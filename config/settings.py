@@ -27,10 +27,8 @@ SECRET_KEY = 'django-insecure-h=(#w%%7ejhe=u$vjre&d%6u(-7a$js2x4*v76iq4_m3+7onk#
 DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
-CSRF_TRUSTED_ORIGINS = [
-    'hondy.pythonanywhere.com',
-    # 他のドメインがあれば追加
-]
+CSRF_TRUSTED_ORIGINS = ['https://hondy.pythonanywhere.com', 'http://hondy.pythonanywhere.com']
+
 
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
