@@ -1,0 +1,200 @@
+<!-- checklist/templates/checklist/form.html -->
+{% extends 'base.html' %}
+
+{% block title %}
+  {% if form.instance.pk %}チェックリスト編集{% else %}チェックリスト作成{% endif %} | 株ノート
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-10">
+    <div class="card shadow">
+      <div class="card-header bg-primary text-white">
+        <h3 class="mb-0">{% if form.instance.pk %}チェックリスト編集{% else %}チェックリスト作成{% endif %}</h3>
+      </div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          
+          <div class="mb-4">
+            <label for="{{ form.name.id_for_label }}" class="form-label">チェックリスト名</label>
+            {{ form.name }}
+            {% if form.name.errors %}
+              <div class="text-danger">{{ form.name.errors }}</div>
+            {% endif %}
+          </div>
+          
+          <h4 class="mb-3">チェック項目</h4>
+          {{ items_formset.management_form }}
+          
+          <div id="items-formset">
+            {% for item_form in items_formset %}
+              <div class="item-form mb-3 p-3 border rounded">
+                {{ item_form.id }}
+                
+                <div class="row">
+                  <div class="col-md-11">
+                    <label for="{{ item_form.item_text.id_for_label }}" class="form-label">項目テキスト</label>
+                    {{ item_form.item_text }}
+                    {% if item_form.item_text.errors %}
+                      <div class="text-danger">{{ item_form.item_text.errors }}</div>
+                    {% endif %}
+                  </div>
+                  <div class="col-md-1 d-flex align-items-end justify-content-end mb-3">
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-item">❌</button>
+                  </div>
+                </div>
+                
+                <!-- 表示順序フィールドは非表示にする -->
+                <div style="display: none;">
+                  {{ item_form.order }}
+                </div>
+                
+                <!-- 編集時のみDELETEチェックボックスを非表示で追加 -->
+                <div style="display: none;">
+                  {{ item_form.DELETE }}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+          
+          <div class="text-center mb-4">
+            <button type="button" id="add-item" class="btn btn-outline-primary">+ 項目を追加</button>
+          </div>
+          
+          <div class="d-flex justify-content-between">
+            <a href="{% url 'checklist:list' %}" class="btn btn-secondary">キャンセル</a>
+            <button type="submit" class="btn btn-primary">保存</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // 初期表示時に表示順を設定
+    const orderInputs = document.querySelectorAll('input[name$="-order"]');
+    if (orderInputs.length > 0) {
+      // 新規作成時は1から始める
+      if (!{{ form.instance.pk|yesno:"true,false" }}) {
+        orderInputs[0].value = 1;
+      }
+    }
+    
+    // フォームセットの要素
+    const addItemButton = document.getElementById('add-item');
+    const itemsFormset = document.getElementById('items-formset');
+    const totalForms = document.querySelector('[name="items-TOTAL_FORMS"]');
+    
+    // 削除ボタンのイベントリスナーを設定
+    function setupRemoveButtons() {
+      document.querySelectorAll('.remove-item').forEach(button => {
+        button.addEventListener('click', function() {
+          const itemForm = this.closest('.item-form');
+          
+          // 最後の1つは削除せずに中身をクリアする
+          if (itemsFormset.querySelectorAll('.item-form').length <= 1) {
+            itemForm.querySelectorAll('input[type="text"]').forEach(input => {
+              input.value = '';
+            });
+            return;
+          }
+          
+          // 既存のアイテムなら、DELETEにチェックを入れる
+          const deleteCheckbox = itemForm.querySelector('input[name$="-DELETE"]');
+          if (deleteCheckbox) {
+            deleteCheckbox.checked = true;
+            itemForm.style.display = 'none';
+          } else {
+            // 新規追加したアイテムなら、DOMから削除
+            itemForm.remove();
+            
+            // フォームの総数を更新
+            const forms = itemsFormset.querySelectorAll('.item-form');
+            totalForms.value = forms.length;
+            
+            // フォームのインデックスを振り直す
+            forms.forEach((form, index) => {
+              form.querySelectorAll('input, select, textarea').forEach(input => {
+                if (input.name) {
+                  input.name = input.name.replace(/items-\d+/, `items-${index}`);
+                }
+                if (input.id) {
+                  input.id = input.id.replace(/items-\d+/, `items-${index}`);
+                }
+              });
+              
+              form.querySelectorAll('label').forEach(label => {
+                if (label.htmlFor) {
+                  label.htmlFor = label.htmlFor.replace(/items-\d+/, `items-${index}`);
+                }
+              });
+            });
+          }
+        });
+      });
+    }
+    
+    // 初期表示時の削除ボタン設定
+    setupRemoveButtons();
+    
+    // 項目追加ボタンのイベントリスナー
+    addItemButton.addEventListener('click', function() {
+      const formCount = parseInt(totalForms.value);
+      const newForm = itemsFormset.children[0].cloneNode(true);
+      
+      // 最後の項目の順序値を取得
+      let maxOrder = 0;
+      const orderInputs = itemsFormset.querySelectorAll('input[name$="-order"]');
+      orderInputs.forEach(input => {
+        const orderValue = parseInt(input.value) || 0;
+        if (orderValue > maxOrder) {
+          maxOrder = orderValue;
+        }
+      });
+      
+      // フォームの各フィールドIDと名前を更新
+      newForm.querySelectorAll('input, select, textarea').forEach(function(input) {
+        if (input.id) {
+          input.id = input.id.replace(/items-\d+/, `items-${formCount}`);
+        }
+        if (input.name) {
+          input.name = input.name.replace(/items-\d+/, `items-${formCount}`);
+        }
+        
+        // 順序フィールドには自動インクリメントした値を設定
+        if (input.name && input.name.includes('-order')) {
+          input.value = maxOrder + 1;
+        } else if (!input.name || !input.name.includes('-DELETE')) {
+          // 順序フィールド以外の値をクリア
+          input.value = '';
+        }
+        
+        // DELETEチェックボックスをリセット
+        if (input.name && input.name.includes('-DELETE')) {
+          input.checked = false;
+        }
+      });
+      
+      // ラベルのforも更新
+      newForm.querySelectorAll('label').forEach(function(label) {
+        if (label.htmlFor) {
+          label.htmlFor = label.htmlFor.replace(/items-\d+/, `items-${formCount}`);
+        }
+      });
+      
+      // 表示を元に戻す（非表示になっていた場合）
+      newForm.style.display = '';
+      
+      // フォームセットに追加
+      itemsFormset.appendChild(newForm);
+      totalForms.value = parseInt(totalForms.value) + 1;
+      
+      // 新しく追加した項目の削除ボタンを設定
+      setupRemoveButtons();
+    });
+  });
+</script>
+{% endblock %}

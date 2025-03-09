@@ -1,0 +1,643 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if form.instance.pk %}日記の編集{% else %}新規日記作成{% endif %} | 株ノート{% endblock %}
+
+{% block head %}
+<!-- CKEditorの基本スタイルをロード -->
+{{ form.media }}
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<style>
+  :root {
+    --primary-color: #4f46e5;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+    --light-bg: #f9fafb;
+    --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  }
+
+  body {
+    background-color: var(--light-bg);
+  }
+
+  /* フォームスタイル */
+  .form-card {
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+  }
+
+  .form-card-header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 1.25rem;
+    border-bottom: none;
+  }
+
+  .form-card-header h3 {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .form-card-body {
+    padding: 1.5rem;
+  }
+
+  .form-section {
+    margin-bottom: 2rem;
+  }
+
+  .form-section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+    color: #111827;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .form-section-title i {
+    color: var(--primary-color);
+  }
+
+  .form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #374151;
+  }
+
+  .form-control, .form-select {
+    border-radius: 0.375rem;
+    padding: 0.625rem 0.75rem;
+    border: 1px solid #d1d5db;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  }
+
+  .form-control:focus, .form-select:focus {
+    border-color: #a5b4fc;
+    box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.25);
+  }
+
+  .input-group .btn {
+    padding-top: 0.625rem;
+    padding-bottom: 0.625rem;
+  }
+
+  /* CKEditorのスタイル調整 */
+  .django-ckeditor-widget {
+    width: 100%;
+  }
+
+  .cke_chrome {
+    border-color: #d1d5db !important;
+    border-radius: 0.375rem !important;
+  }
+
+  .cke_top {
+    border-bottom-color: #e5e7eb !important;
+  }
+
+  /* ボタンスタイル */
+  .btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+  }
+
+  .btn-primary:hover {
+    background-color: #4338ca;
+    border-color: #4338ca;
+  }
+
+  .btn-secondary {
+    background-color: #6b7280;
+    border-color: #6b7280;
+  }
+
+  .btn-secondary:hover {
+    background-color: #4b5563;
+    border-color: #4b5563;
+  }
+
+  /* フィードバックスタイル */
+  .is-valid {
+    border-color: var(--success-color) !important;
+    padding-right: calc(1.5em + 0.75rem) !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2310b981' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right calc(0.375em + 0.1875rem) center !important;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem) !important;
+  }
+
+  .is-invalid {
+    border-color: var(--danger-color) !important;
+    padding-right: calc(1.5em + 0.75rem) !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23ef4444'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23ef4444' stroke='none'/%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right calc(0.375em + 0.1875rem) center !important;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem) !important;
+  }
+
+  /* スピナースタイル */
+  .spinner-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .spinner-symbol {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-width: 0.2em;
+  }
+
+  /* 株価情報カード */
+  .stock-info-card {
+    background-color: #f3f4f6;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid var(--primary-color);
+  }
+
+  .stock-info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .stock-info-title {
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+  }
+
+  .stock-info-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .stock-info-item {
+    flex: 1 1 calc(50% - 0.5rem);
+    min-width: 150px;
+  }
+
+  .stock-info-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+  }
+
+  .stock-info-value {
+    font-weight: 500;
+    color: #111827;
+  }
+
+  /* レスポンシブ調整 */
+  @media (max-width: 768px) {
+    .form-card-body {
+      padding: 1.25rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="card form-card">
+    <div class="form-card-header">
+      <h3>{% if form.instance.pk %}日記の編集{% else %}新規日記作成{% endif %}</h3>
+    </div>
+    
+    <div class="form-card-body">
+      <form method="post">
+        {% csrf_token %}
+        
+        <!-- 株式情報セクション -->
+        <div class="form-section">
+          <h4 class="form-section-title">
+            <i class="bi bi-graph-up"></i> 株式情報
+          </h4>
+          
+          <!-- 株価情報カード (銘柄コード入力後に表示) -->
+          <div class="stock-info-card d-none" id="stockInfoCard">
+            <div class="stock-info-header">
+              <h5 class="stock-info-title" id="stockInfoTitle">会社情報</h5>
+              <span class="badge bg-primary" id="stockInfoCode"></span>
+            </div>
+            <div class="stock-info-body">
+              <div class="stock-info-item">
+                <div class="stock-info-label">現在株価</div>
+                <div class="stock-info-value" id="stockInfoPrice">--</div>
+              </div>
+              <div class="stock-info-item">
+                <div class="stock-info-label">前日比</div>
+                <div class="stock-info-value" id="stockInfoChange">--</div>
+              </div>
+              <div class="stock-info-item">
+                <div class="stock-info-label">市場</div>
+                <div class="stock-info-value" id="stockInfoMarket">--</div>
+              </div>
+              <div class="stock-info-item">
+                <div class="stock-info-label">業種</div>
+                <div class="stock-info-value" id="stockInfoIndustry">--</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="{{ form.stock_symbol.id_for_label }}" class="form-label">銘柄コード</label>
+              <div class="input-group">
+                {{ form.stock_symbol }}
+                <button type="button" class="btn btn-outline-primary" id="fetchStockInfo">
+                  <i class="bi bi-search"></i> 検索
+                </button>
+              </div>
+              <div class="spinner-container mt-2 d-none" id="symbolSpinnerContainer">
+                <div class="spinner-border text-primary spinner-symbol" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+                <small class="text-muted">会社情報を取得中...</small>
+              </div>
+              <small class="form-text text-muted">4桁の銘柄コードを入力して検索ボタンをクリックしてください</small>
+              {% if form.stock_symbol.errors %}
+                <div class="text-danger">{{ form.stock_symbol.errors }}</div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-6 mb-3">
+              <label for="{{ form.stock_name.id_for_label }}" class="form-label">銘柄名</label>
+              {{ form.stock_name }}
+              {% if form.stock_name.errors %}
+                <div class="text-danger">{{ form.stock_name.errors }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        
+        <!-- 取引情報セクション -->
+        <div class="form-section">
+          <h4 class="form-section-title">
+            <i class="bi bi-currency-exchange"></i> 取引情報
+          </h4>
+          
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="{{ form.purchase_date.id_for_label }}" class="form-label">購入日</label>
+                {{ form.purchase_date }}
+                {% if form.purchase_date.errors %}
+                  <div class="text-danger">{{ form.purchase_date.errors }}</div>
+                {% endif %}
+              </div>
+              
+              <div class="mb-3">
+                <label for="{{ form.purchase_price.id_for_label }}" class="form-label">購入価格</label>
+                <div class="input-group">
+                  {{ form.purchase_price }}
+                  <button type="button" class="btn btn-outline-primary" id="fetch-current-price">
+                    <i class="bi bi-arrow-repeat"></i> 現在株価
+                  </button>
+                </div>
+                {% if form.purchase_price.errors %}
+                  <div class="text-danger">{{ form.purchase_price.errors }}</div>
+                {% endif %}
+              </div>
+              
+              <div class="mb-3">
+                <label for="{{ form.purchase_quantity.id_for_label }}" class="form-label">購入数量</label>
+                {{ form.purchase_quantity }}
+                {% if form.purchase_quantity.errors %}
+                  <div class="text-danger">{{ form.purchase_quantity.errors }}</div>
+                {% endif %}
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="{{ form.sell_date.id_for_label }}" class="form-label">売却日 (任意)</label>
+                {{ form.sell_date }}
+                {% if form.sell_date.errors %}
+                  <div class="text-danger">{{ form.sell_date.errors }}</div>
+                {% endif %}
+              </div>
+              
+              <div class="mb-3">
+                <label for="{{ form.sell_price.id_for_label }}" class="form-label">売却価格 (任意)</label>
+                <div class="input-group">
+                  {{ form.sell_price }}
+                  <button type="button" class="btn btn-outline-primary" id="fetch-current-price-sell">
+                    <i class="bi bi-arrow-repeat"></i> 現在株価
+                  </button>
+                </div>
+                {% if form.sell_price.errors %}
+                  <div class="text-danger">{{ form.sell_price.errors }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 分類情報セクション -->
+        <div class="form-section">
+          <h4 class="form-section-title">
+            <i class="bi bi-tags"></i> 分類情報
+          </h4>
+          
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="{{ form.tags.id_for_label }}" class="form-label">タグ</label>
+              {{ form.tags }}
+              <small class="form-text text-muted">複数選択可能です</small>
+              {% if form.tags.errors %}
+                <div class="text-danger">{{ form.tags.errors }}</div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-6 mb-3">
+              <label for="{{ form.checklist.id_for_label }}" class="form-label">チェックリスト</label>
+              {{ form.checklist }}
+              <small class="form-text text-muted">複数選択可能です</small>
+              {% if form.checklist.errors %}
+                <div class="text-danger">{{ form.checklist.errors }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        
+        <!-- 詳細情報セクション -->
+        <div class="form-section">
+          <h4 class="form-section-title">
+            <i class="bi bi-journal-text"></i> 詳細情報
+          </h4>
+          
+          <div class="mb-4">
+            <label for="{{ form.reason.id_for_label }}" class="form-label">購入理由 / 投資日記</label>
+            <small class="d-block text-muted mb-2">株式購入の理由や分析結果、将来の見通しなどを自由に記録できます</small>
+            <div class="rich-text-container">
+              {{ form.reason }}
+            </div>
+            {% if form.reason.errors %}
+              <div class="text-danger">{{ form.reason.errors }}</div>
+            {% endif %}
+          </div>
+          
+          <div class="mb-3">
+            <label for="{{ form.memo.id_for_label }}" class="form-label">メモ (任意)</label>
+            {{ form.memo }}
+            <small class="form-text text-muted">その他の備考事項があれば記入してください</small>
+            {% if form.memo.errors %}
+              <div class="text-danger">{{ form.memo.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+        
+        <div class="d-flex justify-content-between mt-4">
+          <a href="{% url 'stockdiary:home' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i> キャンセル
+          </a>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save me-1"></i> 保存
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // フォーム要素
+  const stockSymbolInput = document.getElementById('{{ form.stock_symbol.id_for_label }}');
+  const stockNameInput = document.getElementById('{{ form.stock_name.id_for_label }}');
+  const purchasePriceInput = document.getElementById('{{ form.purchase_price.id_for_label }}');
+  const sellPriceInput = document.getElementById('{{ form.sell_price.id_for_label }}');
+  
+  // ボタン要素
+  const fetchStockInfoBtn = document.getElementById('fetchStockInfo');
+  const fetchCurrentPriceBtn = document.getElementById('fetch-current-price');
+  const fetchCurrentPriceSellBtn = document.getElementById('fetch-current-price-sell');
+  
+  // UI要素
+  const symbolSpinnerContainer = document.getElementById('symbolSpinnerContainer');
+  const stockInfoCard = document.getElementById('stockInfoCard');
+  const stockInfoTitle = document.getElementById('stockInfoTitle');
+  const stockInfoCode = document.getElementById('stockInfoCode');
+  const stockInfoPrice = document.getElementById('stockInfoPrice');
+  const stockInfoChange = document.getElementById('stockInfoChange');
+  const stockInfoMarket = document.getElementById('stockInfoMarket');
+  const stockInfoIndustry = document.getElementById('stockInfoIndustry');
+  
+  // 銘柄情報検索ボタンのクリックイベント
+  fetchStockInfoBtn.addEventListener('click', function() {
+    const stockCode = stockSymbolInput.value.trim();
+    if (stockCode && /^\d{4}$/.test(stockCode)) {
+      fetchStockInfo(stockCode);
+    } else {
+      showAlert('有効な4桁の銘柄コードを入力してください', 'danger');
+    }
+  });
+  
+  // 銘柄コード入力時の処理（4桁入力時に自動検索）
+  stockSymbolInput.addEventListener('input', function() {
+    const stockCode = this.value.trim();
+    // 4桁以外の場合は情報カードを非表示
+    if (!stockCode || !/^\d{4}$/.test(stockCode)) {
+      stockInfoCard.classList.add('d-none');
+    }
+  });
+  
+  // 購入価格の現在株価取得ボタンのクリックイベント
+  fetchCurrentPriceBtn.addEventListener('click', function() {
+    const stockCode = stockSymbolInput.value.trim();
+    if (stockCode && /^\d{4}$/.test(stockCode)) {
+      fetchCurrentPrice(stockCode, purchasePriceInput, fetchCurrentPriceBtn);
+    } else {
+      showAlert('有効な4桁の銘柄コードを入力してください', 'danger');
+    }
+  });
+  
+  // 売却価格の現在株価取得ボタンのクリックイベント
+  fetchCurrentPriceSellBtn.addEventListener('click', function() {
+    const stockCode = stockSymbolInput.value.trim();
+    if (stockCode && /^\d{4}$/.test(stockCode)) {
+      fetchCurrentPrice(stockCode, sellPriceInput, fetchCurrentPriceSellBtn);
+    } else {
+      showAlert('有効な4桁の銘柄コードを入力してください', 'danger');
+    }
+  });
+
+  // 株式情報を取得する関数
+  function fetchStockInfo(stockCode) {
+    // スピナーを表示
+    symbolSpinnerContainer.classList.remove('d-none');
+    fetchStockInfoBtn.disabled = true;
+    
+    // APIリクエストを送信
+    fetch(`/stockdiary/api/stock/info/${stockCode}/`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('会社情報の取得に失敗しました');
+        }
+        return response.json();
+      })
+      .then(data => {
+        // 会社名を設定
+        stockNameInput.value = data.company_name;
+        
+        // 株価情報カードを更新して表示
+        stockInfoTitle.textContent = data.company_name;
+        stockInfoCode.textContent = stockCode;
+        stockInfoPrice.textContent = data.price ? `${data.price.toLocaleString()}円` : '取得中...';
+        
+        if (data.change_percent) {
+          const isPositive = data.change_percent > 0;
+          const changeText = `${isPositive ? '+' : ''}${data.change_percent.toFixed(2)}%`;
+          stockInfoChange.textContent = changeText;
+          stockInfoChange.className = `stock-info-value ${isPositive ? 'text-success' : 'text-danger'}`;
+        } else {
+          stockInfoChange.textContent = '--';
+          stockInfoChange.className = 'stock-info-value';
+        }
+        
+        // 市場と業種の情報を更新
+        stockInfoMarket.textContent = data.market || '--';
+        stockInfoIndustry.textContent = data.industry || '--';
+        
+        // 情報カードを表示
+        stockInfoCard.classList.remove('d-none');
+        
+        // 成功時のフィードバック
+        stockSymbolInput.classList.add('is-valid');
+        setTimeout(() => {
+          stockSymbolInput.classList.remove('is-valid');
+        }, 2000);
+        
+        // 現在株価が取得できていれば購入価格にセット
+        if (data.price && !purchasePriceInput.value) {
+          purchasePriceInput.value = data.price;
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        // エラー時のフィードバック
+        stockSymbolInput.classList.add('is-invalid');
+        setTimeout(() => {
+          stockSymbolInput.classList.remove('is-invalid');
+        }, 2000);
+        
+        // エラーメッセージを表示
+        showAlert(error.message, 'danger');
+      })
+      .finally(() => {
+        // スピナーを非表示
+        symbolSpinnerContainer.classList.add('d-none');
+        fetchStockInfoBtn.disabled = false;
+      });
+  }
+
+  // 現在株価を取得する関数
+  function fetchCurrentPrice(stockCode, inputField, buttonElement) {
+    // ボタンを無効化してローディング状態を表示
+    buttonElement.disabled = true;
+    const originalBtnText = buttonElement.innerHTML;
+    buttonElement.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 取得中...';
+
+    // APIリクエストを送信
+    fetch(`/stockdiary/api/stock/price/${stockCode}/`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('株価の取得に失敗しました');
+        }
+        return response.json();
+      })
+      .then(data => {
+        // 現在株価を設定
+        inputField.value = data.price;
+        
+        // 株価情報カードの価格も更新
+        if (!stockInfoCard.classList.contains('d-none')) {
+          stockInfoPrice.textContent = `${data.price.toLocaleString()}円`;
+        }
+        
+        // 成功の視覚的フィードバック
+        inputField.classList.add('is-valid');
+        setTimeout(() => {
+          inputField.classList.remove('is-valid');
+        }, 2000);
+        
+        // 成功メッセージを表示
+        showAlert('現在株価を取得しました', 'success');
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        
+        // エラーの視覚的フィードバック
+        inputField.classList.add('is-invalid');
+        setTimeout(() => {
+          inputField.classList.remove('is-invalid');
+        }, 2000);
+        
+        // エラーメッセージを表示
+        showAlert(error.message, 'danger');
+      })
+      .finally(() => {
+        // ボタンを元に戻す
+        buttonElement.disabled = false;
+        buttonElement.innerHTML = originalBtnText;
+      });
+  }
+  
+  // アラートメッセージを表示する関数
+  function showAlert(message, type) {
+    // 既存のアラートを削除
+    const existingAlert = document.querySelector('.alert-feedback');
+    if (existingAlert) {
+      existingAlert.remove();
+    }
+    
+    // 新しいアラートを作成
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-feedback`;
+    alertDiv.role = 'alert';
+    
+    // アイコンを追加
+    let icon = '';
+    if (type === 'success') {
+      icon = '<i class="bi bi-check-circle-fill me-2"></i>';
+    } else if (type === 'danger') {
+      icon = '<i class="bi bi-exclamation-triangle-fill me-2"></i>';
+    }
+    
+    alertDiv.innerHTML = `
+      ${icon}${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    // フォームの先頭に挿入
+    const form = document.querySelector('form');
+    form.insertAdjacentElement('afterbegin', alertDiv);
+    
+    // 5秒後に自動的に閉じる
+    setTimeout(() => {
+      if (alertDiv.parentNode) {
+        alertDiv.classList.remove('show');
+        setTimeout(() => alertDiv.remove(), 150);
+      }
+    }, 5000);
+  }
+  
+  // ページ読み込み時に銘柄コードが入力済みなら情報を取得
+  if (stockSymbolInput.value.trim() && /^\d{4}$/.test(stockSymbolInput.value.trim())) {
+    fetchStockInfo(stockSymbolInput.value.trim());
+  }
+});
+</script>
+{% endblock %}
+

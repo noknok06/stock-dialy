@@ -1,0 +1,42 @@
+<!-- checklist/templates/checklist/detail.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ checklist.name }} | 株ノート{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="mb-0">{{ checklist.name }}</h3>
+    <div>
+      <a href="{% url 'checklist:update' checklist.id %}" class="btn btn-warning">編集</a>
+      <a href="{% url 'checklist:list' %}" class="btn btn-secondary">戻る</a>
+    </div>
+  </div>
+  <div class="card-body">
+    <h5>チェック項目</h5>
+    {% if checklist.items.all %}
+      <div class="list-group">
+        {% for item in checklist.items.all %}
+          <div class="list-group-item d-flex justify-content-between align-items-center">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" {% if item.status %}checked{% endif %} disabled>
+              <label class="form-check-label {% if item.status %}text-decoration-line-through{% endif %}">
+                {{ item.item_text }}
+              </label>
+            </div>
+            <small class="text-muted">順序: {{ item.order }}</small>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="alert alert-info">
+        チェック項目がありません。
+      </div>
+    {% endif %}
+  </div>
+  <div class="card-footer text-muted">
+    作成日時: {{ checklist.created_at }}
+  </div>
+</div>
+
+{% endblock %}

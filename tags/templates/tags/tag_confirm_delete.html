@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+
+{% block title %}タグの削除 | 株ノート{% endblock %}
+
+{% block head %}
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<style>
+  :root {
+    --primary-color: #4f46e5;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+    --warning-color: #f59e0b;
+    --light-bg: #f9fafb;
+    --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  }
+
+  body {
+    background-color: var(--light-bg);
+  }
+
+  /* カードスタイル */
+  .card {
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+  }
+
+  .card-header {
+    background-color: var(--danger-color);
+    color: white;
+    padding: 1.25rem;
+    border-bottom: none;
+  }
+
+  .card-header h3 {
+    margin: 0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .card-body {
+    padding: 1.5rem;
+  }
+
+  /* 警告アイコン */
+  .warning-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--danger-color);
+    border-radius: 9999px;
+    margin: 0 auto 1.5rem;
+  }
+
+  /* タグバッジ */
+  .tag-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background-color: #eef2ff;
+    color: var(--primary-color);
+    border-radius: 9999px;
+    font-weight: 500;
+    margin: 1rem 0;
+  }
+
+  .tag-badge i {
+    margin-right: 0.5rem;
+  }
+
+  /* 関連アイテム */
+  .related-items {
+    background-color: #f3f4f6;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .related-title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #111827;
+  }
+
+  /* ボタンスタイル */
+  .btn-danger {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+  }
+
+  .btn-danger:hover {
+    background-color: #dc2626;
+    border-color: #dc2626;
+  }
+
+  .btn-secondary {
+    background-color: #6b7280;
+    border-color: #6b7280;
+  }
+
+  .btn-secondary:hover {
+    background-color: #4b5563;
+    border-color: #4b5563;
+  }
+
+  .btn-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-header">
+          <h3>
+            <i class="bi bi-exclamation-triangle"></i> タグの削除
+          </h3>
+        </div>
+        
+        <div class="card-body text-center">
+          <div class="warning-icon">
+            <i class="bi bi-exclamation-triangle-fill fs-1"></i>
+          </div>
+          
+          <h4 class="mb-3">このタグを削除してもよろしいですか？</h4>
+          
+          <div class="tag-badge">
+            <i class="bi bi-tag-fill"></i>
+            <span>{{ tag.name }}</span>
+          </div>
+          
+          <p class="text-muted">
+            このタグを削除すると、関連する日記からもタグが削除されます。<br>
+            この操作は元に戻すことができません。
+          </p>
+          
+          {% with related_count=tag.stockdiary_set.count %}
+            {% if related_count > 0 %}
+              <div class="related-items">
+                <h5 class="related-title">
+                  <i class="bi bi-link text-danger"></i> 関連する日記
+                </h5>
+                <p class="mb-0">
+                  このタグは現在 <strong>{{ related_count }}件</strong> の日記で使用されています。
+                </p>
+              </div>
+            {% endif %}
+          {% endwith %}
+          
+          <form method="post" class="mt-4">
+            {% csrf_token %}
+            <div class="d-flex justify-content-center gap-3">
+              <a href="{% url 'tags:list' %}" class="btn btn-secondary btn-icon">
+                <i class="bi bi-x-lg me-1"></i> キャンセル
+              </a>
+              <button type="submit" class="btn btn-danger btn-icon">
+                <i class="bi bi-trash me-1"></i> 削除する
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

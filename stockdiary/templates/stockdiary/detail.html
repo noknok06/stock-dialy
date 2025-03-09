@@ -1,0 +1,583 @@
+{% extends 'base.html' %}
+{% load stockdiary_filters %}
+{% load static %}
+
+{% block title %}{{ diary.stock_name }} | 株ノート{% endblock %}
+
+{% block head %}
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="{% static 'css/stockdairy/detail.css' %}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<style>
+  :root {
+    --primary-color: #4f46e5;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+    --warning-color: #f59e0b;
+    --info-color: #3b82f6;
+    --light-bg: #f9fafb;
+    --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  }
+
+  body {
+    background-color: var(--light-bg);
+  }
+
+  /* カードスタイル */
+  .card {
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+  }
+
+  .card-header {
+    background-color: white;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 1.25rem;
+  }
+
+  .card-body {
+    padding: 1.5rem;
+  }
+
+  .card-footer {
+    background-color: white;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 1rem 1.25rem;
+  }
+
+  /* セクションスタイル */
+  .section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+    color: #111827;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .section-title i {
+    color: var(--primary-color);
+  }
+
+  .section-card {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+
+  .section-header {
+    padding: 1rem 1.25rem;
+    background-color: rgba(249, 250, 251, 0.7);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  .section-body {
+    padding: 1.25rem;
+  }
+
+  /* 情報テーブル */
+  .info-table {
+    width: 100%;
+  }
+
+  .info-table th {
+    width: 40%;
+    color: #6b7280;
+    font-weight: 500;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .info-table td {
+    width: 60%;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e5e7eb;
+    font-weight: 500;
+  }
+
+  .info-table tr:last-child th,
+  .info-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  /* タグスタイル */
+  .tag-badge {
+    background-color: var(--info-color);
+    color: white;
+    font-weight: 500;
+    padding: 0.35em 0.75em;
+    border-radius: 9999px;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+    display: inline-block;
+  }
+
+  /* チェックリストスタイル */
+  .checklist-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  }
+
+  .checklist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background-color: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .checklist-title {
+    font-weight: 600;
+    color: #111827;
+  }
+
+  .checklist-progress {
+    font-weight: 500;
+    padding: 0.25em 0.75em;
+  }
+
+  .checklist-body {
+    padding: 0.5rem 0;
+  }
+
+  .checklist-item {
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    align-items: center;
+  }
+
+  .checklist-item:last-child {
+    border-bottom: none;
+  }
+
+  .checklist-checkbox {
+    margin-right: 0.75rem;
+  }
+
+  .checklist-label {
+    margin-bottom: 0;
+    transition: all 0.2s;
+  }
+
+  .checklist-label.completed {
+    color: #9ca3af;
+    text-decoration: line-through;
+  }
+
+  /* ボタンスタイル */
+  .btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+  }
+
+  .btn-primary:hover {
+    background-color: #4338ca;
+    border-color: #4338ca;
+  }
+
+  .btn-warning {
+    background-color: var(--warning-color);
+    border-color: var(--warning-color);
+    color: white;
+  }
+
+  .btn-warning:hover {
+    background-color: #d97706;
+    border-color: #d97706;
+    color: white;
+  }
+
+  .btn-danger {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+  }
+
+  .btn-danger:hover {
+    background-color: #dc2626;
+    border-color: #dc2626;
+  }
+
+  .btn-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* 利益/損失表示 */
+  .profit {
+    color: var(--success-color);
+    font-weight: 600;
+  }
+
+  .loss {
+    color: var(--danger-color);
+    font-weight: 600;
+  }
+
+  /* コンテンツスタイル */
+  .content-card {
+    height: 100%;
+  }
+
+  .content-body {
+    padding: 1.25rem;
+    height: 100%;
+  }
+
+  .rich-content {
+    line-height: 1.6;
+  }
+
+  .rich-content p:last-child {
+    margin-bottom: 0;
+  }
+
+  .meta-info {
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+
+  /* レスポンシブ調整 */
+  @media (max-width: 768px) {
+    .action-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    
+    .action-buttons .btn {
+      flex: 1;
+      min-width: 100px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+      <div class="d-flex align-items-center mb-2 mb-md-0">
+        <h2 class="mb-0 me-2">{{ diary.stock_name }}</h2>
+        <span class="badge bg-secondary">{{ diary.stock_symbol }}</span>
+      </div>
+      <div class="action-buttons">
+        <a href="{% url 'stockdiary:update' diary.id %}" class="btn btn-warning btn-icon">
+          <i class="bi bi-pencil"></i> 編集
+        </a>
+        <a href="{% url 'stockdiary:delete' diary.id %}" class="btn btn-danger btn-icon">
+          <i class="bi bi-trash"></i> 削除
+        </a>
+        <a href="{% url 'stockdiary:home' %}" class="btn btn-secondary btn-icon">
+          <i class="bi bi-arrow-left"></i> 戻る
+        </a>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="row">
+        <!-- 左側: 基本情報 -->
+        <div class="col-lg-6 mb-4">
+          <h3 class="section-title">
+            <i class="bi bi-info-circle"></i> 基本情報
+          </h3>
+          <div class="section-card">
+            <div class="section-body">
+              <table class="info-table">
+                <tr>
+                  <th>購入日</th>
+                  <td>{{ diary.purchase_date|date:"Y年m月d日" }}</td>
+                </tr>
+                <tr>
+                  <th>購入価格</th>
+                  <td>{{ diary.purchase_price|floatformat:2 }}円</td>
+                </tr>
+                <tr>
+                  <th>購入数量</th>
+                  <td>{{ diary.purchase_quantity }}株</td>
+                </tr>
+                <tr>
+                  <th>総購入額</th>
+                  <td>{{ diary.purchase_price|mul:diary.purchase_quantity|floatformat:2 }}円</td>
+                </tr>
+                {% if diary.sell_date %}
+                <tr>
+                  <th>売却日</th>
+                  <td>{{ diary.sell_date|date:"Y年m月d日" }}</td>
+                </tr>
+                <tr>
+                  <th>売却価格</th>
+                  <td>{{ diary.sell_price|floatformat:2 }}円</td>
+                </tr>
+                <tr>
+                  <th>損益</th>
+                  <td>
+                    {% with profit=diary.sell_price|sub:diary.purchase_price|mul:diary.purchase_quantity %}
+                    {% if profit > 0 %}
+                    <span class="profit">+{{ profit|floatformat:2 }}円 ({{ diary.sell_price|sub:diary.purchase_price|mul:100|floatformat:2 }}%)</span>
+                    {% elif profit < 0 %}
+                    <span class="loss">{{ profit|floatformat:2 }}円 ({{ diary.sell_price|sub:diary.purchase_price|mul:100|floatformat:2 }}%)</span>
+                    {% else %}
+                    <span>{{ profit|floatformat:2 }}円 (0.00%)</span>
+                    {% endif %}
+                    {% endwith %}
+                  </td>
+                </tr>
+                {% endif %}
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右側: タグとチェックリスト -->
+        <div class="col-lg-6 mb-4">
+          <h3 class="section-title">
+            <i class="bi bi-tags"></i> タグ
+          </h3>
+          <div class="section-card mb-4">
+            <div class="section-body">
+              {% for tag in diary.tags.all %}
+              <span class="tag-badge">{{ tag.name }}</span>
+              {% empty %}
+              <p class="text-muted mb-0">タグはありません</p>
+              {% endfor %}
+            </div>
+          </div>
+
+          <h3 class="section-title">
+            <i class="bi bi-check2-square"></i> チェックリスト
+          </h3>
+          <div class="checklist-container">
+            {% for checklist in diary.checklist.all %}
+            <div class="checklist-card" data-checklist-id="{{ checklist.id }}">
+              <div class="checklist-header">
+                <span class="checklist-title">{{ checklist.name }}</span>
+                <span class="badge bg-primary checklist-progress"></span>
+              </div>
+              <div class="checklist-body">
+                {% for item in checklist.items.all %}
+                <div class="checklist-item">
+                  <div class="form-check">
+                    <input class="form-check-input checklist-item-checkbox" 
+                           type="checkbox" 
+                           id="item-{{ item.id }}" 
+                           data-item-id="{{ item.id }}" 
+                           {% if item_statuses|get_item:item.id %}checked{% endif %}>
+                    <label class="form-check-label checklist-label {% if item_statuses|get_item:item.id %}completed{% endif %}" 
+                           for="item-{{ item.id }}" 
+                           id="item-label-{{ item.id }}">
+                      {{ item.item_text }}
+                    </label>
+                  </div>
+                </div>
+                {% empty %}
+                <div class="checklist-item">
+                  <span class="text-muted">チェックリストの項目がありません</span>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% empty %}
+            <p class="text-muted">チェックリストはありません</p>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- 購入理由 -->
+        <div class="col-lg-6 mb-4">
+          <h3 class="section-title">
+            <i class="bi bi-journal-text"></i> 購入理由
+          </h3>
+          <div class="section-card content-card">
+            <div class="content-body rich-content">
+              {{ diary.reason|safe }}
+            </div>
+          </div>
+        </div>
+
+        <!-- メモ -->
+        <div class="col-lg-6 mb-4">
+          <h3 class="section-title">
+            <i class="bi bi-sticky"></i> メモ
+          </h3>
+          <div class="section-card content-card">
+            <div class="content-body">
+              {% if diary.memo %}
+              <div class="rich-content">{{ diary.memo|linebreaks }}</div>
+              {% else %}
+              <p class="text-muted mb-0">メモはありません</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-footer">
+      <div class="meta-info">
+        <i class="bi bi-calendar-check me-1"></i> 作成日時: {{ diary.created_at|date:"Y年m月d日 H:i" }} 
+        <span class="mx-2">|</span> 
+        <i class="bi bi-clock-history me-1"></i> 更新日時: {{ diary.updated_at|date:"Y年m月d日 H:i" }}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // チェックリスト進捗の更新
+    function updateChecklistProgress(checklistCard) {
+      const totalItems = checklistCard.querySelectorAll('.checklist-item-checkbox').length;
+      const checkedItems = checklistCard.querySelectorAll('.checklist-item-checkbox:checked').length;
+      const progressBadge = checklistCard.querySelector('.checklist-progress');
+      
+      // 進捗バッジの更新
+      progressBadge.textContent = `${checkedItems}/${totalItems}`;
+      
+      // 全てチェック済みの場合は色を変更
+      if (checkedItems === totalItems && totalItems > 0) {
+        progressBadge.classList.remove('bg-primary');
+        progressBadge.classList.add('bg-success');
+      } else {
+        progressBadge.classList.remove('bg-success');
+        progressBadge.classList.add('bg-primary');
+      }
+      
+      // 進捗率を計算して表示
+      if (totalItems > 0) {
+        const progressPercent = Math.round((checkedItems / totalItems) * 100);
+        progressBadge.textContent = `${checkedItems}/${totalItems} (${progressPercent}%)`;
+      }
+    }
+    
+    // すべてのチェックリストの進捗を初期表示
+    document.querySelectorAll('.checklist-card').forEach(function(card) {
+      updateChecklistProgress(card);
+    });
+    
+    // チェックボックス変更時の処理
+    document.querySelectorAll('.checklist-item-checkbox').forEach(function(checkbox) {
+      checkbox.addEventListener('change', function() {
+        const itemId = this.dataset.itemId;
+        const checked = this.checked;
+        const label = document.getElementById('item-label-' + itemId);
+        
+        // ラベルのスタイル変更（取り消し線）
+        if (checked) {
+          label.classList.add('completed');
+        } else {
+          label.classList.remove('completed');
+        }
+        
+        // 進捗の更新
+        const checklistCard = this.closest('.checklist-card');
+        updateChecklistProgress(checklistCard);
+        
+        // APIリクエストを送信
+        fetch('/checklist/item/' + itemId + '/toggle/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify({
+            status: checked,
+            diary_id: {{ diary.id }}
+          })
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('サーバーエラーが発生しました');
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (data.error) {
+            throw new Error(data.error);
+          }
+          
+          // 成功時のフィードバック（任意）
+          const feedbackToast = createToast('チェックリストを更新しました', 'success');
+          document.body.appendChild(feedbackToast);
+          new bootstrap.Toast(feedbackToast).show();
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          
+          // エラー時は状態を元に戻す
+          this.checked = !checked;
+          if (!checked) {
+            label.classList.add('completed');
+          } else {
+            label.classList.remove('completed');
+          }
+          updateChecklistProgress(checklistCard);
+          
+          // エラーメッセージを表示
+          const errorToast = createToast('更新に失敗しました: ' + error.message, 'danger');
+          document.body.appendChild(errorToast);
+          new bootstrap.Toast(errorToast).show();
+        });
+      });
+    });
+    
+    // CSRFトークンを取得する関数
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+    
+    // トースト通知を作成する関数
+    function createToast(message, type) {
+      const toastEl = document.createElement('div');
+      toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
+      toastEl.setAttribute('role', 'alert');
+      toastEl.setAttribute('aria-live', 'assertive');
+      toastEl.setAttribute('aria-atomic', 'true');
+      
+      const icon = type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle';
+      
+      toastEl.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">
+            <i class="bi ${icon} me-2"></i> ${message}
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      `;
+      
+      // スタイル調整
+      toastEl.style.position = 'fixed';
+      toastEl.style.bottom = '20px';
+      toastEl.style.right = '20px';
+      toastEl.style.minWidth = '250px';
+      toastEl.style.zIndex = '1050';
+      
+      return toastEl;
+    }
+  });
+</script>
+{% endblock %}

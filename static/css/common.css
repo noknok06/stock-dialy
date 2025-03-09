@@ -1,0 +1,337 @@
+:root {
+    --primary-color: #4f46e5;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+    --light-bg: #f9fafb;
+    --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  }
+  
+  body {
+    background-color: var(--light-bg);
+  }
+  
+  /* カレンダースタイル */
+  .fc-event {
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  
+  .purchase-event {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+  }
+  
+  .sell-event {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+  }
+  
+  #calendar {
+    height: 450px;
+    margin-bottom: 20px;
+  }
+  
+  .fc .fc-toolbar-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  
+  .fc .fc-button-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+  }
+  
+  .fc .fc-button-primary:hover {
+    background-color: #4338ca;
+    border-color: #4338ca;
+  }
+  
+  .fc .fc-button-primary:disabled {
+    background-color: #6366f1;
+    border-color: #6366f1;
+  }
+  
+  .fc-day-today {
+    background-color: rgba(79, 70, 229, 0.1) !important;
+  }
+  
+  /* カード共通スタイル */
+  .card {
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: var(--card-shadow);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  
+  .card-header {
+    background-color: transparent;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 1rem 1.25rem;
+  }
+  
+  .card-title {
+    font-weight: 600;
+    margin-bottom: 0;
+  }
+  
+  /* ボタンスタイル */
+  .btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+  }
+  
+  .btn-primary:hover {
+    background-color: #4338ca;
+    border-color: #4338ca;
+  }
+  
+  .btn-success {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+  }
+  
+  .btn-danger {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+  }
+  
+  /* バッジスタイル */
+  .badge {
+    font-weight: 500;
+    padding: 0.5em 0.75em;
+  }
+  
+  .badge.bg-success {
+    background-color: var(--success-color) !important;
+  }
+  
+  .badge.bg-danger {
+    background-color: var(--danger-color) !important;
+  }
+  
+  .badge.bg-info {
+    background-color: #3b82f6 !important;
+    color: white !important;
+  }
+  
+  /* フォームスタイル */
+  .form-control,
+  .form-select {
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+  }
+  
+  .form-control:focus,
+  .form-select:focus {
+    border-color: #a5b4fc;
+    box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.25);
+  }
+  
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6b7280;
+  }
+  
+  .search-input {
+    padding-left: 35px;
+  }
+  
+  /* 日記カードスタイル */
+  .diary-icon {
+    width: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #6b7280;
+  }
+  
+  .progress {
+    height: 6px;
+    border-radius: 999px;
+  }
+  
+  .progress-bar.bg-success {
+    background-color: var(--success-color) !important;
+  }
+  
+  .progress-bar.bg-primary {
+    background-color: var(--primary-color) !important;
+  }
+  
+  .diary-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    background-color: rgba(249, 250, 251, 0.7);
+  }
+  
+  .diary-card-body {
+    padding: 1.25rem;
+  }
+  
+  .diary-card-footer {
+    padding: 0.75rem 1.25rem;
+    background-color: transparent;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+  }
+  
+  .diary-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+  
+  .diary-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .tag-badge {
+    border-radius: 9999px;
+    padding: 0.35em 0.75em;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+    display: inline-block;
+  }
+  
+  /* 情報表示スタイル */
+  .info-row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+  
+  .info-item {
+    flex: 1 1 50%;
+    min-width: 200px;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: flex-start;
+  }
+  
+  .info-content {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .info-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+  
+  .info-value {
+    font-weight: 500;
+  }
+  
+  /* チェックリストスタイル */
+  .checklist-item {
+    margin-bottom: 1rem;
+  }
+  
+  .checklist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+  
+  .checklist-name {
+    font-size: 0.875rem;
+  }
+  
+  .checklist-count {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+  
+  .section-divider {
+    height: 1px;
+    background-color: #e5e7eb;
+    margin: 1.5rem 0;
+  }
+  
+  /* カレンダーコンテナ */
+  .calendar-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  @media (min-width: 992px) {
+    .calendar-container {
+      grid-template-columns: 7fr 3fr;
+    }
+  }
+  
+  .calendar-events {
+    background-color: white;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    box-shadow: var(--card-shadow);
+    height: 450px;
+    overflow-y: auto;
+  }
+  
+  .calendar-event-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .calendar-event-item:hover {
+    background-color: #f3f4f6;
+  }
+  
+  .calendar-event-badge {
+    width: 80px;
+    text-align: center;
+  }
+  
+  /* ページヘッダー */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0;
+  }
+  
+  .action-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .btn-icon {
+    display: inline-flex;
+    align-items: center;
+  }
+  
+  .btn-icon i {
+    margin-right: 0.5rem;
+  }
+  
+  

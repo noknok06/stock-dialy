@@ -1,0 +1,674 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load stockdiary_filters %}
+
+{% block title %}株式日記 | 株ノート{% endblock %}
+
+{% block head %}
+<!-- FullCalendar CSS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css" rel="stylesheet">
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<style>
+    :root {
+        --primary-color: #4f46e5;
+        --success-color: #10b981;
+        --danger-color: #ef4444;
+        --light-bg: #f9fafb;
+        --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    }
+
+    body {
+        background-color: var(--light-bg);
+    }
+
+    .fc-event {
+        cursor: pointer;
+        border-radius: 4px;
+    }
+
+    .purchase-event {
+        background-color: var(--success-color);
+        border-color: var(--success-color);
+    }
+
+    .sell-event {
+        background-color: var(--danger-color);
+        border-color: var(--danger-color);
+    }
+
+    #calendar {
+        height: 450px;
+        margin-bottom: 20px;
+    }
+
+    .fc-toolbar-chunk {
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+
+    .fc .fc-button-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .fc .fc-button-primary:hover {
+        background-color: #4338ca;
+        border-color: #4338ca;
+    }
+
+    .fc .fc-button-primary:disabled {
+        background-color: #6366f1;
+        border-color: #6366f1;
+    }
+
+    .fc-day-today {
+        background-color: rgba(79, 70, 229, 0.1) !important;
+    }
+
+    .card {
+        border: none;
+        border-radius: 0.5rem;
+        box-shadow: var(--card-shadow);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    .card-header {
+        background-color: transparent;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        padding: 1rem 1.25rem;
+    }
+
+    .card-title {
+        font-weight: 600;
+        margin-bottom: 0;
+    }
+
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .btn-primary:hover {
+        background-color: #4338ca;
+        border-color: #4338ca;
+    }
+
+    .btn-success {
+        background-color: var(--success-color);
+        border-color: var(--success-color);
+    }
+
+    .btn-danger {
+        background-color: var(--danger-color);
+        border-color: var(--danger-color);
+    }
+
+    .badge {
+        font-weight: 500;
+        padding: 0.5em 0.75em;
+    }
+
+    .badge.bg-success {
+        background-color: var(--success-color) !important;
+    }
+
+    .badge.bg-danger {
+        background-color: var(--danger-color) !important;
+    }
+
+    .badge.bg-info {
+        background-color: #3b82f6 !important;
+        color: white !important;
+    }
+
+    .form-control, .form-select {
+        border-radius: 0.375rem;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #d1d5db;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #a5b4fc;
+        box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.25);
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6b7280;
+    }
+
+    .search-input {
+        padding-left: 35px;
+    }
+
+    .diary-icon {
+        width: 40px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #6b7280;
+    }
+
+    .progress {
+        height: 6px;
+        border-radius: 999px;
+    }
+
+    .progress-bar.bg-success {
+        background-color: var(--success-color) !important;
+    }
+
+    .progress-bar.bg-primary {
+        background-color: var(--primary-color) !important;
+    }
+
+    .diary-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1.25rem;
+        background-color: rgba(249, 250, 251, 0.7);
+    }
+
+    .diary-card-body {
+        padding: 1.25rem;
+    }
+
+    .diary-card-footer {
+        padding: 0.75rem 1.25rem;
+        background-color: transparent;
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .diary-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+
+    .diary-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .tag-badge {
+        border-radius: 9999px;
+        padding: 0.35em 0.75em;
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+        display: inline-block;
+    }
+
+    .info-row {
+        display: flex;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+    }
+
+    .info-item {
+        flex: 1 1 50%;
+        min-width: 200px;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: flex-start;
+    }
+
+    .info-content {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .info-label {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+
+    .info-value {
+        font-weight: 500;
+    }
+
+    .checklist-item {
+        margin-bottom: 1rem;
+    }
+
+    .checklist-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .checklist-name {
+        font-size: 0.875rem;
+    }
+
+    .checklist-count {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+
+    .section-divider {
+        height: 1px;
+        background-color: #e5e7eb;
+        margin: 1.5rem 0;
+    }
+
+    .calendar-container {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    @media (min-width: 992px) {
+        .calendar-container {
+            grid-template-columns: 7fr 3fr;
+        }
+    }
+
+    .calendar-events {
+        background-color: white;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        box-shadow: var(--card-shadow);
+        height: 450px;
+        overflow-y: auto;
+    }
+
+    .calendar-event-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        border-radius: 0.375rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .calendar-event-item:hover {
+        background-color: #f3f4f6;
+    }
+
+    .calendar-event-badge {
+        width: 80px;
+        text-align: center;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .page-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-icon {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .btn-icon i {
+        margin-right: 0.5rem;
+    }
+    @media (max-width: 991.98px) {
+        .calendar-container {
+            display: block;
+        }
+        
+        .calendar-events {
+            margin-top: 1rem;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 1rem;
+        }
+    }
+
+    .calendar-event-item {
+        text-decoration: none;
+        color: inherit;
+        padding: 0.75rem;
+        border-radius: 0.375rem;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: background-color 0.2s;
+    }
+
+    .calendar-event-item:hover {
+        background-color: rgba(243, 244, 246, 0.8);
+    }
+
+    .fc-day-today {
+        background-color: rgba(79, 70, 229, 0.1) !important;
+    }
+
+    .fc-day:hover {
+        cursor: pointer;
+        background-color: rgba(243, 244, 246, 0.5);
+    }    
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="page-header">
+        <h1 class="page-title">株式日記</h1>
+        <div class="action-buttons">
+            <a href="{% url 'stockdiary:create' %}" class="btn btn-primary btn-icon">
+                <i class="bi bi-plus-lg"></i> 新規作成
+            </a>
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="manageDropdown"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-gear"></i> 管理
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="manageDropdown">
+                    <li><a class="dropdown-item" href="{% url 'tags:list' %}">タグ管理</a></li>
+                    <li><a class="dropdown-item" href="{% url 'checklist:list' %}">チェックリスト管理</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- カレンダー -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title">投資カレンダー</h5>
+            <div class="calendar-legend d-flex">
+                <span class="badge bg-success me-2">購入</span>
+                <span class="badge bg-danger">売却</span>
+            </div>
+        </div>
+        <div class="card-body"><!-- 元のカレンダー部分を修正 -->
+            <div class="calendar-container">
+                <div id="calendar"></div>
+                <!-- <div class="calendar-events d-none d-lg-block">
+                    <h6 class="mb-3" id="selected-date">選択日のイベント</h6>
+                    <div id="day-events">
+                        <p class="text-muted">日付を選択するとイベントが表示されます</p>
+                    </div>
+                </div> -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 検索フォーム -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title mb-3">検索</h5>
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="query" class="form-label">銘柄検索</label>
+                    <div class="position-relative">
+                        <i class="bi bi-search search-icon"></i>
+                        <input type="text" id="query" name="query" class="form-control search-input" 
+                            placeholder="銘柄名/シンボル" value="{{ request.GET.query }}">
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="tag" class="form-label">タグで絞り込み</label>
+                    <select id="tag" name="tag" class="form-select">
+                        <option value="">すべて表示</option>
+                        {% for tag in tags %}
+                        <option value="{{ tag.id }}" {% if request.GET.tag == tag.id|stringformat:"i" %}selected{% endif %}>
+                            {{ tag.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-search me-1"></i> 検索
+                    </button>
+                    <a href="{% url 'stockdiary:home' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> リセット
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 日記カード一覧 -->
+    <h4 class="mb-3">株式日記リスト</h4>
+    {% if diaries %}
+    <div class="row row-cols-1 row-cols-lg-2 g-4">
+        {% for diary in diaries %}
+        <div class="col">
+            <div class="card h-100">
+                <!-- カードヘッダー - 日付と展開アイコン -->
+                <div class="diary-card-header">
+                    <div class="diary-meta">
+                        <i class="bi bi-clock"></i>
+                        <span>{{ diary.purchase_date|date:"Y年m月d日" }}</span>
+                    </div>
+                    <button class="btn btn-sm btn-link p-0 text-decoration-none" type="button" 
+                        data-bs-toggle="collapse" data-bs-target="#collapse-{{ diary.id }}" aria-expanded="true">
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                </div>
+                
+                <div class="collapse show" id="collapse-{{ diary.id }}">
+                    <div class="diary-card-body">
+                        <h3 class="diary-title">
+                            <i class="bi bi-building text-muted"></i>
+                            {{ diary.stock_name }}
+                        </h3>
+                        
+                        <!-- タグ表示 -->
+                        {% if diary.tags.all %}
+                        <div class="mb-3">
+                            {% for tag in diary.tags.all %}
+                            <span class="badge bg-info tag-badge">{{ tag.name }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <!-- 主要情報のリスト表示 -->
+                        <div class="info-row">
+                            <div class="info-item">
+                                <div class="diary-icon">
+                                    <i class="bi bi-currency-yen"></i>
+                                </div>
+                                <div class="info-content">
+                                    <span class="info-label">購入価格</span>
+                                    <span class="info-value">{{ diary.purchase_price|floatformat:2 }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="info-item">
+                                <div class="diary-icon">
+                                    <i class="bi bi-graph-up"></i>
+                                </div>
+                                <div class="info-content">
+                                    <span class="info-label">購入数量</span>
+                                    <span class="info-value">{{ diary.purchase_quantity }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="info-item">
+                                <div class="diary-icon">
+                                    <i class="bi bi-calendar-date"></i>
+                                </div>
+                                <div class="info-content">
+                                    <span class="info-label">購入日</span>
+                                    <span class="info-value">{{ diary.purchase_date|date:"Y年m月d日" }}</span>
+                                </div>
+                            </div>
+                            
+                            {% if diary.sell_date %}
+                            <div class="info-item">
+                                <div class="diary-icon">
+                                    <i class="bi bi-calendar-check"></i>
+                                </div>
+                                <div class="info-content">
+                                    <span class="info-label">売却日</span>
+                                    <span class="info-value">{{ diary.sell_date|date:"Y年m月d日" }}</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- チェックリスト進捗 -->
+                        {% if diary.checklist.all %}
+                        <div class="section-divider"></div>
+                        <div class="mb-3">
+                            <div class="mb-2">チェックリスト進捗:</div>
+                            {% for checklist in diary.checklist.all %}
+                            <div class="checklist-item">
+                                <div class="checklist-header">
+                                    <span class="checklist-name">{{ checklist.name }}</span>
+                                    {% with diary_stats=checklist_stats|get_item:diary.id %}
+                                        {% if diary_stats %}
+                                        {% with stats=diary_stats|get_item:checklist.id %}
+                                            {% if stats %}
+                                            <span class="checklist-count">{{ stats.completed }}/{{ stats.total }}</span>
+                                            {% else %}
+                                            <span class="checklist-count">0/0</span>
+                                            {% endif %}
+                                        {% endwith %}
+                                        {% else %}
+                                        <span class="checklist-count">0/0</span>
+                                        {% endif %}
+                                    {% endwith %}
+                                </div>
+                                
+                                <div class="progress">
+                                {% with diary_stats=checklist_stats|get_item:diary.id %}
+                                    {% if diary_stats %}
+                                    {% with stats=diary_stats|get_item:checklist.id %}
+                                        {% if stats %}
+                                        <div class="progress-bar {% if stats.is_complete %}bg-success{% else %}bg-primary{% endif %}" 
+                                            style="width: {{ stats.progress }}%"></div>
+                                        {% else %}
+                                        <div class="progress-bar bg-secondary" style="width: 0%"></div>
+                                        {% endif %}
+                                    {% endwith %}
+                                    {% else %}
+                                    <div class="progress-bar bg-secondary" style="width: 0%"></div>
+                                    {% endif %}
+                                {% endwith %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <!-- 購入理由 -->
+                        <div class="section-divider"></div>
+                        <div>
+                            <h6 class="mb-2">購入理由:</h6>
+                            <div class="card-text text-muted">{{ diary.reason|safe|truncatewords_html:20 }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="diary-card-footer d-flex justify-content-between">
+                        <small class="text-muted">更新: {{ diary.updated_at|date:"Y/m/d" }}</small>
+                        <div class="btn-group">
+                            <a href="{% url 'stockdiary:detail' diary.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> 詳細
+                            </a>
+                            <a href="{% url 'stockdiary:update' diary.id %}" class="btn btn-sm btn-outline-warning">
+                                <i class="bi bi-pencil"></i> 編集
+                            </a>
+                            <a href="{% url 'stockdiary:delete' diary.id %}" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i> 削除
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i>
+        <p class="mb-0">日記がありません。「新規日記作成」ボタンから最初の日記を登録してください。</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/locales/ja.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/locales/ja.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // カレンダー要素
+        const calendarEl = document.getElementById('calendar');
+
+        // 日記データをJavaScriptで利用できるようにする
+        const events = [];
+
+        {% for diary in all_diaries %}
+        // 購入日イベント
+        events.push({
+            title: '{{ diary.stock_name }}',
+            start: '{{ diary.purchase_date|date:"Y-m-d" }}',
+            url: '{% url "stockdiary:detail" diary.id %}',
+            className: 'purchase-event'
+        });
+
+        // 売却日イベント（売却日がある場合）
+        {% if diary.sell_date %}
+        events.push({
+            title: '{{ diary.stock_name }}',
+            start: '{{ diary.sell_date|date:"Y-m-d" }}',
+            url: '{% url "stockdiary:detail" diary.id %}',
+            className: 'sell-event'
+        });
+        {% endif %}
+        {% endfor %}
+
+        // FullCalendarの初期化
+        if (calendarEl) {
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'ja',
+                height: 450,
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek'
+                },
+                events: events,
+                eventClick: function (info) {
+                    info.jsEvent.preventDefault(); // 標準のリンク遷移を防止
+                    window.location.href = info.event.url; // 詳細ページに移動
+                }
+            });
+
+            // カレンダーを描画
+            calendar.render();
+        }
+    });
+</script>
+{% endblock %}

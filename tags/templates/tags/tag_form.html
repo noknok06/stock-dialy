@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if form.instance.pk %}タグの編集{% else %}新規タグ作成{% endif %} | 株ノート{% endblock %}
+
+{% block head %}
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<style>
+  :root {
+    --primary-color: #4f46e5;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+    --light-bg: #f9fafb;
+    --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  }
+
+  body {
+    background-color: var(--light-bg);
+  }
+
+  /* フォームスタイル */
+  .form-card {
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+  }
+
+  .form-card-header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 1.25rem;
+    border-bottom: none;
+  }
+
+  .form-card-header h3 {
+    margin: 0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .form-card-body {
+    padding: 1.5rem;
+  }
+
+  .form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #374151;
+  }
+
+  .form-control {
+    border-radius: 0.375rem;
+    padding: 0.625rem 0.75rem;
+    border: 1px solid #d1d5db;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  }
+
+  .form-control:focus {
+    border-color: #a5b4fc;
+    box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.25);
+  }
+
+  /* ボタンスタイル */
+  .btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+  }
+
+  .btn-primary:hover {
+    background-color: #4338ca;
+    border-color: #4338ca;
+  }
+
+  .btn-secondary {
+    background-color: #6b7280;
+    border-color: #6b7280;
+  }
+
+  .btn-secondary:hover {
+    background-color: #4b5563;
+    border-color: #4b5563;
+  }
+
+  .btn-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* タグプレビュー */
+  .tag-preview {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background-color: #eef2ff;
+    color: var(--primary-color);
+    border-radius: 9999px;
+    font-weight: 500;
+    margin-top: 1rem;
+  }
+
+  .tag-preview i {
+    margin-right: 0.5rem;
+  }
+
+  /* ヘルプテキスト */
+  .help-section {
+    background-color: #f3f4f6;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .help-title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #111827;
+  }
+
+  .help-text {
+    color: #4b5563;
+    font-size: 0.875rem;
+    margin-bottom: 0;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card form-card">
+        <div class="form-card-header">
+          <h3>
+            <i class="bi bi-tag"></i>
+            {% if form.instance.pk %}タグの編集{% else %}新規タグ作成{% endif %}
+          </h3>
+        </div>
+        
+        <div class="form-card-body">
+          <form method="post">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+              <label for="{{ form.name.id_for_label }}" class="form-label">タグ名</label>
+              {{ form.name }}
+              {% if form.name.errors %}
+                <div class="text-danger mt-1">{{ form.name.errors }}</div>
+              {% endif %}
+              
+              <small class="form-text text-muted">投資戦略や銘柄の特性を表すタグ名を入力してください</small>
+            </div>
+            
+            <div class="mb-3">
+              <label for="{{ form.description.id_for_label }}" class="form-label">説明 (任意)</label>
+              {{ form.description }}
+              {% if form.description.errors %}
+                <div class="text-danger mt-1">{{ form.description.errors }}</div>
+              {% endif %}
+              <small class="form-text text-muted">このタグの用途や意味を簡単に説明してください</small>
+            </div>
+            
+            <!-- タグプレビュー -->
+            <div class="mb-4">
+              <label class="form-label">プレビュー</label>
+              <div class="tag-preview">
+                <i class="bi bi-tag-fill"></i>
+                <span id="tagPreviewText">{% if form.instance.name %}{{ form.instance.name }}{% else %}タグ名{% endif %}</span>
+              </div>
+            </div>
+            
+            <div class="d-flex justify-content-between mt-4">
+              <a href="{% url 'tags:list' %}" class="btn btn-secondary btn-icon">
+                <i class="bi bi-arrow-left me-1"></i> キャンセル
+              </a>
+              <button type="submit" class="btn btn-primary btn-icon">
+                <i class="bi bi-save me-1"></i> 保存
+              </button>
+            </div>
+          </form>
+          
+          <!-- ヘルプセクション -->
+          <div class="help-section">
+            <h5 class="help-title">
+              <i class="bi bi-info-circle text-primary"></i> 効果的なタグの作り方
+            </h5>
+            <p class="help-text">
+              タグは投資記録を整理するのに役立ちます。業種（テクノロジー、金融など）、投資戦略（成長株、配当株など）、
+              市場（国内、米国など）、または独自の分類（要監視、長期保有など）でタグを作成すると効果的です。
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // タグ名入力時にプレビューを更新
+    const tagNameInput = document.getElementById('{{ form.name.id_for_label }}');
+    const tagPreviewText = document.getElementById('tagPreviewText');
+    
+    if (tagNameInput && tagPreviewText) {
+      tagNameInput.addEventListener('input', function() {
+        tagPreviewText.textContent = this.value || 'タグ名';
+      });
+    }
+  });
+</script>
+{% endblock %}
+

@@ -1,0 +1,23 @@
+<!-- stockdiary/templates/stockdiary/diary_confirm_delete.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card">
+    <div class="card-header">
+      <h3>日記の削除</h3>
+    </div>
+    
+    <div class="card-body">
+      <p>以下の日記を削除してもよろしいですか？</p>
+      <p><strong>{{ object.stock_name }} ({{ object.stock_symbol }})</strong> - 購入日: {{ object.purchase_date }}</p>
+      
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">削除する</button>
+        <a href="{% url 'stockdiary:detail' object.id %}" class="btn btn-secondary">キャンセル</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
