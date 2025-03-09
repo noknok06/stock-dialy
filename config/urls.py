@@ -27,6 +27,7 @@ urlpatterns = [
     path('checklist/', include('checklist.urls')),  # checklistアプリのURL
     path('tags/', include('tags.urls')),
     path('ckeditor/', include('ckeditor_uploader.urls')),  # 追加
+    path('accounts/', include('allauth.urls')),  # allauthのURLを追加
 ]
 
 if settings.DEBUG:

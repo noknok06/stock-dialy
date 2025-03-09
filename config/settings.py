@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    'django.contrib.sites',  # 必須
     'widget_tweaks',
     'ckeditor',
     'ckeditor_uploader',  # 追加
@@ -51,6 +52,11 @@ INSTALLED_APPS = [
     'checklist',
     'tags',
     'stockdiary',
+    # django-allauth関連
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',  # Googleプロバイダー
 ]
 
 
@@ -132,14 +138,42 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',  # 追加
 ]
+
+AUTHENTICATION_BACKENDS = [
+    # デフォルトのDjango認証バックエンド
+    'django.contrib.auth.backends.ModelBackend',
+    
+    # allauth固有の認証バックエンド
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+# Sitesフレームワークの設定
+SITE_ID = 1
+# allauth設定
+ACCOUNT_EMAIL_VERIFICATION = 'none'  # メール検証を無効（必要に応じて 'mandatory' に変更）
+ACCOUNT_EMAIL_REQUIRED = True
+SOCIALACCOUNT_AUTO_SIGNUP = True  # ユーザー情報を自動的に取得
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        },
+        'DIRECT_REDIRECT_URI': True  # 中間ページをスキップ
+    }
+}
 
 ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        "DIRS": [BASE_DIR / "templates"], 
+        'DIRS': [os.path.join(BASE_DIR, 'templates')], 
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

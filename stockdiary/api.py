@@ -9,7 +9,6 @@ from django.conf import settings
 
 # 銘柄リストをキャッシュするための変数
 STOCK_DATA_CACHE = None
-
 def load_stock_data():
     """Excelファイルから銘柄情報を読み込む"""
     global STOCK_DATA_CACHE
@@ -25,8 +24,7 @@ def load_stock_data():
         # Excelファイルを読み込む
         df = pd.read_excel(file_path)
         
-        # 2列目を銘柄コード、3列目を会社名として取得
-        # 列のインデックスは0から始まるので、1と2を使用
+        # 必要な情報を取得
         stock_dict = {}
         
         for _, row in df.iterrows():
@@ -35,7 +33,18 @@ def load_stock_data():
             if code.isdigit():
                 code = code.zfill(4)
                 name = str(row.iloc[2]).strip()
-                stock_dict[code] = name
+                
+                # 6行目（インデックス5）を業種として取得
+                industry = str(row.iloc[5]).strip() if len(row) > 5 else "不明"
+                
+                # 市場情報を取得（もしあれば）- 通常は4列目や5列目にある場合が多い
+                market = str(row.iloc[4]).strip() if len(row) > 4 else "東証"
+                
+                stock_dict[code] = {
+                    'name': name,
+                    'industry': industry,
+                    'market': market
+                }
         
         # キャッシュに保存
         STOCK_DATA_CACHE = stock_dict
@@ -54,8 +63,11 @@ def get_stock_info(request, stock_code):
         # 銘柄リストを読み込む
         stock_dict = load_stock_data()
         
-        # 銘柄コードから会社名を取得
-        company_name = stock_dict.get(stock_code)
+        # 銘柄コードから会社情報を取得
+        stock_info = stock_dict.get(stock_code, {})
+        company_name = stock_info.get('name') if stock_info else None
+        industry_from_excel = stock_info.get('industry') if stock_info else None
+        market_from_excel = stock_info.get('market') if stock_info else None
         
         # Yahoo Finance APIから詳細情報を取得
         try:
@@ -70,8 +82,8 @@ def get_stock_info(request, stock_code):
             # デフォルト値の設定
             price = None
             change_percent = None
-            market = "東証"  # デフォルト値
-            industry = None  # デフォルト値
+            market = market_from_excel or "東証"  # Excelからの情報を優先
+            industry = industry_from_excel or "不明"  # Excelからの情報を優先
             
             if 'chart' in data and 'result' in data['chart'] and len(data['chart']['result']) > 0:
                 meta = data['chart']['result'][0]['meta']
@@ -90,30 +102,12 @@ def get_stock_info(request, stock_code):
                     if not company_name:
                         company_name = meta.get('symbol', '').replace('.T', '')
                 
-                # 取引所情報
-                if meta.get('exchangeName'):
-                    market = meta.get('exchangeName')
-                elif meta.get('fullExchangeName'):
-                    market = meta.get('fullExchangeName')
-                
-                # 業種情報の簡易的な推定
-                # 実際には業種情報DBなどから取得するのが理想的
-                industry_map = {
-                    '0': 'その他',
-                    '1': '水産・農林業',
-                    '2': '鉱業',
-                    '3': '建設業',
-                    '4': '食料品',
-                    '5': '繊維製品・衣料品',
-                    '6': '化学・医薬品',
-                    '7': '石油・石炭製品',
-                    '8': 'ゴム製品',
-                    '9': 'ガラス・土石製品'
-                }
-                
-                if stock_code and len(stock_code) > 0:
-                    first_digit = stock_code[0]
-                    industry = industry_map.get(first_digit, 'その他')
+                # 取引所情報（Excelからの情報がない場合のみ）
+                if not market_from_excel:
+                    if meta.get('exchangeName'):
+                        market = meta.get('exchangeName')
+                    elif meta.get('fullExchangeName'):
+                        market = meta.get('fullExchangeName')
             
             # レスポンスの作成
             response_data = {
@@ -133,6 +127,8 @@ def get_stock_info(request, stock_code):
                 return JsonResponse({
                     'success': True,
                     'company_name': company_name,
+                    'market': market_from_excel or "東証",
+                    'industry': industry_from_excel or "不明",
                     'source': 'local_excel'
                 })
             else:
@@ -146,7 +142,7 @@ def get_stock_info(request, stock_code):
             'success': False,
             'error': str(e)
         }, status=500)
-
+        
 @login_required
 @require_GET
 def get_stock_price(request, stock_code):

@@ -1,5 +1,6 @@
 # users/views.py
 from django.contrib.auth.views import LoginView, LogoutView
+from django.views.generic import TemplateView
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
 from django.contrib.auth import get_user_model
@@ -23,3 +24,6 @@ class SignUpView(CreateView):
     form_class = CustomUserCreationForm
     template_name = 'users/signup.html'
     success_url = reverse_lazy('users:login')
+
+class GoogleLoginView(TemplateView):
+    template_name = 'users/google_login.html'
