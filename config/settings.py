@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-h=(#w%%7ejhe=u$vjre&d%6u(-7a$js2x4*v76iq4_m3+7onk#
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ['hondy.pythonanywhere.com', 'localhost', '127.0.0.1']
 CSRF_TRUSTED_ORIGINS = ['https://hondy.pythonanywhere.com', 'http://hondy.pythonanywhere.com']
 
 
