@@ -38,7 +38,7 @@ def load_stock_data():
                 industry = str(row.iloc[5]).strip() if len(row) > 5 else "不明"
                 
                 # 市場情報を取得（もしあれば）- 通常は4列目や5列目にある場合が多い
-                market = str(row.iloc[4]).strip() if len(row) > 4 else "東証"
+                market = str(row.iloc[3]).strip() if len(row) > 3 else "東証"
                 
                 stock_dict[code] = {
                     'name': name,
@@ -142,7 +142,7 @@ def get_stock_info(request, stock_code):
             'success': False,
             'error': str(e)
         }, status=500)
-        
+
 @login_required
 @require_GET
 def get_stock_price(request, stock_code):
