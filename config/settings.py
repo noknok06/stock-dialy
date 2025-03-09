@@ -24,14 +24,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-h=(#w%%7ejhe=u$vjre&d%6u(-7a$js2x4*v76iq4_m3+7onk#'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
 CSRF_TRUSTED_ORIGINS = [
-    'https://6e30-2400-2411-a761-e100-1436-fd6a-cfec-b578.ngrok-free.app',
+    'hondy.pythonanywhere.com',
     # 他のドメインがあれば追加
 ]
 
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 
 # Application definition
 
