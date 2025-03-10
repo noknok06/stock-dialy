@@ -29,7 +29,66 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
     template_name = 'stockdiary/home.html'
     context_object_name = 'diaries'
     paginate_by = 9  # 1ページに表示する日記の数（3×3のグリッド）
-    
+        
+    def form_valid(self, form):
+        # ユーザーを設定
+        form.instance.user = self.request.user
+        
+        # まずフォームを保存
+        response = super().form_valid(form)
+        
+        # チェックリスト項目のステータスを処理
+        self.process_checklist_items()
+        
+        return response
+
+    def process_checklist_items(self):
+        from checklist.models import DiaryChecklistItem, ChecklistItem
+        
+        # リクエストからチェックリスト項目のステータスを取得
+        item_statuses = {}
+        
+        for key, value in self.request.POST.items():
+            if key.startswith('checklist_item_status[') and key.endswith(']'):
+                # キーから項目IDを抽出
+                item_id_str = key[len('checklist_item_status['):-1]
+                try:
+                    item_id = int(item_id_str)
+                    item_statuses[item_id] = value == '1' or value == 'on' or value == 'true'
+                except ValueError:
+                    continue
+        
+        if not item_statuses:
+            return  # ステータスがなければ何もしない
+        
+        # 既存のDiaryChecklistItemを取得
+        existing_items = DiaryChecklistItem.objects.filter(diary=self.object)
+        existing_item_ids = {item.checklist_item_id: item for item in existing_items}
+        
+        # チェックリスト項目IDのリストを取得
+        checklist_item_ids = list(item_statuses.keys())
+        
+        # 存在するチェックリスト項目を確認
+        valid_items = ChecklistItem.objects.filter(id__in=checklist_item_ids)
+        valid_item_ids = {item.id for item in valid_items}
+        
+        # 項目ごとにDiaryChecklistItemを作成または更新
+        for item_id, status in item_statuses.items():
+            if item_id not in valid_item_ids:
+                continue  # 無効な項目IDはスキップ
+            
+            if item_id in existing_item_ids:
+                # 既存のアイテムを更新
+                diary_item = existing_item_ids[item_id]
+                diary_item.status = status
+                diary_item.save()
+            else:
+                # 新しいアイテムを作成
+                DiaryChecklistItem.objects.create(
+                    diary=self.object,
+                    checklist_item_id=item_id,
+                    status=status
+                )        
     def get_queryset(self):
         queryset = StockDiary.objects.filter(user=self.request.user).order_by('-purchase_date')
         
@@ -170,6 +229,64 @@ class StockDiaryUpdateView(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse_lazy('stockdiary:detail', kwargs={'pk': self.object.pk})
 
+
+    def form_valid(self, form):
+        # フォームを保存
+        response = super().form_valid(form)
+        
+        # チェックリスト項目のステータスを処理
+        self.process_checklist_items()
+        
+        return response
+
+    def process_checklist_items(self):
+        from checklist.models import DiaryChecklistItem, ChecklistItem
+        
+        # リクエストからチェックリスト項目のステータスを取得
+        item_statuses = {}
+        
+        for key, value in self.request.POST.items():
+            if key.startswith('checklist_item_status[') and key.endswith(']'):
+                # キーから項目IDを抽出
+                item_id_str = key[len('checklist_item_status['):-1]
+                try:
+                    item_id = int(item_id_str)
+                    item_statuses[item_id] = value == '1' or value == 'on' or value == 'true'
+                except ValueError:
+                    continue
+        
+        if not item_statuses:
+            return  # ステータスがなければ何もしない
+        
+        # 既存のDiaryChecklistItemを取得
+        existing_items = DiaryChecklistItem.objects.filter(diary=self.object)
+        existing_item_ids = {item.checklist_item_id: item for item in existing_items}
+        
+        # チェックリスト項目IDのリストを取得
+        checklist_item_ids = list(item_statuses.keys())
+        
+        # 存在するチェックリスト項目を確認
+        valid_items = ChecklistItem.objects.filter(id__in=checklist_item_ids)
+        valid_item_ids = {item.id for item in valid_items}
+        
+        # 項目ごとにDiaryChecklistItemを作成または更新
+        for item_id, status in item_statuses.items():
+            if item_id not in valid_item_ids:
+                continue  # 無効な項目IDはスキップ
+            
+            if item_id in existing_item_ids:
+                # 既存のアイテムを更新
+                diary_item = existing_item_ids[item_id]
+                diary_item.status = status
+                diary_item.save()
+            else:
+                # 新しいアイテムを作成
+                DiaryChecklistItem.objects.create(
+                    diary=self.object,
+                    checklist_item_id=item_id,
+                    status=status
+                )
+                
 class StockDiaryDeleteView(LoginRequiredMixin, DeleteView):
     model = StockDiary
     template_name = 'stockdiary/diary_confirm_delete.html'

@@ -3,11 +3,68 @@
 {% block title %}{% if form.instance.pk %}日記の編集{% else %}新規日記作成{% endif %} | 株ノート{% endblock %}
 
 {% block head %}
+{{ block.super }}
 <!-- CKEditorの基本スタイルをロード -->
 {{ form.media }}
 <!-- Bootstrap Icons -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 <style>
+  /* チェックリストスタイル */
+  .checklist-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  }
+
+  .checklist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background-color: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .checklist-title {
+    font-weight: 600;
+    color: #111827;
+  }
+
+  .checklist-progress {
+    font-weight: 500;
+    padding: 0.25em 0.75em;
+  }
+
+  .checklist-body {
+    padding: 0.5rem 0;
+  }
+
+  .checklist-item {
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    align-items: center;
+  }
+
+  .checklist-item:last-child {
+    border-bottom: none;
+  }
+
+  .checklist-checkbox {
+    margin-right: 0.75rem;
+  }
+
+  .form-check-label {
+    margin-bottom: 0;
+    transition: all 0.2s;
+  }
+
+  .form-check-label.completed {
+    color: #9ca3af;
+    text-decoration: line-through;
+  }
+
   :root {
     --primary-color: #4f46e5;
     --success-color: #10b981;
@@ -68,14 +125,16 @@
     color: #374151;
   }
 
-  .form-control, .form-select {
+  .form-control,
+  .form-select {
     border-radius: 0.375rem;
     padding: 0.625rem 0.75rem;
     border: 1px solid #d1d5db;
     transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
   }
 
-  .form-control:focus, .form-select:focus {
+  .form-control:focus,
+  .form-select:focus {
     border-color: #a5b4fc;
     box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.25);
   }
@@ -211,17 +270,17 @@
     <div class="form-card-header">
       <h3>{% if form.instance.pk %}日記の編集{% else %}新規日記作成{% endif %}</h3>
     </div>
-    
+
     <div class="form-card-body">
       <form method="post">
         {% csrf_token %}
-        
+
         <!-- 株式情報セクション -->
         <div class="form-section">
           <h4 class="form-section-title">
             <i class="bi bi-graph-up"></i> 株式情報
           </h4>
-          
+
           <!-- 株価情報カード (銘柄コード入力後に表示) -->
           <div class="stock-info-card d-none" id="stockInfoCard">
             <div class="stock-info-header">
@@ -247,7 +306,7 @@
               </div>
             </div>
           </div>
-          
+
           <div class="row">
             <div class="col-md-6 mb-3">
               <label for="{{ form.stock_symbol.id_for_label }}" class="form-label">銘柄コード</label>
@@ -265,36 +324,36 @@
               </div>
               <small class="form-text text-muted">4桁の銘柄コードを入力して検索ボタンをクリックしてください</small>
               {% if form.stock_symbol.errors %}
-                <div class="text-danger">{{ form.stock_symbol.errors }}</div>
+              <div class="text-danger">{{ form.stock_symbol.errors }}</div>
               {% endif %}
             </div>
-            
+
             <div class="col-md-6 mb-3">
               <label for="{{ form.stock_name.id_for_label }}" class="form-label">銘柄名</label>
               {{ form.stock_name }}
               {% if form.stock_name.errors %}
-                <div class="text-danger">{{ form.stock_name.errors }}</div>
+              <div class="text-danger">{{ form.stock_name.errors }}</div>
               {% endif %}
             </div>
           </div>
         </div>
-        
+
         <!-- 取引情報セクション -->
         <div class="form-section">
           <h4 class="form-section-title">
             <i class="bi bi-currency-exchange"></i> 取引情報
           </h4>
-          
+
           <div class="row">
             <div class="col-md-6">
               <div class="mb-3">
                 <label for="{{ form.purchase_date.id_for_label }}" class="form-label">購入日</label>
                 {{ form.purchase_date }}
                 {% if form.purchase_date.errors %}
-                  <div class="text-danger">{{ form.purchase_date.errors }}</div>
+                <div class="text-danger">{{ form.purchase_date.errors }}</div>
                 {% endif %}
               </div>
-              
+
               <div class="mb-3">
                 <label for="{{ form.purchase_price.id_for_label }}" class="form-label">購入価格</label>
                 <div class="input-group">
@@ -304,28 +363,28 @@
                   </button>
                 </div>
                 {% if form.purchase_price.errors %}
-                  <div class="text-danger">{{ form.purchase_price.errors }}</div>
+                <div class="text-danger">{{ form.purchase_price.errors }}</div>
                 {% endif %}
               </div>
-              
+
               <div class="mb-3">
                 <label for="{{ form.purchase_quantity.id_for_label }}" class="form-label">購入数量</label>
                 {{ form.purchase_quantity }}
                 {% if form.purchase_quantity.errors %}
-                  <div class="text-danger">{{ form.purchase_quantity.errors }}</div>
+                <div class="text-danger">{{ form.purchase_quantity.errors }}</div>
                 {% endif %}
               </div>
             </div>
-            
+
             <div class="col-md-6">
               <div class="mb-3">
                 <label for="{{ form.sell_date.id_for_label }}" class="form-label">売却日 (任意)</label>
                 {{ form.sell_date }}
                 {% if form.sell_date.errors %}
-                  <div class="text-danger">{{ form.sell_date.errors }}</div>
+                <div class="text-danger">{{ form.sell_date.errors }}</div>
                 {% endif %}
               </div>
-              
+
               <div class="mb-3">
                 <label for="{{ form.sell_price.id_for_label }}" class="form-label">売却価格 (任意)</label>
                 <div class="input-group">
@@ -335,46 +394,69 @@
                   </button>
                 </div>
                 {% if form.sell_price.errors %}
-                  <div class="text-danger">{{ form.sell_price.errors }}</div>
+                <div class="text-danger">{{ form.sell_price.errors }}</div>
                 {% endif %}
               </div>
             </div>
           </div>
         </div>
-        
-        <!-- 分類情報セクション -->
+
+
+        <!-- チェックリストセクションを修正 -->
         <div class="form-section">
           <h4 class="form-section-title">
             <i class="bi bi-tags"></i> 分類情報
           </h4>
-          
+
           <div class="row">
             <div class="col-md-6 mb-3">
               <label for="{{ form.tags.id_for_label }}" class="form-label">タグ</label>
               {{ form.tags }}
               <small class="form-text text-muted">複数選択可能です</small>
               {% if form.tags.errors %}
-                <div class="text-danger">{{ form.tags.errors }}</div>
+              <div class="text-danger">{{ form.tags.errors }}</div>
               {% endif %}
             </div>
-            
+
             <div class="col-md-6 mb-3">
               <label for="{{ form.checklist.id_for_label }}" class="form-label">チェックリスト</label>
-              {{ form.checklist }}
-              <small class="form-text text-muted">複数選択可能です</small>
-              {% if form.checklist.errors %}
+              <div class="checklist-selector">
+                {{ form.checklist }}
+                <small class="form-text text-muted mt-1">複数選択可能です</small>
+                {% if form.checklist.errors %}
                 <div class="text-danger">{{ form.checklist.errors }}</div>
-              {% endif %}
+                {% endif %}
+
+                <!-- チェックリスト展開ボタン -->
+                <button type="button" id="expandChecklistBtn" class="btn btn-outline-primary btn-sm mt-2">
+                  <i class="bi bi-list-check me-1"></i> チェックリストを表示
+                </button>
+              </div>
             </div>
           </div>
         </div>
-        
+
+        <!-- チェックリスト項目の表示エリア -->
+        <div id="checklistItemsContainer" class="form-section d-none">
+          <h4 class="form-section-title">
+            <i class="bi bi-check2-square"></i> チェックリスト項目
+          </h4>
+
+          <div id="checklistItemsContent" class="checklist-container">
+            <!-- ここにJSでチェックリスト項目が動的に挿入されます -->
+            <div class="alert alert-info">
+              <i class="bi bi-info-circle me-2"></i>
+              チェックリストを選択すると、項目が表示されます
+            </div>
+          </div>
+        </div>
+
         <!-- 詳細情報セクション -->
         <div class="form-section">
           <h4 class="form-section-title">
             <i class="bi bi-journal-text"></i> 詳細情報
           </h4>
-          
+
           <div class="mb-4">
             <label for="{{ form.reason.id_for_label }}" class="form-label">購入理由 / 投資日記</label>
             <small class="d-block text-muted mb-2">株式購入の理由や分析結果、将来の見通しなどを自由に記録できます</small>
@@ -382,20 +464,20 @@
               {{ form.reason }}
             </div>
             {% if form.reason.errors %}
-              <div class="text-danger">{{ form.reason.errors }}</div>
+            <div class="text-danger">{{ form.reason.errors }}</div>
             {% endif %}
           </div>
-          
+
           <div class="mb-3">
             <label for="{{ form.memo.id_for_label }}" class="form-label">メモ (任意)</label>
             {{ form.memo }}
             <small class="form-text text-muted">その他の備考事項があれば記入してください</small>
             {% if form.memo.errors %}
-              <div class="text-danger">{{ form.memo.errors }}</div>
+            <div class="text-danger">{{ form.memo.errors }}</div>
             {% endif %}
           </div>
         </div>
-        
+
         <div class="d-flex justify-content-between mt-4">
           <a href="{% url 'stockdiary:home' %}" class="btn btn-secondary">
             <i class="bi bi-arrow-left me-1"></i> キャンセル
@@ -409,10 +491,11 @@
   </div>
 </div>
 {% endblock %}
-
+<!-- チェックリスト機能のJavaScriptをblock scriptsに追加 -->
 {% block scripts %}
+{{ block.super }}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', function() {
   // フォーム要素
   const stockSymbolInput = document.getElementById('{{ form.stock_symbol.id_for_label }}');
   const stockNameInput = document.getElementById('{{ form.stock_name.id_for_label }}');
@@ -439,35 +522,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const stockCode = stockSymbolInput.value.trim();
     if (stockCode && /^\d{4}$/.test(stockCode)) {
       fetchStockInfo(stockCode);
-    } else {
-      showAlert('有効な4桁の銘柄コードを入力してください', 'danger');
-    }
-  });
-  
-  // 銘柄コード入力時の処理（4桁入力時に自動検索）
-  stockSymbolInput.addEventListener('input', function() {
-    const stockCode = this.value.trim();
-    // 4桁以外の場合は情報カードを非表示
-    if (!stockCode || !/^\d{4}$/.test(stockCode)) {
-      stockInfoCard.classList.add('d-none');
-    }
-  });
-  
-  // 購入価格の現在株価取得ボタンのクリックイベント
-  fetchCurrentPriceBtn.addEventListener('click', function() {
-    const stockCode = stockSymbolInput.value.trim();
-    if (stockCode && /^\d{4}$/.test(stockCode)) {
-      fetchCurrentPrice(stockCode, purchasePriceInput, fetchCurrentPriceBtn);
-    } else {
-      showAlert('有効な4桁の銘柄コードを入力してください', 'danger');
-    }
-  });
-  
-  // 売却価格の現在株価取得ボタンのクリックイベント
-  fetchCurrentPriceSellBtn.addEventListener('click', function() {
-    const stockCode = stockSymbolInput.value.trim();
-    if (stockCode && /^\d{4}$/.test(stockCode)) {
-      fetchCurrentPrice(stockCode, sellPriceInput, fetchCurrentPriceSellBtn);
     } else {
       showAlert('有効な4桁の銘柄コードを入力してください', 'danger');
     }
@@ -541,103 +595,371 @@ document.addEventListener('DOMContentLoaded', function() {
         fetchStockInfoBtn.disabled = false;
       });
   }
+  function showAlert(message, type) {
+  // 既存のアラートを削除
+  const existingAlert = document.querySelector('.alert-feedback');
+  if (existingAlert) {
+    existingAlert.remove();
+  }
+  
+  // 新しいアラートを作成
+  const alertDiv = document.createElement('div');
+  alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-feedback`;
+  alertDiv.role = 'alert';
+  
+  // アイコンを追加
+  let icon = '';
+  if (type === 'success') {
+    icon = '<i class="bi bi-check-circle-fill me-2"></i>';
+  } else if (type === 'danger') {
+    icon = '<i class="bi bi-exclamation-triangle-fill me-2"></i>';
+  }
+  
+  alertDiv.innerHTML = `
+    ${icon}${message}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  `;
+  
+  // フォームの先頭に挿入
+  const form = document.querySelector('form');
+  form.insertAdjacentElement('afterbegin', alertDiv);
+  
+  // 5秒後に自動的に閉じる
+  setTimeout(() => {
+    if (alertDiv.parentNode) {
+      alertDiv.classList.remove('show');
+      setTimeout(() => alertDiv.remove(), 150);
+    }
+  }, 5000);
+}
 
-  // 現在株価を取得する関数
-  function fetchCurrentPrice(stockCode, inputField, buttonElement) {
-    // ボタンを無効化してローディング状態を表示
-    buttonElement.disabled = true;
-    const originalBtnText = buttonElement.innerHTML;
-    buttonElement.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 取得中...';
+// 購入価格の現在株価取得ボタンのクリックイベント
+fetchCurrentPriceBtn.addEventListener('click', function() {
+  const stockCode = stockSymbolInput.value.trim();
+  if (stockCode && /^\d{4}$/.test(stockCode)) {
+    fetchCurrentPrice(stockCode, purchasePriceInput, fetchCurrentPriceBtn);
+  } else {
+    showAlert('有効な4桁の銘柄コードを入力してください', 'danger');
+  }
+});
 
-    // APIリクエストを送信
-    fetch(`/stockdiary/api/stock/price/${stockCode}/`)
+// 売却価格の現在株価取得ボタンのクリックイベント
+fetchCurrentPriceSellBtn.addEventListener('click', function() {
+  const stockCode = stockSymbolInput.value.trim();
+  if (stockCode && /^\d{4}$/.test(stockCode)) {
+    fetchCurrentPrice(stockCode, sellPriceInput, fetchCurrentPriceSellBtn);
+  } else {
+    showAlert('有効な4桁の銘柄コードを入力してください', 'danger');
+  }
+});
+
+// 現在株価を取得する関数
+function fetchCurrentPrice(stockCode, inputField, buttonElement) {
+  // ボタンを無効化してローディング状態を表示
+  buttonElement.disabled = true;
+  const originalBtnText = buttonElement.innerHTML;
+  buttonElement.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 取得中...';
+
+  // APIリクエストを送信
+  fetch(`/stockdiary/api/stock/price/${stockCode}/`)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('株価の取得に失敗しました');
+      }
+      return response.json();
+    })
+    .then(data => {
+      // 現在株価を設定
+      inputField.value = data.price;
+      
+      // 株価情報カードの価格も更新
+      if (!stockInfoCard.classList.contains('d-none')) {
+        stockInfoPrice.textContent = `${data.price.toLocaleString()}円`;
+      }
+      
+      // 成功の視覚的フィードバック
+      inputField.classList.add('is-valid');
+      setTimeout(() => {
+        inputField.classList.remove('is-valid');
+      }, 2000);
+      
+      // 成功メッセージを表示
+      showAlert('現在株価を取得しました', 'success');
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      
+      // エラーの視覚的フィードバック
+      inputField.classList.add('is-invalid');
+      setTimeout(() => {
+        inputField.classList.remove('is-invalid');
+      }, 2000);
+      
+      // エラーメッセージを表示
+      showAlert(error.message, 'danger');
+    })
+    .finally(() => {
+      // ボタンを元に戻す
+      buttonElement.disabled = false;
+      buttonElement.innerHTML = originalBtnText;
+    });
+}
+
+// 銘柄コード入力時の処理（4桁入力時に自動検索）
+stockSymbolInput.addEventListener('input', function() {
+  const stockCode = this.value.trim();
+  // 4桁以外の場合は情報カードを非表示
+  if (!stockCode || !/^\d{4}$/.test(stockCode)) {
+    stockInfoCard.classList.add('d-none');
+  }
+});
+
+// ページ読み込み時に銘柄コードが入力済みなら情報を取得
+if (stockSymbolInput.value.trim() && /^\d{4}$/.test(stockSymbolInput.value.trim())) {
+  fetchStockInfo(stockSymbolInput.value.trim());
+}
+
+});
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // チェックリスト選択フィールド
+    const checklistSelect = document.getElementById('{{ form.checklist.id_for_label }}');
+    const expandChecklistBtn = document.getElementById('expandChecklistBtn');
+    const checklistItemsContainer = document.getElementById('checklistItemsContainer');
+    const checklistItemsContent = document.getElementById('checklistItemsContent');
+
+    // チェックリスト項目のデータ
+    let checklistItems = {};
+
+    // 初期ロード時のチェックリスト状態
+    let selectedChecklists = [];
+    let diaryChecklistStatuses = {};
+
+    // 編集モードの場合は日記ID
+    const diaryId = {% if form.instance.pk %}{{ form.instance.pk }}{% else %}null{% endif %};
+
+  // チェックリスト展開ボタンのクリックイベント
+  expandChecklistBtn.addEventListener('click', function () {
+    // 現在選択されているチェックリストを取得
+    selectedChecklists = Array.from(checklistSelect.selectedOptions).map(option => option.value);
+
+    if (selectedChecklists.length > 0) {
+      // チェックリスト項目コンテナを表示
+      checklistItemsContainer.classList.remove('d-none');
+
+      // 選択されたチェックリストの項目を取得
+      fetchChecklistItems(selectedChecklists);
+    } else {
+      // 選択されたチェックリストがない場合は警告を表示
+      alert('チェックリストを選択してください');
+    }
+  });
+
+  // チェックリスト選択変更イベント
+  checklistSelect.addEventListener('change', function () {
+    // コンテナが表示されている場合のみ更新
+    if (!checklistItemsContainer.classList.contains('d-none')) {
+      // 現在選択されているチェックリストを取得
+      selectedChecklists = Array.from(checklistSelect.selectedOptions).map(option => option.value);
+
+      if (selectedChecklists.length > 0) {
+        // 選択されたチェックリストの項目を取得
+        fetchChecklistItems(selectedChecklists);
+      } else {
+        // 選択されたチェックリストがない場合は非表示に
+        checklistItemsContainer.classList.add('d-none');
+      }
+    }
+  });
+
+  // チェックリスト項目を取得する関数
+  function fetchChecklistItems(checklistIds) {
+    // ローディング表示
+    checklistItemsContent.innerHTML = `
+        <div class="text-center p-3">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2 text-muted">チェックリスト項目を読み込んでいます...</p>
+        </div>
+      `;
+
+    // APIリクエストを作成
+    fetch(`/checklist/api/checklists/items/?ids=${checklistIds.join(',')}${diaryId ? `&diary_id=${diaryId}` : ''}`)
       .then(response => {
         if (!response.ok) {
-          throw new Error('株価の取得に失敗しました');
+          throw new Error('チェックリスト項目の取得に失敗しました');
         }
         return response.json();
       })
       .then(data => {
-        // 現在株価を設定
-        inputField.value = data.price;
-        
-        // 株価情報カードの価格も更新
-        if (!stockInfoCard.classList.contains('d-none')) {
-          stockInfoPrice.textContent = `${data.price.toLocaleString()}円`;
+        // 取得したチェックリスト項目をグローバル変数に保存
+        checklistItems = data.checklists;
+
+        // 日記のチェックリステータスを保存（編集時）
+        if (data.statuses) {
+          diaryChecklistStatuses = data.statuses;
         }
-        
-        // 成功の視覚的フィードバック
-        inputField.classList.add('is-valid');
-        setTimeout(() => {
-          inputField.classList.remove('is-valid');
-        }, 2000);
-        
-        // 成功メッセージを表示
-        showAlert('現在株価を取得しました', 'success');
+
+        // チェックリスト項目を表示
+        renderChecklistItems();
       })
       .catch(error => {
         console.error('Error:', error);
-        
-        // エラーの視覚的フィードバック
-        inputField.classList.add('is-invalid');
-        setTimeout(() => {
-          inputField.classList.remove('is-invalid');
-        }, 2000);
-        
-        // エラーメッセージを表示
-        showAlert(error.message, 'danger');
-      })
-      .finally(() => {
-        // ボタンを元に戻す
-        buttonElement.disabled = false;
-        buttonElement.innerHTML = originalBtnText;
+        checklistItemsContent.innerHTML = `
+            <div class="alert alert-danger">
+              <i class="bi bi-exclamation-triangle-fill me-2"></i>
+              ${error.message}
+            </div>
+          `;
       });
   }
-  
-  // アラートメッセージを表示する関数
-  function showAlert(message, type) {
-    // 既存のアラートを削除
-    const existingAlert = document.querySelector('.alert-feedback');
-    if (existingAlert) {
-      existingAlert.remove();
+
+  // チェックリスト項目を表示する関数
+  function renderChecklistItems() {
+    // コンテンツをクリア
+    checklistItemsContent.innerHTML = '';
+
+    if (Object.keys(checklistItems).length === 0) {
+      checklistItemsContent.innerHTML = `
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            選択したチェックリストには項目がありません
+          </div>
+        `;
+      return;
     }
-    
-    // 新しいアラートを作成
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-feedback`;
-    alertDiv.role = 'alert';
-    
-    // アイコンを追加
-    let icon = '';
-    if (type === 'success') {
-      icon = '<i class="bi bi-check-circle-fill me-2"></i>';
-    } else if (type === 'danger') {
-      icon = '<i class="bi bi-exclamation-triangle-fill me-2"></i>';
-    }
-    
-    alertDiv.innerHTML = `
-      ${icon}${message}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    `;
-    
-    // フォームの先頭に挿入
-    const form = document.querySelector('form');
-    form.insertAdjacentElement('afterbegin', alertDiv);
-    
-    // 5秒後に自動的に閉じる
-    setTimeout(() => {
-      if (alertDiv.parentNode) {
-        alertDiv.classList.remove('show');
-        setTimeout(() => alertDiv.remove(), 150);
+
+    // 各チェックリストごとに表示
+    for (const checklistId in checklistItems) {
+      if (checklistItems.hasOwnProperty(checklistId)) {
+        const checklist = checklistItems[checklistId];
+
+        // チェックリストのコンテナ
+        const checklistCard = document.createElement('div');
+        checklistCard.className = 'checklist-card mb-4';
+        checklistCard.dataset.checklistId = checklistId;
+
+        // チェックリストのヘッダー
+        const checklistHeader = document.createElement('div');
+        checklistHeader.className = 'checklist-header';
+        checklistHeader.innerHTML = `
+            <h5 class="mb-0">${checklist.name}</h5>
+            <div class="checklist-progress">
+              <span class="badge bg-primary">0/${checklist.items.length}</span>
+            </div>
+          `;
+
+        // チェックリストの本体
+        const checklistBody = document.createElement('div');
+        checklistBody.className = 'checklist-body';
+
+        // チェックリスト項目を追加
+        checklist.items.forEach(item => {
+          const isChecked = diaryChecklistStatuses &&
+            diaryChecklistStatuses[item.id] ?
+            diaryChecklistStatuses[item.id] : false;
+
+          const itemElement = document.createElement('div');
+          itemElement.className = 'checklist-item';
+          itemElement.innerHTML = `
+              <div class="form-check">
+                <input 
+                  class="form-check-input checklist-item-checkbox" 
+                  type="checkbox" 
+                  id="checklist-item-${item.id}" 
+                  name="checklist_item_status[${item.id}]" 
+                  data-item-id="${item.id}"
+                  ${isChecked ? 'checked' : ''}>
+                <label 
+                  class="form-check-label ${isChecked ? 'completed' : ''}" 
+                  for="checklist-item-${item.id}">
+                  ${item.item_text}
+                </label>
+              </div>
+            `;
+
+          checklistBody.appendChild(itemElement);
+        });
+
+        // チェックリストを組み立て
+        checklistCard.appendChild(checklistHeader);
+        checklistCard.appendChild(checklistBody);
+
+        // チェックリストをコンテナに追加
+        checklistItemsContent.appendChild(checklistCard);
       }
-    }, 5000);
+    }
+
+    // チェックボックスのイベントリスナーを設定
+    setupCheckboxListeners();
+    // 進捗表示を更新
+    updateAllProgress();
   }
-  
-  // ページ読み込み時に銘柄コードが入力済みなら情報を取得
-  if (stockSymbolInput.value.trim() && /^\d{4}$/.test(stockSymbolInput.value.trim())) {
-    fetchStockInfo(stockSymbolInput.value.trim());
+
+  // チェックボックスのイベントリスナーを設定
+  function setupCheckboxListeners() {
+    document.querySelectorAll('.checklist-item-checkbox').forEach(checkbox => {
+      checkbox.addEventListener('change', function () {
+        // チェックされたアイテムIDを取得
+        const itemId = this.dataset.itemId;
+        const isChecked = this.checked;
+
+        // ラベルの取得と表示更新
+        const label = this.nextElementSibling;
+
+        if (isChecked) {
+          label.classList.add('completed');
+        } else {
+          label.classList.remove('completed');
+        }
+
+        // フォーム送信時に状態を保持するための隠しフィールドを更新
+        const hiddenField = document.querySelector(`input[name="checklist_item_status[${itemId}]"]`);
+        if (!hiddenField) {
+          // 隠しフィールドがなければ作成
+          const hiddenInput = document.createElement('input');
+          hiddenInput.type = 'hidden';
+          hiddenInput.name = `checklist_item_status[${itemId}]`;
+          hiddenInput.value = isChecked ? '1' : '0';
+          document.querySelector('form').appendChild(hiddenInput);
+        } else {
+          // 既存のフィールドを更新
+          hiddenField.value = isChecked ? '1' : '0';
+        }
+
+        // 進捗表示を更新
+        updateChecklistProgress(this.closest('.checklist-card'));
+      });
+    });
   }
-});
+
+  // チェックリストの進捗表示を更新
+  function updateChecklistProgress(checklistCard) {
+    const totalItems = checklistCard.querySelectorAll('.checklist-item-checkbox').length;
+    const checkedItems = checklistCard.querySelectorAll('.checklist-item-checkbox:checked').length;
+    const progressBadge = checklistCard.querySelector('.checklist-progress .badge');
+
+    // 進捗バッジを更新
+    progressBadge.textContent = `${checkedItems}/${totalItems}`;
+
+    // 全て完了したかどうかで色を変更
+    if (checkedItems === totalItems && totalItems > 0) {
+      progressBadge.classList.remove('bg-primary');
+      progressBadge.classList.add('bg-success');
+    } else {
+      progressBadge.classList.remove('bg-success');
+      progressBadge.classList.add('bg-primary');
+    }
+  }
+
+  // すべてのチェックリストの進捗表示を更新
+  function updateAllProgress() {
+    document.querySelectorAll('.checklist-card').forEach(function (card) {
+      updateChecklistProgress(card);
+    });
+  }
+  });
 </script>
 {% endblock %}
-

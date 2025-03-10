@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+
+{% block title %}アカウント設定 | 株ノート{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<style>
+  .signup-container {
+    max-width: 650px;
+    margin: 0 auto;
+    padding: 2.5rem 0;
+  }
+  
+  .signup-card {
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+  
+  .signup-header {
+    background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+    padding: 2rem;
+    color: white;
+    text-align: center;
+    position: relative;
+  }
+  
+  .signup-header::before {
+    content: "";
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    z-index: 1;
+  }
+  
+  .signup-header::after {
+    content: "";
+    position: absolute;
+    bottom: -40px;
+    left: -40px;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    z-index: 1;
+  }
+  
+  .signup-header h2 {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 2;
+  }
+  
+  .signup-header p {
+    opacity: 0.9;
+    max-width: 400px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 2;
+  }
+  
+  .signup-body {
+    padding: 2.5rem;
+    background-color: white;
+  }
+  
+  .welcome-message {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  
+  .welcome-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #f3f4f6;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto 1rem;
+    border: 2px solid #4f46e5;
+  }
+  
+  .welcome-avatar i {
+    font-size: 2.5rem;
+    color: #4f46e5;
+  }
+  
+  .welcome-text h3 {
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 0.5rem;
+  }
+  
+  .welcome-text p {
+    color: #6b7280;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+  
+  .form-control, .form-select {
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+  }
+  
+  .form-control:focus, .form-select:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.2);
+  }
+  
+  .form-label {
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.5rem;
+  }
+  
+  .signup-btn {
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+    border: none;
+    transition: all 0.3s ease;
+  }
+  
+  .signup-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(79, 70, 229, 0.3);
+  }
+  
+  .google-info {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background-color: #f9fafb;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .google-logo {
+    margin-right: 1rem;
+    width: 24px;
+    height: 24px;
+  }
+  
+  .google-text {
+    font-size: 0.9rem;
+    color: #4b5563;
+  }
+  
+  .form-text {
+    font-size: 0.85rem;
+    color: #6b7280;
+  }
+  
+  .text-danger {
+    color: #ef4444;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+  }
+  
+  .errorlist {
+    color: #ef4444;
+    font-size: 0.85rem;
+    padding-left: 1.25rem;
+    margin-top: 0.5rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="signup-container">
+  <div class="signup-card">
+    <div class="signup-header">
+      <h2>アカウント設定</h2>
+      <p>あともう少しで株ノートの利用を開始できます</p>
+    </div>
+    
+    <div class="signup-body">
+      <div class="welcome-message">
+        <div class="welcome-avatar">
+          <i class="bi bi-person"></i>
+        </div>
+        <div class="welcome-text">
+          <h3>ようこそ！</h3>
+          <p>Googleアカウントを使用して株ノートにログインします。アカウント設定を完了してください。</p>
+        </div>
+      </div>
+      
+      {% if form.errors %}
+      <div class="alert alert-danger" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        フォームにエラーがあります。下記を確認して再度送信してください。
+      </div>
+      {% endif %}
+      
+      <div class="google-info">
+        <svg class="google-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        <div class="google-text">
+          <strong>{{ account.email }}</strong> を使用して登録します
+        </div>
+      </div>
+      
+      <form class="signup" id="signup_form" method="post" action="{% url 'socialaccount_signup' %}">
+        {% csrf_token %}
+        
+        <div class="mb-3">
+          <label for="{{ form.username.id_for_label }}" class="form-label">ユーザー名</label>
+          {{ form.username }}
+          {% if form.username.errors %}
+            <div class="text-danger">{{ form.username.errors }}</div>
+          {% endif %}
+          <div class="form-text">他のユーザーに表示される名前です</div>
+        </div>
+        
+        <div class="mb-3">
+          <label for="{{ form.email.id_for_label }}" class="form-label">メールアドレス</label>
+          {{ form.email }}
+          {% if form.email.errors %}
+            <div class="text-danger">{{ form.email.errors }}</div>
+          {% endif %}
+          <div class="form-text">Google認証で使用しているメールアドレスです</div>
+        </div>
+        
+        {% if redirect_field_value %}
+          <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+        {% endif %}
+        
+        <button type="submit" class="btn signup-btn mt-4">
+          <i class="bi bi-check2-circle me-2"></i> アカウント設定を完了する
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
