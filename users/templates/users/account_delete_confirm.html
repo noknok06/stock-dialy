@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}アカウント削除の確認 | 株ノート{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<style>
+  .delete-card {
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .delete-header {
+    background-color: #ef4444;
+    color: white;
+    padding: 1.5rem;
+    text-align: center;
+  }
+  
+  .delete-body {
+    padding: 2rem;
+  }
+  
+  .warning-icon {
+    font-size: 4rem;
+    color: #ef4444;
+    display: block;
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .data-list {
+    background-color: #f9fafb;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+  
+  .data-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+  
+  .data-item i {
+    margin-right: 0.5rem;
+    color: #6b7280;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="delete-card">
+    <div class="delete-header">
+      <h2>アカウント削除の確認</h2>
+    </div>
+    
+    <div class="delete-body">
+      <i class="bi bi-exclamation-triangle-fill warning-icon"></i>
+      
+      <h3 class="text-center mb-4">アカウントを削除しますか？</h3>
+      
+      <div class="alert alert-danger">
+        <strong>警告:</strong> アカウントを削除すると、以下のデータがすべて削除され、復元できなくなります。
+      </div>
+      
+      <div class="data-list">
+        <div class="data-item">
+          <i class="bi bi-journal-text"></i>
+          <span>投資記録 ({{ user.stockdiary_set.count }}件)</span>
+        </div>
+        <div class="data-item">
+          <i class="bi bi-check2-square"></i>
+          <span>チェックリスト ({{ user.checklist_set.count }}件)</span>
+        </div>
+        <div class="data-item">
+          <i class="bi bi-tags"></i>
+          <span>タグ ({{ user.tag_set.count }}件)</span>
+        </div>
+        <div class="data-item">
+          <i class="bi bi-person"></i>
+          <span>アカウント情報</span>
+        </div>
+      </div>
+      
+      <p class="text-center mb-4">本当にアカウントを削除しますか？</p>
+      
+      <div class="d-flex justify-content-center gap-3">
+        <a href="{% url 'users:profile' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left me-1"></i> キャンセル
+        </a>
+        
+        <form method="post" action="{% url 'users:account_delete' %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">
+            <i class="bi bi-trash me-1"></i> アカウントを削除する
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

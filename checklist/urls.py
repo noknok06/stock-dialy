@@ -1,6 +1,7 @@
 # checklist/urls.py
 from django.urls import path
 from . import views
+from . import api  # APIモジュールをインポート
 
 app_name = 'checklist'
 
@@ -12,4 +13,6 @@ urlpatterns = [
     path('<int:pk>/delete/', views.ChecklistDeleteView.as_view(), name='delete'),
     # checklist/urls.py に追加
     path('item/<int:item_id>/toggle/', views.toggle_checklist_item, name='toggle_item'),
+
+    path('api/checklists/items/', api.get_checklist_items, name='api_checklist_items'),
 ]

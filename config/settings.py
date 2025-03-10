@@ -26,12 +26,12 @@ SECRET_KEY = 'django-insecure-h=(#w%%7ejhe=u$vjre&d%6u(-7a$js2x4*v76iq4_m3+7onk#
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
-CSRF_TRUSTED_ORIGINS = [
-    'https://6e30-2400-2411-a761-e100-1436-fd6a-cfec-b578.ngrok-free.app',
-    # 他のドメインがあれば追加
-]
+ALLOWED_HOSTS = ['hondy.pythonanywhere.com', 'localhost', '127.0.0.1']
+CSRF_TRUSTED_ORIGINS = ['https://hondy.pythonanywhere.com', 'http://hondy.pythonanywhere.com']
 
+
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 
 # Application definition
 
