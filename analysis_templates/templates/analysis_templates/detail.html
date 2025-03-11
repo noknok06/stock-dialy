@@ -1,0 +1,559 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}銘柄データ分析 - {{ diary.stock_name }} | 株ノート{% endblock %}
+
+{% block head %}
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<style>
+  :root {
+    --primary-color: #4f46e5;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+    --warning-color: #f59e0b;
+    --light-bg: #f9fafb;
+    --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --analysis-color: #10b981;  /* 分析テンプレート専用の色 */
+  }
+
+  body {
+    background-color: var(--light-bg);
+  }
+
+  /* カードスタイル */
+  .data-card {
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+
+  .data-card-header {
+    background-color: var(--analysis-color);
+    color: white;
+    padding: 1.25rem;
+    border-bottom: none;
+  }
+
+  .data-card-header h3 {
+    margin: 0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .data-card-body {
+    padding: 1.5rem;
+  }
+
+  /* 株式情報セクション */
+  .stock-info {
+    background-color: #f9fafb;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid var(--analysis-color);
+  }
+
+  .stock-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .stock-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-top: 0.75rem;
+  }
+
+  .stock-meta-item {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stock-meta-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+  }
+
+  .stock-meta-value {
+    font-weight: 600;
+  }
+
+  .stock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.35rem 0.75rem;
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--analysis-color);
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  /* テンプレート選択 */
+  .template-selector {
+    background-color: white;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--card-shadow);
+  }
+
+  .template-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #111827;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .template-select-form {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  /* データフォーム */
+  .data-form-section {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+
+  .data-form-header {
+    background-color: rgba(16, 185, 129, 0.1);
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+  }
+
+  .data-form-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--analysis-color);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .data-form-body {
+    padding: 1.5rem;
+  }
+
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+
+  .form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #374151;
+  }
+
+  .form-control {
+    border-radius: 0.375rem;
+    padding: 0.625rem 0.75rem;
+    border: 1px solid #d1d5db;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  }
+
+  .form-control:focus {
+    border-color: #a5b4fc;
+    box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.25);
+  }
+
+  /* フィールドタイプ別のスタイル */
+  .number-input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .number-input-group .form-control {
+    padding-right: 2.5rem;
+  }
+
+  .number-input-unit {
+    position: absolute;
+    right: 10px;
+    color: #6b7280;
+  }
+
+  .rating-input {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .rating-star {
+    font-size: 1.5rem;
+    color: #d1d5db;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+
+  .rating-star.active {
+    color: #f59e0b;
+  }
+
+  /* ボタンスタイル */
+  .btn-analysis {
+    background-color: var(--analysis-color);
+    border-color: var(--analysis-color);
+    color: white;
+  }
+
+  .btn-analysis:hover {
+    background-color: #0e9f6e;
+    border-color: #0e9f6e;
+    color: white;
+  }
+
+  .btn-outline-analysis {
+    color: var(--analysis-color);
+    border-color: var(--analysis-color);
+  }
+
+  .btn-outline-analysis:hover {
+    background-color: var(--analysis-color);
+    color: white;
+    border-color: var(--analysis-color);
+  }
+
+  /* レスポンシブ調整 */
+  @media (max-width: 768px) {
+    .template-select-form {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .template-select-form .btn {
+      margin-top: 0.5rem;
+    }
+    
+    .stock-meta {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="data-card">
+    <div class="data-card-header">
+      <h3>
+        <i class="bi bi-graph-up"></i> 銘柄データ分析
+    </h3>
+</div>
+
+<div class="data-card-body">
+  <!-- 株式情報 -->
+  <div class="stock-info">
+    <div class="stock-name">
+      {{ diary.stock_name }} <span class="stock-badge">{{ diary.stock_symbol }}</span>
+    </div>
+    
+    <div class="stock-meta">
+      <div class="stock-meta-item">
+        <span class="stock-meta-label">購入日</span>
+        <span class="stock-meta-value">{{ diary.purchase_date|date:"Y年m月d日" }}</span>
+      </div>
+      
+      <div class="stock-meta-item">
+        <span class="stock-meta-label">購入価格</span>
+        <span class="stock-meta-value">{{ diary.purchase_price|floatformat:2 }}円</span>
+      </div>
+      
+      <div class="stock-meta-item">
+        <span class="stock-meta-label">購入数量</span>
+        <span class="stock-meta-value">{{ diary.purchase_quantity }}株</span>
+      </div>
+      
+      {% if diary.sell_date %}
+        <div class="stock-meta-item">
+          <span class="stock-meta-label">売却日</span>
+          <span class="stock-meta-value">{{ diary.sell_date|date:"Y年m月d日" }}</span>
+        </div>
+        
+        <div class="stock-meta-item">
+          <span class="stock-meta-label">売却価格</span>
+          <span class="stock-meta-value">{{ diary.sell_price|floatformat:2 }}円</span>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+  
+  <!-- テンプレート選択 -->
+  <div class="template-selector">
+    <h4 class="template-title">
+      <i class="bi bi-layout-text-window"></i> 分析テンプレート選択
+    </h4>
+    
+    <form method="get" class="template-select-form">
+      <div class="form-group mb-0 flex-grow-1">
+        <select name="template_id" id="template-select" class="form-select">
+          <option value="">テンプレートを選択してください</option>
+          {% for t in templates %}
+            <option value="{{ t.id }}" {% if selected_template.id == t.id %}selected{% endif %}>
+              {{ t.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <button type="submit" class="btn btn-outline-analysis">
+        <i class="bi bi-arrow-repeat"></i> テンプレート読み込み
+      </button>
+    </form>
+  </div>
+  
+  {% if selected_template %}
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="template_id" value="{{ selected_template.id }}">
+      
+      <!-- グループごとのフィールド -->
+      {% for group in selected_template.groups.all %}
+        <div class="data-form-section">
+          <div class="data-form-header">
+            <h4 class="data-form-title">
+              <i class="bi bi-folder"></i> {{ group.name }}
+            </h4>
+          </div>
+          
+          <div class="data-form-body">
+            <div class="row">
+                {% for field in group.fields.all %}
+                    {% if field.id in field_forms %}
+                        {% with field_form=field_forms|get_item:field.id %}
+                            {% if field_form %}
+                            <div class="col-md-6 mb-3">
+                            <div class="form-group">
+                                {% if field.field_type == 'number' %}
+                                <label class="form-label" for="{{ field_form.1.number_value.id_for_label }}">
+                                    {{ field.label }}
+                                    {% if field.is_required %}<span class="text-danger">*</span>{% endif %}
+                                </label>
+                                <div class="number-input-group">
+                                    {{ field_form.1.number_value }}
+                                    {% if field.unit %}
+                                    <span class="number-input-unit">{{ field.unit }}</span>
+                                    {% endif %}
+                                </div>
+                                
+                                {% elif field.field_type == 'percentage' %}
+                                <label class="form-label" for="{{ field_form.1.number_value.id_for_label }}">
+                                    {{ field.label }}
+                                    {% if field.is_required %}<span class="text-danger">*</span>{% endif %}
+                                </label>
+                                <div class="number-input-group">
+                                    {{ field_form.1.number_value }}
+                                    <span class="number-input-unit">%</span>
+                                </div>
+                                
+                                {% elif field.field_type == 'text' %}
+                                <label class="form-label" for="{{ field_form.1.text_value.id_for_label }}">
+                                    {{ field.label }}
+                                    {% if field.is_required %}<span class="text-danger">*</span>{% endif %}
+                                </label>
+                                {{ field_form.1.text_value }}
+                                
+                                {% elif field.field_type == 'date' %}
+                                <label class="form-label" for="{{ field_form.1.date_value.id_for_label }}">
+                                    {{ field.label }}
+                                    {% if field.is_required %}<span class="text-danger">*</span>{% endif %}
+                                </label>
+                                {{ field_form.1.date_value }}
+                                
+                                {% elif field.field_type == 'boolean' %}
+                                <div class="form-check mt-4">
+                                    {{ field_form.1.boolean_value }}
+                                    <label class="form-check-label" for="{{ field_form.1.boolean_value.id_for_label }}">
+                                    {{ field.label }}
+                                    {% if field.is_required %}<span class="text-danger">*</span>{% endif %}
+                                    </label>
+                                </div>
+                                
+                                {% elif field.field_type == 'rating' %}
+                                <label class="form-label">
+                                    {{ field.label }}
+                                    {% if field.is_required %}<span class="text-danger">*</span>{% endif %}
+                                </label>
+                                <div class="rating-input">
+                                    {{ field_form.1.number_value }}
+                                </div>
+                                {% endif %}
+                                
+                                {% if field.description %}
+                                <div class="form-text text-muted">{{ field.description }}</div>
+                                {% endif %}
+                                
+                                {% if field.benchmark_value is not None %}
+                                <div class="form-text text-muted">
+                                    <i class="bi bi-graph-up text-success"></i> 
+                                    基準値: {{ field.benchmark_value }}
+                                    {% if field.unit %}{{ field.unit }}{% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            </div>
+                            {% endif %}
+                        {% endwith %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+      
+        <!-- グループなしのフィールド -->
+        {% if ungrouped_fields %}
+            <div class="data-form-section">
+                <div class="data-form-header">
+                    <h4 class="data-form-title">
+                        <i class="bi bi-list"></i> その他のフィールド
+                    </h4>
+                </div>
+                
+                <div class="data-form-body">
+                    <div class="row">
+                        {% for field in ungrouped_fields %}
+                            {% with field_form=field_forms|get_item:field.id %}
+                                {% if field_form %}
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-group">
+                                            {% include 'analysis_templates/_field_input.html' with field=field field_form=field_form.1 %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endwith %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+      
+      <!-- ボタン -->
+      <div class="d-flex justify-content-between mt-4">
+        <a href="{% url 'stockdiary:detail' diary.id %}" class="btn btn-secondary">
+          <i class="bi bi-arrow-left me-1"></i> 日記に戻る
+        </a>
+        
+        <button type="submit" class="btn btn-analysis">
+          <i class="bi bi-save me-1"></i> 分析データを保存
+        </button>
+      </div>
+    </form>
+  {% else %}
+    <div class="alert alert-info">
+      <i class="bi bi-info-circle me-2"></i>
+      分析テンプレートを選択してください。テンプレートがない場合は、先に
+      <a href="{% url 'analysis_templates:create' %}" class="alert-link">テンプレートを作成</a>
+      してください。
+    </div>
+    
+    <div class="text-center mt-4">
+      <a href="{% url 'stockdiary:detail' diary.id %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left me-1"></i> 日記に戻る
+      </a>
+    </div>
+  {% endif %}
+</div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+// 星評価の実装
+const ratingSelects = document.querySelectorAll('select[id$="-number_value"]');
+
+ratingSelects.forEach(select => {
+  // 親フォームグループが評価（rating）タイプのフィールドの場合
+  const formGroup = select.closest('.form-group');
+  if (formGroup && formGroup.querySelector('.rating-input')) {
+    const ratingInput = formGroup.querySelector('.rating-input');
+    
+    // 星の要素を作成
+    const starsContainer = document.createElement('div');
+    starsContainer.className = 'd-flex gap-1';
+    
+    // 現在の値を取得
+    const currentValue = parseInt(select.value) || 0;
+    
+    // 5つの星を作成
+    for (let i = 1; i <= 5; i++) {
+      const star = document.createElement('span');
+      star.className = `rating-star ${i <= currentValue ? 'active' : ''}`;
+      star.innerHTML = '★';
+      star.dataset.value = i;
+      
+      // 星をクリックしたときの動作
+      star.addEventListener('click', function() {
+        const value = parseInt(this.dataset.value);
+        select.value = value;
+        
+        // 星の見た目を更新
+        const stars = starsContainer.querySelectorAll('.rating-star');
+        stars.forEach((s, index) => {
+          if (index < value) {
+            s.classList.add('active');
+          } else {
+            s.classList.remove('active');
+          }
+        });
+      });
+      
+      // ホバー効果
+      star.addEventListener('mouseenter', function() {
+        const value = parseInt(this.dataset.value);
+        const stars = starsContainer.querySelectorAll('.rating-star');
+        
+        stars.forEach((s, index) => {
+          if (index < value) {
+            s.style.color = '#f59e0b';
+          } else {
+            s.style.color = '#d1d5db';
+          }
+        });
+      });
+      
+      star.addEventListener('mouseleave', function() {
+        const currentValue = parseInt(select.value) || 0;
+        const stars = starsContainer.querySelectorAll('.rating-star');
+        
+        stars.forEach((s, index) => {
+          if (index < currentValue) {
+            s.style.color = '#f59e0b';
+          } else {
+            s.style.color = '#d1d5db';
+          }
+        });
+      });
+      
+      starsContainer.appendChild(star);
+    }
+    
+    // セレクトボックスを非表示にし、星の要素を追加
+    select.style.display = 'none';
+    ratingInput.innerHTML = '';
+    ratingInput.appendChild(starsContainer);
+  }
+});
+});
+</script>
+{% endblock %}
