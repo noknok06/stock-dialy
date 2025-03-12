@@ -451,6 +451,43 @@
           </div>
         </div>
 
+        <!-- 分析テンプレートセクション -->
+        <div class="form-section">
+          <h4 class="form-section-title">
+            <i class="bi bi-clipboard-data"></i> 分析データ
+          </h4>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="{{ form.analysis_template.id_for_label }}" class="form-label">分析テンプレート</label>
+              {{ form.analysis_template }}
+              <small class="form-text text-muted">{{ form.analysis_template.help_text }}</small>
+              {% if form.analysis_template.errors %}
+                <div class="text-danger">{{ form.analysis_template.errors }}</div>
+              {% endif %}
+
+              <!-- テンプレート展開ボタン -->
+              <button type="button" id="expandAnalysisBtn" class="btn btn-outline-primary btn-sm mt-2">
+                <i class="bi bi-clipboard-data me-1"></i> 分析項目を表示
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 分析項目の表示エリア -->
+        <div id="analysisItemsContainer" class="form-section d-none">
+          <h4 class="form-section-title">
+            <i class="bi bi-table"></i> 分析項目
+          </h4>
+
+          <div id="analysisItemsContent" class="analysis-container">
+            <!-- ここにJSで分析項目が動的に挿入されます -->
+            <div class="alert alert-info">
+              <i class="bi bi-info-circle me-2"></i>
+              分析テンプレートを選択すると、項目が表示されます
+            </div>
+          </div>
+        </div>
         <!-- 詳細情報セクション -->
         <div class="form-section">
           <h4 class="form-section-title">
@@ -517,6 +554,174 @@
   const stockInfoMarket = document.getElementById('stockInfoMarket');
   const stockInfoIndustry = document.getElementById('stockInfoIndustry');
   
+  const templateSelect = document.getElementById('{{ form.analysis_template.id_for_label }}');
+    const expandAnalysisBtn = document.getElementById('expandAnalysisBtn');
+    const analysisItemsContainer = document.getElementById('analysisItemsContainer');
+    const analysisItemsContent = document.getElementById('analysisItemsContent');
+    
+    // テンプレートID
+    let selectedTemplateId = templateSelect.value;
+    
+    // 日記ID (編集時のみ)
+    const diaryId = {% if form.instance.pk %}{{ form.instance.pk }}{% else %}null{% endif %};
+    
+    // テンプレート展開ボタンのクリックイベント
+    expandAnalysisBtn.addEventListener('click', function() {
+      selectedTemplateId = templateSelect.value;
+      
+      if (selectedTemplateId) {
+        // テンプレートが選択されていれば分析項目を表示
+        analysisItemsContainer.classList.remove('d-none');
+        fetchAnalysisItems(selectedTemplateId);
+      } else {
+        // テンプレートが選択されていなければアラート表示
+        alert('分析テンプレートを選択してください');
+      }
+    });
+    
+    // テンプレート選択変更イベント
+    templateSelect.addEventListener('change', function() {
+      selectedTemplateId = this.value;
+      
+      // コンテナが表示されている場合は項目を更新
+      if (!analysisItemsContainer.classList.contains('d-none')) {
+        if (selectedTemplateId) {
+          fetchAnalysisItems(selectedTemplateId);
+        } else {
+          analysisItemsContainer.classList.add('d-none');
+        }
+      }
+    });
+    
+    // 分析テンプレートの項目を取得する関数
+    function fetchAnalysisItems(templateId) {
+      // ローディング表示
+      analysisItemsContent.innerHTML = `
+        <div class="text-center p-3">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2 text-muted">分析項目を読み込んでいます...</p>
+        </div>
+      `;
+      
+      // APIリクエスト用のURL
+      let url = `/analysis_template/api/items/?template_id=${templateId}`;
+      if (diaryId) {
+        url += `&diary_id=${diaryId}`;
+      }
+      
+      // APIリクエストを送信
+      fetch(url)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('分析項目の取得に失敗しました');
+          }
+          return response.json();
+        })
+        .then(data => {
+          renderAnalysisItems(data.items, data.values || {});
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          analysisItemsContent.innerHTML = `
+            <div class="alert alert-danger">
+              <i class="bi bi-exclamation-triangle me-2"></i>
+              ${error.message}
+            </div>
+          `;
+        });
+    }
+    
+    // 分析項目を表示する関数
+    function renderAnalysisItems(items, values) {
+      if (!items || items.length === 0) {
+        analysisItemsContent.innerHTML = `
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            このテンプレートには分析項目がありません
+          </div>
+        `;
+        return;
+      }
+      
+      // テーブル要素を作成
+      let html = `
+        <div class="table-responsive">
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th style="width: 30%;">項目</th>
+                <th>値</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+      
+      // 各項目のフォームフィールドを作成
+      items.forEach(item => {
+        const itemId = item.id;
+        const fieldName = `analysis_item_${itemId}`;
+        const fieldId = `id_${fieldName}`;
+        
+        // 既存の値があれば取得
+        let currentValue = values[itemId] || null;
+        
+        html += `
+          <tr>
+            <td>
+              <label for="${fieldId}" class="form-label mb-0 fw-bold">${item.name}</label>
+              ${item.description ? `<div class="small text-muted">${item.description}</div>` : ''}
+            </td>
+            <td>
+        `;
+        
+        // 項目タイプに応じたフォームフィールドを生成
+        if (item.item_type === 'number') {
+          html += `
+              <input type="number" id="${fieldId}" name="${fieldName}" 
+                class="form-control" step="0.01" 
+                value="${currentValue !== null ? currentValue : ''}" />
+          `;
+        } else if (item.item_type === 'select' && item.choices) {
+          const choices = item.choices.split(',').map(c => c.trim());
+          html += `<select id="${fieldId}" name="${fieldName}" class="form-select">`;
+          html += `<option value="">選択してください</option>`;
+          
+          choices.forEach(choice => {
+            const selected = currentValue === choice ? 'selected' : '';
+            html += `<option value="${choice}" ${selected}>${choice}</option>`;
+          });
+          
+          html += `</select>`;
+        } else {
+          // テキストフィールド
+          html += `
+              <input type="text" id="${fieldId}" name="${fieldName}" 
+                class="form-control" value="${currentValue || ''}" />
+          `;
+        }
+        
+        html += `
+            </td>
+          </tr>
+        `;
+      });
+      
+      html += `
+            </tbody>
+          </table>
+        </div>
+      `;
+      
+      // 内容を更新
+      analysisItemsContent.innerHTML = html;
+    }
+    
+    // 初期表示時にテンプレートが選択済みなら項目を表示
+    if (templateSelect.value) {
+      expandAnalysisBtn.click();
+    }
   // 銘柄情報検索ボタンのクリックイベント
   fetchStockInfoBtn.addEventListener('click', function() {
     const stockCode = stockSymbolInput.value.trim();

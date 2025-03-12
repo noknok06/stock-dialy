@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+
+{% block title %}
+  {% if form.instance.pk %}分析テンプレート編集{% else %}分析テンプレート作成{% endif %} | 株ノート
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-10">
+    <div class="card shadow">
+      <div class="card-header bg-primary text-white">
+        <h3 class="mb-0">{% if form.instance.pk %}分析テンプレート編集{% else %}分析テンプレート作成{% endif %}</h3>
+      </div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          
+          <div class="mb-4">
+            <label for="{{ form.name.id_for_label }}" class="form-label">テンプレート名</label>
+            {{ form.name }}
+            {% if form.name.errors %}
+              <div class="text-danger">{{ form.name.errors }}</div>
+            {% endif %}
+          </div>
+          
+          <div class="mb-4">
+            <label for="{{ form.description.id_for_label }}" class="form-label">説明</label>
+            {{ form.description }}
+            {% if form.description.errors %}
+              <div class="text-danger">{{ form.description.errors }}</div>
+            {% endif %}
+          </div>
+          
+          <h4 class="mb-3">分析項目</h4>
+          {{ items_formset.management_form }}
+          
+          <div id="items-formset">
+            {% for item_form in items_formset %}
+              <div class="item-form mb-3 p-3 border rounded{% if forloop.last and not form.instance.pk %} last-form{% endif %}">
+                {{ item_form.id }}
+                
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <label for="{{ item_form.name.id_for_label }}" class="form-label">項目名</label>
+                    {{ item_form.name }}
+                    {% if item_form.name.errors %}
+                      <div class="text-danger">{{ item_form.name.errors }}</div>
+                    {% endif %}
+                  </div>
+                  <div class="col-md-5">
+                    <label for="{{ item_form.item_type.id_for_label }}" class="form-label">項目種類</label>
+                    {{ item_form.item_type }}
+                    {% if item_form.item_type.errors %}
+                      <div class="text-danger">{{ item_form.item_type.errors }}</div>
+                    {% endif %}
+                  </div>
+                  <div class="col-md-1 d-flex align-items-end justify-content-end">
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-item">❌</button>
+                  </div>
+                </div>
+                
+                <div class="row mb-3">
+                  <div class="col-md-12">
+                    <label for="{{ item_form.description.id_for_label }}" class="form-label">説明</label>
+                    {{ item_form.description }}
+                    {% if item_form.description.errors %}
+                      <div class="text-danger">{{ item_form.description.errors }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+                
+                <div class="row mb-3 choices-field">
+                  <div class="col-md-12">
+                    <label for="{{ item_form.choices.id_for_label }}" class="form-label">選択肢（カンマ区切り）</label>
+                    {{ item_form.choices }}
+                    {% if item_form.choices.errors %}
+                      <div class="text-danger">{{ item_form.choices.errors }}</div>
+                    {% endif %}
+                    <div class="form-text">選択肢項目の場合、カンマ区切りで選択肢を入力してください。（例: 高い,普通,低い）</div>
+                  </div>
+                </div>
+                
+                <div class="row">
+                  <div class="col-md-3">
+                    <label for="{{ item_form.order.id_for_label }}" class="form-label">表示順序</label>
+                    {{ item_form.order }}
+                    {% if item_form.order.errors %}
+                      <div class="text-danger">{{ item_form.order.errors }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+                
+                <!-- 編集時のみDELETEチェックボックスを非表示で追加 -->
+                <div style="display: none;">
+                  {{ item_form.DELETE }}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+          
+          <div class="text-center mb-4">
+            <button type="button" id="add-item" class="btn btn-outline-primary">+ 項目を追加</button>
+          </div>
+          
+          <div class="d-flex justify-content-between">
+            <a href="{% url 'analysis_template:list' %}" class="btn btn-secondary">キャンセル</a>
+            <button type="submit" class="btn btn-primary">保存</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // 初期表示時に表示順を設定
+    const orderInputs = document.querySelectorAll('input[name$="-order"]');
+    if (orderInputs.length > 0) {
+      // 新規作成時は1から始める
+      if (!{{ form.instance.pk|yesno:"true,false" }}) {
+        orderInputs[0].value = 1;
+      }
+    }
+    
+    // 項目タイプに応じて選択肢フィールドの表示/非表示を切り替える
+    function toggleChoicesField() {
+      document.querySelectorAll('select[name$="-item_type"]').forEach(select => {
+        const itemForm = select.closest('.item-form');
+        const choicesField = itemForm.querySelector('.choices-field');
+        
+        if (select.value === 'select') {
+          choicesField.style.display = '';
+        } else {
+          choicesField.style.display = 'none';
+        }
+      });
+    }
+    
+    // 初期表示時
+    toggleChoicesField();
+    
+    // 項目タイプ変更時
+    document.querySelectorAll('select[name$="-item_type"]').forEach(select => {
+      select.addEventListener('change', toggleChoicesField);
+    });
+    
+    // フォームセットの要素
+    const addItemButton = document.getElementById('add-item');
+    const itemsFormset = document.getElementById('items-formset');
+    const totalForms = document.querySelector('[name="items-TOTAL_FORMS"]');
+    
+    // 削除ボタンのイベントリスナーを設定
+    function setupRemoveButtons() {
+      document.querySelectorAll('.remove-item').forEach(button => {
+        button.addEventListener('click', function() {
+          const itemForm = this.closest('.item-form');
+          
+          // 最後の1つは削除せずに中身をクリアする
+          if (itemsFormset.querySelectorAll('.item-form').length <= 1) {
+            itemForm.querySelectorAll('input[type="text"], textarea').forEach(input => {
+              input.value = '';
+            });
+            
+            // 選択フィールドをリセット
+            itemForm.querySelectorAll('select').forEach(select => {
+              select.selectedIndex = 0;
+            });
+            
+            toggleChoicesField();
+            return;
+          }
+          
+          // 既存のアイテムなら、DELETEにチェックを入れる
+          const deleteCheckbox = itemForm.querySelector('input[name$="-DELETE"]');
+          if (deleteCheckbox) {
+            deleteCheckbox.checked = true;
+            itemForm.style.display = 'none';
+          } else {
+            // 新規追加したアイテムなら、DOMから削除
+            itemForm.remove();
+            
+            // フォームの総数を更新
+            const forms = itemsFormset.querySelectorAll('.item-form');
+            totalForms.value = forms.length;
+            
+            // フォームのインデックスを振り直す
+            forms.forEach((form, index) => {
+              form.querySelectorAll('input, select, textarea').forEach(input => {
+                if (input.name) {
+                  input.name = input.name.replace(/items-\d+/, `items-${index}`);
+                }
+                if (input.id) {
+                  input.id = input.id.replace(/items-\d+/, `items-${index}`);
+                }
+              });
+              
+              form.querySelectorAll('label').forEach(label => {
+                if (label.htmlFor) {
+                  label.htmlFor = label.htmlFor.replace(/items-\d+/, `items-${index}`);
+                }
+              });
+            });
+          }
+        });
+      });
+    }
+    
+    // 初期表示時の削除ボタン設定
+    setupRemoveButtons();
+    
+    // 項目追加ボタンのイベントリスナー
+    addItemButton.addEventListener('click', function() {
+      const formCount = parseInt(totalForms.value);
+      const newForm = itemsFormset.querySelector('.item-form').cloneNode(true);
+      
+      // フォームから last-form クラスを削除
+      newForm.classList.remove('last-form');
+      
+      // 最後の項目の順序値を取得
+      let maxOrder = 0;
+      const orderInputs = itemsFormset.querySelectorAll('input[name$="-order"]');
+      orderInputs.forEach(input => {
+        const orderValue = parseInt(input.value) || 0;
+        if (orderValue > maxOrder) {
+          maxOrder = orderValue;
+        }
+      });
+      
+      // フォームの各フィールドIDと名前を更新
+      newForm.querySelectorAll('input, select, textarea').forEach(function(input) {
+        if (input.id) {
+          input.id = input.id.replace(/items-\d+/, `items-${formCount}`);
+        }
+        if (input.name) {
+          input.name = input.name.replace(/items-\d+/, `items-${formCount}`);
+        }
+        
+        // 順序フィールドには自動インクリメントした値を設定
+        if (input.name && input.name.includes('-order')) {
+          input.value = maxOrder + 1;
+        } else if (!input.name || !input.name.includes('-DELETE')) {
+          // 順序フィールド以外の値をクリア
+          input.value = '';
+        }
+        
+        // DELETEチェックボックスをリセット
+        if (input.name && input.name.includes('-DELETE')) {
+          input.checked = false;
+        }
+        
+        // 選択フィールドをリセット
+        if (input.tagName === 'SELECT') {
+          input.selectedIndex = 0;
+        }
+      });
+      
+      // ラベルのforも更新
+      newForm.querySelectorAll('label').forEach(function(label) {
+        if (label.htmlFor) {
+          label.htmlFor = label.htmlFor.replace(/items-\d+/, `items-${formCount}`);
+        }
+      });
+      
+      // 表示を元に戻す（非表示になっていた場合）
+      newForm.style.display = '';
+      
+      // フォームセットに追加
+      itemsFormset.appendChild(newForm);
+      totalForms.value = parseInt(totalForms.value) + 1;
+      
+      // 新しく追加した項目の削除ボタンを設定
+      setupRemoveButtons();
+      
+      // 項目タイプによる選択肢フィールドの表示制御を再設定
+      const newTypeSelect = newForm.querySelector('select[name$="-item_type"]');
+      newTypeSelect.addEventListener('change', toggleChoicesField);
+      toggleChoicesField();
+    });
+  });
+</script>
+{% endblock %}

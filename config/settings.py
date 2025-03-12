@@ -24,10 +24,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-h=(#w%%7ejhe=u$vjre&d%6u(-7a$js2x4*v76iq4_m3+7onk#'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ['exnok.pythonanywhere.com', 'localhost', '127.0.0.1']
-CSRF_TRUSTED_ORIGINS = ['https://exnok.pythonanywhere.com', 'http://exnok.pythonanywhere.com']
+ALLOWED_HOSTS = ['exnok.pythonanywhere.com', 'localhost', '127.0.0.1','https://6e30-2400-2411-a761-e100-1436-fd6a-cfec-b578.ngrok-free.app']
+CSRF_TRUSTED_ORIGINS = ['https://exnok.pythonanywhere.com', 'http://exnok.pythonanywhere.com','https://6e30-2400-2411-a761-e100-1436-fd6a-cfec-b578.ngrok-free.app']
 
 
 SESSION_COOKIE_SECURE = True
@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'checklist',
     'tags',
     'stockdiary',
+    'analysis_template',
     # django-allauth関連
     'allauth',
     'allauth.account',

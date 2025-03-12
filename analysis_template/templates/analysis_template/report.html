@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+{% load analysis_filters %}
+{% block title %}分析レポート: {{ template.name }} | 株ノート{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<style>
+  .report-header {
+    background-color: #f9fafb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .report-title {
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .report-description {
+    color: #6b7280;
+  }
+  
+  .report-info {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+  
+  .info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .info-label {
+    color: #4b5563;
+    font-weight: 500;
+  }
+  
+  .info-value {
+    color: #111827;
+    font-weight: 600;
+  }
+  
+  .info-icon {
+    color: #4f46e5;
+  }
+  
+  .table th {
+    background-color: #f9fafb;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  
+  .fixed-column {
+    position: sticky;
+    left: 0;
+    background-color: #fff;
+    z-index: 5;
+  }
+  
+  th.fixed-column {
+    background-color: #f9fafb;
+    z-index: 15;
+  }
+  
+  .table-report {
+    font-size: 0.875rem;
+  }
+  
+  .table-report th {
+    font-weight: 600;
+    text-align: center;
+    vertical-align: middle;
+    border-bottom-width: 2px;
+  }
+  
+  .table-report .diary-col {
+    min-width: 200px;
+  }
+  
+  .table-report .data-col {
+    min-width: 150px;
+  }
+  
+  .table-report tbody tr:hover {
+    background-color: rgba(243, 244, 246, 0.5);
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+  }
+  
+  .empty-icon {
+    font-size: 3rem;
+    color: #d1d5db;
+    margin-bottom: 1rem;
+  }
+  
+  .number-cell {
+    text-align: right;
+  }
+  
+  .text-cell {
+    text-align: left;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="report-header">
+    <h1 class="report-title">
+      <i class="bi bi-clipboard-data text-primary"></i>
+      分析レポート: {{ template.name }}
+    </h1>
+    {% if template.description %}
+      <p class="report-description">{{ template.description }}</p>
+    {% endif %}
+    
+    <div class="report-info">
+      <div class="info-item">
+        <i class="bi bi-journal-text info-icon"></i>
+        <span class="info-label">分析対象銘柄数:</span>
+        <span class="info-value">{{ report_data|length }}</span>
+      </div>
+      <div class="info-item">
+        <i class="bi bi-list-check info-icon"></i>
+        <span class="info-label">分析項目数:</span>
+        <span class="info-value">{{ template.items.count }}</span>
+      </div>
+      <div class="info-item">
+        <i class="bi bi-calendar2 info-icon"></i>
+        <span class="info-label">最終更新:</span>
+        <span class="info-value">{{ template.updated_at|date:"Y年m月d日" }}</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="d-flex justify-content-between mb-4">
+    <div>
+      <h2 class="h4">分析結果一覧</h2>
+    </div>
+    <div>
+      <a href="{% url 'analysis_template:detail' template.id %}" class="btn btn-primary">
+        <i class="bi bi-arrow-left me-1"></i> テンプレート詳細に戻る
+      </a>
+    </div>
+  </div>
+  
+  {% if report_data %}
+    <div class="table-responsive">
+      <table class="table table-bordered table-report">
+        <thead>
+          <tr>
+            <th class="fixed-column diary-col">銘柄</th>
+            {% for item in template.items.all %}
+              <th class="data-col">{{ item.name }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for data in report_data %}
+            <tr>
+              <td class="fixed-column fw-bold">
+                <a href="{% url 'stockdiary:detail' data.diary.id %}">
+                  {{ data.diary.stock_name }}
+                  <small class="text-muted d-block">{{ data.diary.stock_symbol }}</small>
+                </a>
+              </td>
+              
+              {% for item in template.items.all %}
+                {% with value=data.values|get_item:item.id %}
+                  <td class="{% if item.item_type == 'number' %}number-cell{% else %}text-cell{% endif %}">
+                    {% if value != None %}
+                      {% if item.item_type == 'number' %}
+                        {{ value|floatformat:"-2" }}
+                      {% else %}
+                        {{ value }}
+                      {% endif %}
+                    {% else %}
+                      <span class="text-muted">--</span>
+                    {% endif %}
+                  </td>
+                {% endwith %}
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <i class="bi bi-bar-chart empty-icon"></i>
+      <h3>分析データがありません</h3>
+      <p class="text-muted">このテンプレートを使用した分析データがまだ登録されていません。</p>
+      <p>日記作成時にこのテンプレートを選択し、分析データを入力してください。</p>
+      <a href="{% url 'stockdiary:create' %}" class="btn btn-primary mt-3">
+        <i class="bi bi-plus-lg me-1"></i> 新規日記を作成
+      </a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

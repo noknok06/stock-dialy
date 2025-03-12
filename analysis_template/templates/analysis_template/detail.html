@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ template.name }} | 株ノート{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="mb-0">{{ template.name }}</h3>
+    <div>
+      <a href="{% url 'analysis_template:update' template.id %}" class="btn btn-warning">編集</a>
+      <a href="{% url 'analysis_template:report' template.id %}" class="btn btn-info">レポート</a>
+      <a href="{% url 'analysis_template:list' %}" class="btn btn-secondary">戻る</a>
+    </div>
+  </div>
+  <div class="card-body">
+    {% if template.description %}
+      <div class="mb-4">
+        <h5>説明</h5>
+        <p>{{ template.description }}</p>
+      </div>
+    {% endif %}
+    
+    <h5>分析項目</h5>
+    {% if template.items.all %}
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>項目名</th>
+              <th>種類</th>
+              <th>説明</th>
+              <th>選択肢</th>
+              <th>順序</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in template.items.all %}
+              <tr>
+                <td>{{ item.name }}</td>
+                <td>
+                  {% if item.item_type == 'number' %}
+                    <span class="badge bg-primary">数値</span>
+                  {% elif item.item_type == 'text' %}
+                    <span class="badge bg-success">テキスト</span>
+                  {% else %}
+                    <span class="badge bg-info">選択肢</span>
+                  {% endif %}
+                </td>
+                <td>{{ item.description|default:"-" }}</td>
+                <td>
+                  {% if item.item_type == 'select' and item.choices %}
+                    <ul class="mb-0 ps-3">
+                      {% for choice in item.get_choices_list %}
+                        <li>{{ choice }}</li>
+                      {% endfor %}
+                    </ul>
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td>{{ item.order }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-info">
+        分析項目がありません。
+      </div>
+    {% endif %}
+  </div>
+  <div class="card-footer text-muted">
+    作成日時: {{ template.created_at }} | 更新日時: {{ template.updated_at }}
+  </div>
+</div>
+
+{% endblock %}

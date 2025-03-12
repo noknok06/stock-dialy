@@ -21,6 +21,8 @@ from collections import Counter, defaultdict
 import random
 from django.utils.html import strip_tags
 from django.template.defaultfilters import truncatechars_html, stringfilter
+from analysis_template.models import AnalysisTemplate, AnalysisItem, DiaryAnalysisValue
+from analysis_template.forms import create_analysis_value_formset
 
 
 # stockdiary/views.py のStockDiaryListViewクラスを修正
@@ -198,21 +200,107 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
         return kwargs
     
     def form_valid(self, form):
-        # 画像サイズの調整
+        # ユーザーを設定
         form.instance.user = self.request.user
-        content = form.cleaned_data.get('reason', '')
-        if content:
-            # 画像タグの幅と高さを調整（必要に応じて）
-            import re
-            img_pattern = r'<img[^>]*>'
-            for img_tag in re.findall(img_pattern, content):
-                new_img_tag = re.sub(r'width="[^"]*"', 'width="100%"', img_tag)
-                new_img_tag = re.sub(r'height="[^"]*"', 'height="auto"', new_img_tag)
-                content = content.replace(img_tag, new_img_tag)
-            
-            form.instance.reason = content
         
-        return super().form_valid(form)
+        # 保存する前に分析テンプレートID取得
+        analysis_template_id = self.request.POST.get('analysis_template')
+        
+        # 親クラスのform_validを呼び出し、レスポンスを取得
+        response = super().form_valid(form)
+        
+        # チェックリスト項目のステータスを処理
+        self.process_checklist_items()
+        
+        # 分析テンプレートが選択されていれば、分析値を処理
+        if analysis_template_id:
+            self.process_analysis_values(analysis_template_id)
+        
+        return response
+
+    
+    def process_analysis_values(self, template_id):
+        """分析テンプレート値を処理する"""
+        try:
+            template = AnalysisTemplate.objects.get(id=template_id, user=self.request.user)
+            
+            # テンプレートの各項目を取得
+            items = template.items.all()
+            
+            # 各項目の値を保存
+            for item in items:
+                item_id = item.id
+                field_name = f'analysis_item_{item_id}'
+                value = self.request.POST.get(field_name)
+                
+                if value:  # 値が入力されている場合のみ保存
+                    analysis_value = DiaryAnalysisValue(
+                        diary=self.object,
+                        analysis_item=item
+                    )
+                    
+                    # 項目タイプによって適切なフィールドに値を設定
+                    if item.item_type == 'number':
+                        try:
+                            analysis_value.number_value = float(value)
+                        except ValueError:
+                            continue  # 数値変換エラーの場合はスキップ
+                    else:
+                        analysis_value.text_value = value
+                    
+                    analysis_value.save()
+                    
+        except AnalysisTemplate.DoesNotExist:
+            pass  # テンプレートが存在しない場合は何もしない
+        
+    def process_checklist_items(self):
+        """チェックリスト項目のステータスを処理する"""
+        from checklist.models import DiaryChecklistItem, ChecklistItem
+        
+        # リクエストからチェックリスト項目のステータスを取得
+        item_statuses = {}
+        
+        for key, value in self.request.POST.items():
+            if key.startswith('checklist_item_status[') and key.endswith(']'):
+                # キーから項目IDを抽出
+                item_id_str = key[len('checklist_item_status['):-1]
+                try:
+                    item_id = int(item_id_str)
+                    item_statuses[item_id] = value == '1' or value == 'on' or value == 'true'
+                except ValueError:
+                    continue
+        
+        if not item_statuses:
+            return  # ステータスがなければ何もしない
+        
+        # 既存のDiaryChecklistItemを取得
+        existing_items = DiaryChecklistItem.objects.filter(diary=self.object)
+        existing_item_ids = {item.checklist_item_id: item for item in existing_items}
+        
+        # チェックリスト項目IDのリストを取得
+        checklist_item_ids = list(item_statuses.keys())
+        
+        # 存在するチェックリスト項目を確認
+        valid_items = ChecklistItem.objects.filter(id__in=checklist_item_ids)
+        valid_item_ids = {item.id for item in valid_items}
+        
+        # 項目ごとにDiaryChecklistItemを作成または更新
+        for item_id, status in item_statuses.items():
+            if item_id not in valid_item_ids:
+                continue  # 無効な項目IDはスキップ
+            
+            if item_id in existing_item_ids:
+                # 既存のアイテムを更新
+                diary_item = existing_item_ids[item_id]
+                diary_item.status = status
+                diary_item.save()
+            else:
+                # 新しいアイテムを作成
+                DiaryChecklistItem.objects.create(
+                    diary=self.object,
+                    checklist_item_id=item_id,
+                    status=status
+                )        
 class StockDiaryUpdateView(LoginRequiredMixin, UpdateView):
     model = StockDiary
     form_class = StockDiaryForm
@@ -231,13 +319,59 @@ class StockDiaryUpdateView(LoginRequiredMixin, UpdateView):
 
 
     def form_valid(self, form):
-        # フォームを保存
+        # 分析テンプレートID取得
+        analysis_template_id = self.request.POST.get('analysis_template')
+        
+        # 親クラスのform_validを呼び出し
         response = super().form_valid(form)
         
         # チェックリスト項目のステータスを処理
         self.process_checklist_items()
         
+        # 分析テンプレートが選択されていれば、分析値を処理
+        if analysis_template_id:
+            # 既存の分析値を削除（テンプレートが変更された場合に対応）
+            diary_id = self.object.id
+            DiaryAnalysisValue.objects.filter(diary_id=diary_id).delete()
+            
+            # 新しい分析値を処理
+            self.process_analysis_values(analysis_template_id)
+        
         return response
+    
+    def process_analysis_values(self, template_id):
+        """分析テンプレート値を処理する"""
+        try:
+            template = AnalysisTemplate.objects.get(id=template_id, user=self.request.user)
+            
+            # テンプレートの各項目を取得
+            items = template.items.all()
+            
+            # 各項目の値を保存
+            for item in items:
+                item_id = item.id
+                field_name = f'analysis_item_{item_id}'
+                value = self.request.POST.get(field_name)
+                
+                if value:  # 値が入力されている場合のみ保存
+                    analysis_value = DiaryAnalysisValue(
+                        diary=self.object,
+                        analysis_item=item
+                    )
+                    
+                    # 項目タイプによって適切なフィールドに値を設定
+                    if item.item_type == 'number':
+                        try:
+                            analysis_value.number_value = float(value)
+                        except ValueError:
+                            continue  # 数値変換エラーの場合はスキップ
+                    else:
+                        analysis_value.text_value = value
+                    
+                    analysis_value.save()
+                    
+        except AnalysisTemplate.DoesNotExist:
+            pass  # テンプレートが存在しない場合は何もしない
 
     def process_checklist_items(self):
         from checklist.models import DiaryChecklistItem, ChecklistItem

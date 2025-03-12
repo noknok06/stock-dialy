@@ -393,6 +393,60 @@
         </div>
       </div>
 
+      <!-- 分析データセクション -->
+      {% if diary.analysis_values.exists %}
+      <div class="col-lg-12 mb-4">
+        <h3 class="section-title">
+          <i class="bi bi-clipboard-data"></i> 分析データ
+        </h3>
+        
+        {% regroup diary.analysis_values.all|dictsort:"analysis_item.template.id" by analysis_item.template as template_groups %}
+        
+        {% for template_group in template_groups %}
+          <div class="section-card mb-4">
+            <div class="section-header">
+              <h4 class="mb-0">{{ template_group.grouper.name }}</h4>
+            </div>
+            <div class="section-body">
+              <div class="table-responsive">
+                <table class="table table-bordered">
+                  <thead>
+                    <tr>
+                      <th style="width: 30%;">項目</th>
+                      <th>値</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for value in template_group.list %}
+                      <tr>
+                        <td>
+                          <strong>{{ value.analysis_item.name }}</strong>
+                          {% if value.analysis_item.description %}
+                            <div class="small text-muted">{{ value.analysis_item.description }}</div>
+                          {% endif %}
+                        </td>
+                        <td>
+                          {% if value.analysis_item.item_type == 'number' %}
+                            <span class="fw-bold">{{ value.number_value|floatformat:"-2" }}</span>
+                          {% else %}
+                            {{ value.text_value }}
+                          {% endif %}
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              <div class="text-end">
+                <a href="{% url 'analysis_template:report' template_group.grouper.id %}" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-bar-chart"></i> 比較レポートを見る
+                </a>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      {% endif %}
       <div class="row">
         <!-- 購入理由 -->
         <div class="col-lg-6 mb-4">
