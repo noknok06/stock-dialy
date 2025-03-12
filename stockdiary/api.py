@@ -2,15 +2,14 @@
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from django.contrib.auth.decorators import login_required
-import os
-import pandas as pd
 import requests
-from django.conf import settings
+from company_master.models import CompanyMaster
 
 # 銘柄リストをキャッシュするための変数
 STOCK_DATA_CACHE = None
+
 def load_stock_data():
-    """Excelファイルから銘柄情報を読み込む"""
+    """企業マスタから銘柄情報を読み込む"""
     global STOCK_DATA_CACHE
     
     # すでにキャッシュされている場合はそれを返す
@@ -18,33 +17,17 @@ def load_stock_data():
         return STOCK_DATA_CACHE
     
     try:
-        # Excelファイルのパス
-        file_path = os.path.join(os.path.dirname(__file__), 'stock_list.xls')
+        # 企業マスタからデータを取得
+        companies = CompanyMaster.objects.all()
         
-        # Excelファイルを読み込む
-        df = pd.read_excel(file_path)
-        
-        # 必要な情報を取得
+        # 銘柄情報をディクショナリに変換
         stock_dict = {}
-        
-        for _, row in df.iterrows():
-            # 銘柄コードを文字列として取得し、4桁になるように整形
-            code = str(row.iloc[1]).strip()
-            if code.isdigit():
-                code = code.zfill(4)
-                name = str(row.iloc[2]).strip()
-                
-                # 6行目（インデックス5）を業種として取得
-                industry = str(row.iloc[5]).strip() if len(row) > 5 else "不明"
-                
-                # 市場情報を取得（もしあれば）- 通常は4列目や5列目にある場合が多い
-                market = str(row.iloc[3]).strip() if len(row) > 3 else "東証"
-                
-                stock_dict[code] = {
-                    'name': name,
-                    'industry': industry,
-                    'market': market
-                }
+        for company in companies:
+            stock_dict[company.code] = {
+                'name': company.name,
+                'industry': company.industry_name_33 or company.industry_name_17 or "不明",
+                'market': company.market or "東証"
+            }
         
         # キャッシュに保存
         STOCK_DATA_CACHE = stock_dict
@@ -66,8 +49,8 @@ def get_stock_info(request, stock_code):
         # 銘柄コードから会社情報を取得
         stock_info = stock_dict.get(stock_code, {})
         company_name = stock_info.get('name') if stock_info else None
-        industry_from_excel = stock_info.get('industry') if stock_info else None
-        market_from_excel = stock_info.get('market') if stock_info else None
+        industry_from_master = stock_info.get('industry') if stock_info else None
+        market_from_master = stock_info.get('market') if stock_info else None
         
         # Yahoo Finance APIから詳細情報を取得
         try:
@@ -82,8 +65,8 @@ def get_stock_info(request, stock_code):
             # デフォルト値の設定
             price = None
             change_percent = None
-            market = market_from_excel or "東証"  # Excelからの情報を優先
-            industry = industry_from_excel or "不明"  # Excelからの情報を優先
+            market = market_from_master or "東証"  # 企業マスタからの情報を優先
+            industry = industry_from_master or "不明"  # 企業マスタからの情報を優先
             
             if 'chart' in data and 'result' in data['chart'] and len(data['chart']['result']) > 0:
                 meta = data['chart']['result'][0]['meta']
@@ -102,8 +85,8 @@ def get_stock_info(request, stock_code):
                     if not company_name:
                         company_name = meta.get('symbol', '').replace('.T', '')
                 
-                # 取引所情報（Excelからの情報がない場合のみ）
-                if not market_from_excel:
+                # 取引所情報（企業マスタからの情報がない場合のみ）
+                if not market_from_master:
                     if meta.get('exchangeName'):
                         market = meta.get('exchangeName')
                     elif meta.get('fullExchangeName'):
@@ -127,9 +110,9 @@ def get_stock_info(request, stock_code):
                 return JsonResponse({
                     'success': True,
                     'company_name': company_name,
-                    'market': market_from_excel or "東証",
-                    'industry': industry_from_excel or "不明",
-                    'source': 'local_excel'
+                    'market': market_from_master or "東証",
+                    'industry': industry_from_master or "不明",
+                    'source': 'company_master'
                 })
             else:
                 raise Exception(f"株価情報の取得に失敗しました: {str(e)}")

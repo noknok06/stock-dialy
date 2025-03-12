@@ -29,6 +29,7 @@ urlpatterns = [
     path('ckeditor/', include('ckeditor_uploader.urls')),  # 追加
     path('accounts/', include('allauth.urls')),  # allauthのURLを追加
     path('analysis_template/', include('analysis_template.urls')),
+    path('company_master/', include('company_master.urls')),
 ]
 
 if settings.DEBUG:

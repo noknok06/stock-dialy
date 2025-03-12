@@ -1,0 +1,54 @@
+<!-- ファイル: company_master/templates/admin/company_master/import_excel.html -->
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+&rsaquo; <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+&rsaquo; {% trans 'Import Excel' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>Excelからの企業マスタインポート</h1>
+    
+    <div class="module">
+        <div class="form-row">
+            <p>SBI証券などから取得した企業リスト(data_j.xls)ファイルをアップロードして企業マスタをインポートします。</p>
+            <p><strong>注意:</strong> Excelファイルは以下のような構造を持つことを想定しています：</p>
+            <ul>
+                <li>「コード」、「銘柄名」などのカラム名を含むヘッダー行がある</li>
+                <li>企業コードは数値型または文字列型</li>
+                <li>少なくとも「コード」と「銘柄名」のカラムが存在する</li>
+            </ul>
+        </div>
+        
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <fieldset class="module aligned">
+                {% for field in form %}
+                    <div class="form-row">
+                        <div class="fieldBox">
+                            {{ field.errors }}
+                            {{ field.label_tag }}
+                            {{ field }}
+                            {% if field.help_text %}
+                                <div class="help">{{ field.help_text|safe }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </fieldset>
+            
+            <div class="submit-row">
+                <input type="submit" value="インポート" class="default" />
+                <a href="{% url opts|admin_urlname:'changelist' %}" class="button">キャンセル</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

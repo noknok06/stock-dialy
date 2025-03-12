@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'tags',
     'stockdiary',
     'analysis_template',
+    'company_master',
     # django-allauth関連
     'allauth',
     'allauth.account',
@@ -178,7 +179,10 @@ SOCIALACCOUNT_FORMS = {
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')], 
+        'DIRS': [
+            os.path.join(BASE_DIR, 'company_master', 'templates'),
+            os.path.join(BASE_DIR, 'templates')
+            ], 
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
