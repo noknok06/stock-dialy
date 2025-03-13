@@ -369,36 +369,6 @@
         cursor: pointer;
         background-color: rgba(243, 244, 246, 0.5);
     }    
-
-    /* アコーディオンスタイル */
-    @media (max-width: 767.98px) {
-        .card-header .card-title {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-        }
-        
-        .card-header .btn-link {
-            color: var(--primary-color);
-            text-decoration: none;
-            transition: transform 0.2s;
-        }
-        
-        .card-header .btn-link[aria-expanded="true"] .bi-chevron-down {
-            transform: rotate(180deg);
-        }
-        
-        /* カレンダーの高さをモバイル用に調整 */
-        #calendar {
-            height: 400px;
-        }
-        
-        /* アコーディオンアニメーション */
-        .collapse {
-            transition: all 0.3s ease;
-        }
-    }    
 </style>
 {% endblock %}
 
@@ -426,29 +396,19 @@
     <!-- カレンダー -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0">
-                投資カレンダー
-                <!-- スマホ表示時のアコーディオントグル -->
-                <button class="btn btn-link p-0 ms-2 d-md-none" type="button" data-bs-toggle="collapse" 
-                    data-bs-target="#calendarCollapse" aria-expanded="false" aria-controls="calendarCollapse">
-                    <i class="bi bi-chevron-down"></i>
-                </button>
-            </h5>
+            <h5 class="card-title">投資カレンダー</h5>
             <div class="calendar-legend d-flex">
                 <span class="badge bg-success me-2">購入</span>
                 <span class="badge bg-danger">売却</span>
             </div>
         </div>
-        <!-- スマホ表示ではcollapse追加、PC表示では常に表示 -->
-        <div class="collapse d-md-block" id="calendarCollapse">
-            <div class="card-body">
-                <div class="calendar-container">
-                    <div id="calendar"></div>
-                    <div class="calendar-events">
-                        <h6 class="mb-3" id="selected-date">選択日のイベント</h6>
-                        <div id="day-events">
-                            <p class="text-muted">日付を選択するとイベントが表示されます</p>
-                        </div>
+        <div class="card-body">
+            <div class="calendar-container">
+                <div id="calendar"></div>
+                <div class="calendar-events">
+                    <h6 class="mb-3" id="selected-date">選択日のイベント</h6>
+                    <div id="day-events">
+                        <p class="text-muted">日付を選択するとイベントが表示されます</p>
                     </div>
                 </div>
             </div>
@@ -660,39 +620,6 @@
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/locales/ja.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const adjustCalendarHeight = () => {
-            const calendar = document.getElementById('calendar');
-            if (calendar && window.innerWidth < 768) {
-                const fcView = calendar.querySelector('.fc-view-harness');
-                if (fcView) {
-                    fcView.style.height = '350px';
-                }
-            }
-        };
-        // カレンダーが初期化された後にサイズ調整
-        setTimeout(adjustCalendarHeight, 500);
-        
-        // アコーディオントグルイベント
-        const calendarCollapse = document.getElementById('calendarCollapse');
-        if (calendarCollapse) {
-            calendarCollapse.addEventListener('shown.bs.collapse', function() {
-                // アコーディオンが開かれたらカレンダーを再描画
-                const calendar = document.querySelector('.fc');
-                if (calendar) {
-                    const calendarApi = calendar.fcCalendar;
-                    if (calendarApi) {
-                        setTimeout(() => calendarApi.updateSize(), 10);
-                    }
-                }
-                
-                // サイズ調整
-                adjustCalendarHeight();
-            });
-        }
-        
-        // ウィンドウサイズ変更時にも調整
-        window.addEventListener('resize', adjustCalendarHeight);
-        
         // カレンダー要素
         const calendarEl = document.getElementById('calendar');
         const selectedDateEl = document.getElementById('selected-date');
