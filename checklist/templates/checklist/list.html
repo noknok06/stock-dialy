@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}チェックリスト管理 | 株ノート{% endblock %}
+{% block title %}チェックリスト管理 | カブログ{% endblock %}
 
 {% block head %}
 <!-- Bootstrap Icons -->
@@ -352,7 +352,7 @@
               </div>
               
               <!-- 関連する日記があれば表示 -->
-              <!-- {% with related_diaries=checklist.stockdiary_set.all|slice:":3" %}
+              {% with related_diaries=checklist.stockdiary_set.all|slice:":3" %}
                 {% if related_diaries %}
                   <div class="mt-3">
                     <h6 class="mb-2">
@@ -373,7 +373,7 @@
                   </div>
                 {% endif %}
               {% endwith %}
-            </div> -->
+            </div>
             <div class="card-footer d-flex justify-content-center">
               <div class="btn-group action-btn-group">
                 <a href="{% url 'checklist:detail' checklist.id %}" class="btn btn-outline-primary btn-icon">
