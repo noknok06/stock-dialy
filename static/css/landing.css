@@ -1,0 +1,765 @@
+:root {
+    --primary-color: #4f46e5;
+    --secondary-color: #3730a3;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+    --warning-color: #f59e0b;
+    --info-color: #3b82f6;
+    --light-bg: #f9fafb;
+    --dark-text: #111827;
+    --body-text: #4b5563;
+    --light-text: #6b7280;
+    --card-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    color: var(--body-text);
+    line-height: 1.6;
+}
+
+/* ヒーローセクション */
+.hero {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: white;
+    padding: 6rem 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero::before {
+    content: "";
+    position: absolute;
+    top: -100px;
+    right: -100px;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    z-index: 1;
+}
+
+.hero::after {
+    content: "";
+    position: absolute;
+    bottom: -150px;
+    left: -150px;
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    z-index: 1;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+}
+
+.hero h1 {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+}
+
+.hero p {
+    font-size: 1.25rem;
+    opacity: 0.9;
+    margin-bottom: 2rem;
+    max-width: 600px;
+}
+
+.hero-btns .btn {
+    padding: 0.8rem 1.8rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    margin-right: 1rem;
+    margin-bottom: 1rem;
+}
+
+.btn-primary {
+    background-color: white;
+    color: var(--primary-color);
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: var(--secondary-color);
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.btn-outline-light:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.hero-image {
+    position: relative;
+    z-index: 2;
+}
+
+.hero-image img {
+    max-width: 100%;
+    border-radius: 0.5rem;
+    box-shadow: var(--card-shadow);
+}
+
+/* 特徴セクション */
+.features {
+    padding: 6rem 0;
+    background-color: var(--light-bg);
+}
+
+.section-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--dark-text);
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.section-subtitle {
+    font-size: 1.25rem;
+    color: var(--light-text);
+    margin-bottom: 3rem;
+    text-align: center;
+    max-width: this.id
+}
+
+700px;
+margin-left: auto;
+margin-right: auto;
+}
+
+.feature-card {
+    background-color: white;
+    border-radius: 1rem;
+    box-shadow: var(--card-shadow);
+    padding: 2rem;
+    height: 100%;
+    transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+}
+
+.feature-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background-color: rgba(79, 70, 229, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    font-size: 2rem;
+    color: var(--primary-color);
+}
+
+.feature-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--dark-text);
+    margin-bottom: 1rem;
+}
+
+.feature-description {
+    color: var(--body-text);
+    margin-bottom: 0;
+}
+
+/* スクリーンショットセクション */
+.screenshots {
+    padding: 6rem 0;
+}
+
+.screenshot-card {
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 2rem;
+    transition: all 0.3s ease;
+}
+
+.screenshot-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+}
+
+.screenshot-img {
+    width: 100%;
+    height: auto;
+}
+
+.screenshot-content {
+    padding: 1.5rem;
+    background-color: white;
+}
+
+.screenshot-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--dark-text);
+    margin-bottom: 0.5rem;
+}
+
+.screenshot-description {
+    color: var(--light-text);
+    margin-bottom: 0;
+    font-size: 0.95rem;
+}
+
+/* 使い方セクション */
+.how-it-works {
+    padding: 6rem 0;
+    background-color: var(--light-bg);
+}
+
+.step-card {
+    background-color: white;
+    border-radius: 1rem;
+    box-shadow: var(--card-shadow);
+    padding: 2rem;
+    height: 100%;
+    position: relative;
+    z-index: 1;
+}
+
+.step-number {
+    position: absolute;
+    top: -20px;
+    left: -20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    z-index: 2;
+    box-shadow: 0 5px 15px rgba(79, 70, 229, 0.3);
+}
+
+.step-icon {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.step-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--dark-text);
+    margin-bottom: 1rem;
+}
+
+/* 比較表セクション */
+.comparison {
+    padding: 6rem 0;
+}
+
+.comparison-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+}
+
+.comparison-table th {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 1.5rem;
+    text-align: center;
+    font-weight: 600;
+}
+
+.comparison-table td {
+    padding: 1.5rem;
+    text-align: center;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.comparison-table tr:last-child td {
+    border-bottom: none;
+}
+
+.comparison-table td:first-child {
+    text-align: left;
+    font-weight: 500;
+    color: var(--dark-text);
+}
+
+.comparison-table tbody tr:nth-child(odd) {
+    background-color: #f3f4f6;
+}
+
+.comparison-highlight {
+    background-color: rgba(79, 70, 229, 0.05) !important;
+}
+
+.comparison-tick {
+    color: var(--success-color);
+    font-size: 1.25rem;
+}
+
+.comparison-cross {
+    color: var(--danger-color);
+    font-size: 1.25rem;
+}
+
+/* CTA セクション */
+.cta {
+    padding: 6rem 0;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: white;
+    text-align: center;
+}
+
+.cta h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+}
+
+.cta p {
+    font-size: 1.25rem;
+    opacity: 0.9;
+    margin-bottom: 2rem;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.cta-btn {
+    padding: 1rem 2.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    background-color: white;
+    color: var(--primary-color);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.cta-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    background-color: rgba(255, 255, 255, 0.9);
+    color: var(--secondary-color);
+}
+
+/* お客様の声セクション */
+.testimonials {
+    padding: 6rem 0;
+    background-color: var(--light-bg);
+}
+
+.testimonial-card {
+    background-color: white;
+    border-radius: 1rem;
+    box-shadow: var(--card-shadow);
+    padding: 2rem;
+    height: 100%;
+    position: relative;
+}
+
+.testimonial-quote {
+    font-size: 3rem;
+    position: absolute;
+    top: -15px;
+    left: 20px;
+    color: rgba(79, 70, 229, 0.1);
+}
+
+.testimonial-text {
+    color: var(--body-text);
+    font-size: 1.1rem;
+    font-style: italic;
+    margin-bottom: 1.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.testimonial-author {
+    display: flex;
+    align-items: center;
+}
+
+.testimonial-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: #e5e7eb;
+    margin-right: 1rem;
+    overflow: hidden;
+}
+
+.testimonial-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.testimonial-name {
+    font-weight: 600;
+    color: var(--dark-text);
+    margin-bottom: 0.25rem;
+}
+
+.testimonial-role {
+    font-size: 0.85rem;
+    color: var(--light-text);
+}
+
+/* フッター */
+.footer {
+    background-color: #111827;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 4rem 0 2rem;
+}
+
+.footer-logo {
+    display: flex;
+    align-items: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 1.5rem;
+}
+
+.footer-logo img {
+    width: 40px;
+    height: 40px;
+    margin-right: 0.75rem;
+}
+
+.footer-description {
+    margin-bottom: 1.5rem;
+    max-width: 300px;
+}
+
+.footer-heading {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 1.5rem;
+}
+
+.footer-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-links li {
+    margin-bottom: 0.75rem;
+}
+
+.footer-links a {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+    color: white;
+}
+
+.footer-socials {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.footer-social-link {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.footer-social-link:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-3px);
+    color: white;
+}
+
+.footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 2rem;
+    margin-top: 2rem;
+    font-size: 0.85rem;
+}
+
+/* レスポンシブ調整 */
+@media (max-width: 991.98px) {
+    .hero h1 {
+        font-size: 2.5rem;
+    }
+
+    .hero p {
+        font-size: 1.1rem;
+    }
+
+    .hero-image {
+        margin-top: 2rem;
+    }
+
+    .section-title {
+        font-size: 2rem;
+    }
+
+    .feature-card {
+        margin-bottom: 2rem;
+    }
+
+    .step-card {
+        margin-bottom: 2rem;
+    }
+
+    .testimonial-card {
+        margin-bottom: 2rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .hero {
+        padding: 4rem 0;
+    }
+
+    .features,
+    .screenshots,
+    .how-it-works,
+    .comparison,
+    .testimonials,
+    .cta {
+        padding: 4rem 0;
+    }
+
+    .section-title {
+        font-size: 1.75rem;
+    }
+
+    .section-subtitle {
+        font-size: 1.1rem;
+    }
+
+    .comparison-table {
+        font-size: 0.9rem;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+        padding: 1rem;
+    }
+}
+
+/* アニメーション */
+@keyframes float {
+    0% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-20px);
+    }
+
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+.float-animation {
+    animation: float 6s ease-in-out infinite;
+}
+
+/* スクロールに応じたフェードイン */
+.fade-in {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.fade-in.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* モバイル対応の改善用CSS */
+
+/* 左右の余白を調整 */
+@media (max-width: 767.98px) {
+    .container {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    /* ヒーローセクションの余白調整 */
+    .hero {
+        padding: 3rem 0;
+    }
+
+    /* 各セクションの余白調整 */
+    .features,
+    .screenshots,
+    .how-it-works,
+    .comparison,
+    .testimonials,
+    .cta {
+        padding: 3rem 0;
+    }
+
+    /* コンテンツ内の余白も調整 */
+    .feature-card,
+    .step-card,
+    .testimonial-card,
+    .screenshot-card {
+        padding: 1.5rem;
+    }
+}
+
+/* 特徴セクションのアイコン中央配置 */
+@media (max-width: 767.98px) {
+    .feature-icon {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .feature-title,
+    .feature-description {
+        text-align: center;
+    }
+}
+
+/* 使い方セクションの左はみ出し修正 */
+@media (max-width: 767.98px) {
+    .step-card {
+        margin-left: 15px;
+        /* 左側にわずかな余白を追加 */
+        position: relative;
+        padding-top: 2rem;
+        /* 番号用の余白を上部に確保 */
+    }
+
+    .step-number {
+        /* 位置を調整して左にはみ出さないようにする */
+        top: -15px;
+        left: -15px;
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+    }
+
+    /* アイコンも中央に */
+    .step-icon {
+        text-align: center;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .step-title {
+        text-align: center;
+    }
+}
+
+/* モバイルでの画像サイズ最適化 */
+@media (max-width: 767.98px) {
+    .screenshot-img {
+        height: auto;
+        max-height: 250px;
+        object-fit: cover;
+    }
+}
+
+/* モバイルでのナビゲーション調整 */
+@media (max-width: 767.98px) {
+    .navbar-brand {
+        font-size: 1.2rem;
+    }
+
+    .navbar-nav .nav-link {
+        padding: 0.5rem 0;
+    }
+}
+
+/* 比較表のモバイル表示調整 */
+@media (max-width: 767.98px) {
+
+    .comparison-table th,
+    .comparison-table td {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* CTAセクションのモバイル調整 */
+@media (max-width: 767.98px) {
+    .cta h2 {
+        font-size: 1.75rem;
+    }
+
+    .cta p {
+        font-size: 1rem;
+    }
+
+    .cta-btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+    }
+}
+
+/* フッターのモバイル調整 */
+@media (max-width: 767.98px) {
+    .footer {
+        padding: 3rem 0 1.5rem;
+        text-align: center;
+    }
+
+    .footer-logo {
+        justify-content: center;
+    }
+
+    .footer-description {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .footer-socials {
+        justify-content: center;
+    }
+}
+
+/* 全体のフォントサイズ調整 */
+@media (max-width: 576px) {
+    html {
+        font-size: 14px;
+    }
+
+    h1 {
+        font-size: 2rem !important;
+    }
+
+    .section-title {
+        font-size: 1.5rem !important;
+    }
+
+    .section-subtitle {
+        font-size: 1rem !important;
+    }
+}

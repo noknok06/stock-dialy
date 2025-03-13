@@ -274,7 +274,7 @@
       <i class="bi bi-check2-square"></i> チェックリスト管理
     </h1>
   </div>
-  
+
   <!-- 検索フォーム -->
   <div class="card search-card">
     <div class="card-body">
@@ -283,10 +283,11 @@
         <div class="col-md-8">
           <div class="position-relative">
             <i class="bi bi-search search-icon"></i>
-            <input type="text" name="query" class="form-control search-input" placeholder="チェックリスト名" value="{{ request.GET.query }}">
+            <input type="text" name="query" class="form-control search-input" placeholder="チェックリスト名"
+              value="{{ request.GET.query }}">
           </div>
         </div>
-        
+
         <div class="col-md-4 d-flex align-items-end">
           <button type="submit" class="btn btn-primary me-2 btn-icon">
             <i class="bi bi-search"></i> 検索
@@ -298,7 +299,7 @@
       </form>
     </div>
   </div>
-  
+
   <!-- チェックリスト一覧とアクションボタン -->
   <div class="mb-4 d-flex justify-content-between flex-wrap">
     <div>
@@ -312,99 +313,100 @@
       </a>
     </div>
   </div>
-  
+
   {% if checklists %}
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-      {% for checklist in checklists %}
-        <div class="col">
-          <div class="card h-100">
-            <div class="card-header">
-              <h5 class="card-title">{{ checklist.name }}</h5>
-              <div class="d-flex align-items-center">
-                <small class="text-muted">作成: {{ checklist.created_at|date:"Y/m/d" }}</small>
-              </div>
-            </div>
-            <div class="card-body">
-              <div class="checklist-items mb-3">
-                <ul class="list-group list-group-flush">
-                  {% for item in checklist.items.all|slice:":5" %}
-                    <li class="list-group-item py-2">
-                      <div class="form-check">
-                        <input class="form-check-input" type="checkbox" {% if item.status %}checked{% endif %} disabled>
-                        <label class="form-check-label {% if item.status %}text-decoration-line-through text-muted{% endif %}">
-                          {{ item.item_text }}
-                        </label>
-                      </div>
-                    </li>
-                  {% empty %}
-                    <li class="list-group-item">
-                      <div class="text-muted fst-italic">
-                        <i class="bi bi-info-circle me-1"></i> チェック項目がありません
-                      </div>
-                    </li>
-                  {% endfor %}
-                  {% if checklist.items.count > 5 %}
-                    <li class="list-group-item text-center">
-                      <small class="text-muted">他{{ checklist.items.count|add:"-5" }}項目</small>
-                    </li>
-                  {% endif %}
-                </ul>
-              </div>
-              
-              <!-- 関連する日記があれば表示 -->
-              <!-- {% with related_diaries=checklist.stockdiary_set.all|slice:":3" %}
-                {% if related_diaries %}
-                  <div class="mt-3">
-                    <h6 class="mb-2">
-                      <i class="bi bi-link me-1 text-primary"></i> 関連する日記:
-                    </h6>
-                    <div class="related-diaries">
-                      {% for diary in related_diaries %}
-                        <span class="diary-badge">
-                          <i class="bi bi-journal-text"></i> {{ diary.stock_name }}
-                        </span>
-                      {% endfor %}
-                      {% if checklist.stockdiary_set.count > 3 %}
-                        <span class="badge bg-secondary rounded-pill">
-                          +{{ checklist.stockdiary_set.count|add:"-3" }}
-                        </span>
-                      {% endif %}
-                    </div>
-                  </div>
-                {% endif %}
-              {% endwith %}
-            </div> -->
-            <div class="card-footer d-flex justify-content-center">
-              <div class="btn-group action-btn-group">
-                <a href="{% url 'checklist:detail' checklist.id %}" class="btn btn-outline-primary btn-icon">
-                  <i class="bi bi-eye"></i> 詳細
-                </a>
-                <a href="{% url 'checklist:update' checklist.id %}" class="btn btn-outline-warning btn-icon">
-                  <i class="bi bi-pencil"></i> 編集
-                </a>
-                <a href="{% url 'checklist:delete' checklist.id %}" class="btn btn-outline-danger btn-icon">
-                  <i class="bi bi-trash"></i> 削除
-                </a>
-              </div>
-            </div>
+  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    {% for checklist in checklists %}
+    <div class="col">
+      <div class="card h-100">
+        <div class="card-header">
+          <h5 class="card-title">{{ checklist.name }}</h5>
+          <div class="d-flex align-items-center">
+            <small class="text-muted">作成: {{ checklist.created_at|date:"Y/m/d" }}</small>
           </div>
         </div>
-      {% endfor %}
-    </div>
-  {% else %}
-    <div class="empty-state">
-      <div class="empty-state-icon">
-        <i class="bi bi-list-check fs-3"></i>
+        <div class="card-body">
+          <div class="checklist-items mb-3">
+            <ul class="list-group list-group-flush">
+              {% for item in checklist.items.all|slice:":5" %}
+              <li class="list-group-item py-2">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" {% if item.status %}checked{% endif %} disabled>
+                  <label
+                    class="form-check-label {% if item.status %}text-decoration-line-through text-muted{% endif %}">
+                    {{ item.item_text }}
+                  </label>
+                </div>
+              </li>
+              {% empty %}
+              <li class="list-group-item">
+                <div class="text-muted fst-italic">
+                  <i class="bi bi-info-circle me-1"></i> チェック項目がありません
+                </div>
+              </li>
+              {% endfor %}
+              {% if checklist.items.count > 5 %}
+              <li class="list-group-item text-center">
+                <small class="text-muted">他{{ checklist.items.count|add:"-5" }}項目</small>
+              </li>
+              {% endif %}
+            </ul>
+          </div>
+
+          <!-- 関連する日記があれば表示 -->
+          {% with related_diaries=checklist.stockdiary_set.all|slice:":3" %}
+          {% if related_diaries %}
+          <div class="mt-3">
+            <h6 class="mb-2">
+              <i class="bi bi-link me-1 text-primary"></i> 関連する日記:
+            </h6>
+            <div class="related-diaries">
+              {% for diary in related_diaries %}
+              <span class="diary-badge">
+                <i class="bi bi-journal-text"></i> {{ diary.stock_name }}
+              </span>
+              {% endfor %}
+              {% if checklist.stockdiary_set.count > 3 %}
+              <span class="badge bg-secondary rounded-pill">
+                +{{ checklist.stockdiary_set.count|add:"-3" }}
+              </span>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+          {% endwith %}
+        </div>
+        <div class="card-footer d-flex justify-content-center">
+          <div class="btn-group action-btn-group">
+            <a href="{% url 'checklist:detail' checklist.id %}" class="btn btn-outline-primary btn-icon">
+              <i class="bi bi-eye"></i> 詳細
+            </a>
+            <a href="{% url 'checklist:update' checklist.id %}" class="btn btn-outline-warning btn-icon">
+              <i class="bi bi-pencil"></i> 編集
+            </a>
+            <a href="{% url 'checklist:delete' checklist.id %}" class="btn btn-outline-danger btn-icon">
+              <i class="bi bi-trash"></i> 削除
+            </a>
+          </div>
+        </div>
       </div>
-      <h3 class="empty-state-title">チェックリストがありません</h3>
-      <p class="empty-state-description">
-        チェックリストを作成して、投資の意思決定プロセスを標準化しましょう。
-        各銘柄の分析や評価に一貫性を持たせることができます。
-      </p>
-      <a href="{% url 'checklist:create' %}" class="btn btn-success btn-icon">
-        <i class="bi bi-plus-lg"></i> 最初のチェックリストを作成
-      </a>
     </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">
+      <i class="bi bi-list-check fs-3"></i>
+    </div>
+    <h3 class="empty-state-title">チェックリストがありません</h3>
+    <p class="empty-state-description">
+      チェックリストを作成して、投資の意思決定プロセスを標準化しましょう。
+      各銘柄の分析や評価に一貫性を持たせることができます。
+    </p>
+    <a href="{% url 'checklist:create' %}" class="btn btn-success btn-icon">
+      <i class="bi bi-plus-lg"></i> 最初のチェックリストを作成
+    </a>
+  </div>
   {% endif %}
 </div>
 <!-- チェックリストの使い方ガイド -->

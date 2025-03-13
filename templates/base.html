@@ -43,13 +43,13 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}" href="{% url 'stockdiary:analytics' %}">
-                            <i class="bi bi-graph-up me-1"></i> 投資分析
+                        <a class="nav-link {% if request.resolver_match.url_name == 'create' %}active{% endif %}" href="{% url 'stockdiary:create' %}">
+                            <i class="bi bi-plus-circle me-1"></i> 新規作成
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'create' %}active{% endif %}" href="{% url 'stockdiary:create' %}">
-                            <i class="bi bi-plus-circle me-1"></i> 新規作成
+                        <a class="nav-link {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}" href="{% url 'stockdiary:analytics' %}">
+                            <i class="bi bi-graph-up me-1"></i> 投資分析
                         </a>
                     </li>
                     <li class="nav-item dropdown">
@@ -64,15 +64,15 @@
                             </li>
                             <li>
                                 <a class="dropdown-item" href="{% url 'checklist:list' %}">
-                                    <i class="bi bi-list-check me-1"></i> チェックリスト管理
+                                    <i class="bi bi-list-check me-1"></i> チェックリスト
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'analysis_template:list' %}">
+                                    <i class="bi bi-list-check me-1"></i> 分析テンプレート
                                 </a>
                             </li>
                         </ul>
-                    </li>
-                    <li class="nav-item">
-                      <a class="nav-link{% if request.path|slice:":19" == '/analysis_template/' %} active{% endif %}" href="{% url 'analysis_template:list' %}">
-                        <i class="bi bi-clipboard-data"></i> 分析テンプレート
-                      </a>
                     </li>
                     {% endif %}
                 </ul>
