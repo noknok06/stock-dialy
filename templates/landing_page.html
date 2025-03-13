@@ -1,0 +1,525 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>株ノート - 投資日記を簡単管理</title>
+    <meta name="description" content="株ノートは、投資家のための日記アプリです。銘柄情報の記録、チェックリスト管理、分析テンプレートなどの機能で投資判断を整理・改善します。">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{% static 'css/landing.css' %}">
+</head>
+
+<body>
+    <!-- ナビゲーションバー -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <img src="{% static 'images/icon-modern.svg' %}" alt="株ノート" class="me-2" style="height: 25px;">
+                株ノート
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#features">特徴</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#how-it-works">使い方</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#comparison">比較</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#testimonials">お客様の声</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-outline-light btn-sm ms-2 px-3" href="#signup">
+                            無料で始める
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ヒーローセクション -->
+    <section class="hero">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6 hero-content">
+                    <h1>投資判断を<br>記録・分析・改善</h1>
+                    <p>
+                        株ノートは投資家のための日記アプリ。銘柄情報の記録、チェックリスト管理、分析テンプレートなどの機能で、あなたの投資をサポートします。
+                    </p>
+                    <div class="hero-btns">
+                        <a href="#signup" class="btn btn-primary">無料で始める</a>
+                        <a href="#features" class="btn btn-outline-light">詳しく見る</a>
+                    </div>
+                </div>
+                <div class="col-lg-6 hero-image">
+                    <img src="/api/placeholder/600/400" alt="株ノートのダッシュボード" class="float-animation">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 特徴セクション（修正版） -->
+    <section class="features" id="features">
+        <div class="container">
+            <h2 class="section-title fade-in">株ノートの特徴</h2>
+            <p class="section-subtitle fade-in">
+                投資の記録から分析まで、あなたの投資プロセスを効率化する機能が満載
+            </p>
+
+            <div class="row">
+                <div class="col-md-6 col-lg-3 mb-4 fade-in">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-journal-text"></i>
+                        </div>
+                        <h3 class="feature-title">投資日記管理</h3>
+                        <p class="feature-description">
+                            銘柄情報、購入理由、売却情報などを簡単に記録。いつでも振り返りができます。
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3 mb-4 fade-in">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-check2-square"></i>
+                        </div>
+                        <h3 class="feature-title">チェックリスト</h3>
+                        <p class="feature-description">
+                            投資判断の基準をチェックリスト化。一貫した投資基準で判断できます。
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3 mb-4 fade-in">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-tags"></i>
+                        </div>
+                        <h3 class="feature-title">タグ管理</h3>
+                        <p class="feature-description">
+                            投資テーマや銘柄の特性でタグ付け。関連する銘柄を簡単に検索できます。
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3 mb-4 fade-in">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-clipboard-data"></i>
+                        </div>
+                        <h3 class="feature-title">分析テンプレート</h3>
+                        <p class="feature-description">
+                            独自の分析項目を作成して銘柄を評価。複数銘柄の比較も簡単です。
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-md-6 col-lg-3 mb-4 fade-in">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-calendar-event"></i>
+                        </div>
+                        <h3 class="feature-title">カレンダー表示</h3>
+                        <p class="feature-description">
+                            投資のタイミングをカレンダーで視覚化。購入・売却の履歴を一目で確認できます。
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3 mb-4 fade-in">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                        <h3 class="feature-title">投資分析</h3>
+                        <p class="feature-description">
+                            記録データを元に投資パターンを分析。自分の投資スタイルを客観的に把握できます。
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3 mb-4 fade-in">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-shield-lock"></i>
+                        </div>
+                        <h3 class="feature-title">安全なデータ管理</h3>
+                        <p class="feature-description">
+                            Google認証で安全にログイン。あなたの投資情報は適切に保護されます。
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3 mb-4 fade-in">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-phone"></i>
+                        </div>
+                        <h3 class="feature-title">モバイル対応</h3>
+                        <p class="feature-description">
+                            スマートフォンやタブレットからでも快適に利用可能。いつでもどこでも記録できます。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- スクリーンショットセクション -->
+    <section class="screenshots">
+        <div class="container">
+            <h2 class="section-title fade-in">アプリケーション画面</h2>
+            <p class="section-subtitle fade-in">
+                使いやすいインターフェースで、投資記録を効率的に管理
+            </p>
+
+            <div class="row">
+                <div class="col-md-6 col-lg-4 fade-in">
+                    <div class="screenshot-card">
+                        <img src="/api/placeholder/400/300" alt="投資カレンダー" class="screenshot-img">
+                        <div class="screenshot-content">
+                            <h3 class="screenshot-title">投資カレンダー</h3>
+                            <p class="screenshot-description">
+                                購入日と売却日を一目で確認。時系列での投資パターンを把握できます。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4 fade-in">
+                    <div class="screenshot-card">
+                        <img src="/api/placeholder/400/300" alt="銘柄詳細ページ" class="screenshot-img">
+                        <div class="screenshot-content">
+                            <h3 class="screenshot-title">銘柄詳細ページ</h3>
+                            <p class="screenshot-description">
+                                購入理由や分析情報を詳細に記録。投資判断の根拠を残せます。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4 fade-in">
+                    <div class="screenshot-card">
+                        <img src="/api/placeholder/400/300" alt="分析ダッシュボード" class="screenshot-img">
+                        <div class="screenshot-content">
+                            <h3 class="screenshot-title">分析ダッシュボード</h3>
+                            <p class="screenshot-description">
+                                投資パターンを統計的に分析。投資スタイルの強みと弱みが見えてきます。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 使い方セクション（修正版） -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="container">
+            <h2 class="section-title fade-in">株ノートの使い方</h2>
+            <p class="section-subtitle fade-in">
+                簡単3ステップで投資記録の管理を始められます
+            </p>
+
+            <div class="row">
+                <div class="col-md-4 mb-4 fade-in">
+                    <div class="step-card">
+                        <div class="step-number">1</div>
+                        <div class="text-center">
+                            <div class="step-icon">
+                                <i class="bi bi-person-plus"></i>
+                            </div>
+                            <h3 class="step-title">アカウント作成</h3>
+                            <p class="text-center">
+                                Googleアカウントで簡単登録。面倒な入力は必要ありません。数秒で始められます。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4 fade-in">
+                    <div class="step-card">
+                        <div class="step-number">2</div>
+                        <div class="text-center">
+                            <div class="step-icon">
+                                <i class="bi bi-pencil-square"></i>
+                            </div>
+                            <h3 class="step-title">投資情報を記録</h3>
+                            <p class="text-center">
+                                銘柄情報と購入理由を入力。必要に応じてチェックリストやタグを設定できます。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4 fade-in">
+                    <div class="step-card">
+                        <div class="step-number">3</div>
+                        <div class="text-center">
+                            <div class="step-icon">
+                                <i class="bi bi-graph-up"></i>
+                            </div>
+                            <h3 class="step-title">分析と改善</h3>
+                            <p class="text-center">
+                                自分の投資記録を振り返り、分析。投資パターンを把握して投資判断を継続的に改善します。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 比較表セクション -->
+    <section class="comparison" id="comparison">
+        <div class="container">
+            <h2 class="section-title fade-in">他のサービスとの比較</h2>
+            <p class="section-subtitle fade-in">
+                株ノートが選ばれる理由
+            </p>
+
+            <div class="table-responsive fade-in">
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>機能</th>
+                            <th>株ノート</th>
+                            <th>一般的な投資管理ツール</th>
+                            <th>紙のノート</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="comparison-highlight">
+                            <td>投資日記機能</td>
+                            <td><i class="bi bi-check-lg comparison-tick"></i></td>
+                            <td><i class="bi bi-dash"></i></td>
+                            <td><i class="bi bi-check-lg comparison-tick"></i></td>
+                        </tr>
+                        <tr>
+                            <td>カスタマイズ可能なチェックリスト</td>
+                            <td><i class="bi bi-check-lg comparison-tick"></i></td>
+                            <td><i class="bi bi-dash"></i></td>
+                            <td><i class="bi bi-x-lg comparison-cross"></i></td>
+                        </tr>
+                        <tr class="comparison-highlight">
+                            <td>タグ管理システム</td>
+                            <td><i class="bi bi-check-lg comparison-tick"></i></td>
+                            <td><i class="bi bi-check-lg comparison-tick"></i></td>
+                            <td><i class="bi bi-x-lg comparison-cross"></i></td>
+                        </tr>
+                        <tr>
+                            <td>分析テンプレート機能</td>
+                            <td><i class="bi bi-check-lg comparison-tick"></i></td>
+                            <td><i class="bi bi-x-lg comparison-cross"></i></td>
+                            <td><i class="bi bi-x-lg comparison-cross"></i></td>
+                        </tr>
+                        <tr class="comparison-highlight">
+                            <td>投資パターン分析</td>
+                            <td><i class="bi bi-check-lg comparison-tick"></i></td>
+                            <td><i class="bi bi-dash"></i></td>
+                            <td><i class="bi bi-x-lg comparison-cross"></i></td>
+                        </tr>
+                        <tr>
+                            <td>銘柄情報の自動取得</td>
+                            <td><i class="bi bi-check-lg comparison-tick"></i></td>
+                            <td><i class="bi bi-check-lg comparison-tick"></i></td>
+                            <td><i class="bi bi-x-lg comparison-cross"></i></td>
+                        </tr>
+                        <tr class="comparison-highlight">
+                            <td>モバイル対応</td>
+                            <td><i class="bi bi-check-lg comparison-tick"></i></td>
+                            <td><i class="bi bi-check-lg comparison-tick"></i></td>
+                            <td><i class="bi bi-x-lg comparison-cross"></i></td>
+                        </tr>
+                        <tr>
+                            <td>データのバックアップ</td>
+                            <td><i class="bi bi-check-lg comparison-tick"></i></td>
+                            <td><i class="bi bi-check-lg comparison-tick"></i></td>
+                            <td><i class="bi bi-x-lg comparison-cross"></i></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- お客様の声セクション -->
+    <section class="testimonials" id="testimonials">
+        <div class="container">
+            <h2 class="section-title fade-in">お客様の声</h2>
+            <p class="section-subtitle fade-in">
+                株ノートを利用されている投資家の方々からのフィードバック
+            </p>
+
+            <div class="row">
+                <div class="col-md-4 mb-4 fade-in">
+                    <div class="testimonial-card">
+                        <div class="testimonial-quote">"</div>
+                        <p class="testimonial-text">
+                            チェックリスト機能で投資基準が明確になり、感情に左右されずに判断できるようになりました。タグ管理も便利で、関連銘柄をすぐに見つけられます。
+                        </p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar">
+                                <img src="/api/placeholder/50/50" alt="佐藤さん">
+                            </div>
+                            <div>
+                                <div class="testimonial-name">佐藤 健太</div>
+                                <div class="testimonial-role">個人投資家 / 5年</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4 fade-in">
+                    <div class="testimonial-card">
+                        <div class="testimonial-quote">"</div>
+                        <p class="testimonial-text">
+                            分析テンプレート機能が素晴らしいです。自分の投資スタイルに合わせた分析項目を作成でき、銘柄比較も容易になりました。投資の質が向上しています。
+                        </p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar">
+                                <img src="/api/placeholder/50/50" alt="鈴木さん">
+                            </div>
+                            <div>
+                                <div class="testimonial-name">鈴木 美穂</div>
+                                <div class="testimonial-role">会社員 / 投資歴3年</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4 fade-in">
+                    <div class="testimonial-card">
+                        <div class="testimonial-quote">"</div>
+                        <p class="testimonial-text">
+                            これまではExcelで管理していましたが、株ノートに変えてから格段に使いやすくなりました。カレンダー表示で投資タイミングの傾向が見えてきます。
+                        </p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar">
+                                <img src="/api/placeholder/50/50" alt="田中さん">
+                            </div>
+                            <div>
+                                <div class="testimonial-name">田中 優</div>
+                                <div class="testimonial-role">自営業 / 投資歴7年</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA セクション -->
+    <section class="cta" id="signup">
+        <div class="container">
+            <h2>今すぐ株ノートを始めよう</h2>
+            <p>
+                投資判断を記録し、分析し、改善する。株ノートがあなたの投資をサポートします。<br>
+                無料で始められ、Googleアカウントで数秒で登録完了。
+            </p>
+            <a href="#" class="btn cta-btn">無料アカウント作成</a>
+        </div>
+    </section>
+
+    <!-- フッター -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <div class="footer-logo">
+                        <img src="/api/placeholder/40/40" alt="株ノート">
+                        株ノート
+                    </div>
+                    <p class="footer-description">
+                        投資家のための日記アプリ。記録から分析、そして投資判断の改善まで、あなたの投資をサポートします。
+                    </p>
+                    <div class="footer-socials">
+                        <a href="#" class="footer-social-link">
+                            <i class="bi bi-twitter"></i>
+                        </a>
+                        <a href="#" class="footer-social-link">
+                            <i class="bi bi-facebook"></i>
+                        </a>
+                        <a href="#" class="footer-social-link">
+                            <i class="bi bi-instagram"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-md-4 col-lg-2 mb-4">
+                    <h4 class="footer-heading">サービス</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">特徴</a></li>
+                        <li><a href="#">使い方</a></li>
+                        <li><a href="#">料金プラン</a></li>
+                        <li><a href="#">よくある質問</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-md-4 col-lg-2 mb-4">
+                    <h4 class="footer-heading">会社情報</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">会社概要</a></li>
+                        <li><a href="#">チーム</a></li>
+                        <li><a href="#">採用情報</a></li>
+                        <li><a href="#">お問い合わせ</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-md-4 col-lg-4 mb-4">
+                    <h4 class="footer-heading">お知らせ</h4>
+                    <p>最新の機能や投資情報をお届けします</p>
+                    <form>
+                        <div class="input-group mb-3">
+                            <input type="email" class="form-control" placeholder="メールアドレス" aria-label="メールアドレス">
+                            <button class="btn btn-primary" type="button">登録</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="footer-bottom text-center">
+                <p>&copy; 2025 株ノート All Rights Reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // フェードインアニメーション
+        document.addEventListener('DOMContentLoaded', function () {
+            const fadeElements = document.querySelectorAll('.fade-in');
+
+            const fadeInObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('active');
+                        fadeInObserver.unobserve(entry.target);
+                    }
+                });
+            }, {
+                threshold: 0.1
+            });
+
+            fadeElements.forEach(element => {
+                fadeInObserver.observe(element);
+            });
+        });
+    </script>
+</body>
+
+</html>
