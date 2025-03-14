@@ -223,6 +223,25 @@ class StockDiaryDetailView(LoginRequiredMixin, DetailView):
             item_statuses[diary_item.checklist_item_id] = diary_item.status
         
         context['item_statuses'] = item_statuses
+
+
+        diary = self.object
+        from checklist.models import DiaryChecklistItem
+        
+        # 日記のチェックリストアイテムの状態を取得
+        item_statuses = {}
+        diary_items = DiaryChecklistItem.objects.filter(diary=diary)
+        
+        for diary_item in diary_items:
+            item_statuses[diary_item.checklist_item_id] = diary_item.status
+        
+        context['item_statuses'] = item_statuses
+        
+        # 継続記録フォームを追加
+        context['note_form'] = DiaryNoteForm(initial={'date': timezone.now().date()})
+        
+        # 継続記録一覧を追加
+        context['notes'] = diary.notes.all().order_by('-date')
         
         return context
 
@@ -1586,3 +1605,28 @@ class StockDiarySellView(LoginRequiredMixin, TemplateView):
         
         # エラー時は同じページを再表示
         return self.get(request, *args, **kwargs)
+
+# stockdiary/views.py に追加
+from .models import DiaryNote
+from .forms import DiaryNoteForm
+from django.shortcuts import get_object_or_404, redirect
+
+class AddDiaryNoteView(LoginRequiredMixin, CreateView):
+    """日記エントリーへの継続記録追加"""
+    model = DiaryNote
+    form_class = DiaryNoteForm
+    http_method_names = ['post']
+    
+    def form_valid(self, form):
+        diary_id = self.kwargs.get('pk')
+        diary = get_object_or_404(StockDiary, id=diary_id, user=self.request.user)
+        form.instance.diary = diary
+        messages.success(self.request, "継続記録を追加しました")
+        return super().form_valid(form)
+    
+    def get_success_url(self):
+        return reverse_lazy('stockdiary:detail', kwargs={'pk': self.kwargs.get('pk')})
+    
+    def form_invalid(self, form):
+        diary_id = self.kwargs.get('pk')
+        return redirect('stockdiary:detail', pk=diary_id)

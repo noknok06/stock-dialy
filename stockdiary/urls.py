@@ -19,6 +19,7 @@ urlpatterns = [
     path('api/stock/info/<str:stock_code>/', api.get_stock_info, name='api_stock_info'),
     path('api/stock/price/<str:stock_code>/', api.get_stock_price, name='api_stock_price'),
 
-    # 新しく追加する分析ダッシュボードのURL
+    path('<int:pk>/note/', views.AddDiaryNoteView.as_view(), name='add_note'),
+
     path('analytics/', views.DiaryAnalyticsView.as_view(), name='analytics'),
 ]

@@ -9,14 +9,16 @@
 <link rel="stylesheet" href="{% static 'css/common.css' %}">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 <style>
-
-
   /* カードスタイル */
   .card {
     border: none;
     border-radius: 0.5rem;
     box-shadow: var(--card-shadow);
     overflow: hidden;
+  }
+
+  .card-text{
+    padding: 15px 15px;
   }
 
   .card-header {
@@ -66,6 +68,47 @@
 
   .section-body {
     padding: 1.25rem;
+  }
+  
+  /* カード関連のスタイル修正 */
+  .content-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .content-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  /* セクションカードの一貫した高さを確保 */
+  .row .section-card {
+    height: 100%;
+  }
+
+  /* コンテンツカードの高さをセクションタイトルを含めた親要素全体に合わせる */
+  .col-lg-6 {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .section-title {
+    flex-shrink: 0;
+  }
+
+  /* 購入理由とメモのコンテナに対して適切なフレックスレイアウト */
+  .row .col-lg-6 .section-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* メモが空の場合のテキストを中央に配置 */
+  .text-muted.mb-0 {
+    margin: auto;
   }
 
   /* 情報テーブル */
@@ -149,7 +192,6 @@
     text-decoration: line-through;
   }
 
-
   /* 利益/損失表示 */
   .profit {
     color: var(--success-color);
@@ -159,16 +201,6 @@
   .loss {
     color: var(--danger-color);
     font-weight: 600;
-  }
-
-  /* コンテンツスタイル */
-  .content-card {
-    height: 100%;
-  }
-
-  .content-body {
-    padding: 1.25rem;
-    height: 100%;
   }
 
   .rich-content {
@@ -184,6 +216,83 @@
     font-size: 0.875rem;
   }
 
+  /* タイムラインスタイル */
+  .timeline {
+    position: relative;
+    padding-left: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .timeline::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0.5rem;
+    height: 100%;
+    width: 2px;
+    background-color: #e5e7eb;
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+  }
+
+  .timeline-marker {
+    position: absolute;
+    top: 0;
+    left: -2rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    border: 2px solid white;
+  }
+
+  .timeline-content {
+    background-color: white;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .timeline-date {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  .timeline-title {
+    font-weight: 600;
+    font-size: 1rem;
+    margin: 0.5rem 0;
+  }
+
+  .timeline-text {
+    font-size: 0.95rem;
+    color: #4b5563;
+  }
+
+  /* 継続記録フォームのスタイル */
+  .note-form {
+    background-color: #f9fafb;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    border: 1px solid #e5e7eb;
+  }
+
+  /* CKEditorの幅調整 */
+  .django-ckeditor-widget {
+    width: 100% !important;
+    max-width: 100%;
+  }
+
+  .cke_chrome {
+    width: 100% !important;
+    border-color: #d1d5db !important;
+    border-radius: 0.375rem !important;
+  }
+
   /* レスポンシブ調整 */
   @media (max-width: 768px) {
     .action-buttons {
@@ -191,7 +300,7 @@
       flex-wrap: wrap;
       gap: 0.5rem;
     }
-    
+
     .action-buttons .btn {
       flex: 1;
       min-width: 100px;
@@ -266,13 +375,14 @@
                   <td>
                     {% with profit=diary.sell_price|sub:diary.purchase_price|mul:diary.purchase_quantity %}
                     {% if profit > 0 %}
-                    <span class="profit">+{{ profit|floatformat:2 }}円 ({{ diary.sell_price|sub:diary.purchase_price|mul:100|floatformat:2 }}%)</span>
-                    {% elif profit < 0 %}
-                    <span class="loss">{{ profit|floatformat:2 }}円 ({{ diary.sell_price|sub:diary.purchase_price|mul:100|floatformat:2 }}%)</span>
-                    {% else %}
-                    <span>{{ profit|floatformat:2 }}円 (0.00%)</span>
-                    {% endif %}
-                    {% endwith %}
+                    <span class="profit">+{{ profit|floatformat:2 }}円 ({{
+                      diary.sell_price|sub:diary.purchase_price|mul:100|floatformat:2 }}%)</span>
+                    {% elif profit < 0 %} <span class="loss">{{ profit|floatformat:2 }}円 ({{
+                      diary.sell_price|sub:diary.purchase_price|mul:100|floatformat:2 }}%)</span>
+                      {% else %}
+                      <span>{{ profit|floatformat:2 }}円 (0.00%)</span>
+                      {% endif %}
+                      {% endwith %}
                   </td>
                 </tr>
                 {% endif %}
@@ -310,14 +420,11 @@
                 {% for item in checklist.items.all %}
                 <div class="checklist-item">
                   <div class="form-check">
-                    <input class="form-check-input checklist-item-checkbox" 
-                           type="checkbox" 
-                           id="item-{{ item.id }}" 
-                           data-item-id="{{ item.id }}" 
-                           {% if item_statuses|get_item:item.id %}checked{% endif %}>
-                    <label class="form-check-label checklist-label {% if item_statuses|get_item:item.id %}completed{% endif %}" 
-                           for="item-{{ item.id }}" 
-                           id="item-label-{{ item.id }}">
+                    <input class="form-check-input checklist-item-checkbox" type="checkbox" id="item-{{ item.id }}"
+                      data-item-id="{{ item.id }}" {% if item_statuses|get_item:item.id %}checked{% endif %}>
+                    <label
+                      class="form-check-label checklist-label {% if item_statuses|get_item:item.id %}completed{% endif %}"
+                      for="item-{{ item.id }}" id="item-label-{{ item.id }}">
                       {{ item.item_text }}
                     </label>
                   </div>
@@ -342,54 +449,57 @@
         <h3 class="section-title">
           <i class="bi bi-clipboard-data"></i> 分析データ
         </h3>
-        
-        {% regroup diary.analysis_values.all|dictsort:"analysis_item.template.id" by analysis_item.template as template_groups %}
-        
+
+        {% regroup diary.analysis_values.all|dictsort:"analysis_item.template.id" by analysis_item.template as
+        template_groups %}
+
         {% for template_group in template_groups %}
-          <div class="section-card mb-4">
-            <div class="section-header">
-              <h4 class="mb-0">{{ template_group.grouper.name }}</h4>
+        <div class="section-card mb-4">
+          <div class="section-header">
+            <h4 class="mb-0">{{ template_group.grouper.name }}</h4>
+          </div>
+          <div class="section-body">
+            <div class="table-responsive">
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th style="width: 30%;">項目</th>
+                    <th>値</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for value in template_group.list %}
+                  <tr>
+                    <td>
+                      <strong>{{ value.analysis_item.name }}</strong>
+                      {% if value.analysis_item.description %}
+                      <div class="small text-muted">{{ value.analysis_item.description }}</div>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if value.analysis_item.item_type == 'number' %}
+                      <span class="fw-bold">{{ value.number_value|floatformat:"-2" }}</span>
+                      {% else %}
+                      {{ value.text_value }}
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
             </div>
-            <div class="section-body">
-              <div class="table-responsive">
-                <table class="table table-bordered">
-                  <thead>
-                    <tr>
-                      <th style="width: 30%;">項目</th>
-                      <th>値</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for value in template_group.list %}
-                      <tr>
-                        <td>
-                          <strong>{{ value.analysis_item.name }}</strong>
-                          {% if value.analysis_item.description %}
-                            <div class="small text-muted">{{ value.analysis_item.description }}</div>
-                          {% endif %}
-                        </td>
-                        <td>
-                          {% if value.analysis_item.item_type == 'number' %}
-                            <span class="fw-bold">{{ value.number_value|floatformat:"-2" }}</span>
-                          {% else %}
-                            {{ value.text_value }}
-                          {% endif %}
-                        </td>
-                      </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-              <div class="text-end">
-                <a href="{% url 'analysis_template:report' template_group.grouper.id %}" class="btn btn-sm btn-outline-primary">
-                  <i class="bi bi-bar-chart"></i> 比較レポートを見る
-                </a>
-              </div>
+            <div class="text-end">
+              <a href="{% url 'analysis_template:report' template_group.grouper.id %}"
+                class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-bar-chart"></i> 比較レポートを見る
+              </a>
             </div>
           </div>
+        </div>
         {% endfor %}
       </div>
       {% endif %}
+
       <div class="row">
         <!-- 購入理由 -->
         <div class="col-lg-6 mb-4">
@@ -397,9 +507,7 @@
             <i class="bi bi-journal-text"></i> 購入理由
           </h3>
           <div class="section-card content-card">
-            <div class="content-body rich-content">
-              {{ diary.reason|safe }}
-            </div>
+              <div class="card-text text-muted">{{ diary.reason|safe|truncatewords_html:20 }}</div>
           </div>
         </div>
 
@@ -419,12 +527,138 @@
           </div>
         </div>
       </div>
+
+      <!-- 継続記録セクション -->
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="card mb-4">
+            <div class="card-header">
+              <h3 class="section-title mb-0">
+                <i class="bi bi-journal-richtext"></i> 継続記録
+              </h3>
+            </div>
+            <div class="card-body">
+              <div class="timeline">
+                {% for note in notes %}
+                <div class="timeline-item">
+                  <div
+                    class="timeline-marker {% if note.importance == 'high' %}bg-danger{% elif note.importance == 'medium' %}bg-primary{% else %}bg-secondary{% endif %}">
+                  </div>
+                  <div class="timeline-content">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <div class="timeline-date">{{ note.date|date:"Y年m月d日" }}</div>
+                      <span class="badge {% if note.note_type == 'analysis' %}bg-primary
+                            {% elif note.note_type == 'news' %}bg-info
+                            {% elif note.note_type == 'earnings' %}bg-success
+                            {% elif note.note_type == 'insight' %}bg-warning
+                            {% elif note.note_type == 'risk' %}bg-danger
+                            {% else %}bg-secondary{% endif %}">
+                        {% if note.note_type == 'analysis' %}分析更新
+                        {% elif note.note_type == 'news' %}ニュース
+                        {% elif note.note_type == 'earnings' %}決算情報
+                        {% elif note.note_type == 'insight' %}新たな気づき
+                        {% elif note.note_type == 'risk' %}リスク要因
+                        {% else %}その他{% endif %}
+                      </span>
+                    </div>
+
+                    {% if note.current_price %}
+                    <div class="d-flex align-items-center mb-2">
+                      <div class="me-3">
+                        <small class="text-muted">記録時の価格:</small>
+                        <span class="fw-medium">{{ note.current_price|floatformat:2 }}円</span>
+                      </div>
+
+                      {% with price_change=note.get_price_change %}
+                      {% if price_change %}
+                      <div>
+                        <small class="text-muted">購入時からの変動:</small>
+                        <span
+                          class="fw-medium {% if price_change > 0 %}text-success{% elif price_change < 0 %}text-danger{% endif %}">
+                          {{ price_change|floatformat:2 }}%
+                        </span>
+                      </div>
+                      {% endif %}
+                      {% endwith %}
+                    </div>
+                    {% endif %}
+
+                    <div class="timeline-text rich-content">
+                      {{ note.content|safe }}
+                    </div>
+                  </div>
+                </div>
+                {% empty %}
+                <p class="text-muted">継続的な記録はまだありません。下記のフォームから銘柄の状況変化や新たな分析を追加できます。</p>
+                {% endfor %}
+              </div>
+
+              <hr>
+              <!-- 新規継続記録フォーム -->
+              <h5 class="mb-3">継続記録を追加</h5>
+              <form method="post" action="{% url 'stockdiary:add_note' diary.id %}">
+                {% csrf_token %}
+                <div class="row">
+                  <div class="col-md-4 mb-3">
+                    <label for="{{ note_form.date.id_for_label }}" class="form-label">日付</label>
+                    {{ note_form.date }}
+                    {% if note_form.date.errors %}
+                    <div class="text-danger">{{ note_form.date.errors }}</div>
+                    {% endif %}
+                  </div>
+                  <div class="col-md-4 mb-3">
+                    <label for="{{ note_form.note_type.id_for_label }}" class="form-label">記録タイプ</label>
+                    {{ note_form.note_type }}
+                    {% if note_form.note_type.errors %}
+                    <div class="text-danger">{{ note_form.note_type.errors }}</div>
+                    {% endif %}
+                  </div>
+                  <div class="col-md-4 mb-3">
+                    <label for="{{ note_form.importance.id_for_label }}" class="form-label">重要度</label>
+                    {{ note_form.importance }}
+                    {% if note_form.importance.errors %}
+                    <div class="text-danger">{{ note_form.importance.errors }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="{{ note_form.content.id_for_label }}" class="form-label">記録内容</label>
+                  {{ note_form.content }}
+                  {% if note_form.content.errors %}
+                  <div class="text-danger">{{ note_form.content.errors }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="mb-3">
+                  <label for="{{ note_form.current_price.id_for_label }}" class="form-label">現在価格（任意）</label>
+                  <div class="input-group">
+                    {{ note_form.current_price }}
+                    <button type="button" class="btn btn-outline-primary" id="fetch-note-price">
+                      <i class="bi bi-arrow-repeat"></i> 現在株価
+                    </button>
+                  </div>
+                  {% if note_form.current_price.errors %}
+                  <div class="text-danger">{{ note_form.current_price.errors }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="text-end">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i> 記録を追加
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="card-footer">
       <div class="meta-info">
-        <i class="bi bi-calendar-check me-1"></i> 作成日時: {{ diary.created_at|date:"Y年m月d日 H:i" }} 
-        <span class="mx-2">|</span> 
+        <i class="bi bi-calendar-check me-1"></i> 作成日時: {{ diary.created_at|date:"Y年m月d日 H:i" }}
+        <span class="mx-2">|</span>
         <i class="bi bi-clock-history me-1"></i> 更新日時: {{ diary.updated_at|date:"Y年m月d日 H:i" }}
       </div>
     </div>
@@ -433,17 +667,18 @@
 {% endblock %}
 
 {% block scripts %}
+{{ block.super }}
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', function () {
     // チェックリスト進捗の更新
     function updateChecklistProgress(checklistCard) {
       const totalItems = checklistCard.querySelectorAll('.checklist-item-checkbox').length;
       const checkedItems = checklistCard.querySelectorAll('.checklist-item-checkbox:checked').length;
       const progressBadge = checklistCard.querySelector('.checklist-progress');
-      
+
       // 進捗バッジの更新
       progressBadge.textContent = `${checkedItems}/${totalItems}`;
-      
+
       // 全てチェック済みの場合は色を変更
       if (checkedItems === totalItems && totalItems > 0) {
         progressBadge.classList.remove('bg-primary');
@@ -452,37 +687,37 @@
         progressBadge.classList.remove('bg-success');
         progressBadge.classList.add('bg-primary');
       }
-      
+
       // 進捗率を計算して表示
       if (totalItems > 0) {
         const progressPercent = Math.round((checkedItems / totalItems) * 100);
         progressBadge.textContent = `${checkedItems}/${totalItems} (${progressPercent}%)`;
       }
     }
-    
+
     // すべてのチェックリストの進捗を初期表示
-    document.querySelectorAll('.checklist-card').forEach(function(card) {
+    document.querySelectorAll('.checklist-card').forEach(function (card) {
       updateChecklistProgress(card);
     });
-    
+
     // チェックボックス変更時の処理
-    document.querySelectorAll('.checklist-item-checkbox').forEach(function(checkbox) {
-      checkbox.addEventListener('change', function() {
+    document.querySelectorAll('.checklist-item-checkbox').forEach(function (checkbox) {
+      checkbox.addEventListener('change', function () {
         const itemId = this.dataset.itemId;
         const checked = this.checked;
         const label = document.getElementById('item-label-' + itemId);
-        
+
         // ラベルのスタイル変更（取り消し線）
         if (checked) {
           label.classList.add('completed');
         } else {
           label.classList.remove('completed');
         }
-        
+
         // 進捗の更新
         const checklistCard = this.closest('.checklist-card');
         updateChecklistProgress(checklistCard);
-        
+
         // APIリクエストを送信
         fetch('/checklist/item/' + itemId + '/toggle/', {
           method: 'POST',
@@ -494,70 +729,118 @@
             status: checked,
             diary_id: {{ diary.id }}
           })
-        })
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('サーバーエラーが発生しました');
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        // 成功時のフィードバック
+        const feedbackToast = createToast('チェックリストを更新しました', 'success');
+        document.body.appendChild(feedbackToast);
+        new bootstrap.Toast(feedbackToast).show();
+      })
+      .catch(error => {
+        console.error('Error:', error);
+
+        // エラー時は状態を元に戻す
+        this.checked = !checked;
+        if (!checked) {
+          label.classList.add('completed');
+        } else {
+          label.classList.remove('completed');
+        }
+        updateChecklistProgress(checklistCard);
+
+        // エラーメッセージを表示
+        const errorToast = createToast('更新に失敗しました: ' + error.message, 'danger');
+        document.body.appendChild(errorToast);
+        new bootstrap.Toast(errorToast).show();
+      });
+  });
+    });
+
+  // CSRFトークンを取得する関数
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  // 現在価格取得ボタンの処理
+  const fetchNotePriceBtn = document.getElementById('fetch-note-price');
+  if (fetchNotePriceBtn) {
+    fetchNotePriceBtn.addEventListener('click', function () {
+      const stockSymbol = '{{ diary.stock_symbol }}';
+      const priceInput = document.getElementById('{{ note_form.current_price.id_for_label }}');
+
+      // ボタンを無効化してローディング表示
+      this.disabled = true;
+      const originalText = this.innerHTML;
+      this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 取得中...';
+
+      // 株価取得API呼び出し
+      fetch(`/stockdiary/api/stock/price/${stockSymbol}/`)
         .then(response => {
           if (!response.ok) {
-            throw new Error('サーバーエラーが発生しました');
+            throw new Error('株価の取得に失敗しました');
           }
           return response.json();
         })
         .then(data => {
-          if (data.error) {
-            throw new Error(data.error);
-          }
-          
-          // 成功時のフィードバック（任意）
-          const feedbackToast = createToast('チェックリストを更新しました', 'success');
+          priceInput.value = data.price;
+
+          // 成功メッセージ
+          const feedbackToast = createToast('現在株価を取得しました', 'success');
           document.body.appendChild(feedbackToast);
           new bootstrap.Toast(feedbackToast).show();
         })
         .catch(error => {
           console.error('Error:', error);
-          
-          // エラー時は状態を元に戻す
-          this.checked = !checked;
-          if (!checked) {
-            label.classList.add('completed');
-          } else {
-            label.classList.remove('completed');
-          }
-          updateChecklistProgress(checklistCard);
-          
+
           // エラーメッセージを表示
-          const errorToast = createToast('更新に失敗しました: ' + error.message, 'danger');
+          const errorToast = createToast('株価の取得に失敗しました: ' + error.message, 'danger');
           document.body.appendChild(errorToast);
           new bootstrap.Toast(errorToast).show();
+        })
+        .finally(() => {
+          // ボタンを元に戻す
+          this.disabled = false;
+          this.innerHTML = originalText;
         });
-      });
     });
-    
-    // CSRFトークンを取得する関数
-    function getCookie(name) {
-      let cookieValue = null;
-      if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-          const cookie = cookies[i].trim();
-          if (cookie.substring(0, name.length + 1) === (name + '=')) {
-            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-            break;
-          }
-        }
-      }
-      return cookieValue;
+  }
+
+  // トースト作成関数（既存関数がある場合は統合）
+  function createToast(message, type) {
+    if (typeof window.createToast === 'function') {
+      return window.createToast(message, type);
     }
-    
-    // トースト通知を作成する関数
-    function createToast(message, type) {
-      const toastEl = document.createElement('div');
-      toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
-      toastEl.setAttribute('role', 'alert');
-      toastEl.setAttribute('aria-live', 'assertive');
-      toastEl.setAttribute('aria-atomic', 'true');
-      
-      const icon = type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle';
-      
-      toastEl.innerHTML = `
+
+    const toastEl = document.createElement('div');
+    toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
+    toastEl.setAttribute('role', 'alert');
+    toastEl.setAttribute('aria-live', 'assertive');
+    toastEl.setAttribute('aria-atomic', 'true');
+
+    const icon = type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle';
+
+    toastEl.innerHTML = `
         <div class="d-flex">
           <div class="toast-body">
             <i class="bi ${icon} me-2"></i> ${message}
@@ -565,16 +848,16 @@
           <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
       `;
-      
-      // スタイル調整
-      toastEl.style.position = 'fixed';
-      toastEl.style.bottom = '20px';
-      toastEl.style.right = '20px';
-      toastEl.style.minWidth = '250px';
-      toastEl.style.zIndex = '1050';
-      
-      return toastEl;
-    }
+
+    // スタイル調整
+    toastEl.style.position = 'fixed';
+    toastEl.style.bottom = '20px';
+    toastEl.style.right = '20px';
+    toastEl.style.minWidth = '250px';
+    toastEl.style.zIndex = '1050';
+
+    return toastEl;
+  }    
   });
 </script>
 {% endblock %}

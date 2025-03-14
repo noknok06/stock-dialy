@@ -5,6 +5,7 @@ from tags.models import Tag
 from checklist.models import Checklist
 from analysis_template.models import AnalysisTemplate
 from ckeditor_uploader.widgets import CKEditorUploadingWidget
+from .models import DiaryNote
 
 class StockDiaryForm(forms.ModelForm):
     analysis_template = forms.ModelChoiceField(
@@ -49,3 +50,17 @@ class StockDiaryForm(forms.ModelForm):
         # ラベルを変更
         self.fields['reason'].label = "購入理由 / 投資記録"
         self.fields['memo'].label = "追加メモ / コメント"
+
+
+class DiaryNoteForm(forms.ModelForm):
+    """日記エントリーへの継続的なメモ追加フォーム"""
+    class Meta:
+        model = DiaryNote
+        fields = ['date', 'note_type', 'importance', 'content', 'current_price']
+        widgets = {
+            'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'note_type': forms.Select(attrs={'class': 'form-select'}),
+            'importance': forms.Select(attrs={'class': 'form-select'}),
+            'content': CKEditorUploadingWidget(config_name='default'),
+            'current_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+        }        

@@ -56,3 +56,48 @@ class StockDiary(models.Model):
             return item_status.status
         except DiaryChecklistItem.DoesNotExist:
             return False            
+
+# stockdiary/models.py に追加
+
+class DiaryNote(models.Model):
+    """日記エントリーへの継続的な追記"""
+    diary = models.ForeignKey(StockDiary, on_delete=models.CASCADE, related_name='notes')
+    date = models.DateField()
+    content = RichTextUploadingField(verbose_name='記録内容')
+    current_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, 
+                                       verbose_name='記録時点の価格')
+    
+    # メモタイプ
+    TYPE_CHOICES = [
+        ('analysis', '分析更新'),
+        ('news', 'ニュース'),
+        ('earnings', '決算情報'),
+        ('insight', '新たな気づき'),
+        ('risk', 'リスク要因'),
+        ('other', 'その他')
+    ]
+    note_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='analysis')
+    
+    # メモの重要度
+    IMPORTANCE_CHOICES = [
+        ('high', '高'),
+        ('medium', '中'),
+        ('low', '低')
+    ]
+    importance = models.CharField(max_length=10, choices=IMPORTANCE_CHOICES, default='medium')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-date']
+    
+    def __str__(self):
+        return f"{self.diary.stock_name} - {self.date}"
+    
+    def get_price_change(self):
+        """購入価格からの変動率を計算"""
+        if self.current_price and self.diary.purchase_price:
+            change = ((self.current_price - self.diary.purchase_price) / self.diary.purchase_price) * 100
+            return change
+        return None            
