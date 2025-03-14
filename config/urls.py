@@ -33,6 +33,7 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),  # allauthのURLを追加
     path('analysis_template/', include('analysis_template.urls')),
     path('company_master/', include('company_master.urls')),
+    path('journal/', include('journal.urls')),
 ]
 
 if settings.DEBUG:

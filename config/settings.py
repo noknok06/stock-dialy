@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'checklist',
     'tags',
     'stockdiary',
+    'journal',
     'analysis_template',
     'company_master',
     # django-allauth関連

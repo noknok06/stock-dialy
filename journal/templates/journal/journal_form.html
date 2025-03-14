@@ -1,0 +1,293 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{% if form.instance.pk %}投資日記編集{% else %}新規投資日記作成{% endif %} | カブログ
+{% endblock %}
+
+{% block head %}
+{{ block.super }}
+{{ form.media }}
+<style>
+    .journal-form-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .entry-type-tabs {
+        display: flex;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .entry-type-tab {
+        flex: 1;
+        padding: 0.75rem;
+        text-align: center;
+        cursor: pointer;
+        background-color: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-bottom: none;
+        margin-right: -1px;
+        transition: all 0.2s;
+    }
+
+    .entry-type-tab:hover {
+        background-color: #f3f4f6;
+    }
+
+    .entry-type-tab.active {
+        background-color: white;
+        border-bottom-color: white;
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+
+    .form-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-section-title {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .form-section-title i {
+        margin-right: 0.5rem;
+        color: var(--primary-color);
+    }
+
+    .stock-info-card {
+        background-color: #f9fafb;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        border-left: 4px solid var(--primary-color);
+    }
+
+    .stock-info-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .stock-info-title {
+        font-weight: 600;
+        color: #111827;
+        margin: 0;
+    }
+
+    .stock-info-body {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .stock-info-item {
+        flex: 1 1 calc(50% - 0.5rem);
+        min-width: 150px;
+    }
+
+    .stock-info-label {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-bottom: 0.25rem;
+    }
+
+    .stock-info-value {
+        font-weight: 500;
+        color: #111827;
+    }
+
+    .analysis-template-section {
+        background-color: #f9fafb;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .checklist-section {
+        background-color: #f9fafb;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .rich-content-editor {
+        min-height: 300px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="journal-form-container">
+        <div class="card">
+            <div class="card-header">
+                <h3>
+                    <i class="bi bi-journal-text me-2"></i>
+                    {% if form.instance.pk %}投資日記編集{% else %}新規投資日記作成{% endif %}
+                </h3>
+            </div>
+            
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <!-- エントリータイプタブ -->
+                    <div class="entry-type-tabs mb-4">
+                        {% for type_value, type_label in form.fields.entry_type.choices %}
+                            <div class="entry-type-tab {% if form.initial.entry_type == type_value or form.instance.entry_type == type_value %}active{% endif %}" 
+                                 data-type="{{ type_value }}">
+                                {{ type_label }}
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- 銘柄情報セクション -->
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="bi bi-graph-up"></i>
+                            <h4 class="mb-0">銘柄情報</h4>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.stock.id_for_label }}" class="form-label">銘柄</label>
+                                <div class="input-group">
+                                    {{ form.stock }}
+                                    <a href="{% url 'journal:stock_create' %}" class="btn btn-outline-primary">
+                                        <i class="bi bi-plus-lg"></i> 新規
+                                    </a>
+                                </div>
+                                {% if form.stock.errors %}
+                                    <div class="text-danger">{{ form.stock.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.entry_date.id_for_label }}" class="form-label">記録日</label>
+                                {{ form.entry_date }}
+                                {% if form.entry_date.errors %}
+                                    <div class="text-danger">{{ form.entry_date.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- タイトルセクション -->
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="bi bi-card-heading"></i>
+                            <h4 class="mb-0">タイトル</h4>
+                        </div>
+
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                            <div class="text-danger">{{ form.title.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- 記録内容セクション -->
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="bi bi-pencil"></i>
+                            <h4 class="mb-0">記録内容</h4>
+                        </div>
+
+                        {{ form.content }}
+                        {% if form.content.errors %}
+                            <div class="text-danger">{{ form.content.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- メモセクション -->
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="bi bi-sticky"></i>
+                            <h4 class="mb-0">メモ</h4>
+                        </div>
+
+                        {{ form.memo }}
+                        {% if form.memo.errors %}
+                            <div class="text-danger">{{ form.memo.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- タグセクション -->
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="bi bi-tags"></i>
+                            <h4 class="mb-0">タグ</h4>
+                        </div>
+
+                        {{ form.tags }}
+                        {% if form.tags.errors %}
+                            <div class="text-danger">{{ form.tags.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- チェックリストセクション -->
+                    <div class="form-section checklist-section">
+                        <div class="form-section-title">
+                            <i class="bi bi-list-check"></i>
+                            <h4 class="mb-0">チェックリスト</h4>
+                        </div>
+
+                        {{ form.checklist }}
+                        {% if form.checklist.errors %}
+                            <div class="text-danger">{{ form.checklist.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- 分析テンプレートセクション -->
+                    <div class="form-section analysis-template-section">
+                        <div class="form-section-title">
+                            <i class="bi bi-clipboard-data"></i>
+                            <h4 class="mb-0">分析テンプレート</h4>
+                        </div>
+
+                        {{ form.analysis_template }}
+                        {% if form.analysis_template.errors %}
+                            <div class="text-danger">{{ form.analysis_template.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- アクションボタン -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'journal:journal_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-1"></i> キャンセル
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-1"></i> 保存
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // エントリータイプタブの切り替え処理
+        const entryTypeTabs = document.querySelectorAll('.entry-type-tab');
+        const entryTypeInput = document.getElementById('{{ form.entry_type.id_for_label }}');
+
+        entryTypeTabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                // タブのアクティブ状態を切り替え
+                entryTypeTabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+
+                // hiddenフィールドに選択されたタイプを設定
+                const type = this.dataset.type;
+                entryTypeInput.value = type;
+            });
+        });
+    });
+</script>
+{% endblock %}
