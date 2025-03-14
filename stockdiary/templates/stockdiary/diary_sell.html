@@ -1,0 +1,640 @@
+{% extends 'base.html' %}
+{% load stockdiary_filters %}
+
+{% block title %}売却情報登録 | カブログ{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<style>
+  :root {
+    --primary-color: #4f46e5;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+    --warning-color: #f59e0b;
+    --light-bg: #f9fafb;
+    --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  }
+
+  body {
+    background-color: var(--light-bg);
+  }
+
+  .card {
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+
+  .card-header {
+    background-color: white;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 1.25rem;
+  }
+
+  .card-title {
+    font-weight: 600;
+    margin-bottom: 0;
+  }
+
+  .stock-item {
+    border-bottom: 1px solid #f3f4f6;
+    padding: 1rem;
+    transition: background-color 0.2s;
+  }
+
+  .stock-item:last-child {
+    border-bottom: none;
+  }
+
+  .stock-item:hover {
+    background-color: rgba(249, 250, 251, 0.8);
+  }
+
+  .stock-name {
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 0.25rem;
+  }
+
+  .stock-meta {
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+  }
+
+  .lot-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background-color: white;
+    border-radius: 0.375rem;
+    border: 1px solid #f3f4f6;
+  }
+
+  .lot-details {
+    flex-grow: 1;
+  }
+
+  .profit {
+    color: var(--success-color);
+    font-weight: 600;
+  }
+
+  .loss {
+    color: var(--danger-color);
+    font-weight: 600;
+  }
+
+  .btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+  }
+
+  .btn-primary:hover {
+    background-color: #4338ca;
+    border-color: #4338ca;
+  }
+
+  .form-control, .form-select {
+    border-radius: 0.375rem;
+    padding: 0.625rem 0.75rem;
+    border: 1px solid #d1d5db;
+  }
+
+  .form-control:focus, .form-select:focus {
+    border-color: #a5b4fc;
+    box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.25);
+  }
+
+  .btn-sell {
+    width: 100px;
+  }
+
+  .btn-sell-modal {
+    color: white;
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+  }
+
+  .btn-sell-modal:hover {
+    background-color: #4338ca;
+    border-color: #4338ca;
+  }
+
+  .modal-content {
+    border-radius: 0.5rem;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  .modal-header {
+    background-color: white;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  .modal-footer {
+    background-color: white;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  .table-details th {
+    width: 40%;
+    color: #6b7280;
+    font-weight: 500;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .table-details td {
+    width: 60%;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e5e7eb;
+    font-weight: 500;
+  }
+
+  .table-details tr:last-child th,
+  .table-details tr:last-child td {
+    border-bottom: none;
+  }
+  
+  /* スマホ対応 */
+  @media (max-width: 767.98px) {
+    .lot-item {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .lot-details {
+      margin-bottom: 0.5rem;
+      width: 100%;
+    }
+    
+    .btn-sell {
+      width: 100%;
+    }
+  }
+
+  /* 保有なしの表示 */
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    color: #d1d5db;
+    margin-bottom: 1rem;
+  }
+  
+  /* フィルター */
+  .filter-card {
+    margin-bottom: 1.5rem;
+  }
+  
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6b7280;
+  }
+  
+  .search-input {
+    padding-left: 35px;
+  }
+  
+  /* 検索結果ハイライト */
+  .highlight {
+    background-color: rgba(79, 70, 229, 0.1);
+    border-left: 3px solid var(--primary-color);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3">売却情報登録</h1>
+    <div>
+      <a href="{% url 'stockdiary:home' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> 戻る
+      </a>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-4">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- フィルターカード -->
+  <div class="card filter-card">
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-8">
+          <div class="position-relative">
+            <i class="bi bi-search search-icon"></i>
+            <input type="text" id="stockFilter" class="form-control search-input" placeholder="銘柄名またはコードで検索">
+          </div>
+        </div>
+        <div class="col-md-4 mt-2 mt-md-0">
+          <select id="sortStocks" class="form-select">
+            <option value="symbol">銘柄コード順</option>
+            <option value="name">銘柄名順</option>
+            <option value="date-asc">購入日（古い順）</option>
+            <option value="date-desc">購入日（新しい順）</option>
+            <option value="price-asc">購入価格（安い順）</option>
+            <option value="price-desc">購入価格（高い順）</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if grouped_diaries %}
+    {% for stock in grouped_diaries %}
+      <div class="card stock-card" data-symbol="{{ stock.symbol }}" data-name="{{ stock.name }}">
+        <div class="card-header">
+          <h3 class="card-title">
+            {{ stock.name }} <small class="text-muted">({{ stock.symbol }})</small>
+          </h3>
+        </div>
+        <div class="card-body">
+          <div class="stock-meta">
+            {{ stock.entries|length }}件の保有ロット
+          </div>
+          
+          <div class="lots-container">
+            {% for entry in stock.entries %}
+              <div class="lot-item">
+                <div class="lot-details">
+                  <div>
+                    <strong>購入日:</strong> {{ entry.purchase_date|date:"Y年m月d日" }}
+                  </div>
+                  <div>
+                    <strong>購入価格:</strong> {{ entry.purchase_price|floatformat:2 }}円 × {{ entry.purchase_quantity }}株
+                  </div>
+                  <div>
+                    <strong>購入総額:</strong> {{ entry.total_purchase|floatformat:2 }}円
+                  </div>
+                </div>
+                <div>
+                  <button type="button" class="btn btn-primary btn-sell" 
+                          data-bs-toggle="modal" 
+                          data-bs-target="#sellModal"
+                          data-diary-id="{{ entry.id }}"
+                          data-stock-name="{{ stock.name }}"
+                          data-stock-symbol="{{ stock.symbol }}"
+                          data-purchase-date="{{ entry.purchase_date|date:"Y年m月d日" }}"
+                          data-purchase-price="{{ entry.purchase_price }}"
+                          data-purchase-quantity="{{ entry.purchase_quantity }}">
+                    <i class="bi bi-cash-coin me-1"></i> 売却
+                  </button>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="card">
+      <div class="card-body">
+        <div class="empty-state">
+          <div class="empty-icon">
+            <i class="bi bi-inbox"></i>
+          </div>
+          <h3 class="h4 mb-3">保有中の銘柄はありません</h3>
+          <p class="text-muted mb-4">現在保有中の銘柄がありません。新しい日記を作成して購入情報を登録しましょう。</p>
+          <a href="{% url 'stockdiary:create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> 新規日記作成
+          </a>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<!-- 売却モーダル -->
+<div class="modal fade" id="sellModal" tabindex="-1" aria-labelledby="sellModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="sellModalLabel">売却情報登録</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" id="diary_id" name="diary_id">
+        <div class="modal-body">
+          <div class="mb-4">
+            <h6 class="fw-bold">購入情報</h6>
+            <table class="table-details w-100">
+              <tr>
+                <th>銘柄</th>
+                <td id="modal_stock_name"></td>
+              </tr>
+              <tr>
+                <th>購入日</th>
+                <td id="modal_purchase_date"></td>
+              </tr>
+              <tr>
+                <th>購入価格</th>
+                <td id="modal_purchase_price"></td>
+              </tr>
+              <tr>
+                <th>数量</th>
+                <td id="modal_purchase_quantity"></td>
+              </tr>
+              <tr>
+                <th>購入総額</th>
+                <td id="modal_total_purchase"></td>
+              </tr>
+            </table>
+          </div>
+          
+          <div class="mb-3">
+            <h6 class="fw-bold">売却情報</h6>
+            <div class="mb-3">
+              <label for="sell_date" class="form-label">売却日</label>
+              <input type="date" id="sell_date" name="sell_date" class="form-control" 
+                    value="{{ today|date:'Y-m-d' }}" required>
+            </div>
+            <div class="mb-3">
+              <label for="sell_price" class="form-label">売却価格</label>
+              <div class="input-group">
+                <input type="number" id="sell_price" name="sell_price" class="form-control" 
+                      step="0.01" required>
+                <button type="button" id="fetch-current-price" class="btn btn-outline-secondary">
+                  <i class="bi bi-arrow-repeat"></i> 現在株価
+                </button>
+              </div>
+            </div>
+            
+            <!-- 利益/損失の表示 -->
+            <div id="profit-calc" class="mt-4 p-3 bg-light rounded text-center d-none">
+              <div class="mb-2">予想損益</div>
+              <div id="profit-amount" class="h4 mb-1"></div>
+              <div id="profit-percent" class="text-muted"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+          <button type="submit" class="btn btn-sell-modal">売却を登録</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // 売却モーダルの設定
+    const sellModal = document.getElementById('sellModal');
+    const sellButtons = document.querySelectorAll('.btn-sell');
+    const diaryIdInput = document.getElementById('diary_id');
+    const modalStockName = document.getElementById('modal_stock_name');
+    const modalPurchaseDate = document.getElementById('modal_purchase_date');
+    const modalPurchasePrice = document.getElementById('modal_purchase_price');
+    const modalPurchaseQuantity = document.getElementById('modal_purchase_quantity');
+    const modalTotalPurchase = document.getElementById('modal_total_purchase');
+    const sellPriceInput = document.getElementById('sell_price');
+    const profitCalc = document.getElementById('profit-calc');
+    const profitAmount = document.getElementById('profit-amount');
+    const profitPercent = document.getElementById('profit-percent');
+    
+    // 現在株価取得ボタン
+    const fetchPriceBtn = document.getElementById('fetch-current-price');
+    
+    // モーダル表示時の初期化
+    sellButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        // 日記IDを設定
+        const diaryId = this.getAttribute('data-diary-id');
+        diaryIdInput.value = diaryId;
+        
+        // 銘柄情報を表示
+        const stockName = this.getAttribute('data-stock-name');
+        const stockSymbol = this.getAttribute('data-stock-symbol');
+        modalStockName.textContent = `${stockName} (${stockSymbol})`;
+        
+        // 購入情報を表示
+        const purchaseDate = this.getAttribute('data-purchase-date');
+        const purchasePrice = parseFloat(this.getAttribute('data-purchase-price'));
+        const purchaseQuantity = parseInt(this.getAttribute('data-purchase-quantity'));
+        
+        modalPurchaseDate.textContent = purchaseDate;
+        modalPurchasePrice.textContent = `${purchasePrice.toLocaleString()}円`;
+        modalPurchaseQuantity.textContent = `${purchaseQuantity.toLocaleString()}株`;
+        modalTotalPurchase.textContent = `${(purchasePrice * purchaseQuantity).toLocaleString()}円`;
+        
+        // 売却価格の初期値を購入価格にする
+        sellPriceInput.value = purchasePrice;
+        
+        // 利益計算を表示
+        updateProfitCalculation();
+        
+        // 現在株価取得ボタンの処理
+        fetchPriceBtn.onclick = function() {
+          // ボタンを無効化してローディング表示
+          this.disabled = true;
+          const originalText = this.innerHTML;
+          this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 取得中...';
+        
+          // 現在株価を取得
+          fetch(`/stockdiary/api/stock/price/${stockSymbol}/`)
+            .then(response => {
+              if (!response.ok) {
+                throw new Error('株価の取得に失敗しました');
+              }
+              return response.json();
+            })
+            .then(data => {
+              // 現在株価を設定
+              sellPriceInput.value = data.price;
+              
+              // 利益計算を更新
+              updateProfitCalculation();
+              
+              // 成功メッセージ
+              showToast('現在株価を取得しました', 'success');
+            })
+            .catch(error => {
+              console.error('Error:', error);
+              showToast(error.message, 'danger');
+            })
+            .finally(() => {
+              // ボタンを元に戻す
+              this.disabled = false;
+              this.innerHTML = originalText;
+            });
+        };
+      });
+    });
+    
+    // 売却価格変更時に利益計算を更新
+    sellPriceInput.addEventListener('input', updateProfitCalculation);
+    
+    // 利益計算を更新する関数
+    function updateProfitCalculation() {
+      const sellPrice = parseFloat(sellPriceInput.value) || 0;
+      const purchasePrice = parseFloat(modalPurchasePrice.textContent.replace(/[^0-9.-]+/g, ''));
+      const quantity = parseInt(modalPurchaseQuantity.textContent.replace(/[^0-9.-]+/g, ''));
+      
+      if (sellPrice > 0 && purchasePrice > 0 && quantity > 0) {
+        // 損益計算
+        const profit = (sellPrice - purchasePrice) * quantity;
+        const profitPercentage = ((sellPrice - purchasePrice) / purchasePrice) * 100;
+        
+        // 利益表示を更新
+        profitAmount.textContent = `${profit.toLocaleString()}円`;
+        profitPercent.textContent = `${profitPercentage.toFixed(2)}%`;
+        
+        // 利益/損失に応じて色を変更
+        if (profit > 0) {
+          profitAmount.className = 'h4 mb-1 profit';
+          profitPercent.className = 'text-success';
+        } else if (profit < 0) {
+          profitAmount.className = 'h4 mb-1 loss';
+          profitPercent.className = 'text-danger';
+        } else {
+          profitAmount.className = 'h4 mb-1';
+          profitPercent.className = 'text-muted';
+        }
+        
+        // 計算結果を表示
+        profitCalc.classList.remove('d-none');
+      } else {
+        // 入力値が不正な場合は非表示
+        profitCalc.classList.add('d-none');
+      }
+    }
+    
+    // トースト通知を表示する関数
+    function showToast(message, type) {
+      const toastContainer = document.createElement('div');
+      toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+      toastContainer.style.zIndex = '5';
+      
+      const toast = document.createElement('div');
+      toast.className = `toast align-items-center text-white bg-${type} border-0`;
+      toast.setAttribute('role', 'alert');
+      toast.setAttribute('aria-live', 'assertive');
+      toast.setAttribute('aria-atomic', 'true');
+      
+      toast.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">
+            ${message}
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      `;
+      
+      toastContainer.appendChild(toast);
+      document.body.appendChild(toastContainer);
+      
+      const bsToast = new bootstrap.Toast(toast, {
+        autohide: true,
+        delay: 3000
+      });
+      bsToast.show();
+      
+      // トーストが閉じられた後にコンテナを削除
+      toast.addEventListener('hidden.bs.toast', function() {
+        toastContainer.remove();
+      });
+    }
+    
+    // 銘柄検索フィルター
+    const stockFilter = document.getElementById('stockFilter');
+    const stockCards = document.querySelectorAll('.stock-card');
+    
+    stockFilter.addEventListener('input', function() {
+      const searchTerm = this.value.toLowerCase();
+      
+      stockCards.forEach(card => {
+        const symbol = card.getAttribute('data-symbol').toLowerCase();
+        const name = card.getAttribute('data-name').toLowerCase();
+        
+        if (symbol.includes(searchTerm) || name.includes(searchTerm)) {
+          card.style.display = '';
+          
+          // 検索語がマッチしている場合はハイライト
+          if (searchTerm) {
+            card.classList.add('highlight');
+          } else {
+            card.classList.remove('highlight');
+          }
+        } else {
+          card.style.display = 'none';
+          card.classList.remove('highlight');
+        }
+      });
+    });
+    
+    // 銘柄ソート
+    const sortStocks = document.getElementById('sortStocks');
+    const stockContainer = stockCards[0]?.parentElement;
+    
+    sortStocks.addEventListener('change', function() {
+      const sortType = this.value;
+      const cardsArray = Array.from(stockCards);
+      
+      switch (sortType) {
+        case 'symbol':
+          cardsArray.sort((a, b) => a.getAttribute('data-symbol').localeCompare(b.getAttribute('data-symbol')));
+          break;
+        case 'name':
+          cardsArray.sort((a, b) => a.getAttribute('data-name').localeCompare(b.getAttribute('data-name')));
+          break;
+        case 'date-asc':
+          cardsArray.sort((a, b) => {
+            const dateA = new Date(a.querySelector('[data-purchase-date]')?.getAttribute('data-purchase-date') || 0);
+            const dateB = new Date(b.querySelector('[data-purchase-date]')?.getAttribute('data-purchase-date') || 0);
+            return dateA - dateB;
+          });
+          break;
+        case 'date-desc':
+          cardsArray.sort((a, b) => {
+            const dateA = new Date(a.querySelector('[data-purchase-date]')?.getAttribute('data-purchase-date') || 0);
+            const dateB = new Date(b.querySelector('[data-purchase-date]')?.getAttribute('data-purchase-date') || 0);
+            return dateB - dateA;
+          });
+          break;
+        case 'price-asc':
+          cardsArray.sort((a, b) => {
+            const priceA = parseFloat(a.querySelector('[data-purchase-price]')?.getAttribute('data-purchase-price') || 0);
+            const priceB = parseFloat(b.querySelector('[data-purchase-price]')?.getAttribute('data-purchase-price') || 0);
+            return priceA - priceB;
+          });
+          break;
+        case 'price-desc':
+          cardsArray.sort((a, b) => {
+            const priceA = parseFloat(a.querySelector('[data-purchase-price]')?.getAttribute('data-purchase-price') || 0);
+            const priceB = parseFloat(b.querySelector('[data-purchase-price]')?.getAttribute('data-purchase-price') || 0);
+            return priceB - priceA;
+          });
+          break;
+      }
+      
+      // DOMに再追加
+      cardsArray.forEach(card => {
+        stockContainer.appendChild(card);
+      });
+    });
+  });
+</script>
+{% endblock %}

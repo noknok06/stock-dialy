@@ -418,11 +418,69 @@
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="manageDropdown">
                     <li><a class="dropdown-item" href="{% url 'tags:list' %}">タグ管理</a></li>
                     <li><a class="dropdown-item" href="{% url 'checklist:list' %}">チェックリスト管理</a></li>
+                    <li><a class="dropdown-item" href="{% url 'analysis_template:list' %}">テンプレート管理</a></li>
                 </ul>
             </div>
         </div>
     </div>
 
+<!-- 保有株式の概要セクションを追加 -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="card-title mb-0">
+        保有状況サマリー
+        <button class="btn btn-link p-0 ms-2 d-md-none" type="button" data-bs-toggle="collapse"
+            data-bs-target="#holdingsCollapse" aria-expanded="false" aria-controls="holdingsCollapse">
+            <i class="bi bi-chevron-down"></i>
+        </button>
+      </h5>
+    </div>
+    <div class="collapse d-md-block" id="holdingsCollapse">
+      <div class="card-body">
+        <div class="row">
+          <!-- 保有銘柄数 -->
+          <div class="col-md-3 mb-3">
+            <div class="bg-light p-3 rounded text-center h-100">
+              <div class="text-muted small mb-1">保有銘柄数</div>
+              <div class="h4 mb-0">{{ active_holdings_count }}</div>
+            </div>
+          </div>
+          <!-- 保有株式評価額 -->
+          <div class="col-md-3 mb-3">
+            <div class="bg-light p-3 rounded text-center h-100">
+              <div class="text-muted small mb-1">評価額合計</div>
+              <div class="h4 mb-0">{{ total_value|floatformat:0 }}円</div>
+            </div>
+          </div>
+          <!-- 未実現損益 -->
+          <div class="col-md-3 mb-3">
+            <div class="bg-light p-3 rounded text-center h-100">
+              <div class="text-muted small mb-1">未実現損益</div>
+              <div class="h4 mb-0 {% if unrealized_profit > 0 %}profit{% elif unrealized_profit < 0 %}loss{% endif %}">
+                {{ unrealized_profit|floatformat:0 }}円
+              </div>
+            </div>
+          </div>
+          <!-- 実現損益 -->
+          <div class="col-md-3 mb-3">
+            <div class="bg-light p-3 rounded text-center h-100">
+              <div class="text-muted small mb-1">実現損益</div>
+              <div class="h4 mb-0 {% if realized_profit > 0 %}profit{% elif realized_profit < 0 %}loss{% endif %}">
+                {{ realized_profit|floatformat:0 }}円
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="text-end mt-2">
+          <a href="{% url 'stockdiary:sell' %}" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-cash-coin"></i> 売却登録へ
+          </a>
+          <a href="{% url 'stockdiary:analytics' %}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-graph-up"></i> 詳細な分析
+          </a>
+        </div>
+      </div>
+    </div>
     <!-- カレンダー -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -625,7 +683,7 @@
                             <div class="card-text text-muted">{{ diary.reason|safe|truncatewords_html:20 }}</div>
                         </div>
                     </div>
-                    
+                     
                     <div class="diary-card-footer d-flex justify-content-between">
                         <small class="text-muted">更新: {{ diary.updated_at|date:"Y/m/d" }}</small>
                         <div class="btn-group">

@@ -24,6 +24,9 @@ from django.template.defaultfilters import truncatechars_html, stringfilter
 from analysis_template.models import AnalysisTemplate, AnalysisItem, DiaryAnalysisValue
 from analysis_template.forms import create_analysis_value_formset
 
+from django.contrib import messages
+from decimal import Decimal
+
 
 # stockdiary/views.py のStockDiaryListViewクラスを修正
 class StockDiaryListView(LoginRequiredMixin, ListView):
@@ -151,7 +154,43 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
             checklist_stats[diary.id] = diary_stats
         
         context['checklist_stats'] = checklist_stats
+
+        # 保有中の株式を取得
+        active_holdings = StockDiary.objects.filter(user=self.request.user, sell_date__isnull=True)
+        context['active_holdings_count'] = active_holdings.count()
         
+        # 実現損益の計算（売却済みの株式）
+        sold_stocks = StockDiary.objects.filter(user=self.request.user, sell_date__isnull=False)
+        realized_profit = 0
+        for stock in sold_stocks:
+            profit = (stock.sell_price - stock.purchase_price) * stock.purchase_quantity
+            realized_profit += profit
+        
+        context['realized_profit'] = realized_profit
+        
+        # 未実現損益の計算（保有中の株式）
+        from decimal import Decimal
+        import random  # デモ用、実際は現在価格APIを使用
+        
+        # 保有中の株式の評価額と未実現損益
+        total_value = 0
+        unrealized_profit = 0
+        
+        for stock in active_holdings:
+            # 実際の実装では、APIから現在価格を取得
+            # ここではデモのための簡易的な現在価格シミュレーション
+            current_price = Decimal(str(float(stock.purchase_price) * random.uniform(0.8, 1.2)))
+            
+            # 保有株の現在評価額
+            stock_value = current_price * stock.purchase_quantity
+            total_value += stock_value
+            
+            # 未実現損益を計算
+            stock_profit = (current_price - stock.purchase_price) * stock.purchase_quantity
+            unrealized_profit += stock_profit
+        
+        context['total_value'] = total_value
+        context['unrealized_profit'] = unrealized_profit        
         return context
         
 # stockdiary/views.py のStockDiaryDetailViewを修正
@@ -1468,3 +1507,82 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
             'ranges': ranges,
             'counts': counts
         }
+
+# stockdiary/views.py に追加
+class StockDiarySellView(LoginRequiredMixin, TemplateView):
+    """保有株式の売却入力ページ"""
+    template_name = 'stockdiary/diary_sell.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # 保有中（売却日がNull）の株式を取得
+        active_diaries = StockDiary.objects.filter(
+            user=self.request.user,
+            sell_date__isnull=True
+        ).order_by('stock_symbol', 'purchase_date')
+        
+        # 銘柄コードでグループ化
+        grouped_diaries = {}
+        for diary in active_diaries:
+            symbol = diary.stock_symbol
+            if symbol not in grouped_diaries:
+                grouped_diaries[symbol] = {
+                    'symbol': symbol,
+                    'name': diary.stock_name,
+                    'entries': []
+                }
+            
+            # 購入の詳細情報を追加
+            grouped_diaries[symbol]['entries'].append({
+                'id': diary.id,
+                'purchase_date': diary.purchase_date,
+                'purchase_price': diary.purchase_price,
+                'purchase_quantity': diary.purchase_quantity,
+                'total_purchase': diary.purchase_price * diary.purchase_quantity
+            })
+        
+        context['grouped_diaries'] = grouped_diaries.values()
+        
+        # 選択された日記ID（更新用）
+        diary_id = self.kwargs.get('pk')
+        if diary_id:
+            try:
+                selected_diary = StockDiary.objects.get(
+                    id=diary_id,
+                    user=self.request.user
+                )
+                context['selected_diary'] = selected_diary
+            except StockDiary.DoesNotExist:
+                pass
+        
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        diary_id = request.POST.get('diary_id')
+        sell_date = request.POST.get('sell_date')
+        sell_price = request.POST.get('sell_price')
+        
+        try:
+            # 日記エントリーを取得して売却情報を更新
+            diary = StockDiary.objects.get(
+                id=diary_id,
+                user=request.user
+            )
+            
+            diary.sell_date = sell_date
+            diary.sell_price = Decimal(sell_price)
+            diary.save()
+            
+            messages.success(request, f'{diary.stock_name}の売却情報を登録しました')
+            
+            # ホームページまたは詳細ページにリダイレクト
+            return redirect('stockdiary:detail', pk=diary.id)
+            
+        except StockDiary.DoesNotExist:
+            messages.error(request, '指定された日記が見つかりません')
+        except Exception as e:
+            messages.error(request, f'エラーが発生しました: {str(e)}')
+        
+        # エラー時は同じページを再表示
+        return self.get(request, *args, **kwargs)
