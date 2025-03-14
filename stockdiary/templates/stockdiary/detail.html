@@ -223,86 +223,41 @@
     font-weight: 600;
   }
 
-  /* コンテンツカードのレスポンシブ対応改善 */
+  /* コンテンツスタイル */
   .content-card {
-    height: auto !important; /* 固定高さを解除 */
-    margin-bottom: 1.5rem;
+    height: 100%;
   }
-  
+
   .content-body {
-    height: auto !important; /* 固定高さを解除 */
-    min-height: 150px; /* 最小の高さを設定 */
     padding: 1.25rem;
+    height: 100%;
   }
-  
+
   .rich-content {
     line-height: 1.6;
-    overflow-wrap: break-word; /* 長いテキストが枠を破らないように */
-    word-break: break-word;
   }
-  
-  .rich-content img {
-    max-width: 100%; /* 画像がはみ出ないように */
-    height: auto;
+
+  .rich-content p:last-child {
+    margin-bottom: 0;
   }
-  
-  /* スマホ表示時の調整 */
-  @media (max-width: 767.98px) {
-    .section-card {
-      margin-bottom: 1rem;
-    }
-    
-    .section-title {
-      font-size: 1.1rem;
-      margin-bottom: 0.75rem;
-    }
-    
-    .content-body {
-      padding: 1rem;
-      min-height: 100px;
-    }
-    
-    /* モバイルでの余白調整 */
-    .card-body {
-      padding: 1rem;
-    }
-    
-    .row {
-      margin-left: -0.5rem;
-      margin-right: -0.5rem;
-    }
-    
-    .col-lg-6 {
-      padding-left: 0.5rem;
-      padding-right: 0.5rem;
-    }
-    
-    /* テーブルの調整 */
-    .info-table th,
-    .info-table td {
-      padding: 0.5rem 0;
-    }
-    
-    /* リッチテキストコンテンツの調整 */
-    .rich-content {
-      font-size: 0.95rem;
-    }
-    
-    /* テーブルのはみ出しを防止 */
-    .table-responsive {
-      overflow-x: auto;
-    }
-    
-    /* 分析データの調整 */
-    .table th {
-      white-space: normal;
-      word-break: break-word;
-    }
+
+  .meta-info {
+    color: #6b7280;
+    font-size: 0.875rem;
   }
-  
-  /* テーブル内の長いテキストの処理 */
-  .table td {
-    word-break: break-word;
+
+  /* レスポンシブ調整 */
+  @media (max-width: 768px) {
+    .action-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    
+    .action-buttons .btn {
+      flex: 1;
+      min-width: 100px;
+    }
   }
 </style>
 {% endblock %}
@@ -492,14 +447,13 @@
         {% endfor %}
       </div>
       {% endif %}
-      <!-- レイアウト修正：購入理由とメモのカードレイアウト -->
       <div class="row">
         <!-- 購入理由 -->
         <div class="col-lg-6 mb-4">
           <h3 class="section-title">
             <i class="bi bi-journal-text"></i> 購入理由
           </h3>
-          <div class="section-card">
+          <div class="section-card content-card">
             <div class="content-body rich-content">
               {{ diary.reason|safe }}
             </div>
@@ -511,7 +465,7 @@
           <h3 class="section-title">
             <i class="bi bi-sticky"></i> メモ
           </h3>
-          <div class="section-card">
+          <div class="section-card content-card">
             <div class="content-body">
               {% if diary.memo %}
               <div class="rich-content">{{ diary.memo|linebreaks }}</div>
@@ -521,6 +475,7 @@
             </div>
           </div>
         </div>
+      </div>
     </div>
 
     <div class="card-footer">
