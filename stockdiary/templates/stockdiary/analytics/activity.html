@@ -1,0 +1,208 @@
+<!-- 活動分析タブのコンテンツ - analytics/activity.html -->
+
+<div class="row">
+    <!-- 左側 - 活動カレンダーヒートマップ -->
+    <div class="col-lg-6 mb-4">
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h5 class="card-header-title">
+            <i class="bi bi-calendar-week"></i> 活動カレンダー
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-2">
+              <span class="fw-medium">過去30日間の活動</span>
+              <div class="d-flex gap-2 align-items-center">
+                <span class="heat-0 d-inline-block" style="width: 12px; height: 12px; border-radius: 2px;"></span>
+                <span class="heat-5 d-inline-block" style="width: 12px; height: 12px; border-radius: 2px;"></span>
+                <span class="text-muted" style="font-size: 0.75rem;">活動レベル</span>
+              </div>
+            </div>
+            <div class="heatmap-labels d-flex justify-content-between mb-1">
+              <div class="heatmap-label">日</div>
+              <div class="heatmap-label">月</div>
+              <div class="heatmap-label">火</div>
+              <div class="heatmap-label">水</div>
+              <div class="heatmap-label">木</div>
+              <div class="heatmap-label">金</div>
+              <div class="heatmap-label">土</div>
+            </div>
+            <div class="heatmap">
+              {% for day in activity_heatmap %}
+              <div class="heatmap-day heat-{{ day.level }}" title="{{ day.date }}: {{ day.count }}件の記録">
+                {{ day.day }}
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          
+          <div class="activity-summary mt-4">
+            <h6 class="text-primary mb-3">活動サマリー</h6>
+            <div class="row">
+              <div class="col-6 mb-3">
+                <div class="small text-muted">記録総数</div>
+                <div class="fw-medium">{{ total_stocks }}件</div>
+              </div>
+              <div class="col-6 mb-3">
+                <div class="small text-muted">月平均記録</div>
+                <div class="fw-medium">{{ monthly_avg_records|default:"0" }}件</div>
+              </div>
+              <div class="col-6 mb-3">
+                <div class="small text-muted">最も活発な月</div>
+                <div class="fw-medium">{{ most_active_month|default:"データなし" }}</div>
+              </div>
+              <div class="col-6 mb-3">
+                <div class="small text-muted">最も活発な曜日</div>
+                <div class="fw-medium">{{ most_active_day|default:"データなし" }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 右側 - 曜日別記録数 -->
+    <div class="col-lg-6 mb-4">
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h5 class="card-header-title">
+            <i class="bi bi-bar-chart"></i> 曜日別記録数
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="chart-container">
+            <canvas id="dayOfWeekChart"></canvas>
+          </div>
+          
+          <div class="activity-patterns mt-4">
+            <h6 class="text-primary mb-3">活動パターン分析</h6>
+            <div class="pattern-item d-flex align-items-start mb-3">
+              <div class="pattern-icon primary me-3">
+                <i class="bi bi-calendar-check"></i>
+              </div>
+              <div>
+                <div class="fw-medium">記録パターン</div>
+                <p class="small text-muted mb-0">
+                  投資記録は{% if weekday_pattern %}{{ weekday_pattern }}{% else %}平日と週末で均等{% endif %}に分布しています。
+                  最も記録が多い曜日は{{ most_active_day|default:"ありません" }}。
+                </p>
+              </div>
+            </div>
+            
+            <div class="pattern-item d-flex align-items-start">
+              <div class="pattern-icon warning me-3">
+                <i class="bi bi-graph-up"></i>
+              </div>
+              <div>
+                <div class="fw-medium">購入タイミング</div>
+                <p class="small text-muted mb-0">
+                  購入頻度は平均{{ purchase_frequency }}日に1回です。
+                  {% if purchase_trend %}{{ purchase_trend }}{% else %}特定の傾向は見られません{% endif %}。
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="row">
+    <!-- 左側 - 月別記録数推移 -->
+    <div class="col-lg-6 mb-4">
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h5 class="card-header-title">
+            <i class="bi bi-graph-up"></i> 月別記録数推移
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="chart-container">
+            <canvas id="monthlyRecordsChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 右側 - 記録内容の長さ分布 -->
+    <div class="col-lg-6 mb-4">
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h5 class="card-header-title">
+            <i class="bi bi-card-text"></i> 記録内容の詳細度
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="chart-container">
+            <canvas id="contentLengthChart"></canvas>
+          </div>
+          
+          <div class="mt-4">
+            <h6 class="text-primary mb-3">記録の詳細度</h6>
+            <div class="d-flex justify-content-between mb-2">
+              <span>平均文字数</span>
+              <span class="fw-medium">{{ avg_reason_length }}文字</span>
+            </div>
+            <div class="progress mb-3" style="height: 6px;">
+              <div class="progress-bar" role="progressbar" style="width: {{ avg_reason_percentage|default:50 }}%;" aria-valuenow="{{ avg_reason_percentage|default:50 }}" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="small text-muted">短い記録 (〜200文字)</span>
+              <span class="small text-muted">詳細な記録 (2000文字〜)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="row">
+    <!-- 記録習慣の改善推奨 -->
+    <div class="col-12 mb-4">
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h5 class="card-header-title">
+            <i class="bi bi-lightbulb"></i> 記録習慣の改善のために
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <div class="d-flex align-items-start">
+                <div class="bg-success bg-opacity-10 p-2 rounded-3 me-3">
+                  <i class="bi bi-calendar3 text-success fs-4"></i>
+                </div>
+                <div>
+                  <h6 class="mb-2">定期的な記録</h6>
+                  <p class="text-muted small mb-0">週に最低1回は投資日記を更新し、市場の変化や考えを記録しましょう。</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4 mb-3">
+              <div class="d-flex align-items-start">
+                <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                  <i class="bi bi-card-checklist text-primary fs-4"></i>
+                </div>
+                <div>
+                  <h6 class="mb-2">チェックリストの活用</h6>
+                  <p class="text-muted small mb-0">現在のチェックリスト完了率は{{ checklist_completion_rate|floatformat:1 }}%です。分析テンプレートを活用して体系的に記録しましょう。</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4 mb-3">
+              <div class="d-flex align-items-start">
+                <div class="bg-warning bg-opacity-10 p-2 rounded-3 me-3">
+                  <i class="bi bi-chat-quote text-warning fs-4"></i>
+                </div>
+                <div>
+                  <h6 class="mb-2">詳細な理由記録</h6>
+                  <p class="text-muted small mb-0">購入・売却の理由を詳しく記録すると、後で振り返った際に学びが深まります。</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>

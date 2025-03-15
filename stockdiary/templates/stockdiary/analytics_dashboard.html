@@ -2,962 +2,452 @@
 {% load humanize %}
 {% load stockdiary_filters %}
 
-{% block title %}投資記録分析 | カブログ{% endblock %}
+{% block title %}投資分析ダッシュボード | カブログ{% endblock %}
 
 {% block head %}
+{{ block.super }}
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
 <!-- Bootstrap Icons -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 <style>
-
+  /* 全体レイアウト */
+  .page-container {
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+  
+  .dashboard-header {
+    margin-bottom: 1.5rem;
+    position: relative;
+  }
+  
+  .dashboard-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .dashboard-title i {
+    color: var(--primary-color);
+  }
+  
+  .dashboard-subtitle {
+    color: #6b7280;
+    max-width: 800px;
+  }
+  
+  .tab-container {
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+  
+  /* タブナビゲーション */
+  .dashboard-nav {
+    display: flex;
+    border-bottom: 1px solid #f3f4f6;
+    position: relative;
+    background-color: white;
+    padding: 0 1rem;
+  }
+  
+  .dashboard-nav-item {
+    padding: 1rem 1.25rem;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .dashboard-nav-item:hover {
+    color: var(--primary-color);
+  }
+  
+  .dashboard-nav-item.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+  }
+  
+  /* カード共通スタイル */
+  .dashboard-card {
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    height: 100%;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  .dashboard-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .card-header {
+    padding: 1.25rem;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .card-header-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .card-header-title i {
+    color: var(--primary-color);
+  }
+  
+  .card-body {
+    padding: 1.25rem;
+  }
+  
   /* 統計カード */
   .stat-card {
+    background-color: white;
+    border-radius: 0.75rem;
     padding: 1.25rem;
-    display: flex;
-    flex-direction: column;
     height: 100%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
   }
-
+  
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+  }
+  
+  .stat-icon.primary {
+    background-color: rgba(79, 70, 229, 0.1);
+    color: var(--primary-color);
+  }
+  
+  .stat-icon.success {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+  }
+  
+  .stat-icon.info {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: var(--info-color);
+  }
+  
+  .stat-icon.warning {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: var(--warning-color);
+  }
+  
   .stat-title {
     font-size: 0.875rem;
     color: #6b7280;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
   }
-
+  
   .stat-value {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 700;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
   }
-
+  
   .stat-change {
     display: flex;
     align-items: center;
     gap: 0.25rem;
     font-size: 0.875rem;
   }
-
+  
   .stat-change.positive {
     color: var(--success-color);
   }
-
+  
   .stat-change.negative {
     color: var(--danger-color);
   }
-
-  /* フィルターフォーム */
-  .filter-form {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .filter-form .form-group {
-    flex: 1;
-    min-width: 200px;
-  }
-
-  .form-control, .form-select {
-    border-radius: 0.375rem;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #d1d5db;
-  }
-
-  .form-control:focus, .form-select:focus {
-    border-color: #a5b4fc;
-    box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.25);
-  }
-
-  /* テーブルスタイル */
-  .table {
-    width: 100%;
-    margin-bottom: 0;
-  }
-
-  .table th {
-    padding: 0.75rem 1rem;
-    font-weight: 600;
-    color: #4b5563;
-    background-color: #f9fafb;
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  .table td {
-    padding: 1rem;
-    vertical-align: middle;
-    border-bottom: 1px solid #f3f4f6;
-  }
-
-  .table tr:last-child td {
-    border-bottom: none;
-  }
-
-  .table-responsive {
-    overflow-x: auto;
-  }
-
-  /* バッジスタイル */
-  .badge {
-    font-weight: 500;
-    padding: 0.35em 0.65em;
-    border-radius: 0.25rem;
-  }
-
-  /* タグスタイル */
-  .tag-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.25rem 0.5rem;
-    background-color: #eef2ff;
-    color: var(--primary-color);
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    margin-right: 0.25rem;
-    margin-bottom: 0.25rem;
-  }
-
+  
   /* チャートコンテナ */
   .chart-container {
     position: relative;
     height: 300px;
     width: 100%;
   }
-
-  /* ボタンスタイル */
-  .btn-primary {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-  }
-
-  .btn-primary:hover {
-    background-color: #4338ca;
-    border-color: #4338ca;
-  }
-
-  .btn-outline-primary {
-    color: var(--primary-color);
-    border-color: var(--primary-color);
-  }
-
-  .btn-outline-primary:hover {
-    background-color: var(--primary-color);
-    color: white;
-  }
-
-  /* タブスタイル */
-  .nav-tabs {
-    border-bottom: 1px solid #e5e7eb;
+  
+  /* フィルターコントロール */
+  .filter-controls {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
     margin-bottom: 1.5rem;
-  }
-
-  .nav-tabs .nav-link {
-    border: none;
-    color: #6b7280;
-    padding: 0.75rem 1rem;
-    font-weight: 500;
-  }
-
-  .nav-tabs .nav-link:hover {
-    border-color: transparent;
-    color: var(--primary-color);
-  }
-
-  .nav-tabs .nav-link.active {
-    color: var(--primary-color);
-    border-bottom: 2px solid var(--primary-color);
-    background-color: transparent;
-  }
-
-  /* レスポンシブ調整 */
-  @media (max-width: 768px) {
-    .filter-form {
-      flex-direction: column;
-    }
-    
-    .filter-form .form-group {
-      width: 100%;
-    }
-  }
-
-  /* Timeline styles */
-  .timeline {
-    position: relative;
-    padding-left: 2rem;
-  }
-
-  .timeline::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0.5rem;
-    height: 100%;
-    width: 2px;
-    background-color: #e5e7eb;
-  }
-
-  .timeline-item {
-    position: relative;
-    margin-bottom: 1.5rem;
-  }
-
-  .timeline-marker {
-    position: absolute;
-    top: 0;
-    left: -2rem;
-    width: 1rem;
-    height: 1rem;
-    border-radius: 50%;
-    background-color: var(--primary-color);
-    border: 2px solid white;
-  }
-
-  .timeline-item.success .timeline-marker {
-    background-color: var(--success-color);
-  }
-
-  .timeline-item.danger .timeline-marker {
-    background-color: var(--danger-color);
-  }
-
-  .timeline-content {
+    padding: 1.25rem;
     background-color: white;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    box-shadow: var(--card-shadow);
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
-
-  .timeline-date {
-    font-size: 0.875rem;
-    color: #6b7280;
+  
+  .filter-group {
+    flex: 1;
+    min-width: 200px;
   }
-
-  .timeline-title {
-    font-weight: 600;
-    font-size: 1rem;
-    margin: 0.5rem 0;
-  }
-
-  .timeline-text {
-    font-size: 0.875rem;
-    color: #4b5563;
-  }
-
-  /* Heat map styles */
-  .heatmap {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 0.25rem;
-  }
-
-  .heatmap-day {
-    aspect-ratio: 1;
-    border-radius: 0.25rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    color: #4b5563;
-    cursor: default;
-  }
-
-  .heatmap-label {
-    font-size: 0.75rem;
-    color: #6b7280;
-    text-align: center;
-    margin-bottom: 0.25rem;
-  }
-
-  .heat-0 { background-color: #f3f4f6; }
-  .heat-1 { background-color: #dbeafe; }
-  .heat-2 { background-color: #bfdbfe; }
-  .heat-3 { background-color: #93c5fd; }
-  .heat-4 { background-color: #60a5fa; }
-  .heat-5 { background-color: #3b82f6; }
-
-  /* Goal progress */
-  .goal-progress {
-    height: 0.5rem;
-    background-color: #f3f4f6;
-    border-radius: 9999px;
-    overflow: hidden;
+  
+  .filter-label {
+    font-weight: 500;
     margin-bottom: 0.5rem;
-  }
-
-  .goal-bar {
-    height: 100%;
-    background-color: var(--primary-color);
-  }
-
-  .goal-text {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.75rem;
-    color: #6b7280;
-  }
-
-/* スマートフォン向け最適化のためのCSS */
-
-/* 基本フォントサイズの調整 */
-@media (max-width: 576px) {
-  body {
-    font-size: 14px;
+    display: block;
+    color: #374151;
   }
   
-  .page-title {
-    font-size: 1.25rem;
-  }
-  
-  .card-title {
-    font-size: 1rem;
-  }
-  
-  .stat-value {
-    font-size: 1.25rem;
-  }
-}
-
-/* スマートフォンでの余白調整 */
-@media (max-width: 576px) {
-  .container {
-    padding-left: 10px;
-    padding-right: 10px;
-  }
-  
-  .card-body, .card-header {
-    padding: 0.75rem;
-  }
-  
-  .py-4 {
-    padding-top: 1rem !important;
-    padding-bottom: 1rem !important;
-  }
-  
-  .mb-4 {
-    margin-bottom: 1rem !important;
-  }
-  
-  .g-4 {
-    --bs-gutter-y: 0.75rem;
-  }
-}
-
-/* ナビゲーションタブのモバイル調整 */
-@media (max-width: 576px) {
-  .nav-tabs {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    white-space: nowrap;
-    margin-bottom: 1rem;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; /* Firefox */
-  }
-  
-  .nav-tabs::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Edge */
-  }
-  
-  .nav-tabs .nav-link {
+  .filter-select {
+    width: 100%;
     padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
-  }
-  
-  .nav-tabs .nav-item {
-    float: none;
-    flex-shrink: 0;
-  }
-}
-
-/* チャートの高さ調整 */
-@media (max-width: 576px) {
-  .chart-container {
-    height: 220px;
-  }
-}
-
-/* タイムラインの調整 */
-@media (max-width: 576px) {
-  .timeline {
-    padding-left: 1.5rem;
-  }
-  
-  .timeline-marker {
-    width: 0.75rem;
-    height: 0.75rem;
-    left: -1.5rem;
-  }
-  
-  .timeline-title {
+    border-radius: 0.375rem;
+    border: 1px solid #d1d5db;
+    background-color: white;
+    color: #374151;
     font-size: 0.9rem;
   }
   
-  .timeline-text {
-    font-size: 0.8rem;
-  }
-}
-
-/* ヒートマップの調整 */
-@media (max-width: 576px) {
-  .heatmap-day {
-    font-size: 0.7rem;
+  .filter-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+    outline: none;
   }
   
-  .heatmap-label {
-    font-size: 0.7rem;
-  }
-}
-
-/* テーブル調整 */
-@media (max-width: 576px) {
-  .table th, .table td {
-    padding: 0.5rem;
-    font-size: 0.8rem;
-  }
-}
-
-/* タグバッジの調整 */
-@media (max-width: 576px) {
-  .tag-badge {
-    font-size: 0.7rem;
-    padding: 0.15rem 0.4rem;
-  }
-}
-
-/* 統計カードの調整 */
-@media (max-width: 576px) {
-  .stat-card {
-    padding: 0.75rem;
-  }
-  
-  .stat-title {
-    font-size: 0.8rem;
-    margin-bottom: 0.25rem;
-  }
-  
-  .stat-change {
-    font-size: 0.75rem;
-  }
-}
-
-/* フィルターフォームの調整 */
-@media (max-width: 768px) {
-  .filter-form .form-label {
-    font-size: 0.875rem;
-    margin-bottom: 0.25rem;
-  }
-  
-  .filter-form .form-select {
-    padding: 0.375rem 0.5rem;
-    font-size: 0.875rem;
-  }
-  
-  .filter-form .form-group {
-    margin-bottom: 0.5rem;
-  }
-}
-
-/* モバイルでの折りたたみ式フィルターの追加 */
-@media (max-width: 576px) {
-  .filter-toggle-btn {
-    width: 100%;
-    margin-bottom: 1rem;
-    text-align: left;
+  .filter-button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    height: 38px;
+    margin-top: 2rem;
   }
   
-  .filter-toggle-btn::after {
-    content: '\F282';
-    font-family: 'bootstrap-icons';
-    transition: transform 0.3s;
+  .filter-button:hover {
+    background-color: #4338ca;
   }
   
-  .filter-toggle-btn.collapsed::after {
-    transform: rotate(180deg);
+  .filter-button.reset {
+    background-color: #f3f4f6;
+    color: #374151;
   }
   
-  #filterCollapse {
-    margin-bottom: 1rem;
+  .filter-button.reset:hover {
+    background-color: #e5e7eb;
   }
-}  
+  
+  /* 分析タブコンテンツ */
+  .tab-content {
+    padding: 1.5rem;
+  }
+  
+  .tab-pane {
+    display: none;
+  }
+  
+  .tab-pane.active {
+    display: block;
+  }
 </style>
+
+{% include './analytics/styles.html' %}
+
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
-  <div class="page-header">
-    <h1 class="page-title">
-      <i class="bi bi-journal-text"></i> 投資記録分析
+<div class="page-container py-4">
+  <!-- ダッシュボードヘッダー -->
+  <div class="dashboard-header">
+    <h1 class="dashboard-title">
+      <i class="bi bi-graph-up-arrow"></i> 投資分析ダッシュボード
     </h1>
-    <div class="d-flex gap-2">
-      <a href="{% url 'stockdiary:home' %}" class="btn btn-outline-primary">
-        <i class="bi bi-calendar-event me-1"></i> カレンダー表示
-      </a>
-      <a href="{% url 'stockdiary:create' %}" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i> 新規日記作成
+    <p class="dashboard-subtitle">
+      あなたの投資記録をもとに、取引パターン、分析テンプレートの成績、タグの使用状況など様々な視点から投資活動を分析します。
+    </p>
+  </div>
+  
+  <!-- フィルターコントロール -->
+  <div class="filter-controls">
+    <div class="filter-group">
+      <label for="date-range" class="filter-label">期間</label>
+      <select id="date-range" name="date_range" class="filter-select">
+        <option value="all" {% if date_range == 'all' %}selected{% endif %}>すべて</option>
+        <option value="1m" {% if date_range == '1m' %}selected{% endif %}>1ヶ月</option>
+        <option value="3m" {% if date_range == '3m' %}selected{% endif %}>3ヶ月</option>
+        <option value="6m" {% if date_range == '6m' %}selected{% endif %}>6ヶ月</option>
+        <option value="1y" {% if date_range == '1y' %}selected{% endif %}>1年</option>
+      </select>
+    </div>
+    
+    <div class="filter-group">
+      <label for="tag-filter" class="filter-label">タグで絞り込み</label>
+      <select id="tag-filter" name="tag" class="filter-select">
+        <option value="">すべて</option>
+        {% for tag in all_tags %}
+        <option value="{{ tag.id }}" {% if selected_tag == tag.id|stringformat:"i" %}selected{% endif %}>
+          {{ tag.name }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    
+    <div class="filter-group">
+      <label for="status-filter" class="filter-label">ステータス</label>
+      <select id="status-filter" name="status" class="filter-select">
+        <option value="all" {% if status == 'all' %}selected{% endif %}>すべて</option>
+        <option value="active" {% if status == 'active' %}selected{% endif %}>保有中</option>
+        <option value="sold" {% if status == 'sold' %}selected{% endif %}>売却済み</option>
+      </select>
+    </div>
+    
+    <div class="filter-group d-flex align-items-end">
+      <button type="submit" class="filter-button" id="apply-filter">
+        <i class="bi bi-funnel"></i> フィルター適用
+      </button>
+    </div>
+    
+    <div class="filter-group d-flex align-items-end">
+      <a href="{% url 'stockdiary:analytics' %}" class="filter-button reset">
+        <i class="bi bi-arrow-counterclockwise"></i> リセット
       </a>
     </div>
   </div>
 
-  <!-- 統計カード -->
+  <!-- 統計サマリー -->
   <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 mb-4">
     <div class="col">
-      <div class="card h-100">
-        <div class="stat-card">
-          <div class="stat-title">記録した銘柄数</div>
-          <div class="stat-value">{{ total_stocks }}</div>
-          <div class="stat-change {% if stocks_change >= 0 %}positive{% else %}negative{% endif %}">
-            <i class="bi {% if stocks_change >= 0 %}bi-arrow-up-right{% else %}bi-arrow-down-right{% endif %}"></i>
-            <span>{{ stocks_change }} (前月比)</span>
-          </div>
+      <div class="stat-card">
+        <div class="stat-icon primary">
+          <i class="bi bi-bar-chart-fill"></i>
+        </div>
+        <div class="stat-title">記録した銘柄数</div>
+        <div class="stat-value">{{ total_stocks }}</div>
+        <div class="stat-change {% if stocks_change >= 0 %}positive{% else %}negative{% endif %}">
+          <i class="bi {% if stocks_change >= 0 %}bi-arrow-up-right{% else %}bi-arrow-down-right{% endif %}"></i>
+          <span>{{ stocks_change }} (前月比)</span>
         </div>
       </div>
     </div>
+    
     <div class="col">
-      <div class="card h-100">
-        <div class="stat-card">
-          <div class="stat-title">使用したタグ数</div>
-          <div class="stat-value">{{ total_tags }}</div>
-          <div class="stat-change {% if tags_change >= 0 %}positive{% else %}negative{% endif %}">
-            <i class="bi {% if tags_change >= 0 %}bi-arrow-up-right{% else %}bi-arrow-down-right{% endif %}"></i>
-            <span>{{ tags_change }} (前月比)</span>
-          </div>
+      <div class="stat-card">
+        <div class="stat-icon info">
+          <i class="bi bi-tags-fill"></i>
+        </div>
+        <div class="stat-title">使用したタグ数</div>
+        <div class="stat-value">{{ total_tags }}</div>
+        <div class="stat-change {% if tags_change >= 0 %}positive{% else %}negative{% endif %}">
+          <i class="bi {% if tags_change >= 0 %}bi-arrow-up-right{% else %}bi-arrow-down-right{% endif %}"></i>
+          <span>{{ tags_change }} (前月比)</span>
         </div>
       </div>
     </div>
+    
     <div class="col">
-      <div class="card h-100">
-        <div class="stat-card">
-          <div class="stat-title">チェックリスト完了率</div>
-          <div class="stat-value">{{ checklist_completion_rate|floatformat:1 }}%</div>
-          <div class="stat-change {% if checklist_rate_change >= 0 %}positive{% else %}negative{% endif %}">
-            <i class="bi {% if checklist_rate_change >= 0 %}bi-arrow-up-right{% else %}bi-arrow-down-right{% endif %}"></i>
-            <span>{{ checklist_rate_change|floatformat:1 }}% (前月比)</span>
-          </div>
+      <div class="stat-card">
+        <div class="stat-icon success">
+          <i class="bi bi-clipboard-data-fill"></i>
+        </div>
+        <div class="stat-title">分析項目達成率</div>
+        <div class="stat-value">{{ checklist_completion_rate|floatformat:1 }}%</div>
+        <div class="stat-change {% if checklist_rate_change >= 0 %}positive{% else %}negative{% endif %}">
+          <i class="bi {% if checklist_rate_change >= 0 %}bi-arrow-up-right{% else %}bi-arrow-down-right{% endif %}"></i>
+          <span>{{ checklist_rate_change|floatformat:1 }}% (前月比)</span>
         </div>
       </div>
     </div>
+    
     <div class="col">
-      <div class="card h-100">
-        <div class="stat-card">
-          <div class="stat-title">平均記録文字数</div>
-          <div class="stat-value">{{ avg_reason_length }}</div>
-          <div class="stat-change {% if reason_length_change >= 0 %}positive{% else %}negative{% endif %}">
-            <i class="bi {% if reason_length_change >= 0 %}bi-arrow-up-right{% else %}bi-arrow-down-right{% endif %}"></i>
-            <span>{{ reason_length_change }} (前月比)</span>
-          </div>
+      <div class="stat-card">
+        <div class="stat-icon warning">
+          <i class="bi bi-file-text-fill"></i>
+        </div>
+        <div class="stat-title">平均記録文字数</div>
+        <div class="stat-value">{{ avg_reason_length }}</div>
+        <div class="stat-change {% if reason_length_change >= 0 %}positive{% else %}negative{% endif %}">
+          <i class="bi {% if reason_length_change >= 0 %}bi-arrow-up-right{% else %}bi-arrow-down-right{% endif %}"></i>
+          <span>{{ reason_length_change }} (前月比)</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- フィルターフォーム -->
-  <div class="card mb-4">
-    <div class="card-header">
-      <h5 class="card-title mb-0">フィルター</h5>
-    </div>
-    <div class="card-body">
-      <form method="get" class="filter-form">
-        <div class="form-group">
-          <label for="date_range" class="form-label">期間</label>
-          <select id="date_range" name="date_range" class="form-select">
-            <option value="all" {% if date_range == 'all' %}selected{% endif %}>すべて</option>
-            <option value="1m" {% if date_range == '1m' %}selected{% endif %}>1ヶ月</option>
-            <option value="3m" {% if date_range == '3m' %}selected{% endif %}>3ヶ月</option>
-            <option value="6m" {% if date_range == '6m' %}selected{% endif %}>6ヶ月</option>
-            <option value="1y" {% if date_range == '1y' %}selected{% endif %}>1年</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="tag" class="form-label">タグ</label>
-          <select id="tag" name="tag" class="form-select">
-            <option value="">すべて</option>
-            {% for tag in all_tags %}
-            <option value="{{ tag.id }}" {% if selected_tag == tag.id|stringformat:"i" %}selected{% endif %}>
-              {{ tag.name }}
-            </option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="status" class="form-label">ステータス</label>
-          <select id="status" name="status" class="form-select">
-            <option value="all" {% if status == 'all' %}selected{% endif %}>すべて</option>
-            <option value="active" {% if status == 'active' %}selected{% endif %}>保有中</option>
-            <option value="sold" {% if status == 'sold' %}selected{% endif %}>売却済み</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="sort" class="form-label">並び替え</label>
-          <select id="sort" name="sort" class="form-select">
-            <option value="date_desc" {% if sort == 'date_desc' %}selected{% endif %}>購入日 (新しい順)</option>
-            <option value="date_asc" {% if sort == 'date_asc' %}selected{% endif %}>購入日 (古い順)</option>
-            <option value="reason_desc" {% if sort == 'reason_desc' %}selected{% endif %}>記録の長さ (長い順)</option>
-            <option value="reason_asc" {% if sort == 'reason_asc' %}selected{% endif %}>記録の長さ (短い順)</option>
-          </select>
-        </div>
-        <div class="form-group d-flex align-items-end">
-          <button type="submit" class="btn btn-primary w-100">
-            <i class="bi bi-filter me-1"></i> 適用
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- タブナビゲーション -->
-  <ul class="nav nav-tabs" id="analysisTab" role="tablist">
-    <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="habits-tab" data-bs-toggle="tab" data-bs-target="#habits" type="button" role="tab" aria-controls="habits" aria-selected="true">
-        <i class="bi bi-calendar3 me-1"></i> 記録習慣
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tags-tab" data-bs-toggle="tab" data-bs-target="#tags" type="button" role="tab" aria-controls="tags" aria-selected="false">
-        <i class="bi bi-tags me-1"></i> タグ分析
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="checklist-tab" data-bs-toggle="tab" data-bs-target="#checklist" type="button" role="tab" aria-controls="checklist" aria-selected="false">
-        <i class="bi bi-list-check me-1"></i> チェックリスト
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline" type="button" role="tab" aria-controls="timeline" aria-selected="false">
-        <i class="bi bi-clock-history me-1"></i> タイムライン
-      </button>
-    </li>
-  </ul>
-
-  <!-- タブコンテンツ -->
-  <div class="tab-content" id="analysisTabContent">
-    <!-- 記録習慣タブ -->
-    <div class="tab-pane fade show active" id="habits" role="tabpanel" aria-labelledby="habits-tab">
-      <div class="row">
-        <div class="col-lg-6">
-          <!-- 月別記録数チャート -->
-          <div class="card mb-4">
-            <div class="card-header">
-              <h5 class="card-title mb-0">月別記録数</h5>
-            </div>
-            <div class="card-body">
-              <div class="chart-container">
-                <canvas id="monthlyRecordsChart"></canvas>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-6">
-          <!-- 曜日別記録数チャート -->
-          <div class="card mb-4">
-            <div class="card-header">
-              <h5 class="card-title mb-0">曜日別記録数</h5>
-            </div>
-            <div class="card-body">
-              <div class="chart-container">
-                <canvas id="dayOfWeekChart"></canvas>
-              </div>
-            </div>
-          </div>
-        </div>
+  <!-- ダッシュボードタブ -->
+  <div class="tab-container">
+    <div class="dashboard-nav">
+      <div class="dashboard-nav-item active" data-tab="overview">
+        <i class="bi bi-speedometer2"></i> 概要
       </div>
-
-      <div class="row">
-        <div class="col-lg-5">
-          <!-- 記録カレンダーヒートマップ -->
-          <div class="card mb-4">
-            <div class="card-header">
-              <h5 class="card-title mb-0">記録アクティビティ</h5>
-            </div>
-            <div class="card-body">
-              <div class="mb-3">
-                <div class="d-flex justify-content-between mb-2">
-                  <span class="fw-medium">過去1ヶ月のアクティビティ</span>
-                  <div class="d-flex gap-2 align-items-center">
-                    <span class="heat-0 d-inline-block" style="width: 12px; height: 12px; border-radius: 2px;"></span>
-                    <span class="heat-5 d-inline-block" style="width: 12px; height: 12px; border-radius: 2px;"></span>
-                    <span class="text-muted" style="font-size: 0.75rem;">記録数</span>
-                  </div>
-                </div>
-                <div class="heatmap-labels d-flex justify-content-between mb-1">
-                  <div class="heatmap-label">日</div>
-                  <div class="heatmap-label">月</div>
-                  <div class="heatmap-label">火</div>
-                  <div class="heatmap-label">水</div>
-                  <div class="heatmap-label">木</div>
-                  <div class="heatmap-label">金</div>
-                  <div class="heatmap-label">土</div>
-                </div>
-                <div class="heatmap">
-                  {% for day in activity_heatmap %}
-                  <div class="heatmap-day heat-{{ day.level }}" title="{{ day.date }}: {{ day.count }}件の記録">
-                    {{ day.day }}
-                  </div>
-                  {% endfor %}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-7">
-          <!-- 記録内容の長さ分布 -->
-          <div class="card mb-4">
-            <div class="card-header">
-              <h5 class="card-title mb-0">記録内容の詳細度</h5>
-            </div>
-            <div class="card-body">
-              <div class="chart-container">
-                <canvas id="contentLengthChart"></canvas>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div class="dashboard-nav-item" data-tab="activity">
+        <i class="bi bi-calendar3"></i> 活動分析
+      </div>
+      <div class="dashboard-nav-item" data-tab="tags">
+        <i class="bi bi-tags"></i> タグ分析
+      </div>
+      <div class="dashboard-nav-item" data-tab="templates">
+        <i class="bi bi-clipboard-data"></i> 分析テンプレート
+      </div>
+      <div class="dashboard-nav-item" data-tab="portfolio">
+        <i class="bi bi-pie-chart"></i> ポートフォリオ分析
       </div>
     </div>
-
-    <!-- タグ分析タブ -->
-    <div class="tab-pane fade" id="tags" role="tabpanel" aria-labelledby="tags-tab">
-      <div class="row">
-        <div class="col-lg-5">
-          <!-- タグ使用頻度 -->
-          <div class="card mb-4">
-            <div class="card-header">
-              <h5 class="card-title mb-0">タグ使用頻度</h5>
-            </div>
-            <div class="card-body">
-              <div class="chart-container">
-                <canvas id="tagFrequencyChart"></canvas>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-7">
-          <!-- タグの時系列変化 -->
-          <div class="card mb-4">
-            <div class="card-header">
-              <h5 class="card-title mb-0">タグ使用の時系列変化</h5>
-            </div>
-            <div class="card-body">
-              <div class="chart-container">
-                <canvas id="tagTimelineChart"></canvas>
-              </div>
-            </div>
-          </div>
-        </div>
+    
+    <div class="tab-content">
+      <!-- 概要タブ -->
+      <div class="tab-pane active" id="overview-tab">
+        {% include './analytics/overview.html' %}
       </div>
-
-      <div class="row">
-        <div class="col-12">
-          <!-- タグの相関関係 -->
-          <div class="card mb-4">
-            <div class="card-header">
-              <h5 class="card-title mb-0">よく一緒に使われるタグ</h5>
-            </div>
-            <div class="card-body">
-              <div class="row">
-                {% for tag in top_tags %}
-                <div class="col-md-6 mb-3">
-                  <div class="d-flex align-items-center mb-2">
-                    <div class="tag-badge me-2">{{ tag.name }}</div>
-                    <span class="text-muted">{{ tag.count }}回使用</span>
-                  </div>
-                  <div class="mb-2">よく組み合わせるタグ:</div>
-                  <div>
-                    {% for related in tag.related_tags %}
-                    <span class="tag-badge">{{ related.name }} ({{ related.count }})</span>
-                    {% empty %}
-                    <span class="text-muted">関連タグなし</span>
-                    {% endfor %}
-                  </div>
-                </div>
-                {% endfor %}
-              </div>
-            </div>
-          </div>
-        </div>
+      
+      <!-- 活動分析タブ -->
+      <div class="tab-pane" id="activity-tab">
+        {% include './analytics/activity.html' %}
       </div>
-    </div>
-
-    <!-- チェックリストタブ -->
-    <div class="tab-pane fade" id="checklist" role="tabpanel" aria-labelledby="checklist-tab">
-      <div class="row">
-        <div class="col-lg-6">
-          <!-- チェックリスト完了率チャート -->
-          <div class="card mb-4">
-            <div class="card-header">
-              <h5 class="card-title mb-0">チェックリスト完了率</h5>
-            </div>
-            <div class="card-body">
-              <div class="chart-container">
-                <canvas id="checklistCompletionChart"></canvas>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-6">
-          <!-- 時系列でのチェックリスト完了率 -->
-          <div class="card mb-4">
-            <div class="card-header">
-              <h5 class="card-title mb-0">完了率の推移</h5>
-            </div>
-            <div class="card-body">
-              <div class="chart-container">
-                <canvas id="checklistTimelineChart"></canvas>
-              </div>
-            </div>
-          </div>
-        </div>
+      
+      <!-- タグ分析タブ -->
+      <div class="tab-pane" id="tags-tab">
+        {% include './analytics/tags.html' %}
       </div>
-
-      <div class="row">
-        <div class="col-12">
-          <!-- よく使われるチェックリストアイテム -->
-          <div class="card mb-4">
-            <div class="card-header">
-              <h5 class="card-title mb-0">チェックリストアイテムの完了状況</h5>
-            </div>
-            <div class="card-body">
-              <div class="table-responsive">
-                <table class="table table-hover">
-                  <thead>
-                    <tr>
-                      <th>チェックリスト名</th>
-                      <th>使用回数</th>
-                      <th>平均完了率</th>
-                      <th>最も完了しやすいアイテム</th>
-                      <th>最も完了しにくいアイテム</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for checklist in checklist_stats %}
-                    <tr>
-                      <td>{{ checklist.name }}</td>
-                      <td>{{ checklist.usage_count }}</td>
-                      <td>
-                        <div class="goal-progress">
-                          <div class="goal-bar" style="width: {{ checklist.completion_rate }}%;"></div>
-                        </div>
-                        <div class="goal-text">
-                          <span>{{ checklist.completion_rate }}%</span>
-                        </div>
-                      </td>
-                      <td>{{ checklist.most_completed }}</td>
-                      <td>{{ checklist.least_completed }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                      <td colspan="5" class="text-center py-3">
-                        <div class="text-muted">チェックリストデータがありません</div>
-                      </td>
-                    </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
+      
+      <!-- 分析テンプレートタブ -->
+      <div class="tab-pane" id="templates-tab">
+        {% include './analytics/templates.html' %}
       </div>
-    </div>
-
-    <!-- タイムラインタブ -->
-    <div class="tab-pane fade" id="timeline" role="tabpanel" aria-labelledby="timeline-tab">
-      <div class="row">
-        <div class="col-lg-8">
-          <!-- 記録タイムライン -->
-          <div class="card mb-4">
-            <div class="card-header">
-              <h5 class="card-title mb-0">投資記録タイムライン</h5>
-            </div>
-            <div class="card-body">
-              <div class="timeline">
-                {% for entry in diary_timeline %}
-                <div class="timeline-item {% if entry.sell_date %}{% if entry.is_profit %}success{% else %}danger{% endif %}{% endif %}">
-                  <div class="timeline-marker"></div>
-                  <div class="timeline-content">
-                    <div class="timeline-date">{{ entry.date }}</div>
-                    <h3 class="timeline-title">{{ entry.action }}: {{ entry.stock_name }}</h3>
-                    <div class="timeline-text">
-                      {% if entry.tags %}
-                      <div class="mb-2">
-                        {% for tag in entry.tags %}
-                        <span class="tag-badge">{{ tag }}</span>
-                        {% endfor %}
-                      </div>
-                      {% endif %}
-                      <div>{{ entry.reason_excerpt }}</div>
-                      {% if entry.sell_date %}
-                      <div class="mt-2 {% if entry.is_profit %}text-success{% else %}text-danger{% endif %}">
-                        保有期間: {{ entry.holding_period }}日
-                      </div>
-                      {% endif %}
-                    </div>
-                  </div>
-                </div>
-                {% empty %}
-                <div class="text-center text-muted py-4">
-                  <i class="bi bi-clock-history fs-2 mb-2"></i>
-                  <p>投資記録がありません</p>
-                </div>
-                {% endfor %}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-4">
-          <!-- 最近の投資傾向 -->
-          <div class="card mb-4">
-            <div class="card-header">
-              <h5 class="card-title mb-0">最近の投資傾向</h5>
-            </div>
-            <div class="card-body">
-              <div class="mb-4">
-                <div class="d-flex justify-content-between mb-2">
-                  <span class="fw-medium">購入頻度</span>
-                  <span>{{ purchase_frequency }}日に1回</span>
-                </div>
-                <div class="d-flex justify-content-between mb-2">
-                  <span class="fw-medium">平均保有期間</span>
-                  <span>{{ avg_holding_period }}日</span>
-                </div>
-                <div class="d-flex justify-content-between mb-2">
-                  <span class="fw-medium">よく使うタグ</span>
-                  <span>{{ most_used_tag }}</span>
-                </div>
-                <div class="d-flex justify-content-between">
-                  <span class="fw-medium">最も詳細な記録</span>
-                  <span>{{ most_detailed_record }}</span>
-                </div>
-              </div>
-
-              <div class="mb-3">
-                <h6 class="fw-medium mb-2">最近のキーワード</h6>
-                <div class="d-flex flex-wrap gap-1">
-                  {% for keyword in recent_keywords %}
-                  <span class="tag-badge">{{ keyword.word }} ({{ keyword.count }})</span>
-                  {% empty %}
-                  <span class="text-muted">データがありません</span>
-                  {% endfor %}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 保有期間分布 -->
-          <div class="card mb-4">
-            <div class="card-header">
-              <h5 class="card-title mb-0">保有期間分布</h5>
-            </div>
-            <div class="card-body">
-              <div class="chart-container" style="height: 200px;">
-                <canvas id="holdingPeriodChart"></canvas>
-              </div>
-            </div>
-          </div>
-        </div>
+      
+      <!-- ポートフォリオ分析タブ -->
+      <div class="tab-pane" id="portfolio-tab">
+        {% include './analytics/portfolio.html' %}
       </div>
     </div>
   </div>
@@ -966,378 +456,54 @@
 
 {% block scripts %}
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // チャートの共通設定
-    Chart.defaults.font.family = "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
-    Chart.defaults.color = '#6b7280';
-    Chart.defaults.scale.grid.color = 'rgba(243, 244, 246, 1)';
-    Chart.defaults.scale.ticks.padding = 10;
-    
-    // 月別記録数チャート
-    const monthlyRecordsCtx = document.getElementById('monthlyRecordsChart').getContext('2d');
-    const monthlyRecordsChart = new Chart(monthlyRecordsCtx, {
-      type: 'line',
-      data: {
-        labels: {{ monthly_labels|safe }},
-        datasets: [{
-          label: '記録数',
-          data: {{ monthly_counts|safe }},
-          borderColor: '#4f46e5',
-          backgroundColor: 'rgba(79, 70, 229, 0.1)',
-          borderWidth: 2,
-          fill: true,
-          tension: 0.4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: false
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              stepSize: 1
-            }
-          }
+document.addEventListener('DOMContentLoaded', function() {
+  // タブ切り替え機能
+  const tabButtons = document.querySelectorAll('.dashboard-nav-item');
+  const tabPanes = document.querySelectorAll('.tab-pane');
+  
+  tabButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      // タブボタンのアクティブ状態を切り替え
+      tabButtons.forEach(btn => btn.classList.remove('active'));
+      this.classList.add('active');
+      
+      // タブコンテンツの表示/非表示を切り替え
+      const tabId = this.getAttribute('data-tab');
+      tabPanes.forEach(pane => {
+        pane.classList.remove('active');
+        if (pane.id === `${tabId}-tab`) {
+          pane.classList.add('active');
         }
-      }
+      });
     });
-    
-    // 曜日別記録数チャート
-    try {
-      const dayOfWeekCtx = document.getElementById('dayOfWeekChart').getContext('2d');
-      const dayOfWeekChart = new Chart(dayOfWeekCtx, {
-        type: 'bar',
-        data: {
-          labels: ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'],
-          datasets: [{
-            label: '記録数',
-            data: {{ day_of_week_counts|safe }},
-            backgroundColor: 'rgba(79, 70, 229, 0.7)',
-            borderColor: 'rgb(79, 70, 229)',
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                stepSize: 1
-              }
-            }
-          }
-        }
-      });
-    } catch (e) {
-      console.error('曜日別記録数チャートの作成に失敗しました:', e);
-    }
-    
-    // 記録内容の長さ分布チャート
-    try {
-      const contentLengthCtx = document.getElementById('contentLengthChart').getContext('2d');
-      const contentLengthChart = new Chart(contentLengthCtx, {
-        type: 'bar',
-        data: {
-          labels: {{ content_length_ranges|safe }},
-          datasets: [{
-            label: '日記の数',
-            data: {{ content_length_counts|safe }},
-            backgroundColor: 'rgba(79, 70, 229, 0.7)',
-            borderColor: 'rgb(79, 70, 229)',
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
-            },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  let label = context.dataset.label || '';
-                  if (label) {
-                    label += ': ';
-                  }
-                  if (context.parsed.y !== null) {
-                    label += context.parsed.y + '件';
-                  }
-                  return label;
-                }
-              }
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                stepSize: 1
-              }
-            }
-          }
-        }
-      });
-    } catch (e) {
-      console.error('記録内容の長さ分布チャートの作成に失敗しました:', e);
-    }
-    
-    // タグ使用頻度チャート
-    try {
-      const tagFrequencyCtx = document.getElementById('tagFrequencyChart').getContext('2d');
-      const tagNames = {{ tag_names|safe }};
-      const tagCounts = {{ tag_counts|safe }};
-      
-      if (tagNames && tagNames.length > 0) {
-        const tagFrequencyChart = new Chart(tagFrequencyCtx, {
-          type: 'pie',
-          data: {
-            labels: tagNames,
-            datasets: [{
-              data: tagCounts,
-              backgroundColor: [
-                'rgba(79, 70, 229, 0.7)',
-                'rgba(16, 185, 129, 0.7)',
-                'rgba(245, 158, 11, 0.7)',
-                'rgba(239, 68, 68, 0.7)',
-                'rgba(59, 130, 246, 0.7)',
-                'rgba(168, 85, 247, 0.7)',
-                'rgba(236, 72, 153, 0.7)',
-                'rgba(75, 85, 99, 0.7)'
-              ],
-              borderWidth: 1
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              tooltip: {
-                callbacks: {
-                  label: function(context) {
-                    const label = context.label || '';
-                    const value = context.raw || 0;
-                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                    const percentage = ((value / total) * 100).toFixed(1);
-                    return `${label}: ${value}回 (${percentage}%)`;
-                  }
-                }
-              }
-            }
-          }
-        });
-      }
-    } catch (e) {
-      console.error('タグ使用頻度チャートの作成に失敗しました:', e);
-    }
-    
-    // タグの時系列変化チャート
-    try {
-      const tagTimelineCtx = document.getElementById('tagTimelineChart').getContext('2d');
-      const tagTimelineData = {{ tag_timeline_data|safe }};
-      
-      if (tagTimelineData && tagTimelineData.length > 0) {
-        const tagTimelineChart = new Chart(tagTimelineCtx, {
-          type: 'line',
-          data: {
-            labels: {{ tag_timeline_labels|safe }},
-            datasets: tagTimelineData
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              tooltip: {
-                mode: 'index',
-                intersect: false
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                ticks: {
-                  stepSize: 1
-                }
-              }
-            }
-          }
-        });
-      }
-    } catch (e) {
-      console.error('タグの時系列変化チャートの作成に失敗しました:', e);
-    }
-    
-    // チェックリスト完了率チャート
-    try {
-      const checklistCompletionCtx = document.getElementById('checklistCompletionChart').getContext('2d');
-      const checklistNames = {{ checklist_names|safe }};
-      const checklistRates = {{ checklist_completion_rates|safe }};
-      
-      if (checklistNames && checklistNames.length > 0) {
-        const checklistCompletionChart = new Chart(checklistCompletionCtx, {
-          type: 'bar',
-          data: {
-            labels: checklistNames,
-            datasets: [{
-              label: '完了率',
-              data: checklistRates,
-              backgroundColor: function(context) {
-                const value = context.dataset.data[context.dataIndex];
-                if (value >= 80) return 'rgba(16, 185, 129, 0.7)';
-                if (value >= 50) return 'rgba(245, 158, 11, 0.7)';
-                return 'rgba(239, 68, 68, 0.7)';
-              },
-              borderColor: function(context) {
-                const value = context.dataset.data[context.dataIndex];
-                if (value >= 80) return 'rgb(16, 185, 129)';
-                if (value >= 50) return 'rgb(245, 158, 11)';
-                return 'rgb(239, 68, 68)';
-              },
-              borderWidth: 1
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                display: false
-              },
-              tooltip: {
-                callbacks: {
-                  label: function(context) {
-                    return `完了率: ${context.raw}%`;
-                  }
-                }
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                max: 100,
-                ticks: {
-                  callback: function(value) {
-                    return value + '%';
-                  }
-                }
-              }
-            }
-          }
-        });
-      }
-    } catch (e) {
-      console.error('チェックリスト完了率チャートの作成に失敗しました:', e);
-    }
-    
-    // 時系列でのチェックリスト完了率チャート
-    try {
-      const checklistTimelineCtx = document.getElementById('checklistTimelineChart').getContext('2d');
-      const timelineLabels = {{ checklist_timeline_labels|safe }};
-      const timelineData = {{ checklist_timeline_data|safe }};
-      
-      if (timelineLabels && timelineLabels.length > 0) {
-        const checklistTimelineChart = new Chart(checklistTimelineCtx, {
-          type: 'line',
-          data: {
-            labels: timelineLabels,
-            datasets: [{
-              label: '平均完了率',
-              data: timelineData,
-              borderColor: '#4f46e5',
-              backgroundColor: 'rgba(79, 70, 229, 0.1)',
-              borderWidth: 2,
-              fill: true,
-              tension: 0.4
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                display: false
-              },
-              tooltip: {
-                callbacks: {
-                  label: function(context) {
-                    return `完了率: ${context.raw}%`;
-                  }
-                }
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                max: 100,
-                ticks: {
-                  callback: function(value) {
-                    return value + '%';
-                  }
-                }
-              }
-            }
-          }
-        });
-      }
-    } catch (e) {
-      console.error('チェックリスト完了率の時系列チャートの作成に失敗しました:', e);
-    }
-    
-    // 保有期間分布チャート
-    try {
-      const holdingPeriodCtx = document.getElementById('holdingPeriodChart').getContext('2d');
-      const holdingRanges = {{ holding_period_ranges|safe }};
-      const holdingCounts = {{ holding_period_counts|safe }};
-      
-      if (holdingRanges && holdingRanges.length > 0) {
-        const holdingPeriodChart = new Chart(holdingPeriodCtx, {
-          type: 'bar',
-          data: {
-            labels: holdingRanges,
-            datasets: [{
-              label: '銘柄数',
-              data: holdingCounts,
-              backgroundColor: 'rgba(59, 130, 246, 0.7)',
-              borderColor: 'rgb(59, 130, 246)',
-              borderWidth: 1
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                display: false
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                ticks: {
-                  stepSize: 1
-                }
-              }
-            }
-          }
-        });
-      }
-    } catch (e) {
-      console.error('保有期間分布チャートの作成に失敗しました:', e);
-    }
   });
+  
+  // フィルターフォームの送信
+  const filterButton = document.getElementById('apply-filter');
+  
+  if (filterButton) {
+    filterButton.addEventListener('click', function() {
+      // フォームデータを取得
+      const dateRange = document.getElementById('date-range').value;
+      const tagFilter = document.getElementById('tag-filter').value;
+      const statusFilter = document.getElementById('status-filter').value;
+      
+      // URLを構築
+      let url = new URL(window.location.href);
+      url.searchParams.set('date_range', dateRange);
+      if (tagFilter) {
+        url.searchParams.set('tag', tagFilter);
+      } else {
+        url.searchParams.delete('tag');
+      }
+      url.searchParams.set('status', statusFilter);
+      
+      // ページ遷移
+      window.location.href = url.toString();
+    });
+  }
+});
 </script>
+
+{% include './analytics/charts.html' %}
 {% endblock %}

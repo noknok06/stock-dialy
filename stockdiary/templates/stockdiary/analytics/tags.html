@@ -1,0 +1,155 @@
+<!-- タグ分析タブのコンテンツ - analytics/tags.html -->
+
+<div class="row">
+    <!-- タグ使用頻度チャート -->
+    <div class="col-lg-6 mb-4">
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h5 class="card-header-title">
+            <i class="bi bi-pie-chart"></i> タグ使用頻度
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="chart-container">
+            <canvas id="tagFrequencyChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- タグの時系列変化チャート -->
+    <div class="col-lg-6 mb-4">
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h5 class="card-header-title">
+            <i class="bi bi-graph-up"></i> タグ使用の時系列変化
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="chart-container">
+            <canvas id="tagTimelineChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="row">
+    <!-- タグの分布 -->
+    <div class="col-12 mb-4">
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h5 class="card-header-title">
+            <i class="bi bi-tags"></i> タグの使用状況
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="tag-distribution">
+            {% for tag in top_tags %}
+            <div class="tag-item">
+              <div class="tag-icon">
+                <i class="bi bi-tag"></i>
+              </div>
+              <div class="tag-details">
+                <div class="tag-name">{{ tag.name }}</div>
+                <div class="tag-count">{{ tag.count }}回使用</div>
+                <div class="tag-progress">
+                  <div class="tag-progress-bar" style="width: {{ tag.percentage }}%;"></div>
+                </div>
+              </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-4">
+              <div class="text-muted">
+                <i class="bi bi-tag fs-3 mb-2"></i>
+                <p>まだタグが使用されていません。</p>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="row">
+    <!-- タグの関連性分析 -->
+    <div class="col-12 mb-4">
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h5 class="card-header-title">
+            <i class="bi bi-diagram-3"></i> よく一緒に使われるタグ
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            {% for tag in top_tags %}
+            <div class="col-md-6 mb-4">
+              <div class="d-flex align-items-start mb-2">
+                <div class="tag-badge me-2">{{ tag.name }}</div>
+                <span class="text-muted">{{ tag.count }}回使用</span>
+              </div>
+              <div class="mb-2">関連するタグ:</div>
+              <div>
+                {% for related in tag.related_tags %}
+                <span class="tag-badge">{{ related.name }} ({{ related.count }})</span>
+                {% empty %}
+                <span class="text-muted">関連タグはありません</span>
+                {% endfor %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- タグの投資成績 -->
+  <div class="row">
+    <div class="col-12 mb-4">
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h5 class="card-header-title">
+            <i class="bi bi-bar-chart-line"></i> タグ別の投資成績
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>タグ名</th>
+                  <th>使用回数</th>
+                  <th>平均保有期間</th>
+                  <th>平均利益率</th>
+                  <th>総利益</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for tag in tag_performance %}
+                <tr>
+                  <td>{{ tag.name }}</td>
+                  <td>{{ tag.count }}</td>
+                  <td>{{ tag.avg_holding_period|floatformat:0 }}日</td>
+                  <td class="{% if tag.avg_profit_rate >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {{ tag.avg_profit_rate|floatformat:2 }}%
+                  </td>
+                  <td class="{% if tag.total_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {{ tag.total_profit|floatformat:0|intcomma }}円
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center py-3">
+                    <div class="text-muted">タグ別の投資成績データがありません</div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>

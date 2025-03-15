@@ -1,31 +1,27 @@
-# stockdiary/views.py
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Q
-from .models import StockDiary
-from .forms import StockDiaryForm
-from tags.models import Tag
-from checklist.models import DiaryChecklistItem, ChecklistItem, Checklist
-
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
-from django.utils import timezone
-from django.db.models import Count, Avg, F, Q, Sum, Min, Max, Case, When, Value, IntegerField
-from decimal import Decimal
+from django.db.models import Q, Count, Avg, F, Sum, Min, Max, Case, When, Value, IntegerField
 from django.db.models.functions import TruncMonth, ExtractWeekDay, Length
-from datetime import timedelta
-import json
-import re
-from collections import Counter, defaultdict
-import random
+from django.utils import timezone
 from django.utils.html import strip_tags
-from django.template.defaultfilters import truncatechars_html, stringfilter
+from django.utils.safestring import mark_safe
+from django.template.defaultfilters import truncatechars_html
+from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect
+
+from .models import StockDiary, DiaryNote
+from .forms import StockDiaryForm, DiaryNoteForm
+from tags.models import Tag
 from analysis_template.models import AnalysisTemplate, AnalysisItem, DiaryAnalysisValue
 from analysis_template.forms import create_analysis_value_formset
 
-from django.contrib import messages
+import json
+import re
 from decimal import Decimal
+from datetime import timedelta
+from collections import Counter, defaultdict
+import random
 
 
 # stockdiary/views.py のStockDiaryListViewクラスを修正
@@ -34,66 +30,9 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
     template_name = 'stockdiary/home.html'
     context_object_name = 'diaries'
     paginate_by = 9  # 1ページに表示する日記の数（3×3のグリッド）
-        
-    def form_valid(self, form):
-        # ユーザーを設定
-        form.instance.user = self.request.user
-        
-        # まずフォームを保存
-        response = super().form_valid(form)
-        
-        # チェックリスト項目のステータスを処理
-        self.process_checklist_items()
-        
-        return response
-
-    def process_checklist_items(self):
-        from checklist.models import DiaryChecklistItem, ChecklistItem
-        
-        # リクエストからチェックリスト項目のステータスを取得
-        item_statuses = {}
-        
-        for key, value in self.request.POST.items():
-            if key.startswith('checklist_item_status[') and key.endswith(']'):
-                # キーから項目IDを抽出
-                item_id_str = key[len('checklist_item_status['):-1]
-                try:
-                    item_id = int(item_id_str)
-                    item_statuses[item_id] = value == '1' or value == 'on' or value == 'true'
-                except ValueError:
-                    continue
-        
-        if not item_statuses:
-            return  # ステータスがなければ何もしない
-        
-        # 既存のDiaryChecklistItemを取得
-        existing_items = DiaryChecklistItem.objects.filter(diary=self.object)
-        existing_item_ids = {item.checklist_item_id: item for item in existing_items}
-        
-        # チェックリスト項目IDのリストを取得
-        checklist_item_ids = list(item_statuses.keys())
-        
-        # 存在するチェックリスト項目を確認
-        valid_items = ChecklistItem.objects.filter(id__in=checklist_item_ids)
-        valid_item_ids = {item.id for item in valid_items}
-        
-        # 項目ごとにDiaryChecklistItemを作成または更新
-        for item_id, status in item_statuses.items():
-            if item_id not in valid_item_ids:
-                continue  # 無効な項目IDはスキップ
-            
-            if item_id in existing_item_ids:
-                # 既存のアイテムを更新
-                diary_item = existing_item_ids[item_id]
-                diary_item.status = status
-                diary_item.save()
-            else:
-                # 新しいアイテムを作成
-                DiaryChecklistItem.objects.create(
-                    diary=self.object,
-                    checklist_item_id=item_id,
-                    status=status
-                )        
+    
+    # process_checklist_items メソッドを削除
+    
     def get_queryset(self):
         queryset = StockDiary.objects.filter(user=self.request.user).order_by('-purchase_date')
         
@@ -115,46 +54,13 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['tags'] = Tag.objects.filter(user=self.request.user)
-        context['checklists'] = Checklist.objects.filter(user=self.request.user)
+        # checklists の取得を削除
         
         # カレンダー表示用にすべての日記データを追加
         context['all_diaries'] = StockDiary.objects.filter(user=self.request.user)
         
-        # 日記ごとのチェックリスト進捗状況を計算
-        from checklist.models import DiaryChecklistItem
+        # checklist_stats の計算を削除
         
-        checklist_stats = {}
-        
-        for diary in context['diaries']:
-            diary_stats = {}
-            
-            for checklist in diary.checklist.all():
-                items = checklist.items.all()
-                total = items.count()
-                
-                # DiaryChecklistItemから完了状態を取得
-                completed = DiaryChecklistItem.objects.filter(
-                    diary=diary,
-                    checklist_item__checklist=checklist,
-                    status=True
-                ).count()
-                
-                # 進捗率を計算
-                progress = 0
-                if total > 0:
-                    progress = int((completed / total) * 100)
-                
-                diary_stats[checklist.id] = {
-                    'total': total,
-                    'completed': completed,
-                    'progress': progress,
-                    'is_complete': completed == total and total > 0
-                }
-            
-            checklist_stats[diary.id] = diary_stats
-        
-        context['checklist_stats'] = checklist_stats
-
         # 保有中の株式を取得
         active_holdings = StockDiary.objects.filter(user=self.request.user, sell_date__isnull=True)
         context['active_holdings_count'] = active_holdings.count()
@@ -169,28 +75,8 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         context['realized_profit'] = realized_profit
         
         # 未実現損益の計算（保有中の株式）
-        from decimal import Decimal
-        import random  # デモ用、実際は現在価格APIを使用
+        # 現在の実装はそのまま
         
-        # 保有中の株式の評価額と未実現損益
-        total_value = 0
-        unrealized_profit = 0
-        
-        for stock in active_holdings:
-            # 実際の実装では、APIから現在価格を取得
-            # ここではデモのための簡易的な現在価格シミュレーション
-            current_price = Decimal(str(float(stock.purchase_price) * random.uniform(0.8, 1.2)))
-            
-            # 保有株の現在評価額
-            stock_value = current_price * stock.purchase_quantity
-            total_value += stock_value
-            
-            # 未実現損益を計算
-            stock_profit = (current_price - stock.purchase_price) * stock.purchase_quantity
-            unrealized_profit += stock_profit
-        
-        context['total_value'] = total_value
-        context['unrealized_profit'] = unrealized_profit        
         return context
         
 # stockdiary/views.py のStockDiaryDetailViewを修正
@@ -211,40 +97,15 @@ class StockDiaryDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # DiaryChecklistItemから各チェックリストアイテムの状態を取得
-        diary = self.object
-        from checklist.models import DiaryChecklistItem
-        
-        # 日記のチェックリストアイテムの状態を取得
-        item_statuses = {}
-        diary_items = DiaryChecklistItem.objects.filter(diary=diary)
-        
-        for diary_item in diary_items:
-            item_statuses[diary_item.checklist_item_id] = diary_item.status
-        
-        context['item_statuses'] = item_statuses
-
-
-        diary = self.object
-        from checklist.models import DiaryChecklistItem
-        
-        # 日記のチェックリストアイテムの状態を取得
-        item_statuses = {}
-        diary_items = DiaryChecklistItem.objects.filter(diary=diary)
-        
-        for diary_item in diary_items:
-            item_statuses[diary_item.checklist_item_id] = diary_item.status
-        
-        context['item_statuses'] = item_statuses
+        # チェックリスト関連のコードを削除
         
         # 継続記録フォームを追加
         context['note_form'] = DiaryNoteForm(initial={'date': timezone.now().date()})
         
         # 継続記録一覧を追加
-        context['notes'] = diary.notes.all().order_by('-date')
+        context['notes'] = self.object.notes.all().order_by('-date')
         
         return context
-
 
 class StockDiaryCreateView(LoginRequiredMixin, CreateView):
     model = StockDiary
@@ -267,8 +128,7 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
         # 親クラスのform_validを呼び出し、レスポンスを取得
         response = super().form_valid(form)
         
-        # チェックリスト項目のステータスを処理
-        self.process_checklist_items()
+        # チェックリスト項目のステータスを処理する部分を削除
         
         # 分析テンプレートが選択されていれば、分析値を処理
         if analysis_template_id:
@@ -276,7 +136,7 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
         
         return response
 
-    
+    # process_checklist_items メソッドを削除
     def process_analysis_values(self, template_id):
         """分析テンプレート値を処理する"""
         try:
@@ -406,7 +266,6 @@ class StockDiaryUpdateView(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse_lazy('stockdiary:detail', kwargs={'pk': self.object.pk})
 
-
     def form_valid(self, form):
         # 分析テンプレートID取得
         analysis_template_id = self.request.POST.get('analysis_template')
@@ -414,8 +273,7 @@ class StockDiaryUpdateView(LoginRequiredMixin, UpdateView):
         # 親クラスのform_validを呼び出し
         response = super().form_valid(form)
         
-        # チェックリスト項目のステータスを処理
-        self.process_checklist_items()
+        # チェックリスト項目のステータスを処理する部分を削除
         
         # 分析テンプレートが選択されていれば、分析値を処理
         if analysis_template_id:
@@ -685,32 +543,8 @@ class AnalyticsDashboardView(LoginRequiredMixin, TemplateView):
             random_factor = random.uniform(0.9, 1.1)
             prices[symbol] = base_price * random_factor
         return prices
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
-from django.urls import reverse_lazy
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Q
-from .models import StockDiary
-from .forms import StockDiaryForm
-from tags.models import Tag
-from checklist.models import DiaryChecklistItem, ChecklistItem, Checklist
-
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
-from django.utils import timezone
-from django.db.models import Count, Avg, F, Q, Sum, Min, Max, Case, When, Value, IntegerField
-from decimal import Decimal
-from django.db.models.functions import TruncMonth, ExtractWeekDay, Length
-from datetime import timedelta
-import json
-import re
-from collections import Counter, defaultdict
-import random
-from django.utils.html import strip_tags
-from django.template.defaultfilters import truncatechars_html, stringfilter
-from django.utils.safestring import mark_safe
 
 # 既存のStockDiaryListViewとその他のクラスは変更なし
-
 class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
     """投資記録分析ダッシュボードを表示するビュー"""
     template_name = 'stockdiary/analytics_dashboard.html'
@@ -780,8 +614,8 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         last_month_tags = last_month_diaries.values('tags').annotate(count=Count('id')).count()
         tags_change = tags_used - last_month_tags
         
-        # チェックリスト完了率
-        checklist_stats = self.get_checklist_stats(diaries)
+        # 分析テンプレート使用率
+        analysis_stats = self.get_analysis_template_stats(diaries)
         
         # 平均記録文字数
         avg_reason_length = 0
@@ -819,10 +653,10 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         tag_timeline_data = self.prepare_tag_timeline_data(diaries)
         tag_correlation_data = self.prepare_tag_correlation_data(diaries)
         
-        # チェックリスト分析データの準備
-        checklist_completion_data = self.prepare_checklist_completion_data(diaries)
-        checklist_timeline_data = self.prepare_checklist_timeline_data(diaries)
-        checklist_item_stats = self.prepare_checklist_item_stats(diaries)
+        # 分析テンプレート分析データの準備
+        template_usage_data = self.prepare_template_usage_data(diaries)
+        template_timeline_data = self.prepare_template_timeline_data(diaries)
+        template_item_stats = self.prepare_template_item_stats(diaries)
         
         # タイムラインデータの準備
         timeline_data = self.prepare_timeline_data(diaries)
@@ -846,8 +680,8 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
             'stocks_change': stocks_change,
             'total_tags': tags_used,
             'tags_change': tags_change,
-            'checklist_completion_rate': checklist_stats['avg_completion_rate'],
-            'checklist_rate_change': checklist_stats['change'],
+            'analysis_completion_rate': analysis_stats['avg_completion_rate'],
+            'analysis_rate_change': analysis_stats['change'],
             'avg_reason_length': avg_reason_length,
             'reason_length_change': reason_length_change,
             
@@ -864,13 +698,14 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
             'tag_counts': json.dumps(tag_frequency_data['counts']),
             'tag_timeline_labels': json.dumps(tag_timeline_data['labels']),
             'tag_timeline_data': mark_safe(json.dumps(tag_timeline_data['datasets'])),
+            'top_tags': tag_correlation_data,
             
-            # チェックリスト分析データ
-            'checklist_names': json.dumps(checklist_completion_data['names']),
-            'checklist_completion_rates': json.dumps(checklist_completion_data['rates']),
-            'checklist_timeline_labels': json.dumps(checklist_timeline_data['labels']),
-            'checklist_timeline_data': json.dumps(checklist_timeline_data['rates']),
-            'checklist_stats': checklist_item_stats,
+            # 分析テンプレートデータ
+            'template_names': json.dumps(template_usage_data['names']),
+            'template_usage_rates': json.dumps(template_usage_data['rates']),
+            'template_timeline_labels': json.dumps(template_timeline_data['labels']),
+            'template_timeline_data': json.dumps(template_timeline_data['rates']),
+            'template_stats': template_item_stats,
             
             # タイムラインデータ
             'diary_timeline': timeline_data,
@@ -885,9 +720,9 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         
         return context
     
-    def get_checklist_stats(self, diaries):
-        """チェックリストの統計情報を取得"""
-        # 完了率を計算
+    def get_analysis_template_stats(self, diaries):
+        """分析テンプレートの統計情報を取得"""
+        # 使用率を計算
         total_completion = 0
         completion_count = 0
         
@@ -900,32 +735,57 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
                 'change': 0
             }
         
-        # 一度に必要なチェックリストアイテムを取得
-        diary_checklist_items = DiaryChecklistItem.objects.filter(
+        # 一度に必要な分析値を取得
+        diary_analysis_values = DiaryAnalysisValue.objects.filter(
             diary_id__in=diary_ids
-        ).select_related('checklist_item__checklist')
+        ).select_related('analysis_item__template')
         
-        # 日記ごとのチェックリストアイテムを整理
-        diary_items_map = defaultdict(list)
-        for item in diary_checklist_items:
-            diary_items_map[item.diary_id].append(item)
+        # 日記ごとの分析値を整理
+        diary_values_map = defaultdict(list)
+        for value in diary_analysis_values:
+            diary_values_map[value.diary_id].append(value)
         
         for diary in diaries:
-            diary_items = diary_items_map.get(diary.id, [])
+            diary_values = diary_values_map.get(diary.id, [])
             
-            for checklist in diary.checklist.all():
-                items = ChecklistItem.objects.filter(checklist=checklist)
-                total_items = items.count()
-                
-                if total_items > 0:
-                    # 完了したアイテム数をカウント
-                    completed_items = sum(1 for item in diary_items 
-                                        if item.checklist_item.checklist_id == checklist.id 
-                                        and item.status)
+            # 各日記の分析テンプレートを取得
+            templates_used = set()
+            for value in diary_values:
+                templates_used.add(value.analysis_item.template_id)
+            
+            for template_id in templates_used:
+                try:
+                    template = AnalysisTemplate.objects.get(id=template_id)
+                    items = template.items.all()
+                    total_items = items.count()
                     
-                    completion_rate = (completed_items / total_items) * 100
-                    total_completion += completion_rate
-                    completion_count += 1
+                    if total_items > 0:
+                        # テンプレート項目への入力率を計算
+                        filled_items = 0
+                        for item in items:
+                            # この日記のこの項目の値があるか確認
+                            has_value = False
+                            for value in diary_values:
+                                if value.analysis_item_id == item.id:
+                                    # 項目タイプに応じて値が存在するか確認
+                                    if item.item_type == 'number' and value.number_value is not None:
+                                        has_value = True
+                                    elif item.item_type == 'boolean' and value.boolean_value is not None:
+                                        has_value = True
+                                    elif item.item_type == 'boolean_with_value' and (value.boolean_value is not None or value.number_value is not None or value.text_value):
+                                        has_value = True
+                                    elif value.text_value:
+                                        has_value = True
+                                    break
+                            
+                            if has_value:
+                                filled_items += 1
+                        
+                        completion_rate = (filled_items / total_items) * 100
+                        total_completion += completion_rate
+                        completion_count += 1
+                except AnalysisTemplate.DoesNotExist:
+                    pass
         
         avg_completion_rate = 0
         if completion_count > 0:
@@ -945,32 +805,57 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         last_month_diary_ids = list(last_month_diaries.values_list('id', flat=True))
         
         if last_month_diary_ids:
-            # 前月のチェックリストアイテム
-            last_month_items = DiaryChecklistItem.objects.filter(
+            # 前月の分析値
+            last_month_values = DiaryAnalysisValue.objects.filter(
                 diary_id__in=last_month_diary_ids
-            ).select_related('checklist_item__checklist')
+            ).select_related('analysis_item__template')
             
-            # 日記ごとのアイテムをマッピング
-            last_month_items_map = defaultdict(list)
-            for item in last_month_items:
-                last_month_items_map[item.diary_id].append(item)
+            # 日記ごとの分析値をマッピング
+            last_month_values_map = defaultdict(list)
+            for value in last_month_values:
+                last_month_values_map[value.diary_id].append(value)
             
             for diary in last_month_diaries:
-                diary_items = last_month_items_map.get(diary.id, [])
+                diary_values = last_month_values_map.get(diary.id, [])
                 
-                for checklist in diary.checklist.all():
-                    items = ChecklistItem.objects.filter(checklist=checklist)
-                    total_items = items.count()
-                    
-                    if total_items > 0:
-                        # 完了したアイテム数をカウント
-                        completed_items = sum(1 for item in diary_items 
-                                            if item.checklist_item.checklist_id == checklist.id 
-                                            and item.status)
+                # 各日記のテンプレートを取得
+                templates_used = set()
+                for value in diary_values:
+                    templates_used.add(value.analysis_item.template_id)
+                
+                for template_id in templates_used:
+                    try:
+                        template = AnalysisTemplate.objects.get(id=template_id)
+                        items = template.items.all()
+                        total_items = items.count()
                         
-                        completion_rate = (completed_items / total_items) * 100
-                        last_month_total += completion_rate
-                        last_month_count += 1
+                        if total_items > 0:
+                            # テンプレート項目への入力率を計算
+                            filled_items = 0
+                            for item in items:
+                                # この日記のこの項目の値があるか確認
+                                has_value = False
+                                for value in diary_values:
+                                    if value.analysis_item_id == item.id:
+                                        # 項目タイプに応じて値が存在するか確認
+                                        if item.item_type == 'number' and value.number_value is not None:
+                                            has_value = True
+                                        elif item.item_type == 'boolean' and value.boolean_value is not None:
+                                            has_value = True
+                                        elif item.item_type == 'boolean_with_value' and (value.boolean_value is not None or value.number_value is not None or value.text_value):
+                                            has_value = True
+                                        elif value.text_value:
+                                            has_value = True
+                                        break
+                                
+                                if has_value:
+                                    filled_items += 1
+                            
+                            completion_rate = (filled_items / total_items) * 100
+                            last_month_total += completion_rate
+                            last_month_count += 1
+                    except AnalysisTemplate.DoesNotExist:
+                        pass
         
         last_month_avg = 0
         if last_month_count > 0:
@@ -982,7 +867,7 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
             'avg_completion_rate': avg_completion_rate,
             'change': change
         }
-    
+
     def prepare_monthly_data(self, diaries):
         """月別記録数データを準備"""
         # 過去12ヶ月の月ラベルを生成
@@ -1232,192 +1117,6 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         
         return top_tags_data
     
-    def prepare_checklist_completion_data(self, diaries):
-        """チェックリスト完了率データを準備"""
-        # チェックリストごとの完了率を計算
-        checklist_completion = {}
-        
-        # 日記IDのリストを取得
-        diary_ids = list(diaries.values_list('id', flat=True))
-        
-        if not diary_ids:
-            return {
-                'names': [],
-                'rates': []
-            }
-        
-        # 関連するDiaryChecklistItemを一度に取得
-        all_diary_items = DiaryChecklistItem.objects.filter(
-            diary_id__in=diary_ids
-        ).select_related('checklist_item__checklist')
-        
-        # 日記IDとチェックリストIDでマッピング
-        diary_checklist_items = defaultdict(lambda: defaultdict(list))
-        for item in all_diary_items:
-            diary_checklist_items[item.diary_id][item.checklist_item.checklist_id].append(item)
-        
-        for diary in diaries:
-            for checklist in diary.checklist.all():
-                # チェックリストのアイテム総数を取得
-                items = ChecklistItem.objects.filter(checklist=checklist)
-                total_items = items.count()
-                
-                if total_items > 0:
-                    # この日記のこのチェックリストに関するアイテム
-                    checklist_items = diary_checklist_items[diary.id][checklist.id]
-                    completed_items = sum(1 for item in checklist_items if item.status)
-                    
-                    completion_rate = (completed_items / total_items) * 100
-                    
-                    if checklist.name in checklist_completion:
-                        checklist_completion[checklist.name].append(completion_rate)
-                    else:
-                        checklist_completion[checklist.name] = [completion_rate]
-        
-        # 平均完了率を計算
-        checklist_names = []
-        checklist_rates = []
-        
-        for name, rates in checklist_completion.items():
-            avg_rate = sum(rates) / len(rates)
-            checklist_names.append(name)
-            checklist_rates.append(round(avg_rate, 1))
-        
-        return {
-            'names': checklist_names,
-            'rates': checklist_rates
-        }
-    
-    def prepare_checklist_timeline_data(self, diaries):
-        """チェックリスト完了率の時系列変化データを準備"""
-        # 過去6ヶ月の月ラベルを生成
-        today = timezone.now().date()
-        labels = []
-        monthly_rates = []
-        
-        for i in range(5, -1, -1):
-            month_date = (today.replace(day=1) - timedelta(days=i*30))
-            month_str = month_date.strftime('%Y年%m月')
-            labels.append(month_str)
-            
-            month_start = month_date.replace(day=1)
-            if month_date.month == 12:
-                month_end = month_date.replace(year=month_date.year+1, month=1, day=1) - timedelta(days=1)
-            else:
-                month_end = month_date.replace(month=month_date.month+1, day=1) - timedelta(days=1)
-            
-            # その月の日記を取得
-            month_diaries = diaries.filter(purchase_date__gte=month_start, purchase_date__lte=month_end)
-            
-            # 日記IDのリストを取得
-            month_diary_ids = list(month_diaries.values_list('id', flat=True))
-            
-            # チェックリスト完了率を計算
-            total_completion = 0
-            completion_count = 0
-            
-            if month_diary_ids:
-                # その月のDiaryChecklistItemを一度に取得
-                month_items = DiaryChecklistItem.objects.filter(
-                    diary_id__in=month_diary_ids
-                ).select_related('checklist_item__checklist')
-                
-                # 日記IDとチェックリストIDでマッピング
-                diary_checklist_items = defaultdict(lambda: defaultdict(list))
-                for item in month_items:
-                    diary_checklist_items[item.diary_id][item.checklist_item.checklist_id].append(item)
-                
-                for diary in month_diaries:
-                    for checklist in diary.checklist.all():
-                        items = ChecklistItem.objects.filter(checklist=checklist)
-                        total_items = items.count()
-                        
-                        if total_items > 0:
-                            # この日記のこのチェックリストに関するアイテム
-                            checklist_items = diary_checklist_items[diary.id][checklist.id]
-                            completed_items = sum(1 for item in checklist_items if item.status)
-                            
-                            completion_rate = (completed_items / total_items) * 100
-                            total_completion += completion_rate
-                            completion_count += 1
-            
-            # 平均完了率を計算
-            month_rate = 0
-            if completion_count > 0:
-                month_rate = total_completion / completion_count
-            
-            monthly_rates.append(round(month_rate, 1))
-        
-        return {
-            'labels': labels,
-            'rates': monthly_rates
-        }
-
-    def prepare_checklist_item_stats(self, diaries):
-        """チェックリストアイテムの統計情報を準備"""
-        checklist_stats = []
-        
-        # ユーザーのチェックリストを取得
-        checklists = Checklist.objects.filter(user=self.request.user)
-        
-        # 日記IDのリストを取得
-        diary_ids = list(diaries.values_list('id', flat=True))
-        
-        if not diary_ids:
-            return []
-        
-        # DiaryChecklistItemを一度に取得
-        all_diary_items = DiaryChecklistItem.objects.filter(
-            diary_id__in=diary_ids
-        ).select_related('checklist_item__checklist')
-        
-        # チェックリストアイテム別にステータスをマッピング
-        item_statuses = defaultdict(list)
-        for diary_item in all_diary_items:
-            item_statuses[diary_item.checklist_item_id].append(diary_item.status)
-        
-        for checklist in checklists:
-            # このチェックリストを使用している日記を取得
-            usage_count = diaries.filter(checklist=checklist).count()
-            
-            if usage_count > 0:
-                # チェックリストアイテムごとの完了率を計算
-                items = ChecklistItem.objects.filter(checklist=checklist)
-                item_completion = {}
-                
-                for item in items:
-                    # このアイテムのステータスリスト
-                    statuses = item_statuses.get(item.id, [])
-                    total_usages = len(statuses)
-                    
-                    if total_usages > 0:
-                        # 完了数を集計
-                        completed_count = sum(1 for status in statuses if status)
-                        
-                        completion_rate = (completed_count / total_usages) * 100
-                        # 正しいフィールド名 'item_text' を使用
-                        item_completion[item.item_text] = completion_rate
-                
-                # 最も完了しやすいアイテムと最も完了しにくいアイテムを特定
-                most_completed = "なし"
-                least_completed = "なし"
-                if item_completion:
-                    most_completed = max(item_completion.items(), key=lambda x: x[1])[0]
-                    least_completed = min(item_completion.items(), key=lambda x: x[1])[0]
-                
-                # チェックリスト全体の平均完了率を計算
-                average_completion = sum(item_completion.values()) / len(item_completion) if item_completion else 0
-                
-                checklist_stats.append({
-                    'name': checklist.name,
-                    'usage_count': usage_count,
-                    'completion_rate': round(average_completion, 1),
-                    'most_completed': most_completed,
-                    'least_completed': least_completed
-                })
-        
-        return checklist_stats
-
     def prepare_timeline_data(self, diaries):
         """タイムラインデータを準備"""
         timeline_entries = []
@@ -1558,6 +1257,270 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
             'counts': counts
         }
 
+    def prepare_template_usage_data(self, diaries):
+        """分析テンプレート使用率データを準備"""
+        # 各テンプレートの使用率を計算
+        template_usage = {}
+        
+        # 日記IDのリストを取得
+        diary_ids = list(diaries.values_list('id', flat=True))
+        
+        if not diary_ids:
+            return {
+                'names': [],
+                'rates': []
+            }
+        
+        # ユーザーの全テンプレートを取得
+        templates = AnalysisTemplate.objects.filter(user=self.request.user)
+        
+        # DiaryAnalysisValueを取得
+        analysis_values = DiaryAnalysisValue.objects.filter(
+            diary_id__in=diary_ids
+        ).select_related('analysis_item__template')
+        
+        # 日記とテンプレートで分析値をマッピング
+        diary_template_values = defaultdict(lambda: defaultdict(list))
+        for value in analysis_values:
+            diary_template_values[value.diary_id][value.analysis_item.template_id].append(value)
+        
+        for template in templates:
+            template_completion_rates = []
+            
+            for diary in diaries:
+                # この日記でこのテンプレートの項目が使われているか確認
+                values = diary_template_values.get(diary.id, {}).get(template.id, [])
+                
+                if values:
+                    # テンプレートの項目数
+                    items = template.items.all()
+                    total_items = items.count()
+                    
+                    if total_items > 0:
+                        # 項目への入力率を計算
+                        filled_items = 0
+                        
+                        for item in items:
+                            # この項目に値が入力されているか確認
+                            has_value = False
+                            for value in values:
+                                if value.analysis_item_id == item.id:
+                                    # 項目タイプに応じて値が存在するか確認
+                                    if item.item_type == 'number' and value.number_value is not None:
+                                        has_value = True
+                                    elif item.item_type == 'boolean' and value.boolean_value is not None:
+                                        has_value = True
+                                    elif item.item_type == 'boolean_with_value' and (value.boolean_value is not None or value.number_value is not None or value.text_value):
+                                        has_value = True
+                                    elif value.text_value:
+                                        has_value = True
+                                    break
+                            
+                            if has_value:
+                                filled_items += 1
+                        
+                        completion_rate = (filled_items / total_items) * 100
+                        template_completion_rates.append(completion_rate)
+            
+            # 平均使用率を計算
+            if template_completion_rates:
+                avg_rate = sum(template_completion_rates) / len(template_completion_rates)
+                template_usage[template.name] = avg_rate
+        
+        # 使用率順にソート
+        sorted_templates = sorted(template_usage.items(), key=lambda x: x[1], reverse=True)
+        
+        template_names = []
+        template_rates = []
+        
+        for name, rate in sorted_templates:
+            template_names.append(name)
+            template_rates.append(round(rate, 1))
+        
+        return {
+            'names': template_names,
+            'rates': template_rates
+        }
+
+    def prepare_template_timeline_data(self, diaries):
+        """分析テンプレート使用率の時系列変化データを準備"""
+        # 過去6ヶ月の月ラベルを生成
+        today = timezone.now().date()
+        labels = []
+        monthly_rates = []
+        
+        for i in range(5, -1, -1):
+            month_date = (today.replace(day=1) - timedelta(days=i*30))
+            month_str = month_date.strftime('%Y年%m月')
+            labels.append(month_str)
+            
+            month_start = month_date.replace(day=1)
+            if month_date.month == 12:
+                month_end = month_date.replace(year=month_date.year+1, month=1, day=1) - timedelta(days=1)
+            else:
+                month_end = month_date.replace(month=month_date.month+1, day=1) - timedelta(days=1)
+            
+            # その月の日記を取得
+            month_diaries = diaries.filter(purchase_date__gte=month_start, purchase_date__lte=month_end)
+            
+            # 日記IDのリストを取得
+            month_diary_ids = list(month_diaries.values_list('id', flat=True))
+            
+            # テンプレート使用率を計算
+            total_completion = 0
+            completion_count = 0
+            
+            if month_diary_ids:
+                # その月の分析値を取得
+                month_values = DiaryAnalysisValue.objects.filter(
+                    diary_id__in=month_diary_ids
+                ).select_related('analysis_item__template')
+                
+                # 日記別とテンプレート別の分析値をマッピング
+                diary_template_values = defaultdict(lambda: defaultdict(list))
+                for value in month_values:
+                    diary_template_values[value.diary_id][value.analysis_item.template_id].append(value)
+                
+                for diary in month_diaries:
+                    # この日記で使われているテンプレートを取得
+                    templates_used = set()
+                    for template_values in diary_template_values.get(diary.id, {}).values():
+                        for value in template_values:
+                            templates_used.add(value.analysis_item.template_id)
+                    
+                    for template_id in templates_used:
+                        try:
+                            template = AnalysisTemplate.objects.get(id=template_id)
+                            items = template.items.all()
+                            total_items = items.count()
+                            
+                            if total_items > 0:
+                                # テンプレート項目の入力率を計算
+                                values = diary_template_values[diary.id][template_id]
+                                filled_items = 0
+                                
+                                for item in items:
+                                    # この項目に値が入力されているか確認
+                                    has_value = False
+                                    for value in values:
+                                        if value.analysis_item_id == item.id:
+                                            # 項目タイプに応じて値が存在するか確認
+                                            if item.item_type == 'number' and value.number_value is not None:
+                                                has_value = True
+                                            elif item.item_type == 'boolean' and value.boolean_value is not None:
+                                                has_value = True
+                                            elif item.item_type == 'boolean_with_value' and (value.boolean_value is not None or value.number_value is not None or value.text_value):
+                                                has_value = True
+                                            elif value.text_value:
+                                                has_value = True
+                                            break
+                                    
+                                    if has_value:
+                                        filled_items += 1
+                                
+                                completion_rate = (filled_items / total_items) * 100
+                                total_completion += completion_rate
+                                completion_count += 1
+                        except AnalysisTemplate.DoesNotExist:
+                            pass
+            
+            # 平均使用率を計算
+            month_rate = 0
+            if completion_count > 0:
+                month_rate = total_completion / completion_count
+            
+            monthly_rates.append(round(month_rate, 1))
+        
+        return {
+            'labels': labels,
+            'rates': monthly_rates
+        }
+
+    def prepare_template_item_stats(self, diaries):
+        """分析テンプレート項目の統計情報を準備"""
+        template_stats = []
+        
+        # ユーザーのテンプレートを取得
+        templates = AnalysisTemplate.objects.filter(user=self.request.user)
+        
+        # 日記IDのリストを取得
+        diary_ids = list(diaries.values_list('id', flat=True))
+        
+        if not diary_ids:
+            return []
+        
+        # DiaryAnalysisValueを一度に取得
+        all_analysis_values = DiaryAnalysisValue.objects.filter(
+            diary_id__in=diary_ids
+        ).select_related('analysis_item__template')
+        
+        # 分析項目別に値をマッピング
+        item_values = defaultdict(list)
+        for value in all_analysis_values:
+            item_values[value.analysis_item_id].append(value)
+        
+        for template in templates:
+            # このテンプレートを使用している日記を取得
+            template_values = [v for v in all_analysis_values if v.analysis_item.template_id == template.id]
+            template_diary_ids = set(v.diary_id for v in template_values)
+            usage_count = len(template_diary_ids)
+            
+            if usage_count > 0:
+                # テンプレート項目ごとの入力率を計算
+                items = template.items.all()
+                item_completion = {}
+                
+                for item in items:
+                    # この項目の分析値
+                    values = item_values.get(item.id, [])
+                    total_usages = len(template_diary_ids)
+                    
+                    if total_usages > 0:
+                        # 値が入力されている数を集計
+                        filled_count = 0
+                        
+                        for diary_id in template_diary_ids:
+                            # この日記のこの項目に値があるか確認
+                            has_value = False
+                            for value in values:
+                                if value.diary_id == diary_id:
+                                    # 項目タイプに応じた確認
+                                    if item.item_type == 'number' and value.number_value is not None:
+                                        has_value = True
+                                    elif item.item_type == 'boolean' and value.boolean_value is not None:
+                                        has_value = True
+                                    elif item.item_type == 'boolean_with_value' and (value.boolean_value is not None or value.number_value is not None or value.text_value):
+                                        has_value = True
+                                    elif value.text_value:
+                                        has_value = True
+                                    break
+                            
+                            if has_value:
+                                filled_count += 1
+                        
+                        completion_rate = (filled_count / total_usages) * 100
+                        item_completion[item.name] = completion_rate
+                
+                # 最も入力されやすい項目と最も入力されにくい項目を特定
+                most_completed = "なし"
+                least_completed = "なし"
+                if item_completion:
+                    most_completed = max(item_completion.items(), key=lambda x: x[1])[0]
+                    least_completed = min(item_completion.items(), key=lambda x: x[1])[0]
+                
+                # テンプレート全体の平均入力率を計算
+                average_completion = sum(item_completion.values()) / len(item_completion) if item_completion else 0
+                
+                template_stats.append({
+                    'name': template.name,
+                    'usage_count': usage_count,
+                    'completion_rate': round(average_completion, 1),
+                    'most_completed': most_completed,
+                    'least_completed': least_completed
+                })
+        
+        return template_stats
+        
 # stockdiary/views.py に追加
 class StockDiarySellView(LoginRequiredMixin, TemplateView):
     """保有株式の売却入力ページ"""
@@ -1636,11 +1599,6 @@ class StockDiarySellView(LoginRequiredMixin, TemplateView):
         
         # エラー時は同じページを再表示
         return self.get(request, *args, **kwargs)
-
-# stockdiary/views.py に追加
-from .models import DiaryNote
-from .forms import DiaryNoteForm
-from django.shortcuts import get_object_or_404, redirect
 
 class AddDiaryNoteView(LoginRequiredMixin, CreateView):
     """日記エントリーへの継続記録追加"""
