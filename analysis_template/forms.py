@@ -9,29 +9,33 @@ class AnalysisTemplateForm(forms.ModelForm):
         fields = ['name', 'description']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3})
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
 class AnalysisItemForm(forms.ModelForm):
     class Meta:
         model = AnalysisItem
-        fields = ['name', 'description', 'item_type', 'choices', 'order']
+        fields = ['name', 'description', 'item_type', 'choices', 'value_label', 'order']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-            'item_type': forms.Select(attrs={'class': 'form-select'}),
+            'item_type': forms.Select(attrs={'class': 'form-select', 'id': 'item_type_select'}),
             'choices': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-            'order': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'})
+            'value_label': forms.TextInput(attrs={'class': 'form-control'}),  # 追加
+            'order': forms.NumberInput(attrs={'class': 'form-control'})
         }
 
-# インラインフォームセットを作成
+# 既存のフォームセットファクトリを更新して、新しいフィールドを含める
 AnalysisItemFormSet = inlineformset_factory(
     AnalysisTemplate, 
-    AnalysisItem,
+    AnalysisItem, 
     form=AnalysisItemForm,
-    extra=1,
-    can_delete=True
+    extra=1,  # 新規作成時に表示する空のフォームの数
+    min_num=1,  # 最低限必要なフォームの数
+    validate_min=True,  # 最低数の検証を行うか
+    can_delete=True  # 削除ボタンを表示するか
 )
+
 
 class DiaryAnalysisValueForm(forms.ModelForm):
     class Meta:

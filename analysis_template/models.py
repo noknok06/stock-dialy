@@ -17,9 +17,11 @@ class AnalysisTemplate(models.Model):
 class AnalysisItem(models.Model):
     """分析項目"""
     ITEM_TYPE_CHOICES = [
+        ('boolean', 'チェックボックス'),  # 追加
         ('number', '数値'),
         ('text', 'テキスト'),
         ('select', '選択肢'),
+        ('boolean_with_value', 'チェック+値入力'),  # 新しい複合型
     ]
     
     template = models.ForeignKey(AnalysisTemplate, on_delete=models.CASCADE, related_name='items')
@@ -27,9 +29,12 @@ class AnalysisItem(models.Model):
     description = models.TextField(blank=True)
     item_type = models.CharField(max_length=20, choices=ITEM_TYPE_CHOICES, default='number')
     order = models.PositiveIntegerField(default=0)
-    # 選択肢項目の場合のみ使用。カンマ区切りで選択肢を保存
+    # 選択肢項目の場合のみ使用
     choices = models.TextField(blank=True, 
                               help_text='選択肢項目の場合、カンマ区切りで選択肢を入力してください。')
+    # 複合型のための追加フィールド
+    value_label = models.CharField(max_length=100, blank=True, 
+                                help_text='複合型の場合、値入力欄のラベル')
     
     class Meta:
         ordering = ['order']
@@ -47,6 +52,7 @@ class DiaryAnalysisValue(models.Model):
     """日記の分析項目の値"""
     diary = models.ForeignKey(StockDiary, on_delete=models.CASCADE, related_name='analysis_values')
     analysis_item = models.ForeignKey(AnalysisItem, on_delete=models.CASCADE)
+    boolean_value = models.BooleanField(null=True, blank=True)  # 追加
     number_value = models.DecimalField(max_digits=15, decimal_places=5, null=True, blank=True)
     text_value = models.TextField(blank=True)
     

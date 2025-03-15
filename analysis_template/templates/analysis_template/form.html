@@ -69,7 +69,8 @@
                   </div>
                 </div>
                 
-                <div class="row mb-3 choices-field">
+                <!-- 選択肢項目用フィールド -->
+                <div class="row mb-3 choices-field" style="display: none;">
                   <div class="col-md-12">
                     <label for="{{ item_form.choices.id_for_label }}" class="form-label">選択肢（カンマ区切り）</label>
                     {{ item_form.choices }}
@@ -77,6 +78,18 @@
                       <div class="text-danger">{{ item_form.choices.errors }}</div>
                     {% endif %}
                     <div class="form-text">選択肢項目の場合、カンマ区切りで選択肢を入力してください。（例: 高い,普通,低い）</div>
+                  </div>
+                </div>
+                
+                <!-- 複合型項目用フィールド -->
+                <div class="row mb-3 value-label-field" style="display: none;">
+                  <div class="col-md-12">
+                    <label for="{{ item_form.value_label.id_for_label }}" class="form-label">値入力欄のラベル (任意)</label>
+                    {{ item_form.value_label }}
+                    {% if item_form.value_label.errors %}
+                      <div class="text-danger">{{ item_form.value_label.errors }}</div>
+                    {% endif %}
+                    <div class="form-text">チェック+値入力の場合、値入力欄のラベルを設定できます（例: 実際のPBR値、補足情報など）</div>
                   </div>
                 </div>
                 
@@ -123,26 +136,35 @@
       }
     }
     
-    // 項目タイプに応じて選択肢フィールドの表示/非表示を切り替える
-    function toggleChoicesField() {
+    // 項目タイプに応じて関連フィールドの表示/非表示を切り替える
+    function toggleRelatedFields() {
       document.querySelectorAll('select[name$="-item_type"]').forEach(select => {
         const itemForm = select.closest('.item-form');
         const choicesField = itemForm.querySelector('.choices-field');
+        const valueLabelField = itemForm.querySelector('.value-label-field');
         
+        // デフォルトですべての特殊フィールドを非表示
+        choicesField.style.display = 'none';
+        valueLabelField.style.display = 'none';
+        
+        // 選択肢フィールドの表示制御
         if (select.value === 'select') {
           choicesField.style.display = '';
-        } else {
-          choicesField.style.display = 'none';
+        }
+        
+        // 値ラベルフィールドの表示制御
+        if (select.value === 'boolean_with_value') {
+          valueLabelField.style.display = '';
         }
       });
     }
     
-    // 初期表示時
-    toggleChoicesField();
+    // 初期表示時に関連フィールドの表示を設定
+    toggleRelatedFields();
     
-    // 項目タイプ変更時
+    // 項目タイプ変更時のイベント
     document.querySelectorAll('select[name$="-item_type"]').forEach(select => {
-      select.addEventListener('change', toggleChoicesField);
+      select.addEventListener('change', toggleRelatedFields);
     });
     
     // フォームセットの要素
@@ -167,7 +189,7 @@
               select.selectedIndex = 0;
             });
             
-            toggleChoicesField();
+            toggleRelatedFields();
             return;
           }
           
@@ -272,10 +294,15 @@
       // 新しく追加した項目の削除ボタンを設定
       setupRemoveButtons();
       
-      // 項目タイプによる選択肢フィールドの表示制御を再設定
+      // 項目タイプによる関連フィールドの表示制御を再設定
       const newTypeSelect = newForm.querySelector('select[name$="-item_type"]');
-      newTypeSelect.addEventListener('change', toggleChoicesField);
-      toggleChoicesField();
+      newTypeSelect.addEventListener('change', toggleRelatedFields);
+      
+      // 初期状態で関連フィールドを非表示に
+      const newChoicesField = newForm.querySelector('.choices-field');
+      const newValueLabelField = newForm.querySelector('.value-label-field');
+      if (newChoicesField) newChoicesField.style.display = 'none';
+      if (newValueLabelField) newValueLabelField.style.display = 'none';
     });
   });
 </script>

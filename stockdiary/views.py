@@ -288,29 +288,60 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
             # 各項目の値を保存
             for item in items:
                 item_id = item.id
-                field_name = f'analysis_item_{item_id}'
-                value = self.request.POST.get(field_name)
                 
-                if value:  # 値が入力されている場合のみ保存
+                # 複合型の場合、boolean値と実際の値（テキスト）を両方処理
+                if item.item_type == 'boolean_with_value':
+                    boolean_field_name = f'analysis_item_{item_id}_boolean'
+                    value_field_name = f'analysis_item_{item_id}_value'
+                    
+                    boolean_value = boolean_field_name in self.request.POST
+                    actual_value = self.request.POST.get(value_field_name, '')
+                    
+                    # 少なくとも1つの値がある場合のみレコードを作成
+                    if boolean_value or actual_value:
+                        analysis_value = DiaryAnalysisValue(
+                            diary=self.object,
+                            analysis_item=item,
+                            boolean_value=boolean_value
+                        )
+                        
+                        # 実際の値が数値かテキストか判断して適切なフィールドに設定
+                        try:
+                            float_value = float(actual_value)
+                            analysis_value.number_value = float_value
+                        except (ValueError, TypeError):
+                            if actual_value:
+                                analysis_value.text_value = actual_value
+                        
+                        analysis_value.save()
+                    
+                else:  # 既存の処理（単一型の項目）
+                    field_name = f'analysis_item_{item_id}'
+                    value = self.request.POST.get(field_name)
+                    
                     analysis_value = DiaryAnalysisValue(
                         diary=self.object,
                         analysis_item=item
                     )
                     
                     # 項目タイプによって適切なフィールドに値を設定
-                    if item.item_type == 'number':
+                    if item.item_type == 'boolean':
+                        analysis_value.boolean_value = field_name in self.request.POST
+                    elif item.item_type == 'number' and value:
                         try:
                             analysis_value.number_value = float(value)
                         except ValueError:
-                            continue  # 数値変換エラーの場合はスキップ
-                    else:
+                            continue
+                    elif value:  # テキストまたは選択肢
                         analysis_value.text_value = value
-                    
+                    else:
+                        continue  # 値がない場合はスキップ
+                        
                     analysis_value.save()
                     
         except AnalysisTemplate.DoesNotExist:
-            pass  # テンプレートが存在しない場合は何もしない
-        
+            pass  # テンプレートが存在しない場合は何もしない  
+
     def process_checklist_items(self):
         """チェックリスト項目のステータスを処理する"""
         from checklist.models import DiaryChecklistItem, ChecklistItem

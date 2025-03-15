@@ -61,6 +61,6 @@ class DiaryNoteForm(forms.ModelForm):
             'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'note_type': forms.Select(attrs={'class': 'form-select'}),
             'importance': forms.Select(attrs={'class': 'form-select'}),
-            'content': CKEditorUploadingWidget(config_name='default'),
+            'content': CKEditorUploadingWidget(config_name='basic'),  
             'current_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
         }        

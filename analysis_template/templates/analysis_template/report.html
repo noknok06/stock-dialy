@@ -320,20 +320,66 @@
                 </td>
                 
                 {% for item in template.items.all %}
-                  {% with value=data.values|get_item:item.id %}
-                    <td class="{% if item.item_type == 'number' %}number-cell{% else %}text-cell{% endif %}">
+                {% with value=data.values|get_item:item.id %}
+                  {% if item.item_type == 'boolean_with_value' %}
+                    <td class="compound-cell">
+                      <div class="d-flex align-items-center gap-2">
+                        <!-- チェックボックス状態の表示 -->
+                        <div class="status-indicator">
+                          {% if value.boolean_value %}
+                            <span class="badge bg-success" data-bs-toggle="tooltip" title="条件を満たしています">
+                              <i class="bi bi-check-lg"></i>
+                            </span>
+                          {% else %}
+                            <span class="badge bg-secondary" data-bs-toggle="tooltip" title="条件を満たしていません">
+                              <i class="bi bi-x-lg"></i>
+                            </span>
+                          {% endif %}
+                        </div>
+                        
+                        <!-- 値の表示 -->
+                        <div class="value-display">
+                          {% if value.number_value != None %}
+                            <span class="fw-medium">{{ value.number_value|floatformat:"-2" }}</span>
+                          {% elif value.text_value %}
+                            <span class="text-value">{{ value.text_value }}</span>
+                          {% else %}
+                            <span class="text-muted small">-</span>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </td>
+                  {% elif item.item_type == 'number' %}
+                    <td class="number-cell">
                       {% if value != None %}
-                        {% if item.item_type == 'number' %}
-                          {{ value|floatformat:"-2" }}
-                        {% else %}
-                          {{ value }}
-                        {% endif %}
+                        {{ value|floatformat:"-2" }}
                       {% else %}
                         <span class="text-muted">--</span>
                       {% endif %}
                     </td>
-                  {% endwith %}
-                {% endfor %}
+                  {% elif item.item_type == 'boolean' %}
+                    <td class="text-center">
+                      {% if value %}
+                        <span class="badge bg-success">
+                          <i class="bi bi-check-lg"></i> はい
+                        </span>
+                      {% else %}
+                        <span class="badge bg-secondary">
+                          <i class="bi bi-x-lg"></i> いいえ
+                        </span>
+                      {% endif %}
+                    </td>
+                  {% else %}
+                    <td class="text-cell">
+                      {% if value != None %}
+                        {{ value }}
+                      {% else %}
+                        <span class="text-muted">--</span>
+                      {% endif %}
+                    </td>
+                  {% endif %}
+                {% endwith %}
+              {% endfor %}
               </tr>
             {% endfor %}
           </tbody>
@@ -355,23 +401,59 @@
           </div>
           <div class="analysis-card-body">
             {% for item in template.items.all %}
-              {% with value=data.values|get_item:item.id %}
-                <div class="analysis-item">
-                  <div class="analysis-item-label">{{ item.name }}</div>
-                  <div class="analysis-item-value {% if item.item_type == 'number' %}text-end{% endif %}">
-                    {% if value != None %}
-                      {% if item.item_type == 'number' %}
-                        {{ value|floatformat:"-2" }}
+            {% with value=data.values|get_item:item.id %}
+              <div class="analysis-item">
+                <div class="analysis-item-label">{{ item.name }}</div>
+                <div class="analysis-item-value {% if item.item_type == 'number' %}text-end{% endif %}">
+                  {% if item.item_type == 'boolean_with_value' %}
+                    <div class="d-flex align-items-center gap-2">
+                      <!-- チェックボックス状態の表示 -->
+                      {% if value.boolean_value %}
+                        <span class="badge bg-success" data-bs-toggle="tooltip" title="条件を満たしています">
+                          <i class="bi bi-check-lg"></i>
+                        </span>
                       {% else %}
-                        {{ value }}
+                        <span class="badge bg-secondary" data-bs-toggle="tooltip" title="条件を満たしていません">
+                          <i class="bi bi-x-lg"></i>
+                        </span>
                       {% endif %}
+                      
+                      <!-- 値の表示 -->
+                      {% if value.number_value != None %}
+                        <span class="fw-medium">{{ value.number_value|floatformat:"-2" }}</span>
+                      {% elif value.text_value %}
+                        <span class="text-value">{{ value.text_value }}</span>
+                      {% elif value != None %}
+                        <span class="text-muted small">-</span>
+                      {% endif %}
+                    </div>
+                  {% elif item.item_type == 'number' %}
+                    {% if value != None %}
+                      {{ value|floatformat:"-2" }}
                     {% else %}
                       <span class="text-muted">--</span>
                     {% endif %}
-                  </div>
+                  {% elif item.item_type == 'boolean' %}
+                    {% if value %}
+                      <span class="badge bg-success">
+                        <i class="bi bi-check-lg"></i> はい
+                      </span>
+                    {% else %}
+                      <span class="badge bg-secondary">
+                        <i class="bi bi-x-lg"></i> いいえ
+                      </span>
+                    {% endif %}
+                  {% else %}
+                    {% if value != None %}
+                      {{ value }}
+                    {% else %}
+                      <span class="text-muted">--</span>
+                    {% endif %}
+                  {% endif %}
                 </div>
-              {% endwith %}
-            {% endfor %}
+              </div>
+            {% endwith %}
+          {% endfor %}
           </div>
         </div>
       {% endfor %}
@@ -389,7 +471,35 @@
     </div>
   {% endif %}
 </div>
-
+{% if item.item_type == 'boolean_with_value' %}
+  <td class="compound-cell">
+    <div class="d-flex align-items-center gap-2">
+      <!-- チェックボックス状態の表示 -->
+      <div class="status-indicator">
+        {% if value.boolean_value %}
+          <span class="badge bg-success" data-bs-toggle="tooltip" title="条件を満たしています">
+            <i class="bi bi-check-lg"></i>
+          </span>
+        {% else %}
+          <span class="badge bg-secondary" data-bs-toggle="tooltip" title="条件を満たしていません">
+            <i class="bi bi-x-lg"></i>
+          </span>
+        {% endif %}
+      </div>
+      
+      <!-- 値の表示 -->
+      <div class="value-display">
+        {% if value.number_value != None %}
+          <span class="fw-medium">{{ value.number_value|floatformat:"-2" }}</span>
+        {% elif value.text_value %}
+          <span class="text-value">{{ value.text_value }}</span>
+        {% else %}
+          <span class="text-muted small">-</span>
+        {% endif %}
+      </div>
+    </div>
+  </td>
+{% endif %}
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     // モバイル用の表示切り替え機能

@@ -112,6 +112,9 @@ class AnalysisReportView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         template = self.object
         
+        # フィルターを取得
+        condition_filter = self.request.GET.get('condition_filter')
+        
         # テンプレートを使用している日記を取得
         diaries = StockDiary.objects.filter(
             user=self.request.user
@@ -124,30 +127,48 @@ class AnalysisReportView(LoginRequiredMixin, DetailView):
             )
         )
 
-        # レポート用のデータ構造を構築
+        # 統計情報とレポートデータの準備
         report_data = []
+        condition_stats = {}  # 条件達成統計
+        
+        # レポートデータ作成
         for diary in diaries:
-            # この日記のこのテンプレートの分析項目値が存在するかチェック
-            has_values = any(
-                value.analysis_item.template_id == template.id 
-                for value in diary.analysis_values.all()
-            )
+            diary_data = {
+                'diary': diary,
+                'values': {},
+                'conditions_met': 0,
+                'total_conditions': 0
+            }
             
-            if has_values:
-                diary_data = {
-                    'diary': diary,
-                    'values': {}
-                }
-                
-                # 分析項目ごとの値を設定
-                for value in diary.analysis_values.all():
-                    if value.analysis_item.template_id == template.id:
-                        if value.analysis_item.item_type == 'number':
-                            diary_data['values'][value.analysis_item.id] = value.number_value
-                        else:
-                            diary_data['values'][value.analysis_item.id] = value.text_value
-                
+            # この日記の該当テンプレートの値を処理
+            diary_has_values = False
+            
+            for value in diary.analysis_values.all():
+                if value.analysis_item.template_id == template.id:
+                    diary_has_values = True
+                    item = value.analysis_item
+                    
+                    # 複合型項目と他の項目タイプによって異なる処理
+                    if item.item_type == 'boolean_with_value':
+                        # Boolean値と数値/テキスト値の両方を保持
+                        diary_data['values'][item.id] = {
+                            'boolean_value': value.boolean_value,
+                            'number_value': value.number_value,
+                            'text_value': value.text_value
+                        }
+                        
+                        # 条件達成状況の更新
+                        diary_data['total_conditions'] += 1
+                        if value.boolean_value:
+                            diary_data['conditions_met'] += 1
+                    
+                    # その他の項目タイプも処理
+            
+            # レポートデータに追加
+            if diary_has_values:
                 report_data.append(diary_data)
         
         context['report_data'] = report_data
+        context['condition_stats'] = condition_stats
+        
         return context

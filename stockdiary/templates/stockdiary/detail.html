@@ -136,62 +136,6 @@
     border-bottom: none;
   }
 
-  /* チェックリストスタイル */
-  .checklist-card {
-    border: 1px solid #e5e7eb;
-    border-radius: 0.375rem;
-    margin-bottom: 1rem;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  }
-
-  .checklist-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 1rem;
-    background-color: #f9fafb;
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  .checklist-title {
-    font-weight: 600;
-    color: #111827;
-  }
-
-  .checklist-progress {
-    font-weight: 500;
-    padding: 0.25em 0.75em;
-  }
-
-  .checklist-body {
-    padding: 0.5rem 0;
-  }
-
-  .checklist-item {
-    padding: 0.5rem 1rem;
-    border-bottom: 1px solid #f3f4f6;
-    display: flex;
-    align-items: center;
-  }
-
-  .checklist-item:last-child {
-    border-bottom: none;
-  }
-
-  .checklist-checkbox {
-    margin-right: 0.75rem;
-  }
-
-  .checklist-label {
-    margin-bottom: 0;
-    transition: all 0.2s;
-  }
-
-  .checklist-label.completed {
-    color: #9ca3af;
-    text-decoration: line-through;
-  }
-
   /* 利益/損失表示 */
   .profit {
     color: var(--success-color);
@@ -214,6 +158,20 @@
   .meta-info {
     color: #6b7280;
     font-size: 0.875rem;
+  }
+
+  /* タグバッジのスタイル */
+  .tag-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    background-color: #eef2ff;
+    color: var(--primary-color);
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
   }
 
   /* タイムラインスタイル */
@@ -306,6 +264,96 @@
       min-width: 100px;
     }
   }
+/* CKEditorのコンテンツ表示用修正CSS */
+
+/* 記録内容の表示エリア調整 */
+.rich-content,
+.timeline-text,
+.card-text {
+  line-height: 1.6;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
+  overflow-x: auto; /* 内容がはみ出す場合はスクロール可能に */
+}
+
+/* CKEditor内のすべての要素を枠内に収める */
+.rich-content *, 
+.timeline-text *,
+.card-text * {
+  max-width: 100%;
+}
+
+/* CKEditor内の画像が枠をはみ出さないように */
+.rich-content img, 
+.timeline-text img,
+.card-text img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* テーブルのはみ出し防止 */
+.rich-content table,
+.timeline-text table,
+.card-text table {
+  width: 100%;
+  max-width: 100%;
+  display: block;
+  overflow-x: auto;
+}
+
+/* iframeのはみ出し防止 */
+.rich-content iframe,
+.timeline-text iframe,
+.card-text iframe {
+  max-width: 100%;
+}
+
+/* 継続記録のタイムラインコンテンツ調整 */
+.timeline-content {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* CKEditorウィジェット全体の調整 */
+.django-ckeditor-widget {
+  display: block;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* CKEditor本体の枠調整 */
+.cke_chrome {
+  width: 100% !important;
+  max-width: 100% !important;
+  border-color: #d1d5db !important;
+  border-radius: 0.375rem !important;
+  overflow: hidden !important;
+}
+
+/* CKEditorの内部要素調整 */
+.cke_inner, 
+.cke_contents, 
+.cke_wysiwyg_frame, 
+.cke_wysiwyg_div {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* すべてのCKEditor関連要素に最大幅を設定 */
+.cke * {
+  max-width: 100%;
+}
+
+/* 継続記録フォームのエディタ調整 */
+#id_content, 
+#id_content_iframe,
+.cke_reset {
+  max-width: 100% !important;
+  width: 100% !important;
+}  
 </style>
 {% endblock %}
 
@@ -375,10 +423,10 @@
                   <td>
                     {% with profit=diary.sell_price|sub:diary.purchase_price|mul:diary.purchase_quantity %}
                     {% if profit > 0 %}
-                    <span class="profit">+{{ profit|floatformat:2 }}円 ({{
-                      diary.sell_price|sub:diary.purchase_price|mul:100|floatformat:2 }}%)</span>
-                    {% elif profit < 0 %} <span class="loss">{{ profit|floatformat:2 }}円 ({{
-                      diary.sell_price|sub:diary.purchase_price|mul:100|floatformat:2 }}%)</span>
+                    <span class="profit">+{{ profit|floatformat:2 }}円
+                      ({{diary.sell_price|sub:diary.purchase_price|floatformat:2 }}%)</span>
+                    {% elif profit < 0 %} <span class="loss">{{ profit|floatformat:2 }}円
+                      ({{diary.sell_price|sub:diary.purchase_price|floatformat:2 }}%)</span>
                       {% else %}
                       <span>{{ profit|floatformat:2 }}円 (0.00%)</span>
                       {% endif %}
@@ -390,55 +438,13 @@
             </div>
           </div>
         </div>
-
-        <!-- 右側: タグとチェックリスト -->
+        <!-- 購入理由 -->
         <div class="col-lg-6 mb-4">
           <h3 class="section-title">
-            <i class="bi bi-tags"></i> タグ
+            <i class="bi bi-journal-text"></i> 購入理由
           </h3>
-          <div class="section-card mb-4">
-            <div class="section-body">
-              {% for tag in diary.tags.all %}
-              <span class="tag-badge">{{ tag.name }}</span>
-              {% empty %}
-              <p class="text-muted mb-0">タグはありません</p>
-              {% endfor %}
-            </div>
-          </div>
-
-          <h3 class="section-title">
-            <i class="bi bi-check2-square"></i> チェックリスト
-          </h3>
-          <div class="checklist-container">
-            {% for checklist in diary.checklist.all %}
-            <div class="checklist-card" data-checklist-id="{{ checklist.id }}">
-              <div class="checklist-header">
-                <span class="checklist-title">{{ checklist.name }}</span>
-                <span class="badge bg-primary checklist-progress"></span>
-              </div>
-              <div class="checklist-body">
-                {% for item in checklist.items.all %}
-                <div class="checklist-item">
-                  <div class="form-check">
-                    <input class="form-check-input checklist-item-checkbox" type="checkbox" id="item-{{ item.id }}"
-                      data-item-id="{{ item.id }}" {% if item_statuses|get_item:item.id %}checked{% endif %}>
-                    <label
-                      class="form-check-label checklist-label {% if item_statuses|get_item:item.id %}completed{% endif %}"
-                      for="item-{{ item.id }}" id="item-label-{{ item.id }}">
-                      {{ item.item_text }}
-                    </label>
-                  </div>
-                </div>
-                {% empty %}
-                <div class="checklist-item">
-                  <span class="text-muted">チェックリストの項目がありません</span>
-                </div>
-                {% endfor %}
-              </div>
-            </div>
-            {% empty %}
-            <p class="text-muted">チェックリストはありません</p>
-            {% endfor %}
+          <div class="section-card content-card">
+              <div class="card-text">{{ diary.reason|safe }}</div>
           </div>
         </div>
       </div>
@@ -450,8 +456,7 @@
           <i class="bi bi-clipboard-data"></i> 分析データ
         </h3>
 
-        {% regroup diary.analysis_values.all|dictsort:"analysis_item.template.id" by analysis_item.template as
-        template_groups %}
+        {% regroup diary.analysis_values.all|dictsort:"analysis_item.template.id" by analysis_item.template as template_groups %}
 
         {% for template_group in template_groups %}
         <div class="section-card mb-4">
@@ -477,8 +482,44 @@
                       {% endif %}
                     </td>
                     <td>
-                      {% if value.analysis_item.item_type == 'number' %}
+                      {% if value.analysis_item.item_type == 'boolean_with_value' %}
+                      <div class="d-flex align-items-center gap-2">
+                        <!-- チェックボックス状態の表示 -->
+                        <div class="status-indicator">
+                          {% if value.boolean_value %}
+                            <span class="badge bg-success" data-bs-toggle="tooltip" title="条件を満たしています">
+                              <i class="bi bi-check-lg"></i>
+                            </span>
+                          {% else %}
+                            <span class="badge bg-secondary" data-bs-toggle="tooltip" title="条件を満たしていません">
+                              <i class="bi bi-x-lg"></i>
+                            </span>
+                          {% endif %}
+                        </div>
+                        
+                        <!-- 値の表示 -->
+                        <div class="value-display">
+                          {% if value.number_value != None %}
+                            <span class="fw-medium">{{ value.number_value|floatformat:"-2" }}</span>
+                          {% elif value.text_value %}
+                            <span class="text-value">{{ value.text_value }}</span>
+                          {% else %}
+                            <span class="text-muted small">-</span>
+                          {% endif %}
+                        </div>
+                      </div>
+                      {% elif value.analysis_item.item_type == 'number' %}
                       <span class="fw-bold">{{ value.number_value|floatformat:"-2" }}</span>
+                      {% elif value.analysis_item.item_type == 'boolean' %}
+                      {% if value.boolean_value %}
+                        <span class="badge bg-success">
+                          <i class="bi bi-check-lg"></i> はい
+                        </span>
+                      {% else %}
+                        <span class="badge bg-secondary">
+                          <i class="bi bi-x-lg"></i> いいえ
+                        </span>
+                      {% endif %}
                       {% else %}
                       {{ value.text_value }}
                       {% endif %}
@@ -501,15 +542,22 @@
       {% endif %}
 
       <div class="row">
-        <!-- 購入理由 -->
+        <!-- タグ -->
         <div class="col-lg-6 mb-4">
           <h3 class="section-title">
-            <i class="bi bi-journal-text"></i> 購入理由
+            <i class="bi bi-journal-text"></i> タグ
           </h3>
-          <div class="section-card content-card">
-              <div class="card-text text-muted">{{ diary.reason|safe|truncatewords_html:20 }}</div>
+          <div class="section-card">
+            <div class="section-body">
+              {% for tag in diary.tags.all %}
+              <span class="tag-badge">{{ tag.name }}</span>
+              {% empty %}
+              <p class="text-muted mb-0">タグはありません</p>
+              {% endfor %}
+            </div>
           </div>
         </div>
+
 
         <!-- メモ -->
         <div class="col-lg-6 mb-4">
@@ -670,194 +718,98 @@
 {{ block.super }}
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    // チェックリスト進捗の更新
-    function updateChecklistProgress(checklistCard) {
-      const totalItems = checklistCard.querySelectorAll('.checklist-item-checkbox').length;
-      const checkedItems = checklistCard.querySelectorAll('.checklist-item-checkbox:checked').length;
-      const progressBadge = checklistCard.querySelector('.checklist-progress');
+    // 現在価格取得ボタンの処理
+    const fetchNotePriceBtn = document.getElementById('fetch-note-price');
+    if (fetchNotePriceBtn) {
+      fetchNotePriceBtn.addEventListener('click', function () {
+        const stockSymbol = '{{ diary.stock_symbol }}';
+        const priceInput = document.getElementById('{{ note_form.current_price.id_for_label }}');
 
-      // 進捗バッジの更新
-      progressBadge.textContent = `${checkedItems}/${totalItems}`;
+        // ボタンを無効化してローディング表示
+        this.disabled = true;
+        const originalText = this.innerHTML;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 取得中...';
 
-      // 全てチェック済みの場合は色を変更
-      if (checkedItems === totalItems && totalItems > 0) {
-        progressBadge.classList.remove('bg-primary');
-        progressBadge.classList.add('bg-success');
-      } else {
-        progressBadge.classList.remove('bg-success');
-        progressBadge.classList.add('bg-primary');
-      }
-
-      // 進捗率を計算して表示
-      if (totalItems > 0) {
-        const progressPercent = Math.round((checkedItems / totalItems) * 100);
-        progressBadge.textContent = `${checkedItems}/${totalItems} (${progressPercent}%)`;
-      }
-    }
-
-    // すべてのチェックリストの進捗を初期表示
-    document.querySelectorAll('.checklist-card').forEach(function (card) {
-      updateChecklistProgress(card);
-    });
-
-    // チェックボックス変更時の処理
-    document.querySelectorAll('.checklist-item-checkbox').forEach(function (checkbox) {
-      checkbox.addEventListener('change', function () {
-        const itemId = this.dataset.itemId;
-        const checked = this.checked;
-        const label = document.getElementById('item-label-' + itemId);
-
-        // ラベルのスタイル変更（取り消し線）
-        if (checked) {
-          label.classList.add('completed');
-        } else {
-          label.classList.remove('completed');
-        }
-
-        // 進捗の更新
-        const checklistCard = this.closest('.checklist-card');
-        updateChecklistProgress(checklistCard);
-
-        // APIリクエストを送信
-        fetch('/checklist/item/' + itemId + '/toggle/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken')
-          },
-          body: JSON.stringify({
-            status: checked,
-            diary_id: {{ diary.id }}
+        // 株価取得API呼び出し
+        fetch(`/stockdiary/api/stock/price/${stockSymbol}/`)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('株価の取得に失敗しました');
+            }
+            return response.json();
           })
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('サーバーエラーが発生しました');
-        }
-        return response.json();
-      })
-      .then(data => {
-        if (data.error) {
-          throw new Error(data.error);
-        }
+          .then(data => {
+            priceInput.value = data.price;
 
-        // 成功時のフィードバック
-        const feedbackToast = createToast('チェックリストを更新しました', 'success');
-        document.body.appendChild(feedbackToast);
-        new bootstrap.Toast(feedbackToast).show();
-      })
-      .catch(error => {
-        console.error('Error:', error);
+            // 成功メッセージ
+            const feedbackToast = createToast('現在株価を取得しました', 'success');
+            document.body.appendChild(feedbackToast);
+            new bootstrap.Toast(feedbackToast).show();
+          })
+          .catch(error => {
+            console.error('Error:', error);
 
-        // エラー時は状態を元に戻す
-        this.checked = !checked;
-        if (!checked) {
-          label.classList.add('completed');
-        } else {
-          label.classList.remove('completed');
-        }
-        updateChecklistProgress(checklistCard);
-
-        // エラーメッセージを表示
-        const errorToast = createToast('更新に失敗しました: ' + error.message, 'danger');
-        document.body.appendChild(errorToast);
-        new bootstrap.Toast(errorToast).show();
+            // エラーメッセージを表示
+            const errorToast = createToast('株価の取得に失敗しました: ' + error.message, 'danger');
+            document.body.appendChild(errorToast);
+            new bootstrap.Toast(errorToast).show();
+          })
+          .finally(() => {
+            // ボタンを元に戻す
+            this.disabled = false;
+            this.innerHTML = originalText;
+          });
       });
-  });
-    });
+    }
 
-  // CSRFトークンを取得する関数
-  function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-      const cookies = document.cookie.split(';');
-      for (let i = 0; i < cookies.length; i++) {
-        const cookie = cookies[i].trim();
-        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-          break;
+    // CSRFトークンを取得する関数 (トースト機能で使用)
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
         }
       }
-    }
-    return cookieValue;
-  }
-
-  // 現在価格取得ボタンの処理
-  const fetchNotePriceBtn = document.getElementById('fetch-note-price');
-  if (fetchNotePriceBtn) {
-    fetchNotePriceBtn.addEventListener('click', function () {
-      const stockSymbol = '{{ diary.stock_symbol }}';
-      const priceInput = document.getElementById('{{ note_form.current_price.id_for_label }}');
-
-      // ボタンを無効化してローディング表示
-      this.disabled = true;
-      const originalText = this.innerHTML;
-      this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 取得中...';
-
-      // 株価取得API呼び出し
-      fetch(`/stockdiary/api/stock/price/${stockSymbol}/`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('株価の取得に失敗しました');
-          }
-          return response.json();
-        })
-        .then(data => {
-          priceInput.value = data.price;
-
-          // 成功メッセージ
-          const feedbackToast = createToast('現在株価を取得しました', 'success');
-          document.body.appendChild(feedbackToast);
-          new bootstrap.Toast(feedbackToast).show();
-        })
-        .catch(error => {
-          console.error('Error:', error);
-
-          // エラーメッセージを表示
-          const errorToast = createToast('株価の取得に失敗しました: ' + error.message, 'danger');
-          document.body.appendChild(errorToast);
-          new bootstrap.Toast(errorToast).show();
-        })
-        .finally(() => {
-          // ボタンを元に戻す
-          this.disabled = false;
-          this.innerHTML = originalText;
-        });
-    });
-  }
-
-  // トースト作成関数（既存関数がある場合は統合）
-  function createToast(message, type) {
-    if (typeof window.createToast === 'function') {
-      return window.createToast(message, type);
+      return cookieValue;
     }
 
-    const toastEl = document.createElement('div');
-    toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
-    toastEl.setAttribute('role', 'alert');
-    toastEl.setAttribute('aria-live', 'assertive');
-    toastEl.setAttribute('aria-atomic', 'true');
+    // トースト作成関数（既存関数がある場合は統合）
+    function createToast(message, type) {
+      if (typeof window.createToast === 'function') {
+        return window.createToast(message, type);
+      }
 
-    const icon = type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle';
+      const toastEl = document.createElement('div');
+      toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
+      toastEl.setAttribute('role', 'alert');
+      toastEl.setAttribute('aria-live', 'assertive');
+      toastEl.setAttribute('aria-atomic', 'true');
 
-    toastEl.innerHTML = `
-        <div class="d-flex">
-          <div class="toast-body">
-            <i class="bi ${icon} me-2"></i> ${message}
+      const icon = type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle';
+
+      toastEl.innerHTML = `
+          <div class="d-flex">
+            <div class="toast-body">
+              <i class="bi ${icon} me-2"></i> ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
           </div>
-          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-      `;
+        `;
 
-    // スタイル調整
-    toastEl.style.position = 'fixed';
-    toastEl.style.bottom = '20px';
-    toastEl.style.right = '20px';
-    toastEl.style.minWidth = '250px';
-    toastEl.style.zIndex = '1050';
+      // スタイル調整
+      toastEl.style.position = 'fixed';
+      toastEl.style.bottom = '20px';
+      toastEl.style.right = '20px';
+      toastEl.style.minWidth = '250px';
+      toastEl.style.zIndex = '1050';
 
-    return toastEl;
-  }    
+      return toastEl;
+    }
   });
 </script>
 {% endblock %}

@@ -73,52 +73,50 @@ CKEDITOR_RESTRICT_BY_USER = True
 CKEDITOR_BROWSE_SHOW_DIRS = True
 CKEDITOR_IMAGE_BACKEND = 'pillow'
 
+# CKEditor設定
 CKEDITOR_CONFIGS = {
-    'mobile_friendly': {
-        'toolbar': 'Basic',
-        'height': 300,
+    'default': {
         'width': '100%',
+        'height': 300,
+        'toolbar': 'Custom',
+        'toolbar_Custom': [
+            ['Bold', 'Italic', 'Underline', 'Strike', 'RemoveFormat'],
+            ['NumberedList', 'BulletedList', 'Blockquote'],
+            ['Link', 'Unlink', 'Image', 'Table'],
+            ['Styles', 'Format', 'FontSize'],
+            ['TextColor', 'BGColor'],
+            ['Undo', 'Redo'], ['Source', 'Maximize'],
+        ],
+        'extraPlugins': 'autogrow',
+        'autoGrow_minHeight': 300,
+        'autoGrow_maxHeight': 600,
+        'autoGrow_onStartup': True,
+        'contentsCss': ['/static/css/ckeditor.css'],
+        # コンテンツの幅を制限
+        'removePlugins': 'resize',
+        'allowedContent': True,
+        # レスポンシブ画像
+        'image2_responsive': True,
+    },
+    'basic': {
+        'width': '100%',
+        'height': 200,
+        'toolbar': 'Basic',
         'toolbar_Basic': [
-            ['Bold', 'Italic', 'Underline'],
-            ['NumberedList', 'BulletedList'],
-            ['Link', 'Unlink', 'Image'],
-            ['Source'],
+            ['Bold', 'Italic', 'Underline', 'Strike'],
+            ['NumberedList', 'BulletedList', 'Blockquote'],
+            ['Link', 'Unlink'],
+            ['RemoveFormat', 'Source'],
         ],
         'removePlugins': 'resize',
-        'extraPlugins': 'autogrow',
-        'autoGrow_minHeight': 200,
-        'autoGrow_maxHeight': 600,
-        'image2_alignClasses': ['image-left', 'image-center', 'image-right'],
-        'image2_disableResizer': True,
-    },
-
-    'default': {
-        'toolbar': 'Custom',
-        'height': 300,
-        'width': '100%',
-        # iPhoneに最適化したツールバー
-        'toolbar_Custom': [
-            ['Bold', 'Italic', 'Underline'],
-            ['NumberedList', 'BulletedList'],
-            ['Link', 'Image'],
-            ['Source'],
-        ],
-        'removePlugins': 'resize,elementspath',
-        'extraPlugins': 'autogrow,uploadimage',
-        'autoGrow_minHeight': 200,
-        'autoGrow_maxHeight': 500,
-        'image2_disableResizer': True,
-        'forcePasteAsPlainText': True,
-        # モバイル向け最適化
-        'extraAllowedContent': 'img[width,height,align]',
-        'disableNativeSpellChecker': False,
-        'scayt_autoStartup': False,
-        'disableObjectResizing': True,
-        'disableNativeTableHandles': True,
-        'removeDialogTabs': 'image:advanced;link:advanced',
-        'contentsCss': ['/static/css/ckeditor-mobile.css'],
+        'allowedContent': True,
     },
 }
+
+# 静的ファイルの追加
+STATICFILES_DIRS = [
+    # ここに既存のSTATICFILES_DIRSの内容を維持
+]
 
 TINYMCE_DEFAULT_CONFIG = {
     'theme': 'silver',
