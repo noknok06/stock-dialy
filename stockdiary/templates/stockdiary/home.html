@@ -457,6 +457,63 @@
     .calendar-event-item:hover {
         background-color: rgba(243, 244, 246, 1);
     }
+    .skeleton-calendar {
+      width: 100%;
+      height: 350px;
+      background-color: #f9f9f9;
+      border-radius: 0.5rem;
+      overflow: hidden;
+    }
+    
+    .skeleton-header {
+      height: 40px;
+      background: linear-gradient(90deg, #eee 0%, #f5f5f5 50%, #eee 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+    }
+    
+    .skeleton-weekdays {
+      gap: 3px;
+    }
+    
+    .skeleton-day {
+      flex: 1;
+      height: 20px;
+      background: linear-gradient(90deg, #eee 0%, #f5f5f5 50%, #eee 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+    }
+    
+    .skeleton-week {
+      gap: 3px;
+    }
+    
+    .skeleton-date {
+      flex: 1;
+      height: 60px;
+      background: linear-gradient(90deg, #eee 0%, #f5f5f5 50%, #eee 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+    }
+    
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+  
+    /* カレンダー初期化前のプレースホルダー */
+    .fc-uninitialized {
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+  
+    /* カレンダー初期化後の表示 */
+    .fc.fc-initialized {
+      opacity: 1;
+    }
 </style>
 {% endblock %}
 
@@ -481,37 +538,89 @@
         </div>
     </div>
 
-    <!-- カレンダー -->
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0">
-                投資カレンダー
-            </h5>
-            <div class="calendar-legend d-flex">
-                <span class="badge bg-success me-2">購入</span>
-                <span class="badge bg-danger">売却</span>
-            </div>
-            <!-- スマホ表示時のアコーディオントグル -->
-            <button class="btn btn-link p-0 ms-2 d-md-none" type="button" data-bs-toggle="collapse" 
-                data-bs-target="#calendarCollapse" aria-expanded="false" aria-controls="calendarCollapse">
-                <i class="bi bi-chevron-down"></i>
-            </button>
-        </div>
-        <!-- スマホ表示ではcollapse追加、PC表示では常に表示 -->
-        <div class="collapse d-md-block" id="calendarCollapse">
-            <div class="card-body">
-                <div class="calendar-container">
-                    <div id="calendar"></div>
-                    <div class="calendar-events">
-                        <h6 class="mb-3" id="selected-date">選択日のイベント</h6>
-                        <div id="day-events">
-                            <p class="text-muted">日付を選択するとイベントが表示されます</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+<!-- カレンダーコンテナの最適化 - スマホ表示の遅延読み込み -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="card-title mb-0">
+        投資カレンダー
+      </h5>
+      <div class="calendar-legend d-flex">
+        <span class="badge bg-success me-2">購入</span>
+        <span class="badge bg-danger">売却</span>
+      </div>
+      <!-- スマホ表示時のアコーディオントグル -->
+      <button class="btn btn-link p-0 ms-2 d-md-none" type="button" data-bs-toggle="collapse" 
+        data-bs-target="#calendarCollapse" aria-expanded="false" aria-controls="calendarCollapse">
+        <i class="bi bi-chevron-down"></i>
+      </button>
     </div>
+    <!-- スマホ表示ではcollapse追加、PC表示では常に表示だが、初期読み込みは行わない -->
+    <div class="collapse d-md-block" id="calendarCollapse">
+      <div class="card-body">
+        <div class="calendar-container">
+          <!-- カレンダー部分をプレースホルダーに -->
+          <div id="calendar">
+            <!-- スケルトンローディング表示 -->
+            <div class="skeleton-calendar d-md-none">
+              <div class="skeleton-header mb-3"></div>
+              <div class="skeleton-weekdays d-flex mb-2">
+                <div class="skeleton-day"></div>
+                <div class="skeleton-day"></div>
+                <div class="skeleton-day"></div>
+                <div class="skeleton-day"></div>
+                <div class="skeleton-day"></div>
+                <div class="skeleton-day"></div>
+                <div class="skeleton-day"></div>
+              </div>
+              <div class="skeleton-week d-flex mb-1">
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+              </div>
+              <div class="skeleton-week d-flex mb-1">
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+              </div>
+              <div class="skeleton-week d-flex mb-1">
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+              </div>
+              <div class="skeleton-week d-flex mb-1">
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+                <div class="skeleton-date"></div>
+              </div>
+            </div>
+          </div>
+          <div class="calendar-events">
+            <h6 class="mb-3" id="selected-date">選択日のイベント</h6>
+            <div id="day-events">
+              <p class="text-muted">日付を選択するとイベントが表示されます</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 
     <!-- 検索フォーム -->
     <div class="card mb-4">
@@ -700,247 +809,276 @@
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/locales/ja.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const adjustCalendarHeight = () => {
-            const calendar = document.getElementById('calendar');
-            if (calendar && window.innerWidth < 768) {
-                const fcView = calendar.querySelector('.fc-view-harness');
-                if (fcView) {
-                    fcView.style.height = '350px';
-                }
-            }
-        };
-        // カレンダーが初期化された後にサイズ調整
-        setTimeout(adjustCalendarHeight, 500);
-        
-        // アコーディオントグルイベント
-        const calendarCollapse = document.getElementById('calendarCollapse');
-        if (calendarCollapse) {
-            calendarCollapse.addEventListener('shown.bs.collapse', function() {
-                // アコーディオンが開かれたらカレンダーを再描画
-                const calendar = document.querySelector('.fc');
-                if (calendar) {
-                    const calendarApi = calendar.fcCalendar;
-                    if (calendarApi) {
-                        setTimeout(() => calendarApi.updateSize(), 10);
-                    }
-                }
-                
-                // サイズ調整
-                adjustCalendarHeight();
-            });
-        }
-        
-        // ウィンドウサイズ変更時にも調整
-        window.addEventListener('resize', adjustCalendarHeight);
-        
-        // カレンダー要素
-        const calendarEl = document.getElementById('calendar');
-        const selectedDateEl = document.getElementById('selected-date');
-        const dayEventsEl = document.getElementById('day-events');
-
-        // 日記データをJavaScriptで利用できるようにする
-        const events = [];
-        // すべての日記データを保持する配列
-        const allDiaries = [];
-
-        {% for diary in all_diaries %}
-        // 日記データをオブジェクトとして保存
-        allDiaries.push({
-            id: {{ diary.id }},
-            title: '{{ diary.stock_name }}',
-            symbol: '{{ diary.stock_symbol }}',
-            purchaseDate: '{{ diary.purchase_date|date:"Y-m-d" }}',
-            sellDate: {% if diary.sell_date %}'{{ diary.sell_date|date:"Y-m-d" }}'{% else %}null{% endif %},
-            purchasePrice: {{ diary.purchase_price }},
-            sellPrice: {% if diary.sell_price %}{{ diary.sell_price }}{% else %}null{% endif %},
-            quantity: {{ diary.purchase_quantity }},
-            url: '{% url "stockdiary:detail" diary.id %}'
-        });
-
-        // 購入日イベント
-        events.push({
-            title: '{{ diary.stock_name }}',
-            start: '{{ diary.purchase_date|date:"Y-m-d" }}',
-            url: '{% url "stockdiary:detail" diary.id %}',
-            className: 'purchase-event',
-            diaryId: {{ diary.id }},
-            eventType: 'purchase'
-        });
-
-        // 売却日イベント（売却日がある場合）
-        {% if diary.sell_date %}
-        events.push({
-            title: '{{ diary.stock_name }}',
-            start: '{{ diary.sell_date|date:"Y-m-d" }}',
-            url: '{% url "stockdiary:detail" diary.id %}',
-            className: 'sell-event',
-            diaryId: {{ diary.id }},
-            eventType: 'sell'
-        });
-        {% endif %}
-        {% endfor %}
-
-        // 選択された日付に関連する日記を表示する関数
-        function showDayEvents(date) {
-            // 日付を 'YYYY-MM-DD' 形式に変換
-            let dateStr;
-            if (typeof date === 'string') {
-                // すでに文字列形式ならそのまま使用
-                dateStr = date;
-            } else {
-                try {
-                    dateStr = date.toISOString().split('T')[0];
-                } catch (e) {
-                    console.error('Date conversion error:', e);
-                    return;
-                }
-            }
-            
-            console.log('Showing events for date:', dateStr);
-            
-            // タイトルを更新
-            let displayDate;
-            try {
-                if (typeof date === 'string') {
-                    // 文字列から日付オブジェクトを作成
-                    const dateObj = new Date(date);
-                    displayDate = `${dateObj.getFullYear()}年${dateObj.getMonth() + 1}月${dateObj.getDate()}日のイベント`;
-                } else {
-                    displayDate = `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日のイベント`;
-                }
-            } catch (e) {
-                console.error('Date formatting error:', e);
-                displayDate = "選択日のイベント";
-            }
-            selectedDateEl.textContent = displayDate;
-            
-            // その日の購入・売却イベント
-            const dayEvents = events.filter(event => event.start === dateStr);
-            console.log('Found events:', dayEvents);
-            
-            if (dayEvents.length === 0) {
-                dayEventsEl.innerHTML = '<p class="text-muted">この日のイベントはありません</p>';
-                return;
-            }
-            
-            // イベント表示HTML生成
-            let eventsHtml = '';
-            
-            dayEvents.forEach(event => {
-                // イベントの日記IDから対応する日記データを検索
-                const diary = allDiaries.find(d => d.id === event.diaryId);
-                
-                if (!diary) {
-                    console.error('Diary not found for event:', event);
-                    return;
-                }
-                
-                const eventType = event.eventType === 'purchase' ? '購入' : '売却';
-                const badgeClass = event.eventType === 'purchase' ? 'bg-success' : 'bg-danger';
-                const price = event.eventType === 'purchase' ? diary.purchasePrice : (diary.sellPrice || 0);
-                
-                eventsHtml += `
-                <a href="${event.url}" class="calendar-event-item">
-                    <span class="calendar-event-badge badge ${badgeClass}">${eventType}</span>
-                    <div>
-                        <div class="fw-bold">${diary.title} (${diary.symbol})</div>
-                        <div class="small">
-                            ${price.toLocaleString()}円 × ${diary.quantity}株
-                        </div>
-                    </div>
-                </a>`;
-            });
-            
-            dayEventsEl.innerHTML = eventsHtml;
-        }
-
-        // FullCalendarの初期化
-        if (calendarEl) {
-            const calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                locale: 'ja',
-                height: 450,
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,timeGridWeek'
-                },
-                events: events,
-                eventClick: function (info) {
-                    info.jsEvent.preventDefault(); // 標準のリンク遷移を防止
-                    window.location.href = info.event.url; // 詳細ページに移動
-                },
-                dateClick: function(info) {
-                    // 日付クリック時に、その日のイベントを表示
-                    console.log('FullCalendar dateClick:', info.dateStr);
-                    showDayEvents(info.dateStr);
-                    
-                    // クリックされた日付をハイライト
-                    document.querySelectorAll('.fc-day-clicked').forEach(el => {
-                        el.classList.remove('fc-day-clicked');
-                    });
-                    info.dayEl.classList.add('fc-day-clicked');
-                    
-                    // スマホ表示の場合は自動スクロール
-                    if (window.innerWidth < 992) {
-                        const eventsContainer = document.querySelector('.calendar-events');
-                        if (eventsContainer) {
-                            setTimeout(() => {
-                                eventsContainer.scrollIntoView({ behavior: 'smooth' });
-                            }, 100);
-                        }
-                    }
-                }
-            });
-
-            // カレンダーを描画
-            calendar.render();
-            
-            // 初期表示として、現在の日付のイベントを表示
-            showDayEvents(new Date());
-            
-            // デバッグ用コンソールログ
-            console.log('Calendar initialized with', events.length, 'events');
-            console.log('All diaries:', allDiaries);
-            
-            // カレンダー日付のクリックイベントをバックアップとして処理
-            document.addEventListener('click', function(e) {
-                // 日付セルやその子要素がクリックされたか確認
-                const targetEl = e.target;
-                const dayEl = targetEl.classList.contains('fc-daygrid-day') ? 
-                             targetEl : 
-                             targetEl.closest('.fc-daygrid-day');
-                
-                // イベント要素をクリックした場合は除外
-                if (dayEl && !e.target.closest('.fc-event')) {
-                    const dateStr = dayEl.getAttribute('data-date');
-                    if (dateStr) {
-                        console.log('Manual date cell clicked:', dateStr);
-                        showDayEvents(dateStr);
-                        
-                        // ハイライト効果を追加
-                        document.querySelectorAll('.fc-day-clicked').forEach(el => {
-                            el.classList.remove('fc-day-clicked');
-                        });
-                        dayEl.classList.add('fc-day-clicked');
-                        
-                        // スマホ表示の場合は自動スクロール
-                        if (window.innerWidth < 992) {
-                            const eventsContainer = document.querySelector('.calendar-events');
-                            if (eventsContainer) {
-                                setTimeout(() => {
-                                    eventsContainer.scrollIntoView({ behavior: 'smooth' });
-                                }, 100);
-                            }
-                        }
-                    }
-                }
-            });
-        }
+ document.addEventListener('DOMContentLoaded', function () {
+  // イベントデータを一度だけ解析
+  const allDiaries = [];
+  const events = [];
+  
+  // 先にすべての日記データを取得
+  try {
+    {% for diary in all_diaries %}
+    allDiaries.push({
+      id: {{ diary.id }},
+      title: '{{ diary.stock_name }}',
+      symbol: '{{ diary.stock_symbol }}',
+      purchaseDate: '{{ diary.purchase_date|date:"Y-m-d" }}',
+      sellDate: {% if diary.sell_date %}'{{ diary.sell_date|date:"Y-m-d" }}'{% else %}null{% endif %},
+      purchasePrice: {{ diary.purchase_price }},
+      sellPrice: {% if diary.sell_price %}{{ diary.sell_price }}{% else %}null{% endif %},
+      quantity: {{ diary.purchase_quantity }},
+      url: '{% url "stockdiary:detail" diary.id %}'
     });
+
+    // 購入日イベント
+    events.push({
+      title: '{{ diary.stock_name }}',
+      start: '{{ diary.purchase_date|date:"Y-m-d" }}',
+      url: '{% url "stockdiary:detail" diary.id %}',
+      className: 'purchase-event',
+      diaryId: {{ diary.id }},
+      eventType: 'purchase'
+    });
+
+    // 売却日イベント
+    {% if diary.sell_date %}
+    events.push({
+      title: '{{ diary.stock_name }}',
+      start: '{{ diary.sell_date|date:"Y-m-d" }}',
+      url: '{% url "stockdiary:detail" diary.id %}',
+      className: 'sell-event',
+      diaryId: {{ diary.id }},
+      eventType: 'sell'
+    });
+    {% endif %}
+    {% endfor %}
+  } catch (e) {
+    console.error('Data parsing error:', e);
+  }
+
+  // カレンダーとイベント要素を取得
+  const calendarEl = document.getElementById('calendar');
+  const selectedDateEl = document.getElementById('selected-date');
+  const dayEventsEl = document.getElementById('day-events');
+  
+  // カレンダーコンテナの存在確認
+  if (!calendarEl) return;
+  
+  // カレンダーの設定を使い回せるようにオブジェクトとして定義
+  const calendarConfig = {
+    initialView: 'dayGridMonth',
+    locale: 'ja',
+    height: window.innerWidth < 768 ? 350 : 450,
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth'  // timeGridWeekを削除して軽量化
+    },
+    events: events,
+    eventClick: function (info) {
+      info.jsEvent.preventDefault();
+      window.location.href = info.event.url;
+    },
+    dateClick: function(info) {
+      showDayEvents(info.dateStr);
+      
+      // クリックされた日付をハイライト
+      document.querySelectorAll('.fc-day-clicked').forEach(el => {
+        el.classList.remove('fc-day-clicked');
+      });
+      info.dayEl.classList.add('fc-day-clicked');
+      
+      // スマホ表示の場合は自動スクロール (遅延を少なくする)
+      if (window.innerWidth < 992) {
+        const eventsContainer = document.querySelector('.calendar-events');
+        if (eventsContainer) {
+          eventsContainer.scrollIntoView({ behavior: 'auto' });
+        }
+      }
+    },
+    dayMaxEventRows: 3,  // イベント表示数を制限してレンダリングを軽量化
+    // 遅延読み込みを実装
+    lazyFetching: true,
+    // カレンダー内部でのレンダリングを最適化
+    rerenderDelay: 50
+  };
+
+  // カレンダーを初期化
+  const calendar = new FullCalendar.Calendar(calendarEl, calendarConfig);
+  
+  // カレンダーを遅延読み込み (アコーディオンが開かれた後に読み込む)
+  const calendarCollapse = document.getElementById('calendarCollapse');
+  let calendarInitialized = false;
+  
+  // アコーディオントグルイベント
+  if (calendarCollapse) {
+    calendarCollapse.addEventListener('shown.bs.collapse', function() {
+      if (!calendarInitialized) {
+        // 初めて開かれた時だけカレンダーをレンダリング
+        calendar.render();
+        calendarInitialized = true;
+        
+        // 初期表示として、現在の日付のイベントを表示
+        showDayEvents(new Date().toISOString().split('T')[0]);
+      } else {
+        // すでに初期化されていれば、サイズだけ更新
+        calendar.updateSize();
+      }
+    });
+    
+    // PCサイズのときは自動的にカレンダーを初期化
+    if (window.innerWidth >= 768 && !calendarInitialized) {
+      // 少し遅延させてDOM構築を優先
+      setTimeout(() => {
+        calendar.render();
+        calendarInitialized = true;
+        showDayEvents(new Date().toISOString().split('T')[0]);
+      }, 100);
+    }
+  } else {
+    // collapseコンテナがない場合は直接初期化
+    setTimeout(() => {
+      calendar.render();
+      calendarInitialized = true;
+      showDayEvents(new Date().toISOString().split('T')[0]);
+    }, 100);
+  }
+
+  // 選択された日付に関連する日記を表示する関数 (最適化版)
+  function showDayEvents(dateStr) {
+    if (!dateStr) return;
+    
+    // タイトルを更新 (パフォーマンスのためシンプルな方法に)
+    try {
+      const dateObj = new Date(dateStr);
+      const year = dateObj.getFullYear();
+      const month = dateObj.getMonth() + 1;
+      const day = dateObj.getDate();
+      selectedDateEl.textContent = `${year}年${month}月${day}日のイベント`;
+    } catch (e) {
+      selectedDateEl.textContent = "選択日のイベント";
+    }
+    
+    // その日の購入・売却イベント
+    const dayEvents = events.filter(event => event.start === dateStr);
+    
+    if (dayEvents.length === 0) {
+      dayEventsEl.innerHTML = '<p class="text-muted">この日のイベントはありません</p>';
+      return;
+    }
+    
+    // イベント表示HTML生成 (文字列連結で最適化)
+    let eventsHtml = '';
+    
+    // 表示を10件に制限してレンダリングを軽量化
+    const maxEvents = Math.min(dayEvents.length, 10);
+    
+    for (let i = 0; i < maxEvents; i++) {
+      const event = dayEvents[i];
+      // イベントの日記IDから対応する日記データを検索
+      const diary = allDiaries.find(d => d.id === event.diaryId);
+      
+      if (!diary) continue;
+      
+      const eventType = event.eventType === 'purchase' ? '購入' : '売却';
+      const badgeClass = event.eventType === 'purchase' ? 'bg-success' : 'bg-danger';
+      const price = event.eventType === 'purchase' ? diary.purchasePrice : (diary.sellPrice || 0);
+      
+      eventsHtml += '<a href="' + event.url + '" class="calendar-event-item">' +
+        '<span class="calendar-event-badge badge ' + badgeClass + '">' + eventType + '</span>' +
+        '<div>' +
+          '<div class="fw-bold">' + diary.title + ' (' + diary.symbol + ')</div>' +
+          '<div class="small">' + price.toLocaleString() + '円 × ' + diary.quantity + '株</div>' +
+        '</div>' +
+      '</a>';
+    }
+    
+    // 表示件数が制限された場合
+    if (dayEvents.length > maxEvents) {
+      eventsHtml += '<div class="text-center text-muted small mt-2">他 ' + 
+        (dayEvents.length - maxEvents) + ' 件のイベントがあります</div>';
+    }
+    
+    dayEventsEl.innerHTML = eventsHtml;
+  }
+
+  // ウィンドウサイズ変更時の処理を最適化
+  let resizeTimer;
+  window.addEventListener('resize', function() {
+    // リサイズイベントをまとめて処理
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function() {
+      if (calendarInitialized) {
+        // サイズが変わった時だけ更新
+        const newHeight = window.innerWidth < 768 ? 350 : 450;
+        if (calendar.getOption('height') !== newHeight) {
+          calendar.setOption('height', newHeight);
+        }
+      }
+    }, 250);
+  });
+});
 </script>
 
+  <!-- リソース読み込みの最適化 -->
+  <script>
+    // FullCalendarの遅延読み込み
+    document.addEventListener('DOMContentLoaded', function() {
+      const isMobile = window.innerWidth < 768;
+      const calendarCollapse = document.getElementById('calendarCollapse');
+      
+      // カレンダーリソースを遅延読み込みする関数
+      function loadCalendarResources() {
+        // すでに読み込み済みかチェック
+        if (window.FullCalendar) return Promise.resolve();
+        
+        return new Promise((resolve, reject) => {
+          // メインスクリプト
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js';
+          script.onload = () => {
+            // ロケールファイル
+            const localeScript = document.createElement('script');
+            localeScript.src = 'https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/locales/ja.js';
+            localeScript.onload = resolve;
+            localeScript.onerror = reject;
+            document.head.appendChild(localeScript);
+          };
+          script.onerror = reject;
+          document.head.appendChild(script);
+          
+          // CSSも読み込む
+          if (!document.querySelector('link[href*="fullcalendar"]')) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = 'https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css';
+            document.head.appendChild(link);
+          }
+        });
+      }
+      
+      // モバイルではアコーディオンが開かれたときだけリソースを読み込む
+      if (isMobile && calendarCollapse) {
+        calendarCollapse.addEventListener('show.bs.collapse', function() {
+          loadCalendarResources().then(() => {
+            // カレンダー初期化スクリプトを動的に追加
+            const initScript = document.createElement('script');
+            initScript.src = '{% static "js/calendar-init.js" %}';
+            document.body.appendChild(initScript);
+          });
+        }, { once: true }); // 一度だけ実行
+      } else {
+        // PCでは直ちに読み込むが優先度を下げる
+        setTimeout(() => {
+          loadCalendarResources().then(() => {
+            // カレンダー初期化スクリプトを動的に追加
+            const initScript = document.createElement('script');
+            initScript.src = '{% static "js/calendar-init.js" %}';
+            document.body.appendChild(initScript);
+          });
+        }, 100);
+      }
+    });
+  </script>
 <style>
     /* 日付クリック時のスタイル */
     .fc-day-clicked {
