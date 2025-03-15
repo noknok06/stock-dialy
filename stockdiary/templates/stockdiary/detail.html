@@ -353,19 +353,107 @@
 .cke_reset {
   max-width: 100% !important;
   width: 100% !important;
-}  
+}
+
+/* モバイル用浮動ボタン */
+.mobile-floating-buttons {
+  position: fixed;
+  right: 15px;
+  bottom: 70px; /* baseのボタンの下に配置 */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1030;
+}
+
+.mobile-floating-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  border: none;
+  color: white;
+  text-decoration: none;
+}
+
+.mobile-floating-btn:hover, .mobile-floating-btn:focus {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  color: white;
+  text-decoration: none;
+}
+
+.mobile-floating-btn i {
+  font-size: 1.2rem;
+}
+
+/* 各ボタンのスタイル */
+.mobile-floating-btn.edit-btn {
+  background-color: rgba(245, 158, 11, 0.7); /* warning color */
+}
+
+.mobile-floating-btn.edit-btn:hover {
+  background-color: rgba(245, 158, 11, 0.9);
+}
+
+.mobile-floating-btn.delete-btn {
+  background-color: rgba(239, 68, 68, 0.7); /* danger color */
+}
+
+.mobile-floating-btn.delete-btn:hover {
+  background-color: rgba(239, 68, 68, 0.9);
+}
+
+.mobile-floating-btn.back-btn {
+  background-color: rgba(107, 114, 128, 0.7); /* secondary color */
+}
+
+.mobile-floating-btn.back-btn:hover {
+  background-color: rgba(107, 114, 128, 0.9);
+}
+
+.mobile-floating-btn.sell-btn {
+  background-color: rgba(16, 185, 129, 0.7); /* success color */
+}
+
+.mobile-floating-btn.sell-btn:hover {
+  background-color: rgba(16, 185, 129, 0.9);
+}
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container py-4">
+  <!-- モバイル用の半透明浮動ボタン（スマホ表示） -->
+  <div class="mobile-floating-buttons d-md-none">
+    {% if not diary.sell_date %}
+    <a href="{% url 'stockdiary:sell_specific' diary.id %}" class="mobile-floating-btn sell-btn" title="売却">
+      <i class="bi bi-cash-coin"></i>
+    </a>
+    {% endif %}
+    <a href="{% url 'stockdiary:update' diary.id %}" class="mobile-floating-btn edit-btn" title="編集">
+      <i class="bi bi-pencil"></i>
+    </a>
+    <a href="{% url 'stockdiary:delete' diary.id %}" class="mobile-floating-btn delete-btn" title="削除">
+      <i class="bi bi-trash"></i>
+    </a>
+    <a href="{% url 'stockdiary:home' %}" class="mobile-floating-btn back-btn" title="戻る">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+  </div>
+
   <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
       <div class="d-flex align-items-center mb-2 mb-md-0">
         <h2 class="mb-0 me-2">{{ diary.stock_name }}</h2>
         <span class="badge bg-secondary">{{ diary.stock_symbol }}</span>
       </div>
-      <div class="action-buttons">
+      <!-- PC用の通常ボタン（デスクトップ表示） -->
+      <div class="action-buttons d-none d-md-flex">
         {% if not diary.sell_date %}
         <a href="{% url 'stockdiary:sell_specific' diary.id %}" class="btn btn-success btn-icon">
           <i class="bi bi-cash-coin"></i> 売却
