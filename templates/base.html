@@ -248,6 +248,68 @@
     
     {% block head %}{% endblock %}
 </head>
+<header class="pc-only-header">
+  <nav class="navbar navbar-expand bg-light border-bottom shadow-sm">
+    <div class="container">
+      <!-- ロゴ・サイト名 -->
+      <a class="navbar-brand d-flex align-items-center" href="{% url 'stockdiary:home' %}">
+        <img src="{% static 'images/icon-modern.svg' %}" width="30" height="30" class="me-2" alt="カブログ">
+        <span class="fw-bold">カブログ</span>
+      </a>
+      
+      <!-- ナビゲーションリンク -->
+      <div class="navbar-nav-container">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'stockdiary:home' %}">
+              <i class="bi bi-journal-text"></i> 日記一覧
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'stockdiary:analytics' %}">
+              <i class="bi bi-graph-up"></i> 投資分析
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'stockdiary:create' %}">
+              <i class="bi bi-plus-circle"></i> 新規作成
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'stockdiary:sell' %}">
+              <i class="bi bi-cash-coin"></i> 売却登録
+            </a>
+          </li>
+        </ul>
+        
+        <!-- ユーザーメニュー -->
+        {% if user.is_authenticated %}
+        <div class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="avatar-circle bg-primary bg-opacity-10 me-2">
+              <i class="bi bi-person text-primary"></i>
+            </div>
+            <span>{{ user.username }}</span>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+            <li><a class="dropdown-item" href="{% url 'users:profile' %}"><i class="bi bi-person me-2"></i>プロフィール</a></li>
+            <li><a class="dropdown-item" href="{% url 'tags:list' %}"><i class="bi bi-tags me-2"></i>タグ管理</a></li>
+            <li><a class="dropdown-item" href="{% url 'analysis_template:list' %}"><i class="bi bi-clipboard-data me-2"></i>分析テンプレート</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="{% url 'users:logout' %}"><i class="bi bi-box-arrow-right me-2"></i>ログアウト</a></li>
+          </ul>
+        </div>
+        {% else %}
+        <div class="d-flex">
+          <a href="{% url 'users:login' %}" class="btn btn-outline-primary me-2">ログイン</a>
+          <a href="{% url 'users:signup' %}" class="btn btn-primary">新規登録</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+</header>
+
 <body>
     <!-- メインコンテンツ -->
     <div class="container mt-4">

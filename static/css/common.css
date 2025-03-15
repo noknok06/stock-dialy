@@ -12,7 +12,35 @@
   body {
     background-color: var(--light-bg);
   }
-  
+    /* PC表示のみのヘッダー */
+    .pc-only-header {
+      position: sticky;
+      top: 0;
+      z-index: 1030;
+      display: none; /* デフォルトで非表示 */
+    }
+    
+    /* デスクトップ表示時のみ表示 */
+    @media (min-width: 992px) {
+      .pc-only-header {
+        display: block;
+      }
+    }
+    
+    .avatar-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .navbar-nav-container {
+      display: flex;
+      width: 100%;
+      align-items: center;
+    }
   /* カレンダースタイル */
   .fc-event {
     cursor: pointer;
