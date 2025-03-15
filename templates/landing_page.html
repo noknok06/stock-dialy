@@ -12,6 +12,148 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{% static 'css/landing.css' %}">
 </head>
+<style>
+    /* カルーセルのスタイル調整 */
+    .carousel .screenshot-card {
+        margin: 0 auto;
+        max-width: 500px;
+    }
+
+    .carousel-indicators {
+        bottom: -40px;
+    }
+
+    .carousel-indicators button {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: #6c757d;
+        opacity: 0.5;
+    }
+
+    .carousel-indicators button.active {
+        background-color: #0d6efd;
+        opacity: 1;
+    }
+
+    /* コントロールボタンをスクリーンショットの左右に配置 */
+    .carousel-control-prev,
+    .carousel-control-next {
+        width: 10%;
+        opacity: 0.8;
+    }
+
+    .carousel-control-prev-icon,
+    .carousel-control-next-icon {
+        width: 30px;
+        height: 30px;
+        background-color: rgba(0, 0, 0, 0.3);
+        border-radius: 50%;
+        background-size: 50%;
+    }
+
+    /* スワイプヒントのアニメーション */
+    .swipe-hint {
+        color: #6c757d;
+        font-size: 0.85rem;
+        margin-top: 45px;
+    }
+
+    .swipe-hint i {
+        animation: swipe-animation 2s infinite;
+        display: inline-block;
+    }
+
+    @keyframes swipe-animation {
+        0% {
+            transform: translateX(-10px);
+        }
+
+        50% {
+            transform: translateX(10px);
+        }
+
+        100% {
+            transform: translateX(-10px);
+        }
+    }
+
+    @media (max-width: 767px) {
+
+        /* モバイルでの調整 */
+        .carousel .screenshot-card {
+            height: auto;
+            max-width: 100%;
+        }
+
+        .screenshot-img {
+            max-height: 350px;
+            object-fit: contain;
+        }
+    }
+
+    /* プレビューサムネイル */
+    .preview-thumbnails {
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+        padding: 0 15px;
+    }
+
+    .preview-scrollable {
+        display: flex;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        /* Firefox */
+        padding: 10px 0;
+        gap: 10px;
+    }
+
+    .preview-scrollable::-webkit-scrollbar {
+        display: none;
+        /* Chrome, Safari */
+    }
+
+    .preview-item {
+        flex: 0 0 auto;
+        width: 100px;
+        height: 75px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .preview-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 3px solid transparent;
+        opacity: 0.6;
+        transition: all 0.2s ease;
+    }
+
+    .preview-img.active {
+        border-color: var(--primary-color, #4f46e5);
+        opacity: 1;
+    }
+
+    .preview-item:hover .preview-img {
+        opacity: 0.8;
+    }
+
+    /* メインカルーセルの調整 */
+    #appScreenshotsCarousel .carousel-item {
+        transition: transform 0.3s ease;
+    }
+
+    /* カルーセルの下にマージンを追加して、プレビューが見やすくなるように */
+    #appScreenshotsCarousel {
+        margin-bottom: 10px;
+    }
+</style>
 
 <body>
     <!-- ナビゲーションバー -->
@@ -178,16 +320,18 @@
             </div>
         </div>
     </section>
-    <!-- スクリーンショットセクション -->
+
+    <!-- スクリーンショットセクション（カルーセル対応版） -->
     <section class="screenshots">
         <div class="container">
             <h2 class="section-title fade-in">アプリケーション画面</h2>
             <p class="section-subtitle fade-in">
                 使いやすいインターフェースで、投資記録を効率的に管理
             </p>
-
-            <div class="row">
-                <div class="col-md-6 col-lg-4 fade-in">
+    
+            <!-- PCでは3カラム表示 -->
+            <div class="row d-none d-lg-flex">
+                <div class="col-lg-4 fade-in">
                     <div class="screenshot-card" style="height: 400px;">
                         <img src="{% static 'images/calendar.png' %}" alt="投資カレンダー" class="screenshot-img">
                         <div class="screenshot-content">
@@ -198,8 +342,8 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="col-md-6 col-lg-4 fade-in">
+    
+                <div class="col-lg-4 fade-in">
                     <div class="screenshot-card" style="height: 400px;">
                         <img src="{% static 'images/detail.png' %}" alt="銘柄詳細ページ" class="screenshot-img">
                         <div class="screenshot-content">
@@ -210,8 +354,8 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="col-md-6 col-lg-4 fade-in">
+    
+                <div class="col-lg-4 fade-in">
                     <div class="screenshot-card" style="height: 400px;">
                         <img src="{% static 'images/dashboard.png' %}" alt="分析ダッシュボード" class="screenshot-img">
                         <div class="screenshot-content">
@@ -223,52 +367,156 @@
                     </div>
                 </div>
             </div>
+    
+            <!-- タブレット・スマホではカルーセル表示 -->
+            <div class="d-lg-none fade-in">
+                <div id="screenshotsCarousel" class="carousel slide" data-bs-ride="carousel">
+                    <div class="carousel-inner">
+                        <div class="carousel-item active">
+                            <div class="screenshot-card">
+                                <img src="{% static 'images/calendar.png' %}" alt="投資カレンダー" class="screenshot-img">
+                                <div class="screenshot-content">
+                                    <h3 class="screenshot-title">投資カレンダー</h3>
+                                    <p class="screenshot-description">
+                                        購入日と売却日を一目で確認。時系列での投資パターンを把握できます。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="carousel-item">
+                            <div class="screenshot-card">
+                                <img src="{% static 'images/detail.png' %}" alt="銘柄詳細ページ" class="screenshot-img">
+                                <div class="screenshot-content">
+                                    <h3 class="screenshot-title">銘柄詳細ページ</h3>
+                                    <p class="screenshot-description">
+                                        購入理由や分析情報を詳細に記録。投資判断の根拠を残せます。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="carousel-item">
+                            <div class="screenshot-card">
+                                <img src="{% static 'images/dashboard.png' %}" alt="分析ダッシュボード" class="screenshot-img">
+                                <div class="screenshot-content">
+                                    <h3 class="screenshot-title">分析ダッシュボード</h3>
+                                    <p class="screenshot-description">
+                                        投資パターンを統計的に分析。投資スタイルの強みと弱みが見えてきます。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- コントロール -->
+                    <button class="carousel-control-prev" type="button" data-bs-target="#screenshotsCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#screenshotsCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                    
+                    <!-- インジケーター -->
+                    <div class="carousel-indicators">
+                        <button type="button" data-bs-target="#screenshotsCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+                        <button type="button" data-bs-target="#screenshotsCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+                        <button type="button" data-bs-target="#screenshotsCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+                    </div>
+                </div>
+                
+                <!-- スワイプヒント -->
+                <div class="swipe-hint text-center mt-3">
+                    <i class="bi bi-arrow-left-right"></i> スワイプで画像を切り替え
+                </div>
+            </div>
         </div>
     </section>
 
-
-<!-- モバイル対応セクション（3カラム版） -->
+    <!-- モバイル対応セクション（カルーセル版） -->
 <section class="py-5 bg-light">
     <div class="container">
         <h2 class="section-title fade-in">どこでも使えるモバイル対応</h2>
         <p class="section-subtitle fade-in">
             スマートフォンやタブレットからでも快適に利用できるレスポンシブデザイン
         </p>
-        <div class="row">
-            <div class="col-md-6 col-lg-4 fade-in">
-                <div class="screenshot-card" style="height: 400px;">
-                    <img src="{% static 'images/calendar.png' %}" alt="投資カレンダー" class="screenshot-img">
-                    <div class="screenshot-content">
-                        <h3 class="screenshot-title">投資カレンダー</h3>
-                        <p class="screenshot-description">
-                            購入日と売却日を一目で確認。時系列での投資パターンを把握できます。
-                        </p>
+        
+        <!-- PCでは3カラム表示、モバイルではカルーセル -->
+        <div class="d-none d-md-block">
+            <div class="row">
+                <div class="col-md-4 fade-in">
+                    <div class="screenshot-card" style="height: 300px;">
+                        <img src="{% static 'images/mobile1.jpg' %}" alt="モバイル日記一覧" class="screenshot-img">
+                    </div>
+                </div>
+
+                <div class="col-md-4 fade-in">
+                    <div class="screenshot-card" style="height: 300px;">
+                        <img src="{% static 'images/mobile2.jpg' %}" alt="モバイル詳細画面" class="screenshot-img">
+                    </div>
+                </div>
+
+                <div class="col-md-4 fade-in">
+                    <div class="screenshot-card" style="height: 300px;">
+                        <img src="{% static 'images/mobile3.jpg' %}" alt="モバイル分析画面" class="screenshot-img">
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div class="col-md-6 col-lg-4 fade-in">
-                <div class="screenshot-card" style="height: 400px;">
-                    <img src="{% static 'images/detail.png' %}" alt="銘柄詳細ページ" class="screenshot-img">
-                    <div class="screenshot-content">
-                        <h3 class="screenshot-title">銘柄詳細ページ</h3>
-                        <p class="screenshot-description">
-                            購入理由や分析情報を詳細に記録。投資判断の根拠を残せます。
-                        </p>
+        <!-- モバイル向けカルーセル表示 -->
+        <div class="d-md-none mobile-carousel-container fade-in">
+            <div id="mobileScreenshotsCarousel" class="carousel slide" data-bs-ride="carousel">
+                <div class="carousel-inner">
+                    <div class="carousel-item active">
+                        <div class="screenshot-card" style="height: 400px;">
+                            <img src="{% static 'images/mobile1.jpg' %}" alt="モバイル日記一覧" class="screenshot-img">
+                            <div class="carousel-caption">
+                                <h5>日記一覧画面</h5>
+                                <p>スマホでも見やすいリスト表示</p>
+                            </div>
+                        </div>
                     </div>
+                    <div class="carousel-item">
+                        <div class="screenshot-card" style="height: 400px;">
+                            <img src="{% static 'images/mobile2.jpg' %}" alt="モバイル詳細画面" class="screenshot-img">
+                            <div class="carousel-caption">
+                                <h5>詳細画面</h5>
+                                <p>銘柄情報をモバイルでも確認</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="carousel-item">
+                        <div class="screenshot-card" style="height: 400px;">
+                            <img src="{% static 'images/mobile3.jpg' %}" alt="モバイル分析画面" class="screenshot-img">
+                            <div class="carousel-caption">
+                                <h5>分析画面</h5>
+                                <p>投資成績をいつでも分析</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- カルーセルコントロール -->
+                <button class="carousel-control-prev" type="button" data-bs-target="#mobileScreenshotsCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#mobileScreenshotsCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+                
+                <!-- インジケーター -->
+                <div class="carousel-indicators">
+                    <button type="button" data-bs-target="#mobileScreenshotsCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+                    <button type="button" data-bs-target="#mobileScreenshotsCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+                    <button type="button" data-bs-target="#mobileScreenshotsCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
                 </div>
             </div>
-
-            <div class="col-md-6 col-lg-4 fade-in">
-                <div class="screenshot-card" style="height: 400px;">
-                    <img src="{% static 'images/dashboard.png' %}" alt="分析ダッシュボード" class="screenshot-img">
-                    <div class="screenshot-content">
-                        <h3 class="screenshot-title">分析ダッシュボード</h3>
-                        <p class="screenshot-description">
-                            投資パターンを統計的に分析。投資スタイルの強みと弱みが見えてきます。
-                        </p>
-                    </div>
-                </div>
+            
+            <!-- スワイプヒント -->
+            <div class="swipe-hint text-center mt-3">
+                <i class="bi bi-arrow-left-right"></i> スワイプで画像を切り替え
             </div>
         </div>
     </div>
@@ -478,7 +726,7 @@
                 投資判断を記録し、分析し、改善する。カブログがあなたの投資をサポートします。<br>
                 無料で始められ、Googleアカウントで数秒で登録完了。
             </p>
-            <a href="{% url 'stockdiary:home' %}"  class="btn cta-btn">無料アカウント作成</a>
+            <a href="{% url 'stockdiary:home' %}" class="btn cta-btn">無料アカウント作成</a>
         </div>
     </section>
 
@@ -566,7 +814,110 @@
             fadeElements.forEach(element => {
                 fadeInObserver.observe(element);
             });
+            var carousel = document.getElementById('appScreenshotsCarousel');
+            if (!carousel) return;
+
+            // プレビューアイテムにクリックイベントを設定
+            var previewItems = document.querySelectorAll('.preview-item');
+            previewItems.forEach(function (item) {
+                item.addEventListener('click', function () {
+                    var slideIndex = this.dataset.slideTo;
+                    var target = this.dataset.bsTarget;
+                    var carouselInstance = bootstrap.Carousel.getInstance(document.querySelector(target));
+
+                    if (carouselInstance) {
+                        carouselInstance.to(parseInt(slideIndex));
+                    }
+
+                    // アクティブなプレビューを更新
+                    document.querySelectorAll('.preview-img').forEach(function (img) {
+                        img.classList.remove('active');
+                    });
+                    this.querySelector('.preview-img').classList.add('active');
+                });
+            });
+
+            // カルーセルのスライド変更イベント
+            carousel.addEventListener('slid.bs.carousel', function (event) {
+                var activeIndex = event.to;
+
+                // プレビューの状態を更新
+                document.querySelectorAll('.preview-img').forEach(function (img, index) {
+                    if (index === activeIndex) {
+                        img.classList.add('active');
+
+                        // アクティブなサムネイルが見えるようにスクロール
+                        var previewItem = img.closest('.preview-item');
+                        if (previewItem) {
+                            previewItem.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'nearest',
+                                inline: 'center'
+                            });
+                        }
+                    } else {
+                        img.classList.remove('active');
+                    }
+                });
+            });
         });
+
+        // 全てのカルーセルに対してタッチスワイプサポートを追加
+        const carousels = document.querySelectorAll('.carousel');
+
+        carousels.forEach(carousel => {
+            let touchStartX = 0;
+            let touchEndX = 0;
+
+            carousel.addEventListener('touchstart', function (e) {
+                touchStartX = e.changedTouches[0].screenX;
+            }, { passive: true });
+
+            carousel.addEventListener('touchend', function (e) {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipe(this);
+            }, { passive: true });
+
+            function handleSwipe(carouselElement) {
+                const bsCarousel = bootstrap.Carousel.getInstance(carouselElement);
+
+                if (!bsCarousel) return;
+
+                if (touchEndX < touchStartX - 50) {
+                    // 左スワイプ - 次へ
+                    bsCarousel.next();
+                }
+
+                if (touchEndX > touchStartX + 50) {
+                    // 右スワイプ - 前へ
+                    bsCarousel.prev();
+                }
+            }
+        });
+
+        // キーボードナビゲーションのサポート (アクセシビリティ改善)
+        document.addEventListener('keydown', function (e) {
+            // 現在フォーカスされているカルーセルを取得
+            const focusedCarousel = document.querySelector('.carousel:focus') ||
+                document.querySelector('.carousel-item.active').closest('.carousel');
+
+            if (!focusedCarousel) return;
+
+            const bsCarousel = bootstrap.Carousel.getInstance(focusedCarousel);
+            if (!bsCarousel) return;
+
+            // 左矢印キー
+            if (e.key === 'ArrowLeft') {
+                bsCarousel.prev();
+                e.preventDefault();
+            }
+
+            // 右矢印キー
+            if (e.key === 'ArrowRight') {
+                bsCarousel.next();
+                e.preventDefault();
+            }
+        });        
     </script>
 </body>
 
