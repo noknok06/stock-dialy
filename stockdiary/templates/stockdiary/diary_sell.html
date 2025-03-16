@@ -8,6 +8,7 @@
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'css/common.css' %}">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<link rel="stylesheet" href="{% static 'css/speed-dial.css' %}">
 <style>
   .card {
     overflow: hidden;
@@ -355,11 +356,15 @@
     </div>
   </div>
 </div>
+{% include 'speed_dial.html' with actions=page_actions %}
 {% endblock %}
 
 {% block scripts %}
+<script src="{% static 'js/speed-dial.js' %}"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    // スピードダイアルを初期化
+    initializeSpeedDial();
     // 売却モーダルの設定
     const sellModal = document.getElementById('sellModal');
     const sellButtons = document.querySelectorAll('.btn-sell');

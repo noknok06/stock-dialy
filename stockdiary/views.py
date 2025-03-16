@@ -145,6 +145,35 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
     template_name = 'stockdiary/diary_form.html'
     success_url = reverse_lazy('stockdiary:home')
     
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # フォーム用のスピードダイアルアクション
+        form_actions = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('stockdiary:home'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            },
+            {
+                'type': 'template',
+                'url': reverse_lazy('analysis_template:list'),
+                'icon': 'bi-clipboard-data',
+                'label': 'テンプレート'
+            },
+            {
+                'type': 'tag',
+                'url': reverse_lazy('tags:list'),
+                'icon': 'bi-tags',
+                'label': 'タグ管理'
+            }
+        ]
+        context['form_actions'] = form_actions
+        
+        return context
+
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
@@ -301,12 +330,41 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
                     diary=self.object,
                     checklist_item_id=item_id,
                     status=status
-                )        
+                )
+                
 class StockDiaryUpdateView(LoginRequiredMixin, UpdateView):
     model = StockDiary
     form_class = StockDiaryForm
     template_name = 'stockdiary/diary_form.html'
     
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # フォーム用のスピードダイアルアクション
+        form_actions = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('stockdiary:detail', kwargs={'pk': self.object.pk}),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            },
+            {
+                'type': 'template',
+                'url': reverse_lazy('analysis_template:list'),
+                'icon': 'bi-clipboard-data',
+                'label': 'テンプレート'
+            },
+            {
+                'type': 'tag',
+                'url': reverse_lazy('tags:list'),
+                'icon': 'bi-tags',
+                'label': 'タグ管理'
+            }
+        ]
+        context['form_actions'] = form_actions
+        
+        return context
+
     def get_queryset(self):
         return StockDiary.objects.filter(user=self.request.user)
     
@@ -521,6 +579,36 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         recent_trends = self.prepare_recent_trends(diaries)
         holding_period_data = self.prepare_holding_period_data(diaries)
         
+        # スピードダイアルのアクションを定義
+        analytics_actions = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('stockdiary:home'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            },
+            {
+                'type': 'add',
+                'url': reverse_lazy('stockdiary:create'),
+                'icon': 'bi-plus-lg',
+                'label': '新規作成'
+            },
+            {
+                'type': 'tag',
+                'url': reverse_lazy('tags:list'),  # タグ管理ページのURL
+                'icon': 'bi-tags',
+                'label': 'タグ管理'
+            },
+            {
+                'type': 'template',
+                'url': reverse_lazy('analysis_template:list'),  # テンプレート分析ページのURL
+                'icon': 'bi-clipboard-data',
+                'label': 'テンプレート'
+            }
+        ]
+        context['page_actions'] = analytics_actions
+        
+
         # コンテキストの構築
         context.update({
             'diaries': diaries,
@@ -2289,7 +2377,24 @@ class StockDiarySellView(LoginRequiredMixin, TemplateView):
             })
         
         context['grouped_diaries'] = grouped_diaries.values()
-        
+
+        analytics_actions = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('stockdiary:home'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            },
+            {
+                'type': 'add',
+                'url': reverse_lazy('stockdiary:create'),
+                'icon': 'bi-plus-lg',
+                'label': '新規作成'
+            },
+            # 分析ページに必要な他のアクションを追加
+        ]
+        context['page_actions'] = analytics_actions
+                
         # 選択された日記ID（更新用）
         diary_id = self.kwargs.get('pk')
         if diary_id:

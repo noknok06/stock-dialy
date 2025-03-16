@@ -719,42 +719,7 @@
 </div>
 
 <!-- スピードダイアルコンポーネント -->
-<div class="speed-dial-container">
-  <div class="speed-dial-actions">
-    {% if not diary.sell_date %}
-    <div class="speed-dial-action">
-      <span class="action-label">売却</span>
-      <a href="{% url 'stockdiary:sell_specific' diary.id %}" class="speed-dial-btn action-sell">
-        <i class="bi bi-cash-coin"></i>
-      </a>
-    </div>
-    {% endif %}
-    <div class="speed-dial-action">
-      <span class="action-label">編集</span>
-      <a href="{% url 'stockdiary:update' diary.id %}" class="speed-dial-btn action-edit">
-        <i class="bi bi-pencil"></i>
-      </a>
-    </div>
-    <div class="speed-dial-action">
-      <span class="action-label">削除</span>
-      <a href="{% url 'stockdiary:delete' diary.id %}" class="speed-dial-btn action-delete">
-        <i class="bi bi-trash"></i>
-      </a>
-    </div>
-    <div class="speed-dial-action">
-      <span class="action-label">戻る</span>
-      <a href="{% url 'stockdiary:home' %}" class="speed-dial-btn action-back">
-        <i class="bi bi-arrow-left"></i>
-      </a>
-    </div>
-  </div>
-  <button class="speed-dial-trigger" type="button" aria-label="アクションメニュー">
-    <i class="bi bi-plus-lg"></i>
-  </button>
-</div>
-
-<!-- オーバーレイ背景 -->
-<div class="speed-dial-overlay"></div>
+{% include 'speed_dial.html' with actions=diary_actions %}
 {% endblock %}
 
 {% block scripts %}
@@ -763,6 +728,7 @@
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     // スピードダイアルを初期化
+    
     initializeSpeedDial();
 
     // 現在価格取得ボタンの処理
@@ -856,42 +822,6 @@
       toastEl.style.zIndex = '1050';
 
       return toastEl;
-    }
-    // スピードダイアルのアクションを設定（template変数が使えない場合のJS実装例）
-    if (!document.querySelector('.speed-dial')) {
-      const actions = [
-        {% if not diary.sell_date %}
-        {
-          type: 'sell',
-          icon: 'bi-cash-coin',
-          url: '{% url "stockdiary:sell_specific" diary.id %}',
-          label: '売却'
-        },
-        {% endif %}
-        {
-          type: 'edit',
-          icon: 'bi-pencil',
-          url: '{% url "stockdiary:update" diary.id %}',
-          label: '編集'
-        },
-        {
-          type: 'delete',
-          icon: 'bi-trash',
-          url: '{% url "stockdiary:delete" diary.id %}',
-          label: '削除'
-        },
-        {
-          type: 'back',
-          icon: 'bi-arrow-left',
-          url: '{% url "stockdiary:home" %}',
-          label: '戻る'
-        }
-      ];
-      
-      createSpeedDial({
-        actions: actions,
-        useOverlay: true
-      });
     }
   });
 </script>

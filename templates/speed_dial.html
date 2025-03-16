@@ -1,0 +1,38 @@
+{% comment %}
+共通のスピードダイアルコンポーネント
+使用方法：
+{% include 'components/speed_dial.html' with actions=page_actions %}
+
+page_actionsは以下のような構造のリストを含む変数名：
+[
+  {
+    'type': 'edit',
+    'url': url_path,
+    'icon': 'bi-pencil',
+    'label': '編集',
+    'condition': True  # 条件付きで表示/非表示制御可能
+  },
+  ...
+]
+{% endcomment %}
+
+<div class="speed-dial-container">
+  <div class="speed-dial-actions">
+    {% for action in actions %}
+      {% if action.condition != False %}
+      <div class="speed-dial-action">
+        <span class="action-label">{{ action.label }}</span>
+        <a href="{{ action.url }}" class="speed-dial-btn action-{{ action.type }}">
+          <i class="bi {{ action.icon }}"></i>
+        </a>
+      </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+  <button class="speed-dial-trigger" type="button" aria-label="アクションメニュー">
+    <i class="bi bi-plus-lg"></i>
+  </button>
+</div>
+
+<!-- オーバーレイ背景 -->
+<div class="speed-dial-overlay"></div>

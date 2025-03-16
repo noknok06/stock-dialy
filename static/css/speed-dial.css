@@ -118,26 +118,64 @@
     visibility: visible;
   }
   
-  /* アクションボタンの色 */
-  .action-back {
-    background-color: rgba(107, 114, 128, 0.85);  /* グレー */
-  }
-  .action-edit {
-    background-color: rgba(245, 158, 11, 0.85);  /* オレンジ */
-  }
-  .action-delete {
-    background-color: rgba(239, 68, 68, 0.85);  /* レッド */
-  }
-  .action-sell {
-    background-color: rgba(16, 185, 129, 0.85);  /* グリーン */
-  }
-  .action-add {
-    background-color: rgba(59, 130, 246, 0.85);  /* ブルー */
-  }
-  
-  /* レスポンシブ調整 */
-  @media (min-width: 768px) {
-    .speed-dial-container {
-      display: none;  /* PCサイズではスピードダイアルを非表示 */
-    }
-  }
+/* アクションボタンの色 - 既存のスタイルを拡張 */
+/* 基本色 */
+.action-back {
+  background-color: rgba(107, 114, 128, 0.85);  /* グレー */
+}
+.action-edit {
+  background-color: rgba(245, 158, 11, 0.85);  /* オレンジ */
+}
+.action-delete {
+  background-color: rgba(239, 68, 68, 0.85);  /* レッド */
+}
+.action-sell {
+  background-color: rgba(16, 185, 129, 0.85);  /* グリーン */
+}
+.action-add {
+  background-color: rgba(59, 130, 246, 0.85);  /* ブルー */
+}
+
+/* 新しく追加するボタン色 */
+.action-tag {
+  background-color: rgba(139, 92, 246, 0.85);  /* パープル */
+}
+.action-template {
+  background-color: rgba(14, 165, 233, 0.85);  /* スカイブルー */
+}
+.action-chart {
+  background-color: rgba(249, 115, 22, 0.85);  /* オレンジ */
+}
+.action-save {
+  background-color: rgba(34, 197, 94, 0.85);  /* グリーン */
+}
+.action-search {
+  background-color: rgba(168, 85, 247, 0.85);  /* パープル */
+}
+.action-filter {
+  background-color: rgba(79, 70, 229, 0.85);  /* インディゴ */
+}
+
+/* ホバー時に少し明るく */
+.speed-dial-btn:hover {
+  filter: brightness(1.1);
+  transform: scale(1.1);
+}
+/* メイントリガーボタン */
+.speed-dial-trigger {
+  width: 56px;
+  height: 56px;
+  background-color: rgba(79, 70, 229, 0.85);  /* 半透明のインディゴ色 */
+  /* その他のスタイルは省略 */
+}
+
+/* トリガーボタン - テーマカラー変更例 */
+.trigger-primary {
+  background-color: rgba(59, 130, 246, 0.85);  /* ブルー */
+}
+.trigger-danger {
+  background-color: rgba(239, 68, 68, 0.85);  /* レッド */
+}
+.trigger-success {
+  background-color: rgba(16, 185, 129, 0.85);  /* グリーン */
+}

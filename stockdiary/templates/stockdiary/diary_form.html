@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{% if form.instance.pk %}日記の編集{% else %}新規日記作成{% endif %} | カブログ{% endblock %}
 
@@ -8,6 +9,7 @@
 {{ form.media }}
 <!-- Bootstrap Icons -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<link rel="stylesheet" href="{% static 'css/speed-dial.css' %}">
 <style>
   .form-check-label {
     margin-bottom: 0;
@@ -199,6 +201,15 @@
     .form-card-body {
       padding: 1.25rem;
     }
+  }
+  .form-container {
+    padding-bottom: 80px; /* スピードダイアルのためのスペース */
+  }
+  
+  /* フォームボタンエリア */
+  .form-actions {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
   }
 </style>
 {% endblock %}
@@ -458,13 +469,17 @@
     </div>
   </div>
 </div>
+{% include 'speed_dial.html' with actions=form_actions %}
 {% endblock %}
 <!-- チェックリスト機能のJavaScriptをblock scriptsに追加 -->
 {% block scripts %}
 {{ block.super }}
-<!-- 単純化されたスクリプト部分 -->
+<!-- スピードダイアルのJSを追加 -->
+<script src="{% static 'js/speed-dial.js' %}"></script>
 <script>
-  document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('DOMContentLoaded', function() {
+    // スピードダイアルを初期化
+    initializeSpeedDial();
     // フォーム要素
     const stockSymbolInput = document.getElementById('{{ form.stock_symbol.id_for_label }}');
     const stockNameInput = document.getElementById('{{ form.stock_name.id_for_label }}');
