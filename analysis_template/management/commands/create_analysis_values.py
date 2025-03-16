@@ -1,6 +1,6 @@
 # analysis_template/management/commands/create_analysis_values.py
 # python manage.py create_analysis_values --username admin --template_id 5 --all_diaries
-# python manage.py create_analysis_values --username admin --template_id 5 --diary_id 10
+# python manage.py create_analysis_values --username admin --template_id 5 --diary_id 31
 # python manage.py create_analysis_values --username admin --template_id 5
 
 # analysis_template/management/commands/create_analysis_values.py

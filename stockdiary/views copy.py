@@ -418,7 +418,6 @@ class StockDiaryDeleteView(LoginRequiredMixin, DeleteView):
    
 # 既存のStockDiaryListViewとその他のクラスは変更なし
 class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
-    """投資記録分析ダッシュボードを表示するビュー"""
     template_name = 'stockdiary/analytics_dashboard.html'
     
     def get_context_data(self, **kwargs):
@@ -427,67 +426,43 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         
         # フィルターパラメータの取得
         date_range = self.request.GET.get('date_range', 'all')
-        selected_tag = self.request.GET.get('tag', '')
+        selected_tag = self.request.GET.get('tag')
         status = self.request.GET.get('status', 'all')
-        sort = self.request.GET.get('sort', 'date_desc')
+        
+        # 日付フィルターの設定
+        date_from = None
+        if date_range == '1m':
+            date_from = timezone.now() - timedelta(days=30)
+        elif date_range == '3m':
+            date_from = timezone.now() - timedelta(days=90)
+        elif date_range == '6m':
+            date_from = timezone.now() - timedelta(days=180)
+        elif date_range == '1y':
+            date_from = timezone.now() - timedelta(days=365)
         
         # フィルターパラメータの準備
         filter_params = {
-            'date_from': None,
+            'date_from': date_from,
             'tag_id': selected_tag,
             'status': status
         }
         
-        # 日付フィルターの設定
-        if date_range != 'all':
-            today = timezone.now().date()
-            if date_range == '1m':
-                filter_params['date_from'] = today - timedelta(days=30)
-            elif date_range == '3m':
-                filter_params['date_from'] = today - timedelta(days=90)
-            elif date_range == '6m':
-                filter_params['date_from'] = today - timedelta(days=180)
-            elif date_range == '1y':
-                filter_params['date_from'] = today - timedelta(days=365)
-        
         # 基本データの取得
-        diaries = self.get_filtered_diaries(user, filter_params, sort)
+        diaries = self.get_filtered_diaries(user, filter_params)
         all_diaries = StockDiary.objects.filter(user=user)
-        tags = Tag.objects.filter(user=user).distinct()
+        tags = Tag.objects.filter(stockdiary__user=user).distinct()
         
-        # 保有中と売却済みの株式を分離
-        active_diaries = [d for d in diaries if not d.sell_date]
-        sold_diaries = [d for d in diaries if d.sell_date]
-        
-        # 1. 統計データの収集
+        # 統計データの収集
         stats = self.collect_stats(user, diaries, all_diaries)
         
-        # 2. 投資状況サマリー関連のデータ
-        investment_data = self.get_investment_summary_data(user, diaries, all_diaries, active_diaries, sold_diaries)
-        
-        # 3. タグ分析データの取得
+        # タグ分析データの取得
         tag_data = self.get_tag_analysis_data(user, diaries)
         
-        # 4. 分析テンプレートデータの取得
+        # 分析テンプレートデータの取得
         template_data = self.get_template_analysis_data(user, filter_params)
         
-        # 5. 活動分析データの取得
+        # 活動分析データの取得
         activity_data = self.get_activity_analysis_data(user, diaries, all_diaries)
-        
-        # 既存の分析データ準備コードを呼び出す
-        monthly_data = self.prepare_monthly_data(diaries)
-        day_of_week_data = self.prepare_day_of_week_data(diaries)
-        activity_heatmap = self.prepare_activity_heatmap(diaries)
-        content_length_data = self.prepare_content_length_data(diaries)
-        tag_frequency_data = self.prepare_tag_frequency_data(diaries)
-        tag_timeline_data = self.prepare_tag_timeline_data(diaries)
-        tag_correlation_data = self.prepare_tag_correlation_data(diaries)
-        template_usage_data = self.prepare_template_usage_data(diaries)
-        template_timeline_data = self.prepare_template_timeline_data(diaries)
-        template_item_stats = self.prepare_template_item_stats(diaries)
-        timeline_data = self.prepare_timeline_data(diaries)
-        recent_trends = self.prepare_recent_trends(diaries)
-        holding_period_data = self.prepare_holding_period_data(diaries)
         
         # コンテキストの構築
         context.update({
@@ -496,203 +471,16 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
             'date_range': date_range,
             'selected_tag': selected_tag,
             'status': status,
-            'sort': sort,
             'all_tags': tags,
             **stats,
-            **investment_data,
             **tag_data,
             **template_data,
-            **activity_data,
-            
-            # 既存のデータを追加
-            'monthly_labels': json.dumps(monthly_data['labels']),
-            'monthly_counts': json.dumps(monthly_data['counts']),
-            'day_of_week_counts': json.dumps(list(day_of_week_data)),
-            'activity_heatmap': activity_heatmap,
-            'content_length_ranges': json.dumps(content_length_data['ranges']),
-            'content_length_counts': json.dumps(content_length_data['counts']),
-            'tag_names': json.dumps(tag_frequency_data['names']),
-            'tag_counts': json.dumps(tag_frequency_data['counts']),
-            'tag_timeline_labels': json.dumps(tag_timeline_data['labels']),
-            'tag_timeline_data': mark_safe(json.dumps(tag_timeline_data['datasets'])),
-            'top_tags': tag_correlation_data,
-            'template_names': json.dumps(template_usage_data['names']),
-            'template_usage_rates': json.dumps(template_usage_data['rates']),
-            'template_timeline_labels': json.dumps(template_timeline_data['labels']),
-            'template_timeline_data': json.dumps(template_timeline_data['rates']),
-            'template_stats': template_item_stats,
-            'diary_timeline': timeline_data,
-            'purchase_frequency': recent_trends['purchase_frequency'],
-            'most_used_tag': recent_trends['most_used_tag'],
-            'most_detailed_record': recent_trends['most_detailed_record'],
-            'recent_keywords': recent_trends['keywords'],
-            'holding_period_ranges': json.dumps(holding_period_data['ranges']),
-            'holding_period_counts': json.dumps(holding_period_data['counts']),
+            **activity_data
         })
         
-        # メソッド追加
         return context
-
-    def get_current_prices(self, stock_symbols):
-        """銘柄コードから現在の株価を取得する関数"""
-        # 未実装 - 実際の環境では外部APIを使用
-        prices = {}
-        for symbol in stock_symbols:
-            # デモデータを生成 (実際の実装が難しいため)
-            # 本番環境では Yahoo Finance API, Alpha Vantage API, または
-            # 取引所のAPIを使用して株価データを取得すること
-            prices[symbol] = 0  # 未実装のためゼロを返す
-        return prices
     
-    def get_analysis_template_stats(self, diaries):
-        """分析テンプレートの統計情報を取得"""
-        # 使用率を計算
-        total_completion = 0
-        completion_count = 0
-        
-        # 日記IDのリストを取得（効率化のため）
-        diary_ids = list(diaries.values_list('id', flat=True))
-        
-        if not diary_ids:
-            return {
-                'avg_completion_rate': 0,
-                'change': 0
-            }
-        
-        # 一度に必要な分析値を取得
-        diary_analysis_values = DiaryAnalysisValue.objects.filter(
-            diary_id__in=diary_ids
-        ).select_related('analysis_item__template')
-        
-        # 日記ごとの分析値を整理
-        diary_values_map = defaultdict(list)
-        for value in diary_analysis_values:
-            diary_values_map[value.diary_id].append(value)
-        
-        for diary in diaries:
-            diary_values = diary_values_map.get(diary.id, [])
-            
-            # 各日記の分析テンプレートを取得
-            templates_used = set()
-            for value in diary_values:
-                templates_used.add(value.analysis_item.template_id)
-            
-            for template_id in templates_used:
-                try:
-                    template = AnalysisTemplate.objects.get(id=template_id)
-                    items = template.items.all()
-                    total_items = items.count()
-                    
-                    if total_items > 0:
-                        # テンプレート項目への入力率を計算
-                        filled_items = 0
-                        for item in items:
-                            # この日記のこの項目の値があるか確認
-                            has_value = False
-                            for value in diary_values:
-                                if value.analysis_item_id == item.id:
-                                    # 項目タイプに応じて値が存在するか確認
-                                    if item.item_type == 'number' and value.number_value is not None:
-                                        has_value = True
-                                    elif item.item_type == 'boolean' and value.boolean_value is not None:
-                                        has_value = True
-                                    elif item.item_type == 'boolean_with_value' and (value.boolean_value is not None or value.number_value is not None or value.text_value):
-                                        has_value = True
-                                    elif value.text_value:
-                                        has_value = True
-                                    break
-                            
-                            if has_value:
-                                filled_items += 1
-                        
-                        completion_rate = (filled_items / total_items) * 100
-                        total_completion += completion_rate
-                        completion_count += 1
-                except AnalysisTemplate.DoesNotExist:
-                    pass
-        
-        avg_completion_rate = 0
-        if completion_count > 0:
-            avg_completion_rate = total_completion / completion_count
-        
-        # 前月との比較
-        last_month = timezone.now().date() - timedelta(days=30)
-        last_month_diaries = StockDiary.objects.filter(
-            user=self.request.user, 
-            purchase_date__lt=last_month
-        )
-        
-        last_month_total = 0
-        last_month_count = 0
-        
-        # 前月の日記IDリスト
-        last_month_diary_ids = list(last_month_diaries.values_list('id', flat=True))
-        
-        if last_month_diary_ids:
-            # 前月の分析値
-            last_month_values = DiaryAnalysisValue.objects.filter(
-                diary_id__in=last_month_diary_ids
-            ).select_related('analysis_item__template')
-            
-            # 日記ごとの分析値をマッピング
-            last_month_values_map = defaultdict(list)
-            for value in last_month_values:
-                last_month_values_map[value.diary_id].append(value)
-            
-            for diary in last_month_diaries:
-                diary_values = last_month_values_map.get(diary.id, [])
-                
-                # 各日記のテンプレートを取得
-                templates_used = set()
-                for value in diary_values:
-                    templates_used.add(value.analysis_item.template_id)
-                
-                for template_id in templates_used:
-                    try:
-                        template = AnalysisTemplate.objects.get(id=template_id)
-                        items = template.items.all()
-                        total_items = items.count()
-                        
-                        if total_items > 0:
-                            # テンプレート項目への入力率を計算
-                            filled_items = 0
-                            for item in items:
-                                # この日記のこの項目の値があるか確認
-                                has_value = False
-                                for value in diary_values:
-                                    if value.analysis_item_id == item.id:
-                                        # 項目タイプに応じて値が存在するか確認
-                                        if item.item_type == 'number' and value.number_value is not None:
-                                            has_value = True
-                                        elif item.item_type == 'boolean' and value.boolean_value is not None:
-                                            has_value = True
-                                        elif item.item_type == 'boolean_with_value' and (value.boolean_value is not None or value.number_value is not None or value.text_value):
-                                            has_value = True
-                                        elif value.text_value:
-                                            has_value = True
-                                        break
-                                
-                                if has_value:
-                                    filled_items += 1
-                            
-                            completion_rate = (filled_items / total_items) * 100
-                            last_month_total += completion_rate
-                            last_month_count += 1
-                    except AnalysisTemplate.DoesNotExist:
-                        pass
-        
-        last_month_avg = 0
-        if last_month_count > 0:
-            last_month_avg = last_month_total / last_month_count
-        
-        change = avg_completion_rate - last_month_avg
-        
-        return {
-            'avg_completion_rate': avg_completion_rate,
-            'change': change
-        }
-    
-    def get_filtered_diaries(self, user, filter_params, sort='date_desc'):
+    def get_filtered_diaries(self, user, filter_params):
         """フィルター条件に基づいて日記を取得"""
         diaries = StockDiary.objects.filter(user=user)
         
@@ -709,17 +497,6 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
             diaries = diaries.filter(sell_date__isnull=True)
         elif filter_params.get('status') == 'sold':
             diaries = diaries.filter(sell_date__isnull=False)
-        
-        # 並び替え
-        if sort == 'date_desc':
-            diaries = diaries.order_by('-purchase_date')
-        elif sort == 'date_asc':
-            diaries = diaries.order_by('purchase_date')
-        elif sort == 'reason_desc':
-            # 理由フィールドの長さで並べ替え
-            diaries = diaries.annotate(reason_length=Length('reason')).order_by('-reason_length')
-        elif sort == 'reason_asc':
-            diaries = diaries.annotate(reason_length=Length('reason')).order_by('reason_length')
         
         return diaries.select_related('user').prefetch_related('tags')
     
@@ -768,29 +545,18 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         checklist_rate_change = current_completion - prev_completion
         
         # 平均記録文字数
-        avg_reason_length = 0
-        if diaries.exists():
-            # HTMLタグを除去して純粋なテキスト長を計算
-            reason_lengths = []
-            for diary in diaries:
-                raw_text = strip_tags(diary.reason)
-                reason_lengths.append(len(raw_text))
-            
-            if reason_lengths:
-                avg_reason_length = int(sum(reason_lengths) / len(reason_lengths))
+        avg_reason_length = diaries.annotate(
+            reason_length=Length('reason')
+        ).aggregate(avg_length=Avg('reason_length'))['avg_length'] or 0
         
-        # 前月の平均記録文字数
-        last_month_avg_length = 0
-        if prev_month_diaries.exists():
-            last_month_lengths = []
-            for diary in prev_month_diaries:
-                raw_text = strip_tags(diary.reason)
-                last_month_lengths.append(len(raw_text))
-            
-            if last_month_lengths:
-                last_month_avg_length = int(sum(last_month_lengths) / len(last_month_lengths))
+        prev_avg_length = all_diaries.filter(
+            created_at__gte=prev_month_start,
+            created_at__lt=current_month_start
+        ).annotate(
+            reason_length=Length('reason')
+        ).aggregate(avg_length=Avg('reason_length'))['avg_length'] or 0
         
-        reason_length_change = avg_reason_length - last_month_avg_length
+        reason_length_change = int(avg_reason_length) - int(prev_avg_length)
         
         return {
             'total_stocks': total_stocks,
@@ -799,102 +565,8 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
             'tags_change': tags_change,
             'checklist_completion_rate': checklist_completion_rate,
             'checklist_rate_change': checklist_rate_change,
-            'avg_reason_length': avg_reason_length,
+            'avg_reason_length': int(avg_reason_length),
             'reason_length_change': reason_length_change
-        }
-    
-    def get_investment_summary_data(self, user, diaries, all_diaries, active_diaries, sold_diaries):
-        """投資状況サマリー関連のデータを取得"""
-        # 1. 総投資額の計算
-        total_investment = sum(diary.purchase_price * diary.purchase_quantity for diary in diaries)
-        
-        # 2. 前月比較用のデータ
-        last_month = timezone.now().date() - timedelta(days=30)
-        last_month_diaries = StockDiary.objects.filter(
-            user=user, 
-            purchase_date__lt=last_month
-        )
-        last_month_investment = sum(diary.purchase_price * diary.purchase_quantity for diary in last_month_diaries)
-        
-        investment_change = total_investment - last_month_investment
-        investment_change_percent = (investment_change / last_month_investment * 100) if last_month_investment else 0
-        
-        # 3. 実現利益（売却済み株式の損益）
-        realized_profit = Decimal('0')
-        for diary in sold_diaries:
-            profit = (diary.sell_price - diary.purchase_price) * diary.purchase_quantity
-            realized_profit += profit
-        
-        # 4. 未実現利益（保有中の株式の現在価値と購入額の差）
-        # 現在株価を取得（実際の環境では外部APIから取得）
-        current_prices = self.get_current_prices([d.stock_symbol for d in active_diaries])
-        
-        unrealized_profit = Decimal('0')
-        total_value = Decimal('0')  # 保有株式の現在総価値
-        
-        for diary in active_diaries:
-            current_price = current_prices.get(diary.stock_symbol)
-            if current_price:
-                current_value = Decimal(str(current_price)) * diary.purchase_quantity
-                total_value += current_value
-                unrealized_profit += current_value - (diary.purchase_price * diary.purchase_quantity)
-        
-        # 5. 総利益/損失 = 実現利益 + 未実現利益
-        total_profit = realized_profit + unrealized_profit
-        
-        # 6. 前月の利益
-        last_month_profit = Decimal('0')
-        last_month_actives = [d for d in last_month_diaries if not d.sell_date]
-        last_month_sold = [d for d in last_month_diaries if d.sell_date]
-        
-        # 前月の実現利益
-        for diary in last_month_sold:
-            last_month_profit += (diary.sell_price - diary.purchase_price) * diary.purchase_quantity
-        
-        # 前月の未実現利益
-        for diary in last_month_actives:
-            current_price = current_prices.get(diary.stock_symbol)
-            if current_price:
-                current_value = Decimal(str(current_price)) * diary.purchase_quantity
-                last_month_profit += current_value - (diary.purchase_price * diary.purchase_quantity)
-        
-        profit_change = total_profit - last_month_profit
-        profit_change_percent = (profit_change / last_month_profit * 100) if last_month_profit else 0
-        
-        # 7. 保有銘柄数
-        active_stocks_count = len(active_diaries)
-        last_month_active_stocks = len(last_month_actives)
-        stocks_count_change = active_stocks_count - last_month_active_stocks
-        
-        # 8. 平均保有期間
-        avg_holding_period = 0
-        if sold_diaries:
-            total_days = sum((d.sell_date - d.purchase_date).days for d in sold_diaries)
-            avg_holding_period = total_days / len(sold_diaries)
-        
-        # 前月の平均保有期間
-        last_month_avg_holding_period = 0
-        if last_month_sold:
-            last_month_total_days = sum((d.sell_date - d.purchase_date).days for d in last_month_sold)
-            last_month_avg_holding_period = last_month_total_days / len(last_month_sold)
-        
-        holding_period_change = avg_holding_period - last_month_avg_holding_period
-        
-        return {
-            'total_investment': total_investment,
-            'investment_change': investment_change,
-            'investment_change_percent': investment_change_percent,
-            'total_profit': total_profit,
-            'profit_change': profit_change,
-            'profit_change_percent': profit_change_percent,
-            'active_stocks_count': active_stocks_count,
-            'stocks_count_change': stocks_count_change,
-            'avg_holding_period': avg_holding_period,
-            'holding_period_change': holding_period_change,
-            'realized_profit': realized_profit, 
-            'unrealized_profit': unrealized_profit,
-            'total_value': total_value,
-            'active_holdings_count': active_stocks_count,
         }
     
     def calculate_analysis_completion_rate(self, user, diaries):
@@ -1082,6 +754,145 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
             'tag_timeline_data': json.dumps(tag_timeline_data)
         }
     
+    def get_activity_analysis_data(self, user, diaries, all_diaries):
+        """活動分析データを取得"""
+        from django.db.models import Count
+        from django.db.models.functions import TruncMonth
+        from datetime import timedelta
+        import json
+        from collections import defaultdict
+        
+        # 活動ヒートマップ用のデータ（過去30日間）
+        activity_heatmap = []
+        thirty_days_ago = timezone.now().date() - timedelta(days=30)
+        
+        for i in range(31):
+            day = thirty_days_ago + timedelta(days=i)
+            day_count = all_diaries.filter(purchase_date=day).count()
+            
+            # ヒートマップの強度レベル（0-5）
+            if day_count == 0:
+                level = 0
+            elif day_count == 1:
+                level = 1
+            elif day_count == 2:
+                level = 2
+            elif day_count <= 4:
+                level = 3
+            elif day_count <= 6:
+                level = 4
+            else:
+                level = 5
+            
+            activity_heatmap.append({
+                'date': day.strftime('%Y-%m-%d'),
+                'day': day.day,
+                'count': day_count,
+                'level': level
+            })
+        
+        # 月ごとの記録数
+        monthly_data = all_diaries.annotate(
+            month=TruncMonth('purchase_date')
+        ).values('month').annotate(
+            count=Count('id')
+        ).order_by('month')
+        
+        last_6_months = []
+        current = timezone.now()
+        for i in range(5, -1, -1):
+            month = (current - timedelta(days=30 * i))
+            last_6_months.append(month.strftime('%Y-%m'))
+        
+        monthly_counts = []
+        for month_str in last_6_months:
+            year, month = map(int, month_str.split('-'))
+            count = 0
+            for data in monthly_data:
+                if data['month'].year == year and data['month'].month == month:
+                    count = data['count']
+                    break
+            monthly_counts.append(count)
+        
+        # 曜日別記録数
+        day_of_week_counts = [0] * 7  # 0: 月曜日, 6: 日曜日
+        
+        for diary in all_diaries:
+            day_of_week = diary.purchase_date.weekday()
+            day_of_week_counts[day_of_week] += 1
+        
+        # 最も記録が多い曜日
+        max_day_index = day_of_week_counts.index(max(day_of_week_counts))
+        weekdays = ['月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日', '日曜日']
+        most_active_day = weekdays[max_day_index]
+        
+        # 平日/週末のパターン
+        weekday_sum = sum(day_of_week_counts[:5])
+        weekend_sum = sum(day_of_week_counts[5:])
+        
+        if weekday_sum > weekend_sum * 2:
+            weekday_pattern = "主に平日"
+        elif weekend_sum > weekday_sum * 2:
+            weekday_pattern = "主に週末"
+        elif weekday_sum > weekend_sum:
+            weekday_pattern = "平日が多め"
+        elif weekend_sum > weekday_sum:
+            weekday_pattern = "週末が多め"
+        else:
+            weekday_pattern = "平日と週末で均等"
+        
+        # 月平均記録数
+        monthly_avg_records = sum(monthly_counts) / len(monthly_counts) if monthly_counts else 0
+        
+        # 最も活発な月
+        if monthly_counts:
+            max_month_index = monthly_counts.index(max(monthly_counts))
+            most_active_month = last_6_months[max_month_index]
+            most_active_month = f"{most_active_month[:4]}年{most_active_month[5:]}月"
+        else:
+            most_active_month = None
+        
+        # 購入頻度
+        total_days = (timezone.now().date() - all_diaries.order_by('purchase_date').first().purchase_date).days if all_diaries.exists() else 0
+        purchase_frequency = total_days / all_diaries.count() if all_diaries.exists() else 0
+        
+        # 記録内容の長さ分布
+        from django.db.models.functions import Length
+        
+        lengths = all_diaries.annotate(
+            content_length=Length('reason')
+        ).values_list('content_length', flat=True)
+        
+        # 長さの範囲を定義
+        length_ranges = ['〜200字', '201-500字', '501-1000字', '1001-2000字', '2001字〜']
+        length_counts = [0] * 5
+        
+        for length in lengths:
+            if length <= 200:
+                length_counts[0] += 1
+            elif length <= 500:
+                length_counts[1] += 1
+            elif length <= 1000:
+                length_counts[2] += 1
+            elif length <= 2000:
+                length_counts[3] += 1
+            else:
+                length_counts[4] += 1
+        
+        return {
+            'activity_heatmap': activity_heatmap,
+            'monthly_labels': json.dumps(last_6_months),
+            'monthly_counts': json.dumps(monthly_counts),
+            'day_of_week_counts': json.dumps(day_of_week_counts),
+            'most_active_day': most_active_day,
+            'weekday_pattern': weekday_pattern,
+            'monthly_avg_records': round(monthly_avg_records, 1),
+            'most_active_month': most_active_month,
+            'purchase_frequency': round(purchase_frequency, 1),
+            'content_length_ranges': json.dumps(length_ranges),
+            'content_length_counts': json.dumps(length_counts)
+        }
+        
     def get_template_analysis_data(self, user, filter_params=None):
         """分析テンプレートのデータを取得・分析する関数"""
         from django.db.models import Count, Avg, Max, Min, F, Q, Case, When, Value, IntegerField, FloatField
@@ -1422,144 +1233,162 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         }
         
         return template_context
+    def get_current_prices(self, stock_symbols):
+        """銘柄コードから現在の株価を取得する（サンプル実装）"""
+        # 実際の実装ではYahoo FinanceなどのAPIを使用
+        prices = {}
+        for symbol in stock_symbols:
+            # ランダムな株価を生成（デモ用）
+            base_price = 1000 + hash(symbol) % 10000
+            random_factor = random.uniform(0.9, 1.1)
+            prices[symbol] = base_price * random_factor
+        return prices    
+    def get_analysis_template_stats(self, diaries):
+        """分析テンプレートの統計情報を取得"""
+        # 使用率を計算
+        total_completion = 0
+        completion_count = 0
         
-    def get_activity_analysis_data(self, user, diaries, all_diaries):
-        """活動分析データを取得"""
-        from django.db.models import Count
-        from django.db.models.functions import TruncMonth
-        from datetime import timedelta
-        import json
-        from collections import defaultdict
+        # 日記IDのリストを取得（効率化のため）
+        diary_ids = list(diaries.values_list('id', flat=True))
         
-        # 活動ヒートマップ用のデータ（過去30日間）
-        activity_heatmap = []
-        thirty_days_ago = timezone.now().date() - timedelta(days=30)
+        if not diary_ids:
+            return {
+                'avg_completion_rate': 0,
+                'change': 0
+            }
         
-        for i in range(31):
-            day = thirty_days_ago + timedelta(days=i)
-            day_count = all_diaries.filter(purchase_date=day).count()
+        # 一度に必要な分析値を取得
+        diary_analysis_values = DiaryAnalysisValue.objects.filter(
+            diary_id__in=diary_ids
+        ).select_related('analysis_item__template')
+        
+        # 日記ごとの分析値を整理
+        diary_values_map = defaultdict(list)
+        for value in diary_analysis_values:
+            diary_values_map[value.diary_id].append(value)
+        
+        for diary in diaries:
+            diary_values = diary_values_map.get(diary.id, [])
             
-            # ヒートマップの強度レベル（0-5）
-            if day_count == 0:
-                level = 0
-            elif day_count == 1:
-                level = 1
-            elif day_count == 2:
-                level = 2
-            elif day_count <= 4:
-                level = 3
-            elif day_count <= 6:
-                level = 4
-            else:
-                level = 5
+            # 各日記の分析テンプレートを取得
+            templates_used = set()
+            for value in diary_values:
+                templates_used.add(value.analysis_item.template_id)
             
-            activity_heatmap.append({
-                'date': day.strftime('%Y-%m-%d'),
-                'day': day.day,
-                'count': day_count,
-                'level': level
-            })
+            for template_id in templates_used:
+                try:
+                    template = AnalysisTemplate.objects.get(id=template_id)
+                    items = template.items.all()
+                    total_items = items.count()
+                    
+                    if total_items > 0:
+                        # テンプレート項目への入力率を計算
+                        filled_items = 0
+                        for item in items:
+                            # この日記のこの項目の値があるか確認
+                            has_value = False
+                            for value in diary_values:
+                                if value.analysis_item_id == item.id:
+                                    # 項目タイプに応じて値が存在するか確認
+                                    if item.item_type == 'number' and value.number_value is not None:
+                                        has_value = True
+                                    elif item.item_type == 'boolean' and value.boolean_value is not None:
+                                        has_value = True
+                                    elif item.item_type == 'boolean_with_value' and (value.boolean_value is not None or value.number_value is not None or value.text_value):
+                                        has_value = True
+                                    elif value.text_value:
+                                        has_value = True
+                                    break
+                            
+                            if has_value:
+                                filled_items += 1
+                        
+                        completion_rate = (filled_items / total_items) * 100
+                        total_completion += completion_rate
+                        completion_count += 1
+                except AnalysisTemplate.DoesNotExist:
+                    pass
         
-        # 月ごとの記録数
-        monthly_data = all_diaries.annotate(
-            month=TruncMonth('purchase_date')
-        ).values('month').annotate(
-            count=Count('id')
-        ).order_by('month')
+        avg_completion_rate = 0
+        if completion_count > 0:
+            avg_completion_rate = total_completion / completion_count
         
-        last_6_months = []
-        current = timezone.now()
-        for i in range(5, -1, -1):
-            month = (current - timedelta(days=30 * i))
-            last_6_months.append(month.strftime('%Y-%m'))
+        # 前月との比較
+        last_month = timezone.now().date() - timedelta(days=30)
+        last_month_diaries = StockDiary.objects.filter(
+            user=self.request.user, 
+            purchase_date__lt=last_month
+        )
         
-        monthly_counts = []
-        for month_str in last_6_months:
-            year, month = map(int, month_str.split('-'))
-            count = 0
-            for data in monthly_data:
-                if data['month'].year == year and data['month'].month == month:
-                    count = data['count']
-                    break
-            monthly_counts.append(count)
+        last_month_total = 0
+        last_month_count = 0
         
-        # 曜日別記録数
-        day_of_week_counts = [0] * 7  # 0: 月曜日, 6: 日曜日
+        # 前月の日記IDリスト
+        last_month_diary_ids = list(last_month_diaries.values_list('id', flat=True))
         
-        for diary in all_diaries:
-            day_of_week = diary.purchase_date.weekday()
-            day_of_week_counts[day_of_week] += 1
+        if last_month_diary_ids:
+            # 前月の分析値
+            last_month_values = DiaryAnalysisValue.objects.filter(
+                diary_id__in=last_month_diary_ids
+            ).select_related('analysis_item__template')
+            
+            # 日記ごとの分析値をマッピング
+            last_month_values_map = defaultdict(list)
+            for value in last_month_values:
+                last_month_values_map[value.diary_id].append(value)
+            
+            for diary in last_month_diaries:
+                diary_values = last_month_values_map.get(diary.id, [])
+                
+                # 各日記のテンプレートを取得
+                templates_used = set()
+                for value in diary_values:
+                    templates_used.add(value.analysis_item.template_id)
+                
+                for template_id in templates_used:
+                    try:
+                        template = AnalysisTemplate.objects.get(id=template_id)
+                        items = template.items.all()
+                        total_items = items.count()
+                        
+                        if total_items > 0:
+                            # テンプレート項目への入力率を計算
+                            filled_items = 0
+                            for item in items:
+                                # この日記のこの項目の値があるか確認
+                                has_value = False
+                                for value in diary_values:
+                                    if value.analysis_item_id == item.id:
+                                        # 項目タイプに応じて値が存在するか確認
+                                        if item.item_type == 'number' and value.number_value is not None:
+                                            has_value = True
+                                        elif item.item_type == 'boolean' and value.boolean_value is not None:
+                                            has_value = True
+                                        elif item.item_type == 'boolean_with_value' and (value.boolean_value is not None or value.number_value is not None or value.text_value):
+                                            has_value = True
+                                        elif value.text_value:
+                                            has_value = True
+                                        break
+                                
+                                if has_value:
+                                    filled_items += 1
+                            
+                            completion_rate = (filled_items / total_items) * 100
+                            last_month_total += completion_rate
+                            last_month_count += 1
+                    except AnalysisTemplate.DoesNotExist:
+                        pass
         
-        # 最も記録が多い曜日
-        max_day_index = day_of_week_counts.index(max(day_of_week_counts))
-        weekdays = ['月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日', '日曜日']
-        most_active_day = weekdays[max_day_index]
+        last_month_avg = 0
+        if last_month_count > 0:
+            last_month_avg = last_month_total / last_month_count
         
-        # 平日/週末のパターン
-        weekday_sum = sum(day_of_week_counts[:5])
-        weekend_sum = sum(day_of_week_counts[5:])
-        
-        if weekday_sum > weekend_sum * 2:
-            weekday_pattern = "主に平日"
-        elif weekend_sum > weekday_sum * 2:
-            weekday_pattern = "主に週末"
-        elif weekday_sum > weekend_sum:
-            weekday_pattern = "平日が多め"
-        elif weekend_sum > weekday_sum:
-            weekday_pattern = "週末が多め"
-        else:
-            weekday_pattern = "平日と週末で均等"
-        
-        # 月平均記録数
-        monthly_avg_records = sum(monthly_counts) / len(monthly_counts) if monthly_counts else 0
-        
-        # 最も活発な月
-        if monthly_counts:
-            max_month_index = monthly_counts.index(max(monthly_counts))
-            most_active_month = last_6_months[max_month_index]
-            most_active_month = f"{most_active_month[:4]}年{most_active_month[5:]}月"
-        else:
-            most_active_month = None
-        
-        # 購入頻度
-        total_days = (timezone.now().date() - all_diaries.order_by('purchase_date').first().purchase_date).days if all_diaries.exists() else 0
-        purchase_frequency = total_days / all_diaries.count() if all_diaries.exists() else 0
-        
-        # 記録内容の長さ分布
-        from django.db.models.functions import Length
-        
-        lengths = all_diaries.annotate(
-            content_length=Length('reason')
-        ).values_list('content_length', flat=True)
-        
-        # 長さの範囲を定義
-        length_ranges = ['〜200字', '201-500字', '501-1000字', '1001-2000字', '2001字〜']
-        length_counts = [0] * 5
-        
-        for length in lengths:
-            if length <= 200:
-                length_counts[0] += 1
-            elif length <= 500:
-                length_counts[1] += 1
-            elif length <= 1000:
-                length_counts[2] += 1
-            elif length <= 2000:
-                length_counts[3] += 1
-            else:
-                length_counts[4] += 1
+        change = avg_completion_rate - last_month_avg
         
         return {
-            'activity_heatmap': activity_heatmap,
-            'monthly_labels': json.dumps(last_6_months),
-            'monthly_counts': json.dumps(monthly_counts),
-            'day_of_week_counts': json.dumps(day_of_week_counts),
-            'most_active_day': most_active_day,
-            'weekday_pattern': weekday_pattern,
-            'monthly_avg_records': round(monthly_avg_records, 1),
-            'most_active_month': most_active_month,
-            'purchase_frequency': round(purchase_frequency, 1),
-            'content_length_ranges': json.dumps(length_ranges),
-            'content_length_counts': json.dumps(length_counts)
+            'avg_completion_rate': avg_completion_rate,
+            'change': change
         }
 
     def prepare_monthly_data(self, diaries):
