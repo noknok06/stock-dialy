@@ -1,0 +1,143 @@
+/* スピードダイアル（拡張浮動アクションボタン）のスタイル */
+
+.speed-dial-container {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 1040;
+  }
+  
+  /* メイントリガーボタン */
+  .speed-dial-trigger {
+    width: 56px;
+    height: 56px;
+    background-color: rgba(79, 70, 229, 0.85);  /* 半透明のインディゴ色 */
+    color: white;
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.3s, background-color 0.3s;
+    z-index: 10;
+  }
+  
+  .speed-dial-trigger:hover,
+  .speed-dial-trigger:focus {
+    background-color: rgba(79, 70, 229, 0.95);
+    transform: scale(1.05);
+  }
+  
+  .speed-dial-trigger.active {
+    transform: rotate(45deg);
+  }
+  
+  /* アクションボタンのコンテナ */
+  .speed-dial-actions {
+    position: absolute;
+    bottom: 70px;
+    right: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+  }
+  
+  .speed-dial-actions.active {
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  /* 個別のアクションアイテム */
+  .speed-dial-action {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  
+  /* アクションボタン */
+  .speed-dial-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .speed-dial-btn:hover,
+  .speed-dial-btn:focus {
+    transform: scale(1.1);
+  }
+  
+  /* ラベル */
+  .action-label {
+    padding: 4px 8px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    opacity: 0;
+    transform: translateX(10px);
+    transition: opacity 0.2s, transform 0.2s;
+    white-space: nowrap;
+  }
+  
+  .speed-dial-action:hover .action-label {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  
+  /* 半透明オーバーレイ */
+  .speed-dial-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    z-index: 1030;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+  }
+  
+  .speed-dial-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  /* アクションボタンの色 */
+  .action-back {
+    background-color: rgba(107, 114, 128, 0.85);  /* グレー */
+  }
+  .action-edit {
+    background-color: rgba(245, 158, 11, 0.85);  /* オレンジ */
+  }
+  .action-delete {
+    background-color: rgba(239, 68, 68, 0.85);  /* レッド */
+  }
+  .action-sell {
+    background-color: rgba(16, 185, 129, 0.85);  /* グリーン */
+  }
+  .action-add {
+    background-color: rgba(59, 130, 246, 0.85);  /* ブルー */
+  }
+  
+  /* レスポンシブ調整 */
+  @media (min-width: 768px) {
+    .speed-dial-container {
+      display: none;  /* PCサイズではスピードダイアルを非表示 */
+    }
+  }
