@@ -588,12 +588,6 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
                 'label': '戻る'
             },
             {
-                'type': 'add',
-                'url': reverse_lazy('stockdiary:create'),
-                'icon': 'bi-plus-lg',
-                'label': '新規作成'
-            },
-            {
                 'type': 'tag',
                 'url': reverse_lazy('tags:list'),  # タグ管理ページのURL
                 'icon': 'bi-tags',

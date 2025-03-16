@@ -1,10 +1,12 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}
   {% if form.instance.pk %}分析テンプレート編集{% else %}分析テンプレート作成{% endif %} | カブログ
 {% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="{% static 'css/speed-dial.css' %}">
 <div class="row justify-content-center">
   <div class="col-lg-10">
     <div class="card shadow">
@@ -124,7 +126,6 @@
     </div>
   </div>
 </div>
-
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     // 初期表示時に表示順を設定
@@ -304,6 +305,19 @@
       if (newChoicesField) newChoicesField.style.display = 'none';
       if (newValueLabelField) newValueLabelField.style.display = 'none';
     });
+  });
+</script>
+{% include 'speed_dial.html' with actions=page_actions %}
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<!-- スピードダイアルのJSを明示的に読み込む -->
+<script src="{% static 'js/speed-dial.js' %}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // スピードダイアルを初期化
+    initializeSpeedDial();
   });
 </script>
 {% endblock %}

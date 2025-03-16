@@ -19,6 +19,26 @@ class AnalysisTemplateListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return AnalysisTemplate.objects.filter(user=self.request.user)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        analytics_actions = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('stockdiary:home'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            },
+            {
+                'type': 'add',
+                'url': reverse_lazy('analysis_template:create'),  # テンプレート作成ページ
+                'icon': 'bi-plus-lg',
+                'label': '新規テンプレート'
+            },
+        ]
+        context['page_actions'] = analytics_actions
+        return context
+
 class AnalysisTemplateDetailView(LoginRequiredMixin, DetailView):
     model = AnalysisTemplate
     template_name = 'analysis_template/detail.html'
@@ -35,6 +55,7 @@ class AnalysisTemplateCreateView(LoginRequiredMixin, CreateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        user = self.request.user
         if self.request.POST:
             context['items_formset'] = AnalysisItemFormSet(self.request.POST)
         else:
@@ -43,6 +64,17 @@ class AnalysisTemplateCreateView(LoginRequiredMixin, CreateView):
             # 最初の項目の表示順を1に設定
             formset.forms[0].initial = {'order': 1}
             context['items_formset'] = formset
+
+        analytics_actions = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('analysis_template:list'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            }
+        ]
+        context['page_actions'] = analytics_actions
+
         return context
     
     def form_valid(self, form):

@@ -21,6 +21,28 @@ class TagListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return Tag.objects.filter(user=self.request.user)
 
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        # スピードダイアルのアクションを定義
+        analytics_actions = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('stockdiary:home'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            },
+            {
+                'type': 'add',
+                'url': reverse_lazy('tags:create'),
+                'icon': 'bi-plus-lg',
+                'label': '新規作成'
+            }
+        ]
+        context['page_actions'] = analytics_actions
+        return context
+
 class TagCreateView(LoginRequiredMixin, CreateView):
     model = Tag
     form_class = TagForm
@@ -31,6 +53,22 @@ class TagCreateView(LoginRequiredMixin, CreateView):
         form.instance.user = self.request.user
         return super().form_valid(form)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        # スピードダイアルのアクションを定義
+        analytics_actions = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('tags:list'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            }
+        ]
+        context['page_actions'] = analytics_actions
+        return context
+
+
 class TagUpdateView(LoginRequiredMixin, UpdateView):
     model = Tag
     form_class = TagForm
@@ -40,6 +78,22 @@ class TagUpdateView(LoginRequiredMixin, UpdateView):
     def get_queryset(self):
         return Tag.objects.filter(user=self.request.user)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        # スピードダイアルのアクションを定義
+        analytics_actions = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('tags:list'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            }
+        ]
+        context['page_actions'] = analytics_actions
+        return context
+
+
 class TagDeleteView(LoginRequiredMixin, DeleteView):
     model = Tag
     template_name = 'tags/tag_confirm_delete.html'
@@ -47,3 +101,18 @@ class TagDeleteView(LoginRequiredMixin, DeleteView):
     
     def get_queryset(self):
         return Tag.objects.filter(user=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        # スピードダイアルのアクションを定義
+        analytics_actions = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('tags:list'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            }
+        ]
+        context['page_actions'] = analytics_actions
+        return context

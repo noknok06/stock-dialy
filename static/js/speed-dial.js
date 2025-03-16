@@ -20,11 +20,51 @@ class SpeedDial {
       this.container = document.querySelector(this.config.containerSelector);
       
       this.isOpen = false;
+      this.singleAction = false; // 単一アクションモードのフラグ
       
-      if (this.trigger && this.actions) {
+      // アクションが1つだけかチェック
+      if (this.actions && this.actions.querySelectorAll('.speed-dial-action').length === 1) {
+        this.singleAction = true;
+        this.setupSingleAction();
+      } else if (this.trigger && this.actions) {
         this.init();
       } else {
         console.warn('SpeedDial: 必要な要素が見つかりません');
+      }
+    }
+    
+    // 単一アクションモードのセットアップ
+    setupSingleAction() {
+      // トリガーボタンを非表示にする
+      if (this.trigger) {
+        this.trigger.style.display = 'none';
+      }
+      
+      // アクションボタンを常に表示
+      if (this.actions) {
+        this.actions.classList.add('active');
+        
+        // 単一のアクションボタンを取得
+        const actionItem = this.actions.querySelector('.speed-dial-action');
+        if (actionItem) {
+          // ラベルを非表示
+          const label = actionItem.querySelector('.action-label');
+          if (label) {
+            label.style.display = 'none';
+          }
+          
+          // ボタンを大きく
+          const btn = actionItem.querySelector('.speed-dial-btn');
+          if (btn) {
+            btn.style.width = '52px';
+            btn.style.height = '52px';
+          }
+        }
+      }
+      
+      // コンテナにクラスを追加
+      if (this.container) {
+        this.container.classList.add('single-action-mode');
       }
     }
     
@@ -114,18 +154,28 @@ class SpeedDial {
     
     const config = { ...defaults, ...options };
     
+    // アクションをフィルタリング (条件がfalseのものを除外)
+    const filteredActions = config.actions.filter(action => action.condition !== false);
+    
+    // アクションが1つの場合の特別処理
+    const singleActionMode = filteredActions.length === 1;
+    
     // コンテナを作成
     const container = document.createElement('div');
     container.className = 'speed-dial-container';
+    if (singleActionMode) {
+      container.classList.add('single-action-mode');
+    }
     
     // アクションボタンコンテナを作成
     const actionsContainer = document.createElement('div');
     actionsContainer.className = 'speed-dial-actions';
+    if (singleActionMode) {
+      actionsContainer.classList.add('active');
+    }
     
     // アクションボタンを生成
-    for (const action of config.actions) {
-      if (action.condition === false) continue; // 条件がfalseならスキップ
-      
+    for (const action of filteredActions) {
       const actionItem = document.createElement('div');
       actionItem.className = 'speed-dial-action';
       
@@ -145,9 +195,16 @@ class SpeedDial {
       icon.className = `bi ${action.icon}`;
       btn.appendChild(icon);
       
+      // ラベルの作成（単一アクションモードでも念のため作成するが非表示）
       const label = document.createElement('span');
       label.className = 'action-label';
       label.textContent = action.label || '';
+      
+      if (singleActionMode) {
+        label.style.display = 'none';
+        btn.style.width = '52px';
+        btn.style.height = '52px';
+      }
       
       actionItem.appendChild(label);
       actionItem.appendChild(btn);
@@ -164,9 +221,14 @@ class SpeedDial {
     triggerIcon.className = `bi ${config.triggerIcon}`;
     trigger.appendChild(triggerIcon);
     
+    // 単一アクションモードではトリガーを非表示
+    if (singleActionMode) {
+      trigger.style.display = 'none';
+    }
+    
     // オーバーレイを作成
     let overlay = null;
-    if (config.useOverlay) {
+    if (config.useOverlay && !singleActionMode) {
       overlay = document.createElement('div');
       overlay.className = 'speed-dial-overlay';
       config.container.appendChild(overlay);
