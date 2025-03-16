@@ -564,8 +564,8 @@
           `;
         });
     }
-            
-    // 分析項目を表示する関数（修正版）
+    
+    // 分析項目を表示する関数（チェック＋値入力の修正版）
     function renderAnalysisItems(items, values) {
       if (!items || items.length === 0) {
         analysisItemsContent.innerHTML = `
@@ -616,18 +616,26 @@
           const booleanFieldId = `id_${booleanFieldName}`;
           const valueFieldId = `id_${valueFieldName}`;
           
-          // 現在の値を取得
+          // 現在の値を取得（ブール値、テキスト値、数値）
           let booleanValue = false;
           let textValue = '';
           let numberValue = null;
           
+          // console.log(`項目 ${item.name} の現在の値:`, currentValue);
+          
           if (currentValue) {
             if (typeof currentValue === 'object') {
-              booleanValue = currentValue.boolean_value || false;
+              // オブジェクト形式の場合（API側で複合型として返された場合）
+              booleanValue = currentValue.boolean_value === true;
               textValue = currentValue.text_value || '';
-              numberValue = currentValue.number_value || null;
+              numberValue = currentValue.number_value !== null ? currentValue.number_value : null;
             }
           }
+          
+          // console.log(`項目 ${item.name} の処理後の値: ブール値=${booleanValue}, 数値=${numberValue}, テキスト=${textValue}`);
+          
+          // 入力値として表示する値（数値優先）
+          const displayValue = numberValue !== null ? numberValue : textValue;
           
           html += `
             <div class="d-flex align-items-center">
@@ -648,7 +656,7 @@
                       name="${valueFieldName}" 
                       class="form-control" 
                       placeholder="実際の値（任意）" 
-                      value="${numberValue !== null ? numberValue : textValue}">
+                      value="${displayValue}">
               </div>
             </div>
           `;
@@ -657,7 +665,7 @@
           html += `
             <div class="form-check">
               <input type="checkbox" id="${fieldId}" name="${fieldName}" 
-                class="form-check-input" ${currentValue ? 'checked' : ''}>
+                class="form-check-input" ${currentValue === true ? 'checked' : ''}>
               <label class="form-check-label" for="${fieldId}">
                 ${item.description || '有効'}
               </label>
@@ -703,7 +711,6 @@
       // 内容を更新
       analysisItemsContent.innerHTML = html;
     }
-    
     // 初期表示時にテンプレートが選択済みなら項目を表示
     if (templateSelect.value) {
       expandAnalysisBtn.click();

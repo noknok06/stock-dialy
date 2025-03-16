@@ -8,6 +8,10 @@ from django.shortcuts import get_object_or_404
 
 @login_required
 @require_GET
+# analysis_template/api.py の get_template_items 関数修正版
+
+@login_required
+@require_GET
 def get_template_items(request):
     """
     テンプレートの分析項目を取得するAPI
@@ -43,7 +47,8 @@ def get_template_items(request):
                 'description': item.description,
                 'item_type': item.item_type,
                 'order': item.order,
-                'choices': item.choices
+                'choices': item.choices,
+                'value_label': item.value_label
             }
             items_data.append(item_data)
         
@@ -70,9 +75,21 @@ def get_template_items(request):
                 )
                 
                 for value in analysis_values:
-                    if value.analysis_item.item_type == 'number':
-                        values[value.analysis_item_id] = float(value.number_value)
+                    if value.analysis_item.item_type == 'boolean_with_value':
+                        # 複合型の場合はオブジェクトで返す
+                        values[value.analysis_item_id] = {
+                            'boolean_value': value.boolean_value,
+                            'number_value': value.number_value,
+                            'text_value': value.text_value
+                        }
+                    elif value.analysis_item.item_type == 'boolean':
+                        # ブール型の場合は単純なbool値で返す
+                        values[value.analysis_item_id] = value.boolean_value
+                    elif value.analysis_item.item_type == 'number':
+                        # 数値型の場合は数値で返す
+                        values[value.analysis_item_id] = float(value.number_value) if value.number_value is not None else None
                     else:
+                        # テキスト型または選択型の場合は文字列で返す
                         values[value.analysis_item_id] = value.text_value
                 
                 response_data['values'] = values

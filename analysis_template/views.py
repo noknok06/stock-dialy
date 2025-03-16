@@ -99,6 +99,8 @@ class AnalysisTemplateDeleteView(LoginRequiredMixin, DeleteView):
     def get_queryset(self):
         return AnalysisTemplate.objects.filter(user=self.request.user)
 
+# views.py の AnalysisReportView クラスの修正版
+
 class AnalysisReportView(LoginRequiredMixin, DetailView):
     """テンプレートに基づいた分析レポートを表示するビュー"""
     model = AnalysisTemplate
@@ -148,7 +150,7 @@ class AnalysisReportView(LoginRequiredMixin, DetailView):
                     diary_has_values = True
                     item = value.analysis_item
                     
-                    # 複合型項目と他の項目タイプによって異なる処理
+                    # 項目タイプによって異なる処理
                     if item.item_type == 'boolean_with_value':
                         # Boolean値と数値/テキスト値の両方を保持
                         diary_data['values'][item.id] = {
@@ -162,9 +164,16 @@ class AnalysisReportView(LoginRequiredMixin, DetailView):
                         if value.boolean_value:
                             diary_data['conditions_met'] += 1
                     
-                    # その他の項目タイプも処理
+                    elif item.item_type == 'boolean':
+                        diary_data['values'][item.id] = value.boolean_value
+                        
+                    elif item.item_type == 'number':
+                        diary_data['values'][item.id] = value.number_value
+                        
+                    else:  # text または select
+                        diary_data['values'][item.id] = value.text_value
             
-            # レポートデータに追加
+            # レポートデータに追加（分析値がある場合のみ）
             if diary_has_values:
                 report_data.append(diary_data)
         

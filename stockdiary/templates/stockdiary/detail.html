@@ -536,7 +536,6 @@
           </div>
         </div>
       </div>
-
       <!-- 分析データセクション -->
       {% if diary.analysis_values.exists %}
       <div class="col-lg-12 mb-4">
@@ -561,7 +560,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {% for value in template_group.list %}
+                  {% for value in template_group.list|dictsort:"analysis_item.order" %}
                   <tr>
                     <td>
                       <strong>{{ value.analysis_item.name }}</strong>
@@ -608,8 +607,10 @@
                           <i class="bi bi-x-lg"></i> いいえ
                         </span>
                       {% endif %}
+                      {% elif value.analysis_item.item_type == 'select' %}
+                      <span class="badge bg-info">{{ value.text_value }}</span>
                       {% else %}
-                      {{ value.text_value }}
+                      {{ value.text_value|default:"-" }}
                       {% endif %}
                     </td>
                   </tr>
@@ -617,7 +618,7 @@
                 </tbody>
               </table>
             </div>
-            <div class="text-end">
+            <div class="text-end mt-2">
               <a href="{% url 'analysis_template:report' template_group.grouper.id %}"
                 class="btn btn-sm btn-outline-primary">
                 <i class="bi bi-bar-chart"></i> 比較レポートを見る
