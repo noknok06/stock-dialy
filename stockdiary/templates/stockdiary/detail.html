@@ -8,6 +8,7 @@
 <!-- Bootstrap Icons -->
 <link rel="stylesheet" href="{% static 'css/common.css' %}">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<link rel="stylesheet" href="{% static 'css/expandable-fab.css' %}">
 <style>
   /* カードスタイル */
   .card {
@@ -354,120 +355,35 @@
   max-width: 100% !important;
   width: 100% !important;
 }
-
-/* モバイル用浮動ボタン */
-.mobile-floating-buttons {
-  position: fixed;
-  right: 15px;
-  bottom: 70px; /* baseのボタンの下に配置 */
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  z-index: 1030;
-}
-
-.mobile-floating-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  transition: all 0.3s ease;
-  border: none;
-  color: white;
-  text-decoration: none;
-}
-
-.mobile-floating-btn:hover, .mobile-floating-btn:focus {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  color: white;
-  text-decoration: none;
-}
-
-.mobile-floating-btn i {
-  font-size: 1.2rem;
-}
-
-/* 各ボタンのスタイル */
-.mobile-floating-btn.edit-btn {
-  background-color: rgba(245, 158, 11, 0.7); /* warning color */
-}
-
-.mobile-floating-btn.edit-btn:hover {
-  background-color: rgba(245, 158, 11, 0.9);
-}
-
-.mobile-floating-btn.delete-btn {
-  background-color: rgba(239, 68, 68, 0.7); /* danger color */
-}
-
-.mobile-floating-btn.delete-btn:hover {
-  background-color: rgba(239, 68, 68, 0.9);
-}
-
-.mobile-floating-btn.back-btn {
-  background-color: rgba(107, 114, 128, 0.7); /* secondary color */
-}
-
-.mobile-floating-btn.back-btn:hover {
-  background-color: rgba(107, 114, 128, 0.9);
-}
-
-.mobile-floating-btn.sell-btn {
-  background-color: rgba(16, 185, 129, 0.7); /* success color */
-}
-
-.mobile-floating-btn.sell-btn:hover {
-  background-color: rgba(16, 185, 129, 0.9);
-}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
-  <!-- モバイル用の半透明浮動ボタン（スマホ表示） -->
-  <div class="mobile-floating-buttons d-md-none">
-    {% if not diary.sell_date %}
-    <a href="{% url 'stockdiary:sell_specific' diary.id %}" class="mobile-floating-btn sell-btn" title="売却">
-      <i class="bi bi-cash-coin"></i>
-    </a>
-    {% endif %}
-    <a href="{% url 'stockdiary:update' diary.id %}" class="mobile-floating-btn edit-btn" title="編集">
-      <i class="bi bi-pencil"></i>
-    </a>
-    <a href="{% url 'stockdiary:delete' diary.id %}" class="mobile-floating-btn delete-btn" title="削除">
-      <i class="bi bi-trash"></i>
-    </a>
-    <a href="{% url 'stockdiary:home' %}" class="mobile-floating-btn back-btn" title="戻る">
-      <i class="bi bi-arrow-left"></i>
-    </a>
-  </div>
 
+<div class="container py-4">
   <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
       <div class="d-flex align-items-center mb-2 mb-md-0">
         <h2 class="mb-0 me-2">{{ diary.stock_name }}</h2>
         <span class="badge bg-secondary">{{ diary.stock_symbol }}</span>
       </div>
-      <!-- PC用の通常ボタン（デスクトップ表示） -->
-      <div class="action-buttons d-none d-md-flex">
-        {% if not diary.sell_date %}
-        <a href="{% url 'stockdiary:sell_specific' diary.id %}" class="btn btn-success btn-icon">
-          <i class="bi bi-cash-coin"></i> 売却
-        </a>
-        {% endif %}
-        <a href="{% url 'stockdiary:update' diary.id %}" class="btn btn-warning btn-icon">
-          <i class="bi bi-pencil"></i> 編集
-        </a>
-        <a href="{% url 'stockdiary:delete' diary.id %}" class="btn btn-danger btn-icon">
-          <i class="bi bi-trash"></i> 削除
-        </a>
-        <a href="{% url 'stockdiary:home' %}" class="btn btn-secondary btn-icon">
-          <i class="bi bi-arrow-left"></i> 戻る
-        </a>
+        <!-- PC用の通常ボタン（デスクトップ表示） -->
+        <div class="action-buttons d-none d-md-flex">
+          {% if not diary.sell_date %}
+          <a href="{% url 'stockdiary:sell_specific' diary.id %}" class="btn btn-success btn-icon">
+            <i class="bi bi-cash-coin"></i> 売却
+          </a>
+          {% endif %}
+          <a href="{% url 'stockdiary:update' diary.id %}" class="btn btn-warning btn-icon">
+            <i class="bi bi-pencil"></i> 編集
+          </a>
+          <a href="{% url 'stockdiary:delete' diary.id %}" class="btn btn-danger btn-icon">
+            <i class="bi bi-trash"></i> 削除
+          </a>
+          <a href="{% url 'stockdiary:home' %}" class="btn btn-secondary btn-icon">
+            <i class="bi bi-arrow-left"></i> 戻る
+          </a>
+        </div>
       </div>
     </div>
 
@@ -801,12 +717,53 @@
     </div>
   </div>
 </div>
+
+<!-- 修正されたスピードダイアル - ページコンテナの外に配置 -->
+<div class="speed-dial">
+  <div class="speed-dial-actions">
+    {% if not diary.sell_date %}
+    <div class="speed-dial-action">
+      <a href="{% url 'stockdiary:sell_specific' diary.id %}" class="speed-dial-btn action-sell">
+        <i class="bi bi-cash-coin"></i>
+      </a>
+      <span class="action-label">売却</span>
+    </div>
+    {% endif %}
+    <div class="speed-dial-action">
+      <a href="{% url 'stockdiary:update' diary.id %}" class="speed-dial-btn action-edit">
+        <i class="bi bi-pencil"></i>
+      </a>
+      <span class="action-label">編集</span>
+    </div>
+    <div class="speed-dial-action">
+      <a href="{% url 'stockdiary:delete' diary.id %}" class="speed-dial-btn action-delete">
+        <i class="bi bi-trash"></i>
+      </a>
+      <span class="action-label">削除</span>
+    </div>
+    <div class="speed-dial-action">
+      <a href="{% url 'stockdiary:home' %}" class="speed-dial-btn action-back">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <span class="action-label">戻る</span>
+    </div>
+  </div>
+  <button class="speed-dial-trigger">
+    <i class="bi bi-plus-lg"></i>
+  </button>
+</div>
+
+<!-- オーバーレイ背景 -->
+<div class="speed-dial-overlay"></div>
 {% endblock %}
 
 {% block scripts %}
 {{ block.super }}
 <script>
   document.addEventListener('DOMContentLoaded', function () {
+    // スピードダイアルを初期化
+    initializeSpeedDial();
+
     // 現在価格取得ボタンの処理
     const fetchNotePriceBtn = document.getElementById('fetch-note-price');
     if (fetchNotePriceBtn) {
@@ -898,6 +855,42 @@
       toastEl.style.zIndex = '1050';
 
       return toastEl;
+    }
+    // スピードダイアルのアクションを設定（template変数が使えない場合のJS実装例）
+    if (!document.querySelector('.speed-dial')) {
+      const actions = [
+        {% if not diary.sell_date %}
+        {
+          type: 'sell',
+          icon: 'bi-cash-coin',
+          url: '{% url "stockdiary:sell_specific" diary.id %}',
+          label: '売却'
+        },
+        {% endif %}
+        {
+          type: 'edit',
+          icon: 'bi-pencil',
+          url: '{% url "stockdiary:update" diary.id %}',
+          label: '編集'
+        },
+        {
+          type: 'delete',
+          icon: 'bi-trash',
+          url: '{% url "stockdiary:delete" diary.id %}',
+          label: '削除'
+        },
+        {
+          type: 'back',
+          icon: 'bi-arrow-left',
+          url: '{% url "stockdiary:home" %}',
+          label: '戻る'
+        }
+      ];
+      
+      createSpeedDial({
+        actions: actions,
+        useOverlay: true
+      });
     }
   });
 </script>

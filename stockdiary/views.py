@@ -80,6 +80,8 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         return context
         
 # stockdiary/views.py のStockDiaryDetailViewを修正
+# views.py の修正方法
+
 class StockDiaryDetailView(LoginRequiredMixin, DetailView):
     model = StockDiary
     template_name = 'stockdiary/detail.html'
@@ -97,13 +99,43 @@ class StockDiaryDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # チェックリスト関連のコードを削除
-        
         # 継続記録フォームを追加
         context['note_form'] = DiaryNoteForm(initial={'date': timezone.now().date()})
         
         # 継続記録一覧を追加
         context['notes'] = self.object.notes.all().order_by('-date')
+        
+        # スピードダイアルのアクションを定義
+        # この部分を追加 ↓
+        diary = self.object
+        diary_actions = [
+            {
+                'type': 'sell',
+                'url': reverse_lazy('stockdiary:sell_specific', kwargs={'pk': diary.id}),
+                'icon': 'bi-cash-coin',
+                'label': '売却',
+                'condition': not diary.sell_date  # 未売却の場合のみ表示
+            },
+            {
+                'type': 'edit',
+                'url': reverse_lazy('stockdiary:update', kwargs={'pk': diary.id}),
+                'icon': 'bi-pencil',
+                'label': '編集'
+            },
+            {
+                'type': 'delete',
+                'url': reverse_lazy('stockdiary:delete', kwargs={'pk': diary.id}),
+                'icon': 'bi-trash',
+                'label': '削除'
+            },
+            {
+                'type': 'back',
+                'url': reverse_lazy('stockdiary:home'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            }
+        ]
+        context['diary_actions'] = diary_actions  # この行を必ず追加する
         
         return context
 

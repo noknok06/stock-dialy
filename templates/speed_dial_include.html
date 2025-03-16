@@ -1,0 +1,50 @@
+{% comment %}
+speed_dial_include.html - 共通スピードダイアルコンポーネント
+使用方法:
+- includeでこのファイルを取り込む
+- 事前に speed_dial_actions 変数と current_page 変数を設定する
+- speed_dial_actions はアクションの辞書のリスト:
+[
+{'type': 'edit', 'url': '...', 'icon': 'bi-pencil', 'label': '編集'},
+...
+]
+- current_page はボタン表示の制御用（例: 'detail', 'list', 'edit'など）
+{% endcomment %}
+
+{% load static %}
+{% if not speed_dial_included %}
+<!-- CSSの読み込み（初回のみ） -->
+<link rel="stylesheet" href="{% static 'css/expandable-fab.css' %}">
+{% endif %}
+
+<!-- スピードダイアルコンポーネント -->
+<div class="speed-dial">
+    <div class="speed-dial-actions">
+        {% for action in speed_dial_actions %}
+        {% if action.condition != False %}
+        <div class="speed-dial-action">
+            <a href="{{ action.url }}" class="speed-dial-btn action-{{ action.type }}" aria-label="{{ action.label }}">
+                <i class="bi {{ action.icon }}"></i>
+            </a>
+            {% if action.label %}
+            <span class="action-label">{{ action.label }}</span>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    <button class="speed-dial-btn speed-dial-trigger" aria-label="アクションメニューを開く">
+        <i class="bi bi-plus-lg"></i>
+    </button>
+</div>
+
+<!-- オーバーレイ背景 -->
+<div class="speed-dial-overlay"></div>
+
+{% if not speed_dial_included %}
+<!-- JavaScriptの読み込み（初回のみ） -->
+<script src="{% static 'js/expandable-fab.js' %}"></script>
+{% endif %}
+
+{% comment %}次回以降の読み込みで重複を防ぐためのフラグ{% endcomment %}
+{% with speed_dial_included=True %}{% endwith %}
