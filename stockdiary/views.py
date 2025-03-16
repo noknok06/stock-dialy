@@ -532,16 +532,35 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         
         # メソッド追加
         return context
-
+            
     def get_current_prices(self, stock_symbols):
         """銘柄コードから現在の株価を取得する関数"""
-        # 未実装 - 実際の環境では外部APIを使用
+        # デモ用に擬似的な株価データを生成
         prices = {}
         for symbol in stock_symbols:
-            # デモデータを生成 (実際の実装が難しいため)
-            # 本番環境では Yahoo Finance API, Alpha Vantage API, または
-            # 取引所のAPIを使用して株価データを取得すること
-            prices[symbol] = 0  # 未実装のためゼロを返す
+            # 実際のAPIが実装されるまで、購入価格に基づいた擬似的な株価を生成
+            # 対応する日記を検索して購入価格を取得
+            diary = None
+            try:
+                # 最新の日記を取得
+                diary = StockDiary.objects.filter(
+                    user=self.request.user,
+                    stock_symbol=symbol,
+                    sell_date__isnull=True
+                ).latest('purchase_date')
+            except StockDiary.DoesNotExist:
+                pass
+            
+            if diary:
+                # ランダムな価格変動を適用（-15%〜+15%）
+                base_price = float(diary.purchase_price)
+                random_factor = 0.85 + (random.random() * 0.3)  # 0.85〜1.15の乱数
+                current_price = base_price * random_factor
+                prices[symbol] = round(current_price, 2)
+            else:
+                # 日記が見つからない場合はデフォルト値
+                prices[symbol] = 1000.0
+        
         return prices
     
     def get_analysis_template_stats(self, diaries):
@@ -825,48 +844,29 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
             profit = (diary.sell_price - diary.purchase_price) * diary.purchase_quantity
             realized_profit += profit
         
-        # 4. 未実現利益（保有中の株式の現在価値と購入額の差）
-        # 現在株価を取得（実際の環境では外部APIから取得）
-        current_prices = self.get_current_prices([d.stock_symbol for d in active_diaries])
-        
-        unrealized_profit = Decimal('0')
-        total_value = Decimal('0')  # 保有株式の現在総価値
-        
-        for diary in active_diaries:
-            current_price = current_prices.get(diary.stock_symbol)
-            if current_price:
-                current_value = Decimal(str(current_price)) * diary.purchase_quantity
-                total_value += current_value
-                unrealized_profit += current_value - (diary.purchase_price * diary.purchase_quantity)
-        
-        # 5. 総利益/損失 = 実現利益 + 未実現利益
-        total_profit = realized_profit + unrealized_profit
-        
-        # 6. 前月の利益
-        last_month_profit = Decimal('0')
-        last_month_actives = [d for d in last_month_diaries if not d.sell_date]
+        # 4. 現在の保有総額（購入額ベース、API依存なし）
+        active_investment = sum(diary.purchase_price * diary.purchase_quantity for diary in active_diaries)
+    
+        # 5. 総利益/損失 = 実現利益のみ（未実現利益は考慮しない）
+        total_profit = realized_profit
+                
+        # 6. 前月の利益比較（売却済みのみ）
         last_month_sold = [d for d in last_month_diaries if d.sell_date]
+        last_month_profit = Decimal('0')
         
         # 前月の実現利益
         for diary in last_month_sold:
             last_month_profit += (diary.sell_price - diary.purchase_price) * diary.purchase_quantity
-        
-        # 前月の未実現利益
-        for diary in last_month_actives:
-            current_price = current_prices.get(diary.stock_symbol)
-            if current_price:
-                current_value = Decimal(str(current_price)) * diary.purchase_quantity
-                last_month_profit += current_value - (diary.purchase_price * diary.purchase_quantity)
         
         profit_change = total_profit - last_month_profit
         profit_change_percent = (profit_change / last_month_profit * 100) if last_month_profit else 0
         
         # 7. 保有銘柄数
         active_stocks_count = len(active_diaries)
-        last_month_active_stocks = len(last_month_actives)
+        last_month_active_stocks = len([d for d in last_month_diaries if not d.sell_date])
         stocks_count_change = active_stocks_count - last_month_active_stocks
         
-        # 8. 平均保有期間
+        # 8. 平均保有期間（売却済みのみ）
         avg_holding_period = 0
         if sold_diaries:
             total_days = sum((d.sell_date - d.purchase_date).days for d in sold_diaries)
@@ -882,18 +882,17 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         
         return {
             'total_investment': total_investment,
+            'active_investment': active_investment,  # 現在の保有総額（購入額ベース）
             'investment_change': investment_change,
             'investment_change_percent': investment_change_percent,
-            'total_profit': total_profit,
+            'total_profit': total_profit,  # 実現利益のみ
             'profit_change': profit_change,
             'profit_change_percent': profit_change_percent,
             'active_stocks_count': active_stocks_count,
             'stocks_count_change': stocks_count_change,
             'avg_holding_period': avg_holding_period,
             'holding_period_change': holding_period_change,
-            'realized_profit': realized_profit, 
-            'unrealized_profit': unrealized_profit,
-            'total_value': total_value,
+            'realized_profit': realized_profit,  # 売却済み株式からの利益
             'active_holdings_count': active_stocks_count,
         }
     
@@ -992,6 +991,8 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         
         # タグごとの投資パフォーマンス
         tag_performance = []
+        most_profitable_tag = None
+        max_profit_rate = -999  # 最も低い値で初期化
         
         for tag in tag_counts:
             # タグが付いた日記を取得
@@ -1017,11 +1018,16 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
                     profit = (diary.sell_price - diary.purchase_price) * diary.purchase_quantity
                     profit_sum += profit
                     
-                    count_with_profit += 1
-            
+                    count_with_profit += 1            
+
             if count_with_profit > 0:
                 avg_holding_period /= count_with_profit
                 avg_profit_rate = profit_rate_sum / count_with_profit
+            
+            # 最も収益率の高いタグを更新
+            if avg_profit_rate > max_profit_rate:
+                max_profit_rate = avg_profit_rate
+                most_profitable_tag = tag.name
             else:
                 avg_holding_period = 0
                 avg_profit_rate = 0
@@ -1077,6 +1083,7 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
             'tag_names': json.dumps(tag_names),
             'tag_counts': json.dumps(tag_counts_list),
             'top_tags': top_tags,
+            'most_profitable_tag': most_profitable_tag if most_profitable_tag else "データなし",
             'tag_performance': tag_performance,
             'tag_timeline_labels': json.dumps(months),
             'tag_timeline_data': json.dumps(tag_timeline_data)

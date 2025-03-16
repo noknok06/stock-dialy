@@ -178,6 +178,106 @@
     text-align: left;
   }
   
+  /* 項目完了状況カード */
+  .completion-card {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+  }
+  
+  .completion-card-header {
+    padding: 1rem;
+    background-color: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .completion-card-body {
+    padding: 1rem;
+  }
+  
+  .completion-progress {
+    height: 8px;
+    background-color: #e5e7eb;
+    border-radius: 4px;
+    margin-top: 0.5rem;
+    overflow: hidden;
+  }
+  
+  .completion-progress-bar {
+    height: 100%;
+    border-radius: 4px;
+  }
+  
+  .completion-item {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  
+  .completion-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+  
+  .item-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+  
+  .item-name {
+    font-weight: 600;
+    color: #111827;
+  }
+  
+  .item-rate {
+    font-weight: 500;
+  }
+  
+  .item-description {
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  /* モバイル用浮動ボタン */
+  .mobile-floating-buttons {
+    position: fixed;
+    right: 15px;
+    bottom: 70px; /* baseのボタンの下に配置 */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 1030;
+  }
+
+  .mobile-floating-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    border: none;
+    color: white;
+    text-decoration: none;
+  }
+
+  .mobile-floating-btn:hover, .mobile-floating-btn:focus {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    color: white;
+    text-decoration: none;
+  }
+
+  .mobile-floating-btn i {
+    font-size: 1.2rem;
+  }
+  
   /* モバイル最適化 */
   @media (max-width: 768px) {
     .report-header {
@@ -239,6 +339,13 @@
 
 {% block content %}
 <div class="container py-4">
+  <!-- モバイル用の半透明浮動ボタン（スマホ表示） -->
+  <div class="mobile-floating-buttons d-md-none">
+    <a href="{% url 'analysis_template:detail' template.id %}" class="mobile-floating-btn bg-secondary" title="戻る">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+  </div>
+
   <div class="report-header">
     <h1 class="report-title">
       <i class="bi bi-clipboard-data text-primary"></i>
@@ -264,6 +371,11 @@
         <span class="info-label">最終更新:</span>
         <span class="info-value">{{ template.updated_at|date:"Y年m月d日" }}</span>
       </div>
+      <div class="info-item">
+        <i class="bi bi-check2-square info-icon"></i>
+        <span class="info-label">平均完了率:</span>
+        <span class="info-value">{{ avg_completion_rate|default:"0" }}%</span>
+      </div>
     </div>
   </div>
   
@@ -272,11 +384,56 @@
       <h2 class="h4">分析結果一覧</h2>
     </div>
     <div>
-      <a href="{% url 'analysis_template:detail' template.id %}" class="btn btn-primary">
+      <a href="{% url 'analysis_template:detail' template.id %}" class="btn btn-primary d-none d-md-inline-block">
         <i class="bi bi-arrow-left me-1"></i> 戻る
       </a>
     </div>
   </div>
+  
+  <!-- 分析項目の完了状況 -->
+  {% if items_completion %}
+  <div class="completion-card mb-4">
+    <div class="completion-card-header">
+      <h3 class="h5 mb-0">分析項目の完了状況</h3>
+    </div>
+    <div class="completion-card-body">
+      <div class="row">
+        {% for item in items_completion %}
+        <div class="col-md-6">
+          <div class="completion-item">
+            <div class="item-header">
+              <div class="item-name">{{ item.name }}</div>
+              <div class="item-rate">{{ item.completion_rate }}%</div>
+            </div>
+            {% if item.description %}
+            <div class="item-description">{{ item.description }}</div>
+            {% endif %}
+            <div class="completion-progress">
+              <div class="completion-progress-bar bg-primary" style="width: {{ item.completion_rate }}%;"></div>
+            </div>
+            <div class="d-flex justify-content-between mt-2">
+              <small class="text-muted">{{ item.completed_count }} / {{ item.total_count }}</small>
+              <small class="text-muted">
+                {% if item.item_type == 'boolean' %}
+                チェックボックス
+                {% elif item.item_type == 'number' %}
+                数値
+                {% elif item.item_type == 'boolean_with_value' %}
+                チェック+値
+                {% elif item.item_type == 'select' %}
+                選択肢
+                {% else %}
+                テキスト
+                {% endif %}
+              </small>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
   
   {% if report_data %}
     <!-- モバイル用の表示切り替えボタン -->
@@ -304,6 +461,7 @@
           <thead>
             <tr>
               <th class="fixed-column diary-col">銘柄</th>
+              <th>完了率</th>
               {% for item in template.items.all %}
                 <th class="data-col">{{ item.name }}</th>
               {% endfor %}
@@ -317,6 +475,16 @@
                     {{ data.diary.stock_name }}
                     <small class="text-muted d-block">{{ data.diary.stock_symbol }}</small>
                   </a>
+                </td>
+                
+                <td class="text-center">
+                  <div class="progress" style="height: 8px; width: 80px; margin: 0 auto;">
+                    <div class="progress-bar bg-primary" role="progressbar" 
+                         style="width: {{ data.completion_rate }}%;" 
+                         aria-valuenow="{{ data.completion_rate }}"
+                         aria-valuemin="0" aria-valuemax="100"></div>
+                  </div>
+                  <small class="d-block mt-1">{{ data.completion_rate }}%</small>
                 </td>
                 
                 {% for item in template.items.all %}
@@ -392,11 +560,22 @@
       {% for data in report_data %}
         <div class="analysis-card">
           <div class="analysis-card-header">
-            <h5 class="mb-0">
-              <a href="{% url 'stockdiary:detail' data.diary.id %}">
-                {{ data.diary.stock_name }}
-              </a>
-            </h5>
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">
+                <a href="{% url 'stockdiary:detail' data.diary.id %}">
+                  {{ data.diary.stock_name }}
+                </a>
+              </h5>
+              <div>
+                <div class="progress" style="height: 8px; width: 60px;">
+                  <div class="progress-bar bg-primary" role="progressbar" 
+                       style="width: {{ data.completion_rate }}%;" 
+                       aria-valuenow="{{ data.completion_rate }}" 
+                       aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <small class="text-center d-block mt-1">{{ data.completion_rate }}%</small>
+              </div>
+            </div>
             <small class="text-muted">{{ data.diary.stock_symbol }}</small>
           </div>
           <div class="analysis-card-body">
