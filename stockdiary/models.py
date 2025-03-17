@@ -24,6 +24,8 @@ class StockDiary(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    is_memo = models.BooleanField(default=False, verbose_name='メモ記録')
+
     def __str__(self):
         return f"{self.stock_name} ({self.stock_symbol})"
 
@@ -56,6 +58,12 @@ class StockDiary(models.Model):
             return item_status.status
         except DiaryChecklistItem.DoesNotExist:
             return False            
+
+    def save(self, *args, **kwargs):
+        # 価格や数量が入力されていない場合、自動的にメモとして判定
+        if self.purchase_price is None or self.purchase_quantity is None:
+            self.is_memo = True
+        super().save(*args, **kwargs)
 
 # stockdiary/models.py に追加
 

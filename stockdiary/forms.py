@@ -62,6 +62,8 @@ class StockDiaryForm(forms.ModelForm):
             self.fields['purchase_price'].required = True
             self.fields['purchase_quantity'].required = True
 
+        self.fields['purchase_price'].help_text = "記録のみの場合は空欄でもOK"
+        self.fields['purchase_quantity'].help_text = "記録のみの場合は空欄でもOK"
 
     def clean(self):
         cleaned_data = super().clean()
@@ -70,6 +72,13 @@ class StockDiaryForm(forms.ModelForm):
         purchase_quantity = cleaned_data.get('purchase_quantity')
         
         # 売却日が入力されている場合は、購入価格と株数が必須
+        if sell_date:
+            if purchase_price is None:
+                self.add_error('purchase_price', '売却する場合は購入価格を入力してください')
+            if purchase_quantity is None:
+                self.add_error('purchase_quantity', '売却する場合は購入数量を入力してください')
+        
+        # 売却日が入力されている場合のみ価格と数量を必須にする
         if sell_date:
             if purchase_price is None:
                 self.add_error('purchase_price', '売却する場合は購入価格を入力してください')

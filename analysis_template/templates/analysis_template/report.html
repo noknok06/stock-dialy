@@ -1,9 +1,12 @@
 {% extends 'base.html' %}
+{% load static %}
 {% load analysis_filters %}
 {% block title %}分析レポート: {{ template.name }} | カブログ{% endblock %}
 
 {% block head %}
 {{ block.super }}
+<link rel="stylesheet" href="{% static 'css/speed-dial.css' %}">
+
 <style>
   .report-header {
     background-color: #f9fafb;
@@ -679,8 +682,18 @@
     </div>
   </td>
 {% endif %}
+{% include 'speed_dial.html' with actions=page_actions %}
+{% endblock %}
+<!-- スピードダイアルを別のブロックに移動 -->
+
+{% block scripts %}
+{{ block.super }}
+<!-- スピードダイアルのJSを明示的に読み込む -->
+<script src="{% static 'js/speed-dial.js' %}"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    // スピードダイアルを初期化
+    initializeSpeedDial();
     // モバイル用の表示切り替え機能
     const tableViewBtn = document.getElementById('tableViewBtn');
     const cardViewBtn = document.getElementById('cardViewBtn');

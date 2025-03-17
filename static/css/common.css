@@ -1,66 +1,72 @@
 :root {
-    --primary-color: #4f46e5;
-    --success-color: #10b981;
-    --danger-color: #ef4444;
-    --light-bg: #f9fafb;
-    --warning-color: #f59e0b;
-    --info-color: #3b82f6;
-    --light-bg: #f9fafb;
-    --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --primary-color: #4f46e5;
+  --success-color: #10b981;
+  --danger-color: #ef4444;
+  --light-bg: #f9fafb;
+  --warning-color: #f59e0b;
+  --info-color: #3b82f6;
+  --light-bg: #f9fafb;
+  --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+body {
+  background-color: var(--light-bg);
+}
+
+/* PC表示のみのヘッダー */
+.pc-only-header {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  display: none;
+  /* デフォルトで非表示 */
+}
+
+/* デスクトップ表示時のみ表示 */
+@media (min-width: 992px) {
+  .pc-only-header {
+    display: block;
   }
-  
-  body {
-    background-color: var(--light-bg);
-  }
-    /* PC表示のみのヘッダー */
-    .pc-only-header {
-      position: sticky;
-      top: 0;
-      z-index: 1030;
-      display: none; /* デフォルトで非表示 */
-    }
-    
-    /* デスクトップ表示時のみ表示 */
-    @media (min-width: 992px) {
-      .pc-only-header {
-        display: block;
-      }
-    }
-    
-    .avatar-circle {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .navbar-nav-container {
-      display: flex;
-      width: 100%;
-      align-items: center;
-    }
-  /* カレンダースタイル */
-  .fc-event {
-    cursor: pointer;
-    border-radius: 4px;
-  }
-  
-  .purchase-event {
-    background-color: var(--success-color);
-    border-color: var(--success-color);
-  }
-  
-  .sell-event {
-    background-color: var(--danger-color);
-    border-color: var(--danger-color);
-  }
-  /* メモイベント用のスタイル */
+}
+
+.avatar-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navbar-nav-container {
+  display: flex;
+  width: 100%;
+  align-items: center;
+}
+
+/* カレンダースタイル */
+.fc-event {
+  cursor: pointer;
+  border-radius: 4px;
+}
+
 .memo-event {
-  background-color: #17a2b8;  /* Bootstrap info色 */
-  border-color: #17a2b8;
-  color: white;
+  background-color: #0dcaf0;
+  /* infoカラー */
+  border-color: #0dcaf0;
+  opacity: 0.7;
+  /* やや透明に */
+}
+
+/* 既存のイベントスタイル */
+.purchase-event {
+  background-color: var(--success-color);
+  border-color: var(--success-color);
+}
+
+.sell-event {
+  background-color: var(--danger-color);
+  border-color: var(--danger-color);
 }
 
 /* カレンダー凡例スタイル */
@@ -93,280 +99,282 @@
 .calendar-legend-color.memo {
   background-color: #17a2b8;
 }
-  
-  #calendar {
-    height: 450px;
-    margin-bottom: 20px;
-  }
-  
-  .fc .fc-toolbar-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-  }
-  
-  .fc .fc-button-primary {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-  }
-  
-  .fc .fc-button-primary:hover {
-    background-color: #8079cc;
-    border-color: #4338ca;
-  }
-  
-  .fc .fc-button-primary:disabled {
-    background-color: #6366f1;
-    border-color: #6366f1;
-  }
-  
-  .fc-day-today {
-    background-color: rgba(79, 70, 229, 0.1) !important;
-  }
-  
-  /* カード共通スタイル */
-  .card {
-    border: none;
-    border-radius: 0.5rem;
-    box-shadow: var(--card-shadow);
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-  
-  .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  }
-  
-  .card-header {
-    background-color: transparent;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    padding: 1rem 1.25rem;
-  }
-  
-  .card-title {
-    font-weight: 600;
-    margin-bottom: 0;
-  }
-  
-  /* ボタンスタイル */
-  .btn-primary {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-  }
-  
-  .btn-primary:hover {
-    background-color: #4338ca;
-    border-color: #4338ca;
-  }
-  
-  .btn-success {
-    background-color: var(--success-color);
-    border-color: var(--success-color);
-  }
-  
-  .btn-success:hover {
-    background-color: #059669;
-    border-color: #059669;
-  }
 
-  .btn-danger {
-    background-color: var(--danger-color);
-    border-color: var(--danger-color);
-  }
-  
-  .btn-outline-danger:hover {
-    background-color: var(--danger-color);
-    border-color: var(--danger-color);
-    color: white;
-  }
+#calendar {
+  height: 450px;
+  margin-bottom: 20px;
+}
 
-  .btn-secondary {
-    background-color: #6b7280;
-    border-color: #6b7280;
-  }
+.fc .fc-toolbar-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
 
-  .btn-secondary:hover {
-    background-color: #4b5563;
-    border-color: #4b5563;
-  }
+.fc .fc-button-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
 
-  .btn-warning {
-    background-color: var(--warning-color);
-    border-color: var(--warning-color);
-    color: white;
-  }
+.fc .fc-button-primary:hover {
+  background-color: #8079cc;
+  border-color: #4338ca;
+}
 
-  .btn-warning:hover {
-    background-color: #d97706;
-    border-color: #d97706;
-    color: white;
-  }
+.fc .fc-button-primary:disabled {
+  background-color: #6366f1;
+  border-color: #6366f1;
+}
 
-  .btn-danger {
-    background-color: var(--danger-color);
-    border-color: var(--danger-color);
-  }
+.fc-day-today {
+  background-color: rgba(79, 70, 229, 0.1) !important;
+}
 
-  .btn-danger:hover {
-    background-color: #dc2626;
-    border-color: #dc2626;
-  }
+/* カード共通スタイル */
+.card {
+  border: none;
+  border-radius: 0.5rem;
+  box-shadow: var(--card-shadow);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
 
-  .btn-info {
-    background-color: var(--info-color);
-    border-color: var(--info-color);
-    color: white;
-  }
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
 
-  .btn-info:hover {
-    background-color: #2563eb;
-    border-color: #2563eb;
-    color: white;
-  }
-  .btn-icon {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  /* バッジスタイル */
-  .badge {
-    font-weight: 500;
-    padding: 0.5em 0.75em;
-  }
-  
-  .badge.bg-success {
-    background-color: var(--success-color) !important;
-  }
-  
-  .badge.bg-danger {
-    background-color: var(--danger-color) !important;
-  }
-  
-  .badge.bg-info {
-    background-color: #3b82f6 !important;
-    color: white !important;
-  }
-  
-  .badge.bg-danger {
-    background-color: var(--danger-color) !important;
-  }
-  
-  .badge.bg-info {
-    background-color: #3b82f6 !important;
-    color: white !important;
-  }
-  
+.card-header {
+  background-color: transparent;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 1rem 1.25rem;
+}
 
-  .badge-success {
-    background-color: rgba(16, 185, 129, 0.1);
-    color: var(--success-color);
-  }
+.card-title {
+  font-weight: 600;
+  margin-bottom: 0;
+}
 
-  .badge-danger {
-    background-color: rgba(239, 68, 68, 0.1);
-    color: var(--danger-color);
-  }
+/* ボタンスタイル */
+.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
 
-  .badge-info {
-    background-color: rgba(59, 130, 246, 0.1);
-    color: var(--info-color);
-  }
+.btn-primary:hover {
+  background-color: #4338ca;
+  border-color: #4338ca;
+}
 
-  .btn-warning {
-    background-color: var(--warning-color);
-    border-color: var(--warning-color);
-    color: white;
-  }
+.btn-success {
+  background-color: var(--success-color);
+  border-color: var(--success-color);
+}
 
-  .btn-outline-warning:hover {
-    background-color: var(--warning-color);
-    border-color: var(--warning-color);
-    color: white;
-  }
-  
-  /* フォームスタイル */
-  .form-control,
-  .form-select {
-    border-radius: 0.375rem;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #d1d5db;
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-  }
-  
-  .form-control:focus,
-  .form-select:focus {
-    border-color: #a5b4fc;
-    box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.25);
-  }
-  
-  .search-icon {
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #6b7280;
-  }
-  
-  .search-input {
-    padding-left: 35px;
-  }
-  
-  /* 日記カードスタイル */
-  .diary-icon {
-    width: 40px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: #6b7280;
-  }
-  
-  .progress {
-    height: 6px;
-    border-radius: 999px;
-  }
-  
-  .progress-bar.bg-success {
-    background-color: var(--success-color) !important;
-  }
-  
-  .progress-bar.bg-primary {
-    background-color: var(--primary-color) !important;
-  }
-  
-  .diary-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 1.25rem;
-    background-color: rgba(249, 250, 251, 0.7);
-  }
-  
-  .diary-card-body {
-    padding: 1.25rem;
-  }
-  
-  .diary-card-footer {
-    padding: 0.75rem 1.25rem;
-    background-color: transparent;
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
-  }
-  
-  .diary-meta {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #6b7280;
-    font-size: 0.875rem;
-  }
-  
-  .diary-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
+.btn-success:hover {
+  background-color: #059669;
+  border-color: #059669;
+}
+
+.btn-danger {
+  background-color: var(--danger-color);
+  border-color: var(--danger-color);
+}
+
+.btn-outline-danger:hover {
+  background-color: var(--danger-color);
+  border-color: var(--danger-color);
+  color: white;
+}
+
+.btn-secondary {
+  background-color: #6b7280;
+  border-color: #6b7280;
+}
+
+.btn-secondary:hover {
+  background-color: #4b5563;
+  border-color: #4b5563;
+}
+
+.btn-warning {
+  background-color: var(--warning-color);
+  border-color: var(--warning-color);
+  color: white;
+}
+
+.btn-warning:hover {
+  background-color: #d97706;
+  border-color: #d97706;
+  color: white;
+}
+
+.btn-danger {
+  background-color: var(--danger-color);
+  border-color: var(--danger-color);
+}
+
+.btn-danger:hover {
+  background-color: #dc2626;
+  border-color: #dc2626;
+}
+
+.btn-info {
+  background-color: var(--info-color);
+  border-color: var(--info-color);
+  color: white;
+}
+
+.btn-info:hover {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* バッジスタイル */
+.badge {
+  font-weight: 500;
+  padding: 0.5em 0.75em;
+}
+
+.badge.bg-success {
+  background-color: var(--success-color) !important;
+}
+
+.badge.bg-danger {
+  background-color: var(--danger-color) !important;
+}
+
+.badge.bg-info {
+  background-color: #3b82f6 !important;
+  color: white !important;
+}
+
+.badge.bg-danger {
+  background-color: var(--danger-color) !important;
+}
+
+.badge.bg-info {
+  background-color: #3b82f6 !important;
+  color: white !important;
+}
+
+
+.badge-success {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--success-color);
+}
+
+.badge-danger {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--danger-color);
+}
+
+.badge-info {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: var(--info-color);
+}
+
+.btn-warning {
+  background-color: var(--warning-color);
+  border-color: var(--warning-color);
+  color: white;
+}
+
+.btn-outline-warning:hover {
+  background-color: var(--warning-color);
+  border-color: var(--warning-color);
+  color: white;
+}
+
+/* フォームスタイル */
+.form-control,
+.form-select {
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #a5b4fc;
+  box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.25);
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+}
+
+.search-input {
+  padding-left: 35px;
+}
+
+/* 日記カードスタイル */
+.diary-icon {
+  width: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #6b7280;
+}
+
+.progress {
+  height: 6px;
+  border-radius: 999px;
+}
+
+.progress-bar.bg-success {
+  background-color: var(--success-color) !important;
+}
+
+.progress-bar.bg-primary {
+  background-color: var(--primary-color) !important;
+}
+
+.diary-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1.25rem;
+  background-color: rgba(249, 250, 251, 0.7);
+}
+
+.diary-card-body {
+  padding: 1.25rem;
+}
+
+.diary-card-footer {
+  padding: 0.75rem 1.25rem;
+  background-color: transparent;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.diary-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.diary-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 /*   
   .tag-badge {
     border-radius: 9999px;
@@ -376,277 +384,287 @@
     display: inline-block;
   } */
 
-  /* タグスタイル */
-  .tag-badge {
-    background-color: var(--info-color);
-    color: white;
-    font-weight: 500;
-    padding: 0.35em 0.75em;
-    border-radius: 9999px;
-    margin-right: 0.5rem;
-    margin-bottom: 0.5rem;
-    display: inline-block;
-  }
-  
-  /* 情報表示スタイル */
-  .info-row {
-    display: flex;
-    flex-wrap: wrap;
-    margin-bottom: 1.5rem;
-  }
-  
-  .info-item {
-    flex: 1 1 50%;
-    min-width: 200px;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: flex-start;
-  }
-  
-  .info-content {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .info-label {
-    font-size: 0.875rem;
-    color: #6b7280;
-  }
-  
-  .info-value {
-    font-weight: 500;
-  }
-  
-  .section-divider {
-    height: 1px;
-    background-color: #e5e7eb;
-    margin: 1.5rem 0;
-  }
-  
-  /* カレンダーコンテナ */
+/* タグスタイル */
+.tag-badge {
+  background-color: var(--info-color);
+  color: white;
+  font-weight: 500;
+  padding: 0.35em 0.75em;
+  border-radius: 9999px;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  display: inline-block;
+}
+
+/* 情報表示スタイル */
+.info-row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.info-item {
+  flex: 1 1 50%;
+  min-width: 200px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: flex-start;
+}
+
+.info-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.info-value {
+  font-weight: 500;
+}
+
+.section-divider {
+  height: 1px;
+  background-color: #e5e7eb;
+  margin: 1.5rem 0;
+}
+
+/* カレンダーコンテナ */
+.calendar-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 992px) {
   .calendar-container {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1rem;
+    grid-template-columns: 7fr 3fr;
   }
-  
-  @media (min-width: 992px) {
-    .calendar-container {
-      grid-template-columns: 7fr 3fr;
-    }
-  }
-  
-  .calendar-events {
-    background-color: white;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    box-shadow: var(--card-shadow);
-    height: 450px;
-    overflow-y: auto;
-  }
-  
-  .calendar-event-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem;
-    border-radius: 0.375rem;
-    margin-bottom: 0.5rem;
-  }
-  
-  .calendar-event-item:hover {
-    background-color: #f3f4f6;
-  }
-  
-  .calendar-event-badge {
-    width: 80px;
-    text-align: center;
-  }
-  
-  /* ページヘッダー */
-  .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-  }
-  
-  .page-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin-bottom: 0;
-  }
-  
-  .action-buttons {
-    display: flex;
-    gap: 0.5rem;
-  }
-  
-  .btn-icon {
-    display: inline-flex;
-    align-items: center;
-  }
-  
-  .btn-icon i {
-    margin-right: 0.5rem;
-  }
-  
-  
-  /* スピナースタイル */
-  .spinner-container {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
+}
 
-  .spinner-symbol {
-    width: 1.5rem;
-    height: 1.5rem;
-    border-width: 0.2em;
-  }
+.calendar-events {
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: var(--card-shadow);
+  height: 450px;
+  overflow-y: auto;
+}
 
-  /* 右側に縦に並ぶ浮動ボタン */
+.calendar-event-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  margin-bottom: 0.5rem;
+}
+
+.calendar-event-item:hover {
+  background-color: #f3f4f6;
+}
+
+.calendar-event-badge {
+  width: 80px;
+  text-align: center;
+}
+
+/* ページヘッダー */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-icon i {
+  margin-right: 0.5rem;
+}
+
+
+/* スピナースタイル */
+.spinner-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.spinner-symbol {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-width: 0.2em;
+}
+
+/* 右側に縦に並ぶ浮動ボタン */
+.floating-action-buttons {
+  position: fixed;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1030;
+}
+
+.floating-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  border: none;
+  color: white;
+}
+
+.floating-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.floating-btn i {
+  font-size: 1.25rem;
+}
+
+/* 各ボタンのスタイル */
+.floating-btn.edit-btn {
+  background-color: rgba(245, 158, 11, 0.7);
+  /* warning color */
+}
+
+.floating-btn.edit-btn:hover {
+  background-color: rgba(245, 158, 11, 0.9);
+}
+
+.floating-btn.delete-btn {
+  background-color: rgba(239, 68, 68, 0.7);
+  /* danger color */
+}
+
+.floating-btn.delete-btn:hover {
+  background-color: rgba(239, 68, 68, 0.9);
+}
+
+.floating-btn.back-btn {
+  background-color: rgba(107, 114, 128, 0.7);
+  /* secondary color */
+}
+
+.floating-btn.back-btn:hover {
+  background-color: rgba(107, 114, 128, 0.9);
+}
+
+.floating-btn.sell-btn {
+  background-color: rgba(16, 185, 129, 0.7);
+  /* success color */
+}
+
+.floating-btn.sell-btn:hover {
+  background-color: rgba(16, 185, 129, 0.9);
+}
+
+/* 小さい画面の場合、下部に並べる */
+@media (max-width: 768px) {
   .floating-action-buttons {
-    position: fixed;
+    top: auto;
+    bottom: 15px;
     right: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    z-index: 1030;
+    transform: none;
+    flex-direction: row;
   }
-  
-  .floating-btn {
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    transition: all 0.3s ease;
-    border: none;
-    color: white;
-  }
-  
-  .floating-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  }
-  
-  .floating-btn i {
-    font-size: 1.25rem;
-  }
-  
-  /* 各ボタンのスタイル */
-  .floating-btn.edit-btn {
-    background-color: rgba(245, 158, 11, 0.7); /* warning color */
-  }
-  
-  .floating-btn.edit-btn:hover {
-    background-color: rgba(245, 158, 11, 0.9);
-  }
-  
-  .floating-btn.delete-btn {
-    background-color: rgba(239, 68, 68, 0.7); /* danger color */
-  }
-  
-  .floating-btn.delete-btn:hover {
-    background-color: rgba(239, 68, 68, 0.9);
-  }
-  
-  .floating-btn.back-btn {
-    background-color: rgba(107, 114, 128, 0.7); /* secondary color */
-  }
-  
-  .floating-btn.back-btn:hover {
-    background-color: rgba(107, 114, 128, 0.9);
-  }
-  
-  .floating-btn.sell-btn {
-    background-color: rgba(16, 185, 129, 0.7); /* success color */
-  }
-  
-  .floating-btn.sell-btn:hover {
-    background-color: rgba(16, 185, 129, 0.9);
-  }
-  
-  /* 小さい画面の場合、下部に並べる */
-  @media (max-width: 768px) {
-    .floating-action-buttons {
-      top: auto;
-      bottom: 15px;
-      right: 15px;
-      transform: none;
-      flex-direction: row;
-    }
-  }
-    /* モバイル用浮動ボタン */
-    .mobile-floating-buttons {
-      position: fixed;
-      right: 15px;
-      bottom: 70px; /* baseのボタンの下に配置 */
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      z-index: 1030;
-    }
-    
-    .mobile-floating-btn {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-      transition: all 0.3s ease;
-      border: none;
-      color: white;
-      text-decoration: none;
-    }
-    
-    .mobile-floating-btn:hover, .mobile-floating-btn:focus {
-      transform: scale(1.05);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      color: white;
-      text-decoration: none;
-    }
-    
-    .mobile-floating-btn i {
-      font-size: 1.2rem;
-    }
-    
-    /* 各ボタンのスタイル */
-    .mobile-floating-btn.edit-btn {
-      background-color: rgba(245, 158, 11, 0.7); /* warning color */
-    }
-    
-    .mobile-floating-btn.edit-btn:hover {
-      background-color: rgba(245, 158, 11, 0.9);
-    }
-    
-    .mobile-floating-btn.delete-btn {
-      background-color: rgba(239, 68, 68, 0.7); /* danger color */
-    }
-    
-    .mobile-floating-btn.delete-btn:hover {
-      background-color: rgba(239, 68, 68, 0.9);
-    }
-    
-    .mobile-floating-btn.back-btn {
-      background-color: rgba(107, 114, 128, 0.7); /* secondary color */
-    }
-    
-    .mobile-floating-btn.back-btn:hover {
-      background-color: rgba(107, 114, 128, 0.9);
-    }
-    
-    .mobile-floating-btn.sell-btn {
-      background-color: rgba(16, 185, 129, 0.7); /* success color */
-    }
-    
-    .mobile-floating-btn.sell-btn:hover {
-      background-color: rgba(16, 185, 129, 0.9);
-    }
+}
+
+/* モバイル用浮動ボタン */
+.mobile-floating-buttons {
+  position: fixed;
+  right: 15px;
+  bottom: 70px;
+  /* baseのボタンの下に配置 */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1030;
+}
+
+.mobile-floating-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  border: none;
+  color: white;
+  text-decoration: none;
+}
+
+.mobile-floating-btn:hover, .mobile-floating-btn:focus {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  color: white;
+  text-decoration: none;
+}
+
+.mobile-floating-btn i {
+  font-size: 1.2rem;
+}
+
+/* 各ボタンのスタイル */
+.mobile-floating-btn.edit-btn {
+  background-color: rgba(245, 158, 11, 0.7);
+  /* warning color */
+}
+
+.mobile-floating-btn.edit-btn:hover {
+  background-color: rgba(245, 158, 11, 0.9);
+}
+
+.mobile-floating-btn.delete-btn {
+  background-color: rgba(239, 68, 68, 0.7);
+  /* danger color */
+}
+
+.mobile-floating-btn.delete-btn:hover {
+  background-color: rgba(239, 68, 68, 0.9);
+}
+
+.mobile-floating-btn.back-btn {
+  background-color: rgba(107, 114, 128, 0.7);
+  /* secondary color */
+}
+
+.mobile-floating-btn.back-btn:hover {
+  background-color: rgba(107, 114, 128, 0.9);
+}
+
+.mobile-floating-btn.sell-btn {
+  background-color: rgba(16, 185, 129, 0.7);
+  /* success color */
+}
+
+.mobile-floating-btn.sell-btn:hover {
+  background-color: rgba(16, 185, 129, 0.9);
+}

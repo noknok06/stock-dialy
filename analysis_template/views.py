@@ -47,6 +47,33 @@ class AnalysisTemplateDetailView(LoginRequiredMixin, DetailView):
     def get_queryset(self):
         return AnalysisTemplate.objects.filter(user=self.request.user).prefetch_related('items')
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        diary = self.object
+        user = self.request.user
+        analytics_actions = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('stockdiary:home'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            },
+            {
+                'type': 'report',
+                'url': reverse_lazy('analysis_template:report', kwargs={'pk': diary.id}),
+                'icon': 'bi-file-bar-graph',
+                'label': 'レポート'
+            },
+            {
+                'type': 'edit',
+                'url': reverse_lazy('analysis_template:update', kwargs={'pk': diary.id}),
+                'icon': 'bi-pencil',
+                'label': '編集'
+            },
+        ]
+        context['page_actions'] = analytics_actions
+        return context
+        
 class AnalysisTemplateCreateView(LoginRequiredMixin, CreateView):
     model = AnalysisTemplate
     form_class = AnalysisTemplateForm
@@ -102,6 +129,18 @@ class AnalysisTemplateUpdateView(LoginRequiredMixin, UpdateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        diary = self.object
+
+        analytics_actions = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('analysis_template:detail', kwargs={'pk': diary.id}),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            }
+        ]
+        context['page_actions'] = analytics_actions
+        
         if self.request.POST:
             context['items_formset'] = AnalysisItemFormSet(self.request.POST, instance=self.object)
         else:
@@ -280,5 +319,16 @@ class AnalysisReportView(LoginRequiredMixin, DetailView):
             items_completion.append(item_data)
         
         context['items_completion'] = items_completion
-        
+
+        diary = self.object
+        analytics_actions = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('analysis_template:detail', kwargs={'pk': diary.id}),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            }
+        ]
+        context['page_actions'] = analytics_actions
+
         return context

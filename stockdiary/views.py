@@ -90,7 +90,45 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
             realized_profit += profit
         
         context['realized_profit'] = realized_profit
+            
+        # メモと取引記録を分ける
+        memo_entries = [d for d in context['diaries'] if d.is_memo or d.purchase_price is None or d.purchase_quantity is None]
+        transaction_entries = [d for d in context['diaries'] if not d.is_memo and d.purchase_price is not None and d.purchase_quantity is not None]
         
+        context['memo_entries'] = memo_entries
+        context['transaction_entries'] = transaction_entries
+        
+        # 実際の取引のみをカウント
+        context['active_holdings_count'] = len([d for d in transaction_entries if d.sell_date is None])
+        
+        # フォーム用のスピードダイアルアクション
+        form_actions = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('stockdiary:home'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            },
+            {
+                'type': 'add',
+                'url': reverse_lazy('stockdiary:create'),
+                'icon': 'bi-plus-lg',
+                'label': '新規作成'
+            },
+            {
+                'type': 'template',
+                'url': reverse_lazy('analysis_template:list'),
+                'icon': 'bi-clipboard-data',
+                'label': 'テンプレート'
+            },
+            {
+                'type': 'tag',
+                'url': reverse_lazy('tags:list'),
+                'icon': 'bi-tags',
+                'label': 'タグ管理'
+            }
+        ]
+        context['form_actions'] = form_actions
         return context
 # stockdiary/views.py のStockDiaryDetailViewを修正
 # views.py の修正方法
@@ -123,6 +161,12 @@ class StockDiaryDetailView(LoginRequiredMixin, DetailView):
         diary = self.object
         diary_actions = [
             {
+                'type': 'back',
+                'url': reverse_lazy('stockdiary:home'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            },
+            {
                 'type': 'sell',
                 'url': reverse_lazy('stockdiary:sell_specific', kwargs={'pk': diary.id}),
                 'icon': 'bi-cash-coin',
@@ -140,12 +184,6 @@ class StockDiaryDetailView(LoginRequiredMixin, DetailView):
                 'url': reverse_lazy('stockdiary:delete', kwargs={'pk': diary.id}),
                 'icon': 'bi-trash',
                 'label': '削除'
-            },
-            {
-                'type': 'back',
-                'url': reverse_lazy('stockdiary:home'),
-                'icon': 'bi-arrow-left',
-                'label': '戻る'
             }
         ]
         context['diary_actions'] = diary_actions  # この行を必ず追加する
@@ -2352,13 +2390,17 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         
         return template_stats
 
-
     def get_investment_summary_data(self, user, diaries, all_diaries, active_diaries, sold_diaries):
         """投資状況サマリー関連のデータを取得"""
-        # 1. 総投資額の計算 - NoneTypeを考慮
+        # メモエントリー（is_memo=True または price/quantity が None）をフィルタリング
+        transaction_diaries = [d for d in diaries if not (d.is_memo or d.purchase_price is None or d.purchase_quantity is None)]
+        transaction_active_diaries = [d for d in active_diaries if not (d.is_memo or d.purchase_price is None or d.purchase_quantity is None)]
+        transaction_sold_diaries = [d for d in sold_diaries if not (d.is_memo or d.purchase_price is None or d.purchase_quantity is None)]
+        
+        # 1. 総投資額の計算 - メモを除外
         total_investment = sum(
-            (diary.purchase_price or 0) * (diary.purchase_quantity or 0) 
-            for diary in diaries
+            d.purchase_price * d.purchase_quantity 
+            for d in transaction_diaries
         )
         
         # 2. 前月比較用のデータ
@@ -2367,10 +2409,11 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
             user=user, 
             purchase_date__lt=last_month
         )
-        # None値を考慮して計算
+        # メモを除外して計算
+        last_month_transactions = [d for d in last_month_diaries if not (d.is_memo or d.purchase_price is None or d.purchase_quantity is None)]
         last_month_investment = sum(
-            (diary.purchase_price or 0) * (diary.purchase_quantity or 0) 
-            for diary in last_month_diaries
+            d.purchase_price * d.purchase_quantity 
+            for d in last_month_transactions
         )
         
         investment_change = total_investment - last_month_investment
@@ -2378,79 +2421,62 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         
         # 3. 実現利益（売却済み株式の損益）
         realized_profit = Decimal('0')
-        for diary in sold_diaries:
-            # None値を考慮
-            if diary.sell_price is not None and diary.purchase_price is not None and diary.purchase_quantity is not None:
-                profit = (diary.sell_price - diary.purchase_price) * diary.purchase_quantity
-                realized_profit += profit
+        for diary in transaction_sold_diaries:
+            profit = (diary.sell_price - diary.purchase_price) * diary.purchase_quantity
+            realized_profit += profit
         
         # 4. 現在の保有総額（購入額ベース、API依存なし）
         active_investment = sum(
-            (diary.purchase_price or 0) * (diary.purchase_quantity or 0) 
-            for diary in active_diaries
+            d.purchase_price * d.purchase_quantity 
+            for d in transaction_active_diaries
         )
 
         # 5. 総利益/損失 = 実現利益のみ（未実現利益は考慮しない）
         total_profit = realized_profit
                 
         # 6. 前月の利益比較（売却済みのみ）
-        last_month_sold = [d for d in last_month_diaries if d.sell_date]
+        last_month_sold = [d for d in last_month_transactions if d.sell_date]
         last_month_profit = Decimal('0')
         
-        # 前月の実現利益 - None値を考慮
+        # 前月の実現利益
         for diary in last_month_sold:
-            if diary.sell_price is not None and diary.purchase_price is not None and diary.purchase_quantity is not None:
-                last_month_profit += (diary.sell_price - diary.purchase_price) * diary.purchase_quantity
+            last_month_profit += (diary.sell_price - diary.purchase_price) * diary.purchase_quantity
         
         profit_change = total_profit - last_month_profit
         profit_change_percent = (profit_change / last_month_profit * 100) if last_month_profit else 0
         
         # 7. 保有銘柄数 - メモエントリーではない銘柄のみカウント
-        active_stocks_count = len([d for d in active_diaries if d.purchase_price is not None and d.purchase_quantity is not None])
-        last_month_active_stocks = len([
-            d for d in last_month_diaries 
-            if not d.sell_date and d.purchase_price is not None and d.purchase_quantity is not None
-        ])
+        active_stocks_count = len(transaction_active_diaries)
+        last_month_active_stocks = len([d for d in last_month_transactions if not d.sell_date])
         stocks_count_change = active_stocks_count - last_month_active_stocks
         
         # 8. 平均保有期間（売却済みのみ）
-        # 売却済みで、かつ価格・数量があるエントリーのみを対象
-        valid_sold_diaries = [
-            d for d in sold_diaries 
-            if d.purchase_price is not None and d.purchase_quantity is not None
-        ]
-        
         avg_holding_period = 0
-        if valid_sold_diaries:
-            total_days = sum((d.sell_date - d.purchase_date).days for d in valid_sold_diaries)
-            avg_holding_period = total_days / len(valid_sold_diaries)
+        if transaction_sold_diaries:
+            total_days = sum((d.sell_date - d.purchase_date).days for d in transaction_sold_diaries)
+            avg_holding_period = total_days / len(transaction_sold_diaries)
         
         # 前月の平均保有期間 - メモエントリーを除外
-        valid_last_month_sold = [
-            d for d in last_month_sold 
-            if d.purchase_price is not None and d.purchase_quantity is not None
-        ]
-        
         last_month_avg_holding_period = 0
-        if valid_last_month_sold:
-            last_month_total_days = sum((d.sell_date - d.purchase_date).days for d in valid_last_month_sold)
-            last_month_avg_holding_period = last_month_total_days / len(valid_last_month_sold)
+        if last_month_sold:
+            last_month_total_days = sum((d.sell_date - d.purchase_date).days for d in last_month_sold)
+            last_month_avg_holding_period = last_month_total_days / len(last_month_sold)
         
         holding_period_change = avg_holding_period - last_month_avg_holding_period
         
         return {
             'total_investment': total_investment,
-            'active_investment': active_investment,  # 現在の保有総額（購入額ベース）
+            'active_investment': active_investment,
             'investment_change': investment_change,
             'investment_change_percent': investment_change_percent,
-            'total_profit': total_profit,  # 実現利益のみ
+            'total_profit': total_profit,
             'profit_change': profit_change,
             'profit_change_percent': profit_change_percent,
             'active_stocks_count': active_stocks_count,
             'stocks_count_change': stocks_count_change,
             'avg_holding_period': avg_holding_period,
             'holding_period_change': holding_period_change,
-            'realized_profit': realized_profit,  # 売却済み株式からの利益
+            'realized_profit': realized_profit,
             'active_holdings_count': active_stocks_count,
         }
         
@@ -2639,7 +2665,7 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
             'avg_reason_length': avg_reason_length,
             'reason_length_change': reason_length_change
         }
-                
+
 # stockdiary/views.py に追加
 class StockDiarySellView(LoginRequiredMixin, TemplateView):
     """保有株式の売却入力ページ"""
@@ -2651,7 +2677,10 @@ class StockDiarySellView(LoginRequiredMixin, TemplateView):
         # 保有中（売却日がNull）の株式を取得
         active_diaries = StockDiary.objects.filter(
             user=self.request.user,
-            sell_date__isnull=True
+            sell_date__isnull=True,
+            purchase_price__isnull=False,
+            purchase_quantity__isnull=False,
+            is_memo=False  # 明示的なメモを除外
         ).order_by('stock_symbol', 'purchase_date')
         
         # 株数や購入価格がないエントリーを除外
