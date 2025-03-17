@@ -245,42 +245,6 @@
     margin-bottom: 0.5rem;
   }
   
-  /* モバイル用浮動ボタン */
-  .mobile-floating-buttons {
-    position: fixed;
-    right: 15px;
-    bottom: 70px; /* baseのボタンの下に配置 */
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    z-index: 1030;
-  }
-
-  .mobile-floating-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    transition: all 0.3s ease;
-    border: none;
-    color: white;
-    text-decoration: none;
-  }
-
-  .mobile-floating-btn:hover, .mobile-floating-btn:focus {
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    color: white;
-    text-decoration: none;
-  }
-
-  .mobile-floating-btn i {
-    font-size: 1.2rem;
-  }
-  
   /* モバイル最適化 */
   @media (max-width: 768px) {
     .report-header {
@@ -343,12 +307,6 @@
 {% block content %}
 <div class="container py-4">
   <!-- モバイル用の半透明浮動ボタン（スマホ表示） -->
-  <div class="mobile-floating-buttons d-md-none">
-    <a href="{% url 'analysis_template:detail' template.id %}" class="mobile-floating-btn bg-secondary" title="戻る">
-      <i class="bi bi-arrow-left"></i>
-    </a>
-  </div>
-
   <div class="report-header">
     <h1 class="report-title">
       <i class="bi bi-clipboard-data text-primary"></i>
