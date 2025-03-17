@@ -524,6 +524,8 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
     """投資記録分析ダッシュボードを表示するビュー"""
     template_name = 'stockdiary/analytics_dashboard.html'
     
+    # DiaryAnalyticsView の get_context_data メソッドの修正部分
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
@@ -558,7 +560,7 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         all_diaries = StockDiary.objects.filter(user=user)
         tags = Tag.objects.filter(user=user).distinct()
         
-        # 保有中と売却済みの株式を分離
+        # 保有中と売却済みの株式を分離 (メモかどうかの判定は保持)
         active_diaries = [d for d in diaries if not d.sell_date]
         sold_diaries = [d for d in diaries if d.sell_date]
         
@@ -615,7 +617,6 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         ]
         context['page_actions'] = analytics_actions
         
-
         # コンテキストの構築
         context.update({
             'diaries': diaries,
@@ -657,9 +658,7 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
             'holding_period_counts': json.dumps(holding_period_data['counts']),
         })
         
-        # メソッド追加
-        return context
-            
+        return context            
     def get_current_prices(self, stock_symbols):
         """銘柄コードから現在の株価を取得する関数"""
         # デモ用に擬似的な株価データを生成
@@ -869,6 +868,8 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         
         return diaries.select_related('user').prefetch_related('tags')
     
+    # collect_stats メソッドの修正
+
     def collect_stats(self, user, diaries, all_diaries):
         """基本的な統計データを収集"""
         from django.db.models import Avg, Sum, Count, F, ExpressionWrapper, fields
@@ -882,7 +883,7 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         prev_month_end = current_month_start - timedelta(days=1)
         prev_month_start = prev_month_end.replace(day=1)
         
-        # 銘柄数の統計
+        # 銘柄数の統計 - メモを含めてすべてカウント
         total_stocks = diaries.count()
         prev_month_stocks = all_diaries.filter(
             created_at__gte=prev_month_start,
@@ -913,7 +914,7 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         checklist_completion_rate = current_completion
         checklist_rate_change = current_completion - prev_completion
         
-        # 平均記録文字数
+        # 平均記録文字数 - すべてのエントリーを対象（メモも含む）
         avg_reason_length = 0
         if diaries.exists():
             # HTMLタグを除去して純粋なテキスト長を計算
@@ -947,81 +948,7 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
             'checklist_rate_change': checklist_rate_change,
             'avg_reason_length': avg_reason_length,
             'reason_length_change': reason_length_change
-        }
-    
-    def get_investment_summary_data(self, user, diaries, all_diaries, active_diaries, sold_diaries):
-        """投資状況サマリー関連のデータを取得"""
-        # 1. 総投資額の計算
-        total_investment = sum(diary.purchase_price * diary.purchase_quantity for diary in diaries)
-        
-        # 2. 前月比較用のデータ
-        last_month = timezone.now().date() - timedelta(days=30)
-        last_month_diaries = StockDiary.objects.filter(
-            user=user, 
-            purchase_date__lt=last_month
-        )
-        last_month_investment = sum(diary.purchase_price * diary.purchase_quantity for diary in last_month_diaries)
-        
-        investment_change = total_investment - last_month_investment
-        investment_change_percent = (investment_change / last_month_investment * 100) if last_month_investment else 0
-        
-        # 3. 実現利益（売却済み株式の損益）
-        realized_profit = Decimal('0')
-        for diary in sold_diaries:
-            profit = (diary.sell_price - diary.purchase_price) * diary.purchase_quantity
-            realized_profit += profit
-        
-        # 4. 現在の保有総額（購入額ベース、API依存なし）
-        active_investment = sum(diary.purchase_price * diary.purchase_quantity for diary in active_diaries)
-    
-        # 5. 総利益/損失 = 実現利益のみ（未実現利益は考慮しない）
-        total_profit = realized_profit
-                
-        # 6. 前月の利益比較（売却済みのみ）
-        last_month_sold = [d for d in last_month_diaries if d.sell_date]
-        last_month_profit = Decimal('0')
-        
-        # 前月の実現利益
-        for diary in last_month_sold:
-            last_month_profit += (diary.sell_price - diary.purchase_price) * diary.purchase_quantity
-        
-        profit_change = total_profit - last_month_profit
-        profit_change_percent = (profit_change / last_month_profit * 100) if last_month_profit else 0
-        
-        # 7. 保有銘柄数
-        active_stocks_count = len(active_diaries)
-        last_month_active_stocks = len([d for d in last_month_diaries if not d.sell_date])
-        stocks_count_change = active_stocks_count - last_month_active_stocks
-        
-        # 8. 平均保有期間（売却済みのみ）
-        avg_holding_period = 0
-        if sold_diaries:
-            total_days = sum((d.sell_date - d.purchase_date).days for d in sold_diaries)
-            avg_holding_period = total_days / len(sold_diaries)
-        
-        # 前月の平均保有期間
-        last_month_avg_holding_period = 0
-        if last_month_sold:
-            last_month_total_days = sum((d.sell_date - d.purchase_date).days for d in last_month_sold)
-            last_month_avg_holding_period = last_month_total_days / len(last_month_sold)
-        
-        holding_period_change = avg_holding_period - last_month_avg_holding_period
-        
-        return {
-            'total_investment': total_investment,
-            'active_investment': active_investment,  # 現在の保有総額（購入額ベース）
-            'investment_change': investment_change,
-            'investment_change_percent': investment_change_percent,
-            'total_profit': total_profit,  # 実現利益のみ
-            'profit_change': profit_change,
-            'profit_change_percent': profit_change_percent,
-            'active_stocks_count': active_stocks_count,
-            'stocks_count_change': stocks_count_change,
-            'avg_holding_period': avg_holding_period,
-            'holding_period_change': holding_period_change,
-            'realized_profit': realized_profit,  # 売却済み株式からの利益
-            'active_holdings_count': active_stocks_count,
-        }
+        }    
     
     def calculate_analysis_completion_rate(self, user, diaries):
         """分析項目の平均完了率を計算"""
@@ -2055,14 +1982,20 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
             'keywords': keywords
         }
 
+    # DiaryAnalyticsView の他の部分も修正
+
+    # prepare_holding_period_data メソッドを修正
     def prepare_holding_period_data(self, diaries):
         """保有期間分布データを準備"""
         # 保有期間の範囲を定義
         ranges = ['~1週間', '1週間~1ヶ月', '1~3ヶ月', '3~6ヶ月', '6ヶ月~1年', '1年以上']
         counts = [0, 0, 0, 0, 0, 0]
         
-        # 売却済みの日記で保有期間を集計
-        sold_diaries = diaries.filter(sell_date__isnull=False)
+        # 売却済みの日記で保有期間を集計 (None値のチェックを追加)
+        sold_diaries = [
+            d for d in diaries.filter(sell_date__isnull=False)
+            if d.purchase_price is not None and d.purchase_quantity is not None
+        ]
         
         for diary in sold_diaries:
             holding_period = (diary.sell_date - diary.purchase_date).days
@@ -2085,6 +2018,76 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
             'counts': counts
         }
 
+    # prepare_recent_trends メソッドを修正
+    def prepare_recent_trends(self, diaries):
+        """最近の投資傾向データを準備"""
+        # 価格・数量情報があるエントリーだけをフィルタリング
+        valid_diaries = [d for d in diaries if d.purchase_price is not None and d.purchase_quantity is not None]
+        
+        # 購入頻度
+        purchase_frequency = 30  # デフォルト値
+        if len(valid_diaries) >= 2:
+            sorted_diaries = sorted(valid_diaries, key=lambda x: x.purchase_date, reverse=True)
+            first_date = sorted_diaries[0].purchase_date
+            last_date = sorted_diaries[-1].purchase_date
+            date_range = (first_date - last_date).days
+            if date_range > 0 and len(valid_diaries) > 1:
+                purchase_frequency = round(date_range / (len(valid_diaries) - 1))
+        
+        # 平均保有期間
+        avg_holding_period = 0
+        sold_diaries = [d for d in valid_diaries if d.sell_date]
+        if sold_diaries:
+            total_days = sum((d.sell_date - d.purchase_date).days for d in sold_diaries)
+            avg_holding_period = round(total_days / len(sold_diaries))
+        
+        # よく使うタグ
+        most_used_tag = "なし"
+        tag_counts = {}
+        for diary in diaries:  # すべての日記を対象（メモも含む）
+            for tag in diary.tags.all():
+                if tag.name in tag_counts:
+                    tag_counts[tag.name] += 1
+                else:
+                    tag_counts[tag.name] = 1
+        
+        if tag_counts:
+            most_used_tag = max(tag_counts.items(), key=lambda x: x[1])[0]
+        
+        # 最も詳細な記録
+        most_detailed_record = "なし"
+        max_length = 0
+        for diary in diaries:  # すべての日記を対象（メモも含む）
+            text_length = len(strip_tags(diary.reason))
+            if text_length > max_length:
+                max_length = text_length
+                most_detailed_record = diary.stock_name
+        
+        # キーワード抽出
+        keywords = []
+        if diaries.count() > 0:
+            # 最新10件の日記から頻出単語を抽出
+            recent_diaries = diaries.order_by('-purchase_date')[:10]
+            text_content = ' '.join([strip_tags(d.reason) for d in recent_diaries])
+            
+            # 簡易的な形態素解析（実際は形態素解析ライブラリを使用するべき）
+            # 一般的な日本語のストップワード
+            stop_words = ['の', 'に', 'は', 'を', 'た', 'が', 'で', 'て', 'と', 'し', 'れ', 'さ', 'ある', 'いる', 'する', 'から', 'など', 'こと', 'これ', 'それ', 'もの']
+            
+            # 単語の簡易的な抽出（より精緻な形態素解析が必要）
+            words = re.findall(r'\w+', text_content)
+            word_counts = Counter(word for word in words if len(word) > 1 and word not in stop_words)
+            
+            # 上位5キーワードを抽出
+            keywords = [{'word': word, 'count': count} for word, count in word_counts.most_common(5)]
+        
+        return {
+            'purchase_frequency': purchase_frequency,
+            'avg_holding_period': avg_holding_period,
+            'most_used_tag': most_used_tag,
+            'most_detailed_record': most_detailed_record,
+            'keywords': keywords
+        }
     def prepare_template_usage_data(self, diaries):
         """分析テンプレート使用率データを準備"""
         # 各テンプレートの使用率を計算
@@ -2348,7 +2351,295 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
                 })
         
         return template_stats
+
+
+    def get_investment_summary_data(self, user, diaries, all_diaries, active_diaries, sold_diaries):
+        """投資状況サマリー関連のデータを取得"""
+        # 1. 総投資額の計算 - NoneTypeを考慮
+        total_investment = sum(
+            (diary.purchase_price or 0) * (diary.purchase_quantity or 0) 
+            for diary in diaries
+        )
         
+        # 2. 前月比較用のデータ
+        last_month = timezone.now().date() - timedelta(days=30)
+        last_month_diaries = StockDiary.objects.filter(
+            user=user, 
+            purchase_date__lt=last_month
+        )
+        # None値を考慮して計算
+        last_month_investment = sum(
+            (diary.purchase_price or 0) * (diary.purchase_quantity or 0) 
+            for diary in last_month_diaries
+        )
+        
+        investment_change = total_investment - last_month_investment
+        investment_change_percent = (investment_change / last_month_investment * 100) if last_month_investment else 0
+        
+        # 3. 実現利益（売却済み株式の損益）
+        realized_profit = Decimal('0')
+        for diary in sold_diaries:
+            # None値を考慮
+            if diary.sell_price is not None and diary.purchase_price is not None and diary.purchase_quantity is not None:
+                profit = (diary.sell_price - diary.purchase_price) * diary.purchase_quantity
+                realized_profit += profit
+        
+        # 4. 現在の保有総額（購入額ベース、API依存なし）
+        active_investment = sum(
+            (diary.purchase_price or 0) * (diary.purchase_quantity or 0) 
+            for diary in active_diaries
+        )
+
+        # 5. 総利益/損失 = 実現利益のみ（未実現利益は考慮しない）
+        total_profit = realized_profit
+                
+        # 6. 前月の利益比較（売却済みのみ）
+        last_month_sold = [d for d in last_month_diaries if d.sell_date]
+        last_month_profit = Decimal('0')
+        
+        # 前月の実現利益 - None値を考慮
+        for diary in last_month_sold:
+            if diary.sell_price is not None and diary.purchase_price is not None and diary.purchase_quantity is not None:
+                last_month_profit += (diary.sell_price - diary.purchase_price) * diary.purchase_quantity
+        
+        profit_change = total_profit - last_month_profit
+        profit_change_percent = (profit_change / last_month_profit * 100) if last_month_profit else 0
+        
+        # 7. 保有銘柄数 - メモエントリーではない銘柄のみカウント
+        active_stocks_count = len([d for d in active_diaries if d.purchase_price is not None and d.purchase_quantity is not None])
+        last_month_active_stocks = len([
+            d for d in last_month_diaries 
+            if not d.sell_date and d.purchase_price is not None and d.purchase_quantity is not None
+        ])
+        stocks_count_change = active_stocks_count - last_month_active_stocks
+        
+        # 8. 平均保有期間（売却済みのみ）
+        # 売却済みで、かつ価格・数量があるエントリーのみを対象
+        valid_sold_diaries = [
+            d for d in sold_diaries 
+            if d.purchase_price is not None and d.purchase_quantity is not None
+        ]
+        
+        avg_holding_period = 0
+        if valid_sold_diaries:
+            total_days = sum((d.sell_date - d.purchase_date).days for d in valid_sold_diaries)
+            avg_holding_period = total_days / len(valid_sold_diaries)
+        
+        # 前月の平均保有期間 - メモエントリーを除外
+        valid_last_month_sold = [
+            d for d in last_month_sold 
+            if d.purchase_price is not None and d.purchase_quantity is not None
+        ]
+        
+        last_month_avg_holding_period = 0
+        if valid_last_month_sold:
+            last_month_total_days = sum((d.sell_date - d.purchase_date).days for d in valid_last_month_sold)
+            last_month_avg_holding_period = last_month_total_days / len(valid_last_month_sold)
+        
+        holding_period_change = avg_holding_period - last_month_avg_holding_period
+        
+        return {
+            'total_investment': total_investment,
+            'active_investment': active_investment,  # 現在の保有総額（購入額ベース）
+            'investment_change': investment_change,
+            'investment_change_percent': investment_change_percent,
+            'total_profit': total_profit,  # 実現利益のみ
+            'profit_change': profit_change,
+            'profit_change_percent': profit_change_percent,
+            'active_stocks_count': active_stocks_count,
+            'stocks_count_change': stocks_count_change,
+            'avg_holding_period': avg_holding_period,
+            'holding_period_change': holding_period_change,
+            'realized_profit': realized_profit,  # 売却済み株式からの利益
+            'active_holdings_count': active_stocks_count,
+        }
+        
+    # prepare_holding_period_data メソッドを追加
+    def prepare_holding_period_data(self, diaries):
+        """保有期間分布データを準備"""
+        # 保有期間の範囲を定義
+        ranges = ['~1週間', '1週間~1ヶ月', '1~3ヶ月', '3~6ヶ月', '6ヶ月~1年', '1年以上']
+        counts = [0, 0, 0, 0, 0, 0]
+        
+        # 売却済みの日記で保有期間を集計 (None値のチェックを追加)
+        sold_diaries = [
+            d for d in diaries.filter(sell_date__isnull=False)
+            if d.purchase_price is not None and d.purchase_quantity is not None
+        ]
+        
+        for diary in sold_diaries:
+            holding_period = (diary.sell_date - diary.purchase_date).days
+            
+            if holding_period <= 7:
+                counts[0] += 1
+            elif holding_period <= 30:
+                counts[1] += 1
+            elif holding_period <= 90:
+                counts[2] += 1
+            elif holding_period <= 180:
+                counts[3] += 1
+            elif holding_period <= 365:
+                counts[4] += 1
+            else:
+                counts[5] += 1
+        
+        return {
+            'ranges': ranges,
+            'counts': counts
+        }
+
+    # prepare_recent_trends メソッドを追加
+    def prepare_recent_trends(self, diaries):
+        """最近の投資傾向データを準備"""
+        # 価格・数量情報があるエントリーだけをフィルタリング
+        valid_diaries = [d for d in diaries if d.purchase_price is not None and d.purchase_quantity is not None]
+        
+        # 購入頻度
+        purchase_frequency = 30  # デフォルト値
+        if len(valid_diaries) >= 2:
+            sorted_diaries = sorted(valid_diaries, key=lambda x: x.purchase_date, reverse=True)
+            first_date = sorted_diaries[0].purchase_date
+            last_date = sorted_diaries[-1].purchase_date
+            date_range = (first_date - last_date).days
+            if date_range > 0 and len(valid_diaries) > 1:
+                purchase_frequency = round(date_range / (len(valid_diaries) - 1))
+        
+        # 平均保有期間
+        avg_holding_period = 0
+        sold_diaries = [d for d in valid_diaries if d.sell_date]
+        if sold_diaries:
+            total_days = sum((d.sell_date - d.purchase_date).days for d in sold_diaries)
+            avg_holding_period = round(total_days / len(sold_diaries))
+        
+        # よく使うタグ
+        most_used_tag = "なし"
+        tag_counts = {}
+        for diary in diaries:  # すべての日記を対象（メモも含む）
+            for tag in diary.tags.all():
+                if tag.name in tag_counts:
+                    tag_counts[tag.name] += 1
+                else:
+                    tag_counts[tag.name] = 1
+        
+        if tag_counts:
+            most_used_tag = max(tag_counts.items(), key=lambda x: x[1])[0]
+        
+        # 最も詳細な記録
+        most_detailed_record = "なし"
+        max_length = 0
+        for diary in diaries:  # すべての日記を対象（メモも含む）
+            text_length = len(strip_tags(diary.reason))
+            if text_length > max_length:
+                max_length = text_length
+                most_detailed_record = diary.stock_name
+        
+        # キーワード抽出
+        keywords = []
+        if diaries.count() > 0:
+            # 最新10件の日記から頻出単語を抽出
+            recent_diaries = diaries.order_by('-purchase_date')[:10]
+            text_content = ' '.join([strip_tags(d.reason) for d in recent_diaries])
+            
+            # 簡易的な形態素解析（実際は形態素解析ライブラリを使用するべき）
+            # 一般的な日本語のストップワード
+            stop_words = ['の', 'に', 'は', 'を', 'た', 'が', 'で', 'て', 'と', 'し', 'れ', 'さ', 'ある', 'いる', 'する', 'から', 'など', 'こと', 'これ', 'それ', 'もの']
+            
+            # 単語の簡易的な抽出（より精緻な形態素解析が必要）
+            words = re.findall(r'\w+', text_content)
+            word_counts = Counter(word for word in words if len(word) > 1 and word not in stop_words)
+            
+            # 上位5キーワードを抽出
+            keywords = [{'word': word, 'count': count} for word, count in word_counts.most_common(5)]
+        
+        return {
+            'purchase_frequency': purchase_frequency,
+            'avg_holding_period': avg_holding_period,
+            'most_used_tag': most_used_tag,
+            'most_detailed_record': most_detailed_record,
+            'keywords': keywords
+        }
+        
+    # collect_stats メソッドを修正
+    def collect_stats(self, user, diaries, all_diaries):
+        """基本的な統計データを収集"""
+        from django.db.models import Avg, Sum, Count, F, ExpressionWrapper, fields
+        from django.db.models.functions import Length
+        
+        # 現在の月の開始日
+        today = timezone.now().date()
+        current_month_start = today.replace(day=1)
+        
+        # 前月の日付範囲
+        prev_month_end = current_month_start - timedelta(days=1)
+        prev_month_start = prev_month_end.replace(day=1)
+        
+        # 銘柄数の統計 - メモを含めてすべてカウント
+        total_stocks = diaries.count()
+        prev_month_stocks = all_diaries.filter(
+            created_at__gte=prev_month_start,
+            created_at__lt=current_month_start
+        ).count()
+        stocks_change = total_stocks - prev_month_stocks
+        
+        # タグの統計
+        total_tags = Tag.objects.filter(stockdiary__in=diaries).distinct().count()
+        prev_month_tags = Tag.objects.filter(
+            stockdiary__in=all_diaries,
+            stockdiary__created_at__gte=prev_month_start,
+            stockdiary__created_at__lt=current_month_start
+        ).distinct().count()
+        tags_change = total_tags - prev_month_tags
+        
+        # 分析項目達成率
+        # 現在の平均完了率
+        current_completion = self.calculate_analysis_completion_rate(user, diaries)
+        
+        # 前月の平均完了率
+        prev_month_diaries = all_diaries.filter(
+            created_at__gte=prev_month_start,
+            created_at__lt=current_month_start
+        )
+        prev_completion = self.calculate_analysis_completion_rate(user, prev_month_diaries)
+        
+        checklist_completion_rate = current_completion
+        checklist_rate_change = current_completion - prev_completion
+        
+        # 平均記録文字数 - すべてのエントリーを対象（メモも含む）
+        avg_reason_length = 0
+        if diaries.exists():
+            # HTMLタグを除去して純粋なテキスト長を計算
+            reason_lengths = []
+            for diary in diaries:
+                raw_text = strip_tags(diary.reason)
+                reason_lengths.append(len(raw_text))
+            
+            if reason_lengths:
+                avg_reason_length = int(sum(reason_lengths) / len(reason_lengths))
+        
+        # 前月の平均記録文字数
+        last_month_avg_length = 0
+        if prev_month_diaries.exists():
+            last_month_lengths = []
+            for diary in prev_month_diaries:
+                raw_text = strip_tags(diary.reason)
+                last_month_lengths.append(len(raw_text))
+            
+            if last_month_lengths:
+                last_month_avg_length = int(sum(last_month_lengths) / len(last_month_lengths))
+        
+        reason_length_change = avg_reason_length - last_month_avg_length
+        
+        return {
+            'total_stocks': total_stocks,
+            'stocks_change': stocks_change,
+            'total_tags': total_tags,
+            'tags_change': tags_change,
+            'checklist_completion_rate': checklist_completion_rate,
+            'checklist_rate_change': checklist_rate_change,
+            'avg_reason_length': avg_reason_length,
+            'reason_length_change': reason_length_change
+        }
+                
 # stockdiary/views.py に追加
 class StockDiarySellView(LoginRequiredMixin, TemplateView):
     """保有株式の売却入力ページ"""
