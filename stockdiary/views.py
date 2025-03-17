@@ -104,12 +104,6 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         # フォーム用のスピードダイアルアクション
         form_actions = [
             {
-                'type': 'back',
-                'url': reverse_lazy('stockdiary:home'),
-                'icon': 'bi-arrow-left',
-                'label': '戻る'
-            },
-            {
                 'type': 'add',
                 'url': reverse_lazy('stockdiary:create'),
                 'icon': 'bi-plus-lg',
