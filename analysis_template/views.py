@@ -174,6 +174,8 @@ class AnalysisTemplateDeleteView(LoginRequiredMixin, DeleteView):
 
 # analysis_template/views.py の AnalysisReportView クラスの修正版
 
+# analysis_template/views.py の AnalysisReportView クラスの修正版
+
 class AnalysisReportView(LoginRequiredMixin, DetailView):
     """テンプレートに基づいた分析レポートを表示するビュー"""
     model = AnalysisTemplate
@@ -221,47 +223,65 @@ class AnalysisReportView(LoginRequiredMixin, DetailView):
                 'completion_rate': 0
             }
             
-            # この日記の該当テンプレートの値を処理
-            diary_has_values = False
+            # 現在の日記のテンプレート項目に対する分析値を取得
+            diary_analysis_values = {value.analysis_item_id: value for value in diary.analysis_values.all() 
+                                    if value.analysis_item.template_id == template.id}
+            
             completed_items = 0
+            diary_has_values = len(diary_analysis_values) > 0
             
-            for value in diary.analysis_values.all():
-                if value.analysis_item.template_id == template.id:
-                    diary_has_values = True
-                    item = value.analysis_item
-                    
-                    # 項目タイプによって異なる処理
+            # すべてのテンプレート項目をループ処理
+            for item in template.items.all():
+                value = diary_analysis_values.get(item.id)
+                
+                # 値が存在しない場合は空の値として処理
+                if not value:
                     if item.item_type == 'boolean_with_value':
-                        # Boolean値と数値/テキスト値の両方を保持
                         diary_data['values'][item.id] = {
-                            'boolean_value': value.boolean_value,
-                            'number_value': value.number_value,
-                            'text_value': value.text_value
+                            'boolean_value': None,
+                            'number_value': None,
+                            'text_value': None
                         }
-                        
-                        # 条件達成状況の更新
-                        diary_data['total_conditions'] += 1
-                        if value.boolean_value:
-                            diary_data['conditions_met'] += 1
-                            completed_items += 1
-                    
                     elif item.item_type == 'boolean':
-                        diary_data['values'][item.id] = value.boolean_value
-                        if value.boolean_value:
-                            completed_items += 1
-                        
+                        diary_data['values'][item.id] = None
                     elif item.item_type == 'number':
-                        diary_data['values'][item.id] = value.number_value
-                        if value.number_value is not None:
-                            completed_items += 1
-                        
+                        diary_data['values'][item.id] = None
                     else:  # text または select
-                        diary_data['values'][item.id] = value.text_value
-                        if value.text_value:
-                            completed_items += 1
+                        diary_data['values'][item.id] = None
+                    continue
+                
+                # 項目タイプによって異なる処理
+                if item.item_type == 'boolean_with_value':
+                    # Boolean値と数値/テキスト値の両方を保持
+                    diary_data['values'][item.id] = {
+                        'boolean_value': value.boolean_value,
+                        'number_value': value.number_value,
+                        'text_value': value.text_value
+                    }
+                    
+                    # 条件達成状況の更新
+                    diary_data['total_conditions'] += 1
+                    if value.boolean_value:
+                        diary_data['conditions_met'] += 1
+                        completed_items += 1
+                
+                elif item.item_type == 'boolean':
+                    diary_data['values'][item.id] = value.boolean_value
+                    if value.boolean_value:
+                        completed_items += 1
+                    
+                elif item.item_type == 'number':
+                    diary_data['values'][item.id] = value.number_value
+                    if value.number_value is not None:
+                        completed_items += 1
+                    
+                else:  # text または select
+                    diary_data['values'][item.id] = value.text_value
+                    if value.text_value:
+                        completed_items += 1
             
-            # 完了率を計算
-            if diary_has_values and template_items_count > 0:
+            # 完了率を計算 - 分析値の有無に関わらず、すべての日記について計算
+            if template_items_count > 0 and diary_has_values:
                 completion_rate = (completed_items / template_items_count) * 100
                 diary_data['completion_rate'] = round(completion_rate, 1)
                 total_completion += completion_rate
@@ -293,23 +313,27 @@ class AnalysisReportView(LoginRequiredMixin, DetailView):
                 'completion_rate': 0
             }
             
+            # すべての日記データについて項目の完了状況を確認
             for diary_data in report_data:
+                # すべての日記で項目の総数をインクリメント
+                item_data['total_count'] += 1
+                
+                # 該当項目の値を取得
                 if item.id in diary_data['values']:
-                    item_data['total_count'] += 1
+                    value = diary_data['values'][item.id]
                     
                     # 項目タイプに応じて完了判定
                     if item.item_type == 'boolean_with_value':
-                        value = diary_data['values'][item.id]
-                        if value['boolean_value']:
+                        if value and value['boolean_value']:
                             item_data['completed_count'] += 1
                     elif item.item_type == 'boolean':
-                        if diary_data['values'][item.id]:
+                        if value:
                             item_data['completed_count'] += 1
                     elif item.item_type == 'number':
-                        if diary_data['values'][item.id] is not None:
+                        if value is not None:
                             item_data['completed_count'] += 1
                     else:  # text または select
-                        if diary_data['values'][item.id]:
+                        if value:
                             item_data['completed_count'] += 1
             
             # 完了率を計算
