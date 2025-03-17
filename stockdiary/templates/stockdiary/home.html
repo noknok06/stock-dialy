@@ -402,6 +402,7 @@
         border-color: var(--danger-color);
     }
 
+    
     /* 日付クリック時のスタイル */
     .fc-day-clicked {
         background-color: rgba(79, 70, 229, 0.2) !important;
@@ -411,6 +412,37 @@
     /* 今日の日付と選択日が重なった場合 */
     .fc-day-today.fc-day-clicked {
         background-color: rgba(79, 70, 229, 0.3) !important;
+    }
+      /* スピードダイアルの位置を修正するCSS */
+
+    /* デフォルトで右下に表示 */
+    .speed-dial-container {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 1040;
+    }
+
+    /* ホームページの上書きを防止 - 既存のスタイルよりも優先度を高く設定 */
+    .speed-dial-container.speed-dial-container {
+      position: fixed !important; 
+      right: 20px !important;
+      bottom: 20px !important;
+      left: auto !important;
+      top: auto !important;
+      transform: none !important;
+      width: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    /* ヘッダーの固定ナビゲーションボタンには別のクラスを使用 */
+    .header-nav-button {
+      position: fixed !important; 
+      top: 15px !important;
+      right: 15px !important;
+      left: auto !important;
+      z-index: 9999 !important;
     }
     
     /* イベントアイテムのスタイル調整 */

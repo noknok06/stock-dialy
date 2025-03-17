@@ -16,7 +16,7 @@ page_actionsは以下のような構造のリストを含む変数名：
 ]
 {% endcomment %}
 
-<div class="speed-dial-container">
+<div class="speed-dial-container" {% if speed_dial_id %}id="{{ speed_dial_id }}"{% endif %}>
   <div class="speed-dial-actions">
     {% for action in actions %}
       {% if action.condition != False %}
