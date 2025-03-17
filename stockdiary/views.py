@@ -1046,7 +1046,7 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         
         completion_rate = (total_completed / total_items * 100) if total_items > 0 else 0
         return completion_rate
-    
+        
     def get_tag_analysis_data(self, user, diaries):
         """タグ分析データを取得"""
         from django.db.models import Count, Avg, Sum, F, ExpressionWrapper, fields
@@ -1091,41 +1091,43 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
             count_with_profit = 0
             
             for diary in tag_diaries:
-                if diary.sell_date:
-                    # 保有期間
-                    holding_period = (diary.sell_date - diary.purchase_date).days
-                    avg_holding_period += holding_period
-                    
-                    # 収益率
-                    profit_rate = ((diary.sell_price - diary.purchase_price) / diary.purchase_price) * 100
-                    profit_rate_sum += profit_rate
-                    
-                    # 総利益
-                    profit = (diary.sell_price - diary.purchase_price) * diary.purchase_quantity
-                    profit_sum += profit
-                    
-                    count_with_profit += 1            
-                    
-            avg_holding_period = 0
+                # 価格・数量情報があるエントリーのみ処理
+                if diary.sell_date and diary.purchase_price is not None and diary.purchase_quantity is not None and diary.sell_price is not None:
+                    try:
+                        # 保有期間
+                        holding_period = (diary.sell_date - diary.purchase_date).days
+                        avg_holding_period += holding_period
+                        
+                        # 収益率
+                        profit_rate = ((diary.sell_price - diary.purchase_price) / diary.purchase_price) * 100
+                        profit_rate_sum += profit_rate
+                        
+                        # 総利益
+                        profit = (diary.sell_price - diary.purchase_price) * diary.purchase_quantity
+                        profit_sum += profit
+                        
+                        count_with_profit += 1
+                    except (TypeError, ZeroDivisionError):
+                        # 価格が0やNoneの場合のエラー処理
+                        continue
+
+            # デフォルト値を設定
             avg_profit_rate = 0
-
+            
             if count_with_profit > 0:
-                avg_holding_period = avg_holding_period / count_with_profit
+                avg_holding_period /= count_with_profit
                 avg_profit_rate = profit_rate_sum / count_with_profit
-
+            
             # 最も収益率の高いタグを更新
             if avg_profit_rate > max_profit_rate:
                 max_profit_rate = avg_profit_rate
                 most_profitable_tag = tag.name
-            else:
-                avg_holding_period = 0
-                avg_profit_rate = 0
             
             tag_performance.append({
                 'name': tag.name,
                 'count': tag.count,
-                'avg_holding_period': avg_holding_period,
-                'avg_profit_rate': avg_profit_rate,
+                'avg_holding_period': round(avg_holding_period, 1),
+                'avg_profit_rate': round(avg_profit_rate, 2),
                 'total_profit': profit_sum
             })
         
@@ -1177,7 +1179,7 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
             'tag_timeline_labels': json.dumps(months),
             'tag_timeline_data': json.dumps(tag_timeline_data)
         }
-    
+  
     def get_template_analysis_data(self, user, filter_params=None):
         """分析テンプレートのデータを取得・分析する関数"""
         from django.db.models import Count, Avg, Max, Min, F, Q, Case, When, Value, IntegerField, FloatField
