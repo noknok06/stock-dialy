@@ -407,7 +407,7 @@
                 </tr>
                 <tr>
                   <th>購入数量</th>
-                  <td>{{ diary.purchase_quantity }}株</td>
+                  <td>{{ diary.purchase_quantity|floatformat:0 }}株</td>
                 </tr>
                 <tr>
                   <th>総購入額</th>
@@ -637,7 +637,7 @@
                     {% endif %}
 
                     <div class="timeline-text rich-content">
-                      {{ note.content|safe }}
+                      {{ note.content|safe|linebreaks }}
                     </div>
                   </div>
                 </div>

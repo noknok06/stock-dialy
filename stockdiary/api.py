@@ -54,7 +54,11 @@ def get_stock_info(request, stock_code):
         
         # Yahoo Finance APIから詳細情報を取得
         try:
-            url = f"https://query1.finance.yahoo.com/v8/finance/chart/{stock_code}.T"
+            # 日本株と米国株で分岐
+            is_us_stock = not stock_code.isdigit() or len(stock_code) > 4
+            ticker_symbol = stock_code if is_us_stock else f"{stock_code}.T"
+
+            url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker_symbol}"
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
@@ -65,7 +69,7 @@ def get_stock_info(request, stock_code):
             # デフォルト値の設定
             price = None
             change_percent = None
-            market = market_from_master or "東証"  # 企業マスタからの情報を優先
+            market = market_from_master or ("米国市場" if is_us_stock else "東証")  # 市場情報
             industry = industry_from_master or "不明"  # 企業マスタからの情報を優先
             
             if 'chart' in data and 'result' in data['chart'] and len(data['chart']['result']) > 0:
@@ -131,8 +135,12 @@ def get_stock_info(request, stock_code):
 def get_stock_price(request, stock_code):
     """銘柄コードから現在株価を取得するAPIエンドポイント"""
     try:
+        # 日本株と米国株で分岐
+        is_us_stock = not stock_code.isdigit() or len(stock_code) > 4
+        ticker_symbol = stock_code if is_us_stock else f"{stock_code}.T"
+
         # Yahoo Finance Chart APIを使用
-        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{stock_code}.T"
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker_symbol}"
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }

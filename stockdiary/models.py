@@ -9,11 +9,11 @@ from ckeditor_uploader.fields import RichTextUploadingField
 
 class StockDiary(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    stock_symbol = models.CharField(max_length=10)
+    stock_symbol = models.CharField(max_length=50, blank=True)
     stock_name = models.CharField(max_length=100)
     purchase_date = models.DateField()
-    purchase_price = models.DecimalField(max_digits=10, decimal_places=2)
-    purchase_quantity = models.IntegerField()
+    purchase_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    purchase_quantity = models.IntegerField(null=True, blank=True)
     reason = RichTextUploadingField(verbose_name='購入理由') 
     # 文字列参照を使用して循環参照を避ける
     checklist = models.ManyToManyField('checklist.Checklist', blank=True)

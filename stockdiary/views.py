@@ -50,23 +50,40 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
             queryset = queryset.filter(tags__id=tag_id)
             
         return queryset
-   
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['tags'] = Tag.objects.filter(user=self.request.user)
-        # checklists の取得を削除
         
         # カレンダー表示用にすべての日記データを追加
-        context['all_diaries'] = StockDiary.objects.filter(user=self.request.user)
+        # select_related を使用しつつ、不要なフィールドを defer で除外
+        diaries_query = StockDiary.objects.filter(user=self.request.user)
         
-        # checklist_stats の計算を削除
+        # select_related が必要な場合は使用
+        # diaries_query = diaries_query.select_related('user')
+        
+        # 不要なフィールドを defer で除外
+        context['all_diaries'] = diaries_query.defer(
+            'reason', 'memo', 'created_at', 'updated_at',
+            # その他の大きいフィールドやカレンダー表示に不要なフィールド
+        )
         
         # 保有中の株式を取得
-        active_holdings = StockDiary.objects.filter(user=self.request.user, sell_date__isnull=True)
+        active_holdings = StockDiary.objects.filter(
+            user=self.request.user, 
+            sell_date__isnull=True,
+            purchase_price__isnull=False,
+            purchase_quantity__isnull=False
+        )
         context['active_holdings_count'] = active_holdings.count()
         
         # 実現損益の計算（売却済みの株式）
-        sold_stocks = StockDiary.objects.filter(user=self.request.user, sell_date__isnull=False)
+        sold_stocks = StockDiary.objects.filter(
+            user=self.request.user, 
+            sell_date__isnull=False,
+            purchase_price__isnull=False,
+            purchase_quantity__isnull=False
+        )
         realized_profit = 0
         for stock in sold_stocks:
             profit = (stock.sell_price - stock.purchase_price) * stock.purchase_quantity
@@ -74,11 +91,7 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         
         context['realized_profit'] = realized_profit
         
-        # 未実現損益の計算（保有中の株式）
-        # 現在の実装はそのまま
-        
         return context
-        
 # stockdiary/views.py のStockDiaryDetailViewを修正
 # views.py の修正方法
 
@@ -2350,8 +2363,18 @@ class StockDiarySellView(LoginRequiredMixin, TemplateView):
             sell_date__isnull=True
         ).order_by('stock_symbol', 'purchase_date')
         
+        # 株数や購入価格がないエントリーを除外
+        active_diaries = active_diaries.filter(
+            purchase_price__isnull=False,
+            purchase_quantity__isnull=False
+        )
+            
+        # すべての保有銘柄を保持（フィルタリング前）
+        context['active_diaries'] = active_diaries
+
         # 銘柄コードでグループ化
         grouped_diaries = {}
+        has_valid_entries = False  # 有効なエントリーがあるかのフラグ
         for diary in active_diaries:
             symbol = diary.stock_symbol
             if symbol not in grouped_diaries:
@@ -2361,16 +2384,19 @@ class StockDiarySellView(LoginRequiredMixin, TemplateView):
                     'entries': []
                 }
             
-            # 購入の詳細情報を追加
-            grouped_diaries[symbol]['entries'].append({
-                'id': diary.id,
-                'purchase_date': diary.purchase_date,
-                'purchase_price': diary.purchase_price,
-                'purchase_quantity': diary.purchase_quantity,
-                'total_purchase': diary.purchase_price * diary.purchase_quantity
-            })
+            # 購入の詳細情報を追加（NoneType チェックを追加）
+            if diary.purchase_price is not None and diary.purchase_quantity is not None:
+                grouped_diaries[symbol]['entries'].append({
+                    'id': diary.id,
+                    'purchase_date': diary.purchase_date,
+                    'purchase_price': diary.purchase_price,
+                    'purchase_quantity': diary.purchase_quantity,
+                    'total_purchase': diary.purchase_price * diary.purchase_quantity
+                })
+                has_valid_entries = True  # 少なくとも1つの有効なエントリーがある
         
         context['grouped_diaries'] = grouped_diaries.values()
+        context['has_valid_entries'] = has_valid_entries 
 
         analytics_actions = [
             {
@@ -2397,7 +2423,13 @@ class StockDiarySellView(LoginRequiredMixin, TemplateView):
                     id=diary_id,
                     user=self.request.user
                 )
-                context['selected_diary'] = selected_diary
+                
+                # 購入価格と株数が入力されている場合のみ
+                if selected_diary.purchase_price is not None and selected_diary.purchase_quantity is not None:
+                    context['selected_diary'] = selected_diary
+                else:
+                    messages.error(self.request, '購入価格と株数が設定されていない日記は売却できません')
+                    # リダイレクトはここでは返せないので、メッセージだけ追加
             except StockDiary.DoesNotExist:
                 pass
         
@@ -2415,6 +2447,11 @@ class StockDiarySellView(LoginRequiredMixin, TemplateView):
                 user=request.user
             )
             
+            # 購入価格と株数が設定されているか確認
+            if diary.purchase_price is None or diary.purchase_quantity is None:
+                messages.error(request, '購入価格と株数が設定されていない日記は売却できません')
+                return redirect('stockdiary:home')
+                
             diary.sell_date = sell_date
             diary.sell_price = Decimal(sell_price)
             diary.save()

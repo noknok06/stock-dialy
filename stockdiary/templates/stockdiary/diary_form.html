@@ -734,10 +734,10 @@
     // 銘柄情報検索ボタンのクリックイベント
     fetchStockInfoBtn.addEventListener('click', function() {
       const stockCode = stockSymbolInput.value.trim();
-      if (stockCode && /^\d{4}$/.test(stockCode)) {
+      if (stockCode) {
         fetchStockInfo(stockCode);
       } else {
-        showAlert('有効な4桁の銘柄コードを入力してください', 'danger');
+        showAlert('銘柄コードを入力してください', 'warning');
       }
     });
 
@@ -851,23 +851,22 @@
     // 購入価格の現在株価取得ボタンのクリックイベント
     fetchCurrentPriceBtn.addEventListener('click', function() {
       const stockCode = stockSymbolInput.value.trim();
-      if (stockCode && /^\d{4}$/.test(stockCode)) {
+      if (stockCode) {
         fetchCurrentPrice(stockCode, purchasePriceInput, fetchCurrentPriceBtn);
       } else {
-        showAlert('有効な4桁の銘柄コードを入力してください', 'danger');
+        showAlert('銘柄コードを入力してください', 'warning');
       }
     });
 
     // 売却価格の現在株価取得ボタンのクリックイベント
     fetchCurrentPriceSellBtn.addEventListener('click', function() {
       const stockCode = stockSymbolInput.value.trim();
-      if (stockCode && /^\d{4}$/.test(stockCode)) {
+      if (stockCode) {
         fetchCurrentPrice(stockCode, sellPriceInput, fetchCurrentPriceSellBtn);
       } else {
-        showAlert('有効な4桁の銘柄コードを入力してください', 'danger');
+        showAlert('銘柄コードを入力してください', 'warning');
       }
     });
-
     // 現在株価を取得する関数
     function fetchCurrentPrice(stockCode, inputField, buttonElement) {
       // ボタンを無効化してローディング状態を表示
@@ -921,10 +920,11 @@
     }
 
     // 銘柄コード入力時の処理（4桁入力時に自動検索）
+
     stockSymbolInput.addEventListener('input', function() {
       const stockCode = this.value.trim();
-      // 4桁以外の場合は情報カードを非表示
-      if (!stockCode || !/^\d{4}$/.test(stockCode)) {
+      // コードが空になった場合は情報カードを非表示
+      if (!stockCode) {
         stockInfoCard.classList.add('d-none');
       }
     });

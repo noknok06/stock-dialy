@@ -187,15 +187,6 @@
     </div>
   </div>
 
-  {% if messages %}
-    {% for message in messages %}
-      <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-4">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-    {% endfor %}
-  {% endif %}
-
   <!-- フィルターカード -->
   <div class="card filter-card">
     <div class="card-body">
@@ -266,6 +257,12 @@
         </div>
       </div>
     {% endfor %}
+    {% if not has_valid_entries %}
+    <div class="alert alert-warning">
+      <i class="bi bi-exclamation-triangle me-2"></i>
+      <p class="mb-0">売却可能な銘柄がありません。購入価格と株数が設定されている銘柄のみ売却できます。</p>
+    </div>
+    {% endif %}
   {% else %}
     <div class="card">
       <div class="card-body">
@@ -407,6 +404,11 @@
         // 売却価格の初期値を購入価格にする
         sellPriceInput.value = purchasePrice;
         
+        // 売却ボタンを有効化
+        if (sellSubmitButton) {
+          sellSubmitButton.disabled = false;
+        }
+
         // 利益計算を表示
         updateProfitCalculation();
         
@@ -457,7 +459,7 @@
       const purchasePrice = parseFloat(modalPurchasePrice.textContent.replace(/[^0-9.-]+/g, ''));
       const quantity = parseInt(modalPurchaseQuantity.textContent.replace(/[^0-9.-]+/g, ''));
       
-      if (sellPrice > 0 && purchasePrice > 0 && quantity > 0) {
+      if (sellPrice > 0 && !isNaN(purchasePrice) && !isNaN(quantity) && purchasePrice > 0 && quantity > 0) {
         // 損益計算
         const profit = (sellPrice - purchasePrice) * quantity;
         const profitPercentage = ((sellPrice - purchasePrice) / purchasePrice) * 100;
@@ -484,6 +486,18 @@
         // 入力値が不正な場合は非表示
         profitCalc.classList.add('d-none');
       }
+    }
+    
+    // フォーム送信前の検証
+    const sellForm = document.querySelector('#sellModal form');
+    if (sellForm) {
+      sellForm.addEventListener('submit', function(e) {
+        const sellPrice = parseFloat(sellPriceInput.value);
+        if (!sellPrice || isNaN(sellPrice) || sellPrice <= 0) {
+          e.preventDefault();
+          showToast('有効な売却価格を入力してください', 'danger');
+        }
+      });
     }
     
     // トースト通知を表示する関数
