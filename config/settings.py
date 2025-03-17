@@ -54,7 +54,6 @@ INSTALLED_APPS = [
     'stockdiary',
     'analysis_template',
     'company_master',
-    'watchlist',
     # django-allauth関連
     'allauth',
     'allauth.account',
