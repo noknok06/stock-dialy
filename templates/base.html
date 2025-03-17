@@ -15,7 +15,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- デフォルトカラースタイルシート -->
     <link rel="stylesheet" href="{% static 'css/common.css' %}">
-    <link rel="stylesheet" href="{% static 'css/default-colors.css' %}">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <!-- Bootstrap Icons -->
@@ -26,10 +25,11 @@
     <style>
       /* 固定ナビゲーションボタン */
       .floating-nav-button {
-        position: fixed;
-        top: 15px;
-        right: 15px;
-        z-index: 1040;
+        position: fixed !important; /* Force override any other positioning */
+        top: 15px !important;
+        right: 15px !important;
+        left: auto !important; /* Ensure it's not positioned from the left */
+        z-index: 1040 !important;
       }
       
       .nav-btn {

@@ -91,7 +91,6 @@ CKEDITOR_CONFIGS = {
         'autoGrow_minHeight': 300,
         'autoGrow_maxHeight': 600,
         'autoGrow_onStartup': True,
-        'contentsCss': ['/static/css/ckeditor.css'],
         # コンテンツの幅を制限
         'removePlugins': 'resize',
         'allowedContent': True,
