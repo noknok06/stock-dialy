@@ -1105,11 +1105,14 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
                     profit_sum += profit
                     
                     count_with_profit += 1            
+                    
+            avg_holding_period = 0
+            avg_profit_rate = 0
 
             if count_with_profit > 0:
-                avg_holding_period /= count_with_profit
+                avg_holding_period = avg_holding_period / count_with_profit
                 avg_profit_rate = profit_rate_sum / count_with_profit
-            
+
             # 最も収益率の高いタグを更新
             if avg_profit_rate > max_profit_rate:
                 max_profit_rate = avg_profit_rate
