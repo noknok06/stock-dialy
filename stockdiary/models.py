@@ -25,6 +25,7 @@ class StockDiary(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     is_memo = models.BooleanField(default=False, verbose_name='メモ記録')
+    sector = models.CharField(max_length=50, blank=True, verbose_name='業種')
 
     def __str__(self):
         return f"{self.stock_name} ({self.stock_symbol})"

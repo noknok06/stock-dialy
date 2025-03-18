@@ -759,6 +759,11 @@
           // 会社名を設定
           stockNameInput.value = data.company_name;
           
+          // 業種情報を設定（新しい部分）
+          const sectorInput = document.getElementById('id_sector');
+          if (sectorInput && data.industry) {
+              sectorInput.value = data.industry;
+          }
           // 株価情報カードを更新して表示
           stockInfoTitle.textContent = data.company_name;
           stockInfoCode.textContent = stockCode;

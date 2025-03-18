@@ -1,0 +1,66 @@
+<!-- portfolio/templates/portfolio/snapshot_list.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}ポートフォリオスナップショット | カブログ{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="page-header">
+    <h1 class="page-title">
+      <i class="bi bi-camera"></i> ポートフォリオスナップショット
+    </h1>
+    <div>
+      <a href="{% url 'portfolio:create_snapshot' %}" class="btn btn-primary btn-icon">
+        <i class="bi bi-plus-lg"></i> 新規スナップショット
+      </a>
+    </div>
+  </div>
+  
+  {% if snapshots %}
+    <div class="row">
+      {% for snapshot in snapshots %}
+        <div class="col-md-6 col-lg-4 mb-4">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="card-title mb-0">{{ snapshot.name }}</h5>
+            </div>
+            <div class="card-body">
+              <p class="text-muted">
+                <i class="bi bi-calendar3"></i> {{ snapshot.created_at|date:"Y年m月d日" }}
+              </p>
+              <p class="mb-2">
+                <strong>総評価額:</strong> {{ snapshot.total_value|floatformat:0 }}円
+              </p>
+              <p class="mb-3">
+                {% if snapshot.description %}
+                  {{ snapshot.description|truncatechars:80 }}
+                {% else %}
+                  <span class="text-muted">説明はありません</span>
+                {% endif %}
+              </p>
+            </div>
+            <div class="card-footer">
+              <a href="{% url 'portfolio:snapshot_detail' snapshot.id %}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-eye"></i> 詳細を見る
+              </a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    
+    <!-- 比較ボタン -->
+    <div class="text-center mt-4">
+      <a href="{% url 'portfolio:compare_snapshots' %}" class="btn btn-info btn-icon">
+        <i class="bi bi-bar-chart"></i> スナップショット比較
+      </a>
+    </div>
+  {% else %}
+    <div class="alert alert-info">
+      <i class="bi bi-info-circle me-2"></i>
+      <p class="mb-0">スナップショットがありません。「新規スナップショット」ボタンから作成できます。</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

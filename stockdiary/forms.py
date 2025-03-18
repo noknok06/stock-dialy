@@ -21,12 +21,13 @@ class StockDiaryForm(forms.ModelForm):
         fields = [
             'stock_symbol', 'stock_name', 'purchase_date', 
             'purchase_price', 'purchase_quantity', 'reason',
-            'sell_date', 'sell_price', 'memo', 'checklist', 'tags'
+            'sell_date', 'sell_price', 'memo', 'checklist', 'tags', 'sector'
         ]
         widgets = {
             'stock_symbol': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': '日本株: 7203, 米国株: AAPL など'
+                'placeholder': '日本株: 7203, 米国株: AAPL など',
+                'sector': forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
             }),
             'stock_name': forms.TextInput(attrs={'class': 'form-control'}),
             'purchase_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),

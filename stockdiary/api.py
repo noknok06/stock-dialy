@@ -103,7 +103,7 @@ def get_stock_info(request, stock_code):
                 'price': price,
                 'change_percent': change_percent,
                 'market': market,
-                'industry': industry
+                'industry': industry  # 業種情報
             }
             
             return JsonResponse(response_data)

@@ -1,0 +1,348 @@
+<!-- portfolio/templates/portfolio/snapshot_form.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}新規スナップショット作成 | カブログ{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/speed-dial.css' %}">
+<style>
+  .form-card {
+    border: none;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  
+  .form-card:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+  
+  .form-card-header {
+    background: linear-gradient(to right, #4f46e5, #6366f1);
+    padding: 1.5rem;
+    color: white;
+    border-bottom: none;
+  }
+  
+  .form-card-header h3 {
+    margin: 0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .form-card-body {
+    padding: 2rem;
+  }
+  
+  .form-control, .form-select {
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e5e7eb;
+    box-shadow: none;
+    transition: all 0.3s ease;
+  }
+  
+  .form-control:focus, .form-select:focus {
+    border-color: #a5b4fc;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+  }
+  
+  textarea.form-control {
+    min-height: 120px;
+  }
+  
+  .info-box {
+    background-color: #eef2ff;
+    border-left: 4px solid #4f46e5;
+    padding: 1.25rem;
+    margin-bottom: 2rem;
+    border-radius: 0.5rem;
+  }
+  
+  .info-box-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background-color: #4f46e5;
+    color: white;
+    border-radius: 50%;
+    margin-right: 1rem;
+    float: left;
+  }
+  
+  .info-box-content {
+    display: inline-block;
+    width: calc(100% - 60px);
+  }
+  
+  .info-box-title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #111827;
+  }
+  
+  .info-box-text {
+    color: #4b5563;
+    margin-bottom: 0;
+  }
+  
+  .btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+  
+  .btn-primary {
+    background-color: #4f46e5;
+    border-color: #4f46e5;
+    box-shadow: 0 2px 4px rgba(79, 70, 229, 0.15);
+  }
+  
+  .btn-primary:hover {
+    background-color: #4338ca;
+    border-color: #4338ca;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2);
+  }
+  
+  .btn-secondary {
+    background-color: #f3f4f6;
+    border-color: #e5e7eb;
+    color: #4b5563;
+  }
+  
+  .btn-secondary:hover {
+    background-color: #e5e7eb;
+    color: #111827;
+  }
+  
+  .form-text {
+    color: #6b7280;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .preview-section {
+    background-color: #f9fafb;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    border: 1px dashed #d1d5db;
+  }
+  
+  .preview-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #111827;
+  }
+  
+  .preview-content {
+    color: #4b5563;
+  }
+  
+  .preview-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+  
+  .preview-icon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #eef2ff;
+    border-radius: 50%;
+    margin-right: 1rem;
+    color: #4f46e5;
+  }
+  
+  .preview-label {
+    font-weight: 500;
+    color: #111827;
+    margin-right: 0.5rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title">
+      <i class="bi bi-camera"></i> 新規スナップショット作成
+    </h1>
+    <div>
+      <a href="{% url 'portfolio:snapshot_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> 戻る
+      </a>
+    </div>
+  </div>
+  
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="form-card mb-4">
+        <div class="form-card-header">
+          <h3>
+            <i class="bi bi-camera"></i>
+            スナップショット情報
+          </h3>
+        </div>
+        <div class="form-card-body">
+          <div class="info-box mb-4">
+            <div class="info-box-icon">
+              <i class="bi bi-info-lg"></i>
+            </div>
+            <div class="info-box-content">
+              <h5 class="info-box-title">ポートフォリオの状態を記録</h5>
+              <p class="info-box-text">現在の保有銘柄の状態をスナップショットとして記録します。これにより時間経過による変化を後で振り返ることができます。定期的に記録することで、投資の変遷を追跡できます。</p>
+            </div>
+            <div style="clear: both;"></div>
+          </div>
+          
+          <form method="post">
+            {% csrf_token %}
+            
+            <div class="mb-4">
+              <label for="{{ form.name.id_for_label }}" class="form-label fw-semibold">スナップショット名</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-tag"></i></span>
+                <input type="text" name="name" id="{{ form.name.id_for_label }}" class="form-control" placeholder="例: 2023年第3四半期">
+              </div>
+              <div class="form-text">
+                <i class="bi bi-lightbulb me-1"></i> 例: 2023年第3四半期、年末ポートフォリオ2023など
+              </div>
+              {% if form.name.errors %}
+                <div class="text-danger mt-1">{{ form.name.errors }}</div>
+              {% endif %}
+            </div>
+            
+            <div class="mb-4">
+              <label for="{{ form.description.id_for_label }}" class="form-label fw-semibold">説明 (任意)</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-pencil"></i></span>
+                <textarea name="description" id="{{ form.description.id_for_label }}" class="form-control" placeholder="現在の市場状況や投資方針などのメモを残せます"></textarea>
+              </div>
+              <div class="form-text">
+                <i class="bi bi-lightbulb me-1"></i> 現在の市場状況や投資方針などのメモを残せます
+              </div>
+              {% if form.description.errors %}
+                <div class="text-danger mt-1">{{ form.description.errors }}</div>
+              {% endif %}
+            </div>
+            
+            <div class="preview-section">
+              <h5 class="preview-title">
+                <i class="bi bi-eye"></i> スナップショット情報のプレビュー
+              </h5>
+              <div class="preview-content">
+                <div class="preview-item">
+                  <div class="preview-icon">
+                    <i class="bi bi-calendar"></i>
+                  </div>
+                  <div>
+                    <span class="preview-label">作成日時:</span>
+                    <span>{{ now|date:"Y年m月d日 H:i" }}</span>
+                  </div>
+                </div>
+                
+                <div class="preview-item">
+                  <div class="preview-icon">
+                    <i class="bi bi-currency-yen"></i>
+                  </div>
+                  <div>
+                    <span class="preview-label">現在の総評価額:</span>
+                    <span>{{ total_value|default:"集計中..." }}</span>
+                  </div>
+                </div>
+                
+                <div class="preview-item">
+                  <div class="preview-icon">
+                    <i class="bi bi-bar-chart"></i>
+                  </div>
+                  <div>
+                    <span class="preview-label">保有銘柄数:</span>
+                    <span>{{ active_diaries_count|default:"集計中..." }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="d-flex justify-content-between mt-4">
+              <a href="{% url 'portfolio:snapshot_list' %}" class="btn btn-secondary">
+                <i class="bi bi-x-lg me-1"></i> キャンセル
+              </a>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-camera me-1"></i> スナップショットを作成
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-lg-4">
+      <div class="form-card">
+        <div class="form-card-header">
+          <h3>
+            <i class="bi bi-info-circle"></i>
+            ヘルプ
+          </h3>
+        </div>
+        <div class="form-card-body">
+          <h5 class="mb-3">スナップショットとは？</h5>
+          <p>ポートフォリオの現在の状態を保存した記録です。時間経過によるポートフォリオの変化を追跡するために役立ちます。</p>
+          
+          <h5 class="mb-3 mt-4">いつ作成すべき？</h5>
+          <ul class="mb-4">
+            <li>決算発表後などの重要なタイミング</li>
+            <li>大きな資産配分の変更前後</li>
+            <li>四半期ごとや年末など定期的に</li>
+            <li>重要な投資判断の前後</li>
+          </ul>
+          
+          <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>注意:</strong> スナップショットは作成後に編集できません。現在のポートフォリオ状態が正確に記録されます。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% include 'speed_dial.html' with actions=page_actions %}
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script src="{% static 'js/speed-dial.js' %}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // スピードダイアルを初期化
+    initializeSpeedDial();
+    
+    // 名前フィールドにフォーカス
+    document.getElementById('{{ form.name.id_for_label }}').focus();
+    
+    // 今日の日付をデフォルトのスナップショット名として設定
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1;
+    const defaultName = `${year}年${month}月のポートフォリオ`;
+    document.getElementById('{{ form.name.id_for_label }}').value = defaultName;
+  });
+</script>
+{% endblock %}
