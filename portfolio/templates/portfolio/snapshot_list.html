@@ -92,8 +92,6 @@
     padding: 1rem 1.25rem;
     background-color: #f9fafb;
     border-top: 1px solid rgba(0, 0, 0, 0.05);
-    display: flex;
-    gap: 0.5rem;
   }
   
   .btn-view {
@@ -107,7 +105,7 @@
     align-items: center;
     gap: 0.5rem;
     transition: all 0.2s;
-    text-decoration: none;
+    text-align: center;
   }
   
   .btn-view:hover {
@@ -388,9 +386,6 @@
           <div class="snapshot-footer">
             <a href="{% url 'portfolio:snapshot_detail' snapshot.id %}" class="btn-view">
               <i class="bi bi-eye"></i> 詳細を見る
-            </a>
-            <a href="{% url 'portfolio:compare_snapshots' %}?snapshot1={{ snapshot.id }}" class="btn-view" style="background-color: #3b82f6;">
-              <i class="bi bi-bar-chart"></i> 比較
             </a>
           </div>
         </div>
