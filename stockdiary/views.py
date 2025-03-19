@@ -9,6 +9,7 @@ from django.utils.safestring import mark_safe
 from django.template.defaultfilters import truncatechars_html
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect
+from django.views.generic import View
 
 from .models import StockDiary, DiaryNote
 from .forms import StockDiaryForm, DiaryNoteForm
@@ -166,6 +167,14 @@ class StockDiaryDetailView(LoginRequiredMixin, DetailView):
                 'icon': 'bi-cash-coin',
                 'label': '売却',
                 'condition': not diary.sell_date  # 未売却の場合のみ表示
+            },
+            # ここに売却取消アクションを追加
+            {
+                'type': 'cancel-sell',
+                'url': reverse_lazy('stockdiary:cancel_sell', kwargs={'pk': diary.id}),
+                'icon': 'bi-arrow-counterclockwise',
+                'label': '売却取消',
+                'condition': diary.sell_date is not None  # 売却済みの場合のみ表示
             },
             {
                 'type': 'edit',
@@ -2806,4 +2815,24 @@ class AddDiaryNoteView(LoginRequiredMixin, CreateView):
     
     def form_invalid(self, form):
         diary_id = self.kwargs.get('pk')
+        return redirect('stockdiary:detail', pk=diary_id)
+
+class CancelSellView(LoginRequiredMixin, View):
+    """売却情報を取り消すビュー"""
+    
+    def get(self, request, *args, **kwargs):
+        diary_id = kwargs.get('pk')
+        try:
+            diary = StockDiary.objects.get(id=diary_id, user=request.user)
+            
+            # 売却情報をクリア
+            diary.sell_date = None
+            diary.sell_price = None
+            diary.save()
+            
+            messages.success(request, f'{diary.stock_name}の売却情報を取り消しました')
+        except StockDiary.DoesNotExist:
+            messages.error(request, '指定された日記が見つかりません')
+        
+        # 詳細ページにリダイレクト
         return redirect('stockdiary:detail', pk=diary_id)

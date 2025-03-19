@@ -15,6 +15,7 @@ urlpatterns = [
     # 新規追加：売却登録ページ
     path('sell/', views.StockDiarySellView.as_view(), name='sell'),
     path('sell/<int:pk>/', views.StockDiarySellView.as_view(), name='sell_specific'),
+    path('<int:pk>/cancel_sell/', views.CancelSellView.as_view(), name='cancel_sell'),
     
     path('api/stock/info/<str:stock_code>/', api.get_stock_info, name='api_stock_info'),
     path('api/stock/price/<str:stock_code>/', api.get_stock_price, name='api_stock_price'),
