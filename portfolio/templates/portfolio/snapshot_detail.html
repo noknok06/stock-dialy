@@ -9,6 +9,7 @@
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link rel="stylesheet" href="{% static 'css/speed-dial.css' %}">
+<link rel="stylesheet" href="{% static 'css/portfolio-responsive.css' %}">
 <style>
   .detail-container {
     margin-bottom: 2rem;
@@ -241,35 +242,7 @@
   .percentage-low {
     color: #6b7280;
   }
-  
-  .holdings-card {
-    max-height: 600px;
-    overflow-y: auto;
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  }
-  
-  .holdings-header {
-    padding: 1.25rem;
-    background: rgb(208, 207, 243);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: sticky;
-    top: 0;
-    z-index: 20;
-  }
-  
-  .holdings-title {
-    margin: 0;
-    font-weight: 600;
-    font-size: 1.25rem;
-    color: #111827;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
+
   
   .action-buttons {
     display: flex;
@@ -314,6 +287,7 @@
     background-color: #f9fafb;
     color: #111827;
   }
+  
   
   .summary-stats {
     display: grid;
@@ -393,6 +367,176 @@
   .realestate { background-color: #f97316; }
   .industry { background-color: #06b6d4; }
   .other { background-color: #6b7280; }
+
+/* 保有銘柄一覧のスタイル改善 */
+
+/* ヘッダー部分のスタイル改善 */
+.holdings-header {
+  padding: 0.75rem 1rem;
+  background: linear-gradient(to right, rgba(79, 70, 229, 0.1), rgba(79, 70, 229, 0.05));
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+/* ヘッダータイトルをよりコンパクトに */
+.holdings-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* テーブルのスタイル調整 */
+.holdings-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.holdings-table th {
+  position: sticky;
+  top: 0;
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #4b5563;
+  padding: 0.75rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.9rem;
+}
+
+.holdings-table td {
+  padding: 0.75rem 0.5rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.9rem;
+}
+
+/* スマホ表示時の調整 */
+@media (max-width: 768px) {
+  .holdings-header {
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .holdings-title {
+    font-size: 1rem;
+  }
+  
+  .holdings-title i {
+    font-size: 0.9rem;
+  }
+  
+  /* 検索入力欄をコンパクトに */
+  .input-group {
+    max-width: 160px;
+  }
+  
+  .input-group-text {
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .form-control {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  /* テーブルセルのパディングを削減 */
+  .holdings-table th, 
+  .holdings-table td {
+    padding: 0.5rem 0.4rem;
+    font-size: 0.8rem;
+  }
+  
+  /* 銘柄シンボルと名前のレイアウト調整 */
+  .stock-symbol {
+    display: inline-block;
+    padding: 0.15rem 0.3rem;
+    font-size: 0.7rem;
+    margin-bottom: 0.1rem;
+  }
+  
+  .stock-name {
+    font-size: 0.8rem;
+  }
+  
+  /* セクターバッジをコンパクトに */
+  .sector-badge {
+    padding: 0.15rem 0.3rem;
+    font-size: 0.7rem;
+  }
+}
+
+/* 特に小さい画面用 (スマートフォン) */
+@media (max-width: 576px) {
+  /* ヘッダーをよりコンパクトに */
+  .holdings-header {
+    flex-wrap: wrap;
+    padding: 0.5rem;
+  }
+  
+  .holdings-title {
+    width: 100%;
+    margin-bottom: 0.4rem;
+  }
+  
+  .input-group {
+    width: 100% !important;
+    max-width: none;
+  }
+  
+  /* テーブルレイアウトの最適化 */
+  .holdings-table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+  }
+  
+  /* 列の幅を最適化 */
+  .holdings-table th:nth-child(1),
+  .holdings-table td:nth-child(1) {
+    min-width: 100px; /* 銘柄 */
+  }
+  
+  .holdings-table th:nth-child(2),
+  .holdings-table td:nth-child(2) {
+    min-width: 85px; /* セクター */
+  }
+  
+  .holdings-table th:nth-child(3),
+  .holdings-table td:nth-child(3) {
+    min-width: 50px; /* 数量 */
+  }
+  
+  .holdings-table th:nth-child(4),
+  .holdings-table td:nth-child(4) {
+    min-width: 75px; /* 価格 */
+  }
+  
+  .holdings-table th:nth-child(5),
+  .holdings-table td:nth-child(5) {
+    min-width: 80px; /* 評価額 */
+  }
+  
+  .holdings-table th:nth-child(6),
+  .holdings-table td:nth-child(6) {
+    min-width: 60px; /* 構成比 */
+  }
+  
+  /* 必要に応じて一部の列を非表示にするオプション 
+  .holdings-table th:nth-child(2),
+  .holdings-table td:nth-child(2) {
+    display: none;
+  }
+  */
+}
 </style>
 {% endblock %}
 

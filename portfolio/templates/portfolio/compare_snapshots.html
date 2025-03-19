@@ -9,7 +9,9 @@
 {{ block.super }}
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'js/speed-dial.js' %}"></script>
 <link rel="stylesheet" href="{% static 'css/speed-dial.css' %}">
+<link rel="stylesheet" href="{% static 'css/portfolio-responsive.css' %}">
 <style>
   .comparison-container {
     margin-bottom: 2rem;
@@ -358,6 +360,101 @@
     color: #6b7280;
     font-size: 0.875rem;
   }
+/* セクター配分比較のスタイル - portfolio-responsive.css に追加するか、style タグ内に追加 */
+
+/* セクター比較カードのコンパクト化 */
+@media (max-width: 768px) {
+  /* グラフコンテナの高さを縮小 */
+  .comparison-chart-container {
+    height: 300px;
+    margin-bottom: 1rem;
+  }
+  
+  /* 凡例を横並びでコンパクトに */
+  .legend-container {
+    justify-content: flex-start;
+    margin-bottom: 0.75rem;
+    gap: 0.5rem;
+  }
+  
+  .legend-item {
+    margin: 0;
+    gap: 0.25rem;
+  }
+  
+  .legend-color {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .legend-label {
+    font-size: 0.8rem;
+  }
+}
+
+/* 特に小さい画面用 (スマートフォン) */
+@media (max-width: 576px) {
+  /* グラフの高さをさらに縮小 */
+  .comparison-chart-container {
+    height: 240px;
+  }
+  
+  /* テーブルの高さを制限 */
+  .table-scrollable {
+    max-height: 300px;
+  }
+  
+  /* テーブル内の文字サイズ縮小 */
+  .comparison-table th, 
+  .comparison-table td {
+    padding: 0.4rem 0.25rem;
+    font-size: 0.75rem;
+  }
+  
+  /* 変化列の値サイズ調整 */
+  .value-positive, .value-negative, .value-neutral {
+    font-size: 0.75rem;
+  }
+}
+
+/* セクター配分比較カードのための特別なクラス */
+.compact-sector-card .comparison-chart-container {
+  height: 220px;
+}
+
+.compact-sector-card .table-scrollable {
+  max-height: 250px;
+}
+
+/* トグルスイッチ用スタイル */
+.view-toggle {
+  display: none;
+  margin-bottom: 0.5rem;
+  text-align: right;
+}
+
+.toggle-btn {
+  background-color: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.toggle-btn.active {
+  background-color: #4f46e5;
+  border-color: #4f46e5;
+  color: white;
+}
+
+/* モバイル表示時のみトグルを表示 */
+@media (max-width: 768px) {
+  .view-toggle {
+    display: block;
+  }
+}  
 </style>
 {% endblock %}
 
@@ -486,7 +583,7 @@
     </div>
     
     <!-- セクター配分の比較 -->
-    <div class="comparison-card">
+    <div class="comparison-card compact-sector-card">
       <div class="comparison-card-header">
         <div class="comparison-card-icon">
           <i class="bi bi-pie-chart"></i>
@@ -494,6 +591,16 @@
         <h3 class="comparison-card-title">セクター配分の比較</h3>
       </div>
       <div class="comparison-card-body">
+        <!-- モバイル用表示切替トグル -->
+        <div class="view-toggle">
+          <button type="button" class="toggle-btn active" data-view="chart">
+            <i class="bi bi-bar-chart"></i> グラフ
+          </button>
+          <button type="button" class="toggle-btn" data-view="table">
+            <i class="bi bi-table"></i> テーブル
+          </button>
+        </div>
+        
         <div class="legend-container">
           <div class="legend-item">
             <div class="legend-color snapshot1-color"></div>
@@ -505,46 +612,50 @@
           </div>
         </div>
         
-        <div class="comparison-chart-container">
+        <!-- グラフ表示部分 -->
+        <div id="chartView" class="comparison-chart-container">
           <canvas id="sectorComparisonChart"></canvas>
         </div>
         
-        <div class="search-input">
-          <i class="bi bi-search"></i>
-          <input type="text" id="sectorSearch" class="form-control" placeholder="セクターを検索...">
-        </div>
-        
-        <div class="table-scrollable">
-          <table class="comparison-table" id="sectorTable">
-            <thead>
-              <tr>
-                <th style="width: 40%;">セクター</th>
-                <th style="width: 20%;" class="text-end">{{ snapshot1.name }}</th>
-                <th style="width: 20%;" class="text-end">{{ snapshot2.name }}</th>
-                <th style="width: 20%;" class="text-end">変化</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for sector in sector_comparison %}
+        <!-- テーブル表示部分 -->
+        <div id="tableView" style="display: none;">
+          <div class="search-input">
+            <i class="bi bi-search"></i>
+            <input type="text" id="sectorSearch" class="form-control" placeholder="セクターを検索...">
+          </div>
+          
+          <div class="table-scrollable">
+            <table class="comparison-table" id="sectorTable">
+              <thead>
                 <tr>
-                  <td>{{ sector.name }}</td>
-                  <td class="text-end">{{ sector.snapshot1|floatformat:1 }}%</td>
-                  <td class="text-end">{{ sector.snapshot2|floatformat:1 }}%</td>
-                  <td class="text-end">
-                    <span class="{% if sector.change > 0 %}value-positive{% elif sector.change < 0 %}value-negative{% else %}value-neutral{% endif %}">
-                      {% if sector.change > 0 %}+{% endif %}{{ sector.change|floatformat:1 }}%
-                    </span>
-                  </td>
+                  <th>セクター</th>
+                  <th class="text-end">{{ snapshot1.name }}</th>
+                  <th class="text-end">{{ snapshot2.name }}</th>
+                  <th class="text-end">変化</th>
                 </tr>
-              {% endfor %}
-              <tr class="summary-row">
-                <td>合計</td>
-                <td class="text-end">100.0%</td>
-                <td class="text-end">100.0%</td>
-                <td class="text-end">-</td>
-              </tr>
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {% for sector in sector_comparison %}
+                  <tr>
+                    <td>{{ sector.name }}</td>
+                    <td class="text-end">{{ sector.snapshot1|floatformat:1 }}%</td>
+                    <td class="text-end">{{ sector.snapshot2|floatformat:1 }}%</td>
+                    <td class="text-end">
+                      <span class="{% if sector.change > 0 %}value-positive{% elif sector.change < 0 %}value-negative{% else %}value-neutral{% endif %}">
+                        {% if sector.change > 0 %}+{% endif %}{{ sector.change|floatformat:1 }}%
+                      </span>
+                    </td>
+                  </tr>
+                {% endfor %}
+                <tr class="summary-row">
+                  <td>合計</td>
+                  <td class="text-end">100.0%</td>
+                  <td class="text-end">100.0%</td>
+                  <td class="text-end">-</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -813,6 +924,63 @@
         });
       }
     {% endif %}
+    
+    const toggleButtons = document.querySelectorAll('.toggle-btn');
+    const chartView = document.getElementById('chartView');
+    const tableView = document.getElementById('tableView');
+    
+    // 各トグルボタンにクリックイベントを設定
+    if (toggleButtons.length > 0 && chartView && tableView) {
+      toggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          // すべてのボタンからアクティブクラスを削除
+          toggleButtons.forEach(btn => btn.classList.remove('active'));
+          
+          // クリックされたボタンにアクティブクラスを追加
+          this.classList.add('active');
+          
+          // 表示するビューを切り替え
+          const viewType = this.getAttribute('data-view');
+          if (viewType === 'chart') {
+            chartView.style.display = 'block';
+            tableView.style.display = 'none';
+          } else if (viewType === 'table') {
+            chartView.style.display = 'none';
+            tableView.style.display = 'block';
+          }
+        });
+      });
+      
+      // ウィンドウサイズに応じた表示の自動切替
+      function adjustViewBasedOnSize() {
+        const isMobile = window.innerWidth <= 576; // スマホサイズの閾値
+        
+        if (isMobile) {
+          const activeButton = document.querySelector('.toggle-btn.active');
+          const activeView = activeButton ? activeButton.getAttribute('data-view') : 'chart';
+          
+          if (activeView === 'chart') {
+            chartView.style.display = 'block';
+            tableView.style.display = 'none';
+          } else {
+            chartView.style.display = 'none';
+            tableView.style.display = 'block';
+          }
+        } else {
+          const chartButton = document.querySelector('.toggle-btn[data-view="chart"]');
+          if (chartButton) {
+            chartButton.classList.add('active');
+            document.querySelector('.toggle-btn[data-view="table"]').classList.remove('active');
+            chartView.style.display = 'block';
+            tableView.style.display = 'block';
+          }
+        }
+      }
+      
+      // 初期表示時と画面サイズ変更時に実行
+      adjustViewBasedOnSize();
+      window.addEventListener('resize', adjustViewBasedOnSize);
+    }
   });
 </script>
 {% endblock %}
