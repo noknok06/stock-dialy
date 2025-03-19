@@ -484,7 +484,11 @@
     const stockSymbolInput = document.getElementById('{{ form.stock_symbol.id_for_label }}');
     const stockNameInput = document.getElementById('{{ form.stock_name.id_for_label }}');
     const purchasePriceInput = document.getElementById('{{ form.purchase_price.id_for_label }}');
+    const purchaseQuantityInput = document.getElementById('{{ form.purchase_quantity.id_for_label }}');
+        
+    const sellDateInput = document.getElementById('{{ form.sell_date.id_for_label }}');
     const sellPriceInput = document.getElementById('{{ form.sell_price.id_for_label }}');
+    const fetchPriceButton = document.getElementById('fetch-current-price-sell');
     
     // ボタン要素
     const fetchStockInfoBtn = document.getElementById('fetchStockInfo');
@@ -1142,6 +1146,66 @@
       updateChecklistProgress(card);
     });
   }
+  // 売却フィールドの状態を更新する関数
+  function updateSellFields() {
+    const hasPrice = purchasePriceInput.value.trim() !== '';
+    const hasQuantity = purchaseQuantityInput.value.trim() !== '';
+    
+    // 両方入力されている場合のみ売却フィールドを有効化
+    const canSell = hasPrice && hasQuantity;
+    
+    sellDateInput.disabled = !canSell;
+    sellPriceInput.disabled = !canSell;
+    
+    if (fetchPriceButton) {
+      fetchPriceButton.disabled = !canSell;
+    }
+    
+    // 視覚的なフィードバック
+    if (canSell) {
+      sellDateInput.classList.remove('bg-light');
+      sellPriceInput.classList.remove('bg-light');
+      
+      // 売却セクションの警告メッセージを非表示
+      const warningMessage = document.getElementById('sell-warning-message');
+      if (warningMessage) {
+        warningMessage.style.display = 'none';
+      }
+    } else {
+      sellDateInput.classList.add('bg-light');
+      sellPriceInput.classList.add('bg-light');
+      
+      // 売却セクションに警告メッセージを表示
+      const warningMessage = document.getElementById('sell-warning-message');
+      if (warningMessage) {
+        warningMessage.style.display = 'block';
+      }
+    }
+  }
+
+  // 初期状態を設定
+  updateSellFields();
+  // 購入価格と株数の変更を監視
+  purchasePriceInput.addEventListener('input', updateSellFields);
+  purchaseQuantityInput.addEventListener('input', updateSellFields);
+  const form = document.querySelector('form');
+  form.addEventListener('submit', function(event) {
+    const sellDate = sellDateInput.value.trim();
+    const sellPrice = sellPriceInput.value.trim();
+    
+    // 片方だけ入力されている場合
+    if ((sellDate && !sellPrice) || (!sellDate && sellPrice)) {
+      event.preventDefault(); // フォーム送信をキャンセル
+      showAlert('売却日と売却価格は両方入力するか、両方入力しないでください', 'danger');
+      
+      // 不完全なフィールドをハイライト
+      if (sellDate && !sellPrice) {
+        sellPriceInput.classList.add('is-invalid');
+      } else if (!sellDate && sellPrice) {
+        sellDateInput.classList.add('is-invalid');
+      }
+    }
+  });  
   });
 </script>
 {% endblock %}

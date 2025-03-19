@@ -60,12 +60,21 @@ class StockDiary(models.Model):
         except DiaryChecklistItem.DoesNotExist:
             return False            
 
+    def can_be_sold(self):
+        """この株式が売却可能かどうかを確認"""
+        return self.purchase_price is not None and self.purchase_quantity is not None and not self.is_memo
+    
     def save(self, *args, **kwargs):
-        # 価格や数量が入力されていない場合、自動的にメモとして判定
+        # 売却情報が設定されている場合は購入情報もチェック
+        if self.sell_date is not None and not self.can_be_sold():
+            raise ValueError("購入価格と株数が設定されていない株式は売却できません")
+        
+        # 価格や数量が入力されていない場合、自動的にメモとして判定（既存のコード）
         if self.purchase_price is None or self.purchase_quantity is None:
             self.is_memo = True
+            
         super().save(*args, **kwargs)
-
+        
 # stockdiary/models.py に追加
 
 class DiaryNote(models.Model):

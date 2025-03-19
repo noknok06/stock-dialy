@@ -70,7 +70,15 @@ class StockDiaryForm(forms.ModelForm):
         cleaned_data = super().clean()
         sell_date = cleaned_data.get('sell_date')
         purchase_price = cleaned_data.get('purchase_price')
+        sell_price = cleaned_data.get('sell_price') 
         purchase_quantity = cleaned_data.get('purchase_quantity')
+        
+        # 片方だけ入力されている場合はエラー
+        if (sell_date and sell_price is None) or (sell_date is None and sell_price):
+            raise forms.ValidationError("売却日と売却価格は両方入力するか、両方入力しないでください")
+
+        if sell_date and sell_price and (purchase_price is None or purchase_quantity is None):
+            raise forms.ValidationError("購入価格と購入数量を入力してから売却情報を設定してください")
         
         # 売却日が入力されている場合は、購入価格と株数が必須
         if sell_date:

@@ -87,7 +87,10 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         )
         realized_profit = 0
         for stock in sold_stocks:
-            profit = (stock.sell_price - stock.purchase_price) * stock.purchase_quantity
+            if stock.sell_price is not None and stock.purchase_price is not None and stock.purchase_quantity is not None:
+                profit = (stock.sell_price - stock.purchase_price) * stock.purchase_quantity
+            else:
+                profit = 0  # あるいは別の適切なデフォルト値
             realized_profit += profit
         
         context['realized_profit'] = realized_profit
@@ -2685,25 +2688,23 @@ class StockDiarySellView(LoginRequiredMixin, TemplateView):
         # 保有中（売却日がNull）の株式を取得
         active_diaries = StockDiary.objects.filter(
             user=self.request.user,
-            sell_date__isnull=True,
-            purchase_price__isnull=False,
-            purchase_quantity__isnull=False,
-            is_memo=False  # 明示的なメモを除外
+            sell_date__isnull=True
         ).order_by('stock_symbol', 'purchase_date')
         
         # 株数や購入価格がないエントリーを除外
-        active_diaries = active_diaries.filter(
+        valid_diaries = active_diaries.filter(
             purchase_price__isnull=False,
             purchase_quantity__isnull=False
         )
             
         # すべての保有銘柄を保持（フィルタリング前）
-        context['active_diaries'] = active_diaries
+        context['active_diaries'] = valid_diaries
 
         # 銘柄コードでグループ化
         grouped_diaries = {}
         has_valid_entries = False  # 有効なエントリーがあるかのフラグ
-        for diary in active_diaries:
+        
+        for diary in valid_diaries:
             symbol = diary.stock_symbol
             if symbol not in grouped_diaries:
                 grouped_diaries[symbol] = {
@@ -2712,19 +2713,18 @@ class StockDiarySellView(LoginRequiredMixin, TemplateView):
                     'entries': []
                 }
             
-            # 購入の詳細情報を追加（NoneType チェックを追加）
-            if diary.purchase_price is not None and diary.purchase_quantity is not None:
-                grouped_diaries[symbol]['entries'].append({
-                    'id': diary.id,
-                    'purchase_date': diary.purchase_date,
-                    'purchase_price': diary.purchase_price,
-                    'purchase_quantity': diary.purchase_quantity,
-                    'total_purchase': diary.purchase_price * diary.purchase_quantity
-                })
-                has_valid_entries = True  # 少なくとも1つの有効なエントリーがある
+            # 購入の詳細情報を追加
+            grouped_diaries[symbol]['entries'].append({
+                'id': diary.id,
+                'purchase_date': diary.purchase_date,
+                'purchase_price': diary.purchase_price,
+                'purchase_quantity': diary.purchase_quantity,
+                'total_purchase': diary.purchase_price * diary.purchase_quantity
+            })
+            has_valid_entries = True
         
         context['grouped_diaries'] = grouped_diaries.values()
-        context['has_valid_entries'] = has_valid_entries 
+        context['has_valid_entries'] = has_valid_entries
 
         analytics_actions = [
             {
