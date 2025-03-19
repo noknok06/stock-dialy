@@ -16,6 +16,7 @@ from .forms import StockDiaryForm, DiaryNoteForm
 from tags.models import Tag
 from analysis_template.models import AnalysisTemplate, AnalysisItem, DiaryAnalysisValue
 from analysis_template.forms import create_analysis_value_formset
+from utils.mixins import ObjectNotFoundRedirectMixin
 
 import json
 import re
@@ -137,10 +138,12 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
 # stockdiary/views.py のStockDiaryDetailViewを修正
 # views.py の修正方法
 
-class StockDiaryDetailView(LoginRequiredMixin, DetailView):
+class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, DetailView):
     model = StockDiary
     template_name = 'stockdiary/detail.html'
     context_object_name = 'diary'
+    redirect_url = 'stockdiary:home'
+    not_found_message = "日記エントリーが見つかりません。削除された可能性があります。"
     
     def get_queryset(self):
         return StockDiary.objects.filter(user=self.request.user)
@@ -395,10 +398,12 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
                     status=status
                 )
                 
-class StockDiaryUpdateView(LoginRequiredMixin, UpdateView):
+class StockDiaryUpdateView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, UpdateView):
     model = StockDiary
     form_class = StockDiaryForm
     template_name = 'stockdiary/diary_form.html'
+    redirect_url = 'stockdiary:home'
+    not_found_message = "日記エントリーが見つかりません。削除された可能性があります。"
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

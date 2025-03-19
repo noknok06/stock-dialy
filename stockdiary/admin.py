@@ -25,7 +25,7 @@ class StockDiaryAdmin(admin.ModelAdmin):
             'fields': ('purchase_date', 'purchase_price', 'purchase_quantity', 'sell_date', 'sell_price')
         }),
         ('詳細情報', {
-            'fields': ('reason', 'memo', 'tags', 'checklist')
+            'fields': ('reason', 'memo', 'tags', 'sector')
         }),
         ('システム情報', {
             'fields': ('created_at', 'updated_at'),
@@ -34,8 +34,10 @@ class StockDiaryAdmin(admin.ModelAdmin):
     )
     
     def get_total_value(self, obj):
-        """購入時の合計金額を表示"""
-        return obj.purchase_price * obj.purchase_quantity
+        """購入時の合計金額を表示（Null値のチェックを追加）"""
+        if obj.purchase_price is not None and obj.purchase_quantity is not None:
+            return obj.purchase_price * obj.purchase_quantity
+        return None
     get_total_value.short_description = '購入金額（合計）'
 
 @admin.register(DiaryNote)

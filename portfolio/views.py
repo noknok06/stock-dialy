@@ -6,6 +6,7 @@ from django.db.models import Sum
 from .models import PortfolioSnapshot, HoldingRecord, SectorAllocation
 from stockdiary.models import StockDiary
 from decimal import Decimal
+from utils.mixins import ObjectNotFoundRedirectMixin
 
 class SnapshotListView(LoginRequiredMixin, ListView):
     model = PortfolioSnapshot
@@ -40,10 +41,12 @@ class SnapshotListView(LoginRequiredMixin, ListView):
         context['page_actions'] = diary_actions  # この行を必ず追加する
         return context
 
-class SnapshotDetailView(LoginRequiredMixin, DetailView):
+class SnapshotDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, DetailView):
     model = PortfolioSnapshot
     template_name = 'portfolio/detail.html'
     context_object_name = 'snapshot'
+    redirect_url = 'portfolio:list'
+    not_found_message = "スナップショットが見つかりません。削除された可能性があります。"
     
     def get_queryset(self):
         return PortfolioSnapshot.objects.filter(user=self.request.user)
@@ -127,7 +130,23 @@ class CreateSnapshotView(LoginRequiredMixin, CreateView):
             if diary.purchase_price and diary.purchase_quantity:
                 stock_value = diary.purchase_price * diary.purchase_quantity
                 percentage = (stock_value / total_value * 100) if total_value else Decimal('0')
+
+                # セクター情報を取得 - StockDiaryから直接取得し、空の場合はタグから推測
+                sector = diary.sector
                 
+                # # セクターが未設定の場合はタグから推測
+                # if not sector or sector.strip() == "":
+                #     sector_tags = ['テクノロジー', '金融', 'ヘルスケア', '消費財', '素材', 'エネルギー', '通信', '公共', '不動産', '産業']
+                #     for tag in diary.tags.all():
+                #         tag_name = tag.name
+                #         if any(s in tag_name for s in sector_tags):
+                #             sector = tag_name
+                #             break
+                
+                # それでも設定できない場合は「未分類」
+                if not sector or sector.strip() == "":
+                    sector = "未分類"         
+
                 HoldingRecord.objects.create(
                     snapshot=self.object,
                     stock_symbol=diary.stock_symbol,
@@ -170,8 +189,11 @@ class CreateSnapshotView(LoginRequiredMixin, CreateView):
 # portfolio/views.py に追加
 # portfolio/views.py のCompareSnapshotsViewクラスを修正
 
-class CompareSnapshotsView(LoginRequiredMixin, TemplateView):
+class CompareSnapshotsView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, TemplateView):
     template_name = 'portfolio/compare.html'
+    redirect_url = 'portfolio:list'
+    not_found_message = "比較対象のスナップショットが見つかりません。"
+    model = PortfolioSnapshot  # ミックスインで使用するため必要
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -329,10 +351,12 @@ class CompareSnapshotsView(LoginRequiredMixin, TemplateView):
         return result
 
 # portfolio/views.py に追加
-class SnapshotDeleteView(LoginRequiredMixin, DeleteView):
+class SnapshotDeleteView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, DeleteView):
     model = PortfolioSnapshot
     success_url = reverse_lazy('portfolio:list')
     template_name = 'portfolio/snapshot_confirm_delete.html'
+    redirect_url = 'portfolio:list'
+    not_found_message = "削除対象のスナップショットが見つかりません。"
     
     def get_queryset(self):
         return PortfolioSnapshot.objects.filter(user=self.request.user)

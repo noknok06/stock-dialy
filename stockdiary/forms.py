@@ -27,8 +27,8 @@ class StockDiaryForm(forms.ModelForm):
             'stock_symbol': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': '日本株: 7203, 米国株: AAPL など',
-                'sector': forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
             }),
+            'sector': forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
             'stock_name': forms.TextInput(attrs={'class': 'form-control'}),
             'purchase_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'purchase_price': forms.NumberInput(attrs={'class': 'form-control'}),
@@ -40,6 +40,7 @@ class StockDiaryForm(forms.ModelForm):
             'memo': forms.Textarea(attrs={'rows': 5, 'class': 'form-control'}),
             'checklist': forms.SelectMultiple(attrs={'class': 'form-control', 'size': '5'}),
             'tags': forms.SelectMultiple(attrs={'class': 'form-control', 'size': '5'}),
+            'sector': forms.TextInput(attrs={'class': 'form-control'}),  # ここを追加
         }
 
     def __init__(self, *args, **kwargs):
