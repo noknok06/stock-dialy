@@ -1,4 +1,4 @@
-<!-- portfolio/templates/portfolio/snapshot_list.html -->
+<!-- portfolio/templates/portfolio/list.html -->
 {% extends 'base.html' %}
 {% load static %}
 
@@ -26,6 +26,7 @@
     flex-direction: column;
     background-color: white;
     overflow: hidden;
+    position: relative;
   }
   
   .snapshot-card:hover {
@@ -92,6 +93,9 @@
     padding: 1rem 1.25rem;
     background-color: #f9fafb;
     border-top: 1px solid rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
   }
   
   .btn-view {
@@ -105,11 +109,35 @@
     align-items: center;
     gap: 0.5rem;
     transition: all 0.2s;
-    text-align: center;
+    text-decoration: none;
+    flex-grow: 1;
+    justify-content: center;
   }
   
   .btn-view:hover {
     background-color: #4338ca;
+    color: white;
+    transform: translateY(-2px);
+  }
+  
+  .btn-delete {
+    padding: 0.5rem;
+    background-color: transparent;
+    color: #ef4444;
+    border: 1px solid #ef4444;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+  
+  .btn-delete:hover {
+    background-color: #ef4444;
     color: white;
     transform: translateY(-2px);
   }
@@ -171,7 +199,7 @@
     position: fixed;
     bottom: 20px;
     left: 20px;
-    z-index: 1000;
+    z-index: 999;
     padding: 0.75rem 1.25rem;
     background-color: #3b82f6;
     color: white;
@@ -193,35 +221,6 @@
     box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4);
   }
   
-  /* モバイル用固定フッター */
-  .mobile-fixed-footer {
-    display: none; /* デフォルトでは非表示 */
-    padding: 12px 16px;
-    background-color: white;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-  }
-  
-  .mobile-footer-button {
-    width: 100%;
-    padding: 12px;
-    border-radius: 0.5rem;
-    background-color: #3b82f6;
-    color: white;
-    font-weight: 500;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 0.5rem;
-    text-decoration: none;
-    transition: all 0.2s;
-  }
-  
-  .mobile-footer-button:hover,
-  .mobile-footer-button:active {
-    background-color: #2563eb;
-    color: white;
-  }
-  
   /* ページヘッダーのスタイル */
   .page-header {
     display: flex;
@@ -238,6 +237,115 @@
     gap: 0.5rem;
     margin: 0;
     font-weight: 700;
+  }
+  
+  /* 固定フッター */
+  .page-footer-spacer {
+    height: 65px; /* フッターの高さ分の余白 */
+    width: 100%;
+  }
+  
+  .fixed-footer {
+    display: none; /* デフォルトでは非表示 */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: white;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 998; /* speed-dial(1040)より下、通常コンテンツより上 */
+    padding: 12px 16px;
+  }
+  
+  /* 削除確認モーダル */
+  .modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+  }
+  
+  .modal-backdrop.show {
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  .modal-dialog {
+    width: 100%;
+    max-width: 400px;
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transform: translateY(20px);
+    transition: transform 0.3s;
+  }
+  
+  .modal-backdrop.show .modal-dialog {
+    transform: translateY(0);
+  }
+  
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+  }
+  
+  .modal-body {
+    padding: 1.5rem;
+  }
+  
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e5e7eb;
+  }
+  
+  .btn-modal-cancel {
+    padding: 0.5rem 1rem;
+    background-color: white;
+    color: #6b7280;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  
+  .btn-modal-cancel:hover {
+    background-color: #f9fafb;
+    color: #111827;
+  }
+  
+  .btn-modal-delete {
+    padding: 0.5rem 1rem;
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  
+  .btn-modal-delete:hover {
+    background-color: #dc2626;
   }
   
   /* モバイル対応 */
@@ -258,8 +366,16 @@
     }
     
     .floating-compare-btn {
-      padding: 0.625rem 1rem;
-      font-size: 0.875rem;
+      display: none; /* モバイルではフッターに移動するので非表示 */
+    }
+    
+    .fixed-footer {
+      display: block; /* モバイルでは固定フッターを表示 */
+    }
+    
+    /* スピードダイアルの位置調整 */
+    .speed-dial-container {
+      bottom: 75px !important; /* フッターの上に配置 */
     }
     
     .snapshot-header {
@@ -267,7 +383,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 0.5rem;
-      padding: 0.75rem 1rem;
+      padding: 0.625rem 0.875rem;
     }
     
     .snapshot-title {
@@ -279,13 +395,10 @@
     }
     
     .snapshot-footer {
-      justify-content: space-between;
       padding: 0.75rem 1rem;
     }
     
     .btn-view {
-      flex: 1;
-      justify-content: center;
       padding: 0.5rem 0.75rem;
       font-size: 0.875rem;
     }
@@ -322,34 +435,16 @@
       font-size: 1.25rem;
     }
     
-    /* フローティングボタンをフッターに置き換え */
-    .floating-compare-btn {
-      display: none; /* モバイルではフローティングボタンを非表示 */
-    }
-    
-    /* 固定フッターを追加 */
-    .mobile-fixed-footer {
-      display: block;
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background-color: white;
-      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-      z-index: 999;
-      padding: 12px 16px;
-    }
-    
-    /* スピードダイアルボタンの位置調整 */
-    .speed-dial-container {
-      bottom: 80px !important; /* フッターの上に配置 */
+    .modal-dialog {
+      width: 90%;
+      margin: 0 auto;
     }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4 pb-5 mb-5"><!-- 下部にマージンとパディングを追加してフッターに隠れないようにする -->
+<div class="container py-4 pb-5">
   <div class="page-header">
     <h1 class="page-title">
       <i class="bi bi-camera"></i> ポートフォリオスナップショット
@@ -384,25 +479,21 @@
             </div>
           </div>
           <div class="snapshot-footer">
-            <a href="{% url 'portfolio:snapshot_detail' snapshot.id %}" class="btn-view">
+            <a href="{% url 'portfolio:detail' snapshot.id %}" class="btn-view">
               <i class="bi bi-eye"></i> 詳細を見る
             </a>
+            <button type="button" class="btn-delete" onclick="showDeleteModal({{ snapshot.id }}, '{{ snapshot.name|escapejs }}')">
+              <i class="bi bi-trash"></i>
+            </button>
           </div>
         </div>
       {% endfor %}
     </div>
     
     <!-- デスクトップ用フローティング比較ボタン -->
-    <a href="{% url 'portfolio:compare_snapshots' %}" class="floating-compare-btn">
+    <a href="{% url 'portfolio:compare' %}" class="floating-compare-btn">
       <i class="bi bi-bar-chart"></i> スナップショット比較
     </a>
-    
-    <!-- モバイル用固定フッター -->
-    <div class="mobile-fixed-footer">
-      <a href="{% url 'portfolio:compare_snapshots' %}" class="mobile-footer-button">
-        <i class="bi bi-bar-chart"></i> スナップショット比較
-      </a>
-    </div>
     
   {% else %}
     <div class="empty-state">
@@ -419,6 +510,35 @@
       </a>
     </div>
   {% endif %}
+  
+  <!-- フッター余白スペーサー - モバイル表示時のみ表示 -->
+  <div class="page-footer-spacer d-block d-md-none"></div>
+</div>
+
+<!-- 削除確認モーダル -->
+<div class="modal-backdrop" id="deleteModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-exclamation-triangle text-danger me-2"></i>
+          スナップショットの削除
+        </h5>
+        <button type="button" class="btn-close" onclick="hideDeleteModal()"></button>
+      </div>
+      <div class="modal-body">
+        <p><span id="snapshotName"></span> を削除してもよろしいですか？</p>
+        <p class="text-danger">この操作は取り消せません。</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-modal-cancel" onclick="hideDeleteModal()">キャンセル</button>
+        <form id="deleteForm" method="post" action="">
+          {% csrf_token %}
+          <button type="submit" class="btn-modal-delete">削除する</button>
+        </form>
+      </div>
+    </div>
+  </div>
 </div>
 
 {% include 'speed_dial.html' with actions=page_actions %}
@@ -431,6 +551,31 @@
   document.addEventListener('DOMContentLoaded', function() {
     // スピードダイアルを初期化
     initializeSpeedDial();
+  });
+  
+  // 削除モーダルを表示する関数
+  function showDeleteModal(snapshotId, snapshotName) {
+    document.getElementById('snapshotName').textContent = snapshotName;
+    document.getElementById('deleteForm').action = '/portfolio/snapshots/' + snapshotId + '/delete/';
+    document.getElementById('deleteModal').classList.add('show');
+    
+    // スクロール防止
+    document.body.style.overflow = 'hidden';
+  }
+  
+  // 削除モーダルを非表示にする関数
+  function hideDeleteModal() {
+    document.getElementById('deleteModal').classList.remove('show');
+    
+    // スクロール再開
+    document.body.style.overflow = '';
+  }
+  
+  // ESCキーでモーダルを閉じる
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('deleteModal').classList.contains('show')) {
+      hideDeleteModal();
+    }
   });
 </script>
 {% endblock %}

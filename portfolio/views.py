@@ -9,15 +9,40 @@ from decimal import Decimal
 
 class SnapshotListView(LoginRequiredMixin, ListView):
     model = PortfolioSnapshot
-    template_name = 'portfolio/snapshot_list.html'
+    template_name = 'portfolio/list.html'
     context_object_name = 'snapshots'
     
     def get_queryset(self):
         return PortfolioSnapshot.objects.filter(user=self.request.user)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        diary_actions = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('stockdiary:home'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            },
+            {
+                'type': 'add',
+                'url': reverse_lazy('portfolio:create_snapshot'),
+                'icon': 'bi-plus-lg',
+                'label': '新規作成'
+            },
+            {
+                'type': 'snap',
+                'url': reverse_lazy('portfolio:compare'),
+                'icon': 'bi-camera',
+                'label': '比較分析'
+            }
+        ]
+        context['page_actions'] = diary_actions  # この行を必ず追加する
+        return context
+
 class SnapshotDetailView(LoginRequiredMixin, DetailView):
     model = PortfolioSnapshot
-    template_name = 'portfolio/snapshot_detail.html'
+    template_name = 'portfolio/detail.html'
     context_object_name = 'snapshot'
     
     def get_queryset(self):
@@ -27,15 +52,36 @@ class SnapshotDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context['holdings'] = self.object.holdings.all()
         context['sector_allocations'] = self.object.sector_allocations.all()
+        diary_actions = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('portfolio:list'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            },
+            {
+                'type': 'add',
+                'url': reverse_lazy('portfolio:create_snapshot'),
+                'icon': 'bi-plus-lg',
+                'label': '新規作成'
+            },
+            {
+                'type': 'snap',
+                'url': reverse_lazy('portfolio:compare'),
+                'icon': 'bi-camera',
+                'label': '比較分析'
+            }
+        ]
+        context['diary_actions'] = diary_actions  # この行を必ず追加する
         return context
 
 # portfolio/views.py の CreateSnapshotView クラスを修正
 
 class CreateSnapshotView(LoginRequiredMixin, CreateView):
     model = PortfolioSnapshot
-    template_name = 'portfolio/snapshot_form.html'
+    template_name = 'portfolio/form.html'
     fields = ['name', 'description']
-    success_url = reverse_lazy('portfolio:snapshot_list')
+    success_url = reverse_lazy('portfolio:list')
     
 
     def get_context_data(self, **kwargs):
@@ -44,7 +90,7 @@ class CreateSnapshotView(LoginRequiredMixin, CreateView):
         page_actions = [
             {
                 'type': 'back',
-                'url': reverse_lazy('portfolio:snapshot_list'),
+                'url': reverse_lazy('portfolio:list'),
                 'icon': 'bi-arrow-left',
                 'label': '戻る'
             },
@@ -125,7 +171,7 @@ class CreateSnapshotView(LoginRequiredMixin, CreateView):
 # portfolio/views.py のCompareSnapshotsViewクラスを修正
 
 class CompareSnapshotsView(LoginRequiredMixin, TemplateView):
-    template_name = 'portfolio/compare_snapshots.html'
+    template_name = 'portfolio/compare.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -158,7 +204,7 @@ class CompareSnapshotsView(LoginRequiredMixin, TemplateView):
         page_actions = [
             {
                 'type': 'back',
-                'url': reverse_lazy('portfolio:snapshot_list'),
+                'url': reverse_lazy('portfolio:list'),
                 'icon': 'bi-arrow-left',
                 'label': '戻る'
             },
@@ -281,3 +327,12 @@ class CompareSnapshotsView(LoginRequiredMixin, TemplateView):
         result.sort(key=lambda x: abs(x['value_change']), reverse=True)
         
         return result
+
+# portfolio/views.py に追加
+class SnapshotDeleteView(LoginRequiredMixin, DeleteView):
+    model = PortfolioSnapshot
+    success_url = reverse_lazy('portfolio:list')
+    template_name = 'portfolio/snapshot_confirm_delete.html'
+    
+    def get_queryset(self):
+        return PortfolioSnapshot.objects.filter(user=self.request.user)

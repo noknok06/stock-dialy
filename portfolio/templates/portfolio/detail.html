@@ -1,4 +1,4 @@
-<!-- portfolio/templates/portfolio/snapshot_detail.html -->
+<!-- portfolio/templates/portfolio/detail.html -->
 {% extends 'base.html' %}
 {% load static %}
 
@@ -549,10 +549,10 @@
       <p class="text-muted mb-0">{{ snapshot.created_at|date:"Y年m月d日 H:i" }} 作成</p>
     </div>
     <div class="action-buttons">
-      <a href="{% url 'portfolio:compare_snapshots' %}?snapshot1={{ snapshot.id }}" class="btn-compare">
+      <a href="{% url 'portfolio:compare' %}?snapshot1={{ snapshot.id }}" class="btn-compare">
         <i class="bi bi-bar-chart"></i> 比較分析
       </a>
-      <a href="{% url 'portfolio:snapshot_list' %}" class="btn-back">
+      <a href="{% url 'portfolio:list' %}" class="btn-back">
         <i class="bi bi-arrow-left"></i> 戻る
       </a>
     </div>
@@ -755,7 +755,7 @@
   </div>
 </div>
 
-{% include 'speed_dial.html' with actions=page_actions %}
+{% include 'speed_dial.html' with actions=diary_actions %}
 {% endblock %}
 
 {% block scripts %}
