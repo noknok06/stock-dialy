@@ -3,64 +3,439 @@
 {% load static %}
 
 {% block title %}ポートフォリオスナップショット | カブログ{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/speed-dial.css' %}">
 <link rel="stylesheet" href="{% static 'css/portfolio-responsive.css' %}">
+<style>
+  /* スナップショットリスト用のカードスタイル */
+  .snapshot-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  .snapshot-card {
+    border: none;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    overflow: hidden;
+  }
+  
+  .snapshot-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.15);
+  }
+  
+  .snapshot-header {
+    padding: 0.875rem 1.25rem;
+    background: linear-gradient(to right, rgba(79, 70, 229, 0.1), rgba(79, 70, 229, 0.05));
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .snapshot-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .snapshot-date {
+    font-size: 0.875rem;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  .snapshot-body {
+    padding: 1rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .snapshot-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #10b981;
+    margin-bottom: 1rem;
+  }
+  
+  .snapshot-desc {
+    color: #4b5563;
+    margin-bottom: 1rem;
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .snapshot-footer {
+    padding: 1rem 1.25rem;
+    background-color: #f9fafb;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .btn-view {
+    padding: 0.5rem 1rem;
+    background-color: #4f46e5;
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+  
+  .btn-view:hover {
+    background-color: #4338ca;
+    color: white;
+    transform: translateY(-2px);
+  }
+  
+  /* 空の状態のスタイル */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-top: 2rem;
+  }
+  
+  .empty-icon {
+    font-size: 4rem;
+    color: #e5e7eb;
+    margin-bottom: 1.5rem;
+  }
+  
+  .empty-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 1rem;
+  }
+  
+  .empty-description {
+    color: #6b7280;
+    max-width: 500px;
+    margin: 0 auto 1.5rem;
+  }
+  
+  /* 新規作成ボタンのスタイル */
+  .btn-create {
+    padding: 0.75rem 1.5rem;
+    background-color: #4f46e5;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+    text-decoration: none;
+    box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+  }
+  
+  .btn-create:hover {
+    background-color: #4338ca;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(79, 70, 229, 0.3);
+  }
+  
+  /* フローティング比較ボタン - デスクトップ用 */
+  .floating-compare-btn {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1000;
+    padding: 0.75rem 1.25rem;
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s;
+    text-decoration: none;
+  }
+  
+  .floating-compare-btn:hover {
+    background-color: #2563eb;
+    color: white;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4);
+  }
+  
+  /* モバイル用固定フッター */
+  .mobile-fixed-footer {
+    display: none; /* デフォルトでは非表示 */
+    padding: 12px 16px;
+    background-color: white;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .mobile-footer-button {
+    width: 100%;
+    padding: 12px;
+    border-radius: 0.5rem;
+    background-color: #3b82f6;
+    color: white;
+    font-weight: 500;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  
+  .mobile-footer-button:hover,
+  .mobile-footer-button:active {
+    background-color: #2563eb;
+    color: white;
+  }
+  
+  /* ページヘッダーのスタイル */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .page-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    font-weight: 700;
+  }
+  
+  /* モバイル対応 */
+  @media (max-width: 768px) {
+    .snapshot-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    
+    .page-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .btn-create {
+      width: 100%;
+      justify-content: center;
+    }
+    
+    .floating-compare-btn {
+      padding: 0.625rem 1rem;
+      font-size: 0.875rem;
+    }
+    
+    .snapshot-header {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+    }
+    
+    .snapshot-title {
+      font-size: 1.125rem;
+    }
+    
+    .snapshot-value {
+      font-size: 1.25rem;
+    }
+    
+    .snapshot-footer {
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+    }
+    
+    .btn-view {
+      flex: 1;
+      justify-content: center;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+    }
+  }
+  
+  /* 特に小さい画面用 (スマートフォン) */
+  @media (max-width: 480px) {
+    .snapshot-card {
+      border-radius: 0.5rem;
+    }
+    
+    .snapshot-header {
+      padding: 0.625rem 0.875rem;
+    }
+    
+    .snapshot-body {
+      padding: 1rem;
+    }
+    
+    .snapshot-footer {
+      padding: 0.75rem 1rem;
+    }
+    
+    .empty-state {
+      padding: 2rem 1rem;
+    }
+    
+    .empty-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+    
+    .empty-title {
+      font-size: 1.25rem;
+    }
+    
+    /* フローティングボタンをフッターに置き換え */
+    .floating-compare-btn {
+      display: none; /* モバイルではフローティングボタンを非表示 */
+    }
+    
+    /* 固定フッターを追加 */
+    .mobile-fixed-footer {
+      display: block;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: white;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+      z-index: 999;
+      padding: 12px 16px;
+    }
+    
+    /* スピードダイアルボタンの位置調整 */
+    .speed-dial-container {
+      bottom: 80px !important; /* フッターの上に配置 */
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4">
+<div class="container py-4 pb-5 mb-5"><!-- 下部にマージンとパディングを追加してフッターに隠れないようにする -->
   <div class="page-header">
     <h1 class="page-title">
       <i class="bi bi-camera"></i> ポートフォリオスナップショット
     </h1>
-    <div>
-      <a href="{% url 'portfolio:create_snapshot' %}" class="btn btn-primary btn-icon">
-        <i class="bi bi-plus-lg"></i> 新規スナップショット
-      </a>
-    </div>
+    <a href="{% url 'portfolio:create_snapshot' %}" class="btn-create">
+      <i class="bi bi-plus-lg"></i> 新規スナップショット
+    </a>
   </div>
   
   {% if snapshots %}
-    <div class="row">
+    <div class="snapshot-grid">
       {% for snapshot in snapshots %}
-        <div class="col-md-6 col-lg-4 mb-4">
-          <div class="card">
-            <div class="card-header">
-              <h5 class="card-title mb-0">{{ snapshot.name }}</h5>
+        <div class="snapshot-card">
+          <div class="snapshot-header">
+            <h5 class="snapshot-title">
+              <i class="bi bi-camera"></i> {{ snapshot.name }}
+            </h5>
+            <div class="snapshot-date">
+              <i class="bi bi-calendar3"></i> {{ snapshot.created_at|date:"Y年m月d日" }}
             </div>
-            <div class="card-body">
-              <p class="text-muted">
-                <i class="bi bi-calendar3"></i> {{ snapshot.created_at|date:"Y年m月d日" }}
-              </p>
-              <p class="mb-2">
-                <strong>総評価額:</strong> {{ snapshot.total_value|floatformat:0 }}円
-              </p>
-              <p class="mb-3">
-                {% if snapshot.description %}
-                  {{ snapshot.description|truncatechars:80 }}
-                {% else %}
-                  <span class="text-muted">説明はありません</span>
-                {% endif %}
-              </p>
+          </div>
+          <div class="snapshot-body">
+            <div class="snapshot-value">
+              <i class="bi bi-currency-yen"></i> {{ snapshot.total_value|floatformat:0 }}円
             </div>
-            <div class="card-footer">
-              <a href="{% url 'portfolio:snapshot_detail' snapshot.id %}" class="btn btn-outline-primary btn-sm">
-                <i class="bi bi-eye"></i> 詳細を見る
-              </a>
+            <div class="snapshot-desc">
+              {% if snapshot.description %}
+                {{ snapshot.description|truncatechars:100 }}
+              {% else %}
+                <span class="text-muted">説明はありません</span>
+              {% endif %}
             </div>
+          </div>
+          <div class="snapshot-footer">
+            <a href="{% url 'portfolio:snapshot_detail' snapshot.id %}" class="btn-view">
+              <i class="bi bi-eye"></i> 詳細を見る
+            </a>
+            <a href="{% url 'portfolio:compare_snapshots' %}?snapshot1={{ snapshot.id }}" class="btn-view" style="background-color: #3b82f6;">
+              <i class="bi bi-bar-chart"></i> 比較
+            </a>
           </div>
         </div>
       {% endfor %}
     </div>
     
-    <!-- 比較ボタン -->
-    <div class="text-center mt-4">
-      <a href="{% url 'portfolio:compare_snapshots' %}" class="btn btn-info btn-icon">
+    <!-- デスクトップ用フローティング比較ボタン -->
+    <a href="{% url 'portfolio:compare_snapshots' %}" class="floating-compare-btn">
+      <i class="bi bi-bar-chart"></i> スナップショット比較
+    </a>
+    
+    <!-- モバイル用固定フッター -->
+    <div class="mobile-fixed-footer">
+      <a href="{% url 'portfolio:compare_snapshots' %}" class="mobile-footer-button">
         <i class="bi bi-bar-chart"></i> スナップショット比較
       </a>
     </div>
+    
   {% else %}
-    <div class="alert alert-info">
-      <i class="bi bi-info-circle me-2"></i>
-      <p class="mb-0">スナップショットがありません。「新規スナップショット」ボタンから作成できます。</p>
+    <div class="empty-state">
+      <div class="empty-icon">
+        <i class="bi bi-camera"></i>
+      </div>
+      <h3 class="empty-title">スナップショットがありません</h3>
+      <p class="empty-description">
+        スナップショットを作成して、あなたのポートフォリオの状態を記録しましょう。
+        時間経過による変化を追跡するために役立ちます。
+      </p>
+      <a href="{% url 'portfolio:create_snapshot' %}" class="btn-create">
+        <i class="bi bi-plus-lg"></i> 新規スナップショット作成
+      </a>
     </div>
   {% endif %}
 </div>
+
+{% include 'speed_dial.html' with actions=page_actions %}
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script src="{% static 'js/speed-dial.js' %}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // スピードダイアルを初期化
+    initializeSpeedDial();
+  });
+</script>
 {% endblock %}
