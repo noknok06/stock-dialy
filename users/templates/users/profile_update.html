@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block title %}プロフィール編集 | カブログ{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<style>
+  .profile-edit-container {
+    padding: 2.5rem 0;
+  }
+  
+  .profile-edit-card {
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .profile-edit-header {
+    background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+    padding: 2rem;
+    color: white;
+    text-align: center;
+    position: relative;
+  }
+  
+  .profile-edit-header::before {
+    content: "";
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    z-index: 1;
+  }
+  
+  .profile-edit-header::after {
+    content: "";
+    position: absolute;
+    bottom: -40px;
+    left: -40px;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    z-index: 1;
+  }
+  
+  .profile-edit-header h2 {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 2;
+  }
+  
+  .profile-edit-header p {
+    opacity: 0.9;
+    max-width: 400px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 2;
+  }
+  
+  .profile-edit-body {
+    padding: 2.5rem;
+    background-color: white;
+  }
+  
+  .form-control {
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+  }
+  
+  .form-control:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.2);
+  }
+  
+  .form-label {
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.5rem;
+  }
+  
+  .submit-btn {
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+    border: none;
+    transition: all 0.3s ease;
+    color: white;
+  }
+  
+  .submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(79, 70, 229, 0.3);
+  }
+  
+  .text-danger {
+    color: #ef4444;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+  }
+  
+  .profile-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background-color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 3rem;
+    color: #4f46e5;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-edit-container">
+  <div class="profile-edit-card">
+    <div class="profile-edit-header">
+      <div class="profile-avatar">
+        <i class="bi bi-person"></i>
+      </div>
+      <h2>プロフィール編集</h2>
+      <p>アカウント情報を更新できます</p>
+    </div>
+    
+    <div class="profile-edit-body">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-4">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+      
+      <form method="post" novalidate>
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">
+            {% for error in form.non_field_errors %}
+              {{ error }}
+            {% endfor %}
+          </div>
+        {% endif %}
+        
+        <div class="mb-3">
+          <label for="{{ form.username.id_for_label }}" class="form-label">ユーザー名</label>
+          {{ form.username }}
+          {% if form.username.errors %}
+            <div class="text-danger">{{ form.username.errors }}</div>
+          {% endif %}
+        </div>
+        
+        <div class="mb-3">
+          <label for="{{ form.email.id_for_label }}" class="form-label">メールアドレス</label>
+          {{ form.email }}
+          {% if form.email.errors %}
+            <div class="text-danger">{{ form.email.errors }}</div>
+          {% endif %}
+          {% if user.socialaccount_set.exists %}
+            <div class="form-text">Google認証を使用している場合、メールアドレスの変更はGoogleアカウントで行ってください。</div>
+          {% endif %}
+        </div>
+        
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn submit-btn">
+            <i class="bi bi-check-circle me-2"></i>プロフィールを更新する
+          </button>
+          <a href="{% url 'users:profile' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>プロフィールに戻る
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

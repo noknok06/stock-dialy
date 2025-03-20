@@ -256,3 +256,14 @@ AUTH_USER_MODEL = 'users.CustomUser'
 LOGIN_URL = 'users:login'
 LOGIN_REDIRECT_URL = 'stockdiary:home'
 LOGOUT_REDIRECT_URL = 'users:login'
+
+# 本番環境の設定例
+# https://myaccount.google.com/apppasswords
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # 使用するメールサーバー
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'kabulog.information@gmail.com'  # 送信元メールアドレス
+EMAIL_HOST_PASSWORD = 'wfsdxbdxsdusvddw'  # アプリパスワードまたは通常のパスワード
+# DEFAULT_FROM_EMAIL = 'Kabulog <kabulog.information@gmail.com>'
+DEBUG = True  # 開発環境ではTrueに

@@ -6,6 +6,11 @@ from django.views.generic import CreateView
 from django.contrib.auth import get_user_model
 from .forms import CustomUserCreationForm, CustomAuthenticationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.views import (
+    PasswordResetView, PasswordResetDoneView,
+    PasswordResetConfirmView, PasswordResetCompleteView
+)
+from .forms import CustomPasswordResetForm
 
 User = get_user_model()
 
@@ -73,3 +78,77 @@ class AccountDeleteView(LoginRequiredMixin, DeleteView):
         user.delete()
         
         return redirect(self.success_url)
+
+# users/views.py に以下を追加（冒頭のインポート部分）
+from django.contrib.auth.views import PasswordChangeView
+from django.views.generic.edit import UpdateView
+from django.contrib import messages
+from django.contrib.auth import logout  # 既存のImportがなければ追加
+from .forms import CustomPasswordChangeForm, CustomUserChangeForm
+
+# 既存のビュークラスと一緒に以下を追加
+
+class CustomPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
+    """パスワード変更ビュー"""
+    form_class = CustomPasswordChangeForm
+    template_name = 'users/password_change.html'
+    success_url = reverse_lazy('users:profile')
+    
+    def form_valid(self, form):
+        # フォームが有効な場合の処理
+        response = super().form_valid(form)
+        messages.success(self.request, 'パスワードが正常に変更されました。')
+        return response
+
+class ProfileUpdateView(LoginRequiredMixin, UpdateView):
+    """プロフィール更新ビュー"""
+    model = User
+    form_class = CustomUserChangeForm
+    template_name = 'users/profile_update.html'
+    success_url = reverse_lazy('users:profile')
+    
+    def get_object(self, queryset=None):
+        return self.request.user
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'プロフィール情報が更新されました。')
+        return response        
+
+
+class CustomPasswordResetView(PasswordResetView):
+    template_name = 'users/password_reset.html'
+    email_template_name = 'users/password_reset_email_text.txt'  # プレーンテキスト版
+    html_email_template_name = 'users/password_reset_email.html'  # HTML版
+    subject_template_name = 'users/password_reset_subject.txt'
+    form_class = CustomPasswordResetForm
+    success_url = reverse_lazy('users:password_reset_done')
+
+    def dispatch(self, request, *args, **kwargs):
+        # ユーザーのメールアドレスを取得（フォーム送信時）
+        if request.method == 'POST':
+            email = request.POST.get('email')
+            if email:
+                # ユーザーを検索
+                try:
+                    user = User.objects.get(email=email)
+                    # Google認証ユーザーかどうかを確認
+                    if user.socialaccount_set.filter(provider='google').exists():
+                        messages.info(request, 'このアカウントはGoogle認証で登録されています。Googleアカウントのパスワードリセットを行ってください。')
+                        return redirect('users:password_reset')
+                except User.DoesNotExist:
+                    pass
+        return super().dispatch(request, *args, **kwargs)
+        
+class CustomPasswordResetDoneView(PasswordResetDoneView):
+    """パスワードリセットメール送信完了ビュー"""
+    template_name = 'users/password_reset_done.html'
+
+class CustomPasswordResetConfirmView(PasswordResetConfirmView):
+    """パスワードリセット確認ビュー"""
+    template_name = 'users/password_reset_confirm.html'
+    success_url = reverse_lazy('users:password_reset_complete')
+
+class CustomPasswordResetCompleteView(PasswordResetCompleteView):
+    """パスワードリセット完了ビュー"""
+    template_name = 'users/password_reset_complete.html'        
