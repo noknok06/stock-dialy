@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}認証エラー | カブログ{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<style>
+  .auth-error-container {
+    padding: 3rem 0;
+  }
+  
+  .auth-error-card {
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .auth-error-header {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    padding: 2rem;
+    color: white;
+    text-align: center;
+  }
+  
+  .auth-error-header h2 {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  
+  .auth-error-body {
+    padding: 2.5rem;
+    background-color: white;
+    text-align: center;
+  }
+  
+  .error-icon {
+    font-size: 4rem;
+    color: #ef4444;
+    margin-bottom: 1.5rem;
+  }
+  
+  .error-details {
+    background-color: #fef2f2;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    color: #b91c1c;
+    text-align: left;
+  }
+  
+  .return-btn {
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+    border: none;
+    transition: all 0.3s ease;
+    color: white;
+  }
+  
+  .return-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(79, 70, 229, 0.3);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-error-container">
+  <div class="auth-error-card">
+    <div class="auth-error-header">
+      <h2>認証エラー</h2>
+    </div>
+    
+    <div class="auth-error-body">
+      <i class="bi bi-exclamation-triangle-fill error-icon"></i>
+      
+      <h3 class="mb-3">Google認証中にエラーが発生しました</h3>
+      
+      {% if error %}
+      <div class="error-details">
+        {{ error }}
+      </div>
+      {% else %}
+      <div class="error-details">
+        認証プロセス中に問題が発生しました。再度お試しください。
+      </div>
+      {% endif %}
+      
+      <p class="mb-4">
+        以下のことをお試しください：<br>
+        ・別のGoogleアカウントを使用する<br>
+        ・ブラウザのCookieをクリアしてから再試行する<br>
+        ・しばらく時間をおいてから再度お試しください
+      </p>
+      
+      <a href="{% url 'users:login' %}" class="btn return-btn">
+        <i class="bi bi-arrow-left me-2"></i>ログインページに戻る
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

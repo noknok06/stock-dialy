@@ -152,9 +152,13 @@ AUTHENTICATION_BACKENDS = [
 # Sitesフレームワークの設定
 SITE_ID = 1
 # allauth設定
-ACCOUNT_EMAIL_VERIFICATION = 'none'  # メール検証を無効（必要に応じて 'mandatory' に変更）
+ACCOUNT_EMAIL_VERIFICATION = 'optional'
 ACCOUNT_EMAIL_REQUIRED = True
-SOCIALACCOUNT_AUTO_SIGNUP = True  # ユーザー情報を自動的に取得
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'  # ソーシャルアカウントのメール検証は不要
+SOCIALACCOUNT_AUTO_SIGNUP = True  # 自動サインアップを有効に
+ACCOUNT_UNIQUE_EMAIL = True  # メールアドレスの一意性を保証
+
+# Google認証設定
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'SCOPE': [
@@ -164,9 +168,15 @@ SOCIALACCOUNT_PROVIDERS = {
         'AUTH_PARAMS': {
             'access_type': 'online',
         },
-        'DIRECT_REDIRECT_URI': True  # 中間ページをスキップ
+        'VERIFIED_EMAIL': True,  # Googleからのメールアドレスを検証済みとして扱う
     }
 }
+# ソーシャルアカウント設定
+SOCIALACCOUNT_LOGIN_ON_GET = True  # GETリクエストで直接ログイン
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_USERNAME_REQUIRED = True
+ACCOUNT_EMAIL_VERIFICATION = 'none'  # メール確認なし
+SOCIALACCOUNT_ADAPTER = 'users.adapters.CustomSocialAccountAdapter'
 
 ROOT_URLCONF = 'config.urls'
 

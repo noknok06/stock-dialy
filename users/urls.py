@@ -21,5 +21,9 @@ urlpatterns = [
     path('password-reset/', views.CustomPasswordResetView.as_view(), name='password_reset'),
     path('password-reset/done/', views.CustomPasswordResetDoneView.as_view(), name='password_reset_done'),
     path('password-reset/confirm/<uidb64>/<token>/', views.CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
-    path('password-reset/complete/', views.CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),    
+    path('password-reset/complete/', views.CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),   
+    
+    path('social-connected/', views.SocialAccountConnectedView.as_view(), name='social_connected'), 
+    path('connect-existing-account/', views.ConnectExistingAccountView.as_view(), name='connect_existing_account'),
+    path('email-duplicate/', views.EmailDuplicateNotificationView.as_view(), name='email_duplicate'),
 ]

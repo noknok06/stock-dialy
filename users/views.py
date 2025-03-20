@@ -11,6 +11,9 @@ from django.contrib.auth.views import (
     PasswordResetConfirmView, PasswordResetCompleteView
 )
 from .forms import CustomPasswordResetForm
+from django.views.generic import FormView
+from django.contrib.auth.forms import AuthenticationForm
+from allauth.socialaccount.models import SocialAccount
 
 User = get_user_model()
 
@@ -152,3 +155,67 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
 class CustomPasswordResetCompleteView(PasswordResetCompleteView):
     """パスワードリセット完了ビュー"""
     template_name = 'users/password_reset_complete.html'        
+
+
+class SocialAccountConnectedView(LoginRequiredMixin, TemplateView):
+    """ソーシャルアカウント接続完了ビュー"""
+    template_name = 'socialaccount/signup_success.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        
+        # ユーザーのソーシャルアカウント情報を取得
+        try:
+            social_account = SocialAccount.objects.get(user=user, provider='google')
+            context['social_account'] = social_account
+            context['social_data'] = social_account.extra_data
+        except SocialAccount.DoesNotExist:
+            context['social_account'] = None
+            
+        return context
+
+
+class ConnectExistingAccountView(FormView):
+    """既存アカウントとGoogleアカウントを連携するビュー"""
+    template_name = 'users/connect_existing_account.html'
+    form_class = AuthenticationForm
+    success_url = reverse_lazy('stockdiary:home')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['email'] = self.request.session.get('connect_email', '')
+        return context
+    
+    def form_valid(self, form):
+        # ユーザーをログイン
+        login(self.request, form.get_user())
+        user = form.get_user()
+        
+        # セッションからGoogleアカウントのデータを取得
+        email = self.request.session.get('connect_email')
+        
+        if email:
+            # 既存アカウントとGoogleアカウントを関連付ける
+            try:
+                social_account = SocialAccount.objects.get(email=email, provider='google')
+                social_account.user = user
+                social_account.save()
+                messages.success(self.request, 'Googleアカウントと既存アカウントが連携されました')
+            except SocialAccount.DoesNotExist:
+                messages.error(self.request, 'Google認証情報が見つかりませんでした')
+            
+            # セッションをクリア
+            if 'connect_email' in self.request.session:
+                del self.request.session['connect_email']
+        
+        return super().form_valid(form)            
+
+class EmailDuplicateNotificationView(TemplateView):
+    """メールアドレスが重複している場合の通知ビュー"""
+    template_name = 'users/email_duplicate.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['email'] = self.request.GET.get('email', '')
+        return context
