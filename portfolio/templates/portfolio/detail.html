@@ -1,6 +1,7 @@
 <!-- portfolio/templates/portfolio/detail.html -->
 {% extends 'base.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}{{ snapshot.name }} | カブログ{% endblock %}
 
@@ -566,7 +567,7 @@
       </div>
       <div class="stat-content">
         <div class="stat-label">総評価額</div>
-        <div class="stat-value">{{ snapshot.total_value|floatformat:0 }}円</div>
+        <div class="stat-value">{{ snapshot.total_value|floatformat:0|intcomma }}円</div>
       </div>
     </div>
     
@@ -660,7 +661,7 @@
               </div>
               <div class="info-content">
                 <div class="info-label">総評価額</div>
-                <div class="info-text total-value">{{ snapshot.total_value|floatformat:0 }}円</div>
+                <div class="info-text total-value">{{ snapshot.total_value|floatformat:0|intcomma }}円</div>
               </div>
             </li>
             
@@ -737,8 +738,8 @@
                 {% endwith %}
               </td>
               <td class="text-end">{{ holding.quantity|floatformat:0 }}</td>
-              <td class="text-end value-cell">{{ holding.price|floatformat:2 }}円</td>
-              <td class="text-end value-cell">{{ holding.total_value|floatformat:0 }}円</td>
+              <td class="text-end value-cell">{{ holding.price|floatformat:0|intcomma }}円</td>
+              <td class="text-end value-cell">{{ holding.total_value|floatformat:0|intcomma }}円</td>
               <td class="text-end">
                 <span class="percentage-cell
                   {% if holding.percentage > 10 %}percentage-high

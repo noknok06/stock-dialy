@@ -7,6 +7,8 @@ from .models import PortfolioSnapshot, HoldingRecord, SectorAllocation
 from stockdiary.models import StockDiary
 from decimal import Decimal
 from utils.mixins import ObjectNotFoundRedirectMixin
+from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect
 
 class SnapshotListView(LoginRequiredMixin, ListView):
     model = PortfolioSnapshot
@@ -189,7 +191,7 @@ class CreateSnapshotView(LoginRequiredMixin, CreateView):
 # portfolio/views.py に追加
 # portfolio/views.py のCompareSnapshotsViewクラスを修正
 
-class CompareSnapshotsView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, TemplateView):
+class CompareSnapshotsView(LoginRequiredMixin, TemplateView):
     template_name = 'portfolio/compare.html'
     redirect_url = 'portfolio:list'
     not_found_message = "比較対象のスナップショットが見つかりません。"
@@ -205,6 +207,14 @@ class CompareSnapshotsView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Temp
         # 選択された2つのスナップショットを取得
         snapshot1_id = self.request.GET.get('snapshot1')
         snapshot2_id = self.request.GET.get('snapshot2')
+        
+        # いずれかのIDが指定されていて、存在しない場合の処理
+        if (snapshot1_id and not PortfolioSnapshot.objects.filter(
+                id=snapshot1_id, user=self.request.user).exists()) or \
+           (snapshot2_id and not PortfolioSnapshot.objects.filter(
+                id=snapshot2_id, user=self.request.user).exists()):
+            messages.error(self.request, "比較対象のスナップショットが見つかりません。")
+            return redirect('portfolio:list')
         
         if snapshot1_id and snapshot2_id:
             try:

@@ -1,5 +1,3 @@
-# python manage.py create_stock_diaries --username admin --count 20 --notes 5
-
 # stockdiary/management/commands/create_stock_diaries.py
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
@@ -35,48 +33,49 @@ class Command(BaseCommand):
         if not user_tags:
             self.stdout.write(self.style.WARNING(f'ユーザー "{username}" のタグが見つかりません。タグなしで日記を作成します。'))
 
-        # テストデータ用の株式リスト
+        # テストデータ用の株式リスト（セクター情報を追加）
         stocks = [
-            {"symbol": "7203", "name": "トヨタ自動車"},
-            {"symbol": "6758", "name": "ソニーグループ"},
-            {"symbol": "9432", "name": "日本電信電話"},
-            {"symbol": "9984", "name": "ソフトバンクグループ"},
-            {"symbol": "6861", "name": "キーエンス"},
-            {"symbol": "6098", "name": "リクルートホールディングス"},
-            {"symbol": "8035", "name": "東京エレクトロン"},
-            {"symbol": "4063", "name": "信越化学工業"},
-            {"symbol": "9433", "name": "KDDI"},
-            {"symbol": "8306", "name": "三菱UFJフィナンシャル・グループ"},
-            {"symbol": "6367", "name": "ダイキン工業"},
-            {"symbol": "4519", "name": "中外製薬"},
-            {"symbol": "7974", "name": "任天堂"},
-            {"symbol": "9983", "name": "ファーストリテイリング"},
-            {"symbol": "4568", "name": "第一三共"},
-            {"symbol": "4661", "name": "オリエンタルランド"},
-            {"symbol": "6501", "name": "日立製作所"},
-            {"symbol": "8058", "name": "三菱商事"},
-            {"symbol": "6594", "name": "日本電産"},
-            {"symbol": "6460", "name": "セガサミーホールディングス"},
-            {"symbol": "7267", "name": "ホンダ"},
-            {"symbol": "4901", "name": "富士フイルムホールディングス"},
-            {"symbol": "8591", "name": "オリックス"},
-            {"symbol": "3382", "name": "セブン&アイ・ホールディングス"},
-            {"symbol": "6902", "name": "デンソー"},
-            {"symbol": "1925", "name": "大和ハウス工業"},
-            {"symbol": "9020", "name": "東日本旅客鉄道"},
-            {"symbol": "8031", "name": "三井物産"},
-            {"symbol": "5108", "name": "ブリヂストン"},
-            {"symbol": "9022", "name": "東海旅客鉄道"},
-            # {"symbol": "AAPL", "name": "アップル"},
-            # {"symbol": "MSFT", "name": "マイクロソフト"},
-            # {"symbol": "AMZN", "name": "アマゾン"},
-            # {"symbol": "GOOGL", "name": "アルファベット"},
-            # {"symbol": "NVDA", "name": "エヌビディア"},
-            # {"symbol": "TSLA", "name": "テスラ"},
-            # {"symbol": "META", "name": "メタ・プラットフォームズ"},
-            # {"symbol": "NFLX", "name": "ネットフリックス"},
-            # {"symbol": "ADBE", "name": "アドビ"},
-            # {"symbol": "JPM", "name": "JPモルガン・チェース"},
+            {"symbol": "7203", "name": "トヨタ自動車", "sector": "自動車"},
+            {"symbol": "6758", "name": "ソニーグループ", "sector": "テクノロジー"},
+            {"symbol": "9432", "name": "日本電信電話", "sector": "通信"},
+            {"symbol": "9984", "name": "ソフトバンクグループ", "sector": "テクノロジー"},
+            {"symbol": "6861", "name": "キーエンス", "sector": "テクノロジー"},
+            {"symbol": "6098", "name": "リクルートホールディングス", "sector": "サービス"},
+            {"symbol": "8035", "name": "東京エレクトロン", "sector": "テクノロジー"},
+            {"symbol": "4063", "name": "信越化学工業", "sector": "素材"},
+            {"symbol": "9433", "name": "KDDI", "sector": "通信"},
+            {"symbol": "8306", "name": "三菱UFJフィナンシャル・グループ", "sector": "金融"},
+            {"symbol": "6367", "name": "ダイキン工業", "sector": "産業"},
+            {"symbol": "4519", "name": "中外製薬", "sector": "ヘルスケア"},
+            {"symbol": "7974", "name": "任天堂", "sector": "消費財"},
+            {"symbol": "9983", "name": "ファーストリテイリング", "sector": "消費財"},
+            {"symbol": "4568", "name": "第一三共", "sector": "ヘルスケア"},
+            {"symbol": "4661", "name": "オリエンタルランド", "sector": "サービス"},
+            {"symbol": "6501", "name": "日立製作所", "sector": "産業"},
+            {"symbol": "8058", "name": "三菱商事", "sector": "商社"},
+            {"symbol": "6594", "name": "日本電産", "sector": "産業"},
+            {"symbol": "6460", "name": "セガサミーホールディングス", "sector": "エンターテイメント"},
+            {"symbol": "7267", "name": "ホンダ", "sector": "自動車"},
+            {"symbol": "4901", "name": "富士フイルムホールディングス", "sector": "素材"},
+            {"symbol": "8591", "name": "オリックス", "sector": "金融"},
+            {"symbol": "3382", "name": "セブン&アイ・ホールディングス", "sector": "消費財"},
+            {"symbol": "6902", "name": "デンソー", "sector": "自動車部品"},
+            {"symbol": "1925", "name": "大和ハウス工業", "sector": "不動産"},
+            {"symbol": "9020", "name": "東日本旅客鉄道", "sector": "運輸"},
+            {"symbol": "8031", "name": "三井物産", "sector": "商社"},
+            {"symbol": "5108", "name": "ブリヂストン", "sector": "自動車部品"},
+            {"symbol": "9022", "name": "東海旅客鉄道", "sector": "運輸"},
+            # 米国株も必要に応じて追加可能
+            {"symbol": "AAPL", "name": "アップル", "sector": "テクノロジー"},
+            {"symbol": "MSFT", "name": "マイクロソフト", "sector": "テクノロジー"},
+            {"symbol": "AMZN", "name": "アマゾン", "sector": "テクノロジー"},
+            {"symbol": "GOOGL", "name": "アルファベット", "sector": "テクノロジー"},
+            {"symbol": "NVDA", "name": "エヌビディア", "sector": "テクノロジー"},
+            {"symbol": "TSLA", "name": "テスラ", "sector": "自動車"},
+            {"symbol": "META", "name": "メタ・プラットフォームズ", "sector": "テクノロジー"},
+            {"symbol": "NFLX", "name": "ネットフリックス", "sector": "エンターテイメント"},
+            {"symbol": "ADBE", "name": "アドビ", "sector": "テクノロジー"},
+            {"symbol": "JPM", "name": "JPモルガン・チェース", "sector": "金融"},
         ]
 
         # ランダムに日記を作成
@@ -125,7 +124,7 @@ class Command(BaseCommand):
             ]
             memo = random.choice(memos)
             
-            # 日記作成
+            # 日記作成（セクター情報を追加）
             diary = StockDiary.objects.create(
                 user=user,
                 stock_symbol=stock["symbol"],
@@ -136,7 +135,8 @@ class Command(BaseCommand):
                 reason=reason,
                 sell_date=sell_date,
                 sell_price=sell_price,
-                memo=memo
+                memo=memo,
+                sector=stock["sector"]  # セクター情報を設定
             )
             
             # タグ付け（ランダムに1～4個のタグを選択）
@@ -208,6 +208,6 @@ class Command(BaseCommand):
                 
                 note_count += 1
             
-            self.stdout.write(self.style.SUCCESS(f'{created_count}/{diary_count} 件の日記を作成: {stock["name"]} ({stock["symbol"]})'))
+            self.stdout.write(self.style.SUCCESS(f'{created_count}/{diary_count} 件の日記を作成: {stock["name"]} ({stock["symbol"]}) セクター: {stock["sector"]}'))
         
         self.stdout.write(self.style.SUCCESS(f'合計 {created_count} 件の日記と {note_count} 件のノートを作成しました。'))

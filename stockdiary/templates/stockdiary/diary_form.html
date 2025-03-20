@@ -357,12 +357,25 @@
           </h4>
 
           <div class="row">
-            <div class="col-md-12 mb-3">
+            <div class="col-md-6 mb-3">
               <label for="{{ form.tags.id_for_label }}" class="form-label">タグ</label>
               {{ form.tags }}
               <small class="form-text text-muted">複数選択可能です</small>
               {% if form.tags.errors %}
               <div class="text-danger">{{ form.tags.errors }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="{{ form.sector.id_for_label }}" class="form-label">業種</label>
+              <div class="input-group">
+                {{ form.sector }}
+                <span class="input-group-text" id="sector-info">
+                  <i class="bi bi-info-circle" data-bs-toggle="tooltip" title="銘柄コードを検索すると自動設定されます"></i>
+                </span>
+              </div>
+              <small class="form-text text-muted">業種情報は銘柄検索時に自動設定されます</small>
+              {% if form.sector.errors %}
+              <div class="text-danger">{{ form.sector.errors }}</div>
               {% endif %}
             </div>
           </div>
@@ -763,11 +776,13 @@
           // 会社名を設定
           stockNameInput.value = data.company_name;
           
-          // 業種情報を設定（新しい部分）
+          // 業種情報を設定（hidden inputに値を設定）
           const sectorInput = document.getElementById('id_sector');
           if (sectorInput && data.industry) {
-              sectorInput.value = data.industry;
+            sectorInput.value = data.industry;
+            console.log('セクター情報を設定:', data.industry); // デバッグ用
           }
+          
           // 株価情報カードを更新して表示
           stockInfoTitle.textContent = data.company_name;
           stockInfoCode.textContent = stockCode;

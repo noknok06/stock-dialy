@@ -2,6 +2,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load portfolio_filters %} 
+{% load humanize %}
 
 {% block title %}スナップショット比較 | カブログ{% endblock %}
 
@@ -534,7 +535,7 @@
               <div class="snapshot-date">{{ snapshot1.created_at|date:"Y年m月d日" }}</div>
             </div>
           </div>
-          <div class="snapshot-value snapshot1-value">{{ snapshot1.total_value|floatformat:0 }}円</div>
+          <div class="snapshot-value snapshot1-value">{{ snapshot1.total_value|floatformat:0|intcomma }}円</div>
           <div class="text-muted">基準スナップショット</div>
         </div>
       </div>
@@ -550,7 +551,7 @@
               <div class="snapshot-date">{{ snapshot2.created_at|date:"Y年m月d日" }}</div>
             </div>
           </div>
-          <div class="snapshot-value snapshot2-value">{{ snapshot2.total_value|floatformat:0 }}円</div>
+          <div class="snapshot-value snapshot2-value">{{ snapshot2.total_value|floatformat:0|intcomma }}円</div>
           
           {% with value_change=snapshot2.total_value|sub:snapshot1.total_value %}
             {% with percent_change=value_change|div:snapshot1.total_value|mul:100 %}
@@ -560,14 +561,14 @@
                     <i class="bi bi-arrow-up"></i>
                   </div>
                   <span class="value-positive">
-                    +{{ value_change|floatformat:0 }}円 (+{{ percent_change|floatformat:2 }}%)
+                    +{{ value_change|floatformat:0|intcomma }}円 (+{{ percent_change|floatformat:2 }}%)
                   </span>
                 {% elif value_change < 0 %}
                   <div class="change-icon decrease-icon">
                     <i class="bi bi-arrow-down"></i>
                   </div>
                   <span class="value-negative">
-                    {{ value_change|floatformat:0 }}円 ({{ percent_change|floatformat:2 }}%)
+                    {{ value_change|floatformat:0|intcomma }}円 ({{ percent_change|floatformat:2 }}%)
                   </span>
                 {% else %}
                   <div class="change-icon neutral-icon">
@@ -704,12 +705,12 @@
                   <td class="text-end">
                     {% if holding.price_change != 0 %}
                       <span class="{% if holding.price_change > 0 %}value-positive{% elif holding.price_change < 0 %}value-negative{% endif %}">
-                        {% if holding.price_change > 0 %}+{% endif %}{{ holding.price_change|floatformat:2 }}円
+                        {% if holding.price_change > 0 %}+{% endif %}{{ holding.price_change|floatformat:2|intcomma }}円
                         <br>
                         <small>
                           ({% if holding.price_change > 0 %}+{% endif %}
                           {% if holding.snapshot1_price != 0 %}
-                            {{ holding.price_change|div:holding.snapshot1_price|mul:100|floatformat:2 }}%
+                            {{ holding.price_change|div:holding.snapshot1_price|mul:100|floatformat:2|intcomma }}%
                           {% else %}
                             -
                           {% endif %})
@@ -722,7 +723,7 @@
                   <td class="text-end">
                     {% if holding.value_change != 0 %}
                       <span class="{% if holding.value_change > 0 %}value-positive{% elif holding.value_change < 0 %}value-negative{% endif %}">
-                        {% if holding.value_change > 0 %}+{% endif %}{{ holding.value_change|floatformat:0 }}円
+                        {% if holding.value_change > 0 %}+{% endif %}{{ holding.value_change|floatformat:0|intcomma }}円
                       </span>
                     {% else %}
                       <span class="value-neutral">変化なし</span>
@@ -747,7 +748,7 @@
                 <td class="text-end">
                   {% with total_value_change=snapshot2.total_value|sub:snapshot1.total_value %}
                     <span class="{% if total_value_change > 0 %}value-positive{% elif total_value_change < 0 %}value-negative{% else %}value-neutral{% endif %}">
-                      {% if total_value_change > 0 %}+{% endif %}{{ total_value_change|floatformat:0 }}円
+                      {% if total_value_change > 0 %}+{% endif %}{{ total_value_change|floatformat:0|intcomma }}円
                     </span>
                   {% endwith %}
                 </td>
