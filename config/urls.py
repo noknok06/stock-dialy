@@ -34,6 +34,7 @@ urlpatterns = [
     path('analysis_template/', include('analysis_template.urls')),
     path('company_master/', include('company_master.urls')),
     path('portfolio/', include('portfolio.urls')),
+    path('subscriptions/', include('subscriptions.urls')),
 ]
 
 if settings.DEBUG:

@@ -1,0 +1,78 @@
+<!-- templates/subscriptions/checkout.html -->
+{% extends 'base.html' %}
+
+{% block title %}プラン切り替え{% endblock %}
+
+{% block extra_head %}
+<!-- Stripe準備のためコメントアウト 
+<script src="https://js.stripe.com/v3/"></script>
+-->
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">プラン切り替え</h1>
+    
+    {% if error %}
+    <div class="alert alert-danger">
+        {{ error }}
+    </div>
+    <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-primary">プラン選択に戻る</a>
+    {% else %}
+    <div class="card">
+        <div class="card-header">
+            <h2>{{ plan.name }}プラン ({{ billing_type }})</h2>
+        </div>
+        <div class="card-body">
+            <h3 class="mb-3">
+                {% if billing_type == 'yearly' %}
+                {{ plan.price_yearly }}円 (年額)
+                {% else %}
+                {{ plan.price_monthly }}円 (月額)
+                {% endif %}
+            </h3>
+            
+            {% if is_test_mode %}
+            <div class="alert alert-info">
+                <p><strong>テストモード:</strong> 現在、決済処理はテストモードです。実際の決済は行われません。</p>
+            </div>
+            
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success">このプランに切り替える</button>
+                <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-outline-secondary">キャンセル</a>
+            </form>
+            {% else %}
+            <!-- Stripe決済ボタン（準備のためコメントアウト） -->
+            <!--
+            <p>下記の「支払いに進む」ボタンをクリックして決済を完了してください。</p>
+            <button id="checkout-button" class="btn btn-success">支払いに進む</button>
+            <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-outline-secondary">キャンセル</a>
+            -->
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Stripe決済スクリプト（準備のためコメントアウト） -->
+<!--
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var stripe = Stripe('{{ stripe_public_key }}');
+    var checkoutButton = document.getElementById('checkout-button');
+    
+    checkoutButton.addEventListener('click', function() {
+      // セッションIDを使用してチェックアウトに移動
+      stripe.redirectToCheckout({
+        sessionId: '{{ checkout_session_id }}'
+      }).then(function (result) {
+        if (result.error) {
+          alert(result.error.message);
+        }
+      });
+    });
+  });
+</script>
+-->
+{% endblock %}

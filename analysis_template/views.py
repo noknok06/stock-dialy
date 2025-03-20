@@ -10,6 +10,7 @@ from django.db import transaction
 from .models import AnalysisTemplate, AnalysisItem, DiaryAnalysisValue
 from .forms import AnalysisTemplateForm, AnalysisItemFormSet, create_analysis_value_formset
 from stockdiary.models import StockDiary
+from subscriptions.mixins import SubscriptionLimitCheckMixin
 
 class AnalysisTemplateListView(LoginRequiredMixin, ListView):
     model = AnalysisTemplate
@@ -74,7 +75,7 @@ class AnalysisTemplateDetailView(LoginRequiredMixin, DetailView):
         context['page_actions'] = analytics_actions
         return context
         
-class AnalysisTemplateCreateView(LoginRequiredMixin, CreateView):
+class AnalysisTemplateCreateView(SubscriptionLimitCheckMixin, LoginRequiredMixin, CreateView):
     model = AnalysisTemplate
     form_class = AnalysisTemplateForm
     template_name = 'analysis_template/form.html'

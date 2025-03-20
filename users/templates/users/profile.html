@@ -5,6 +5,23 @@
 {% block head %}
 {{ block.super }}
 <style>
+  .badge {
+    font-size: 0.875rem;
+    padding: 0.35em 0.65em;
+  }
+
+  .list-group-item {
+    border-left: none;
+    border-right: none;
+  }
+
+  .list-group-item:first-child {
+    border-top: none;
+  }
+
+  .list-group-item:last-child {
+    border-bottom: none;
+  }  
   .profile-card {
     border: none;
     border-radius: 0.5rem;
@@ -130,11 +147,11 @@
               <div class="stats-label">記録した銘柄</div>
             </div>
           </div>
-          
+                
           <div class="col">
             <div class="stats-card">
-              <div class="stats-number">{{ checklist_count }}</div>
-              <div class="stats-label">チェックリスト</div>
+              <div class="stats-number">{{ template_count }}</div>
+              <div class="stats-label">分析テンプレート</div>
             </div>
           </div>
           
@@ -181,7 +198,115 @@
           </a>
         </div>
       </div>
-      
+
+      <!-- サブスクリプション情報 -->
+      <div class="profile-section">
+        <h3 class="profile-section-title">
+          <i class="bi bi-credit-card"></i> サブスクリプション情報
+        </h3>
+        
+        <div class="card">
+          <div class="card-body">
+            {% if subscription_plan %}
+              <h4 class="mb-3">現在のプラン: 
+                <span class="badge 
+                  {% if subscription_plan.slug == 'free' %}bg-secondary
+                  {% elif subscription_plan.slug == 'ad_free' %}bg-primary
+                  {% elif subscription_plan.slug == 'pro' %}bg-success
+                  {% else %}bg-info{% endif %}">
+                  {{ subscription_plan.name }}
+                </span>
+              </h4>
+              
+              <div class="row mb-4">
+                <div class="col-md-6">
+                  <p><strong>使用制限:</strong></p>
+                  <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      タグ
+                      <span class="badge bg-primary rounded-pill">{{ tag_count }} / {{ subscription_plan.max_tags }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      テンプレート
+                      <span class="badge bg-primary rounded-pill">
+                        {% if user.analysistemplate_set.count %}
+                          {{ user.analysistemplate_set.count }}
+                        {% else %}
+                          0
+                        {% endif %} / {{ subscription_plan.max_templates }}
+                      </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      スナップショット
+                      <span class="badge bg-primary rounded-pill">
+                        {% if user.portfoliosnapshot_set.count %}
+                          {{ user.portfoliosnapshot_set.count }}
+                        {% else %}
+                          0
+                        {% endif %} / {{ subscription_plan.max_snapshots }}
+                      </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      株式記録
+                      <span class="badge bg-primary rounded-pill">{{ diary_count }} / {{ subscription_plan.max_records }}</span>
+                    </li>
+                  </ul>
+                </div>
+                <div class="col-md-6">
+                  <p><strong>特典:</strong></p>
+                  <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      広告表示
+                      {% if subscription_plan.show_ads %}
+                        <span class="badge bg-danger">あり</span>
+                      {% else %}
+                        <span class="badge bg-success">なし</span>
+                      {% endif %}
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      データエクスポート
+                      {% if subscription_plan.export_enabled %}
+                        <span class="badge bg-success">可能</span>
+                      {% else %}
+                        <span class="badge bg-secondary">不可</span>
+                      {% endif %}
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      高度な分析
+                      {% if subscription_plan.advanced_analytics %}
+                        <span class="badge bg-success">利用可能</span>
+                      {% else %}
+                        <span class="badge bg-secondary">制限あり</span>
+                      {% endif %}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              
+              <div class="text-center">
+                <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-primary btn-lg">
+                  <i class="bi bi-arrow-up-circle me-1"></i> プランをアップグレード
+                </a>
+                {% if not subscription_plan.slug == 'free' %}
+                  <a href="{% url 'subscriptions:downgrade' %}" class="btn btn-outline-secondary ms-2">
+                    <i class="bi bi-arrow-down-circle me-1"></i> フリープランに戻す
+                  </a>
+                {% endif %}
+              </div>
+            {% else %}
+              <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                サブスクリプション情報を読み込めませんでした。
+              </div>
+              <div class="text-center">
+                <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-primary">
+                  <i class="bi bi-arrow-up-circle me-1"></i> プランを選択する
+                </a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>      
       <!-- アカウント設定 -->
       <div class="profile-section">
         <h3 class="profile-section-title">

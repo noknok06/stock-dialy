@@ -4,6 +4,7 @@ from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import Tag
 from django import forms
+from subscriptions.mixins import SubscriptionLimitCheckMixin
 
 class TagForm(forms.ModelForm):
     class Meta:
@@ -43,7 +44,7 @@ class TagListView(LoginRequiredMixin, ListView):
         context['page_actions'] = analytics_actions
         return context
 
-class TagCreateView(LoginRequiredMixin, CreateView):
+class TagCreateView(SubscriptionLimitCheckMixin, LoginRequiredMixin, CreateView):
     model = Tag
     form_class = TagForm
     template_name = 'tags/tag_form.html'

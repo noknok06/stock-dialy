@@ -9,6 +9,8 @@ from decimal import Decimal
 from utils.mixins import ObjectNotFoundRedirectMixin
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect
+from django.utils import timezone
+from subscriptions.mixins import SubscriptionLimitCheckMixin
 
 class SnapshotListView(LoginRequiredMixin, ListView):
     model = PortfolioSnapshot
@@ -82,15 +84,39 @@ class SnapshotDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Detail
 
 # portfolio/views.py の CreateSnapshotView クラスを修正
 
-class CreateSnapshotView(LoginRequiredMixin, CreateView):
+class CreateSnapshotView(SubscriptionLimitCheckMixin, LoginRequiredMixin, CreateView):
     model = PortfolioSnapshot
     template_name = 'portfolio/form.html'
     fields = ['name', 'description']
     success_url = reverse_lazy('portfolio:list')
     
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        
+        # 現在日時を取得
+        context['now'] = timezone.now()
+        
+        # アクティブな株式日記を取得（売却されていないもの）
+        active_diaries = StockDiary.objects.filter(
+            user=self.request.user, 
+            sell_date__isnull=True,
+            purchase_price__isnull=False,
+            purchase_quantity__isnull=False
+        )
+        
+        # 保有銘柄数をカウント
+        context['active_diaries_count'] = active_diaries.count()
+        
+        # 合計評価額を計算
+        total_value = Decimal('0')
+        for diary in active_diaries:
+            total_value += diary.purchase_price * diary.purchase_quantity
+        
+        # 通貨フォーマット (カンマ区切り)
+        if total_value > 0:
+            context['total_value'] = '{:,}'.format(int(total_value)) + '円'
+        else:
+            context['total_value'] = '0円'
         
         page_actions = [
             {

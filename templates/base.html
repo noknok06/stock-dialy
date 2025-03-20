@@ -245,6 +245,21 @@
     {% block head %}{% endblock %}
 </head>
 <header class="pc-only-header">
+  {% if show_ads %}
+  <div class="ad-container">
+      <!-- 広告コード -->
+      <div class="ad-banner">
+          <p class="text-center text-muted">広告</p>
+          <!-- 実際の広告コードをここに挿入 -->
+      </div>
+      
+      <div class="upgrade-prompt mt-2">
+          <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-sm btn-outline-primary">
+              広告を非表示にする →
+          </a>
+      </div>
+  </div>
+  {% endif %}
   <nav class="navbar navbar-expand bg-light border-bottom shadow-sm">
     <div class="container">
       <!-- ロゴ・サイト名 -->

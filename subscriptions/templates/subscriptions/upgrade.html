@@ -1,0 +1,56 @@
+<!-- templates/subscriptions/upgrade.html -->
+{% extends 'base.html' %}
+
+{% block title %}プランアップグレード{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">プランをアップグレード</h1>
+    
+    <div class="row">
+        {% for plan in plans %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 {% if plan.slug == current_plan.slug %}border-primary{% endif %}">
+                <div class="card-header">
+                    <h3 class="card-title">{{ plan.name }}</h3>
+                    {% if plan.slug == current_plan.slug %}
+                    <span class="badge bg-primary">現在のプラン</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <h4 class="card-title pricing-card-title">
+                        {% if plan.price_monthly == 0 %}
+                        無料
+                        {% else %}
+                        {{ plan.price_monthly }}円<small class="text-muted fw-light">/月</small>
+                        {% endif %}
+                    </h4>
+                    
+                    <ul class="list-unstyled mt-3 mb-4">
+                        <li>タグ: 最大{{ plan.max_tags }}個</li>
+                        <li>テンプレート: 最大{{ plan.max_templates }}個</li>
+                        <li>スナップショット: 最大{{ plan.max_snapshots }}回</li>
+                        <li>株式記録: 最大{{ plan.max_records }}件</li>
+                        <li>広告: {% if plan.show_ads %}あり{% else %}なし{% endif %}</li>
+                        <li>データエクスポート: {% if plan.export_enabled %}可能{% else %}不可{% endif %}</li>
+                        <li>高度な分析: {% if plan.advanced_analytics %}可能{% else %}不可{% endif %}</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    {% if plan.slug != current_plan.slug %}
+                        {% if plan.price_monthly > 0 %}
+                        <a href="{% url 'subscriptions:checkout' plan.id 'monthly' %}" class="btn btn-primary w-100">月額プランで契約</a>
+                        <a href="{% url 'subscriptions:checkout' plan.id 'yearly' %}" class="btn btn-outline-primary w-100 mt-2">年額プランで契約</a>
+                        {% else %}
+                        <a href="{% url 'subscriptions:downgrade' %}" class="btn btn-secondary w-100">ダウングレード</a>
+                        {% endif %}
+                    {% else %}
+                    <button class="btn btn-success w-100" disabled>現在のプラン</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

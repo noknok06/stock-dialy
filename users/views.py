@@ -47,11 +47,24 @@ class ProfileView(LoginRequiredMixin, TemplateView):
         
         # ユーザーの統計情報を取得
         context['diary_count'] = user.stockdiary_set.count()
-        context['checklist_count'] = user.checklist_set.count()
+        context['template_count'] = user.analysistemplate_set.count()
         context['tag_count'] = user.tag_set.count()
         
         # 最近の投資日記を取得（最新5件）
         context['recent_diaries'] = user.stockdiary_set.all().order_by('-created_at')[:5]
+        
+        # サブスクリプション情報を追加
+        try:
+            subscription = user.subscription
+            context['subscription'] = subscription
+            context['subscription_plan'] = subscription.plan
+        except:
+            # サブスクリプションがない場合はフリープラン情報を取得
+            try:
+                from subscriptions.models import SubscriptionPlan
+                context['subscription_plan'] = SubscriptionPlan.objects.get(slug='free')
+            except:
+                context['subscription_plan'] = None
         
         return context
 

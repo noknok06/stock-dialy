@@ -7,12 +7,178 @@
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/speed-dial.css' %}">
+<style>
+  /* スマホ向け最適化スタイル */
+  @media (max-width: 767px) {
+    .item-form {
+      padding: 0.75rem !important;
+      margin-bottom: 1.5rem !important;
+      border-radius: 0.75rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .form-label {
+      font-size: 0.875rem;
+      margin-bottom: 0.25rem;
+    }
+    
+    .item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .item-number {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      background-color: rgba(79, 70, 229, 0.1);
+      color: #4f46e5;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 24px;
+      font-weight: 600;
+      font-size: 0.75rem;
+      margin-right: 0.5rem;
+    }
+    
+    .item-title {
+      font-weight: 600;
+      flex-grow: 1;
+    }
+    
+    .remove-item {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .mobile-section {
+      margin-bottom: 0.75rem;
+    }
+    
+    .section-divider {
+      height: 4px;
+      background-color: #f9fafb;
+      margin: 1.5rem -0.75rem;
+      border-top: 1px solid #e5e7eb;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    /* フローティングヘッダーとフッター */
+    .form-header {
+      position: sticky;
+      top: 0;
+      background-color: #fff;
+      z-index: 10;
+      padding: 1rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      margin: -1rem -1rem 1rem -1rem;
+    }
+    
+    .form-footer {
+      position: sticky;
+      bottom: 0;
+      background-color: #fff;
+      padding: 0.75rem;
+      box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
+      margin: 1rem -1rem -1rem -1rem;
+    }
+    
+    /* 項目追加ボタンをよりタップしやすく */
+    #add-item {
+      width: 100%;
+      padding: 0.75rem;
+      font-size: 1rem;
+      border-radius: 0.5rem;
+    }
+    
+    /* フォーム全体の余白調整 */
+    .card-body {
+      padding: 1rem;
+    }
+    
+    /* 項目のコラプス機能 */
+    .item-form.collapsed .item-content {
+      display: none;
+    }
+    
+    .toggle-collapse {
+      background: none;
+      border: none;
+      padding: 0;
+      margin-right: 0.5rem;
+      cursor: pointer;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #6b7280;
+    }
+    
+    /* タップ領域を拡大 */
+    .form-select, .form-control {
+      padding: 0.75rem;
+      font-size: 1rem;
+      height: auto;
+    }
+  }
+  
+  /* 共通スタイル */
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  
+  .card-title {
+    margin-bottom: 0.5rem;
+  }
+  
+  .item-form {
+    transition: all 0.3s ease;
+    position: relative;
+  }
+  
+  .item-form:hover {
+    background-color: #f9fafb;
+  }
+  
+  /* ドラッグハンドルスタイル */
+  .drag-handle {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: move;
+    margin-right: 0.5rem;
+    color: #a0aec0;
+  }
+</style>
+
 <div class="row justify-content-center">
   <div class="col-lg-10">
     <div class="card shadow">
-      <div class="card-header bg-primary text-white">
+      <!-- モバイル用フォームヘッダー -->
+      <div class="card-header bg-primary text-white d-md-none form-header">
+        <h3 class="mb-0 fs-5">{% if form.instance.pk %}分析テンプレート編集{% else %}分析テンプレート作成{% endif %}</h3>
+        <small class="d-block">入力しやすいよう各項目はタップで開閉できます</small>
+      </div>
+      
+      <!-- PCビュー用ヘッダー -->
+      <div class="card-header bg-primary text-white d-none d-md-block">
         <h3 class="mb-0">{% if form.instance.pk %}分析テンプレート編集{% else %}分析テンプレート作成{% endif %}</h3>
       </div>
+      
       <div class="card-body">
         <form method="post" novalidate>
           {% csrf_token %}
@@ -33,75 +199,97 @@
             {% endif %}
           </div>
           
-          <h4 class="mb-3">分析項目</h4>
+          <h4 class="mb-3 d-flex align-items-center justify-content-between">
+            <span>分析項目</span>
+            <span class="badge bg-primary d-md-none" id="total-items-count">0 項目</span>
+          </h4>
           {{ items_formset.management_form }}
           
           <div id="items-formset">
             {% for item_form in items_formset %}
-              <div class="item-form mb-3 p-3 border rounded{% if forloop.last and not form.instance.pk %} last-form{% endif %}">
+              <div class="item-form mb-3 p-3 border rounded{% if forloop.last and not form.instance.pk %} last-form{% endif %}" data-index="{{ forloop.counter0 }}">
                 {{ item_form.id }}
                 
-                <div class="row mb-3">
-                  <div class="col-md-6">
-                    <label for="{{ item_form.name.id_for_label }}" class="form-label">項目名</label>
-                    {{ item_form.name }}
-                    {% if item_form.name.errors %}
-                      <div class="text-danger">{{ item_form.name.errors }}</div>
-                    {% endif %}
+                <!-- モバイル用項目ヘッダー -->
+                <div class="item-header d-md-none">
+                  <div class="d-flex align-items-center">
+                    <span class="item-number">{{ forloop.counter }}</span>
+                    <span class="item-title">項目 {{ forloop.counter }}</span>
                   </div>
-                  <div class="col-md-5">
-                    <label for="{{ item_form.item_type.id_for_label }}" class="form-label">項目種類</label>
-                    {{ item_form.item_type }}
-                    {% if item_form.item_type.errors %}
-                      <div class="text-danger">{{ item_form.item_type.errors }}</div>
-                    {% endif %}
-                  </div>
-                  <div class="col-md-1 d-flex align-items-end justify-content-end">
-                    <button type="button" class="btn btn-sm btn-outline-danger remove-item">❌</button>
+                  <div class="d-flex">
+                    <button type="button" class="toggle-collapse" aria-label="開閉">
+                      <i class="bi bi-chevron-down"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-item" aria-label="削除">
+                      <i class="bi bi-trash"></i>
+                    </button>
                   </div>
                 </div>
                 
-                <div class="row mb-3">
-                  <div class="col-md-12">
-                    <label for="{{ item_form.description.id_for_label }}" class="form-label">説明</label>
-                    {{ item_form.description }}
-                    {% if item_form.description.errors %}
-                      <div class="text-danger">{{ item_form.description.errors }}</div>
-                    {% endif %}
+                <div class="item-content">
+                  <div class="row mb-3">
+                    <div class="col-md-6">
+                      <label for="{{ item_form.name.id_for_label }}" class="form-label">項目名</label>
+                      {{ item_form.name }}
+                      {% if item_form.name.errors %}
+                        <div class="text-danger">{{ item_form.name.errors }}</div>
+                      {% endif %}
+                    </div>
+                    <div class="col-md-5 mt-3 mt-md-0">
+                      <label for="{{ item_form.item_type.id_for_label }}" class="form-label">項目種類</label>
+                      {{ item_form.item_type }}
+                      {% if item_form.item_type.errors %}
+                        <div class="text-danger">{{ item_form.item_type.errors }}</div>
+                      {% endif %}
+                    </div>
+                    <!-- PCビュー用削除ボタン -->
+                    <div class="col-md-1 d-none d-md-flex align-items-end justify-content-end">
+                      <button type="button" class="btn btn-sm btn-outline-danger remove-item">❌</button>
+                    </div>
                   </div>
-                </div>
-                
-                <!-- 選択肢項目用フィールド -->
-                <div class="row mb-3 choices-field" style="display: none;">
-                  <div class="col-md-12">
-                    <label for="{{ item_form.choices.id_for_label }}" class="form-label">選択肢（カンマ区切り）</label>
-                    {{ item_form.choices }}
-                    {% if item_form.choices.errors %}
-                      <div class="text-danger">{{ item_form.choices.errors }}</div>
-                    {% endif %}
-                    <div class="form-text">選択肢項目の場合、カンマ区切りで選択肢を入力してください。（例: 高い,普通,低い）</div>
+                  
+                  <div class="row mb-3">
+                    <div class="col-md-12">
+                      <label for="{{ item_form.description.id_for_label }}" class="form-label">説明</label>
+                      {{ item_form.description }}
+                      {% if item_form.description.errors %}
+                        <div class="text-danger">{{ item_form.description.errors }}</div>
+                      {% endif %}
+                    </div>
                   </div>
-                </div>
-                
-                <!-- 複合型項目用フィールド -->
-                <div class="row mb-3 value-label-field" style="display: none;">
-                  <div class="col-md-12">
-                    <label for="{{ item_form.value_label.id_for_label }}" class="form-label">値入力欄のラベル (任意)</label>
-                    {{ item_form.value_label }}
-                    {% if item_form.value_label.errors %}
-                      <div class="text-danger">{{ item_form.value_label.errors }}</div>
-                    {% endif %}
-                    <div class="form-text">チェック+値入力の場合、値入力欄のラベルを設定できます（例: 実際のPBR値、補足情報など）</div>
+                  
+                  <!-- 選択肢項目用フィールド -->
+                  <div class="row mb-3 choices-field" style="display: none;">
+                    <div class="col-md-12">
+                      <label for="{{ item_form.choices.id_for_label }}" class="form-label">選択肢（カンマ区切り）</label>
+                      {{ item_form.choices }}
+                      {% if item_form.choices.errors %}
+                        <div class="text-danger">{{ item_form.choices.errors }}</div>
+                      {% endif %}
+                      <div class="form-text">選択肢項目の場合、カンマ区切りで選択肢を入力してください。（例: 高い,普通,低い）</div>
+                    </div>
                   </div>
-                </div>
-                
-                <div class="row">
-                  <div class="col-md-3">
-                    <label for="{{ item_form.order.id_for_label }}" class="form-label">表示順序</label>
-                    {{ item_form.order }}
-                    {% if item_form.order.errors %}
-                      <div class="text-danger">{{ item_form.order.errors }}</div>
-                    {% endif %}
+                  
+                  <!-- 複合型項目用フィールド -->
+                  <div class="row mb-3 value-label-field" style="display: none;">
+                    <div class="col-md-12">
+                      <label for="{{ item_form.value_label.id_for_label }}" class="form-label">値入力欄のラベル (任意)</label>
+                      {{ item_form.value_label }}
+                      {% if item_form.value_label.errors %}
+                        <div class="text-danger">{{ item_form.value_label.errors }}</div>
+                      {% endif %}
+                      <div class="form-text">チェック+値入力の場合、値入力欄のラベルを設定できます（例: 実際のPBR値、補足情報など）</div>
+                    </div>
+                  </div>
+                  
+                  <div class="row">
+                    <div class="col-md-3 col-6">
+                      <label for="{{ item_form.order.id_for_label }}" class="form-label">表示順序</label>
+                      {{ item_form.order }}
+                      {% if item_form.order.errors %}
+                        <div class="text-danger">{{ item_form.order.errors }}</div>
+                      {% endif %}
+                    </div>
                   </div>
                 </div>
                 
@@ -114,12 +302,27 @@
           </div>
           
           <div class="text-center mb-4">
-            <button type="button" id="add-item" class="btn btn-outline-primary">+ 項目を追加</button>
+            <button type="button" id="add-item" class="btn btn-outline-primary">
+              <i class="bi bi-plus-lg me-1"></i> 項目を追加
+            </button>
           </div>
           
-          <div class="d-flex justify-content-between">
+          <!-- PC用フッター -->
+          <div class="d-flex justify-content-between d-none d-md-flex">
             <a href="{% url 'analysis_template:list' %}" class="btn btn-secondary">キャンセル</a>
             <button type="submit" class="btn btn-primary">保存</button>
+          </div>
+          
+          <!-- モバイル用固定フッター -->
+          <div class="form-footer d-md-none">
+            <div class="row g-2">
+              <div class="col-6">
+                <a href="{% url 'analysis_template:list' %}" class="btn btn-secondary w-100">キャンセル</a>
+              </div>
+              <div class="col-6">
+                <button type="submit" class="btn btn-primary w-100">保存</button>
+              </div>
+            </div>
           </div>
         </form>
       </div>
@@ -135,6 +338,28 @@
       if (!{{ form.instance.pk|yesno:"true,false" }}) {
         orderInputs[0].value = 1;
       }
+    }
+    
+    // 項目の数を更新する関数
+    function updateItemCount() {
+      const itemForms = document.querySelectorAll('.item-form:not([style*="display: none"])');
+      const countElement = document.getElementById('total-items-count');
+      if (countElement) {
+        countElement.textContent = `${itemForms.length} 項目`;
+      }
+      
+      // 各項目のタイトルを更新
+      itemForms.forEach((form, index) => {
+        const titleEl = form.querySelector('.item-title');
+        if (titleEl) {
+          const itemName = form.querySelector('input[name$="-name"]').value;
+          titleEl.textContent = itemName || `項目 ${index + 1}`;
+        }
+        const numEl = form.querySelector('.item-number');
+        if (numEl) {
+          numEl.textContent = index + 1;
+        }
+      });
     }
     
     // 項目タイプに応じて関連フィールドの表示/非表示を切り替える
@@ -162,6 +387,17 @@
     
     // 初期表示時に関連フィールドの表示を設定
     toggleRelatedFields();
+    updateItemCount();
+    
+    // 項目名の変更を監視して項目タイトルを更新
+    document.querySelectorAll('input[name$="-name"]').forEach(input => {
+      input.addEventListener('change', function() {
+        updateItemCount();
+      });
+      input.addEventListener('blur', function() {
+        updateItemCount();
+      });
+    });
     
     // 項目タイプ変更時のイベント
     document.querySelectorAll('select[name$="-item_type"]').forEach(select => {
@@ -173,6 +409,27 @@
     const itemsFormset = document.getElementById('items-formset');
     const totalForms = document.querySelector('[name="items-TOTAL_FORMS"]');
     
+    // スマホ向け - 項目の開閉機能
+    function setupCollapseButtons() {
+      document.querySelectorAll('.toggle-collapse').forEach(button => {
+        button.addEventListener('click', function() {
+          const itemForm = this.closest('.item-form');
+          const content = itemForm.querySelector('.item-content');
+          const icon = this.querySelector('i');
+          
+          if (content.style.display === 'none') {
+            content.style.display = '';
+            icon.classList.remove('bi-chevron-down');
+            icon.classList.add('bi-chevron-up');
+          } else {
+            content.style.display = 'none';
+            icon.classList.remove('bi-chevron-up');
+            icon.classList.add('bi-chevron-down');
+          }
+        });
+      });
+    }
+    
     // 削除ボタンのイベントリスナーを設定
     function setupRemoveButtons() {
       document.querySelectorAll('.remove-item').forEach(button => {
@@ -180,7 +437,7 @@
           const itemForm = this.closest('.item-form');
           
           // 最後の1つは削除せずに中身をクリアする
-          if (itemsFormset.querySelectorAll('.item-form').length <= 1) {
+          if (itemsFormset.querySelectorAll('.item-form:not([style*="display: none"])').length <= 1) {
             itemForm.querySelectorAll('input[type="text"], textarea').forEach(input => {
               input.value = '';
             });
@@ -191,6 +448,7 @@
             });
             
             toggleRelatedFields();
+            updateItemCount();
             return;
           }
           
@@ -204,7 +462,7 @@
             itemForm.remove();
             
             // フォームの総数を更新
-            const forms = itemsFormset.querySelectorAll('.item-form');
+            const forms = itemsFormset.querySelectorAll('.item-form:not([style*="display: none"])');
             totalForms.value = forms.length;
             
             // フォームのインデックスを振り直す
@@ -225,12 +483,15 @@
               });
             });
           }
+          
+          updateItemCount();
         });
       });
     }
     
     // 初期表示時の削除ボタン設定
     setupRemoveButtons();
+    setupCollapseButtons();
     
     // 項目追加ボタンのイベントリスナー
     addItemButton.addEventListener('click', function() {
@@ -278,6 +539,27 @@
         }
       });
       
+      // インデックスを更新
+      newForm.dataset.index = formCount;
+      
+      // モバイル向けの項目タイトルを更新
+      const titleEl = newForm.querySelector('.item-title');
+      if (titleEl) {
+        titleEl.textContent = `項目 ${formCount + 1}`;
+      }
+      const numEl = newForm.querySelector('.item-number');
+      if (numEl) {
+        numEl.textContent = formCount + 1;
+      }
+      
+      // 開閉状態をリセット
+      const contentEl = newForm.querySelector('.item-content');
+      const toggleIcon = newForm.querySelector('.toggle-collapse i');
+      if (contentEl && toggleIcon) {
+        contentEl.style.display = '';
+        toggleIcon.className = 'bi bi-chevron-up';
+      }
+      
       // ラベルのforも更新
       newForm.querySelectorAll('label').forEach(function(label) {
         if (label.htmlFor) {
@@ -295,6 +577,9 @@
       // 新しく追加した項目の削除ボタンを設定
       setupRemoveButtons();
       
+      // 新しく追加した項目の開閉ボタンを設定
+      setupCollapseButtons();
+      
       // 項目タイプによる関連フィールドの表示制御を再設定
       const newTypeSelect = newForm.querySelector('select[name$="-item_type"]');
       newTypeSelect.addEventListener('change', toggleRelatedFields);
@@ -304,6 +589,12 @@
       const newValueLabelField = newForm.querySelector('.value-label-field');
       if (newChoicesField) newChoicesField.style.display = 'none';
       if (newValueLabelField) newValueLabelField.style.display = 'none';
+      
+      // 項目数を更新
+      updateItemCount();
+      
+      // スクロールして新しい項目を表示
+      newForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   });
 </script>

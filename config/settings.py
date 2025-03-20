@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'portfolio', 
     'analysis_template',
     'company_master',
+    'subscriptions',
     # django-allauth関連
     'allauth',
     'allauth.account',
@@ -139,6 +140,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',  # 追加
+    'subscriptions.middleware.SubscriptionMiddleware',
 ]
 
 AUTHENTICATION_BACKENDS = [
@@ -198,6 +200,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'subscriptions.context_processors.subscription_status',
             ],
         },
     },
@@ -277,3 +280,9 @@ EMAIL_HOST_USER = 'kabulog.information@gmail.com'  # 送信元メールアドレ
 EMAIL_HOST_PASSWORD = 'wfsdxbdxsdusvddw'  # アプリパスワードまたは通常のパスワード
 # DEFAULT_FROM_EMAIL = 'Kabulog <kabulog.information@gmail.com>'
 DEBUG = True  # 開発環境ではTrueに
+
+
+# ===== Stripe設定（現在は機能を使用していないためコメントアウト） =====
+# STRIPE_PUBLIC_KEY = 'pk_test_あなたのStripeパブリックキー'
+# STRIPE_SECRET_KEY = 'sk_test_あなたのStripeシークレットキー'
+# STRIPE_WEBHOOK_SECRET = 'whsec_あなたのWebhookシークレット'
