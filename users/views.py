@@ -14,6 +14,9 @@ from .forms import CustomPasswordResetForm
 from django.views.generic import FormView
 from django.contrib.auth.forms import AuthenticationForm
 from allauth.socialaccount.models import SocialAccount
+from django.views.decorators.http import require_http_methods
+
+from django.contrib.auth import logout as auth_logout, get_user_model
 
 User = get_user_model()
 
@@ -26,8 +29,15 @@ class CustomLoginView(LoginView):
         return reverse_lazy('stockdiary:home')
 
 class CustomLogoutView(LogoutView):
-    next_page = reverse_lazy('users:login')
-
+    http_method_names = ['get', 'post']
+    template_name = 'users/logout.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        # 明示的にログアウト処理を行う
+        if request.user.is_authenticated:
+            auth_logout(request)
+        return super().dispatch(request, *args, **kwargs)
+        
 class SignUpView(CreateView):
     model = User
     form_class = CustomUserCreationForm

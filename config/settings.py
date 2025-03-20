@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import os
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,11 +25,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-h=(#w%%7ejhe=u$vjre&d%6u(-7a$js2x4*v76iq4_m3+7onk#'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['exnok.pythonanywhere.com', 'localhost', '127.0.0.1','https://6e30-2400-2411-a761-e100-1436-fd6a-cfec-b578.ngrok-free.app']
-CSRF_TRUSTED_ORIGINS = ['https://exnok.pythonanywhere.com', 'http://exnok.pythonanywhere.com','https://6e30-2400-2411-a761-e100-1436-fd6a-cfec-b578.ngrok-free.app']
-
+ALLOWED_HOSTS = ['kabu-log.com', 'localhost', '127.0.0.1', '160.251.136.191']
+CSRF_TRUSTED_ORIGINS = [
+    'https://kabu-log.com', 'http://kabu-log.com', 
+    'http://localhost:8000', 
+]
 
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
@@ -49,13 +52,14 @@ INSTALLED_APPS = [
     'ckeditor_uploader',  # 追加
     'tinymce',
     'users',  # ← これがあるか確認
-    'checklist',
     'tags',
-    'stockdiary',
-    'portfolio', 
     'analysis_template',
     'company_master',
+    'checklist',
+    'stockdiary',
+    'portfolio', 
     'subscriptions',
+    'ads',
     # django-allauth関連
     'allauth',
     'allauth.account',
@@ -112,11 +116,6 @@ CKEDITOR_CONFIGS = {
         'allowedContent': True,
     },
 }
-
-# 静的ファイルの追加
-STATICFILES_DIRS = [
-    # ここに既存のSTATICFILES_DIRSの内容を維持
-]
 
 TINYMCE_DEFAULT_CONFIG = {
     'theme': 'silver',
@@ -212,14 +211,21 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME'),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': os.environ.get('DB_HOST'),
+        'PORT': os.environ.get('DB_PORT'),
 }
-
-
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
@@ -276,3 +282,36 @@ LOGOUT_REDIRECT_URL = 'users:login'
 # STRIPE_PUBLIC_KEY = 'pk_test_あなたのStripeパブリックキー'
 # STRIPE_SECRET_KEY = 'sk_test_あなたのStripeシークレットキー'
 # STRIPE_WEBHOOK_SECRET = 'whsec_あなたのWebhookシークレット'
+# セッション設定
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'  # または 'Strict'
+
+# CSRF設定
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'  # または 'Strict'
+
+ACCOUNT_LOGOUT_REDIRECT_URL = 'users:login'
+
+SECURE_SSL_REDIRECT = True
+SECURE_HSTS_SECONDS = 31536000  # 1年
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'django-error.log'),
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+    },
+}

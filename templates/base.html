@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}カブログ{% endblock %}</title>
     
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3954701883136363"
+         crossorigin="anonymous"></script>
     <!-- ファビコン設定 -->
     <link rel="icon" type="image/svg+xml" href="{% static 'images/icon-modern.svg' %}">
     <link rel="alternate icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
@@ -240,26 +243,26 @@
         background-color: rgba(239, 68, 68, 0.1);
         color: #ef4444;
       }
+      .ad-container {
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
+      .ad-banner {
+        min-height: 90px; /* 最小の高さを設定して広告ロード前にスペースを確保 */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .upgrade-prompt {
+        text-align: center;
+      }
     </style>
     
     {% block head %}{% endblock %}
 </head>
 <header class="pc-only-header">
-  {% if show_ads %}
-  <div class="ad-container">
-      <!-- 広告コード -->
-      <div class="ad-banner">
-          <p class="text-center text-muted">広告</p>
-          <!-- 実際の広告コードをここに挿入 -->
-      </div>
-      
-      <div class="upgrade-prompt mt-2">
-          <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-sm btn-outline-primary">
-              広告を非表示にする →
-          </a>
-      </div>
-  </div>
-  {% endif %}
   <nav class="navbar navbar-expand bg-light border-bottom shadow-sm">
     <div class="container">
       <!-- ロゴ・サイト名 -->
@@ -322,7 +325,29 @@
     </div>
   </nav>
 </header>
-
+{% if show_ads %}
+<div class="ad-container">
+    <!-- Google AdSenseコード -->
+    <div class="ad-banner">
+      <!-- カブログ -->
+      <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-3954701883136363"
+            data-ad-slot="8657428640"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+      <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </div>
+    
+    <div class="upgrade-prompt mt-2">
+        <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-sm btn-outline-primary">
+            広告を非表示にする →
+        </a>
+    </div>
+</div>
+{% endif %}
 <body>
     <!-- メインコンテンツ -->
     <div class="container mt-4">

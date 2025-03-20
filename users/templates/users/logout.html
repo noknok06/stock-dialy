@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}ログアウト | カブログ{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<style>
+  .logout-container {
+    padding: 2.5rem 0;
+  }
+  
+  .logout-card {
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    max-width: 600px;
+    margin: 0 auto;
+    transition: all 0.3s ease;
+  }
+  
+  .logout-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+  }
+  
+  .logout-header {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    padding: 2rem;
+    color: white;
+    text-align: center;
+    position: relative;
+  }
+  
+  .logout-header::before {
+    content: "";
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    z-index: 1;
+  }
+  
+  .logout-header::after {
+    content: "";
+    position: absolute;
+    bottom: -40px;
+    left: -40px;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    z-index: 1;
+  }
+  
+  .logout-header h2 {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 2;
+  }
+  
+  .logout-body {
+    padding: 2.5rem;
+    background-color: white;
+    text-align: center;
+  }
+  
+  .success-icon {
+    font-size: 4rem;
+    color: #10b981;
+    margin-bottom: 1.5rem;
+  }
+  
+  .login-btn {
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    border: none;
+    transition: all 0.3s ease;
+    color: white;
+    margin-top: 1.5rem;
+  }
+  
+  .login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+  }
+  
+  .thank-you-message {
+    font-size: 1.1rem;
+    color: #4b5563;
+    margin-bottom: 1.5rem;
+  }
+  
+  .logout-footer {
+    margin-top: 2rem;
+    font-size: 0.9rem;
+    color: #6b7280;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="logout-container">
+  <div class="logout-card">
+    <div class="logout-header">
+      <h2>ログアウト</h2>
+      <p>セッションが終了しました</p>
+    </div>
+    
+    <div class="logout-body">
+      <i class="bi bi-box-arrow-right success-icon"></i>
+      
+      <h3 class="mb-3">ログアウト完了</h3>
+      
+      <p class="thank-you-message">
+        ご利用いただきありがとうございました。<br>
+        正常にログアウトされました。
+      </p>
+      
+      <a href="{% url 'users:login' %}" class="btn login-btn">
+        <i class="bi bi-box-arrow-in-right me-2"></i>再度ログインする
+      </a>
+      
+      <div class="logout-footer">
+        <p>アカウントをお持ちでない方は <a href="{% url 'users:signup' %}">アカウント登録</a> からどうぞ</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
