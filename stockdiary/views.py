@@ -130,7 +130,7 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
                 'type': 'snap',
                 'url': reverse_lazy('portfolio:list'),
                 'icon': 'bi-camera',
-                'label': '比較分析'
+                'label': 'スナップショット'
             }
         ]
         context['form_actions'] = form_actions

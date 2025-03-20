@@ -3,6 +3,7 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from stockdiary.models import StockDiary, DiaryNote
 from tags.models import Tag
+from analysis_template.models import AnalysisTemplate, AnalysisItem, DiaryAnalysisValue
 import random
 import datetime
 from decimal import Decimal
@@ -16,11 +17,13 @@ class Command(BaseCommand):
         parser.add_argument('--username', type=str, required=True, help='テストデータを作成するユーザー名')
         parser.add_argument('--count', type=int, default=10, help='作成する日記の数 (デフォルト: 10)')
         parser.add_argument('--notes', type=int, default=3, help='各日記に追加するノートの数 (デフォルト: 3)')
+        parser.add_argument('--with-analysis', action='store_true', help='分析テンプレートを適用するかどうか')
 
     def handle(self, *args, **options):
         username = options['username']
         diary_count = options['count']
         notes_per_diary = options['notes']
+        with_analysis = options['with_analysis']
 
         try:
             user = User.objects.get(username=username)
@@ -32,6 +35,13 @@ class Command(BaseCommand):
         user_tags = list(Tag.objects.filter(user=user))
         if not user_tags:
             self.stdout.write(self.style.WARNING(f'ユーザー "{username}" のタグが見つかりません。タグなしで日記を作成します。'))
+
+        # ユーザーの分析テンプレートを取得
+        templates = list(AnalysisTemplate.objects.filter(user=user).prefetch_related('items'))
+        if with_analysis and not templates:
+            self.stdout.write(self.style.WARNING(f'ユーザー "{username}" の分析テンプレートが見つかりません。テンプレートなしで日記を作成します。'))
+        elif with_analysis:
+            self.stdout.write(self.style.SUCCESS(f'ユーザー "{username}" の分析テンプレートが {len(templates)} 件見つかりました。'))
 
         # テストデータ用の株式リスト（セクター情報を追加）
         stocks = [
@@ -81,6 +91,7 @@ class Command(BaseCommand):
         # ランダムに日記を作成
         created_count = 0
         note_count = 0
+        template_count = 0
 
         for _ in range(diary_count):
             stock = random.choice(stocks)
@@ -148,6 +159,97 @@ class Command(BaseCommand):
             
             created_count += 1
             
+            # 分析テンプレートの適用（80%の確率で適用）
+            if with_analysis and templates and random.random() < 0.8:
+                # ランダムにテンプレートを選択
+                template = random.choice(templates)
+                
+                # テンプレート内の各項目について値を生成
+                for item in template.items.all():
+                    # 項目タイプに応じて適切な値を生成
+                    if item.item_type == 'boolean':
+                        # ブール値の場合
+                        boolean_value = random.choice([True, False])
+                        DiaryAnalysisValue.objects.create(
+                            diary=diary,
+                            analysis_item=item,
+                            boolean_value=boolean_value
+                        )
+                    
+                    elif item.item_type == 'number':
+                        # 数値の場合
+                        if random.random() < 0.9:  # 90%の確率で値を設定
+                            number_value = Decimal(random.uniform(1, 100)).quantize(Decimal('0.1'))
+                            DiaryAnalysisValue.objects.create(
+                                diary=diary,
+                                analysis_item=item,
+                                number_value=number_value
+                            )
+                    
+                    elif item.item_type == 'select':
+                        # 選択肢の場合
+                        if random.random() < 0.9 and item.choices:  # 90%の確率で値を設定
+                            choices = item.get_choices_list()
+                            if choices:
+                                text_value = random.choice(choices)
+                                DiaryAnalysisValue.objects.create(
+                                    diary=diary,
+                                    analysis_item=item,
+                                    text_value=text_value
+                                )
+                    
+                    elif item.item_type == 'text':
+                        # テキストの場合
+                        if random.random() < 0.8:  # 80%の確率で値を設定
+                            text_options = [
+                                "良好", "注意が必要", "期待できる", "慎重に判断", 
+                                "強気", "弱気", "横ばい", "上昇傾向", "下降傾向"
+                            ]
+                            text_value = random.choice(text_options)
+                            DiaryAnalysisValue.objects.create(
+                                diary=diary,
+                                analysis_item=item,
+                                text_value=text_value
+                            )
+                    
+                    elif item.item_type == 'boolean_with_value':
+                        # ブール値+値入力の複合型
+                        boolean_value = random.choice([True, False])
+                        
+                        if boolean_value and random.random() < 0.8:  # TRUEかつ80%の確率で値を設定
+                            # 数値か文字列かランダムに決定
+                            if random.random() < 0.5:
+                                # 数値
+                                number_value = Decimal(random.uniform(1, 100)).quantize(Decimal('0.1'))
+                                DiaryAnalysisValue.objects.create(
+                                    diary=diary,
+                                    analysis_item=item,
+                                    boolean_value=boolean_value,
+                                    number_value=number_value
+                                )
+                            else:
+                                # 文字列
+                                text_options = [
+                                    "高い", "低い", "普通", "良い", "悪い", 
+                                    "優れている", "不足している", "適切", "不適切"
+                                ]
+                                text_value = random.choice(text_options)
+                                DiaryAnalysisValue.objects.create(
+                                    diary=diary,
+                                    analysis_item=item,
+                                    boolean_value=boolean_value,
+                                    text_value=text_value
+                                )
+                        else:
+                            # ブール値のみ
+                            DiaryAnalysisValue.objects.create(
+                                diary=diary,
+                                analysis_item=item,
+                                boolean_value=boolean_value
+                            )
+                
+                template_count += 1
+            
             # ノート追加
             for j in range(random.randint(0, notes_per_diary)):
                 # ノート作成日（購入日～今日または売却日まで）
@@ -210,4 +312,5 @@ class Command(BaseCommand):
             
             self.stdout.write(self.style.SUCCESS(f'{created_count}/{diary_count} 件の日記を作成: {stock["name"]} ({stock["symbol"]}) セクター: {stock["sector"]}'))
         
-        self.stdout.write(self.style.SUCCESS(f'合計 {created_count} 件の日記と {note_count} 件のノートを作成しました。'))
+        template_status = f'うち {template_count} 件に分析テンプレートを適用' if with_analysis else ''
+        self.stdout.write(self.style.SUCCESS(f'合計 {created_count} 件の日記と {note_count} 件のノート、{template_status}を作成しました。'))

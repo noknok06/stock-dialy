@@ -36,7 +36,7 @@ class SnapshotListView(LoginRequiredMixin, ListView):
             {
                 'type': 'snap',
                 'url': reverse_lazy('portfolio:compare'),
-                'icon': 'bi-camera',
+                'icon': 'bi-input-cursor',
                 'label': '比較分析'
             }
         ]
