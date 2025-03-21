@@ -833,18 +833,18 @@
     });  
 
     // 銘柄コード入力時の処理（4桁入力時に自動検索）
-    stockSymbolInput.addEventListener('input', function() {
-      const stockCode = this.value.trim();
-      // コードが空になった場合は情報カードを非表示
-      if (!stockCode) {
-        stockInfoCard.classList.add('d-none');
-      }
+    // stockSymbolInput.addEventListener('input', function() {
+    //   const stockCode = this.value.trim();
+    //   // コードが空になった場合は情報カードを非表示
+    //   if (!stockCode) {
+    //     stockInfoCard.classList.add('d-none');
+    //   }
       
-      // 4桁入力時に自動検索
-      if (stockCode.length === 4 && /^\d{4}$/.test(stockCode)) {
-        fetchStockInfo(stockCode);
-      }
-    });
+    //   // 4桁入力時に自動検索
+    //   if (stockCode.length === 4 && /^\d{4}$/.test(stockCode)) {
+    //     fetchStockInfo(stockCode);
+    //   }
+    // });
 
     // ページ読み込み時に銘柄コードが入力済みなら情報を取得
     if (stockSymbolInput.value.trim() && /^\d{4}$/.test(stockSymbolInput.value.trim())) {
