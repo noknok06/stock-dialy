@@ -16,52 +16,56 @@
 <!-- FullCalendar CSS -->
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'css/speed-dial.css' %}">
+
 <style>
-    /* カレンダーイベントスタイル */
-    .purchase-event {
-        background-color: var(--success-color);
-        border-color: var(--success-color);
-    }
+  /* カレンダーイベントスタイル */
+  .purchase-event {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+  }
 
-    .sell-event {
-        background-color: var(--danger-color);
-        border-color: var(--danger-color);
-    }
-    
-    .memo-event {
-        background-color: var(--info-color);
-        border-color: var(--info-color);
-        opacity: 0.8;
-    }
+  .sell-event {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+  }
 
-    /* 日付クリック時のスタイル */
-    .fc-day-clicked {
-        background-color: rgba(74, 109, 167, 0.2) !important;
-        box-shadow: inset 0 0 0 2px var(--primary-color) !important;
-    }
-    
-    /* 今日の日付と選択日が重なった場合 */
-    .fc-day-today.fc-day-clicked {
-        background-color: rgba(74, 109, 167, 0.3) !important;
-    }
-    
-    /* イベントアイテムのスタイル調整 */
-    .calendar-event-item {
-        text-decoration: none;
-        color: inherit;
-        padding: 0.75rem;
-        border-radius: 0.375rem;
-        margin-bottom: 0.5rem;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        transition: background-color 0.2s;
-        background-color: rgba(249, 250, 251, 0.5);
-    }
-    
-    .calendar-event-item:hover {
-        background-color: rgba(243, 244, 246, 1);
-    }
+  .memo-event {
+    background-color: var(--info-color);
+    border-color: var(--info-color);
+    opacity: 0.8;
+  }
+
+  /* 日付クリック時のスタイル */
+  .fc-day-clicked {
+    background-color: rgba(74, 109, 167, 0.2) !important;
+    box-shadow: inset 0 0 0 2px var(--primary-color) !important;
+  }
+
+  /* 今日の日付と選択日が重なった場合 */
+  .fc-day-today.fc-day-clicked {
+    background-color: rgba(74, 109, 167, 0.3) !important;
+  }
+
+  /* イベントアイテムのスタイル調整 */
+  .calendar-event-item {
+    text-decoration: none;
+    color: inherit;
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: background-color 0.2s;
+    background-color: rgba(249, 250, 251, 0.5);
+  }
+
+  .calendar-event-item:hover {
+    background-color: rgba(243, 244, 246, 1);
+  }
+  
+}
+
 </style>
 {% endblock %}
 
@@ -74,70 +78,120 @@
       <i class="bi bi-plus-lg me-1"></i> 新規作成
     </a>
   </div>
+  <!-- 修正済みのカレンダーセクション（PC/スマホ共通部分を修正） -->
+  <div class="calendar-section mb-4">
+    <!-- スマホ用カレンダーアコーディオン -->
+    <div class="d-lg-none">
+      <div class="accordion" id="calendarAccordion">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="calendarHeading">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+              data-bs-target="#calendarCollapse" aria-expanded="false" aria-controls="calendarCollapse">
+              <i class="bi bi-calendar-week me-2"></i> 投資カレンダーを表示
+            </button>
+          </h2>
+          <div id="calendarCollapse" class="accordion-collapse collapse" aria-labelledby="calendarHeading">
+            <div class="accordion-body p-0">
+              <!-- モバイル用カレンダー -->
+              <div class="calendar-view">
+                <!-- カレンダーヘッダー部分 -->
+                <div class="calendar-header">
+                  <!-- 日付表示と操作ボタン -->
+                  <div class="calendar-controls">
+                    <div class="calendar-date-display" id="mobile-current-year-month">2025年3月</div>
+                    <div class="calendar-nav-buttons">
+                      <button class="calendar-nav-button" id="mobile-prev-month">
+                        <i class="bi bi-chevron-left"></i>
+                      </button>
+                      <button class="calendar-nav-button" id="mobile-next-month">
+                        <i class="bi bi-chevron-right"></i>
+                      </button>
+                      <button class="calendar-nav-button" id="mobile-today-button">今日</button>
+                    </div>
+                    <button class="calendar-view-toggle" id="mobile-month-view-toggle">月</button>
+                  </div>
+                </div>
 
-  <!-- カスタマイズされたカレンダーレイアウト -->
-  <div class="calendar-and-events-container">
-    <div class="calendar-view">
-      <!-- カレンダーヘッダー部分 -->
-      <div class="calendar-header">
-        <!-- タイトル行 -->
-        <div class="calendar-title-row">
-          <div class="calendar-title">
-            <i class="bi bi-calendar-week"></i> 投資カレンダー
-          </div>
-          <div class="calendar-badges">
-            <span class="badge bg-success">購入</span>
-            <span class="badge bg-danger">売却</span>
-            <span class="badge bg-info">メモ</span>
+                <!-- カレンダー本体 -->
+                <div id="mobile-calendar" class="calendar-container"></div>
+              </div>
+            </div>
           </div>
         </div>
-        
-        <!-- 日付表示と操作ボタン -->
-        <div class="calendar-controls">
-          <div class="calendar-date-display" id="current-year-month">2025年3月</div>
-          <div class="calendar-nav-buttons">
-            <button class="calendar-nav-button" id="prev-month">
-              <i class="bi bi-chevron-left"></i>
-            </button>
-            <button class="calendar-nav-button" id="next-month">
-              <i class="bi bi-chevron-right"></i>
-            </button>
-            <button class="calendar-nav-button" id="today-button">今日</button>
+      </div>
+    </div>
+
+    <!-- PC用カレンダー（左右7:3の横並びレイアウト） -->
+    <div class="d-none d-lg-block">
+      <div class="calendar-and-events-container">
+        <div class="row">
+          <!-- カレンダー部分：左側（7/10） -->
+          <div class="col-lg-7">
+            <div class="calendar-view pe-lg-3">
+              <!-- カレンダーヘッダー部分 -->
+              <div class="calendar-header">
+                <!-- タイトル行 -->
+                <div class="calendar-title-row">
+                  <div class="calendar-title">
+                    <i class="bi bi-calendar-week"></i> 投資カレンダー
+                  </div>
+                  <div class="calendar-badges">
+                    <span class="badge bg-success">購入</span>
+                    <span class="badge bg-danger">売却</span>
+                    <span class="badge bg-info">メモ</span>
+                  </div>
+                </div>
+
+                <!-- 日付表示と操作ボタン -->
+                <div class="calendar-controls">
+                  <div class="calendar-date-display" id="desktop-current-year-month">2025年3月</div>
+                  <div class="calendar-nav-buttons">
+                    <button class="calendar-nav-button" id="desktop-prev-month">
+                      <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button class="calendar-nav-button" id="desktop-next-month">
+                      <i class="bi bi-chevron-right"></i>
+                    </button>
+                    <button class="calendar-nav-button" id="desktop-today-button">今日</button>
+                  </div>
+                  <button class="calendar-view-toggle" id="desktop-month-view-toggle">月</button>
+                </div>
+              </div>
+
+              <!-- カレンダー本体 -->
+              <div id="desktop-calendar" class="calendar-container"></div>
+            </div>
           </div>
-          <button class="calendar-view-toggle" id="month-view-toggle">月</button>
+
+          <!-- イベント詳細部分：右側（3/10） -->
+          <div class="col-lg-5">
+            <div class="card h-100 desktop-events-card" id="desktop-events-card">
+              <div class="card-header bg-white">
+                <h6 class="mb-0" id="desktop-selected-date">選択日のイベント</h6>
+              </div>
+              <div class="card-body" id="desktop-day-events">
+                <p class="text-muted">日付を選択するとイベントが表示されます</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      
-      <!-- カレンダー本体 -->
-      <div id="calendar" class="calendar-container"></div>
     </div>
 
-    <!-- 選択された日のイベント表示 -->
-    <div class="card events-card mt-3">
-      <div class="card-header bg-white">
-        <h6 class="mb-0" id="selected-date">選択日のイベント</h6>
+    <!-- スマホ用のイベント表示カード -->
+    <div class="d-lg-none">
+      <div class="card mt-3 mb-4" id="mobile-events-card" style="display: none;">
+        <div class="card-header bg-white">
+          <h6 class="mb-0" id="mobile-selected-date">選択日のイベント</h6>
+        </div>
+        <div class="card-body" id="mobile-day-events">
+          <p class="text-muted">日付を選択するとイベントが表示されます</p>
+        </div>
       </div>
-      <div class="card-body" id="day-events">
-        <p class="text-muted">日付を選択するとイベントが表示されます</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- 選択された日のイベント表示 -->
-  <div class="card mt-3">
-    <div class="card-header bg-white">
-      <h6 class="mb-0" id="selected-date">選択日のイベント</h6>
-    </div>
-    <div class="card-body" id="day-events">
-      <p class="text-muted">日付を選択するとイベントが表示されます</p>
     </div>
   </div>
   <!-- 改善された検索フォーム部分 -->
   <div class="diary-search mb-4">
-    <h2 class="diary-search-title mb-3">
-      <i class="bi bi-search"></i> 検索
-    </h2>
-    
     <form method="get" class="mb-3">
       <div class="row g-2">
         <!-- 銘柄検索フィールド -->
@@ -145,8 +199,8 @@
           <label for="query" class="form-label">銘柄検索</label>
           <div class="position-relative">
             <i class="bi bi-search" style="position: absolute; left: 10px; top: 10px; color: #aaa;"></i>
-            <input type="text" id="query" name="query" class="form-control ps-4" 
-                  placeholder="銘柄名/シンボル" value="{{ request.GET.query }}">
+            <input type="text" id="query" name="query" class="form-control ps-4" placeholder="銘柄名/シンボル"
+              value="{{ request.GET.query }}">
           </div>
         </div>
 
@@ -176,11 +230,11 @@
           </div>
         </div>
       </div>
-      
+
       <!-- 日記タイプフィルター（隠しフィールドで送信） -->
       <input type="hidden" id="diary_type_filter" name="diary_type" value="{{ request.GET.diary_type|default:'' }}">
     </form>
-    
+
     <!-- フィルターバッジ - スマホ対応と状態維持 -->
     <!-- <div class="filter-badges-container">
       <div class="filter-badge {% if not request.GET.diary_type %}active{% endif %}" 
@@ -203,666 +257,801 @@
   </div> -->
 
 
-  <!-- 日記カード一覧 -->
-  <h4 class="mb-3 diary-title">
-    <i class="bi bi-journal-richtext"></i> 株式日記リスト
-  </h4>
+    <!-- 日記カード一覧 -->
+    <h4 class="mb-3 diary-title">
+      <i class="bi bi-journal-richtext"></i> 株式日記リスト
+    </h4>
 
-  {% if diaries %}
-  <div class="home-diary-grid">
-    {% for diary in diaries %}
-    <div class="diary-card {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo-card{% elif diary.sell_date %}sold-card{% endif %}" 
-         data-diary-id="{{ diary.id }}" 
-         data-diary-type="{% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo{% elif diary.sell_date %}sold{% else %}active{% endif %}">
-      
-      <!-- マスキングテープの装飾（ランダムな配置） -->
-      {% if forloop.counter|divisibleby:3 %}
-      <div class="masking-tape yellow"></div>
-      {% elif forloop.counter|divisibleby:5 %}
-      <div class="masking-tape green"></div>
-      {% elif forloop.counter|divisibleby:2 %}
-      <div class="masking-tape"></div>
-      {% endif %}
+    {% if diaries %}
+    <div class="home-diary-grid">
+      {% for diary in diaries %}
+      <div
+        class="diary-card {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo-card{% elif diary.sell_date %}sold-card{% endif %}"
+        data-diary-id="{{ diary.id }}"
+        data-diary-type="{% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo{% elif diary.sell_date %}sold{% else %}active{% endif %}">
 
-      <!-- カードヘッダー -->
-      <div class="diary-card-header">
-        <div class="diary-meta">
-          <i class="bi bi-clock"></i>
-          <span>{{ diary.purchase_date|date:"Y年m月d日" }}</span>
-          
-          <!-- メモバッジを追加 -->
-          {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
-          <span class="badge bg-info">メモ</span>
-          {% endif %}
-          
-          <!-- 売却済みバッジ -->
-          {% if diary.sell_date %}
-          <span class="badge bg-success">売却済み</span>
-          {% endif %}
-        </div>
-        <button class="btn btn-sm btn-link p-0 text-decoration-none" type="button" 
-          data-bs-toggle="collapse" data-bs-target="#collapse-{{ diary.id }}" aria-expanded="true">
-          <i class="bi bi-chevron-down"></i>
-        </button>
-      </div>
-      
-      <!-- コンテンツ部分 -->
-      <div class="collapse show" id="collapse-{{ diary.id }}">
-        <div class="diary-card-body">
-          <!-- 日記のアイコン表示 -->
-          {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
-          <i class="bi bi-sticky memo-icon"></i>
-          {% endif %}
-          
-          <!-- 銘柄名とタグを上下に並べる -->
-          <h3 class="diary-title">
-            <i class="bi bi-building text-muted"></i>
-            <a href="{% url 'stockdiary:detail' diary.id %}" class="view-btn" title="詳細" style="color:var(--primary-color);text-decoration: none">
-              {{ diary.stock_name }} 
-            </a>
-            <small class="text-muted">({{ diary.stock_symbol }})</small>
-          </h3>
-  
-          <!-- タグ表示 - 銘柄名の下に配置 -->
-          {% if diary.tags.all %}
-          <div class="diary-tags">
-            {% for tag in diary.tags.all %}
-            <span class="diary-tag"><i class="bi bi-tag"></i> {{ tag.name }}</span>
-            {% endfor %}
-          </div>
-          {% endif %}
-          
-          <!-- 主要情報のリスト表示 - メモでない場合のみ表示 -->
-          {% if not diary.is_memo and diary.purchase_price is not None and diary.purchase_quantity is not None %}
-          <div class="info-block mt-3">
-            <div class="info-row">
-              <div class="info-item">
-                <div class="info-icon">
-                  <i class="bi bi-currency-yen"></i>
-                </div>
-                <div class="info-content">
-                  <span class="info-label">購入価格</span>
-                  <span class="info-value">{{ diary.purchase_price|floatformat:2 }}円</span>
-                </div>
-              </div>
-              
-              <div class="info-item">
-                <div class="info-icon">
-                  <i class="bi bi-graph-up"></i>
-                </div>
-                <div class="info-content">
-                  <span class="info-label">購入数量</span>
-                  <span class="info-value">{{ diary.purchase_quantity }}株</span>
-                </div>
-              </div>
-              
-              <div class="info-item">
-                <div class="info-icon">
-                  <i class="bi bi-calendar-date"></i>
-                </div>
-                <div class="info-content">
-                  <span class="info-label">購入/メモ日</span>
-                  <span class="info-value">{{ diary.purchase_date|date:"Y年m月d日" }}</span>
-                </div>
-              </div>
-              
-              <div class="info-item">
-                <div class="info-icon">
-                  <i class="bi bi-cash-stack"></i>
-                </div>
-                <div class="info-content">
-                  <span class="info-label">総投資額</span>
-                  <span class="info-value">{{ diary.purchase_price|mul:diary.purchase_quantity|floatformat:2 }}円</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          {% endif %}
-          
-          <!-- 売却情報表示 -->
-          {% if diary.sell_date and diary.purchase_price is not None and diary.purchase_quantity is not None %}
-          <div class="sell-info">
-            <div class="info-row">
-              <div class="info-item">
-                <div class="info-icon">
-                  <i class="bi bi-currency-yen"></i>
-                </div>
-                <div class="info-content">
-                  <span class="info-label">売却価格</span>
-                  <span class="info-value">{{ diary.sell_price|floatformat:2 }}円</span>
-                </div>
-              </div>
-              
-              <div class="info-item">
-                <div class="info-icon">
-                  <i class="bi bi-calendar-check"></i>
-                </div>
-                <div class="info-content">
-                  <span class="info-label">売却日</span>
-                  <span class="info-value">{{ diary.sell_date|date:"Y年m月d日" }}</span>
-                </div>
-              </div>
-              
-              <div class="info-item">
-                <div class="info-icon">
-                  <i class="bi bi-graph-up-arrow"></i>
-                </div>
-                <div class="info-content">
-                  <span class="info-label">損益</span>
-                  {% with profit=diary.sell_price|sub:diary.purchase_price|mul:diary.purchase_quantity %}
-                  {% if profit > 0 %}
-                  <span class="profit">+{{ profit|floatformat:2 }}円</span>
-                  {% elif profit < 0 %} 
-                  <span class="loss">{{ profit|floatformat:2 }}円</span>
-                  {% else %}
-                  <span class="text-muted">{{ profit|floatformat:2 }}円</span>
-                  {% endif %}
-                  {% endwith %}
-                </div>
-              </div>
-              
-              <div class="info-item">
-                <div class="info-icon">
-                  <i class="bi bi-percent"></i>
-                </div>
-                <div class="info-content">
-                  <span class="info-label">損益率</span>
-                  {% with rate=diary.sell_price|sub:diary.purchase_price|div:diary.purchase_price|mul:100 %}
-                  {% if rate > 0 %}
-                  <span class="profit">+{{ rate|floatformat:2 }}%</span>
-                  {% elif rate < 0 %} 
-                  <span class="loss">{{ rate|floatformat:2 }}%</span>
-                  {% else %}
-                  <span class="text-muted">{{ rate|floatformat:2 }}%</span>
-                  {% endif %}
-                  {% endwith %}
-                </div>
-              </div>
-            </div>
-          </div>
-          {% endif %}
-          
-          <!-- 購入理由またはメモ内容 -->
-          <div class="mt-3">
-            <h6 class="mb-2">
-              <i class="bi bi-journal-text"></i> 
-              {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
-              メモ内容:
-              {% else %}
-              購入理由:
-              {% endif %}
-            </h6>
-            <div class="mx-3">
-              {{ diary.reason|safe|truncatewords_html:40|linebreaksbr }}
-            </div>
-          </div>
-        </div>
-        
-        <div class="diary-card-footer">
-          <small class="text-muted">更新: {{ diary.updated_at|date:"Y/m/d" }}</small>
-          <div class="action-buttons">
-            <a href="{% url 'stockdiary:detail' diary.id %}" class="action-icon-btn view-btn" title="詳細">
-              <i class="bi bi-eye"></i>
-            </a>
-            <a href="{% url 'stockdiary:update' diary.id %}" class="action-icon-btn edit-btn" title="編集">
-              <i class="bi bi-pencil"></i>
-            </a>
-            {% if not diary.sell_date and not diary.is_memo and diary.purchase_price is not None and diary.purchase_quantity is not None %}
-            <a href="{% url 'stockdiary:sell_specific' diary.id %}" class="action-icon-btn" title="売却" style="color:var(--success-color)">
-              <i class="bi bi-cash-coin"></i>
-            </a>
+        <!-- マスキングテープの装飾（ランダムな配置） -->
+        {% if forloop.counter|divisibleby:3 %}
+        <div class="masking-tape yellow"></div>
+        {% elif forloop.counter|divisibleby:5 %}
+        <div class="masking-tape green"></div>
+        {% elif forloop.counter|divisibleby:2 %}
+        <div class="masking-tape"></div>
+        {% endif %}
+
+        <!-- カードヘッダー -->
+        <div class="diary-card-header">
+          <div class="diary-meta">
+            <i class="bi bi-clock"></i>
+            <span>{{ diary.purchase_date|date:"Y年m月d日" }}</span>
+
+            <!-- メモバッジを追加 -->
+            {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
+            <span class="badge bg-info">メモ</span>
             {% endif %}
-            <a href="{% url 'stockdiary:delete' diary.id %}" class="action-icon-btn delete-btn" title="削除">
-              <i class="bi bi-trash"></i>
-            </a>
+
+            <!-- 売却済みバッジ -->
+            {% if diary.sell_date %}
+            <span class="badge bg-success">売却済み</span>
+            {% endif %}
+          </div>
+          <button class="btn btn-sm btn-link p-0 text-decoration-none" type="button" data-bs-toggle="collapse"
+            data-bs-target="#collapse-{{ diary.id }}" aria-expanded="true">
+            <i class="bi bi-chevron-down"></i>
+          </button>
+        </div>
+
+        <!-- コンテンツ部分 -->
+        <div class="collapse show" id="collapse-{{ diary.id }}">
+          <div class="diary-card-body">
+            <!-- 日記のアイコン表示 -->
+            {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
+            <i class="bi bi-sticky memo-icon"></i>
+            {% endif %}
+
+            <!-- 銘柄名とタグを上下に並べる -->
+            <h3 class="diary-title">
+              <i class="bi bi-building text-muted"></i>
+              <a href="{% url 'stockdiary:detail' diary.id %}" class="view-btn" title="詳細"
+                style="color:var(--primary-color);text-decoration: none">
+                {{ diary.stock_name }}
+              </a>
+              <small class="text-muted">({{ diary.stock_symbol }})</small>
+            </h3>
+
+            <!-- タグ表示 - 銘柄名の下に配置 -->
+            {% if diary.tags.all %}
+            <div class="diary-tags">
+              {% for tag in diary.tags.all %}
+              <span class="diary-tag"><i class="bi bi-tag"></i> {{ tag.name }}</span>
+              {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- 主要情報のリスト表示 - メモでない場合のみ表示 -->
+            {% if not diary.is_memo and diary.purchase_price is not None and diary.purchase_quantity is not None %}
+            <div class="info-block mt-3">
+              <div class="info-row">
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-currency-yen"></i>
+                  </div>
+                  <div class="info-content">
+                    <span class="info-label">購入価格</span>
+                    <span class="info-value">{{ diary.purchase_price|floatformat:2 }}円</span>
+                  </div>
+                </div>
+
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-graph-up"></i>
+                  </div>
+                  <div class="info-content">
+                    <span class="info-label">購入数量</span>
+                    <span class="info-value">{{ diary.purchase_quantity }}株</span>
+                  </div>
+                </div>
+
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-calendar-date"></i>
+                  </div>
+                  <div class="info-content">
+                    <span class="info-label">購入/メモ日</span>
+                    <span class="info-value">{{ diary.purchase_date|date:"Y年m月d日" }}</span>
+                  </div>
+                </div>
+
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-cash-stack"></i>
+                  </div>
+                  <div class="info-content">
+                    <span class="info-label">総投資額</span>
+                    <span class="info-value">{{ diary.purchase_price|mul:diary.purchase_quantity|floatformat:2
+                      }}円</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- 売却情報表示 -->
+            {% if diary.sell_date and diary.purchase_price is not None and diary.purchase_quantity is not None %}
+            <div class="sell-info">
+              <div class="info-row">
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-currency-yen"></i>
+                  </div>
+                  <div class="info-content">
+                    <span class="info-label">売却価格</span>
+                    <span class="info-value">{{ diary.sell_price|floatformat:2 }}円</span>
+                  </div>
+                </div>
+
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-calendar-check"></i>
+                  </div>
+                  <div class="info-content">
+                    <span class="info-label">売却日</span>
+                    <span class="info-value">{{ diary.sell_date|date:"Y年m月d日" }}</span>
+                  </div>
+                </div>
+
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-graph-up-arrow"></i>
+                  </div>
+                  <div class="info-content">
+                    <span class="info-label">損益</span>
+                    {% with profit=diary.sell_price|sub:diary.purchase_price|mul:diary.purchase_quantity %}
+                    {% if profit > 0 %}
+                    <span class="profit">+{{ profit|floatformat:2 }}円</span>
+                    {% elif profit < 0 %} <span class="loss">{{ profit|floatformat:2 }}円</span>
+                      {% else %}
+                      <span class="text-muted">{{ profit|floatformat:2 }}円</span>
+                      {% endif %}
+                      {% endwith %}
+                  </div>
+                </div>
+
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-percent"></i>
+                  </div>
+                  <div class="info-content">
+                    <span class="info-label">損益率</span>
+                    {% with rate=diary.sell_price|sub:diary.purchase_price|div:diary.purchase_price|mul:100 %}
+                    {% if rate > 0 %}
+                    <span class="profit">+{{ rate|floatformat:2 }}%</span>
+                    {% elif rate < 0 %} <span class="loss">{{ rate|floatformat:2 }}%</span>
+                      {% else %}
+                      <span class="text-muted">{{ rate|floatformat:2 }}%</span>
+                      {% endif %}
+                      {% endwith %}
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- 購入理由またはメモ内容 -->
+            <div class="mt-3">
+              <h6 class="mb-2">
+                <i class="bi bi-journal-text"></i>
+                {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
+                メモ内容:
+                {% else %}
+                購入理由:
+                {% endif %}
+              </h6>
+              <div class="mx-3">
+                {{ diary.reason|safe|truncatewords_html:40|linebreaksbr }}
+              </div>
+            </div>
+          </div>
+
+          <div class="diary-card-footer">
+            <small class="text-muted">更新: {{ diary.updated_at|date:"Y/m/d" }}</small>
+            <div class="action-buttons">
+              <a href="{% url 'stockdiary:detail' diary.id %}" class="action-icon-btn view-btn" title="詳細">
+                <i class="bi bi-eye"></i>
+              </a>
+              <a href="{% url 'stockdiary:update' diary.id %}" class="action-icon-btn edit-btn" title="編集">
+                <i class="bi bi-pencil"></i>
+              </a>
+              {% if not diary.sell_date and not diary.is_memo and diary.purchase_price is not None and diary.purchase_quantity is not None %}
+              <a href="{% url 'stockdiary:sell_specific' diary.id %}" class="action-icon-btn" title="売却" style="color:var(--success-color)">
+                <i class="bi bi-cash-coin"></i>
+              </a>
+              {% endif %}
+              <a href="{% url 'stockdiary:delete' diary.id %}" class="action-icon-btn delete-btn" title="削除">
+                <i class="bi bi-trash"></i>
+              </a>
+            </div>
           </div>
         </div>
       </div>
+      {% endfor %}
     </div>
-    {% endfor %}
-  </div>
-  {% else %}
-  <div class="alert alert-info">
-    <i class="bi bi-info-circle me-2"></i>
-    <p class="mb-0">日記がありません。「新規日記作成」ボタンから最初の日記を登録してください。</p>
-  </div>
-  {% endif %}
-  
-</div>
-{% include 'speed_dial.html' with actions=form_actions %}
-{% endblock %}
-
-{% block scripts %}
-<!-- スピードダイアル -->
-<script src="{% static 'js/speed-dial.js' %}"></script>
-<!-- FullCalendar JS -->
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/locales/ja.js"></script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  // スピードダイアルを初期化
-  initializeSpeedDial();
-  
-  // 日記データとイベント配列の初期化
-  const allDiaries = [];
-  const events = [];
-  
-  // 先にすべての日記データを取得
-  try {
-    {% for diary in all_diaries %}
-    allDiaries.push({
-      id: {{ diary.id }},
-      title: '{{ diary.stock_name }}',
-      symbol: '{{ diary.stock_symbol }}',
-      purchaseDate: '{{ diary.purchase_date|date:"Y-m-d" }}',
-      sellDate: {% if diary.sell_date %}'{{ diary.sell_date|date:"Y-m-d" }}'{% else %}null{% endif %},
-      purchasePrice: {% if diary.purchase_price %}{{ diary.purchase_price }}{% else %}null{% endif %},
-      sellPrice: {% if diary.sell_price %}{{ diary.sell_price }}{% else %}null{% endif %},
-      quantity: {% if diary.purchase_quantity %}{{ diary.purchase_quantity }}{% else %}null{% endif %},
-      url: '{% url "stockdiary:detail" diary.id %}',
-      isMemo: {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}true{% else %}false{% endif %}
-    });
-
-    // 購入/メモイベント
-    events.push({
-      title: '{{ diary.stock_name }}',
-      start: '{{ diary.purchase_date|date:"Y-m-d" }}',
-      url: '{% url "stockdiary:detail" diary.id %}',
-      className: '{% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo-event{% else %}purchase-event{% endif %}',
-      diaryId: {{ diary.id }},
-      eventType: '{% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo{% else %}purchase{% endif %}'
-    });
-
-    // 売却イベント（売却日がある場合のみ）
-    {% if diary.sell_date %}
-    events.push({
-      title: '{{ diary.stock_name }}',
-      start: '{{ diary.sell_date|date:"Y-m-d" }}',
-      url: '{% url "stockdiary:detail" diary.id %}',
-      className: 'sell-event',
-      diaryId: {{ diary.id }},
-      eventType: 'sell'
-    });
+    {% else %}
+    <div class="alert alert-info">
+      <i class="bi bi-info-circle me-2"></i>
+      <p class="mb-0">日記がありません。「新規日記作成」ボタンから最初の日記を登録してください。</p>
+    </div>
     {% endif %}
-    {% endfor %}
-  } catch (e) {
-    console.error('Data parsing error:', e);
-  }
 
-  // カレンダーとイベント要素を取得
-  const calendarEl = document.getElementById('calendar');
-  const selectedDateEl = document.getElementById('selected-date');
-  const dayEventsEl = document.getElementById('day-events');
-  const calendarCollapse = document.getElementById('calendarCollapse');
-  const currentYearMonthEl = document.getElementById('current-year-month');
-  
-  // ナビゲーションボタン
-  const prevMonthBtn = document.getElementById('prev-month');
-  const nextMonthBtn = document.getElementById('next-month');
-  const todayBtn = document.getElementById('today-button');
-  const monthViewToggleBtn = document.getElementById('month-view-toggle');
-  
-  // カレンダーインスタンスを格納する変数
-  let calendarInstance = null;
-  
-  // カレンダーを初期化する関数
-  function initializeCalendar() {
-    // カレンダーコンテナが存在しない場合は早期リターン
-    if (!calendarEl) return null;
+  </div>
+  {% include 'speed_dial.html' with actions=form_actions %}
+  {% endblock %}
+
+  {% block scripts %}
+  <!-- スピードダイアル -->
+  <script src="{% static 'js/speed-dial.js' %}"></script>
+  <!-- FullCalendar JS -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/locales/ja.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+    // スピードダイアルを初期化
+    initializeSpeedDial();
     
-    // 既存のカレンダーインスタンスがあれば破棄
-    if (calendarInstance) {
-      calendarInstance.destroy();
+    // 日記データとイベント配列の初期化
+    const allDiaries = [];
+    const events = [];
+    
+    // 先にすべての日記データを取得
+    try {
+      {% for diary in all_diaries %}
+      allDiaries.push({
+        id: {{ diary.id }},
+        title: '{{ diary.stock_name }}',
+        symbol: '{{ diary.stock_symbol }}',
+        purchaseDate: '{{ diary.purchase_date|date:"Y-m-d" }}',
+        sellDate: {% if diary.sell_date %}'{{ diary.sell_date|date:"Y-m-d" }}'{% else %}null{% endif %},
+        purchasePrice: {% if diary.purchase_price %}{{ diary.purchase_price }}{% else %}null{% endif %},
+        sellPrice: {% if diary.sell_price %}{{ diary.sell_price }}{% else %}null{% endif %},
+        quantity: {% if diary.purchase_quantity %}{{ diary.purchase_quantity }}{% else %}null{% endif %},
+        url: '{% url "stockdiary:detail" diary.id %}',
+        isMemo: {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}true{% else %}false{% endif %}
+      });
+
+      // 購入/メモイベント
+      events.push({
+        title: '{{ diary.stock_name }}',
+        start: '{{ diary.purchase_date|date:"Y-m-d" }}',
+        url: '{% url "stockdiary:detail" diary.id %}',
+        className: '{% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo-event{% else %}purchase-event{% endif %}',
+        diaryId: {{ diary.id }},
+        eventType: '{% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo{% else %}purchase{% endif %}'
+      });
+
+      // 売却イベント（売却日がある場合のみ）
+      {% if diary.sell_date %}
+      events.push({
+        title: '{{ diary.stock_name }}',
+        start: '{{ diary.sell_date|date:"Y-m-d" }}',
+        url: '{% url "stockdiary:detail" diary.id %}',
+        className: 'sell-event',
+        diaryId: {{ diary.id }},
+        eventType: 'sell'
+      });
+      {% endif %}
+      {% endfor %}
+    } catch (e) {
+      console.error('Data parsing error:', e);
+    }
+
+    // PC用要素の取得
+    const desktopCalendarEl = document.getElementById('desktop-calendar');
+    const desktopSelectedDateEl = document.getElementById('desktop-selected-date');
+    const desktopDayEventsEl = document.getElementById('desktop-day-events');
+    const desktopEventsCard = document.getElementById('desktop-events-card');
+    const desktopCurrentYearMonthEl = document.getElementById('desktop-current-year-month');
+    const desktopPrevMonthBtn = document.getElementById('desktop-prev-month');
+    const desktopNextMonthBtn = document.getElementById('desktop-next-month');
+    const desktopTodayBtn = document.getElementById('desktop-today-button');
+    const desktopMonthViewToggleBtn = document.getElementById('desktop-month-view-toggle');
+    
+    // モバイル用要素の取得
+    const mobileCalendarEl = document.getElementById('mobile-calendar');
+    const mobileSelectedDateEl = document.getElementById('mobile-selected-date');
+    const mobileDayEventsEl = document.getElementById('mobile-day-events');
+    const mobileEventsCard = document.getElementById('mobile-events-card');
+    const calendarCollapse = document.getElementById('calendarCollapse');
+    const mobileCurrentYearMonthEl = document.getElementById('mobile-current-year-month');
+    const mobilePrevMonthBtn = document.getElementById('mobile-prev-month');
+    const mobileNextMonthBtn = document.getElementById('mobile-next-month');
+    const mobileTodayBtn = document.getElementById('mobile-today-button');
+    const mobileMonthViewToggleBtn = document.getElementById('mobile-month-view-toggle');
+    
+    // カレンダーインスタンスを格納する変数
+    let desktopCalendarInstance = null;
+    let mobileCalendarInstance = null;
+    
+    // 選択された日付に関連する日記を表示する関数
+    function showDayEvents(dateStr, isMobile = false) {
+      if (!dateStr) return;
+      
+      // 表示要素の選択
+      const selectedDateEl = isMobile ? mobileSelectedDateEl : desktopSelectedDateEl;
+      const dayEventsEl = isMobile ? mobileDayEventsEl : desktopDayEventsEl;
+      const eventsCard = isMobile ? mobileEventsCard : desktopEventsCard;
+      
+      // タイトルを更新
+      try {
+        const dateObj = new Date(dateStr);
+        const year = dateObj.getFullYear();
+        const month = dateObj.getMonth() + 1;
+        const day = dateObj.getDate();
+        
+        if (selectedDateEl) {
+          selectedDateEl.textContent = `${year}年${month}月${day}日のイベント`;
+        }
+      } catch (e) {
+        if (selectedDateEl) {
+          selectedDateEl.textContent = "選択日のイベント";
+        }
+      }
+      
+      // その日の購入・売却イベント
+      const dayEvents = events.filter(event => event.start === dateStr);
+      
+      if (dayEventsEl) {
+        if (dayEvents.length === 0) {
+          dayEventsEl.innerHTML = '<p class="text-muted">この日のイベントはありません</p>';
+        } else {
+          // イベント表示HTML生成
+          let eventsHtml = '';
+          
+          for (const event of dayEvents) {
+            // イベントの日記IDから対応する日記データを検索
+            const diary = allDiaries.find(d => d.id === event.diaryId);
+            
+            if (!diary) continue;
+                
+            let badgeClass, badgeText, priceInfo;
+            
+            if (event.eventType === 'memo') {
+              badgeClass = 'bg-info';
+              badgeText = 'メモ';
+              priceInfo = '<div class="small">記録のみ</div>';
+            } else if (event.eventType === 'purchase') {
+              badgeClass = 'bg-success';
+              badgeText = '購入';
+              priceInfo = diary.purchasePrice ? 
+                `<div class="small">${diary.purchasePrice.toLocaleString()}円 × ${diary.quantity}株</div>` :
+                '<div class="small">価格情報なし</div>';
+            } else { // sell
+              badgeClass = 'bg-danger';
+              badgeText = '売却';
+              priceInfo = diary.sellPrice ? 
+                `<div class="small">${diary.sellPrice.toLocaleString()}円 × ${diary.quantity}株</div>` :
+                '<div class="small">価格情報なし</div>';
+            }
+            
+            eventsHtml += `
+              <a href="${event.url}" class="calendar-event-item">
+                <span class="badge ${badgeClass}">${badgeText}</span>
+                <div>
+                  <div class="fw-bold">${diary.title} (${diary.symbol})</div>
+                  ${priceInfo}
+                </div>
+              </a>
+            `;
+          }
+          
+          dayEventsEl.innerHTML = eventsHtml;
+        }
+      }
+      
+      // モバイルではイベントカードを表示
+      if (isMobile && mobileEventsCard) {
+        mobileEventsCard.style.display = 'block';
+      }
+    }
+
+    // 年月表示を更新する関数
+    function updateCurrentYearMonth(date, isMobile) {
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1; // JavaScriptの月は0から始まる
+      const displayText = `${year}年${month}月`;
+      
+      if (isMobile && mobileCurrentYearMonthEl) {
+        mobileCurrentYearMonthEl.textContent = displayText;
+      } else if (!isMobile && desktopCurrentYearMonthEl) {
+        desktopCurrentYearMonthEl.textContent = displayText;
+      }
+    }
+
+    // デスクトップカレンダーを初期化する関数
+    function initializeDesktopCalendar() {
+      if (!desktopCalendarEl) return null;
+      
+      // 既存のカレンダーインスタンスがあれば破棄
+      if (desktopCalendarInstance) {
+        desktopCalendarInstance.destroy();
+      }
+      
+      const calendar = new FullCalendar.Calendar(desktopCalendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'ja',
+        height: 450,
+        headerToolbar: false, // カスタムヘッダーを使用
+        events: events,
+        eventDisplay: 'block',
+        eventClick: function(info) {
+          info.jsEvent.preventDefault();
+          window.location.href = info.event.url;
+        },
+        dateClick: function(info) {
+          // 日付クリック時の処理（PC用）
+          showDayEvents(info.dateStr, false);
+          
+          // クリックされた日付をハイライト
+          document.querySelectorAll('.fc-day-clicked').forEach(el => {
+            el.classList.remove('fc-day-clicked');
+          });
+          info.dayEl.classList.add('fc-day-clicked');
+        },
+        datesSet: function(info) {
+          // カレンダーが新しい月/年を表示したとき
+          updateCurrentYearMonth(info.view.currentStart, false);
+        },
+        dayMaxEventRows: 3
+      });
+      
+      calendar.render();
+      return calendar;
     }
     
-    // 新しいカレンダーインスタンスを作成
-    const calendar = new FullCalendar.Calendar(calendarEl, {
-      initialView: 'dayGridMonth',
-      locale: 'ja',
-      height: window.innerWidth < 768 ? 350 : 450,
-      headerToolbar: false, // カスタムヘッダーを使用するため無効化
-      events: events,
-      eventDisplay: 'block',
-      eventTimeFormat: {
-        hour: 'numeric',
-        minute: '2-digit',
-        meridiem: false
-      },
-      eventClick: function (info) {
-        info.jsEvent.preventDefault();
-        window.location.href = info.event.url;
-      },
-      dateClick: function(info) {
-        showDayEvents(info.dateStr);
-        
-        // クリックされた日付をハイライト
-        document.querySelectorAll('.fc-day-clicked').forEach(el => {
-          el.classList.remove('fc-day-clicked');
-        });
-        info.dayEl.classList.add('fc-day-clicked');
-        
-        // スマホ表示の場合は自動スクロール
-        if (window.innerWidth < 992) {
-          const eventsContainer = document.querySelector('.card');
-          if (eventsContainer) {
-            eventsContainer.scrollIntoView({ behavior: 'smooth' });
+    // モバイルカレンダーを初期化する関数
+    function initializeMobileCalendar() {
+      if (!mobileCalendarEl) return null;
+      
+      // 既存のカレンダーインスタンスがあれば破棄
+      if (mobileCalendarInstance) {
+        mobileCalendarInstance.destroy();
+      }
+      
+      const calendar = new FullCalendar.Calendar(mobileCalendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'ja',
+        height: 350,
+        headerToolbar: false, // カスタムヘッダーを使用
+        events: events,
+        eventDisplay: 'block',
+        eventClick: function(info) {
+          info.jsEvent.preventDefault();
+          window.location.href = info.event.url;
+        },
+        dateClick: function(info) {
+          // 日付クリック時の処理（モバイル用）
+          showDayEvents(info.dateStr, true);
+          
+          // クリックされた日付をハイライト
+          document.querySelectorAll('.fc-day-clicked').forEach(el => {
+            el.classList.remove('fc-day-clicked');
+          });
+          info.dayEl.classList.add('fc-day-clicked');
+          
+          // イベントカードまでスクロール
+          if (mobileEventsCard) {
+            mobileEventsCard.scrollIntoView({ behavior: 'smooth' });
+          }
+        },
+        datesSet: function(info) {
+          // カレンダーが新しい月/年を表示したとき
+          updateCurrentYearMonth(info.view.currentStart, true);
+        },
+        dayMaxEventRows: 3
+      });
+      
+      // レンダリング前にビューポートの可視性を確認
+      const isVisible = mobileCalendarEl.offsetParent !== null;
+      
+      // カレンダーをレンダリング
+      calendar.render();
+      
+      // アコーディオンが閉じている場合、表示時に遅延再レンダリング
+      if (!isVisible) {
+        mobileCalendarEl.classList.add('needs-resize');
+      }
+      
+      return calendar;
+    }
+
+    // PC用のナビゲーションボタンのイベントリスナー
+    if (desktopPrevMonthBtn) {
+      desktopPrevMonthBtn.addEventListener('click', function() {
+        if (desktopCalendarInstance) {
+          desktopCalendarInstance.prev();
+        }
+      });
+    }
+
+    if (desktopNextMonthBtn) {
+      desktopNextMonthBtn.addEventListener('click', function() {
+        if (desktopCalendarInstance) {
+          desktopCalendarInstance.next();
+        }
+      });
+    }
+
+    if (desktopTodayBtn) {
+      desktopTodayBtn.addEventListener('click', function() {
+        if (desktopCalendarInstance) {
+          desktopCalendarInstance.today();
+        }
+      });
+    }
+
+    if (desktopMonthViewToggleBtn) {
+      desktopMonthViewToggleBtn.addEventListener('click', function() {
+        if (desktopCalendarInstance) {
+          const currentView = desktopCalendarInstance.view.type;
+          if (currentView === 'dayGridMonth') {
+            desktopCalendarInstance.changeView('listMonth');
+            desktopMonthViewToggleBtn.textContent = 'リスト';
+          } else {
+            desktopCalendarInstance.changeView('dayGridMonth');
+            desktopMonthViewToggleBtn.textContent = '月';
           }
         }
-      },
-      datesSet: function(info) {
-        // カレンダーが新しい月/年を表示したとき
-        const currentDate = info.view.currentStart;
-        updateCurrentYearMonth(currentDate);
-      },
-      dayMaxEventRows: 3
-    });
-    
-    // レンダリング前にビューポートの可視性を確認
-    const isVisible = calendarEl.offsetParent !== null;
-    
-    // カレンダーをレンダリング
-    calendar.render();
-    
-    // スマホ表示でアコーディオンが閉じている場合、表示時に遅延再レンダリング
-    if (!isVisible && window.innerWidth < 768) {
-      // カレンダーコンテナに識別用クラスを追加
-      calendarEl.classList.add('needs-resize');
+      });
     }
     
-    return calendar;
-  }
+    // モバイル用のナビゲーションボタンのイベントリスナー
+    if (mobilePrevMonthBtn) {
+      mobilePrevMonthBtn.addEventListener('click', function() {
+        if (mobileCalendarInstance) {
+          mobileCalendarInstance.prev();
+        }
+      });
+    }
 
-  // 年月表示を更新する関数
-  function updateCurrentYearMonth(date) {
-    if (!currentYearMonthEl) return;
-    
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1; // JavaScriptの月は0から始まる
-    currentYearMonthEl.textContent = `${year}年${month}月`;
-  }
-  
-  // 選択された日付に関連する日記を表示する関数
-  function showDayEvents(dateStr) {
-    if (!dateStr) return;
-    
-    // タイトルを更新
-    try {
-      const dateObj = new Date(dateStr);
-      const year = dateObj.getFullYear();
-      const month = dateObj.getMonth() + 1;
-      const day = dateObj.getDate();
-      selectedDateEl.textContent = `${year}年${month}月${day}日のイベント`;
-    } catch (e) {
-      selectedDateEl.textContent = "選択日のイベント";
+    if (mobileNextMonthBtn) {
+      mobileNextMonthBtn.addEventListener('click', function() {
+        if (mobileCalendarInstance) {
+          mobileCalendarInstance.next();
+        }
+      });
+    }
+
+    if (mobileTodayBtn) {
+      mobileTodayBtn.addEventListener('click', function() {
+        if (mobileCalendarInstance) {
+          mobileCalendarInstance.today();
+        }
+      });
+    }
+
+    if (mobileMonthViewToggleBtn) {
+      mobileMonthViewToggleBtn.addEventListener('click', function() {
+        if (mobileCalendarInstance) {
+          const currentView = mobileCalendarInstance.view.type;
+          if (currentView === 'dayGridMonth') {
+            mobileCalendarInstance.changeView('listMonth');
+            mobileMonthViewToggleBtn.textContent = 'リスト';
+          } else {
+            mobileCalendarInstance.changeView('dayGridMonth');
+            mobileMonthViewToggleBtn.textContent = '月';
+          }
+        }
+      });
+    }
+
+    // モバイル用アコーディオンのイベントリスナー
+    if (calendarCollapse) {
+      // Bootstrap 5のイベントを利用
+      calendarCollapse.addEventListener('shown.bs.collapse', function() {
+        // カレンダーが表示されたタイミングで再初期化
+        setTimeout(function() {
+          // resize処理が必要なカレンダーを再初期化
+          if (mobileCalendarEl && mobileCalendarEl.classList.contains('needs-resize')) {
+            mobileCalendarInstance = initializeMobileCalendar();
+            mobileCalendarEl.classList.remove('needs-resize');
+          } else if (mobileCalendarInstance) {
+            // 既存カレンダーのサイズ更新
+            mobileCalendarInstance.updateSize();
+          }
+        }, 100); // 少し遅延させて実行
+      });
     }
     
-    // その日の購入・売却イベント
-    const dayEvents = events.filter(event => event.start === dateStr);
+    // カレンダーの初期化（PCとモバイルそれぞれ）
+    desktopCalendarInstance = initializeDesktopCalendar();
+    mobileCalendarInstance = initializeMobileCalendar();
     
-    if (dayEvents.length === 0) {
-      dayEventsEl.innerHTML = '<p class="text-muted">この日のイベントはありません</p>';
-      return;
+    // 初期表示として、現在の日付のイベントを表示
+    const today = new Date().toISOString().split('T')[0];
+    showDayEvents(today, false); // PC用
+    
+    // モバイル用は、イベントがある場合のみ表示
+    const todayEvents = events.filter(event => event.start === today);
+    if (todayEvents.length > 0) {
+      showDayEvents(today, true);
+    } else if (mobileEventsCard) {
+      // モバイルでイベントがない場合は最初は非表示に
+      mobileEventsCard.style.display = 'none';
     }
     
-    // イベント表示HTML生成
-    let eventsHtml = '';
-    
-    for (const event of dayEvents) {
-      // イベントの日記IDから対応する日記データを検索
-      const diary = allDiaries.find(d => d.id === event.diaryId);
-      
-      if (!diary) continue;
-          
-      let badgeClass, badgeText, priceInfo;
-      
-      if (event.eventType === 'memo') {
-        badgeClass = 'bg-info';
-        badgeText = 'メモ';
-        priceInfo = '<div class="small">記録のみ</div>';
-      } else if (event.eventType === 'purchase') {
-        badgeClass = 'bg-success';
-        badgeText = '購入';
-        priceInfo = diary.purchasePrice ? 
-          `<div class="small">${diary.purchasePrice.toLocaleString()}円 × ${diary.quantity}株</div>` :
-          '<div class="small">価格情報なし</div>';
-      } else { // sell
-        badgeClass = 'bg-danger';
-        badgeText = '売却';
-        priceInfo = diary.sellPrice ? 
-          `<div class="small">${diary.sellPrice.toLocaleString()}円 × ${diary.quantity}株</div>` :
-          '<div class="small">価格情報なし</div>';
+    // ウィンドウサイズ変更時の処理
+    window.addEventListener('resize', function() {
+      if (desktopCalendarInstance) {
+        desktopCalendarInstance.updateSize();
       }
       
-      eventsHtml += `
-        <a href="${event.url}" class="calendar-event-item">
-          <span class="badge ${badgeClass}">${badgeText}</span>
-          <div>
-            <div class="fw-bold">${diary.title} (${diary.symbol})</div>
-            ${priceInfo}
-          </div>
-        </a>
-      `;
-    }
-    
-    dayEventsEl.innerHTML = eventsHtml;
-  }
-
-  // 前月ボタンのイベントリスナー
-  if (prevMonthBtn) {
-    prevMonthBtn.addEventListener('click', function() {
-      if (calendarInstance) {
-        calendarInstance.prev();
+      if (mobileCalendarInstance && !mobileCalendarEl.classList.contains('needs-resize')) {
+        mobileCalendarInstance.updateSize();
       }
     });
-  }
 
-  // 次月ボタンのイベントリスナー
-  if (nextMonthBtn) {
-    nextMonthBtn.addEventListener('click', function() {
-      if (calendarInstance) {
-        calendarInstance.next();
-      }
+    // フィルターバッジのクリックイベント処理（既存コード）
+    document.querySelectorAll('.filter-badge').forEach(badge => {
+      badge.addEventListener('click', function () {
+        // アクティブクラスの切り替え
+        document.querySelectorAll('.filter-badge').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+
+        const filterType = this.dataset.filterType;
+        const diaryCards = document.querySelectorAll('.diary-card');
+
+        diaryCards.forEach(card => {
+          if (filterType === 'all') {
+            card.style.display = 'block';
+          } else {
+            const cardType = card.dataset.diaryType;
+            card.style.display = (cardType === filterType) ? 'block' : 'none';
+          }
+        });
+      });
     });
-  }
 
-  // 今日ボタンのイベントリスナー
-  if (todayBtn) {
-    todayBtn.addEventListener('click', function() {
-      if (calendarInstance) {
-        calendarInstance.today();
-      }
+    // フィルタリング処理
+    document.querySelectorAll('.filter-badge').forEach(badge => {
+      badge.addEventListener('click', function () {
+        // アクティブクラスの切り替え
+        document.querySelectorAll('.filter-badge').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+
+        const filterType = this.dataset.filterType;
+        const diaryCards = document.querySelectorAll('.diary-card');
+
+        diaryCards.forEach(card => {
+          if (filterType === 'all') {
+            card.style.display = 'block';
+          } else {
+            const cardType = card.dataset.diaryType;
+            card.style.display = (cardType === filterType) ? 'block' : 'none';
+          }
+        });
+      });
     });
-  }
 
-  // 月表示ボタンのイベントリスナー
-  if (monthViewToggleBtn) {
-    monthViewToggleBtn.addEventListener('click', function() {
-      if (calendarInstance) {
-        const currentView = calendarInstance.view.type;
-        if (currentView === 'dayGridMonth') {
-          calendarInstance.changeView('listMonth');
-          monthViewToggleBtn.textContent = 'リスト';
+    // ============= フィルターバッジ機能 =============
+    const filterBadges = document.querySelectorAll('.filter-badge');
+    const diaryCards = document.querySelectorAll('.diary-card');
+    const diaryTypeFilter = document.getElementById('diary_type_filter');
+
+    // URLから現在のフィルターパラメータを取得
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentFilter = urlParams.get('diary_type') || '';
+
+    // フィルターバッジのクリックイベント
+    filterBadges.forEach(badge => {
+      badge.addEventListener('click', function () {
+        const filterType = this.dataset.filterType;
+
+        // フィルターのモード: 'js' または 'submit'
+        const filterMode = this.dataset.filterMode || 'submit';
+
+        if (filterMode === 'js') {
+          // JS側でフィルタリング（ページ遷移なし）
+          jsFilter(this);
         } else {
-          calendarInstance.changeView('dayGridMonth');
-          monthViewToggleBtn.textContent = '月';
+          // フォーム送信によるフィルタリング
+          if (diaryTypeFilter) {
+            diaryTypeFilter.value = filterType;
+            const form = diaryTypeFilter.closest('form');
+            if (form) form.submit();
+          }
         }
-      }
+      });
     });
-  }
 
-  // モバイル用アコーディオンのイベントリスナーを設定
-  if (calendarCollapse) {
-    // Bootstrap 5のイベントを利用
-    calendarCollapse.addEventListener('shown.bs.collapse', function() {
-      // カレンダーが表示されたタイミングで再初期化
-      setTimeout(function() {
-        // resize処理が必要なカレンダーを再初期化
-        if (calendarEl.classList.contains('needs-resize')) {
-          calendarInstance = initializeCalendar();
-          calendarEl.classList.remove('needs-resize');
-        } else if (calendarInstance) {
-          // 既存カレンダーのサイズ更新
-          calendarInstance.updateSize();
-        }
-      }, 50); // 少し遅延させて実行
-    });
-  }
-  
-  // カレンダーの初期化（PCでは即時、モバイルではアコーディオン次第）
-  calendarInstance = initializeCalendar();
-  
-  // 初期表示として、現在の日付のイベントを表示
-  showDayEvents(new Date().toISOString().split('T')[0]);
-  
-  // ウィンドウサイズ変更時の処理
-  window.addEventListener('resize', function() {
-    if (calendarInstance) {
-      const newHeight = window.innerWidth < 768 ? 350 : 450;
-      calendarInstance.setOption('height', newHeight);
-    }
-  });
-  
-  // フィルタリング処理
-  document.querySelectorAll('.filter-badge').forEach(badge => {
-    badge.addEventListener('click', function() {
+    // JavaScriptフィルタリング関数
+    function jsFilter(badge) {
       // アクティブクラスの切り替え
-      document.querySelectorAll('.filter-badge').forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
-      
-      const filterType = this.dataset.filterType;
-      const diaryCards = document.querySelectorAll('.diary-card');
-      
+      filterBadges.forEach(b => b.classList.remove('active'));
+      badge.classList.add('active');
+
+      const filterType = badge.dataset.filterType;
+
+      // 全てのカードを処理
       diaryCards.forEach(card => {
-        if (filterType === 'all') {
+        if (!filterType) {
+          // 「すべて」フィルター
           card.style.display = 'block';
         } else {
+          // 特定タイプのフィルター
           const cardType = card.dataset.diaryType;
           card.style.display = (cardType === filterType) ? 'block' : 'none';
         }
       });
-    });
-  });
-  
-  // ============= フィルターバッジ機能 =============
-  const filterBadges = document.querySelectorAll('.filter-badge');
-  const diaryCards = document.querySelectorAll('.diary-card');
-  const diaryTypeFilter = document.getElementById('diary_type_filter');
-  
-  // URLから現在のフィルターパラメータを取得
-  const urlParams = new URLSearchParams(window.location.search);
-  const currentFilter = urlParams.get('diary_type') || '';
-  
-  // フィルターバッジのクリックイベント
-  filterBadges.forEach(badge => {
-    badge.addEventListener('click', function() {
-      const filterType = this.dataset.filterType;
-      
-      // フィルターのモード: 'js' または 'submit'
-      const filterMode = this.dataset.filterMode || 'submit';
-      
-      if (filterMode === 'js') {
-        // JS側でフィルタリング（ページ遷移なし）
-        jsFilter(this);
-      } else {
-        // フォーム送信によるフィルタリング
-        if (diaryTypeFilter) {
-          diaryTypeFilter.value = filterType;
-          const form = diaryTypeFilter.closest('form');
-          if (form) form.submit();
+
+      // フィルター状態をセッションストレージに保存
+      sessionStorage.setItem('currentFilter', filterType);
+
+      // フィルタリング後のカウントを表示
+      updateFilterCount();
+    }
+
+    // フィルター適用後の表示件数を更新
+    function updateFilterCount() {
+      const visibleCards = document.querySelectorAll('.diary-card[style="display: block;"]');
+      const totalCards = diaryCards.length;
+
+      const countElement = document.getElementById('filtered-count');
+      if (countElement) {
+        if (visibleCards.length === totalCards) {
+          countElement.textContent = `全 ${totalCards} 件表示中`;
+        } else {
+          countElement.textContent = `${visibleCards.length} / ${totalCards} 件表示中`;
         }
       }
-    });
-  });
-  
-  // JavaScriptフィルタリング関数
-  function jsFilter(badge) {
-    // アクティブクラスの切り替え
-    filterBadges.forEach(b => b.classList.remove('active'));
-    badge.classList.add('active');
-    
-    const filterType = badge.dataset.filterType;
-    
-    // 全てのカードを処理
-    diaryCards.forEach(card => {
-      if (!filterType) {
-        // 「すべて」フィルター
-        card.style.display = 'block';
-      } else {
-        // 特定タイプのフィルター
-        const cardType = card.dataset.diaryType;
-        card.style.display = (cardType === filterType) ? 'block' : 'none';
-      }
-    });
-    
-    // フィルター状態をセッションストレージに保存
-    sessionStorage.setItem('currentFilter', filterType);
-    
-    // フィルタリング後のカウントを表示
-    updateFilterCount();
-  }
-  
-  // フィルター適用後の表示件数を更新
-  function updateFilterCount() {
-    const visibleCards = document.querySelectorAll('.diary-card[style="display: block;"]');
-    const totalCards = diaryCards.length;
-    
-    const countElement = document.getElementById('filtered-count');
-    if (countElement) {
-      if (visibleCards.length === totalCards) {
-        countElement.textContent = `全 ${totalCards} 件表示中`;
-      } else {
-        countElement.textContent = `${visibleCards.length} / ${totalCards} 件表示中`;
+    }
+
+    // 初期状態でのフィルタリング適用
+    function applyInitialFilter() {
+      // 現在のフィルターを確認（URL、セッションストレージ、または「すべて」）
+      const filterType = currentFilter || sessionStorage.getItem('currentFilter') || '';
+
+      // 対応するバッジを見つけて適用
+      const targetBadge = Array.from(filterBadges).find(badge =>
+        badge.dataset.filterType === filterType
+      ) || filterBadges[0]; // デフォルトは最初のバッジ（すべて）
+
+      // フィルタリングを適用
+      if (targetBadge && diaryCards.length > 0) {
+        jsFilter(targetBadge);
       }
     }
-  }
-  
-  // 初期状態でのフィルタリング適用
-  function applyInitialFilter() {
-    // 現在のフィルターを確認（URL、セッションストレージ、または「すべて」）
-    const filterType = currentFilter || sessionStorage.getItem('currentFilter') || '';
-    
-    // 対応するバッジを見つけて適用
-    const targetBadge = Array.from(filterBadges).find(badge => 
-      badge.dataset.filterType === filterType
-    ) || filterBadges[0]; // デフォルトは最初のバッジ（すべて）
-    
-    // フィルタリングを適用
-    if (targetBadge && diaryCards.length > 0) {
-      jsFilter(targetBadge);
-    }
-  }
-  
-  // ページ読み込み時にフィルター適用（サーバー側でフィルタリングされていない場合）
-  if (diaryCards.length > 0 && filterBadges.length > 0) {
-    // 適用モードを確認 - URL パラメータの場合はスキップ
-    if (document.querySelector('.filter-badge[data-filter-mode="js"]') || !currentFilter) {
-      setTimeout(applyInitialFilter, 100); // DOM完全読み込み後に実行
-    }
-  }
-  
-  // ============= 検索フォーム機能拡張 =============
-  
-  // フォーム送信時のフィルター状態維持
-  const searchForm = document.querySelector('.diary-search form');
-  if (searchForm) {
-    searchForm.addEventListener('submit', function(e) {
-      // 現在のJSフィルター状態をフォームに反映
-      const activeFilterBadge = document.querySelector('.filter-badge.active');
-      if (activeFilterBadge && diaryTypeFilter) {
-        diaryTypeFilter.value = activeFilterBadge.dataset.filterType || '';
+
+    // ページ読み込み時にフィルター適用（サーバー側でフィルタリングされていない場合）
+    if (diaryCards.length > 0 && filterBadges.length > 0) {
+      // 適用モードを確認 - URL パラメータの場合はスキップ
+      if (document.querySelector('.filter-badge[data-filter-mode="js"]') || !currentFilter) {
+        setTimeout(applyInitialFilter, 100); // DOM完全読み込み後に実行
       }
-    });
-  }
-  
-  // リセットボタンのイベント調整
-  const resetButton = document.querySelector('.diary-search .btn-diary-outline');
-  if (resetButton) {
-    resetButton.addEventListener('click', function(e) {
-      // セッションストレージのフィルター状態もクリア
-      sessionStorage.removeItem('currentFilter');
-    });
-  }
+    }
+
+    // ============= 検索フォーム機能拡張 =============
+
+    // フォーム送信時のフィルター状態維持
+    const searchForm = document.querySelector('.diary-search form');
+    if (searchForm) {
+      searchForm.addEventListener('submit', function (e) {
+        // 現在のJSフィルター状態をフォームに反映
+        const activeFilterBadge = document.querySelector('.filter-badge.active');
+        if (activeFilterBadge && diaryTypeFilter) {
+          diaryTypeFilter.value = activeFilterBadge.dataset.filterType || '';
+        }
+      });
+    }
+
+    // リセットボタンのイベント調整
+    const resetButton = document.querySelector('.diary-search .btn-diary-outline');
+    if (resetButton) {
+      resetButton.addEventListener('click', function (e) {
+        // セッションストレージのフィルター状態もクリア
+        sessionStorage.removeItem('currentFilter');
+      });
+    }
 });
-</script>
-{% endblock %}
+  </script>
+  {% endblock %}
