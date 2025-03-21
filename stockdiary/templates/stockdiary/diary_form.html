@@ -7,221 +7,37 @@
 {{ block.super }}
 <!-- CKEditorの基本スタイルをロード -->
 {{ form.media }}
+<!-- 共通スタイルシート -->
+<link rel="stylesheet" href="{% static 'css/common.css' %}">
+<!-- 日記テーマCSS -->
+<link rel="stylesheet" href="{% static 'css/diary-theme.css' %}">
 <!-- Bootstrap Icons -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 <link rel="stylesheet" href="{% static 'css/speed-dial.css' %}">
-<style>
-  .form-check-label {
-    margin-bottom: 0;
-    transition: all 0.2s;
-  }
-
-  .form-check-label.completed {
-    color: #9ca3af;
-    text-decoration: line-through;
-  }
-
-  /* フォームスタイル */
-  .form-card {
-    border: none;
-    border-radius: 0.5rem;
-    box-shadow: var(--card-shadow);
-    overflow: hidden;
-  }
-
-  .form-card-header {
-    background-color: var(--primary-color);
-    color: white;
-    padding: 1.25rem;
-    border-bottom: none;
-  }
-
-  .form-card-header h3 {
-    margin: 0;
-    font-weight: 600;
-  }
-
-  .form-card-body {
-    padding: 1.5rem;
-  }
-
-  .form-section {
-    margin-bottom: 2rem;
-  }
-
-  .form-section-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: 1.25rem;
-    color: #111827;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .form-section-title i {
-    color: var(--primary-color);
-  }
-
-  .form-label {
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-    color: #374151;
-  }
-
-  .input-group .btn {
-    padding-top: 0.625rem;
-    padding-bottom: 0.625rem;
-  }
-  /* CKEditorのスタイル調整 */
-  .django-ckeditor-widget {
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-
-  .cke_chrome {
-    width: 100% !important;
-    max-width: 100% !important;
-    border-color: #d1d5db !important;
-    border-radius: 0.375rem !important;
-    overflow: hidden !important;
-  }
-
-  .cke_inner, 
-  .cke_wysiwyg_frame, 
-  .cke_wysiwyg_div {
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-
-  .cke_top {
-    border-bottom-color: #e5e7eb !important;
-  }
-
-  .rich-text-container {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
-  }
-
-  /* レスポンシブ調整 */
-  @media (max-width: 768px) {
-    .form-card-body {
-      padding: 1rem;
-    }
-    
-    .cke_toolbar {
-      margin-right: 3px !important;
-    }
-    
-    .cke_toolbar_break {
-      display: block !important;
-      clear: both !important;
-      height: 1px !important;
-    }
-  }
-
-  /* スマホ表示時のエディター調整 */
-  @media (max-width: 576px) {
-    .cke_toolbar_group {
-      margin-bottom: 3px;
-    }
-
-    .cke_toolbar {
-      float: none !important;
-      display: inline-block !important;
-    }
-  }
-
-  /* フィードバックスタイル */
-  .is-valid {
-    border-color: var(--success-color) !important;
-    padding-right: calc(1.5em + 0.75rem) !important;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2310b981' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e") !important;
-    background-repeat: no-repeat !important;
-    background-position: right calc(0.375em + 0.1875rem) center !important;
-    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem) !important;
-  }
-
-  .is-invalid {
-    border-color: var(--danger-color) !important;
-    padding-right: calc(1.5em + 0.75rem) !important;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23ef4444'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23ef4444' stroke='none'/%3e%3c/svg%3e") !important;
-    background-repeat: no-repeat !important;
-    background-position: right calc(0.375em + 0.1875rem) center !important;
-    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem) !important;
-  }
-
-  /* 株価情報カード */
-  .stock-info-card {
-    background-color: #f3f4f6;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
-    border-left: 4px solid var(--primary-color);
-  }
-
-  .stock-info-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.75rem;
-  }
-
-  .stock-info-title {
-    font-weight: 600;
-    color: #111827;
-    margin: 0;
-  }
-
-  .stock-info-body {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-
-  .stock-info-item {
-    flex: 1 1 calc(50% - 0.5rem);
-    min-width: 150px;
-  }
-
-  .stock-info-label {
-    font-size: 0.875rem;
-    color: #6b7280;
-    margin-bottom: 0.25rem;
-  }
-
-  .stock-info-value {
-    font-weight: 500;
-    color: #111827;
-  }
-
-  /* レスポンシブ調整 */
-  @media (max-width: 768px) {
-    .form-card-body {
-      padding: 1.25rem;
-    }
-  }
-  .form-container {
-    padding-bottom: 80px; /* スピードダイアルのためのスペース */
-  }
-  
-  /* フォームボタンエリア */
-  .form-actions {
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-  }
-</style>
 {% endblock %}
 
 {% block content %}
 <div class="container py-4">
-  <div class="card form-card">
-    <div class="form-card-header">
-      <h3>{% if form.instance.pk %}日記の編集{% else %}新規日記作成{% endif %}</h3>
+  <!-- 戻るリンク -->
+  <div class="mb-3">
+    {% if form.instance.pk %}
+    <a href="{% url 'stockdiary:detail' form.instance.pk %}" class="btn btn-diary btn-diary-outline">
+      <i class="bi bi-arrow-left"></i> 日記詳細に戻る
+    </a>
+    {% else %}
+    <a href="{% url 'stockdiary:home' %}" class="btn btn-diary btn-diary-outline">
+      <i class="bi bi-arrow-left"></i> 日記一覧に戻る
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- フォームカード -->
+  <div class="diary-form">
+    <div class="form-header">
+      <h3 class="form-title">{% if form.instance.pk %}日記の編集{% else %}新規日記作成{% endif %}</h3>
     </div>
 
-    <div class="form-card-body">
+    <div class="form-body">
       <form method="post">
         {% csrf_token %}
 
@@ -232,27 +48,47 @@
           </h4>
 
           <!-- 株価情報カード (銘柄コード入力後に表示) -->
-          <div class="stock-info-card d-none" id="stockInfoCard">
-            <div class="stock-info-header">
-              <h5 class="stock-info-title" id="stockInfoTitle">会社情報</h5>
+          <div class="info-block d-none" id="stockInfoCard">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="mb-0" id="stockInfoTitle">会社情報</h5>
               <span class="badge bg-primary" id="stockInfoCode"></span>
             </div>
-            <div class="stock-info-body">
-              <div class="stock-info-item">
-                <div class="stock-info-label">現在株価</div>
-                <div class="stock-info-value" id="stockInfoPrice">--</div>
+            <div class="info-row">
+              <div class="info-item">
+                <div class="info-icon">
+                  <i class="bi bi-currency-yen"></i>
+                </div>
+                <div class="info-content">
+                  <span class="info-label">現在株価</span>
+                  <span class="info-value" id="stockInfoPrice">--</span>
+                </div>
               </div>
-              <div class="stock-info-item">
-                <div class="stock-info-label">前日比</div>
-                <div class="stock-info-value" id="stockInfoChange">--</div>
+              <div class="info-item">
+                <div class="info-icon">
+                  <i class="bi bi-graph-up-arrow"></i>
+                </div>
+                <div class="info-content">
+                  <span class="info-label">前日比</span>
+                  <span class="info-value" id="stockInfoChange">--</span>
+                </div>
               </div>
-              <div class="stock-info-item">
-                <div class="stock-info-label">市場</div>
-                <div class="stock-info-value" id="stockInfoMarket">--</div>
+              <div class="info-item">
+                <div class="info-icon">
+                  <i class="bi bi-building"></i>
+                </div>
+                <div class="info-content">
+                  <span class="info-label">市場</span>
+                  <span class="info-value" id="stockInfoMarket">--</span>
+                </div>
               </div>
-              <div class="stock-info-item">
-                <div class="stock-info-label">業種</div>
-                <div class="stock-info-value" id="stockInfoIndustry">--</div>
+              <div class="info-item">
+                <div class="info-icon">
+                  <i class="bi bi-diagram-3"></i>
+                </div>
+                <div class="info-content">
+                  <span class="info-label">業種</span>
+                  <span class="info-value" id="stockInfoIndustry">--</span>
+                </div>
               </div>
             </div>
           </div>
@@ -297,7 +133,7 @@
           <div class="row">
             <div class="col-md-6">
               <div class="mb-3">
-                <label for="{{ form.purchase_date.id_for_label }}" class="form-label">購入日</label>
+                <label for="{{ form.purchase_date.id_for_label }}" class="form-label">購入/メモ日</label>
                 {{ form.purchase_date }}
                 {% if form.purchase_date.errors %}
                 <div class="text-danger">{{ form.purchase_date.errors }}</div>
@@ -312,6 +148,7 @@
                     <i class="bi bi-arrow-repeat"></i> 現在株価
                   </button>
                 </div>
+                <small class="form-text text-muted">空欄のままにするとメモ記録として扱われます</small>
                 {% if form.purchase_price.errors %}
                 <div class="text-danger">{{ form.purchase_price.errors }}</div>
                 {% endif %}
@@ -320,6 +157,7 @@
               <div class="mb-3">
                 <label for="{{ form.purchase_quantity.id_for_label }}" class="form-label">購入数量</label>
                 {{ form.purchase_quantity }}
+                <small class="form-text text-muted">空欄のままにするとメモ記録として扱われます</small>
                 {% if form.purchase_quantity.errors %}
                 <div class="text-danger">{{ form.purchase_quantity.errors }}</div>
                 {% endif %}
@@ -347,10 +185,16 @@
                 <div class="text-danger">{{ form.sell_price.errors }}</div>
                 {% endif %}
               </div>
+              
+              <div class="alert alert-info" id="sell-warning-message" style="display:none;">
+                <i class="bi bi-info-circle me-2"></i>
+                購入価格と株数を入力すると売却情報を登録できるようになります
+              </div>
             </div>
           </div>
         </div>
-        <!-- 修正後の分類情報セクション -->
+
+        <!-- 分類情報セクション -->
         <div class="form-section">
           <h4 class="form-section-title">
             <i class="bi bi-tags"></i> 分類情報
@@ -388,16 +232,17 @@
           </h4>
 
           <div class="row mb-3">
-            <div class="col-md-6">
+            <div class="col-md-8">
               <label for="{{ form.analysis_template.id_for_label }}" class="form-label">分析テンプレート</label>
               {{ form.analysis_template }}
               <small class="form-text text-muted">{{ form.analysis_template.help_text }}</small>
               {% if form.analysis_template.errors %}
                 <div class="text-danger">{{ form.analysis_template.errors }}</div>
               {% endif %}
-
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
               <!-- テンプレート展開ボタン -->
-              <button type="button" id="expandAnalysisBtn" class="btn btn-outline-primary btn-sm mt-2">
+              <button type="button" id="expandAnalysisBtn" class="btn btn-diary btn-diary-primary btn-sm">
                 <i class="bi bi-clipboard-data me-1"></i> 分析項目を表示
               </button>
             </div>
@@ -410,7 +255,7 @@
             <i class="bi bi-table"></i> 分析項目
           </h4>
 
-          <div id="analysisItemsContent" class="analysis-container">
+          <div id="analysisItemsContent" class="analysis-container info-block">
             <!-- ここにJSで分析項目が動的に挿入されます -->
             <div class="alert alert-info">
               <i class="bi bi-info-circle me-2"></i>
@@ -418,37 +263,13 @@
             </div>
           </div>
         </div>
+
         <!-- 詳細情報セクション -->
         <div class="form-section">
           <h4 class="form-section-title">
             <i class="bi bi-journal-text"></i> 詳細情報
           </h4>
-          {% if item.item_type == 'boolean_with_value' %}
-          <!-- チェック+値入力の複合型項目 -->
-          <div class="mb-2">
-            <div class="form-check">
-              <input type="checkbox" 
-                     id="analysis_item_{{ item.id }}_boolean" 
-                     name="analysis_item_{{ item.id }}_boolean" 
-                     class="form-check-input" 
-                     {% if item.current_boolean_value %}checked{% endif %}>
-              <label class="form-check-label" for="analysis_item_{{ item.id }}_boolean">
-                {{ item.description }}
-              </label>
-            </div>
-          </div>
-          <div class="input-group">
-            {% if item.value_label %}
-              <span class="input-group-text">{{ item.value_label }}</span>
-            {% endif %}
-            <input type="text" 
-                   id="analysis_item_{{ item.id }}_value" 
-                   name="analysis_item_{{ item.id }}_value" 
-                   class="form-control" 
-                   placeholder="実際の値（任意）" 
-                   value="{{ item.current_value|default:'' }}">
-          </div>
-        {% endif %}
+
           <div class="mb-4">
             <label for="{{ form.reason.id_for_label }}" class="form-label">購入理由 / 投資日記</label>
             <small class="d-block text-muted mb-2">株式購入の理由や分析結果、将来の見通しなどを自由に記録できます</small>
@@ -470,11 +291,11 @@
           </div>
         </div>
 
-        <div class="d-flex justify-content-between mt-4">
-          <a href="{% url 'stockdiary:home' %}" class="btn btn-secondary">
+        <div class="form-footer">
+          <a href="{% if form.instance.pk %}{% url 'stockdiary:detail' form.instance.pk %}{% else %}{% url 'stockdiary:home' %}{% endif %}" class="btn btn-diary btn-diary-outline">
             <i class="bi bi-arrow-left me-1"></i> キャンセル
           </a>
-          <button type="submit" class="btn btn-primary">
+          <button type="submit" class="btn btn-diary btn-diary-primary">
             <i class="bi bi-save me-1"></i> 保存
           </button>
         </div>
@@ -482,17 +303,18 @@
     </div>
   </div>
 </div>
+
 {% include 'speed_dial.html' with actions=form_actions %}
 {% endblock %}
-<!-- チェックリスト機能のJavaScriptをblock scriptsに追加 -->
+
 {% block scripts %}
 {{ block.super }}
-<!-- スピードダイアルのJSを追加 -->
 <script src="{% static 'js/speed-dial.js' %}"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     // スピードダイアルを初期化
     initializeSpeedDial();
+    
     // フォーム要素
     const stockSymbolInput = document.getElementById('{{ form.stock_symbol.id_for_label }}');
     const stockNameInput = document.getElementById('{{ form.stock_name.id_for_label }}');
@@ -522,6 +344,9 @@
     const expandAnalysisBtn = document.getElementById('expandAnalysisBtn');
     const analysisItemsContainer = document.getElementById('analysisItemsContainer');
     const analysisItemsContent = document.getElementById('analysisItemsContent');
+    
+    // 売却情報フォームの警告メッセージ
+    const sellWarningMessage = document.getElementById('sell-warning-message');
     
     // テンプレートID
     let selectedTemplateId = templateSelect.value;
@@ -612,7 +437,7 @@
       // テーブル要素を作成
       let html = `
         <div class="table-responsive">
-          <table class="table table-bordered">
+          <table class="table">
             <thead>
               <tr>
                 <th style="width: 30%;">項目</th>
@@ -653,8 +478,6 @@
           let textValue = '';
           let numberValue = null;
           
-          // console.log(`項目 ${item.name} の現在の値:`, currentValue);
-          
           if (currentValue) {
             if (typeof currentValue === 'object') {
               // オブジェクト形式の場合（API側で複合型として返された場合）
@@ -663,8 +486,6 @@
               numberValue = currentValue.number_value !== null ? currentValue.number_value : null;
             }
           }
-          
-          // console.log(`項目 ${item.name} の処理後の値: ブール値=${booleanValue}, 数値=${numberValue}, テキスト=${textValue}`);
           
           // 入力値として表示する値（数値優先）
           const displayValue = numberValue !== null ? numberValue : textValue;
@@ -743,6 +564,7 @@
       // 内容を更新
       analysisItemsContent.innerHTML = html;
     }
+
     // 初期表示時にテンプレートが選択済みなら項目を表示
     if (templateSelect.value) {
       expandAnalysisBtn.click();
@@ -792,10 +614,10 @@
             const isPositive = data.change_percent > 0;
             const changeText = `${isPositive ? '+' : ''}${data.change_percent.toFixed(2)}%`;
             stockInfoChange.textContent = changeText;
-            stockInfoChange.className = `stock-info-value ${isPositive ? 'text-success' : 'text-danger'}`;
+            stockInfoChange.className = `info-value ${isPositive ? 'profit' : 'loss'}`;
           } else {
             stockInfoChange.textContent = '--';
-            stockInfoChange.className = 'stock-info-value';
+            stockInfoChange.className = 'info-value';
           }
           
           // 市場と業種の情報を更新
@@ -852,6 +674,10 @@
         icon = '<i class="bi bi-check-circle-fill me-2"></i>';
       } else if (type === 'danger') {
         icon = '<i class="bi bi-exclamation-triangle-fill me-2"></i>';
+      } else if (type === 'warning') {
+        icon = '<i class="bi bi-exclamation-circle-fill me-2"></i>';
+      } else if (type === 'info') {
+        icon = '<i class="bi bi-info-circle-fill me-2"></i>';
       }
       
       alertDiv.innerHTML = `
@@ -891,6 +717,7 @@
         showAlert('銘柄コードを入力してください', 'warning');
       }
     });
+    
     // 現在株価を取得する関数
     function fetchCurrentPrice(stockCode, inputField, buttonElement) {
       // ボタンを無効化してローディング状態を表示
@@ -943,13 +770,79 @@
         });
     }
 
-    // 銘柄コード入力時の処理（4桁入力時に自動検索）
+    // 売却フィールドの状態を更新する関数
+    function updateSellFields() {
+      const hasPrice = purchasePriceInput.value.trim() !== '';
+      const hasQuantity = purchaseQuantityInput.value.trim() !== '';
+      
+      // 両方入力されている場合のみ売却フィールドを有効化
+      const canSell = hasPrice && hasQuantity;
+      
+      sellDateInput.disabled = !canSell;
+      sellPriceInput.disabled = !canSell;
+      
+      if (fetchPriceButton) {
+        fetchPriceButton.disabled = !canSell;
+      }
+      
+      // 視覚的なフィードバック
+      if (canSell) {
+        sellDateInput.classList.remove('bg-light');
+        sellPriceInput.classList.remove('bg-light');
+        
+        // 売却セクションの警告メッセージを非表示
+        if (sellWarningMessage) {
+          sellWarningMessage.style.display = 'none';
+        }
+      } else {
+        sellDateInput.classList.add('bg-light');
+        sellPriceInput.classList.add('bg-light');
+        
+        // 売却セクションに警告メッセージを表示
+        if (sellWarningMessage) {
+          sellWarningMessage.style.display = 'block';
+        }
+      }
+    }
 
+    // 初期状態を設定
+    updateSellFields();
+    
+    // 購入価格と株数の変更を監視
+    purchasePriceInput.addEventListener('input', updateSellFields);
+    purchaseQuantityInput.addEventListener('input', updateSellFields);
+    
+    // フォーム送信前のバリデーション
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(event) {
+      const sellDate = sellDateInput.value.trim();
+      const sellPrice = sellPriceInput.value.trim();
+      
+      // 片方だけ入力されている場合
+      if ((sellDate && !sellPrice) || (!sellDate && sellPrice)) {
+        event.preventDefault(); // フォーム送信をキャンセル
+        showAlert('売却日と売却価格は両方入力するか、両方入力しないでください', 'danger');
+        
+        // 不完全なフィールドをハイライト
+        if (sellDate && !sellPrice) {
+          sellPriceInput.classList.add('is-invalid');
+        } else if (!sellDate && sellPrice) {
+          sellDateInput.classList.add('is-invalid');
+        }
+      }
+    });  
+
+    // 銘柄コード入力時の処理（4桁入力時に自動検索）
     stockSymbolInput.addEventListener('input', function() {
       const stockCode = this.value.trim();
       // コードが空になった場合は情報カードを非表示
       if (!stockCode) {
         stockInfoCard.classList.add('d-none');
+      }
+      
+      // 4桁入力時に自動検索
+      if (stockCode.length === 4 && /^\d{4}$/.test(stockCode)) {
+        fetchStockInfo(stockCode);
       }
     });
 
@@ -957,270 +850,6 @@
     if (stockSymbolInput.value.trim() && /^\d{4}$/.test(stockSymbolInput.value.trim())) {
       fetchStockInfo(stockSymbolInput.value.trim());
     }
-  });
-</script>
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-
-    // 初期ロード時のチェックリスト状態
-    let selectedChecklists = [];
-    let diaryChecklistStatuses = {};
-
-    // 編集モードの場合は日記ID
-    const diaryId = {% if form.instance.pk %}{{ form.instance.pk }}{% else %}null{% endif %};
-
-  // チェックリスト展開ボタンのクリックイベント
-  expandChecklistBtn.addEventListener('click', function () {
-    // 現在選択されているチェックリストを取得
-    selectedChecklists = Array.from(checklistSelect.selectedOptions).map(option => option.value);
-
-  // チェックリスト項目を取得する関数
-  function fetchChecklistItems(checklistIds) {
-    // ローディング表示
-    checklistItemsContent.innerHTML = `
-        <div class="text-center p-3">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-          </div>
-          <p class="mt-2 text-muted">チェックリスト項目を読み込んでいます...</p>
-        </div>
-      `;
-
-    // APIリクエストを作成
-    fetch(`/checklist/api/checklists/items/?ids=${checklistIds.join(',')}${diaryId ? `&diary_id=${diaryId}` : ''}`)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('チェックリスト項目の取得に失敗しました');
-        }
-        return response.json();
-      })
-      .then(data => {
-        // 取得したチェックリスト項目をグローバル変数に保存
-        checklistItems = data.checklists;
-
-        // 日記のチェックリステータスを保存（編集時）
-        if (data.statuses) {
-          diaryChecklistStatuses = data.statuses;
-        }
-
-        // チェックリスト項目を表示
-        renderChecklistItems();
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        checklistItemsContent.innerHTML = `
-            <div class="alert alert-danger">
-              <i class="bi bi-exclamation-triangle-fill me-2"></i>
-              ${error.message}
-            </div>
-          `;
-      });
-  }
-
-  // チェックリスト項目を表示する関数
-  function renderChecklistItems() {
-    // コンテンツをクリア
-    checklistItemsContent.innerHTML = '';
-
-    if (Object.keys(checklistItems).length === 0) {
-      checklistItemsContent.innerHTML = `
-          <div class="alert alert-info">
-            <i class="bi bi-info-circle me-2"></i>
-            選択したチェックリストには項目がありません
-          </div>
-        `;
-      return;
-    }
-
-    // 各チェックリストごとに表示
-    for (const checklistId in checklistItems) {
-      if (checklistItems.hasOwnProperty(checklistId)) {
-        const checklist = checklistItems[checklistId];
-
-        // チェックリストのコンテナ
-        const checklistCard = document.createElement('div');
-        checklistCard.className = 'checklist-card mb-4';
-        checklistCard.dataset.checklistId = checklistId;
-
-        // チェックリストのヘッダー
-        const checklistHeader = document.createElement('div');
-        checklistHeader.className = 'checklist-header';
-        checklistHeader.innerHTML = `
-            <h5 class="mb-0">${checklist.name}</h5>
-            <div class="checklist-progress">
-              <span class="badge bg-primary">0/${checklist.items.length}</span>
-            </div>
-          `;
-
-        // チェックリストの本体
-        const checklistBody = document.createElement('div');
-        checklistBody.className = 'checklist-body';
-
-        // チェックリスト項目を追加
-        checklist.items.forEach(item => {
-          const isChecked = diaryChecklistStatuses &&
-            diaryChecklistStatuses[item.id] ?
-            diaryChecklistStatuses[item.id] : false;
-
-          const itemElement = document.createElement('div');
-          itemElement.className = 'checklist-item';
-          itemElement.innerHTML = `
-              <div class="form-check">
-                <input 
-                  class="form-check-input checklist-item-checkbox" 
-                  type="checkbox" 
-                  id="checklist-item-${item.id}" 
-                  name="checklist_item_status[${item.id}]" 
-                  data-item-id="${item.id}"
-                  ${isChecked ? 'checked' : ''}>
-                <label 
-                  class="form-check-label ${isChecked ? 'completed' : ''}" 
-                  for="checklist-item-${item.id}">
-                  ${item.item_text}
-                </label>
-              </div>
-            `;
-
-          checklistBody.appendChild(itemElement);
-        });
-
-        // チェックリストを組み立て
-        checklistCard.appendChild(checklistHeader);
-        checklistCard.appendChild(checklistBody);
-
-        // チェックリストをコンテナに追加
-        checklistItemsContent.appendChild(checklistCard);
-      }
-    }
-
-    // チェックボックスのイベントリスナーを設定
-    setupCheckboxListeners();
-    // 進捗表示を更新
-    updateAllProgress();
-  }
-
-  // チェックボックスのイベントリスナーを設定
-  function setupCheckboxListeners() {
-    document.querySelectorAll('.checklist-item-checkbox').forEach(checkbox => {
-      checkbox.addEventListener('change', function () {
-        // チェックされたアイテムIDを取得
-        const itemId = this.dataset.itemId;
-        const isChecked = this.checked;
-
-        // ラベルの取得と表示更新
-        const label = this.nextElementSibling;
-
-        if (isChecked) {
-          label.classList.add('completed');
-        } else {
-          label.classList.remove('completed');
-        }
-
-        // フォーム送信時に状態を保持するための隠しフィールドを更新
-        const hiddenField = document.querySelector(`input[name="checklist_item_status[${itemId}]"]`);
-        if (!hiddenField) {
-          // 隠しフィールドがなければ作成
-          const hiddenInput = document.createElement('input');
-          hiddenInput.type = 'hidden';
-          hiddenInput.name = `checklist_item_status[${itemId}]`;
-          hiddenInput.value = isChecked ? '1' : '0';
-          document.querySelector('form').appendChild(hiddenInput);
-        } else {
-          // 既存のフィールドを更新
-          hiddenField.value = isChecked ? '1' : '0';
-        }
-
-        // 進捗表示を更新
-        updateChecklistProgress(this.closest('.checklist-card'));
-      });
-    });
-  }
-
-  // チェックリストの進捗表示を更新
-  function updateChecklistProgress(checklistCard) {
-    const totalItems = checklistCard.querySelectorAll('.checklist-item-checkbox').length;
-    const checkedItems = checklistCard.querySelectorAll('.checklist-item-checkbox:checked').length;
-    const progressBadge = checklistCard.querySelector('.checklist-progress .badge');
-
-    // 進捗バッジを更新
-    progressBadge.textContent = `${checkedItems}/${totalItems}`;
-
-    // 全て完了したかどうかで色を変更
-    if (checkedItems === totalItems && totalItems > 0) {
-      progressBadge.classList.remove('bg-primary');
-      progressBadge.classList.add('bg-success');
-    } else {
-      progressBadge.classList.remove('bg-success');
-      progressBadge.classList.add('bg-primary');
-    }
-  }
-
-  // すべてのチェックリストの進捗表示を更新
-  function updateAllProgress() {
-    document.querySelectorAll('.checklist-card').forEach(function (card) {
-      updateChecklistProgress(card);
-    });
-  }
-  // 売却フィールドの状態を更新する関数
-  function updateSellFields() {
-    const hasPrice = purchasePriceInput.value.trim() !== '';
-    const hasQuantity = purchaseQuantityInput.value.trim() !== '';
-    
-    // 両方入力されている場合のみ売却フィールドを有効化
-    const canSell = hasPrice && hasQuantity;
-    
-    sellDateInput.disabled = !canSell;
-    sellPriceInput.disabled = !canSell;
-    
-    if (fetchPriceButton) {
-      fetchPriceButton.disabled = !canSell;
-    }
-    
-    // 視覚的なフィードバック
-    if (canSell) {
-      sellDateInput.classList.remove('bg-light');
-      sellPriceInput.classList.remove('bg-light');
-      
-      // 売却セクションの警告メッセージを非表示
-      const warningMessage = document.getElementById('sell-warning-message');
-      if (warningMessage) {
-        warningMessage.style.display = 'none';
-      }
-    } else {
-      sellDateInput.classList.add('bg-light');
-      sellPriceInput.classList.add('bg-light');
-      
-      // 売却セクションに警告メッセージを表示
-      const warningMessage = document.getElementById('sell-warning-message');
-      if (warningMessage) {
-        warningMessage.style.display = 'block';
-      }
-    }
-  }
-
-  // 初期状態を設定
-  updateSellFields();
-  // 購入価格と株数の変更を監視
-  purchasePriceInput.addEventListener('input', updateSellFields);
-  purchaseQuantityInput.addEventListener('input', updateSellFields);
-  const form = document.querySelector('form');
-  form.addEventListener('submit', function(event) {
-    const sellDate = sellDateInput.value.trim();
-    const sellPrice = sellPriceInput.value.trim();
-    
-    // 片方だけ入力されている場合
-    if ((sellDate && !sellPrice) || (!sellDate && sellPrice)) {
-      event.preventDefault(); // フォーム送信をキャンセル
-      showAlert('売却日と売却価格は両方入力するか、両方入力しないでください', 'danger');
-      
-      // 不完全なフィールドをハイライト
-      if (sellDate && !sellPrice) {
-        sellPriceInput.classList.add('is-invalid');
-      } else if (!sellDate && sellPrice) {
-        sellDateInput.classList.add('is-invalid');
-      }
-    }
-  });  
   });
 </script>
 {% endblock %}

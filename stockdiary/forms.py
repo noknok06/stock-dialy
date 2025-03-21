@@ -34,7 +34,7 @@ class StockDiaryForm(forms.ModelForm):
             'purchase_price': forms.NumberInput(attrs={'class': 'form-control'}),
             'purchase_quantity': forms.NumberInput(attrs={'class': 'form-control'}),
             # 購入理由欄の拡張
-            'reason': CKEditorUploadingWidget(config_name='default'), 
+            'reason': forms.Textarea(attrs={'rows': 5, 'class': 'form-control'}),
             'sell_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'sell_price': forms.NumberInput(attrs={'class': 'form-control'}),
             'memo': forms.Textarea(attrs={'rows': 5, 'class': 'form-control'}),
@@ -106,6 +106,6 @@ class DiaryNoteForm(forms.ModelForm):
             'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'note_type': forms.Select(attrs={'class': 'form-select'}),
             'importance': forms.Select(attrs={'class': 'form-select'}),
-            'content': CKEditorUploadingWidget(config_name='basic'),  
+            'content': forms.Textarea(attrs={'rows': 5, 'class': 'form-control'}),
             'current_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
         }        

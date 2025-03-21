@@ -6,154 +6,225 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>カブログ - 投資日記を簡単管理</title>
-    <meta name="description" content="カブログは、投資家のための日記アプリです。銘柄情報の記録、チェックリスト管理、分析テンプレートなどの機能で投資判断を整理・改善します。">
+    <title>カブログ - 投資判断を記録・分析・改善</title>
+    <meta name="description" content="カブログは、投資家のための日記アプリです。銘柄情報の記録、分析テンプレート、継続記録機能などで投資判断プロセスを整理・改善します。">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{% static 'css/landing.css' %}">
-</head>
-<style>
-    /* カルーセルのスタイル調整 */
-    .carousel .screenshot-card {
-        margin: 0 auto;
-        max-width: 500px;
-    }
-
-    .carousel-indicators {
-        bottom: -40px;
-    }
-
-    .carousel-indicators button {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background-color: #6c757d;
-        opacity: 0.5;
-    }
-
-    .carousel-indicators button.active {
-        background-color: #0d6efd;
-        opacity: 1;
-    }
-
-    /* コントロールボタンをスクリーンショットの左右に配置 */
-    .carousel-control-prev,
-    .carousel-control-next {
-        width: 10%;
-        opacity: 0.8;
-    }
-
-    .carousel-control-prev-icon,
-    .carousel-control-next-icon {
-        width: 30px;
-        height: 30px;
-        background-color: rgba(0, 0, 0, 0.3);
-        border-radius: 50%;
-        background-size: 50%;
-    }
-
-    /* スワイプヒントのアニメーション */
-    .swipe-hint {
-        color: #6c757d;
-        font-size: 0.85rem;
-        margin-top: 45px;
-    }
-
-    .swipe-hint i {
-        animation: swipe-animation 2s infinite;
-        display: inline-block;
-    }
-
-    @keyframes swipe-animation {
-        0% {
-            transform: translateX(-10px);
-        }
-
-        50% {
-            transform: translateX(10px);
-        }
-
-        100% {
-            transform: translateX(-10px);
-        }
-    }
-
-    @media (max-width: 767px) {
-
-        /* モバイルでの調整 */
+    <style>
+        /* カルーセルのスタイル調整 */
         .carousel .screenshot-card {
-            height: auto;
-            max-width: 100%;
+            margin: 0 auto;
+            max-width: 500px;
         }
 
-        .screenshot-img {
-            max-height: 350px;
-            object-fit: contain;
+        .carousel-indicators {
+            bottom: -40px;
         }
-    }
 
-    /* プレビューサムネイル */
-    .preview-thumbnails {
-        position: relative;
-        overflow: hidden;
-        width: 100%;
-        padding: 0 15px;
-    }
+        .carousel-indicators button {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #6c757d;
+            opacity: 0.5;
+        }
 
-    .preview-scrollable {
-        display: flex;
-        overflow-x: auto;
-        overflow-y: hidden;
-        scroll-behavior: smooth;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        /* Firefox */
-        padding: 10px 0;
-        gap: 10px;
-    }
+        .carousel-indicators button.active {
+            background-color: #0d6efd;
+            opacity: 1;
+        }
 
-    .preview-scrollable::-webkit-scrollbar {
-        display: none;
-        /* Chrome, Safari */
-    }
+        /* コントロールボタンをスクリーンショットの左右に配置 */
+        .carousel-control-prev,
+        .carousel-control-next {
+            width: 10%;
+            opacity: 0.8;
+        }
 
-    .preview-item {
-        flex: 0 0 auto;
-        width: 100px;
-        height: 75px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
+        .carousel-control-prev-icon,
+        .carousel-control-next-icon {
+            width: 30px;
+            height: 30px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+            background-size: 50%;
+        }
 
-    .preview-img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 8px;
-        border: 3px solid transparent;
-        opacity: 0.6;
-        transition: all 0.2s ease;
-    }
+        /* スワイプヒントのアニメーション */
+        .swipe-hint {
+            color: #6c757d;
+            font-size: 0.85rem;
+            margin-top: 45px;
+        }
 
-    .preview-img.active {
-        border-color: var(--primary-color, #4f46e5);
-        opacity: 1;
-    }
+        .swipe-hint i {
+            animation: swipe-animation 2s infinite;
+            display: inline-block;
+        }
 
-    .preview-item:hover .preview-img {
-        opacity: 0.8;
-    }
+        @keyframes swipe-animation {
+            0% {
+                transform: translateX(-10px);
+            }
 
-    /* メインカルーセルの調整 */
-    #appScreenshotsCarousel .carousel-item {
-        transition: transform 0.3s ease;
-    }
+            50% {
+                transform: translateX(10px);
+            }
 
-    /* カルーセルの下にマージンを追加して、プレビューが見やすくなるように */
-    #appScreenshotsCarousel {
-        margin-bottom: 10px;
-    }
-</style>
+            100% {
+                transform: translateX(-10px);
+            }
+        }
+
+        @media (max-width: 767px) {
+            /* モバイルでの調整 */
+            .carousel .screenshot-card {
+                height: auto;
+                max-width: 100%;
+            }
+
+            .screenshot-img {
+                max-height: 350px;
+                object-fit: contain;
+            }
+        }
+
+        /* アニメーションをより洗練されたものに */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+
+        .fade-in.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .feature-card {
+            overflow: hidden;
+        }
+
+        /* タブレット用の改善 */
+        @media (min-width: 768px) and (max-width: 991px) {
+            .feature-card {
+                min-height: 300px;
+            }
+
+            .step-card {
+                min-height: 280px;
+            }
+        }
+
+        /* インフォグラフィック風の新セクション */
+        .analytics-graphic {
+            position: relative;
+            padding: 2rem;
+            border-radius: 1rem;
+            background-color: #f8f9fa;
+            margin-bottom: 2rem;
+        }
+
+        .analytics-path {
+            position: absolute;
+            top: 50%;
+            left: 5%;
+            width: 90%;
+            height: 3px;
+            background-color: var(--primary-color);
+            z-index: 1;
+        }
+
+        .analytics-step {
+            position: relative;
+            background-color: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        .analytics-step:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .analytics-step-number {
+            position: absolute;
+            top: -15px;
+            left: -15px;
+            width: 40px;
+            height: 40px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 視覚的に美しいデザイン要素 */
+        .wave-divider {
+            margin-top: -50px;
+            height: 50px;
+            overflow: hidden;
+        }
+
+        .wave-divider svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* アプリスクリーンショットのサムネイル */
+        .preview-thumbnails {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .preview-item {
+            width: 80px;
+            height: 60px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .preview-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 3px solid transparent;
+            opacity: 0.6;
+            transition: all 0.2s ease;
+        }
+
+        .preview-img.active {
+            border-color: var(--primary-color);
+            opacity: 1;
+        }
+
+        /* ポイントバッジ */
+        .point-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background-color: rgba(79, 70, 229, 0.1);
+            color: var(--primary-color);
+            border-radius: 0.25rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
 
 <body>
     <!-- ナビゲーションバー -->
@@ -175,11 +246,11 @@
                         <a class="nav-link" href="#how-it-works">使い方</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="#advanced-analysis">高度な分析</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="#comparison">比較</a>
                     </li>
-                    <!-- <li class="nav-item">
-                        <a class="nav-link" href="#testimonials">お客様の声</a>
-                    </li> -->
                     <li class="nav-item">
                         <a class="nav-link btn btn-outline-light btn-sm ms-2 px-3" href="#signup">
                             無料で始める
@@ -197,7 +268,7 @@
                 <div class="col-lg-6 hero-content">
                     <h1>投資判断を<br>記録・分析・改善</h1>
                     <p>
-                        カブログは投資家のための日記アプリ。銘柄情報の記録、チェックリスト管理、分析テンプレートなどの機能で、あなたの投資をサポートします。
+                        カブログはあなたの投資判断プロセスをサポートする日記アプリ。銘柄情報の記録だけでなく、なぜその判断をしたのかを体系的に整理し、継続的に改善できます。
                     </p>
                     <div class="hero-btns">
                         <a href="#signup" class="btn btn-primary">無料で始める</a>
@@ -211,7 +282,7 @@
         </div>
     </section>
 
-    <!-- 特徴セクション（修正版） -->
+    <!-- 特徴セクション -->
     <section class="features" id="features">
         <div class="container">
             <h2 class="section-title fade-in">カブログの特徴</h2>
@@ -235,18 +306,6 @@
                 <div class="col-md-6 col-lg-3 mb-4 fade-in">
                     <div class="feature-card">
                         <div class="feature-icon">
-                            <i class="bi bi-check2-square"></i>
-                        </div>
-                        <h3 class="feature-title">チェックリスト</h3>
-                        <p class="feature-description">
-                            投資判断の基準をチェックリスト化。一貫した投資基準で判断できます。
-                        </p>
-                    </div>
-                </div>
-
-                <div class="col-md-6 col-lg-3 mb-4 fade-in">
-                    <div class="feature-card">
-                        <div class="feature-icon">
                             <i class="bi bi-tags"></i>
                         </div>
                         <h3 class="feature-title">タグ管理</h3>
@@ -257,13 +316,25 @@
                 </div>
 
                 <div class="col-md-6 col-lg-3 mb-4 fade-in">
-                    <div class="feature-card">
+                    <div class="feature-card position-relative">
                         <div class="feature-icon">
                             <i class="bi bi-clipboard-data"></i>
                         </div>
                         <h3 class="feature-title">分析テンプレート</h3>
                         <p class="feature-description">
                             独自の分析項目を作成して銘柄を評価。複数銘柄の比較も簡単です。
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3 mb-4 fade-in">
+                    <div class="feature-card position-relative">
+                        <div class="feature-icon">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+                        <h3 class="feature-title">継続記録</h3>
+                        <p class="feature-description">
+                            投資後の考え方の変化や気づきを記録。時系列での判断プロセスの変化を追跡できます。
                         </p>
                     </div>
                 </div>
@@ -283,25 +354,25 @@
                 </div>
 
                 <div class="col-md-6 col-lg-3 mb-4 fade-in">
-                    <div class="feature-card">
+                    <div class="feature-card position-relative">
                         <div class="feature-icon">
-                            <i class="bi bi-graph-up"></i>
+                            <i class="bi bi-graph-up-arrow"></i>
                         </div>
-                        <h3 class="feature-title">投資分析</h3>
+                        <h3 class="feature-title">投資分析ダッシュボード</h3>
                         <p class="feature-description">
-                            記録データを元に投資パターンを分析。自分の投資スタイルを客観的に把握できます。
+                            投資パターン、タグ使用状況、テンプレート完了率など多角的に分析できます。
                         </p>
                     </div>
                 </div>
 
                 <div class="col-md-6 col-lg-3 mb-4 fade-in">
-                    <div class="feature-card">
+                    <div class="feature-card position-relative">
                         <div class="feature-icon">
-                            <i class="bi bi-shield-lock"></i>
+                            <i class="bi bi-camera"></i>
                         </div>
-                        <h3 class="feature-title">安全なデータ管理</h3>
+                        <h3 class="feature-title">ポートフォリオスナップショット</h3>
                         <p class="feature-description">
-                            Google認証で安全にログイン。あなたの投資情報は適切に保護されます。
+                            特定時点の保有状況を記録し、時間経過による変化を追跡できます。
                         </p>
                     </div>
                 </div>
@@ -321,23 +392,23 @@
         </div>
     </section>
 
-    <!-- スクリーンショットセクション（カルーセル対応版） -->
+    <!-- スクリーンショットセクション -->
     <section class="screenshots">
         <div class="container">
             <h2 class="section-title fade-in">アプリケーション画面</h2>
             <p class="section-subtitle fade-in">
-                使いやすいインターフェースで、投資記録を効率的に管理
+                使いやすいインターフェースで、投資判断を効率的に記録・分析
             </p>
 
             <!-- PCでは3カラム表示 -->
             <div class="row d-none d-lg-flex">
                 <div class="col-lg-4 fade-in">
                     <div class="screenshot-card" style="height: 400px;">
-                        <img src="{% static 'images/calendar.png' %}" alt="投資カレンダー" class="screenshot-img">
+                        <img src="{% static 'images/dialy.png' %}" alt="株日記" class="screenshot-img">
                         <div class="screenshot-content">
-                            <h3 class="screenshot-title">投資カレンダー</h3>
+                            <h3 class="screenshot-title">株日記</h3>
                             <p class="screenshot-description">
-                                購入日と売却日を一目で確認。時系列での投資パターンを把握できます。
+                                売買だけでなく買った理由記録。一度投資を振り返る機会を持つことができます。
                             </p>
                         </div>
                     </div>
@@ -349,7 +420,7 @@
                         <div class="screenshot-content">
                             <h3 class="screenshot-title">銘柄詳細ページ</h3>
                             <p class="screenshot-description">
-                                購入理由や分析情報を詳細に記録。投資判断の根拠を残せます。
+                                タグ傾向、テンプレート活用、投資パターンを統計的に可視化できます。
                             </p>
                         </div>
                     </div>
@@ -357,11 +428,11 @@
 
                 <div class="col-lg-4 fade-in">
                     <div class="screenshot-card" style="height: 400px;">
-                        <img src="{% static 'images/dashboard.png' %}" alt="分析ダッシュボード" class="screenshot-img">
+                        <img src="{% static 'images/snapshots.png' %}" alt="スナップショット" class="screenshot-img">
                         <div class="screenshot-content">
-                            <h3 class="screenshot-title">分析ダッシュボード</h3>
+                            <h3 class="screenshot-title">スナップショット</h3>
                             <p class="screenshot-description">
-                                投資パターンを統計的に分析。投資スタイルの強みと弱みが見えてきます。
+                                リアルタイムの資産状況キャプチャ。投資の旅路を可視化するタイムマシンです。投資判断の軌跡を振り返りましょう。
                             </p>
                         </div>
                     </div>
@@ -374,11 +445,11 @@
                     <div class="carousel-inner">
                         <div class="carousel-item active">
                             <div class="screenshot-card">
-                                <img src="{% static 'images/calendar.png' %}" alt="投資カレンダー" class="screenshot-img">
+                                <img src="{% static 'images/dialy.png' %}" alt="株日記" class="screenshot-img">
                                 <div class="screenshot-content">
-                                    <h3 class="screenshot-title">投資カレンダー</h3>
+                                    <h3 class="screenshot-title">株日記</h3>
                                     <p class="screenshot-description">
-                                        購入日と売却日を一目で確認。時系列での投資パターンを把握できます。
+                                        売買だけでなく買った理由記録。一度投資を振り返る機会を持つことができます。
                                     </p>
                                 </div>
                             </div>
@@ -389,18 +460,18 @@
                                 <div class="screenshot-content">
                                     <h3 class="screenshot-title">銘柄詳細ページ</h3>
                                     <p class="screenshot-description">
-                                        購入理由や分析情報を詳細に記録。投資判断の根拠を残せます。
+                                        タグ傾向、テンプレート活用、投資パターンを統計的に可視化できます。
                                     </p>
                                 </div>
                             </div>
                         </div>
                         <div class="carousel-item">
                             <div class="screenshot-card">
-                                <img src="{% static 'images/dashboard.png' %}" alt="分析ダッシュボード" class="screenshot-img">
+                                <img src="{% static 'images/snapshots.png' %}" alt="スナップショット" class="screenshot-img">
                                 <div class="screenshot-content">
-                                    <h3 class="screenshot-title">分析ダッシュボード</h3>
+                                    <h3 class="screenshot-title">スナップショット</h3>
                                     <p class="screenshot-description">
-                                        投資パターンを統計的に分析。投資スタイルの強みと弱みが見えてきます。
+                                        リアルタイムの資産状況キャプチャ。投資の旅路を可視化するタイムマシンです。投資判断の軌跡を振り返りましょう。
                                     </p>
                                 </div>
                             </div>
@@ -437,7 +508,287 @@
         </div>
     </section>
 
-    <!-- モバイル対応セクション（カルーセル版） -->
+    <!-- 新機能：継続記録セクション -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <h2 class="section-title fade-in">継続記録で投資判断の変化を追跡</h2>
+            <p class="section-subtitle fade-in">
+                最初の記録だけでなく、その後の考え方や判断の変化まで記録して投資プロセスを改善
+            </p>
+
+            <div class="row align-items-center fade-in">
+                <div class="col-lg-6 mb-4 mb-lg-0">
+                    <img src="{% static 'images/continuation.png' %}" alt="継続記録機能" class="img-fluid rounded shadow">
+                </div>
+                <div class="col-lg-6">
+                    <div class="point-badge">
+                        <i class="bi bi-stars"></i> NEW FEATURE
+                    </div>
+                    <h3 class="mb-4">時系列で投資判断を記録</h3>
+                    <ul class="list-unstyled">
+                        <li class="mb-3">
+                            <div class="d-flex">
+                                <div class="me-3"><i class="bi bi-check-circle-fill text-success fs-4"></i></div>
+                                <div>
+                                    <h5>銘柄ごとのタイムライン</h5>
+                                    <p>購入後の思考プロセスや気づきを時系列で記録。いつ、どのような判断変化があったかを振り返れます。</p>
+                                </div>
+                            </div>
+                        </li>
+                        <li class="mb-3">
+                            <div class="d-flex">
+                                <div class="me-3"><i class="bi bi-check-circle-fill text-success fs-4"></i></div>
+                                <div>
+                                    <h5>重要度と分類</h5>
+                                    <p>更新内容に重要度（高/中/低）とタイプ（分析更新/ニュース/決算情報など）を設定できます。</p>
+                                </div>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="d-flex">
+                                <div class="me-3"><i class="bi bi-check-circle-fill text-success fs-4"></i></div>
+                                <div>
+                                    <h5>価格推移の記録</h5>
+                                    <p>記録時点の株価も一緒に保存。購入時からの変動率も自動計算されます。</p>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 新機能：分析ダッシュボード -->
+    <section class="py-5" id="advanced-analysis">
+        <div class="container">
+            <h2 class="section-title fade-in">高度な投資分析ダッシュボード</h2>
+            <p class="section-subtitle fade-in">
+                投資パターンを多角的に分析し、強みと弱みを客観的に把握
+            </p>
+
+            <div class="row align-items-center fade-in">
+                <div class="col-lg-6 order-lg-2 mb-4 mb-lg-0">
+                    <img src="{% static 'images/portfolio.png' %}" alt="分析ダッシュボード" class="img-fluid rounded shadow">
+                </div>
+                <div class="col-lg-6 order-lg-1">
+                    <div class="point-badge">
+                        <i class="bi bi-stars"></i> ENHANCED
+                    </div>
+                    <h3 class="mb-4">データに基づく投資改善</h3>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="p-3 rounded bg-light">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-clipboard-data text-primary me-2 fs-4"></i>
+                                    <h5 class="mb-0">テンプレート分析</h5>
+                                </div>
+                                <p class="mb-0 small">分析テンプレートの使用状況や完了率を追跡し、テンプレートの有効性を評価できます。</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="p-3 rounded bg-light">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-bar-chart text-primary me-2 fs-4"></i>
+                                    <h5 class="mb-0">ポートフォリオ分析</h5>
+                                </div>
+                                <p class="mb-0 small">業種別分布や保有期間の傾向、利益率の分布など、ポートフォリオを多角的に分析できます。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 新機能：ポートフォリオスナップショット -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <h2 class="section-title fade-in">ポートフォリオスナップショット</h2>
+            <p class="section-subtitle fade-in">
+                特定時点の保有状況を記録して資産配分を分析
+            </p>
+
+            <div class="row align-items-center fade-in">
+                <div class="col-lg-6 mb-4 mb-lg-0">
+                    <img src="{% static 'images/dashboard.png' %}" alt="ポートフォリオスナップショット" class="img-fluid rounded shadow">
+                </div>
+                <div class="col-lg-6">
+                    <div class="point-badge">
+                        <i class="bi bi-stars"></i> NEW FEATURE
+                    </div>
+                    <h3 class="mb-4">時間経過での変化を追跡</h3>
+                    
+                    <div class="analytics-graphic mb-4">
+                        <div class="analytics-path"></div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="analytics-step">
+                                    <div class="analytics-step-number">1</div>
+                                    <div class="text-center">
+                                        <i class="bi bi-camera fs-3 text-primary mb-2"></i>
+                                        <h5>スナップショット作成</h5>
+                                        <p class="small mb-0">特定時点の保有状況を記録</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="analytics-step">
+                                    <div class="analytics-step-number">2</div>
+                                    <div class="text-center">
+                                        <i class="bi bi-pie-chart fs-3 text-primary mb-2"></i>
+                                        <h5>セクター分析</h5>
+                                        <p class="small mb-0">業種別配分を可視化</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="analytics-step">
+                                    <div class="analytics-step-number">3</div>
+                                    <div class="text-center">
+                                        <i class="bi bi-arrow-left-right fs-3 text-primary mb-2"></i>
+                                        <h5>スナップショット比較</h5>
+                                        <p class="small mb-0">時点間の変化を確認</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <ul class="list-unstyled">
+                        <li class="mb-3">
+                            <div class="d-flex">
+                                <div class="me-3"><i class="bi bi-check-circle-fill text-success fs-4"></i></div>
+                                <div>
+                                    <h5>セクター配分の可視化</h5>
+                                    <p>業種別の資産配分をグラフで確認。偏りのない分散投資を目指せます。</p>
+                                </div>
+                            </div>
+                        </li>
+                        <li class="mb-3">
+                            <div class="d-flex">
+                                <div class="me-3"><i class="bi bi-check-circle-fill text-success fs-4"></i></div>
+                                <div>
+                                    <h5>時系列での比較</h5>
+                                    <p>過去のスナップショットと比較して、ポートフォリオの変化を追跡できます。</p>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 新機能：カスタム分析テンプレート -->
+    <section class="py-5">
+        <div class="container">
+            <h2 class="section-title fade-in">カスタム分析テンプレート</h2>
+            <p class="section-subtitle fade-in">
+                あなた独自の投資判断基準を作成して体系的に評価
+            </p>
+
+            <div class="row align-items-center fade-in">
+                <div class="col-lg-6 order-lg-2 mb-4 mb-lg-0">
+                    <img src="{% static 'images/template.png' %}" alt="分析テンプレート" class="img-fluid rounded shadow">
+                </div>
+                <div class="col-lg-6 order-lg-1">
+                    <div class="point-badge">
+                        <i class="bi bi-stars"></i> ENHANCED
+                    </div>
+                    <h3 class="mb-4">独自の分析フレームワーク</h3>
+
+                    <div class="mb-4">
+                        <div class="mb-3">
+                            <h5><i class="bi bi-list-check text-primary me-2"></i> 多様な項目タイプをサポート</h5>
+                            <div class="bg-light p-3 rounded">
+                                <div class="d-flex mb-2">
+                                    <div class="badge bg-primary me-2">チェックボックス</div>
+                                    <div class="badge bg-success me-2">数値</div>
+                                    <div class="badge bg-info me-2">テキスト</div>
+                                    <div class="badge bg-warning me-2">選択肢</div>
+                                    <div class="badge bg-secondary">チェック+値入力</div>
+                                </div>
+                                <p class="small mb-0">様々なタイプの分析項目を組み合わせて、柔軟な評価フレームワークを構築できます。</p>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <h5><i class="bi bi-bar-chart-line text-primary me-2"></i> 分析レポート</h5>
+                            <p>複数の銘柄間で同じテンプレートを使用した場合、比較レポートを生成。投資判断の一貫性を保てます。</p>
+                        </div>
+
+                        <div class="mb-3">
+                            <h5><i class="bi bi-clock-history text-primary me-2"></i> テンプレート使用状況の追跡</h5>
+                            <p>テンプレートの使用頻度や入力完了率を追跡。より効果的なテンプレートへと改善できます。</p>
+                        </div>
+                    </div>
+
+                    <a href="#" class="btn btn-primary">詳細を見る</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 使い方セクション -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="container">
+            <h2 class="section-title fade-in">カブログの使い方</h2>
+            <p class="section-subtitle fade-in">
+                簡単3ステップで投資記録の管理を始められます
+            </p>
+
+            <div class="row">
+                <div class="col-md-4 mb-4 fade-in">
+                    <div class="step-card">
+                        <div class="step-number">1</div>
+                        <div class="text-center">
+                            <div class="step-icon">
+                                <i class="bi bi-person-plus"></i>
+                            </div>
+                            <h3 class="step-title">アカウント作成</h3>
+                            <p class="text-center">
+                                Googleアカウントで簡単登録。面倒な入力は必要ありません。数秒で始められます。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4 fade-in">
+                    <div class="step-card">
+                        <div class="step-number">2</div>
+                        <div class="text-center">
+                            <div class="step-icon">
+                                <i class="bi bi-pencil-square"></i>
+                            </div>
+                            <h3 class="step-title">投資情報を記録</h3>
+                            <p class="text-center">
+                                銘柄情報と購入理由を入力。タグや分析テンプレートを活用してデータを整理できます。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4 fade-in">
+                    <div class="step-card">
+                        <div class="step-number">3</div>
+                        <div class="text-center">
+                            <div class="step-icon">
+                                <i class="bi bi-graph-up"></i>
+                            </div>
+                            <h3 class="step-title">分析と改善</h3>
+                            <p class="text-center">
+                                分析ダッシュボードで投資パターンを把握。自分の強みと弱みを理解して投資判断を改善します。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- モバイル対応セクション -->
     <section class="py-5 bg-light">
         <div class="container">
             <h2 class="section-title fade-in">どこでも使えるモバイル対応</h2>
@@ -450,19 +801,19 @@
                 <div class="row">
                     <div class="col-md-4 fade-in">
                         <div class="screenshot-card" style="height: 300px;">
-                            <img src="{% static 'images/mobile1.jpg' %}" alt="モバイル日記一覧" class="screenshot-img">
+                            <img src="{% static 'images/mobile1.png' %}" alt="モバイル日記一覧" class="screenshot-img">
                         </div>
                     </div>
 
                     <div class="col-md-4 fade-in">
                         <div class="screenshot-card" style="height: 300px;">
-                            <img src="{% static 'images/mobile2.jpg' %}" alt="モバイル詳細画面" class="screenshot-img">
+                            <img src="{% static 'images/mobile2.png' %}" alt="モバイル詳細画面" class="screenshot-img">
                         </div>
                     </div>
 
                     <div class="col-md-4 fade-in">
                         <div class="screenshot-card" style="height: 300px;">
-                            <img src="{% static 'images/mobile3.jpg' %}" alt="モバイル分析画面" class="screenshot-img">
+                            <img src="{% static 'images/mobile3.png' %}" alt="モバイル分析画面" class="screenshot-img">
                         </div>
                     </div>
                 </div>
@@ -520,63 +871,6 @@
         </div>
     </section>
 
-    <!-- 使い方セクション（修正版） -->
-    <section class="how-it-works" id="how-it-works">
-        <div class="container">
-            <h2 class="section-title fade-in">カブログの使い方</h2>
-            <p class="section-subtitle fade-in">
-                簡単3ステップで投資記録の管理を始められます
-            </p>
-
-            <div class="row">
-                <div class="col-md-4 mb-4 fade-in">
-                    <div class="step-card">
-                        <div class="step-number">1</div>
-                        <div class="text-center">
-                            <div class="step-icon">
-                                <i class="bi bi-person-plus"></i>
-                            </div>
-                            <h3 class="step-title">アカウント作成</h3>
-                            <p class="text-center">
-                                Googleアカウントで簡単登録。面倒な入力は必要ありません。数秒で始められます。
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-4 mb-4 fade-in">
-                    <div class="step-card">
-                        <div class="step-number">2</div>
-                        <div class="text-center">
-                            <div class="step-icon">
-                                <i class="bi bi-pencil-square"></i>
-                            </div>
-                            <h3 class="step-title">投資情報を記録</h3>
-                            <p class="text-center">
-                                銘柄情報と購入理由を入力。必要に応じてチェックリストやタグを設定できます。
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-4 mb-4 fade-in">
-                    <div class="step-card">
-                        <div class="step-number">3</div>
-                        <div class="text-center">
-                            <div class="step-icon">
-                                <i class="bi bi-graph-up"></i>
-                            </div>
-                            <h3 class="step-title">分析と改善</h3>
-                            <p class="text-center">
-                                自分の投資記録を振り返り、分析。投資パターンを把握して投資判断を継続的に改善します。
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <!-- 比較表セクション -->
     <section class="comparison" id="comparison">
         <div class="container">
@@ -603,9 +897,9 @@
                             <td><i class="bi bi-check-lg comparison-tick"></i></td>
                         </tr>
                         <tr>
-                            <td>カスタマイズ可能なチェックリスト</td>
+                            <td>カスタマイズ可能な分析テンプレート</td>
                             <td><i class="bi bi-check-lg comparison-tick"></i></td>
-                            <td><i class="bi bi-dash"></i></td>
+                            <td><i class="bi bi-x-lg comparison-cross"></i></td>
                             <td><i class="bi bi-x-lg comparison-cross"></i></td>
                         </tr>
                         <tr class="comparison-highlight">
@@ -615,10 +909,10 @@
                             <td><i class="bi bi-x-lg comparison-cross"></i></td>
                         </tr>
                         <tr>
-                            <td>分析テンプレート機能</td>
+                            <td>継続記録機能</td>
                             <td><i class="bi bi-check-lg comparison-tick"></i></td>
                             <td><i class="bi bi-x-lg comparison-cross"></i></td>
-                            <td><i class="bi bi-x-lg comparison-cross"></i></td>
+                            <td><i class="bi bi-dash"></i></td>
                         </tr>
                         <tr class="comparison-highlight">
                             <td>投資パターン分析</td>
@@ -627,7 +921,7 @@
                             <td><i class="bi bi-x-lg comparison-cross"></i></td>
                         </tr>
                         <tr>
-                            <td>銘柄情報の自動取得</td>
+                            <td>ポートフォリオスナップショット</td>
                             <td><i class="bi bi-check-lg comparison-tick"></i></td>
                             <td><i class="bi bi-check-lg comparison-tick"></i></td>
                             <td><i class="bi bi-x-lg comparison-cross"></i></td>
@@ -650,78 +944,12 @@
         </div>
     </section>
 
-    <!-- お客様の声セクション -->
-    <!-- <section class="testimonials" id="testimonials">
-        <div class="container">
-            <h2 class="section-title fade-in">お客様の声</h2>
-            <p class="section-subtitle fade-in">
-                カブログを利用されている投資家の方々からのフィードバック
-            </p>
-
-            <div class="row">
-                <div class="col-md-4 mb-4 fade-in">
-                    <div class="testimonial-card">
-                        <div class="testimonial-quote">"</div>
-                        <p class="testimonial-text">
-                            チェックリスト機能で投資基準が明確になり、感情に左右されずに判断できるようになりました。タグ管理も便利で、関連銘柄をすぐに見つけられます。
-                        </p>
-                        <div class="testimonial-author">
-                            <div class="testimonial-avatar">
-                                <img src="/api/placeholder/50/50" alt="佐藤さん">
-                            </div>
-                            <div>
-                                <div class="testimonial-name">佐藤 健太</div>
-                                <div class="testimonial-role">個人投資家 / 5年</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-4 mb-4 fade-in">
-                    <div class="testimonial-card">
-                        <div class="testimonial-quote">"</div>
-                        <p class="testimonial-text">
-                            分析テンプレート機能が素晴らしいです。自分の投資スタイルに合わせた分析項目を作成でき、銘柄比較も容易になりました。投資の質が向上しています。
-                        </p>
-                        <div class="testimonial-author">
-                            <div class="testimonial-avatar">
-                                <img src="/api/placeholder/50/50" alt="鈴木さん">
-                            </div>
-                            <div>
-                                <div class="testimonial-name">鈴木 美穂</div>
-                                <div class="testimonial-role">会社員 / 投資歴3年</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-4 mb-4 fade-in">
-                    <div class="testimonial-card">
-                        <div class="testimonial-quote">"</div>
-                        <p class="testimonial-text">
-                            これまではExcelで管理していましたが、カブログに変えてから格段に使いやすくなりました。カレンダー表示で投資タイミングの傾向が見えてきます。
-                        </p>
-                        <div class="testimonial-author">
-                            <div class="testimonial-avatar">
-                                <img src="/api/placeholder/50/50" alt="田中さん">
-                            </div>
-                            <div>
-                                <div class="testimonial-name">田中 優</div>
-                                <div class="testimonial-role">自営業 / 投資歴7年</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section> -->
-
     <!-- CTA セクション -->
     <section class="cta" id="signup">
         <div class="container">
             <h2>今すぐカブログを始めよう</h2>
             <p>
-                投資判断を記録し、分析し、改善する。カブログがあなたの投資をサポートします。<br>
+                投資判断を記録し、分析し、改善する。カブログがあなたの投資判断プロセスをサポートします。<br>
                 無料で始められ、Googleアカウントで数秒で登録完了。
             </p>
             <a href="{% url 'stockdiary:home' %}" class="btn cta-btn">無料アカウント作成</a>
@@ -738,7 +966,7 @@
                         カブログ
                     </div>
                     <p class="footer-description">
-                        投資家のための日記アプリ。記録から分析、そして投資判断の改善まで、あなたの投資をサポートします。
+                        投資判断プロセスをサポートする日記アプリ。記録から分析、そして継続的な改善までをサポートします。
                     </p>
                     <div class="footer-socials">
                         <a href="#" class="footer-social-link">
@@ -754,34 +982,23 @@
                 </div>
 
                 <div class="col-md-4 col-lg-2 mb-4">
-                    <h4 class="footer-heading">サービス</h4>
+                    <h4 class="footer-heading">機能</h4>
                     <ul class="footer-links">
-                        <li><a href="#">特徴</a></li>
-                        <li><a href="#">使い方</a></li>
-                        <li><a href="#">料金プラン</a></li>
-                        <li><a href="#">よくある質問</a></li>
+                        <li><a href="#features">基本機能</a></li>
+                        <li><a href="#advanced-analysis">分析ダッシュボード</a></li>
+                        <li><a href="#how-it-works">使い方</a></li>
+                        <li><a href="#comparison">比較表</a></li>
                     </ul>
                 </div>
 
                 <div class="col-md-4 col-lg-2 mb-4">
-                    <h4 class="footer-heading">会社情報</h4>
+                    <h4 class="footer-heading">サポート</h4>
                     <ul class="footer-links">
-                        <li><a href="#">会社概要</a></li>
-                        <li><a href="#">チーム</a></li>
-                        <li><a href="#">採用情報</a></li>
+                        <li><a href="#">よくある質問</a></li>
+                        <li><a href="#">使い方ガイド</a></li>
                         <li><a href="#">お問い合わせ</a></li>
+                        <li><a href="#">プライバシーポリシー</a></li>
                     </ul>
-                </div>
-
-                <div class="col-md-4 col-lg-4 mb-4">
-                    <h4 class="footer-heading">お知らせ</h4>
-                    <p>最新の機能や投資情報をお届けします</p>
-                    <form>
-                        <div class="input-group mb-3">
-                            <input type="email" class="form-control" placeholder="メールアドレス" aria-label="メールアドレス">
-                            <button class="btn btn-primary" type="button">登録</button>
-                        </div>
-                    </form>
                 </div>
             </div>
 
@@ -811,52 +1028,6 @@
 
             fadeElements.forEach(element => {
                 fadeInObserver.observe(element);
-            });
-            var carousel = document.getElementById('appScreenshotsCarousel');
-            if (!carousel) return;
-
-            // プレビューアイテムにクリックイベントを設定
-            var previewItems = document.querySelectorAll('.preview-item');
-            previewItems.forEach(function (item) {
-                item.addEventListener('click', function () {
-                    var slideIndex = this.dataset.slideTo;
-                    var target = this.dataset.bsTarget;
-                    var carouselInstance = bootstrap.Carousel.getInstance(document.querySelector(target));
-
-                    if (carouselInstance) {
-                        carouselInstance.to(parseInt(slideIndex));
-                    }
-
-                    // アクティブなプレビューを更新
-                    document.querySelectorAll('.preview-img').forEach(function (img) {
-                        img.classList.remove('active');
-                    });
-                    this.querySelector('.preview-img').classList.add('active');
-                });
-            });
-
-            // カルーセルのスライド変更イベント
-            carousel.addEventListener('slid.bs.carousel', function (event) {
-                var activeIndex = event.to;
-
-                // プレビューの状態を更新
-                document.querySelectorAll('.preview-img').forEach(function (img, index) {
-                    if (index === activeIndex) {
-                        img.classList.add('active');
-
-                        // アクティブなサムネイルが見えるようにスクロール
-                        var previewItem = img.closest('.preview-item');
-                        if (previewItem) {
-                            previewItem.scrollIntoView({
-                                behavior: 'smooth',
-                                block: 'nearest',
-                                inline: 'center'
-                            });
-                        }
-                    } else {
-                        img.classList.remove('active');
-                    }
-                });
             });
         });
 
@@ -897,7 +1068,7 @@
         document.addEventListener('keydown', function (e) {
             // 現在フォーカスされているカルーセルを取得
             const focusedCarousel = document.querySelector('.carousel:focus') ||
-                document.querySelector('.carousel-item.active').closest('.carousel');
+                document.querySelector('.carousel-item.active')?.closest('.carousel');
 
             if (!focusedCarousel) return;
 
@@ -918,5 +1089,3 @@
         });        
     </script>
 </body>
-
-</html>

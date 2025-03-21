@@ -96,7 +96,7 @@ class Command(BaseCommand):
         for _ in range(diary_count):
             stock = random.choice(stocks)
             
-            # 購入日（過去3年以内）
+            # 購入/メモ日（過去3年以内）
             today = datetime.date.today()
             days_ago = random.randint(1, 1095)  # 最大3年（365*3日）
             purchase_date = today - datetime.timedelta(days=days_ago)
@@ -252,7 +252,7 @@ class Command(BaseCommand):
             
             # ノート追加
             for j in range(random.randint(0, notes_per_diary)):
-                # ノート作成日（購入日～今日または売却日まで）
+                # ノート作成日（購入/メモ日～今日または売却日まで）
                 if sell_date:
                     days_after_purchase = random.randint(1, (sell_date - purchase_date).days)
                 else:

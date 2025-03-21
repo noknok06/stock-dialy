@@ -14,7 +14,7 @@ class StockDiary(models.Model):
     purchase_date = models.DateField()
     purchase_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     purchase_quantity = models.IntegerField(null=True, blank=True)
-    reason = RichTextUploadingField(verbose_name='購入理由') 
+    reason = models.TextField(verbose_name='購入理由', blank=True)
     # 文字列参照を使用して循環参照を避ける
     checklist = models.ManyToManyField('checklist.Checklist', blank=True)
     tags = models.ManyToManyField(Tag, blank=True)
@@ -74,14 +74,14 @@ class StockDiary(models.Model):
             self.is_memo = True
             
         super().save(*args, **kwargs)
-        
+
 # stockdiary/models.py に追加
 
 class DiaryNote(models.Model):
     """日記エントリーへの継続的な追記"""
     diary = models.ForeignKey(StockDiary, on_delete=models.CASCADE, related_name='notes')
     date = models.DateField()
-    content = RichTextUploadingField(verbose_name='記録内容')
+    content = models.TextField(verbose_name='記録内容', blank=True)
     current_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, 
                                        verbose_name='記録時点の価格')
     
