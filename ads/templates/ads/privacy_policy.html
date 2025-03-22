@@ -1,0 +1,127 @@
+{# ads/templates/ads/privacy_policy.html #}
+{% extends 'base.html' %}
+
+{% block title %}プライバシーポリシー - カブログ{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h1 class="h4 mb-0">プライバシーポリシー</h1>
+                </div>
+                <div class="card-body">
+                    <div class="mb-5">
+                        <h2 class="h5 fw-bold mb-3">カブログによる個人情報の取り扱いについて</h2>
+                        <p>
+                            カブログ（以下「当サービス」）は、ユーザーのプライバシーを尊重し、個人情報の保護に努めています。
+                            このプライバシーポリシーでは、当サービスが収集する情報とその使用方法について説明します。
+                        </p>
+                    </div>
+                    
+                    <div class="mb-5">
+                        <h2 class="h5 fw-bold mb-3">1. 収集する情報</h2>
+                        <p>当サービスは、以下の情報を収集することがあります：</p>
+                        <ul>
+                            <li>アカウント情報（ユーザー名、メールアドレスなど）</li>
+                            <li>プロフィール情報（任意で提供された情報）</li>
+                            <li>投資日記の内容やポートフォリオ情報</li>
+                            <li>サービス利用状況（アクセスログ、IPアドレスなど）</li>
+                            <li>Cookieやローカルストレージに保存される情報</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-5">
+                        <h2 class="h5 fw-bold mb-3">2. 広告に関する情報</h2>
+                        <p>
+                            当サービスでは、Google AdSenseをはじめとする第三者の広告配信サービスを利用しています。
+                            これらのサービスは、ユーザーの興味に基づいて広告を表示するために、Cookieを使用することがあります。
+                        </p>
+                        <p>
+                            Google AdSenseに関する詳細情報は、
+                            <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer">
+                                Googleの広告ポリシー
+                            </a>
+                            をご覧ください。
+                        </p>
+                        <p>
+                            ユーザーは「<a href="{% url 'ads:ad_preferences' %}">広告設定</a>」ページでパーソナライズ広告の表示有無を選択できます。
+                            また、<a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer">
+                                Googleの広告設定ページ
+                            </a>でも広告のパーソナライズを管理できます。
+                        </p>
+                    </div>
+                    
+                    <div class="mb-5">
+                        <h2 class="h5 fw-bold mb-3">3. 情報の利用目的</h2>
+                        <p>収集した情報は、以下の目的で利用されます：</p>
+                        <ul>
+                            <li>サービスの提供と改善</li>
+                            <li>ユーザー認証とアカウント管理</li>
+                            <li>カスタマーサポートの提供</li>
+                            <li>サービスの利用状況の分析</li>
+                            <li>不正利用の防止とセキュリティ確保</li>
+                            <li>新機能や更新情報のお知らせ（任意）</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-5">
+                        <h2 class="h5 fw-bold mb-3">4. 情報の共有と開示</h2>
+                        <p>
+                            当サービスは、以下の場合を除き、ユーザーの個人情報を第三者と共有または開示しません：
+                        </p>
+                        <ul>
+                            <li>ユーザーの同意がある場合</li>
+                            <li>法的要請や規制に従う必要がある場合</li>
+                            <li>サービス提供に必要なパートナー企業との共有（データ処理業者など）</li>
+                            <li>当サービスの権利や財産を保護する必要がある場合</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-5">
+                        <h2 class="h5 fw-bold mb-3">5. ユーザーの権利</h2>
+                        <p>ユーザーには以下の権利があります：</p>
+                        <ul>
+                            <li>アカウント情報へのアクセスと修正</li>
+                            <li>データのエクスポートと削除の要請</li>
+                            <li>マーケティング目的での連絡のオプトアウト</li>
+                            <li>Cookie使用に関する設定変更</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-5">
+                        <h2 class="h5 fw-bold mb-3">6. プライバシーポリシーの変更</h2>
+                        <p>
+                            当サービスは、必要に応じてこのプライバシーポリシーを更新することがあります。
+                            重要な変更がある場合は、サービス内での通知やメールでお知らせします。
+                        </p>
+                    </div>
+                    
+                    <div class="mb-5">
+                        <h2 class="h5 fw-bold mb-3">7. お問い合わせ</h2>
+                        <p>
+                            プライバシーポリシーに関するご質問やご不明点がある場合は、
+                            <a href="mailto:support@example.com">support@example.com</a>
+                            までお問い合わせください。
+                        </p>
+                    </div>
+                    
+                    <div class="text-end">
+                        <p class="text-muted">最終更新日：2024年3月22日</p>
+                    </div>
+                    
+                    <div class="mt-4 d-flex justify-content-between">
+                        <a href="{% url 'stockdiary:home' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i> ホームに戻る
+                        </a>
+                        <a href="{% url 'ads:ad_preferences' %}" class="btn btn-primary">
+                            <i class="bi bi-gear me-1"></i> 広告設定を変更する
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

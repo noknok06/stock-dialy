@@ -35,6 +35,7 @@ urlpatterns = [
     path('company_master/', include('company_master.urls')),
     path('portfolio/', include('portfolio.urls')),
     path('subscriptions/', include('subscriptions.urls')),
+    path('ads/', include('ads.urls')),
 ]
 
 if settings.DEBUG:
