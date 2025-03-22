@@ -20,7 +20,8 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from . import views
-
+from django.contrib.staticfiles.storage import staticfiles_storage
+from django.views.generic.base import RedirectView
 
 urlpatterns = [
     path('', views.landing_page, name='landing_page'),
@@ -36,6 +37,7 @@ urlpatterns = [
     path('portfolio/', include('portfolio.urls')),
     path('subscriptions/', include('subscriptions.urls')),
     path('ads/', include('ads.urls')),
+    path('ads.txt', RedirectView.as_view(url=staticfiles_storage.url('ads.txt'))),
 ]
 
 if settings.DEBUG:

@@ -20,17 +20,13 @@ def google_adsense():
 
 @register.simple_tag(takes_context=True)
 def display_ad(context, ad_slot, format='auto'):
-    """
-    指定されたスロットIDの広告を表示する
-    例: {% display_ad "1234567890" %}
-    """
     # パーソナライズ広告の設定を取得
     personalized_ads = context.get('personalized_ads', True)
     
     ad_code = """
     <ins class="adsbygoogle"
          style="display:block"
-         data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+         data-ad-client="ca-pub-3954701883136363"
          data-ad-slot="{slot}"
          data-ad-format="{format}"
          {personalized}></ins>
@@ -43,6 +39,7 @@ def display_ad(context, ad_slot, format='auto'):
         personalized='' if personalized_ads else 'data-adtest="on" data-ad-channel="non-personalized"'
     )
     return mark_safe(ad_code)
+    
 @register.simple_tag(takes_context=True)
 def show_placement_ad(context, position):
     """
