@@ -35,44 +35,6 @@
   </div>
   
   <div class="row">
-    <!-- タグの分布 -->
-    <div class="col-12 mb-4">
-      <div class="dashboard-card">
-        <div class="card-header">
-          <h5 class="card-header-title">
-            <i class="bi bi-tags"></i> タグの使用状況
-          </h5>
-        </div>
-        <div class="card-body">
-          <div class="tag-distribution">
-            {% for tag in top_tags %}
-            <div class="tag-item">
-              <div class="tag-icon">
-                <i class="bi bi-tag"></i>
-              </div>
-              <div class="tag-details">
-                <div class="tag-name">{{ tag.name }}</div>
-                <div class="tag-count">{{ tag.count }}回使用</div>
-                <div class="tag-progress">
-                  <div class="tag-progress-bar" style="width: {{ tag.percentage }}%;"></div>
-                </div>
-              </div>
-            </div>
-            {% empty %}
-            <div class="col-12 text-center py-4">
-              <div class="text-muted">
-                <i class="bi bi-tag fs-3 mb-2"></i>
-                <p>まだタグが使用されていません。</p>
-              </div>
-            </div>
-            {% endfor %}
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <div class="row">
     <!-- タグの関連性分析 -->
     <div class="col-12 mb-4">
       <div class="dashboard-card">
