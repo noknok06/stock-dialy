@@ -389,11 +389,19 @@
     const ctx = document.getElementById('templateTypeChart');
     if (!ctx) return;
     
-    // テンプレート名とその使用回数をそのまま使用
+    // テンプレート名とその使用回数を取得
     const templateNames = {{ template_names|safe|default:"[]" }};
-    const templateUsages = {{ template_usage_rates|safe|default:"[]" }};
+    const templateUsageCounts = {{ template_usage_data|safe|default:"[]" }};
     
-    if (!templateNames.length || !templateUsages.length) return;
+    if (!templateNames.length || !templateUsageCounts.length) return;
+    
+    // 全テンプレートの合計使用回数を計算
+    const totalUsage = templateUsageCounts.reduce((sum, count) => sum + count, 0);
+    
+    // 使用率（パーセント）に変換
+    const usagePercentages = templateUsageCounts.map(count => 
+      totalUsage > 0 ? (count / totalUsage * 100) : 0
+    );
     
     // 最大5つまで表示し、それ以上は「その他」にまとめる
     let labels = [];
@@ -410,17 +418,32 @@
     if (templateNames.length <= 5) {
       // 5つ以下の場合はそのまま表示
       labels = templateNames;
-      data = templateUsages;
+      data = usagePercentages;
     } else {
       // 5つ以上ある場合は上位5つを表示し、残りは「その他」としてまとめる
-      labels = templateNames.slice(0, 5);
-      data = templateUsages.slice(0, 5);
+      // 使用回数でソートするための配列を作成
+      const templatesWithUsage = templateNames.map((name, index) => ({
+        name,
+        percentage: usagePercentages[index]
+      }));
+      
+      // 使用率の降順でソート
+      templatesWithUsage.sort((a, b) => b.percentage - a.percentage);
+      
+      // 上位5つを取得
+      const top5 = templatesWithUsage.slice(0, 5);
+      labels = top5.map(t => t.name);
+      data = top5.map(t => t.percentage);
       
       // 「その他」の集計
-      const otherSum = templateUsages.slice(5).reduce((sum, value) => sum + value, 0);
-      if (otherSum > 0) {
-        labels.push('その他');
-        data.push(otherSum);
+      if (templatesWithUsage.length > 5) {
+        const otherSum = templatesWithUsage
+          .slice(5)
+          .reduce((sum, t) => sum + t.percentage, 0);
+        if (otherSum > 0) {
+          labels.push('その他');
+          data.push(otherSum);
+        }
       }
     }
     

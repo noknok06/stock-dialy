@@ -128,10 +128,12 @@
                     </a>
                   </td>
                   <td>
-                    {% if not diary.sell_date %}
-                      <span class="badge bg-success">購入</span>
-                    {% else %}
+                    {% if diary.purchase_price and diary.sell_price %}
                       <span class="badge bg-danger">売却</span>
+                    {% elif diary.purchase_price %}
+                      <span class="badge bg-success">購入</span>
+                    {% else %}                  
+                    <span class="badge bg-info">メモ</span>
                     {% endif %}
                   </td>
                   <td class="text-end">
