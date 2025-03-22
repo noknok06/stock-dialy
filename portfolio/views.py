@@ -58,7 +58,8 @@ class SnapshotDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Detail
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['holdings'] = self.object.holdings.all()
-        context['sector_allocations'] = self.object.sector_allocations.all()
+        # セクター配分を割合の降順でソート
+        context['sector_allocations'] = self.object.sector_allocations.all().order_by('-percentage')
         diary_actions = [
             {
                 'type': 'back',
@@ -81,7 +82,6 @@ class SnapshotDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Detail
         ]
         context['diary_actions'] = diary_actions  # この行を必ず追加する
         return context
-
 # portfolio/views.py の CreateSnapshotView クラスを修正
 
 class CreateSnapshotView(SubscriptionLimitCheckMixin, LoginRequiredMixin, CreateView):
