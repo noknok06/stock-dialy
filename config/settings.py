@@ -12,6 +12,11 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import os
+import dj_database_url
+from dotenv import load_dotenv
+
+# .envファイルの読み込み
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,14 +26,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-h=(#w%%7ejhe=u$vjre&d%6u(-7a$js2x4*v76iq4_m3+7onk#'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['exnok.pythonanywhere.com', 'localhost', '127.0.0.1','https://6e30-2400-2411-a761-e100-1436-fd6a-cfec-b578.ngrok-free.app']
-CSRF_TRUSTED_ORIGINS = ['https://exnok.pythonanywhere.com', 'http://exnok.pythonanywhere.com','https://6e30-2400-2411-a761-e100-1436-fd6a-cfec-b578.ngrok-free.app']
-
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+CSRF_TRUSTED_ORIGINS = [
+    'https://kabu-log.net', 'http://kabu-log.net', 
+    'http://localhost:8000', 
+]
 
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
@@ -49,14 +56,14 @@ INSTALLED_APPS = [
     'ckeditor_uploader',  # 追加
     'tinymce',
     'users',  # ← これがあるか確認
-    'checklist',
     'tags',
-    'ads',
-    'stockdiary',
-    'portfolio', 
     'analysis_template',
     'company_master',
+    'checklist',
+    'stockdiary',
+    'portfolio', 
     'subscriptions',
+    'ads',
     # django-allauth関連
     'allauth',
     'allauth.account',
@@ -115,11 +122,6 @@ CKEDITOR_CONFIGS = {
     },
 }
 
-# 静的ファイルの追加
-STATICFILES_DIRS = [
-    # ここに既存のSTATICFILES_DIRSの内容を維持
-]
-
 TINYMCE_DEFAULT_CONFIG = {
     'theme': 'silver',
     'width': '100%',
@@ -134,7 +136,7 @@ TINYMCE_DEFAULT_CONFIG = {
 }
 
 MIDDLEWARE = [
-    'maintenance.middleware.MaintenanceModeMiddleware',  # これを追加
+    'maintenance.middleware.MaintenanceModeMiddleware',  # これを追加   
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -210,7 +212,6 @@ TEMPLATES = [
                 'subscriptions.context_processors.subscription_status',
                 # 広告コンテキストプロセッサを追加
                 'ads.context_processors.ads_processor',
-
             ],
         },
     },
@@ -224,30 +225,31 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME', 'kabulog'),
+        'USER': os.getenv('DB_USER', 'naoki'),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
-
-
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
-
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
@@ -289,13 +291,48 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'kabulog.information@gmail.com'  # 送信元メールアドレス
 EMAIL_HOST_PASSWORD = 'wfsdxbdxsdusvddw'  # アプリパスワードまたは通常のパスワード
 # DEFAULT_FROM_EMAIL = 'Kabulog <kabulog.information@gmail.com>'
-DEBUG = True  # 開発環境ではTrueに
-
 
 # ===== Stripe設定（現在は機能を使用していないためコメントアウト） =====
 # STRIPE_PUBLIC_KEY = 'pk_test_あなたのStripeパブリックキー'
 # STRIPE_SECRET_KEY = 'sk_test_あなたのStripeシークレットキー'
 # STRIPE_WEBHOOK_SECRET = 'whsec_あなたのWebhookシークレット'
+# セッション設定
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'  # または 'Strict'
+
+# CSRF設定
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'  # または 'Strict'
+
+ACCOUNT_LOGOUT_REDIRECT_URL = 'users:login'
+
+SECURE_SSL_REDIRECT = True
+SECURE_HSTS_SECONDS = 31536000  # 1年
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'django-error.log'),
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+    },
+}
+SOCIALACCOUNT_REDIRECT_URLS = {
+    'google': 'https://kabu-log.net/accounts/google/login/callback/'
+}
+
 
 ADS_SETTINGS = {
     'DEFAULT_AD_CLIENT': 'ca-pub-3954701883136363',  # デフォルトの広告クライアントID
@@ -307,8 +344,8 @@ MAINTENANCE_MODE = True
 
 #  許可するIPアドレスのリスト（管理者のIPなど）
 MAINTENANCE_ALLOWED_IPS = [
-    '127.0.0.1',       # ローカル開発環境
-    '72.14.201.171',   # 例: 管理者のIP
+    '193.186.4.181',       # ローカル開発環境
+    '192.168.1.100',   # 例: 管理者のIP
     # 実際の管理者IPに置き換えてください
 ]
 
@@ -316,6 +353,7 @@ MAINTENANCE_ALLOWED_IPS = [
 MAINTENANCE_EXEMPT_URLS = [
     r'^/static/.*',    # 静的ファイル
     r'^/media/.*',     # メディアファイル
+    r'^/$',            # ランディングページ（ルートURL）
 ]
 
 # メンテナンス終了予定時刻（表示用）
