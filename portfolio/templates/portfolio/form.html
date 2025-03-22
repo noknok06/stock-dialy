@@ -323,7 +323,36 @@
     </div>
   </div>
 </div>
-
+<div class="info-box mb-4" style="border-left-color: {% if usage_percent.snapshots >= 100 %}#ef4444{% elif usage_percent.snapshots >= 80 %}#f59e0b{% else %}#10b981{% endif %}; background-color: {% if usage_percent.snapshots >= 100 %}#fee2e2{% elif usage_percent.snapshots >= 80 %}#fef3c7{% else %}#ecfdf5{% endif %};">
+  <div class="info-box-icon" style="background-color: {% if usage_percent.snapshots >= 100 %}#ef4444{% elif usage_percent.snapshots >= 80 %}#f59e0b{% else %}#10b981{% endif %};">
+    <i class="bi bi-pie-chart"></i>
+  </div>
+  <div class="info-box-content">
+    <h5 class="info-box-title">サブスクリプション使用状況</h5>
+    <p class="info-box-text">
+      現在のプラン：<strong>{{ subscription_name }}</strong><br>
+      スナップショット：
+      <strong>{{ usage.snapshots }} / {{ plan_limits.max_snapshots }}</strong>
+      ({{ usage_percent.snapshots }}%)
+      {% if usage_percent.snapshots >= 80 %}
+        <span class="text-{% if usage_percent.snapshots >= 100 %}danger{% else %}warning{% endif %}">
+          <i class="bi bi-exclamation-triangle"></i>
+          {% if usage_percent.snapshots >= 100 %}
+            上限に達しています
+          {% else %}
+            上限に近づいています
+          {% endif %}
+        </span>
+      {% endif %}
+    </p>
+    {% if today_snapshot_exists %}
+      <div class="alert alert-warning mt-2 mb-0" style="padding: 0.5rem;">
+        <i class="bi bi-calendar-check me-1"></i> 本日のスナップショットはすでに作成済みです（1日1回の制限）
+      </div>
+    {% endif %}
+  </div>
+  <div style="clear: both;"></div>
+</div>
 {% include 'speed_dial.html' with actions=page_actions %}
 {% endblock %}
 

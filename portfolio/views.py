@@ -12,6 +12,8 @@ from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 from subscriptions.mixins import SubscriptionLimitCheckMixin
 
+# portfolio/views.py の SnapshotListView クラスを更新
+
 class SnapshotListView(LoginRequiredMixin, ListView):
     model = PortfolioSnapshot
     template_name = 'portfolio/list.html'
@@ -22,6 +24,29 @@ class SnapshotListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        
+        # 同日のスナップショットがすでに存在するかチェック
+        from django.utils import timezone
+        import datetime
+        from zoneinfo import ZoneInfo  # ZoneInfo を追加
+        
+        today = timezone.now().date()
+        # timezone.utc の代わりに ZoneInfo("UTC") を使用
+        today_start = datetime.datetime.combine(today, datetime.time.min, tzinfo=ZoneInfo("UTC"))
+        today_end = datetime.datetime.combine(today, datetime.time.max, tzinfo=ZoneInfo("UTC"))
+        
+        context['today_snapshot_exists'] = PortfolioSnapshot.objects.filter(
+            user=self.request.user,
+            created_at__range=(today_start, today_end)
+        ).exists()
+        
+        # 残りの作成可能枚数
+        if hasattr(self.request, 'subscription') and self.request.subscription:
+            plan = self.request.subscription.plan
+            snapshot_count = PortfolioSnapshot.objects.filter(user=self.request.user).count()
+            remaining = max(0, plan.max_snapshots - snapshot_count)
+            context['remaining_snapshots'] = remaining
+        
         diary_actions = [
             {
                 'type': 'back',
@@ -42,7 +67,7 @@ class SnapshotListView(LoginRequiredMixin, ListView):
                 'label': '比較分析'
             }
         ]
-        context['page_actions'] = diary_actions  # この行を必ず追加する
+        context['page_actions'] = diary_actions
         return context
 
 class SnapshotDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, DetailView):
@@ -82,7 +107,7 @@ class SnapshotDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Detail
         ]
         context['diary_actions'] = diary_actions  # この行を必ず追加する
         return context
-# portfolio/views.py の CreateSnapshotView クラスを修正
+# portfolio/views.py の CreateSnapshotView クラスを完全に修正
 
 class CreateSnapshotView(SubscriptionLimitCheckMixin, LoginRequiredMixin, CreateView):
     model = PortfolioSnapshot
@@ -92,6 +117,10 @@ class CreateSnapshotView(SubscriptionLimitCheckMixin, LoginRequiredMixin, Create
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        
+        # 必要なインポート
+        import datetime
+        from zoneinfo import ZoneInfo
         
         # 現在日時を取得
         context['now'] = timezone.now()
@@ -118,6 +147,16 @@ class CreateSnapshotView(SubscriptionLimitCheckMixin, LoginRequiredMixin, Create
         else:
             context['total_value'] = '0円'
         
+        # 同日のスナップショットがすでに存在するかチェック
+        today = timezone.now().date()
+        today_start = datetime.datetime.combine(today, datetime.time.min, tzinfo=ZoneInfo("UTC"))
+        today_end = datetime.datetime.combine(today, datetime.time.max, tzinfo=ZoneInfo("UTC"))
+        
+        context['today_snapshot_exists'] = PortfolioSnapshot.objects.filter(
+            user=self.request.user,
+            created_at__range=(today_start, today_end)
+        ).exists()
+        
         page_actions = [
             {
                 'type': 'back',
@@ -132,6 +171,25 @@ class CreateSnapshotView(SubscriptionLimitCheckMixin, LoginRequiredMixin, Create
         return context
         
     def form_valid(self, form):
+        # 必要なインポート
+        import datetime
+        from zoneinfo import ZoneInfo
+        
+        # 同日のスナップショットがすでに存在するかチェック
+        today = timezone.now().date()
+        today_start = datetime.datetime.combine(today, datetime.time.min, tzinfo=ZoneInfo("UTC"))
+        today_end = datetime.datetime.combine(today, datetime.time.max, tzinfo=ZoneInfo("UTC"))
+        
+        today_snapshot_exists = PortfolioSnapshot.objects.filter(
+            user=self.request.user,
+            created_at__range=(today_start, today_end)
+        ).exists()
+        
+        if today_snapshot_exists:
+            messages.error(self.request, "本日のスナップショットはすでに作成済みです。スナップショットは1日1回のみ作成できます。")
+            return redirect('portfolio:list')
+        
+        # ミックスインの制限チェックが通った場合は、ユーザーを設定
         form.instance.user = self.request.user
         
         # アクティブな株式日記を取得（売却されていないもの）
@@ -162,14 +220,14 @@ class CreateSnapshotView(SubscriptionLimitCheckMixin, LoginRequiredMixin, Create
                 # セクター情報を取得 - StockDiaryから直接取得し、空の場合はタグから推測
                 sector = diary.sector
                 
-                # # セクターが未設定の場合はタグから推測
-                # if not sector or sector.strip() == "":
-                #     sector_tags = ['テクノロジー', '金融', 'ヘルスケア', '消費財', '素材', 'エネルギー', '通信', '公共', '不動産', '産業']
-                #     for tag in diary.tags.all():
-                #         tag_name = tag.name
-                #         if any(s in tag_name for s in sector_tags):
-                #             sector = tag_name
-                #             break
+                # セクターが未設定の場合はタグから推測
+                if not sector or sector.strip() == "":
+                    sector_tags = ['テクノロジー', '金融', 'ヘルスケア', '消費財', '素材', 'エネルギー', '通信', '公共', '不動産', '産業']
+                    for tag in diary.tags.all():
+                        tag_name = tag.name
+                        if any(s in tag_name for s in sector_tags):
+                            sector = tag_name
+                            break
                 
                 # それでも設定できない場合は「未分類」
                 if not sector or sector.strip() == "":
@@ -182,40 +240,15 @@ class CreateSnapshotView(SubscriptionLimitCheckMixin, LoginRequiredMixin, Create
                     quantity=diary.purchase_quantity,
                     price=diary.purchase_price,
                     total_value=stock_value,
-                    sector=diary.sector,  # StockDiary から直接取得
+                    sector=sector,
                     percentage=percentage
                 )
         
         # セクター配分を計算
         self.calculate_sector_allocations()
         
-        return response
-    
-    def calculate_sector_allocations(self):
-        """セクター別の配分を計算して保存"""
-        # 全ホールディングを取得
-        holdings = self.object.holdings.all()
-        
-        # セクターごとにグループ化
-        sectors = {}
-        for holding in holdings:
-            sector = holding.sector if holding.sector else "未分類"
-            
-            if sector in sectors:
-                sectors[sector] += holding.percentage
-            else:
-                sectors[sector] = holding.percentage
-        
-        # セクター配分を保存
-        for sector_name, percentage in sectors.items():
-            SectorAllocation.objects.create(
-                snapshot=self.object,
-                sector_name=sector_name,
-                percentage=percentage
-            )
-
-# portfolio/views.py に追加
-# portfolio/views.py のCompareSnapshotsViewクラスを修正
+        messages.success(self.request, f"スナップショット「{self.object.name}」を作成しました。")
+        return response# portfolio/views.py のCompareSnapshotsViewクラスを修正
 
 class CompareSnapshotsView(LoginRequiredMixin, TemplateView):
     template_name = 'portfolio/compare.html'

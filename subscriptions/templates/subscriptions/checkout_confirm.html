@@ -1,0 +1,273 @@
+<!-- subscriptions/templates/subscriptions/checkout_confirm.html -->
+{% extends 'base.html' %}
+
+{% block title %}プラン変更確認 | カブログ{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<style>
+  .confirmation-container {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  
+  .plan-card {
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+  }
+  
+  .plan-header {
+    padding: 1.5rem;
+    color: white;
+  }
+  
+  .plan-basic .plan-header {
+    background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+  }
+  
+  .plan-pro .plan-header {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  }
+  
+  .plan-free .plan-header {
+    background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%);
+  }
+  
+  .plan-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  
+  .plan-price {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0;
+  }
+  
+  .plan-period {
+    font-size: 1rem;
+    opacity: 0.9;
+  }
+  
+  .plan-body {
+    padding: 1.5rem;
+    background-color: white;
+  }
+  
+  .plan-features {
+    margin-bottom: 1.5rem;
+  }
+  
+  .feature-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+  }
+  
+  .feature-icon {
+    color: #10b981;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+    margin-top: 0.25rem;
+  }
+  
+  .feature-text {
+    font-size: 0.95rem;
+    color: #4b5563;
+  }
+  
+  .warning-box {
+    background-color: #fff5f5;
+    border: 1px solid #fed7d7;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .warning-title {
+    color: #e53e3e;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+  }
+  
+  .warning-title i {
+    margin-right: 0.5rem;
+  }
+  
+  .warning-text {
+    color: #4a5568;
+    font-size: 0.95rem;
+  }
+  
+  .action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  
+  .confirm-btn {
+    flex: 1;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    text-align: center;
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+  }
+  
+  .btn-basic {
+    background-color: #4f46e5;
+  }
+  
+  .btn-basic:hover {
+    background-color: #3730a3;
+  }
+  
+  .btn-pro {
+    background-color: #10b981;
+  }
+  
+  .btn-pro:hover {
+    background-color: #059669;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="confirmation-container">
+    <h1 class="mb-4">プラン変更の確認</h1>
+    
+    {% if error %}
+    <div class="alert alert-danger">
+      {{ error }}
+      <p class="mt-3">
+        <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-outline-secondary">プラン選択に戻る</a>
+      </p>
+    </div>
+    {% else %}
+    
+    <div class="plan-card plan-{{ plan.slug }}">
+      <div class="plan-header">
+        <h2 class="plan-name">{{ plan.name }}</h2>
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="plan-price">
+            {% if plan.price_monthly == 0 %}
+            無料
+            {% else %}
+            ¥{{ plan.price_monthly }} <small class="opacity-75">/月</small>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      
+      <div class="plan-body">
+        <p class="mb-4">{{ plan.name }}に変更することを確認してください。</p>
+        
+        <div class="plan-features">
+          <h3 class="h5 mb-3">プラン特典</h3>
+          <ul class="list-unstyled">
+            {% if plan.slug == 'free' %}
+              <li class="feature-item">
+                <i class="bi bi-check-circle-fill feature-icon"></i>
+                <span class="feature-text">最大5個のタグ</span>
+              </li>
+              <li class="feature-item">
+                <i class="bi bi-check-circle-fill feature-icon"></i>
+                <span class="feature-text">最大3個の分析テンプレート</span>
+              </li>
+              <li class="feature-item">
+                <i class="bi bi-check-circle-fill feature-icon"></i>
+                <span class="feature-text">最大3回のスナップショット</span>
+              </li>
+              <li class="feature-item">
+                <i class="bi bi-check-circle-fill feature-icon"></i>
+                <span class="feature-text">無制限の株式記録</span>
+              </li>
+            {% elif plan.slug == 'basic' %}
+              <li class="feature-item">
+                <i class="bi bi-check-circle-fill feature-icon"></i>
+                <span class="feature-text">広告表示なし</span>
+              </li>
+              <li class="feature-item">
+                <i class="bi bi-check-circle-fill feature-icon"></i>
+                <span class="feature-text">最大10個のタグ</span>
+              </li>
+              <li class="feature-item">
+                <i class="bi bi-check-circle-fill feature-icon"></i>
+                <span class="feature-text">最大10個の分析テンプレート</span>
+              </li>
+              <li class="feature-item">
+                <i class="bi bi-check-circle-fill feature-icon"></i>
+                <span class="feature-text">最大10回のスナップショット</span>
+              </li>
+            {% elif plan.slug == 'pro' %}
+              <li class="feature-item">
+                <i class="bi bi-check-circle-fill feature-icon"></i>
+                <span class="feature-text">広告表示なし</span>
+              </li>
+              <li class="feature-item">
+                <i class="bi bi-check-circle-fill feature-icon"></i>
+                <span class="feature-text">無制限のタグ</span>
+              </li>
+              <li class="feature-item">
+                <i class="bi bi-check-circle-fill feature-icon"></i>
+                <span class="feature-text">無制限の分析テンプレート</span>
+              </li>
+              <li class="feature-item">
+                <i class="bi bi-check-circle-fill feature-icon"></i>
+                <span class="feature-text">無制限のスナップショット</span>
+              </li>
+            {% endif %}
+          </ul>
+        </div>
+        
+        {% if is_downgrade %}
+        <div class="warning-box">
+          <div class="warning-title">
+            <i class="bi bi-exclamation-triangle-fill"></i> プランのダウングレードについて
+          </div>
+          <p class="warning-text">
+            プランをダウングレードすると、新しいプランの制限を超えるデータへのアクセスが制限される可能性があります。
+            ただし、データ自体は削除されず、再度上位プランにアップグレードすると、すべてのデータにアクセスできるようになります。
+          </p>
+        </div>
+        {% endif %}
+        
+        {% if plan.price_monthly > 0 %}
+        <div class="small text-muted mb-3">
+          <p><i class="bi bi-shield-lock me-1"></i> 安全な決済: 256ビット暗号化でデータを保護します。</p>
+          <p><i class="bi bi-calendar-check me-1"></i> いつでもキャンセル可能: 簡単に解約できます。</p>
+        </div>
+        {% endif %}
+        
+        <form method="post" action="{% url 'subscriptions:checkout' plan.id 'monthly' %}">
+          {% csrf_token %}
+          <input type="hidden" name="confirmed" value="true">
+          
+          <div class="action-buttons">
+            <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-outline-secondary flex-1">
+              キャンセル
+            </a>
+            <button type="submit" class="confirm-btn btn-{{ plan.slug }} flex-1">
+              {% if plan.price_monthly > 0 %}
+              プランを契約する
+              {% else %}
+              このプランに変更する
+              {% endif %}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

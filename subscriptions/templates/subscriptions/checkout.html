@@ -1,77 +1,432 @@
-<!-- templates/subscriptions/checkout.html -->
+<!-- subscriptions/templates/subscriptions/checkout.html -->
 {% extends 'base.html' %}
 
-{% block title %}プラン切り替え{% endblock %}
+{% block title %}プラン決済 | カブログ{% endblock %}
 
-{% block extra_head %}
-<!-- Stripe準備のためコメントアウト 
-<script src="https://js.stripe.com/v3/"></script>
--->
+{% block head %}
+{{ block.super }}
+<style>
+  .checkout-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .plan-card {
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+  }
+  
+  .plan-header {
+    padding: 1.5rem;
+    color: white;
+  }
+  
+  .plan-basic .plan-header {
+    background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+  }
+  
+  .plan-pro .plan-header {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  }
+  
+  .plan-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  
+  .plan-period {
+    font-size: 1rem;
+    opacity: 0.9;
+  }
+  
+  .plan-body {
+    padding: 1.5rem;
+    background-color: white;
+  }
+  
+  .plan-price {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #111827;
+  }
+  
+  .payment-options {
+    margin-top: 2rem;
+  }
+  
+  .payment-method {
+    margin-bottom: 1.5rem;
+  }
+  
+  .payment-method-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .payment-icon {
+    width: 40px;
+    height: 40px;
+    background-color: #f3f4f6;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    font-size: 1.25rem;
+  }
+  
+  .payment-title {
+    font-weight: 600;
+    margin-bottom: 0;
+  }
+  
+  .payment-method-body {
+    background-color: #f9fafb;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .checkout-btn {
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+  }
+  
+  .checkout-btn-basic {
+    background-color: #4f46e5;
+  }
+  
+  .checkout-btn-basic:hover {
+    background-color: #3730a3;
+  }
+  
+  .checkout-btn-pro {
+    background-color: #10b981;
+  }
+  
+  .checkout-btn-pro:hover {
+    background-color: #059669;
+  }
+  
+  .test-mode-notice {
+    padding: 1rem;
+    background-color: #fffbeb;
+    border: 1px solid #fef3c7;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .summary-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+  }
+  
+  .summary-total {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+    font-weight: 700;
+    font-size: 1.25rem;
+  }
+  
+  .benefits-list {
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0;
+  }
+  
+  .benefit-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+  }
+  
+  .benefit-icon {
+    color: #10b981;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+    margin-top: 0.25rem;
+  }
+  
+  .benefit-text {
+    font-size: 0.95rem;
+    color: #4b5563;
+  }
+  
+  .payment-cards {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  
+  .payment-card-icon {
+    width: 45px;
+    height: 30px;
+    background-color: #f3f4f6;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: #4b5563;
+  }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="container py-5">
-    <h1 class="mb-4">プラン切り替え</h1>
+  <div class="checkout-container">
+    <h1 class="mb-4">プラン決済</h1>
     
     {% if error %}
     <div class="alert alert-danger">
-        {{ error }}
+      {{ error }}
+      <p class="mt-3">
+        <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-outline-secondary">プラン選択に戻る</a>
+      </p>
     </div>
-    <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-primary">プラン選択に戻る</a>
     {% else %}
-    <div class="card">
-        <div class="card-header">
-            <h2>{{ plan.name }}プラン ({{ billing_type }})</h2>
-        </div>
-        <div class="card-body">
-            <h3 class="mb-3">
-                {% if billing_type == 'yearly' %}
-                {{ plan.price_yearly }}円 (年額)
-                {% else %}
-                {{ plan.price_monthly }}円 (月額)
-                {% endif %}
-            </h3>
-            
-            {% if is_test_mode %}
-            <div class="alert alert-info">
-                <p><strong>テストモード:</strong> 現在、決済処理はテストモードです。実際の決済は行われません。</p>
+    
+    <div class="row">
+      <div class="col-md-7 mb-4">
+        <!-- 決済フォーム -->
+        <div class="plan-card plan-{{ plan.slug }}">
+          <div class="plan-header">
+            <h2 class="plan-name">{{ plan.name }}</h2>
+            <div class="plan-period">{{ billing_type }}プラン</div>
+          </div>
+          <div class="plan-body">
+            <div class="plan-price">
+              ¥{{ plan.price_monthly }} <small class="text-muted">/月</small>
             </div>
             
-            <form method="post">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-success">このプランに切り替える</button>
-                <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-outline-secondary">キャンセル</a>
-            </form>
-            {% else %}
-            <!-- Stripe決済ボタン（準備のためコメントアウト） -->
-            <!--
-            <p>下記の「支払いに進む」ボタンをクリックして決済を完了してください。</p>
-            <button id="checkout-button" class="btn btn-success">支払いに進む</button>
-            <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-outline-secondary">キャンセル</a>
-            -->
+            {% if is_test_mode %}
+            <div class="test-mode-notice">
+              <div class="d-flex align-items-center">
+                <i class="bi bi-info-circle-fill text-warning me-2 fs-4"></i>
+                <div>
+                  <strong>テストモード:</strong> 現在、決済処理はテストモードです。実際の決済は行われません。
+                </div>
+              </div>
+            </div>
             {% endif %}
+            
+            <div class="payment-options">
+              <h3 class="mb-3">お支払い方法</h3>
+              
+              {% if is_test_mode %}
+              <!-- テストモード用の簡易フォーム -->
+              <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="checkout-btn checkout-btn-{{ plan.slug }}">
+                  このプランに切り替える
+                </button>
+              </form>
+              {% else %}
+              <!-- Stripe決済ボタン（準備のためコメントアウト） -->
+              <div class="payment-method">
+                <div class="payment-method-header">
+                  <div class="payment-icon">
+                    <i class="bi bi-credit-card"></i>
+                  </div>
+                  <h4 class="payment-title">クレジットカード</h4>
+                </div>
+                <div class="payment-method-body">
+                  <div class="payment-cards">
+                    <div class="payment-card-icon">Visa</div>
+                    <div class="payment-card-icon">MC</div>
+                    <div class="payment-card-icon">Amex</div>
+                    <div class="payment-card-icon">JCB</div>
+                  </div>
+                  <div id="card-element" class="my-3">
+                    <!-- Stripeカード要素がここに表示されます -->
+                    <div class="form-control p-3 text-center text-muted">
+                      <i class="bi bi-lock"></i> セキュアな決済フォーム
+                    </div>
+                  </div>
+                  <div id="card-errors" class="text-danger mb-3"></div>
+                  <button id="checkout-button" class="checkout-btn checkout-btn-{{ plan.slug }}">
+                    <i class="bi bi-lock-fill me-2"></i> 安全に支払いを完了する
+                  </button>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+            
+            <div class="d-flex justify-content-center mt-4">
+              <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> プラン選択に戻る
+              </a>
+            </div>
+          </div>
         </div>
+      </div>
+      
+      <div class="col-md-5">
+        <!-- 注文サマリー -->
+        <div class="card">
+          <div class="card-header bg-light">
+            <h3 class="card-title h5 mb-0">注文内容</h3>
+          </div>
+          <div class="card-body">
+            <div class="summary-item">
+              <span>{{ plan.name }}</span>
+              <span>¥{{ plan.price_monthly }}</span>
+            </div>
+            
+            <div class="summary-item">
+              <span>お支払い頻度</span>
+              <span>月額</span>
+            </div>
+            
+            <div class="summary-total">
+              <span>合計</span>
+              <span>¥{{ plan.price_monthly }}</span>
+            </div>
+            
+            <ul class="benefits-list">
+              {% if plan.slug == 'basic' %}
+                <li class="benefit-item">
+                  <i class="bi bi-check-circle-fill benefit-icon"></i>
+                  <span class="benefit-text">広告表示なし</span>
+                </li>
+                <li class="benefit-item">
+                  <i class="bi bi-check-circle-fill benefit-icon"></i>
+                  <span class="benefit-text">最大10個のタグ</span>
+                </li>
+                <li class="benefit-item">
+                  <i class="bi bi-check-circle-fill benefit-icon"></i>
+                  <span class="benefit-text">最大10個の分析テンプレート</span>
+                </li>
+                <li class="benefit-item">
+                  <i class="bi bi-check-circle-fill benefit-icon"></i>
+                  <span class="benefit-text">最大10回のスナップショット</span>
+                </li>
+              {% elif plan.slug == 'pro' %}
+                <li class="benefit-item">
+                  <i class="bi bi-check-circle-fill benefit-icon"></i>
+                  <span class="benefit-text">広告表示なし</span>
+                </li>
+                <li class="benefit-item">
+                  <i class="bi bi-check-circle-fill benefit-icon"></i>
+                  <span class="benefit-text">無制限のタグ</span>
+                </li>
+                <li class="benefit-item">
+                  <i class="bi bi-check-circle-fill benefit-icon"></i>
+                  <span class="benefit-text">無制限の分析テンプレート</span>
+                </li>
+                <li class="benefit-item">
+                  <i class="bi bi-check-circle-fill benefit-icon"></i>
+                  <span class="benefit-text">無制限のスナップショット</span>
+                </li>
+              {% endif %}
+            </ul>
+            
+            <div class="small text-muted">
+              <p><i class="bi bi-shield-lock me-1"></i> 安全な決済: 256ビット暗号化でデータを保護します。</p>
+              <p><i class="bi bi-calendar-check me-1"></i> いつでもキャンセル可能: 簡単に解約できます。</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     {% endif %}
+  </div>
 </div>
 
 <!-- Stripe決済スクリプト（準備のためコメントアウト） -->
 <!--
+<script src="https://js.stripe.com/v3/"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     var stripe = Stripe('{{ stripe_public_key }}');
-    var checkoutButton = document.getElementById('checkout-button');
+    var elements = stripe.elements();
     
-    checkoutButton.addEventListener('click', function() {
-      // セッションIDを使用してチェックアウトに移動
-      stripe.redirectToCheckout({
-        sessionId: '{{ checkout_session_id }}'
-      }).then(function (result) {
+    // カード要素のスタイル
+    var style = {
+      base: {
+        color: '#32325d',
+        fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+        fontSmoothing: 'antialiased',
+        fontSize: '16px',
+        '::placeholder': {
+          color: '#aab7c4'
+        }
+      },
+      invalid: {
+        color: '#fa755a',
+        iconColor: '#fa755a'
+      }
+    };
+    
+    // カード要素を作成
+    var card = elements.create('card', {style: style});
+    card.mount('#card-element');
+    
+    // エラーハンドリング
+    card.on('change', function(event) {
+      var displayError = document.getElementById('card-errors');
+      if (event.error) {
+        displayError.textContent = event.error.message;
+      } else {
+        displayError.textContent = '';
+      }
+    });
+    
+    // フォーム送信
+    var form = document.getElementById('payment-form');
+    form.addEventListener('submit', function(event) {
+      event.preventDefault();
+      
+      // フォーム送信ボタンを無効化
+      document.getElementById('checkout-button').disabled = true;
+      
+      stripe.createPaymentMethod({
+        type: 'card',
+        card: card,
+        billing_details: {
+          email: '{{ user.email }}'
+        },
+      }).then(function(result) {
         if (result.error) {
-          alert(result.error.message);
+          // エラー表示
+          var errorElement = document.getElementById('card-errors');
+          errorElement.textContent = result.error.message;
+          document.getElementById('checkout-button').disabled = false;
+        } else {
+          // サーバーにトークンを送信
+          stripeTokenHandler(result.paymentMethod);
         }
       });
     });
+    
+    function stripeTokenHandler(paymentMethod) {
+      // Hidden inputを作成してフォームに追加
+      var form = document.getElementById('payment-form');
+      var hiddenInput = document.createElement('input');
+      hiddenInput.setAttribute('type', 'hidden');
+      hiddenInput.setAttribute('name', 'payment_method_id');
+      hiddenInput.setAttribute('value', paymentMethod.id);
+      form.appendChild(hiddenInput);
+      
+      // フォームをサブミット
+      form.submit();
+    }
   });
 </script>
 -->

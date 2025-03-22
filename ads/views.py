@@ -1,4 +1,4 @@
-# ads/views.py - 広告設定ビューの更新 - サブスクリプション対応
+# ads/views.py - 新しいサブスクリプションプラン構造に対応
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -6,7 +6,7 @@ from django.urls import reverse_lazy
 from django.views.generic import TemplateView
 
 from .models import UserAdPreference
-from subscriptions.models import UserSubscription
+from subscriptions.models import UserSubscription, SubscriptionPlan
 
 def privacy_policy(request):
     """プライバシーポリシーのビュー"""
@@ -14,10 +14,10 @@ def privacy_policy(request):
 
 @login_required
 def ad_preferences(request):
-    """ユーザーの広告設定ページ - 単純化版"""
+    """ユーザーの広告設定ページ - サブスクリプション新構造対応版"""
     # ユーザーのサブスクリプション情報を取得
     is_premium = False
-    is_free = False
+    is_free = True  # デフォルトはフリープラン
     subscription_plan = None
     
     try:
@@ -31,11 +31,10 @@ def ad_preferences(request):
             subscription_plan = subscription.plan
     except UserSubscription.DoesNotExist:
         # サブスクリプションがない場合はフリープラン扱い
-        is_free = True
         try:
-            from subscriptions.models import SubscriptionPlan
             subscription_plan = SubscriptionPlan.objects.get(slug='free')
-        except:
+        except SubscriptionPlan.DoesNotExist:
+            # フリープランが存在しない場合はNoneのまま
             pass
     
     # 広告設定の取得または作成
@@ -46,20 +45,20 @@ def ad_preferences(request):
             user=request.user,
             show_ads=not is_premium,
             is_premium=is_premium,
-            allow_personalized_ads=is_free  # フリープランならTrue、それ以外はFalse
+            allow_personalized_ads=is_free
         )
     
     # プランに基づいて広告設定を自動的に更新
     update_needed = False
     
     if is_premium:
-        # 広告削除プランまたはプロプランの場合、広告を非表示
+        # 有料プラン（basic/pro）の場合、広告を非表示
         if preference.show_ads or not preference.is_premium:
             preference.show_ads = False
             preference.is_premium = True
             update_needed = True
             
-        # 広告非表示プランの場合、パーソナライズ広告も無効化
+        # 有料プランの場合、パーソナライズ広告も無効化
         if preference.allow_personalized_ads:
             preference.allow_personalized_ads = False
             update_needed = True
@@ -77,12 +76,24 @@ def ad_preferences(request):
     
     if update_needed:
         preference.save()
-        print(f"Updated ad preferences in view for user {request.user.username}: allow_personalized_ads={preference.allow_personalized_ads}")
+        print(f"Updated ad preferences in view for user {request.user.username}: "
+              f"plan={subscription_plan.slug if subscription_plan else 'unknown'}, "
+              f"show_ads={preference.show_ads}, is_premium={preference.is_premium}, "
+              f"allow_personalized_ads={preference.allow_personalized_ads}")
+    
+    # 利用可能なすべてのプランを取得
+    try:
+        all_plans = SubscriptionPlan.objects.all().order_by('display_order')
+    except:
+        all_plans = []
     
     # テンプレートにコンテキストを渡す
-    return render(request, 'ads/ad_preferences.html', {
+    context = {
         'preference': preference,
         'is_premium': is_premium,
         'is_free': is_free,
-        'subscription_plan': subscription_plan
-    })
+        'subscription_plan': subscription_plan,
+        'all_plans': all_plans,
+    }
+    
+    return render(request, 'ads/ad_preferences.html', context)

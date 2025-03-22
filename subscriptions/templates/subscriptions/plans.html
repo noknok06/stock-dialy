@@ -1,0 +1,409 @@
+<!-- subscriptions/templates/subscriptions/plans.html -->
+{% extends 'base.html' %}
+
+{% block title %}プラン比較 | カブログ{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<style>
+  .pricing-header {
+    text-align: center;
+    padding: 2rem 0;
+  }
+  
+  .pricing-title {
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  
+  .pricing-subtitle {
+    color: #6b7280;
+    max-width: 700px;
+    margin: 0 auto 2rem;
+  }
+  
+  .pricing-cards {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
+  
+  .pricing-card {
+    flex: 1;
+    min-width: 280px;
+    max-width: 350px;
+    border-radius: 1rem;
+    overflow: hidden;
+    border: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .pricing-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+  }
+  
+  .pricing-card-header {
+    padding: 1.5rem;
+    text-align: center;
+  }
+  
+  .free-plan .pricing-card-header {
+    background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%);
+    color: white;
+  }
+  
+  .basic-plan .pricing-card-header {
+    background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+    color: white;
+  }
+  
+  .pro-plan .pricing-card-header {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+  }
+  
+  .plan-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  
+  .plan-price {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0;
+  }
+  
+  .plan-period {
+    font-size: 0.875rem;
+    opacity: 0.8;
+  }
+  
+  .pricing-card-body {
+    padding: 1.5rem;
+    background-color: white;
+  }
+  
+  .plan-description {
+    color: #6b7280;
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem;
+  }
+  
+  .feature-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  
+  .feature-item:last-child {
+    border-bottom: none;
+  }
+  
+  .feature-icon {
+    color: #4f46e5;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+  }
+  
+  .feature-icon.not-included {
+    color: #d1d5db;
+  }
+  
+  .feature-text {
+    font-size: 0.95rem;
+  }
+  
+  .plan-cta {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+  }
+  
+  .free-plan .plan-cta {
+    background-color: #6b7280;
+    color: white;
+    border: none;
+  }
+  
+  .free-plan .plan-cta:hover {
+    background-color: #4b5563;
+  }
+  
+  .basic-plan .plan-cta {
+    background-color: #4f46e5;
+    color: white;
+    border: none;
+  }
+  
+  .basic-plan .plan-cta:hover {
+    background-color: #3730a3;
+  }
+  
+  .pro-plan .plan-cta {
+    background-color: #10b981;
+    color: white;
+    border: none;
+  }
+  
+  .pro-plan .plan-cta:hover {
+    background-color: #059669;
+  }
+  
+  .current-plan-badge {
+    display: inline-block;
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+    background-color: #10b981;
+    margin-left: 0.5rem;
+  }
+  
+  .pricing-faq {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .accordion-button:not(.collapsed) {
+    background-color: rgba(79, 70, 229, 0.05);
+    color: #4f46e5;
+    box-shadow: none;
+  }
+  
+  .accordion-button:focus {
+    box-shadow: none;
+    border-color: rgba(79, 70, 229, 0.5);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="pricing-header">
+    <h1 class="pricing-title">プラン比較</h1>
+    <p class="pricing-subtitle">あなたの投資スタイルに合わせて最適なプランをお選びください。いつでもプランの変更が可能です。</p>
+  </div>
+  
+  <div class="pricing-cards">
+    <!-- フリープラン -->
+    <div class="pricing-card free-plan">
+      <div class="pricing-card-header">
+        <h3 class="plan-name">フリープラン</h3>
+        <p class="plan-price">¥0</p>
+        <span class="plan-period">無料</span>
+        {% if current_plan.slug == 'free' %}
+          <span class="current-plan-badge">現在のプラン</span>
+        {% endif %}
+      </div>
+      <div class="pricing-card-body">
+        <p class="plan-description">基本的な機能を無料で利用できるプランです</p>
+        <ul class="feature-list">
+          <li class="feature-item">
+            <i class="bi bi-check feature-icon"></i>
+            <span class="feature-text">最大5個のタグ</span>
+          </li>
+          <li class="feature-item">
+            <i class="bi bi-check feature-icon"></i>
+            <span class="feature-text">最大3個の分析テンプレート</span>
+          </li>
+          <li class="feature-item">
+            <i class="bi bi-check feature-icon"></i>
+            <span class="feature-text">最大3回のスナップショット</span>
+          </li>
+          <li class="feature-item">
+            <i class="bi bi-check feature-icon"></i>
+            <span class="feature-text">無制限の株式記録</span>
+          </li>
+          <li class="feature-item">
+            <i class="bi bi-x feature-icon not-included"></i>
+            <span class="feature-text">広告表示あり</span>
+          </li>
+        </ul>
+        
+        {% if current_plan.slug == 'free' %}
+          <a href="#" class="plan-cta disabled" disabled>現在のプラン</a>
+        {% else %}
+          <a href="{% url 'subscriptions:downgrade' %}" class="plan-cta">このプランに変更</a>
+        {% endif %}
+      </div>
+    </div>
+    
+    <!-- ベーシックプラン -->
+    <div class="pricing-card basic-plan">
+      <div class="pricing-card-header">
+        <h3 class="plan-name">ベーシックプラン</h3>
+        <p class="plan-price">¥400</p>
+        <span class="plan-period">月額 (年間払いで¥3,800)</span>
+        {% if current_plan.slug == 'basic' %}
+          <span class="current-plan-badge">現在のプラン</span>
+        {% endif %}
+      </div>
+      <div class="pricing-card-body">
+        <p class="plan-description">広告のない快適な環境で、より多くの機能を利用できます</p>
+        <ul class="feature-list">
+          <li class="feature-item">
+            <i class="bi bi-check feature-icon"></i>
+            <span class="feature-text">最大10個のタグ</span>
+          </li>
+          <li class="feature-item">
+            <i class="bi bi-check feature-icon"></i>
+            <span class="feature-text">最大10個の分析テンプレート</span>
+          </li>
+          <li class="feature-item">
+            <i class="bi bi-check feature-icon"></i>
+            <span class="feature-text">最大10回のスナップショット</span>
+          </li>
+          <li class="feature-item">
+            <i class="bi bi-check feature-icon"></i>
+            <span class="feature-text">最大100件の株式記録</span>
+          </li>
+          <li class="feature-item">
+            <i class="bi bi-check feature-icon"></i>
+            <span class="feature-text">広告表示なし</span>
+          </li>
+        </ul>
+        
+        {% if current_plan.slug == 'basic' %}
+          <a href="#" class="plan-cta disabled" disabled>現在のプラン</a>
+        {% elif current_plan.slug == 'free' %}
+          <a href="{% url 'subscriptions:upgrade_to_plan' 'basic' %}" class="plan-cta">アップグレード</a>
+        {% else %}
+          <a href="{% url 'subscriptions:downgrade_to_plan' 'basic' %}" class="plan-cta">このプランに変更</a>
+        {% endif %}
+      </div>
+    </div>
+    
+    <!-- プロプラン -->
+    <div class="pricing-card pro-plan">
+      <div class="pricing-card-header">
+        <h3 class="plan-name">プロプラン</h3>
+        <p class="plan-price">¥800</p>
+        <span class="plan-period">月額 (年間払いで¥7,600)</span>
+        {% if current_plan.slug == 'pro' %}
+          <span class="current-plan-badge">現在のプラン</span>
+        {% endif %}
+      </div>
+      <div class="pricing-card-body">
+        <p class="plan-description">無制限の機能と高度な分析ツールで投資管理を最大限に活用できます</p>
+        <ul class="feature-list">
+          <li class="feature-item">
+            <i class="bi bi-check feature-icon"></i>
+            <span class="feature-text">無制限のタグ</span>
+          </li>
+          <li class="feature-item">
+            <i class="bi bi-check feature-icon"></i>
+            <span class="feature-text">無制限の分析テンプレート</span>
+          </li>
+          <li class="feature-item">
+            <i class="bi bi-check feature-icon"></i>
+            <span class="feature-text">無制限のスナップショット</span>
+          </li>
+          <li class="feature-item">
+            <i class="bi bi-check feature-icon"></i>
+            <span class="feature-text">無制限の株式記録</span>
+          </li>
+          <li class="feature-item">
+            <i class="bi bi-check feature-icon"></i>
+            <span class="feature-text">広告表示なし</span>
+          </li>
+          <li class="feature-item">
+            <i class="bi bi-check feature-icon"></i>
+            <span class="feature-text">データエクスポート機能あり</span>
+          </li>
+          <li class="feature-item">
+            <i class="bi bi-check feature-icon"></i>
+            <span class="feature-text">高度な分析機能</span>
+          </li>
+        </ul>
+        
+        {% if current_plan.slug == 'pro' %}
+          <a href="#" class="plan-cta disabled" disabled>現在のプラン</a>
+        {% else %}
+          <a href="{% url 'subscriptions:upgrade_to_plan' 'pro' %}" class="plan-cta">アップグレード</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  
+  <!-- よくある質問 -->
+  <div class="pricing-faq mt-5">
+    <h2 class="text-center mb-4">よくある質問</h2>
+    
+    <div class="accordion" id="pricingFAQ">
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="headingOne">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+            プランはいつでも変更できますか？
+          </button>
+        </h2>
+        <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#pricingFAQ">
+          <div class="accordion-body">
+            はい、いつでもプランを変更することができます。アップグレードの場合は即時反映され、ダウングレードの場合は現在の支払い期間の終了時に反映されます。
+          </div>
+        </div>
+      </div>
+      
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="headingTwo">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+            支払い方法はどのようなものがありますか？
+          </button>
+        </h2>
+        <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#pricingFAQ">
+          <div class="accordion-body">
+            クレジットカード（Visa、Mastercard、American Express、JCB）およびPayPalでの支払いに対応しています。
+          </div>
+        </div>
+      </div>
+      
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="headingThree">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+            無料プランに戻すと、データは失われますか？
+          </button>
+        </h2>
+        <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#pricingFAQ">
+          <div class="accordion-body">
+            無料プランの制限を超えるデータがある場合、プランの変更時にそのデータへのアクセスが制限されますが、削除はされません。再度有料プランにアップグレードすると、すべてのデータにアクセスできるようになります。
+          </div>
+        </div>
+      </div>
+      
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="headingFour">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+            返金ポリシーはどうなっていますか？
+          </button>
+        </h2>
+        <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#pricingFAQ">
+          <div class="accordion-body">
+            ご購入から14日以内であれば全額返金が可能です。それ以降の返金はサポートまでお問い合わせください。なお、年間プランからの月額プランへの変更による返金はできません。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

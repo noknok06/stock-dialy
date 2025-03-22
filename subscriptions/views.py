@@ -12,6 +12,8 @@ import stripe
 from django.conf import settings
 from django.utils import timezone
 
+# subscriptions/views.py のUpgradeViewを修正
+
 class UpgradeView(LoginRequiredMixin, ListView):
     """プランアップグレード画面"""
     template_name = 'subscriptions/upgrade.html'
@@ -20,27 +22,68 @@ class UpgradeView(LoginRequiredMixin, ListView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        
         try:
+            # 各プランのIDをデバッグ出力
+            all_plans = list(context['plans'])
+            for plan in all_plans:
+                print(f"Plan: {plan.slug}, ID: {plan.id}, Name: {plan.name}")
+            
+            # フリープラン、ベーシックプラン、プロプランのIDを設定
+            free_plan = None
+            basic_plan = None
+            pro_plan = None
+            
+            for plan in all_plans:
+                if plan.slug == 'free':
+                    free_plan = plan
+                elif plan.slug == 'basic':
+                    basic_plan = plan
+                elif plan.slug == 'pro':
+                    pro_plan = plan
+            
+            context['free_plan'] = free_plan
+            context['basic_plan'] = basic_plan
+            context['pro_plan'] = pro_plan
+            
+            # 現在のプラン
             context['current_plan'] = self.request.user.subscription.plan
-        except:
+        except Exception as e:
+            print(f"Error in UpgradeView: {str(e)}")
             # サブスクリプションが存在しない場合はフリープランを探す
             try:
                 context['current_plan'] = SubscriptionPlan.objects.get(slug='free')
-            except:
+            except SubscriptionPlan.DoesNotExist:
                 context['current_plan'] = None
+        
         return context
 
+# subscriptions/views.py のCheckoutViewを修正
 
 class CheckoutView(LoginRequiredMixin, TemplateView):
-    """決済処理画面（テスト用に簡素化+Stripe準備）"""
-    template_name = 'subscriptions/checkout.html'
+    """決済処理画面（確認画面付き）"""
+    
+    def get_template_names(self):
+        """確認済みかどうかでテンプレートを切り替え"""
+        confirmed = self.request.GET.get('confirmed', 'false') == 'true'
+        return 'subscriptions/checkout.html' if confirmed else 'subscriptions/checkout_confirm.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         plan_id = self.kwargs.get('plan_id')
         billing_type = self.kwargs.get('type', 'monthly')
         
+        # デバッグ情報
+        print(f"CheckoutView: plan_id={plan_id}, type={billing_type}")
+        
+        # プランIDが存在しない場合のエラーハンドリング
+        if plan_id is None:
+            context['error'] = "プランIDが指定されていません。"
+            print("Error: Plan ID is None")
+            return context
+        
         try:
+            # プランIDでの取得を試みる
             plan = SubscriptionPlan.objects.get(id=plan_id)
             context['plan'] = plan
             context['billing_type'] = billing_type
@@ -48,81 +91,48 @@ class CheckoutView(LoginRequiredMixin, TemplateView):
             # テスト用設定
             context['is_test_mode'] = True
             
-            # Stripe準備（コメントアウトしておく）
-            """
-            # Stripe決済セッションを作成
-            stripe.api_key = settings.STRIPE_SECRET_KEY
-            
-            # 価格を選択（月額/年額）
-            price = plan.price_yearly if billing_type == 'yearly' else plan.price_monthly
-            
-            # プラン名
-            plan_display_name = f"{plan.name} ({billing_type})"
-            
-            # Stripeの顧客IDを取得または作成
-            customer_id = None
+            # 現在のプランと比較してダウングレードかどうかを判定
+            is_downgrade = False
             try:
-                # ユーザーに関連するStripe顧客IDを取得（存在する場合）
-                if hasattr(self.request.user, 'stripe_customer'):
-                    customer_id = self.request.user.stripe_customer.stripe_id
-            except:
+                current_plan = self.request.user.subscription.plan
+                if current_plan.id != plan.id:
+                    if (
+                        (current_plan.slug == 'pro' and plan.slug in ['basic', 'free']) or
+                        (current_plan.slug == 'basic' and plan.slug == 'free')
+                    ):
+                        is_downgrade = True
+            except Exception as e:
+                print(f"Error checking downgrade status: {str(e)}")
                 pass
-                
-            # 顧客IDがない場合は新規作成
-            if not customer_id:
-                customer = stripe.Customer.create(
-                    email=self.request.user.email,
-                    name=self.request.user.username,
-                    metadata={
-                        'user_id': self.request.user.id
-                    }
-                )
-                customer_id = customer.id
-                
-                # 顧客IDを保存（StripeCustomerモデルがある場合）
-                # StripeCustomer.objects.create(user=self.request.user, stripe_id=customer_id)
             
-            # 決済セッションを作成
-            checkout_session = stripe.checkout.Session.create(
-                customer=customer_id,
-                payment_method_types=['card'],
-                line_items=[{
-                    'price_data': {
-                        'currency': 'jpy',
-                        'product_data': {
-                            'name': plan_display_name,
-                        },
-                        'unit_amount': int(price),
-                        'recurring': {
-                            'interval': 'year' if billing_type == 'yearly' else 'month',
-                        }
-                    },
-                    'quantity': 1,
-                }],
-                mode='subscription',
-                success_url=self.request.build_absolute_uri(reverse('subscriptions:success')) + "?session_id={CHECKOUT_SESSION_ID}",
-                cancel_url=self.request.build_absolute_uri(reverse('subscriptions:upgrade')),
-                metadata={
-                    'user_id': self.request.user.id,
-                    'plan_id': plan.id,
-                    'billing_type': billing_type
-                }
-            )
-            
-            context['stripe_public_key'] = settings.STRIPE_PUBLIC_KEY
-            context['checkout_session_id'] = checkout_session.id
-            """
+            context['is_downgrade'] = is_downgrade
+            context['confirmed'] = self.request.GET.get('confirmed', 'false') == 'true'
             
         except SubscriptionPlan.DoesNotExist:
-            context['error'] = "指定されたプランが見つかりません"
+            # プランが見つからない場合のエラーメッセージ
+            context['error'] = f"指定されたプラン(ID: {plan_id})が見つかりません。"
+            print(f"Error: Plan with ID {plan_id} not found.")
         except Exception as e:
+            # その他のエラー
             context['error'] = f"エラーが発生しました: {str(e)}"
+            print(f"Error in CheckoutView: {str(e)}")
         
         return context
     
     def post(self, request, *args, **kwargs):
-        """テスト用の簡易プラン切り替え処理"""
+        """プラン変更処理"""
         plan_id = self.kwargs.get('plan_id')
+        
+        # プランIDが存在しない場合のエラーハンドリング
+        if plan_id is None:
+            messages.error(request, "プランIDが指定されていません。")
+            return redirect('subscriptions:upgrade')
+            
+        confirmed = request.POST.get('confirmed', 'false') == 'true'
+        
+        # 確認していない場合は確認画面にリダイレクト
+        if not confirmed:
+            return redirect(reverse('subscriptions:checkout', kwargs=self.kwargs) + '?confirmed=true')
         
         try:
             plan = SubscriptionPlan.objects.get(id=plan_id)
@@ -160,7 +170,7 @@ class CheckoutView(LoginRequiredMixin, TemplateView):
             except Exception as e:
                 print(f"Error updating ad preferences during plan change: {str(e)}")
             
-            messages.success(request, f"{plan.name}プランに切り替えました")
+            messages.success(request, f"{plan.name}に切り替えました")
             return redirect('subscriptions:success')
             
         except SubscriptionPlan.DoesNotExist:
@@ -233,11 +243,28 @@ class SubscriptionSuccessView(LoginRequiredMixin, TemplateView):
         
         return super().get(request, *args, **kwargs)
     """
+# subscriptions/views.py のDowngradeViewを修正
+
 class DowngradeView(LoginRequiredMixin, TemplateView):
-    """ダウングレード処理"""
+    """ダウングレード処理（確認付き）"""
     template_name = 'subscriptions/downgrade.html'
     
-    def get(self, request, *args, **kwargs):
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        try:
+            # フリープランを取得
+            free_plan = SubscriptionPlan.objects.get(slug='free')
+            context['plan'] = free_plan
+            
+            # 処理中かどうか
+            context['processing'] = self.request.GET.get('processing', 'false') == 'true'
+            
+        except Exception as e:
+            context['error'] = f"エラーが発生しました: {str(e)}"
+        
+        return context
+    
+    def post(self, request, *args, **kwargs):
         try:
             # フリープランを取得
             free_plan = SubscriptionPlan.objects.get(slug='free')
@@ -271,11 +298,14 @@ class DowngradeView(LoginRequiredMixin, TemplateView):
                 print(f"Error updating ad preferences during downgrade: {str(e)}")
                 
             messages.success(request, "プランをフリープランに変更しました")
-            return redirect('subscriptions:upgrade')
+            
+            # 処理中画面を表示してからリダイレクト
+            return redirect(reverse('subscriptions:downgrade') + '?processing=true')
             
         except Exception as e:
             messages.error(request, f"エラーが発生しました: {str(e)}")
             return super().get(request, *args, **kwargs)
+            
 # Stripeの準備ができたらコメントを外す
 """
 @method_decorator(csrf_exempt, name='dispatch')
@@ -357,3 +387,105 @@ class StripeWebhookView(View):
         except Exception as e:
             print(f"Error handling payment failure: {str(e)}")
 """
+class SubscriptionUsageView(LoginRequiredMixin, TemplateView):
+    """サブスクリプション使用状況の詳細ビュー"""
+    template_name = 'subscriptions/usage.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        try:
+            subscription = self.request.user.subscription
+            plan = subscription.plan
+            
+            context['subscription'] = subscription
+            context['plan'] = plan
+            
+            # リソース使用状況を取得
+            user = self.request.user
+            
+            # タグデータ
+            tags = user.tag_set.all()
+            tag_count = tags.count()
+            tag_limit = plan.max_tags
+            tag_percent = int(tag_count / tag_limit * 100) if tag_limit > 0 else 0
+            
+            # テンプレートデータ
+            templates = user.analysistemplate_set.all()
+            template_count = templates.count()
+            template_limit = plan.max_templates
+            template_percent = int(template_count / template_limit * 100) if template_limit > 0 else 0
+            
+            # スナップショットデータ
+            snapshots = user.portfoliosnapshot_set.all()
+            snapshot_count = snapshots.count()
+            snapshot_limit = plan.max_snapshots
+            snapshot_percent = int(snapshot_count / snapshot_limit * 100) if snapshot_limit > 0 else 0
+            
+            # 株式記録データ
+            records = user.stockdiary_set.all()
+            record_count = records.count()
+            record_limit = plan.max_records
+            record_percent = int(record_count / record_limit * 100) if record_limit > 0 else 0
+            
+            # コンテキストに追加
+            context.update({
+                'resources': {
+                    'tags': {
+                        'items': tags,
+                        'count': tag_count,
+                        'limit': tag_limit,
+                        'percent': tag_percent,
+                        'name': 'タグ',
+                        'status': 'danger' if tag_percent > 90 else 'warning' if tag_percent > 70 else 'success',
+                    },
+                    'templates': {
+                        'items': templates,
+                        'count': template_count,
+                        'limit': template_limit,
+                        'percent': template_percent,
+                        'name': '分析テンプレート',
+                        'status': 'danger' if template_percent > 90 else 'warning' if template_percent > 70 else 'success',
+                    },
+                    'snapshots': {
+                        'items': snapshots,
+                        'count': snapshot_count,
+                        'limit': snapshot_limit,
+                        'percent': snapshot_percent,
+                        'name': 'スナップショット',
+                        'status': 'danger' if snapshot_percent > 90 else 'warning' if snapshot_percent > 70 else 'success',
+                    },
+                    'records': {
+                        'items': records,
+                        'count': record_count,
+                        'limit': record_limit,
+                        'percent': record_percent,
+                        'name': '株式記録',
+                        'status': 'danger' if record_percent > 90 else 'warning' if record_percent > 70 else 'success',
+                    }
+                }
+            })
+            
+        except Exception as e:
+            # エラーが発生した場合はエラーメッセージをコンテキストに追加
+            context['error'] = f"使用状況データの取得中にエラーが発生しました: {str(e)}"
+            
+        return context
+
+class PlanView(LoginRequiredMixin, ListView):
+    """プラン一覧表示画面 - UpgradeViewと同じテンプレートを使用"""
+    template_name = 'subscriptions/upgrade.html'
+    model = SubscriptionPlan
+    context_object_name = 'plans'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        try:
+            context['current_plan'] = self.request.user.subscription.plan
+        except:
+            # サブスクリプションが存在しない場合はフリープランを探す
+            try:
+                context['current_plan'] = SubscriptionPlan.objects.get(slug='free')
+            except:
+                context['current_plan'] = None
+        return context        

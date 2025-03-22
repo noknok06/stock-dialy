@@ -38,55 +38,88 @@ class SubscriptionLimitCheckMixin:
                 if current_count >= plan.max_tags:
                     messages.error(request, f"タグ数が上限({plan.max_tags}個)に達しています。プランをアップグレードしてください。")
                     return redirect('subscriptions:upgrade')
-        except Exception:
-            # エラーが発生した場合はチェックをスキップ
+        except Exception as e:
+            # エラー発生時はログに記録
+            print(f"Error in tag limit check: {str(e)}")
+            # チェックをスキップ
             pass
                 
         return super().dispatch(request, *args, **kwargs)
-    # 他の制限チェックメソッドも同様に実装
+        
     def check_template_limit(self, request, *args, **kwargs):
+        """分析テンプレート数の制限チェック"""
         try:
-            if request.method == 'POST':
+            if request.method == 'POST':  # 新規作成時のみチェック
                 plan = request.subscription.plan
                 current_count = request.user.analysistemplate_set.count()
                 
                 if current_count >= plan.max_templates:
                     messages.error(request, f"分析テンプレート数が上限({plan.max_templates}個)に達しています。プランをアップグレードしてください。")
                     return redirect('subscriptions:upgrade')
-                
-        except Exception:
-            # エラーが発生した場合はチェックをスキップ
+        except Exception as e:
+            # エラー発生時はログに記録
+            print(f"Error in template limit check: {str(e)}")
+            # チェックをスキップ
             pass
-
+                
         return super().dispatch(request, *args, **kwargs)
     
+    # subscriptions/mixins.py の check_snapshot_limit メソッドを改善
+    # subscriptions/mixins.py の check_snapshot_limit メソッドを修正
     def check_snapshot_limit(self, request, *args, **kwargs):
+        """スナップショット数の制限チェック"""
         try:
-            if request.method == 'POST':
+            if request.method == 'POST':  # 新規作成時のみチェック
                 plan = request.subscription.plan
                 current_count = request.user.portfoliosnapshot_set.count()
                 
-                if current_count >= plan.max_snapshots:
-                    messages.error(request, f"スナップショット数が上限({plan.max_snapshots}回)に達しています。プランをアップグレードしてください。")
-                    return redirect('subscriptions:upgrade')
+                # 同日のスナップショットがすでに存在するかチェック
+                from django.utils import timezone
+                import datetime
+                from zoneinfo import ZoneInfo  # ZoneInfo を追加
                 
-        except Exception:
-            # エラーが発生した場合はチェックをスキップ
-            pass    
+                today = timezone.now().date()
+                # timezone.utc の代わりに ZoneInfo("UTC") または datetime.timezone.utc を使用
+                today_start = datetime.datetime.combine(today, datetime.time.min, tzinfo=ZoneInfo("UTC"))
+                today_end = datetime.datetime.combine(today, datetime.time.max, tzinfo=ZoneInfo("UTC"))
+                
+                today_snapshot_exists = request.user.portfoliosnapshot_set.filter(
+                    created_at__range=(today_start, today_end)
+                ).exists()
+                
+                if today_snapshot_exists:
+                    messages.error(request, "本日のスナップショットはすでに作成済みです。スナップショットは1日1回のみ作成できます。")
+                    return redirect('portfolio:list')
+                
+                if current_count >= plan.max_snapshots:
+                    messages.error(
+                        request, 
+                        f"スナップショット数が上限({plan.max_snapshots}回)に達しています。"
+                        f"プランをアップグレードするか、古いスナップショットを削除してください。"
+                    )
+                    return redirect('subscriptions:upgrade')
+        except Exception as e:
+            # エラー発生時はログに記録
+            print(f"Error in snapshot limit check: {str(e)}")
+            # チェックをスキップ
+            pass
+                
         return super().dispatch(request, *args, **kwargs)
-    
+
     def check_record_limit(self, request, *args, **kwargs):
+        """株式記録数の制限チェック"""
         try:
-            if request.method == 'POST':
+            if request.method == 'POST':  # 新規作成時のみチェック
                 plan = request.subscription.plan
                 current_count = request.user.stockdiary_set.count()
                 
                 if current_count >= plan.max_records:
                     messages.error(request, f"株式記録数が上限({plan.max_records}件)に達しています。プランをアップグレードしてください。")
                     return redirect('subscriptions:upgrade')
-                
-        except Exception:
-            # エラーが発生した場合はチェックをスキップ
+        except Exception as e:
+            # エラー発生時はログに記録
+            print(f"Error in record limit check: {str(e)}")
+            # チェックをスキップ
             pass
-        
+                
         return super().dispatch(request, *args, **kwargs)

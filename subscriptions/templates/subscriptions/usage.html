@@ -1,0 +1,102 @@
+<!-- templates/subscriptions/usage.html -->
+{% extends 'base.html' %}
+
+{% block title %}サブスクリプション使用状況{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4">サブスクリプション使用状況</h1>
+    
+    {% if error %}
+    <div class="alert alert-danger">
+        {{ error }}
+    </div>
+    {% else %}
+    
+    <!-- 現在のプラン情報 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">現在のプラン: {{ plan.name }}</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>広告表示:</strong> {% if plan.show_ads %}あり{% else %}なし{% endif %}</p>
+                    <p><strong>エクスポート機能:</strong> {% if plan.export_enabled %}利用可能{% else %}利用不可{% endif %}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>高度な分析機能:</strong> {% if plan.advanced_analytics %}利用可能{% else %}利用不可{% endif %}</p>
+                    <p>
+                        <strong>料金:</strong> 
+                        {% if plan.price_monthly == 0 %}
+                            無料
+                        {% else %}
+                            {{ plan.price_monthly }}円/月 または {{ plan.price_yearly }}円/年
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            
+            {% if not plan.slug == 'pro' %}
+            <div class="mt-3">
+                <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-primary">
+                    <i class="bi bi-arrow-up-circle me-1"></i> プランをアップグレード
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- リソース使用状況の概要 -->
+    <h2 class="h4 mb-3">リソース使用状況</h2>
+    <div class="row">
+        {% for key, resource in resources.items %}
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">{{ resource.name }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div class="display-4 text-{{ resource.status }}">{{ resource.count }}</div>
+                        <div class="text-muted">/ {{ resource.limit }}</div>
+                    </div>
+                    <div class="progress mb-2">
+                        <div class="progress-bar bg-{{ resource.status }}" 
+                            role="progressbar" 
+                            style="width: {{ resource.percent }}%" 
+                            aria-valuenow="{{ resource.percent }}" 
+                            aria-valuemin="0" 
+                            aria-valuemax="100">
+                            {{ resource.percent }}%
+                        </div>
+                    </div>
+                    {% if resource.percent >= 90 %}
+                    <div class="alert alert-danger mt-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i> 上限にほぼ達しています！
+                    </div>
+                    {% elif resource.percent >= 80 %}
+                    <div class="alert alert-warning mt-3" role="alert">
+                        <i class="bi bi-exclamation-circle me-1"></i> 上限に近づいています
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer text-center">
+                    {% if key == 'tags' %}
+                    <a href="{% url 'tags:list' %}" class="btn btn-sm btn-outline-primary">タグ管理</a>
+                    {% elif key == 'templates' %}
+                    <a href="{% url 'analysis_template:list' %}" class="btn btn-sm btn-outline-primary">テンプレート管理</a>
+                    {% elif key == 'snapshots' %}
+                    <a href="{% url 'portfolio:list' %}" class="btn btn-sm btn-outline-primary">スナップショット管理</a>
+                    {% elif key == 'records' %}
+                    <a href="{% url 'stockdiary:home' %}" class="btn btn-sm btn-outline-primary">株式記録一覧</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% endif %}
+</div>
+{% endblock %}

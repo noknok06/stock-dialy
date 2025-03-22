@@ -1,16 +1,231 @@
-<!-- templates/subscriptions/success.html -->
+<!-- subscriptions/templates/subscriptions/success.html -->
 {% extends 'base.html' %}
 
-{% block title %}サブスクリプション完了{% endblock %}
+{% block title %}サブスクリプション完了 | カブログ{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<style>
+  .success-container {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  
+  .success-card {
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+    text-align: center;
+    padding: 3rem 2rem;
+  }
+  
+  .success-icon {
+    font-size: 5rem;
+    margin-bottom: 1.5rem;
+    color: #10b981;
+    display: inline-block;
+    animation: pulse 2s ease-in-out;
+  }
+  
+  @keyframes pulse {
+    0% {
+      transform: scale(0.5);
+      opacity: 0;
+    }
+    70% {
+      transform: scale(1.1);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  
+  .success-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #111827;
+  }
+  
+  .success-message {
+    font-size: 1.1rem;
+    color: #6b7280;
+    margin-bottom: 2rem;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .plan-details {
+    background-color: #f9fafb;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    margin-bottom: 2rem;
+    text-align: left;
+  }
+  
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .detail-row:last-child {
+    border-bottom: none;
+  }
+  
+  .detail-label {
+    font-weight: 500;
+    color: #6b7280;
+  }
+  
+  .detail-value {
+    font-weight: 600;
+    color: #111827;
+  }
+  
+  .badge-basic {
+    background-color: rgba(79, 70, 229, 0.1);
+    color: #4f46e5;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+  
+  .badge-pro {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+  
+  .actions {
+    margin-top: 2rem;
+  }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container py-5">
-    <div class="card">
-        <div class="card-body text-center">
-            <h1 class="card-title mb-4"><i class="bi bi-check-circle-fill text-success"></i> サブスクリプション完了</h1>
-            <p class="card-text">サブスクリプションが正常に更新されました。新しいプランでのご利用をお楽しみください。</p>
-            <a href="{% url 'stockdiary:home' %}" class="btn btn-primary">ホームに戻る</a>
+  <div class="success-container">
+    <div class="success-card">
+      <div class="success-icon">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+      <h1 class="success-title">サブスクリプション完了！</h1>
+      <p class="success-message">
+        お支払いが正常に処理され、サブスクリプションが更新されました。
+        新しいプランでの機能をお楽しみください。
+      </p>
+      
+      <div class="plan-details">
+        <div class="detail-row">
+          <span class="detail-label">プラン</span>
+          <span class="detail-value">
+            {{ plan.name }}
+            {% if plan.slug == 'basic' %}
+              <span class="badge-basic">ベーシック</span>
+            {% elif plan.slug == 'pro' %}
+              <span class="badge-pro">プロ</span>
+            {% endif %}
+          </span>
         </div>
+        <div class="detail-row">
+          <span class="detail-label">ステータス</span>
+          <span class="detail-value">
+            <i class="bi bi-check-circle-fill text-success me-1"></i> アクティブ
+          </span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">お支払い頻度</span>
+          <span class="detail-value">
+            {% if subscription.billing_type == 'yearly' %}
+              年間
+            {% else %}
+              月間
+            {% endif %}
+          </span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">金額</span>
+          <span class="detail-value">
+            {% if subscription.billing_type == 'yearly' %}
+              ¥{{ plan.price_yearly }}/年
+            {% else %}
+              ¥{{ plan.price_monthly }}/月
+            {% endif %}
+          </span>
+        </div>
+      </div>
+      
+      <div class="actions">
+        <a href="{% url 'stockdiary:home' %}" class="btn btn-primary btn-lg">
+          <i class="bi bi-house-door me-2"></i> ホームに戻る
+        </a>
+        <a href="{% url 'ads:ad_preferences' %}" class="btn btn-outline-secondary ms-2">
+          <i class="bi bi-gear me-2"></i> 広告設定を確認
+        </a>
+      </div>
     </div>
+    
+    <div class="card">
+      <div class="card-body">
+        <h3 class="card-title h5 mb-3">次のステップ</h3>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <div class="d-flex">
+              <div class="me-3 text-primary">
+                <i class="bi bi-lightning-charge-fill fs-3"></i>
+              </div>
+              <div>
+                <h4 class="h6">新機能をお試しください</h4>
+                <p class="small text-muted">新しく利用可能になった機能をお試しいただけます。</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="d-flex">
+              <div class="me-3 text-primary">
+                <i class="bi bi-person-gear fs-3"></i>
+              </div>
+              <div>
+                <h4 class="h6">アカウント設定</h4>
+                <p class="small text-muted">プロフィールや通知設定をカスタマイズできます。</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="d-flex">
+              <div class="me-3 text-primary">
+                <i class="bi bi-graph-up-arrow fs-3"></i>
+              </div>
+              <div>
+                <h4 class="h6">投資データの分析</h4>
+                <p class="small text-muted">高度な分析機能を使って投資パターンを確認しましょう。</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="d-flex">
+              <div class="me-3 text-primary">
+                <i class="bi bi-question-circle-fill fs-3"></i>
+              </div>
+              <div>
+                <h4 class="h6">サポート</h4>
+                <p class="small text-muted">ご質問があれば、いつでもサポートにお問い合わせください。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

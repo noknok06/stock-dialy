@@ -932,12 +932,6 @@
                             <td><i class="bi bi-check-lg comparison-tick"></i></td>
                             <td><i class="bi bi-x-lg comparison-cross"></i></td>
                         </tr>
-                        <tr>
-                            <td>データのバックアップ</td>
-                            <td><i class="bi bi-check-lg comparison-tick"></i></td>
-                            <td><i class="bi bi-check-lg comparison-tick"></i></td>
-                            <td><i class="bi bi-x-lg comparison-cross"></i></td>
-                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -991,13 +985,13 @@
                     </ul>
                 </div>
 
-                <div class="col-md-4 col-lg-2 mb-4">
-                    <h4 class="footer-heading">サポート</h4>
+                <div class="col-md-4 col-lg-3 mb-4">
+                    <h4 class="footer-heading">ヘルプ・サポート</h4>
                     <ul class="footer-links">
-                        <li><a href="#">よくある質問</a></li>
-                        <li><a href="#">使い方ガイド</a></li>
-                        <li><a href="#">お問い合わせ</a></li>
-                        <li><a href="#">プライバシーポリシー</a></li>
+                        <li><a href="#" id="usage-guide-link">使い方ガイド</a></li>
+                        <li><a href="mailto:kabulog.information@gmail.com">お問い合わせ</a></li>
+                        <li><a href="{% url 'ads:privacy_policy' %}">プライバシーポリシー</a></li>
+                        <li><a href="{% url 'subscriptions:upgrade' %}">料金プラン</a></li>
                     </ul>
                 </div>
             </div>
@@ -1029,6 +1023,55 @@
             fadeElements.forEach(element => {
                 fadeInObserver.observe(element);
             });
+            // 使い方ガイドリンクのイベントハンドラ
+            const usageGuideLink = document.getElementById('usage-guide-link');
+            if (usageGuideLink) {
+                usageGuideLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // モーダルダイアログのHTMLを作成
+                    const modalHTML = `
+                    <div class="modal fade" id="usageGuideModal" tabindex="-1" aria-labelledby="usageGuideModalLabel" aria-hidden="true">
+                      <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                          <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title" id="usageGuideModalLabel">使い方ガイドについて</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body">
+                            <p>詳細な使い方ガイドは現在作成中です。</p>
+                            <p>基本的な使い方は以下の通りです：</p>
+                            <ol>
+                              <li><strong>アカウント作成</strong>：「無料で始める」ボタンからアカウントを作成</li>
+                              <li><strong>日記を記録</strong>：銘柄情報と購入理由を入力</li>
+                              <li><strong>分析する</strong>：タグやテンプレートを活用して投資判断を整理・分析</li>
+                            </ol>
+                            <p>より詳しい情報が必要な場合は、下記メールアドレスまでお問い合わせください。</p>
+                          </div>
+                          <div class="modal-footer">
+                            <a href="mailto:kabulog.information@gmail.com" class="btn btn-outline-primary">
+                              <i class="bi bi-envelope me-1"></i> お問い合わせ
+                            </a>
+                            <a href="#signup" class="btn btn-primary" data-bs-dismiss="modal">
+                              <i class="bi bi-arrow-right me-1"></i> 無料で始める
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>`;
+                    
+                    // モーダルをDOMに追加
+                    document.body.insertAdjacentHTML('beforeend', modalHTML);
+                    
+                    // モーダルを表示
+                    const modal = new bootstrap.Modal(document.getElementById('usageGuideModal'));
+                    modal.show();
+                    
+                    // モーダルが閉じられたら要素を削除（メモリリーク防止）
+                    document.getElementById('usageGuideModal').addEventListener('hidden.bs.modal', function() {
+                        this.remove();
+                    });
+                });
+            }
         });
 
         // 全てのカルーセルに対してタッチスワイプサポートを追加

@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',  # Googleプロバイダー
+    'maintenance',
 ]
 
 
@@ -135,6 +136,7 @@ TINYMCE_DEFAULT_CONFIG = {
 }
 
 MIDDLEWARE = [
+    'maintenance.middleware.MaintenanceModeMiddleware',  # これを追加   
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -330,3 +332,31 @@ LOGGING = {
 SOCIALACCOUNT_REDIRECT_URLS = {
     'google': 'https://kabu-log.net/accounts/google/login/callback/'
 }
+
+
+ADS_SETTINGS = {
+    'DEFAULT_AD_CLIENT': 'ca-pub-3954701883136363',  # デフォルトの広告クライアントID
+    'SHOW_ADS_DEFAULT': True,  # デフォルトで広告表示を有効にするか
+    'PREMIUM_USERS_NO_ADS': True,  # プレミアムユーザーに広告を表示しないか
+}
+
+MAINTENANCE_MODE = True
+
+#  許可するIPアドレスのリスト（管理者のIPなど）
+MAINTENANCE_ALLOWED_IPS = [
+    '127.0.0.1',       # ローカル開発環境
+    '192.168.1.100',   # 例: 管理者のIP
+    # 実際の管理者IPに置き換えてください
+]
+
+# メンテナンスモードでもアクセス可能なURLパターン（正規表現）
+MAINTENANCE_EXEMPT_URLS = [
+    r'^/static/.*',    # 静的ファイル
+    r'^/media/.*',     # メディアファイル
+]
+
+# メンテナンス終了予定時刻（表示用）
+MAINTENANCE_END_TIME = '2025年3月23日 10:00 (JST)'
+
+# 問い合わせ用メールアドレス
+MAINTENANCE_CONTACT_EMAIL = 'support@kablog.example.com'

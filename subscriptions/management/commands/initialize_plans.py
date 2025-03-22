@@ -7,6 +7,9 @@ class Command(BaseCommand):
     help = 'Initialize subscription plans'
 
     def handle(self, *args, **kwargs):
+        # 既存のプランを確認
+        existing_slugs = set(SubscriptionPlan.objects.values_list('slug', flat=True))
+        
         # フリープラン
         free_plan, created = SubscriptionPlan.objects.get_or_create(
             slug='free',
@@ -15,7 +18,7 @@ class Command(BaseCommand):
                 'max_tags': 5,
                 'max_templates': 3,
                 'max_snapshots': 3,
-                'max_records': 30,
+                'max_records': -1,  # 無制限
                 'show_ads': True,
                 'export_enabled': False,
                 'advanced_analytics': False,
@@ -23,12 +26,13 @@ class Command(BaseCommand):
                 'price_yearly': 0,
             }
         )
+        self.stdout.write(f"フリープラン: {'作成' if created else '既存'}")
         
-        # 広告削除プラン
-        ad_free_plan, created = SubscriptionPlan.objects.get_or_create(
-            slug='ad_free',
+        # ベーシックプラン (以前のad_freeプランの代替)
+        basic_plan, created = SubscriptionPlan.objects.get_or_create(
+            slug='basic',
             defaults={
-                'name': '広告削除プラン',
+                'name': 'ベーシックプラン',
                 'max_tags': 10,
                 'max_templates': 10,
                 'max_snapshots': 10,
@@ -37,25 +41,38 @@ class Command(BaseCommand):
                 'export_enabled': False,
                 'advanced_analytics': False,
                 'price_monthly': 400,
-                'price_yearly': 3900,
+                'price_yearly': 3800,
             }
         )
+        self.stdout.write(f"ベーシックプラン: {'作成' if created else '既存'}")
         
         # プロプラン
         pro_plan, created = SubscriptionPlan.objects.get_or_create(
             slug='pro',
             defaults={
                 'name': 'プロプラン',
-                'max_tags': 9999,
-                'max_templates': 9999,
-                'max_snapshots': 9999,
-                'max_records': 9999,
+                'max_tags': -1,  # 無制限
+                'max_templates': -1,  # 無制限
+                'max_snapshots': -1,  # 無制限
+                'max_records': -1,  # 無制限
                 'show_ads': False,
                 'export_enabled': True,
                 'advanced_analytics': True,
-                'price_monthly': 900,
-                'price_yearly': 9000,
+                'price_monthly': 800,
+                'price_yearly': 7600,
             }
         )
+        self.stdout.write(f"プロプラン: {'作成' if created else '既存'}")
         
-        self.stdout.write(self.style.SUCCESS('Subscription plans have been initialized successfully'))
+        # 古いプランの非アクティブ化 (ad_freeプランなど)
+        old_slugs = {'ad_free'}
+        for old_slug in old_slugs:
+            if old_slug in existing_slugs:
+                try:
+                    old_plan = SubscriptionPlan.objects.get(slug=old_slug)
+                    # 必要に応じて古いプランの処理を追加
+                    self.stdout.write(f"古いプラン '{old_slug}' を検出しました")
+                except SubscriptionPlan.DoesNotExist:
+                    pass
+        
+        self.stdout.write(self.style.SUCCESS('サブスクリプションプランの初期化が完了しました'))

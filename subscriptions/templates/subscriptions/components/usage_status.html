@@ -1,0 +1,114 @@
+<!-- templates/subscriptions/components/status_card.html -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">サブスクリプション状況</h5>
+        <span class="badge {% if is_pro %}bg-primary{% elif is_premium %}bg-success{% else %}bg-secondary{% endif %}">
+            {{ subscription_name }}プラン
+        </span>
+    </div>
+    <div class="card-body">
+        <!-- リソース使用状況プログレスバー -->
+        <div class="mb-3">
+            <div class="d-flex justify-content-between">
+                <small>タグ使用状況</small>
+                <small>{{ usage.tags }} / {{ plan_limits.max_tags }}個</small>
+            </div>
+            <div class="progress" style="height: 6px;">
+                <div class="progress-bar {% if usage_percent.tags > 90 %}bg-danger{% elif usage_percent.tags > 70 %}bg-warning{% else %}bg-success{% endif %}" 
+                    role="progressbar" 
+                    style="width: {{ usage_percent.tags }}%" 
+                    aria-valuenow="{{ usage_percent.tags }}" 
+                    aria-valuemin="0" 
+                    aria-valuemax="100">
+                </div>
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <div class="d-flex justify-content-between">
+                <small>テンプレート使用状況</small>
+                <small>{{ usage.templates }} / {{ plan_limits.max_templates }}個</small>
+            </div>
+            <div class="progress" style="height: 6px;">
+                <div class="progress-bar {% if usage_percent.templates > 90 %}bg-danger{% elif usage_percent.templates > 70 %}bg-warning{% else %}bg-success{% endif %}" 
+                    role="progressbar" 
+                    style="width: {{ usage_percent.templates }}%" 
+                    aria-valuenow="{{ usage_percent.templates }}" 
+                    aria-valuemin="0" 
+                    aria-valuemax="100">
+                </div>
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <div class="d-flex justify-content-between">
+                <small>スナップショット使用状況</small>
+                <small>{{ usage.snapshots }} / {{ plan_limits.max_snapshots }}回</small>
+            </div>
+            <div class="progress" style="height: 6px;">
+                <div class="progress-bar {% if usage_percent.snapshots > 90 %}bg-danger{% elif usage_percent.snapshots > 70 %}bg-warning{% else %}bg-success{% endif %}" 
+                    role="progressbar" 
+                    style="width: {{ usage_percent.snapshots }}%" 
+                    aria-valuenow="{{ usage_percent.snapshots }}" 
+                    aria-valuemin="0" 
+                    aria-valuemax="100">
+                </div>
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <div class="d-flex justify-content-between">
+                <small>株式記録使用状況</small>
+                <small>{{ usage.records }} / {{ plan_limits.max_records }}件</small>
+            </div>
+            <div class="progress" style="height: 6px;">
+                <div class="progress-bar {% if usage_percent.records > 90 %}bg-danger{% elif usage_percent.records > 70 %}bg-warning{% else %}bg-success{% endif %}" 
+                    role="progressbar" 
+                    style="width: {{ usage_percent.records }}%" 
+                    aria-valuenow="{{ usage_percent.records }}" 
+                    aria-valuemin="0" 
+                    aria-valuemax="100">
+                </div>
+            </div>
+        </div>
+        
+        <!-- その他のサブスクリプション情報 -->
+        <ul class="list-group list-group-flush mt-3">
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                広告表示
+                {% if show_ads %}
+                <span class="badge bg-secondary">あり</span>
+                {% else %}
+                <span class="badge bg-success">なし</span>
+                {% endif %}
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                エクスポート機能
+                {% if plan_limits.export_enabled %}
+                <span class="badge bg-success">利用可能</span>
+                {% else %}
+                <span class="badge bg-secondary">利用不可</span>
+                {% endif %}
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                高度な分析機能
+                {% if plan_limits.advanced_analytics %}
+                <span class="badge bg-success">利用可能</span>
+                {% else %}
+                <span class="badge bg-secondary">利用不可</span>
+                {% endif %}
+            </li>
+        </ul>
+        
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-3">
+            <a href="{% url 'subscriptions:usage' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-graph-up me-1"></i> 詳細を見る
+            </a>
+            {% if not is_pro %}
+            <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-primary btn-sm">
+                <i class="bi bi-arrow-up-circle me-1"></i> アップグレード
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>

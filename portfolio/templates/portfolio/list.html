@@ -442,13 +442,44 @@
 {% block content %}
 <div class="container py-4 pb-5">
   <div class="page-header">
-    <h1 class="page-title">
-      <i class="bi bi-camera"></i> ポートフォリオスナップショット
-    </h1>
-    <a href="{% url 'portfolio:create_snapshot' %}" class="btn-create">
-      <i class="bi bi-plus-lg"></i> 新規スナップショット
-    </a>
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-camera"></i> ポートフォリオスナップショット
+      </h1>
+      <p class="text-muted mb-0">
+        <i class="bi bi-info-circle"></i> 
+        現在のプラン: {{ subscription_name }}（上限: {{ plan_limits.max_snapshots }} 枚、使用: {{ usage.snapshots }} 枚、1日1回）
+      </p>
+    </div>
+    
+    {% if usage.snapshots < plan_limits.max_snapshots %}
+      <!-- 制限内の場合は通常通り表示 -->
+      <a href="{% url 'portfolio:create_snapshot' %}" class="btn-create">
+        <i class="bi bi-plus-lg"></i> 新規スナップショット
+      </a>
+    {% else %}
+      <!-- 上限に達している場合はアップグレードボタンを表示 -->
+      <a href="{% url 'subscriptions:upgrade' %}" class="btn-create" style="background-color: #f59e0b;">
+        <i class="bi bi-arrow-up-circle"></i> プランをアップグレード
+      </a>
+    {% endif %}
   </div>
+
+  <!-- 使用状況が上限に近づいている場合の警告 -->
+  {% if usage_percent.snapshots >= 80 and usage_percent.snapshots < 100 %}
+  <div class="alert alert-warning mb-4">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i> 
+    スナップショットの使用量が上限の{{ usage_percent.snapshots }}%に達しています。
+    より多くのスナップショットを保存するには、<a href="{% url 'subscriptions:upgrade' %}" class="alert-link">プランをアップグレード</a>するか、古いスナップショットを削除してください。
+  </div>
+  {% elif usage_percent.snapshots >= 100 %}
+  <div class="alert alert-danger mb-4">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i> 
+    スナップショット数が上限に達しています。新しいスナップショットを作成するには、
+    <a href="{% url 'subscriptions:upgrade' %}" class="alert-link">プランをアップグレード</a>するか、
+    古いスナップショットを削除してください。
+  </div>
+  {% endif %}
   
   {% if snapshots %}
     <div class="snapshot-grid">
@@ -536,7 +567,77 @@
     </div>
   </div>
 </div>
+<!-- portfolio/templates/portfolio/list.html のモーダルダイアログに追加情報 -->
+<div class="modal-backdrop" id="deleteModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-exclamation-triangle text-danger me-2"></i>
+          スナップショットの削除
+        </h5>
+        <button type="button" class="btn-close" onclick="hideDeleteModal()"></button>
+      </div>
+      <div class="modal-body">
+        <p><span id="snapshotName"></span> を削除してもよろしいですか？</p>
+        <p class="text-danger mb-0">この操作は取り消せません。</p>
+        
+        {% if usage.snapshots >= plan_limits.max_snapshots %}
+        <!-- スナップショットが上限に達している場合 -->
+        <div class="alert alert-info mt-3 mb-0">
+          <i class="bi bi-info-circle me-2"></i> 
+          <strong>ヒント:</strong> スナップショットが上限に達しています。削除すると新しいスナップショットを作成できるようになります。
+        </div>
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-modal-cancel" onclick="hideDeleteModal()">キャンセル</button>
+        <form id="deleteForm" method="post" action="">
+          {% csrf_token %}
+          <button type="submit" class="btn-modal-delete">削除する</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 
+<!-- 固定フッターのメッセージを更新 - モバイル表示時 -->
+<!-- portfolio/templates/portfolio/list.html の最後に追加 -->
+<div class="fixed-footer d-md-none">
+  <div class="container-fluid">
+    {% if today_snapshot_exists %}
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <i class="bi bi-calendar-check text-primary me-1"></i> 
+          <span>本日のスナップショットは作成済み</span>
+        </div>
+        <a href="{% url 'portfolio:compare' %}" class="btn btn-sm btn-outline-primary">
+          <i class="bi bi-bar-chart me-1"></i> 比較分析
+        </a>
+      </div>
+    {% elif usage.snapshots >= plan_limits.max_snapshots %}
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <i class="bi bi-exclamation-triangle text-warning me-1"></i> 
+          <span>スナップショット数が上限に達しています</span>
+        </div>
+        <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-sm btn-warning">
+          <i class="bi bi-arrow-up-circle me-1"></i> アップグレード
+        </a>
+      </div>
+    {% else %}
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <i class="bi bi-info-circle text-primary me-1"></i> 
+          <span>残り作成可能数: {{ remaining_snapshots }}枚</span>
+        </div>
+        <a href="{% url 'portfolio:create_snapshot' %}" class="btn btn-sm btn-primary">
+          <i class="bi bi-plus-lg me-1"></i> 新規作成
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
 {% include 'speed_dial.html' with actions=page_actions %}
 {% endblock %}
 

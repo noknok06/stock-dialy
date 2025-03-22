@@ -10,8 +10,8 @@ def ads_processor(request):
     # パーソナライズ広告の設定（デフォルトはTrue）
     personalized_ads = True
     
-    # ユーザーが認証済みの場合、ユーザーの設定を取得
-    if request.user.is_authenticated:
+    # ユーザーが認証済みかつユーザー属性にアクセス可能な場合、ユーザーの設定を取得
+    if hasattr(request, 'user') and request.user.is_authenticated:
         try:
             ad_preference = UserAdPreference.objects.get(user=request.user)
             show_ads = ad_preference.should_show_ads()

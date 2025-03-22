@@ -1,4 +1,4 @@
-# ads/signals.py - ユーザーモデル参照の修正
+# ads/signals.py - サブスクリプションプラン変更に対応
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
@@ -56,14 +56,17 @@ def update_user_ad_preference(sender, instance, **kwargs):
             # フリープランの場合はパーソナライズ広告を有効化
             ad_preference.allow_personalized_ads = True
         else:
-            # 有料プラン（広告非表示プラン）の場合はパーソナライズ広告を無効化
+            # 有料プラン（basic/pro）の場合はパーソナライズ広告を無効化
             # 広告自体が表示されないため、この設定は実質的に意味がないが一貫性のために設定
             ad_preference.allow_personalized_ads = False
         
         ad_preference.save()
         
         # 変更後のログを出力（デバッグ用）
-        print(f"Updated ad preferences for user {instance.user.username}: show_ads={ad_preference.show_ads}, is_premium={ad_preference.is_premium}, allow_personalized_ads={ad_preference.allow_personalized_ads}")
+        print(f"Updated ad preferences for user {instance.user.username}: "
+              f"plan={instance.plan.slug}, show_ads={ad_preference.show_ads}, "
+              f"is_premium={ad_preference.is_premium}, "
+              f"allow_personalized_ads={ad_preference.allow_personalized_ads}")
         
     except Exception as e:
         # エラーが発生した場合は処理をスキップ
