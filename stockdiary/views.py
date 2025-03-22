@@ -2847,3 +2847,135 @@ class CancelSellView(LoginRequiredMixin, View):
         
         # 詳細ページにリダイレクト
         return redirect('stockdiary:detail', pk=diary_id)
+
+class StockDiarySellView(LoginRequiredMixin, TemplateView):
+    """保有株式の売却入力ページ"""
+    template_name = 'stockdiary/diary_sell.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # 保有中（売却日がNull）の株式を取得
+        active_diaries = StockDiary.objects.filter(
+            user=self.request.user,
+            sell_date__isnull=True
+        ).order_by('stock_symbol', 'purchase_date')
+        
+        # 株数や購入価格がないエントリーを除外
+        valid_diaries = active_diaries.filter(
+            purchase_price__isnull=False,
+            purchase_quantity__isnull=False
+        )
+            
+        # すべての保有銘柄を保持（フィルタリング前）
+        context['active_diaries'] = valid_diaries
+
+        # 銘柄コードでグループ化
+        grouped_diaries = {}
+        has_valid_entries = False  # 有効なエントリーがあるかのフラグ
+        
+        for diary in valid_diaries:
+            symbol = diary.stock_symbol
+            if symbol not in grouped_diaries:
+                grouped_diaries[symbol] = {
+                    'symbol': symbol,
+                    'name': diary.stock_name,
+                    'entries': []
+                }
+            
+            # 購入の詳細情報を追加
+            grouped_diaries[symbol]['entries'].append({
+                'id': diary.id,
+                'purchase_date': diary.purchase_date,
+                'purchase_price': diary.purchase_price,
+                'purchase_quantity': diary.purchase_quantity,
+                'total_purchase': diary.purchase_price * diary.purchase_quantity
+            })
+            has_valid_entries = True
+        
+        context['grouped_diaries'] = grouped_diaries.values()
+        context['has_valid_entries'] = has_valid_entries
+        
+        # 今日の日付を初期値として設定
+        context['today'] = timezone.now().date()
+
+        # スピードダイアル用のアクション
+        analytics_actions = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('stockdiary:home'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            },
+            {
+                'type': 'add',
+                'url': reverse_lazy('stockdiary:create'),
+                'icon': 'bi-plus-lg',
+                'label': '新規作成'
+            }
+        ]
+        context['page_actions'] = analytics_actions
+                
+        # 選択された日記ID（更新用）
+        diary_id = self.kwargs.get('pk')
+        if diary_id:
+            try:
+                selected_diary = StockDiary.objects.get(
+                    id=diary_id,
+                    user=self.request.user,
+                    sell_date__isnull=True  # 売却済みでないことを確認
+                )
+                
+                # 購入価格と株数が入力されている場合のみ
+                if selected_diary.purchase_price is not None and selected_diary.purchase_quantity is not None:
+                    context['selected_diary'] = selected_diary
+                    
+                    # 売却モーダルを自動的に開くためのフラグを追加
+                    context['auto_open_modal'] = True
+                    
+                    # 選択された日記のシンボルを強調表示するためのフラグ
+                    context['highlight_symbol'] = selected_diary.stock_symbol
+                    
+                    # スピードダイアルの「戻る」ボタンのURLを日記詳細ページに変更
+                    analytics_actions[0]['url'] = reverse_lazy('stockdiary:detail', kwargs={'pk': diary_id})
+                else:
+                    messages.error(self.request, '購入価格と株数が設定されていない日記は売却できません')
+                    # URLを保持したままリダイレクトはできないので、メッセージだけ追加
+            except StockDiary.DoesNotExist:
+                pass
+        
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        diary_id = request.POST.get('diary_id')
+        sell_date = request.POST.get('sell_date')
+        sell_price = request.POST.get('sell_price')
+        
+        try:
+            # 日記エントリーを取得して売却情報を更新
+            diary = StockDiary.objects.get(
+                id=diary_id,
+                user=request.user
+            )
+            
+            # 購入価格と株数が設定されているか確認
+            if diary.purchase_price is None or diary.purchase_quantity is None:
+                messages.error(request, '購入価格と株数が設定されていない日記は売却できません')
+                return redirect('stockdiary:home')
+                
+            diary.sell_date = sell_date
+            diary.sell_price = Decimal(sell_price)
+            diary.save()
+            
+            messages.success(request, f'{diary.stock_name}の売却情報を登録しました')
+            
+            # ホームページまたは詳細ページにリダイレクト
+            return redirect('stockdiary:detail', pk=diary.id)
+            
+        except StockDiary.DoesNotExist:
+            messages.error(request, '指定された日記が見つかりません')
+        except Exception as e:
+            messages.error(request, f'エラーが発生しました: {str(e)}')
+        
+        # エラー時は同じページを再表示
+        return self.get(request, *args, **kwargs)

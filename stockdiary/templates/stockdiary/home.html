@@ -330,7 +330,7 @@
 
             <!-- 主要情報のリスト表示 - メモでない場合のみ表示 -->
             {% if not diary.is_memo and diary.purchase_price is not None and diary.purchase_quantity is not None %}
-            <div class="info-block mt-3">
+            <div class="info-block mt-4">
               <div class="info-row">
                 <div class="info-item">
                   <div class="info-icon">
@@ -368,8 +368,7 @@
                   </div>
                   <div class="info-content">
                     <span class="info-label">総投資額</span>
-                    <span class="info-value">{{ diary.purchase_price|mul:diary.purchase_quantity|floatformat:2
-                      }}円</span>
+                    <span class="info-value">{{ diary.purchase_price|mul:diary.purchase_quantity|floatformat:2 }}円</span>
                   </div>
                 </div>
               </div>
