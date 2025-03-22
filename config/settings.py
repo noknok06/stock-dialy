@@ -363,13 +363,13 @@ MAINTENANCE_END_TIME = '2025年3月23日 10:00 (JST)'
 MAINTENANCE_CONTACT_EMAIL = 'support@kablog.example.com'
 
 MIDDLEWARE.append('csp.middleware.CSPMiddleware')
-
-CSP_FRAME_ANCESTORS = ["'self'", "*.google.com", "*.doubleclick.net"]
-CSP_SCRIPT_SRC = ["'self'", "*.googleadservices.com", "*.google.com", 
-                  "*.googlesyndication.com", "*.doubleclick.net", "'unsafe-inline'"]
-
-# スタイルに関する設定を追加
-CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", "*.googleapis.com", "*.bootstrapcdn.com"]
-CSP_FONT_SRC = ["'self'", "*.googleapis.com", "*.gstatic.com", "*.bootstrapcdn.com"]
-CSP_IMG_SRC = ["'self'", "data:", "*.google.com", "*.googleapis.com", "*.gstatic.com", "*.doubleclick.net"]
-CSP_CONNECT_SRC = ["'self'", "*.google.com", "*.doubleclick.net"]
+CSP_DEFAULT_SRC = ["'self'", "cdn.jsdelivr.net", "*.googleapis.com", "*.gstatic.com", "*.bootstrapcdn.com"]
+CSP_SCRIPT_SRC = ["'self'", "'unsafe-inline'", "'unsafe-eval'", 
+                  "cdn.jsdelivr.net", "*.jquery.com", "*.googleadservices.com", 
+                  "*.google.com", "*.googleapis.com", "*.gstatic.com",
+                  "*.googlesyndication.com", "*.doubleclick.net", "*.bootstrapcdn.com"]
+CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", "*.googleapis.com", "*.bootstrapcdn.com", "cdn.jsdelivr.net"]
+CSP_FONT_SRC = ["'self'", "data:", "*.googleapis.com", "*.gstatic.com", "*.bootstrapcdn.com", "cdn.jsdelivr.net"]
+CSP_IMG_SRC = ["'self'", "data:", "blob:", "*.google.com", "*.googleapis.com", "*.gstatic.com", "*.doubleclick.net"]
+CSP_CONNECT_SRC = ["'self'", "*.google.com", "*.doubleclick.net", "*.googleapis.com"]
+CSP_FRAME_SRC = ["'self'", "*.google.com", "*.doubleclick.net"]
