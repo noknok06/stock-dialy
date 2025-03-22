@@ -1,5 +1,167 @@
 {% load humanize %} 
+<style>
+  /* テンプレート分析ページの追加スタイル */
 
+/* アコーディオンスタイル */
+.accordion-item {
+  border: 1px solid rgba(0, 0, 0, 0.125);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.accordion-header {
+  margin: 0;
+}
+
+.accordion-button {
+  padding: 1rem 1.25rem;
+  font-weight: 500;
+  color: #4f46e5;
+  background-color: #f9fafb;
+  transition: all 0.2s;
+}
+
+.accordion-button:not(.collapsed) {
+  color: #4338ca;
+  background-color: rgba(79, 70, 229, 0.1);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+}
+
+.accordion-button:focus {
+  box-shadow: none;
+  border-color: rgba(79, 70, 229, 0.5);
+}
+
+.accordion-button::after {
+  background-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+  background-position: center;
+}
+
+.accordion-body {
+  padding: 0;
+}
+
+/* テーブルスタイル改善 */
+.table {
+  margin-bottom: 0;
+}
+
+.table th {
+  font-weight: 600;
+  color: #374151;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.table td {
+  padding: 0.75rem 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  color: #4b5563;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.table tr:hover td {
+  background-color: rgba(249, 250, 251, 0.8);
+}
+
+/* バッジスタイル最適化 */
+.badge {
+  font-weight: 500;
+  padding: 0.35em 0.65em;
+  border-radius: 0.375rem;
+}
+
+/* スマートフォン向け最適化 */
+@media (max-width: 767.98px) {
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .card-header .form-select {
+    margin-bottom: 0.5rem;
+    margin-top: 0.5rem;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  #toggleAllTemplates {
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+  
+  .table {
+    white-space: nowrap;
+  }
+  
+  /* 重要カラムを強調 */
+  .table th:nth-child(1),
+  .table td:nth-child(1) {
+    position: sticky;
+    left: 0;
+    background-color: #fff;
+    z-index: 1;
+    box-shadow: 2px 0 5px -2px rgba(0,0,0,0.1);
+  }
+  
+  .table tr:hover td:nth-child(1) {
+    background-color: rgba(249, 250, 251, 0.8);
+  }
+  
+  /* フィルターをよりモバイルフレンドリーに */
+  #templateFilter {
+    max-width: none !important;
+    width: 100%;
+  }
+}
+
+/* プログレスバー調整 */
+.progress {
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  height: 6px;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.progress-bar {
+  background-color: #4f46e5;
+  border-radius: 9999px;
+}
+
+/* アコーディオン内テーブルの横スクロール最適化 */
+.accordion-body .table-responsive {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+/* カラム幅の最適化 */
+@media (min-width: 768px) {
+  .table th:nth-child(1),
+  .table td:nth-child(1) {
+    width: 40%;
+  }
+  
+  .table th:nth-child(2),
+  .table td:nth-child(2),
+  .table th:nth-child(3),
+  .table td:nth-child(3),
+  .table th:nth-child(4),
+  .table td:nth-child(4),
+  .table th:nth-child(5),
+  .table td:nth-child(5) {
+    width: 15%;
+  }
+}
+</style>
 <!-- 分析テンプレート概要カード -->
 <div class="row">
   <div class="col-lg-8 mb-4">
@@ -121,83 +283,120 @@
 </div>
 
 <div class="row">
-  <!-- 分析項目の詳細 -->
+  <!-- 分析項目の詳細（改善版：テンプレートごとのアコーディオン表示） -->
   <div class="col-12 mb-4">
     <div class="dashboard-card">
-      <div class="card-header">
-        <h5 class="card-header-title">
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+        <h5 class="card-header-title mb-2 mb-md-0">
           <i class="bi bi-list-check"></i> 分析項目の完了状況
         </h5>
-        <div class="card-tools">
-          <select id="templateFilter" class="form-select form-select-sm" style="max-width: 200px;">
+        <div class="d-flex align-items-center">
+          <select id="templateFilter" class="form-select form-select-sm me-2" style="max-width: 200px;">
             <option value="all">すべてのテンプレート</option>
             {% for template in all_templates %}
               <option value="{{ template.id }}">{{ template.name }}</option>
             {% endfor %}
           </select>
+          <button class="btn btn-sm btn-outline-primary" id="toggleAllTemplates">
+            <i class="bi bi-arrows-expand"></i> <span id="toggleButtonText">すべて展開</span>
+          </button>
         </div>
       </div>
       <div class="card-body">
-        <div class="table-responsive">
-          <table class="table table-hover" id="itemAnalysisTable">
-            <thead>
-              <tr>
-                <th>テンプレート名</th>
-                <th>項目名</th>
-                <th>タイプ</th>
-                <th>使用回数</th>
-                <th>完了率</th>
-                <th>平均値</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for item in items_analysis %}
-              <tr data-template-id="{{ item.template_id }}">
-                <td>{{ item.template_name }}</td>
-                <td>{{ item.name }}</td>
-                <td>
-                  {% if item.item_type == 'number' %}
-                    <span class="badge bg-primary">数値</span>
-                  {% elif item.item_type == 'boolean' %}
-                    <span class="badge bg-success">チェック</span>
-                  {% elif item.item_type == 'boolean_with_value' %}
-                    <span class="badge bg-info">チェック+値</span>
-                  {% elif item.item_type == 'select' %}
-                    <span class="badge bg-warning">選択肢</span>
-                  {% else %}
-                    <span class="badge bg-secondary">テキスト</span>
-                  {% endif %}
-                </td>
-                <td>{{ item.usage_count }}</td>
-                <td>
-                  <div class="progress" style="height: 6px; width: 100px;">
-                    <div class="progress-bar" role="progressbar" style="width: {{ item.completion_rate }}%;" 
-                         aria-valuenow="{{ item.completion_rate }}" aria-valuemin="0" aria-valuemax="100">
-                    </div>
+        <div class="accordion" id="templateAccordion">
+          {% regroup items_analysis by template_name as template_groups %}
+          
+          {% for template in template_groups %}
+            <div class="accordion-item mb-3 template-group" data-template-id="{{ template.list.0.template_id }}">
+              <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                <button class="accordion-button {% if forloop.counter > 1 %}collapsed{% endif %}" 
+                        type="button" 
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#collapse{{ forloop.counter }}" 
+                        aria-expanded="{% if forloop.counter == 1 %}true{% else %}false{% endif %}" 
+                        aria-controls="collapse{{ forloop.counter }}">
+                  <div class="d-flex justify-content-between align-items-center w-100 pe-3">
+                    <span><i class="bi bi-clipboard-data me-2"></i> {{ template.grouper }}</span>
+                    <span class="badge bg-primary rounded-pill">{{ template.list|length }}項目</span>
                   </div>
-                  <small>{{ item.completion_rate }}%</small>
-                </td>
-                <td>
-                  {% if item.item_type == 'number' %}
-                    {{ item.average_value|floatformat:2 }}
-                  {% elif item.item_type == 'boolean' or item.item_type == 'boolean_with_value' %}
-                    {{ item.completion_rate }}%
-                  {% elif item.item_type == 'select' %}
-                    {{ item.most_common_value|default:"-" }}
-                  {% else %}
-                    -
-                  {% endif %}
-                </td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="6" class="text-center py-3">
-                  <div class="text-muted">分析項目のデータがありません</div>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+                </button>
+              </h2>
+              <div id="collapse{{ forloop.counter }}" 
+                   class="accordion-collapse collapse {% if forloop.counter == 1 %}show{% endif %}" 
+                   aria-labelledby="heading{{ forloop.counter }}" 
+                   data-bs-parent="#templateAccordion">
+                <div class="accordion-body p-0">
+                  <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th style="width: 40%;">項目名</th>
+                          <th style="width: 15%;">タイプ</th>
+                          <th style="width: 15%;">使用回数</th>
+                          <th style="width: 15%;">完了率</th>
+                          <th style="width: 15%;">平均値</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for item in template.list %}
+                        <tr>
+                          <td>{{ item.name }}</td>
+                          <td>
+                            {% if item.item_type == 'number' %}
+                              <span class="badge bg-primary">数値</span>
+                            {% elif item.item_type == 'boolean' %}
+                              <span class="badge bg-success">チェック</span>
+                            {% elif item.item_type == 'boolean_with_value' %}
+                              <span class="badge bg-info">チェック+値</span>
+                            {% elif item.item_type == 'select' %}
+                              <span class="badge bg-warning">選択肢</span>
+                            {% else %}
+                              <span class="badge bg-secondary">テキスト</span>
+                            {% endif %}
+                          </td>
+                          <td>{{ item.usage_count }}</td>
+                          <td>
+                            <div class="progress" style="height: 6px;">
+                              <div class="progress-bar" role="progressbar" 
+                                   style="width: {{ item.completion_rate }}%;" 
+                                   aria-valuenow="{{ item.completion_rate }}" 
+                                   aria-valuemin="0" 
+                                   aria-valuemax="100">
+                              </div>
+                            </div>
+                            <small>{{ item.completion_rate }}%</small>
+                          </td>
+                          <td>
+                            {% if item.item_type == 'number' %}
+                              {{ item.average_value|floatformat:2 }}
+                            {% elif item.item_type == 'boolean' or item.item_type == 'boolean_with_value' %}
+                              {{ item.completion_rate }}%
+                            {% elif item.item_type == 'select' %}
+                              {{ item.most_common_value|default:"-" }}
+                            {% else %}
+                              -
+                            {% endif %}
+                          </td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% empty %}
+            <div class="alert alert-info">
+              <i class="bi bi-info-circle me-2"></i>
+              <span>分析項目のデータがありません。テンプレートを使用して日記を記録すると、ここに統計情報が表示されます。</span>
+            </div>
+          {% endfor %}
+        </div>
+        
+        <!-- テンプレートがない場合の表示 -->
+        <div id="noItemsMessage" class="alert alert-info d-none">
+          <i class="bi bi-info-circle me-2"></i>
+          <span>選択したテンプレートの分析項目データがありません。</span>
         </div>
       </div>
     </div>
@@ -302,29 +501,76 @@
   </div>
 </div>
 
-<!-- テンプレートフィルタリングのJavaScript -->
+<!-- JavaScript部分 -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    // テンプレートフィルタリング
     const templateFilter = document.getElementById('templateFilter');
+    const templateGroups = document.querySelectorAll('.template-group');
+    const noItemsMessage = document.getElementById('noItemsMessage');
+    
     if (templateFilter) {
       templateFilter.addEventListener('change', function() {
         const selectedTemplateId = this.value;
-        const rows = document.querySelectorAll('#itemAnalysisTable tbody tr');
+        let visibleGroupsCount = 0;
         
-        rows.forEach(row => {
-          const templateId = row.getAttribute('data-template-id');
+        templateGroups.forEach(group => {
+          const templateId = group.getAttribute('data-template-id');
           if (selectedTemplateId === 'all' || templateId === selectedTemplateId) {
-            row.style.display = '';
+            group.style.display = '';
+            visibleGroupsCount++;
           } else {
-            row.style.display = 'none';
+            group.style.display = 'none';
           }
         });
+        
+        // テンプレートが1つも表示されていない場合、メッセージを表示
+        if (visibleGroupsCount === 0) {
+          noItemsMessage.classList.remove('d-none');
+        } else {
+          noItemsMessage.classList.add('d-none');
+        }
+      });
+    }
+    
+    // すべて展開/折りたたみボタン
+    const toggleAllButton = document.getElementById('toggleAllTemplates');
+    const toggleButtonText = document.getElementById('toggleButtonText');
+    let isExpanded = false;
+    
+    if (toggleAllButton) {
+      toggleAllButton.addEventListener('click', function() {
+        isExpanded = !isExpanded;
+        
+        const accordionButtons = document.querySelectorAll('.accordion-button');
+        const accordionCollapses = document.querySelectorAll('.accordion-collapse');
+        
+        accordionButtons.forEach(button => {
+          if (isExpanded) {
+            button.classList.remove('collapsed');
+            button.setAttribute('aria-expanded', 'true');
+          } else {
+            button.classList.add('collapsed');
+            button.setAttribute('aria-expanded', 'false');
+          }
+        });
+        
+        accordionCollapses.forEach(collapse => {
+          if (isExpanded) {
+            collapse.classList.add('show');
+          } else {
+            collapse.classList.remove('show');
+          }
+        });
+        
+        toggleButtonText.textContent = isExpanded ? 'すべて折りたたむ' : 'すべて展開';
+        toggleAllButton.querySelector('i').className = isExpanded ? 'bi bi-arrows-collapse' : 'bi bi-arrows-expand';
       });
     }
   });
 </script>
 
-<!-- チャート作成用のJavaScript -->
+<!-- テンプレート使用概要チャート -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     // テンプレート使用概要チャート
