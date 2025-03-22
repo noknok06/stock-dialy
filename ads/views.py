@@ -18,16 +18,19 @@ def ad_preferences(request):
     # ユーザーのサブスクリプション情報を取得
     is_premium = False
     premium_controls_ads = False
+    is_free = False
     
     try:
         subscription = UserSubscription.objects.get(user=request.user)
-        is_premium = subscription.is_valid() and not subscription.plan.show_ads
-        
-        # プレミアムプラン（広告非表示プラン）の場合は広告設定を制限
-        premium_controls_ads = not subscription.plan.show_ads
+        if subscription.is_valid():
+            # プレミアムプラン（広告非表示プラン）の場合
+            is_premium = not subscription.plan.show_ads
+            premium_controls_ads = not subscription.plan.show_ads
+            # フリープランの場合
+            is_free = subscription.plan.slug == 'free'
     except UserSubscription.DoesNotExist:
-        # サブスクリプションがない場合は何もしない
-        pass
+        # サブスクリプションがない場合はフリープラン扱い
+        is_free = True
     
     # 広告設定の取得または作成
     try:
@@ -42,13 +45,21 @@ def ad_preferences(request):
             messages.info(request, "現在のプランでは広告表示は自動的に無効化されます。設定を変更する必要はありません。")
             return redirect('ads:ad_preferences')
         
+        # フリープランの場合は広告表示をオフにできない
+        if is_free:
+            messages.info(request, "フリープランでは広告表示は必須です。広告を非表示にするにはプランのアップグレードが必要です。")
+            return redirect('ads:ad_preferences')
+        
         # フォームから値を取得
-        show_ads = request.POST.get('show_ads') == 'on'
         allow_personalized_ads = request.POST.get('allow_personalized_ads') == 'on'
         
         # 設定を更新
-        preference.show_ads = show_ads
         preference.allow_personalized_ads = allow_personalized_ads
+        
+        # フリープランでは強制的に広告表示をオン
+        if is_free:
+            preference.show_ads = True
+        
         preference.save()
         
         messages.success(request, '広告設定を更新しました。')
@@ -58,5 +69,6 @@ def ad_preferences(request):
     return render(request, 'ads/ad_preferences.html', {
         'preference': preference,
         'is_premium': is_premium,
-        'premium_controls_ads': premium_controls_ads
+        'premium_controls_ads': premium_controls_ads,
+        'is_free': is_free
     })

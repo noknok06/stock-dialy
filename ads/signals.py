@@ -52,6 +52,10 @@ def update_user_ad_preference(sender, instance, **kwargs):
         ad_preference.is_premium = not instance.plan.show_ads
         
         ad_preference.save()
-    except Exception:
+        
+        # 変更後のログを出力（デバッグ用）
+        print(f"Updated ad preferences for user {instance.user.username}: show_ads={ad_preference.show_ads}, is_premium={ad_preference.is_premium}")
+        
+    except Exception as e:
         # エラーが発生した場合は処理をスキップ
-        pass
+        print(f"Error updating ad preferences: {str(e)}")

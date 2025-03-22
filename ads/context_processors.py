@@ -7,17 +7,21 @@ def ads_processor(request):
     
     # 広告表示の有無を判定
     show_ads = True
+    # パーソナライズ広告の設定（デフォルトはTrue）
+    personalized_ads = True
     
     # ユーザーが認証済みの場合、ユーザーの設定を取得
     if request.user.is_authenticated:
         try:
             ad_preference = UserAdPreference.objects.get(user=request.user)
             show_ads = ad_preference.should_show_ads()
+            personalized_ads = ad_preference.allow_personalized_ads
         except UserAdPreference.DoesNotExist:
             # 設定がない場合は広告表示（通常はシグナルで作成されるはず）
             UserAdPreference.objects.create(user=request.user)
     
     context['show_ads'] = show_ads
+    context['personalized_ads'] = personalized_ads
     
     # 広告表示が有効な場合のみ、広告ユニットを取得
     if show_ads:

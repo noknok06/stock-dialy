@@ -27,24 +27,22 @@
                                 </div>
                             </div>
                         </div>
+                    {% else %}
+                        <div class="alert alert-info mb-4">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <i class="bi bi-info-circle fs-1 text-info"></i>
+                                </div>
+                                <div>
+                                    <h5 class="alert-heading">フリープラン情報</h5>
+                                    <p class="mb-0">現在のプランでは広告が表示されます。広告を非表示にするには、広告削除プランまたはプロプランへのアップグレードが必要です。</p>
+                                </div>
+                            </div>
+                        </div>
                     {% endif %}
                     
-                    <form method="post" {% if premium_controls_ads %}class="opacity-50"{% endif %}>
+                    <form method="post" {% if premium_controls_ads or is_free %}class="opacity-50"{% endif %}>
                         {% csrf_token %}
-                        
-                        <div class="form-group mb-4">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch" 
-                                      id="show_ads" name="show_ads" 
-                                      {% if preference.show_ads %}checked{% endif %}
-                                      {% if premium_controls_ads %}disabled{% endif %}>
-                                <label class="form-check-label" for="show_ads">広告を表示する</label>
-                            </div>
-                            <small class="text-muted d-block mt-1">
-                                このオプションをオフにすると、サイト内の広告が表示されなくなります。
-                                ただし、プレミアムプランに加入していない場合は機能が制限される場合があります。
-                            </small>
-                        </div>
                         
                         <div class="form-group mb-4">
                             <div class="form-check form-switch">
@@ -67,6 +65,11 @@
                                 <i class="bi bi-info-circle-fill me-2"></i>
                                 現在のプランでは広告設定は自動的に管理されています。設定を変更する必要はありません。
                             </div>
+                        {% elif is_free %}
+                            <div class="alert alert-warning mb-4">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                フリープランでは広告表示は必須です。広告を非表示にするにはプランのアップグレードが必要です。
+                            </div>
                         {% else %}
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-lg me-1"></i> 設定を保存
@@ -80,15 +83,15 @@
                             プレミアムプランにアップグレードすると、広告なしでカブログをご利用いただけます。
                             さらに、タグ数や記録数の制限緩和など、さまざまな特典があります。
                         </p>
-                        <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-outline-success">
-                            <i class="bi bi-star-fill me-1"></i> プレミアムにアップグレード
-                        </a>
+                        <div class="d-flex flex-column flex-md-row gap-2">
+                            <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-success">
+                                <i class="bi bi-star-fill me-1"></i> プレミアムにアップグレード
+                            </a>
+                            <a href="{% url 'ads:privacy_policy' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-shield-lock me-1"></i> プライバシーポリシーを確認
+                            </a>
+                        </div>
                     </div>
-                </div>
-                <div class="card-footer">
-                    <a href="{% url 'ads:privacy_policy' %}" class="text-decoration-none">
-                        <i class="bi bi-shield-lock me-1"></i> プライバシーポリシーを確認
-                    </a>
                 </div>
             </div>
         </div>

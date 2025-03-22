@@ -30,7 +30,7 @@ class AdPlacement(models.Model):
 class AdUnit(models.Model):
     """GoogleアドセンスのAd Unitを管理するモデル"""
     name = models.CharField(_('ユニット名'), max_length=100)
-    ad_client = models.CharField(_('ad-client ID'), max_length=100, help_text=_('例: ca-pub-XXXXXXXXXXXXXXXX'))
+    ad_client = models.CharField(_('ad-client ID'), max_length=100, help_text=_('例: ca-pub-3954701883136363'))
     ad_slot = models.CharField(_('ad-slot ID'), max_length=100)
     
     # 広告フォーマット

@@ -30,6 +30,10 @@ class AdsMiddleware:
     def __call__(self, request):
         # リクエストオブジェクトに広告表示フラグを追加
         request.show_ads = self._should_show_ads(request)
+        
+        # パーソナライズ広告の設定も追加
+        request.personalized_ads = self._should_show_personalized_ads(request)
+        
         response = self.get_response(request)
         return response
     
@@ -78,3 +82,24 @@ class AdsMiddleware:
         
         # 上記のチェックでいずれも該当しない場合、デフォルト設定を使用
         return show_ads_default
+    
+    def _should_show_personalized_ads(self, request):
+        """パーソナライズ広告を表示すべきかどうかを判定"""
+        # デフォルト設定
+        personalized_ads_default = getattr(settings, 'ADS_SETTINGS', {}).get('PERSONALIZED_ADS_DEFAULT', True)
+        
+        # ユーザーがログインしている場合
+        if request.user.is_authenticated:
+            try:
+                ad_preference = UserAdPreference.objects.get(user=request.user)
+                return ad_preference.allow_personalized_ads
+            except UserAdPreference.DoesNotExist:
+                # 設定がない場合は作成
+                try:
+                    ad_preference = UserAdPreference.objects.create(user=request.user)
+                    return ad_preference.allow_personalized_ads
+                except:
+                    pass
+        
+        # デフォルト設定を使用
+        return personalized_ads_default
