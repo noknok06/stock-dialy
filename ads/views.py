@@ -14,61 +14,75 @@ def privacy_policy(request):
 
 @login_required
 def ad_preferences(request):
-    """ユーザーの広告設定ページ - サブスクリプション対応"""
+    """ユーザーの広告設定ページ - 単純化版"""
     # ユーザーのサブスクリプション情報を取得
     is_premium = False
-    premium_controls_ads = False
     is_free = False
+    subscription_plan = None
     
     try:
         subscription = UserSubscription.objects.get(user=request.user)
         if subscription.is_valid():
-            # プレミアムプラン（広告非表示プラン）の場合
+            # 広告非表示プラン判定
             is_premium = not subscription.plan.show_ads
-            premium_controls_ads = not subscription.plan.show_ads
-            # フリープランの場合
+            # フリープラン判定
             is_free = subscription.plan.slug == 'free'
+            # プラン情報
+            subscription_plan = subscription.plan
     except UserSubscription.DoesNotExist:
         # サブスクリプションがない場合はフリープラン扱い
         is_free = True
+        try:
+            from subscriptions.models import SubscriptionPlan
+            subscription_plan = SubscriptionPlan.objects.get(slug='free')
+        except:
+            pass
     
     # 広告設定の取得または作成
     try:
         preference = UserAdPreference.objects.get(user=request.user)
     except UserAdPreference.DoesNotExist:
-        preference = UserAdPreference.objects.create(user=request.user)
+        preference = UserAdPreference.objects.create(
+            user=request.user,
+            show_ads=not is_premium,
+            is_premium=is_premium,
+            allow_personalized_ads=is_free  # フリープランならTrue、それ以外はFalse
+        )
     
-    # POSTリクエスト（設定更新）の処理
-    if request.method == 'POST':
-        # プレミアムプランで広告表示が制御される場合は設定変更を制限
-        if premium_controls_ads:
-            messages.info(request, "現在のプランでは広告表示は自動的に無効化されます。設定を変更する必要はありません。")
-            return redirect('ads:ad_preferences')
-        
-        # フリープランの場合は広告表示をオフにできない
-        if is_free:
-            messages.info(request, "フリープランでは広告表示は必須です。広告を非表示にするにはプランのアップグレードが必要です。")
-            return redirect('ads:ad_preferences')
-        
-        # フォームから値を取得
-        allow_personalized_ads = request.POST.get('allow_personalized_ads') == 'on'
-        
-        # 設定を更新
-        preference.allow_personalized_ads = allow_personalized_ads
-        
-        # フリープランでは強制的に広告表示をオン
-        if is_free:
+    # プランに基づいて広告設定を自動的に更新
+    update_needed = False
+    
+    if is_premium:
+        # 広告削除プランまたはプロプランの場合、広告を非表示
+        if preference.show_ads or not preference.is_premium:
+            preference.show_ads = False
+            preference.is_premium = True
+            update_needed = True
+            
+        # 広告非表示プランの場合、パーソナライズ広告も無効化
+        if preference.allow_personalized_ads:
+            preference.allow_personalized_ads = False
+            update_needed = True
+    else:
+        # フリープランの場合、広告を表示
+        if not preference.show_ads or preference.is_premium:
             preference.show_ads = True
+            preference.is_premium = False
+            update_needed = True
         
-        preference.save()
-        
-        messages.success(request, '広告設定を更新しました。')
-        return redirect('ads:ad_preferences')
+        # フリープランの場合は、パーソナライズ広告も有効化
+        if is_free and not preference.allow_personalized_ads:
+            preference.allow_personalized_ads = True
+            update_needed = True
     
-    # プレミアムプラン情報をテンプレートに渡す
+    if update_needed:
+        preference.save()
+        print(f"Updated ad preferences in view for user {request.user.username}: allow_personalized_ads={preference.allow_personalized_ads}")
+    
+    # テンプレートにコンテキストを渡す
     return render(request, 'ads/ad_preferences.html', {
         'preference': preference,
         'is_premium': is_premium,
-        'premium_controls_ads': premium_controls_ads,
-        'is_free': is_free
+        'is_free': is_free,
+        'subscription_plan': subscription_plan
     })

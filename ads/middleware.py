@@ -63,8 +63,9 @@ class AdsMiddleware:
                 # サブスクリプションから広告表示設定を取得
                 subscription = getattr(request.user, 'subscription', None)
                 if subscription and subscription.is_valid():
-                    # サブスクリプションプランの広告設定に従う
-                    return subscription.plan.show_ads
+                    # プレミアムプランの場合は広告を表示しない
+                    if not subscription.plan.show_ads:
+                        return False
             except:
                 pass
             
@@ -82,7 +83,6 @@ class AdsMiddleware:
         
         # 上記のチェックでいずれも該当しない場合、デフォルト設定を使用
         return show_ads_default
-    
     def _should_show_personalized_ads(self, request):
         """パーソナライズ広告を表示すべきかどうかを判定"""
         # デフォルト設定

@@ -1,4 +1,4 @@
-{# ads/templates/ads/ad_preferences.html - サブスクリプション対応 #}
+{# ads/templates/ads/ad_preferences.html - シンプル化バージョン #}
 {% extends 'base.html' %}
 {% load static %}
 
@@ -13,7 +13,7 @@
                     <h1 class="h4 mb-0">広告設定</h1>
                 </div>
                 <div class="card-body">
-                    <p class="mb-4">カブログでの広告表示に関する設定を変更できます。</p>
+                    <p class="mb-4">カブログでの広告表示に関する設定情報です。</p>
                     
                     {% if is_premium %}
                         <div class="alert alert-success mb-4">
@@ -22,8 +22,14 @@
                                     <i class="bi bi-star-fill fs-1 text-warning"></i>
                                 </div>
                                 <div>
-                                    <h5 class="alert-heading">プレミアムプラン特典</h5>
-                                    <p class="mb-0">現在のサブスクリプションプランでは、広告は自動的に非表示になっています。</p>
+                                    <h5 class="alert-heading">
+                                        {% if subscription_plan.slug == 'pro' %}
+                                            プロプラン特典
+                                        {% else %}
+                                            広告削除プラン特典
+                                        {% endif %}
+                                    </h5>
+                                    <p class="mb-0">現在のサブスクリプションプランでは、広告は非表示になっています。</p>
                                 </div>
                             </div>
                         </div>
@@ -41,51 +47,49 @@
                         </div>
                     {% endif %}
                     
-                    <form method="post" {% if premium_controls_ads or is_free %}class="opacity-50"{% endif %}>
-                        {% csrf_token %}
-                        
-                        <div class="form-group mb-4">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch" 
-                                      id="allow_personalized_ads" name="allow_personalized_ads" 
-                                      {% if preference.allow_personalized_ads %}checked{% endif %}
-                                      {% if premium_controls_ads %}disabled{% endif %}>
-                                <label class="form-check-label" for="allow_personalized_ads">
-                                  パーソナライズ広告を許可する
-                                </label>
-                            </div>
-                            <small class="text-muted d-block mt-1">
-                                このオプションをオンにすると、あなたの興味に合わせた広告が表示されます。
-                                オフにした場合は、興味に基づかないランダムな広告が表示されます。
-                            </small>
-                        </div>
-                        
-                        {% if premium_controls_ads %}
-                            <div class="alert alert-info mb-4">
-                                <i class="bi bi-info-circle-fill me-2"></i>
-                                現在のプランでは広告設定は自動的に管理されています。設定を変更する必要はありません。
-                            </div>
-                        {% elif is_free %}
-                            <div class="alert alert-warning mb-4">
-                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                                フリープランでは広告表示は必須です。広告を非表示にするにはプランのアップグレードが必要です。
-                            </div>
-                        {% else %}
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-lg me-1"></i> 設定を保存
-                            </button>
-                        {% endif %}
-                    </form>
-                    
                     <div class="mt-4 pt-4 border-top">
-                        <h3 class="h5 mb-3">プレミアムプランで広告を非表示に</h3>
-                        <p>
-                            プレミアムプランにアップグレードすると、広告なしでカブログをご利用いただけます。
-                            さらに、タグ数や記録数の制限緩和など、さまざまな特典があります。
-                        </p>
-                        <div class="d-flex flex-column flex-md-row gap-2">
+                        <h3 class="h5 mb-3">プラン比較</h3>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>機能</th>
+                                        <th>フリープラン</th>
+                                        <th>広告削除プラン</th>
+                                        <th>プロプラン</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>広告表示</td>
+                                        <td><i class="bi bi-check-lg text-danger"></i> あり</td>
+                                        <td><i class="bi bi-x-lg text-success"></i> なし</td>
+                                        <td><i class="bi bi-x-lg text-success"></i> なし</td>
+                                    </tr>
+                                    <tr>
+                                        <td>タグ上限</td>
+                                        <td>5個</td>
+                                        <td>10個</td>
+                                        <td>無制限</td>
+                                    </tr>
+                                    <tr>
+                                        <td>株式記録上限</td>
+                                        <td>30件</td>
+                                        <td>100件</td>
+                                        <td>無制限</td>
+                                    </tr>
+                                    <tr>
+                                        <td>高度な分析</td>
+                                        <td><i class="bi bi-x-lg text-danger"></i></td>
+                                        <td><i class="bi bi-x-lg text-danger"></i></td>
+                                        <td><i class="bi bi-check-lg text-success"></i></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex flex-column flex-md-row gap-2 mt-3">
                             <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-success">
-                                <i class="bi bi-star-fill me-1"></i> プレミアムにアップグレード
+                                <i class="bi bi-arrow-up-circle me-1"></i> プランをアップグレード
                             </a>
                             <a href="{% url 'ads:privacy_policy' %}" class="btn btn-outline-secondary">
                                 <i class="bi bi-shield-lock me-1"></i> プライバシーポリシーを確認

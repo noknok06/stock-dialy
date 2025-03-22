@@ -138,6 +138,28 @@ class CheckoutView(LoginRequiredMixin, TemplateView):
                 subscription.is_active = True
                 subscription.save()
             
+            # 広告設定も直接更新して確実に反映
+            try:
+                from ads.models import UserAdPreference
+                ad_preference, _ = UserAdPreference.objects.get_or_create(
+                    user=request.user
+                )
+                
+                # 広告表示設定をプランに応じて更新
+                ad_preference.show_ads = plan.show_ads
+                ad_preference.is_premium = not plan.show_ads
+                
+                # 有料プランならパーソナライズ広告を無効化
+                if not plan.show_ads:
+                    ad_preference.allow_personalized_ads = False
+                else:
+                    # フリープランの場合、パーソナライズ広告を有効化
+                    ad_preference.allow_personalized_ads = True
+                    
+                ad_preference.save()
+            except Exception as e:
+                print(f"Error updating ad preferences during plan change: {str(e)}")
+            
             messages.success(request, f"{plan.name}プランに切り替えました")
             return redirect('subscriptions:success')
             
@@ -147,7 +169,6 @@ class CheckoutView(LoginRequiredMixin, TemplateView):
         except Exception as e:
             messages.error(request, f"エラーが発生しました: {str(e)}")
             return redirect('subscriptions:upgrade')
-
 
 class SubscriptionSuccessView(LoginRequiredMixin, TemplateView):
     """サブスクリプション成功画面（テスト用簡素化+Stripe準備）"""
@@ -212,7 +233,6 @@ class SubscriptionSuccessView(LoginRequiredMixin, TemplateView):
         
         return super().get(request, *args, **kwargs)
     """
-    
 class DowngradeView(LoginRequiredMixin, TemplateView):
     """ダウングレード処理"""
     template_name = 'subscriptions/downgrade.html'
@@ -231,6 +251,24 @@ class DowngradeView(LoginRequiredMixin, TemplateView):
             if not created:
                 subscription.plan = free_plan
                 subscription.save()
+            
+            # 広告設定を直接更新（シグナルに加えて確実に更新）
+            try:
+                from ads.models import UserAdPreference
+                ad_preference, _ = UserAdPreference.objects.get_or_create(
+                    user=request.user,
+                    defaults={
+                        'show_ads': True,
+                        'is_premium': False,
+                        'allow_personalized_ads': True
+                    }
+                )
+                ad_preference.show_ads = True
+                ad_preference.is_premium = False
+                ad_preference.allow_personalized_ads = True
+                ad_preference.save()
+            except Exception as e:
+                print(f"Error updating ad preferences during downgrade: {str(e)}")
                 
             messages.success(request, "プランをフリープランに変更しました")
             return redirect('subscriptions:upgrade')
@@ -238,9 +276,6 @@ class DowngradeView(LoginRequiredMixin, TemplateView):
         except Exception as e:
             messages.error(request, f"エラーが発生しました: {str(e)}")
             return super().get(request, *args, **kwargs)
-
-
-
 # Stripeの準備ができたらコメントを外す
 """
 @method_decorator(csrf_exempt, name='dispatch')

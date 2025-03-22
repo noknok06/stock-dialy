@@ -13,7 +13,7 @@ def google_adsense():
     例: {% google_adsense %}
     """
     ad_code = """
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3954701883136363"
          crossorigin="anonymous"></script>
     """
     return mark_safe(ad_code)
@@ -43,7 +43,6 @@ def display_ad(context, ad_slot, format='auto'):
         personalized='' if personalized_ads else 'data-adtest="on" data-ad-channel="non-personalized"'
     )
     return mark_safe(ad_code)
-
 @register.simple_tag(takes_context=True)
 def show_placement_ad(context, position):
     """
@@ -73,29 +72,26 @@ def show_placement_ad(context, position):
     if ad_unit.width and ad_unit.height and ad_unit.ad_format != 'responsive':
         style += f"width:{ad_unit.width}px;height:{ad_unit.height}px;"
     
-    ad_code = """
+    # JavaScript部分のために波括弧をエスケープ
+    personalized_attr = '' if personalized_ads else 'data-adtest="on" data-ad-channel="non-personalized"'
+    
+    # JavaScriptのコードはf-stringの外に出すか、{{}}でエスケープする
+    ad_code = f"""
     <div class="ad-container ad-{position}">
         <span class="ad-label">広告</span>
         <ins class="adsbygoogle"
              style="{style}"
-             data-ad-client="ca-pub-{client}"
-             data-ad-slot="{slot}"
-             data-ad-format="{format}"
-             {personalized}></ins>
+             data-ad-client="{ad_unit.ad_client}"
+             data-ad-slot="{ad_unit.ad_slot}"
+             data-ad-format="{ad_unit.ad_format}"
+             {personalized_attr}></ins>
         <script>
-             (adsbygoogle = window.adsbygoogle || []).push({});
+             (adsbygoogle = window.adsbygoogle || []).push({{}});
         </script>
         <div class="upgrade-prompt">
             <a href="/subscriptions/upgrade/" class="small text-muted">広告を非表示にする</a>
         </div>
     </div>
-    """.format(
-        position=position,
-        style=style,
-        client=ad_unit.ad_client,
-        slot=ad_unit.ad_slot,
-        format=ad_unit.ad_format,
-        personalized='' if personalized_ads else 'data-adtest="on" data-ad-channel="non-personalized"'
-    )
+    """
     
     return mark_safe(ad_code)

@@ -51,10 +51,19 @@ def update_user_ad_preference(sender, instance, **kwargs):
         # プレミアム状態を設定（広告非表示プランの場合はプレミアム扱い）
         ad_preference.is_premium = not instance.plan.show_ads
         
+        # プランに応じてパーソナライズ広告設定を更新
+        if instance.plan.slug == 'free':
+            # フリープランの場合はパーソナライズ広告を有効化
+            ad_preference.allow_personalized_ads = True
+        else:
+            # 有料プラン（広告非表示プラン）の場合はパーソナライズ広告を無効化
+            # 広告自体が表示されないため、この設定は実質的に意味がないが一貫性のために設定
+            ad_preference.allow_personalized_ads = False
+        
         ad_preference.save()
         
         # 変更後のログを出力（デバッグ用）
-        print(f"Updated ad preferences for user {instance.user.username}: show_ads={ad_preference.show_ads}, is_premium={ad_preference.is_premium}")
+        print(f"Updated ad preferences for user {instance.user.username}: show_ads={ad_preference.show_ads}, is_premium={ad_preference.is_premium}, allow_personalized_ads={ad_preference.allow_personalized_ads}")
         
     except Exception as e:
         # エラーが発生した場合は処理をスキップ

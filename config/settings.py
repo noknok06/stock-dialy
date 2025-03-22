@@ -144,6 +144,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',  # 追加
     'subscriptions.middleware.SubscriptionMiddleware',
+    'ads.middleware.AdsMiddleware',  # 広告表示制御
 ]
 
 AUTHENTICATION_BACKENDS = [
@@ -204,6 +205,11 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'subscriptions.context_processors.subscription_status',
+                'ads.context_processors.ads_processor',
+                # サブスクリプションコンテキストプロセッサ
+                'subscriptions.context_processors.subscription_status',
+                # 広告コンテキストプロセッサを追加
+                'ads.context_processors.ads_processor',
             ],
         },
     },
@@ -274,7 +280,15 @@ LOGIN_URL = 'users:login'
 LOGIN_REDIRECT_URL = 'stockdiary:home'
 LOGOUT_REDIRECT_URL = 'users:login'
 
-
+# 本番環境の設定例
+# https://myaccount.google.com/apppasswords
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # 使用するメールサーバー
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'kabulog.information@gmail.com'  # 送信元メールアドレス
+EMAIL_HOST_PASSWORD = 'wfsdxbdxsdusvddw'  # アプリパスワードまたは通常のパスワード
+# DEFAULT_FROM_EMAIL = 'Kabulog <kabulog.information@gmail.com>'
 
 # ===== Stripe設定（現在は機能を使用していないためコメントアウト） =====
 # STRIPE_PUBLIC_KEY = 'pk_test_あなたのStripeパブリックキー'
@@ -312,4 +326,7 @@ LOGGING = {
             'propagate': True,
         },
     },
+}
+SOCIALACCOUNT_REDIRECT_URLS = {
+    'google': 'https://kabu-log.net/accounts/google/login/callback/'
 }

@@ -1,4 +1,4 @@
-# python manage.py create_analysis_templates --username testtest --templates 3
+# python manage.py create_analysis_templates --username naotaro --templates 3
 # analysis_template/management/commands/create_analysis_templates.py
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model

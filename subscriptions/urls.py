@@ -9,10 +9,5 @@ urlpatterns = [
     path('checkout/<int:plan_id>/<str:type>/', views.CheckoutView.as_view(), name='checkout'),
     path('success/', views.SubscriptionSuccessView.as_view(), name='success'),
     path('downgrade/', views.DowngradeView.as_view(), name='downgrade'),
-
-    path('upgrade/', views.UpgradeView.as_view(), name='upgrade'),
-    path('checkout/<int:plan_id>/<str:type>/', views.CheckoutView.as_view(), name='checkout'),
-    path('success/', views.SubscriptionSuccessView.as_view(), name='success'),
-    path('downgrade/', views.DowngradeView.as_view(), name='downgrade'),
     # path('webhook/', views.StripeWebhookView.as_view(), name='webhook'),
 ]
