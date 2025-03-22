@@ -62,7 +62,7 @@ class Command(BaseCommand):
             placement=header_placement,
             defaults={
                 'name': 'ヘッダーバナー広告',
-                'ad_client': 'ca-pub-XXXXXXXXXXXXXXXX',  # 実際のAdSenseクライアントIDに置き換え
+                'ad_client': 'ca-pub-3954701883136363',  # 実際のAdSenseクライアントIDに置き換え
                 'ad_slot': '1234567890',  # 実際のAdSenseスロットIDに置き換え
                 'ad_format': 'horizontal',
                 'width': 728,
@@ -76,7 +76,7 @@ class Command(BaseCommand):
             placement=sidebar_placement,
             defaults={
                 'name': 'サイドバーレクタングル広告',
-                'ad_client': 'ca-pub-XXXXXXXXXXXXXXXX',
+                'ad_client': 'ca-pub-3954701883136363',
                 'ad_slot': '0987654321',
                 'ad_format': 'rectangle',
                 'width': 300,
@@ -90,7 +90,7 @@ class Command(BaseCommand):
             placement=content_top_placement,
             defaults={
                 'name': 'コンテンツ上部広告',
-                'ad_client': 'ca-pub-XXXXXXXXXXXXXXXX',
+                'ad_client': 'ca-pub-3954701883136363',
                 'ad_slot': '1357924680',
                 'ad_format': 'responsive',
                 'is_active': True
@@ -102,7 +102,7 @@ class Command(BaseCommand):
             placement=content_bottom_placement,
             defaults={
                 'name': 'コンテンツ下部広告',
-                'ad_client': 'ca-pub-XXXXXXXXXXXXXXXX',
+                'ad_client': 'ca-pub-3954701883136363',
                 'ad_slot': '2468013579',
                 'ad_format': 'responsive',
                 'is_active': True
@@ -114,7 +114,7 @@ class Command(BaseCommand):
             placement=footer_placement,
             defaults={
                 'name': 'フッター広告',
-                'ad_client': 'ca-pub-XXXXXXXXXXXXXXXX',
+                'ad_client': 'ca-pub-3954701883136363',
                 'ad_slot': '0864213579',
                 'ad_format': 'horizontal',
                 'width': 728,
