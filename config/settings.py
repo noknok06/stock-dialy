@@ -367,3 +367,9 @@ MIDDLEWARE.append('csp.middleware.CSPMiddleware')
 CSP_FRAME_ANCESTORS = ["'self'", "*.google.com", "*.doubleclick.net"]
 CSP_SCRIPT_SRC = ["'self'", "*.googleadservices.com", "*.google.com", 
                   "*.googlesyndication.com", "*.doubleclick.net", "'unsafe-inline'"]
+
+# スタイルに関する設定を追加
+CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", "*.googleapis.com", "*.bootstrapcdn.com"]
+CSP_FONT_SRC = ["'self'", "*.googleapis.com", "*.gstatic.com", "*.bootstrapcdn.com"]
+CSP_IMG_SRC = ["'self'", "data:", "*.google.com", "*.googleapis.com", "*.gstatic.com", "*.doubleclick.net"]
+CSP_CONNECT_SRC = ["'self'", "*.google.com", "*.doubleclick.net"]
