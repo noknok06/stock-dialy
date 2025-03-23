@@ -30,17 +30,18 @@ urlpatterns = [
     path('stockdiary/', include('stockdiary.urls')),  # stockdiary アプリのURL
     path('checklist/', include('checklist.urls')),  # checklistアプリのURL
     path('tags/', include('tags.urls')),
-    path('ckeditor/', include('ckeditor_uploader.urls')),  # 追加
     path('accounts/', include('allauth.urls')),  # allauthのURLを追加
     path('analysis_template/', include('analysis_template.urls')),
     path('company_master/', include('company_master.urls')),
     path('portfolio/', include('portfolio.urls')),
     path('subscriptions/', include('subscriptions.urls')),
     path('ads/', include('ads.urls')),
+    path('security/', include('security.urls')),
 ]
 urlpatterns += [
     path('ads.txt', RedirectView.as_view(url=staticfiles_storage.url('ads.txt'))),
 ]
 
 if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

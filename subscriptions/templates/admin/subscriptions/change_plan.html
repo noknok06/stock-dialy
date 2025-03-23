@@ -1,0 +1,36 @@
+<!-- subscriptions/templates/admin/subscriptions/change_plan.html -->
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls %}
+
+{% block content %}
+<div id="content-main">
+    <div class="module">
+        <h1>{{ title }}</h1>
+        
+        <p>{{ message }}</p>
+        
+        <p>現在のプラン: <strong>{{ subscription.plan.name }}</strong></p>
+        
+        <form method="post" action="{{ action_url }}">
+            {% csrf_token %}
+            
+            <div class="form-row">
+                <label for="id_plan">新しいプラン:</label>
+                <select name="plan_id" id="id_plan" required>
+                    <option value="">---------</option>
+                    {% for plan in plans %}
+                    <option value="{{ plan.id }}" {% if plan.id == subscription.plan.id %}selected{% endif %}>
+                        {{ plan.name }} (¥{{ plan.price_monthly }}/月)
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="submit-row">
+                <input type="submit" class="default" value="プランを変更">
+                <a href="{% url 'admin:subscriptions_usersubscription_changelist' %}" class="button">キャンセル</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

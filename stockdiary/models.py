@@ -4,7 +4,6 @@ from django.contrib.auth import get_user_model
 # from checklist.models import Checklist  # この行をコメントアウト
 from tags.models import Tag
 from django.conf import settings
-from ckeditor_uploader.fields import RichTextUploadingField
 
 
 class StockDiary(models.Model):

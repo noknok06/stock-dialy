@@ -1,0 +1,28 @@
+<!-- subscriptions/templates/admin/subscriptions/confirm_action.html -->
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls %}
+
+{% block content %}
+<div id="content-main">
+    <div class="module">
+        <h1>{{ title }}</h1>
+        
+        <p>{{ message }}</p>
+        
+        {% if warning %}
+        <div class="alert alert-warning">
+            <strong>注意:</strong> {{ warning }}
+        </div>
+        {% endif %}
+        
+        <form method="post" action="{{ action_url }}">
+            {% csrf_token %}
+            
+            <div class="submit-row">
+                <input type="submit" class="default" value="{{ action }}">
+                <a href="{% url 'admin:subscriptions_usersubscription_changelist' %}" class="button">キャンセル</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -4,7 +4,6 @@ from .models import StockDiary
 from tags.models import Tag
 from checklist.models import Checklist
 from analysis_template.models import AnalysisTemplate
-from ckeditor_uploader.widgets import CKEditorUploadingWidget
 from .models import DiaryNote
 
 class StockDiaryForm(forms.ModelForm):

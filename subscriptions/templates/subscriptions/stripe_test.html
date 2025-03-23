@@ -1,0 +1,347 @@
+<!-- subscriptions/templates/subscriptions/stripe_test.html -->
+{% extends 'base.html' %}
+
+{% block title %}Stripe決済テスト | カブログ{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<style>
+  .test-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 0;
+  }
+  
+  .test-card {
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+  }
+  
+  .test-header {
+    background: linear-gradient(135deg, #6772e5 0%, #4a3dff 100%);
+    padding: 1.5rem;
+    color: white;
+  }
+  
+  .test-body {
+    padding: 2rem;
+    background-color: white;
+  }
+  
+  .plan-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  
+  .plan-option {
+    flex: 1;
+    min-width: 200px;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .plan-option:hover {
+    border-color: #6772e5;
+    transform: translateY(-2px);
+  }
+  
+  .plan-option.selected {
+    border-color: #6772e5;
+    background-color: rgba(103, 114, 229, 0.05);
+  }
+  
+  .plan-name {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  
+  .plan-price {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  
+  .plan-features {
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+  
+  .test-notice {
+    background-color: #fffbeb;
+    border: 1px solid #fef3c7;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .checkout-btn {
+    background-color: #6772e5;
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+  
+  .checkout-btn:hover {
+    background-color: #4a3dff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(74, 61, 255, 0.1);
+  }
+  
+  .mock-checkout-btn {
+    background-color: #10b981;
+  }
+  
+  .mock-checkout-btn:hover {
+    background-color: #059669;
+  }
+  
+  .current-plan-info {
+    background-color: #f9fafb;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .api-key-section {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e5e7eb;
+  }
+  
+  .status-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+  }
+  
+  .status-indicator.active {
+    background-color: #10b981;
+  }
+  
+  .status-indicator.inactive {
+    background-color: #ef4444;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="test-container">
+  <div class="test-card">
+    <div class="test-header">
+      <h2>Stripe決済テスト</h2>
+      <p>サブスクリプションプランの支払い処理をテストします</p>
+    </div>
+    
+    <div class="test-body">
+      {% if error %}
+        <div class="alert alert-danger">
+          {{ error }}
+        </div>
+      {% else %}
+        <!-- 現在のサブスクリプション情報 -->
+        <div class="current-plan-info">
+          <h3 class="h5 mb-3">
+            <i class="bi bi-info-circle me-2"></i>現在のサブスクリプション情報
+          </h3>
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>プラン:</strong> {{ current_plan.name }}</p>
+              <p>
+                <strong>ステータス:</strong>
+                <span class="status-indicator {% if current_subscription.is_valid %}active{% else %}inactive{% endif %}"></span>
+                {% if current_subscription.is_valid %}有効{% else %}無効{% endif %}
+              </p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>広告表示:</strong> {% if current_plan.show_ads %}あり{% else %}なし{% endif %}</p>
+              <p>
+                <a href="{% url 'ads:ad_preferences' %}" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-gear me-1"></i> 広告設定を確認
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- テストモードの注意書き -->
+        <div class="test-notice">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-info-circle-fill text-warning me-2 fs-4"></i>
+            <div>
+              <strong>テストモード:</strong> これはテスト用の画面です。実際の決済処理は行われません。
+              <p class="mb-0 mt-1 small">テストカード番号: <code>4242 4242 4242 4242</code> (有効期限は未来の日付、CVCは任意の3桁)</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- プラン選択 -->
+        <h3 class="h5 mb-3">プランを選択してください</h3>
+        <div class="plan-selector">
+          {% for plan in plans %}
+            <div class="plan-option" data-plan-id="{{ plan.id }}">
+              <div class="plan-name">{{ plan.name }}</div>
+              <div class="plan-price">
+                ¥{{ plan.price_monthly }}
+                <small class="text-muted">/月</small>
+              </div>
+              <div class="plan-features">
+                {% if plan.show_ads %}
+                  <div>広告表示あり</div>
+                {% else %}
+                  <div>広告表示なし</div>
+                {% endif %}
+                <div>最大{{ plan.max_tags }}個のタグ</div>
+                <div>最大{{ plan.max_templates }}個のテンプレート</div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+        
+        <!-- 決済ボタン -->
+        <div class="d-grid gap-2">
+          <button id="checkout-button" class="checkout-btn" disabled>
+            <i class="bi bi-credit-card me-2"></i> Stripeで決済する
+          </button>
+          
+          <button id="mock-checkout-button" class="checkout-btn mock-checkout-btn">
+            <i class="bi bi-check-circle me-2"></i> モック決済処理を実行する
+          </button>
+        </div>
+        
+        <!-- Stripe設定セクション -->
+        <div class="api-key-section">
+          <h3 class="h5 mb-3">Stripe API設定</h3>
+          <p>
+            <strong>公開キー:</strong>
+            {% if stripe_public_key %}
+              <code>{{ stripe_public_key }}</code>
+            {% else %}
+              <span class="text-danger">未設定</span>
+            {% endif %}
+          </p>
+          <div class="alert alert-info">
+            <p class="mb-0">
+              <i class="bi bi-lightbulb me-2"></i>
+              <strong>設定方法:</strong> settings.pyに<code>STRIPE_PUBLIC_KEY</code>と<code>STRIPE_SECRET_KEY</code>を設定してください。
+            </p>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% block scripts %}
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var stripe = Stripe('{{ stripe_public_key }}');
+    var selectedPlanId = null;
+    
+    // プラン選択の処理
+    const planOptions = document.querySelectorAll('.plan-option');
+    planOptions.forEach(option => {
+      option.addEventListener('click', function() {
+        // 選択状態をリセット
+        planOptions.forEach(opt => opt.classList.remove('selected'));
+        
+        // 選択したプランをマーク
+        this.classList.add('selected');
+        selectedPlanId = this.getAttribute('data-plan-id');
+        
+        // チェックアウトボタンを有効化
+        document.getElementById('checkout-button').disabled = false;
+      });
+    });
+    
+    // Stripeチェックアウト処理
+    const checkoutButton = document.getElementById('checkout-button');
+    checkoutButton.addEventListener('click', async function() {
+      if (!selectedPlanId) {
+        alert('プランを選択してください');
+        return;
+      }
+      
+      try {
+        // チェックアウトセッションを作成
+        const response = await fetch('{% url "subscriptions:create_checkout_session" %}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+          },
+          body: JSON.stringify({
+            plan_id: selectedPlanId
+          })
+        });
+        
+        const session = await response.json();
+        
+        if (session.error) {
+          alert('エラーが発生しました: ' + session.error);
+          return;
+        }
+        
+        // Stripeチェックアウトにリダイレクト
+        const result = await stripe.redirectToCheckout({
+          sessionId: session.id
+        });
+        
+        if (result.error) {
+          alert(result.error.message);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('エラーが発生しました: ' + error.message);
+      }
+    });
+    
+    // モック決済処理
+    const mockCheckoutButton = document.getElementById('mock-checkout-button');
+    mockCheckoutButton.addEventListener('click', async function() {
+      if (!selectedPlanId) {
+        alert('プランを選択してください');
+        return;
+      }
+      
+      if (!confirm('モック決済を実行してサブスクリプションを更新しますか？')) {
+        return;
+      }
+      
+      try {
+        // プラン変更のPOSTリクエストを送信
+        const response = await fetch('{% url "subscriptions:checkout" %}' + selectedPlanId + '/monthly/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+          },
+          body: 'confirmed=true'
+        });
+        
+        if (response.ok) {
+          window.location.href = '{% url "subscriptions:success" %}';
+        } else {
+          alert('エラーが発生しました。ステータスコード: ' + response.status);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('エラーが発生しました: ' + error.message);
+      }
+    });
+  });
+</script>
+{% endblock %}
+{% endblock %}

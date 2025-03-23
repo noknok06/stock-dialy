@@ -43,6 +43,22 @@
     margin-bottom: 1.5rem;
   }
   
+  .info-box {
+    background-color: #ebf8ff;
+    border: 1px solid #bee3f8;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .scheduled-box {
+    background-color: #f0fff4;
+    border: 1px solid #c6f6d5;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  
   .warning-title {
     color: #e53e3e;
     font-weight: 600;
@@ -51,11 +67,27 @@
     align-items: center;
   }
   
-  .warning-title i {
+  .info-title {
+    color: #3182ce;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+  }
+  
+  .scheduled-title {
+    color: #38a169;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+  }
+  
+  .title-icon {
     margin-right: 0.5rem;
   }
   
-  .warning-text {
+  .warning-text, .info-text, .scheduled-text {
     color: #4a5568;
     font-size: 0.95rem;
   }
@@ -113,6 +145,14 @@
     background-color: #4b5563;
   }
   
+  .cancel-btn {
+    background-color: #ef4444;
+  }
+  
+  .cancel-btn:hover {
+    background-color: #dc2626;
+  }
+  
   .cancel-link {
     display: block;
     text-align: center;
@@ -146,6 +186,11 @@
     font-size: 1.1rem;
     color: #4b5563;
   }
+  
+  .highlight {
+    font-weight: 600;
+    color: #2563eb;
+  }
 </style>
 {% endblock %}
 
@@ -159,80 +204,130 @@
       </div>
       
       <div class="card-body p-4">
-        {% if processing %}
-        <!-- 処理中表示 -->
-        <div class="downgrade-progress">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
+        {% if error %}
+          <div class="alert alert-danger">
+            {{ error }}
+            <div class="mt-3">
+              <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> プラン選択に戻る
+              </a>
+            </div>
           </div>
-          <p class="progress-text">プラン変更処理中です...</p>
-          <p class="text-muted">しばらくお待ちください。自動的にリダイレクトされます。</p>
-        </div>
         
-        <script>
-          // 5秒後にアップグレードページにリダイレクト
-          setTimeout(function() {
-            window.location.href = "{% url 'subscriptions:upgrade' %}";
-          }, 5000);
-        </script>
+        {% elif processing %}
+          <!-- 処理中表示 -->
+          <div class="downgrade-progress">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="progress-text">プラン変更処理中です...</p>
+            <p class="text-muted">しばらくお待ちください。自動的にリダイレクトされます。</p>
+          </div>
+          
+          <script>
+            // 5秒後にアップグレードページにリダイレクト
+            setTimeout(function() {
+              window.location.href = "{% url 'subscriptions:upgrade' %}";
+            }, 5000);
+          </script>
+        
+        {% elif scheduled_downgrade %}
+          <!-- すでにダウングレードがスケジュールされている場合 -->
+          <div class="scheduled-box">
+            <div class="scheduled-title">
+              <i class="bi bi-calendar-check title-icon"></i> ダウングレードが予定されています
+            </div>
+            <p class="scheduled-text">
+              {{ downgrade_date|date:"Y年m月d日" }}の請求日以降に、プランが「{{ target_plan.name }}」に変更される予定です。
+              それまでは現在の「{{ current_plan.name }}」をご利用いただけます。
+            </p>
+          </div>
+          
+          <div class="text-center mb-4">
+            <p>ダウングレードをキャンセルして現在のプランを継続しますか？</p>
+            
+            <form method="post" action="{% url 'subscriptions:cancel_downgrade' %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-success">
+                <i class="bi bi-arrow-counterclockwise me-1"></i> ダウングレードをキャンセルする
+              </button>
+            </form>
+          </div>
+          
+          <div class="mt-3 text-center">
+            <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left me-1"></i> プラン選択に戻る
+            </a>
+          </div>
+          
         {% else %}
-        
-        <div class="warning-box">
-          <div class="warning-title">
-            <i class="bi bi-exclamation-triangle-fill"></i> ダウングレードする前にご確認ください
+          <!-- 通常のダウングレード確認 -->
+          <div class="info-box">
+            <div class="info-title">
+              <i class="bi bi-info-circle title-icon"></i> ダウングレードについて
+            </div>
+            <p class="info-text">
+              <span class="highlight">{{ current_period_end|date:"Y年m月d日" }}</span>の請求日までは現在のプラン「<span class="highlight">{{ current_plan.name }}</span>」をご利用いただけます。
+              その後、自動的にフリープランに変更されます。
+            </p>
           </div>
-          <p class="warning-text">
-            フリープランに変更すると、以下の制限が適用されます。
-            現在のプランで作成したデータが制限を超える場合、一部のデータにアクセスできなくなる可能性があります。
+          
+          <div class="warning-box">
+            <div class="warning-title">
+              <i class="bi bi-exclamation-triangle-fill title-icon"></i> ダウングレードする前にご確認ください
+            </div>
+            <p class="warning-text">
+              フリープランに変更すると、以下の制限が適用されます。
+              現在のプランで作成したデータが制限を超える場合、一部のデータにアクセスできなくなる可能性があります。
+            </p>
+          </div>
+          
+          <ul class="limitation-list">
+            <li class="limitation-item">
+              <i class="bi bi-exclamation-circle-fill limitation-icon"></i>
+              <div class="limitation-content">
+                <div class="limitation-title">タグ数の制限</div>
+                <p>5個を超えるタグを作成している場合、超過分へのアクセスが制限されます。</p>
+              </div>
+            </li>
+            <li class="limitation-item">
+              <i class="bi bi-exclamation-circle-fill limitation-icon"></i>
+              <div class="limitation-content">
+                <div class="limitation-title">分析テンプレート数の制限</div>
+                <p>3個を超える分析テンプレートを作成している場合、超過分へのアクセスが制限されます。</p>
+              </div>
+            </li>
+            <li class="limitation-item">
+              <i class="bi bi-exclamation-circle-fill limitation-icon"></i>
+              <div class="limitation-content">
+                <div class="limitation-title">スナップショット数の制限</div>
+                <p>3回を超えるスナップショットを作成している場合、超過分へのアクセスが制限されます。</p>
+              </div>
+            </li>
+            <li class="limitation-item">
+              <i class="bi bi-exclamation-circle-fill limitation-icon"></i>
+              <div class="limitation-content">
+                <div class="limitation-title">広告の表示</div>
+                <p>フリープランでは広告が表示されます。</p>
+              </div>
+            </li>
+          </ul>
+          
+          <p class="mb-4 text-muted">
+            <i class="bi bi-info-circle me-1"></i> 
+            再度有料プランにアップグレードすると、すべてのデータにアクセスできるようになります。データそのものは削除されません。
           </p>
-        </div>
-        
-        <ul class="limitation-list">
-          <li class="limitation-item">
-            <i class="bi bi-exclamation-circle-fill limitation-icon"></i>
-            <div class="limitation-content">
-              <div class="limitation-title">タグ数の制限</div>
-              <p>5個を超えるタグを作成している場合、超過分へのアクセスが制限されます。</p>
-            </div>
-          </li>
-          <li class="limitation-item">
-            <i class="bi bi-exclamation-circle-fill limitation-icon"></i>
-            <div class="limitation-content">
-              <div class="limitation-title">分析テンプレート数の制限</div>
-              <p>3個を超える分析テンプレートを作成している場合、超過分へのアクセスが制限されます。</p>
-            </div>
-          </li>
-          <li class="limitation-item">
-            <i class="bi bi-exclamation-circle-fill limitation-icon"></i>
-            <div class="limitation-content">
-              <div class="limitation-title">スナップショット数の制限</div>
-              <p>3回を超えるスナップショットを作成している場合、超過分へのアクセスが制限されます。</p>
-            </div>
-          </li>
-          <li class="limitation-item">
-            <i class="bi bi-exclamation-circle-fill limitation-icon"></i>
-            <div class="limitation-content">
-              <div class="limitation-title">広告の表示</div>
-              <p>フリープランでは広告が表示されます。</p>
-            </div>
-          </li>
-        </ul>
-        
-        <p class="mb-4 text-muted">
-          <i class="bi bi-info-circle me-1"></i> 
-          再度有料プランにアップグレードすると、すべてのデータにアクセスできるようになります。データそのものは削除されません。
-        </p>
-        
-        <form method="post">
-          {% csrf_token %}
-          <button type="submit" class="confirm-btn">
-            フリープランに変更する
-          </button>
-        </form>
-        
-        <a href="{% url 'subscriptions:upgrade' %}" class="cancel-link">
-          キャンセルしてプラン比較に戻る
-        </a>
+          
+          <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="confirm-btn">
+              <i class="bi bi-arrow-down-circle me-1"></i> フリープランに変更する
+            </button>
+          </form>
+          
+          <a href="{% url 'subscriptions:upgrade' %}" class="cancel-link">
+            キャンセルしてプラン比較に戻る
+          </a>
         {% endif %}
       </div>
     </div>
