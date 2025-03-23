@@ -69,10 +69,10 @@ def subscription_status(request):
                 
                 # 使用率を計算（0除算を防止）
                 context['usage_percent'] = {
-                    'tags': int(tags_count / plan.max_tags * 100) if plan.max_tags > 0 else 0,
-                    'templates': int(templates_count / plan.max_templates * 100) if plan.max_templates > 0 else 0,
-                    'snapshots': int(snapshots_count / plan.max_snapshots * 100) if plan.max_snapshots > 0 else 0,
-                    'records': int(records_count / plan.max_records * 100) if plan.max_records > 0 else 0
+                    'tags': int(tags_count / plan.max_tags * 100) if plan.max_tags > 0 else (0 if plan.max_tags == -1 else 100),
+                    'templates': int(templates_count / plan.max_templates * 100) if plan.max_templates > 0 else (0 if plan.max_templates_tags == -1 else 100),
+                    'snapshots': int(snapshots_count / plan.max_snapshots * 100) if plan.max_snapshots > 0 else (0 if plan.max_snapshots == -1 else 100),
+                    'records': int(records_count / plan.max_records * 100) if plan.max_records > 0 else (0 if plan.max_records == -1 else 100),
                 }
             except Exception as e:
                 # 使用状況の取得に失敗した場合はデフォルト値を使用

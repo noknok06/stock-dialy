@@ -29,7 +29,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 # 本番環境用デバッグ設定（無効）
-DEBUG = True
+DEBUG = False
 
 # ホストとCSRF設定
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')

@@ -59,7 +59,7 @@
                 <div class="card-body">
                     <div class="text-center mb-3">
                         <div class="display-4 text-{{ resource.status }}">{{ resource.count }}</div>
-                        <div class="text-muted">/ {{ resource.limit }}</div>
+                        <div class="text-muted">/ {% if resource.limit == -1 %}無制限{% else %}{{ resource.limit }}{% endif %}</div>
                     </div>
                     <div class="progress mb-2">
                         <div class="progress-bar bg-{{ resource.status }}" 

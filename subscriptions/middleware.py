@@ -81,7 +81,7 @@ class SubscriptionMiddleware:
         except Exception as e:
             print(f"Error updating ad preferences: {str(e)}")
             return False
-    
+
     def check_resource_warnings(self, request):
         """リソース使用量の警告チェック（上限の80%以上使用している場合に警告）"""
         if not hasattr(request, 'subscription') or request.subscription is None:
@@ -94,25 +94,25 @@ class SubscriptionMiddleware:
             # タグ数チェック
             tag_count = request.user.tag_set.count()
             tag_limit = plan.max_tags
-            if tag_count >= tag_limit * 0.8 and tag_count < tag_limit:
+            if tag_limit > 0 and tag_count >= tag_limit * 0.8 and tag_count < tag_limit:
                 messages.warning(request, f"タグ数が上限({tag_limit}個)の{int(tag_count/tag_limit*100)}%に達しています。")
             
             # テンプレート数チェック
             template_count = request.user.analysistemplate_set.count()
             template_limit = plan.max_templates
-            if template_count >= template_limit * 0.8 and template_count < template_limit:
+            if template_limit > 0 and template_count >= template_limit * 0.8 and template_count < template_limit:
                 messages.warning(request, f"分析テンプレート数が上限({template_limit}個)の{int(template_count/template_limit*100)}%に達しています。")
             
             # スナップショット数チェック
             snapshot_count = request.user.portfoliosnapshot_set.count()
             snapshot_limit = plan.max_snapshots
-            if snapshot_count >= snapshot_limit * 0.8 and snapshot_count < snapshot_limit:
+            if snapshot_limit > 0 and snapshot_count >= snapshot_limit * 0.8 and snapshot_count < snapshot_limit:
                 messages.warning(request, f"スナップショット数が上限({snapshot_limit}回)の{int(snapshot_count/snapshot_limit*100)}%に達しています。")
             
             # 株式記録数チェック
             record_count = request.user.stockdiary_set.count()
             record_limit = plan.max_records
-            if record_count >= record_limit * 0.8 and record_count < record_limit:
+            if record_limit > 0 and record_count >= record_limit * 0.8 and record_count < record_limit:
                 messages.warning(request, f"株式記録数が上限({record_limit}件)の{int(record_count/record_limit*100)}%に達しています。")
         
         except Exception as e:

@@ -28,6 +28,7 @@ class SubscriptionLimitCheckMixin:
             
         return super().dispatch(request, *args, **kwargs)
         
+        
     def check_tag_limit(self, request, *args, **kwargs):
         """タグ数の制限チェック"""
         try:
@@ -35,7 +36,7 @@ class SubscriptionLimitCheckMixin:
                 plan = request.subscription.plan
                 current_count = request.user.tag_set.count()
                 
-                if current_count >= plan.max_tags:
+                if plan.max_tags != -1 and current_count >= plan.max_tags:
                     messages.error(request, f"タグ数が上限({plan.max_tags}個)に達しています。プランをアップグレードしてください。")
                     return redirect('subscriptions:upgrade')
         except Exception as e:
@@ -52,8 +53,8 @@ class SubscriptionLimitCheckMixin:
             if request.method == 'POST':  # 新規作成時のみチェック
                 plan = request.subscription.plan
                 current_count = request.user.analysistemplate_set.count()
-                
-                if current_count >= plan.max_templates:
+
+                if plan.max_templates != -1 and current_count >= plan.max_tags:                
                     messages.error(request, f"分析テンプレート数が上限({plan.max_templates}個)に達しています。プランをアップグレードしてください。")
                     return redirect('subscriptions:upgrade')
         except Exception as e:
@@ -91,7 +92,7 @@ class SubscriptionLimitCheckMixin:
                     messages.error(request, "本日のスナップショットはすでに作成済みです。スナップショットは1日1回のみ作成できます。")
                     return redirect('portfolio:list')
                 
-                if current_count >= plan.max_snapshots:
+                if plan.max_snapshots != -1 and current_count >= plan.max_tags:                
                     messages.error(
                         request, 
                         f"スナップショット数が上限({plan.max_snapshots}回)に達しています。"
@@ -113,7 +114,7 @@ class SubscriptionLimitCheckMixin:
                 plan = request.subscription.plan
                 current_count = request.user.stockdiary_set.count()
                 
-                if current_count >= plan.max_records:
+                if plan.max_records != -1 and current_count >= plan.max_tags:                
                     messages.error(request, f"株式記録数が上限({plan.max_records}件)に達しています。プランをアップグレードしてください。")
                     return redirect('subscriptions:upgrade')
         except Exception as e:

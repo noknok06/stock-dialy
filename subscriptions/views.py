@@ -715,25 +715,25 @@ class SubscriptionUsageView(LoginRequiredMixin, TemplateView):
             tags = user.tag_set.all()
             tag_count = tags.count()
             tag_limit = plan.max_tags
-            tag_percent = int(tag_count / tag_limit * 100) if tag_limit > 0 else 0
+            tag_percent = int(tag_count / tag_limit * 100) if tag_limit > 0 else 0 if tag_limit == -1 else 100
             
             # テンプレートデータ
             templates = user.analysistemplate_set.all()
             template_count = templates.count()
             template_limit = plan.max_templates
-            template_percent = int(template_count / template_limit * 100) if template_limit > 0 else 0
+            template_percent = int(template_count / template_limit * 100) if template_limit > 0 else 0 if template_limit == -1 else 100
             
             # スナップショットデータ
             snapshots = user.portfoliosnapshot_set.all()
             snapshot_count = snapshots.count()
             snapshot_limit = plan.max_snapshots
-            snapshot_percent = int(snapshot_count / snapshot_limit * 100) if snapshot_limit > 0 else 0
+            snapshot_percent = int(snapshot_count / snapshot_limit * 100) if snapshot_limit > 0 else 0 if snapshot_limit == -1 else 100
             
             # 株式記録データ
             records = user.stockdiary_set.all()
             record_count = records.count()
             record_limit = plan.max_records
-            record_percent = int(record_count / record_limit * 100) if record_limit > 0 else 0
+            record_percent = int(record_count / record_limit * 100) if record_limit > 0 else 0 if record_limit == -1 else 100
             
             # コンテキストに追加
             context.update({
