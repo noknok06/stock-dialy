@@ -29,7 +29,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 # 本番環境用デバッグ設定（無効）
-DEBUG = False
+DEBUG = True
 
 # ホストとCSRF設定
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
@@ -121,6 +121,7 @@ THIRD_PARTY_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     'csp',
+    'axes',
 ]
 
 # ローカルアプリ
@@ -338,7 +339,7 @@ ADS_SETTINGS = {
 }
 
 # メンテナンスモード設定
-MAINTENANCE_MODE = True  # メンテナンスモード有効
+MAINTENANCE_MODE = False  # メンテナンスモード有効
 MAINTENANCE_ALLOWED_IPS = [
     '193.186.4.181',  # 管理者IP
     '192.168.1.100',  # 管理者IP

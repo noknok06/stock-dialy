@@ -23,6 +23,7 @@ import re
 from decimal import Decimal
 from datetime import timedelta
 from collections import Counter, defaultdict
+import secrets
 import random
 
 
@@ -735,7 +736,7 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
             if diary:
                 # ランダムな価格変動を適用（-15%〜+15%）
                 base_price = float(diary.purchase_price)
-                random_factor = 0.85 + (random.random() * 0.3)  # 0.85〜1.15の乱数
+                random_factor = 0.85 + (secrets.SystemRandom().random() * 0.3)  # セキュアな乱数生成
                 current_price = base_price * random_factor
                 prices[symbol] = round(current_price, 2)
             else:
