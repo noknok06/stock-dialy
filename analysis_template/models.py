@@ -12,7 +12,7 @@ class AnalysisTemplate(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
 class AnalysisItem(models.Model):
     """分析項目"""

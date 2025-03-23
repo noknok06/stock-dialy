@@ -21,13 +21,17 @@ class Command(BaseCommand):
         template_count = options['templates']
 
         if not username:
-            self.stdout.write(self.style.ERROR('ユーザー名が指定されていません。--username オプションを指定してください。'))
+            self.stdout.write(
+                    self.style.ERROR('ユーザー名が指定されていません。--username オプションを指定してください。')
+                )
             return
 
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
-            self.stdout.write(self.style.ERROR(f'ユーザー "{username}" が見つかりません。'))
+            self.stdout.write(
+                    self.style.ERROR(f'ユーザー "{username}" が見つかりません。')
+                )
             return
 
         # テンプレートデータの定義（前回と同様）

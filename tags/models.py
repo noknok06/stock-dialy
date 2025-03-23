@@ -12,4 +12,4 @@ class Tag(models.Model):
         ordering = ['name']  # 名前順に並べる
 
     def __str__(self):
-        return self.name
+        return str(self.name)

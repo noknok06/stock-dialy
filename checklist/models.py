@@ -20,7 +20,7 @@ class ChecklistItem(models.Model):
         ordering = ['order']
     
     def __str__(self):
-        return self.item_text
+        return str(self.item_text)
 
 class DiaryChecklistItem(models.Model):
     diary = models.ForeignKey('stockdiary.StockDiary', on_delete=models.CASCADE)
