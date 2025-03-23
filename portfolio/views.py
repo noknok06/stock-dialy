@@ -107,8 +107,8 @@ class SnapshotDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Detail
         ]
         context['diary_actions'] = diary_actions  # この行を必ず追加する
         return context
-# portfolio/views.py の CreateSnapshotView クラスを完全に修正
 
+# portfolio/views.py の CreateSnapshotView クラスを完全に修正
 class CreateSnapshotView(SubscriptionLimitCheckMixin, LoginRequiredMixin, CreateView):
     model = PortfolioSnapshot
     template_name = 'portfolio/form.html'
@@ -249,6 +249,26 @@ class CreateSnapshotView(SubscriptionLimitCheckMixin, LoginRequiredMixin, Create
         
         messages.success(self.request, f"スナップショット「{self.object.name}」を作成しました。")
         return response# portfolio/views.py のCompareSnapshotsViewクラスを修正
+
+    def calculate_sector_allocations(self):
+        """セクター別の配分を計算して保存"""
+        holdings = HoldingRecord.objects.filter(snapshot=self.object)
+        sectors = {}
+        
+        # セクターごとに集計
+        for holding in holdings:
+            if holding.sector in sectors:
+                sectors[holding.sector] += holding.percentage
+            else:
+                sectors[holding.sector] = holding.percentage
+        
+        # セクター配分を保存
+        for sector_name, percentage in sectors.items():
+            SectorAllocation.objects.create(
+                snapshot=self.object,
+                sector_name=sector_name,
+                percentage=percentage
+            )
 
 class CompareSnapshotsView(LoginRequiredMixin, TemplateView):
     template_name = 'portfolio/compare.html'
