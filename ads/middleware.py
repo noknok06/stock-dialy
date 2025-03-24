@@ -1,4 +1,4 @@
-# ads/middleware.py - サブスクリプション新構造対応版
+# ads/middleware.py - サブスクリプション関連の参照を削除
 from django.conf import settings
 from django.urls import resolve
 from .models import UserAdPreference
@@ -14,17 +14,11 @@ class AdsMiddleware:
             '/accounts/login/',
             '/accounts/signup/',
             '/accounts/password_reset/',
-            '/subscriptions/checkout/',
-            '/subscriptions/success/',
-            '/subscriptions/plans/',
-            '/subscriptions/upgrade/',
-            '/subscriptions/downgrade/',
         ]
         
         # 広告を表示しないネームスペースのリスト
         self.no_ads_namespaces = [
             'admin',
-            'subscriptions',
             'ads:ad_preferences',
             'ads:privacy_policy',
         ]
@@ -60,18 +54,7 @@ class AdsMiddleware:
         
         # ユーザーがログインしている場合
         if request.user.is_authenticated:
-            # まずサブスクリプションをチェック
-            try:
-                # サブスクリプションから広告表示設定を取得
-                subscription = getattr(request.user, 'subscription', None)
-                if subscription and subscription.is_valid():
-                    # 有料プラン（basic/pro）の場合は広告を表示しない
-                    if not subscription.plan.show_ads:
-                        return False
-            except:
-                pass
-            
-            # 次に広告設定をチェック
+            # 広告設定をチェック
             try:
                 ad_preference = UserAdPreference.objects.get(user=request.user)
                 return ad_preference.should_show_ads()
@@ -94,13 +77,6 @@ class AdsMiddleware:
         # ユーザーがログインしている場合
         if request.user.is_authenticated:
             try:
-                # サブスクリプションを確認
-                subscription = getattr(request.user, 'subscription', None)
-                if subscription and subscription.is_valid():
-                    # 有料プラン（basic/pro）ならパーソナライズ広告も無効化
-                    if not subscription.plan.show_ads:
-                        return False
-                
                 # 広告設定を確認
                 ad_preference = UserAdPreference.objects.get(user=request.user)
                 return ad_preference.allow_personalized_ads

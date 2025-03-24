@@ -1,18 +1,18 @@
-# subscriptions/context_processors.py
+# subscriptions/context_processors.py - 修正版
 def subscription_status(request):
-    """サブスクリプション情報をテンプレートに提供"""
+    """サブスクリプション情報をテンプレートに提供（機能制限なし、広告表示あり）"""
     context = {
-        'show_ads': True,  # デフォルトは広告表示
-        'is_pro': False,
+        'show_ads': True,  # 広告表示あり
+        'is_pro': False,   # プロステータスなし（広告表示のため）
         'subscription_name': 'フリー',
-        'is_premium': False,  # 広告削除プランまたはプロプラン
+        'is_premium': False,  # 広告表示あり
         'plan_limits': {
-            'max_tags': 5,
-            'max_templates': 3,
-            'max_snapshots': 3,
-            'max_records': 30,
-            'export_enabled': False,
-            'advanced_analytics': False
+            'max_tags': -1,           # 無制限
+            'max_templates': -1,      # 無制限
+            'max_snapshots': -1,      # 無制限
+            'max_records': -1,        # 無制限
+            'export_enabled': True,   # エクスポート機能有効
+            'advanced_analytics': True # 高度な分析機能有効
         },
         'usage': {
             'tags': 0,
@@ -28,58 +28,43 @@ def subscription_status(request):
         }
     }
     
-    if not hasattr(request, 'user') or not request.user.is_authenticated:
-        return context
-    
-    try:
-        subscription = request.user.subscription
-        if subscription and subscription.is_valid():
-            plan = subscription.plan
+    # ユーザーが認証済みかつユーザー属性にアクセス可能な場合、ユーザーの設定を取得
+    if hasattr(request, 'user') and request.user.is_authenticated:
+        try:
+            # ユーザーの広告設定を反映
+            from ads.models import UserAdPreference
+            try:
+                ad_preference = UserAdPreference.objects.get(user=request.user)
+                context['show_ads'] = ad_preference.should_show_ads()
+                context['personalized_ads'] = ad_preference.allow_personalized_ads
+            except UserAdPreference.DoesNotExist:
+                # デフォルトの設定を使用
+                pass
+                
+            # 使用状況を取得（該当のリレーションが存在する場合のみ）
+            user = request.user
+            tags_count = user.tag_set.count() if hasattr(user, 'tag_set') else 0
+            templates_count = user.analysistemplate_set.count() if hasattr(user, 'analysistemplate_set') else 0
+            snapshots_count = user.portfoliosnapshot_set.count() if hasattr(user, 'portfoliosnapshot_set') else 0
+            records_count = user.stockdiary_set.count() if hasattr(user, 'stockdiary_set') else 0
             
-            # 基本情報を設定
-            context['show_ads'] = plan.show_ads
-            context['is_pro'] = plan.slug == 'pro'
-            context['is_premium'] = not plan.show_ads  # 広告削除プランまたはプロプラン
-            context['subscription_name'] = plan.name
-            
-            # プラン制限情報を設定
-            context['plan_limits'] = {
-                'max_tags': plan.max_tags,
-                'max_templates': plan.max_templates,
-                'max_snapshots': plan.max_snapshots,
-                'max_records': plan.max_records,
-                'export_enabled': plan.export_enabled,
-                'advanced_analytics': plan.advanced_analytics
+            context['usage'] = {
+                'tags': tags_count,
+                'templates': templates_count,
+                'snapshots': snapshots_count,
+                'records': records_count
             }
             
-            # 使用状況を取得（該当のリレーションが存在する場合のみ）
-            try:
-                user = request.user
-                tags_count = user.tag_set.count() if hasattr(user, 'tag_set') else 0
-                templates_count = user.analysistemplate_set.count() if hasattr(user, 'analysistemplate_set') else 0
-                snapshots_count = user.portfoliosnapshot_set.count() if hasattr(user, 'portfoliosnapshot_set') else 0
-                records_count = user.stockdiary_set.count() if hasattr(user, 'stockdiary_set') else 0
+            # 使用率は常に0（無制限のため）
+            context['usage_percent'] = {
+                'tags': 0,
+                'templates': 0,
+                'snapshots': 0,
+                'records': 0
+            }
                 
-                context['usage'] = {
-                    'tags': tags_count,
-                    'templates': templates_count,
-                    'snapshots': snapshots_count,
-                    'records': records_count
-                }
-                
-                # 使用率を計算（0除算を防止）
-                context['usage_percent'] = {
-                    'tags': int(tags_count / plan.max_tags * 100) if plan.max_tags > 0 else (0 if plan.max_tags == -1 else 100),
-                    'templates': int(templates_count / plan.max_templates * 100) if plan.max_templates > 0 else (0 if plan.max_templates_tags == -1 else 100),
-                    'snapshots': int(snapshots_count / plan.max_snapshots * 100) if plan.max_snapshots > 0 else (0 if plan.max_snapshots == -1 else 100),
-                    'records': int(records_count / plan.max_records * 100) if plan.max_records > 0 else (0 if plan.max_records == -1 else 100),
-                }
-            except Exception as e:
-                # 使用状況の取得に失敗した場合はデフォルト値を使用
-                print(f"Error getting usage info: {str(e)}")
-                
-    except (AttributeError, Exception) as e:
-        # エラーが発生した場合はデフォルト値を使用
-        print(f"Error in subscription context processor: {str(e)}")
+        except Exception as e:
+            # エラーが発生した場合はデフォルト値を使用
+            print(f"Error getting usage info: {str(e)}")
     
     return context

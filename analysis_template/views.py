@@ -10,7 +10,6 @@ from django.db import transaction
 from .models import AnalysisTemplate, AnalysisItem, DiaryAnalysisValue
 from .forms import AnalysisTemplateForm, AnalysisItemFormSet, create_analysis_value_formset
 from stockdiary.models import StockDiary
-from subscriptions.mixins import SubscriptionLimitCheckMixin
 
 class AnalysisTemplateListView(LoginRequiredMixin, ListView):
     model = AnalysisTemplate
@@ -75,7 +74,7 @@ class AnalysisTemplateDetailView(LoginRequiredMixin, DetailView):
         context['page_actions'] = analytics_actions
         return context
         
-class AnalysisTemplateCreateView(SubscriptionLimitCheckMixin, LoginRequiredMixin, CreateView):
+class AnalysisTemplateCreateView(LoginRequiredMixin, CreateView):
     model = AnalysisTemplate
     form_class = AnalysisTemplateForm
     template_name = 'analysis_template/form.html'
@@ -170,12 +169,6 @@ class AnalysisTemplateDeleteView(LoginRequiredMixin, DeleteView):
     
     def get_queryset(self):
         return AnalysisTemplate.objects.filter(user=self.request.user)
-
-# views.py の AnalysisReportView クラスの修正版
-
-# analysis_template/views.py の AnalysisReportView クラスの修正版
-
-# analysis_template/views.py の AnalysisReportView クラスの修正版
 
 class AnalysisReportView(LoginRequiredMixin, DetailView):
     """テンプレートに基づいた分析レポートを表示するビュー"""

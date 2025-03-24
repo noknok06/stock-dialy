@@ -10,9 +10,6 @@ from utils.mixins import ObjectNotFoundRedirectMixin
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
-from subscriptions.mixins import SubscriptionLimitCheckMixin
-
-# portfolio/views.py の SnapshotListView クラスを更新
 
 class SnapshotListView(LoginRequiredMixin, ListView):
     model = PortfolioSnapshot
@@ -40,12 +37,19 @@ class SnapshotListView(LoginRequiredMixin, ListView):
             created_at__range=(today_start, today_end)
         ).exists()
         
-        # 残りの作成可能枚数
-        if hasattr(self.request, 'subscription') and self.request.subscription:
-            plan = self.request.subscription.plan
-            snapshot_count = PortfolioSnapshot.objects.filter(user=self.request.user).count()
-            remaining = max(0, plan.max_snapshots - snapshot_count)
-            context['remaining_snapshots'] = remaining
+        # 制限関連のデータを固定値に設定
+        context['subscription_name'] = "標準プラン"
+        context['plan_limits'] = {'max_snapshots': 999}
+        context['usage'] = {'snapshots': PortfolioSnapshot.objects.filter(user=self.request.user).count()}
+        context['remaining_snapshots'] = 999  # 事実上無制限
+        
+        # 使用率の計算（スナップショット）
+        try:
+            snapshots_percent = (context['usage']['snapshots'] / context['plan_limits']['max_snapshots']) * 100
+        except ZeroDivisionError:
+            snapshots_percent = 0
+        
+        context['usage_percent'] = {'snapshots': min(snapshots_percent, 99)}  # 常に上限以下に表示
         
         diary_actions = [
             {
@@ -108,8 +112,7 @@ class SnapshotDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Detail
         context['diary_actions'] = diary_actions  # この行を必ず追加する
         return context
 
-# portfolio/views.py の CreateSnapshotView クラスを完全に修正
-class CreateSnapshotView(SubscriptionLimitCheckMixin, LoginRequiredMixin, CreateView):
+class CreateSnapshotView(LoginRequiredMixin, CreateView):
     model = PortfolioSnapshot
     template_name = 'portfolio/form.html'
     fields = ['name', 'description']
@@ -157,6 +160,12 @@ class CreateSnapshotView(SubscriptionLimitCheckMixin, LoginRequiredMixin, Create
             created_at__range=(today_start, today_end)
         ).exists()
         
+        # サブスクリプション関連の情報を固定値に設定
+        context['subscription_name'] = "標準プラン"
+        context['plan_limits'] = {'max_snapshots': 999}
+        context['usage'] = {'snapshots': PortfolioSnapshot.objects.filter(user=self.request.user).count()}
+        context['usage_percent'] = {'snapshots': 0}  # 常に制限未満
+        
         page_actions = [
             {
                 'type': 'back',
@@ -189,7 +198,7 @@ class CreateSnapshotView(SubscriptionLimitCheckMixin, LoginRequiredMixin, Create
             messages.error(self.request, "本日のスナップショットはすでに作成済みです。スナップショットは1日1回のみ作成できます。")
             return redirect('portfolio:list')
         
-        # ミックスインの制限チェックが通った場合は、ユーザーを設定
+        # ユーザーを設定
         form.instance.user = self.request.user
         
         # アクティブな株式日記を取得（売却されていないもの）
@@ -248,7 +257,7 @@ class CreateSnapshotView(SubscriptionLimitCheckMixin, LoginRequiredMixin, Create
         self.calculate_sector_allocations()
         
         messages.success(self.request, f"スナップショット「{self.object.name}」を作成しました。")
-        return response# portfolio/views.py のCompareSnapshotsViewクラスを修正
+        return response
 
     def calculate_sector_allocations(self):
         """セクター別の配分を計算して保存"""
@@ -439,7 +448,6 @@ class CompareSnapshotsView(LoginRequiredMixin, TemplateView):
         
         return result
 
-# portfolio/views.py に追加
 class SnapshotDeleteView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, DeleteView):
     model = PortfolioSnapshot
     success_url = reverse_lazy('portfolio:list')

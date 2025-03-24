@@ -1,4 +1,4 @@
-{# ads/templates/ads/ad_preferences.html - 目的を明確化したバージョン #}
+{# ads/templates/ads/ad_preferences.html - サブスクリプション遷移なしバージョン #}
 {% extends 'base.html' %}
 {% load static %}
 
@@ -15,108 +15,40 @@
                 <div class="card-body">
                     <p class="mb-4">カブログでの広告表示に関する設定情報です。</p>
                     
-                    {% if is_premium %}
-                        <div class="alert alert-success mb-4">
-                            <div class="d-flex">
-                                <div class="me-3">
-                                    <i class="bi bi-star-fill fs-1 text-warning"></i>
-                                </div>
-                                <div>
-                                    <h5 class="alert-heading">
-                                        {% if subscription_plan.slug == 'pro' %}
-                                            プロプラン特典
-                                        {% else %}
-                                            広告削除プラン特典
-                                        {% endif %}
-                                    </h5>
-                                    <p class="mb-0">現在のサブスクリプションプランでは、広告は非表示になっています。</p>
-                                </div>
+                    <div class="alert alert-info mb-4">
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <i class="bi bi-info-circle fs-1 text-info"></i>
+                            </div>
+                            <div>
+                                <h5 class="alert-heading">広告情報</h5>
+                                <p class="mb-0">カブログでは、サービス運営のため広告が表示されます。</p>
                             </div>
                         </div>
-                    {% else %}
-                        <div class="alert alert-info mb-4">
-                            <div class="d-flex">
-                                <div class="me-3">
-                                    <i class="bi bi-info-circle fs-1 text-info"></i>
-                                </div>
-                                <div>
-                                    <h5 class="alert-heading">フリープラン情報</h5>
-                                    <p class="mb-0">現在のプランでは広告が表示されます。広告を非表示にするには、有料プランへのアップグレードが必要です。</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="text-center mb-4">
-                            <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-success btn-lg">
-                                <i class="bi bi-star me-1"></i> 広告を非表示にするためにアップグレード
-                            </a>
-                        </div>
-                    {% endif %}
+                    </div>
                     
                     <div class="mt-4 pt-4 border-top">
                         <h3 class="h5 mb-3">広告プライバシー設定</h3>
                         
-                        {% if not is_premium %}
-                            <p class="text-muted mb-3">広告表示に関するプライバシー設定をカスタマイズできます。</p>
-                            
-                            <div class="mb-4">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="personalized-ads" {% if preference.allow_personalized_ads %}checked{% endif %} disabled>
-                                    <label class="form-check-label" for="personalized-ads">
-                                        パーソナライズド広告を許可する
-                                    </label>
-                                </div>
-                                <small class="text-muted d-block mt-1">
-                                    <i class="bi bi-info-circle me-1"></i> フリープランではパーソナライズド広告が表示されます。
-                                    広告のパーソナライズを無効にするには、<a href="{% url 'subscriptions:upgrade' %}">有料プランにアップグレード</a>してください。
-                                </small>
+                        <p class="text-muted mb-3">広告表示に関するプライバシー設定をカスタマイズできます。</p>
+                        
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="personalized-ads" {% if preference.allow_personalized_ads %}checked{% endif %} disabled>
+                                <label class="form-check-label" for="personalized-ads">
+                                    パーソナライズド広告を許可する
+                                </label>
                             </div>
-                        {% endif %}
+                            <small class="text-muted d-block mt-1">
+                                <i class="bi bi-info-circle me-1"></i> カブログではパーソナライズド広告が表示されます。
+                            </small>
+                        </div>
                         
                         <p class="mt-3 mb-4">
                             <a href="{% url 'ads:privacy_policy' %}" class="text-decoration-none">
                                 <i class="bi bi-shield-lock me-1"></i> 広告とプライバシーポリシーについての詳細を読む
                             </a>
                         </p>
-                    </div>
-                    
-                    <div class="mt-4 pt-4 border-top">
-                        <h3 class="h5 mb-3">有料プランの特典</h3>
-                        <div class="d-flex flex-column gap-3">
-                            <div class="d-flex">
-                                <div class="me-3 text-success">
-                                    <i class="bi bi-x-circle-fill fs-4"></i>
-                                </div>
-                                <div>
-                                    <h4 class="h6 mb-1">広告を完全に非表示</h4>
-                                    <p class="text-muted small mb-0">サイト全体から広告が完全に削除されます</p>
-                                </div>
-                            </div>
-                            <div class="d-flex">
-                                <div class="me-3 text-success">
-                                    <i class="bi bi-shield-check fs-4"></i>
-                                </div>
-                                <div>
-                                    <h4 class="h6 mb-1">プライバシー強化</h4>
-                                    <p class="text-muted small mb-0">広告トラッキングやパーソナライズ広告がオフになります</p>
-                                </div>
-                            </div>
-                            <div class="d-flex">
-                                <div class="me-3 text-success">
-                                    <i class="bi bi-speedometer2 fs-4"></i>
-                                </div>
-                                <div>
-                                    <h4 class="h6 mb-1">ページ読み込み速度向上</h4>
-                                    <p class="text-muted small mb-0">広告なしでウェブページの読み込みが高速化します</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-4 text-center">
-                            <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-primary">
-                                <i class="bi bi-arrow-right-circle me-1"></i> プラン詳細とアップグレードオプションを見る
-                            </a>
-                        </div>
                     </div>
                 </div>
             </div>

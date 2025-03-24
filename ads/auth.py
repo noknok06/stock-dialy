@@ -1,4 +1,4 @@
-# ads/auth.py - 認証バックエンドと広告設定の統合
+# ads/auth.py - サブスクリプション関連の参照を削除
 from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
 from .models import UserAdPreference
@@ -31,24 +31,13 @@ class AdsEnabledAuthBackend(ModelBackend):
         try:
             # 広告設定の取得または作成
             ad_preference, created = UserAdPreference.objects.get_or_create(
-                user=user
+                user=user,
+                defaults={
+                    'show_ads': True,
+                    'is_premium': False,
+                    'allow_personalized_ads': True
+                }
             )
-            
-            # ここで必要に応じて広告設定を更新
-            # 例: ユーザーの属性や最終ログイン日時に基づいて設定を調整
-            
-            if created:
-                # 新規作成された場合は、サブスクリプションに基づいて設定を調整
-                try:
-                    subscription = user.subscription
-                    if subscription and subscription.is_valid():
-                        ad_preference.show_ads = subscription.plan.show_ads
-                        ad_preference.is_premium = not subscription.plan.show_ads
-                        ad_preference.save()
-                except:
-                    # サブスクリプションが存在しない場合は何もしない
-                    pass
-                
         except Exception:
             # エラーが発生した場合は処理をスキップ
             pass

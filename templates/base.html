@@ -460,13 +460,9 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                             <li><a class="dropdown-item" href="{% url 'users:profile' %}"><i class="bi bi-person me-2"></i>プロフィール</a></li>
-                            <li><a class="dropdown-item" href="{% url 'subscriptions:usage' %}"><i class="bi bi-graph-up me-2"></i>サブスクリプション状況</a></li>
                             <li><a class="dropdown-item" href="{% url 'ads:ad_preferences' %}"><i class="bi bi-gear me-2"></i>広告設定</a></li>
                             <li><a class="dropdown-item" href="{% url 'ads:privacy_policy' %}"><i class="bi bi-shield-lock me-2"></i>プライバシーポリシー</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            {% if not is_pro %}
-                            <li><a class="dropdown-item text-primary" href="{% url 'subscriptions:upgrade' %}"><i class="bi bi-arrow-up-circle me-2"></i>プランをアップグレード</a></li>
-                            {% endif %}
                             <li><a class="dropdown-item text-danger" href="{% url 'users:logout' %}"><i class="bi bi-box-arrow-right me-2"></i>ログアウト</a></li>
                         </ul>
                     </div>
@@ -596,13 +592,6 @@
                   </div>
                   <div class="menu-item-label">スナップショット</div>
               </a>
-                        
-              <a href="{% url 'subscriptions:upgrade' %}" class="menu-item primary">
-                <div class="menu-item-icon">
-                    <i class="bi bi-arrow-up-circle"></i>
-                </div>
-                <div class="menu-item-label">プランアップグレード</div>
-            </a>
           </div>
           
           <!-- ユーザーセクション -->

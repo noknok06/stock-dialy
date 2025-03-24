@@ -85,9 +85,6 @@ def show_placement_ad(context, position):
         <script>
              (adsbygoogle = window.adsbygoogle || []).push({{}});
         </script>
-        <div class="upgrade-prompt">
-            <a href="/subscriptions/upgrade/" class="small text-muted">広告を非表示にする</a>
-        </div>
     </div>
     """
     
