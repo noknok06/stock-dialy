@@ -12,6 +12,7 @@ urlpatterns = [
     path('<int:pk>/update/', views.AnalysisTemplateUpdateView.as_view(), name='update'),
     path('<int:pk>/delete/', views.AnalysisTemplateDeleteView.as_view(), name='delete'),
     path('<int:pk>/report/', views.AnalysisReportView.as_view(), name='report'),
+    path('<int:pk>/clone/', views.CloneAnalysisTemplateView.as_view(), name='clone'),
     
     # API URLs
     path('api/items/', api.get_template_items, name='api_get_items'),

@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404
 @require_GET
 # analysis_template/api.py の get_template_items 関数修正版
 
+
 @login_required
 @require_GET
 def get_template_items(request):

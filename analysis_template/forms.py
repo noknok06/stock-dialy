@@ -41,48 +41,113 @@ class DiaryAnalysisValueForm(forms.ModelForm):
     class Meta:
         model = DiaryAnalysisValue
         fields = ['analysis_item', 'number_value', 'text_value']
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
         # analysis_itemのインスタンスが設定されている場合
         if self.instance and self.instance.analysis_item:
-            item = self.instance.analysis_item
+            self._setup_form_fields()
+    
+    def _setup_form_fields(self):
+        """項目タイプに基づいてフォームフィールドを設定"""
+        item = self.instance.analysis_item
+        
+        # 項目タイプごとのフィールド設定を適切なメソッドに委譲
+        if item.item_type == 'number':
+            self._setup_number_field(item)
+        elif item.item_type == 'select':
+            self._setup_select_field(item)
+        elif item.item_type == 'boolean':
+            self._setup_boolean_field(item)
+        elif item.item_type == 'boolean_with_value':
+            self._setup_boolean_with_value_field(item)
+        else:  # text
+            self._setup_text_field(item)
+        
+        # 説明があれば表示
+        self._add_help_text(item)
+    
+    def _setup_number_field(self, item):
+        """数値フィールドの設定"""
+        self.fields['number_value'] = forms.DecimalField(
+            label=item.name,
+            required=False,
+            widget=forms.NumberInput(attrs={'class': 'form-control'})
+        )
+        self.fields['text_value'].widget = forms.HiddenInput()
+        self.fields['boolean_value'].widget = forms.HiddenInput()
+    
+    def _setup_select_field(self, item):
+        """選択フィールドの設定"""
+        if item.choices:
+            choices = [(choice, choice) for choice in item.get_choices_list()]
+            choices.insert(0, ('', '選択してください'))
+            self.fields['text_value'] = forms.ChoiceField(
+                label=item.name,
+                choices=choices,
+                required=False,
+                widget=forms.Select(attrs={'class': 'form-select'})
+            )
+            self.fields['number_value'].widget = forms.HiddenInput()
+            self.fields['boolean_value'].widget = forms.HiddenInput()
+    
+    def _setup_text_field(self, item):
+        """テキストフィールドの設定"""
+        self.fields['text_value'] = forms.CharField(
+            label=item.name,
+            required=False,
+            widget=forms.TextInput(attrs={'class': 'form-control'})
+        )
+        self.fields['number_value'].widget = forms.HiddenInput()
+        self.fields['boolean_value'].widget = forms.HiddenInput()
+    
+    def _setup_boolean_field(self, item):
+        """ブールフィールドの設定"""
+        self.fields['boolean_value'] = forms.BooleanField(
+            label=item.name,
+            required=False,
+            widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+        )
+        self.fields['number_value'].widget = forms.HiddenInput()
+        self.fields['text_value'].widget = forms.HiddenInput()
+    
+    def _setup_boolean_with_value_field(self, item):
+        """複合型（チェック+値）フィールドの設定"""
+        # チェックボックス部分
+        self.fields['boolean_value'] = forms.BooleanField(
+            label=item.name,
+            required=False,
+            widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+        )
+        
+        # 値部分（デフォルトは数値だが、テキストも可能に）
+        value_label = item.value_label or "値"
+        self.fields['number_value'] = forms.DecimalField(
+            label=value_label,
+            required=False,
+            widget=forms.NumberInput(attrs={'class': 'form-control'})
+        )
+        self.fields['text_value'] = forms.CharField(
+            label=f"{value_label} (テキスト)",
+            required=False,
+            widget=forms.TextInput(attrs={'class': 'form-control mt-2'})
+        )
+    
+    def _add_help_text(self, item):
+        """説明テキストの追加"""
+        if item.description:
+            help_text = item.description
             
-            # 項目タイプに基づいてフィールドを設定
+            # 説明テキストを適切なフィールドに追加
             if item.item_type == 'number':
-                self.fields['number_value'] = forms.DecimalField(
-                    label=item.name,
-                    required=False,
-                    widget=forms.NumberInput(attrs={'class': 'form-control'})
-                )
-                self.fields['text_value'].widget = forms.HiddenInput()
-            elif item.item_type == 'select' and item.choices:
-                choices = [(choice, choice) for choice in item.get_choices_list()]
-                choices.insert(0, ('', '選択してください'))
-                self.fields['text_value'] = forms.ChoiceField(
-                    label=item.name,
-                    choices=choices,
-                    required=False,
-                    widget=forms.Select(attrs={'class': 'form-select'})
-                )
-                self.fields['number_value'].widget = forms.HiddenInput()
-            else:  # text
-                self.fields['text_value'] = forms.CharField(
-                    label=item.name,
-                    required=False,
-                    widget=forms.TextInput(attrs={'class': 'form-control'})
-                )
-                self.fields['number_value'].widget = forms.HiddenInput()
-            
-            # 説明があれば表示
-            if item.description:
-                help_text = item.description
-                if item.item_type == 'number':
-                    self.fields['number_value'].help_text = help_text
-                else:
-                    self.fields['text_value'].help_text = help_text
-
+                self.fields['number_value'].help_text = help_text
+            elif item.item_type == 'boolean':
+                self.fields['boolean_value'].help_text = help_text
+            elif item.item_type == 'boolean_with_value':
+                self.fields['boolean_value'].help_text = help_text
+            else:
+                self.fields['text_value'].help_text = help_text
 # 分析項目値のセットを作成するための工場関数
 def create_analysis_value_formset(template, diary=None, data=None):
     """

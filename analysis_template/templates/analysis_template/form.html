@@ -331,19 +331,34 @@
 </div>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    // 初期表示時に表示順を設定
-    const orderInputs = document.querySelectorAll('input[name$="-order"]');
-    if (orderInputs.length > 0) {
-      // 新規作成時は1から始める
-      if (!{{ form.instance.pk|yesno:"true,false" }}) {
+    // DOM要素の取得
+    const addItemButton = document.getElementById('add-item');
+    const itemsFormset = document.getElementById('items-formset');
+    const totalForms = document.querySelector('[name="items-TOTAL_FORMS"]');
+    
+    // 初期化関数
+    function initialize() {
+      initializeOrderInputs();
+      toggleRelatedFields();
+      updateItemCount();
+      setupEventListeners();
+      setupCollapseButtons();
+      setupRemoveButtons();
+    }
+    
+    // 表示順を初期化
+    function initializeOrderInputs() {
+      const orderInputs = document.querySelectorAll('input[name$="-order"]');
+      if (orderInputs.length > 0 && !{{ form.instance.pk|yesno:"true,false" }}) {
         orderInputs[0].value = 1;
       }
     }
     
-    // 項目の数を更新する関数
+    // 項目数の更新
     function updateItemCount() {
       const itemForms = document.querySelectorAll('.item-form:not([style*="display: none"])');
       const countElement = document.getElementById('total-items-count');
+      
       if (countElement) {
         countElement.textContent = `${itemForms.length} 項目`;
       }
@@ -351,18 +366,20 @@
       // 各項目のタイトルを更新
       itemForms.forEach((form, index) => {
         const titleEl = form.querySelector('.item-title');
+        const numEl = form.querySelector('.item-number');
+        
         if (titleEl) {
           const itemName = form.querySelector('input[name$="-name"]').value;
           titleEl.textContent = itemName || `項目 ${index + 1}`;
         }
-        const numEl = form.querySelector('.item-number');
+        
         if (numEl) {
           numEl.textContent = index + 1;
         }
       });
     }
     
-    // 項目タイプに応じて関連フィールドの表示/非表示を切り替える
+    // 項目タイプに応じて関連フィールドの表示/非表示を切り替え
     function toggleRelatedFields() {
       document.querySelectorAll('select[name$="-item_type"]').forEach(select => {
         const itemForm = select.closest('.item-form');
@@ -385,31 +402,26 @@
       });
     }
     
-    // 初期表示時に関連フィールドの表示を設定
-    toggleRelatedFields();
-    updateItemCount();
-    
-    // 項目名の変更を監視して項目タイトルを更新
-    document.querySelectorAll('input[name$="-name"]').forEach(input => {
-      input.addEventListener('change', function() {
-        updateItemCount();
+    // イベントリスナーのセットアップ
+    function setupEventListeners() {
+      // 項目名変更の監視
+      document.querySelectorAll('input[name$="-name"]').forEach(input => {
+        input.addEventListener('change', updateItemCount);
+        input.addEventListener('blur', updateItemCount);
       });
-      input.addEventListener('blur', function() {
-        updateItemCount();
+      
+      // 項目タイプ変更の監視
+      document.querySelectorAll('select[name$="-item_type"]').forEach(select => {
+        select.addEventListener('change', toggleRelatedFields);
       });
-    });
+      
+      // 項目追加ボタンの監視
+      if (addItemButton) {
+        addItemButton.addEventListener('click', addNewItem);
+      }
+    }
     
-    // 項目タイプ変更時のイベント
-    document.querySelectorAll('select[name$="-item_type"]').forEach(select => {
-      select.addEventListener('change', toggleRelatedFields);
-    });
-    
-    // フォームセットの要素
-    const addItemButton = document.getElementById('add-item');
-    const itemsFormset = document.getElementById('items-formset');
-    const totalForms = document.querySelector('[name="items-TOTAL_FORMS"]');
-    
-    // スマホ向け - 項目の開閉機能
+    // 開閉ボタンのセットアップ
     function setupCollapseButtons() {
       document.querySelectorAll('.toggle-collapse').forEach(button => {
         button.addEventListener('click', function() {
@@ -430,29 +442,21 @@
       });
     }
     
-    // 削除ボタンのイベントリスナーを設定
+    // 削除ボタンのセットアップ
     function setupRemoveButtons() {
       document.querySelectorAll('.remove-item').forEach(button => {
         button.addEventListener('click', function() {
           const itemForm = this.closest('.item-form');
           
-          // 最後の1つは削除せずに中身をクリアする
+          // 最後の1つは削除せずに中身をクリア
           if (itemsFormset.querySelectorAll('.item-form:not([style*="display: none"])').length <= 1) {
-            itemForm.querySelectorAll('input[type="text"], textarea').forEach(input => {
-              input.value = '';
-            });
-            
-            // 選択フィールドをリセット
-            itemForm.querySelectorAll('select').forEach(select => {
-              select.selectedIndex = 0;
-            });
-            
+            clearFormInputs(itemForm);
             toggleRelatedFields();
             updateItemCount();
             return;
           }
           
-          // 既存のアイテムなら、DELETEにチェックを入れる
+          // 既存のアイテムなら、DELETEにチェックを入れて非表示に
           const deleteCheckbox = itemForm.querySelector('input[name$="-DELETE"]');
           if (deleteCheckbox) {
             deleteCheckbox.checked = true;
@@ -462,26 +466,7 @@
             itemForm.remove();
             
             // フォームの総数を更新
-            const forms = itemsFormset.querySelectorAll('.item-form:not([style*="display: none"])');
-            totalForms.value = forms.length;
-            
-            // フォームのインデックスを振り直す
-            forms.forEach((form, index) => {
-              form.querySelectorAll('input, select, textarea').forEach(input => {
-                if (input.name) {
-                  input.name = input.name.replace(/items-\d+/, `items-${index}`);
-                }
-                if (input.id) {
-                  input.id = input.id.replace(/items-\d+/, `items-${index}`);
-                }
-              });
-              
-              form.querySelectorAll('label').forEach(label => {
-                if (label.htmlFor) {
-                  label.htmlFor = label.htmlFor.replace(/items-\d+/, `items-${index}`);
-                }
-              });
-            });
+            updateFormIndices();
           }
           
           updateItemCount();
@@ -489,21 +474,76 @@
       });
     }
     
-    // 初期表示時の削除ボタン設定
-    setupRemoveButtons();
-    setupCollapseButtons();
+    // フォーム入力をクリア
+    function clearFormInputs(form) {
+      form.querySelectorAll('input[type="text"], textarea').forEach(input => {
+        input.value = '';
+      });
+      
+      form.querySelectorAll('select').forEach(select => {
+        select.selectedIndex = 0;
+      });
+    }
     
-    // 項目追加ボタンのイベントリスナー
-    addItemButton.addEventListener('click', function() {
+    // フォームのインデックスを更新
+    function updateFormIndices() {
+      const forms = itemsFormset.querySelectorAll('.item-form:not([style*="display: none"])');
+      totalForms.value = forms.length;
+      
+      forms.forEach((form, index) => {
+        form.querySelectorAll('input, select, textarea').forEach(input => {
+          if (input.name) {
+            input.name = input.name.replace(/items-\d+/, `items-${index}`);
+          }
+          if (input.id) {
+            input.id = input.id.replace(/items-\d+/, `items-${index}`);
+          }
+        });
+        
+        form.querySelectorAll('label').forEach(label => {
+          if (label.htmlFor) {
+            label.htmlFor = label.htmlFor.replace(/items-\d+/, `items-${index}`);
+          }
+        });
+      });
+    }
+    
+    // 新しい項目の追加
+    function addNewItem() {
       const formCount = parseInt(totalForms.value);
       const newForm = itemsFormset.querySelector('.item-form').cloneNode(true);
       
-      // フォームから last-form クラスを削除
+      // フォームをリセット
       newForm.classList.remove('last-form');
       
       // 最後の項目の順序値を取得
+      let maxOrder = getMaxOrder();
+      
+      // フォームの各フィールドIDと名前を更新
+      updateNewFormAttributes(newForm, formCount, maxOrder);
+      
+      // 表示を元に戻す
+      newForm.style.display = '';
+      
+      // フォームセットに追加
+      itemsFormset.appendChild(newForm);
+      totalForms.value = parseInt(totalForms.value) + 1;
+      
+      // 新しく追加した項目の各種セットアップ
+      setupNewFormEvents(newForm);
+      
+      // 項目数を更新
+      updateItemCount();
+      
+      // スクロールして新しい項目を表示
+      newForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    
+    // 最大の順序値を取得
+    function getMaxOrder() {
       let maxOrder = 0;
       const orderInputs = itemsFormset.querySelectorAll('input[name$="-order"]');
+      
       orderInputs.forEach(input => {
         const orderValue = parseInt(input.value) || 0;
         if (orderValue > maxOrder) {
@@ -511,7 +551,11 @@
         }
       });
       
-      // フォームの各フィールドIDと名前を更新
+      return maxOrder;
+    }
+    
+    // 新しいフォームの属性を更新
+    function updateNewFormAttributes(newForm, formCount, maxOrder) {
       newForm.querySelectorAll('input, select, textarea').forEach(function(input) {
         if (input.id) {
           input.id = input.id.replace(/items-\d+/, `items-${formCount}`);
@@ -547,6 +591,7 @@
       if (titleEl) {
         titleEl.textContent = `項目 ${formCount + 1}`;
       }
+      
       const numEl = newForm.querySelector('.item-number');
       if (numEl) {
         numEl.textContent = formCount + 1;
@@ -566,14 +611,10 @@
           label.htmlFor = label.htmlFor.replace(/items-\d+/, `items-${formCount}`);
         }
       });
-      
-      // 表示を元に戻す（非表示になっていた場合）
-      newForm.style.display = '';
-      
-      // フォームセットに追加
-      itemsFormset.appendChild(newForm);
-      totalForms.value = parseInt(totalForms.value) + 1;
-      
+    }
+    
+    // 新しいフォームのイベントをセットアップ
+    function setupNewFormEvents(newForm) {
       // 新しく追加した項目の削除ボタンを設定
       setupRemoveButtons();
       
@@ -590,12 +631,16 @@
       if (newChoicesField) newChoicesField.style.display = 'none';
       if (newValueLabelField) newValueLabelField.style.display = 'none';
       
-      // 項目数を更新
-      updateItemCount();
-      
-      // スクロールして新しい項目を表示
-      newForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    });
+      // 項目名の変更監視
+      const nameInput = newForm.querySelector('input[name$="-name"]');
+      if (nameInput) {
+        nameInput.addEventListener('change', updateItemCount);
+        nameInput.addEventListener('blur', updateItemCount);
+      }
+    }
+    
+    // 初期化の実行
+    initialize();
   });
 </script>
 {% include 'speed_dial.html' with actions=page_actions %}

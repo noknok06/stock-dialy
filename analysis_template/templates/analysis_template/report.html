@@ -611,35 +611,7 @@
     </div>
   {% endif %}
 </div>
-{% if item.item_type == 'boolean_with_value' %}
-  <td class="compound-cell">
-    <div class="d-flex align-items-center gap-2">
-      <!-- チェックボックス状態の表示 -->
-      <div class="status-indicator">
-        {% if value.boolean_value %}
-          <span class="badge bg-success" data-bs-toggle="tooltip" title="条件を満たしています">
-            <i class="bi bi-check-lg"></i>
-          </span>
-        {% else %}
-          <span class="badge bg-secondary" data-bs-toggle="tooltip" title="条件を満たしていません">
-            <i class="bi bi-x-lg"></i>
-          </span>
-        {% endif %}
-      </div>
-      
-      <!-- 値の表示 -->
-      <div class="value-display">
-        {% if value.number_value != None %}
-          <span class="fw-medium">{{ value.number_value|floatformat:"-2" }}</span>
-        {% elif value.text_value %}
-          <span class="text-value">{{ value.text_value }}</span>
-        {% else %}
-          <span class="text-muted small">-</span>
-        {% endif %}
-      </div>
-    </div>
-  </td>
-{% endif %}
+
 {% include 'speed_dial.html' with actions=page_actions %}
 {% endblock %}
 <!-- スピードダイアルを別のブロックに移動 -->

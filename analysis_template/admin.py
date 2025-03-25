@@ -15,9 +15,18 @@ class AnalysisTemplateAdmin(admin.ModelAdmin):
     date_hierarchy = 'created_at'
     inlines = [AnalysisItemInline]
     
+    def get_queryset(self, request):
+        # items の数をあらかじめ計算してクエリセットに追加
+        queryset = super().get_queryset(request)
+        queryset = queryset.annotate(items_count=Count('items'))
+        return queryset
+    
     def item_count(self, obj):
-        return obj.items.count()
+        # annotate された値を使用
+        return obj.items_count
     item_count.short_description = '項目数'
+    item_count.admin_order_field = 'items_count'  # 項目数でのソートを可能に
+    
 
 @admin.register(AnalysisItem)
 class AnalysisItemAdmin(admin.ModelAdmin):
