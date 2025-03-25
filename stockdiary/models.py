@@ -8,24 +8,33 @@ from django.conf import settings
 
 class StockDiary(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    stock_symbol = models.CharField(max_length=50, blank=True)
+    stock_symbol = models.CharField(max_length=50, blank=True, db_index=True)  # インデックス追加
     stock_name = models.CharField(max_length=100)
-    purchase_date = models.DateField()
+    purchase_date = models.DateField(db_index=True)  # インデックス追加
     purchase_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     purchase_quantity = models.IntegerField(null=True, blank=True)
     reason = models.TextField(verbose_name='購入理由', blank=True)
     # 文字列参照を使用して循環参照を避ける
     checklist = models.ManyToManyField('checklist.Checklist', blank=True)
     tags = models.ManyToManyField(Tag, blank=True)
-    sell_date = models.DateField(null=True, blank=True)
+    sell_date = models.DateField(null=True, blank=True, db_index=True)  # インデックス追加
     sell_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     memo = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)  # インデックス追加
     updated_at = models.DateTimeField(auto_now=True)
 
-    is_memo = models.BooleanField(default=False, verbose_name='メモ記録')
+    is_memo = models.BooleanField(default=False, verbose_name='メモ記録', db_index=True) 
     sector = models.CharField(max_length=50, blank=True, verbose_name='業種')
 
+    class Meta:
+        # 複合インデックスを追加
+        indexes = [
+            models.Index(fields=['user', 'purchase_date']),  # ユーザー別の日付検索
+            models.Index(fields=['user', 'stock_symbol']),   # ユーザー別の銘柄検索
+            models.Index(fields=['user', 'sell_date']),      # 売却済み/未売却フィルター
+            models.Index(fields=['user', 'is_memo']),        # メモタイプフィルター
+        ]
+        
     def __str__(self):
         return f"{self.stock_name} ({self.stock_symbol})"
 
