@@ -266,17 +266,6 @@
                   </ul>
                 </div>
               </div>
-              
-              <div class="text-center">
-                <a href="{% url 'subscriptions:upgrade' %}" class="btn btn-primary btn-lg">
-                  <i class="bi bi-arrow-up-circle me-1"></i> プランをアップグレード
-                </a>
-                {% if not subscription_plan.slug == 'free' %}
-                  <a href="{% url 'subscriptions:downgrade' %}" class="btn btn-outline-secondary ms-2">
-                    <i class="bi bi-arrow-down-circle me-1"></i> フリープランに戻す
-                  </a>
-                {% endif %}
-              </div>
             {% else %}
               <div class="alert alert-warning">
                 <i class="bi bi-exclamation-triangle me-2"></i>
