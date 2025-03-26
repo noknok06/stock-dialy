@@ -1,12 +1,18 @@
 # stockdiary/api.py
+import traceback
+import requests
+from decimal import Decimal
+
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from django.contrib.auth.decorators import login_required
-import requests
+
 from company_master.models import CompanyMaster
+
 
 # 銘柄リストをキャッシュするための変数
 STOCK_DATA_CACHE = None
+
 
 def load_stock_data():
     """企業マスタから銘柄情報を読み込む"""
@@ -33,10 +39,10 @@ def load_stock_data():
         STOCK_DATA_CACHE = stock_dict
         return stock_dict
     except Exception as e:
-        import traceback
         print(f"Error loading stock data: {str(e)}")
         print(traceback.format_exc())
         return {}
+
 
 @login_required
 @require_GET
@@ -122,13 +128,13 @@ def get_stock_info(request, stock_code):
                 raise Exception(f"株価情報の取得に失敗しました: {str(e)}")
             
     except Exception as e:
-        import traceback
         print(f"Exception occurred: {str(e)}")
         print(traceback.format_exc())
         return JsonResponse({
             'success': False,
             'error': str(e)
         }, status=500)
+
 
 @login_required
 @require_GET
@@ -167,7 +173,6 @@ def get_stock_price(request, stock_code):
             }, status=404)
             
     except Exception as e:
-        import traceback
         print(f"Exception occurred: {str(e)}")
         print(traceback.format_exc())
         return JsonResponse({
