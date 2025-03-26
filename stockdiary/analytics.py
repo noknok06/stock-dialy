@@ -215,6 +215,26 @@ class DiaryAnalytics:
         for tag in top_tags:
             tag.percentage = (tag.count / total_tag_usage * 100) if total_tag_usage > 0 else 0
         
+        # 関連タグを計算 - 修正部分
+        for tag in top_tags:
+            # このタグを持つ日記をすべて取得
+            tag_diaries_ids = diaries.filter(tags=tag).values_list('id', flat=True)
+            
+            # これらの日記で使われている他のタグをカウント
+            related_tags_data = Tag.objects.filter(
+                stockdiary__in=tag_diaries_ids
+            ).exclude(
+                id=tag.id  # 自分自身を除外
+            ).annotate(
+                related_count=Count('stockdiary')
+            ).order_by('-related_count')[:5]  # 上位5つの関連タグ
+            
+            # 関連タグリストを作成
+            tag.related_tags = [
+                {'name': related.name, 'count': related.related_count}
+                for related in related_tags_data
+            ]
+        
         # タグごとの投資パフォーマンス
         tag_performance = []
         most_profitable_tag = None
@@ -318,230 +338,8 @@ class DiaryAnalytics:
             'tag_performance': tag_performance,
             'tag_timeline_labels': json.dumps(months),
             'tag_timeline_data': json.dumps(tag_timeline_data)
-        }
-    
-        def get_template_analysis_data(self, filter_params=None):
-            """分析テンプレートのデータを取得・分析する関数"""
-            # 基本的なフィルタリング - ユーザーのデータのみ
-            templates = AnalysisTemplate.objects.filter(user=self.user)
-            template_ids = list(templates.values_list('id', flat=True))
-            
-            # 日記に紐づく分析値を取得
-            analysis_values = DiaryAnalysisValue.objects.filter(
-                analysis_item__template__id__in=template_ids,
-                diary__user=self.user
-            ).select_related('diary', 'analysis_item', 'analysis_item__template')
-            
-            # フィルターが提供されている場合の絞り込み
-            if filter_params:
-                if 'date_from' in filter_params and filter_params['date_from']:
-                    analysis_values = analysis_values.filter(diary__purchase_date__gte=filter_params['date_from'])
-                if 'tag_id' in filter_params and filter_params['tag_id']:
-                    analysis_values = analysis_values.filter(diary__tags__id=filter_params['tag_id'])
-                if 'status' in filter_params and filter_params['status'] == 'active':
-                    analysis_values = analysis_values.filter(diary__sell_date__isnull=True)
-                elif 'status' in filter_params and filter_params['status'] == 'sold':
-                    analysis_values = analysis_values.filter(diary__sell_date__isnull=False)
-            
-            # テンプレート使用統計データの収集
-            template_stats = []
-            template_usage_counts = {}
-            
-            # テンプレートIDごとに分析値をグループ化
-            template_values = defaultdict(list)
-            for value in analysis_values:
-                template_id = value.analysis_item.template.id
-                template_values[template_id].append(value)
-            
-            for template in templates:
-                # このテンプレートの分析値
-                values = template_values.get(template.id, [])
-                
-                # 使用回数計算 - ユニークな日記IDの数
-                diary_ids = set(v.diary_id for v in values)
-                usage_count = len(diary_ids)
-                template_usage_counts[template.id] = usage_count
-                
-                # 最新の使用日を取得
-                last_used = None
-                if values:
-                    latest_values = sorted(values, key=lambda x: x.diary.purchase_date, reverse=True)
-                    if latest_values:
-                        last_used = latest_values[0].diary.purchase_date
-                
-                # 平均完了率の計算 - 各日記ごとの完了項目数/全項目数
-                total_items = template.items.count()
-                completion_rates = []
-                
-                # 日記ごとに完了率を計算
-                for diary_id in diary_ids:
-                    diary_values = [v for v in values if v.diary_id == diary_id]
-                    completed_items = 0
-                    
-                    for value in diary_values:
-                        if value.analysis_item.item_type == 'boolean' or value.analysis_item.item_type == 'boolean_with_value':
-                            if value.boolean_value:
-                                completed_items += 1
-                        elif value.analysis_item.item_type == 'number':
-                            if value.number_value is not None:
-                                completed_items += 1
-                        elif value.analysis_item.item_type == 'select' or value.analysis_item.item_type == 'text':
-                            if value.text_value:
-                                completed_items += 1
-                    
-                    if total_items > 0:
-                        completion_rate = (completed_items / total_items) * 100
-                        completion_rates.append(completion_rate)
-                
-                avg_completion_rate = sum(completion_rates) / len(completion_rates) if completion_rates else 0
-                
-                # 使用トレンドの計算（過去3ヶ月と比較した前月）
-                trend = 0
-                if usage_count > 0:
-                    # 前月の使用回数
-                    one_month_ago = timezone.now() - timedelta(days=30)
-                    two_months_ago = timezone.now() - timedelta(days=60)
-                    
-                    prev_month_count = DiaryAnalysisValue.objects.filter(
-                        analysis_item__template_id=template.id,
-                        diary__user=self.user,
-                        diary__purchase_date__gte=two_months_ago,
-                        diary__purchase_date__lt=one_month_ago
-                    ).values('diary').distinct().count()
-                    
-                    if prev_month_count > 0:
-                        # 前月と比較した成長率
-                        trend = ((usage_count - prev_month_count) / prev_month_count) * 100
-                    else:
-                        trend = 100 if usage_count > 0 else 0
-                
-                template_stats.append({
-                    'id': template.id,
-                    'name': template.name,
-                    'usage_count': usage_count,
-                    'avg_completion_rate': avg_completion_rate,
-                    'last_used': last_used,
-                    'trend': trend
-                })
-            
-            # テンプレート種類別の分布
-            template_categories = {
-                '財務分析': ['PER', 'PBR', 'ROE', '配当', '収益', '財務', '利益'],
-                'テクニカル分析': ['RSI', 'MACD', 'ボリンジャー', '移動平均', 'チャート'],
-                'ファンダメンタル分析': ['成長', '競争', '優位', '市場'],
-                'バリュー投資': ['割安', 'バフェット', '長期'],
-                '投資心理': ['心理', 'バイアス', '感情'],
-                'ESG評価': ['ESG', '環境', '社会', 'ガバナンス']
-            }
-            
-            template_type_data = defaultdict(int)
-            template_type_labels = []
-            
-            for template in templates:
-                categorized = False
-                for category, keywords in template_categories.items():
-                    if any(keyword in template.name or keyword in template.description for keyword in keywords):
-                        template_type_data[category] += template_usage_counts.get(template.id, 0)
-                        if category not in template_type_labels:
-                            template_type_labels.append(category)
-                        categorized = True
-                        break
-                
-                if not categorized:
-                    template_type_data['その他'] += template_usage_counts.get(template.id, 0)
-                    if 'その他' not in template_type_labels:
-                        template_type_labels.append('その他')
-            
-            # 最もよく使われるテンプレート
-            most_used_template = None
-            if template_stats:
-                most_used = max(template_stats, key=lambda x: x['usage_count'])
-                if most_used['usage_count'] > 0:
-                    most_used_template = {
-                        'name': most_used['name'],
-                        'count': most_used['usage_count']
-                    }
-            
-            # 最も完了率が高いテンプレート
-            highest_completion_template = None
-            if template_stats:
-                highest_completion = max(template_stats, key=lambda x: x['avg_completion_rate'])
-                if highest_completion['avg_completion_rate'] > 0:
-                    highest_completion_template = {
-                        'name': highest_completion['name'],
-                        'rate': highest_completion['avg_completion_rate']
-                    }
-            
-            # 最も改善が見られたテンプレート（トレンド値が最も高い）
-            most_improved_template = None
-            improved_templates = [t for t in template_stats if t['trend'] > 0]
-            if improved_templates:
-                most_improved = max(improved_templates, key=lambda x: x['trend'])
-                most_improved_template = {
-                    'name': most_improved['name'],
-                    'improvement': most_improved['trend']
-                }
-            
-            # テンプレート使用回数の時系列データ
-            # 過去6ヶ月の月ごとの使用回数を集計
-            six_months_ago = timezone.now() - timedelta(days=180)
-            monthly_usage = DiaryAnalysisValue.objects.filter(
-                analysis_item__template__id__in=template_ids,
-                diary__user=self.user,
-                diary__purchase_date__gte=six_months_ago
-            ).annotate(
-                month=TruncMonth('diary__purchase_date')
-            ).values('month', 'analysis_item__template_id').annotate(
-                count=Count('diary_id', distinct=True)
-            ).order_by('month')
-            
-            # 月ごとの使用回数をテンプレート別に集計
-            monthly_data = defaultdict(lambda: defaultdict(int))
-            for entry in monthly_usage:
-                month_str = entry['month'].strftime('%Y-%m')
-                template_id = entry['analysis_item__template_id']
-                monthly_data[month_str][template_id] = entry['count']
-            
-            # 月のリストを生成（過去6ヶ月）
-            months = []
-            current = timezone.now()
-            for i in range(5, -1, -1):
-                month = (current - timedelta(days=30 * i)).strftime('%Y-%m')
-                months.append(month)
-            
-            # テンプレート使用回数の時系列データをJSON形式で準備
-            template_usage_labels = months
-            template_usage_data = []
-            for template in templates:
-                data_points = [monthly_data[month].get(template.id, 0) for month in months]
-                template_usage_data.append({
-                    'name': template.name,
-                    'data': data_points
-                })
-            
-            # テンプレート完了率の計算（チェックリスト完了率のチャート用）
-            checklist_names = []
-            checklist_completion_rates = []
-            
-            for template in template_stats:
-                if template['usage_count'] > 0:  # 使用されたテンプレートのみ
-                    checklist_names.append(template['name'])
-                    checklist_completion_rates.append(round(template['avg_completion_rate'], 1))
-            
-            return {
-                'template_stats': template_stats,
-                'most_used_template': most_used_template,
-                'highest_completion_template': highest_completion_template,
-                'most_improved_template': most_improved_template,
-                'template_usage_labels': json.dumps(template_usage_labels),
-                'template_usage_data': json.dumps([sum(entry['data']) for entry in template_usage_data]),
-                'template_type_labels': json.dumps(template_type_labels),
-                'template_type_data': json.dumps([template_type_data[label] for label in template_type_labels]),
-                'checklist_names': json.dumps(checklist_names),
-                'checklist_completion_rates': json.dumps(checklist_completion_rates),
-                'all_templates': templates
-            }
-    
+        }    
+ 
     def get_activity_analysis_data(self, diaries, all_diaries):
         """活動分析データを取得"""
         # 活動ヒートマップ用のデータ（過去30日間）
