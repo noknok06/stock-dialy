@@ -18,11 +18,11 @@ from utils.mixins import ObjectNotFoundRedirectMixin
 from .utils import process_analysis_values, calculate_analysis_completion_rate
 from .analytics import DiaryAnalytics  # 追加: DiaryAnalytics クラスをインポート
 
+from collections import Counter, defaultdict
+from datetime import timedelta
+
 import json
 import re
-from decimal import Decimal
-from datetime import timedelta
-from collections import Counter, defaultdict
 
 
 class StockDiaryListView(LoginRequiredMixin, ListView):
@@ -597,7 +597,7 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         })
         
         return context
-    
+        
     def _prepare_filter_params(self, date_range, tag_id, status):
         """フィルターパラメータを準備"""
         filter_params = {

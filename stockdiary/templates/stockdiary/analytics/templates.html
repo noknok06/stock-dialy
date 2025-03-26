@@ -341,7 +341,59 @@
     // テンプレート完了率チャート
     setupChecklistCompletionChart();
   });
-  
+  function setupTemplateTypeChart() {
+    const ctx = document.getElementById('templateTypeChart');
+    if (!ctx) return;
+    
+    // テンプレート名とその使用回数を取得
+    const templateTypeLabels = {{ template_type_labels|safe|default:"[]" }};
+    const templateTypeData = {{ template_type_data|safe|default:"[]" }};
+    
+    if (!templateTypeLabels.length || !templateTypeData.length) return;
+    
+    const colors = [
+      'rgba(79, 70, 229, 0.7)',
+      'rgba(16, 185, 129, 0.7)',
+      'rgba(245, 158, 11, 0.7)',
+      'rgba(239, 68, 68, 0.7)',
+      'rgba(59, 130, 246, 0.7)',
+      'rgba(168, 85, 247, 0.7)'
+    ];
+    
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: templateTypeLabels,
+        datasets: [{
+          data: templateTypeData,
+          backgroundColor: colors.slice(0, templateTypeLabels.length),
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true, // 凡例を表示
+            position: 'right'
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.raw || 0;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+                return `${label}: ${value}回 (${percentage}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
   // テンプレート使用概要チャート
   function setupTemplateUsageChart() {
     const ctx = document.getElementById('templateUsageChart');
@@ -382,102 +434,7 @@
         }
       }
     });
-  }
-  
-  // テンプレート別使用率チャート
-  function setupTemplateTypeChart() {
-    const ctx = document.getElementById('templateTypeChart');
-    if (!ctx) return;
-    
-    // テンプレート名とその使用回数を取得
-    const templateNames = {{ template_names|safe|default:"[]" }};
-    const templateUsageCounts = {{ template_usage_data|safe|default:"[]" }};
-    
-    if (!templateNames.length || !templateUsageCounts.length) return;
-    
-    // 全テンプレートの合計使用回数を計算
-    const totalUsage = templateUsageCounts.reduce((sum, count) => sum + count, 0);
-    
-    // 使用率（パーセント）に変換
-    const usagePercentages = templateUsageCounts.map(count => 
-      totalUsage > 0 ? (count / totalUsage * 100) : 0
-    );
-    
-    // 最大5つまで表示し、それ以上は「その他」にまとめる
-    let labels = [];
-    let data = [];
-    let colors = [
-      'rgba(79, 70, 229, 0.7)',
-      'rgba(16, 185, 129, 0.7)',
-      'rgba(245, 158, 11, 0.7)',
-      'rgba(239, 68, 68, 0.7)',
-      'rgba(59, 130, 246, 0.7)',
-      'rgba(168, 85, 247, 0.7)'
-    ];
-    
-    if (templateNames.length <= 5) {
-      // 5つ以下の場合はそのまま表示
-      labels = templateNames;
-      data = usagePercentages;
-    } else {
-      // 5つ以上ある場合は上位5つを表示し、残りは「その他」としてまとめる
-      // 使用回数でソートするための配列を作成
-      const templatesWithUsage = templateNames.map((name, index) => ({
-        name,
-        percentage: usagePercentages[index]
-      }));
-      
-      // 使用率の降順でソート
-      templatesWithUsage.sort((a, b) => b.percentage - a.percentage);
-      
-      // 上位5つを取得
-      const top5 = templatesWithUsage.slice(0, 5);
-      labels = top5.map(t => t.name);
-      data = top5.map(t => t.percentage);
-      
-      // 「その他」の集計
-      if (templatesWithUsage.length > 5) {
-        const otherSum = templatesWithUsage
-          .slice(5)
-          .reduce((sum, t) => sum + t.percentage, 0);
-        if (otherSum > 0) {
-          labels.push('その他');
-          data.push(otherSum);
-        }
-      }
-    }
-    
-    new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: labels,
-        datasets: [{
-          data: data,
-          backgroundColor: colors.slice(0, labels.length),
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: false // ラベルを非表示に
-          },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                const label = context.label || '';
-                const value = context.parsed || 0;
-                return `${label}: ${value.toFixed(1)}%`;
-              }
-            }
-          }
-        }
-      }
-    });
-  }
-  
+  } 
   // テンプレート完了率チャート
   function setupChecklistCompletionChart() {
     const ctx = document.getElementById('checklistCompletionChart');
