@@ -217,7 +217,8 @@ class AnalysisReportView(LoginRequiredMixin, DetailView):
             'values': {},
             'conditions_met': 0,
             'total_conditions': 0,
-            'completion_rate': 0
+            'completion_rate': 0,
+            'profit_info': self.calculate_profit(diary),  # 利益情報を追加
         }
         
         # 現在の日記のテンプレート項目に対する分析値を取得
@@ -254,7 +255,52 @@ class AnalysisReportView(LoginRequiredMixin, DetailView):
             return diary_data, completion_rate
         
         return diary_data, 0
-    
+
+
+    def calculate_profit(self, diary):
+        """日記エントリから利益情報を計算"""
+        profit_info = {
+            'is_sold': diary.sell_date is not None,
+            'is_profitable': False,
+            'profit_amount': 0,
+            'profit_percent': 0,
+            'current_price': None,
+            'has_profit_data': False
+        }
+        
+        # 必要な情報が揃っているか確認
+        if diary.purchase_price is None or diary.purchase_quantity is None:
+            return profit_info
+
+        # 売却済みの場合
+        if diary.sell_date and diary.sell_price:
+            profit_amount = (diary.sell_price - diary.purchase_price) * diary.purchase_quantity
+            profit_percent = ((diary.sell_price - diary.purchase_price) / diary.purchase_price) * 100
+            profit_info.update({
+                'is_profitable': profit_amount > 0,
+                'profit_amount': round(float(profit_amount), 2),
+                'profit_percent': round(float(profit_percent), 2),
+                'current_price': float(diary.sell_price),
+                'has_profit_data': True
+            })
+        
+        # 保有中の場合 - 最新の継続記録から現在価格を取得
+        else:
+            latest_note = diary.notes.filter(current_price__isnull=False).order_by('-date').first()
+            if latest_note and latest_note.current_price:
+                current_price = latest_note.current_price
+                profit_amount = (current_price - diary.purchase_price) * diary.purchase_quantity
+                profit_percent = ((current_price - diary.purchase_price) / diary.purchase_price) * 100
+                profit_info.update({
+                    'is_profitable': profit_amount > 0,
+                    'profit_amount': round(float(profit_amount), 2),
+                    'profit_percent': round(float(profit_percent), 2),
+                    'current_price': float(current_price),
+                    'has_profit_data': True
+                })
+        
+        return profit_info
+        
     def process_item_value(self, item, value, diary_data, completed_items):
         """項目タイプ別の値処理を行い、完了したかどうかを返す"""
         completed = False
