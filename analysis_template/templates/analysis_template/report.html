@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load analysis_filters %}
+
 {% block title %}分析レポート: {{ template.name }} | カブログ{% endblock %}
 
 {% block head %}
@@ -8,8 +9,14 @@
 <link rel="stylesheet" href="{% static 'css/speed-dial.css' %}">
 
 <style>
+  /* 全体的なレイアウト */
+  .report-container {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
 
-.report-header {
+  /* ヘッダー部分 */
+  .report-header {
     background-color: #f9fafb;
     border-radius: 8px;
     padding: 1.25rem;
@@ -40,41 +47,6 @@
     border-top: 1px solid #e5e7eb;
   }
   
-  .report-description {
-    color: #6b7280;
-  }
-  
-  .report-info {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid #e5e7eb;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.5rem;
-  }
-  
-  .info-item {
-    display: flex;
-    flex-direction: column;
-    padding: 0.75rem;
-    background-color: rgba(255, 255, 255, 0.5);
-    border-radius: 0.5rem;
-    transition: all 0.2s ease;
-  }
-  
-  .info-item:hover {
-    background-color: rgba(255, 255, 255, 0.8);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  }
-  
-  .info-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.25rem;
-  }
-  
-
   .info-badge {
     display: inline-flex;
     align-items: center;
@@ -101,16 +73,86 @@
     color: #111827;
     font-weight: 600;
   }
-  
-  /* 利益関連のスタイル */
-  .profit-table tr.profitable {
-    background-color: rgba(16, 185, 129, 0.05) !important;
-  }
-  
-  .profit-table tr.non-profitable {
-    background-color: rgba(239, 68, 68, 0.05) !important;
+
+  /* 切り替えタブ */
+  .view-toggle {
+    margin-bottom: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: white;
+    padding: 10px 0;
+    border-bottom: 1px solid #e5e7eb;
   }
 
+  /* テーブル表示のスタイル */
+  .table-container {
+    position: relative;
+    overflow-x: auto;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+  }
+
+  .report-table {
+    width: 100%;
+    font-size: 0.875rem;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .report-table th {
+    position: sticky;
+    top: 0;
+    background-color: #f9fafb;
+    z-index: 10;
+    padding: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    border-bottom: 2px solid #e5e7eb;
+  }
+
+  .report-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle;
+  }
+
+  /* 固定列のスタイル */
+  .sticky-col {
+    position: sticky;
+    left: 0;
+    background-color: white;
+    z-index: 5;
+    max-width: 200px;
+    min-width: 150px;
+  }
+
+  th.sticky-col {
+    background-color: #f9fafb;
+    z-index: 15;
+  }
+
+  /* 銘柄情報のスタイル */
+  .stock-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stock-name {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+  }
+
+  .stock-symbol {
+    font-size: 0.75rem;
+    color: #6b7280;
+  }
+
+  /* 利益関連のスタイル */
   .profit-badge {
     display: inline-flex;
     align-items: center;
@@ -118,7 +160,7 @@
     border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 600;
-    white-space: nowrap;
+    margin-top: 0.25rem;
   }
   
   .profit-badge.positive {
@@ -130,432 +172,276 @@
     background-color: rgba(239, 68, 68, 0.1);
     color: #991b1b;
   }
-  
-  .profit-icon {
-    margin-right: 0.25rem;
-  }
-  
-  .stock-meta {
-    display: flex;
-    flex-direction: column;
+
+  /* 進捗バーのスタイル */
+  .progress-mini {
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    background-color: #e5e7eb;
+    width: 80px;
+    margin: 0 auto;
   }
 
-  .stock-name {
-    font-weight: 600;
+  .progress-mini-bar {
+    height: 100%;
   }
-  
-  .stock-symbol {
-    font-size: 0.75rem;
-    color: #6b7280;
-  }
-  
-  .stock-status {
-    font-size: 0.6875rem;
-    margin-top: 0.25rem;
-    padding: 0.125rem 0.375rem;
-    border-radius: 9999px;
-    width: fit-content;
-  }
-  
-  .stock-status.sold {
-    background-color: #f3f4f6;
-    color: #4b5563;
-  }
-  
-  .stock-status.active {
-    background-color: #dbeafe;
-    color: #1e40af;
-  }
-  
-  /* モバイル対応 */
-  @media (max-width: 640px) {
-    .info-badge {
-      padding: 0.25rem 0.5rem;
-      font-size: 0.6875rem;
-    }
-  }
-  /* テーブルのスタイル改善 */
-  .table-responsive {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    max-width: 100%;
-    margin-bottom: 1rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    border-radius: 0.5rem;
-  }
-  
-  .table th {
-    background-color: #f9fafb;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-  
-  .fixed-column {
-    position: sticky;
-    left: 0;
-    background-color: #fff;
-    z-index: 5;
-  }
-  
-  th.fixed-column {
-    background-color: #f9fafb;
-    z-index: 15;
-  }
-  
-  .table-report {
-    font-size: 0.875rem;
-    width: 100%;
-    margin-bottom: 0;
-    white-space: nowrap;
-  }
-  
-  .table-report th {
-    font-weight: 600;
+
+  .progress-value {
     text-align: center;
-    vertical-align: middle;
-    border-bottom-width: 2px;
-    padding: 0.75rem;
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
   }
-  
-  .table-report td {
-    padding: 0.75rem;
-    vertical-align: middle;
-  }
-  
-  .table-report .diary-col {
-    min-width: 150px;
-    max-width: 200px;
-  }
-  
-  .table-report .data-col {
-    min-width: 120px;
-  }
-  
-  .table-report tbody tr:hover {
-    background-color: rgba(243, 244, 246, 0.5);
-  }
-  
-  /* カード表示のスタイル（モバイル用） */
-  .mobile-card-view {
+
+  /* カード表示のスタイル */
+  .cards-container {
     display: none;
   }
-  
+
   .analysis-card {
     background-color: white;
-    border-radius: 0.5rem;
+    border-radius: 8px;
+    overflow: hidden;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     margin-bottom: 1rem;
-    overflow: hidden;
+    border-left: 4px solid transparent;
   }
-  
+
+  .analysis-card.profitable {
+    border-left-color: #10b981;
+  }
+
+  .analysis-card.non-profitable {
+    border-left-color: #ef4444;
+  }
+
   .analysis-card-header {
     padding: 1rem;
     background-color: #f9fafb;
     border-bottom: 1px solid #e5e7eb;
   }
-  
+
   .analysis-card-body {
     padding: 0;
   }
-  
+
   .analysis-item {
-    padding: 0.75rem 1rem;
     display: flex;
     justify-content: space-between;
+    padding: 0.75rem 1rem;
     border-bottom: 1px solid #f3f4f6;
   }
-  
+
   .analysis-item:last-child {
     border-bottom: none;
   }
-  
+
   .analysis-item-label {
     font-weight: 500;
     color: #4b5563;
   }
-  
+
   .analysis-item-value {
     font-weight: 600;
   }
-  
-  .empty-state {
-    text-align: center;
-    padding: 3rem;
-  }
-  
-  .empty-icon {
-    font-size: 3rem;
-    color: #d1d5db;
-    margin-bottom: 1rem;
-  }
-  
-  .number-cell {
-    text-align: right;
-  }
-  
-  .text-cell {
-    text-align: left;
-  }
-  
-  /* 項目完了状況カード */
+
+  /* 完了率カードのスタイル */
   .completion-card {
     background-color: white;
-    border-radius: 0.5rem;
+    border-radius: 8px;
+    overflow: hidden;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     margin-bottom: 1.5rem;
   }
-  
+
   .completion-card-header {
     padding: 1rem;
     background-color: #f9fafb;
     border-bottom: 1px solid #e5e7eb;
   }
-  
+
   .completion-card-body {
     padding: 1rem;
   }
-  
+
+  .completion-item {
+    padding: 1rem;
+    background-color: #f9fafb;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+
+  .item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .item-name {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .item-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: rgba(79, 70, 229, 0.1);
+    color: #4f46e5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .item-rate {
+    font-weight: 500;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+  }
+
+  .item-rate.high {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #065f46;
+  }
+
+  .item-rate.medium {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: #92400e;
+  }
+
+  .item-rate.low {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #991b1b;
+  }
+
   .completion-progress {
     height: 8px;
     background-color: #e5e7eb;
     border-radius: 4px;
-    margin-top: 0.5rem;
     overflow: hidden;
+    margin-top: 0.5rem;
   }
-  
+
   .completion-progress-bar {
     height: 100%;
-    border-radius: 4px;
+    transition: width 0.3s ease;
   }
-  
-  .completion-item {
-    margin-bottom: 1rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #f3f4f6;
+
+  .completion-progress-bar.high {
+    background-color: #10b981;
   }
-  
-  .completion-item:last-child {
-    margin-bottom: 0;
-    padding-bottom: 0;
-    border-bottom: none;
+
+  .completion-progress-bar.medium {
+    background-color: #f59e0b;
   }
-  
-  .item-header {
+
+  .completion-progress-bar.low {
+    background-color: #ef4444;
+  }
+
+  .completion-stats {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 0.5rem;
-  }
-  
-  .item-name {
-    font-weight: 600;
-    color: #111827;
-  }
-  
-  .item-rate {
-    font-weight: 500;
-  }
-  
-  .item-description {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
     color: #6b7280;
-    font-size: 0.875rem;
-    margin-bottom: 0.5rem;
   }
-  
-  /* モバイル最適化 */
+
+  /* 項目タイプ別のスタイル */
+  .boolean-value {
+    text-align: center;
+  }
+
+  .number-value {
+    text-align: right;
+  }
+
+  .text-value {
+    text-align: left;
+  }
+
+  /* 空のデータ状態 */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    color: #d1d5db;
+    margin-bottom: 1rem;
+  }
+
+  /* レスポンシブ調整 */
   @media (max-width: 768px) {
     .report-header {
       padding: 1rem;
     }
-    
-    .report-title {
-      font-size: 1.25rem;
+
+    .view-toggle {
+      display: flex;
     }
-    
-    .report-info {
-      grid-template-columns: repeat(2, 1fr);
+
+    .table-container {
+      margin-bottom: 1rem;
     }
-    
-    .info-item {
+
+    .stock-name {
+      max-width: 120px;
+    }
+
+    /* モバイル時は固定列を解除 */
+    .sticky-col {
+      position: sticky;
+      max-width: 120px;
+      min-width: 120px;
+    }
+
+    /* スクロールガイダンス */
+    .scroll-guide {
       padding: 0.5rem;
-    }
-    
-    /* スクロールガイダンス表示 */
-    .scroll-guidance {
+      font-size: 0.75rem;
+      color: #6b7280;
+      text-align: center;
+      background-color: #f9fafb;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 0.5rem;
-      background-color: #f9fafb;
-      border-radius: 0.5rem;
-      margin-bottom: 0.5rem;
-      color: #4b5563;
-      font-size: 0.8rem;
+      animation: fade-out 5s forwards;
     }
-    
-    .scroll-guidance i {
+
+    .scroll-guide i {
       margin-right: 0.5rem;
       animation: scroll-hint 1.5s infinite;
     }
-    
+
     @keyframes scroll-hint {
       0% { transform: translateX(0); }
       50% { transform: translateX(5px); }
       100% { transform: translateX(0); }
     }
-    
-    /* 代替表示方法：カード表示切り替えボタン */
-    .view-toggle {
-      margin-bottom: 1rem;
-    }
-    
-    /* モバイルでカード表示を有効にする場合 */
-    .mobile-card-view.active {
-      display: block;
-    }
-    
-    .table-view.hidden {
-      display: none;
-    }
-  }
 
-  /* 2. テーブル表示の改善 - 利益項目の強調表示 */
-  .profit-positive {
-    background-color: rgba(74, 222, 128, 0.1) !important;
-    color: #065f46 !important;
-    font-weight: 600;
-  }
-  
-  .profit-negative {
-    background-color: rgba(252, 165, 165, 0.1) !important;
-    color: #991b1b !important;
-  }
-  
-  .criteria-met {
-    position: relative;
-  }
-  
-  .criteria-met::after {
-    content: "✓";
-    position: absolute;
-    top: 0;
-    right: 0;
-    background-color: #10b981;
-    color: white;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    border-radius: 0 0.25rem 0 0.25rem;
-  }
-  
-  /* 項目の完了状況カードの改善 */
-  .completion-card {
-    background-color: white;
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    margin-bottom: 1.5rem;
-    transition: all 0.3s ease;
-  }
-  
-  .completion-card:hover {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  }
-  
-  .completion-item {
-    margin-bottom: 1rem;
-    padding: 1rem;
-    border-radius: 0.5rem;
-    background-color: #f9fafb;
-    transition: all 0.2s ease;
-  }
-  
-  .completion-item:hover {
-    background-color: #f3f4f6;
-  }
-  
-  .item-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 0.5rem;
-    align-items: center;
-  }
-  
-  .item-name {
-    font-weight: 600;
-    color: #111827;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  .item-icon {
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background-color: rgba(79, 70, 229, 0.1);
-    color: #4f46e5;
-  }
-  
-  .item-rate {
-    font-weight: 500;
-    padding: 0.25rem 0.5rem;
-    border-radius: 9999px;
-    font-size: 0.875rem;
-    background-color: #e5e7eb;
-  }
-  
-  .item-rate.high {
-    background-color: rgba(16, 185, 129, 0.1);
-    color: #065f46;
-  }
-  
-  .item-rate.medium {
-    background-color: rgba(245, 158, 11, 0.1);
-    color: #92400e;
-  }
-  
-  .item-rate.low {
-    background-color: rgba(239, 68, 68, 0.1);
-    color: #991b1b;
-  }
-  
-  .completion-progress {
-    height: 8px;
-    background-color: #e5e7eb;
-    border-radius: 4px;
-    margin-top: 0.5rem;
-    overflow: hidden;
-  }
-  
-  .completion-progress-bar {
-    height: 100%;
-    border-radius: 4px;
-    transition: width 0.5s ease;
-  }
-  
-  .completion-progress-bar.high {
-    background-color: #10b981;
-  }
-  
-  .completion-progress-bar.medium {
-    background-color: #f59e0b;
-  }
-  
-  .completion-progress-bar.low {
-    background-color: #ef4444;
+    @keyframes fade-out {
+      0% { opacity: 1; }
+      80% { opacity: 1; }
+      100% { opacity: 0; }
+    }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
-
+<div class="container py-4 report-container">
+  <!-- レポートヘッダー -->
   <div class="report-header">
     <h1 class="report-title">
       <i class="bi bi-clipboard-data text-primary"></i>
@@ -565,7 +451,6 @@
       <p class="report-description">{{ template.description }}</p>
     {% endif %}
     
-    <!-- コンパクトなレポート情報 -->
     <div class="report-info">
       <span class="info-badge">
         <i class="bi bi-journal-text info-icon"></i>
@@ -589,14 +474,15 @@
       </span>
     </div>
   </div>
-  
+
+  <!-- 操作メニュー -->
   <div class="d-flex justify-content-between mb-4">
     <div>
       <h2 class="h4">分析結果一覧</h2>
     </div>
     <div>
-      <a href="{% url 'analysis_template:detail' template.id %}" class="btn btn-primary d-none d-md-inline-block">
-        <i class="bi bi-arrow-left me-1"></i> 戻る
+      <a href="{% url 'analysis_template:detail' template.id %}" class="btn btn-primary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> テンプレート詳細へ戻る
       </a>
     </div>
   </div>
@@ -634,15 +520,15 @@
               </div>
             </div>
             {% if item.description %}
-            <div class="item-description">{{ item.description }}</div>
+            <div class="item-description text-muted small mb-2">{{ item.description }}</div>
             {% endif %}
             <div class="completion-progress">
               <div class="completion-progress-bar {% if item.completion_rate >= 70 %}high{% elif item.completion_rate >= 40 %}medium{% else %}low{% endif %}" 
                    style="width: {{ item.completion_rate }}%;"></div>
             </div>
-            <div class="d-flex justify-content-between mt-2">
-              <small class="text-muted">{{ item.completed_count }} / {{ item.total_count }}</small>
-              <small class="text-muted">
+            <div class="completion-stats">
+              <span>{{ item.completed_count }} / {{ item.total_count }}</span>
+              <span>
                 {% if item.item_type == 'boolean' %}
                 チェックボックス
                 {% elif item.item_type == 'number' %}
@@ -654,7 +540,7 @@
                 {% else %}
                 テキスト
                 {% endif %}
-              </small>
+              </span>
             </div>
           </div>
         </div>
@@ -663,126 +549,111 @@
     </div>
   </div>
   {% endif %}
-  
-  
-  
+
   {% if report_data %}
-    <!-- モバイル用の表示切り替えボタン -->
-    <div class="view-toggle d-md-none">
+    <!-- 表示切り替えボタン -->
+    <div class="view-toggle">
       <div class="btn-group w-100" role="group">
-        <button type="button" class="btn btn-outline-primary active" id="tableViewBtn">
+        <button type="button" class="btn btn-outline-primary active" id="table-view-btn">
           <i class="bi bi-table"></i> テーブル表示
         </button>
-        <button type="button" class="btn btn-outline-primary" id="cardViewBtn">
+        <button type="button" class="btn btn-outline-primary" id="card-view-btn">
           <i class="bi bi-card-list"></i> カード表示
         </button>
       </div>
     </div>
-    
-    <!-- モバイル用スクロールガイダンス -->
-    <div class="scroll-guidance d-md-none" id="scrollGuidance">
+
+    <!-- スクロールガイド（モバイル用） -->
+    <div class="scroll-guide d-md-none" id="scroll-guide">
       <i class="bi bi-arrow-left-right"></i>
-      <span>横にスクロールして全データを表示できます</span>
+      横にスクロールして全データを表示できます
     </div>
-    
+
     <!-- テーブル表示 -->
-    <div class="table-view">
-      <div class="table-responsive">
-        <table class="table table-bordered table-report">
+    <div class="table-view" id="table-view">
+      <div class="table-container">
+        <table class="report-table">
           <thead>
             <tr>
-              <th class="fixed-column diary-col">銘柄</th>
-              <th>完了率</th>
+              <th class="sticky-col">銘柄</th>
+              <th style="width: 100px;">完了率</th>
               {% for item in template.items.all %}
-                <th class="data-col">{{ item.name }}</th>
+              <th style="min-width: 120px;">{{ item.name }}</th>
               {% endfor %}
             </tr>
           </thead>
           <tbody>
             {% for data in report_data %}
             <tr class="{% if data.profit_info.is_profitable %}profitable{% else %}non-profitable{% endif %}">
-              <td class="fixed-column fw-bold">
-                <div class="d-flex justify-content-between">
-                  <div class="stock-meta">
-                    <a href="{% url 'stockdiary:detail' data.diary.id %}" class="stock-name">
-                      {{ data.diary.stock_name }}
-                    </a>
-                    <span class="stock-symbol">{{ data.diary.stock_symbol }}</span>
-                    {% if data.profit_info.is_sold %}
-                      <span class="stock-status sold">売却済</span>
-                    {% else %}
-                      <span class="stock-status active">保有中</span>
-                    {% endif %}
-                  </div>
+              <td class="sticky-col">
+                <div class="stock-info">
+                  <a href="{% url 'stockdiary:detail' data.diary.id %}" class="stock-name" title="{{ data.diary.stock_name }}">
+                    {{ data.diary.stock_name }}
+                  </a>
+                  <span class="stock-symbol">{{ data.diary.stock_symbol }}</span>
                   
                   {% if data.profit_info.has_profit_data %}
-                    <div class="ms-1">
-                      {% if data.profit_info.is_profitable %}
-                        <span class="profit-badge positive">
-                          <i class="bi bi-graph-up-arrow profit-icon"></i>
-                          +{{ data.profit_info.profit_percent }}%
-                        </span>
-                      {% else %}
-                        <span class="profit-badge negative">
-                          <i class="bi bi-graph-down-arrow profit-icon"></i>
-                          {{ data.profit_info.profit_percent }}%
-                        </span>
-                      {% endif %}
-                    </div>
+                    {% if data.profit_info.is_profitable %}
+                      <span class="profit-badge positive">
+                        <i class="bi bi-graph-up-arrow me-1"></i>
+                        +{{ data.profit_info.profit_percent }}%
+                      </span>
+                    {% else %}
+                      <span class="profit-badge negative">
+                        <i class="bi bi-graph-down-arrow me-1"></i>
+                        {{ data.profit_info.profit_percent }}%
+                      </span>
+                    {% endif %}
                   {% endif %}
                 </div>
               </td>
               
-              <td class="text-center">
-                <div class="progress" style="height: 8px; width: 80px; margin: 0 auto;">
-                  <div class="progress-bar {% if data.completion_rate >= 70 %}bg-success{% elif data.completion_rate >= 40 %}bg-warning{% else %}bg-danger{% endif %}" role="progressbar" 
-                       style="width: {{ data.completion_rate }}%;" 
-                       aria-valuenow="{{ data.completion_rate }}"
-                       aria-valuemin="0" aria-valuemax="100"></div>
+              <td>
+                <div class="progress-mini">
+                  <div class="progress-mini-bar 
+                      {% if data.completion_rate >= 70 %}bg-success
+                      {% elif data.completion_rate >= 40 %}bg-warning
+                      {% else %}bg-danger{% endif %}" 
+                      style="width: {{ data.completion_rate }}%;">
+                  </div>
                 </div>
-                <small class="d-block mt-1">{{ data.completion_rate }}%</small>
+                <div class="progress-value">{{ data.completion_rate }}%</div>
               </td>
               
               {% for item in template.items.all %}
               {% with value=data.values|get_item:item.id %}
                 {% if item.item_type == 'boolean_with_value' %}
-                  <td class="compound-cell {% if value.boolean_value and data.profit_info.is_profitable %}bg-success bg-opacity-10{% elif value.boolean_value and not data.profit_info.is_profitable %}bg-warning bg-opacity-10{% endif %}">
-                    <div class="d-flex align-items-center gap-2">
-                      <!-- チェックボックス状態の表示 -->
-                      <div class="status-indicator">
-                        {% if value.boolean_value %}
-                          <span class="badge bg-success" data-bs-toggle="tooltip" title="条件を満たしています">
-                            <i class="bi bi-check-lg"></i>
-                          </span>
-                        {% else %}
-                          <span class="badge bg-secondary" data-bs-toggle="tooltip" title="条件を満たしていません">
-                            <i class="bi bi-x-lg"></i>
-                          </span>
-                        {% endif %}
-                      </div>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      {% if value.boolean_value %}
+                        <span class="badge bg-success me-2">
+                          <i class="bi bi-check-lg"></i>
+                        </span>
+                      {% else %}
+                        <span class="badge bg-secondary me-2">
+                          <i class="bi bi-x-lg"></i>
+                        </span>
+                      {% endif %}
                       
-                      <!-- 値の表示 -->
-                      <div class="value-display">
-                        {% if value.number_value != None %}
-                          <span class="fw-medium">{{ value.number_value|floatformat:"-2" }}</span>
-                        {% elif value.text_value %}
-                          <span class="text-value">{{ value.text_value }}</span>
-                        {% else %}
-                          <span class="text-muted small">-</span>
-                        {% endif %}
-                      </div>
+                      {% if value.number_value != None %}
+                        <span>{{ value.number_value|floatformat:"-2" }}</span>
+                      {% elif value.text_value %}
+                        <span>{{ value.text_value }}</span>
+                      {% else %}
+                        <span class="text-muted">-</span>
+                      {% endif %}
                     </div>
                   </td>
                 {% elif item.item_type == 'number' %}
-                  <td class="number-cell {% if value > 0 and data.profit_info.is_profitable %}bg-success bg-opacity-10{% elif value < 0 and not data.profit_info.is_profitable %}bg-danger bg-opacity-10{% endif %}">
+                  <td class="number-value">
                     {% if value != None %}
                       {{ value|floatformat:"-2" }}
                     {% else %}
-                      <span class="text-muted">--</span>
+                      <span class="text-muted">-</span>
                     {% endif %}
                   </td>
                 {% elif item.item_type == 'boolean' %}
-                  <td class="text-center {% if value and data.profit_info.is_profitable %}bg-success bg-opacity-10{% elif value and not data.profit_info.is_profitable %}bg-warning bg-opacity-10{% endif %}">
+                  <td class="boolean-value">
                     {% if value %}
                       <span class="badge bg-success">
                         <i class="bi bi-check-lg"></i> はい
@@ -794,11 +665,11 @@
                     {% endif %}
                   </td>
                 {% else %}
-                  <td class="text-cell">
+                  <td class="text-value">
                     {% if value != None %}
                       {{ value }}
                     {% else %}
-                      <span class="text-muted">--</span>
+                      <span class="text-muted">-</span>
                     {% endif %}
                   </td>
                 {% endif %}
@@ -811,11 +682,10 @@
       </div>
     </div>
     
-    <!-- カード表示 (モバイル用代替表示) -->
-
-    <div class="mobile-card-view">
+    <!-- カード表示 -->
+    <div class="cards-container" id="cards-view">
       {% for data in report_data %}
-        <div class="analysis-card {% if data.profit_info.is_profitable %}border-success{% else %}border-danger{% endif %}" style="border-left-width: 4px;">
+        <div class="analysis-card {% if data.profit_info.is_profitable %}profitable{% else %}non-profitable{% endif %}">
           <div class="analysis-card-header">
             <div class="d-flex justify-content-between align-items-start">
               <div>
@@ -824,39 +694,34 @@
                     {{ data.diary.stock_name }}
                   </a>
                 </h5>
-                <div class="d-flex align-items-center gap-2">
-                  <small class="text-muted">{{ data.diary.stock_symbol }}</small>
-                  {% if data.profit_info.is_sold %}
-                    <span class="stock-status sold">売却済</span>
-                  {% else %}
-                    <span class="stock-status active">保有中</span>
-                  {% endif %}
-                </div>
+                <small class="text-muted">{{ data.diary.stock_symbol }}</small>
               </div>
               
               <div class="d-flex flex-column align-items-end">
                 {% if data.profit_info.has_profit_data %}
                   {% if data.profit_info.is_profitable %}
                     <span class="profit-badge positive">
-                      <i class="bi bi-graph-up-arrow profit-icon"></i>
+                      <i class="bi bi-graph-up-arrow me-1"></i>
                       +{{ data.profit_info.profit_percent }}%
                     </span>
                   {% else %}
                     <span class="profit-badge negative">
-                      <i class="bi bi-graph-down-arrow profit-icon"></i>
+                      <i class="bi bi-graph-down-arrow me-1"></i>
                       {{ data.profit_info.profit_percent }}%
                     </span>
                   {% endif %}
                 {% endif %}
                 
-                <div class="mt-1">
-                  <div class="progress" style="height: 6px; width: 60px;">
-                    <div class="progress-bar {% if data.completion_rate >= 70 %}bg-success{% elif data.completion_rate >= 40 %}bg-warning{% else %}bg-danger{% endif %}" role="progressbar" 
-                         style="width: {{ data.completion_rate }}%;" 
-                         aria-valuenow="{{ data.completion_rate }}" 
-                         aria-valuemin="0" aria-valuemax="100"></div>
+                <div class="mt-2">
+                  <div class="progress-mini">
+                    <div class="progress-mini-bar 
+                        {% if data.completion_rate >= 70 %}bg-success
+                        {% elif data.completion_rate >= 40 %}bg-warning
+                        {% else %}bg-danger{% endif %}" 
+                        style="width: {{ data.completion_rate }}%;">
+                    </div>
                   </div>
-                  <small class="text-center d-block mt-1" style="font-size: 0.6875rem;">{{ data.completion_rate }}%</small>
+                  <div class="progress-value">{{ data.completion_rate }}%</div>
                 </div>
               </div>
             </div>
@@ -865,36 +730,35 @@
           <div class="analysis-card-body">
             {% for item in template.items.all %}
             {% with value=data.values|get_item:item.id %}
-              <div class="analysis-item {% if item.item_type == 'boolean' and value and data.profit_info.is_profitable %}bg-success bg-opacity-10{% elif item.item_type == 'number' and value > 0 and data.profit_info.is_profitable %}bg-success bg-opacity-10{% endif %}">
+              <div class="analysis-item">
                 <div class="analysis-item-label">{{ item.name }}</div>
-                <div class="analysis-item-value {% if item.item_type == 'number' %}text-end{% endif %}">
+                
+                <div class="analysis-item-value">
                   {% if item.item_type == 'boolean_with_value' %}
-                    <div class="d-flex align-items-center gap-2">
-                      <!-- チェックボックス状態の表示 -->
+                    <div class="d-flex align-items-center">
                       {% if value.boolean_value %}
-                        <span class="badge bg-success" data-bs-toggle="tooltip" title="条件を満たしています">
+                        <span class="badge bg-success me-2">
                           <i class="bi bi-check-lg"></i>
                         </span>
                       {% else %}
-                        <span class="badge bg-secondary" data-bs-toggle="tooltip" title="条件を満たしていません">
+                        <span class="badge bg-secondary me-2">
                           <i class="bi bi-x-lg"></i>
                         </span>
                       {% endif %}
                       
-                      <!-- 値の表示 -->
                       {% if value.number_value != None %}
-                        <span class="fw-medium">{{ value.number_value|floatformat:"-2" }}</span>
+                        <span>{{ value.number_value|floatformat:"-2" }}</span>
                       {% elif value.text_value %}
-                        <span class="text-value">{{ value.text_value }}</span>
-                      {% elif value != None %}
-                        <span class="text-muted small">-</span>
+                        <span>{{ value.text_value }}</span>
+                      {% else %}
+                        <span class="text-muted">-</span>
                       {% endif %}
                     </div>
                   {% elif item.item_type == 'number' %}
                     {% if value != None %}
                       {{ value|floatformat:"-2" }}
                     {% else %}
-                      <span class="text-muted">--</span>
+                      <span class="text-muted">-</span>
                     {% endif %}
                   {% elif item.item_type == 'boolean' %}
                     {% if value %}
@@ -910,7 +774,7 @@
                     {% if value != None %}
                       {{ value }}
                     {% else %}
-                      <span class="text-muted">--</span>
+                      <span class="text-muted">-</span>
                     {% endif %}
                   {% endif %}
                 </div>
@@ -936,7 +800,6 @@
 
 {% include 'speed_dial.html' with actions=page_actions %}
 {% endblock %}
-<!-- スピードダイアルを別のブロックに移動 -->
 
 {% block scripts %}
 {{ block.super }}
@@ -947,242 +810,54 @@
     // スピードダイアルを初期化
     initializeSpeedDial();
     
-    // モバイル用の表示切り替え機能
-    const tableViewBtn = document.getElementById('tableViewBtn');
-    const cardViewBtn = document.getElementById('cardViewBtn');
-    const tableView = document.querySelector('.table-view');
-    const cardView = document.querySelector('.mobile-card-view');
-    const scrollGuidance = document.getElementById('scrollGuidance');
+    // 表示切り替え機能
+    setupViewToggle();
     
-    if (tableViewBtn && cardViewBtn) {
+    // ツールチップ初期化
+    initTooltips();
+  });
+  
+  function setupViewToggle() {
+    const tableViewBtn = document.getElementById('table-view-btn');
+    const cardViewBtn = document.getElementById('card-view-btn');
+    const tableView = document.getElementById('table-view');
+    const cardsView = document.getElementById('cards-view');
+    
+    if (tableViewBtn && cardViewBtn && tableView && cardsView) {
+      // デフォルト状態の設定
+      tableView.style.display = 'block';
+      cardsView.style.display = 'none';
+      
+      // テーブル表示ボタン
       tableViewBtn.addEventListener('click', function() {
-        tableView.classList.remove('hidden');
-        cardView.classList.remove('active');
-        scrollGuidance.style.display = '';
+        tableView.style.display = 'block';
+        cardsView.style.display = 'none';
         tableViewBtn.classList.add('active');
         cardViewBtn.classList.remove('active');
       });
       
+      // カード表示ボタン
       cardViewBtn.addEventListener('click', function() {
-        tableView.classList.add('hidden');
-        cardView.classList.add('active');
-        scrollGuidance.style.display = 'none';
+        tableView.style.display = 'none';
+        cardsView.style.display = 'block';
         cardViewBtn.classList.add('active');
         tableViewBtn.classList.remove('active');
       });
-    }
-    
-    // スクロールガイダンスは一定時間後に非表示
-    if (scrollGuidance) {
-      setTimeout(function() {
-        scrollGuidance.style.opacity = '0';
-        scrollGuidance.style.transition = 'opacity 0.5s ease';
-        
-        setTimeout(function() {
-          scrollGuidance.style.display = 'none';
-        }, 500);
-      }, 5000);
-    }
-
-    // テーブル表示に関する強調処理
-    enhanceTableVisuals();
-    
-    // カード表示に関する強調処理
-    enhanceCardVisuals();
-    
-    // 項目完了状況の視覚効果強化
-    enhanceCompletionItems();
-    
-
-    initTooltips();
-
-  // テーブル内の利益と項目の関連付けを強調表示
-  enhanceProfitDisplay();
-  
-  // ツールチップの初期化（Bootstrapのツールチップ機能）
-  initTooltips();
-});
-
-// 利益情報の視覚的強調表示
-function enhanceProfitDisplay() {
-  // 利益のある行とない行を識別して強調表示
-  highlightProfitableRows();
-  
-  // 条件と利益の関連性を強調表示
-  highlightProfitConditionRelations();
-  
-  // マウスオーバー効果の強化
-  enhanceRowHoverEffects();
-}
-
-// 利益のある行を強調表示
-function highlightProfitableRows() {
-  const profitableRows = document.querySelectorAll('tr.profitable');
-  const nonProfitableRows = document.querySelectorAll('tr.non-profitable');
-  
-  profitableRows.forEach(row => {
-    // 利益のある行の場合、より明確な背景色を設定
-    row.style.backgroundColor = 'rgba(16, 185, 129, 0.05)';
-    
-    // 利益率バッジにアニメーション効果を追加
-    const badge = row.querySelector('.profit-badge.positive');
-    if (badge) {
-      badge.classList.add('shadow-sm');
-    }
-  });
-  
-  nonProfitableRows.forEach(row => {
-    // 損失のある行の場合、より明確な背景色を設定
-    row.style.backgroundColor = 'rgba(239, 68, 68, 0.05)';
-  });
-}
-
-// 条件と利益の関連性を強調表示
-function highlightProfitConditionRelations() {
-  const rows = document.querySelectorAll('.table-report tbody tr');
-  
-  rows.forEach(row => {
-    const isProfitable = row.classList.contains('profitable');
-    
-    // この行のすべての条件セル（boolean や boolean_with_value）を取得
-    const conditionCells = row.querySelectorAll('td .badge.bg-success');
-    let metConditionsCount = conditionCells.length;
-    
-    // 条件を満たしているセルを取得し、利益との関連性を強調表示
-    conditionCells.forEach(badge => {
-      const cell = badge.closest('td');
       
-      // 利益がある場合、条件を満たしているセルを強調表示
-      if (isProfitable) {
-        cell.setAttribute('data-profitable-condition', 'true');
-        
-        // ツールチップを追加/更新
-        if (!cell.hasAttribute('title')) {
-          cell.setAttribute('title', '利益と関連する条件を満たしています');
-          cell.setAttribute('data-bs-toggle', 'tooltip');
-        }
-      }
-    });
-    
-    // 数値型のセルも処理（正の値と負の値）
-    const numberCells = row.querySelectorAll('td.number-cell');
-    numberCells.forEach(cell => {
-      const value = parseFloat(cell.textContent);
-      if (!isNaN(value)) {
-        // 利益がある場合、正の値のセルを強調表示
-        if (isProfitable && value > 0) {
-          cell.setAttribute('data-profitable-indicator', 'true');
-          
-          // パルスエフェクトのクラスを追加（CSSで定義）
-          cell.classList.add('pulse-highlight');
-          
-          // ツールチップを追加/更新
-          if (!cell.hasAttribute('title')) {
-            cell.setAttribute('title', '利益に関連する指標です');
-            cell.setAttribute('data-bs-toggle', 'tooltip');
-          }
-        }
-        
-        // 利益がない場合、負の値のセルを強調表示
-        else if (!isProfitable && value < 0) {
-          cell.setAttribute('data-non-profitable-indicator', 'true');
-          
-          // ツールチップを追加/更新
-          if (!cell.hasAttribute('title')) {
-            cell.setAttribute('title', '損失に関連する指標かもしれません');
-            cell.setAttribute('data-bs-toggle', 'tooltip');
-          }
-        }
-      }
-    });
-    
-    // もし利益があり、条件セルが3つ以上ある場合は、行全体をより強調表示
-    if (isProfitable && metConditionsCount >= 3) {
-      row.classList.add('super-profitable');
-      
-      // 分析スコアを表示するバッジを追加
-      const firstCell = row.querySelector('td');
-      if (firstCell) {
-        const scoreDiv = document.createElement('div');
-        scoreDiv.className = 'analysis-score';
-        scoreDiv.innerHTML = `<span class="badge bg-success">スコア: ${metConditionsCount}</span>`;
-        firstCell.appendChild(scoreDiv);
+      // モバイル表示の場合の自動切替
+      if (window.innerWidth < 768) {
+        // モバイルではカード表示をデフォルトに
+        cardViewBtn.click();
       }
     }
-  });
-}
-
-// 行のマウスオーバー効果を強化
-function enhanceRowHoverEffects() {
-  const rows = document.querySelectorAll('.table-report tbody tr');
+  }
   
-  rows.forEach(row => {
-    row.addEventListener('mouseenter', function() {
-      // 行のハイライト
-      this.style.backgroundColor = this.classList.contains('profitable') 
-        ? 'rgba(16, 185, 129, 0.1)' 
-        : 'rgba(239, 68, 68, 0.1)';
-      
-      // 条件セルと関連指標をパルス効果で強調
-      const conditionCells = this.querySelectorAll('[data-profitable-condition="true"]');
-      conditionCells.forEach(cell => {
-        cell.classList.add('highlight-pulse');
-      });
-      
-      const indicatorCells = this.querySelectorAll('[data-profitable-indicator="true"]');
-      indicatorCells.forEach(cell => {
-        cell.classList.add('highlight-pulse');
-      });
+  function initTooltips() {
+    // Bootstrapのツールチップ初期化（必要に応じて）
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
     });
-    
-    row.addEventListener('mouseleave', function() {
-      // マウスが離れたら元の状態に戻す
-      this.style.backgroundColor = this.classList.contains('profitable')
-        ? 'rgba(16, 185, 129, 0.05)'
-        : 'rgba(239, 68, 68, 0.05)';
-      
-      // パルス効果を解除
-      const highlightedCells = this.querySelectorAll('.highlight-pulse');
-      highlightedCells.forEach(cell => {
-        cell.classList.remove('highlight-pulse');
-      });
-    });
-  });
-}
-
-// ツールチップの初期化
-function initTooltips() {
-  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-  tooltipTriggerList.map(function (tooltipTriggerEl) {
-    return new bootstrap.Tooltip(tooltipTriggerEl);
-  });
-}
-
-// カード表示の強調表示（モバイル用）
-function enhanceCardDisplay() {
-  const cards = document.querySelectorAll('.analysis-card');
-  
-  cards.forEach(card => {
-    const isProfitable = card.classList.contains('border-success');
-    
-    if (isProfitable) {
-      // 条件を満たしている項目をカウント
-      const metConditions = card.querySelectorAll('.badge.bg-success').length;
-      
-      // 条件を多く満たしているカードを特に強調
-      if (metConditions >= 3) {
-        card.classList.add('super-profitable-card');
-        
-        // スコアバッジを追加
-        const headerEl = card.querySelector('.analysis-card-header');
-        if (headerEl) {
-          const scoreDiv = document.createElement('div');
-          scoreDiv.className = 'analysis-score-badge';
-          scoreDiv.innerHTML = `<span class="badge bg-success">スコア: ${metConditions}</span>`;
-          headerEl.appendChild(scoreDiv);
-        }
-      }
-    }
-  });
-}
+  }
+</script>
 {% endblock %}
