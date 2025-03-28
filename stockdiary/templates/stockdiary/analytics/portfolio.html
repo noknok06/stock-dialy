@@ -68,8 +68,8 @@
                   </td>
                   <td>{{ stock.purchase_date|date:"Y/m/d" }}</td>
                   <td>{{ stock.holding_days }}日</td>
-                  <td>{{ stock.purchase_price|floatformat:2 }}円</td>
-                  <td>{{ stock.current_price|floatformat:2 }}円</td>
+                  <td>{{ stock.purchase_price|floatformat:|intcomma }}円</td>
+                  <td>{{ stock.current_price|floatformat:2|intcomma }}円</td>
                   <td class="{% if stock.profit_rate > 0 %}text-success{% elif stock.profit_rate < 0 %}text-danger{% endif %}">
                     {{ stock.profit_rate|floatformat:2 }}%
                   </td>

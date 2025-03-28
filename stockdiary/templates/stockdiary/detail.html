@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load stockdiary_filters %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}{{ diary.stock_name }} | カブログ{% endblock %}
 
@@ -107,7 +108,7 @@
                 </div>
                 <div class="info-content">
                   <span class="info-label">購入価格</span>
-                  <span class="info-value">{{ diary.purchase_price|floatformat:2 }}円</span>
+                  <span class="info-value">{{ diary.purchase_price|floatformat:2|intcomma }}円</span>
                 </div>
               </div>
               {% endif %}
@@ -131,7 +132,7 @@
                 </div>
                 <div class="info-content">
                   <span class="info-label">総購入額</span>
-                  <span class="info-value">{{ diary.purchase_price|mul:diary.purchase_quantity|floatformat:2 }}円</span>
+                  <span class="info-value">{{ diary.purchase_price|mul:diary.purchase_quantity|floatformat:2|intcomma }}円</span>
                 </div>
               </div>
               {% endif %}
@@ -158,7 +159,7 @@
                 </div>
                 <div class="info-content">
                   <span class="info-label">売却価格</span>
-                  <span class="info-value">{{ diary.sell_price|floatformat:2 }}円</span>
+                  <span class="info-value">{{ diary.sell_price|floatformat:2|intcomma }}円</span>
                 </div>
               </div>
               
@@ -170,11 +171,11 @@
                   <span class="info-label">損益</span>
                   {% with profit=diary.sell_price|sub:diary.purchase_price|mul:diary.purchase_quantity %}
                   {% if profit > 0 %}
-                  <span class="profit">+{{ profit|floatformat:2 }}円</span>
+                  <span class="profit">+{{ profit|floatformat:2|intcomma }}円</span>
                   {% elif profit < 0 %} 
-                  <span class="loss">{{ profit|floatformat:2 }}円</span>
+                  <span class="loss">{{ profit|floatformat:2|intcomma }}円</span>
                   {% else %}
-                  <span class="text-muted">{{ profit|floatformat:2 }}円</span>
+                  <span class="text-muted">{{ profit|floatformat:2|intcomma }}円</span>
                   {% endif %}
                   {% endwith %}
                 </div>
@@ -375,7 +376,7 @@
                 <div class="d-flex align-items-center mb-2">
                   <div class="me-3">
                     <small class="text-muted">記録時の価格:</small>
-                    <span class="fw-medium">{{ note.current_price|floatformat:2 }}円</span>
+                    <span class="fw-medium">{{ note.current_price|floatformat:2|intcomma }}円</span>
                   </div>
 
                   {% with price_change=note.get_price_change %}

@@ -338,7 +338,7 @@
                   </div>
                   <div class="info-content">
                     <span class="info-label">購入価格</span>
-                    <span class="info-value">{{ diary.purchase_price|floatformat:2 }}円</span>
+                    <span class="info-value">{{ diary.purchase_price|floatformat:2|intcomma }}円</span>
                   </div>
                 </div>
 
@@ -368,7 +368,7 @@
                   </div>
                   <div class="info-content">
                     <span class="info-label">総投資額</span>
-                    <span class="info-value">{{ diary.purchase_price|mul:diary.purchase_quantity|floatformat:2 }}円</span>
+                    <span class="info-value">{{ diary.purchase_price|mul:diary.purchase_quantity|floatformat:2|intcomma }}円</span>
                   </div>
                 </div>
               </div>
@@ -385,7 +385,7 @@
                   </div>
                   <div class="info-content">
                     <span class="info-label">売却価格</span>
-                    <span class="info-value">{{ diary.sell_price|floatformat:2 }}円</span>
+                    <span class="info-value">{{ diary.sell_price|floatformat:2|intcomma }}円</span>
                   </div>
                 </div>
 
@@ -407,10 +407,10 @@
                     <span class="info-label">損益</span>
                     {% with profit=diary.sell_price|sub:diary.purchase_price|mul:diary.purchase_quantity %}
                     {% if profit > 0 %}
-                    <span class="profit">+{{ profit|floatformat:2 }}円</span>
-                    {% elif profit < 0 %} <span class="loss">{{ profit|floatformat:2 }}円</span>
+                    <span class="profit">+{{ profit|floatformat:2|intcomma }}円</span>
+                    {% elif profit < 0 %} <span class="loss">{{ profit|floatformat:2|intcomma }}円</span>
                       {% else %}
-                      <span class="text-muted">{{ profit|floatformat:2 }}円</span>
+                      <span class="text-muted">{{ profit|floatformat:2|intcomma }}円</span>
                       {% endif %}
                       {% endwith %}
                   </div>
