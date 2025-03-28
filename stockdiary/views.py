@@ -17,6 +17,7 @@ from analysis_template.models import AnalysisTemplate, AnalysisItem, DiaryAnalys
 from utils.mixins import ObjectNotFoundRedirectMixin
 from .utils import process_analysis_values, calculate_analysis_completion_rate
 from .analytics import DiaryAnalytics  # 追加: DiaryAnalytics クラスをインポート
+from decimal import Decimal, InvalidOperation
 
 from collections import Counter, defaultdict
 from datetime import timedelta
@@ -435,13 +436,13 @@ class StockDiarySellView(LoginRequiredMixin, TemplateView):
         sell_price = request.POST.get('sell_price')
         
         try:
-            # 日記エントリーを取得して売却情報を更新
+            # Get the diary entry and update selling info
             diary = StockDiary.objects.get(
                 id=diary_id,
                 user=request.user
             )
             
-            # 購入価格と株数が設定されているか確認
+            # Check if purchase price and quantity are set
             if diary.purchase_price is None or diary.purchase_quantity is None:
                 messages.error(request, '購入価格と株数が設定されていない日記は売却できません')
                 return redirect('stockdiary:home')
@@ -452,7 +453,7 @@ class StockDiarySellView(LoginRequiredMixin, TemplateView):
             
             messages.success(request, f'{diary.stock_name}の売却情報を登録しました')
             
-            # 詳細ページにリダイレクト
+            # Redirect to the detail page
             return redirect('stockdiary:detail', pk=diary.id)
             
         except StockDiary.DoesNotExist:
@@ -460,9 +461,8 @@ class StockDiarySellView(LoginRequiredMixin, TemplateView):
         except Exception as e:
             messages.error(request, f'エラーが発生しました: {str(e)}')
         
-        # エラー時は同じページを再表示
+        # In case of error, redisplay the same page
         return self.get(request, *args, **kwargs)
-
 
 class AddDiaryNoteView(LoginRequiredMixin, CreateView):
     """日記エントリーへの継続記録追加"""
