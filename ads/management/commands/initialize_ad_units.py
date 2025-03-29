@@ -64,9 +64,7 @@ class Command(BaseCommand):
                 'name': 'ヘッダーバナー広告',
                 'ad_client': 'ca-pub-3954701883136363',  # 実際のAdSenseクライアントIDに置き換え
                 'ad_slot': '1234567890',  # 実際のAdSenseスロットIDに置き換え
-                'ad_format': 'horizontal',
-                'width': 728,
-                'height': 90,
+                'ad_format': 'responsive',  # 'horizontal'から変更
                 'is_active': True
             }
         )
@@ -114,9 +112,7 @@ class Command(BaseCommand):
                 'name': 'フッター広告',
                 'ad_client': 'ca-pub-3954701883136363',
                 'ad_slot': '0864213579',
-                'ad_format': 'horizontal',
-                'width': 728,
-                'height': 90,
+                'ad_format': 'responsive',  # 'horizontal'から変更
                 'is_active': True
             }
         )
