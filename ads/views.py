@@ -32,3 +32,14 @@ def ad_preferences(request):
     }
     
     return render(request, 'ads/ad_preferences.html', context)
+
+
+class TermsView(TemplateView):
+    template_name = 'ads/terms.html'
+    
+class FAQView(TemplateView):
+    template_name = 'ads/faq.html'
+
+class InvestmentGuideView(TemplateView):
+    """投資記録ガイドページを表示するビュー"""
+    template_name = 'ads/guide.html'

@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}投資記録ガイド | カブログ{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<style>
+  .guide-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 0;
+  }
+  
+  .guide-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+  
+  .guide-header h1 {
+    color: #1f2937;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  
+  .guide-section {
+    margin-bottom: 4rem;
+  }
+  
+  .guide-section h2 {
+    color: #3730a3;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #f3f4f6;
+  }
+  
+  .guide-section h3 {
+    color: #4b5563;
+    font-weight: 600;
+    margin: 1.5rem 0 1rem;
+  }
+  
+  .guide-img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin: 1.5rem 0;
+  }
+  
+  .guide-tips {
+    background-color: #f0f4ff;
+    border-left: 4px solid #4f46e5;
+    padding: 1.25rem;
+    border-radius: 0.5rem;
+    margin: 1.5rem 0;
+  }
+  
+  .guide-tips h4 {
+    color: #4f46e5;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+  
+  .step-list {
+    counter-reset: steps;
+    list-style: none;
+    padding-left: 0;
+  }
+  
+  .step-list li {
+    position: relative;
+    margin-bottom: 1.5rem;
+    padding-left: 3rem;
+    counter-increment: steps;
+  }
+  
+  .step-list li::before {
+    content: counter(steps);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 2rem;
+    height: 2rem;
+    background-color: #4f46e5;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+  }
+  
+  .guide-example {
+    background-color: #f9fafb;
+    padding: 1.25rem;
+    border-radius: 0.5rem;
+    margin: 1.5rem 0;
+  }
+  
+  .guide-example h4 {
+    margin-bottom: 1rem;
+    color: #1f2937;
+    font-weight: 600;
+  }
+  
+  .example-item {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .example-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+  
+  .example-label {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: #4b5563;
+  }
+  
+  .conclusion {
+    background-color: #f3f4f6;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    text-align: center;
+    margin-top: 3rem;
+  }
+  
+  .conclusion h3 {
+    margin-bottom: 1rem;
+  }
+  
+  .guide-btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background-color: #4f46e5;
+    color: white;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: all 0.3s;
+    text-decoration: none;
+  }
+  
+  .guide-btn:hover {
+    background-color: #3730a3;
+    transform: translateY(-2px);
+    color: white;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container guide-container">
+  <div class="guide-header">
+    <h1>効果的な投資記録の付け方</h1>
+    <p class="text-muted">カブログを活用して投資判断を振り返り、成長する投資家になるためのガイド</p>
+  </div>
+  
+  <div class="guide-section">
+    <h2>なぜ投資記録が重要なのか</h2>
+    <p>投資の世界では、「何を買ったか」だけでなく「なぜ買ったか」を記録することが非常に重要です。その理由は次のとおりです：</p>
+    
+    <div class="row mt-4">
+      <div class="col-md-6 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title">
+              <i class="bi bi-graph-up text-primary me-2"></i>
+              パターンの発見
+            </h5>
+            <p class="card-text">成功した投資と失敗した投資のパターンを見つけることで、自分の強みと弱みを把握できます。</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-md-6 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title">
+              <i class="bi bi-lightbulb text-primary me-2"></i>
+              感情バイアスの軽減
+            </h5>
+            <p class="card-text">記録を残すことで、後から振り返った際に感情ではなく事実に基づいた分析ができます。</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-md-6 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title">
+              <i class="bi bi-arrow-repeat text-primary me-2"></i>
+              一貫性の維持
+            </h5>
+            <p class="card-text">投資基準を明確にして記録することで、投資判断の一貫性を保てます。</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-md-6 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title">
+              <i class="bi bi-clock-history text-primary me-2"></i>
+              時間経過による変化の追跡
+            </h5>
+            <p class="card-text">投資家としての成長過程や考え方の変化を追跡できます。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="guide-tips mt-4">
+      <h4>重要ポイント</h4>
+      <p>投資記録は、単なる取引履歴ではありません。それは、あなたの投資判断プロセスを整理し、改善するための貴重な資料です。</p>
+    </div>
+  </div>
+  
+  <div class="guide-section">
+    <h2>効果的な投資記録の要素</h2>
+    
+    <h3>1. 基本情報の記録</h3>
+    <p>まずは投資の基本情報を正確に記録しましょう：</p>
+    <ul>
+      <li>銘柄名とコード</li>
+      <li>購入日と購入価格</li>
+      <li>購入数量</li>
+      <li>売却日と売却価格（売却時）</li>
+    </ul>
+    
+    <h3>2. 投資理由の詳細な記録</h3>
+    <p>「なぜ買ったのか」という投資理由を詳細に記録することが重要です。以下の点を考慮しましょう：</p>
+    <ul>
+      <li>企業の強みや成長性</li>
+      <li>財務状況の評価</li>
+      <li>業界動向や市場環境</li>
+      <li>リスク要因とその対策</li>
+      <li>期待するリターンと時間軸</li>
+    </ul>
+    
+    <div class="guide-example">
+      <h4>投資理由の記録例</h4>
+      <div class="example-item">
+        <div class="example-label">悪い例：</div>
+        <p>"株価が上がりそうだから購入した。"</p>
+        <small class="text-muted">（具体性がなく、後で振り返っても意味がない）</small>
+      </div>
+      
+      <div class="example-item">
+        <div class="example-label">良い例：</div>
+        <p>"この企業は新製品の発表により今後2年間で売上が30%増加すると予想される。PER20倍で業界平均より割安。財務体質も健全で無借金経営。主なリスクは競合他社の類似製品だが、特許による参入障壁がある。3年保有を予定し、株価30%上昇を期待。"</p>
+        <small class="text-muted">（具体的な根拠、数値、時間軸、リスク認識が含まれている）</small>
+      </div>
+    </div>
+    
+    <h3>3. 分析テンプレートの活用</h3>
+    <p>カブログの分析テンプレート機能を使用して、投資判断の基準を体系化しましょう。テンプレートを作成する際のポイント：</p>
+    <ul>
+      <li>自分の投資スタイルに合った項目を設定</li>
+      <li>数値化できる項目を含める（例：PERの評価を1〜5で点数化）</li>
+      <li>チェックリスト形式の項目と詳細記述の項目をバランスよく配置</li>
+    </ul>
+    
+    <h3>4. タグの効果的な使用</h3>
+    <p>タグ機能を活用して、投資記録を整理しましょう：</p>
+    <ul>
+      <li>業種タグ（例：テクノロジー、金融、ヘルスケア）</li>
+      <li>投資テーマタグ（例：高配当、成長株、バリュー）</li>
+      <li>投資判断タグ（例：強気、弱気、様子見）</li>
+    </ul>
+    
+    <div class="guide-tips">
+      <h4>タグ活用のコツ</h4>
+      <p>一貫性のあるタグ付けを心がけましょう。あまりに多くのタグを作りすぎると混乱の原因になります。10〜15個程度の主要タグを決めて使い回すのがおすすめです。</p>
+    </div>
+  </div>
+  
+  <div class="guide-section">
+    <h2>継続的な記録と振り返り</h2>
+    
+    <h3>1. 継続記録の活用</h3>
+    <p>カブログの継続記録機能を使って、投資後の考え方の変化や新たな情報を記録しましょう：</p>
+    <ul>
+      <li>定期的（例：四半期ごと）に投資判断を再評価</li>
+      <li>重要なニュースや決算情報を記録</li>
+      <li>当初の投資理由が現在も有効かを検証</li>
+    </ul>
+    
+    <h3>2. 売却時の振り返り</h3>
+    <p>投資を売却する際には、以下の点を記録しましょう：</p>
+    <ul>
+      <li>売却理由（目標達成、損切り、資金需要など）</li>
+      <li>当初の投資理由と実際の結果の比較</li>
+      <li>学んだ教訓や次回に活かすべきポイント</li>
+    </ul>
+    
+    <div class="guide-example">
+      <h4>売却時の振り返り例</h4>
+      <p><strong>購入時の予想：</strong> 新製品により2年で売上30%増加と予想</p>
+      <p><strong>実際の結果：</strong> 新製品は好評だったが、売上増加は15%に留まった</p>
+      <p><strong>学んだ教訓：</strong> 成長予測は保守的に見積もるべき。競合の反応をもっと考慮する必要がある。</p>
+    </div>
+    
+    <h3>3. 定期的なポートフォリオ分析</h3>
+    <p>カブログのスナップショット機能を使って、定期的（例：四半期または半年ごと）にポートフォリオ全体を分析しましょう：</p>
+    <ul>
+      <li>業種別の配分バランスの確認</li>
+      <li>リスク分散の状況チェック</li>
+      <li>パフォーマンスの良い/悪い銘柄の傾向分析</li>
+    </ul>
+  </div>
+  
+  <div class="guide-section">
+    <h2>効果的な記録のステップバイステップガイド</h2>
+    
+    <ol class="step-list">
+      <li>
+        <h4>新規投資記録の作成</h4>
+        <p>投資を行ったら、できるだけ早く（理想的には当日中に）記録を作成しましょう。感情や判断が鮮明なうちに記録することが重要です。</p>
+      </li>
+      
+      <li>
+        <h4>基本情報の入力</h4>
+        <p>銘柄コード、銘柄名、購入日、購入価格、購入数量などの基本情報を正確に入力します。</p>
+      </li>
+      
+      <li>
+        <h4>投資理由の詳細記述</h4>
+        <p>なぜこの銘柄を選んだのか、どのような将来性を期待しているのか、考えられるリスクは何かなどを詳細に記述します。</p>
+      </li>
+      
+      <li>
+        <h4>分析テンプレートの適用</h4>
+        <p>事前に作成した分析テンプレートを使用して、投資判断を体系的に評価します。</p>
+      </li>
+      
+      <li>
+        <h4>タグ付け</h4>
+        <p>関連するタグを付けて、後から検索や分析がしやすいようにします。</p>
+      </li>
+      
+      <li>
+        <h4>継続的な記録の追加</h4>
+        <p>四半期決算や重要ニュースがあるたびに、継続記録を追加して考え方の変化を記録します。</p>
+      </li>
+      
+      <li>
+        <h4>売却時の振り返り</h4>
+        <p>投資を売却する際には、結果と当初の予想を比較し、学んだ教訓を記録します。</p>
+      </li>
+      
+      <li>
+        <h4>定期的な分析</h4>
+        <p>カブログの分析ダッシュボードを使って、定期的に投資パターンや傾向を分析します。</p>
+      </li>
+    </ol>
+  </div>
+  
+  <div class="conclusion">
+    <h3>あなたの投資の旅を記録しましょう</h3>
+    <p>投資記録は、単なる取引履歴ではなく、投資家としての成長を促す貴重なツールです。一貫性を持って記録を続けることで、時間の経過とともに投資判断が洗練されていくでしょう。</p>
+    <a href="{% url 'stockdiary:create' %}" class="guide-btn mt-3">
+      <i class="bi bi-pencil-square me-2"></i>投資記録を始める
+    </a>
+  </div>
+</div>
+{% endblock %}

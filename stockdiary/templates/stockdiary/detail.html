@@ -513,29 +513,6 @@
       <span class="mx-2">|</span>
       <i class="bi bi-clock-history me-1"></i> 更新: {{ diary.updated_at|date:"Y年m月d日 H:i" }}
     </div>
-    
-    <!-- PCの場合はボタンを標準サイズで右寄せ -->
-    <div class="action-buttons">
-      {% if not diary.sell_date and not diary.is_memo and diary.purchase_price is not None and diary.purchase_quantity is not None %}
-      <a href="{% url 'stockdiary:sell_specific' diary.id %}" class="btn btn-diary btn-diary-success">
-        <i class="bi bi-cash-coin me-1"></i> 売却
-      </a>
-      {% endif %}
-      
-      {% if diary.sell_date %}
-      <a href="{% url 'stockdiary:cancel_sell' diary.id %}" class="btn btn-diary btn-diary-warning">
-        <i class="bi bi-arrow-counterclockwise me-1"></i> 売却取消
-      </a>
-      {% endif %}
-      
-      <a href="{% url 'stockdiary:update' diary.id %}" class="btn btn-diary btn-diary-warning ms-2">
-        <i class="bi bi-pencil me-1"></i> 編集
-      </a>
-      
-      <a href="{% url 'stockdiary:delete' diary.id %}" class="btn btn-diary btn-diary-danger ms-2">
-        <i class="bi bi-trash me-1"></i> 削除
-      </a>
-    </div>
   </div>
 </div>
   </div>

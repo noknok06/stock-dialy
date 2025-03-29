@@ -1,0 +1,410 @@
+{% extends 'base.html' %}
+
+{% block title %}よくある質問 | カブログ{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<style>
+  .faq-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 0;
+  }
+  
+  .faq-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+  
+  .faq-header h1 {
+    color: #1f2937;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  
+  .faq-header p {
+    color: #6b7280;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .faq-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 2rem;
+    justify-content: center;
+  }
+  
+  .faq-category {
+    padding: 0.5rem 1.25rem;
+    background-color: #f3f4f6;
+    border-radius: 2rem;
+    font-weight: 500;
+    color: #4b5563;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .faq-category:hover, .faq-category.active {
+    background-color: #4f46e5;
+    color: white;
+  }
+  
+  .faq-list {
+    margin-bottom: 3rem;
+  }
+  
+  .faq-item {
+    margin-bottom: 1.5rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+  
+  .faq-question {
+    padding: 1.25rem;
+    background-color: #f9fafb;
+    cursor: pointer;
+    font-weight: 600;
+    color: #1f2937;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .faq-question i {
+    transition: transform 0.3s;
+  }
+  
+  .faq-question.open i {
+    transform: rotate(180deg);
+  }
+  
+  .faq-answer {
+    padding: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  
+  .faq-answer.open {
+    padding: 1.25rem;
+    max-height: 1000px;
+  }
+  
+  .faq-answer p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+  }
+  
+  .faq-answer p:last-child {
+    margin-bottom: 0;
+  }
+  
+  .faq-highlight {
+    background-color: #f0f4ff;
+    border-left: 4px solid #4f46e5;
+    padding: 1rem;
+    border-radius: 0.25rem;
+    margin: 1rem 0;
+  }
+  
+  .still-have-questions {
+    text-align: center;
+    padding: 2rem;
+    background-color: #f3f4f6;
+    border-radius: 0.5rem;
+  }
+  
+  .still-have-questions h3 {
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+  
+  .contact-btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background-color: #4f46e5;
+    color: white;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: all 0.3s;
+    text-decoration: none;
+    margin-top: 0.5rem;
+  }
+  
+  .contact-btn:hover {
+    background-color: #3730a3;
+    transform: translateY(-2px);
+    color: white;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container faq-container">
+  <div class="faq-header">
+    <h1>よくある質問</h1>
+    <p>カブログの利用方法や機能について、よくいただく質問をまとめました。</p>
+  </div>
+  
+  <div class="faq-categories">
+    <div class="faq-category active" data-category="general">一般的な質問</div>
+    <div class="faq-category" data-category="features">機能について</div>
+    <div class="faq-category" data-category="data">データと分析</div>
+    <div class="faq-category" data-category="account">アカウント管理</div>
+  </div>
+  
+  <div class="faq-list" id="general">
+    <div class="faq-item">
+      <div class="faq-question">
+        カブログとは何ですか？
+        <i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        <p>カブログは、投資家のための日記アプリです。株式投資の記録・分析・改善を支援するプラットフォームとして、投資判断のプロセスを整理し、より良い投資家になるための振り返りをサポートします。</p>
+        
+        <div class="faq-highlight">
+          <p><strong>重要:</strong> カブログは投資判断の記録と分析に特化したツールであり、投資アドバイスを提供したり、特定の銘柄を推奨するサービスではありません。</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="faq-item">
+      <div class="faq-question">
+        カブログは無料で利用できますか？
+        <i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        <p>はい、カブログの基本機能は無料でご利用いただけます。アカウント作成後、投資記録の管理、基本的な分析機能、分析テンプレートの利用など、主要な機能をすべて無料でお使いいただけます。</p>
+      </div>
+    </div>
+    
+    <div class="faq-item">
+      <div class="faq-question">
+        カブログは投資のアドバイスをしてくれますか？
+        <i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        <p>いいえ、カブログは投資アドバイスを提供するサービスではありません。カブログは、ユーザー自身の投資判断を記録し、そのプロセスを振り返るためのツールです。</p>
+        
+        <p>カブログでは、以下のことを行います：</p>
+        <ul>
+          <li>投資判断の記録と整理</li>
+          <li>過去の投資パターンの分析</li>
+          <li>投資プロセスの改善サポート</li>
+        </ul>
+        
+        <p>カブログでは、以下のことは行いません：</p>
+        <ul>
+          <li>特定の銘柄の推奨</li>
+          <li>投資タイミングのアドバイス</li>
+          <li>将来の株価予測</li>
+        </ul>
+        
+        <div class="faq-highlight">
+          <p>投資判断はすべてユーザー自身の責任で行ってください。カブログの利用による投資結果について、運営者は一切の責任を負いません。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="faq-list" id="features" style="display: none;">
+    <div class="faq-item">
+      <div class="faq-question">
+        分析テンプレートとは何ですか？
+        <i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        <p>分析テンプレートは、投資判断の際に考慮すべき項目を整理するためのフレームワークです。自分だけの投資基準や分析項目をカスタマイズして作成できます。</p>
+        
+        <p>例えば、以下のような項目を設定できます：</p>
+        <ul>
+          <li>企業の財務状況に関するチェック項目</li>
+          <li>業界動向の評価</li>
+          <li>リスク要因の分析</li>
+          <li>将来性の評価基準</li>
+        </ul>
+        
+        <p>テンプレートを使用することで、投資判断の一貫性を保ち、感情に左右されない投資を実現できます。</p>
+      </div>
+    </div>
+    
+    <div class="faq-item">
+      <div class="faq-question">
+        継続記録機能とは何ですか？
+        <i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        <p>継続記録機能は、投資後の状況変化や考え方の変化を時系列で記録する機能です。購入時点だけでなく、その後の判断プロセスも記録することで、投資判断の変化を追跡できます。</p>
+        
+        <p>継続記録では以下の情報を記録できます：</p>
+        <ul>
+          <li>記録時点の株価</li>
+          <li>新たな気づきや情報</li>
+          <li>判断の変化とその理由</li>
+          <li>重要度（高/中/低）とタイプ（分析更新/ニュース/決算情報など）</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="faq-item">
+      <div class="faq-question">
+        ポートフォリオスナップショットとは何ですか？
+        <i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        <p>ポートフォリオスナップショットは、特定時点のポートフォリオ状況を記録する機能です。保有銘柄の構成や配分を記録し、時間経過による変化を追跡できます。</p>
+        
+        <p>スナップショット機能では、以下のことが可能です：</p>
+        <ul>
+          <li>特定時点の資産配分の可視化</li>
+          <li>セクター（業種）別の投資比率の分析</li>
+          <li>過去のスナップショットとの比較</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  
+  <div class="faq-list" id="data" style="display: none;">
+    <div class="faq-item">
+      <div class="faq-question">
+        分析ダッシュボードではどのような情報が見られますか？
+        <i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        <p>分析ダッシュボードでは、あなたの投資パターンや傾向を様々な角度から分析できます。</p>
+        
+        <p>主な分析項目：</p>
+        <ul>
+          <li>投資タイミングの傾向</li>
+          <li>保有期間の分布</li>
+          <li>売買パターンの可視化</li>
+          <li>よく使用するタグの分析</li>
+          <li>テンプレート使用状況と完了率</li>
+          <li>利益率の分布</li>
+        </ul>
+        
+        <p>これらの分析を通じて、自分の投資プロセスの強みと改善点を客観的に把握できます。</p>
+      </div>
+    </div>
+    
+    <div class="faq-item">
+      <div class="faq-question">
+        株価データは自動で更新されますか？
+        <i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        <p>カブログでは、株価データの自動更新機能は提供していません。投資記録の主な目的は、ユーザー自身の判断プロセスを記録することにあるため、株価は手動で入力する設計になっています。</p>
+        
+        <p>継続記録機能を使用する際に、その時点の株価を入力することで、購入時からの変動率は自動計算されます。</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="faq-list" id="account" style="display: none;">
+    <div class="faq-item">
+      <div class="faq-question">
+        アカウントの作成方法を教えてください
+        <i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        <p>アカウント作成は簡単です。以下の手順で登録できます：</p>
+        
+        <ol>
+          <li>トップページの「無料で始める」ボタンをクリック</li>
+          <li>「Google」でのログインを選択、またはメールアドレスで登録</li>
+          <li>Google認証の場合は、Googleアカウントでのログインを完了</li>
+          <li>メールアドレス登録の場合は、必要情報を入力して「登録」をクリック</li>
+          <li>登録完了後、自動的にダッシュボードに移動します</li>
+        </ol>
+      </div>
+    </div>
+    
+    <div class="faq-item">
+      <div class="faq-question">
+        パスワードを忘れた場合はどうすればよいですか？
+        <i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        <p>パスワードをお忘れの場合は、以下の手順でリセットできます：</p>
+        
+        <ol>
+          <li>ログインページの「パスワードを忘れた方」をクリック</li>
+          <li>登録したメールアドレスを入力</li>
+          <li>メールに記載されたリンクからパスワードリセット画面に移動</li>
+          <li>新しいパスワードを設定</li>
+        </ol>
+        
+        <p>なお、Googleアカウントでログインしている場合は、パスワードリセットは不要です。通常通りGoogleアカウントでログインしてください。</p>
+      </div>
+    </div>
+    
+    <div class="faq-item">
+      <div class="faq-question">
+        アカウントを削除することはできますか？
+        <i class="bi bi-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        <p>はい、アカウントの削除は可能です。</p>
+        
+        <ol>
+          <li>ログイン後、右上のユーザーメニューから「プロフィール」を選択</li>
+          <li>プロフィールページ下部の「アカウント設定」セクションにある「アカウント削除」をクリック</li>
+          <li>確認画面で「削除する」ボタンをクリック</li>
+        </ol>
+        
+        <div class="faq-highlight">
+          <p><strong>注意:</strong> アカウント削除を行うと、すべての投資記録や分析データが完全に削除され、復元できなくなります。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="still-have-questions">
+    <h3>まだ質問がありますか？</h3>
+    <p>お探しの情報が見つからない場合は、お気軽にお問い合わせください。</p>
+    <a href="{% url 'contact' %}" class="contact-btn">
+      <i class="bi bi-envelope me-2"></i>お問い合わせ
+    </a>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // FAQの開閉処理
+    const questions = document.querySelectorAll('.faq-question');
+    
+    questions.forEach(question => {
+      question.addEventListener('click', function() {
+        const answer = this.nextElementSibling;
+        const isOpen = this.classList.contains('open');
+        
+        // 現在のFAQを開閉
+        this.classList.toggle('open');
+        answer.classList.toggle('open');
+      });
+    });
+    
+    // カテゴリー切り替え処理
+    const categories = document.querySelectorAll('.faq-category');
+    const faqLists = document.querySelectorAll('.faq-list');
+    
+    categories.forEach(category => {
+      category.addEventListener('click', function() {
+        const targetCategory = this.getAttribute('data-category');
+        
+        // アクティブなカテゴリーを切り替え
+        categories.forEach(c => c.classList.remove('active'));
+        this.classList.add('active');
+        
+        // 対応するFAQリストを表示
+        faqLists.forEach(list => {
+          list.style.display = list.id === targetCategory ? 'block' : 'none';
+        });
+      });
+    });
+  });
+</script>
+{% endblock %}

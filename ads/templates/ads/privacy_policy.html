@@ -1,180 +1,216 @@
-{# ads/templates/ads/privacy_policy.html #}
 {% extends 'base.html' %}
 
-{% block title %}プライバシーポリシー - カブログ{% endblock %}
+{% block title %}プライバシーポリシー | カブログ{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<style>
+  .terms-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 0;
+  }
+  
+  .terms-section {
+    margin-bottom: 2.5rem;
+  }
+  
+  .terms-section h2 {
+    color: #3730a3;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #f3f4f6;
+  }
+  
+  .terms-section h3 {
+    color: #4b5563;
+    font-weight: 600;
+    margin: 1.5rem 0 0.75rem;
+  }
+  
+  .terms-list {
+    padding-left: 1.5rem;
+  }
+  
+  .terms-list li {
+    margin-bottom: 0.75rem;
+    line-height: 1.6;
+  }
+  
+  .highlight-box {
+    background-color: #f0f4ff;
+    border-left: 4px solid #4f46e5;
+    padding: 1.25rem;
+    border-radius: 0.5rem;
+    margin: 1.5rem 0;
+  }
+  
+  .warning-box {
+    background-color: #fff5f5;
+    border-left: 4px solid #ef4444;
+    padding: 1.25rem;
+    border-radius: 0.5rem;
+    margin: 1.5rem 0;
+  }
+  
+  .disclaimer-note {
+    font-style: italic;
+    color: #6b7280;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-10">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h1 class="h4 mb-0">プライバシーポリシー</h1>
-                </div>
-                <div class="card-body">
-                    <!-- 導入部分 -->
-                    <div class="mb-5">
-                        <h2 class="h5 fw-bold mb-3 d-flex align-items-center">
-                            <i class="bi bi-shield-lock me-2 text-primary"></i>カブログによる個人情報の取り扱いについて
-                        </h2>
-                        <div class="ps-4">
-                            <p>
-                                カブログ（以下「当サービス」）は、ユーザーのプライバシーを尊重し、個人情報の保護に努めています。
-                                このプライバシーポリシーでは、当サービスが収集する情報とその使用方法について説明します。
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <!-- 1. 収集する情報 -->
-                    <div class="mb-5">
-                        <h2 class="h5 fw-bold mb-3 d-flex align-items-center">
-                            <i class="bi bi-database me-2 text-primary"></i>1. 収集する情報
-                        </h2>
-                        <div class="ps-4">
-                            <p>当サービスは、以下の情報を収集することがあります：</p>
-                            <ul class="mb-0">
-                                <li>アカウント情報（ユーザー名、メールアドレスなど）</li>
-                                <li>プロフィール情報（任意で提供された情報）</li>
-                                <li>投資日記の内容やポートフォリオ情報</li>
-                                <li>サービス利用状況（アクセスログ、IPアドレスなど）</li>
-                                <li>Cookieやローカルストレージに保存される情報</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <!-- 2. 広告に関する情報 -->
-                    <div class="mb-5">
-                        <h2 class="h5 fw-bold mb-3 d-flex align-items-center">
-                            <i class="bi bi-badge-ad me-2 text-primary"></i>2. 広告に関する情報
-                        </h2>
-                        <div class="ps-4">
-                            <p>
-                                当サービスでは、Google AdSenseをはじめとする第三者の広告配信サービスを利用しています。
-                                これらのサービスは、ユーザーの興味に基づいて広告を表示するために、Cookieを使用することがあります。
-                            </p>
-                            <p class="mb-0">
-                                Google AdSenseに関する詳細情報は、
-                                <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer">
-                                    Googleの広告ポリシー
-                                </a>
-                                をご覧ください。
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <!-- 3. 情報の利用目的 -->
-                    <div class="mb-5">
-                        <h2 class="h5 fw-bold mb-3 d-flex align-items-center">
-                            <i class="bi bi-clipboard-check me-2 text-primary"></i>3. 情報の利用目的
-                        </h2>
-                        <div class="ps-4">
-                            <p>収集した情報は、以下の目的で利用されます：</p>
-                            <ul class="mb-0">
-                                <li>サービスの提供と改善</li>
-                                <li>ユーザー認証とアカウント管理</li>
-                                <li>カスタマーサポートの提供</li>
-                                <li>サービスの利用状況の分析</li>
-                                <li>不正利用の防止とセキュリティ確保</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <!-- 4. 情報の共有と開示 -->
-                    <div class="mb-5">
-                        <h2 class="h5 fw-bold mb-3 d-flex align-items-center">
-                            <i class="bi bi-share me-2 text-primary"></i>4. 情報の共有と開示
-                        </h2>
-                        <div class="ps-4">
-                            <p>
-                                当サービスは、以下の場合を除き、ユーザーの個人情報を第三者と共有または開示しません：
-                            </p>
-                            <ul class="mb-0">
-                                <li>ユーザーの同意がある場合</li>
-                                <li>法的要請や規制に従う必要がある場合</li>
-                                <li>サービス提供に必要なパートナー企業との共有（データ処理業者など）</li>
-                                <li>当サービスの権利や財産を保護する必要がある場合</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <!-- 5. ユーザーの権利 -->
-                    <div class="mb-5">
-                        <h2 class="h5 fw-bold mb-3 d-flex align-items-center">
-                            <i class="bi bi-person-check me-2 text-primary"></i>5. ユーザーの権利
-                        </h2>
-                        <div class="ps-4">
-                            <p>ユーザーには以下の権利があります：</p>
-                            <ul class="mb-0">
-                                <li>アカウント情報へのアクセスと修正</li>
-                                <li>ご自身の情報の削除を請求する権利</li>
-                                <li>個人情報の処理に関する制限を請求する権利</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <!-- 6. Cookieの使用について -->
-                    <div class="mb-5">
-                        <h2 class="h5 fw-bold mb-3 d-flex align-items-center">
-                            <i class="bi bi-cookie me-2 text-primary"></i>6. Cookieの使用について
-                        </h2>
-                        <div class="ps-4">
-                            <p>当サービスでは、以下のタイプのCookieを使用しています：</p>
-                            <ul>
-                                <li><strong>必須Cookie</strong>：サービスの機能に必要なCookie</li>
-                                <li><strong>分析Cookie</strong>：サービス改善のためのデータ収集に使用するCookie</li>
-                                <li><strong>広告Cookie</strong>：広告表示のために使用されるCookie（Google AdSenseなど）</li>
-                            </ul>
-                            <p class="mb-0">多くのCookieは30日間から最大2年間ブラウザに保存されます。</p>
-                        </div>
-                    </div>
-                    
-                    <!-- 7. 広告のオプトアウト方法 -->
-                    <div class="mb-5">
-                        <h2 class="h5 fw-bold mb-3 d-flex align-items-center">
-                            <i class="bi bi-toggle-off me-2 text-primary"></i>7. 広告のオプトアウト方法
-                        </h2>
-                        <div class="ps-4">
-                            <p>以下の方法で広告のパーソナライズを無効にできます：</p>
-                            <ul>
-                                <li class="mb-2">ブラウザの設定からCookieを管理する：
-                                    <ul class="mt-2">
-                                        <li><a href="https://support.google.com/chrome/answer/95647" target="_blank" rel="noopener noreferrer">Google Chrome</a></li>
-                                        <li><a href="https://support.mozilla.org/ja/kb/enhanced-tracking-protection-firefox-desktop" target="_blank" rel="noopener noreferrer">Mozilla Firefox</a></li>
-                                        <li><a href="https://support.microsoft.com/ja-jp/microsoft-edge/microsoft-edge-でcookieを削除する-63947406-40ac-c3b8-57b9-2a946a29ae09" target="_blank" rel="noopener noreferrer">Microsoft Edge</a></li>
-                                        <li><a href="https://support.apple.com/ja-jp/guide/safari/sfri11471/mac" target="_blank" rel="noopener noreferrer">Safari</a></li>
-                                    </ul>
-                                </li>
-                                <li class="my-2"><a href="https://adssettings.google.com/authenticated" target="_blank" rel="noopener noreferrer">Google広告設定</a>からパーソナライズド広告を管理する</li>
-                                <li class="my-2"><a href="https://optout.networkadvertising.org/" target="_blank" rel="noopener noreferrer">Network Advertising Initiative</a>のオプトアウトページを利用する</li>
-                                <li class="mb-0"><a href="https://optout.aboutads.info/" target="_blank" rel="noopener noreferrer">Digital Advertising Alliance</a>のオプトアウトページを利用する</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <!-- 8. データ保持期間 -->
-                    <div class="mb-5">
-                        <h2 class="h5 fw-bold mb-3 d-flex align-items-center">
-                            <i class="bi bi-hourglass-split me-2 text-primary"></i>8. データ保持期間
-                        </h2>
-                        <div class="ps-4">
-                            <p class="mb-0">当サービスは、ユーザーアカウントが存在する限り、または法的義務を満たすために必要な期間、ユーザーの情報を保持します。アカウントを削除すると、法的理由で保持する必要がある情報を除き、すべての個人情報は削除されます。</p>
-                        </div>
-                    </div>
-
-                    <!-- 更新日 -->
-                    <div class="text-end mb-4">
-                        <p class="text-muted mb-0">最終更新日：2025年3月29日</p>
-                    </div>
-
-                    <!-- ボタン -->
-                    <div class="d-flex justify-content-between">
-                        <a href="{% url 'stockdiary:home' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left me-1"></i> ホームに戻る
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
+<div class="container terms-container">
+  <div class="mb-5 text-center">
+    <h1 class="mb-3">プライバシーポリシー</h1>
+    <p class="text-muted">最終更新日: 2025年3月29日</p>
+  </div>
+  
+  <div class="terms-section">
+    <h2>はじめに</h2>
+    <p>カブログ（以下「当サービス」）は、ユーザーのプライバシーを尊重し、個人情報の保護に努めています。本プライバシーポリシーでは、当サービスがどのような情報を収集し、どのように利用・保護するかについて説明します。</p>
+    
+    <div class="highlight-box">
+      <p><strong>重要:</strong> 当サービスを利用することにより、本プライバシーポリシーに記載された情報の収集と利用に同意したものとみなされます。</p>
     </div>
+  </div>
+  
+  <div class="terms-section">
+    <h2>収集する情報</h2>
+    <h3>アカウント情報</h3>
+    <p>当サービスを利用するために、以下の情報を収集します：</p>
+    <ul class="terms-list">
+      <li>ユーザー名</li>
+      <li>メールアドレス</li>
+      <li>Google認証を利用する場合の認証情報</li>
+    </ul>
+    
+    <h3>投資記録情報</h3>
+    <p>ユーザーが当サービスに入力する投資記録情報：</p>
+    <ul class="terms-list">
+      <li>銘柄情報（銘柄名、コード）</li>
+      <li>取引情報（購入日、購入価格、購入数量、売却日、売却価格など）</li>
+      <li>投資理由や分析情報</li>
+      <li>タグやカテゴリー情報</li>
+    </ul>
+    
+    <h3>利用状況の情報</h3>
+    <p>サービス改善を目的として、以下の情報を収集することがあります：</p>
+    <ul class="terms-list">
+      <li>アクセスログ（IPアドレス、ブラウザの種類、アクセス日時など）</li>
+      <li>機能の使用状況</li>
+      <li>サービス内の行動パターン</li>
+    </ul>
+  </div>
+  
+  <div class="terms-section">
+    <h2>情報の利用目的</h2>
+    <p>収集した情報は、以下の目的で利用します：</p>
+    <ul class="terms-list">
+      <li>ユーザーへのサービス提供</li>
+      <li>アカウント管理と認証</li>
+      <li>サービスの改善と新機能の開発</li>
+      <li>カスタマーサポートの提供</li>
+      <li>サービスの利用状況の分析</li>
+      <li>不正利用の防止とセキュリティの確保</li>
+    </ul>
+  </div>
+  
+  <div class="terms-section">
+    <h2>情報の共有</h2>
+    <p>当サービスは、ユーザーの個人情報を以下の場合を除き、第三者と共有することはありません：</p>
+    <ul class="terms-list">
+      <li>ユーザーの明示的な同意がある場合</li>
+      <li>法的な要請や規制に従う必要がある場合</li>
+      <li>当サービスの権利や財産を保護する必要がある場合</li>
+      <li>緊急事態でユーザーや他者の安全を確保する必要がある場合</li>
+    </ul>
+    
+    <h3>サービス提供事業者との共有</h3>
+    <p>当サービスは、以下のサービス提供のために必要な範囲で情報を共有することがあります：</p>
+    <ul class="terms-list">
+      <li>ホスティングサービス提供者</li>
+      <li>メール配信サービス</li>
+      <li>分析サービス（Google Analyticsなど）</li>
+      <li>広告配信サービス（Google AdSenseなど）</li>
+    </ul>
+    
+    <div class="highlight-box">
+      <p><strong>注意:</strong> サービス提供事業者との情報共有は、当サービスの機能提供に必要な範囲に限定されます。これらの事業者は、当社と同等の情報保護義務を負っています。</p>
+    </div>
+  </div>
+  
+  <div class="terms-section">
+    <h2>広告について</h2>
+    <p>当サービスでは、サービス維持のためにGoogle AdSenseなどの広告を掲載しています。これらの広告サービスはCookieを使用し、ユーザーの興味に基づいた広告を表示することがあります。</p>
+    
+    <h3>広告オプトアウト</h3>
+    <p>広告のパーソナライズをオプトアウトするには、以下の方法があります：</p>
+    <ul class="terms-list">
+      <li>当サービスの広告設定ページで設定を変更する</li>
+      <li>Google広告設定ページ（<a href="https://www.google.com/settings/ads" target="_blank">https://www.google.com/settings/ads</a>）で設定を変更する</li>
+      <li>ブラウザの設定でCookieを無効にする</li>
+    </ul>
+  </div>
+  
+  <div class="terms-section">
+    <h2>データの保存と保護</h2>
+    <p>当サービスは、ユーザーの個人情報を安全に保管するために適切なセキュリティ対策を講じています。具体的には以下の対策を実施しています：</p>
+    <ul class="terms-list">
+      <li>データの暗号化</li>
+      <li>安全な認証システムの利用</li>
+      <li>アクセス制限と権限管理</li>
+      <li>定期的なセキュリティレビュー</li>
+    </ul>
+    
+    <h3>データの保存期間</h3>
+    <p>ユーザーのデータは、サービス提供に必要な期間、または法的義務を遵守するために必要な期間保存されます。アカウントを削除した場合、個人情報は速やかに削除されますが、一部の情報は法的要件のために一定期間保持される場合があります。</p>
+  </div>
+  
+  <div class="terms-section">
+    <h2>ユーザーの権利</h2>
+    <p>ユーザーは以下の権利を有しています：</p>
+    <ul class="terms-list">
+      <li>個人情報へのアクセス権</li>
+      <li>個人情報の訂正権</li>
+      <li>個人情報の削除権（法的要件により制限される場合があります）</li>
+      <li>データの処理に対する異議申し立て権</li>
+      <li>データポータビリティの権利</li>
+    </ul>
+    
+    <p>これらの権利を行使するには、下記のお問い合わせ先までご連絡ください。</p>
+  </div>
+  
+  <div class="terms-section">
+    <h2>Cookieの使用</h2>
+    <p>当サービスでは、ユーザー体験の向上や機能提供のためにCookieを使用しています。Cookieは以下の目的で使用されます：</p>
+    <ul class="terms-list">
+      <li>ログイン状態の維持</li>
+      <li>ユーザー設定の保存</li>
+      <li>アクセス分析</li>
+      <li>広告のパーソナライズ</li>
+    </ul>
+    
+    <p>ブラウザの設定でCookieを無効にすることも可能ですが、一部の機能が正常に動作しなくなる場合があります。</p>
+    
+    <div class="warning-box">
+      <p><strong>注意:</strong> Cookieを無効にすると、ログイン状態の維持などの基本機能が利用できなくなる場合があります。</p>
+    </div>
+  </div>
+  
+  <div class="terms-section">
+    <h2>プライバシーポリシーの変更</h2>
+    <p>当サービスは、必要に応じて本プライバシーポリシーを変更することがあります。変更があった場合は、当ページで通知するとともに、重要な変更については電子メールでユーザーに通知します。</p>
+  </div>
+  
+  <div class="disclaimer-note">
+    <p>本プライバシーポリシーは、法律の変更やサービスの変更に応じて、予告なく変更されることがあります。定期的に確認することをお勧めします。</p>
+    <p>プライバシーポリシーに関するご質問やご意見がある場合は、<a href="{% url 'contact' %}">お問い合わせ</a>よりご連絡ください。</p>
+  </div>
 </div>
 {% endblock %}
