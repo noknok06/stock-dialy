@@ -137,6 +137,7 @@ LOCAL_APPS = [
     'company_master',
     'subscriptions',
     'maintenance',
+    'contact',
 ]
 
 # インストール済みアプリ
@@ -285,7 +286,8 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'kabulog.information@gmail.com'
 EMAIL_HOST_PASSWORD = 'wfsdxbdxsdusvddw'  # 注意: 環境変数を使用することをお勧めします
-
+# デフォルトの送信元メールアドレス
+DEFAULT_FROM_EMAIL = 'カブログ <kabulog.information@gmail.com>'
 # =============================================================================
 # ロギング設定
 # =============================================================================
@@ -336,6 +338,7 @@ ADS_SETTINGS = {
     'DEFAULT_AD_CLIENT': 'ca-pub-3954701883136363',  # デフォルト広告クライアントID
     'SHOW_ADS_DEFAULT': True,  # デフォルトで広告表示
     'PREMIUM_USERS_NO_ADS': True,  # プレミアムユーザーには広告非表示
+    'SHOW_ADS_ON_AUTH_PAGES': False,
 }
 
 # メンテナンスモード設定
