@@ -77,13 +77,14 @@ def show_placement_ad(context, position):
     <div class="ad-container ad-{position}">
         <span class="ad-label">広告</span>
         <ins class="adsbygoogle"
-             style="{style}"
-             data-ad-client="{ad_unit.ad_client}"
-             data-ad-slot="{ad_unit.ad_slot}"
-             data-ad-format="{ad_unit.ad_format}"
-             {personalized_attr}></ins>
+            style="{style}"
+            data-ad-client="{ad_unit.ad_client}"
+            data-ad-slot="{ad_unit.ad_slot}"
+            data-ad-format="{ad_unit.ad_format}"
+            data-full-width-responsive="true"  # これを追加
+            {personalized_attr}></ins>
         <script>
-             (adsbygoogle = window.adsbygoogle || []).push({{}});
+            (adsbygoogle = window.adsbygoogle || []).push({{}});
         </script>
     </div>
     """

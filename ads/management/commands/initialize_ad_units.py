@@ -78,9 +78,7 @@ class Command(BaseCommand):
                 'name': 'サイドバーレクタングル広告',
                 'ad_client': 'ca-pub-3954701883136363',
                 'ad_slot': '0987654321',
-                'ad_format': 'rectangle',
-                'width': 300,
-                'height': 250,
+                'ad_format': 'responsive',  # 'horizontal'から変更
                 'is_active': True
             }
         )
