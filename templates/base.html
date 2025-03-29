@@ -412,42 +412,51 @@
                 <!-- ナビゲーションリンク -->
                 <div class="navbar-nav-container">
                     <ul class="navbar-nav me-auto">
-                        {% if user.is_authenticated %}
-                        <!-- ログイン済みの場合に表示するメニュー -->
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'stockdiary:home' %}">
-                                <i class="bi bi-journal-text"></i> 日記一覧
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'stockdiary:analytics' %}">
-                                <i class="bi bi-graph-up"></i> 投資分析
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'stockdiary:create' %}">
-                                <i class="bi bi-plus-circle"></i> 新規作成
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'stockdiary:sell' %}">
-                                <i class="bi bi-cash-coin"></i> 売却登録
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'portfolio:list' %}">
-                                <i class="bi bi-camera"></i> ポートフォリオスナップショット
-                            </a>
-                        </li>
-                        {% else %}
-                        <!-- 未ログインの場合に表示するメニュー -->
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'ads:privacy_policy' %}">
-                                <i class="bi bi-shield-lock"></i> プライバシー
-                            </a>
-                        </li>
-                        {% endif %}
-                    </ul>
+                      {% if user.is_authenticated %}
+                      <li class="nav-item">
+                          <a class="nav-link" href="{% url 'stockdiary:home' %}">
+                              <i class="bi bi-journal-text"></i> 日記一覧
+                          </a>
+                      </li>
+                      <li class="nav-item">
+                          <a class="nav-link" href="{% url 'stockdiary:analytics' %}">
+                              <i class="bi bi-graph-up"></i> 投資分析
+                          </a>
+                      </li>
+                      <li class="nav-item">
+                          <a class="nav-link" href="{% url 'stockdiary:create' %}">
+                              <i class="bi bi-plus-circle"></i> 新規作成
+                          </a>
+                      </li>
+                      <li class="nav-item">
+                          <a class="nav-link" href="{% url 'stockdiary:sell' %}">
+                              <i class="bi bi-cash-coin"></i> 売却登録
+                          </a>
+                      </li>
+                      <li class="nav-item">
+                          <a class="nav-link" href="{% url 'analysis_template:list' %}">
+                              <i class="bi bi-camera"></i> 分析テンプレート
+                          </a>
+                      </li>
+                      <li class="nav-item">
+                          <a class="nav-link" href="{% url 'contact' %}">
+                              <i class="bi bi-envelope"></i> お問い合わせ
+                          </a>
+                      </li>
+                      {% else %}
+                      <!-- 未ログインの場合に表示するメニュー -->
+                      <li class="nav-item">
+                          <a class="nav-link" href="{% url 'ads:privacy_policy' %}">
+                              <i class="bi bi-shield-lock"></i> プライバシー
+                          </a>
+                      </li>
+                      <li class="nav-item">
+                          <a class="nav-link" href="{% url 'contact' %}">
+                              <i class="bi bi-envelope"></i> お問い合わせ
+                          </a>
+                      </li>
+                      {% endif %}
+                  </ul>
                   
                     <!-- ユーザーメニュー -->
                     {% if user.is_authenticated %}
@@ -543,6 +552,7 @@
       </div>
       
       <div class="menu-content">
+        <div class="menu-content">
           <div class="menu-items">
               <!-- 主要機能 -->
               <a href="{% url 'stockdiary:home' %}" class="menu-item primary">
@@ -567,11 +577,11 @@
               </a>
               
               <a href="{% url 'stockdiary:sell' %}" class="menu-item success">
-                <div class="menu-item-icon">
-                    <i class="bi bi-cash-coin"></i>
-                </div>
-                <div class="menu-item-label">売却登録</div>
-            </a>
+                  <div class="menu-item-icon">
+                      <i class="bi bi-cash-coin"></i>
+                  </div>
+                  <div class="menu-item-label">売却登録</div>
+              </a>
           </div>
           
           <div class="menu-divider">管理機能</div>
@@ -597,6 +607,13 @@
                   </div>
                   <div class="menu-item-label">スナップショット</div>
               </a>
+              
+              <a href="{% url 'contact' %}" class="menu-item info">
+                  <div class="menu-item-icon">
+                      <i class="bi bi-envelope"></i>
+                  </div>
+                  <div class="menu-item-label">お問い合わせ</div>
+              </a>
           </div>
           
           <!-- ユーザーセクション -->
@@ -618,7 +635,7 @@
       </div>
   </div>
   {% endif %}
-<!-- フッター -->
+<!-- フッターにお問い合わせリンクを追加 -->
 <footer class="app-footer">
   <div class="container">
     <!-- ロゴと説明部分 -->
@@ -634,16 +651,20 @@
           </p>
         </div>
         
+        <!-- リンクセクション -->
+        <div class="footer-links d-flex justify-content-center flex-wrap gap-3 mb-4">
+          <a href="{% url 'contact' %}" class="text-muted text-decoration-none">
+            <i class="bi bi-envelope me-1"></i>お問い合わせ
+          </a>
+          <a href="{% url 'ads:privacy_policy' %}" class="text-muted text-decoration-none">
+            <i class="bi bi-shield-lock me-1"></i>プライバシーポリシー
+          </a>
+        </div>
+        
         <!-- SNSリンク -->
         <div class="footer-social d-flex gap-3 justify-content-center mt-4">
-          <a href="#" class="social-link" aria-label="Twitter">
-            <i class="bi bi-twitter"></i>
-          </a>
-          <a href="#" class="social-link" aria-label="Facebook">
-            <i class="bi bi-facebook"></i>
-          </a>
-          <a href="#" class="social-link" aria-label="Instagram">
-            <i class="bi bi-instagram"></i>
+          <a href="https://x.com/kabulog_net?s=21" class="social-link" aria-label="Twitter">
+            <i class="bi bi-twitter-x"></i>
           </a>
         </div>
       </div>

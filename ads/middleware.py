@@ -49,6 +49,7 @@ class AdsMiddleware:
             '/users/profile/password/',
             '/users/google-login/',
             '/ads/privacy-policy/',
+            '/contact/',
         ]
         
         if path in auth_paths:

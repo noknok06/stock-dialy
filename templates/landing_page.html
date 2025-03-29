@@ -252,7 +252,7 @@
                         <a class="nav-link" href="#comparison">比較</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link btn btn-outline-light btn-sm ms-2 px-3" href="#signup">
+                        <a class="nav-link btn btn-outline-light btn-sm ms-2 px-3" href="{% url 'users:signup' %}">
                             無料で始める
                         </a>
                     </li>
@@ -271,7 +271,7 @@
                         カブログはあなたの投資判断プロセスをサポートする日記アプリ。銘柄情報の記録だけでなく、なぜその判断をしたのかを体系的に整理し、継続的に改善できます。
                     </p>
                     <div class="hero-btns">
-                        <a href="#signup" class="btn btn-primary">無料で始める</a>
+                        <a href="{% url 'users:signup' %}" class="btn btn-primary">無料で始める</a>
                         <a href="#features" class="btn btn-outline-light">詳しく見る</a>
                     </div>
                 </div>
@@ -983,7 +983,7 @@
                     <h4 class="footer-heading">ヘルプ・サポート</h4>
                     <ul class="footer-links">
                         <li><a href="#" id="usage-guide-link">使い方ガイド</a></li>
-                        <li><a href="mailto:kabulog.information@gmail.com">お問い合わせ</a></li>
+                        <li><a href="{% url 'contact' %}">お問い合わせ</a></li>
                         <li><a href="{% url 'ads:privacy_policy' %}">プライバシーポリシー</a></li>
                     </ul>
                 </div>
@@ -1034,18 +1034,15 @@
                             <p>詳細な使い方ガイドは現在作成中です。</p>
                             <p>基本的な使い方は以下の通りです：</p>
                             <ol>
-                              <li><strong>アカウント作成</strong>：「無料で始める」ボタンからアカウントを作成</li>
+                              <li><strong>アカウント作成</strong>：「無料アカウントを作成」ボタンからアカウントを作成</li>
                               <li><strong>日記を記録</strong>：銘柄情報と購入理由を入力</li>
                               <li><strong>分析する</strong>：タグやテンプレートを活用して投資判断を整理・分析</li>
                             </ol>
                             <p>より詳しい情報が必要な場合は、下記メールアドレスまでお問い合わせください。</p>
                           </div>
                           <div class="modal-footer">
-                            <a href="mailto:kabulog.information@gmail.com" class="btn btn-outline-primary">
+                            <a href="{% url 'contact' %}" class="btn btn-outline-primary">
                               <i class="bi bi-envelope me-1"></i> お問い合わせ
-                            </a>
-                            <a href="#signup" class="btn btn-primary" data-bs-dismiss="modal">
-                              <i class="bi bi-arrow-right me-1"></i> 無料で始める
                             </a>
                           </div>
                         </div>

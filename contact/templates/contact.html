@@ -1,0 +1,347 @@
+{% extends 'base.html' %}
+
+{% block title %}お問い合わせ | カブログ{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<style>
+  .contact-container {
+    padding: 3rem 0;
+  }
+  
+  .contact-card {
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  
+  .contact-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #3730a3 100%);
+    padding: 2rem;
+    color: white;
+    text-align: center;
+    position: relative;
+  }
+  
+  .contact-header::before {
+    content: "";
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    z-index: 1;
+  }
+  
+  .contact-header::after {
+    content: "";
+    position: absolute;
+    bottom: -40px;
+    left: -40px;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    z-index: 1;
+  }
+  
+  .contact-header h2 {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 2;
+  }
+  
+  .contact-header p {
+    opacity: 0.9;
+    max-width: 500px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 2;
+  }
+  
+  .contact-body {
+    padding: 2.5rem;
+    background-color: white;
+  }
+  
+  .contact-section {
+    margin-bottom: 2rem;
+  }
+  
+  .contact-info {
+    margin-bottom: 2rem;
+  }
+  
+  .contact-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1.25rem;
+  }
+  
+  .contact-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgba(79, 70, 229, 0.1);
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    flex-shrink: 0;
+  }
+  
+  .contact-item-content h5 {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: #111827;
+  }
+  
+  .contact-item-content p {
+    color: #6b7280;
+    margin-bottom: 0;
+  }
+  
+  .contact-divider {
+    height: 1px;
+    background-color: #e5e7eb;
+    margin: 2rem 0;
+  }
+  
+  .contact-form-section h3 {
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-control, .form-select {
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+  }
+  
+  .form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.2);
+  }
+  
+  .form-label {
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.5rem;
+  }
+  
+  .form-text {
+    font-size: 0.85rem;
+    color: #6b7280;
+  }
+  
+  .send-btn {
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, var(--primary-color) 0%, #3730a3 100%);
+    border: none;
+    transition: all 0.3s ease;
+    color: white;
+  }
+  
+  .send-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(79, 70, 229, 0.3);
+  }
+  
+  .contact-faq {
+    background-color: #f9fafb;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-top: 2rem;
+  }
+  
+  .contact-faq h4 {
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+  }
+  
+  .contact-faq h4 i {
+    margin-right: 0.5rem;
+    color: var(--primary-color);
+  }
+  
+  .faq-item {
+    margin-bottom: 1rem;
+  }
+  
+  .faq-question {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+  }
+  
+  .faq-answer {
+    color: #6b7280;
+    margin-bottom: 0;
+  }
+  
+  @media (max-width: 767.98px) {
+    .contact-body {
+      padding: 1.5rem;
+    }
+    
+    .contact-header {
+      padding: 1.5rem;
+    }
+    
+    .contact-header h2 {
+      font-size: 1.5rem;
+    }
+    
+    .contact-item {
+      flex-direction: column;
+    }
+    
+    .contact-icon {
+      margin-bottom: 0.75rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="contact-container">
+  <div class="contact-card">
+    <div class="contact-header">
+      <h2>お問い合わせ</h2>
+      <p>カブログをご利用いただきありがとうございます。ご質問やご提案などお気軽にお問い合わせください。</p>
+    </div>
+    
+    <div class="contact-body">
+      <div class="contact-section">
+        <div class="contact-info">
+          <div class="contact-item">
+            <div class="contact-icon">
+              <i class="bi bi-envelope-fill"></i>
+            </div>
+            <div class="contact-item-content">
+              <h5>メールでのお問い合わせ</h5>
+              <p>直接メールでのお問い合わせも受け付けております。<br><a href="mailto:kabulog.information@gmail.com">kabulog.information@gmail.com</a></p>
+            </div>
+          </div>
+          
+          <div class="contact-item">
+            <div class="contact-icon">
+              <i class="bi bi-twitter-x"></i>
+            </div>
+            <div class="contact-item-content">
+              <h5>公式Twitter</h5>
+              <p>最新情報やお知らせを配信しています。<br><a href="https://x.com/kabulog_net?s=21" target="_blank">@kabulog_net</a></p>
+            </div>
+          </div>
+          
+          <div class="contact-item">
+            <div class="contact-icon">
+              <i class="bi bi-clock-fill"></i>
+            </div>
+            <div class="contact-item-content">
+              <h5>対応時間</h5>
+              <p>夜間帯対応となります。<br>通常、3営業日以内にご返信いたします。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="contact-divider"></div>
+      
+      <div class="contact-form-section">
+        <h3>お問い合わせフォーム</h3>
+        
+        <form method="post" action="{% url 'contact' %}">
+          {% csrf_token %}
+          
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-4">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+          
+          <div class="mb-3">
+            <label for="name" class="form-label">お名前</label>
+            <input type="text" class="form-control" id="name" name="name" required>
+          </div>
+          
+          <div class="mb-3">
+            <label for="email" class="form-label">メールアドレス</label>
+            <input type="email" class="form-control" id="email" name="email" required>
+            <div class="form-text">ご返信先のメールアドレスをご入力ください。</div>
+          </div>
+          
+          <div class="mb-3">
+            <label for="subject" class="form-label">件名</label>
+            <select class="form-select" id="subject" name="subject" required>
+              <option value="" selected disabled>選択してください</option>
+              <option value="サービスについての質問">サービスについての質問</option>
+              <option value="機能の提案・改善要望">機能の提案・改善要望</option>
+              <option value="不具合の報告">不具合の報告</option>
+              <option value="料金プランについて">料金プランについて</option>
+              <option value="その他">その他</option>
+            </select>
+          </div>
+          
+          <div class="mb-3">
+            <label for="message" class="form-label">お問い合わせ内容</label>
+            <textarea class="form-control" id="message" name="message" rows="5" required></textarea>
+            <div class="form-text">できるだけ詳しくご記入いただくとスムーズにご回答できます。</div>
+          </div>
+          
+          <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="privacy_agreement" name="privacy_agreement" required>
+            <label class="form-check-label" for="privacy_agreement">
+              <a href="{% url 'ads:privacy_policy' %}" target="_blank">プライバシーポリシー</a>に同意します。
+            </label>
+          </div>
+          
+          <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <button type="submit" class="btn send-btn">
+              <i class="bi bi-send me-2"></i>送信する
+            </button>
+          </div>
+        </form>
+      </div>
+      
+      <div class="contact-faq">
+        <h4><i class="bi bi-question-circle-fill"></i> よくあるご質問</h4>
+        
+        <div class="faq-item">
+          <div class="faq-question">Q. 広告は消せますか</div>
+          <div class="faq-answer">A. 現在は広告により運営費を賄わせていただいております。今後有料プラン等で広告の非表示を検討したいと考えています。</div>
+        </div>
+        
+        <div class="faq-item">
+          <div class="faq-question">Q. パスワードを忘れてしまいました。</div>
+          <div class="faq-answer">A. ログインページの「パスワードをお忘れですか？」リンクからパスワードリセット手続きを行えます。Google認証をご利用の場合は、「Googleでログイン」ボタンからログインしてください。</div>
+        </div>
+        
+        <div class="faq-item">
+          <div class="faq-question">Q. データのバックアップはできますか？</div>
+          <div class="faq-answer">A. バックアップ機能はございません。スナップショット機能はございます。ご要望が多い場合は、CSV等での出力を検討させていただきます。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
