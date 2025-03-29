@@ -48,7 +48,10 @@ class AdsMiddleware:
             '/users/password-reset/',
             '/users/profile/password/',
             '/users/google-login/',
-            '/ads/',
+            '/ads/terms/',
+            '/ads/privacy-policy/',
+            '/ads/faq/',
+            '/ads/guide/',
             '/contact/',
         ]
         
