@@ -403,8 +403,8 @@
     <header class="pc-only-header">
         <nav class="navbar navbar-expand bg-light border-bottom shadow-sm">
             <div class="container">
-                <!-- ロゴ・サイト名 -->
-                <a class="navbar-brand d-flex align-items-center" href="{% url 'stockdiary:home' %}">
+                <!-- ロゴ・サイト名 - 常に表示 -->
+                  <a class="navbar-brand d-flex align-items-center" href="{% url 'landing_page' %}">
                     <img src="{% static 'images/icon-modern.svg' %}" width="30" height="30" class="me-2" alt="カブログ">
                     <span class="fw-bold">カブログ</span>
                 </a>
@@ -412,6 +412,8 @@
                 <!-- ナビゲーションリンク -->
                 <div class="navbar-nav-container">
                     <ul class="navbar-nav me-auto">
+                        {% if user.is_authenticated %}
+                        <!-- ログイン済みの場合に表示するメニュー -->
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'stockdiary:home' %}">
                                 <i class="bi bi-journal-text"></i> 日記一覧
@@ -437,11 +439,14 @@
                                 <i class="bi bi-camera"></i> ポートフォリオスナップショット
                             </a>
                         </li>
+                        {% else %}
+                        <!-- 未ログインの場合に表示するメニュー -->
                         <li class="nav-item">
-                          <a class="nav-link" href="{% url 'ads:privacy_policy' %}">
-                              <i class="bi bi-shield-lock"></i> プライバシー
-                          </a>
-                      </li>
+                            <a class="nav-link" href="{% url 'ads:privacy_policy' %}">
+                                <i class="bi bi-shield-lock"></i> プライバシー
+                            </a>
+                        </li>
+                        {% endif %}
                     </ul>
                   
                     <!-- ユーザーメニュー -->
