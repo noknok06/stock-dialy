@@ -596,7 +596,9 @@
         })
         .then(data => {
           // 会社名を設定
-          stockNameInput.value = data.company_name;
+          if (!stockNameInput.value.trim()) {
+            stockNameInput.value = data.company_name;
+          }
           
           // 業種情報を設定（hidden inputに値を設定）
           const sectorInput = document.getElementById('id_sector');
