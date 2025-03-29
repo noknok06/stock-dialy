@@ -5,13 +5,15 @@ def ads_processor(request):
     """広告関連のグローバル変数をテンプレートに提供"""
     context = {}
     
-    # 広告表示の有無を判定
-    show_ads = True
-    # パーソナライズ広告の設定（デフォルトはTrue）
-    personalized_ads = True
+    # ミドルウェアで設定されたshow_adsの値を取得
+    # ミドルウェアでFalseに設定されていれば、その値を尊重する
+    show_ads = getattr(request, 'show_ads', True)
     
-    # ユーザーが認証済みかつユーザー属性にアクセス可能な場合、ユーザーの設定を取得
-    if hasattr(request, 'user') and request.user.is_authenticated:
+    # パーソナライズ広告の設定（リクエストから取得、デフォルトはTrue）
+    personalized_ads = getattr(request, 'personalized_ads', True)
+    
+    # ミドルウェアでFalseになっていない場合のみ、ユーザー設定を確認
+    if show_ads and hasattr(request, 'user') and request.user.is_authenticated:
         try:
             ad_preference = UserAdPreference.objects.get(user=request.user)
             show_ads = ad_preference.should_show_ads()

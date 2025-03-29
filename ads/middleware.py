@@ -40,8 +40,22 @@ class AdsMiddleware:
         
         # 広告非表示パスかどうかをチェック
         path = request.path
-        if any(path.startswith(no_ads_path) for no_ads_path in self.no_ads_paths):
+
+        auth_paths = [
+            '/users/login/',
+            '/users/logout/',
+            '/users/signup/',
+            '/users/password-reset/',
+            '/users/profile/password/',
+            '/users/google-login/',
+            '/ads/privacy-policy/',
+        ]
+        
+        if path in auth_paths:
+            print(f"Path {path} matches auth_paths - should hide ads")
             return False
+        else:
+            print(f"Path {path} does not match any auth paths")
         
         # URLの名前空間をチェック
         try:
