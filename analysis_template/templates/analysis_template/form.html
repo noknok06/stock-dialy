@@ -729,7 +729,7 @@ function setupFormHandling() {
   const totalForms = document.querySelector('[name="items-TOTAL_FORMS"]');
   
   if (!itemsFormset || !totalForms) {
-    console.error('必要なフォーム要素が見つかりません');
+    //console.error('必要なフォーム要素が見つかりません');
     return;
   }
 
@@ -787,7 +787,7 @@ function setupFormHandling() {
         }
       });
     } catch (error) {
-      console.error('項目カウント更新中にエラー:', error);
+      //console.error('項目カウント更新中にエラー:', error);
     }
   }
   
@@ -876,7 +876,7 @@ function setupFormHandling() {
         });
       });
     } catch (error) {
-      console.error('フォームインデックス更新中にエラー:', error);
+      //console.error('フォームインデックス更新中にエラー:', error);
     }
   }
   
@@ -953,7 +953,7 @@ function setupFormHandling() {
       // 既存フォームの最初の要素をクローン
       const firstForm = itemsFormset.querySelector('.item-form');
       if (!firstForm) {
-        console.error('テンプレート要素が見つかりません');
+        //console.error('テンプレート要素が見つかりません');
         return;
       }
       
@@ -983,7 +983,7 @@ function setupFormHandling() {
       // スクロールして新しい項目を表示
       newForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } catch (error) {
-      console.error('項目追加中にエラー:', error);
+      //console.error('項目追加中にエラー:', error);
     }
   }
   
@@ -1132,7 +1132,7 @@ function setupReviewScreen() {
     try {
       previewContent = getItemPreviewContent(itemTypeValue, itemName);
     } catch (error) {
-      console.error(`プレビュー内容の生成でエラー:`, error);
+      //console.error(`プレビュー内容の生成でエラー:`, error);
       previewContent = '<div class="text-danger">プレビューの生成に失敗しました</div>';
     }
     
@@ -1154,7 +1154,7 @@ function setupReviewScreen() {
   function generateItemPreviews() {
     const itemsPreview = document.getElementById('items-preview');
     if (!itemsPreview) {
-      console.error("items-previewエレメントが見つかりません");
+      //console.error("items-previewエレメントが見つかりません");
       return;
     }
     
@@ -1178,7 +1178,7 @@ function setupReviewScreen() {
         const itemType = form.querySelector('select[name$="-item_type"]');
         
         if (!itemType) {
-          console.error(`項目 ${index + 1} の種類が取得できません`);
+          //console.error(`項目 ${index + 1} の種類が取得できません`);
           return;
         }
         
@@ -1189,7 +1189,7 @@ function setupReviewScreen() {
         const previewHtml = createItemPreviewHtml(form, index, itemName, itemTypeValue, itemTypeText);
         itemsPreview.innerHTML += previewHtml;
       } catch (error) {
-        console.error(`項目 ${index + 1} のプレビュー生成でエラー:`, error);
+        //console.error(`項目 ${index + 1} のプレビュー生成でエラー:`, error);
       }
     });
   }
@@ -1210,7 +1210,7 @@ function setupReviewScreen() {
       // 項目のプレビュー生成
       generateItemPreviews();
     } catch (error) {
-      console.error("プレビュー内容の更新中にエラー:", error);
+      //console.error("プレビュー内容の更新中にエラー:", error);
     }
   }
   

@@ -1,0 +1,214 @@
+{% load stockdiary_filters %}
+{% load humanize %}
+
+<div class="diary-card {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo-card{% elif diary.sell_date %}sold-card{% endif %}"
+  data-diary-id="{{ diary.id }}"
+  data-diary-type="{% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo{% elif diary.sell_date %}sold{% else %}active{% endif %}">
+
+  <!-- マスキングテープの装飾（ランダムな配置） -->
+  {% if forloop.counter|divisibleby:3 %}
+  <div class="masking-tape yellow"></div>
+  {% elif forloop.counter|divisibleby:5 %}
+  <div class="masking-tape green"></div>
+  {% elif forloop.counter|divisibleby:2 %}
+  <div class="masking-tape"></div>
+  {% endif %}
+
+  <!-- カードヘッダー -->
+  <div class="diary-card-header">
+    <div class="diary-meta">
+      <i class="bi bi-clock"></i>
+      <span>{{ diary.purchase_date|date:"Y年m月d日" }}</span>
+
+      <!-- メモバッジを追加 -->
+      {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
+      <span class="badge bg-info">メモ</span>
+      {% endif %}
+
+      <!-- 売却済みバッジ -->
+      {% if diary.sell_date %}
+      <span class="badge bg-success">売却済み</span>
+      {% endif %}
+    </div>
+    <button class="btn btn-sm btn-link p-0 text-decoration-none" type="button" data-bs-toggle="collapse"
+      data-bs-target="#collapse-{{ diary.id }}" aria-expanded="true">
+      <i class="bi bi-chevron-down"></i>
+    </button>
+  </div>
+
+  <!-- コンテンツ部分 -->
+  <div class="collapse show" id="collapse-{{ diary.id }}">
+    <div class="diary-card-body">
+      <!-- 日記のアイコン表示 -->
+      {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
+      <i class="bi bi-sticky memo-icon"></i>
+      {% endif %}
+
+      <!-- 銘柄名とタグを上下に並べる -->
+      <h3 class="diary-title">
+        <i class="bi bi-building text-muted"></i>
+        <a href="{% url 'stockdiary:detail' diary.id %}" class="view-btn" title="詳細"
+          style="color:var(--primary-color);text-decoration: none">
+          {{ diary.stock_name }}
+        </a>
+        <small class="text-muted">({{ diary.stock_symbol }})</small>
+      </h3>
+
+      <!-- タグ表示 - 銘柄名の下に配置 -->
+      {% if diary.tags.all %}
+      <div class="diary-tags">
+        {% for tag in diary.tags.all %}
+        <span class="diary-tag"><i class="bi bi-tag"></i> {{ tag.name }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- 主要情報のリスト表示 - メモでない場合のみ表示 -->
+      {% if not diary.is_memo and diary.purchase_price is not None and diary.purchase_quantity is not None %}
+      <div class="info-block mt-4">
+        <div class="info-row">
+          <div class="info-item">
+            <div class="info-icon">
+              <i class="bi bi-currency-yen"></i>
+            </div>
+            <div class="info-content">
+              <span class="info-label">購入価格</span>
+              <span class="info-value">{{ diary.purchase_price|floatformat:2|intcomma }}円</span>
+            </div>
+          </div>
+
+          <div class="info-item">
+            <div class="info-icon">
+              <i class="bi bi-graph-up"></i>
+            </div>
+            <div class="info-content">
+              <span class="info-label">購入数量</span>
+              <span class="info-value">{{ diary.purchase_quantity }}株</span>
+            </div>
+          </div>
+
+          <div class="info-item">
+            <div class="info-icon">
+              <i class="bi bi-calendar-date"></i>
+            </div>
+            <div class="info-content">
+              <span class="info-label">購入/メモ日</span>
+              <span class="info-value">{{ diary.purchase_date|date:"Y年m月d日" }}</span>
+            </div>
+          </div>
+
+          <div class="info-item">
+            <div class="info-icon">
+              <i class="bi bi-cash-stack"></i>
+            </div>
+            <div class="info-content">
+              <span class="info-label">総投資額</span>
+              <span class="info-value">{{ diary.purchase_price|mul:diary.purchase_quantity|floatformat:2|intcomma }}円</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- 売却情報表示 -->
+      {% if diary.sell_date and diary.purchase_price is not None and diary.purchase_quantity is not None %}
+      <div class="sell-info">
+        <div class="info-row">
+          <div class="info-item">
+            <div class="info-icon">
+              <i class="bi bi-currency-yen"></i>
+            </div>
+            <div class="info-content">
+              <span class="info-label">売却価格</span>
+              <span class="info-value">{{ diary.sell_price|floatformat:2|intcomma }}円</span>
+            </div>
+          </div>
+
+          <div class="info-item">
+            <div class="info-icon">
+              <i class="bi bi-calendar-check"></i>
+            </div>
+            <div class="info-content">
+              <span class="info-label">売却日</span>
+              <span class="info-value">{{ diary.sell_date|date:"Y年m月d日" }}</span>
+            </div>
+          </div>
+
+          <div class="info-item">
+            <div class="info-icon">
+              <i class="bi bi-graph-up-arrow"></i>
+            </div>
+            <div class="info-content">
+              <span class="info-label">損益</span>
+              {% with profit=diary.sell_price|sub:diary.purchase_price|mul:diary.purchase_quantity %}
+              {% if profit > 0 %}
+              <span class="profit">+{{ profit|floatformat:2|intcomma }}円</span>
+              {% elif profit < 0 %} <span class="loss">{{ profit|floatformat:2|intcomma }}円</span>
+                {% else %}
+                <span class="text-muted">{{ profit|floatformat:2|intcomma }}円</span>
+                {% endif %}
+                {% endwith %}
+            </div>
+          </div>
+
+          <div class="info-item">
+            <div class="info-icon">
+              <i class="bi bi-percent"></i>
+            </div>
+            <div class="info-content">
+              <span class="info-label">損益率</span>
+              {% with rate=diary.sell_price|sub:diary.purchase_price|div:diary.purchase_price|mul:100 %}
+              {% if rate > 0 %}
+              <span class="profit">+{{ rate|floatformat:2 }}%</span>
+              {% elif rate < 0 %} <span class="loss">{{ rate|floatformat:2 }}%</span>
+                {% else %}
+                <span class="text-muted">{{ rate|floatformat:2 }}%</span>
+                {% endif %}
+                {% endwith %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- 購入理由またはメモ内容 -->
+      <div class="mt-3">
+        <h6 class="mb-2">
+          <i class="bi bi-journal-text"></i>
+          {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
+          メモ内容:
+          {% else %}
+          購入理由:
+          {% endif %}
+        </h6>
+        <div class="mx-3">
+          {% if request.GET.query and request.GET.query != '' %}
+            {{ diary.reason|safe|highlight:request.GET.query|truncatewords_html:40 }}
+          {% else %}
+            {{ diary.reason|safe|truncatewords_html:40 }}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="diary-card-footer">
+      <small class="text-muted">更新: {{ diary.updated_at|date:"Y/m/d" }}</small>
+      <div class="action-buttons">
+        <a href="{% url 'stockdiary:detail' diary.id %}" class="action-icon-btn view-btn" title="詳細">
+          <i class="bi bi-eye"></i>
+        </a>
+        <a href="{% url 'stockdiary:update' diary.id %}" class="action-icon-btn edit-btn" title="編集">
+          <i class="bi bi-pencil"></i>
+        </a>
+        {% if not diary.sell_date and not diary.is_memo and diary.purchase_price is not None and diary.purchase_quantity is not None %}
+        <a href="{% url 'stockdiary:sell_specific' diary.id %}" class="action-icon-btn" title="売却" style="color:var(--success-color)">
+          <i class="bi bi-cash-coin"></i>
+        </a>
+        {% endif %}
+        <a href="{% url 'stockdiary:delete' diary.id %}" class="action-icon-btn delete-btn" title="削除">
+          <i class="bi bi-trash"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

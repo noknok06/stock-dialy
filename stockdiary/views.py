@@ -9,6 +9,8 @@ from django.utils.safestring import mark_safe
 from django.template.defaultfilters import truncatechars_html
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect
+from django.http import JsonResponse
+from django.template.loader import render_to_string
 
 from .models import StockDiary, DiaryNote
 from .forms import StockDiaryForm, DiaryNoteForm
@@ -30,7 +32,7 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
     model = StockDiary
     template_name = 'stockdiary/home.html'
     context_object_name = 'diaries'
-    paginate_by = 9
+    paginate_by = 4
     
     def get_queryset(self):
         queryset = StockDiary.objects.filter(user=self.request.user).order_by('-purchase_date')
@@ -148,6 +150,57 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         ]
         return context
 
+    def get(self, request, *args, **kwargs):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            try:
+                # AJAXリクエストの場合
+                self.object_list = self.get_queryset()
+                page_size = self.get_paginate_by(self.object_list)
+                
+                if page_size:
+                    paginator = self.get_paginator(self.object_list, page_size)
+                    page_number = request.GET.get('page', 1)
+                    try:
+                        page_obj = paginator.get_page(page_number)
+                    except (EmptyPage, PageNotAnInteger):
+                        page_obj = paginator.get_page(1)
+                    
+                    # 日記データをJSON形式で返す
+                    from django.http import JsonResponse
+                    from django.template.loader import render_to_string
+                    
+                    data = []
+                    for diary in page_obj:
+                        try:
+                            # 各日記エントリの HTML をレンダリング
+                            diary_html = render_to_string('stockdiary/partials/diary_card.html', {
+                                'diary': diary,
+                                'request': request,
+                                'forloop': {'counter': 1}  # forloop.counter の代わり
+                            })
+                            data.append(diary_html)
+                        except Exception as e:
+                            # 個別のエントリでエラーが発生した場合はスキップして続行
+                            print(f"Error rendering diary {diary.id}: {e}")
+                            continue
+                    
+                    return JsonResponse({
+                        'html': data,
+                        'has_next': page_obj.has_next(),
+                        'next_page': page_obj.next_page_number() if page_obj.has_next() else None
+                    })
+            except Exception as e:
+                # エラーが発生した場合はエラーレスポンスを返す
+                import traceback
+                print(f"AJAX request error: {e}")
+                print(traceback.format_exc())
+                return JsonResponse({
+                    'error': str(e),
+                    'message': 'データの読み込み中にエラーが発生しました。'
+                }, status=500)
+        
+        # 通常のリクエストの場合は既存の処理
+        return super().get(request, *args, **kwargs)
 
 class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, DetailView):
     model = StockDiary

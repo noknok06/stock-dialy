@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
       try {
         initFn();
       } catch (err) {
-        console.error(`Error initializing chart: ${err.message}`);
+        //console.error(`Error initializing chart: ${err.message}`);
       }
     });
   
