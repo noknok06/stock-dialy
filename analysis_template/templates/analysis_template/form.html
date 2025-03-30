@@ -306,7 +306,7 @@
       </div>
       
       <div class="card-body">
-        <form method="post" id="stepByStepForm" novalidate>
+        <form method="post" id="stepByStepForm" novalidate data-edit-mode="{% if form.instance.pk %}true{% else %}false{% endif %}">
           {% csrf_token %}
           {{ items_formset.management_form }}
           
@@ -407,18 +407,6 @@
                         <div class="form-text">例: 高い,普通,低い</div>
                       </div>
                     </div>
-                    
-                    <!-- 複合型項目用フィールド -->
-                    <!-- <div class="row mb-3 value-label-field" style="display: none;">
-                      <div class="col-md-12">
-                        <label for="{{ item_form.value_label.id_for_label }}" class="form-label">値入力欄のラベル (任意)</label>
-                        {{ item_form.value_label }}
-                        {% if item_form.value_label.errors %}
-                          <div class="text-danger">{{ item_form.value_label.errors }}</div>
-                        {% endif %}
-                        <div class="form-text">例: 実際のPBR値、補足情報など</div>
-                      </div>
-                    </div> -->
                     
                     <div class="row">
                       <div class="col-md-3 col-6">
@@ -580,171 +568,202 @@
 {{ block.super }}
 <!-- スピードダイアルのJSを明示的に読み込む -->
 <script src="{% static 'js/speed-dial.js' %}"></script>
-<!-- スピードダイアルのJSを明示的に読み込む -->
-<script src="{% static 'js/speed-dial.js' %}"></script>
 <script>
-  // グローバル関数や変数を保持するオブジェクト
-  var TemplateApp = {
-    updateItemCount: null,
-    updateReviewContent: null
-  };
+// グローバル関数や変数を保持するオブジェクト
+var TemplateApp = {
+  updateItemCount: null,
+  updateReviewContent: null
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+  // スピードダイアルを初期化
+  initializeSpeedDial();
   
-  document.addEventListener('DOMContentLoaded', function() {
-    // スピードダイアルを初期化
-    initializeSpeedDial();
-    
-    // ステップ遷移に関する処理
-    setupStepNavigation();
-    
-    // フォームと項目の処理
-    setupFormHandling();
-    
-    // 項目タイプに関する処理 - 関数を定義
-    setupItemTypeHandling();
-    
-    // レビュー画面の処理
-    setupReviewScreen();
-  });
-  
-  // 項目タイプに応じた関連フィールドの表示/非表示 - 不足している関数を追加
-  function setupItemTypeHandling() {
-    // toggleRelatedFields()を呼び出すだけのラッパー関数
-    toggleRelatedFields();
-  }
-  
-  // ステップ間のナビゲーション処理
-  function setupStepNavigation() {
-    // 次へボタンのクリックイベント
-    document.querySelectorAll('.next-step').forEach(button => {
-      button.addEventListener('click', function() {
-        const nextStep = this.dataset.next;
-        
-        // 現在のステップのバリデーションチェック
-        if (!validateCurrentStep()) {
-          return;
-        }
-        
-        // 現在のアクティブステップを非アクティブに
-        document.querySelector('.step-content.active').classList.remove('active');
-        document.querySelector('.step.active').classList.remove('active');
-        
-        // 前のステップを完了済みにする
-        document.querySelector(`.step-${parseInt(nextStep) - 1}`).classList.add('completed');
-        
-        // 次のステップをアクティブに
-        document.querySelector(`.step-${nextStep}`).classList.add('active');
-        document.querySelector(`.step-${nextStep}-content`).classList.add('active');
-        
-        // ステップ3（確認）の場合、レビュー内容を更新
-        if (nextStep === "3") {
-          // 確認画面に移る前に項目数を再計算
-          TemplateApp.updateItemCount(); // グローバル変数経由で呼び出し
-          // その後でレビュー内容を更新
-          TemplateApp.updateReviewContent(); // グローバル変数経由で呼び出し
-        }
-        
-        // ページトップにスクロール
-        window.scrollTo({top: 0, behavior: 'smooth'});
-      });
-    });
-    
-    // 戻るボタンのクリックイベント
-    document.querySelectorAll('.prev-step').forEach(button => {
-      button.addEventListener('click', function() {
-        const prevStep = this.dataset.prev;
-        
-        // 現在のアクティブステップを非アクティブに
-        document.querySelector('.step-content.active').classList.remove('active');
-        document.querySelector('.step.active').classList.remove('active');
-        
-        // 前のステップを完了済みから通常に戻す（前のステップに戻る場合）
-        document.querySelector(`.step-${parseInt(prevStep) + 1}`).classList.remove('completed');
-        
-        // 前のステップをアクティブに
-        document.querySelector(`.step-${prevStep}`).classList.add('active');
-        document.querySelector(`.step-${prevStep}-content`).classList.add('active');
-        
-        // ページトップにスクロール
-        window.scrollTo({top: 0, behavior: 'smooth'});
-      });
-    });
-  }
-  
-  // 現在のステップのバリデーション
-  function validateCurrentStep() {
-    const activeStep = document.querySelector('.step.active');
-    const stepNumber = activeStep.classList[1].split('-')[1];
-    
-    // ステップ1のバリデーション
-    if (stepNumber === "1") {
-      const templateName = document.getElementById('{{ form.name.id_for_label }}').value.trim();
-      if (!templateName) {
-        alert('テンプレート名を入力してください');
-        return false;
-      }
-    }
-    
-    // ステップ2のバリデーション
-    if (stepNumber === "2") {
-      const itemForms = document.querySelectorAll('.item-form:not([style*="display: none"])');
-      if (itemForms.length === 0) {
-        alert('少なくとも1つの分析項目を追加してください');
-        return false;
-      }
-      
-      // 各項目の名前が入力されているか確認
-      let isValid = true;
-      itemForms.forEach((form, index) => {
-        const nameInput = form.querySelector('input[name$="-name"]');
-        if (!nameInput.value.trim()) {
-          alert(`項目 ${index + 1} の名前を入力してください`);
-          isValid = false;
-        }
-      });
-      
-      if (!isValid) return false;
-    }
-    
-    return true;
-  }
+  // ステップ遷移に関する処理
+  setupStepNavigation();
   
   // フォームと項目の処理
-  function setupFormHandling() {
-    // DOM要素の取得
-    const addItemButton = document.getElementById('add-item');
-    const itemsFormset = document.getElementById('items-formset');
-    const totalForms = document.querySelector('[name="items-TOTAL_FORMS"]');
+  setupFormHandling();
+  
+  // 項目タイプに関する処理
+  setupItemTypeHandling();
+  
+  // レビュー画面の処理
+  setupReviewScreen();
+});
+
+// 項目タイプに応じた関連フィールドの表示/非表示
+function setupItemTypeHandling() {
+  document.querySelectorAll('select[name$="-item_type"]').forEach(select => {
+    select.addEventListener('change', function() {
+      updateFieldsForSelect(this);
+    });
     
-    // 表示順を初期化
-    initializeOrderInputs();
-    
-    // 項目タイプに応じて関連フィールドの表示/非表示を切り替え
-    toggleRelatedFields();
-    
-    // 項目数の更新
-    updateItemCount();
-    
-    // イベントリスナーのセットアップ
-    setupEventListeners();
-    
-    // 削除ボタンのセットアップ
-    setupRemoveButtons();
-    
-    // 項目追加ボタンのクリックイベント
-    if (addItemButton) {
-      addItemButton.addEventListener('click', addNewItem);
-    }
-    
-    // 表示順を初期化
-    function initializeOrderInputs() {
-      const orderInputs = document.querySelectorAll('input[name$="-order"]');
-      if (orderInputs.length > 0 && !{{ form.instance.pk|yesno:"true,false" }}) {
-        orderInputs[0].value = 1;
+    // 初期表示用
+    updateFieldsForSelect(select);
+  });
+}
+
+// 特定のセレクトに対して関連フィールドを更新
+function updateFieldsForSelect(select) {
+  const itemForm = select.closest('.item-form');
+  const choicesField = itemForm.querySelector('.choices-field');
+  const valueLabelField = itemForm.querySelector('.value-label-field');
+  
+  // デフォルトですべての特殊フィールドを非表示
+  if (choicesField) choicesField.style.display = 'none';
+  if (valueLabelField) valueLabelField.style.display = 'none';
+  
+  // 選択肢フィールドの表示制御
+  if (select.value === 'select' && choicesField) {
+    choicesField.style.display = '';
+  }
+  
+  // 値ラベルフィールドの表示制御
+  if (select.value === 'boolean_with_value' && valueLabelField) {
+    valueLabelField.style.display = '';
+  }
+}
+
+// ステップ間のナビゲーション処理
+function setupStepNavigation() {
+  // 次へボタンのクリックイベント
+  document.querySelectorAll('.next-step').forEach(button => {
+    button.addEventListener('click', function() {
+      const nextStep = this.dataset.next;
+      
+      // 現在のステップのバリデーションチェック
+      if (!validateCurrentStep()) {
+        return;
       }
+      
+      // 現在のアクティブステップを非アクティブに
+      document.querySelector('.step-content.active').classList.remove('active');
+      document.querySelector('.step.active').classList.remove('active');
+      
+      // 前のステップを完了済みにする
+      document.querySelector(`.step-${parseInt(nextStep) - 1}`).classList.add('completed');
+      
+      // 次のステップをアクティブに
+      document.querySelector(`.step-${nextStep}`).classList.add('active');
+      document.querySelector(`.step-${nextStep}-content`).classList.add('active');
+      
+      // ステップ3（確認）の場合、レビュー内容を更新
+      if (nextStep === "3") {
+        // 確認画面に移る前に項目数を再計算
+        TemplateApp.updateItemCount(); // グローバル変数経由で呼び出し
+        // その後でレビュー内容を更新
+        TemplateApp.updateReviewContent(); // グローバル変数経由で呼び出し
+      }
+      
+      // ページトップにスクロール
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    });
+  });
+  
+  // 戻るボタンのクリックイベント
+  document.querySelectorAll('.prev-step').forEach(button => {
+    button.addEventListener('click', function() {
+      const prevStep = this.dataset.prev;
+      
+      // 現在のアクティブステップを非アクティブに
+      document.querySelector('.step-content.active').classList.remove('active');
+      document.querySelector('.step.active').classList.remove('active');
+      
+      // 前のステップを完了済みから通常に戻す（前のステップに戻る場合）
+      document.querySelector(`.step-${parseInt(prevStep) + 1}`).classList.remove('completed');
+      
+      // 前のステップをアクティブに
+      document.querySelector(`.step-${prevStep}`).classList.add('active');
+      document.querySelector(`.step-${prevStep}-content`).classList.add('active');
+      
+      // ページトップにスクロール
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    });
+  });
+}
+
+// 現在のステップのバリデーション
+function validateCurrentStep() {
+  const activeStep = document.querySelector('.step.active');
+  const stepNumber = activeStep.classList[1].split('-')[1];
+  
+  // ステップ1のバリデーション
+  if (stepNumber === "1") {
+    const templateNameInput = document.querySelector('input[name="name"]');
+    if (!templateNameInput || !templateNameInput.value.trim()) {
+      alert('テンプレート名を入力してください');
+      return false;
+    }
+  }
+  
+  // ステップ2のバリデーション
+  if (stepNumber === "2") {
+    const itemForms = document.querySelectorAll('.item-form:not([style*="display: none"])');
+    if (itemForms.length === 0) {
+      alert('少なくとも1つの分析項目を追加してください');
+      return false;
     }
     
-    // 項目数の更新
-    function updateItemCount() {
+    // 各項目の名前が入力されているか確認
+    let isValid = true;
+    itemForms.forEach((form, index) => {
+      const nameInput = form.querySelector('input[name$="-name"]');
+      if (!nameInput.value.trim()) {
+        alert(`項目 ${index + 1} の名前を入力してください`);
+        isValid = false;
+      }
+    });
+    
+    if (!isValid) return false;
+  }
+  
+  return true;
+}
+
+// フォームと項目の処理
+function setupFormHandling() {
+  // DOM要素の取得
+  const addItemButton = document.getElementById('add-item');
+  const itemsFormset = document.getElementById('items-formset');
+  const totalForms = document.querySelector('[name="items-TOTAL_FORMS"]');
+  
+  if (!itemsFormset || !totalForms) {
+    console.error('必要なフォーム要素が見つかりません');
+    return;
+  }
+
+  // 表示順を初期化
+  initializeOrderInputs();
+  
+  // 項目数の更新
+  updateItemCount();
+  
+  // イベントリスナーのセットアップ
+  setupEventListeners();
+  
+  // 削除ボタンのセットアップ
+  setupRemoveButtons();
+  
+  // 項目追加ボタンのクリックイベント
+  if (addItemButton) {
+    addItemButton.addEventListener('click', addNewItem);
+  }
+  
+  // 表示順を初期化
+  function initializeOrderInputs() {
+    const orderInputs = document.querySelectorAll('input[name$="-order"]');
+    const isEditMode = document.querySelector('form').dataset.editMode === 'true';
+    
+    if (orderInputs.length > 0 && !isEditMode) {
+      // 新規作成時のみ初期値を設定
+      orderInputs[0].value = 1;
+    }
+  }
+  
+  // 項目数の更新
+  function updateItemCount() {
+    try {
       // 表示されているフォームのみを正確にカウント
       const itemForms = document.querySelectorAll('.item-form:not([style*="display: none"])');
       const itemsCountEl = document.getElementById('items-count');
@@ -753,13 +772,13 @@
         itemsCountEl.textContent = itemForms.length;
       }
       
-      // タイトルの更新処理などは変更なし
+      // タイトルの更新
       itemForms.forEach((form, index) => {
         const titleEl = form.querySelector('.item-title');
         const numEl = form.querySelector('.item-number');
         
         if (titleEl) {
-          const itemName = form.querySelector('input[name$="-name"]').value;
+          const itemName = form.querySelector('input[name$="-name"]')?.value || '';
           titleEl.textContent = itemName || `項目 ${index + 1}`;
         }
         
@@ -767,72 +786,78 @@
           numEl.textContent = index + 1;
         }
       });
+    } catch (error) {
+      console.error('項目カウント更新中にエラー:', error);
+    }
+  }
+  
+  // グローバル関数として公開
+  TemplateApp.updateItemCount = updateItemCount;
+  
+  // イベントリスナーのセットアップ
+  function setupEventListeners() {
+    // 項目名変更の監視
+    document.querySelectorAll('input[name$="-name"]').forEach(input => {
+      input.addEventListener('change', updateItemCount);
+      input.addEventListener('blur', updateItemCount);
+    });
+  }
+  
+  // 削除ボタンのセットアップ
+  function setupRemoveButtons() {
+    document.querySelectorAll('.remove-item').forEach(button => {
+      // すでにイベントリスナーが設定されている場合は削除（重複防止）
+      const newButton = button.cloneNode(true);
+      button.parentNode.replaceChild(newButton, button);
       
-      // フォームセットの総数も更新
-      if (totalForms) {
-        totalForms.value = itemForms.length;
-      }
-    }
-    
-    // グローバル関数として公開
-    TemplateApp.updateItemCount = updateItemCount;
-    
-    // イベントリスナーのセットアップ
-    function setupEventListeners() {
-      // 項目名変更の監視
-      document.querySelectorAll('input[name$="-name"]').forEach(input => {
-        input.addEventListener('change', updateItemCount);
-        input.addEventListener('blur', updateItemCount);
-      });
-    }
-    
-    // 削除ボタンのセットアップ
-    function setupRemoveButtons() {
-      document.querySelectorAll('.remove-item').forEach(button => {
-        button.addEventListener('click', function() {
-          const itemForm = this.closest('.item-form');
-          
-          // 最後の1つは削除せずに中身をクリア
-          if (itemsFormset.querySelectorAll('.item-form:not([style*="display: none"])').length <= 1) {
-            clearFormInputs(itemForm);
-            toggleRelatedFields();
-            updateItemCount();
-            return;
-          }
-          
-          // 既存のアイテムなら、DELETEにチェックを入れて非表示に
-          const deleteCheckbox = itemForm.querySelector('input[name$="-DELETE"]');
-          if (deleteCheckbox) {
-            deleteCheckbox.checked = true;
-            itemForm.style.display = 'none';
-          } else {
-            // 新規追加したアイテムなら、DOMから削除
-            itemForm.remove();
-          }
-          
-          // フォームの総数とインデックスを更新
-          updateFormIndices();
-          // 項目数のカウントを更新
+      newButton.addEventListener('click', function() {
+        const itemForm = this.closest('.item-form');
+        
+        // 最後の1つは削除せずに中身をクリア
+        const visibleForms = itemsFormset.querySelectorAll('.item-form:not([style*="display: none"])');
+        if (visibleForms.length <= 1) {
+          clearFormInputs(itemForm);
+          updateFieldsForSelect(itemForm.querySelector('select[name$="-item_type"]'));
           updateItemCount();
-        });
+          return;
+        }
+        
+        // 既存のアイテムなら、DELETEにチェックを入れて非表示に
+        const deleteCheckbox = itemForm.querySelector('input[name$="-DELETE"]');
+        if (deleteCheckbox) {
+          deleteCheckbox.checked = true;
+          itemForm.style.display = 'none';
+        } else {
+          // 新規追加したアイテムなら、DOMから削除
+          itemForm.remove();
+        }
+        
+        // フォームの総数とインデックスを更新
+        updateFormIndices();
+        // 項目数のカウントを更新
+        updateItemCount();
       });
-    }
+    });
+  }
+  
+  // フォーム入力をクリア
+  function clearFormInputs(form) {
+    form.querySelectorAll('input[type="text"], textarea').forEach(input => {
+      input.value = '';
+    });
     
-    // フォーム入力をクリア
-    function clearFormInputs(form) {
-      form.querySelectorAll('input[type="text"], textarea').forEach(input => {
-        input.value = '';
-      });
-      
-      form.querySelectorAll('select').forEach(select => {
-        select.selectedIndex = 0;
-      });
-    }
-    
-    // フォームのインデックスを更新
-    function updateFormIndices() {
+    form.querySelectorAll('select').forEach(select => {
+      select.selectedIndex = 0;
+    });
+  }
+  
+  // フォームのインデックスを更新
+  function updateFormIndices() {
+    try {
       const forms = itemsFormset.querySelectorAll('.item-form:not([style*="display: none"])');
-      totalForms.value = forms.length;
+      if (totalForms) {
+        totalForms.value = forms.length;
+      }
       
       forms.forEach((form, index) => {
         form.querySelectorAll('input, select, textarea').forEach(input => {
@@ -850,12 +875,23 @@
           }
         });
       });
+    } catch (error) {
+      console.error('フォームインデックス更新中にエラー:', error);
     }
-    
-    // 新しい項目の追加
-    function addNewItem() {
+  }
+  
+  // 新しい項目の追加
+  function addNewItem() {
+    try {
       const formCount = parseInt(totalForms.value);
-      const newForm = itemsFormset.querySelector('.item-form').cloneNode(true);
+      // 既存フォームの最初の要素をクローン
+      const firstForm = itemsFormset.querySelector('.item-form');
+      if (!firstForm) {
+        console.error('テンプレート要素が見つかりません');
+        return;
+      }
+      
+      const newForm = firstForm.cloneNode(true);
       
       // 最後の項目の順序値を取得
       let maxOrder = getMaxOrder();
@@ -868,339 +904,287 @@
       
       // フォームセットに追加
       itemsFormset.appendChild(newForm);
-      totalForms.value = parseInt(totalForms.value) + 1;
       
       // 新しく追加した項目の各種セットアップ
       setupNewFormEvents(newForm);
+      
+      // 総数を更新
+      totalForms.value = formCount + 1;
       
       // 項目数を更新
       updateItemCount();
       
       // スクロールして新しい項目を表示
       newForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-    
-    // 最大の順序値を取得
-    function getMaxOrder() {
-      let maxOrder = 0;
-      const orderInputs = itemsFormset.querySelectorAll('input[name$="-order"]');
-      
-      orderInputs.forEach(input => {
-        const orderValue = parseInt(input.value) || 0;
-        if (orderValue > maxOrder) {
-          maxOrder = orderValue;
-        }
-      });
-      
-      return maxOrder;
-    }
-    
-    // 新しいフォームの属性を更新
-    function updateNewFormAttributes(newForm, formCount, maxOrder) {
-      newForm.querySelectorAll('input, select, textarea').forEach(function(input) {
-        if (input.id) {
-          input.id = input.id.replace(/items-\d+/, `items-${formCount}`);
-        }
-        if (input.name) {
-          input.name = input.name.replace(/items-\d+/, `items-${formCount}`);
-        }
-        
-        // 順序フィールドには自動インクリメントした値を設定
-        if (input.name && input.name.includes('-order')) {
-          input.value = maxOrder + 1;
-        } else if (!input.name || !input.name.includes('-DELETE')) {
-          // 順序フィールド以外の値をクリア
-          input.value = '';
-        }
-        
-        // DELETEチェックボックスをリセット
-        if (input.name && input.name.includes('-DELETE')) {
-          input.checked = false;
-        }
-        
-        // 選択フィールドをリセット
-        if (input.tagName === 'SELECT') {
-          input.selectedIndex = 0;
-        }
-      });
-      
-      // インデックスを更新
-      newForm.dataset.index = formCount;
-      
-      // モバイル向けの項目タイトルを更新
-      const titleEl = newForm.querySelector('.item-title');
-      if (titleEl) {
-        titleEl.textContent = `項目 ${formCount + 1}`;
-      }
-      
-      const numEl = newForm.querySelector('.item-number');
-      if (numEl) {
-        numEl.textContent = formCount + 1;
-      }
-      
-      // ラベルのforも更新
-      newForm.querySelectorAll('label').forEach(function(label) {
-        if (label.htmlFor) {
-          label.htmlFor = label.htmlFor.replace(/items-\d+/, `items-${formCount}`);
-        }
-      });
-    }
-    
-    // 新しいフォームのイベントをセットアップ
-    function setupNewFormEvents(newForm) {
-      // 新しく追加した項目の削除ボタンを設定
-      setupRemoveButtons();
-      
-      // 項目タイプによる関連フィールドの表示制御を再設定
-      const newTypeSelect = newForm.querySelector('select[name$="-item_type"]');
-      newTypeSelect.addEventListener('change', toggleRelatedFields);
-      
-      // 初期状態で関連フィールドを非表示に
-      const newChoicesField = newForm.querySelector('.choices-field');
-      const newValueLabelField = newForm.querySelector('.value-label-field');
-      if (newChoicesField) newChoicesField.style.display = 'none';
-      if (newValueLabelField) newValueLabelField.style.display = 'none';
-      
-      // 項目名の変更監視
-      const nameInput = newForm.querySelector('input[name$="-name"]');
-      if (nameInput) {
-        nameInput.addEventListener('change', updateItemCount);
-        nameInput.addEventListener('blur', updateItemCount);
-      }
+    } catch (error) {
+      console.error('項目追加中にエラー:', error);
     }
   }
   
-  // 項目タイプに応じた関連フィールドの表示/非表示
-  function toggleRelatedFields() {
-    document.querySelectorAll('select[name$="-item_type"]').forEach(select => {
-      select.addEventListener('change', updateFields);
-      
-      // 初期表示用
-      updateFieldsForSelect(select);
+  // 最大の順序値を取得
+  function getMaxOrder() {
+    let maxOrder = 0;
+    const orderInputs = itemsFormset.querySelectorAll('input[name$="-order"]');
+    
+    orderInputs.forEach(input => {
+      const orderValue = parseInt(input.value) || 0;
+      if (orderValue > maxOrder) {
+        maxOrder = orderValue;
+      }
     });
     
-    // 全選択フィールドにイベントリスナーを設定
-    function updateFields(event) {
-      updateFieldsForSelect(event.target);
-    }
-    
-    // 特定のセレクトに対して関連フィールドを更新
-    function updateFieldsForSelect(select) {
-      const itemForm = select.closest('.item-form');
-      const choicesField = itemForm.querySelector('.choices-field');
-      const valueLabelField = itemForm.querySelector('.value-label-field');
-      
-      // デフォルトですべての特殊フィールドを非表示
-      choicesField.style.display = 'none';
-      valueLabelField.style.display = 'none';
-      
-      // 選択肢フィールドの表示制御
-      if (select.value === 'select') {
-        choicesField.style.display = '';
-      }
-      
-      // 値ラベルフィールドの表示制御
-      if (select.value === 'boolean_with_value') {
-        valueLabelField.style.display = '';
-      }
-    }
+    return maxOrder;
   }
   
-  // レビュー画面のセットアップ
-  function setupReviewScreen() {
-    // 項目タイプに応じたプレビュー内容を生成
-    function getItemPreviewContent(itemType, itemName) {
-      switch (itemType) {
-        case 'boolean':
-          return `
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" id="preview-check-${Date.now()}">
-              <label class="form-check-label">${itemName}</label>
-            </div>
-          `;
-        
-        case 'number':
-          return `
-            <div class="mb-3">
-              <label class="form-label">${itemName}</label>
-              <input type="number" class="form-control" placeholder="数値を入力" disabled>
-            </div>
-          `;
-        
-        case 'text':
-          return `
-            <div class="mb-3">
-              <label class="form-label">${itemName}</label>
-              <input type="text" class="form-control" placeholder="テキストを入力" disabled>
-            </div>
-          `;
-        
-        case 'select':
-          return `
-            <div class="mb-3">
-              <label class="form-label">${itemName}</label>
-              <select class="form-select" disabled>
-                <option>選択してください</option>
-                <option>選択肢1</option>
-                <option>選択肢2</option>
-                <option>選択肢3</option>
-              </select>
-            </div>
-          `;
-        
-        case 'boolean_with_value':
-          return `
-            <div class="mb-3">
-              <div class="d-flex align-items-center mb-2">
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" id="preview-check-value-${Date.now()}">
-                  <label class="form-check-label">${itemName}</label>
-                </div>
-              </div>
-              <input type="number" class="form-control" placeholder="関連する値を入力" disabled>
-            </div>
-          `;
-        
-        default:
-          return `<div class="text-muted">プレビューはありません（未知の項目タイプ: ${itemType}）</div>`;
+  // 新しいフォームの属性を更新
+  function updateNewFormAttributes(newForm, formCount, maxOrder) {
+    newForm.querySelectorAll('input, select, textarea').forEach(function(input) {
+      if (input.id) {
+        input.id = input.id.replace(/items-\d+/, `items-${formCount}`);
       }
+      if (input.name) {
+        input.name = input.name.replace(/items-\d+/, `items-${formCount}`);
+      }
+      
+      // 順序フィールドには自動インクリメントした値を設定
+      if (input.name && input.name.includes('-order')) {
+        input.value = maxOrder + 1;
+      } else if (!input.name || !input.name.includes('-DELETE')) {
+        // 順序フィールド以外の値をクリア
+        input.value = '';
+      }
+      
+      // DELETEチェックボックスをリセット
+      if (input.name && input.name.includes('-DELETE')) {
+        input.checked = false;
+      }
+      
+      // 選択フィールドをリセット
+      if (input.tagName === 'SELECT') {
+        input.selectedIndex = 0;
+      }
+    });
+    
+    // インデックスを更新
+    newForm.dataset.index = formCount;
+    
+    // モバイル向けの項目タイトルを更新
+    const titleEl = newForm.querySelector('.item-title');
+    if (titleEl) {
+      titleEl.textContent = `項目 ${formCount + 1}`;
     }
     
-    // 個別項目のHTML生成
-    function createItemPreviewHtml(form, index, itemName, itemType, itemTypeValue, itemTypeText) {
-      // 説明文を取得
-      const itemDesc = form.querySelector('textarea[name$="-description"]').value || '';
-      
-      // 項目の種類に応じた追加情報を取得
-      let additionalInfo = '';
-      
-      if (itemTypeValue === 'select') {
-        const choices = form.querySelector('textarea[name$="-choices"]').value || '';
-        if (choices) {
-          additionalInfo = `
-            <div class="mt-2">
-              <strong>選択肢:</strong> ${choices}
-            </div>
-          `;
-        }
-      } else if (itemTypeValue === 'boolean_with_value') {
-        const valueLabel = form.querySelector('input[name$="-value_label"]').value || '';
-        if (valueLabel) {
-          additionalInfo = `
-            <div class="mt-2">
-              <strong>値ラベル:</strong> ${valueLabel}
-            </div>
-          `;
-        }
-      }
-      
-      // プレビュー内容を取得
-      let previewContent;
-      try {
-        previewContent = getItemPreviewContent(itemTypeValue, itemName);
-      } catch (error) {
-        console.error(`プレビュー内容の生成でエラー:`, error);
-        previewContent = '<div class="text-danger">プレビューの生成に失敗しました</div>';
-      }
-      
-      // 項目プレビューHTMLを構築
-      return `
-        <div class="review-item">
-          <div class="d-flex justify-content-between align-items-start">
-            <div class="review-item-title">
-              <span class="badge bg-secondary me-2">${index + 1}</span>
-              ${itemName}
-            </div>
-            <span class="badge bg-primary">${itemTypeText}</span>
-          </div>
-          
-          ${itemDesc ? `<div class="text-muted mt-2">${itemDesc}</div>` : ''}
-          ${additionalInfo}
-          
-          <div class="item-preview-box">
-            ${previewContent}
-          </div>
-        </div>
-      `;
+    const numEl = newForm.querySelector('.item-number');
+    if (numEl) {
+      numEl.textContent = formCount + 1;
     }
     
-    // 項目プレビューの生成
-    function generateItemPreviews() {
-      const itemsPreview = document.getElementById('items-preview');
-      if (!itemsPreview) {
-        console.error("items-previewエレメントが見つかりません");
-        return;
+    // ラベルのforも更新
+    newForm.querySelectorAll('label').forEach(function(label) {
+      if (label.htmlFor) {
+        label.htmlFor = label.htmlFor.replace(/items-\d+/, `items-${formCount}`);
       }
-      
-      itemsPreview.innerHTML = ''; // クリア
-      
-      // 表示されている項目のみをカウント
-      const itemForms = document.querySelectorAll('.item-form:not([style*="display: none"])');
-      console.log(`表示されている項目数: ${itemForms.length}個`);
-      
-      const itemsCountEl = document.getElementById('items-count');
-      if (itemsCountEl) itemsCountEl.textContent = itemForms.length;
-      
-      if (itemForms.length === 0) {
-        itemsPreview.innerHTML = '<div class="alert alert-warning">分析項目がありません</div>';
-        return;
-      }
-      
-      // 各項目をループして処理
-      itemForms.forEach((form, index) => {
-        try {
-          const itemName = form.querySelector('input[name$="-name"]').value || `項目 ${index + 1}`;
-          const itemType = form.querySelector('select[name$="-item_type"]');
-          
-          if (!itemType) {
-            console.error(`項目 ${index + 1} の種類が取得できません`);
-            return;
-          }
-          
-          const itemTypeValue = itemType.value;
-          const itemTypeText = itemType.options[itemType.selectedIndex].text;
-          console.log(`項目 ${index + 1}: ${itemName} (種類: ${itemTypeText})`);
-          
-          // 項目プレビューHTMLを生成して追加
-          const previewHtml = createItemPreviewHtml(form, index, itemName, itemType, itemTypeValue, itemTypeText);
-          itemsPreview.innerHTML += previewHtml;
-        } catch (error) {
-          console.error(`項目 ${index + 1} のプレビュー生成でエラー:`, error);
-        }
+    });
+  }
+  
+  // 新しいフォームのイベントをセットアップ
+  function setupNewFormEvents(newForm) {
+    // 項目名の変更監視
+    const nameInput = newForm.querySelector('input[name$="-name"]');
+    if (nameInput) {
+      nameInput.addEventListener('change', updateItemCount);
+      nameInput.addEventListener('blur', updateItemCount);
+    }
+    
+    // 項目タイプのイベント設定
+    const typeSelect = newForm.querySelector('select[name$="-item_type"]');
+    if (typeSelect) {
+      typeSelect.addEventListener('change', function() {
+        updateFieldsForSelect(this);
       });
     }
     
-    // レビュー画面の内容を更新する関数
-    function updateReviewContent() {
-      console.log("確認画面の内容を更新しています...");
+    // 削除ボタンの再設定
+    setupRemoveButtons();
+  }
+}
+// レビュー画面のセットアップ
+function setupReviewScreen() {
+  // 項目タイプに応じたプレビュー内容を生成
+  function getItemPreviewContent(itemType, itemName) {
+    switch (itemType) {
+      case 'boolean':
+        return `
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="preview-check-${Date.now()}">
+            <label class="form-check-label">${itemName}</label>
+          </div>
+        `;
       
+      case 'number':
+        return `
+          <div class="mb-3">
+            <label class="form-label">${itemName}</label>
+            <input type="number" class="form-control" placeholder="数値を入力" disabled>
+          </div>
+        `;
+      
+      case 'text':
+        return `
+          <div class="mb-3">
+            <label class="form-label">${itemName}</label>
+            <input type="text" class="form-control" placeholder="テキストを入力" disabled>
+          </div>
+        `;
+      
+      case 'select':
+        return `
+          <div class="mb-3">
+            <label class="form-label">${itemName}</label>
+            <select class="form-select" disabled>
+              <option>選択してください</option>
+              <option>選択肢1</option>
+              <option>選択肢2</option>
+              <option>選択肢3</option>
+            </select>
+          </div>
+        `;
+      
+      case 'boolean_with_value':
+        return `
+          <div class="mb-3">
+            <div class="d-flex align-items-center mb-2">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="preview-check-value-${Date.now()}">
+                <label class="form-check-label">${itemName}</label>
+              </div>
+            </div>
+            <input type="number" class="form-control" placeholder="関連する値を入力" disabled>
+          </div>
+        `;
+      
+      default:
+        return `<div class="text-muted">プレビューはありません（未知の項目タイプ: ${itemType}）</div>`;
+    }
+  }
+  
+  // 個別項目のHTML生成
+  function createItemPreviewHtml(form, index, itemName, itemTypeValue, itemTypeText) {
+    // 説明文を取得
+    const itemDesc = form.querySelector('textarea[name$="-description"]')?.value || '';
+    
+    // 項目の種類に応じた追加情報を取得
+    let additionalInfo = '';
+    
+    if (itemTypeValue === 'select') {
+      const choices = form.querySelector('textarea[name$="-choices"]')?.value || '';
+      if (choices) {
+        additionalInfo = `
+          <div class="mt-2">
+            <strong>選択肢:</strong> ${choices}
+          </div>
+        `;
+      }
+    } else if (itemTypeValue === 'boolean_with_value') {
+      const valueLabel = form.querySelector('input[name$="-value_label"]')?.value || '';
+      if (valueLabel) {
+        additionalInfo = `
+          <div class="mt-2">
+            <strong>値ラベル:</strong> ${valueLabel}
+          </div>
+        `;
+      }
+    }
+    
+    // プレビュー内容を取得
+    let previewContent;
+    try {
+      previewContent = getItemPreviewContent(itemTypeValue, itemName);
+    } catch (error) {
+      console.error(`プレビュー内容の生成でエラー:`, error);
+      previewContent = '<div class="text-danger">プレビューの生成に失敗しました</div>';
+    }
+    
+    // 項目プレビューHTMLを構築
+    return `
+      <div class="review-item">
+        <div class="d-flex justify-content-between align-items-start">
+          <div class="review-item-title">
+            <span class="badge bg-secondary me-2">${index + 1}</span>
+            ${itemName}
+          </div>
+          <span class="badge bg-primary">${itemTypeText}</span>
+        </div>        
+      </div>
+    `;
+  }
+  
+  // 項目プレビューの生成
+  function generateItemPreviews() {
+    const itemsPreview = document.getElementById('items-preview');
+    if (!itemsPreview) {
+      console.error("items-previewエレメントが見つかりません");
+      return;
+    }
+    
+    itemsPreview.innerHTML = ''; // クリア
+    
+    // 表示されている項目のみをカウント
+    const itemForms = document.querySelectorAll('.item-form:not([style*="display: none"])');
+    
+    const itemsCountEl = document.getElementById('items-count');
+    if (itemsCountEl) itemsCountEl.textContent = itemForms.length;
+    
+    if (itemForms.length === 0) {
+      itemsPreview.innerHTML = '<div class="alert alert-warning">分析項目がありません</div>';
+      return;
+    }
+    
+    // 各項目をループして処理
+    itemForms.forEach((form, index) => {
+      try {
+        const itemName = form.querySelector('input[name$="-name"]')?.value || `項目 ${index + 1}`;
+        const itemType = form.querySelector('select[name$="-item_type"]');
+        
+        if (!itemType) {
+          console.error(`項目 ${index + 1} の種類が取得できません`);
+          return;
+        }
+        
+        const itemTypeValue = itemType.value;
+        const itemTypeText = itemType.options[itemType.selectedIndex].text;
+        
+        // 項目プレビューHTMLを生成して追加
+        const previewHtml = createItemPreviewHtml(form, index, itemName, itemTypeValue, itemTypeText);
+        itemsPreview.innerHTML += previewHtml;
+      } catch (error) {
+        console.error(`項目 ${index + 1} のプレビュー生成でエラー:`, error);
+      }
+    });
+  }
+  
+  // レビュー画面の内容を更新する関数
+  function updateReviewContent() {
+    try {
       // テンプレート基本情報
-      const templateName = document.getElementById('{{ form.name.id_for_label }}').value;
-      const templateDescription = document.getElementById('{{ form.description.id_for_label }}').value;
-      
-      console.log("テンプレート名:", templateName);
-      console.log("説明:", templateDescription);
+      const templateName = document.querySelector('input[name="name"]')?.value || '';
+      const templateDescription = document.querySelector('textarea[name="description"]')?.value || '';
       
       const reviewNameEl = document.getElementById('review-name');
       const reviewDescEl = document.getElementById('review-description');
-      
-      if (!reviewNameEl || !reviewDescEl) {
-        console.error("review-nameまたはreview-descriptionエレメントが見つかりません");
-      }
       
       if (reviewNameEl) reviewNameEl.textContent = templateName || '(未入力)';
       if (reviewDescEl) reviewDescEl.textContent = templateDescription || '(説明なし)';
       
       // 項目のプレビュー生成
-      try {
-        generateItemPreviews();
-      } catch (error) {
-        console.error("プレビュー生成でエラーが発生しました:", error);
-      }
+      generateItemPreviews();
+    } catch (error) {
+      console.error("プレビュー内容の更新中にエラー:", error);
     }
-    
-    // グローバルスコープに関数を割り当て
-    TemplateApp.updateReviewContent = updateReviewContent;
   }
+  
+  // グローバルスコープに関数を割り当て
+  TemplateApp.updateReviewContent = updateReviewContent;
+}
 </script>
 {% endblock %}
