@@ -27,9 +27,8 @@ class StockDiaryForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': '日本株: 7203, 米国株: AAPL など',
             }),
-            'sector': forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
-            'stock_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'purchase_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'stock_name': forms.TextInput(attrs={'class': 'form-control', 'required': 'required'}),
+            'purchase_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control', 'required': 'required'}),
             'purchase_price': forms.NumberInput(attrs={'class': 'form-control'}),
             'purchase_quantity': forms.NumberInput(attrs={'class': 'form-control'}),
             # 購入理由欄の拡張

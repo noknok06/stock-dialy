@@ -115,7 +115,7 @@
             </div>
 
             <div class="col-md-6 mb-3">
-              <label for="{{ form.stock_name.id_for_label }}" class="form-label">銘柄名/メモタイトル</label>
+              <label for="{{ form.stock_name.id_for_label }}" class="form-label">銘柄名/メモタイトル<span class="text-danger">*</span></label>
               {{ form.stock_name }}
               {% if form.stock_name.errors %}
               <div class="text-danger">{{ form.stock_name.errors }}</div>
@@ -133,8 +133,11 @@
           <div class="row">
             <div class="col-md-6">
               <div class="mb-3">
-                <label for="{{ form.purchase_date.id_for_label }}" class="form-label">購入/メモ日</label>
+                <label for="{{ form.purchase_date.id_for_label }}" class="form-label">購入/メモ日<span class="text-danger">*</span></label>
                 {{ form.purchase_date }}
+                <div class="invalid-feedback">
+                  購入/メモ日を入力してください
+                </div>
                 {% if form.purchase_date.errors %}
                 <div class="text-danger">{{ form.purchase_date.errors }}</div>
                 {% endif %}
@@ -852,5 +855,105 @@
       fetchStockInfo(stockSymbolInput.value.trim());
     }
   });
+// 日記フォームのバリデーション強化スクリプト
+document.addEventListener('DOMContentLoaded', function() {
+  // フォーム要素を取得
+  const diaryForm = document.querySelector('form');
+  
+  if (diaryForm) {
+    // 送信イベントリスナーを追加
+    diaryForm.addEventListener('submit', function(event) {
+      // 必須フィールドをすべて検索
+      const requiredFields = diaryForm.querySelectorAll('[required]');
+      let firstInvalidField = null;
+      
+      // 各必須フィールドをチェック
+      for (const field of requiredFields) {
+        if (!field.value.trim()) {
+          // 空の場合、無効としてマークし最初のフィールドを記憶
+          field.classList.add('is-invalid');
+          if (!firstInvalidField) {
+            firstInvalidField = field;
+          }
+        } else {
+          // そうでなければ、無効マークを削除
+          field.classList.remove('is-invalid');
+        }
+      }
+      
+      // 必須フィールドが空の場合、フォーム送信を防止して最初のフィールドにスクロール
+      if (firstInvalidField) {
+        event.preventDefault();
+        
+        // フィールドを見やすくするために少しオフセットをつけてスクロール
+        const yOffset = -100; // 要素の上に100pxオフセット
+        const y = firstInvalidField.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        
+        window.scrollTo({
+          top: y,
+          behavior: 'smooth'
+        });
+        
+        // フィールドにフォーカス
+        setTimeout(() => {
+          firstInvalidField.focus();
+        }, 500);
+        
+        // 視覚的なフィードバックを追加
+        firstInvalidField.parentElement.classList.add('shake-animation');
+        setTimeout(() => {
+          firstInvalidField.parentElement.classList.remove('shake-animation');
+        }, 500);
+      }
+    });
+    
+    // ユーザーが入力を開始したら無効状態をクリアするイベントリスナー
+    diaryForm.addEventListener('keyup', function(event) {
+      if (event.target.hasAttribute('required') && event.target.classList.contains('is-invalid')) {
+        if (event.target.value.trim()) {
+          event.target.classList.remove('is-invalid');
+        }
+      }
+    });
+    
+    // 日付入力、セレクトなどの変更イベントリスナー
+    diaryForm.addEventListener('change', function(event) {
+      if (event.target.hasAttribute('required') && event.target.classList.contains('is-invalid')) {
+        if (event.target.value.trim()) {
+          event.target.classList.remove('is-invalid');
+        }
+      }
+    });
+  }
+});
+
+// CSSアニメーションを追加
+const style = document.createElement('style');
+style.textContent = `
+.shake-animation {
+  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes shake {
+  10%, 90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+  20%, 80% {
+    transform: translate3d(2px, 0, 0);
+  }
+  30%, 50%, 70% {
+    transform: translate3d(-3px, 0, 0);
+  }
+  40%, 60% {
+    transform: translate3d(3px, 0, 0);
+  }
+}
+
+.is-invalid {
+  border-color: #dc3545 !important;
+  background-color: rgba(220, 53, 69, 0.05) !important;
+}
+`;
+document.head.appendChild(style);  
 </script>
 {% endblock %}
