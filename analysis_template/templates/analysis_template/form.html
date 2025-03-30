@@ -880,6 +880,72 @@ function setupFormHandling() {
     }
   }
   
+  // 最大の順序値を取得
+  function getMaxOrder() {
+    let maxOrder = 0;
+    const orderInputs = itemsFormset.querySelectorAll('input[name$="-order"]');
+    
+    orderInputs.forEach(input => {
+      const orderValue = parseInt(input.value) || 0;
+      if (orderValue > maxOrder) {
+        maxOrder = orderValue;
+      }
+    });
+    
+    return maxOrder;
+  }
+  
+  // 新しく追加した項目の各種イベントをセットアップする関数
+  function setupNewFormEvents(newForm) {
+    // 項目名の変更監視
+    const nameInput = newForm.querySelector('input[name$="-name"]');
+    if (nameInput) {
+      nameInput.addEventListener('change', updateItemCount);
+      nameInput.addEventListener('blur', updateItemCount);
+    }
+    
+    // 項目タイプのイベント設定
+    const typeSelect = newForm.querySelector('select[name$="-item_type"]');
+    if (typeSelect) {
+      typeSelect.addEventListener('change', function() {
+        updateFieldsForSelect(this);
+      });
+      updateFieldsForSelect(typeSelect);
+    }
+    
+    // 削除ボタンの設定
+    const removeButton = newForm.querySelector('.remove-item');
+    if (removeButton) {
+      removeButton.addEventListener('click', function() {
+        const itemForm = this.closest('.item-form');
+        
+        // 最後の1つは削除せずに中身をクリア
+        const visibleForms = itemsFormset.querySelectorAll('.item-form:not([style*="display: none"])');
+        if (visibleForms.length <= 1) {
+          clearFormInputs(itemForm);
+          updateFieldsForSelect(itemForm.querySelector('select[name$="-item_type"]'));
+          updateItemCount();
+          return;
+        }
+        
+        // 既存のアイテムなら、DELETEにチェックを入れて非表示に
+        const deleteCheckbox = itemForm.querySelector('input[name$="-DELETE"]');
+        if (deleteCheckbox) {
+          deleteCheckbox.checked = true;
+          itemForm.style.display = 'none';
+        } else {
+          // 新規追加したアイテムなら、DOMから削除
+          itemForm.remove();
+        }
+        
+        // フォームの総数とインデックスを更新
+        updateFormIndices();
+        // 項目数のカウントを更新
+        updateItemCount();
+      });
+    }
+  }
+  
   // 新しい項目の追加
   function addNewItem() {
     try {
@@ -921,21 +987,6 @@ function setupFormHandling() {
     }
   }
   
-  // 最大の順序値を取得
-  function getMaxOrder() {
-    let maxOrder = 0;
-    const orderInputs = itemsFormset.querySelectorAll('input[name$="-order"]');
-    
-    orderInputs.forEach(input => {
-      const orderValue = parseInt(input.value) || 0;
-      if (orderValue > maxOrder) {
-        maxOrder = orderValue;
-      }
-    });
-    
-    return maxOrder;
-  }
-  
   // 新しいフォームの属性を更新
   function updateNewFormAttributes(newForm, formCount, maxOrder) {
     newForm.querySelectorAll('input, select, textarea').forEach(function(input) {
@@ -948,7 +999,7 @@ function setupFormHandling() {
       
       // 順序フィールドには自動インクリメントした値を設定
       if (input.name && input.name.includes('-order')) {
-        input.value = maxOrder + 1;
+        input.value = maxOrder + 1; // 最大の順序値+1を設定
       } else if (!input.name || !input.name.includes('-DELETE')) {
         // 順序フィールド以外の値をクリア
         input.value = '';
@@ -986,28 +1037,8 @@ function setupFormHandling() {
       }
     });
   }
-  
-  // 新しいフォームのイベントをセットアップ
-  function setupNewFormEvents(newForm) {
-    // 項目名の変更監視
-    const nameInput = newForm.querySelector('input[name$="-name"]');
-    if (nameInput) {
-      nameInput.addEventListener('change', updateItemCount);
-      nameInput.addEventListener('blur', updateItemCount);
-    }
-    
-    // 項目タイプのイベント設定
-    const typeSelect = newForm.querySelector('select[name$="-item_type"]');
-    if (typeSelect) {
-      typeSelect.addEventListener('change', function() {
-        updateFieldsForSelect(this);
-      });
-    }
-    
-    // 削除ボタンの再設定
-    setupRemoveButtons();
-  }
 }
+
 // レビュー画面のセットアップ
 function setupReviewScreen() {
   // 項目タイプに応じたプレビュー内容を生成

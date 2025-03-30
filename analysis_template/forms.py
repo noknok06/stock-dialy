@@ -30,7 +30,7 @@ AnalysisItemFormSet = inlineformset_factory(
     AnalysisTemplate, 
     AnalysisItem, 
     form=AnalysisItemForm,
-    extra=1,  # 新規作成時に表示する空のフォームの数
+    extra=0,  # 新規作成時に表示する空のフォームの数
     min_num=1,  # 最低限必要なフォームの数
     validate_min=True,  # 最低数の検証を行うか
     can_delete=True  # 削除ボタンを表示するか
