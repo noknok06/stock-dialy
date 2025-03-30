@@ -106,6 +106,220 @@
     height: 2rem;
   }
 }
+/* 日記カードタブUIのスタイル */
+.diary-card-tabs {
+  margin-top: 1rem;
+}
+
+.card-tabs {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  margin-bottom: 0.75rem;
+}
+
+.card-tabs .nav-link {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-light);
+  border: none;
+  border-radius: 0;
+  position: relative;
+}
+
+.card-tabs .nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: transparent;
+  transition: background-color 0.2s;
+}
+
+.card-tabs .nav-link.active {
+  color: var(--primary-color);
+  font-weight: 500;
+  background-color: transparent;
+}
+
+.card-tabs .nav-link.active::after {
+  background-color: var(--primary-color);
+}
+
+.card-tabs .nav-link:hover:not(.active) {
+  color: var(--primary-color);
+  background-color: rgba(79, 70, 229, 0.05);
+}
+
+.card-tabs .nav-link i {
+  margin-right: 0.3rem;
+}
+
+/* 理由コンテンツのスタイル */
+.reason-content {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-color);
+  background-color: rgba(255, 255, 255, 0.6);
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  /* テキストの最大高さを設定 */
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* 分析プレビューのスタイル */
+.analysis-template-summary {
+  background-color: rgba(255, 255, 255, 0.6);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+.analysis-template-summary h6 {
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.analysis-item-preview {
+  margin-top: 0.75rem;
+}
+
+.analysis-preview-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.35rem 0;
+  border-bottom: 1px dotted rgba(0, 0, 0, 0.1);
+  font-size: 0.9rem;
+}
+
+.analysis-preview-item:last-child {
+  border-bottom: none;
+}
+
+.analysis-preview-item .key {
+  color: var(--text-light);
+  flex: 1;
+}
+
+.analysis-preview-item .value {
+  font-weight: 500;
+  text-align: right;
+  padding-left: 0.5rem;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 576px) {
+  .card-tabs .nav-link {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .card-tabs .nav-link i {
+    margin-right: 0.2rem;
+  }
+  
+  .reason-content {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .analysis-preview-item {
+    font-size: 0.85rem;
+  }
+}
+</style>
+
+<!-- 既存のstyleはそのまま -->
+<style>
+  /* カレンダーイベントスタイル */
+  .purchase-event {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+  }
+
+  .sell-event {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+  }
+
+  .memo-event {
+    background-color: var(--info-color);
+    border-color: var(--info-color);
+    opacity: 0.8;
+  }
+
+  /* 日付クリック時のスタイル */
+  .fc-day-clicked {
+    background-color: rgba(74, 109, 167, 0.2) !important;
+    box-shadow: inset 0 0 0 2px var(--primary-color) !important;
+  }
+
+  /* 今日の日付と選択日が重なった場合 */
+  .fc-day-today.fc-day-clicked {
+    background-color: rgba(74, 109, 167, 0.3) !important;
+  }
+
+  /* イベントアイテムのスタイル調整 */
+  .calendar-event-item {
+    text-decoration: none;
+    color: inherit;
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: background-color 0.2s;
+    background-color: rgba(249, 250, 251, 0.5);
+  }
+
+  .calendar-event-item:hover {
+    background-color: rgba(243, 244, 246, 1);
+  }
+  
+  /* 検索キーワードハイライト */
+  .search-highlight {
+    background-color: #ffc107;
+    color: #000;
+    padding: 0 2px;
+    border-radius: 2px;
+    font-weight: bold;
+  }
+
+  /* 検索条件表示バッジ */
+  .search-badge {
+    display: inline-flex;
+    align-items: center;
+    background-color: #f1f1f1;
+    color: #333;
+    padding: 0.25rem 0.5rem;
+    border-radius: 1rem;
+    margin-right: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .search-badge i {
+    margin-right: 0.25rem;
+  }
+
+  /* 検索関連カード装飾 */
+  .diary-card-highlight {
+    border-left: 3px solid #ffc107 !important;
+  }
+
+  /* 無限スクロール用ローディングインジケーター */
+  #loading-indicator {
+    padding: 1rem;
+    margin: 1rem 0;
+    text-align: center;
+  }
+
+  #loading-indicator .spinner-border {
+    width: 2rem;
+    height: 2rem;
+  }
+}
+
 </style>
 {% endblock %}
 
@@ -319,7 +533,7 @@
   </div>
 
   <!-- 日記カード一覧 -->
-  <h4 class="mb-3 diary-title">
+  <h4 class="mb-3 diary-title px-2">
     <i class="bi bi-journal-richtext"></i> 株式日記リスト
   </h4>
 
@@ -374,6 +588,129 @@
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/locales/ja.js"></script>
   
+<!-- 日記カードタブ機能 -->
+<script>
+  /**
+   * 日記カードのタブUIを初期化する関数
+   */
+  // タブ初期化関数を改善して、クリックイベントをより確実に処理する
+  function initDiaryCardTabs(element) {
+    if (!element) return;
+    
+    // data-bs-toggle="tab"を持つタブ要素を取得
+    const tabElements = element.querySelectorAll('[data-bs-toggle="tab"]');
+    if (tabElements.length === 0) return;
+    
+    // 既に初期化済みならスキップ
+    if (element.getAttribute('data-tabs-initialized') === 'true') return;
+    
+    // 初期化済みとしてマーク
+    element.setAttribute('data-tabs-initialized', 'true');
+    
+    // クリックイベントリスナーを追加
+    tabElements.forEach(tabElement => {
+      tabElement.addEventListener('click', function (event) {
+        // デフォルトのアンカー動作を防止（点滅修正に重要）
+        event.preventDefault();
+        
+        // 親コンテナを取得
+        const tabsContainer = this.closest('.card-tabs');
+        if (!tabsContainer) return;
+        
+        // このコンテナ内のすべてのタブを非アクティブに
+        const allTabs = tabsContainer.querySelectorAll('.nav-link');
+        allTabs.forEach(tab => tab.classList.remove('active'));
+        
+        // クリックされたタブをアクティブに
+        this.classList.add('active');
+        
+        // ターゲットパネルのIDと要素を取得
+        const targetId = this.getAttribute('data-bs-target');
+        if (!targetId) return;
+        
+        const targetPanel = element.querySelector(targetId);
+        if (!targetPanel) return;
+        
+        // タブコンテンツコンテナを取得
+        const tabContent = targetPanel.closest('.tab-content');
+        if (!tabContent) return;
+        
+        // すべてのパネルを非表示
+        const allPanels = tabContent.querySelectorAll('.tab-pane');
+        allPanels.forEach(panel => {
+          panel.classList.remove('show', 'active');
+        });
+        
+        // ターゲットパネルを表示
+        targetPanel.classList.add('show', 'active');
+        
+        // イベントの伝播を防止
+        event.stopPropagation();
+      }, { passive: false });
+    });
+  }
+  /**
+   * 既存のDOMにタブ機能を適用する
+   */
+  document.addEventListener('DOMContentLoaded', function() {
+    // ページ読み込み時に全ての日記カードにタブ機能を適用
+    const diaryCards = document.querySelectorAll('.diary-card');
+    diaryCards.forEach(initDiaryCardTabs);
+    
+    // 無限スクロールとの連携
+    setupInfiniteScrollIntegration();
+  });
+  
+  /**
+   * 無限スクロールとタブ機能を連携させる
+   */
+  function setupInfiniteScrollIntegration() {
+    // 1. MutationObserverを使用して動的に追加される要素を監視
+    const diaryContainer = document.getElementById('diary-container');
+    if (!diaryContainer) return;
+    
+    // DOM変更を監視
+    const observer = new MutationObserver(function(mutations) {
+      mutations.forEach(function(mutation) {
+        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+          // 追加されたノードを検索
+          mutation.addedNodes.forEach(function(node) {
+            if (node.nodeType === 1) { // 要素ノードのみ
+              // 新しく追加された日記カードを探す
+              if (node.classList && node.classList.contains('diary-card')) {
+                // タブ機能を初期化
+                initDiaryCardTabs(node);
+              }
+              
+              // 子要素内の日記カードも探す
+              const childCards = node.querySelectorAll('.diary-card');
+              childCards.forEach(initDiaryCardTabs);
+            }
+          });
+        }
+      });
+    });
+    
+    // 監視を開始
+    observer.observe(diaryContainer, { childList: true, subtree: true });
+  }
+  
+  // 既存のinitNewEntryElement関数を拡張（既存のものを上書きしないよう注意）
+  const originalInitNewEntryElement = window.initNewEntryElement;
+  if (typeof originalInitNewEntryElement === 'function') {
+    window.initNewEntryElement = function(element) {
+      // 元の初期化処理を実行
+      originalInitNewEntryElement.call(this, element);
+      
+      // タブ機能を追加
+      try {
+        initDiaryCardTabs(element);
+      } catch (err) {
+        console.warn('タブ初期化エラー:', err);
+      }
+    };
+  }
+  </script>  
   <script>
     // グローバル変数
     let scrollState = {
@@ -425,7 +762,7 @@
         url: scrollData.dataset.url || window.location.pathname
       };
       
-      console.log('無限スクロール初期化:', scrollState);
+      // console.log('無限スクロール初期化:', scrollState);
       
       // スクロールイベントリスナー
       window.addEventListener('scroll', function() {
@@ -679,7 +1016,7 @@
     function monitorNetworkStatus() {
       // オフラインになった時
       window.addEventListener('offline', function() {
-        console.log('ネットワーク切断を検出');
+        // console.log('ネットワーク切断を検出');
         showNetworkStatus(false);
       });
       
@@ -1483,7 +1820,7 @@
     function setupNetworkMonitoring() {
       // オフライン状態に入った時
       window.addEventListener('offline', function() {
-        console.log('ネットワーク接続がオフラインになりました');
+        // console.log('ネットワーク接続がオフラインになりました');
         
         // 現在読み込み中の場合は適切に処理
         if (infiniteScrollState.loadingData) {

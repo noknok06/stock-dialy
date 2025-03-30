@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from stockdiary.models import StockDiary, DiaryNote
 from tags.models import Tag
 from analysis_template.models import AnalysisTemplate, AnalysisItem, DiaryAnalysisValue
+from company_master.models import CompanyMaster  # For looking up sector info
 import random
 import datetime
 from decimal import Decimal
@@ -43,50 +44,86 @@ class Command(BaseCommand):
         elif with_analysis:
             self.stdout.write(self.style.SUCCESS(f'ユーザー "{username}" の分析テンプレートが {len(templates)} 件見つかりました。'))
 
-        # テストデータ用の株式リスト（セクター情報を追加）
+        # テストデータ用の株式リスト（セクター情報はCompanyMasterから取得するため省略）
         stocks = [
-            {"symbol": "7203", "name": "トヨタ自動車", "sector": "自動車"},
-            {"symbol": "6758", "name": "ソニーグループ", "sector": "テクノロジー"},
-            {"symbol": "9432", "name": "日本電信電話", "sector": "通信"},
-            {"symbol": "9984", "name": "ソフトバンクグループ", "sector": "テクノロジー"},
-            {"symbol": "6861", "name": "キーエンス", "sector": "テクノロジー"},
-            {"symbol": "6098", "name": "リクルートホールディングス", "sector": "サービス"},
-            {"symbol": "8035", "name": "東京エレクトロン", "sector": "テクノロジー"},
-            {"symbol": "4063", "name": "信越化学工業", "sector": "素材"},
-            {"symbol": "9433", "name": "KDDI", "sector": "通信"},
-            {"symbol": "8306", "name": "三菱UFJフィナンシャル・グループ", "sector": "金融"},
-            {"symbol": "6367", "name": "ダイキン工業", "sector": "産業"},
-            {"symbol": "4519", "name": "中外製薬", "sector": "ヘルスケア"},
-            {"symbol": "7974", "name": "任天堂", "sector": "消費財"},
-            {"symbol": "9983", "name": "ファーストリテイリング", "sector": "消費財"},
-            {"symbol": "4568", "name": "第一三共", "sector": "ヘルスケア"},
-            {"symbol": "4661", "name": "オリエンタルランド", "sector": "サービス"},
-            {"symbol": "6501", "name": "日立製作所", "sector": "産業"},
-            {"symbol": "8058", "name": "三菱商事", "sector": "商社"},
-            {"symbol": "6594", "name": "日本電産", "sector": "産業"},
-            {"symbol": "6460", "name": "セガサミーホールディングス", "sector": "エンターテイメント"},
-            {"symbol": "7267", "name": "ホンダ", "sector": "自動車"},
-            {"symbol": "4901", "name": "富士フイルムホールディングス", "sector": "素材"},
-            {"symbol": "8591", "name": "オリックス", "sector": "金融"},
-            {"symbol": "3382", "name": "セブン&アイ・ホールディングス", "sector": "消費財"},
-            {"symbol": "6902", "name": "デンソー", "sector": "自動車部品"},
-            {"symbol": "1925", "name": "大和ハウス工業", "sector": "不動産"},
-            {"symbol": "9020", "name": "東日本旅客鉄道", "sector": "運輸"},
-            {"symbol": "8031", "name": "三井物産", "sector": "商社"},
-            {"symbol": "5108", "name": "ブリヂストン", "sector": "自動車部品"},
-            {"symbol": "9022", "name": "東海旅客鉄道", "sector": "運輸"},
-            # 米国株も必要に応じて追加可能
-            {"symbol": "AAPL", "name": "アップル", "sector": "テクノロジー"},
-            {"symbol": "MSFT", "name": "マイクロソフト", "sector": "テクノロジー"},
-            {"symbol": "AMZN", "name": "アマゾン", "sector": "テクノロジー"},
-            {"symbol": "GOOGL", "name": "アルファベット", "sector": "テクノロジー"},
-            {"symbol": "NVDA", "name": "エヌビディア", "sector": "テクノロジー"},
-            {"symbol": "TSLA", "name": "テスラ", "sector": "自動車"},
-            {"symbol": "META", "name": "メタ・プラットフォームズ", "sector": "テクノロジー"},
-            {"symbol": "NFLX", "name": "ネットフリックス", "sector": "エンターテイメント"},
-            {"symbol": "ADBE", "name": "アドビ", "sector": "テクノロジー"},
-            {"symbol": "JPM", "name": "JPモルガン・チェース", "sector": "金融"},
+            {"symbol": "7203", "name": "トヨタ自動車"},
+            {"symbol": "6758", "name": "ソニーグループ"},
+            {"symbol": "9432", "name": "日本電信電話"},
+            {"symbol": "9984", "name": "ソフトバンクグループ"},
+            {"symbol": "6861", "name": "キーエンス"},
+            {"symbol": "6098", "name": "リクルートホールディングス"},
+            {"symbol": "8035", "name": "東京エレクトロン"},
+            {"symbol": "4063", "name": "信越化学工業"},
+            {"symbol": "9433", "name": "KDDI"},
+            {"symbol": "8306", "name": "三菱UFJフィナンシャル・グループ"},
+            {"symbol": "6367", "name": "ダイキン工業"},
+            {"symbol": "4519", "name": "中外製薬"},
+            {"symbol": "7974", "name": "任天堂"},
+            {"symbol": "9983", "name": "ファーストリテイリング"},
+            {"symbol": "4568", "name": "第一三共"},
+            {"symbol": "4661", "name": "オリエンタルランド"},
+            {"symbol": "6501", "name": "日立製作所"},
+            {"symbol": "8058", "name": "三菱商事"},
+            {"symbol": "6594", "name": "日本電産"},
+            {"symbol": "6460", "name": "セガサミーホールディングス"},
+            {"symbol": "7267", "name": "ホンダ"},
+            {"symbol": "4901", "name": "富士フイルムホールディングス"},
+            {"symbol": "8591", "name": "オリックス"},
+            {"symbol": "3382", "name": "セブン&アイ・ホールディングス"},
+            {"symbol": "6902", "name": "デンソー"},
+            {"symbol": "1925", "name": "大和ハウス工業"},
+            {"symbol": "9020", "name": "東日本旅客鉄道"},
+            {"symbol": "8031", "name": "三井物産"},
+            {"symbol": "5108", "name": "ブリヂストン"},
+            {"symbol": "9022", "name": "東海旅客鉄道"},
         ]
+        
+        # CompanyMasterからセクター情報を取得するメソッド
+        def get_sector_for_stock(symbol):
+            fallback_sectors = {
+                "7203": "自動車", "6758": "テクノロジー", "9432": "通信",
+                "9984": "テクノロジー", "6861": "テクノロジー", "6098": "サービス",
+                "8035": "テクノロジー", "4063": "素材", "9433": "通信",
+                "8306": "金融", "6367": "産業", "4519": "ヘルスケア",
+                "7974": "消費財", "9983": "消費財", "4568": "ヘルスケア",
+                "4661": "サービス", "6501": "産業", "8058": "商社",
+                "6594": "産業", "6460": "エンターテイメント", "7267": "自動車",
+                "4901": "素材", "8591": "金融", "3382": "消費財",
+                "6902": "自動車部品", "1925": "不動産", "9020": "運輸",
+                "8031": "商社", "5108": "自動車部品", "9022": "運輸"
+            }
+            
+            try:
+                # CompanyMasterから企業情報を取得
+                company = CompanyMaster.objects.filter(code=symbol).first()
+                if company and company.industry_name_33:
+                    return company.industry_name_33
+                
+                # 見つからない場合はフォールバック
+                return fallback_sectors.get(symbol, "その他")
+            except Exception as e:
+                self.stdout.write(self.style.WARNING(f"CompanyMaster検索中にエラー: {e}"))
+                return fallback_sectors.get(symbol, "その他")
+        
+        # テンプレートに基づいた分析値を生成するメソッド
+        def generate_template_analysis_values(template, diary):
+            # テンプレート名に基づいて適切な値を生成
+            template_name = template.name
+            
+            for item in template.items.all():
+                if template_name == "基本財務分析テンプレート":
+                    self.create_basic_financial_value(item, diary)
+                elif template_name == "グロース株評価テンプレート":
+                    self.create_growth_stock_value(item, diary)
+                elif template_name == "高配当株スクリーニング":
+                    self.create_high_dividend_value(item, diary)
+                elif template_name == "業界比較分析":
+                    self.create_industry_comparison_value(item, diary)
+                elif template_name == "バリュー投資チェックリスト":
+                    self.create_value_investment_value(item, diary)
+                else:
+                    # 不明なテンプレートの場合はランダム値
+                    self.create_random_value(item, diary)
 
         # ランダムに日記を作成
         created_count = 0
@@ -95,6 +132,9 @@ class Command(BaseCommand):
 
         for _ in range(diary_count):
             stock = random.choice(stocks)
+            
+            # CompanyMasterからセクター情報を取得
+            sector = get_sector_for_stock(stock["symbol"])
             
             # 購入/メモ日（過去3年以内）
             today = datetime.date.today()
@@ -135,7 +175,7 @@ class Command(BaseCommand):
             ]
             memo = random.choice(memos)
             
-            # 日記作成（セクター情報を追加）
+            # 日記作成（CompanyMasterから取得したセクターを設定）
             diary = StockDiary.objects.create(
                 user=user,
                 stock_symbol=stock["symbol"],
@@ -147,7 +187,7 @@ class Command(BaseCommand):
                 sell_date=sell_date,
                 sell_price=sell_price,
                 memo=memo,
-                sector=stock["sector"]  # セクター情報を設定
+                sector=sector  # CompanyMasterから取得したセクター
             )
             
             # タグ付け（ランダムに1～4個のタグを選択）
@@ -164,89 +204,8 @@ class Command(BaseCommand):
                 # ランダムにテンプレートを選択
                 template = random.choice(templates)
                 
-                # テンプレート内の各項目について値を生成
-                for item in template.items.all():
-                    # 項目タイプに応じて適切な値を生成
-                    if item.item_type == 'boolean':
-                        # ブール値の場合
-                        boolean_value = random.choice([True, False])
-                        DiaryAnalysisValue.objects.create(
-                            diary=diary,
-                            analysis_item=item,
-                            boolean_value=boolean_value
-                        )
-                    
-                    elif item.item_type == 'number':
-                        # 数値の場合
-                        if random.random() < 0.9:  # 90%の確率で値を設定
-                            number_value = Decimal(random.uniform(1, 100)).quantize(Decimal('0.1'))
-                            DiaryAnalysisValue.objects.create(
-                                diary=diary,
-                                analysis_item=item,
-                                number_value=number_value
-                            )
-                    
-                    elif item.item_type == 'select':
-                        # 選択肢の場合
-                        if random.random() < 0.9 and item.choices:  # 90%の確率で値を設定
-                            choices = item.get_choices_list()
-                            if choices:
-                                text_value = random.choice(choices)
-                                DiaryAnalysisValue.objects.create(
-                                    diary=diary,
-                                    analysis_item=item,
-                                    text_value=text_value
-                                )
-                    
-                    elif item.item_type == 'text':
-                        # テキストの場合
-                        if random.random() < 0.8:  # 80%の確率で値を設定
-                            text_options = [
-                                "良好", "注意が必要", "期待できる", "慎重に判断", 
-                                "強気", "弱気", "横ばい", "上昇傾向", "下降傾向"
-                            ]
-                            text_value = random.choice(text_options)
-                            DiaryAnalysisValue.objects.create(
-                                diary=diary,
-                                analysis_item=item,
-                                text_value=text_value
-                            )
-                    
-                    elif item.item_type == 'boolean_with_value':
-                        # ブール値+値入力の複合型
-                        boolean_value = random.choice([True, False])
-                        
-                        if boolean_value and random.random() < 0.8:  # TRUEかつ80%の確率で値を設定
-                            # 数値か文字列かランダムに決定
-                            if random.random() < 0.5:
-                                # 数値
-                                number_value = Decimal(random.uniform(1, 100)).quantize(Decimal('0.1'))
-                                DiaryAnalysisValue.objects.create(
-                                    diary=diary,
-                                    analysis_item=item,
-                                    boolean_value=boolean_value,
-                                    number_value=number_value
-                                )
-                            else:
-                                # 文字列
-                                text_options = [
-                                    "高い", "低い", "普通", "良い", "悪い", 
-                                    "優れている", "不足している", "適切", "不適切"
-                                ]
-                                text_value = random.choice(text_options)
-                                DiaryAnalysisValue.objects.create(
-                                    diary=diary,
-                                    analysis_item=item,
-                                    boolean_value=boolean_value,
-                                    text_value=text_value
-                                )
-                        else:
-                            # ブール値のみ
-                            DiaryAnalysisValue.objects.create(
-                                diary=diary,
-                                analysis_item=item,
-                                boolean_value=boolean_value
-                            )
+                # テンプレートに基づいた分析値を生成
+                generate_template_analysis_values(template, diary)
                 
                 template_count += 1
             
@@ -310,7 +269,431 @@ class Command(BaseCommand):
                 
                 note_count += 1
             
-            self.stdout.write(self.style.SUCCESS(f'{created_count}/{diary_count} 件の日記を作成: {stock["name"]} ({stock["symbol"]}) セクター: {stock["sector"]}'))
+            self.stdout.write(self.style.SUCCESS(f'{created_count}/{diary_count} 件の日記を作成: {stock["name"]} ({stock["symbol"]}) セクター: {sector}'))
         
         template_status = f'うち {template_count} 件に分析テンプレートを適用' if with_analysis else ''
         self.stdout.write(self.style.SUCCESS(f'合計 {created_count} 件の日記と {note_count} 件のノート、{template_status}を作成しました。'))
+
+    # 以下、テンプレート別の分析値生成メソッド
+    def create_basic_financial_value(self, item, diary):
+        """基本財務分析テンプレートの値を生成"""
+        if item.name == 'PER':
+            # PERは通常10〜30倍程度
+            value = Decimal(random.uniform(8, 35)).quantize(Decimal('0.1'))
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                number_value=value
+            )
+        elif item.name == 'PBR':
+            # PBRは通常0.5〜3倍程度
+            value = Decimal(random.uniform(0.5, 3.5)).quantize(Decimal('0.1'))
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                number_value=value
+            )
+        elif item.name == 'ROE':
+            # ROEは通常5〜20%程度
+            value = Decimal(random.uniform(3, 25)).quantize(Decimal('0.1'))
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                number_value=value
+            )
+        elif item.name == '配当利回り':
+            # 配当利回りは通常0〜5%程度
+            value = Decimal(random.uniform(0, 6)).quantize(Decimal('0.1'))
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                number_value=value
+            )
+        elif item.name == '成長性評価':
+            # 成長性評価の選択肢
+            choices = item.get_choices_list()
+            if choices:
+                text_value = random.choice(choices)
+                DiaryAnalysisValue.objects.create(
+                    diary=diary,
+                    analysis_item=item,
+                    text_value=text_value
+                )
+        elif item.name == '投資判断':
+            # 投資判断の選択肢
+            choices = item.get_choices_list()
+            if choices:
+                text_value = random.choice(choices)
+                DiaryAnalysisValue.objects.create(
+                    diary=diary,
+                    analysis_item=item,
+                    text_value=text_value
+                )
+
+    def create_growth_stock_value(self, item, diary):
+        """グロース株評価テンプレートの値を生成"""
+        if item.name == '売上高成長率':
+            # 成長株なので高めの成長率
+            value = Decimal(random.uniform(5, 40)).quantize(Decimal('0.1'))
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                number_value=value
+            )
+        elif item.name == '利益成長率':
+            # 利益成長率も高め
+            value = Decimal(random.uniform(8, 50)).quantize(Decimal('0.1'))
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                number_value=value
+            )
+        elif item.name == 'PSR':
+            # PSRは通常1〜10倍程度
+            value = Decimal(random.uniform(1, 15)).quantize(Decimal('0.1'))
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                number_value=value
+            )
+        elif item.name == 'PER > 40':
+            # 成長株は高PERの可能性がある
+            is_high_per = random.random() < 0.4  # 40%の確率で高PER
+            per_value = Decimal(random.uniform(25, 60)).quantize(Decimal('0.1'))
+            
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                boolean_value=is_high_per,
+                number_value=per_value
+            )
+        elif item.name == '市場シェア':
+            choices = item.get_choices_list()
+            if choices:
+                text_value = random.choice(choices)
+                DiaryAnalysisValue.objects.create(
+                    diary=diary,
+                    analysis_item=item,
+                    text_value=text_value
+                )
+        elif item.name == '競争優位性':
+            advantages = [
+                "独自技術による参入障壁", 
+                "ブランド力と顧客忠誠度", 
+                "ネットワーク効果が強い", 
+                "特許によるプロテクション", 
+                "スケールメリットによるコスト優位性",
+                "サブスクリプションモデルによる安定収益"
+            ]
+            text_value = random.choice(advantages)
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                text_value=text_value
+            )
+        elif item.name == '今後3年間の予想':
+            choices = item.get_choices_list()
+            if choices:
+                text_value = random.choice(choices)
+                DiaryAnalysisValue.objects.create(
+                    diary=diary,
+                    analysis_item=item,
+                    text_value=text_value
+                )
+
+    def create_high_dividend_value(self, item, diary):
+        """高配当株スクリーニングの値を生成"""
+        if item.name == '配当利回り':
+            # 高配当株なので高めの利回り
+            value = Decimal(random.uniform(2, 8)).quantize(Decimal('0.1'))
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                number_value=value
+            )
+        elif item.name == '配当性向':
+            # 配当性向は通常20〜50%程度
+            value = Decimal(random.uniform(15, 70)).quantize(Decimal('0.1'))
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                number_value=value
+            )
+        elif item.name == '連続増配年数':
+            # 0〜10年程度
+            value = Decimal(random.randint(0, 12))
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                number_value=value
+            )
+        elif item.name == '配当利回り 3%超':
+            # 高配当株なので高確率で3%超え
+            is_over_3pct = random.random() < 0.7  # 70%の確率で3%超え
+            yield_value = Decimal(random.uniform(2, 7)).quantize(Decimal('0.1'))
+            
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                boolean_value=is_over_3pct,
+                number_value=yield_value
+            )
+        elif item.name == '安定配当':
+            # 安定配当かどうか
+            is_stable = random.random() < 0.8  # 80%の確率で安定配当
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                boolean_value=is_stable
+            )
+        elif item.name == '財務健全性':
+            choices = item.get_choices_list()
+            if choices:
+                text_value = random.choice(choices)
+                DiaryAnalysisValue.objects.create(
+                    diary=diary,
+                    analysis_item=item,
+                    text_value=text_value
+                )
+        elif item.name == '配当の継続性予想':
+            choices = item.get_choices_list()
+            if choices:
+                text_value = random.choice(choices)
+                DiaryAnalysisValue.objects.create(
+                    diary=diary,
+                    analysis_item=item,
+                    text_value=text_value
+                )
+
+    def create_industry_comparison_value(self, item, diary):
+        """業界比較分析の値を生成"""
+        if item.name == '業界内PER順位':
+            # 1〜10位程度
+            value = Decimal(random.randint(1, 15))
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                number_value=value
+            )
+        elif item.name == '業界内ROE順位':
+            # 1〜10位程度
+            value = Decimal(random.randint(1, 15))
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                number_value=value
+            )
+        elif item.name == '売上高シェア':
+            # 売上高シェアは1〜30%程度
+            value = Decimal(random.uniform(1, 35)).quantize(Decimal('0.1'))
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                number_value=value
+            )
+        elif item.name == '利益率比較':
+            choices = item.get_choices_list()
+            if choices:
+                text_value = random.choice(choices)
+                DiaryAnalysisValue.objects.create(
+                    diary=diary,
+                    analysis_item=item,
+                    text_value=text_value
+                )
+        elif item.name == '成長率比較':
+            choices = item.get_choices_list()
+            if choices:
+                text_value = random.choice(choices)
+                DiaryAnalysisValue.objects.create(
+                    diary=diary,
+                    analysis_item=item,
+                    text_value=text_value
+                )
+        elif item.name == '競争優位性あり':
+            has_advantage = random.random() < 0.6  # 60%の確率で競争優位性あり
+            
+            advantage_text = ""
+            if has_advantage:
+                advantages = [
+                    "ブランド力", "特許技術", "コスト競争力", "流通網", 
+                    "研究開発力", "顧客基盤", "デジタル変革", "ESG対応"
+                ]
+                advantage_text = random.choice(advantages)
+            
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                boolean_value=has_advantage,
+                text_value=advantage_text
+            )
+
+    def create_value_investment_value(self, item, diary):
+        """バリュー投資チェックリストの値を生成"""
+        if item.name == 'PER < 15':
+            # バリュー投資なので、低PERの確率が高い
+            is_low_per = random.random() < 0.7  # 70%の確率で低PER
+            per_value = Decimal(random.uniform(7, 20)).quantize(Decimal('0.1'))
+            
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                boolean_value=is_low_per,
+                number_value=per_value
+            )
+        elif item.name == 'PBR < 1.0':
+            # バリュー投資なので、低PBRの確率が高い
+            is_low_pbr = random.random() < 0.6  # 60%の確率で低PBR
+            pbr_value = Decimal(random.uniform(0.5, 1.5)).quantize(Decimal('0.1'))
+            
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                boolean_value=is_low_pbr,
+                number_value=pbr_value
+            )
+        elif item.name == 'ROE > 10%':
+            # ROE 10%以上かどうか
+            is_high_roe = random.random() < 0.65  # 65%の確率で高ROE
+            roe_value = Decimal(random.uniform(5, 20)).quantize(Decimal('0.1'))
+            
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                boolean_value=is_high_roe,
+                number_value=roe_value
+            )
+        elif item.name == '負債比率':
+            # 負債比率は20〜80%程度
+            value = Decimal(random.uniform(15, 90)).quantize(Decimal('0.1'))
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                number_value=value
+            )
+        elif item.name == 'FCF':
+            # フリーキャッシュフロー（億円）
+            value = Decimal(random.uniform(10, 1000)).quantize(Decimal('0.1'))
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                number_value=value
+            )
+        elif item.name == '業績の安定性':
+            choices = item.get_choices_list()
+            if choices:
+                text_value = random.choice(choices)
+                DiaryAnalysisValue.objects.create(
+                    diary=diary,
+                    analysis_item=item,
+                    text_value=text_value
+                )
+        elif item.name == '株主還元姿勢':
+            choices = item.get_choices_list()
+            if choices:
+                text_value = random.choice(choices)
+                DiaryAnalysisValue.objects.create(
+                    diary=diary,
+                    analysis_item=item,
+                    text_value=text_value
+                )
+        elif item.name == '市場での過小評価理由':
+            reasons = [
+                "短期志向の市場が長期価値を評価していない",
+                "一時的な業績悪化による過剰反応",
+                "セクター全体の不人気",
+                "複雑なビジネスモデルの理解不足",
+                "ESG問題への懸念",
+                "経営陣への不信感",
+                "新規事業の成長性が過小評価されている",
+                "構造改革の効果が市場に認識されていない"
+            ]
+            text_value = random.choice(reasons)
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                text_value=text_value
+            )
+
+    def create_random_value(self, item, diary):
+        """ランダムな分析値を生成（既存のロジックを使用）"""
+        # 項目タイプに応じて適切な値を生成
+        if item.item_type == 'boolean':
+            # ブール値の場合
+            boolean_value = random.choice([True, False])
+            DiaryAnalysisValue.objects.create(
+                diary=diary,
+                analysis_item=item,
+                boolean_value=boolean_value
+            )
+        
+        elif item.item_type == 'number':
+            # 数値の場合
+            if random.random() < 0.9:  # 90%の確率で値を設定
+                number_value = Decimal(random.uniform(1, 100)).quantize(Decimal('0.1'))
+                DiaryAnalysisValue.objects.create(
+                    diary=diary,
+                    analysis_item=item,
+                    number_value=number_value
+                )
+        
+        elif item.item_type == 'select':
+            # 選択肢の場合
+            if random.random() < 0.9 and item.choices:  # 90%の確率で値を設定
+                choices = item.get_choices_list()
+                if choices:
+                    text_value = random.choice(choices)
+                    DiaryAnalysisValue.objects.create(
+                        diary=diary,
+                        analysis_item=item,
+                        text_value=text_value
+                    )
+        
+        elif item.item_type == 'text':
+            # テキストの場合
+            if random.random() < 0.8:  # 80%の確率で値を設定
+                text_options = [
+                    "良好", "注意が必要", "期待できる", "慎重に判断", 
+                    "強気", "弱気", "横ばい", "上昇傾向", "下降傾向"
+                ]
+                text_value = random.choice(text_options)
+                DiaryAnalysisValue.objects.create(
+                    diary=diary,
+                    analysis_item=item,
+                    text_value=text_value
+                )
+        
+        elif item.item_type == 'boolean_with_value':
+            # ブール値+値入力の複合型
+            boolean_value = random.choice([True, False])
+            
+            if boolean_value and random.random() < 0.8:  # TRUEかつ80%の確率で値を設定
+                # 数値か文字列かランダムに決定
+                if random.random() < 0.5:
+                    # 数値
+                    number_value = Decimal(random.uniform(1, 100)).quantize(Decimal('0.1'))
+                    DiaryAnalysisValue.objects.create(
+                        diary=diary,
+                        analysis_item=item,
+                        boolean_value=boolean_value,
+                        number_value=number_value
+                    )
+                else:
+                    # 文字列
+                    text_options = [
+                        "高い", "低い", "普通", "良い", "悪い", 
+                        "優れている", "不足している", "適切", "不適切"
+                    ]
+                    text_value = random.choice(text_options)
+                    DiaryAnalysisValue.objects.create(
+                        diary=diary,
+                        analysis_item=item,
+                        boolean_value=boolean_value,
+                        text_value=text_value
+                    )
+            else:
+                # ブール値のみ
+                DiaryAnalysisValue.objects.create(
+                    diary=diary,
+                    analysis_item=item,
+                    boolean_value=boolean_value
+                )
