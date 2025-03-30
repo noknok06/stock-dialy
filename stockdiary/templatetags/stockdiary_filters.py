@@ -1,5 +1,6 @@
 # stockdiary/templatetags/stockdiary_filters.py
-
+import re
+from django.utils.safestring import mark_safe
 from django import template
 from django.template.defaultfilters import stringfilter
 import decimal
@@ -58,44 +59,18 @@ def percentage_of(value, total):
         return 0
 
 @register.filter(name='highlight')
-def highlight_filter(text, search_term):
+@stringfilter
+def highlight(text, search_term):
     """
-    テキスト内の検索キーワードをハイライト表示するフィルター
-    検索キーワードが大文字小文字を区別せずにハイライトします
-    """
-    if not text or not search_term or not isinstance(search_term, str) or not search_term.strip():
-        return text
+    テキスト内の検索キーワードをハイライト表示するフィルタ
     
-    try:
-        # テキストと検索語を小文字に変換して位置を特定
-        text_lower = str(text).lower()
-        search_term_lower = search_term.lower()
-        
-        # 元のテキストから該当部分を抽出して置き換え
-        result = text
-        start_pos = 0
-        
-        while True:
-            pos = text_lower.find(search_term_lower, start_pos)
-            if pos == -1:
-                break
-                
-            original_match = text[pos:pos+len(search_term)]
-            highlighted = f'<span class="search-highlight">{original_match}</span>'
-            
-            # 置換前のテキストの長さ
-            before_len = len(result)
-            
-            # 置換
-            result = result[:pos] + highlighted + result[pos+len(search_term):]
-            
-            # 次の検索位置を計算（ハイライトタグの分だけずれる）
-            start_pos = pos + len(highlighted)
-            
-            # テキストが変わったので、text_lowerも再計算
-            text_lower = result.lower()
-        
-        return mark_safe(result)
-    except Exception as e:
-        print(f"Highlight error: {e}")
-        return text
+    例: {{ diary.reason|highlight:request.GET.query }}
+    """
+    if not search_term or not text:
+        return mark_safe(text)
+    
+    # HTMLタグをエスケープせずに検索するために正規表現を使用
+    search_pattern = re.compile(r'({0})'.format(re.escape(search_term)), re.IGNORECASE)
+    result = search_pattern.sub(r'<span class="search-highlight">\1</span>', text)
+    
+    return mark_safe(result)

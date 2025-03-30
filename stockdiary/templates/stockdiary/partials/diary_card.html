@@ -70,18 +70,18 @@
                   data-bs-target="#reason-content-{{ diary.id }}" type="button" role="tab" aria-selected="true">
             <i class="bi bi-journal-text"></i> 購入理由
           </button>
-          {% if diary.analysis_values.exists %}
-          <button class="nav-link" id="analysis-tab-{{ diary.id }}" data-bs-toggle="tab" 
-                  data-bs-target="#analysis-content-{{ diary.id }}" type="button" role="tab" aria-selected="false">
-            <i class="bi bi-clipboard-data"></i> 分析
-          </button>
-          {% endif %}
           <!-- 継続記録タブの追加 -->
           {% if diary.notes.exists %}
           <button class="nav-link" id="notes-tab-{{ diary.id }}" data-bs-toggle="tab" 
                   data-bs-target="#notes-content-{{ diary.id }}" type="button" role="tab" aria-selected="false">
             <i class="bi bi-journal-richtext"></i> 継続記録
           </button>
+          {% if diary.analysis_values.exists %}
+          <button class="nav-link" id="analysis-tab-{{ diary.id }}" data-bs-toggle="tab" 
+                  data-bs-target="#analysis-content-{{ diary.id }}" type="button" role="tab" aria-selected="false">
+            <i class="bi bi-clipboard-data"></i> 分析
+          </button>
+          {% endif %}
           {% endif %}
           <button class="nav-link" id="details-tab-{{ diary.id }}" data-bs-toggle="tab" 
                   data-bs-target="#details-content-{{ diary.id }}" type="button" role="tab" aria-selected="false">
