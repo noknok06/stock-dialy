@@ -580,13 +580,13 @@
       <div class="row">
         <!-- タグセクション -->
         <div class="col-lg-6 mb-4">
-          <h3 class="section-title mb-3">
+          <h3 class="section-title mb-1">
             <i class="bi bi-tags"></i> タグ
           </h3>
           
           <div style="background-color:rgba(255,255,255,0.5); padding:15px; border-radius:8px;">
             {% for tag in diary.tags.all %}
-            <span class="diary-tag">{{ tag.name }}</span>
+            <span class="diary-tag my-1">{{ tag.name }}</span>
             {% empty %}
             <p class="text-muted mb-0">タグはありません</p>
             {% endfor %}
@@ -733,7 +733,7 @@
     </div>
 
     <!-- 改善されたカードフッター -->
-    <div class="diary-card-footer">
+    <div class="diary-card-footer mx-2">
       <!-- モバイル向けレイアウト(小さい画面) -->
       <div class="d-md-none">
         <div class="d-flex flex-column">
@@ -745,29 +745,6 @@
             <span class="d-block">
               <i class="bi bi-clock-history me-1"></i> 更新: {{ diary.updated_at|date:"Y/m/d H:i" }}
             </span>
-          </div>
-          
-          <!-- アクションボタングループを下部にフル幅で配置 -->
-          <div class="action-buttons d-flex justify-content-center gap-2 mt-1">
-            {% if not diary.sell_date and not diary.is_memo and diary.purchase_price is not None and diary.purchase_quantity is not None %}
-            <a href="{% url 'stockdiary:sell_specific' diary.id %}" class="btn btn-sm btn-diary btn-diary-success">
-              <i class="bi bi-cash-coin"></i> <span class="d-none d-sm-inline">売却</span>
-            </a>
-            {% endif %}
-            
-            {% if diary.sell_date %}
-            <a href="{% url 'stockdiary:cancel_sell' diary.id %}" class="btn btn-sm btn-diary btn-diary-warning">
-              <i class="bi bi-arrow-counterclockwise"></i> <span class="d-none d-sm-inline">売却取消</span>
-            </a>
-            {% endif %}
-            
-            <a href="{% url 'stockdiary:update' diary.id %}" class="btn btn-sm btn-diary btn-diary-warning">
-              <i class="bi bi-pencil"></i> <span class="d-none d-sm-inline">編集</span>
-            </a>
-            
-            <a href="{% url 'stockdiary:delete' diary.id %}" class="btn btn-sm btn-diary btn-diary-danger">
-              <i class="bi bi-trash"></i> <span class="d-none d-sm-inline">削除</span>
-            </a>
           </div>
         </div>
       </div>
@@ -787,7 +764,7 @@
   <div class="row">
     <div class="col-lg-12">
       <h3 class="section-title mb-3">
-        <i class="bi bi-link-45deg"></i> {{ diary.stock_name }} ({{ diary.stock_symbol }}) の投資タイムライン
+        <i class="bi bi-link-45deg"></i> 日記タイムライン
       </h3>
       
       <div class="investment-timeline">

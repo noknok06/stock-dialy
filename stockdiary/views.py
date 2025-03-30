@@ -259,8 +259,41 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
             
             # 関連日記の全リスト（現在の日記も含む）をタイムライン表示用に追加
             context['timeline_diaries'] = all_related_diaries
-        
-        # スピードダイアルのアクションを定義（省略）...
+            
+            context['diary_actions'] = [
+                {
+                    'type': 'back',
+                    'url': reverse_lazy('stockdiary:home'),
+                    'icon': 'bi-arrow-left',
+                    'label': '戻る'
+                },
+                {
+                    'type': 'sell',
+                    'url': reverse_lazy('stockdiary:sell_specific', kwargs={'pk': diary.id}),
+                    'icon': 'bi-cash-coin',
+                    'label': '売却',
+                    'condition': not diary.sell_date  # 未売却の場合のみ表示
+                },
+                {
+                    'type': 'cancel-sell',
+                    'url': reverse_lazy('stockdiary:cancel_sell', kwargs={'pk': diary.id}),
+                    'icon': 'bi-arrow-counterclockwise',
+                    'label': '売却取消',
+                    'condition': diary.sell_date is not None  # 売却済みの場合のみ表示
+                },
+                {
+                    'type': 'edit',
+                    'url': reverse_lazy('stockdiary:update', kwargs={'pk': diary.id}),
+                    'icon': 'bi-pencil',
+                    'label': '編集'
+                },
+                {
+                    'type': 'delete',
+                    'url': reverse_lazy('stockdiary:delete', kwargs={'pk': diary.id}),
+                    'icon': 'bi-trash',
+                    'label': '削除'
+                }
+            ]
         
         return context
 
