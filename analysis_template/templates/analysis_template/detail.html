@@ -6,15 +6,23 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/speed-dial.css' %}">
 <div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center">
     <h3 class="mb-0">{{ template.name }}</h3>
-    <div>
-      <a href="{% url 'analysis_template:clone' template.id %}" class="btn btn-info" title="このテンプレートを複製">
-        <i class="bi bi-files"></i> 複製
+    
+    <!-- レスポンシブ対応のボタングループ（右寄せ） -->
+    <div class="d-flex flex-wrap gap-2 justify-content-end">
+      <button id="clone-btn" class="btn btn-info" title="このテンプレートを複製">
+        <i class="bi bi-files"></i> <span class="d-none d-md-inline">複製</span>
+      </button>
+      <a href="{% url 'analysis_template:update' template.id %}" class="btn btn-warning">
+        <i class="bi bi-pencil"></i> <span class="d-none d-md-inline">編集</span>
       </a>
-      <a href="{% url 'analysis_template:update' template.id %}" class="btn btn-warning">編集</a>
-      <a href="{% url 'analysis_template:report' template.id %}" class="btn btn-info">レポート</a>
-      <a href="{% url 'analysis_template:list' %}" class="btn btn-secondary">戻る</a>
+      <a href="{% url 'analysis_template:report' template.id %}" class="btn btn-info">
+        <i class="bi bi-bar-chart"></i> <span class="d-none d-md-inline">レポート</span>
+      </a>
+      <a href="{% url 'analysis_template:list' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> <span class="d-none d-md-inline">戻る</span>
+      </a>
     </div>
   </div>
   <div class="card-body">
@@ -47,6 +55,10 @@
                     <span class="badge bg-primary">数値</span>
                   {% elif item.item_type == 'text' %}
                     <span class="badge bg-success">テキスト</span>
+                  {% elif item.item_type == 'boolean' %}
+                    <span class="badge bg-warning">チェックボックス</span>
+                  {% elif item.item_type == 'boolean_with_value' %}
+                    <span class="badge bg-danger">チェック+値入力</span>
                   {% else %}
                     <span class="badge bg-info">選択肢</span>
                   {% endif %}
@@ -82,7 +94,6 @@
 
 {% include 'speed_dial.html' with actions=page_actions %}
 {% endblock %}
-<!-- スピードダイアルを別のブロックに移動 -->
 
 {% block scripts %}
 {{ block.super }}
@@ -92,6 +103,13 @@
   document.addEventListener('DOMContentLoaded', function() {
     // スピードダイアルを初期化
     initializeSpeedDial();
+    
+    // 複製ボタンのクリックイベント
+    document.getElementById('clone-btn').addEventListener('click', function() {
+      if (confirm('このテンプレートを複製しますか？\n複製後は新しいテンプレートの編集画面に移動します。')) {
+        window.location.href = "{% url 'analysis_template:clone' template.id %}";
+      }
+    });
   });
 </script>
 {% endblock %}
