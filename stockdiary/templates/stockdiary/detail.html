@@ -13,6 +13,273 @@
 <!-- Bootstrap Icons -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 <link rel="stylesheet" href="{% static 'css/speed-dial.css' %}">
+
+<style>
+/* 修正版 - 日付順タイムラインのスタイル */
+.investment-timeline {
+  padding: 20px 0;
+  margin-bottom: 2rem;
+}
+
+/* タイムラインリスト */
+.timeline-list {
+  position: relative;
+  list-style: none;
+  padding-left: 40px;
+  margin: 0;
+}
+
+/* 縦線 */
+.timeline-list::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 18px;
+  height: 100%;
+  width: 2px;
+  background-color: var(--notebook-line);
+}
+
+/* リストアイテム */
+.timeline-list-item {
+  position: relative;
+  margin-bottom: 25px;
+  padding-right: 15px;
+}
+
+.timeline-list-item:last-child {
+  margin-bottom: 0;
+}
+
+/* マーカーの代わりにリストアイテムの::before疑似要素を使用 */
+.timeline-list-item::before {
+  content: '';
+  position: absolute;
+  top: 15px;
+  left: -30px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  border: 2px solid white;
+  box-shadow: 0 0 0 2px rgba(74, 109, 167, 0.3);
+  z-index: 2;
+}
+
+/* タイプ別のマーカーカラー */
+.item-active::before {
+  background-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(74, 109, 167, 0.3);
+}
+
+.item-sold::before {
+  background-color: var(--success-color);
+  box-shadow: 0 0 0 2px rgba(90, 154, 120, 0.3);
+}
+
+.item-memo::before {
+  background-color: var(--info-color);
+  box-shadow: 0 0 0 2px rgba(124, 155, 210, 0.3);
+}
+
+/* 現在表示中の項目 */
+.timeline-current::before {
+  width: 18px;
+  height: 18px;
+  left: -32px;
+  top: 14px;
+  background-color: var(--secondary-color);
+  box-shadow: 0 0 0 3px rgba(232, 168, 124, 0.4);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(232, 168, 124, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(232, 168, 124, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(232, 168, 124, 0);
+  }
+}
+
+/* 日付表示 */
+.timeline-date {
+  font-family: 'Courier New', monospace;
+  color: var(--text-light);
+  margin-bottom: 8px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.current-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  margin-left: 8px;
+  border-radius: 12px;
+  background-color: var(--secondary-color);
+  color: white;
+  font-size: 0.75rem;
+}
+
+/* カードリンク - 単純化したバージョン */
+.timeline-card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.2s;
+}
+
+.timeline-card-link:hover {
+  transform: translateY(-3px);
+  color: inherit;
+  text-decoration: none;
+}
+
+/* シンプルカード */
+.simple-card {
+  background-color: white;
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  padding: 15px;
+  position: relative;
+  border-left: 3px solid var(--primary-color);
+  transition: box-shadow 0.2s;
+}
+
+.timeline-card-link:hover .simple-card {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* カード種類による色分け */
+.item-sold .simple-card {
+  border-left-color: var(--success-color);
+}
+
+.item-memo .simple-card {
+  border-left-color: var(--info-color);
+}
+
+/* 現在表示中のカード */
+.current-card {
+  border: 2px solid var(--secondary-color);
+  border-left-width: 5px;
+  box-shadow: 0 3px 10px rgba(232, 168, 124, 0.2);
+}
+
+/* カード内の要素 */
+.card-badge {
+  margin-bottom: 10px;
+}
+
+.card-title {
+  margin-bottom: 10px;
+  font-size: 1rem;
+  color: var(--primary-color);
+}
+
+.card-price {
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+}
+
+.card-content {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-color);
+  margin-bottom: 10px;
+}
+
+.card-tags {
+  margin-top: 5px;
+}
+
+.card-tag {
+  display: inline-block;
+  padding: 3px 8px;
+  margin-right: 5px;
+  font-size: 0.75rem;
+  border-radius: 12px;
+  background-color: rgba(74, 109, 167, 0.1);
+  color: var(--primary-color);
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 767.98px) {
+  .timeline-list {
+    padding-left: 30px;
+  }
+  
+  .timeline-list::before {
+    left: 12px;
+  }
+  
+  .timeline-list-item::before {
+    left: -25px;
+    width: 12px;
+    height: 12px;
+  }
+  
+  .timeline-current::before {
+    width: 16px;
+    height: 16px;
+    left: -27px;
+  }
+  
+  .simple-card {
+    padding: 12px;
+  }
+  
+  .card-title {
+    font-size: 0.95rem;
+  }
+  
+  .card-content, .card-price {
+    font-size: 0.85rem;
+  }
+}
+
+/* モバイル最適化 */
+@media (max-width: 575.98px) {
+  .timeline-list {
+    padding-left: 25px;
+  }
+  
+  .timeline-list::before {
+    left: 10px;
+  }
+  
+  .timeline-list-item::before {
+    left: -20px;
+    width: 10px;
+    height: 10px;
+    top: 16px;
+  }
+  
+  .timeline-current::before {
+    width: 14px;
+    height: 14px;
+    left: -22px;
+    top: 14px;
+  }
+  
+  .timeline-date {
+    font-size: 0.8rem;
+  }
+  
+  .current-badge {
+    font-size: 0.7rem;
+    padding: 1px 6px;
+  }
+  
+  .simple-card {
+    padding: 10px;
+  }
+}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -465,57 +732,173 @@
       </div>
     </div>
 
-    <!-- カードフッター -->
-<!-- 改善されたカードフッター -->
-<div class="diary-card-footer">
-  <!-- モバイル向けレイアウト(小さい画面) -->
-  <div class="d-md-none">
-    <div class="d-flex flex-column">
-      <!-- メタ情報を上部に -->
-      <div class="meta-info mb-2 text-center small">
-        <span class="d-block mb-1">
-          <i class="bi bi-calendar-check me-1"></i> 作成: {{ diary.created_at|date:"Y/m/d H:i" }}
-        </span>
-        <span class="d-block">
-          <i class="bi bi-clock-history me-1"></i> 更新: {{ diary.updated_at|date:"Y/m/d H:i" }}
-        </span>
+    <!-- 改善されたカードフッター -->
+    <div class="diary-card-footer">
+      <!-- モバイル向けレイアウト(小さい画面) -->
+      <div class="d-md-none">
+        <div class="d-flex flex-column">
+          <!-- メタ情報を上部に -->
+          <div class="meta-info mb-2 text-center small">
+            <span class="d-block mb-1">
+              <i class="bi bi-calendar-check me-1"></i> 作成: {{ diary.created_at|date:"Y/m/d H:i" }}
+            </span>
+            <span class="d-block">
+              <i class="bi bi-clock-history me-1"></i> 更新: {{ diary.updated_at|date:"Y/m/d H:i" }}
+            </span>
+          </div>
+          
+          <!-- アクションボタングループを下部にフル幅で配置 -->
+          <div class="action-buttons d-flex justify-content-center gap-2 mt-1">
+            {% if not diary.sell_date and not diary.is_memo and diary.purchase_price is not None and diary.purchase_quantity is not None %}
+            <a href="{% url 'stockdiary:sell_specific' diary.id %}" class="btn btn-sm btn-diary btn-diary-success">
+              <i class="bi bi-cash-coin"></i> <span class="d-none d-sm-inline">売却</span>
+            </a>
+            {% endif %}
+            
+            {% if diary.sell_date %}
+            <a href="{% url 'stockdiary:cancel_sell' diary.id %}" class="btn btn-sm btn-diary btn-diary-warning">
+              <i class="bi bi-arrow-counterclockwise"></i> <span class="d-none d-sm-inline">売却取消</span>
+            </a>
+            {% endif %}
+            
+            <a href="{% url 'stockdiary:update' diary.id %}" class="btn btn-sm btn-diary btn-diary-warning">
+              <i class="bi bi-pencil"></i> <span class="d-none d-sm-inline">編集</span>
+            </a>
+            
+            <a href="{% url 'stockdiary:delete' diary.id %}" class="btn btn-sm btn-diary btn-diary-danger">
+              <i class="bi bi-trash"></i> <span class="d-none d-sm-inline">削除</span>
+            </a>
+          </div>
+        </div>
       </div>
       
-      <!-- アクションボタングループを下部にフル幅で配置 -->
-      <div class="action-buttons d-flex justify-content-center gap-2 mt-1">
-        {% if not diary.sell_date and not diary.is_memo and diary.purchase_price is not None and diary.purchase_quantity is not None %}
-        <a href="{% url 'stockdiary:sell_specific' diary.id %}" class="btn btn-sm btn-diary btn-diary-success">
-          <i class="bi bi-cash-coin"></i> <span class="d-none d-sm-inline">売却</span>
-        </a>
-        {% endif %}
-        
-        {% if diary.sell_date %}
-        <a href="{% url 'stockdiary:cancel_sell' diary.id %}" class="btn btn-sm btn-diary btn-diary-warning">
-          <i class="bi bi-arrow-counterclockwise"></i> <span class="d-none d-sm-inline">売却取消</span>
-        </a>
-        {% endif %}
-        
-        <a href="{% url 'stockdiary:update' diary.id %}" class="btn btn-sm btn-diary btn-diary-warning">
-          <i class="bi bi-pencil"></i> <span class="d-none d-sm-inline">編集</span>
-        </a>
-        
-        <a href="{% url 'stockdiary:delete' diary.id %}" class="btn btn-sm btn-diary btn-diary-danger">
-          <i class="bi bi-trash"></i> <span class="d-none d-sm-inline">削除</span>
-        </a>
+      <!-- デスクトップ向けレイアウト(中・大画面) -->
+      <div class="d-none d-md-flex justify-content-between align-items-center">
+        <div class="meta-info">
+          <i class="bi bi-calendar-check me-1"></i> 作成: {{ diary.created_at|date:"Y年m月d日 H:i" }}
+          <span class="mx-2">|</span>
+          <i class="bi bi-clock-history me-1"></i> 更新: {{ diary.updated_at|date:"Y年m月d日 H:i" }}
+        </div>
       </div>
     </div>
   </div>
-  
-  <!-- デスクトップ向けレイアウト(中・大画面) -->
-  <div class="d-none d-md-flex justify-content-between align-items-center">
-    <div class="meta-info">
-      <i class="bi bi-calendar-check me-1"></i> 作成: {{ diary.created_at|date:"Y年m月d日 H:i" }}
-      <span class="mx-2">|</span>
-      <i class="bi bi-clock-history me-1"></i> 更新: {{ diary.updated_at|date:"Y年m月d日 H:i" }}
+  <!-- 修正版 - 日付順のタイムラインテンプレート -->
+  {% if related_diaries %}
+  <div class="row">
+    <div class="col-lg-12">
+      <h3 class="section-title mb-3">
+        <i class="bi bi-link-45deg"></i> {{ diary.stock_name }} ({{ diary.stock_symbol }}) の投資タイムライン
+      </h3>
+      
+      <div class="investment-timeline">
+        <!-- タイムラインリスト - すべての日記を日付順に表示 -->
+        <ol class="timeline-list">
+          {% for timeline_diary in timeline_diaries %}
+            <li class="timeline-list-item {% if timeline_diary.sell_date %}item-sold{% elif timeline_diary.is_memo or timeline_diary.purchase_price is None or timeline_diary.purchase_quantity is None %}item-memo{% else %}item-active{% endif %} {% if timeline_diary.id == diary.id %}timeline-current{% endif %}">
+              <div class="timeline-date">
+                {{ timeline_diary.purchase_date|date:"Y年m月d日" }}
+                {% if timeline_diary.id == diary.id %}
+                  <span class="current-badge">現在表示中</span>
+                {% endif %}
+              </div>
+              
+              {% if timeline_diary.id == diary.id %}
+                <!-- 現在表示中の日記 -->
+                <div class="simple-card current-card">
+                  <div class="card-badge">
+                    {% if timeline_diary.sell_date %}
+                      <span class="badge bg-success">売却済み</span>
+                    {% elif timeline_diary.is_memo or timeline_diary.purchase_price is None or timeline_diary.purchase_quantity is None %}
+                      <span class="badge bg-info">メモ</span>
+                    {% else %}
+                      <span class="badge bg-primary">保有中</span>
+                    {% endif %}
+                  </div>
+                  
+                  <h6 class="card-title">{{ timeline_diary.stock_name }}</h6>
+                  
+                  {% if not timeline_diary.is_memo and timeline_diary.purchase_price is not None and timeline_diary.purchase_quantity is not None %}
+                  <div class="card-price">
+                    {{ timeline_diary.purchase_price|floatformat:2|intcomma }}円 × {{ timeline_diary.purchase_quantity }}株
+                    {% if timeline_diary.sell_date %}
+                      {% with profit=timeline_diary.sell_price|sub:timeline_diary.purchase_price|div:timeline_diary.purchase_price|mul:100 %}
+                      <span class="{% if profit > 0 %}text-success{% elif profit < 0 %}text-danger{% endif %}">
+                        ({{ profit|floatformat:2 }}%)
+                      </span>
+                      {% endwith %}
+                    {% endif %}
+                  </div>
+                  {% endif %}
+                  
+                  <div class="card-content">
+                    {{ timeline_diary.reason|safe|truncatewords_html:20 }}
+                  </div>
+                </div>
+              {% else %}
+                <!-- その他の関連日記 -->
+                <a href="{% url 'stockdiary:detail' timeline_diary.id %}" class="timeline-card-link">
+                  <div class="simple-card">
+                    <div class="card-badge">
+                      {% if timeline_diary.sell_date %}
+                        <span class="badge bg-success">売却済み</span>
+                      {% elif timeline_diary.is_memo or timeline_diary.purchase_price is None or timeline_diary.purchase_quantity is None %}
+                        <span class="badge bg-info">メモ</span>
+                      {% else %}
+                        <span class="badge bg-primary">保有中</span>
+                      {% endif %}
+                    </div>
+                    
+                    <h6 class="card-title">{{ timeline_diary.stock_name }}</h6>
+                    
+                    {% if not timeline_diary.is_memo and timeline_diary.purchase_price is not None and timeline_diary.purchase_quantity is not None %}
+                    <div class="card-price">
+                      {{ timeline_diary.purchase_price|floatformat:2|intcomma }}円 × {{ timeline_diary.purchase_quantity }}株
+                      {% if timeline_diary.sell_date %}
+                        {% with profit=timeline_diary.sell_price|sub:timeline_diary.purchase_price|div:timeline_diary.purchase_price|mul:100 %}
+                        <span class="{% if profit > 0 %}text-success{% elif profit < 0 %}text-danger{% endif %}">
+                          ({{ profit|floatformat:2 }}%)
+                        </span>
+                        {% endwith %}
+                      {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="card-content">
+                      {{ timeline_diary.reason|safe|truncatewords_html:20 }}
+                    </div>
+                    
+                    {% if timeline_diary.tags.exists %}
+                    <div class="card-tags">
+                      {% for tag in timeline_diary.tags.all|slice:":3" %}
+                      <span class="card-tag">{{ tag.name }}</span>
+                      {% endfor %}
+                    </div>
+                    {% endif %}
+                  </div>
+                </a>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ol>
+        
+        {% if related_diaries_count > 10 %}
+        <div class="text-center mt-4">
+          <a href="{% url 'stockdiary:home' %}?query={{ diary.stock_symbol }}" class="btn btn-outline-primary btn-sm">
+            すべての記録を表示 (全{{ total_related_count }}件)
+          </a>
+        </div>
+        {% endif %}
+        
+        <!-- 位置情報（オプション） -->
+        {% if current_diary_index is not None %}
+        <div class="text-center text-muted mt-3 small">
+          <span>{{ current_diary_index|add:1 }}</span> / <span>{{ total_related_count }}</span> 件目
+        </div>
+        {% endif %}
+      </div>
     </div>
   </div>
-</div>
-  </div>
+  {% endif %}
 </div>
 
 <!-- スピードダイアルコンポーネント -->

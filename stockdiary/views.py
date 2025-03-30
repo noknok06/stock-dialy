@@ -202,6 +202,8 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         # 通常のリクエストの場合は既存の処理
         return super().get(request, *args, **kwargs)
 
+# stockdiary/views.py の StockDiaryDetailView クラスを修正
+
 class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, DetailView):
     model = StockDiary
     template_name = 'stockdiary/detail.html'
@@ -227,45 +229,40 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         # 継続記録一覧を追加
         context['notes'] = self.object.notes.all().order_by('-date')
         
-        # スピードダイアルのアクションを定義
+        # 関連日記（同じ銘柄コードを持つ日記）を取得
         diary = self.object
-        context['diary_actions'] = [
-            {
-                'type': 'back',
-                'url': reverse_lazy('stockdiary:home'),
-                'icon': 'bi-arrow-left',
-                'label': '戻る'
-            },
-            {
-                'type': 'sell',
-                'url': reverse_lazy('stockdiary:sell_specific', kwargs={'pk': diary.id}),
-                'icon': 'bi-cash-coin',
-                'label': '売却',
-                'condition': not diary.sell_date  # 未売却の場合のみ表示
-            },
-            {
-                'type': 'cancel-sell',
-                'url': reverse_lazy('stockdiary:cancel_sell', kwargs={'pk': diary.id}),
-                'icon': 'bi-arrow-counterclockwise',
-                'label': '売却取消',
-                'condition': diary.sell_date is not None  # 売却済みの場合のみ表示
-            },
-            {
-                'type': 'edit',
-                'url': reverse_lazy('stockdiary:update', kwargs={'pk': diary.id}),
-                'icon': 'bi-pencil',
-                'label': '編集'
-            },
-            {
-                'type': 'delete',
-                'url': reverse_lazy('stockdiary:delete', kwargs={'pk': diary.id}),
-                'icon': 'bi-trash',
-                'label': '削除'
-            }
-        ]
+        if diary.stock_symbol:  # 銘柄コードが存在する場合のみ
+            # 現在の日記を含むすべての関連日記を取得（日付順）
+            all_related_diaries = StockDiary.objects.filter(
+                user=self.request.user,
+                stock_symbol=diary.stock_symbol
+            ).order_by('purchase_date')
+            
+            # 総数（現在の日記も含む）
+            total_count = all_related_diaries.count()
+            
+            # 現在の日記のインデックスを特定（タイムライン内での位置）
+            current_diary_index = None
+            for i, related_diary in enumerate(all_related_diaries):
+                if related_diary.id == diary.id:
+                    current_diary_index = i
+                    break
+            
+            # 現在の日記の位置情報をコンテキストに追加
+            context['current_diary_index'] = current_diary_index
+            context['total_related_count'] = total_count
+            
+            # 現在の日記以外の関連日記をコンテキストに追加
+            # ※順序はすでに purchase_date の昇順
+            context['related_diaries'] = all_related_diaries.exclude(id=diary.id)
+            context['related_diaries_count'] = total_count - 1  # 現在の日記を除く
+            
+            # 関連日記の全リスト（現在の日記も含む）をタイムライン表示用に追加
+            context['timeline_diaries'] = all_related_diaries
+        
+        # スピードダイアルのアクションを定義（省略）...
         
         return context
-
 
 class StockDiaryCreateView(LoginRequiredMixin, CreateView):
     model = StockDiary
