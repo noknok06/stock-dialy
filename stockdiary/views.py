@@ -38,15 +38,38 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         # 検索フィルター
         query = self.request.GET.get('query', '')
         tag_id = self.request.GET.get('tag', '')
+        status = self.request.GET.get('status', '')  # 新しいステータスフィルター
         
         if query:
+            # 全文検索に拡張 - 銘柄名、シンボル、理由、メモを対象に
             queryset = queryset.filter(
                 Q(stock_name__icontains=query) | 
-                Q(stock_symbol__icontains=query)
+                Q(stock_symbol__icontains=query) |
+                Q(reason__icontains=query) |
+                Q(memo__icontains=query)
             )
         
         if tag_id:
             queryset = queryset.filter(tags__id=tag_id)
+        
+        # 保有状態によるフィルタリング
+        if status == 'active':
+            # 保有中（売却日がNullで、メモでない）
+            queryset = queryset.filter(
+                sell_date__isnull=True,
+                purchase_price__isnull=False,
+                purchase_quantity__isnull=False
+            )
+        elif status == 'sold':
+            # 売却済み
+            queryset = queryset.filter(sell_date__isnull=False)
+        elif status == 'memo':
+            # メモのみ（購入価格または数量がNullまたはis_memoがTrue）
+            queryset = queryset.filter(
+                Q(purchase_price__isnull=True) | 
+                Q(purchase_quantity__isnull=True) | 
+                Q(is_memo=True)
+            )
             
         return queryset
 

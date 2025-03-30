@@ -64,6 +64,35 @@
     background-color: rgba(243, 244, 246, 1);
   }
   
+  /* 検索キーワードハイライト */
+  .search-highlight {
+    background-color: #ffc107;
+    color: #000;
+    padding: 0 2px;
+    border-radius: 2px;
+    font-weight: bold;
+  }
+
+  /* 検索条件表示バッジ */
+  .search-badge {
+    display: inline-flex;
+    align-items: center;
+    background-color: #f1f1f1;
+    color: #333;
+    padding: 0.25rem 0.5rem;
+    border-radius: 1rem;
+    margin-right: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .search-badge i {
+    margin-right: 0.25rem;
+  }
+
+  /* 検索関連カード装飾 */
+  .diary-card-highlight {
+    border-left: 3px solid #ffc107 !important;
+  }
 }
 
 </style>
@@ -194,16 +223,17 @@
   <div class="diary-search mb-4">
     <form method="get" class="mb-3">
       <div class="row g-2">
-        <!-- 銘柄検索フィールド -->
+        <!-- 検索フィールド - 全文検索の説明を追加 -->
         <div class="col-md-4 col-sm-12 mb-2">
-          <label for="query" class="form-label">銘柄検索</label>
+          <label for="query" class="form-label">検索</label>
           <div class="position-relative">
-            <i class="bi bi-search" style="position: absolute; left: 10px; top: 10px; color: #aaa;"></i>
-            <input type="text" id="query" name="query" class="form-control ps-4" placeholder="銘柄名/シンボル"
+            <i class="bi bi-search" style="position: absolute; right: 10px; top: 10px; color: #aaa;"></i>
+            <input type="text" id="query" name="query" class="form-control" placeholder="銘柄名/シンボル/内容/メモ"
               value="{{ request.GET.query }}">
           </div>
+          <small class="form-text text-muted">日記内容も含めて検索できます</small>
         </div>
-
+  
         <!-- タグ絞り込みセレクト -->
         <div class="col-md-4 col-sm-12 mb-2">
           <label for="tag" class="form-label">タグで絞り込み</label>
@@ -216,47 +246,66 @@
             {% endfor %}
           </select>
         </div>
-
-        <!-- ボタングループ -->
+  
+        <!-- 保有状態フィルター - 新規追加 -->
         <div class="col-md-4 col-sm-12 mb-2">
-          <label class="form-label d-block">&nbsp;</label>
-          <div class="d-flex w-100">
-            <button type="submit" class="btn btn-diary btn-diary-primary me-2 flex-grow-1">
-              <i class="bi bi-search me-1"></i> <span class="d-none d-sm-inline">検索</span>
-            </button>
-            <a href="{% url 'stockdiary:home' %}" class="btn btn-diary btn-diary-outline flex-grow-1">
-              <i class="bi bi-arrow-counterclockwise me-1"></i> <span class="d-none d-sm-inline">リセット</span>
-            </a>
-          </div>
+          <label for="status" class="form-label">保有状態</label>
+          <select id="status" name="status" class="form-select">
+            <option value="" {% if not request.GET.status %}selected{% endif %}>すべて</option>
+            <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>保有中</option>
+            <option value="sold" {% if request.GET.status == 'sold' %}selected{% endif %}>売却済み</option>
+            <option value="memo" {% if request.GET.status == 'memo' %}selected{% endif %}>メモのみ</option>
+          </select>
         </div>
       </div>
-
-      <!-- 日記タイプフィルター（隠しフィールドで送信） -->
-      <input type="hidden" id="diary_type_filter" name="diary_type" value="{{ request.GET.diary_type|default:'' }}">
+  
+      <div class="d-flex justify-content-end mt-2">
+        <button type="submit" class="btn btn-diary btn-diary-primary me-2">
+          <i class="bi bi-search me-1"></i> 検索
+        </button>
+        <a href="{% url 'stockdiary:home' %}" class="btn btn-diary btn-diary-outline">
+          <i class="bi bi-arrow-counterclockwise me-1"></i> リセット
+        </a>
+      </div>
     </form>
+  </div>
 
-    <!-- フィルターバッジ - スマホ対応と状態維持 -->
-    <!-- <div class="filter-badges-container">
-      <div class="filter-badge {% if not request.GET.diary_type %}active{% endif %}" 
-          data-filter-type="" onclick="updateFilter(this)">
-        <i class="bi bi-funnel"></i> すべて
+  <div class="mb-3">
+    {% if request.GET.query or request.GET.tag or request.GET.status %}
+      <div class="alert alert-info d-flex justify-content-between align-items-center">
+        <div>
+          <i class="bi bi-info-circle me-2"></i>
+          <span>検索結果: {{ diaries|length }}件</span>
+          
+          {% if request.GET.query %}
+            <span class="ms-2">キーワード: "{{ request.GET.query }}"</span>
+          {% endif %}
+          
+          {% if request.GET.tag %}
+            <span class="ms-2">タグ: 
+              {% for tag in tags %}
+                {% if request.GET.tag == tag.id|stringformat:"i" %}{{ tag.name }}{% endif %}
+              {% endfor %}
+            </span>
+          {% endif %}
+          
+          {% if request.GET.status %}
+            <span class="ms-2">保有状態: 
+              {% if request.GET.status == 'active' %}保有中
+              {% elif request.GET.status == 'sold' %}売却済み
+              {% elif request.GET.status == 'memo' %}メモのみ
+              {% endif %}
+            </span>
+          {% endif %}
+        </div>
+        
+        <a href="{% url 'stockdiary:home' %}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-x"></i> クリア
+        </a>
       </div>
-      <div class="filter-badge {% if request.GET.diary_type == 'active' %}active{% endif %}"
-          data-filter-type="active" onclick="updateFilter(this)">
-        <i class="bi bi-graph-up-arrow"></i> 保有中
-      </div>
-      <div class="filter-badge {% if request.GET.diary_type == 'sold' %}active{% endif %}"
-          data-filter-type="sold" onclick="updateFilter(this)">
-        <i class="bi bi-cash-coin"></i> 売却済み
-      </div>
-      <div class="filter-badge {% if request.GET.diary_type == 'memo' %}active{% endif %}"
-          data-filter-type="memo" onclick="updateFilter(this)">
-        <i class="bi bi-sticky"></i> メモのみ
-      </div>
-    </div>
-  </div> -->
-
-
+    {% endif %}
+    
+  </div>
     <!-- 日記カード一覧 -->
     <h4 class="mb-3 diary-title">
       <i class="bi bi-journal-richtext"></i> 株式日記リスト
@@ -447,7 +496,11 @@
                 {% endif %}
               </h6>
               <div class="mx-3">
-                {{ diary.reason|linebreaksbr|truncatewords_html:40 }}
+                {% if request.GET.query and request.GET.query != '' %}
+                  {{ diary.reason|safe|highlight:request.GET.query|truncatewords_html:40 }}
+                {% else %}
+                  {{ diary.reason|safe|truncatewords_html:40 }}
+                {% endif %}
               </div>
             </div>
           </div>
@@ -476,10 +529,19 @@
       {% endfor %}
     </div>
     {% else %}
-    <div class="alert alert-info">
-      <i class="bi bi-info-circle me-2"></i>
-      <p class="mb-0">日記がありません。「新規日記作成」ボタンから最初の日記を登録してください。</p>
-    </div>
+      {% if request.GET.query or request.GET.tag or request.GET.status %}
+        <!-- 検索条件あり・結果なしの場合 -->
+        <div class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <p class="mb-0">検索条件に一致する日記が見つかりませんでした。検索条件を変更してお試しください。</p>
+        </div>
+      {% else %}
+        <!-- 検索条件なし・日記なしの場合 -->
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-2"></i>
+          <p class="mb-0">日記がありません。「新規日記作成」ボタンから最初の日記を登録してください。</p>
+        </div>
+      {% endif %}
     {% endif %}
 
   </div>
@@ -1051,6 +1113,81 @@
         sessionStorage.removeItem('currentFilter');
       });
     }
+});
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const query = urlParams.get('query');
+  
+  if (query && query.trim() !== '') {
+    // 日記カードに検索ヒットの強調表示を追加
+    const diaryCards = document.querySelectorAll('.diary-card');
+    diaryCards.forEach(card => {
+      const cardText = card.textContent.toLowerCase();
+      if (cardText.includes(query.toLowerCase())) {
+        card.classList.add('diary-card-highlight');
+      }
+    });
+    
+    // テキスト内のキーワードをハイライト
+    const textContainers = document.querySelectorAll('.diary-card-body .mx-3');
+    textContainers.forEach(container => {
+      highlightKeyword(container, query);
+    });
+  }
+  
+  function highlightKeyword(element, keyword) {
+    if (!keyword || keyword.trim() === '') return;
+    
+    const regex = new RegExp(`(${keyword})`, 'gi');
+    highlightTextNodes(element, regex);
+  }
+  
+  function highlightTextNodes(element, regex) {
+    if (element.nodeType === Node.TEXT_NODE) {
+      const parent = element.parentNode;
+      const content = element.textContent;
+      
+      if (regex.test(content)) {
+        const fragment = document.createDocumentFragment();
+        let lastIndex = 0;
+        let match;
+        
+        regex.lastIndex = 0;
+        while ((match = regex.exec(content)) !== null) {
+          const beforeMatch = content.substring(lastIndex, match.index);
+          if (beforeMatch) {
+            fragment.appendChild(document.createTextNode(beforeMatch));
+          }
+          
+          const highlighted = document.createElement('span');
+          highlighted.className = 'search-highlight';
+          highlighted.textContent = match[0];
+          fragment.appendChild(highlighted);
+          
+          lastIndex = regex.lastIndex;
+        }
+        
+        const afterMatch = content.substring(lastIndex);
+        if (afterMatch) {
+          fragment.appendChild(document.createTextNode(afterMatch));
+        }
+        
+        parent.replaceChild(fragment, element);
+        return true;
+      }
+    } else if (element.nodeType === Node.ELEMENT_NODE) {
+      if (element.tagName === 'SCRIPT' || element.tagName === 'STYLE') {
+        return false;
+      }
+      
+      const childNodes = Array.from(element.childNodes);
+      childNodes.forEach(child => highlightTextNodes(child, regex));
+    }
+    
+    return false;
+  }
 });
   </script>
   {% endblock %}
