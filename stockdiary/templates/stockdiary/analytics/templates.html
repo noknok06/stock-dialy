@@ -78,7 +78,7 @@
                             {% if item.item_type == 'number' %}
                               {{ item.average_value|floatformat:2 }}
                             {% elif item.item_type == 'boolean' or item.item_type == 'boolean_with_value' %}
-                              {{ item.completion_rate }}%
+                              {{ item.completion_rate|floatformat:2 }}%
                             {% elif item.item_type == 'select' %}
                               {{ item.most_common_value|floatformat:2|default:"-" }}
                             {% else %}
