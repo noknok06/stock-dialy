@@ -4,6 +4,7 @@ from django.utils.safestring import mark_safe
 from django import template
 from django.template.defaultfilters import stringfilter
 import decimal
+from analysis_template.models import DiaryAnalysisValue
 
 register = template.Library()
 
@@ -74,3 +75,16 @@ def highlight(text, search_term):
     result = search_pattern.sub(r'<span class="search-highlight">\1</span>', text)
     
     return mark_safe(result)
+
+@register.filter
+def get_analysis_value(item, diary):
+    """
+    テンプレート項目と日記から、該当する分析値を取得する
+    """
+    try:
+        return DiaryAnalysisValue.objects.filter(
+            diary=diary,
+            analysis_item=item
+        ).first()
+    except Exception:
+        return None

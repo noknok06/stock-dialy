@@ -1,65 +1,8 @@
+
 /* 株式日記 (カブログ) 共通テーマCSS
  * -----------------------------------------
  * 日記らしい親しみやすいデザインのための共通スタイル定義
  */
-
- :root {
-  /* メインカラーパレット - 落ち着いた日記らしい色調 */
-  --primary-color: #4a6da7;      /* メインカラー: 優しい青色 */
-  --secondary-color: #e8a87c;    /* アクセントカラー: 柔らかいオレンジ */
-  --success-color: #5a9a78;      /* 成功/購入/利益: 自然な緑色 */
-  --danger-color: #d27c7c;       /* 警告/売却/損失: 柔らかい赤色 */
-  --warning-color: #e0b878;      /* 警告/編集: マスタード色 */
-  --info-color: #7c9bd2;         /* 情報/メモ: 淡い青色 */
-  
-  /* 背景色とテキスト色 */
-  --bg-color: #f6f8fa;           /* ページ背景: 明るい灰色がかった白 */
-  --card-bg-color: #ffffff;      /* カード背景: 白 */
-  --text-color: #3a4a5a;         /* メインテキスト: 暗めの青灰色 */
-  --text-light: #6b7280;         /* 薄いテキスト: グレー */
-  
-  /* 日記特有の要素 */
-  --notebook-line: #e0e5ec;      /* ノートの罫線色 */
-  --notebook-line-height: 2rem;  /* 罫線の高さ */
-  --notebook-binding: #4a6da7;   /* ノートの綴じ部分の色 */
-  --masking-tape: rgba(232, 168, 124, 0.6); /* マスキングテープ色 */
-  
-  /* シャドウと効果 */
-  --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  --card-shadow-hover: 0 5px 15px rgba(0, 0, 0, 0.08);
-  --button-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  
-  /* 各種サイズ */
-  --border-radius: 8px;          /* 角丸の基本サイズ */
-  --spacing-xs: 0.25rem;
-  --spacing-sm: 0.5rem;
-  --spacing-md: 1rem;
-  --spacing-lg: 1.5rem;
-  --spacing-xl: 2rem;
-}
-
-/* ========== 基本スタイル ========== */
-body {
-  background-color: var(--bg-color);
-  color: var(--text-color);
-  font-family: 'Hiragino Kaku Gothic Pro', 'メイリオ', sans-serif;
-  line-height: 1.6;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  color: var(--primary-color);
-  font-weight: 600;
-}
-
-a {
-  color: var(--primary-color);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-a:hover {
-  color: var(--secondary-color);
-}
 
 /* ========== ヘッダースタイル ========== */
 .diary-header {
@@ -102,7 +45,7 @@ a:hover {
   top: 0;
   width: 8px;
   height: 100%;
-  background-color: var(--notebook-binding);
+  background-color: var(--success-color);
   opacity: 0.7;
 }
 
@@ -118,7 +61,7 @@ a:hover {
 
 /* 売却済みの日記スタイル */
 .diary-card.sold-card::before {
-  background-color: var(--success-color);
+  background-color: var(--danger-color);
 }
 
 /* 日記カードのヘッダー */
@@ -190,14 +133,110 @@ a:hover {
 
 /* 黄色いマスキングテープバリエーション */
 .masking-tape.yellow {
-  background-color: rgba(240, 217, 108, 0.6);
+  background-color: rgba(247, 183, 49, 0.6);
   transform: rotate(2deg);
 }
 
 /* 緑のマスキングテープバリエーション */
 .masking-tape.green {
-  background-color: rgba(144, 202, 143, 0.6);
+  background-color: rgba(93, 176, 117, 0.6);
   transform: rotate(-2deg);
+}
+
+/* ========== バッジスタイル ========== */
+/* メモバッジ */
+.badge.bg-info {
+  background-color: var(--info-color) !important;
+  color: white !important;
+}
+
+/* 購入バッジ */
+.badge.bg-success {
+  background-color: var(--success-color) !important;
+}
+
+/* 売却バッジ */
+.badge.bg-danger {
+  background-color: var(--danger-color) !important;
+}
+
+/* 警告バッジ */
+.badge.bg-warning {
+  background-color: var(--warning-color) !important;
+  color: white !important;
+}
+
+/* ========== アクションボタン ========== */
+.action-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* アイコンだけのアクションボタン */
+.action-icon-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: white;
+  border: 1px solid rgba(90, 126, 197, 0.3);
+  color: var(--text-light);
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.action-icon-btn:hover {
+  background-color: rgba(249, 250, 251, 0.8);
+  transform: translateY(-2px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* 詳細表示ボタン */
+.action-icon-btn.view-btn {
+  color: var(--primary-color);
+}
+.action-icon-btn.view-btn:hover {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+/* 編集ボタン */
+.action-icon-btn.edit-btn {
+  color: var(--warning-color);
+}
+.action-icon-btn.edit-btn:hover {
+  background-color: var(--warning-color);
+  color: white;
+  border-color: var(--warning-color);
+}
+
+/* 削除ボタン */
+.action-icon-btn.delete-btn {
+  color: var(--danger-color);
+}
+.action-icon-btn.delete-btn:hover {
+  background-color: var(--danger-color);
+  color: white;
+  border-color: var(--danger-color);
+}
+
+/* 売却ボタン */
+.action-icon-btn.sell-btn {
+  color: var(--success-color);
+}
+.action-icon-btn.sell-btn:hover {
+  background-color: var(--success-color);
+  color: white;
+  border-color: var(--success-color);
 }
 
 /* ========== インフォメーションブロック ========== */
@@ -273,69 +312,49 @@ a:hover {
   font-weight: 600;
 }
 
-/* ========== タグスタイル ========== */
-.diary-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-md);
+/* ========== タブスタイル ========== */
+.card-tabs {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  margin-bottom: 0.75rem;
 }
 
-.diary-tag {
-  background-color: rgba(74, 109, 167, 0.1);
-  color: var(--primary-color);
-  border-radius: 20px;
-  padding: 0.35rem 0.75rem;
+.card-tabs .nav-link {
+  padding: 0.4rem 0.75rem;
   font-size: 0.85rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-/* ========== アクションボタン ========== */
-.action-buttons {
-  display: flex;
-  gap: var(--spacing-sm);
-}
-
-.btn-icon {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-/* アイコンだけのアクションボタン */
-.action-icon-btn {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background-color: white;
-  border: 1px solid #e5e7eb;
   color: var(--text-light);
-  transition: all 0.2s;
+  border: none;
+  border-radius: 0;
+  position: relative;
 }
 
-.action-icon-btn:hover {
-  background-color: rgba(249, 250, 251, 0.8);
-  transform: translateY(-2px);
+.card-tabs .nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: transparent;
+  transition: background-color 0.2s;
 }
 
-.action-icon-btn.view-btn:hover {
+.card-tabs .nav-link.active {
   color: var(--primary-color);
-  border-color: var(--primary-color);
+  font-weight: 500;
+  background-color: transparent;
 }
 
-.action-icon-btn.edit-btn:hover {
-  color: var(--warning-color);
-  border-color: var(--warning-color);
+.card-tabs .nav-link.active::after {
+  background-color: var(--primary-color);
 }
 
-.action-icon-btn.delete-btn:hover {
-  color: var(--danger-color);
-  border-color: var(--danger-color);
+.card-tabs .nav-link:hover:not(.active) {
+  color: var(--primary-color);
+  background-color: rgba(90, 126, 197, 0.05);
+}
+
+.card-tabs .nav-link i {
+  margin-right: 0.3rem;
 }
 
 /* ========== ボタンスタイル ========== */
@@ -359,8 +378,8 @@ a:hover {
 }
 
 .btn-diary-primary:hover {
-  background-color: #3a5a8c;
-  border-color: #3a5a8c;
+  background-color: #4a6eaf;
+  border-color: #4a6eaf;
   color: white;
 }
 
@@ -371,8 +390,8 @@ a:hover {
 }
 
 .btn-diary-success:hover {
-  background-color: #4a8968;
-  border-color: #4a8968;
+  background-color: #4c9c62;
+  border-color: #4c9c62;
   color: white;
 }
 
@@ -383,8 +402,8 @@ a:hover {
 }
 
 .btn-diary-danger:hover {
-  background-color: #c26c6c;
-  border-color: #c26c6c;
+  background-color: #ca5050;
+  border-color: #ca5050;
   color: white;
 }
 
@@ -395,8 +414,8 @@ a:hover {
 }
 
 .btn-diary-warning:hover {
-  background-color: #d09b58;
-  border-color: #d09b58;
+  background-color: #e4a41c;
+  border-color: #e4a41c;
   color: white;
 }
 
@@ -408,80 +427,143 @@ a:hover {
 }
 
 .btn-diary-outline:hover {
-  background-color: rgba(74, 109, 167, 0.1);
+  background-color: rgba(90, 126, 197, 0.1);
 }
 
-/* ========== フォームスタイル ========== */
-.diary-form {
-  background-color: var(--card-bg-color);
-  border-radius: var(--border-radius);
-  box-shadow: var(--card-shadow);
-  margin-bottom: var(--spacing-lg);
-  position: relative;
+/* ========== カレンダーイベントスタイル ========== */
+.purchase-event {
+  background-color: var(--success-color) !important;
+  border-color: var(--success-color) !important;
+  color: white !important;
 }
 
-.diary-form::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 8px;
-  height: 100%;
+.sell-event {
+  background-color: var(--danger-color) !important;
+  border-color: var(--danger-color) !important;
+  color: white !important;
+}
+
+.memo-event {
+  background-color: var(--info-color) !important;
+  border-color: var(--info-color) !important;
+  color: white !important;
+  opacity: 0.8;
+}
+
+/* 日付クリック時のスタイル */
+.fc-day-clicked {
+  background-color: rgba(90, 126, 197, 0.2) !important;
+  box-shadow: inset 0 0 0 2px var(--primary-color) !important;
+}
+
+/* タグスタイル */
+.diary-tag {
+  background-color: rgba(90, 126, 197, 0.1);
+  color: var(--primary-color);
+  border-radius: 20px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid rgba(90, 126, 197, 0.2);
+}
+
+.diary-tag:hover {
+  background-color: rgba(90, 126, 197, 0.15);
+}
+
+/* プログレスバー */
+.progress-bar.bg-primary {
+  background-color: var(--primary-color) !important;
+}
+
+.progress-bar.bg-success {
+  background-color: var(--success-color) !important;
+}
+
+/* フィルターバッジ */
+.filter-badge {
+  background-color: rgba(90, 126, 197, 0.1);
+  color: var(--primary-color);
+  border: 1px solid rgba(90, 126, 197, 0.2);
+}
+
+.filter-badge:hover {
+  background-color: rgba(90, 126, 197, 0.2);
+}
+
+.filter-badge.active {
   background-color: var(--primary-color);
-  opacity: 0.7;
+  color: white;
 }
 
-.form-header {
-  background-color: rgba(74, 109, 167, 0.05);
-  padding: var(--spacing-lg);
-  border-bottom: 1px solid var(--notebook-line);
+/* スピードダイヤル */
+.speed-dial-trigger {
+  background-color: rgba(90, 126, 197, 0.85);
 }
 
-.form-title {
-  font-size: 1.5rem;
-  color: var(--primary-color);
-  margin-bottom: 0;
-  font-weight: 600;
+.speed-dial-trigger:hover,
+.speed-dial-trigger:focus {
+  background-color: rgba(90, 126, 197, 0.95);
 }
 
-.form-body {
-  padding: var(--spacing-lg);
+.action-add {
+  background-color: rgba(93, 161, 229, 0.85);
 }
 
-.form-section {
-  margin-bottom: var(--spacing-lg);
+.action-edit {
+  background-color: rgba(247, 183, 49, 0.85);
 }
 
-.form-section-title {
-  font-size: 1.25rem;
-  color: var(--primary-color);
-  margin-bottom: var(--spacing-md);
-  padding-bottom: var(--spacing-sm);
-  border-bottom: 1px dashed var(--notebook-line);
-  display: flex;
+.action-delete {
+  background-color: rgba(225, 90, 90, 0.85);
+}
+
+.action-sell {
+  background-color: rgba(93, 176, 117, 0.85);
+}
+
+/* 検索ハイライト */
+.search-highlight {
+  background-color: var(--warning-color);
+  color: white;
+  padding: 0 2px;
+  border-radius: 2px;
+  font-weight: bold;
+}
+
+/* 検索関連カード装飾 */
+.diary-card-highlight {
+  border-left: 3px solid #ffc107 !important;
+}
+
+/* 無限スクロール用ローディングインジケーター */
+#loading-indicator {
+  padding: 1rem;
+  margin: 1rem 0;
+  text-align: center;
+}
+
+#loading-indicator .spinner-border {
+  width: 2rem;
+  height: 2rem;
+}
+
+/* 検索条件表示バッジ */
+.search-badge {
+  display: inline-flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  background-color: #f1f1f1;
+  color: #333;
+  padding: 0.25rem 0.5rem;
+  border-radius: 1rem;
+  margin-right: 0.5rem;
+  font-size: 0.85rem;
 }
 
-.form-footer {
-  background-color: rgba(74, 109, 167, 0.05);
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-top: 1px solid var(--notebook-line);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* インプットデザインの調整 */
-.form-control, .form-select {
-  border-color: var(--notebook-line);
-  border-radius: 6px;
-  transition: all 0.2s;
-}
-
-.form-control:focus, .form-select:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 0.25rem rgba(74, 109, 167, 0.25);
+.search-badge i {
+  margin-right: 0.25rem;
 }
 
 /* ========== 投資分析フィルター ========== */

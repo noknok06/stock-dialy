@@ -27,7 +27,7 @@
 
       <!-- 売却済みバッジ -->
       {% if diary.sell_date %}
-      <span class="badge bg-success">売却済み</span>
+      <span class="badge bg-danger">売却済み</span>
       {% endif %}
     </div>
     <button class="btn btn-sm btn-link p-0 text-decoration-none" type="button" data-bs-toggle="collapse"
@@ -76,12 +76,12 @@
                   data-bs-target="#notes-content-{{ diary.id }}" type="button" role="tab" aria-selected="false">
             <i class="bi bi-journal-richtext"></i> 継続記録
           </button>
+          {% endif %}
           {% if diary.analysis_values.exists %}
           <button class="nav-link" id="analysis-tab-{{ diary.id }}" data-bs-toggle="tab" 
                   data-bs-target="#analysis-content-{{ diary.id }}" type="button" role="tab" aria-selected="false">
             <i class="bi bi-clipboard-data"></i> 分析
           </button>
-          {% endif %}
           {% endif %}
           <button class="nav-link" id="details-tab-{{ diary.id }}" data-bs-toggle="tab" 
                   data-bs-target="#details-content-{{ diary.id }}" type="button" role="tab" aria-selected="false">
@@ -148,27 +148,49 @@
               </div>
               
               <div class="analysis-item-preview">
-                {% for value in template_group.list|slice:":3" %}
+                {% for item in template_group.grouper.items.all %}
                 <div class="analysis-preview-item">
-                  <span class="key">{{ value.analysis_item.name }}:</span>
+                  <span class="key">{{ item.name }}:</span>
                   <span class="value">
-                    {% if value.analysis_item.item_type == 'boolean_with_value' %}
-                      {% if value.boolean_value %}✓{% else %}✗{% endif %}
-                      {% if value.number_value != None %}
-                        {{ value.number_value|floatformat:"-2" }}
-                      {% elif value.text_value %}
-                        {{ value.text_value }}
+                    {% with value_obj=item|get_analysis_value:diary %}
+                      {% if item.item_type == 'boolean_with_value' %}
+                        {% if value_obj and value_obj.boolean_value %}✓{% else %}{% endif %}
+                        {% if value_obj and value_obj.number_value != None %}
+                          {{ value_obj.number_value|floatformat:"-2" }}
+                        {% elif value_obj and value_obj.text_value %}
+                          {{ value_obj.text_value }}
+                        {% else %}
+                          
+                        {% endif %}
+                      {% elif item.item_type == 'number' %}
+                        {% if value_obj and value_obj.number_value != None %}
+                          {{ value_obj.number_value|floatformat:"-2" }}
+                        {% else %}
+                          -
+                        {% endif %}
+                      {% elif item.item_type == 'boolean' %}
+                        {% if value_obj %}
+                          {% if value_obj.boolean_value %}はい{% else %}いいえ{% endif %}
+                        {% else %}
+                          -
+                        {% endif %}
+                      {% elif item.item_type == 'select' %}
+                        {% if value_obj and value_obj.text_value %}
+                          {{ value_obj.text_value }}
+                        {% else %}
+                          -
+                        {% endif %}
+                      {% else %}
+                        {% if value_obj and value_obj.text_value %}
+                          {{ value_obj.text_value }}
+                        {% else %}
+                          -
+                        {% endif %}
                       {% endif %}
-                    {% elif value.analysis_item.item_type == 'number' %}
-                      {{ value.number_value|floatformat:"-2" }}
-                    {% elif value.analysis_item.item_type == 'boolean' %}
-                      {% if value.boolean_value %}はい{% else %}いいえ{% endif %}
-                    {% else %}
-                      {{ value.text_value|default:"-" }}
-                    {% endif %}
+                    {% endwith %}
                   </span>
                 </div>
-                {% endfor %}
+              {% endfor %}
                 
                 {% if template_group.list|length > 3 %}
                 <div class="text-end mt-2">
