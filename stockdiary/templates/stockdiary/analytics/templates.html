@@ -67,12 +67,12 @@
                             <div class="progress" style="height: 6px;">
                               <div class="progress-bar" role="progressbar" 
                                    style="width: {{ item.completion_rate }}%;" 
-                                   aria-valuenow="{{ item.completion_rate }}" 
+                                   aria-valuenow="{{ item.completion_rate|floatformat:2 }}" 
                                    aria-valuemin="0" 
                                    aria-valuemax="100">
                               </div>
                             </div>
-                            <small>{{ item.completion_rate }}%</small>
+                            <small>{{ item.completion_rate|floatformat:2 }}%</small>
                           </td>
                           <td>
                             {% if item.item_type == 'number' %}
@@ -80,7 +80,7 @@
                             {% elif item.item_type == 'boolean' or item.item_type == 'boolean_with_value' %}
                               {{ item.completion_rate }}%
                             {% elif item.item_type == 'select' %}
-                              {{ item.most_common_value|default:"-" }}
+                              {{ item.most_common_value|floatformat:2|default:"-" }}
                             {% else %}
                               -
                             {% endif %}
