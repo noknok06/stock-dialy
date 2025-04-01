@@ -69,15 +69,6 @@ class Command(BaseCommand):
                 stock_value = diary.purchase_price * diary.purchase_quantity
                 percentage = (stock_value / total_value * 100) if total_value else Decimal('0')
                 
-                # セクターを取得（タグから推測）
-                sector = "未分類"
-                sector_tags = ['テクノロジー', '金融', 'ヘルスケア', '消費財', '素材', 'エネルギー', '通信', '公共', '不動産', '産業']
-                
-                for tag in diary.tags.all():
-                    if any(s in tag.name for s in sector_tags):
-                        sector = tag.name
-                        break
-                
                 HoldingRecord.objects.create(
                     snapshot=snapshot,
                     stock_symbol=diary.stock_symbol,

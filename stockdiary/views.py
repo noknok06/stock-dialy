@@ -349,7 +349,6 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
         
         return response
 
-
 class StockDiaryUpdateView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, UpdateView):
     model = StockDiary
     form_class = StockDiaryForm

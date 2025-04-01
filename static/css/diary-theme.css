@@ -5,25 +5,33 @@
  */
 
 /* ========== ヘッダースタイル ========== */
-.diary-header {
-  background-color: #fff;
-  border-bottom: 2px solid var(--notebook-line);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  padding: var(--spacing-md) 0;
+.diary-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1.25rem;
+  background-color: rgba(249, 250, 251, 0.7);
 }
 
-.diary-brand {
+.diary-card-body {
+  padding: 1.25rem;
+}
+
+.diary-meta {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  font-weight: 600;
-  color: var(--primary-color);
-  text-decoration: none;
+  gap: 0.5rem;
+  color: #6b7280;
+  font-size: 0.875rem;
 }
 
-.diary-logo {
-  width: 32px;
-  height: 32px;
+.diary-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 /* ========== 日記カードスタイル ========== */
@@ -480,48 +488,6 @@
 
 .progress-bar.bg-success {
   background-color: var(--success-color) !important;
-}
-
-/* フィルターバッジ */
-.filter-badge {
-  background-color: rgba(90, 126, 197, 0.1);
-  color: var(--primary-color);
-  border: 1px solid rgba(90, 126, 197, 0.2);
-}
-
-.filter-badge:hover {
-  background-color: rgba(90, 126, 197, 0.2);
-}
-
-.filter-badge.active {
-  background-color: var(--primary-color);
-  color: white;
-}
-
-/* スピードダイヤル */
-.speed-dial-trigger {
-  background-color: rgba(90, 126, 197, 0.85);
-}
-
-.speed-dial-trigger:hover,
-.speed-dial-trigger:focus {
-  background-color: rgba(90, 126, 197, 0.95);
-}
-
-.action-add {
-  background-color: rgba(93, 161, 229, 0.85);
-}
-
-.action-edit {
-  background-color: rgba(247, 183, 49, 0.85);
-}
-
-.action-delete {
-  background-color: rgba(225, 90, 90, 0.85);
-}
-
-.action-sell {
-  background-color: rgba(93, 176, 117, 0.85);
 }
 
 /* 検索ハイライト */

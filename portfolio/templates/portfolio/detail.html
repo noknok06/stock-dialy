@@ -12,10 +12,6 @@
 <link rel="stylesheet" href="{% static 'css/speed-dial.css' %}">
 <link rel="stylesheet" href="{% static 'css/portfolio-responsive.css' %}">
 <style>
-  .detail-container {
-    margin-bottom: 2rem;
-  }
-  
   .detail-card {
     border: none;
     border-radius: 0.75rem;
@@ -542,7 +538,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-4 detail-container">
+<div class="container py-4">
   <!-- ページヘッダー -->
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -721,18 +717,7 @@
               </td>
               <td>
                 {% with sector_class=holding.sector|lower|slugify %}
-                <span class="sector-badge 
-                  {% if 'テクノロジー' in holding.sector or 'tech' in sector_class %}tech
-                  {% elif '金融' in holding.sector or 'finance' in sector_class %}finance
-                  {% elif 'ヘルスケア' in holding.sector or '医療' in holding.sector or 'health' in sector_class %}health
-                  {% elif '消費' in holding.sector or 'consumer' in sector_class %}consumer
-                  {% elif '素材' in holding.sector or 'material' in sector_class %}materials
-                  {% elif 'エネルギー' in holding.sector or 'energy' in sector_class %}energy
-                  {% elif '通信' in holding.sector or 'telecom' in sector_class %}telecom
-                  {% elif '公共' in holding.sector or 'utilities' in sector_class %}utilities
-                  {% elif '不動産' in holding.sector or 'real' in sector_class %}realestate
-                  {% elif '産業' in holding.sector or 'industry' in sector_class %}industry
-                  {% else %}other{% endif %}">
+                <span class="sector-badge finance">
                   {{ holding.sector|default:"未分類" }}
                 </span>
                 {% endwith %}

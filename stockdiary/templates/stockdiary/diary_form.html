@@ -18,25 +18,14 @@
 
 {% block content %}
 <div class="container py-4">
-  <!-- 戻るリンク -->
-  <div class="mb-3">
-    {% if form.instance.pk %}
-    <a href="{% url 'stockdiary:detail' form.instance.pk %}" class="btn btn-diary btn-diary-outline">
-      <i class="bi bi-arrow-left"></i> 日記詳細に戻る
-    </a>
-    {% else %}
-    <a href="{% url 'stockdiary:home' %}" class="btn btn-diary btn-diary-outline">
-      <i class="bi bi-arrow-left"></i> 日記一覧に戻る
-    </a>
-    {% endif %}
-  </div>
 
+  <div class="title_header">
+    <h1 class="title">
+      <i class="bi bi-journal-text"></i> {% if form.instance.pk %}日記の編集{% else %}新規日記作成{% endif %}
+    </h1>
+  </div>
   <!-- フォームカード -->
   <div class="diary-form">
-    <div class="form-header">
-      <h3 class="form-title pb-2">{% if form.instance.pk %}日記の編集{% else %}新規日記作成{% endif %}</h3>
-    </div>
-
     <div class="form-body">
       <form method="post">
         {% csrf_token %}

@@ -309,7 +309,7 @@
         
         <!-- 売却済みバッジ -->
         {% if diary.sell_date %}
-        <span class="badge bg-success ms-2">売却済み</span>
+        <span class="badge bg-danger ms-2">売却済み</span>
         {% endif %}
       </div>
       
@@ -784,11 +784,11 @@
                 <div class="simple-card current-card">
                   <div class="card-badge">
                     {% if timeline_diary.sell_date %}
-                      <span class="badge bg-success">売却済み</span>
+                      <span class="badge bg-danger">売却済み</span>
                     {% elif timeline_diary.is_memo or timeline_diary.purchase_price is None or timeline_diary.purchase_quantity is None %}
                       <span class="badge bg-info">メモ</span>
                     {% else %}
-                      <span class="badge bg-primary">保有中</span>
+                      <span class="badge bg-success">保有中</span>
                     {% endif %}
                   </div>
                   
@@ -817,11 +817,11 @@
                   <div class="simple-card">
                     <div class="card-badge">
                       {% if timeline_diary.sell_date %}
-                        <span class="badge bg-success">売却済み</span>
+                        <span class="badge bg-danger">売却済み</span>
                       {% elif timeline_diary.is_memo or timeline_diary.purchase_price is None or timeline_diary.purchase_quantity is None %}
                         <span class="badge bg-info">メモ</span>
                       {% else %}
-                        <span class="badge bg-primary">保有中</span>
+                        <span class="badge bg-success">保有中</span>
                       {% endif %}
                     </div>
                     
