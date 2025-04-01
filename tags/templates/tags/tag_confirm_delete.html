@@ -4,6 +4,7 @@
 
 {% block head %}
 <!-- Bootstrap Icons -->
+<link rel="stylesheet" href="{% static 'css/common.css' %}">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 <style>
   :root {
@@ -57,18 +58,6 @@
     color: var(--danger-color);
     border-radius: 9999px;
     margin: 0 auto 1.5rem;
-  }
-
-  /* タグバッジ */
-  .tag-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.5rem 1rem;
-    background-color: #eef2ff;
-    color: var(--primary-color);
-    border-radius: 9999px;
-    font-weight: 500;
-    margin: 1rem 0;
   }
 
   .tag-badge i {
@@ -139,7 +128,7 @@
           
           <h4 class="mb-3">このタグを削除してもよろしいですか？</h4>
           
-          <div class="tag-badge">
+          <div class="badge">
             <i class="bi bi-tag-fill"></i>
             <span>{{ tag.name }}</span>
           </div>
