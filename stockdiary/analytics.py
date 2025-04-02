@@ -857,3 +857,234 @@ class DiaryAnalytics:
             'template_names': json.dumps(template_names),  # チャート用のテンプレート名
             'template_counts': json.dumps(template_counts)  # チャート用の使用回数
         }        
+# analytics.py の DiaryAnalytics クラスに追加するメソッド
+
+    def get_sector_analysis_data(self, diaries, all_diaries):
+        """
+        セクター分析データを取得
+        """
+        from django.db.models import Count, Avg, F, ExpressionWrapper, FloatField, Q, StdDev
+        from django.db.models.functions import Length
+        from collections import defaultdict
+        from stockdiary.templatetags.sector_analysis_tags import get_sector_correlation_data
+        import json
+        from decimal import Decimal
+        
+        # 結果格納用の辞書
+        result = {
+            'sector_allocation_data': {'labels': [], 'values': []},
+            'sector_stocks_data': {'labels': [], 'counts': [], 'investments': []},
+            'sector_performance_data': {'labels': [], 'returns': [], 'success_rates': []},
+            'sector_correlation_data': [],
+            'highest_return_sector': {'name': '', 'value': 0},
+            'highest_success_sector': {'name': '', 'value': 0},
+            'most_stable_sector': {'name': '', 'value': 0},
+            'portfolio_hints': [],
+            'total_investment': 0
+        }
+        
+        # 投資データがない場合は空のデータを返す
+        if not diaries:
+            return result
+        
+        # 総投資額を計算（配分比率の計算に使用）
+        total_investment = sum([
+            diary.purchase_price * diary.purchase_quantity 
+            for diary in diaries 
+            if diary.purchase_price and diary.purchase_quantity
+        ])
+        result['total_investment'] = total_investment
+        
+        # セクターごとに日記をグループ化
+        sector_groups = defaultdict(list)
+        for diary in diaries:
+            sector_name = diary.sector or '未分類'
+            sector_groups[sector_name].append(diary)
+        
+        # セクター別の分析を行う
+        sector_stats = []
+        
+        for sector_name, sector_diaries in sector_groups.items():
+            # 銘柄数
+            count = len(sector_diaries)
+            
+            # 投資額 - Decimal型を維持
+            investment = sum([
+                diary.purchase_price * diary.purchase_quantity 
+                for diary in sector_diaries 
+                if diary.purchase_price and diary.purchase_quantity
+            ])
+
+            # 平均投資額 - Decimal型の除算
+            avg_investment = Decimal(investment) / Decimal(count) if count > 0 else Decimal('0')
+            
+            # 配分率 - Decimal型の除算
+            allocation = (Decimal(investment) / Decimal(total_investment)) * Decimal('100') if total_investment > 0 else Decimal('0')
+            
+            # リターン計算
+            returns = []
+            for diary in sector_diaries:
+                if diary.sell_date and diary.purchase_price and diary.sell_price:
+                    # Decimal同士の計算を保証
+                    return_rate = ((Decimal(diary.sell_price) - Decimal(diary.purchase_price)) / Decimal(diary.purchase_price)) * Decimal('100')
+                    returns.append(return_rate)
+            
+            # 平均リターン - Decimal型の除算
+            avg_return = sum(returns) / Decimal(len(returns)) if returns else Decimal('0')
+            
+            # リターンの標準偏差（変動性）
+            if len(returns) >= 2:
+                import statistics
+                # 計算前にfloatに変換
+                return_volatility = statistics.stdev([float(r) for r in returns])
+            else:
+                return_volatility = 0
+            
+            # 成功率
+            sold_diaries = [d for d in sector_diaries if d.sell_date and d.purchase_price and d.sell_price]
+            if sold_diaries:
+                successful = sum(1 for d in sold_diaries if d.sell_price >= d.purchase_price)
+                # floatとDecimalの混合を避けるため、Decimal型で統一
+                success_rate = (Decimal(successful) / Decimal(len(sold_diaries))) * Decimal('100')
+            else:
+                success_rate = Decimal('0')
+            
+            sector_stats.append({
+                'name': sector_name,
+                'count': count,
+                'investment': investment,
+                'avg_investment': avg_investment,
+                'allocation': allocation,
+                'avg_return': avg_return,
+                'return_volatility': return_volatility,
+                'success_rate': success_rate
+            })
+        
+        # 分析結果から各種データを生成
+        if not sector_stats:
+            # デフォルトセクターデータ
+            default_sector = {
+                'name': 'サンプル',
+                'count': 1,
+                'investment': Decimal('0'),
+                'avg_investment': Decimal('0'),
+                'allocation': Decimal('100.0'),
+                'avg_return': Decimal('0.0'),
+                'return_volatility': 0,
+                'success_rate': Decimal('0.0')
+            }
+            sector_stats = [default_sector]
+        
+        # 少なくとも1つのセクターがある場合にチャートを生成
+        if len(sector_stats) >= 1:
+            # 1. セクター別投資配分
+            allocation_data = sorted(sector_stats, key=lambda x: x['allocation'], reverse=True)
+            result['sector_allocation_data'] = {
+                'labels': [stat['name'] for stat in allocation_data],
+                'values': [float(round(stat['allocation'], 1)) for stat in allocation_data]  # Decimalをfloatに変換
+            }
+
+            # 2. セクター別銘柄数と平均投資額
+            stocks_data = sorted(sector_stats, key=lambda x: x['count'], reverse=True)
+            result['sector_stocks_data'] = {
+                'labels': [stat['name'] for stat in stocks_data],
+                'counts': [int(stat['count']) for stat in stocks_data],
+                'investments': [float(round(stat['avg_investment'], 0)) for stat in stocks_data]  # Decimalをfloatに変換
+            }
+
+            # 3. セクター別リターンと成功率
+            performance_data = sorted(sector_stats, key=lambda x: x['avg_return'], reverse=True)
+            result['sector_performance_data'] = {
+                'labels': [stat['name'] for stat in performance_data],
+                'returns': [float(round(stat['avg_return'], 1)) for stat in performance_data],  # Decimalをfloatに変換
+                'success_rates': [float(round(stat['success_rate'], 1)) for stat in performance_data]  # Decimalをfloatに変換
+            }
+            
+            # 4. セクター間相関行列
+            result['sector_correlation_data'] = get_sector_correlation_data(diaries)
+        
+        # 最も成績の良いセクターを特定
+        if sector_stats:
+            # リターンが最も高いセクター
+            highest_return = max(sector_stats, key=lambda x: x['avg_return'])
+            if highest_return['avg_return'] > 0:
+                result['highest_return_sector'] = {
+                    'name': highest_return['name'],
+                    'value': float(highest_return['avg_return'])  # Decimalをfloatに変換
+                }
+            
+            # 成功率が最も高いセクター
+            highest_success = max(sector_stats, key=lambda x: x['success_rate'])
+            if highest_success['success_rate'] > 0:
+                result['highest_success_sector'] = {
+                    'name': highest_success['name'],
+                    'value': float(highest_success['success_rate'])  # Decimalをfloatに変換
+                }
+            
+            # 最も安定性の高い（変動性の低い）セクター
+            stable_sectors = [s for s in sector_stats if s['return_volatility'] > 0]
+            if stable_sectors:
+                most_stable = min(stable_sectors, key=lambda x: x['return_volatility'])
+                result['most_stable_sector'] = {
+                    'name': most_stable['name'],
+                    'value': float(most_stable['return_volatility'])
+                }
+        
+        # ポートフォリオ最適化のヒント生成
+        hints = self._generate_portfolio_hints(sector_stats, result['sector_correlation_data'])
+        result['portfolio_hints'] = hints
+        
+        return result
+        
+    def _generate_portfolio_hints(self, sector_stats, correlation_data):
+        """ポートフォリオ最適化のヒントを生成"""
+        hints = []
+        
+        # 十分なデータがあるか確認
+        if len(sector_stats) < 3 or not correlation_data:
+            return hints
+        
+        # 1. 相関が低いセクターペアを探す（分散効果のためのヒント）
+        neg_correlations = []
+        for row in correlation_data:
+            sector1 = row['sector']
+            for i, corr in enumerate(row['correlations']):
+                if float(corr['value']) < -0.1 and 'danger' in corr['css_class']:
+                    sector2 = correlation_data[i]['sector']
+                    if sector1 != sector2:
+                        neg_correlations.append((sector1, sector2, float(corr['value'])))
+        
+        if neg_correlations:
+            # 最も負の相関が強いペアを選択
+            best_pair = min(neg_correlations, key=lambda x: x[2])
+            hints.append({
+                'icon': 'bi-pie-chart',
+                'title': '最適なセクター配分',
+                'text': f'{best_pair[0]}と{best_pair[1]}セクター間の負の相関({best_pair[2]:.2f})を活かし、リスク分散効果を最大化する配分を検討しましょう。'
+            })
+        else:
+            # 負の相関がない場合は一般的なアドバイス
+            hints.append({
+                'icon': 'bi-pie-chart',
+                'title': 'セクター間の分散',
+                'text': '複数のセクターに分散投資することで、特定のセクターリスクを軽減し、より安定したリターンを得られる可能性があります。'
+            })
+        
+        # 2. 最も成功率の高いセクターに関するヒント
+        success_sectors = [s for s in sector_stats if s['success_rate'] > 50]
+        if success_sectors:
+            best_sector = max(success_sectors, key=lambda x: x['success_rate'])
+            hints.append({
+                'icon': 'bi-search',
+                'title': 'セクター内の銘柄選択',
+                'text': f'{best_sector["name"]}セクターは{best_sector["success_rate"]:.1f}%の高い成功率を示しています。このセクターへの投資比率を高めることを検討してください。'
+            })
+        
+        # 3. リバランスに関するヒント
+        hints.append({
+            'icon': 'bi-arrow-repeat',
+            'title': 'リバランス戦略',
+            'text': 'セクター間の相関関係は経済環境により変化するため、定期的な分析と配分調整が重要です。四半期ごとのリバランスをお勧めします。'
+        })
+        
+        return hints

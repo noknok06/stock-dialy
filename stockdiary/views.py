@@ -656,6 +656,9 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         holding_period_data = analytics.prepare_holding_period_data(diaries)
         recent_trends = analytics.prepare_recent_trends(diaries)
         
+        sector_data = analytics.get_sector_analysis_data(diaries, all_diaries)
+        context.update(sector_data)
+            
         # スピードダイアルのアクションを定義
         analytics_actions = [
             {

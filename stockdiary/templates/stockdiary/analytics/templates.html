@@ -1,21 +1,88 @@
 {% load humanize %} 
+{% load sector_analysis_tags %}
 
-<!-- 分析テンプレート概要カード -->
+<!-- セクター別分析 -->
 <div class="row">
-  <!-- 分析項目の詳細（改善版：テンプレートごとのアコーディオン表示） -->
   <div class="col-12 mb-4">
     <div class="dashboard-card">
       <div class="card-header">
         <h5 class="card-header-title">
-          <i class="bi bi-list-check"></i> 分析項目の完了状況
+          <i class="bi bi-building"></i> セクター別分析概要
         </h5>
+        <div>
+          <button class="btn btn-sm btn-outline-primary" id="toggleAllSectors">
+            <i class="bi bi-arrows-expand" id="toggleButtonIcon"></i>
+            <span id="toggleButtonText">すべて展開</span>
+          </button>
+        </div>
       </div>
       <div class="card-body">
-        <div class="accordion" id="templateAccordion">
-          {% regroup items_analysis by template_name as template_groups %}
+        <!-- セクター別投資配分 -->
+        <div class="row mb-4">
+          <div class="col-lg-6">
+            <h6 class="mb-3">セクター別投資配分</h6>
+            <div class="chart-container" style="height: 300px">
+              <canvas id="sectorAllocationChart"></canvas>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <h6 class="mb-3">セクター別リターンと成功率</h6>
+            <div class="chart-container" style="height: 300px">
+              <canvas id="sectorReturnSuccessChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- セクター間相関 -->
+        {% if sector_correlation_data %}
+        <div class="mb-4">
+          <h6 class="mb-3">セクター間のリターン相関</h6>
+          <div class="table-responsive">
+            <table class="table table-bordered table-sm">
+              <thead class="table-light">
+                <tr>
+                  <th class="text-center">セクター</th>
+                  {% for sector in sector_names %}
+                    <th class="text-center">{{ sector }}</th>
+                  {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in sector_correlation_data %}
+                <tr>
+                  <th class="text-center table-light">{{ row.sector }}</th>
+                  {% for corr in row.correlations %}
+                    <td class="text-center {{ corr.css_class }}">{{ corr.value }}</td>
+                  {% endfor %}
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="small text-muted mt-2">
+            <i class="bi bi-info-circle"></i> 相関係数の色分け: 
+            <span class="badge bg-success bg-opacity-25">強い正の相関</span> 
+            <span class="badge bg-success bg-opacity-10">弱い正の相関</span> 
+            <span class="badge bg-light">無相関</span> 
+            <span class="badge bg-danger bg-opacity-10">負の相関</span>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- セクター別銘柄数と平均投資額 -->
+        <div class="mb-4">
+          <h6 class="mb-3">セクター別銘柄数と平均投資額</h6>
+          <div class="chart-container" style="height: 300px">
+            <canvas id="sectorStocksInvestmentChart"></canvas>
+          </div>
+        </div>
+
+        <div class="accordion" id="sectorAccordion">
+          {% regroup diaries by sector as sector_groups %}
           
-          {% for template in template_groups %}
-            <div class="accordion-item mb-3 template-group" data-template-id="{{ template.list.0.template_id }}">
+          {% for sector in sector_groups %}
+            {% with sector_name=sector.grouper|default:"未分類" %}
+            <div class="accordion-item mb-3 sector-group" data-sector-id="{{ sector_name|slugify }}">
               <h2 class="accordion-header" id="heading{{ forloop.counter }}">
                 <button class="accordion-button {% if forloop.counter > 1 %}collapsed{% endif %}" 
                         type="button" 
@@ -24,214 +91,297 @@
                         aria-expanded="{% if forloop.counter == 1 %}true{% else %}false{% endif %}" 
                         aria-controls="collapse{{ forloop.counter }}">
                   <div class="d-flex justify-content-between align-items-center w-100 pe-3">
-                    <span><i class="bi bi-clipboard-data me-2"></i> {{ template.grouper }}</span>
-                    <span class="badge bg-primary rounded-pill">{{ template.list|length }}項目</span>
+                    <span>
+                      <i class="bi bi-building me-2"></i> {{ sector_name }}
+                    </span>
+                    <span class="badge bg-primary rounded-pill">
+                      {{ sector.list|length }}件
+                      {% with sector_allocation=sector.list|sector_allocation:total_investment %}
+                        ({{ sector_allocation|floatformat:1 }}%)
+                      {% endwith %}
+                    </span>
                   </div>
                 </button>
               </h2>
               <div id="collapse{{ forloop.counter }}" 
                    class="accordion-collapse collapse {% if forloop.counter == 1 %}show{% endif %}" 
                    aria-labelledby="heading{{ forloop.counter }}" 
-                   data-bs-parent="#templateAccordion">
+                   data-bs-parent="#sectorAccordion">
                 <div class="accordion-body p-0">
-                  <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                      <thead class="table-light">
-                        <tr>
-                          <th style="width: 40%;">項目名</th>
-                          <th style="width: 15%;">タイプ</th>
-                          <th style="width: 15%;">使用回数</th>
-                          <th style="width: 15%;">完了率</th>
-                          <th style="width: 15%;">平均値</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {% for item in template.list %}
-                        <tr>
-                          <td>{{ item.name }}</td>
-                          <td>
-                            {% if item.item_type == 'number' %}
-                              <span class="badge bg-primary">数値</span>
-                            {% elif item.item_type == 'boolean' %}
-                              <span class="badge bg-success">チェック</span>
-                            {% elif item.item_type == 'boolean_with_value' %}
-                              <span class="badge bg-info">チェック+値</span>
-                            {% elif item.item_type == 'select' %}
-                              <span class="badge bg-warning">選択肢</span>
-                            {% else %}
-                              <span class="badge bg-secondary">テキスト</span>
-                            {% endif %}
-                          </td>
-                          <td>{{ item.usage_count }}</td>
-                          <td>
-                            <div class="progress" style="height: 6px;">
-                              <div class="progress-bar" role="progressbar" 
-                                   style="width: {{ item.completion_rate }}%;" 
-                                   aria-valuenow="{{ item.completion_rate|floatformat:2 }}" 
-                                   aria-valuemin="0" 
-                                   aria-valuemax="100">
+                  <!-- セクター内の分析項目サマリー -->
+                  <div class="p-3 bg-light">
+                    <div class="row">
+                      <div class="col-md-3 mb-3 mb-md-0">
+                        <div class="d-flex align-items-center">
+                          <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                            <i class="bi bi-graph-up text-primary fs-4"></i>
+                          </div>
+                          <div>
+                            <h6 class="mb-1">平均リターン</h6>
+                            <p class="h4 mb-0 {% if sector.list|sector_avg_return > 0 %}text-success{% elif sector.list|sector_avg_return < 0 %}text-danger{% endif %}">
+                              {% with avg_return=sector.list|sector_avg_return %}
+                                {% if avg_return > 0 %}+{% endif %}{{ avg_return|floatformat:1 }}%
+                              {% endwith %}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-3 mb-3 mb-md-0">
+                        <div class="d-flex align-items-center">
+                          <div class="bg-success bg-opacity-10 p-2 rounded-3 me-3">
+                            <i class="bi bi-check2-all text-success fs-4"></i>
+                          </div>
+                          <div>
+                            <h6 class="mb-1">成功率</h6>
+                            <p class="h4 mb-0">
+                              {% with success_rate=sector.list|sector_success_rate %}
+                                {{ success_rate|floatformat:1 }}%
+                              {% endwith %}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-3 mb-3 mb-md-0">
+                        <div class="d-flex align-items-center">
+                          <div class="bg-info bg-opacity-10 p-2 rounded-3 me-3">
+                            <i class="bi bi-coin text-info fs-4"></i>
+                          </div>
+                          <div>
+                            <h6 class="mb-1">平均投資額</h6>
+                            <p class="h4 mb-0">
+                              {% with avg_investment=sector.list|sector_avg_investment %}
+                                ¥{{ avg_investment|floatformat:0|intcomma }}
+                              {% endwith %}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="d-flex align-items-center">
+                          <div class="bg-warning bg-opacity-10 p-2 rounded-3 me-3">
+                            <i class="bi bi-calendar-check text-warning fs-4"></i>
+                          </div>
+                          <div>
+                            <h6 class="mb-1">平均保有期間</h6>
+                            <p class="h4 mb-0">
+                              {% with avg_holding=sector.list|sector_avg_holding_days %}
+                                {{ avg_holding|floatformat:0 }}日
+                              {% endwith %}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- セクターの詳細分析 -->
+                  <div class="p-4">
+                    {% with sector_metrics=sector.list|sector_metrics %}
+                      {% if sector_metrics.indicators or sector_metrics.tags %}
+                      <div class="row mb-4">
+                        <div class="col-12">
+                          <h6 class="mb-3">注目指標と頻出タグ</h6>
+                          <div class="card border-0 bg-light">
+                            <div class="card-body">
+                              {% if sector_metrics.indicators %}
+                              <div class="row mb-3">
+                                <div class="col-12">
+                                  <h6 class="text-muted mb-2">注目指標</h6>
+                                  <div class="d-flex flex-wrap gap-2">
+                                    {% for indicator in sector_metrics.indicators %}
+                                      <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2">{{ indicator.name }}</span>
+                                    {% endfor %}
+                                  </div>
+                                </div>
                               </div>
+                              {% endif %}
+                              
+                              {% if sector_metrics.tags %}
+                              <div class="row">
+                                <div class="col-12">
+                                  <h6 class="text-muted mb-2">頻出タグ</h6>
+                                  <div class="d-flex flex-wrap gap-2">
+                                    {% for tag in sector_metrics.tags %}
+                                      <span class="badge bg-success bg-opacity-10 text-success px-3 py-2">{{ tag.name }}</span>
+                                    {% endfor %}
+                                  </div>
+                                </div>
+                              </div>
+                              {% endif %}
                             </div>
-                            <small>{{ item.completion_rate|floatformat:2 }}%</small>
-                          </td>
-                          <td>
-                            {% if item.item_type == 'number' %}
-                              {{ item.average_value|floatformat:2 }}
-                            {% elif item.item_type == 'boolean' or item.item_type == 'boolean_with_value' %}
-                              {{ item.completion_rate|floatformat:2 }}%
-                            {% elif item.item_type == 'select' %}
-                              {{ item.most_common_value|floatformat:2|default:"-" }}
-                            {% else %}
-                              -
-                            {% endif %}
-                          </td>
-                        </tr>
-                        {% endfor %}
-                      </tbody>
-                    </table>
+                          </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                    {% endwith %}
+
+                    <!-- PER/ROEヒートマップ（データがある場合のみ表示） -->
+                    {% with per_roe_matrix=sector.list|sector_per_roe_matrix %}
+                      {% if per_roe_matrix %}
+                      <div class="row mb-4">
+                        <div class="col-12">
+                          <h6 class="mb-3">{{ sector_name }}セクターのPERとROEに基づく成功率</h6>
+                          <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                              <thead class="table-light">
+                                <tr>
+                                  <th class="text-center">PER / ROE</th>
+                                  {% for roe in per_roe_matrix.roe_values %}
+                                    <th class="text-center">{{ roe }}%</th>
+                                  {% endfor %}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {% for per_row in per_roe_matrix.matrix %}
+                                <tr>
+                                  <th class="text-center table-light">{{ per_row.per }}倍</th>
+                                  {% for cell in per_row.values %}
+                                    <td class="text-center {{ cell.css_class }}">{{ cell.value }}%</td>
+                                  {% endfor %}
+                                </tr>
+                                {% endfor %}
+                              </tbody>
+                            </table>
+                          </div>
+                          <div class="small text-muted mt-2">
+                            <i class="bi bi-info-circle"></i> 色分け: 
+                            <span class="badge bg-success bg-opacity-75">高い成功率(90%+)</span> 
+                            <span class="badge bg-success bg-opacity-50">良い成功率(80-89%)</span> 
+                            <span class="badge bg-success bg-opacity-25">中程度(60-79%)</span> 
+                            <span class="badge bg-warning bg-opacity-25">低い(40-59%)</span> 
+                            <span class="badge bg-danger bg-opacity-25">非常に低い(40%未満)</span>
+                          </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                    {% endwith %}
+
+                    <!-- セクター分析のインサイト -->
+                    <div class="row">
+                      <div class="col-12">
+                        <h6 class="mb-3">セクター分析のインサイト</h6>
+                        <div class="card border-0 bg-light">
+                          <div class="card-body">
+                            {% with sector_insights=sector.list|sector_insights:all_diaries %}
+                              {% if sector_insights %}
+                                <ul class="mb-0">
+                                  {% for insight in sector_insights %}
+                                    <li class="mb-2">{{ insight|safe }}</li>
+                                  {% endfor %}
+                                </ul>
+                              {% else %}
+                                <p class="text-muted mb-0">このセクターのインサイトを生成するには、より多くの取引データが必要です。</p>
+                              {% endif %}
+                            {% endwith %}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+            {% endwith %}
           {% empty %}
             <div class="alert alert-info">
               <i class="bi bi-info-circle me-2"></i>
-              <span>分析項目のデータがありません。テンプレートを使用して日記を記録すると、ここに統計情報が表示されます。</span>
+              <span>セクター分析のためのデータがありません。株式を記録して業種を設定すると、ここに分析結果が表示されます。</span>
             </div>
           {% endfor %}
         </div>
-        
-        <!-- テンプレートがない場合の表示 -->
-        <div id="noItemsMessage" class="alert alert-info d-none">
-          <i class="bi bi-info-circle me-2"></i>
-          <span>選択したテンプレートの分析項目データがありません。</span>
-        </div>
       </div>
     </div>
   </div>
 </div>
 
+<!-- セクター分析のインサイト -->
 <div class="row">
-  <div class="col-lg-8 mb-4">
-    <div class="dashboard-card">
-      <div class="card-header">
-        <h5 class="card-header-title">
-          <i class="bi bi-clipboard-data"></i> テンプレート使用概要
-        </h5>
-      </div>
-      <div class="card-body">
-        <div class="chart-container">
-          <canvas id="templateUsageChart"></canvas>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <div class="col-lg-4 mb-4">
-    <div class="dashboard-card">
-      <div class="card-header">
-        <h5 class="card-header-title">
-          <i class="bi bi-pie-chart"></i> テンプレート別使用率
-        </h5>
-      </div>
-      <div class="card-body">
-        <div class="chart-container">
-          <canvas id="templateTypeChart"></canvas>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-<div class="row">
-  <!-- テンプレート分析のインサイト -->
   <div class="col-12 mb-4">
     <div class="dashboard-card">
       <div class="card-header">
         <h5 class="card-header-title">
-          <i class="bi bi-lightbulb"></i> 分析テンプレートのインサイト
+          <i class="bi bi-lightbulb"></i> セクターポートフォリオのインサイト
         </h5>
       </div>
       <div class="card-body">
         <div class="row">
+          <!-- 最もリターンが高いセクター -->
+          <div class="col-md-4 mb-3">
+            <div class="d-flex align-items-start">
+              <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                <i class="bi bi-graph-up text-primary fs-4"></i>
+              </div>
+              <div>
+                <h6 class="mb-2">最もリターンが高いセクター</h6>
+                <p class="text-muted small mb-0">
+                  {{ highest_return_sector.name|default:"データなし" }} 
+                  {% if highest_return_sector.value %}
+                    {% if highest_return_sector.value > 0 %}+{% endif %}{{ highest_return_sector.value|floatformat:1 }}%
+                  {% endif %}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 最も成功率が高いセクター -->
           <div class="col-md-4 mb-3">
             <div class="d-flex align-items-start">
               <div class="bg-success bg-opacity-10 p-2 rounded-3 me-3">
                 <i class="bi bi-trophy text-success fs-4"></i>
               </div>
               <div>
-                <h6 class="mb-2">最も使用されたテンプレート</h6>
+                <h6 class="mb-2">最も成功率が高いセクター</h6>
                 <p class="text-muted small mb-0">
-                  {{ most_used_template.name|default:"データなし" }} 
-                  ({{ most_used_template.count|default:0 }}回)
+                  {{ highest_success_sector.name|default:"データなし" }} 
+                  {% if highest_success_sector.value %}
+                    ({{ highest_success_sector.value|floatformat:1 }}%)
+                  {% endif %}
                 </p>
               </div>
             </div>
           </div>
+
+          <!-- 最も安定性の高いセクター -->
           <div class="col-md-4 mb-3">
             <div class="d-flex align-items-start">
-              <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
-                <i class="bi bi-check2-all text-primary fs-4"></i>
+              <div class="bg-info bg-opacity-10 p-2 rounded-3 me-3">
+                <i class="bi bi-shield-check text-info fs-4"></i>
               </div>
               <div>
-                <h6 class="mb-2">最も完了率が高いテンプレート</h6>
+                <h6 class="mb-2">最も安定性の高いセクター</h6>
                 <p class="text-muted small mb-0">
-                  {{ highest_completion_template.name|default:"データなし" }} 
-                  ({{ highest_completion_template.rate|default:0|floatformat:1 }}%)
-                </p>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-4 mb-3">
-            <div class="d-flex align-items-start">
-              <div class="bg-warning bg-opacity-10 p-2 rounded-3 me-3">
-                <i class="bi bi-arrow-up-right text-warning fs-4"></i>
-              </div>
-              <div>
-                <h6 class="mb-2">最も改善が見られたテンプレート</h6>
-                <p class="text-muted small mb-0">
-                  {{ most_improved_template.name|default:"データなし" }} 
-                  (+{{ most_improved_template.improvement|default:0|floatformat:1 }}%)
+                  {{ most_stable_sector.name|default:"データなし" }} 
+                  {% if most_stable_sector.value %}
+                    (変動率: {{ most_stable_sector.value|floatformat:1 }}%)
+                  {% endif %}
                 </p>
               </div>
             </div>
           </div>
         </div>
         
+        <!-- ポートフォリオ最適化のヒント -->
         <div class="row mt-4">
           <div class="col-12">
-            <h6 class="mb-3">テンプレート活用のヒント</h6>
+            <h6 class="mb-3">ポートフォリオ最適化のヒント</h6>
             <div class="card bg-light">
               <div class="card-body">
                 <div class="row">
-                  <div class="col-md-4 mb-3 mb-md-0">
+                  {% for hint in portfolio_hints %}
+                  <div class="col-md-4 {% if not forloop.last %}mb-3 mb-md-0{% endif %}">
                     <div class="d-flex align-items-center mb-2">
-                      <i class="bi bi-calendar-check text-primary me-2"></i>
-                      <strong>定期的な使用</strong>
+                      <i class="bi {{ hint.icon }} text-primary me-2"></i>
+                      <strong>{{ hint.title }}</strong>
                     </div>
                     <p class="small mb-0">
-                      同じテンプレートを定期的に使用することで、投資判断の一貫性を保ち、時間経過による変化を追跡できます。
+                      {{ hint.text }}
                     </p>
                   </div>
-                  <div class="col-md-4 mb-3 mb-md-0">
-                    <div class="d-flex align-items-center mb-2">
-                      <i class="bi bi-grid-3x3 text-primary me-2"></i>
-                      <strong>複数テンプレートの併用</strong>
-                    </div>
-                    <p class="small mb-0">
-                      異なる視点のテンプレートを併用することで、投資判断の質を高めることができます。
-                    </p>
+                  {% empty %}
+                  <div class="col-12">
+                    <p class="text-muted">ヒントを生成するにはより多くのセクターデータが必要です。複数の業種に投資すると、ここに最適化ヒントが表示されます。</p>
                   </div>
-                  <div class="col-md-4">
-                    <div class="d-flex align-items-center mb-2">
-                      <i class="bi bi-sliders text-primary me-2"></i>
-                      <strong>カスタマイズ</strong>
-                    </div>
-                    <p class="small mb-0">
-                      自分の投資スタイルに合わせてテンプレートをカスタマイズすると、より効果的な分析が可能になります。
-                    </p>
-                  </div>
+                  {% endfor %}
                 </div>
               </div>
             </div>
@@ -245,38 +395,10 @@
 <!-- JavaScript部分 -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    // テンプレートフィルタリング
-    const templateFilter = document.getElementById('templateFilter');
-    const templateGroups = document.querySelectorAll('.template-group');
-    const noItemsMessage = document.getElementById('noItemsMessage');
-    
-    if (templateFilter) {
-      templateFilter.addEventListener('change', function() {
-        const selectedTemplateId = this.value;
-        let visibleGroupsCount = 0;
-        
-        templateGroups.forEach(group => {
-          const templateId = group.getAttribute('data-template-id');
-          if (selectedTemplateId === 'all' || templateId === selectedTemplateId) {
-            group.style.display = '';
-            visibleGroupsCount++;
-          } else {
-            group.style.display = 'none';
-          }
-        });
-        
-        // テンプレートが1つも表示されていない場合、メッセージを表示
-        if (visibleGroupsCount === 0) {
-          noItemsMessage.classList.remove('d-none');
-        } else {
-          noItemsMessage.classList.add('d-none');
-        }
-      });
-    }
-    
     // すべて展開/折りたたみボタン
-    const toggleAllButton = document.getElementById('toggleAllTemplates');
+    const toggleAllButton = document.getElementById('toggleAllSectors');
     const toggleButtonText = document.getElementById('toggleButtonText');
+    const toggleButtonIcon = document.getElementById('toggleButtonIcon');
     let isExpanded = false;
     
     if (toggleAllButton) {
@@ -305,50 +427,46 @@
         });
         
         toggleButtonText.textContent = isExpanded ? 'すべて折りたたむ' : 'すべて展開';
-        toggleAllButton.querySelector('i').className = isExpanded ? 'bi bi-arrows-collapse' : 'bi bi-arrows-expand';
+        toggleButtonIcon.className = isExpanded ? 'bi bi-arrows-collapse' : 'bi bi-arrows-expand';
       });
     }
+    
+    // セクター別投資配分チャート
+    setupSectorAllocationChart();
+    
+    // セクター別銘柄数と平均投資額チャート
+    setupSectorStocksInvestmentChart();
+    
+    // セクター別リターンと成功率チャート
+    setupSectorReturnSuccessChart();
   });
-</script>
-
-<!-- テンプレート使用概要チャート -->
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // テンプレート使用概要チャート
-    setupTemplateUsageChart();
+  
+  // セクター別投資配分チャート
+function setupSectorAllocationChart() {
+  const ctx = document.getElementById('sectorAllocationChart');
+  if (!ctx) return;
+  
+  // データを取得し、エラーハンドリング追加
+  try {
+    // Django テンプレートからJSONデータを取得
+    const sectorLabels = {{ sector_allocation_data.labels|safe|default:"[]" }};
+    const sectorValues = {{ sector_allocation_data.values|safe|default:"[]" }};
     
-    // テンプレート種類別使用率
-    setupTemplateTypeChart();
+    if (!sectorLabels.length || !sectorValues.length) {
+      ctx.parentElement.innerHTML = '<div class="alert alert-info p-3 h-100 d-flex align-items-center justify-content-center">十分なセクターデータがありません</div>';
+      return;
+    }
     
-    // テンプレート完了率チャート
-    setupChecklistCompletionChart();
-  });
-  function setupTemplateTypeChart() {
-    const ctx = document.getElementById('templateTypeChart');
-    if (!ctx) return;
-    
-    // テンプレート名とその使用回数を取得
-    const templateTypeLabels = {{ template_type_labels|safe|default:"[]" }};
-    const templateTypeData = {{ template_type_data|safe|default:"[]" }};
-    
-    if (!templateTypeLabels.length || !templateTypeData.length) return;
-    
-    const colors = [
-      'rgba(79, 70, 229, 0.7)',
-      'rgba(16, 185, 129, 0.7)',
-      'rgba(245, 158, 11, 0.7)',
-      'rgba(239, 68, 68, 0.7)',
-      'rgba(59, 130, 246, 0.7)',
-      'rgba(168, 85, 247, 0.7)'
-    ];
+    // チャートの色生成
+    const colors = generateColors(sectorLabels.length);
     
     new Chart(ctx, {
-      type: 'doughnut',
+      type: 'pie',
       data: {
-        labels: templateTypeLabels,
+        labels: sectorLabels,
         datasets: [{
-          data: templateTypeData,
-          backgroundColor: colors.slice(0, templateTypeLabels.length),
+          data: sectorValues,
+          backgroundColor: colors,
           borderWidth: 1
         }]
       },
@@ -357,17 +475,112 @@
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            display: true, // 凡例を表示
-            position: 'right'
+            position: 'right',
+            labels: {
+              boxWidth: 12,
+              font: {
+                size: 11
+              }
+            }
           },
           tooltip: {
             callbacks: {
               label: function(context) {
                 const label = context.label || '';
                 const value = context.raw || 0;
-                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
-                return `${label}: ${value}回 (${percentage}%)`;
+                return `${label}: ${value}%`;
+              }
+            }
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.error('チャート描画エラー:', error);
+    ctx.parentElement.innerHTML = '<div class="alert alert-danger p-3">チャートの描画中にエラーが発生しました</div>';
+  }
+}
+
+  
+  // セクター別銘柄数と平均投資額チャート
+  function setupSectorStocksInvestmentChart() {
+    const ctx = document.getElementById('sectorStocksInvestmentChart');
+    if (!ctx) return;
+    
+    // Django テンプレートからJSONデータを取得
+    const sectorLabels = {{ sector_stocks_data.labels|safe|default:"[]" }};
+    const stocksCounts = {{ sector_stocks_data.counts|safe|default:"[]" }};
+    const avgInvestments = {{ sector_stocks_data.investments|safe|default:"[]" }};
+    
+    if (!sectorLabels.length || !stocksCounts.length || !avgInvestments.length) {
+      ctx.parentElement.innerHTML = '<div class="alert alert-info p-3 h-100 d-flex align-items-center justify-content-center">十分なセクターデータがありません</div>';
+      return;
+    }
+    
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: sectorLabels,
+        datasets: [
+          {
+            label: '銘柄数',
+            data: stocksCounts,
+            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+            borderColor: 'rgb(54, 162, 235)',
+            borderWidth: 1,
+            yAxisID: 'y'
+          },
+          {
+            label: '平均投資額（円）',
+            data: avgInvestments,
+            type: 'line',
+            borderColor: 'rgb(255, 159, 64)',
+            borderWidth: 2,
+            pointBackgroundColor: 'rgb(255, 159, 64)',
+            fill: false,
+            yAxisID: 'y1'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            position: 'left',
+            title: {
+              display: true,
+              text: '銘柄数'
+            }
+          },
+          y1: {
+            beginAtZero: true,
+            position: 'right',
+            grid: {
+              drawOnChartArea: false
+            },
+            title: {
+              display: true,
+              text: '平均投資額（円）'
+            },
+            ticks: {
+              callback: function(value) {
+                return value.toLocaleString() + '円';
+              }
+            }
+          }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.dataset.label || '';
+                const value = context.raw || 0;
+                if (label === '平均投資額（円）') {
+                  return `${label}: ${value.toLocaleString()}円`;
+                }
+                return `${label}: ${value}`;
               }
             }
           }
@@ -375,98 +588,74 @@
       }
     });
   }
-
-  // テンプレート使用概要チャート
-  function setupTemplateUsageChart() {
-    const ctx = document.getElementById('templateUsageChart');
+  
+  // セクター別リターンと成功率チャート
+  function setupSectorReturnSuccessChart() {
+    const ctx = document.getElementById('sectorReturnSuccessChart');
     if (!ctx) return;
     
-    const labels = {{ template_usage_labels|safe|default:"[]" }};
-    const data = {{ template_usage_data|safe|default:"[]" }};
+    // Django テンプレートからJSONデータを取得
+    const sectorLabels = {{ sector_performance_data.labels|safe|default:"[]" }};
+    const returns = {{ sector_performance_data.returns|safe|default:"[]" }};
+    const successRates = {{ sector_performance_data.success_rates|safe|default:"[]" }};
     
-    if (!labels.length || !data.length) return;
+    if (!sectorLabels.length || !returns.length || !successRates.length) {
+      ctx.parentElement.innerHTML = '<div class="alert alert-info p-3 h-100 d-flex align-items-center justify-content-center">十分なセクターデータがありません</div>';
+      return;
+    }
     
     new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: labels,
-        datasets: [{
-          label: '使用回数',
-          data: data,
-          backgroundColor: 'rgba(79, 70, 229, 0.7)',
-          borderColor: 'rgb(79, 70, 229)',
-          borderWidth: 1
-        }]
+        labels: sectorLabels,
+        datasets: [
+          {
+            label: '平均リターン（%）',
+            data: returns,
+            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+            borderColor: 'rgb(54, 162, 235)',
+            borderWidth: 1,
+            yAxisID: 'y'
+          },
+          {
+            label: '成功率（%）',
+            data: successRates,
+            type: 'line',
+            borderColor: 'rgb(75, 192, 192)',
+            borderWidth: 2,
+            pointBackgroundColor: 'rgb(75, 192, 192)',
+            fill: false,
+            yAxisID: 'y1'
+          }
+        ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: false
-          }
-        },
         scales: {
           y: {
-            beginAtZero: true,
+            position: 'left',
+            title: {
+              display: true,
+              text: '平均リターン（%）'
+            },
             ticks: {
-              stepSize: 1
-            }
-          }
-        }
-      }
-    });
-  } 
-  // テンプレート完了率チャート
-  function setupChecklistCompletionChart() {
-    const ctx = document.getElementById('checklistCompletionChart');
-    if (!ctx) return;
-    
-    const labels = {{ checklist_names|safe|default:"[]" }};
-    const rates = {{ checklist_completion_rates|safe|default:"[]" }};
-    
-    if (!labels.length || !rates.length) return;
-    
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: '完了率',
-          data: rates,
-          backgroundColor: function(context) {
-            const value = context.dataset.data[context.dataIndex];
-            if (value >= 80) return 'rgba(16, 185, 129, 0.7)';
-            if (value >= 50) return 'rgba(245, 158, 11, 0.7)';
-            return 'rgba(239, 68, 68, 0.7)';
-          },
-          borderColor: function(context) {
-            const value = context.dataset.data[context.dataIndex];
-            if (value >= 80) return 'rgb(16, 185, 129)';
-            if (value >= 50) return 'rgb(245, 158, 11)';
-            return 'rgb(239, 68, 68)';
-          },
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: false
-          },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                return `完了率: ${context.raw}%`;
+              callback: function(value) {
+                return value + '%';
               }
             }
-          }
-        },
-        scales: {
-          y: {
+          },
+          y1: {
             beginAtZero: true,
+            position: 'right',
+            grid: {
+              drawOnChartArea: false
+            },
+            title: {
+              display: true,
+              text: '成功率（%）'
+            },
+            min: 0,
             max: 100,
             ticks: {
               callback: function(value) {
@@ -474,8 +663,41 @@
               }
             }
           }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.dataset.label || '';
+                const value = context.raw || 0;
+                return `${label}: ${value}%`;
+              }
+            }
+          }
         }
       }
     });
+  }
+  
+  // チャートのカラーパレット生成関数
+  function generateColors(count) {
+    const baseColors = [
+      'rgba(54, 162, 235, 0.7)',   // 青
+      'rgba(75, 192, 192, 0.7)',   // 緑
+      'rgba(255, 159, 64, 0.7)',   // オレンジ
+      'rgba(255, 99, 132, 0.7)',   // 赤
+      'rgba(153, 102, 255, 0.7)',  // 紫
+      'rgba(201, 203, 207, 0.7)',  // グレー
+      'rgba(255, 205, 86, 0.7)',   // 黄色
+      'rgba(255, 99, 71, 0.7)'     // トマト
+    ];
+    
+    let colors = [];
+    // 基本色を繰り返し使用
+    for (let i = 0; i < count; i++) {
+      colors.push(baseColors[i % baseColors.length]);
+    }
+    
+    return colors;
   }
 </script>
