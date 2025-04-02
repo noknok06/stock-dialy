@@ -327,3 +327,15 @@ def get_correlation_css_class(corr):
         return "bg-danger bg-opacity-10"   # 弱い負の相関
     else:
         return "bg-light"                  # ほぼ無相関
+
+@register.filter
+def unique_sectors(diaries):
+    """日記のリストから一意のセクター情報を抽出するフィルター"""
+    sector_count = {}
+    
+    for diary in diaries:
+        sector_name = diary.sector or "未分類"
+        sector_count[sector_name] = sector_count.get(sector_name, 0) + 1
+    
+    # 結果のリストを作成
+    return [{'name': name, 'count': count} for name, count in sector_count.items()]
