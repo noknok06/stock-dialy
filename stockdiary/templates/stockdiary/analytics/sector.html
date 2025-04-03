@@ -378,7 +378,6 @@
     });
   }
   
-  // セクター別リターンと成功率チャート
   function setupSectorReturnSuccessChart() {
     const ctx = document.getElementById('sectorReturnSuccessChart');
     if (!ctx) return;
@@ -393,14 +392,37 @@
       return;
     }
     
+    // 成功率が0のデータポイントを除外する
+    const filteredData = [];
+    for (let i = 0; i < sectorLabels.length; i++) {
+      if (successRates[i] !== 0) {
+        filteredData.push({
+          label: sectorLabels[i],
+          return: returns[i],
+          successRate: successRates[i]
+        });
+      }
+    }
+    
+    // フィルタリングしたデータから新しい配列を作成
+    const filteredLabels = filteredData.map(item => item.label);
+    const filteredReturns = filteredData.map(item => item.return);
+    const filteredSuccessRates = filteredData.map(item => item.successRate);
+    
+    // フィルタリングした結果、データがない場合は通知を表示
+    if (!filteredLabels.length) {
+      ctx.parentElement.innerHTML = '<div class="alert alert-info p-3 h-100 d-flex align-items-center justify-content-center">表示可能なデータがありません</div>';
+      return;
+    }
+    
     new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: sectorLabels,
+        labels: filteredLabels,
         datasets: [
           {
             label: '平均リターン（%）',
-            data: returns,
+            data: filteredReturns,
             backgroundColor: 'rgba(54, 162, 235, 0.7)',
             borderColor: 'rgb(54, 162, 235)',
             borderWidth: 1,
@@ -408,7 +430,7 @@
           },
           {
             label: '成功率（%）',
-            data: successRates,
+            data: filteredSuccessRates,
             type: 'line',
             borderColor: 'rgb(75, 192, 192)',
             borderWidth: 2,
