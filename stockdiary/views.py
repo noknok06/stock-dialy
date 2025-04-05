@@ -127,25 +127,29 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
                 'type': 'add',
                 'url': reverse_lazy('stockdiary:create'),
                 'icon': 'bi-plus-lg',
-                'label': '新規作成'
+                'label': '新規作成',
+                'aria_label': '新規作成' 
             },
             {
                 'type': 'template',
                 'url': reverse_lazy('analysis_template:list'),
                 'icon': 'bi-clipboard-data',
-                'label': 'テンプレート'
+                'label': 'テンプレート',
+                'aria_label': 'テンプレート' ,
             },
             {
                 'type': 'tag',
                 'url': reverse_lazy('tags:list'),
                 'icon': 'bi-tags',
-                'label': 'タグ管理'
+                'label': 'タグ管理',
+                'aria_label': 'タグ管理' 
             },
             {
                 'type': 'snap',
                 'url': reverse_lazy('portfolio:list'),
                 'icon': 'bi-camera',
-                'label': 'スナップショット'
+                'label': 'スナップショット',
+                'aria_label': 'スナップショット' 
             }
         ]
         return context
@@ -312,19 +316,22 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
                 'type': 'back',
                 'url': reverse_lazy('stockdiary:home'),
                 'icon': 'bi-arrow-left',
-                'label': '戻る'
+                'label': '戻る',
+                'aria_label': '戻る' 
             },
             {
                 'type': 'template',
                 'url': reverse_lazy('analysis_template:list'),
                 'icon': 'bi-clipboard-data',
-                'label': 'テンプレート'
+                'label': 'テンプレート',
+                'aria_label': 'テンプレート' 
             },
             {
                 'type': 'tag',
                 'url': reverse_lazy('tags:list'),
                 'icon': 'bi-tags',
-                'label': 'タグ管理'
+                'label': 'タグ管理',
+                'aria_label': 'タグ管理' 
             }
         ]
         
@@ -365,19 +372,22 @@ class StockDiaryUpdateView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Upda
                 'type': 'back',
                 'url': reverse_lazy('stockdiary:detail', kwargs={'pk': self.object.pk}),
                 'icon': 'bi-arrow-left',
-                'label': '戻る'
+                'label': '戻る',
+                'aria_label': '戻る' 
             },
             {
                 'type': 'template',
                 'url': reverse_lazy('analysis_template:list'),
                 'icon': 'bi-clipboard-data',
-                'label': 'テンプレート'
+                'label': 'テンプレート',
+                'aria_label': 'テンプレート' 
             },
             {
                 'type': 'tag',
                 'url': reverse_lazy('tags:list'),
                 'icon': 'bi-tags',
-                'label': 'タグ管理'
+                'label': 'タグ管理',
+                'aria_label': 'タグ管理' 
             }
         ]
         
