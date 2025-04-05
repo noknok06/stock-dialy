@@ -10,7 +10,9 @@
     <meta name="description" content="カブログは、投資家のための日記アプリです。銘柄情報の記録、分析テンプレート、継続記録機能などで投資判断プロセスを整理・改善します。">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{% static 'css/landing.css' %}">
+    <link rel="preload" href="{% static 'images/dashboard.webp' %}" as="image">
+    <link rel="preload" href="{% static 'css/landing.css' %}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="{% static 'css/landing.css' %}"></noscript>
     <style>
         /* カルーセルのスタイル調整 */
         .carousel .screenshot-card {
@@ -276,7 +278,7 @@
                     </div>
                 </div>
                 <div class="col-lg-6 hero-image">
-                    <img src="{% static 'images/dashboard.webp' %}" loading="lazy" alt="カブログのダッシュボード" class="float-animation">
+                    <img src="{% static 'images/dashboard.webp' %}" alt="カブログのダッシュボード" class="float-animation">
                 </div>
             </div>
         </div>
@@ -404,7 +406,7 @@
             <div class="row d-none d-lg-flex">
                 <div class="col-lg-4 fade-in">
                     <div class="screenshot-card" style="height: 400px;">
-                        <img src="{% static 'images/dialy.webp' %}" loading="lazy" alt="株日記" class="screenshot-img">
+                        <img src="{% static 'images/dialy.webp' %}" loading="lazy" alt="株日記" class="screenshot-img" width="500" height="350">
                         <div class="screenshot-content">
                             <h3 class="screenshot-title">株日記</h3>
                             <p class="screenshot-description">
@@ -416,7 +418,7 @@
 
                 <div class="col-lg-4 fade-in">
                     <div class="screenshot-card" style="height: 400px;">
-                        <img src="{% static 'images/analytics.webp' %}" loading="lazy" alt="分析機能" class="screenshot-img">
+                        <img src="{% static 'images/analytics.webp' %}" loading="lazy" alt="分析機能" class="screenshot-img" width="500" height="350">
                         <div class="screenshot-content">
                             <h3 class="screenshot-title">分析機能</h3>
                             <p class="screenshot-description">
@@ -428,7 +430,7 @@
 
                 <div class="col-lg-4 fade-in">
                     <div class="screenshot-card" style="height: 400px;">
-                        <img src="{% static 'images/snapshots.webp' %}" loading="lazy" alt="スナップショット" class="screenshot-img">
+                        <img src="{% static 'images/snapshots.webp' %}" loading="lazy" alt="スナップショット" class="screenshot-img" width="500" height="350">
                         <div class="screenshot-content">
                             <h3 class="screenshot-title">スナップショット</h3>
                             <p class="screenshot-description">
@@ -456,7 +458,7 @@
                         </div>
                         <div class="carousel-item">
                             <div class="screenshot-card">
-                                <img src="{% static 'images/analytics.webp' %}" loading="lazy" alt="分析機能" class="screenshot-img">
+                                <img src="{% static 'images/analytics.webp' %}" loading="lazy" alt="分析機能" class="screenshot-img" width="500" height="350">
                                 <div class="screenshot-content">
                                     <h3 class="screenshot-title">分析機能</h3>
                                     <p class="screenshot-description">
@@ -518,7 +520,7 @@
 
             <div class="row align-items-center fade-in">
                 <div class="col-lg-6 mb-4 mb-lg-0">
-                    <img src="{% static 'images/continuation.webp' %}" loading="lazy" alt="継続記録機能" class="img-fluid rounded shadow">
+                    <img src="{% static 'images/continuation.webp' %}" loading="lazy" alt="継続記録機能" class="img-fluid rounded shadow" width="540" height="360">
                 </div>
                 <div class="col-lg-6">
                     <div class="point-badge">
@@ -569,7 +571,7 @@
 
             <div class="row align-items-center fade-in">
                 <div class="col-lg-6 order-lg-2 mb-4 mb-lg-0">
-                    <img src="{% static 'images/portfolio.webp' %}" alt="分析ダッシュボード" loading="lazy" class="img-fluid rounded shadow">
+                    <img src="{% static 'images/portfolio.webp' %}" alt="分析ダッシュボード" loading="lazy" class="img-fluid rounded shadow" width="540" height="360">
                 </div>
                 <div class="col-lg-6 order-lg-1">
                     <div class="point-badge">
@@ -691,7 +693,7 @@
 
             <div class="row align-items-center fade-in">
                 <div class="col-lg-6 order-lg-2 mb-4 mb-lg-0">
-                    <img src="{% static 'images/template.webp' %}" loading="lazy" alt="分析テンプレート" class="img-fluid rounded shadow">
+                    <img src="{% static 'images/template.webp' %}" loading="lazy" alt="分析テンプレート" class="img-fluid rounded shadow" width="540" height="360">
                 </div>
                 <div class="col-lg-6 order-lg-1">
                     <div class="point-badge">
@@ -825,17 +827,17 @@
                     <div class="carousel-inner">
                         <div class="carousel-item active">
                             <div class="screenshot-card" style="height: 400px;">
-                                <img src="{% static 'images/mobile1.webp' %}" loading="lazy" alt="モバイル日記一覧" class="screenshot-img">
+                                <img src="{% static 'images/mobile1.webp' %}" loading="lazy" alt="モバイル日記一覧" class="screenshot-img" width="280" height="500">
                             </div>
                         </div>
                         <div class="carousel-item">
                             <div class="screenshot-card" style="height: 400px;">
-                                <img src="{% static 'images/mobile2.webp' %}" loading="lazy" alt="モバイル詳細画面" class="screenshot-img">
+                                <img src="{% static 'images/mobile2.webp' %}" loading="lazy" alt="モバイル日記一覧" class="screenshot-img" width="280" height="500">
                             </div>
                         </div>
                         <div class="carousel-item">
                             <div class="screenshot-card" style="height: 400px;">
-                                <img src="{% static 'images/mobile3.webp' %}" loading="lazy" alt="モバイル分析画面" class="screenshot-img">
+                                <img src="{% static 'images/mobile3.webp' %}" loading="lazy" alt="モバイル分析画面" class="screenshot-img" width="280" height="500">
                             </div>
                         </div>
                     </div>
@@ -956,7 +958,7 @@
             <div class="row">
                 <div class="col-lg-4 mb-4">
                     <div class="footer-logo">
-                        <img src="{% static 'images/icon-modern.svg' %}" loading="lazy" alt="カブログフッター">
+                        <img src="{% static 'images/icon-modern.svg' %}" loading="lazy" gitalt="カブログフッター">
                         カブログ
                     </div>
                     <p class="footer-description">
@@ -1123,4 +1125,5 @@
             }
         });        
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
 </body>
