@@ -402,4 +402,4 @@ AXES_COOLOFF_TIME = 1  # ロックアウト期間（時間単位）
 AXES_LOCKOUT_PARAMETERS = ['username', 'ip_address'] 
 
 # 静的ファイルのキャッシュ期間を設定（秒単位）
-STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+# STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
