@@ -400,3 +400,6 @@ HIGH_RISK_COUNTRIES = ['CN', 'RU', 'KP', 'IR']  # 例: 中国、ロシア、北�
 AXES_FAILURE_LIMIT = 10  # 10回の失敗でロック
 AXES_COOLOFF_TIME = 1  # ロックアウト期間（時間単位）
 AXES_LOCKOUT_PARAMETERS = ['username', 'ip_address'] 
+
+# 静的ファイルのキャッシュ期間を設定（秒単位）
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
