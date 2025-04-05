@@ -231,152 +231,117 @@
     });
   }
   
-  // セクター別投資配分チャート
   function setupSectorAllocationChart() {
-    const ctx = document.getElementById('sectorAllocationChart');
-    if (!ctx) return;
+    const sectorLabels = {{ sector_allocation_data.labels|safe|default:"[]" }};
+    const sectorValues = {{ sector_allocation_data.values|safe|default:"[]" }};
     
-    // データを取得し、エラーハンドリング追加
-    try {
-      // Django テンプレートからJSONデータを取得
-      const sectorLabels = {{ sector_allocation_data.labels|safe|default:"[]" }};
-      const sectorValues = {{ sector_allocation_data.values|safe|default:"[]" }};
-      
-      if (!sectorLabels.length || !sectorValues.length) {
-        ctx.parentElement.innerHTML = '<div class="alert alert-info p-3 h-100 d-flex align-items-center justify-content-center">十分なセクターデータがありません</div>';
-        return;
-      }
-      
-      // チャートの色生成
-      const colors = generateColors(sectorLabels.length);
-      
-      new Chart(ctx, {
-        type: 'pie',
-        data: {
-          labels: sectorLabels,
-          datasets: [{
-            data: sectorValues,
-            backgroundColor: colors,
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'right',
-              labels: {
-                boxWidth: 12,
-                font: {
-                  size: 11
-                }
-              }
-            },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  const label = context.label || '';
-                  const value = context.raw || 0;
-                  return `${label}: ${value}%`;
-                }
-              }
-            }
-          }
-        }
-      });
-    } catch (error) {
-      console.error('チャート描画エラー:', error);
-      ctx.parentElement.innerHTML = '<div class="alert alert-danger p-3">チャートの描画中にエラーが発生しました</div>';
-    }
-  }
-  
-  // セクター別銘柄数と平均投資額チャート
-  function setupSectorStocksInvestmentChart() {
-    const ctx = document.getElementById('sectorStocksInvestmentChart');
-    if (!ctx) return;
-    
-    // Django テンプレートからJSONデータを取得
-    const sectorLabels = {{ sector_stocks_data.labels|safe|default:"[]" }};
-    const stocksCounts = {{ sector_stocks_data.counts|safe|default:"[]" }};
-    const avgInvestments = {{ sector_stocks_data.investments|safe|default:"[]" }};
-    
-    if (!sectorLabels.length || !stocksCounts.length || !avgInvestments.length) {
-      ctx.parentElement.innerHTML = '<div class="alert alert-info p-3 h-100 d-flex align-items-center justify-content-center">十分なセクターデータがありません</div>';
-      return;
-    }
-    
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: sectorLabels,
-        datasets: [
-          {
-            label: '銘柄数',
-            data: stocksCounts,
-            backgroundColor: 'rgba(54, 162, 235, 0.7)',
-            borderColor: 'rgb(54, 162, 235)',
-            borderWidth: 1,
-            yAxisID: 'y'
-          },
-          {
-            label: '平均投資額（円）',
-            data: avgInvestments,
-            type: 'line',
-            borderColor: 'rgb(255, 159, 64)',
-            borderWidth: 2,
-            pointBackgroundColor: 'rgb(255, 159, 64)',
-            fill: false,
-            yAxisID: 'y1'
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            beginAtZero: true,
-            position: 'left',
-            title: {
-              display: true,
-              text: '銘柄数'
-            }
-          },
-          y1: {
-            beginAtZero: true,
-            position: 'right',
-            grid: {
-              drawOnChartArea: false
-            },
-            title: {
-              display: true,
-              text: '平均投資額（円）'
-            },
-            ticks: {
-              callback: function(value) {
-                return value.toLocaleString() + '円';
-              }
-            }
-          }
-        },
+    return ChartUtils.createStyledPieChart(
+      'sectorAllocationChart', 
+      sectorLabels, 
+      sectorValues, 
+      generateColors, // セクター分析用の色生成関数
+      {
         plugins: {
           tooltip: {
             callbacks: {
               label: function(context) {
-                const label = context.dataset.label || '';
+                const label = context.label || '';
                 const value = context.raw || 0;
-                if (label === '平均投資額（円）') {
-                  return `${label}: ${value.toLocaleString()}円`;
-                }
-                return `${label}: ${value}`;
+                return `${label}: ${value}%`;
               }
             }
           }
         }
       }
-    });
+    );
   }
+  
+  // セクター別銘柄数と平均投資額チャート
+  function setupSectorStocksInvestmentChart() {
+    const sectorLabels = {{ sector_stocks_data.labels|safe|default:"[]" }};
+    const stocksCounts = {{ sector_stocks_data.counts|safe|default:"[]" }};
+    const avgInvestments = {{ sector_stocks_data.investments|safe|default:"[]" }};
+    
+    if (!ChartUtils.isValidData(sectorLabels) || 
+        !ChartUtils.isValidData(stocksCounts) || 
+        !ChartUtils.isValidData(avgInvestments)) {
+      const ctx = document.getElementById('sectorStocksInvestmentChart');
+      if (ctx) {
+        ctx.parentElement.innerHTML = '<div class="alert alert-info p-3 h-100 d-flex align-items-center justify-content-center">十分なセクターデータがありません</div>';
+      }
+      return null;
+    }
+    
+    const chartData = {
+      labels: sectorLabels,
+      datasets: [
+        {
+          label: '銘柄数',
+          data: stocksCounts,
+          backgroundColor: 'rgba(54, 162, 235, 0.7)',
+          borderColor: 'rgb(54, 162, 235)',
+          borderWidth: 1,
+          yAxisID: 'y'
+        },
+        {
+          label: '平均投資額（円）',
+          data: avgInvestments,
+          type: 'line',
+          borderColor: 'rgb(255, 159, 64)',
+          borderWidth: 2,
+          pointBackgroundColor: 'rgb(255, 159, 64)',
+          fill: false,
+          yAxisID: 'y1'
+        }
+      ]
+    };
+    
+    const options = {
+      scales: {
+        y: {
+          beginAtZero: true,
+          position: 'left',
+          title: {
+            display: true,
+            text: '銘柄数'
+          }
+        },
+        y1: {
+          beginAtZero: true,
+          position: 'right',
+          grid: {
+            drawOnChartArea: false
+          },
+          title: {
+            display: true,
+            text: '平均投資額（円）'
+          },
+          ticks: {
+            callback: function(value) {
+              return value.toLocaleString() + '円';
+            }
+          }
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const label = context.dataset.label || '';
+              const value = context.raw || 0;
+              if (label === '平均投資額（円）') {
+                return `${label}: ${value.toLocaleString()}円`;
+              }
+              return `${label}: ${value}`;
+            }
+          }
+        }
+      }
+    };
+    
+    return ChartUtils.initChart('sectorStocksInvestmentChart', 'bar', chartData, options);
+  }
+
   
   // セクター別リターンと成功率チャート
   function setupSectorReturnSuccessChart() {

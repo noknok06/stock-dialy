@@ -214,15 +214,135 @@ const ChartUtils = (function() {
       
       return initChart(elementId, 'pie', chartData, chartOptions);
     }
-  
-    // 公開API
-    return {
-      COLORS,
-      DEFAULT_OPTIONS,
-      isValidData,
-      initChart,
-      createLineChart,
-      createBarChart,
-      createPieChart
+
+  /**
+   * アプリケーション固有の円グラフスタイル設定を適用した円グラフを作成
+   * @param {string} elementId - チャート要素のID
+   * @param {Array} labels - ラベル配列
+   * @param {Array} data - データ配列
+   * @param {Function} colorGenerator - 色生成関数（省略可）
+   * @param {object} customOptions - 追加オプション（省略可）
+   * @returns {Chart|null} チャートインスタンス
+   */
+  function createStyledPieChart(elementId, labels, data, colorGenerator = null, customOptions = {}) {
+    // データの検証
+    if (!isValidData(labels) || !isValidData(data)) { // this. を削除
+      const ctx = document.getElementById(elementId);
+      if (ctx) {
+        ctx.parentElement.innerHTML = '<div class="alert alert-info p-3 h-100 d-flex align-items-center justify-content-center">データがありません</div>';
+      }
+      return null;
+    }
+    
+    // 色の生成（カスタム関数または内部配列を使用）
+    let colors;
+    if (typeof colorGenerator === 'function') {
+      colors = colorGenerator(labels.length);
+    } else {
+      // デフォルトの色配列
+      colors = [
+        COLORS.primary.light, // this. を削除
+        COLORS.success.light,
+        COLORS.warning.light,
+        COLORS.danger.light,
+        COLORS.info.light,
+        COLORS.gray.light
+      ];
+      
+      // データに合わせて色を生成
+      while (colors.length < data.length) {
+        const r = Math.floor(Math.random() * 200) + 50;
+        const g = Math.floor(Math.random() * 200) + 50;
+        const b = Math.floor(Math.random() * 200) + 50;
+        colors.push(`rgba(${r}, ${g}, ${b}, 0.7)`);
+      }
+    }
+      
+    
+    // アプリケーション固有のデフォルト設定
+    const defaultOptions = {
+      plugins: {
+        legend: {
+          display: true,
+          position: 'right',
+          align: 'left',
+          labels: {
+            boxWidth: 14,
+            usePointStyle: true,
+            padding: 10,
+            font: {
+              size: 10
+            }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const label = context.label || '';
+              const value = context.raw || 0;
+              const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+              const percentage = Math.round((value / total) * 100);
+              return `${label}: ${value} (${percentage}%)`;
+            }
+          }
+        }
+      }
     };
-  })();
+    
+    // カスタムオプションとデフォルトオプションをマージ
+    const mergedOptions = _deepMerge(defaultOptions, customOptions);
+
+    // 円グラフを作成して返す
+    return createPieChart(elementId, labels, data, {
+      scales: {
+        y: {
+          ticks: {
+            display: false // Y軸の数値ラベルを非表示
+          }
+        }
+      },
+      backgroundColor: colors.slice(0, data.length),
+      ...mergedOptions
+    });
+  }
+
+  function _deepMerge(target, source) {
+    const output = Object.assign({}, target);
+    if (isObject(target) && isObject(source)) { // this. を削除
+      Object.keys(source).forEach(key => {
+        if (isObject(source[key])) { // this. を削除
+          if (!(key in target)) {
+            Object.assign(output, { [key]: source[key] });
+          } else {
+            output[key] = _deepMerge(target[key], source[key]); // this. を削除
+          }
+        } else {
+          Object.assign(output, { [key]: source[key] });
+        }
+      });
+    }
+    return output;
+  }
+  
+  /**
+   * 値がオブジェクトかどうかを確認
+   * @private
+   */
+  function isObject(item) { // function キーワードを追加
+    return (item && typeof item === 'object' && !Array.isArray(item));
+  }
+
+// 戻り値に新しい関数を追加
+return {
+  COLORS,
+  DEFAULT_OPTIONS,
+  isValidData,
+  initChart,
+  createLineChart,
+  createBarChart,
+  createPieChart,
+  createStyledPieChart, // 新しい関数を追加
+  _deepMerge,
+  isObject
+};
+})();

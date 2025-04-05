@@ -47,90 +47,82 @@
       setupMonthlyInvestmentChart();
     });
     
-    // 月別記録数チャート
-    function setupMonthlyRecordsChart() {
-      const ctx = document.getElementById('monthlyRecordsChart');
-      if (!ctx) return;
+    // グローバル変数でチャートインスタンスを保持
+    var tagFrequencyChartInstance = null;
+    var tagTimelineChartInstance = null;
+    
+    // パステルカラーパレット生成関数（セクター分析とタグ分析で共通使用）
+    function generatePastelColors(count) {
+      // セクター分析の円グラフに合わせたパステルカラー
+      const baseColors = [
+        'rgba(106, 180, 238, 0.8)',  // 薄い青（陸運業）
+        'rgba(139, 227, 217, 0.8)',  // ティファニーブルー（サービス業）
+        'rgba(249, 180, 111, 0.8)',  // 薄いオレンジ（ゴム製品）
+        'rgba(232, 232, 232, 0.8)',  // 薄いグレー（商社）
+        'rgba(255, 136, 136, 0.8)',  // 薄い赤（卸売業）
+        'rgba(255, 217, 102, 0.8)',  // 薄い黄色（輸送用機器）
+        'rgba(188, 156, 255, 0.8)',  // 薄い紫（テクノロジー）
+        'rgba(252, 142, 121, 0.8)',  // サーモン（その他金融業）
+        'rgba(179, 203, 255, 0.8)',  // 薄い青紫（通信）
+        'rgba(161, 214, 255, 0.8)',  // 水色（自動車）
+        'rgba(255, 201, 134, 0.8)',  // 薄い橙（医薬品）
+        'rgba(157, 233, 195, 0.8)',  // 薄い緑（銀行業）
+        'rgba(247, 155, 155, 0.8)'   // 薄いピンク（小売業）
+      ];
       
-      const monthlyLabels = {{ monthly_labels|safe|default:"[]" }};
-      const monthlyCounts = {{ monthly_counts|safe|default:"[]" }};
+      // 色数が足りない場合は明度や彩度を変えて新しい色を生成
+      let colors = [];
       
-      if (!monthlyLabels || !monthlyCounts || monthlyLabels.length === 0 || monthlyCounts.length === 0) return;
-      
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: monthlyLabels,
-          datasets: [{
-            label: '記録数',
-            data: monthlyCounts,
-            borderColor: '#4f46e5',
-            backgroundColor: 'rgba(79, 70, 229, 0.1)',
-            borderWidth: 2,
-            fill: true,
-            tension: 0.4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                stepSize: 1
-              }
-            }
+      // 基本色を繰り返し使用しながら、必要に応じて明度を調整
+      for (let i = 0; i < count; i++) {
+        const baseIndex = i % baseColors.length;
+        const base = baseColors[baseIndex];
+        
+        if (i < baseColors.length) {
+          // 基本色をそのまま使用
+          colors.push(base);
+        } else {
+          // 基本色を少し明るくまたは暗くして新しい色を生成
+          const brightness = 0.7 + (i % 3) * 0.1; // 0.7, 0.8, 0.9 の明度変化
+          const colorMatch = base.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+          if (colorMatch) {
+            const r = Math.min(255, Math.round(parseInt(colorMatch[1]) * brightness));
+            const g = Math.min(255, Math.round(parseInt(colorMatch[2]) * brightness));
+            const b = Math.min(255, Math.round(parseInt(colorMatch[3]) * brightness));
+            colors.push(`rgba(${r}, ${g}, ${b}, ${colorMatch[4]})`);
+          } else {
+            // マッチしない場合は基本色を使用
+            colors.push(base);
           }
         }
-      });
+      }
+      
+      return colors;
     }
     
+    // 月別記録数チャート
+    function setupMonthlyRecordsChart() {
+        const monthlyLabels = {{ monthly_labels|safe|default:"[]" }};
+        const monthlyCounts = {{ monthly_counts|safe|default:"[]" }};
+        
+        return ChartUtils.createLineChart('monthlyRecordsChart', monthlyLabels, monthlyCounts, {
+            label: '記録数'
+        });
+    }
     // 曜日別記録数チャート
     function setupDayOfWeekChart() {
-      const ctx = document.getElementById('dayOfWeekChart');
-      if (!ctx) return;
-      
-      const dayOfWeekCounts = {{ day_of_week_counts|safe|default:"[]" }};
-      
-      if (!dayOfWeekCounts || dayOfWeekCounts.length === 0) return;
-      
-      new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'],
-          datasets: [{
+        const dayOfWeekCounts = {{ day_of_week_counts|safe|default:"[]" }};
+        
+        return ChartUtils.createBarChart('dayOfWeekChart', 
+            ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'],
+            dayOfWeekCounts,
+            {
             label: '記録数',
-            data: dayOfWeekCounts,
-            backgroundColor: 'rgba(79, 70, 229, 0.7)',
-            borderColor: 'rgb(79, 70, 229)',
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
+            backgroundColor: ChartUtils.COLORS.primary.light,
+            borderColor: ChartUtils.COLORS.primary.main
             }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                stepSize: 1
-              }
-            }
-          }
+        );
         }
-      });
-    }
     
     // 記録内容の長さ分布チャート
     function setupContentLengthChart() {
@@ -189,93 +181,95 @@
       });
     }
     
-    // タグ使用頻度チャート
+    // タグ使用頻度チャート - セクター分析スタイルに合わせて更新
     function setupTagFrequencyChart() {
-      const ctx = document.getElementById('tagFrequencyChart');
-      if (!ctx) return;
-      
-      const tagNames = {{ tag_names|safe|default:"[]" }};
-      const tagCounts = {{ tag_counts|safe|default:"[]" }};
-      
-      if (!tagNames || !tagCounts || tagNames.length === 0 || tagCounts.length === 0) return;
-      
-      const tagColors = [
-        'rgba(79, 70, 229, 0.7)',
-        'rgba(16, 185, 129, 0.7)',
-        'rgba(245, 158, 11, 0.7)',
-        'rgba(239, 68, 68, 0.7)',
-        'rgba(59, 130, 246, 0.7)',
-        'rgba(168, 85, 247, 0.7)',
-        'rgba(236, 72, 153, 0.7)',
-        'rgba(75, 85, 99, 0.7)'
-      ];
-      
-      new Chart(ctx, {
-        type: 'pie',
-        data: {
-          labels: tagNames,
-          datasets: [{
-            data: tagCounts,
-            backgroundColor: tagColors,
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  const label = context.label || '';
-                  const value = context.raw || 0;
-                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                  const percentage = ((value / total) * 100).toFixed(1);
-                  return `${label}: ${value}回 (${percentage}%)`;
-                }
-              }
-            }
-          }
+        const tagNames = {{ tag_names|safe|default:"[]" }};
+        const tagCounts = {{ tag_counts|safe|default:"[]" }};
+        
+        // 既存のチャートがあれば破棄
+        if (tagFrequencyChartInstance) {
+            tagFrequencyChartInstance.destroy();
         }
-      });
-    }
+        
+        // パステルカラーパレットを生成（既存関数を使用）
+        const colors = generatePastelColors(tagNames.length);
+        
+        // 共通関数を使用して新しいチャートを作成
+        tagFrequencyChartInstance = ChartUtils.createStyledPieChart(
+            'tagFrequencyChart', 
+            tagNames, 
+            tagCounts, 
+            generatePastelColors, // 既存の色生成関数を使用
+            {
+            plugins: {
+                tooltip: {
+                callbacks: {
+                    label: function(context) {
+                    const label = context.label || '';
+                    const value = context.raw || 0;
+                    const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                    const percentage = Math.round((value / total) * 100);
+                    return `${label}: ${value}回 (${percentage}%)`;
+                    }
+                }
+                }
+            }
+            }
+        );
+
+        return tagFrequencyChartInstance;
+        }
     
     // タグの時系列変化チャート
     function setupTagTimelineChart() {
       const ctx = document.getElementById('tagTimelineChart');
       if (!ctx) return;
       
-      const tagTimelineLabels = {{ tag_timeline_labels|safe|default:"[]" }};
-      const tagTimelineData = {{ tag_timeline_data|safe|default:"[]" }};
-      
-      if (!tagTimelineLabels || !tagTimelineData || 
-          tagTimelineLabels.length === 0 || tagTimelineData.length === 0) return;
-      
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: tagTimelineLabels,
-          datasets: tagTimelineData
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            tooltip: {
-              mode: 'index',
-              intersect: false
-            }
+      try {
+        // 既存のチャートがあれば破棄
+        if (tagTimelineChartInstance) {
+          tagTimelineChartInstance.destroy();
+        }
+        
+        const tagTimelineLabels = {{ tag_timeline_labels|safe|default:"[]" }};
+        const tagTimelineData = {{ tag_timeline_data|safe|default:"[]" }};
+        
+        if (!tagTimelineLabels || !tagTimelineData || 
+            tagTimelineLabels.length === 0 || tagTimelineData.length === 0) {
+          ctx.parentElement.innerHTML = '<div class="alert alert-info p-3 h-100 d-flex align-items-center justify-content-center">時系列データがありません</div>';
+          return;
+        }
+        
+        // 新しいチャートを作成
+        tagTimelineChartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: tagTimelineLabels,
+            datasets: tagTimelineData
           },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                stepSize: 1
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              tooltip: {
+                mode: 'index',
+                intersect: false
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  stepSize: 1
+                }
               }
             }
           }
-        }
-      });
+        });
+      } catch (error) {
+        console.error('時系列チャート描画エラー:', error);
+        ctx.parentElement.innerHTML = '<div class="alert alert-danger p-3">チャートの描画中にエラーが発生しました: ' + error.message + '</div>';
+      }
     }
     
     // チェックリスト完了率チャート
@@ -398,61 +392,43 @@
     
     // 保有銘柄の割合チャート
     function setupHoldingsChart() {
-      const ctx = document.getElementById('holdingsChart');
-      if (!ctx) return;
-      
-      // サンプルデータ - APIから実際のデータを取得する必要があります
-      const holdingLabels = {{ holdings_labels|safe|default:"['銘柄A', '銘柄B', '銘柄C', '銘柄D', '銘柄E', 'その他']" }};
-      const holdingData = {{ holdings_data|safe|default:"[30, 25, 15, 10, 8, 12]" }};
-      
-      if (!holdingLabels || !holdingData || 
-          holdingLabels.length === 0 || holdingData.length === 0) return;
-      
-      new Chart(ctx, {
-        type: 'pie',
-        data: {
-          labels: holdingLabels,
-          datasets: [{
-            data: holdingData,
-            backgroundColor: [
-              'rgba(79, 70, 229, 0.7)',
-              'rgba(16, 185, 129, 0.7)',
-              'rgba(245, 158, 11, 0.7)',
-              'rgba(239, 68, 68, 0.7)',
-              'rgba(59, 130, 246, 0.7)',
-              'rgba(168, 85, 247, 0.7)'
-            ],
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  const label = context.label || '';
-                  const value = context.raw || 0;
-                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                  const percentage = ((value / total) * 100).toFixed(1);
-                  return `${label}: ${percentage}%`;
+        const holdingLabels = {{ holdings_labels|safe|default:"['銘柄A', '銘柄B', '銘柄C', '銘柄D', '銘柄E', 'その他']" }};
+        const holdingData = {{ holdings_data|safe|default:"[30, 25, 15, 10, 8, 12]" }};
+        
+        return ChartUtils.createStyledPieChart(
+            'holdingsChart', 
+            holdingLabels, 
+            holdingData, 
+            generatePastelColors,
+            {
+            plugins: {
+                legend: {
+                position: 'top',
+                align: 'center'
+                },
+                tooltip: {
+                callbacks: {
+                    label: function(context) {
+                    const label = context.label || '';
+                    const value = context.raw || 0;
+                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                    const percentage = ((value / total) * 100).toFixed(1);
+                    return `${label}: ${percentage}%`;
+                    }
                 }
-              }
+                }
             }
-          }
+            }
+        );
         }
-      });
-    }
-    
+
     // 業種別分布チャート
     function setupSectorDistributionChart() {
       const ctx = document.getElementById('sectorDistributionChart');
       if (!ctx) return;
       
-      // // サンプルデータ - APIから実際のデータを取得する必要があります
-      // const sectorLabels = {{ sector_labels|safe|default:"['テクノロジー', '金融', '製造', '小売', 'ヘルスケア', 'その他']" }};
-      // const sectorData = {{ sector_data|safe|default:"[35, 20, 15, 12, 10, 8]" }};
+      const sectorLabels = {{ sector_labels|safe|default:"[]" }};
+      const sectorData = {{ sector_data|safe|default:"[]" }};
       
       if (!sectorLabels || !sectorData || 
           sectorLabels.length === 0 || sectorData.length === 0) return;
@@ -463,21 +439,27 @@
           labels: sectorLabels,
           datasets: [{
             data: sectorData,
-            backgroundColor: [
-              'rgba(59, 130, 246, 0.7)',
-              'rgba(16, 185, 129, 0.7)',
-              'rgba(245, 158, 11, 0.7)',
-              'rgba(239, 68, 68, 0.7)',
-              'rgba(168, 85, 247, 0.7)',
-              'rgba(75, 85, 99, 0.7)'
-            ],
-            borderWidth: 1
+            backgroundColor: generatePastelColors(sectorLabels.length), // 統一されたパステルカラー
+            borderWidth: 1,
+            borderColor: '#ffffff'
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
+            legend: {
+              position: 'top',
+              align: 'center',
+              labels: {
+                boxWidth: 15,
+                usePointStyle: true,
+                padding: 20,
+                font: {
+                  size: 12
+                }
+              }
+            },
             tooltip: {
               callbacks: {
                 label: function(context) {
@@ -592,9 +574,8 @@
       const ctx = document.getElementById('sectorChart');
       if (!ctx) return;
       
-      // // サンプルデータ - APIから実際のデータを取得する必要があります
-      // const sectorLabels = {{ sector_labels|safe|default:"['テクノロジー', '金融', '製造', '小売', 'ヘルスケア', 'その他']" }};
-      // const sectorData = {{ sector_data|safe|default:"[35, 20, 15, 12, 10, 8]" }};
+      const sectorLabels = {{ sector_allocation_data.labels|safe|default:"[]" }};
+      const sectorData = {{ sector_allocation_data.values|safe|default:"[]" }};
       
       if (!sectorLabels || !sectorData || 
           sectorLabels.length === 0 || sectorData.length === 0) return;
@@ -605,29 +586,32 @@
           labels: sectorLabels,
           datasets: [{
             data: sectorData,
-            backgroundColor: [
-              'rgba(59, 130, 246, 0.7)',
-              'rgba(16, 185, 129, 0.7)',
-              'rgba(245, 158, 11, 0.7)',
-              'rgba(239, 68, 68, 0.7)',
-              'rgba(168, 85, 247, 0.7)',
-              'rgba(75, 85, 99, 0.7)'
-            ],
-            borderWidth: 1
+            backgroundColor: generatePastelColors(sectorLabels.length), // 統一されたパステルカラー
+            borderWidth: 1,
+            borderColor: '#ffffff'
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
+            legend: {
+              position: 'right',
+              align: 'start',
+              labels: {
+                boxWidth: 15,
+                padding: 15,
+                font: {
+                  size: 12
+                }
+              }
+            },
             tooltip: {
               callbacks: {
                 label: function(context) {
                   const label = context.label || '';
                   const value = context.raw || 0;
-                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                  const percentage = ((value / total) * 100).toFixed(1);
-                  return `${label}: ${percentage}%`;
+                  return `${label}: ${value}%`;
                 }
               }
             }
