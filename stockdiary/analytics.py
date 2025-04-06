@@ -1029,62 +1029,6 @@ class DiaryAnalytics:
                     'name': most_stable['name'],
                     'value': float(most_stable['return_volatility'])
                 }
-        
-        # ポートフォリオ最適化のヒント生成
-        hints = self._generate_portfolio_hints(sector_stats, result['sector_correlation_data'])
-        result['portfolio_hints'] = hints
-        
+                
         return result
         
-    def _generate_portfolio_hints(self, sector_stats, correlation_data):
-        """ポートフォリオ最適化のヒントを生成"""
-        hints = []
-        
-        # 十分なデータがあるか確認
-        if len(sector_stats) < 3 or not correlation_data:
-            return hints
-        
-        # 1. 相関が低いセクターペアを探す（分散効果のためのヒント）
-        neg_correlations = []
-        for row in correlation_data:
-            sector1 = row['sector']
-            for i, corr in enumerate(row['correlations']):
-                if float(corr['value']) < -0.1 and 'danger' in corr['css_class']:
-                    sector2 = correlation_data[i]['sector']
-                    if sector1 != sector2:
-                        neg_correlations.append((sector1, sector2, float(corr['value'])))
-        
-        if neg_correlations:
-            # 最も負の相関が強いペアを選択
-            best_pair = min(neg_correlations, key=lambda x: x[2])
-            hints.append({
-                'icon': 'bi-pie-chart',
-                'title': '最適なセクター配分',
-                'text': f'{best_pair[0]}と{best_pair[1]}セクター間の負の相関({best_pair[2]:.2f})を活かし、リスク分散効果を最大化する配分を検討しましょう。'
-            })
-        else:
-            # 負の相関がない場合は一般的なアドバイス
-            hints.append({
-                'icon': 'bi-pie-chart',
-                'title': 'セクター間の分散',
-                'text': '複数のセクターに分散投資することで、特定のセクターリスクを軽減し、より安定したリターンを得られる可能性があります。'
-            })
-        
-        # 2. 最も成功率の高いセクターに関するヒント
-        success_sectors = [s for s in sector_stats if s['success_rate'] > 50]
-        if success_sectors:
-            best_sector = max(success_sectors, key=lambda x: x['success_rate'])
-            hints.append({
-                'icon': 'bi-search',
-                'title': 'セクター内の銘柄選択',
-                'text': f'{best_sector["name"]}セクターは{best_sector["success_rate"]:.1f}%の高い成功率を示しています。このセクターへの投資比率を高めることを検討してください。'
-            })
-        
-        # 3. リバランスに関するヒント
-        hints.append({
-            'icon': 'bi-arrow-repeat',
-            'title': 'リバランス戦略',
-            'text': 'セクター間の相関関係は経済環境により変化するため、定期的な分析と配分調整が重要です。四半期ごとのリバランスをお勧めします。'
-        })
-        
-        return hints
