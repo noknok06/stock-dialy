@@ -1,0 +1,162 @@
+/* static/css/quick-diary.css */
+
+/* モーダルのスタイル調整 */
+#quickDiaryModal .modal-header {
+    background-color: var(--primary-color);
+    color: white;
+  }
+  
+  #quickDiaryModal .modal-title i {
+    margin-right: 8px;
+  }
+  
+  #quickDiaryModal .modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  
+  /* フォームグループのスタイル */
+  #quickDiaryModal .form-label {
+    font-weight: 500;
+    color: var(--text-color);
+    font-size: 0.9rem;
+  }
+  
+  #quickDiaryModal .form-text {
+    font-size: 0.8rem;
+  }
+  
+  /* 銘柄情報フィードバック */
+  .stock-info-feedback {
+    min-height: 20px;
+    transition: all 0.3s ease;
+  }
+  
+  /* 株価情報カード */
+  .stock-info-card {
+    background-color: rgba(var(--bs-primary-rgb), 0.05);
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 10px;
+    border: 1px solid rgba(var(--bs-primary-rgb), 0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .stock-info-card.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  .stock-info-card.hide {
+    opacity: 0;
+    transform: translateY(-10px);
+    height: 0;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+  }
+  
+  /* 項目行のスタイル */
+  .stock-info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 0.85rem;
+  }
+  
+  .stock-info-label {
+    color: var(--text-light);
+  }
+  
+  .stock-info-value {
+    font-weight: 500;
+  }
+  
+  /* トースト通知のスタイル */
+  .toast-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    min-width: 250px;
+    z-index: 1050;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+    animation: slideIn 0.3s ease-out;
+  }
+  
+  @keyframes slideIn {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  /* Select2のカスタマイズ（Select2を使用する場合） */
+  .select2-container--default .select2-selection--multiple {
+    border-color: #ced4da;
+    border-radius: 0.375rem;
+  }
+  
+  .select2-container--default.select2-container--focus .select2-selection--multiple {
+    border-color: #a5b4fc;
+    box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.25);
+  }
+  
+  /* モバイル対応 */
+  @media (max-width: 768px) {
+    #quickDiaryModal .modal-body {
+      max-height: 60vh;
+    }
+    
+    #quickDiaryModal .form-label {
+      font-size: 0.85rem;
+    }
+  }
+  
+  /* ローディングインジケーター */
+  .form-status-feedback {
+    transition: all 0.3s ease;
+  }
+  
+  .form-status-feedback.d-none {
+    display: none !important;
+  }
+  
+  /* フォーム検証スタイル */
+  .is-invalid:focus {
+    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
+  }
+  
+  /* 送信ボタンのスタイル */
+  #quickDiarySubmit {
+    min-width: 100px;
+  }
+  
+  #quickDiarySubmit:disabled {
+    opacity: 0.7;
+  }
+  
+  /* 新しく追加された日記カードのハイライト効果 */
+  @keyframes highlight-pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(var(--bs-success-rgb), 0.7);
+      border-color: rgba(var(--bs-success-rgb), 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(var(--bs-success-rgb), 0);
+      border-color: rgba(var(--bs-success-rgb), 0.3);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(var(--bs-success-rgb), 0);
+      border-color: rgba(var(--bs-primary-rgb), 0.1);
+    }
+  }
+  
+  .new-diary-highlight {
+    animation: highlight-pulse 2s ease-in-out 2;
+    border: 2px solid rgba(var(--bs-success-rgb), 0.7);
+    transform: translateY(0) !important;
+  }

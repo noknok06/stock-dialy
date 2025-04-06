@@ -1,0 +1,101 @@
+<!-- stockdiary/templates/stockdiary/partials/quick_diary_modal.html -->
+<div class="modal fade" id="quickDiaryModal" tabindex="-1" aria-labelledby="quickDiaryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="quickDiaryModalLabel">
+            <i class="bi bi-plus-circle"></i> クイック日記作成
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+        </div>
+        <div class="modal-body">
+            <form id="quickDiaryForm" method="post" action="{% url 'stockdiary:api_create' %}">
+            {% csrf_token %}
+            <div class="row">
+              <!-- 株式基本情報 -->
+              <div class="col-md-6 mb-3">
+                <label for="quick_stock_symbol" class="form-label">銘柄コード</label>
+                <div class="input-group">
+                  <input type="text" id="quick_stock_symbol" name="stock_symbol" class="form-control" 
+                         placeholder="例: 7203、AAPL" maxlength="10">
+                  <button type="button" class="btn btn-outline-primary" id="quick_fetch_stock_info">
+                    <i class="bi bi-search"></i>
+                  </button>
+                </div>
+                <div class="stock-info-feedback mt-1 small"></div>
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label for="quick_stock_name" class="form-label">銘柄名 <span class="text-danger">*</span></label>
+                <input type="text" id="quick_stock_name" name="stock_name" class="form-control" required>
+              </div>
+            </div>
+            
+            <!-- 日付・価格・数量 -->
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label for="quick_purchase_date" class="form-label">購入/メモ日 <span class="text-danger">*</span></label>
+                <input type="date" id="quick_purchase_date" name="purchase_date" class="form-control" 
+                       value="{% now 'Y-m-d' %}" required>
+              </div>
+              
+              <div class="col-md-4 mb-3">
+                <label for="quick_purchase_price" class="form-label">購入価格</label>
+                <div class="input-group">
+                  <input type="number" id="quick_purchase_price" name="purchase_price" class="form-control" 
+                         step="0.01" placeholder="空欄=メモ">
+                  <button type="button" class="btn btn-outline-secondary" id="quick_fetch_price">
+                    <i class="bi bi-arrow-repeat"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="col-md-4 mb-3">
+                <label for="quick_purchase_quantity" class="form-label">購入数量</label>
+                <input type="number" id="quick_purchase_quantity" name="purchase_quantity" class="form-control" 
+                       placeholder="空欄=メモ">
+              </div>
+            </div>
+            
+            <!-- タグとセクター -->
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="quick_tags" class="form-label">タグ</label>
+                <select id="quick_tags" name="tags" class="form-select" multiple>
+                  <!-- タグオプションはAJAXで動的に読み込み -->
+                </select>
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label for="quick_sector" class="form-label">セクター/業種</label>
+                <input type="text" id="quick_sector" name="sector" class="form-control">
+              </div>
+            </div>
+            
+            <!-- 理由/メモ -->
+            <div class="mb-3">
+              <label for="quick_reason" class="form-label">購入理由/メモ</label>
+              <textarea id="quick_reason" name="reason" class="form-control" rows="5" 
+                        placeholder="購入理由や分析結果をメモしましょう"></textarea>
+            </div>
+            
+            <!-- フォーム送信ステータス -->
+            <div class="form-status-feedback mt-3 d-none">
+              <div class="alert alert-info d-flex align-items-center">
+                <div class="spinner-border spinner-border-sm me-2" role="status">
+                  <span class="visually-hidden">送信中...</span>
+                </div>
+                <div>日記を作成中...</div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+          <button type="button" class="btn btn-primary" id="quickDiarySubmit">
+            <i class="bi bi-save me-1"></i> 保存
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>

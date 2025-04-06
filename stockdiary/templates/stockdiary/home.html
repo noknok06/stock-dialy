@@ -14,6 +14,7 @@
 <!-- FullCalendar CSS -->
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'css/speed-dial.css' %}">
+<link rel="stylesheet" href="{% static 'css/quick-diary.css' %}">
 
 <style>
 
@@ -577,16 +578,37 @@
   {% endif %}
 </div>
   {% include 'speed_dial.html' with actions=form_actions %}
+  {% include "stockdiary/partials/quick_diary_modal.html" %}
   {% endblock %}
 
   {% block scripts %}
   <!-- スピードダイアル -->
   <script src="{% static 'js/speed-dial.js' %}"></script>
+  <script src="{% static 'js/quick-diary.js' %}"></script>
   <!-- FullCalendar JS -->
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/locales/ja.js"></script>
   
 <!-- 日記カードタブ機能 -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      // 既存のスピードダイアルの初期化
+      initializeSpeedDial();
+      
+      // クイックボタンのイベントリスナー設定
+      const quickButtons = document.querySelectorAll('.speed-dial-btn.action-quick-add');
+      if (quickButtons.length > 0) {
+          quickButtons.forEach(btn => {
+              btn.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  if (window.quickDiaryForm) {
+                      window.quickDiaryForm.show();
+                  }
+              });
+          });
+      }
+  });
+</script>
 <script>
   /**
    * 日記カードのタブUIを初期化する関数

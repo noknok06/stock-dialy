@@ -5,9 +5,13 @@ from decimal import Decimal
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 
+from django.urls import reverse
 from company_master.models import CompanyMaster
+from .models import StockDiary
+from tags.models import Tag
 
 
 # 銘柄リストをキャッシュするための変数
@@ -179,3 +183,87 @@ def get_stock_price(request, stock_code):
             'success': False,
             'error': str(e)
         }, status=500)
+
+
+@login_required
+@require_POST
+def api_create_diary(request):
+    try:
+        # 必須フィールドのチェック
+        stock_name = request.POST.get('stock_name')
+        purchase_date = request.POST.get('purchase_date')
+        
+        if not stock_name:
+            return JsonResponse({
+                'success': False,
+                'message': '銘柄名は必須です'
+            }, status=400)
+        
+        # 日付が未設定の場合は今日の日付を使用
+        if not purchase_date:
+            from django.utils import timezone
+            purchase_date = timezone.now().date().isoformat()
+        
+        # 新しい日記インスタンスを作成
+        diary = StockDiary(
+            user=request.user,
+            stock_name=stock_name,
+            purchase_date=purchase_date
+        )
+        
+        # オプションフィールドの設定
+        diary.stock_symbol = request.POST.get('stock_symbol', '')
+        diary.sector = request.POST.get('sector', '')
+        diary.reason = request.POST.get('reason', '')
+        
+        # 数値フィールドの処理
+        price = request.POST.get('purchase_price')
+        quantity = request.POST.get('purchase_quantity')
+        
+        if price:
+            try:
+                diary.purchase_price = float(price)
+            except ValueError:
+                pass
+                
+        if quantity:
+            try:
+                diary.purchase_quantity = int(quantity)
+            except ValueError:
+                pass
+        
+        # 日記を保存
+        diary.save()
+        
+        # タグの処理
+        tags = request.POST.getlist('tags')
+        if tags:
+            for tag_id in tags:
+                try:
+                    tag = Tag.objects.get(id=tag_id, user=request.user)
+                    diary.tags.add(tag)
+                except Tag.DoesNotExist:
+                    pass
+        
+        # 新しく作成した日記のHTMLを生成
+        from django.template.loader import render_to_string
+        diary_html = render_to_string('stockdiary/partials/diary_card.html', {
+            'diary': diary,
+            'request': request,
+            'forloop': {'counter': 1}  # forloop.counter の代わり
+        })
+
+        return JsonResponse({
+            'success': True,
+            'message': '日記を作成しました',
+            'diary_id': diary.id,
+            'diary_html': diary_html,
+            'redirect_url': reverse('stockdiary:detail', kwargs={'pk': diary.id})
+        })
+        
+    except Exception as e:
+        # エラー処理
+        return JsonResponse({
+            'success': False,
+            'message': f'エラーが発生しました: {str(e)}'
+        }, status=500)        

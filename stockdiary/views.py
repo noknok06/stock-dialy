@@ -127,8 +127,17 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
                 'type': 'add',
                 'url': reverse_lazy('stockdiary:create'),
                 'icon': 'bi-plus-lg',
-                'label': '新規作成',
-                'aria_label': '新規作成' 
+                'label': '詳細作成',  # ラベルを変更して区別する
+                'aria_label': '詳細作成' 
+            },
+            # ここにクイック作成ボタンを追加
+            {
+                'type': 'quick-add',
+                'url': '#',  # モーダルを表示するだけなのでURLは不要
+                'icon': 'bi-lightning',
+                'label': 'クイック作成',
+                'aria_label': 'クイック作成',
+                'onclick': 'window.quickDiaryForm.show(); return false;'  # クリック時にモーダルを表示
             },
             {
                 'type': 'template',

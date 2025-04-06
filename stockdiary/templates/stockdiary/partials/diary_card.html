@@ -105,9 +105,9 @@
             </h6>
             <div class="mx-2 reason-content">
               {% if request.GET.query and request.GET.query != '' %}
-                {{ diary.reason|safe|highlight:request.GET.query|truncatewords_html:50 }}
+                {{ diary.reason|safe|linebreaks|highlight:request.GET.query|truncatewords_html:50 }}
               {% else %}
-                {{ diary.reason|safe|truncatewords_html:50 }}
+                {{ diary.reason|safe|linebreaks|truncatewords_html:50 }}
               {% endif %}
             </div>
             
