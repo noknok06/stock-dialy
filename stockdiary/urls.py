@@ -21,6 +21,7 @@ urlpatterns = [
     path('api/stock/price/<str:stock_code>/', api.get_stock_price, name='api_stock_price'),
 
     path('<int:pk>/note/', views.AddDiaryNoteView.as_view(), name='add_note'),
+    path('<int:diary_pk>/note/<int:pk>/delete/', views.DeleteDiaryNoteView.as_view(), name='delete_note'),
 
     path('analytics/', views.DiaryAnalyticsView.as_view(), name='analytics'),
 ]

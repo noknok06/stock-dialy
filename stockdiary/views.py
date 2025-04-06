@@ -768,3 +768,22 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
             diaries = diaries.annotate(reason_length=Length('reason')).order_by('reason_length')
         
         return diaries.select_related('user').prefetch_related('tags')
+
+class DeleteDiaryNoteView(LoginRequiredMixin, DeleteView):
+    """継続記録を削除するビュー"""
+    model = DiaryNote
+    template_name = 'stockdiary/note_confirm_delete.html'
+    
+    def get_queryset(self):
+        # ユーザーの日記に紐づいたノートのみを取得
+        return DiaryNote.objects.filter(diary__user=self.request.user)
+    
+    def get_success_url(self):
+        # 削除後は日記詳細ページにリダイレクト
+        diary_pk = self.kwargs.get('diary_pk')
+        return reverse_lazy('stockdiary:detail', kwargs={'pk': diary_pk})
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['diary_pk'] = self.kwargs.get('diary_pk')
+        return context        
