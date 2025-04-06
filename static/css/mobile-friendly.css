@@ -300,3 +300,27 @@
       height: 36px !important;
     }
   }
+  @media (max-width: 768px) {
+    /* ボタン間の間隔を調整 */
+    .d-flex.justify-content-between.mt-4 {
+      gap: 10px;
+    }
+    
+    /* ボタンの幅を調整 */
+    .d-flex.justify-content-between.mt-4 .btn {
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+  }
+  
+  /* 特に小さい画面（スマートフォン）では縦に配置 */
+  @media (max-width: 576px) {
+    .d-flex.justify-content-between.mt-4 {
+      flex-direction: column-reverse;
+      gap: 8px;
+    }
+    
+    .d-flex.justify-content-between.mt-4 .btn {
+      width: 100%;
+    }
+  }
