@@ -1,0 +1,57 @@
+<div class="px-1 py-2">
+    <div class="notes-timeline">
+      {% for note in notes %}
+      <div class="note-item mb-3">
+        <div class="d-flex justify-content-between align-items-start mb-1">
+            <div class="note-date">
+              <i class="bi bi-calendar-date text-muted"></i>
+              <span class="text-muted small">{{ note.date|date:"Y年m月d日" }}</span>
+            </div>
+            <span class="badge {% if note.note_type == 'analysis' %}bg-primary
+                  {% elif note.note_type == 'news' %}bg-info
+                  {% elif note.note_type == 'earnings' %}bg-success
+                  {% elif note.note_type == 'insight' %}bg-warning
+                  {% elif note.note_type == 'risk' %}bg-danger
+                  {% else %}bg-secondary{% endif %} small">
+              {% if note.note_type == 'analysis' %}分析更新
+              {% elif note.note_type == 'news' %}ニュース
+              {% elif note.note_type == 'earnings' %}決算情報
+              {% elif note.note_type == 'insight' %}新たな気づき
+              {% elif note.note_type == 'risk' %}リスク要因
+              {% else %}その他{% endif %}
+            </span>
+          </div>
+          
+          {% if note.current_price %}
+          <div class="note-price small mb-1">
+            <span class="text-muted">記録時価格:</span>
+            <span class="fw-medium">{{ note.current_price|floatformat:2|intcomma }}円</span>
+            
+            {% with price_change=note.get_price_change %}
+            {% if price_change %}
+            <span class="{% if price_change > 0 %}text-success{% elif price_change < 0 %}text-danger{% endif %} ms-2">
+              ({{ price_change|floatformat:2 }}%)
+            </span>
+            {% endif %}
+            {% endwith %}
+          </div>
+          {% endif %}
+          
+          <div class="note-content bg-light p-2 rounded">
+            {{ note.content|safe|truncatewords_html:30 }}
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-muted">継続記録はまだありません</p>
+      {% endfor %}
+      
+      {% if diary.notes.count > 3 %}
+      <div class="text-end mt-2">
+        <a href="{% url 'stockdiary:detail' diary.id %}" class="text-primary text-decoration-none small">
+          すべての記録を見る ({{ diary.notes.count }}件) <i class="bi bi-arrow-right"></i>
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>

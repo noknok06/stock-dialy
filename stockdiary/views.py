@@ -24,6 +24,12 @@ from decimal import Decimal, InvalidOperation
 from collections import Counter, defaultdict
 from datetime import timedelta
 
+import traceback
+
+from django.template import engines, Context
+from django.contrib.humanize.templatetags.humanize import intcomma
+from stockdiary.templatetags.stockdiary_filters import mul_filter, sub_filter, div_filter
+
 import json
 import re
 
@@ -796,3 +802,357 @@ class DeleteDiaryNoteView(LoginRequiredMixin, DeleteView):
         context = super().get_context_data(**kwargs)
         context['diary_pk'] = self.kwargs.get('diary_pk')
         return context        
+
+# views.py
+
+from django.views import View
+from django.http import JsonResponse
+from django.contrib.auth.mixins import LoginRequiredMixin
+
+class DiaryTabContentView(LoginRequiredMixin, View):
+    def get(self, request, diary_id, tab_type):
+        try:
+            diary = StockDiary.objects.get(id=diary_id, user=request.user)
+            
+            # 基本データの事前処理（カスタムフィルター不要）
+            context = {
+                'diary': diary,
+                'diary_id': diary.id,
+                'purchase_date': diary.purchase_date.strftime('%Y年%m月%d日')
+            }
+            
+            # 数値のフォーマット処理（intcommaフィルターの代わり）
+            if diary.purchase_price is not None:
+                context['purchase_price'] = f"{float(diary.purchase_price):,.2f}円"
+                
+            if diary.purchase_quantity is not None:
+                context['purchase_quantity'] = diary.purchase_quantity
+                
+            # 総投資額の計算（mulフィルターの代わり）
+            if diary.purchase_price is not None and diary.purchase_quantity is not None:
+                total = float(diary.purchase_price) * diary.purchase_quantity
+                context['total_investment'] = f"{total:,.2f}円"
+                
+            # 売却情報
+            if diary.sell_date:
+                context['sell_date'] = diary.sell_date.strftime('%Y年%m月%d日')
+                
+                if diary.sell_price is not None:
+                    context['sell_price'] = f"{float(diary.sell_price):,.2f}円"
+                    
+                    # 損益計算
+                    if diary.purchase_price is not None and diary.purchase_quantity is not None:
+                        profit = float(diary.sell_price - diary.purchase_price) * diary.purchase_quantity
+                        context['profit'] = profit
+                        context['profit_formatted'] = f"{profit:,.2f}円"
+                        
+                        # 損益率計算
+                        profit_rate = ((float(diary.sell_price) / float(diary.purchase_price)) - 1) * 100
+                        context['profit_rate'] = profit_rate
+                        context['profit_rate_formatted'] = f"{profit_rate:.2f}%"
+            
+            # タブタイプに応じたHTMLを生成
+            if tab_type == 'notes':
+                html = self._render_notes_tab(diary)
+            elif tab_type == 'analysis':
+                html = self._render_analysis_tab(diary)
+            elif tab_type == 'details':
+                html = self._render_details_tab(context)
+            else:
+                return JsonResponse({'error': '無効なタブタイプです'}, status=400)
+            
+            return JsonResponse({'html': html})
+            
+        except StockDiary.DoesNotExist:
+            return JsonResponse({'error': '日記が見つかりません'}, status=404)
+        except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"Tab content error: {error_details}")
+            return JsonResponse({
+                'error': str(e),
+                'details': error_details
+            }, status=500)
+
+    def _render_notes_tab(self, diary):
+        """継続記録タブのHTMLを直接生成"""
+        notes = diary.notes.all().order_by('-date')[:3]
+        html = '<div class="px-1 py-2"><div class="notes-timeline">'
+        
+        if notes.exists():
+            for note in notes:
+                # 基本情報
+                date_str = note.date.strftime('%Y年%m月%d日')
+                
+                # ノートタイプのバッジカラー
+                badge_class = self._get_note_badge_class(note.note_type)
+                badge_text = self._get_note_type_display(note.note_type)
+                
+                html += f'''
+                <div class="note-item mb-3" data-importance="{note.importance}">
+                  <div class="d-flex justify-content-between align-items-start mb-1">
+                    <div class="note-date">
+                      <i class="bi bi-calendar-date text-muted"></i>
+                      <span class="text-muted small">{date_str}</span>
+                    </div>
+                    <span class="badge {badge_class} small">{badge_text}</span>
+                  </div>
+                '''
+                
+                # 価格情報があれば表示
+                if note.current_price:
+                    price_formatted = f"{float(note.current_price):,.2f}円"
+                    html += f'<div class="note-price small mb-1"><span class="text-muted">記録時価格:</span><span class="fw-medium">{price_formatted}</span>'
+                    
+                    # 価格変化率
+                    if diary.purchase_price:
+                        price_change = ((float(note.current_price) / float(diary.purchase_price)) - 1) * 100
+                        price_change_class = "text-success" if price_change > 0 else "text-danger"
+                        price_change_sign = "+" if price_change > 0 else ""
+                        html += f'<span class="{price_change_class} ms-2">({price_change_sign}{price_change:.2f}%)</span>'
+                    
+                    html += '</div>'
+                
+                # コンテンツ
+                html += f'''
+                  <div class="note-content bg-light p-2 rounded">
+                    {note.content}
+                  </div>
+                </div>
+                '''
+            
+            # もっと見るリンク
+            notes_count = diary.notes.count()
+            if notes_count > 3:
+                html += f'''
+                <div class="text-end mt-2">
+                  <a href="/stockdiary/{diary.id}/" class="text-primary text-decoration-none small">
+                    すべての記録を見る ({notes_count}件) <i class="bi bi-arrow-right"></i>
+                  </a>
+                </div>
+                '''
+        else:
+            html += '<p class="text-muted">継続記録はまだありません</p>'
+        
+        html += '</div></div>'
+        return html
+    
+    def _render_analysis_tab(self, diary):
+        """分析タブのHTMLを直接生成"""
+        from analysis_template.models import DiaryAnalysisValue
+        
+        html = '<div class="px-1 py-2">'
+        
+        # 分析値を取得してテンプレートごとにグループ化
+        analysis_values = DiaryAnalysisValue.objects.filter(diary=diary).select_related('analysis_item__template')
+        
+        if analysis_values.exists():
+            # テンプレートごとにグループ化
+            from collections import defaultdict
+            templates = defaultdict(list)
+            
+            for value in analysis_values:
+                template = value.analysis_item.template
+                templates[template.id].append(value)
+            
+            for template_id, values in templates.items():
+                if not values:
+                    continue
+                    
+                template = values[0].analysis_item.template
+                
+                # テンプレート名とプログレスバー
+                html += f'''
+                <div class="analysis-template-summary mb-3" data-template-id="{template.id}">
+                  <h6 class="mb-2">
+                    <i class="bi bi-clipboard-check"></i> {template.name}
+                  </h6>
+                  
+                  <div class="progress mb-2" style="height: 6px;">
+                '''
+                
+                # 進捗率の計算
+                items_count = template.items.count()
+                filled_count = len(values)
+                completion = int((filled_count / items_count) * 100) if items_count > 0 else 0
+                
+                html += f'<div class="progress-bar bg-primary" style="width: {completion}%"></div></div>'
+                
+                # 分析項目
+                html += '<div class="analysis-item-preview">'
+                
+                for i, value in enumerate(values[:5]):  # 最大5項目まで表示
+                    item_name = value.analysis_item.name
+                    
+                    # 値のタイプに基づいて表示
+                    if value.analysis_item.item_type == 'boolean_with_value':
+                        if value.boolean_value:
+                            display_value = "✓"
+                        else:
+                            display_value = ""
+                            
+                        if value.number_value is not None:
+                            display_value += f" {value.number_value:.2f}"
+                        elif value.text_value:
+                            display_value += f" {value.text_value}"
+                    elif value.analysis_item.item_type == 'number':
+                        display_value = f"{float(value.number_value):.2f}" if value.number_value is not None else "-"
+                    elif value.analysis_item.item_type == 'boolean':
+                        display_value = "はい" if value.boolean_value else "いいえ"
+                    elif value.analysis_item.item_type == 'select':
+                        display_value = value.text_value or "-"
+                    else:
+                        display_value = value.text_value or "-"
+                    
+                    html += f'''
+                    <div class="analysis-preview-item">
+                      <span class="key">{item_name}:</span>
+                      <span class="value">{display_value}</span>
+                    </div>
+                    '''
+                
+                # もっと見るリンク
+                if len(values) > 5:
+                    html += f'''
+                    <div class="text-end mt-2">
+                      <a href="/stockdiary/{diary.id}/" class="text-primary text-decoration-none small">
+                        すべて表示 <i class="bi bi-arrow-right"></i>
+                      </a>
+                    </div>
+                    '''
+                
+                html += '</div></div>'
+        else:
+            html += '<p class="text-muted">分析データはありません</p>'
+        
+        html += '</div>'
+        return html
+    
+    def _render_details_tab(self, context):
+        """詳細タブのHTMLを直接生成"""
+        diary = context['diary']
+        html = '<div class="px-1 py-2">'
+        
+        # 購入情報
+        if not diary.is_memo and diary.purchase_price is not None and diary.purchase_quantity is not None:
+            html += f'''
+            <div class="info-block">
+              <div class="info-row">
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-currency-yen"></i>
+                  </div>
+                  <div class="info-content">
+                    <span class="info-label">購入価格</span>
+                    <span class="info-value">{context['purchase_price']}</span>
+                  </div>
+                </div>
+
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-graph-up"></i>
+                  </div>
+                  <div class="info-content">
+                    <span class="info-label">購入数量</span>
+                    <span class="info-value">{context['purchase_quantity']}株</span>
+                  </div>
+                </div>
+
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-calendar-date"></i>
+                  </div>
+                  <div class="info-content">
+                    <span class="info-label">購入/メモ日</span>
+                    <span class="info-value">{context['purchase_date']}</span>
+                  </div>
+                </div>
+
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-cash-stack"></i>
+                  </div>
+                  <div class="info-content">
+                    <span class="info-label">総投資額</span>
+                    <span class="info-value">{context['total_investment']}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            '''
+        
+        # 売却情報
+        if diary.sell_date and diary.purchase_price is not None and diary.purchase_quantity is not None:
+            profit_class = "profit" if context.get('profit', 0) > 0 else "loss" if context.get('profit', 0) < 0 else "text-muted"
+            profit_sign = "+" if context.get('profit', 0) > 0 else ""
+            
+            html += f'''
+            <div class="sell-info">
+              <div class="info-row">
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-currency-yen"></i>
+                  </div>
+                  <div class="info-content">
+                    <span class="info-label">売却価格</span>
+                    <span class="info-value">{context['sell_price']}</span>
+                  </div>
+                </div>
+
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-calendar-check"></i>
+                  </div>
+                  <div class="info-content">
+                    <span class="info-label">売却日</span>
+                    <span class="info-value">{context['sell_date']}</span>
+                  </div>
+                </div>
+
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-graph-up-arrow"></i>
+                  </div>
+                  <div class="info-content">
+                    <span class="info-label">損益</span>
+                    <span class="{profit_class}">{profit_sign}{context['profit_formatted']}</span>
+                  </div>
+                </div>
+
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-percent"></i>
+                  </div>
+                  <div class="info-content">
+                    <span class="info-label">損益率</span>
+                    <span class="{profit_class}">{profit_sign}{context['profit_rate_formatted']}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            '''
+        
+        html += '</div>'
+        return html
+    
+    def _get_note_badge_class(self, note_type):
+        """ノートタイプに応じたバッジクラスを取得"""
+        badge_classes = {
+            'analysis': 'bg-primary',
+            'news': 'bg-info',
+            'earnings': 'bg-success',
+            'insight': 'bg-warning',
+            'risk': 'bg-danger'
+        }
+        return badge_classes.get(note_type, 'bg-secondary')
+    
+    def _get_note_type_display(self, note_type):
+        """ノートタイプの表示名を取得"""
+        type_displays = {
+            'analysis': '分析更新',
+            'news': 'ニュース',
+            'earnings': '決算情報',
+            'insight': '新たな気づき',
+            'risk': 'リスク要因'
+        }
+        return type_displays.get(note_type, 'その他')

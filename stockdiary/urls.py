@@ -20,6 +20,7 @@ urlpatterns = [
     path('api/stock/info/<str:stock_code>/', api.get_stock_info, name='api_stock_info'),
     path('api/stock/price/<str:stock_code>/', api.get_stock_price, name='api_stock_price'),
     path('api/create/', api.api_create_diary, name='api_create'),
+    path('api/tab-content/<int:diary_id>/<str:tab_type>/', views.DiaryTabContentView.as_view(), name='api_tab_content'),
 
     path('<int:pk>/note/', views.AddDiaryNoteView.as_view(), name='add_note'),
     path('<int:diary_pk>/note/<int:pk>/delete/', views.DeleteDiaryNoteView.as_view(), name='delete_note'),

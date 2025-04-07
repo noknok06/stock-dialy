@@ -1,0 +1,52 @@
+<div class="px-1 py-2">
+    {% if template_groups %}
+      {% for group in template_groups %}
+      <div class="analysis-template-summary mb-3" data-template-id="{{ group.template.id }}">
+        <h6 class="mb-2">
+          <i class="bi bi-clipboard-check"></i> {{ group.template.name }}
+        </h6>
+        
+        <div class="progress mb-2" style="height: 6px;">
+          {% with items_count=group.template.items.count %}
+          {% if items_count > 0 %}
+            {% with filled_count=group.values|length %}
+            <div class="progress-bar bg-primary" style="width: {{ filled_count|floatformat:0 }}%"></div>
+            {% endwith %}
+          {% else %}
+            <div class="progress-bar bg-primary" style="width: 0%"></div>
+          {% endif %}
+          {% endwith %}
+        </div>
+        
+        <div class="analysis-item-preview">
+          {% for value in group.values|slice:":3" %}
+          <div class="analysis-preview-item">
+            <span class="key">{{ value.analysis_item.name }}:</span>
+            <span class="value">
+              {% if value.number_value != None %}
+                {{ value.number_value|floatformat:"-2" }}
+              {% elif value.boolean_value != None %}
+                {% if value.boolean_value %}はい{% else %}いいえ{% endif %}
+              {% elif value.text_value %}
+                {{ value.text_value }}
+              {% else %}
+                -
+              {% endif %}
+            </span>
+          </div>
+          {% endfor %}
+          
+          {% if group.values|length > 3 %}
+          <div class="text-end mt-2">
+            <a href="{% url 'stockdiary:detail' diary.id %}" class="text-primary text-decoration-none small">
+              すべて表示 <i class="bi bi-arrow-right"></i>
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p class="text-muted">分析データはありません</p>
+    {% endif %}
+  </div>

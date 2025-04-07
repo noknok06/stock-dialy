@@ -664,14 +664,131 @@
         // ターゲットパネルを表示
         targetPanel.classList.add('show', 'active');
         
+        // 遅延ロード処理 - 理由タブ以外でまだロードされていないコンテンツの場合
+        if (!targetPanel.hasAttribute('data-loaded') && !targetId.includes('reason-content')) {
+          const diaryId = element.dataset.diaryId;
+          // data-tab-type属性から取得するか、IDから抽出
+          const tabType = this.getAttribute('data-tab-type') || 
+                        this.id.split('-')[0]; // notes-tab-123 -> notes
+          
+          console.log(`Loading tab content for ${diaryId}, type: ${tabType}`);
+          
+          // APIのURLを構築
+          const apiUrl = `/stockdiary/api/tab-content/${diaryId}/${tabType}/`;
+          
+          // タブコンテンツをフェッチ
+          fetch(apiUrl, {
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+          })
+          .then(response => {
+            if (!response.ok) {
+              return response.json().then(data => {
+                throw new Error(data.error || 'Network response was not ok');
+              });
+            }
+            return response.json();
+          })
+          .then(data => {
+            // コンテンツを挿入
+            targetPanel.innerHTML = data.html;
+            
+            // ロード済みとしてマーク
+            targetPanel.setAttribute('data-loaded', 'true');
+            
+            // モーダルやその他の動的要素を初期化
+            initDynamicElements(targetPanel);
+          })
+          .catch(error => {
+            console.error('Error loading tab content:', error);
+            targetPanel.innerHTML = `
+              <div class="alert alert-warning m-3">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                コンテンツの読み込みに失敗しました: ${error.message || '不明なエラー'}
+                <button class="btn btn-sm btn-outline-primary ms-2" onclick="retryLoadTab('${diaryId}', '${tabType}', '${targetId}')">
+                  再試行
+                </button>
+              </div>
+            `;
+          });
+        }
+        
         // イベントの伝播を防止
         event.stopPropagation();
       }, { passive: false });
     });
   }
-  /**
-   * 既存のDOMにタブ機能を適用する
-   */
+
+  // 動的に読み込まれた要素の初期化
+  function initDynamicElements(container) {
+    // モーダルトリガーなどの初期化
+    try {
+      const modalTriggers = container.querySelectorAll('[data-bs-toggle="modal"]');
+      modalTriggers.forEach(trigger => {
+        trigger.addEventListener('click', function(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          
+          const targetId = this.getAttribute('data-bs-target');
+          const modalElement = document.querySelector(targetId);
+          
+          if (modalElement) {
+            showAnalysisModalSafely(modalElement.id, event);
+          }
+        });
+      });
+    } catch (e) {
+      console.warn('Modal initialization error:', e);
+    }
+  }
+
+  // タブコンテンツ読み込みの再試行
+  function retryLoadTab(diaryId, tabType, targetId) {
+    const targetPanel = document.querySelector(targetId);
+    if (!targetPanel) return;
+    
+    // 読み込み中表示
+    targetPanel.innerHTML = `
+      <div class="d-flex justify-content-center p-4">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">読み込み中...</span>
+        </div>
+      </div>
+    `;
+    
+    // 再度APIリクエスト
+    fetch(`/stockdiary/api/tab-content/${diaryId}/${tabType}/`, {
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      credentials: 'same-origin'
+    })
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(data => {
+          throw new Error(data.error || 'リクエスト失敗');
+        });
+      }
+      return response.json();
+    })
+    .then(data => {
+      targetPanel.innerHTML = data.html;
+      targetPanel.setAttribute('data-loaded', 'true');
+      initDynamicElements(targetPanel);
+    })
+    .catch(error => {
+      console.error('Error retrying tab content:', error);
+      targetPanel.innerHTML = `
+        <div class="alert alert-danger m-3">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          コンテンツの読み込みに再び失敗しました: ${error.message || '不明なエラー'}
+        </div>
+      `;
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
     // ページ読み込み時に全ての日記カードにタブ機能を適用
     const diaryCards = document.querySelectorAll('.diary-card');
