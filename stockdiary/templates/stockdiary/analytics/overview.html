@@ -19,7 +19,7 @@
           </div>
           <div class="compact-stat-content">
             <h3 class="compact-stat-value">{{ total_investment|floatformat:0|intcomma }}円</h3>
-            <p class="compact-stat-label">総投資額</p>
+            <p class="compact-stat-label">保有中投資額</p>
             <div class="compact-stat-change {% if investment_change >= 0 %}positive{% else %}negative{% endif %}">
               <i
                 class="bi {% if investment_change >= 0 %}bi-arrow-up-right{% else %}bi-arrow-down-right{% endif %}"></i>
@@ -38,7 +38,7 @@
             <h3 class="compact-stat-value {% if total_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
               {{ total_profit|floatformat:0|intcomma }}円
             </h3>
-            <p class="compact-stat-label">総利益/損失</p>
+            <p class="compact-stat-label">保有総利益/損失</p>
             <div class="compact-stat-change {% if profit_change >= 0 %}positive{% else %}negative{% endif %}">
               <i class="bi {% if profit_change >= 0 %}bi-arrow-up-right{% else %}bi-arrow-down-right{% endif %}"></i>
               <span>{{ profit_change_percent|floatformat:1 }}% (前月比)</span>
