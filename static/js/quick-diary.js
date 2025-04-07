@@ -532,11 +532,25 @@ class QuickDiaryForm {
     const createButtons = document.querySelectorAll('.speed-dial-btn.action-add');
     createButtons.forEach(btn => {
       btn.addEventListener('click', function(e) {
-        e.preventDefault(); // デフォルトのリンク動作をキャンセル
+        // デフォルトのリンク動作をキャンセル
+        e.preventDefault();
+        e.stopPropagation(); // イベントの伝播も停止
         
         if (window.quickDiaryForm) {
           window.quickDiaryForm.show();
         }
       });
+    });
+    
+    // 「詳細作成」ボタンに正しいURLへの遷移を確保
+    const detailCreateButtons = document.querySelectorAll('.speed-dial-btn.action-add');
+    detailCreateButtons.forEach(btn => {
+      // 既存のイベントリスナーを確認
+      if (btn.getAttribute('data-has-listeners') !== 'true') {
+        btn.setAttribute('data-has-listeners', 'true');
+        // クリックイベントをクリア
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+      }
     });
   });
