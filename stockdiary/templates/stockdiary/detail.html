@@ -411,10 +411,26 @@
       </p>
       
       <div class="row">
+
+        <!-- 購入理由セクション -->
+        <div class="col-lg-6 mb-4">
+          <h3 class="section-title mb-3">
+            <i class="bi bi-journal-text"></i> 
+            {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
+            メモ内容
+            {% else %}
+            購入理由
+            {% endif %}
+          </h3>
+          
+          <div class="mx-3"">
+            {{ diary.reason|safe|linebreaksbr }}
+          </div>
+        </div>
         <!-- 基本情報セクション -->
         <div class="col-lg-6 mb-4">
           <h3 class="section-title mb-3">
-            <i class="bi bi-info-circle"></i> 基本情報
+            <i class="bi bi-info-circle"></i> 売買情報
           </h3>
           
           <div class="info-block">
@@ -528,22 +544,6 @@
               </div>
             </div>
             {% endif %}
-          </div>
-        </div>
-        
-        <!-- 購入理由セクション -->
-        <div class="col-lg-6 mb-4">
-          <h3 class="section-title mb-3">
-            <i class="bi bi-journal-text"></i> 
-            {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
-            メモ内容
-            {% else %}
-            購入理由
-            {% endif %}
-          </h3>
-          
-          <div class="mx-3"">
-            {{ diary.reason|safe|linebreaksbr }}
           </div>
         </div>
       </div>

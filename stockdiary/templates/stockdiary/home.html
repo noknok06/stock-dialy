@@ -397,7 +397,7 @@
 
                 <!-- 日付表示と操作ボタン -->
                 <div class="calendar-controls">
-                  <div class="calendar-date-display" id="desktop-current-year-month">2025年3月</div>
+                  <div class="calendar-date-display" id="desktop-current-year-month"></div>
                   <div class="calendar-nav-buttons">
                     <button class="calendar-nav-button" id="desktop-prev-month">
                       <i class="bi bi-chevron-left"></i>
@@ -592,21 +592,33 @@
 <!-- 日記カードタブ機能 -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-      // 既存のスピードダイアルの初期化
-      initializeSpeedDial();
-      
-      // クイックボタンのイベントリスナー設定
-      const quickButtons = document.querySelectorAll('.speed-dial-btn.action-quick-add');
-      if (quickButtons.length > 0) {
-          quickButtons.forEach(btn => {
-              btn.addEventListener('click', function(e) {
-                  e.preventDefault();
-                  if (window.quickDiaryForm) {
-                      window.quickDiaryForm.show();
-                  }
-              });
-          });
-      }
+    // 既存のスピードダイアルの初期化
+    initializeSpeedDial();
+    
+    // クラスセレクタをより具体的にして、quick-addタイプのみに適用する
+    const quickButtons = document.querySelectorAll('.speed-dial-btn.action-quick-add');
+    if (quickButtons.length > 0) {
+      quickButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          if (window.quickDiaryForm) {
+              window.quickDiaryForm.show();
+          }
+        });
+      });
+    }
+    
+    // 追加: 詳細作成ボタンは通常のリンクとして機能させる
+    const addButtons = document.querySelectorAll('.speed-dial-btn.action-add');
+    if (addButtons.length > 0) {
+      addButtons.forEach(btn => {
+        // クリックした時のデフォルト動作を維持（リンク遷移）
+        btn.addEventListener('click', function(e) {
+            // デフォルト動作のままにする（preventDefault不要）
+            // URLがhref属性に設定されていれば自動的にそのページに遷移する
+        });
+      });
+    }
   });
 </script>
 <script>
