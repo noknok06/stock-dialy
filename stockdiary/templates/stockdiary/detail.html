@@ -737,6 +737,65 @@
         </div>
       </div>
 
+      <hr class="my-4">
+          
+      <!-- 新規継続記録フォーム -->
+      <div class="info-block">
+        <h5 class="mb-3">継続記録を追加</h5>
+        <form method="post" action="{% url 'stockdiary:add_note' diary.id %}">
+          {% csrf_token %}
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label for="{{ note_form.date.id_for_label }}" class="form-label">日付</label>
+              {{ note_form.date }}
+              {% if note_form.date.errors %}
+              <div class="text-danger">{{ note_form.date.errors }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-4 mb-3">
+              <label for="{{ note_form.note_type.id_for_label }}" class="form-label">記録タイプ</label>
+              {{ note_form.note_type }}
+              {% if note_form.note_type.errors %}
+              <div class="text-danger">{{ note_form.note_type.errors }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-4 mb-3">
+              <label for="{{ note_form.importance.id_for_label }}" class="form-label">重要度</label>
+              {{ note_form.importance }}
+              {% if note_form.importance.errors %}
+              <div class="text-danger">{{ note_form.importance.errors }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="{{ note_form.content.id_for_label }}" class="form-label">記録内容</label>
+            {{ note_form.content }}
+            {% if note_form.content.errors %}
+            <div class="text-danger">{{ note_form.content.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label for="{{ note_form.current_price.id_for_label }}" class="form-label">現在価格（任意）</label>
+            <div class="input-group">
+              {{ note_form.current_price }}
+              <button type="button" class="btn btn-outline-primary" id="fetch-note-price">
+                <i class="bi bi-arrow-repeat"></i> 現在株価
+              </button>
+            </div>
+            {% if note_form.current_price.errors %}
+            <div class="text-danger">{{ note_form.current_price.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="text-end">
+            <button type="submit" class="btn btn-diary btn-diary-primary">
+              <i class="bi bi-plus-circle me-1"></i> 記録を追加
+            </button>
+          </div>
+        </form>
+      </div>
       <!-- 改善されたカードフッター -->
       <div class="diary-card-footer mx-2">
         <!-- モバイル向けレイアウト(小さい画面) -->
