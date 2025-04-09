@@ -1,0 +1,76 @@
+name: Django Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: naoki
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: kabulog_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install flake8 pytest coverage
+        
+    - name: Lint with flake8
+      run: |
+        # 深刻なエラーのみ停止
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # 警告としてのエラーはすべて表示するが失敗させない
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        
+    - name: Configure Django settings
+      run: |
+        # テスト用の設定を作成
+        echo "from .settings import *" > config/test_settings.py
+        echo "DEBUG = True" >> config/test_settings.py
+        echo "DATABASES = {'default': {'ENGINE': 'django.db.backends.postgresql', 'NAME': 'kabulog_test', 'USER': 'naoki', 'PASSWORD': 'postgres', 'HOST': 'localhost', 'PORT': '5432'}}" >> config/test_settings.py
+        echo "SECRET_KEY = 'test-secret-key'" >> config/test_settings.py
+        echo "ALLOWED_HOSTS = ['*']" >> config/test_settings.py
+        
+    - name: Run migrations
+      run: |
+        python manage.py migrate --settings=config.test_settings
+        
+    - name: Test models
+      run: |
+        python -m pytest tests/test_models.py -v --settings=config.test_settings
+        
+    - name: Test management commands
+      run: |
+        python -m pytest tests/test_commands.py -v --settings=config.test_settings
+        
+    - name: Test views
+      run: |
+        python -m pytest tests/test_views.py -v --settings=config.test_settings
+        
+    - name: Run coverage
+      run: |
+        coverage run --source='.' manage.py test --settings=config.test_settings
+        coverage report
