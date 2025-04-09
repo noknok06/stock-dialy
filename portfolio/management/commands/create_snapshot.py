@@ -76,7 +76,7 @@ class Command(BaseCommand):
                     quantity=diary.purchase_quantity,
                     price=diary.purchase_price,
                     total_value=stock_value,
-                    sector=sector,
+                    sector=diary.sector,
                     percentage=percentage
                 )
             
