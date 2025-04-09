@@ -59,7 +59,7 @@ jobs:
       run: |
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-        
+            
     - name: Configure Django settings
       run: |
         echo "from .settings import *" > config/test_settings.py
@@ -76,6 +76,8 @@ jobs:
         echo "PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']" >> config/test_settings.py
         echo "# ミドルウェアから不要なものを削除" >> config/test_settings.py
         echo "MIDDLEWARE = [m for m in MIDDLEWARE if 'subscription' not in m.lower()]" >> config/test_settings.py
+        echo "# SSLリダイレクトを無効化" >> config/test_settings.py
+        echo "SECURE_SSL_REDIRECT = False" >> config/test_settings.py
             
     - name: Run migrations in order
       run: |
