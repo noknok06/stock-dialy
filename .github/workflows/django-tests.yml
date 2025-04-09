@@ -112,9 +112,16 @@ jobs:
         python manage.py migrate socialaccount --settings=config.test_settings
         
         # 残りのマイグレーションは実行せず、テストだけ実行する
-        
+  
+    - name: Update pytest.ini
+      run: |
+        echo "[pytest]" > pytest.ini
+        echo "DJANGO_SETTINGS_MODULE = config.test_settings" >> pytest.ini
+        echo "python_files = test_*.py" >> pytest.ini
+      
     - name: Test
       run: |
+        export DJANGO_SETTINGS_MODULE=config.test_settings
         python -m pytest tests/ -v
         
     - name: Run coverage
