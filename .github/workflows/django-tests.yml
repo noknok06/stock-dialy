@@ -54,6 +54,8 @@ jobs:
         echo "INSTALLED_APPS = [app for app in INSTALLED_APPS if app != 'subscriptions']" >> config/test_settings.py
         echo "# SQLiteを使用" >> config/test_settings.py
         echo "DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': 'test_db.sqlite3'}}" >> config/test_settings.py
+        echo "# テスト用URLsを使用" >> config/test_settings.py
+        echo "ROOT_URLCONF = 'config.test_urls'" >> config/test_settings.py
         echo "# パスワードハッシュを高速化" >> config/test_settings.py
         echo "PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']" >> config/test_settings.py
         echo "# ミドルウェアから不要なものを削除" >> config/test_settings.py
