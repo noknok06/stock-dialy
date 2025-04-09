@@ -16,6 +16,8 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+import json
+from django.http import JsonResponse
 
 # subscriptions/views.py のUpgradeViewを修正
 

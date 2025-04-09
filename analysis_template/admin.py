@@ -1,6 +1,8 @@
 # analysis_template/admin.py
 from django.contrib import admin
 from .models import AnalysisTemplate, AnalysisItem, DiaryAnalysisValue
+from django.db.models import Count
+
 
 class AnalysisItemInline(admin.TabularInline):
     model = AnalysisItem

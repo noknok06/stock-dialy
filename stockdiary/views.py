@@ -20,6 +20,7 @@ from utils.mixins import ObjectNotFoundRedirectMixin
 from .utils import process_analysis_values, calculate_analysis_completion_rate
 from .analytics import DiaryAnalytics  # 追加: DiaryAnalytics クラスをインポート
 from decimal import Decimal, InvalidOperation
+from django.core.paginator import EmptyPage, PageNotAnInteger
 
 from collections import Counter, defaultdict
 from datetime import timedelta
@@ -764,7 +765,7 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
             'notes',
             'analysis_values__analysis_item__template'
         )
-        
+
         # 日付でフィルタリング
         if filter_params.get('date_from'):
             diaries = diaries.filter(purchase_date__gte=filter_params['date_from'])

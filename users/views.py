@@ -17,6 +17,8 @@ from allauth.socialaccount.models import SocialAccount
 from django.views.decorators.http import require_http_methods
 
 from django.contrib.auth import logout as auth_logout, get_user_model
+from django.shortcuts import redirect
+from django.contrib.auth import login
 
 User = get_user_model()
 
