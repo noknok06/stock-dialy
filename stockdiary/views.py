@@ -42,6 +42,7 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
     
     def get_queryset(self):
         queryset = StockDiary.objects.filter(user=self.request.user).order_by('-purchase_date')
+        queryset = queryset.select_related('user').prefetch_related('tags', 'notes')
         
         # 検索フィルター
         query = self.request.GET.get('query', '')
@@ -231,8 +232,9 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
     not_found_message = "日記エントリーが見つかりません。削除された可能性があります。"
     
     def get_queryset(self):
-        return StockDiary.objects.filter(user=self.request.user)
-    
+        return StockDiary.objects.filter(user=self.request.user).select_related('user').prefetch_related(
+            'notes', 'tags', 'checklist', 'analysis_values__analysis_item'
+        )    
     def get(self, request, *args, **kwargs):
         response = super().get(request, *args, **kwargs)
         # 現在表示中の日記IDをセッションに保存
@@ -756,6 +758,12 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
     def _get_filtered_diaries(self, user, filter_params, sort='date_desc'):
         """フィルター条件に基づいて日記を取得"""
         diaries = StockDiary.objects.filter(user=user)
+        
+        diaries = diaries.select_related('user').prefetch_related(
+            'tags', 
+            'notes',
+            'analysis_values__analysis_item__template'
+        )
         
         # 日付でフィルタリング
         if filter_params.get('date_from'):

@@ -382,20 +382,19 @@ class CompareSnapshotsView(LoginRequiredMixin, TemplateView):
         result.sort(key=lambda x: abs(x['change']), reverse=True)
         
         return result
-    
+        
     def generate_holdings_comparison(self, snapshot1, snapshot2):
         """保有銘柄の比較データを生成"""
-        symbols = set()
+        # 両方のスナップショットのホールディングデータを一度に取得
+        holdings = HoldingRecord.objects.filter(
+            snapshot_id__in=[snapshot1.id, snapshot2.id]
+        ).select_related('snapshot')
+        
+        # 全銘柄シンボルを収集
+        symbols = set(h.stock_symbol for h in holdings)
+        
+        # 銘柄ごとの初期データを作成
         holdings_data = {}
-        
-        # すべての銘柄を収集
-        for holding in snapshot1.holdings.all():
-            symbols.add(holding.stock_symbol)
-        
-        for holding in snapshot2.holdings.all():
-            symbols.add(holding.stock_symbol)
-        
-        # 各銘柄のデータを初期化
         for symbol in symbols:
             holdings_data[symbol] = {
                 'symbol': symbol,
@@ -414,25 +413,27 @@ class CompareSnapshotsView(LoginRequiredMixin, TemplateView):
                 'value_change': 0
             }
         
-        # スナップショット1のデータを設定
-        for holding in snapshot1.holdings.all():
-            holdings_data[holding.stock_symbol].update({
-                'name': holding.stock_name,
-                'snapshot1_quantity': holding.quantity,
-                'snapshot1_price': holding.price,
-                'snapshot1_value': holding.total_value,
-                'snapshot1_percentage': holding.percentage
-            })
-        
-        # スナップショット2のデータを設定
-        for holding in snapshot2.holdings.all():
-            holdings_data[holding.stock_symbol].update({
-                'name': holding.stock_name,
-                'snapshot2_quantity': holding.quantity,
-                'snapshot2_price': holding.price,
-                'snapshot2_value': holding.total_value,
-                'snapshot2_percentage': holding.percentage
-            })
+        # スナップショットIDで分類してデータを設定
+        for holding in holdings:
+            symbol = holding.stock_symbol
+            # スナップショット1のデータ
+            if holding.snapshot_id == snapshot1.id:
+                holdings_data[symbol].update({
+                    'name': holding.stock_name,
+                    'snapshot1_quantity': holding.quantity,
+                    'snapshot1_price': holding.price,
+                    'snapshot1_value': holding.total_value,
+                    'snapshot1_percentage': holding.percentage
+                })
+            # スナップショット2のデータ
+            elif holding.snapshot_id == snapshot2.id:
+                holdings_data[symbol].update({
+                    'name': holding.stock_name,
+                    'snapshot2_quantity': holding.quantity,
+                    'snapshot2_price': holding.price,
+                    'snapshot2_value': holding.total_value,
+                    'snapshot2_percentage': holding.percentage
+                })
         
         # 変化を計算
         for symbol in holdings_data:
