@@ -37,8 +37,24 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        pip install flake8 pytest coverage
+        pip install flake8 pytest coverage pytest-django
         
+    - name: Configure pytest
+      run: |
+        # pytest.iniを更新
+        echo "[pytest]" > pytest.ini
+        echo "DJANGO_SETTINGS_MODULE = config.test_settings" >> pytest.ini
+        echo "python_files = test_*.py" >> pytest.ini
+        
+        # conftest.pyを作成
+        echo "import os" > conftest.py
+        echo "import django" >> conftest.py
+        echo "from django.conf import settings" >> conftest.py
+        echo "" >> conftest.py
+        echo "os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.test_settings')" >> conftest.py
+        echo "django.setup()" >> conftest.py
+
+
     - name: Lint with flake8
       run: |
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -112,12 +128,6 @@ jobs:
         python manage.py migrate socialaccount --settings=config.test_settings
         
         # 残りのマイグレーションは実行せず、テストだけ実行する
-  
-    - name: Update pytest.ini
-      run: |
-        echo "[pytest]" > pytest.ini
-        echo "DJANGO_SETTINGS_MODULE = config.test_settings" >> pytest.ini
-        echo "python_files = test_*.py" >> pytest.ini
       
     - name: Test
       run: |
