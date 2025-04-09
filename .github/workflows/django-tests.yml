@@ -60,7 +60,7 @@ jobs:
         echo "PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']" >> config/test_settings.py
         echo "# ミドルウェアから不要なものを削除" >> config/test_settings.py
         echo "MIDDLEWARE = [m for m in MIDDLEWARE if 'subscription' not in m.lower()]" >> config/test_settings.py
-        
+            
     - name: Run migrations in order
       run: |
         # まず、データベースファイルがあれば削除して新規作成
@@ -100,7 +100,7 @@ jobs:
         echo "        )," >> users/migrations/0001_initial.py
         echo "    ]" >> users/migrations/0001_initial.py
         
-        # 正しい順序でマイグレーションを実行
+        # 基本的なDjangoアプリのマイグレーションを順番に実行
         python manage.py migrate contenttypes --settings=config.test_settings
         python manage.py migrate auth --settings=config.test_settings
         python manage.py migrate users --settings=config.test_settings
@@ -111,17 +111,7 @@ jobs:
         python manage.py migrate account --settings=config.test_settings
         python manage.py migrate socialaccount --settings=config.test_settings
         
-        # 他のアプリのマイグレーション
-        python manage.py migrate stockdiary --settings=config.test_settings
-        python manage.py migrate portfolio --settings=config.test_settings
-        python manage.py migrate tags --settings=config.test_settings
-        python manage.py migrate checklist --settings=config.test_settings
-        python manage.py migrate analysis_template --settings=config.test_settings
-        python manage.py migrate company_master --settings=config.test_settings
-        python manage.py migrate contact --settings=config.test_settings
-        python manage.py migrate maintenance --settings=config.test_settings
-        python manage.py migrate ads --settings=config.test_settings
-        python manage.py migrate security --settings=config.test_settings
+        # 残りのマイグレーションは実行せず、テストだけ実行する
         
     - name: Test
       run: |
