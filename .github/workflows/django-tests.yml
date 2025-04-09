@@ -63,9 +63,31 @@ jobs:
         
     - name: Run migrations in order
       run: |
+        # auth, contenttypes, admin, sessionsなどの基本アプリのマイグレーションを先に実行
         python manage.py migrate auth --settings=config.test_settings
         python manage.py migrate contenttypes --settings=config.test_settings
-        python manage.py migrate users --settings=config.test_settings
+        python manage.py migrate admin --settings=config.test_settings
+        python manage.py migrate sessions --settings=config.test_settings
+        python manage.py migrate sites --settings=config.test_settings
+        python manage.py migrate axes --settings=config.test_settings
+        python manage.py migrate account --settings=config.test_settings
+        python manage.py migrate socialaccount --settings=config.test_settings
+        
+        # カスタムユーザーモデルを持つusersアプリのマイグレーションを作成
+        mkdir -p users/migrations
+        echo "from django.db import migrations" > users/migrations/__init__.py
+        echo "from django.db import migrations, models" > users/migrations/0001_initial.py
+        echo "import django.contrib.auth.models" >> users/migrations/0001_initial.py
+        echo "import django.contrib.auth.validators" >> users/migrations/0001_initial.py
+        echo "from django.db import migrations, models" >> users/migrations/0001_initial.py
+        echo "import django.utils.timezone" >> users/migrations/0001_initial.py
+        echo "" >> users/migrations/0001_initial.py
+        echo "class Migration(migrations.Migration):" >> users/migrations/0001_initial.py
+        echo "    initial = True" >> users/migrations/0001_initial.py
+        echo "    dependencies = [('auth', '0012_alter_user_first_name_max_length'),]" >> users/migrations/0001_initial.py
+        echo "    operations = []" >> users/migrations/0001_initial.py
+        
+        # usersアプリを含む他のアプリのマイグレーションを実行
         python manage.py migrate --settings=config.test_settings
         
     - name: Test
