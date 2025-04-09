@@ -27,6 +27,21 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          python3-dev \
+          libpq-dev \
+          libjpeg-dev \
+          zlib1g-dev \
+          libfreetype6-dev \
+          liblcms2-dev \
+          libwebp-dev \
+          libharfbuzz-dev \
+          libfribidi-dev \
+          libpng-dev
+    
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -38,16 +53,14 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install flake8 pytest coverage
         
+    # 以下は以前のワークフローと同じ
     - name: Lint with flake8
       run: |
-        # 深刻なエラーのみ停止
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # 警告としてのエラーはすべて表示するが失敗させない
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
         
     - name: Configure Django settings
       run: |
-        # テスト用の設定を作成
         echo "from .settings import *" > config/test_settings.py
         echo "DEBUG = True" >> config/test_settings.py
         echo "DATABASES = {'default': {'ENGINE': 'django.db.backends.postgresql', 'NAME': 'kabulog_test', 'USER': 'naoki', 'PASSWORD': 'postgres', 'HOST': 'localhost', 'PORT': '5432'}}" >> config/test_settings.py
@@ -58,17 +71,9 @@ jobs:
       run: |
         python manage.py migrate --settings=config.test_settings
         
-    - name: Test models
+    - name: Test
       run: |
-        python -m pytest tests/test_models.py -v --settings=config.test_settings
-        
-    - name: Test management commands
-      run: |
-        python -m pytest tests/test_commands.py -v --settings=config.test_settings
-        
-    - name: Test views
-      run: |
-        python -m pytest tests/test_views.py -v --settings=config.test_settings
+        python -m pytest tests/ -v --settings=config.test_settings
         
     - name: Run coverage
       run: |
