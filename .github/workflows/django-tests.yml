@@ -13,7 +13,7 @@ jobs:
       postgres:
         image: postgres:13
         env:
-          POSTGRES_USER: naoki
+          POSTGRES_USER: postgres  # rootではなくpostgresユーザーを使用
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: kabulog_test
         ports:
@@ -53,7 +53,6 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install flake8 pytest coverage
         
-    # 以下は以前のワークフローと同じ
     - name: Lint with flake8
       run: |
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -63,7 +62,7 @@ jobs:
       run: |
         echo "from .settings import *" > config/test_settings.py
         echo "DEBUG = True" >> config/test_settings.py
-        echo "DATABASES = {'default': {'ENGINE': 'django.db.backends.postgresql', 'NAME': 'kabulog_test', 'USER': 'naoki', 'PASSWORD': 'postgres', 'HOST': 'localhost', 'PORT': '5432'}}" >> config/test_settings.py
+        echo "DATABASES = {'default': {'ENGINE': 'django.db.backends.postgresql', 'NAME': 'kabulog_test', 'USER': 'postgres', 'PASSWORD': 'postgres', 'HOST': 'localhost', 'PORT': '5432'}}" >> config/test_settings.py
         echo "SECRET_KEY = 'test-secret-key'" >> config/test_settings.py
         echo "ALLOWED_HOSTS = ['*']" >> config/test_settings.py
         
