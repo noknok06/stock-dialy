@@ -30,7 +30,7 @@ import traceback
 from django.template import engines, Context
 from django.contrib.humanize.templatetags.humanize import intcomma
 from stockdiary.templatetags.stockdiary_filters import mul_filter, sub_filter, div_filter
-
+import html
 import json
 import re
 
@@ -921,12 +921,14 @@ class DiaryTabContentView(LoginRequiredMixin, View):
                         html += f'<span class="{price_change_class} ms-2">({price_change_sign}{price_change:.2f}%)</span>'
                     
                     html += '</div>'
-                
-                # コンテンツ
+                                
+                formatted_content = note.content.replace('\n', '<br>')
+
+                # コンテンツ部分のHTMLを生成
                 html += f'''
-                  <div class="note-content bg-light p-2 rounded">
-                    {note.content}
-                  </div>
+                <div class="note-content bg-light p-2 rounded">
+                    {formatted_content}
+                </div>
                 </div>
                 '''
             
