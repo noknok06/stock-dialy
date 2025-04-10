@@ -529,7 +529,7 @@ class QuickDiaryForm {
     window.quickDiaryForm = new QuickDiaryForm();
     
     // スピードダイアルの「新規作成」ボタンにイベントリスナーを追加
-    const createButtons = document.querySelectorAll('.speed-dial-btn.action-add');
+    const createButtons = document.querySelectorAll('.speed-dial-btn.action-quick-add');
     createButtons.forEach(btn => {
       btn.addEventListener('click', function(e) {
         // デフォルトのリンク動作をキャンセル
