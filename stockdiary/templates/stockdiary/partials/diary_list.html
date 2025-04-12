@@ -61,21 +61,23 @@
     {% endfor %}
   {% endif %}
 
-  <!-- 無限スクロール用のトリガー要素 -->
+  <!-- 無限スクロール用のトリガー要素 - 修正版 -->
   {% if page_obj.has_next %}
-  <div class="grid-column-span" hx-get="{% url 'stockdiary:diary_list' %}?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}"
-       hx-trigger="revealed"
-       hx-target="#diary-container"
-       hx-swap="beforeend"
-       hx-indicator="#loading-indicator-{{ page_obj.next_page_number }}">
-    <div id="loading-indicator-{{ page_obj.next_page_number }}" class="text-center py-4 htmx-indicator">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">日記を読み込んでいます...</span>
+    <div class="grid-column-span" 
+        hx-get="{% url 'stockdiary:diary_list' %}?page={{ page_obj.next_page_number }}{% if current_params %}&{{ current_params.urlencode }}{% endif %}"
+        hx-trigger="revealed"
+        hx-target="#diary-container"
+        hx-swap="beforeend"
+        hx-indicator="#loading-indicator-{{ page_obj.next_page_number }}">
+      <div id="loading-indicator-{{ page_obj.next_page_number }}" class="text-center py-4 htmx-indicator">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">日記を読み込んでいます...</span>
+        </div>
+        <p class="mt-2">日記を読み込んでいます...</p>
       </div>
-      <p class="mt-2">日記を読み込んでいます...</p>
     </div>
-  </div>
   {% endif %}
+
 {% else %}
   {% if request.GET.query or request.GET.tag or request.GET.status %}
     <!-- 検索条件あり・結果なしの場合 -->

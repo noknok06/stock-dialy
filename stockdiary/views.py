@@ -1387,7 +1387,10 @@ def diary_list(request):
         query = request.GET.get('query', '')
         tag_id = request.GET.get('tag', '')
         status = request.GET.get('status', '')
-        
+                
+        current_params = request.GET.copy()
+        current_params.pop('page', None)
+
         if query:
             queryset = queryset.filter(
                 Q(stock_name__icontains=query) | 
@@ -1432,6 +1435,7 @@ def diary_list(request):
             'page_obj': diaries,
             'tags': tags,
             'request': request,
+            'current_params': current_params,  # ← 追加
         }
         
         return render(request, 'stockdiary/partials/diary_list.html', context)

@@ -7,3 +7,7 @@ register = template.Library()
 def get_item(dictionary, key):
     """辞書からキーの値を取得するカスタムフィルタ"""
     return dictionary.get(key)
+
+@register.filter
+def multiply(value, arg):
+    return value * arg    
