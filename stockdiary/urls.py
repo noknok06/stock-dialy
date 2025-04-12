@@ -38,4 +38,9 @@ urlpatterns = [
     path('day-events/', login_required(views.day_events), name='day_events'),
     path('diary-list/', login_required(views.diary_list), name='diary_list'),
     path('tab-content/<int:diary_id>/<str:tab_type>/', login_required(views.tab_content), name='tab_content'),
+
+    # 新規：モバイル操作性向上のための追加エンドポイント
+    path('search-suggestion/', login_required(views.search_suggestion), name='search_suggestion'),
+    path('<int:pk>/context-actions/', login_required(views.context_actions), name='context_actions'),
+    path('validate/<str:field_type>/', login_required(views.validate_field), name='validate_field'),
 ]

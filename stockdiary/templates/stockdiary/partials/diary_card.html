@@ -1,9 +1,11 @@
 {% load stockdiary_filters %}
 {% load humanize %}
 
-<div class="diary-card {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo-card{% elif diary.sell_date %}sold-card{% endif %}"
+<div class="diary-card {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo-card{% elif diary.sell_date %}sold-card{% endif %} swipeable"
   data-diary-id="{{ diary.id }}"
-  data-diary-type="{% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo{% elif diary.sell_date %}sold{% else %}active{% endif %}">
+  data-diary-type="{% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo{% elif diary.sell_date %}sold{% else %}active{% endif %}"
+  hx-trigger="longpress:click"
+  hx-get="{% url 'stockdiary:detail' diary.id %}">
 
   <!-- マスキングテープの装飾（ランダムな配置） -->
   {% if forloop.counter|divisibleby:3 %}

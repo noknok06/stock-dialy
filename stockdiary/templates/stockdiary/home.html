@@ -12,6 +12,8 @@
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'css/speed-dial.css' %}">
 <link rel="stylesheet" href="{% static 'css/quick-diary.css' %}">
+<!-- モバイルジェスチャー用のスタイルシート追加 -->
+<link rel="stylesheet" href="{% static 'css/mobile-gestures.css' %}">
 
 <style>
 /* 日記カードタブのスタイル */
@@ -135,12 +137,22 @@
 .grid-column-span {
   grid-column: 1 / -1; /* すべての列にまたがる */
 }
+
+/* オフラインバッジのスタイル */
+.offline-badge {
+  display: none;
+}
 </style>
 {% endblock %}
 
 {% block content %}
 <!-- CSRF トークンを追加 -->
 {% csrf_token %}
+
+<!-- オフライン状態バッジ -->
+<div class="offline-badge">
+  <i class="bi bi-wifi-off me-1"></i> オフライン状態です
+</div>
 
 <div class="container py-4">
   <!-- ヘッダー部分 -->
@@ -288,10 +300,14 @@
           <label for="query" class="form-label">検索</label>
           <div class="position-relative">
             <i class="bi bi-search" style="position: absolute; right: 10px; top: 10px; color: #aaa;"></i>
-            <input type="text" id="query" name="query" class="form-control" 
+            <input type="text" id="query" name="query" class="form-control validate-inline" 
                    placeholder="銘柄名/シンボル/内容/メモ"
-                   value="{{ request.GET.query }}">
+                   value="{{ request.GET.query }}"
+                   hx-get="{% url 'stockdiary:search_suggestion' %}"
+                   hx-trigger="keyup changed delay:500ms"
+                   hx-target="#search-suggestion">
           </div>
+          <div id="search-suggestion" class="small"></div>
           <small class="form-text text-muted">日記内容も含めて検索できます</small>
         </div>
   
@@ -361,8 +377,9 @@
   <!-- 日記リストコンテナ - HTMX対応 (PCでの2列表示のためのクラスを追加) -->
   <div id="diary-container" class="home-diary-grid"
        hx-get="{% url 'stockdiary:diary_list' %}"
-       hx-trigger="load"
-       hx-indicator="#diary-loading">
+       hx-trigger="load, pulldown"
+       hx-indicator="#diary-loading"
+       data-hx-offline-queue="true">
     <div id="diary-loading" class="text-center py-4 htmx-indicator grid-column-span">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">日記を読み込んでいます...</span>
@@ -381,6 +398,8 @@
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/locales/ja.js"></script>
 <script src="{% static 'js/quick-diary.js' %}"></script>
+<!-- モバイルジェスチャー用のJSを追加 -->
+<script src="{% static 'js/mobile-gestures.js' %}"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

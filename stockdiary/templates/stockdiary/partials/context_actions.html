@@ -1,0 +1,38 @@
+<!-- context_actions.html - 日記カードの長押し時に表示されるコンテキストメニュー -->
+<div class="context-menu">
+    <!-- 常に表示されるアクション -->
+    <a href="{% url 'stockdiary:detail' diary.id %}" class="context-menu-item">
+      <i class="bi bi-eye"></i> 詳細表示
+    </a>
+    <a href="{% url 'stockdiary:update' diary.id %}" class="context-menu-item">
+      <i class="bi bi-pencil"></i> 編集する
+    </a>
+    
+    <!-- 売却済みでなく、取引記録の場合のみ表示 -->
+    {% if not is_memo and not is_sold %}
+    <a href="{% url 'stockdiary:sell_specific' diary.id %}" class="context-menu-item">
+      <i class="bi bi-cash-coin"></i> 売却登録
+    </a>
+    {% endif %}
+    
+    <!-- 売却済みの場合のみ表示 -->
+    {% if is_sold %}
+    <a href="{% url 'stockdiary:cancel_sell' diary.id %}" class="context-menu-item">
+      <i class="bi bi-arrow-counterclockwise"></i> 売却を取り消す
+    </a>
+    {% endif %}
+    
+    <div class="context-menu-divider"></div>
+    
+    <!-- 継続記録の追加リンク -->
+    <a href="{% url 'stockdiary:detail' diary.id %}#add-note" class="context-menu-item">
+      <i class="bi bi-journal-plus"></i> 継続記録を追加
+    </a>
+    
+    <div class="context-menu-divider"></div>
+    
+    <!-- 削除は常に表示 -->
+    <a href="{% url 'stockdiary:delete' diary.id %}" class="context-menu-item text-danger">
+      <i class="bi bi-trash"></i> 削除
+    </a>
+  </div>

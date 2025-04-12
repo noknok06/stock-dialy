@@ -14,7 +14,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- base.html の head セクション内に追加 -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data:;">
     <title>{% block title %}カブログ{% endblock %}</title>
     
     <!-- Google AdSense -->
@@ -36,6 +36,10 @@
     <!-- HTMXを追加 -->
     <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
     
+    <!-- モバイルジェスチャー用のスタイルシート -->
+    <link rel="stylesheet" href="{% static 'css/mobile-gestures.css' %}">
+    <link rel="stylesheet" href="{% static 'css/search-suggestions.css' %}">
+
     <!-- 右上ナビボタンとモーダルメニュー用のスタイル -->
     <style>    
       /* 固定フッター */
@@ -791,6 +795,7 @@
       });
   </script>
   <script src="{% static 'js/speed-dial.js' %}"></script>
+  <script src="{% static 'js/mobile-gestures.js' %}"></script>
   {% endif %}
   
   {% block scripts %}
