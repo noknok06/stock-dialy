@@ -300,6 +300,10 @@ def calculate_correlation(x, y):
     if len(x) != len(y) or len(x) < 3:
         return 0  # 十分なデータがない場合は相関なし
     
+    # Decimal型またはfloat型をすべてfloatに変換
+    x = [float(val) for val in x]
+    y = [float(val) for val in y]
+    
     n = len(x)
     sum_x = sum(x)
     sum_y = sum(y)
