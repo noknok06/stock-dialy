@@ -1,6 +1,6 @@
 /**
- * 改善版クイック作成モーダルのタブスワイプ機能
- * ホーム画面のような自然な「引っ張る」感覚と視覚的フィードバックを提供
+ * 修正版クイック作成モーダルのタブスワイプ機能
+ * スワイプ後に操作できなくなる問題を修正
  */
 document.addEventListener('DOMContentLoaded', function() {
     const tabContent = document.getElementById('quickDiaryTabContent');
@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let moveDistance = 0;
     let currentTabIndex = 0;
     let isDragging = false;
+    let isAnimating = false; // アニメーション中かどうかのフラグ
     
     // トランジション設定
     const TRANSITION_DURATION = 300; // ミリ秒
@@ -72,6 +73,8 @@ document.addEventListener('DOMContentLoaded', function() {
           border-color: var(--primary-color);
           opacity: 0;
           transition: opacity 0.3s ease;
+          z-index: 5;
+          pointer-events: none;
         }
         
         .swipe-direction-indicator.left {
@@ -149,11 +152,38 @@ document.addEventListener('DOMContentLoaded', function() {
             swipeHint.style.display = 'none';
           }
         }
+        
+        // 状態のリセット
+        resetSwipeState();
       });
+    }
+    
+    // スワイプ状態のリセット
+    function resetSwipeState() {
+      touchStartX = 0;
+      touchEndX = 0;
+      touchMoveX = 0;
+      moveDistance = 0;
+      isDragging = false;
+      isAnimating = false;
+      tabContent.classList.remove('swiping');
+      
+      // 方向インジケーターのリセット
+      const leftIndicator = tabContent.querySelector('.swipe-direction-indicator.left');
+      const rightIndicator = tabContent.querySelector('.swipe-direction-indicator.right');
+      
+      if (leftIndicator) leftIndicator.style.opacity = '0';
+      if (rightIndicator) rightIndicator.style.opacity = '0';
+      
+      // ハイライトのリセット
+      tabButtons.forEach(btn => btn.classList.remove('tab-highlight'));
     }
     
     // タッチ開始イベント
     function handleTouchStart(e) {
+      // アニメーション中は新しいスワイプを開始しない
+      if (isAnimating) return;
+      
       touchStartX = e.touches[0].clientX;
       startTime = Date.now();
       isDragging = true;
@@ -173,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // タッチ移動イベント
     function handleTouchMove(e) {
-      if (!isDragging) return;
+      if (!isDragging || isAnimating) return;
       
       touchMoveX = e.touches[0].clientX;
       moveDistance = touchMoveX - touchStartX;
@@ -198,7 +228,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // タッチ終了イベント
     function handleTouchEnd(e) {
-      if (!isDragging) return;
+      if (!isDragging || isAnimating) return;
       
       isDragging = false;
       touchEndX = e.changedTouches[0].clientX;
@@ -214,6 +244,9 @@ document.addEventListener('DOMContentLoaded', function() {
       // スワイプ方向と距離に基づいてタブを切り替えるかどうか判断
       const swipeDistance = touchEndX - touchStartX;
       
+      // スワイプの方向と強さをログに出力（デバッグ用）
+      console.log('Swipe distance:', swipeDistance, 'velocity:', velocity);
+      
       // 素早いスワイプまたは十分な距離があればタブ切り替え
       if (Math.abs(swipeDistance) > DRAG_THRESHOLD || velocity > VELOCITY_THRESHOLD) {
         // 左スワイプ（次のタブへ）
@@ -224,6 +257,9 @@ document.addEventListener('DOMContentLoaded', function() {
         else if (swipeDistance > 0 && currentTabIndex > 0) {
           switchToTab(currentTabIndex - 1);
         }
+      } else {
+        // スワイプが不十分だった場合は状態をすぐにリセット
+        resetSwipeState();
       }
       
       // 完了時のフィードバック振動
@@ -234,8 +270,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // スワイプキャンセルイベント
     function handleTouchCancel() {
-      isDragging = false;
-      tabContent.classList.remove('swiping');
+      if (isDragging) {
+        isDragging = false;
+        tabContent.classList.remove('swiping');
+        resetSwipeState();
+      }
     }
     
     // 方向インジケーターを更新
@@ -278,6 +317,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function switchToTab(index) {
       if (index < 0 || index >= tabButtons.length) return;
       
+      // アニメーション中フラグをセット
+      isAnimating = true;
+      console.log('Animation started');
+      
       // タブボタンのハイライト
       tabButtons[index].classList.add('tab-highlight');
       
@@ -290,20 +333,43 @@ document.addEventListener('DOMContentLoaded', function() {
         // ハイライトを解除
         setTimeout(() => {
           tabButtons.forEach(btn => btn.classList.remove('tab-highlight'));
-        }, 300);
+        }, 150);
         
         // 現在のタブインデックスを更新
         currentTabIndex = index;
+        
+        // アニメーション完了後に状態をリセット
+        setTimeout(() => {
+          isAnimating = false;
+          resetSwipeState();
+          console.log('Animation completed, state reset');
+        }, TRANSITION_DURATION);
       }, 50);
     }
     
-    // タブコンテンツにタッチイベントリスナーを追加
-    if (tabContent) {
-      tabContent.addEventListener('touchstart', handleTouchStart, { passive: true });
-      tabContent.addEventListener('touchmove', handleTouchMove, { passive: true });
-      tabContent.addEventListener('touchend', handleTouchEnd, { passive: true });
-      tabContent.addEventListener('touchcancel', handleTouchCancel, { passive: true });
+    // イベントリスナーをクリーンアップする関数
+    function cleanupEventListeners() {
+      if (tabContent) {
+        tabContent.removeEventListener('touchstart', handleTouchStart);
+        tabContent.removeEventListener('touchmove', handleTouchMove);
+        tabContent.removeEventListener('touchend', handleTouchEnd);
+        tabContent.removeEventListener('touchcancel', handleTouchCancel);
+      }
     }
+    
+    // イベントリスナーを再設定する関数
+    function setupEventListeners() {
+      if (tabContent) {
+        cleanupEventListeners(); // 重複を防ぐために一度削除
+        tabContent.addEventListener('touchstart', handleTouchStart, { passive: true });
+        tabContent.addEventListener('touchmove', handleTouchMove, { passive: true });
+        tabContent.addEventListener('touchend', handleTouchEnd, { passive: true });
+        tabContent.addEventListener('touchcancel', handleTouchCancel, { passive: true });
+      }
+    }
+    
+    // タブコンテンツにタッチイベントリスナーを追加
+    setupEventListeners();
     
     // タブ切り替えのナビゲーションボタンのイベントリスナー
     const toDetailsTab = document.getElementById('to-details-tab');
@@ -314,24 +380,28 @@ document.addEventListener('DOMContentLoaded', function() {
     if (toDetailsTab) {
       toDetailsTab.addEventListener('click', function() {
         currentTabIndex = 1; // 詳細タブのインデックス
+        resetSwipeState();
       });
     }
     
     if (backToBasicTab) {
       backToBasicTab.addEventListener('click', function() {
         currentTabIndex = 0; // 基本タブのインデックス
+        resetSwipeState();
       });
     }
     
     if (toTagsTab) {
       toTagsTab.addEventListener('click', function() {
         currentTabIndex = 2; // タグタブのインデックス
+        resetSwipeState();
       });
     }
     
     if (backToDetailsTab) {
       backToDetailsTab.addEventListener('click', function() {
         currentTabIndex = 1; // 詳細タブのインデックス
+        resetSwipeState();
       });
     }
     
@@ -339,9 +409,24 @@ document.addEventListener('DOMContentLoaded', function() {
     tabButtons.forEach((button, index) => {
       button.addEventListener('shown.bs.tab', function() {
         currentTabIndex = index;
+        
+        // タブ切り替え後に状態をリセット
+        setTimeout(() => {
+          resetSwipeState();
+        }, 50);
       });
     });
     
+    // モーダルが閉じられたときのクリーンアップ
+    if (quickDiaryModal) {
+      quickDiaryModal.addEventListener('hidden.bs.modal', function() {
+        resetSwipeState();
+      });
+    }
+    
     // 初回実行
     initStyles();
+    
+    // デバッグ情報
+    console.log('Quick diary tabs swipe handler initialized');
   });
