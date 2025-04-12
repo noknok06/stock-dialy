@@ -87,6 +87,12 @@
   /* ステップコンテンツ */
   .step-content {
     display: none;
+    animation: fadeIn 0.3s ease;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
   
   .step-content.active {
@@ -291,6 +297,137 @@
     margin-top: 2rem;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
   }
+  
+  /* バリデーションとエラー表示 */
+  .error-feedback {
+    color: #dc2626;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+  }
+  
+  .is-invalid {
+    border-color: #dc2626;
+  }
+  
+  .success-icon {
+    color: #10b981;
+    display: none;
+  }
+  
+  .error-icon {
+    color: #dc2626;
+    display: none;
+  }
+  
+  .field-validated .success-icon {
+    display: inline;
+  }
+  
+  .field-error .error-icon {
+    display: inline;
+  }
+  
+  /* ドラッグ&ドロップ機能用 */
+  .draggable {
+    cursor: move;
+  }
+  
+  .drag-handle {
+    cursor: move;
+    padding: 0.5rem;
+    color: #9ca3af;
+    transition: color 0.2s ease;
+  }
+  
+  .drag-handle:hover {
+    color: #4f46e5;
+  }
+  
+  .item-form.dragging {
+    opacity: 0.6;
+    border: 2px dashed #4f46e5;
+  }
+  
+  /* スクロールトップボタン */
+  .scroll-top-btn {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgba(79, 70, 229, 0.8);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 100;
+  }
+  
+  .scroll-top-btn.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  /* フォーム送信インジケーター */
+  .form-status {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 1000;
+    transform: translateY(-100px);
+    opacity: 0;
+    transition: all 0.3s ease;
+  }
+  
+  .form-status.visible {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  
+  .form-status-success {
+    background-color: #d1fae5;
+    color: #065f46;
+  }
+  
+  .form-status-error {
+    background-color: #fee2e2;
+    color: #991b1b;
+  }
+  
+  /* モバイル用簡潔化 */
+  @media (max-width: 768px) {
+    .item-type-guide {
+      padding: 1rem;
+    }
+    
+    .type-cards {
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 0.75rem;
+    }
+    
+    .type-card {
+      padding: 0.75rem;
+    }
+    
+    .type-card-desc {
+      display: none; /* モバイルでは説明を非表示 */
+    }
+    
+    .item-form {
+      padding: 1rem;
+    }
+  }
 </style>
 
 <div class="row justify-content-center">
@@ -302,7 +439,9 @@
       </div>
       
       <div class="card-body">
-        <form method="post" id="stepByStepForm" novalidate data-edit-mode="{% if form.instance.pk %}true{% else %}false{% endif %}">
+        <form method="post" id="stepByStepForm" novalidate data-edit-mode="{% if form.instance.pk %}true{% else %}false{% endif %}"
+              hx-post="{% if form.instance.pk %}{% url 'analysis_template:update' form.instance.pk %}{% else %}{% url 'analysis_template:create' %}{% endif %}"
+              hx-indicator="#form-submitting">
           {% csrf_token %}
           {{ items_formset.management_form }}
           
@@ -324,9 +463,16 @@
           
           <!-- ステップ1: 基本情報 -->
           <div class="step-content step-1-content active">
-            <div class="mb-4">
+            <div class="mb-4 position-relative">
               <label for="{{ form.name.id_for_label }}" class="form-label">テンプレート名</label>
-              {{ form.name }}
+              <div class="input-group">
+                {{ form.name }}
+                <span class="input-group-text">
+                  <i class="bi bi-check-circle-fill success-icon"></i>
+                  <i class="bi bi-exclamation-circle-fill error-icon"></i>
+                </span>
+              </div>
+              <div class="error-feedback" id="name-error"></div>
               {% if form.name.errors %}
                 <div class="text-danger">{{ form.name.errors }}</div>
               {% endif %}
@@ -351,11 +497,12 @@
           <div class="step-content step-2-content">
             <div id="items-formset">
               {% for item_form in items_formset %}
-                <div class="item-form mb-3" data-index="{{ forloop.counter0 }}">
+                <div class="item-form mb-3 draggable" data-index="{{ forloop.counter0 }}">
                   {{ item_form.id }}
                   
                   <div class="item-header">
                     <div class="d-flex align-items-center">
+                      <div class="drag-handle me-2"><i class="bi bi-grip-vertical"></i></div>
                       <div class="item-number">{{ forloop.counter }}</div>
                       <span class="item-title">項目 {{ forloop.counter }}</span>
                     </div>
@@ -368,7 +515,14 @@
                     <div class="row mb-3">
                       <div class="col-md-6">
                         <label for="{{ item_form.name.id_for_label }}" class="form-label">項目名</label>
-                        {{ item_form.name }}
+                        <div class="input-group">
+                          {{ item_form.name }}
+                          <span class="input-group-text">
+                            <i class="bi bi-check-circle-fill success-icon"></i>
+                            <i class="bi bi-exclamation-circle-fill error-icon"></i>
+                          </span>
+                        </div>
+                        <div class="error-feedback" id="item-name-error-{{ forloop.counter0 }}"></div>
                         {% if item_form.name.errors %}
                           <div class="text-danger">{{ item_form.name.errors }}</div>
                         {% endif %}
@@ -426,7 +580,11 @@
             <button type="button" id="add-item" class="btn btn-outline-primary w-100">
               <i class="bi bi-plus-lg me-1"></i> 項目を追加
             </button>
-            
+            <div class="step-nav-buttons">
+              <button type="button" class="btn btn-outline-secondary prev-step" data-prev="1">戻る</button>
+              <button type="button" class="btn btn-primary next-step" data-next="3">確認</button>
+            </div>
+
             <!-- 項目タイプガイド -->
             <div class="item-type-guide">
               <h5 class="guide-title">
@@ -494,12 +652,7 @@
                   </div>
                 </div>
               </div>
-            </div>
-            
-            <div class="step-nav-buttons">
-              <button type="button" class="btn btn-outline-secondary prev-step" data-prev="1">戻る</button>
-              <button type="button" class="btn btn-primary next-step" data-next="3">確認</button>
-            </div>
+            </div>            
           </div>
           
           <!-- ステップ3: 確認 -->
@@ -544,6 +697,12 @@
                   </button>
                 </div>
                 <div class="col-md-8">
+                  <div id="form-submitting" class="htmx-indicator text-center mb-2">
+                    <div class="spinner-border text-primary" role="status">
+                      <span class="visually-hidden">送信中...</span>
+                    </div>
+                    <span class="ms-2">処理中...</span>
+                  </div>
                   <button type="submit" class="btn btn-primary w-100">
                     <i class="bi bi-save me-1"></i> 保存する
                   </button>
@@ -557,13 +716,23 @@
   </div>
 </div>
 
+<!-- フォーム送信状態通知 -->
+<div id="formStatus" class="form-status">
+  <i class="bi bi-check-circle-fill"></i>
+  <span id="statusMessage"></span>
+</div>
+
+<!-- スクロールトップボタン -->
+<button class="scroll-top-btn" id="scrollTopBtn" aria-label="ページの先頭へ">
+  <i class="bi bi-arrow-up"></i>
+</button>
+
 {% include 'speed_dial.html' with actions=page_actions %}
 {% endblock %}
 
 {% block scripts %}
 {{ block.super }}
 <!-- スピードダイアルのJSを明示的に読み込む -->
-<script src="{% static 'js/speed-dial.js' %}"></script>
 <script>
 // グローバル関数や変数を保持するオブジェクト
 var TemplateApp = {
@@ -586,6 +755,15 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // レビュー画面の処理
   setupReviewScreen();
+  
+  // ドラッグ&ドロップ機能
+  setupDragAndDrop();
+  
+  // スクロールトップボタン
+  setupScrollTopButton();
+  
+  // フォームのHTMXイベント処理
+  setupHtmxHandlers();
 });
 
 // 項目タイプに応じた関連フィールドの表示/非表示
@@ -688,8 +866,10 @@ function validateCurrentStep() {
   if (stepNumber === "1") {
     const templateNameInput = document.querySelector('input[name="name"]');
     if (!templateNameInput || !templateNameInput.value.trim()) {
-      alert('テンプレート名を入力してください');
+      showValidationError(templateNameInput, 'name-error', 'テンプレート名を入力してください');
       return false;
+    } else {
+      clearValidationError(templateNameInput, 'name-error');
     }
   }
   
@@ -697,7 +877,7 @@ function validateCurrentStep() {
   if (stepNumber === "2") {
     const itemForms = document.querySelectorAll('.item-form:not([style*="display: none"])');
     if (itemForms.length === 0) {
-      alert('少なくとも1つの分析項目を追加してください');
+      showFormStatus('error', '少なくとも1つの分析項目を追加してください');
       return false;
     }
     
@@ -706,8 +886,12 @@ function validateCurrentStep() {
     itemForms.forEach((form, index) => {
       const nameInput = form.querySelector('input[name$="-name"]');
       if (!nameInput.value.trim()) {
-        alert(`項目 ${index + 1} の名前を入力してください`);
+        const errorId = `item-name-error-${index}`;
+        showValidationError(nameInput, errorId, `項目 ${index + 1} の名前を入力してください`);
         isValid = false;
+      } else {
+        const errorId = `item-name-error-${index}`;
+        clearValidationError(nameInput, errorId);
       }
     });
     
@@ -715,6 +899,36 @@ function validateCurrentStep() {
   }
   
   return true;
+}
+
+// バリデーションエラーの表示
+function showValidationError(inputElement, errorId, message) {
+  inputElement.classList.add('is-invalid');
+  const parentField = inputElement.closest('.position-relative, .input-group').parentElement;
+  parentField.classList.add('field-error');
+  parentField.classList.remove('field-validated');
+  
+  const errorElement = document.getElementById(errorId);
+  if (errorElement) {
+    errorElement.textContent = message;
+  }
+  
+  // 視覚的にフィードバック
+  inputElement.focus();
+  inputElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// バリデーションエラーのクリア
+function clearValidationError(inputElement, errorId) {
+  inputElement.classList.remove('is-invalid');
+  const parentField = inputElement.closest('.position-relative, .input-group').parentElement;
+  parentField.classList.remove('field-error');
+  parentField.classList.add('field-validated');
+  
+  const errorElement = document.getElementById(errorId);
+  if (errorElement) {
+    errorElement.textContent = '';
+  }
 }
 
 // フォームと項目の処理
@@ -725,7 +939,6 @@ function setupFormHandling() {
   const totalForms = document.querySelector('[name="items-TOTAL_FORMS"]');
   
   if (!itemsFormset || !totalForms) {
-    //console.error('必要なフォーム要素が見つかりません');
     return;
   }
 
@@ -783,7 +996,7 @@ function setupFormHandling() {
         }
       });
     } catch (error) {
-      //console.error('項目カウント更新中にエラー:', error);
+      console.error('項目カウント更新中にエラー:', error);
     }
   }
   
@@ -872,7 +1085,7 @@ function setupFormHandling() {
         });
       });
     } catch (error) {
-      //console.error('フォームインデックス更新中にエラー:', error);
+      console.error('フォームインデックス更新中にエラー:', error);
     }
   }
   
@@ -949,7 +1162,7 @@ function setupFormHandling() {
       // 既存フォームの最初の要素をクローン
       const firstForm = itemsFormset.querySelector('.item-form');
       if (!firstForm) {
-        //console.error('テンプレート要素が見つかりません');
+        console.error('テンプレート要素が見つかりません');
         return;
       }
       
@@ -979,7 +1192,7 @@ function setupFormHandling() {
       // スクロールして新しい項目を表示
       newForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } catch (error) {
-      //console.error('項目追加中にエラー:', error);
+      console.error('項目追加中にエラー:', error);
     }
   }
   
@@ -1128,7 +1341,7 @@ function setupReviewScreen() {
     try {
       previewContent = getItemPreviewContent(itemTypeValue, itemName);
     } catch (error) {
-      //console.error(`プレビュー内容の生成でエラー:`, error);
+      console.error(`プレビュー内容の生成でエラー:`, error);
       previewContent = '<div class="text-danger">プレビューの生成に失敗しました</div>';
     }
     
@@ -1141,7 +1354,14 @@ function setupReviewScreen() {
             ${itemName}
           </div>
           <span class="badge bg-primary">${itemTypeText}</span>
-        </div>        
+        </div>
+        
+        ${itemDesc ? `<div class="text-muted small mb-2">${itemDesc}</div>` : ''}
+        ${additionalInfo || ''}
+        
+        <div class="item-preview-box">
+          ${previewContent}
+        </div>
       </div>
     `;
   }
@@ -1150,7 +1370,7 @@ function setupReviewScreen() {
   function generateItemPreviews() {
     const itemsPreview = document.getElementById('items-preview');
     if (!itemsPreview) {
-      //console.error("items-previewエレメントが見つかりません");
+      console.error("items-previewエレメントが見つかりません");
       return;
     }
     
@@ -1174,7 +1394,7 @@ function setupReviewScreen() {
         const itemType = form.querySelector('select[name$="-item_type"]');
         
         if (!itemType) {
-          //console.error(`項目 ${index + 1} の種類が取得できません`);
+          console.error(`項目 ${index + 1} の種類が取得できません`);
           return;
         }
         
@@ -1185,7 +1405,7 @@ function setupReviewScreen() {
         const previewHtml = createItemPreviewHtml(form, index, itemName, itemTypeValue, itemTypeText);
         itemsPreview.innerHTML += previewHtml;
       } catch (error) {
-        //console.error(`項目 ${index + 1} のプレビュー生成でエラー:`, error);
+        console.error(`項目 ${index + 1} のプレビュー生成でエラー:`, error);
       }
     });
   }
@@ -1206,12 +1426,292 @@ function setupReviewScreen() {
       // 項目のプレビュー生成
       generateItemPreviews();
     } catch (error) {
-      //console.error("プレビュー内容の更新中にエラー:", error);
+      console.error("プレビュー内容の更新中にエラー:", error);
     }
   }
   
   // グローバルスコープに関数を割り当て
   TemplateApp.updateReviewContent = updateReviewContent;
+}
+
+// ドラッグ&ドロップ機能
+function setupDragAndDrop() {
+  const itemsFormset = document.getElementById('items-formset');
+  
+  if (!itemsFormset) return;
+  
+  // ドラッグ可能な要素すべてに対してドラッグ開始ハンドラを設定
+  const draggableItems = itemsFormset.querySelectorAll('.draggable');
+  
+  // 各変数の初期化
+  let draggedItem = null;
+  
+  // ドラッグイベント用のハンドラ関数
+  const handleDragStart = function(e) {
+    draggedItem = this;
+    this.classList.add('dragging');
+    
+    // ドラッグ中のスタイルを設定
+    setTimeout(() => {
+      this.style.opacity = '0.5';
+    }, 0);
+  };
+  
+  const handleDragEnd = function(e) {
+    this.classList.remove('dragging');
+    this.style.opacity = '1';
+    
+    // 項目の順序を更新
+    updateItemsOrder();
+    
+    // フォームを更新
+    TemplateApp.updateItemCount();
+  };
+  
+  const handleDragOver = function(e) {
+    e.preventDefault();
+    return false;
+  };
+  
+  const handleDragEnter = function(e) {
+    e.preventDefault();
+    this.classList.add('drag-over');
+  };
+  
+  const handleDragLeave = function(e) {
+    this.classList.remove('drag-over');
+  };
+  
+  const handleDrop = function(e) {
+    e.stopPropagation();
+    this.classList.remove('drag-over');
+    
+    // ドロップ先が自分自身でない場合のみ処理
+    if (draggedItem !== this) {
+      // ドロップ先のインデックスを取得
+      const draggables = [...itemsFormset.querySelectorAll('.draggable:not(.dragging)')];
+      const draggedIndex = parseInt(draggedItem.dataset.index);
+      const dropIndex = draggables.indexOf(this);
+      
+      // ドラッグされた要素を挿入
+      if (dropIndex >= 0) {
+        // ドロップ場所が後ろの場合
+        if (draggedIndex < dropIndex) {
+          this.parentNode.insertBefore(draggedItem, this.nextSibling);
+        } else {
+          // ドロップ場所が前の場合
+          this.parentNode.insertBefore(draggedItem, this);
+        }
+      }
+    }
+    
+    return false;
+  };
+  
+  // すべての項目にドラッグイベントを設定
+  function setupDraggableEvents() {
+    const items = itemsFormset.querySelectorAll('.draggable');
+    
+    items.forEach(item => {
+      // 既存のイベントリスナーを削除（重複防止）
+      item.removeEventListener('dragstart', handleDragStart);
+      item.removeEventListener('dragend', handleDragEnd);
+      item.removeEventListener('dragover', handleDragOver);
+      item.removeEventListener('dragenter', handleDragEnter);
+      item.removeEventListener('dragleave', handleDragLeave);
+      item.removeEventListener('drop', handleDrop);
+      
+      // 新しいイベントリスナーを設定
+      item.setAttribute('draggable', 'true');
+      item.addEventListener('dragstart', handleDragStart);
+      item.addEventListener('dragend', handleDragEnd);
+      item.addEventListener('dragover', handleDragOver);
+      item.addEventListener('dragenter', handleDragEnter);
+      item.addEventListener('dragleave', handleDragLeave);
+      item.addEventListener('drop', handleDrop);
+    });
+  }
+  
+  // 初期設定
+  setupDraggableEvents();
+  
+  // 新しい項目が追加されたときにイベントを再設定
+  document.getElementById('add-item').addEventListener('click', function() {
+    setTimeout(() => {
+      setupDraggableEvents();
+    }, 100);
+  });
+  
+  // 表示順フィールドの更新
+  function updateItemsOrder() {
+    const items = itemsFormset.querySelectorAll('.draggable:not([style*="display: none"])');
+    
+    items.forEach((item, index) => {
+      const orderInput = item.querySelector('input[name$="-order"]');
+      if (orderInput) {
+        orderInput.value = index + 1;
+      }
+      
+      // 項目番号の表示も更新
+      const itemNumber = item.querySelector('.item-number');
+      if (itemNumber) {
+        itemNumber.textContent = index + 1;
+      }
+      
+      // データインデックスも更新
+      item.dataset.index = index;
+    });
+    
+    // フォームのインデックスも更新
+    updateFormIndices();
+  }
+  
+  // フォームのインデックスを更新する関数
+  function updateFormIndices() {
+    try {
+      const forms = itemsFormset.querySelectorAll('.item-form:not([style*="display: none"])');
+      const totalForms = document.querySelector('[name="items-TOTAL_FORMS"]');
+      
+      if (totalForms) {
+        totalForms.value = forms.length;
+      }
+      
+      forms.forEach((form, index) => {
+        form.querySelectorAll('input, select, textarea').forEach(input => {
+          if (input.name) {
+            input.name = input.name.replace(/items-\d+/, `items-${index}`);
+          }
+          if (input.id) {
+            input.id = input.id.replace(/items-\d+/, `items-${index}`);
+          }
+        });
+        
+        form.querySelectorAll('label').forEach(label => {
+          if (label.htmlFor) {
+            label.htmlFor = label.htmlFor.replace(/items-\d+/, `items-${index}`);
+          }
+        });
+      });
+    } catch (error) {
+      console.error('フォームインデックス更新中にエラー:', error);
+    }
+  }
+}
+
+// スクロールトップボタン
+function setupScrollTopButton() {
+  const scrollTopBtn = document.getElementById('scrollTopBtn');
+  
+  if (!scrollTopBtn) return;
+  
+  window.addEventListener('scroll', function() {
+    if (window.pageYOffset > 300) {
+      scrollTopBtn.classList.add('visible');
+    } else {
+      scrollTopBtn.classList.remove('visible');
+    }
+  });
+  
+  scrollTopBtn.addEventListener('click', function() {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  });
+}
+
+// フォームのHTMXイベント処理
+function setupHtmxHandlers() {
+  const form = document.getElementById('stepByStepForm');
+  
+  if (!form) return;
+  
+  // フォーム送信ステータス通知
+  const formStatus = document.getElementById('formStatus');
+  const statusMessage = document.getElementById('statusMessage');
+  
+  // 成功メッセージ表示
+  function showFormStatus(type, message) {
+    if (!formStatus || !statusMessage) return;
+    
+    formStatus.className = 'form-status';
+    statusMessage.textContent = message;
+    
+    if (type === 'success') {
+      formStatus.classList.add('form-status-success');
+      formStatus.innerHTML = '<i class="bi bi-check-circle-fill"></i>' + message;
+    } else if (type === 'error') {
+      formStatus.classList.add('form-status-error');
+      formStatus.innerHTML = '<i class="bi bi-exclamation-circle-fill"></i>' + message;
+    }
+    
+    formStatus.classList.add('visible');
+    
+    // 一定時間後に非表示
+    setTimeout(() => {
+      formStatus.classList.remove('visible');
+    }, 3000);
+  }
+  
+  // フォーム送信前のイベント
+  document.body.addEventListener('htmx:beforeRequest', function(event) {
+    if (event.detail.elt.id === 'stepByStepForm') {
+      // バリデーションを実行
+      if (!validateAllSteps()) {
+        event.preventDefault();
+        showFormStatus('error', '入力内容に問題があります。確認してください。');
+      }
+    }
+  });
+  
+  // レスポンス後のイベント
+  document.body.addEventListener('htmx:afterRequest', function(event) {
+    if (event.detail.elt.id === 'stepByStepForm') {
+      if (event.detail.successful) {
+        showFormStatus('success', '保存しました！');
+        
+        // リダイレクトする場合はHTMXからのレスポンスに含まれるヘッダーを確認
+        const redirectPath = event.detail.xhr.getResponseHeader('HX-Redirect');
+        if (redirectPath) {
+          setTimeout(() => {
+            window.location.href = redirectPath;
+          }, 1000);
+        }
+      } else {
+        showFormStatus('error', '保存に失敗しました。入力内容を確認してください。');
+      }
+    }
+  });
+  
+  // すべてのステップのバリデーション
+  function validateAllSteps() {
+    // ステップ1のバリデーション
+    const templateNameInput = document.querySelector('input[name="name"]');
+    if (!templateNameInput || !templateNameInput.value.trim()) {
+      showValidationError(templateNameInput, 'name-error', 'テンプレート名を入力してください');
+      return false;
+    }
+    
+    // ステップ2のバリデーション（項目が少なくとも1つ必要）
+    const itemForms = document.querySelectorAll('.item-form:not([style*="display: none"])');
+    if (itemForms.length === 0) {
+      showFormStatus('error', '少なくとも1つの分析項目を追加してください');
+      return false;
+    }
+    
+    // 各項目の名前が入力されているか確認
+    let isValid = true;
+    itemForms.forEach((form, index) => {
+      const nameInput = form.querySelector('input[name$="-name"]');
+      if (!nameInput.value.trim()) {
+        const errorId = `item-name-error-${index}`;
+        showValidationError(nameInput, errorId, `項目 ${index + 1} の名前を入力してください`);
+        isValid = false;
+      }
+    });
+    
+    return isValid;
+  }
 }
 </script>
 {% endblock %}
