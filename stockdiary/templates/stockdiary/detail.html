@@ -84,7 +84,7 @@
   line-height: 1;
 }
 
-.timeline-item .btn-outline-danger:hover {
+.timeline-item {
   background-color: #dc3545;
   color: white;
 }
@@ -111,7 +111,7 @@
   transition: all 0.2s;
 }
 
-.timeline-item .btn-outline-danger:hover {
+.timeline-item {
   transform: translateY(-2px);
   box-shadow: 0 2px 5px rgba(220, 53, 69, 0.3);
 }
@@ -256,13 +256,10 @@
   margin-bottom: 10px;
 }
 
-.card-tags {
-  margin-top: 5px;
-}
-
 .card-tag {
   display: inline-block;
   padding: 3px 8px;
+  margin-top: 5px;
   margin-right: 5px;
   font-size: 0.75rem;
   border-radius: 12px;
@@ -385,7 +382,7 @@
         {% endif %}
         
         {% if diary.sell_date %}
-        <a href="{% url 'stockdiary:cancel_sell' diary.id %}" class="btn btn-diary btn-diary-warning">
+        <a href="{% url 'stockdiary:cancel_sell' diary.id %}" class="btn btn-diary btn-diary-success">
           <i class="bi bi-arrow-counterclockwise me-1"></i> 売却取消
         </a>
         {% endif %}
