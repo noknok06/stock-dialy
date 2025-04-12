@@ -1,6 +1,7 @@
 <!-- diary_list.html - 日記一覧を表示する部分テンプレート -->
 
 {% load stockdiary_filters %}
+{% load humanize %}
 
 {% if request.htmx.target == "diary-container" and not request.GET.page %}
   <!-- 検索結果情報を更新 -->

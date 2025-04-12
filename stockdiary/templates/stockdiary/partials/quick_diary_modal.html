@@ -1,101 +1,812 @@
-<!-- stockdiary/templates/stockdiary/partials/quick_diary_modal.html -->
+<!-- Enhanced Quick Diary Modal Template -->
 <div class="modal fade" id="quickDiaryModal" tabindex="-1" aria-labelledby="quickDiaryModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="quickDiaryModalLabel">
-            <i class="bi bi-plus-circle"></i> クイック日記作成
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
-        </div>
-        <div class="modal-body">
-            <form id="quickDiaryForm" method="post" action="{% url 'stockdiary:api_create' %}">
-            {% csrf_token %}
-            <div class="row">
-              <!-- 株式基本情報 -->
-              <div class="col-md-6 mb-3">
-                <label for="quick_stock_symbol" class="form-label">銘柄コード</label>
-                <div class="input-group">
-                  <input type="text" id="quick_stock_symbol" name="stock_symbol" class="form-control" 
-                         placeholder="例: 7203、AAPL" maxlength="10">
-                  <button type="button" class="btn btn-outline-primary" id="quick_fetch_stock_info">
-                    <i class="bi bi-search"></i>
-                  </button>
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="quickDiaryModalLabel">
+          <i class="bi bi-lightning-fill me-2"></i>クイック日記作成
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="quickDiaryForm" action="{% url 'stockdiary:api_create' %}" method="post" class="needs-validation" novalidate>
+          {% csrf_token %}
+          
+          <!-- モバイル対応タブナビゲーション -->
+          <ul class="nav nav-tabs nav-fill mb-3" id="quickDiaryTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic-info" 
+                      type="button" role="tab" aria-controls="basic-info" aria-selected="true">
+                <i class="bi bi-info-circle d-none d-sm-inline me-1"></i>基本情報
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="details-tab" data-bs-toggle="tab" data-bs-target="#details-info" 
+                      type="button" role="tab" aria-controls="details-info" aria-selected="false">
+                <i class="bi bi-card-text d-none d-sm-inline me-1"></i>詳細情報
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tags-tab" data-bs-toggle="tab" data-bs-target="#tags-info" 
+                      type="button" role="tab" aria-controls="tags-info" aria-selected="false">
+                <i class="bi bi-tags d-none d-sm-inline me-1"></i>タグ付け
+              </button>
+            </li>
+          </ul>
+          
+          <div class="tab-content" id="quickDiaryTabContent">
+            <!-- 基本情報タブ -->
+            <div class="tab-pane fade show active" id="basic-info" role="tabpanel" aria-labelledby="basic-tab">
+              <div class="row g-3">
+                <!-- 銘柄コード -->
+                <div class="col-md-6">
+                  <label for="quick_stock_symbol" class="form-label">銘柄コード</label>
+                  <div class="input-group">
+                    <input type="text" class="form-control" id="quick_stock_symbol" name="stock_symbol" 
+                          placeholder="例: 7203" autocomplete="off">
+                    <button class="btn btn-outline-primary" type="button" id="quick_fetch_stock_info">
+                      <i class="bi bi-search"></i>
+                    </button>
+                  </div>
+                  <div class="stock-info-feedback mt-1 small"></div>
                 </div>
-                <div class="stock-info-feedback mt-1 small"></div>
+                
+                <!-- 銘柄名 -->
+                <div class="col-md-6">
+                  <label for="quick_stock_name" class="form-label">銘柄名 <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="quick_stock_name" name="stock_name" 
+                        placeholder="例: トヨタ自動車" required>
+                  <div class="invalid-feedback">銘柄名を入力してください</div>
+                </div>
+                
+                <!-- 日付 -->
+                <div class="col-md-4">
+                  <label for="quick_purchase_date" class="form-label">購入/メモ日 <span class="text-danger">*</span></label>
+                  <input type="date" class="form-control" id="quick_purchase_date" name="purchase_date" required>
+                  <div class="invalid-feedback">日付を入力してください</div>
+                </div>
+                
+                <!-- 購入価格 -->
+                <div class="col-md-4">
+                  <label for="quick_purchase_price" class="form-label">購入価格</label>
+                  <div class="input-group">
+                    <input type="number" class="form-control" id="quick_purchase_price" name="purchase_price" 
+                          placeholder="円" step="0.01">
+                    <button class="btn btn-outline-primary" type="button" id="quick_fetch_price" aria-label="現在価格取得">
+                      <i class="bi bi-arrow-repeat"></i>
+                    </button>
+                  </div>
+                  <small class="form-text text-muted">空欄の場合はメモとして扱われます</small>
+                </div>
+                
+                <!-- 購入数量 -->
+                <div class="col-md-4">
+                  <label for="quick_purchase_quantity" class="form-label">購入数量</label>
+                  <input type="number" class="form-control" id="quick_purchase_quantity" name="purchase_quantity" 
+                        placeholder="株" step="1">
+                  <small class="form-text text-muted">空欄の場合はメモとして扱われます</small>
+                </div>
               </div>
               
-              <div class="col-md-6 mb-3">
-                <label for="quick_stock_name" class="form-label">銘柄名 <span class="text-danger">*</span></label>
-                <input type="text" id="quick_stock_name" name="stock_name" class="form-control" required>
+              <!-- 株価情報カード -->
+              <div class="stock-info-card hide mt-3">
+                <div class="row">
+                  <div class="col-6 col-md-3">
+                    <div class="stock-info-row">
+                      <div class="stock-info-label">市場：</div>
+                      <div class="stock-info-value" id="stock_market"></div>
+                    </div>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <div class="stock-info-row">
+                      <div class="stock-info-label">業種：</div>
+                      <div class="stock-info-value" id="stock_sector"></div>
+                    </div>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <div class="stock-info-row">
+                      <div class="stock-info-label">現在価格：</div>
+                      <div class="stock-info-value" id="stock_price"></div>
+                    </div>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <div class="stock-info-row">
+                      <div class="stock-info-label">前日比：</div>
+                      <div class="stock-info-value" id="stock_change"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- ナビゲーションボタン -->
+              <div class="d-flex justify-content-end mt-3">
+                <button type="button" class="btn btn-primary" id="to-details-tab">
+                  次へ <i class="bi bi-chevron-right"></i>
+                </button>
               </div>
             </div>
             
-            <!-- 日付・価格・数量 -->
-            <div class="row">
-              <div class="col-md-4 mb-3">
-                <label for="quick_purchase_date" class="form-label">購入/メモ日 <span class="text-danger">*</span></label>
-                <input type="date" id="quick_purchase_date" name="purchase_date" class="form-control" 
-                       value="{% now 'Y-m-d' %}" required>
+            <!-- 詳細情報タブ -->
+            <div class="tab-pane fade" id="details-info" role="tabpanel" aria-labelledby="details-tab">
+              <!-- 業種 -->
+              <div class="mb-3">
+                <label for="quick_sector" class="form-label">業種</label>
+                <input type="text" class="form-control" id="quick_sector" name="sector" 
+                      placeholder="例: 自動車・輸送機器">
+                <small class="form-text text-muted">銘柄検索時に自動入力されます</small>
               </div>
               
-              <div class="col-md-4 mb-3">
-                <label for="quick_purchase_price" class="form-label">購入価格</label>
-                <div class="input-group">
-                  <input type="number" id="quick_purchase_price" name="purchase_price" class="form-control" 
-                         step="0.01" placeholder="空欄はメモとなります">
-                  <button type="button" class="btn btn-outline-secondary" id="quick_fetch_price">
-                    <i class="bi bi-arrow-repeat"></i>
-                  </button>
-                </div>
+              <!-- 購入理由 -->
+              <div class="mb-3">
+                <label for="quick_reason" class="form-label">購入理由/メモ</label>
+                <textarea class="form-control" id="quick_reason" name="reason" rows="5" 
+                         placeholder="購入理由や着目点などを記録しましょう"></textarea>
               </div>
               
-              <div class="col-md-4 mb-3">
-                <label for="quick_purchase_quantity" class="form-label">購入数量</label>
-                <input type="number" id="quick_purchase_quantity" name="purchase_quantity" class="form-control" 
-                       placeholder="空欄はメモとなります">
+              <!-- ナビゲーションボタン -->
+              <div class="d-flex justify-content-between mt-3">
+                <button type="button" class="btn btn-outline-secondary" id="back-to-basic-tab">
+                  <i class="bi bi-chevron-left"></i> 戻る
+                </button>
+                <button type="button" class="btn btn-primary" id="to-tags-tab">
+                  次へ <i class="bi bi-chevron-right"></i>
+                </button>
               </div>
             </div>
             
-            <!-- タグとセクター -->
-            <div class="row">
-              <div class="col-md-6 mb-3">
+            <!-- タグ情報タブ -->
+            <div class="tab-pane fade" id="tags-info" role="tabpanel" aria-labelledby="tags-tab">
+              <!-- タグセレクト -->
+              <div class="mb-3">
                 <label for="quick_tags" class="form-label">タグ</label>
-                <select id="quick_tags" name="tags" class="form-select" multiple>
-                  <!-- タグオプションはAJAXで動的に読み込み -->
+                <select class="form-select" id="quick_tags" name="tags" multiple="multiple">
+                  <!-- タグオプションはJavaScriptで動的に追加されます -->
                 </select>
+                <small class="form-text text-muted">複数選択可能です。新しいタグを追加するには、まず<a href="{% url 'tags:list' %}" target="_blank">タグ管理</a>ページで作成してください。</small>
               </div>
               
-              <div class="col-md-6 mb-3">
-                <label for="quick_sector" class="form-label">セクター/業種</label>
-                <input type="text" id="quick_sector" name="sector" class="form-control">
+              <!-- フィードバック表示エリア -->
+              <div class="form-status-feedback d-none alert alert-info">
+                <span class="feedback-message"></span>
+              </div>
+              
+              <!-- ナビゲーションと送信ボタン -->
+              <div class="d-flex justify-content-between mt-3">
+                <button type="button" class="btn btn-outline-secondary" id="back-to-details-tab">
+                  <i class="bi bi-chevron-left"></i> 戻る
+                </button>
+                
+                <button type="submit" class="btn btn-success px-4" id="quickDiarySubmit">
+                  <i class="bi bi-journal-plus"></i> 作成する
+                </button>
               </div>
             </div>
-            
-            <!-- 理由/メモ -->
-            <div class="mb-3">
-              <label for="quick_reason" class="form-label">購入理由/メモ</label>
-              <textarea id="quick_reason" name="reason" class="form-control" rows="5" 
-                        placeholder="購入理由や分析結果をメモしましょう"></textarea>
-            </div>
-            
-            <!-- フォーム送信ステータス -->
-            <div class="form-status-feedback mt-3 d-none">
-              <div class="alert alert-info d-flex align-items-center">
-                <div class="spinner-border spinner-border-sm me-2" role="status">
-                  <span class="visually-hidden">送信中...</span>
-                </div>
-                <div>日記を作成中...</div>
-              </div>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-          <button type="button" class="btn btn-primary" id="quickDiarySubmit">
-            <i class="bi bi-save me-1"></i> 保存
-          </button>
-        </div>
+          </div>
+        </form>
       </div>
     </div>
   </div>
+</div>
+<script>
+  // Enhanced QuickDiaryForm class with improved mobile handling
+class QuickDiaryForm {
+  constructor() {
+    // 要素の参照
+    this.modal = document.getElementById('quickDiaryModal');
+    this.form = document.getElementById('quickDiaryForm');
+    this.submitBtn = document.getElementById('quickDiarySubmit');
+    this.symbolInput = document.getElementById('quick_stock_symbol');
+    this.nameInput = document.getElementById('quick_stock_name');
+    this.sectorInput = document.getElementById('quick_sector');
+    this.priceInput = document.getElementById('quick_purchase_price');
+    this.fetchInfoBtn = document.getElementById('quick_fetch_stock_info');
+    this.fetchPriceBtn = document.getElementById('quick_fetch_price');
+    this.feedbackEl = document.querySelector('.stock-info-feedback');
+    this.formStatusEl = document.querySelector('.form-status-feedback');
+    this.tagsSelect = document.getElementById('quick_tags');
+    
+    // タブナビゲーション用の要素
+    this.tabButtons = {
+      toDetails: document.getElementById('to-details-tab'),
+      backToBasic: document.getElementById('back-to-basic-tab'),
+      toTags: document.getElementById('to-tags-tab'),
+      backToDetails: document.getElementById('back-to-details-tab')
+    };
+    
+    // タブ参照
+    this.tabs = {
+      basic: new bootstrap.Tab(document.getElementById('basic-tab')),
+      details: new bootstrap.Tab(document.getElementById('details-tab')),
+      tags: new bootstrap.Tab(document.getElementById('tags-tab'))
+    };
+    
+    // 株価情報カード要素
+    this.stockInfoCard = document.querySelector('.stock-info-card');
+    this.stockInfoElements = {
+      market: document.getElementById('stock_market'),
+      sector: document.getElementById('stock_sector'),
+      price: document.getElementById('stock_price'),
+      change: document.getElementById('stock_change')
+    };
+    
+    // 要素の存在チェック
+    if (!this.modal || !this.form) {
+      console.warn('クイック日記作成モーダルが見つかりません');
+      return;
+    }
+    
+    // モーダルのブートストラップインスタンス
+    this.modalInstance = null;
+    
+    // イベントリスナーの設定
+    this.initEventListeners();
+    
+    // タグデータの初期ロード
+    this.loadTagsData();
+  }
+  
+  /**
+   * イベントリスナーの初期化
+   */
+  initEventListeners() {
+    // モーダルの初期化
+    this.modalInstance = new bootstrap.Modal(this.modal);
+    
+    // モーダルが表示されたときのイベント
+    this.modal.addEventListener('shown.bs.modal', () => {
+      // フォームをリセット
+      this.resetForm();
+      
+      // 日付フィールドに明示的に今日の日付を設定
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('quick_purchase_date').value = today;
+      
+      // 最初のフィールドにフォーカス
+      setTimeout(() => {
+        this.symbolInput.focus();
+      }, 300);
+    });
+    
+    // 銘柄情報取得ボタンのクリックイベント
+    if (this.fetchInfoBtn) {
+      this.fetchInfoBtn.addEventListener('click', () => {
+        this.fetchStockInfo();
+      });
+    }
+    
+    // 銘柄コード入力後のEnterキーイベント
+    if (this.symbolInput) {
+      this.symbolInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.fetchStockInfo();
+        }
+      });
+    }
+    
+    // 現在価格取得ボタンのクリックイベント
+    if (this.fetchPriceBtn) {
+      this.fetchPriceBtn.addEventListener('click', () => {
+        this.fetchCurrentPrice();
+      });
+    }
+    
+    // 送信ボタンのクリックイベント
+    if (this.submitBtn) {
+      this.submitBtn.addEventListener('click', () => {
+        this.submitForm();
+      });
+    }
+    
+    // タブナビゲーションボタンイベント
+    if (this.tabButtons.toDetails) {
+      this.tabButtons.toDetails.addEventListener('click', () => {
+        this.tabs.details.show();
+      });
+    }
+    
+    if (this.tabButtons.backToBasic) {
+      this.tabButtons.backToBasic.addEventListener('click', () => {
+        this.tabs.basic.show();
+      });
+    }
+    
+    if (this.tabButtons.toTags) {
+      this.tabButtons.toTags.addEventListener('click', () => {
+        this.tabs.tags.show();
+      });
+    }
+    
+    if (this.tabButtons.backToDetails) {
+      this.tabButtons.backToDetails.addEventListener('click', () => {
+        this.tabs.details.show();
+      });
+    }
+    
+    // フォームのバリデーションイベント
+    this.form.addEventListener('submit', (e) => {
+      if (!this.form.checkValidity()) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // 最初のタブに戻して最初のエラー項目にフォーカス
+        this.tabs.basic.show();
+        
+        const firstInvalid = this.form.querySelector(':invalid');
+        if (firstInvalid) {
+          firstInvalid.focus();
+        }
+      }
+      
+      this.form.classList.add('was-validated');
+    });
+  }
+  
+  /**
+   * モーダルを表示する
+   */
+  show() {
+    if (this.modalInstance) {
+      this.modalInstance.show();
+    }
+  }
+  
+  /**
+   * モーダルを閉じる
+   */
+  hide() {
+    if (this.modalInstance) {
+      this.modalInstance.hide();
+    }
+  }
+  
+  /**
+   * フォームをリセットする
+   */
+  resetForm() {
+    this.form.reset();
+    this.form.classList.remove('was-validated');
+    
+    // 株価情報カードをリセット
+    this.stockInfoCard.classList.add('hide');
+    this.stockInfoCard.classList.remove('show');
+    
+    // 日付を今日に設定
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('quick_purchase_date');
+    if (dateInput) {
+      dateInput.value = today;
+    }
+    
+    // フィードバックをクリア
+    if (this.feedbackEl) {
+      this.feedbackEl.innerHTML = '';
+      this.feedbackEl.className = 'stock-info-feedback mt-1 small';
+    }
+    
+    // 送信ステータスをリセット
+    if (this.formStatusEl) {
+      this.formStatusEl.classList.add('d-none');
+    }
+    
+    // 最初のタブに戻す
+    this.tabs.basic.show();
+  }
+  
+  /**
+   * タグデータを読み込む
+   */
+  async loadTagsData() {
+    try {
+      const response = await fetch('/tags/api/list/');
+      
+      if (!response.ok) {
+        throw new Error(`タグの読み込みに失敗しました - ステータス: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // タグのオプションを作成
+      if (this.tagsSelect) {
+        this.tagsSelect.innerHTML = '';
+        
+        if (data.tags && data.tags.length > 0) {
+          data.tags.forEach(tag => {
+            const option = document.createElement('option');
+            option.value = tag.id;
+            option.textContent = tag.name;
+            this.tagsSelect.appendChild(option);
+          });
+          
+        } else {
+          // タグがない場合は「タグがありません」というオプションを追加
+          const emptyOption = document.createElement('option');
+          emptyOption.disabled = true;
+          emptyOption.textContent = 'タグがありません';
+          this.tagsSelect.appendChild(emptyOption);
+        }
+        
+        // モバイル対応のセレクト初期化
+        if (typeof $ !== 'undefined' && $.fn.select2) {
+          $(this.tagsSelect).select2({
+            placeholder: 'タグを選択...',
+            width: '100%',
+            language: 'ja',
+            closeOnSelect: false,
+            allowClear: true,
+            theme: 'bootstrap-5'
+          });
+        } else {
+          // Select2が利用できない場合はネイティブのマルチセレクトを使用
+          this.tagsSelect.classList.add('form-select');
+          this.tagsSelect.style.height = 'auto';
+        }
+      }
+    } catch (error) {          
+      // エラーが発生した場合の処理
+      if (this.tagsSelect) {
+        this.tagsSelect.innerHTML = '';
+        const errorOption = document.createElement('option');
+        errorOption.disabled = true;
+        errorOption.textContent = 'タグの読み込みに失敗しました';
+        this.tagsSelect.appendChild(errorOption);
+      }
+    }
+  }
+  
+  /**
+   * 銘柄情報を取得する
+   */
+  async fetchStockInfo() {
+    const stockCode = this.symbolInput.value.trim();
+    
+    if (!stockCode) {
+      this.showFeedback('銘柄コードを入力してください', 'warning');
+      return;
+    }
+    
+    try {
+      // フィードバックを表示
+      this.showFeedback('<i class="spinner-border spinner-border-sm me-1"></i> 銘柄情報を取得中...', 'info');
+      
+      // インターネット接続をチェック
+      if (!navigator.onLine) {
+        throw new Error('インターネット接続がありません');
+      }
+      
+      // APIリクエスト
+      const response = await fetch(`/stockdiary/api/stock/info/${stockCode}/`);
+      
+      if (!response.ok) {
+        throw new Error('銘柄情報の取得に失敗しました');
+      }
+      
+      const data = await response.json();
+      
+      // 銘柄名を設定
+      if (this.nameInput && data.company_name) {
+        this.nameInput.value = data.company_name;
+      }
+      
+      // セクターを設定
+      if (this.sectorInput && data.industry) {
+        this.sectorInput.value = data.industry;
+      }
+      
+      // 現在価格を設定
+      if (this.priceInput && data.price) {
+        this.priceInput.value = data.price;
+      }
+      
+      // 株価情報カードを更新
+      if (this.stockInfoElements.sector) this.stockInfoElements.sector.textContent = data.industry || '不明';
+      if (this.stockInfoElements.market) this.stockInfoElements.market.textContent = data.market || '-';
+      if (this.stockInfoElements.price) this.stockInfoElements.price.textContent = data.price ? `${data.price.toLocaleString()}円` : '-';
+      
+      // 前日比を表示
+      if (this.stockInfoElements.change && data.change_percent) {
+        const changeClass = data.change_percent > 0 ? 'text-success' : data.change_percent < 0 ? 'text-danger' : '';
+        const changeSign = data.change_percent > 0 ? '+' : '';
+        this.stockInfoElements.change.textContent = `${changeSign}${data.change_percent.toFixed(2)}%`;
+        this.stockInfoElements.change.className = `stock-info-value ${changeClass}`;
+      } else if (this.stockInfoElements.change) {
+        this.stockInfoElements.change.textContent = '-';
+        this.stockInfoElements.change.className = 'stock-info-value';
+      }
+      
+      // 株価情報カードを表示
+      this.stockInfoCard.classList.remove('hide');
+      this.stockInfoCard.classList.add('show');
+      
+      // 成功フィードバック
+      this.showFeedback(`<i class="bi bi-check-circle text-success"></i> ${data.company_name} の情報を取得しました`, 'success');
+    } catch (error) {
+      // インターネット接続エラーを特別に処理
+      if (!navigator.onLine || error.message.includes('ERR_INTERNET_DISCONNECTED')) {
+        this.showFeedback(`<i class="bi bi-wifi-off text-warning"></i> インターネット接続がありません。オフラインモードで続行します。`, 'warning');
+        
+        // 入力された銘柄コードだけでも使用できるようにする
+        if (stockCode) {
+          if (this.nameInput && !this.nameInput.value) {
+            this.nameInput.value = `${stockCode} (オフライン)`;
+          }
+        }
+        return;
+      }
+      
+      // その他のエラーフィードバック
+      this.showFeedback(`<i class="bi bi-exclamation-triangle text-danger"></i> ${error.message}`, 'danger');
+    }
+  }
+  
+  /**
+   * 現在価格を取得する
+   */
+  async fetchCurrentPrice() {
+    const stockCode = this.symbolInput.value.trim();
+    
+    if (!stockCode) {
+      this.showFeedback('銘柄コードを入力してください', 'warning');
+      return;
+    }
+    
+    try {
+      // フィードバックを表示
+      this.showFeedback('<i class="spinner-border spinner-border-sm me-1"></i> 現在価格を取得中...', 'info');
+      
+      // APIリクエスト
+      const response = await fetch(`/stockdiary/api/stock/price/${stockCode}/`);
+      
+      if (!response.ok) {
+        throw new Error('価格の取得に失敗しました');
+      }
+      
+      const data = await response.json();
+      
+      // 価格を設定
+      if (this.priceInput && data.price) {
+        this.priceInput.value = data.price;
+      }
+      
+      // 成功フィードバック
+      this.showFeedback(`<i class="bi bi-check-circle text-success"></i> 現在価格: ${data.price.toLocaleString()}円`, 'success');
+      
+      // 株価情報カードを更新
+      if (this.stockInfoElements.price) {
+        this.stockInfoElements.price.textContent = `${data.price.toLocaleString()}円`;
+      }
+    } catch (error) {
+      // エラーフィードバック
+      this.showFeedback(`<i class="bi bi-exclamation-triangle text-danger"></i> ${error.message}`, 'danger');
+    }
+  }
+  
+  /**
+   * フィードバックを表示する
+   * @param {string} message - メッセージ
+   * @param {string} type - メッセージタイプ (success, info, warning, danger)
+   */
+  showFeedback(message, type = 'info') {
+    if (!this.feedbackEl) return;
+    
+    this.feedbackEl.innerHTML = message;
+    this.feedbackEl.className = `stock-info-feedback mt-1 small text-${type}`;
+  }
+  
+  /**
+   * フォームを送信する
+   */
+  async submitForm() {
+    // バリデーション - Bootstrapの組み込みバリデーションを使用
+    if (!this.form.checkValidity()) {
+      this.form.classList.add('was-validated');
+      return;
+    }
+    
+    // 送信中の状態を表示
+    if (this.formStatusEl) {
+      this.formStatusEl.classList.remove('d-none');
+      this.formStatusEl.classList.add('alert-info');
+      this.formStatusEl.querySelector('.feedback-message').innerHTML = 
+        '<i class="spinner-border spinner-border-sm me-2"></i>日記を作成中...';
+    }
+    
+    // 送信ボタンを無効化
+    if (this.submitBtn) {
+      this.submitBtn.disabled = true;
+    }
+    
+    try {
+      // CSRFトークンの取得
+      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+      
+      // フォームデータを準備
+      const formData = new FormData(this.form);
+      
+      // 日付が正しく設定されているか確認
+      const purchaseDate = formData.get('purchase_date');
+      if (!purchaseDate) {
+        // 日付が設定されていない場合は現在の日付を設定
+        const today = new Date().toISOString().split('T')[0];
+        formData.set('purchase_date', today);
+      }
+      
+      // APIリクエスト
+      const response = await fetch(this.form.action, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrfToken,
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+      });
+      
+      // レスポンスを解析
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || '日記の作成に失敗しました');
+      }
+      
+      const data = await response.json();
+      
+      // 成功時の処理
+      if (this.formStatusEl) {
+        this.formStatusEl.classList.remove('alert-info');
+        this.formStatusEl.classList.add('alert-success');
+        this.formStatusEl.querySelector('.feedback-message').innerHTML = 
+          '<i class="bi bi-check-circle me-2"></i>日記が正常に作成されました！';
+      }
+      
+      // トースト通知を表示
+      this.showToast('日記を作成しました', 'success');
+      
+      // 1秒後にモーダルを閉じる
+      setTimeout(() => {
+        this.hide();
+        
+        // 日記リストがある場合は新しい日記カードを直接追加
+        const diaryContainer = document.getElementById('diary-container');
+        if (diaryContainer && data.diary_html) {
+          // テンプレートHTML文字列からDOM要素を作成
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = data.diary_html.trim();
+          
+          // 最初の子要素（日記カード）を取得
+          const newDiaryCard = tempDiv.firstElementChild;
+          
+          if (newDiaryCard) {
+            // 日記コンテナの先頭に新しい日記を追加
+            diaryContainer.insertBefore(newDiaryCard, diaryContainer.firstChild);
+            
+            // 新しく追加された要素のイベントリスナーなどを初期化
+            if (typeof initializeNewElements === 'function') {
+              initializeNewElements(newDiaryCard);
+            }
+            
+            // カードタブの初期化（もし該当関数があれば）
+            if (typeof initDiaryCardTabs === 'function') {
+              initDiaryCardTabs(newDiaryCard);
+            }
+            
+            // アニメーションで注目を集める
+            newDiaryCard.classList.add('new-diary-highlight');
+            setTimeout(() => {
+              newDiaryCard.classList.remove('new-diary-highlight');
+            }, 3000);
+            
+            // 該当する日記カードまでスクロール
+            setTimeout(() => {
+              newDiaryCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 200);
+            
+            return; // 日記カード追加に成功したらここで終了
+          }
+        }
+        
+        // 日記カードの直接追加に失敗した場合は、従来通りのリダイレクトまたはリロード
+        if (data.redirect_url) {
+          // 作成された日記の詳細ページに遷移
+          window.location.href = data.redirect_url;
+        } else {
+          // または現在のページをリロード
+          window.location.reload();
+        }
+      }, 1000);
+    } catch (error) {
+      // エラー時の処理
+      if (this.formStatusEl) {
+        this.formStatusEl.classList.remove('alert-info');
+        this.formStatusEl.classList.add('alert-danger');
+        this.formStatusEl.querySelector('.feedback-message').innerHTML = 
+          `<i class="bi bi-exclamation-triangle me-2"></i>${error.message}`;
+      }
+      
+      this.showToast(error.message, 'danger');
+      
+      // 送信ボタンを有効化
+      if (this.submitBtn) {
+        this.submitBtn.disabled = false;
+      }
+    }
+  }
+  
+  /**
+   * トースト通知を表示する
+   * @param {string} message - メッセージ
+   * @param {string} type - メッセージタイプ (success, info, warning, danger)
+   */
+  showToast(message, type = 'success') {
+    // 既存のトーストを削除
+    const existingToast = document.querySelector('.toast-notification');
+    if (existingToast) {
+      existingToast.remove();
+    }
+    
+    // トースト要素を作成
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast align-items-center text-white bg-${type} border-0 show`;
+    toast.role = 'alert';
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    
+    const icon = type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle';
+    
+    toast.innerHTML = `
+      <div class="d-flex">
+        <div class="toast-body">
+          <i class="bi ${icon} me-2"></i> ${message}
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    `;
+    
+    // スタイル調整
+    toast.style.position = 'fixed';
+    toast.style.bottom = '20px';
+    toast.style.right = '20px';
+    toast.style.minWidth = '250px';
+    toast.style.zIndex = '1050';
+    
+    // DOMに追加
+    document.body.appendChild(toast);
+    
+    // 5秒後に自動的に消す
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 300);
+    }, 5000);
+  }
+}
+
+// ページロード時に初期化
+document.addEventListener('DOMContentLoaded', function() {
+  // グローバルインスタンスを作成
+  window.quickDiaryForm = new QuickDiaryForm();
+  
+  // スピードダイアルの「新規作成」ボタンにイベントリスナーを追加
+  const createButtons = document.querySelectorAll('.speed-dial-btn.action-quick-add');
+  createButtons.forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      // デフォルトのリンク動作をキャンセル
+      e.preventDefault();
+      e.stopPropagation(); // イベントの伝播も停止
+      
+      if (window.quickDiaryForm) {
+        window.quickDiaryForm.show();
+      }
+    });
+  });
+  
+  // 新しい日記カードへのHTMXイベントハンドラを追加する関数
+  window.initializeNewElements = function(element) {
+    // タブ機能の初期化
+    const tabButtons = element.querySelectorAll('[data-bs-toggle="tab"]');
+    tabButtons.forEach(btn => {
+      // htmx属性を追加してダイナミックコンテンツのロードを有効化
+      if (btn.hasAttribute('hx-get')) {
+        htmx.process(btn);
+      }
+    });
+  };
+});
+</script>

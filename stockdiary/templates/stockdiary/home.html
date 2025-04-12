@@ -154,6 +154,7 @@
   <!-- カレンダーセクション - HTMX対応 -->
   <div class="calendar-section mb-4">
     <!-- スマホ用カレンダーアコーディオン -->
+    <!-- Mobile Calendar Accordion - Improved HTMX Loading -->
     <div class="d-lg-none">
       <div class="accordion" id="calendarAccordion">
         <div class="accordion-item">
@@ -165,11 +166,12 @@
           </h2>
           <div id="calendarCollapse" class="accordion-collapse collapse" aria-labelledby="calendarHeading">
             <div class="accordion-body p-0">
-              <!-- モバイル用カレンダー -->
+              <!-- Mobile Calendar - Improved Loading Handling -->
               <div class="calendar-view" id="mobile-calendar-container"
-                   hx-get="{% url 'stockdiary:calendar_partial' %}?view=mobile"
-                   hx-trigger="revealed"
-                   hx-indicator="#mobile-calendar-loading">
+                  hx-get="{% url 'stockdiary:calendar_partial' %}?view=mobile"
+                  hx-trigger="revealed"
+                  hx-swap="innerHTML"
+                  hx-indicator="#mobile-calendar-loading">
                 <div id="mobile-calendar-loading" class="text-center py-4 htmx-indicator">
                   <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>
@@ -183,18 +185,42 @@
       </div>
     </div>
 
-    <!-- PC用カレンダー（左右7:3の横並びレイアウト） -->
+    <!-- Enhanced Event Display Section for Mobile -->
+    <div class="d-lg-none">
+      <div class="card mt-3 mb-4" id="mobile-events-card">
+        <div class="card-header bg-white">
+          <h6 class="mb-0" id="mobile-selected-date">選択日のイベント</h6>
+        </div>
+        <div class="card-body" id="mobile-day-events"
+            hx-get="{% url 'stockdiary:day_events' %}"
+            hx-trigger="date-selected from:body"
+            hx-target="#mobile-day-events"
+            hx-swap="innerHTML"
+            hx-include="[name='date'], [name='view']">
+          <p class="text-muted">日付を選択するとイベントが表示されます</p>
+          <!-- Event Loading Indicator -->
+          <div id="day-events-loading-mobile" class="htmx-indicator text-center mt-3">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+              <span class="visually-hidden">読み込み中...</span>
+            </div>
+          </div>
+          <input type="hidden" name="view" value="mobile">
+          <input type="hidden" name="date" value="">
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop Calendar Container - Enhanced HTMX Loading -->
     <div class="d-none d-lg-block">
       <div class="row">
-        <!-- カレンダー部分：左側（7/10） -->
+        <!-- Calendar Part: Left Side (7/10) -->
         <div class="col-lg-7">
           <div class="calendar-view pe-lg-3">
-            <!-- カレンダーコンテナ -->
             <div id="desktop-calendar-container" class="calendar-container"
                 hx-get="{% url 'stockdiary:calendar_partial' %}?view=desktop"
                 hx-trigger="load"
+                hx-swap="innerHTML"
                 hx-indicator="#desktop-calendar-loading">
-              <!-- 以下を追加 -->
               <div id="desktop-calendar-loading" class="text-center py-4 htmx-indicator">
                 <div class="spinner-border text-primary" role="status">
                   <span class="visually-hidden">Loading...</span>
@@ -205,26 +231,32 @@
           </div>
         </div>
 
-        <!-- イベント詳細部分：右側（3/10） -->
+        <!-- Events Part: Right Side (3/10) -->
         <div class="col-lg-5">
           <div class="card h-100" id="desktop-events-card">
             <div class="card-header bg-white">
               <h6 class="mb-0" id="desktop-selected-date">選択日のイベント</h6>
             </div>
-            <div class="card-body" id="desktop-day-events">
+            <div class="card-body" id="desktop-day-events"
+                hx-get="{% url 'stockdiary:day_events' %}"
+                hx-trigger="date-selected from:body"
+                hx-target="#desktop-day-events"
+                hx-swap="innerHTML"
+                hx-include="[name='date'], [name='view']">
               <p class="text-muted">日付を選択するとイベントが表示されます</p>
-              <!-- イベントローディングインジケータ追加 -->
-              <div id="day-events-loading-desktop" class="htmx-indicator text-center">
+              <!-- Event Loading Indicator -->
+              <div id="day-events-loading-desktop" class="htmx-indicator text-center mt-3">
                 <div class="spinner-border spinner-border-sm text-primary" role="status">
                   <span class="visually-hidden">読み込み中...</span>
                 </div>
               </div>
+              <input type="hidden" name="view" value="desktop">
+              <input type="hidden" name="date" value="">
             </div>
           </div>
         </div>
       </div>
     </div>
-
     <!-- スマホ用のイベント表示カード -->
     <div class="d-lg-none">
       <div class="card mt-3 mb-4" id="mobile-events-card" style="display: none;">
@@ -244,7 +276,6 @@
     </div>
   </div>
 
-  <!-- 検索フォーム部分 - HTMX対応 -->
   <div class="diary-search mb-4">
     <form hx-get="{% url 'stockdiary:diary_list' %}" 
           hx-target="#diary-container"
@@ -316,46 +347,6 @@
     </form>
   </div>
 
-  <!-- 検索結果表示 -->
-  <div class="mb-3" id="search-result-info">
-    {% if request.GET.query or request.GET.tag or request.GET.status %}
-      <div class="alert alert-info d-flex justify-content-between align-items-center">
-        <div>
-          <i class="bi bi-info-circle me-2"></i>
-          <span>検索結果: {{ diaries|length }}件</span>
-          
-          {% if request.GET.query %}
-            <span class="ms-2">キーワード: "{{ request.GET.query }}"</span>
-          {% endif %}
-          
-          {% if request.GET.tag %}
-            <span class="ms-2">タグ: 
-              {% for tag in tags %}
-                {% if request.GET.tag == tag.id|stringformat:"i" %}{{ tag.name }}{% endif %}
-              {% endfor %}
-            </span>
-          {% endif %}
-          
-          {% if request.GET.status %}
-            <span class="ms-2">保有状態: 
-              {% if request.GET.status == 'active' %}保有中
-              {% elif request.GET.status == 'sold' %}売却済み
-              {% elif request.GET.status == 'memo' %}メモのみ
-              {% endif %}
-            </span>
-          {% endif %}
-        </div>
-        
-        <a href="{% url 'stockdiary:home' %}" class="btn btn-sm btn-outline-secondary"
-           hx-get="{% url 'stockdiary:diary_list' %}" 
-           hx-target="#diary-container"
-           hx-push-url="true">
-          <i class="bi bi-x"></i> クリア
-        </a>
-      </div>
-    {% endif %}
-  </div>
-
   <!-- 日記カード一覧 -->
   <h4 class="mb-3 diary-title px-2">
     <i class="bi bi-journal-richtext"></i> 株式日記リスト
@@ -393,155 +384,176 @@
 <script src="{% static 'js/quick-diary.js' %}"></script>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // 基本的な初期化
-    if (typeof initializeSpeedDial === 'function') {
-      initializeSpeedDial();
-    }
-    
-    // クイック追加ボタンの処理
-    document.querySelectorAll('.speed-dial-btn.action-quick-add').forEach(btn => {
-      btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        if (window.quickDiaryForm) {
-          window.quickDiaryForm.show();
-        }
-      });
-    });
-    
-    // オフライン状態の監視
-    window.addEventListener('online', function() {
-      document.body.classList.remove('is-offline');
-    });
-    
-    window.addEventListener('offline', function() {
-      document.body.classList.add('is-offline');
-    });
-    
-    // 初期状態のチェック
-    if (!navigator.onLine) {
-      document.body.classList.add('is-offline');
-    }
-    
-    // HTMX エラーハンドリング
-    document.body.addEventListener('htmx:responseError', function(event) {
-      console.error('HTMX エラー:', event.detail.xhr.status, event.detail.xhr.statusText);
-      
-      // ターゲット要素
-      const target = event.detail.target;
-      
-      // エラーメッセージ表示
-      if (target.id === 'desktop-day-events' || target.id === 'mobile-day-events') {
-        target.innerHTML = `
-          <div class="alert alert-warning m-2">
-            <i class="bi bi-exclamation-triangle me-2"></i>
-            イベントの読み込みに失敗しました。
-          </div>
-        `;
-      } else if (target.id.includes('content-')) {
-        target.innerHTML = `
-          <div class="alert alert-warning m-3">
-            <i class="bi bi-exclamation-triangle me-2"></i>
-            コンテンツの読み込みに失敗しました。
-          </div>
-        `;
-      }
-    });
-    
-    // カレンダー日付クリック時のフォールバック処理
-    document.addEventListener('click', function(e) {
-      const td = e.target.closest('td[data-date]');
-      if (td) {
-        // クリックされた日付をハイライト
-        document.querySelectorAll('td').forEach(cell => cell.classList.remove('fc-day-clicked'));
-        td.classList.add('fc-day-clicked');
-      }
-    });
-    
-    // HTMX イベントハンドラを追加
-    document.addEventListener('htmx:load', function() {
-      // ハイライト処理
-      function highlightSearchTerms() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const query = urlParams.get('query');
-        
-        if (query && query.trim() !== '') {
-          document.querySelectorAll('.diary-card:not(.highlighted)').forEach(card => {
-            // ハイライト済みフラグ
-            card.classList.add('highlighted');
-            
-            // カードのハイライト
-            if (card.textContent.toLowerCase().includes(query.toLowerCase())) {
-              card.classList.add('diary-card-highlight');
-            }
-            
-            // テキスト内のキーワードをハイライト
-            const textContainers = card.querySelectorAll('.diary-card-body .reason-content');
-            textContainers.forEach(container => {
-              try {
-                const regex = new RegExp(`(${query})`, 'gi');
-                container.innerHTML = container.innerHTML.replace(regex, '<span class="search-highlight">$1</span>');
-              } catch (e) {
-                console.error('Highlight error:', e);
-              }
-            });
-          });
+document.addEventListener('DOMContentLoaded', function() {
+  // 基本的な初期化
+  if (typeof initializeSpeedDial === 'function') {
+    initializeSpeedDial();
+  }
+  
+  // モバイルカレンダーのアコーディオン処理を強化
+  const calendarCollapse = document.getElementById('calendarCollapse');
+  if (calendarCollapse) {
+    calendarCollapse.addEventListener('shown.bs.collapse', function() {
+      const container = document.getElementById('mobile-calendar-container');
+      if (container && !container.getAttribute('data-loaded')) {
+        htmx.trigger(container, 'revealed');
+        container.setAttribute('data-loaded', 'true');
+        // モバイルイベントカードを表示
+        const mobileEventsCard = document.getElementById('mobile-events-card');
+        if (mobileEventsCard) {
+          mobileEventsCard.style.display = 'block';
         }
       }
-      
-      // ドキュメント読み込み時とHTMX更新後にハイライト処理を実行
-      try {
-        highlightSearchTerms();
-      } catch (e) {
-        console.error('Highlight init error:', e);
-      }
-      
-      document.body.addEventListener('htmx:afterSwap', function() {
-        try {
-          highlightSearchTerms();
-        } catch (e) {
-          console.error('Highlight afterSwap error:', e);
-        }
-      });
-      
-      // 既存のモバイルカレンダーのアコーディオンイベントにHTMX処理を追加
-      const calendarCollapse = document.getElementById('calendarCollapse');
-      if (calendarCollapse) {
-        calendarCollapse.addEventListener('shown.bs.collapse', function() {
-          const container = document.getElementById('mobile-calendar-container');
-          if (container && !container.getAttribute('data-loaded')) {
-            htmx.trigger(container, 'revealed');
-            container.setAttribute('data-loaded', 'true');
-          }
-        });
-      }
     });
-    
-    // HTMXリクエストにCSRFトークンを自動的に追加
-    document.body.addEventListener('htmx:configRequest', function(evt) {
-      const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
-      if (!evt.detail.headers) {
-        evt.detail.headers = {};
-      }
-      evt.detail.headers['X-CSRFToken'] = csrfToken;
-    });
+  }
+  
+  // オフライン状態の監視
+  window.addEventListener('online', function() {
+    document.body.classList.remove('is-offline');
   });
-  htmx.config.defaultSwapStyle = "innerHTML";
-  htmx.config.includeIndicatorStyles = true;
-  htmx.config.withCredentials = true;
-
-  // エラー処理を強化（hx-indicatorがない場合のハンドリング）
-  htmx.on('htmx:beforeRequest', function(evt) {
-    // インジケーター要素を取得
-    const indicatorSelector = evt.detail.elt.getAttribute('hx-indicator');
-    if (indicatorSelector) {
-      const indicator = document.querySelector(indicatorSelector);
-      if (!indicator) {
-        console.warn('Indicator not found:', indicatorSelector);
-        // インジケーターが存在しない場合はメッセージを出力するだけでエラーにはしない
-        evt.detail.elt.removeAttribute('hx-indicator');
+  
+  window.addEventListener('offline', function() {
+    document.body.classList.add('is-offline');
+  });
+  
+  // 初期状態のチェック
+  if (!navigator.onLine) {
+    document.body.classList.add('is-offline');
+  }
+  
+  // カレンダー日付クリック処理を強化
+  document.addEventListener('click', function(e) {
+    const td = e.target.closest('td[data-date]');
+    if (td) {
+      // クリックされた日付をハイライト
+      document.querySelectorAll('td').forEach(cell => cell.classList.remove('fc-day-clicked'));
+      td.classList.add('fc-day-clicked');
+      
+      // データと日付を取得して、イベントをトリガー
+      const dateStr = td.getAttribute('data-date');
+      if (dateStr) {
+        // 日付を入力フィールドに設定
+        document.querySelectorAll('input[name="date"]').forEach(input => {
+          input.value = dateStr;
+        });
+        
+        // カスタムイベントをディスパッチ
+        htmx.trigger('body', 'date-selected');
+        
+        // 選択日の表示を更新
+        const dateObj = new Date(dateStr);
+        const formattedDate = dateObj.getFullYear() + '年' + 
+                             (dateObj.getMonth() + 1) + '月' + 
+                             dateObj.getDate() + '日のイベント';
+        
+        const mobileDate = document.getElementById('mobile-selected-date');
+        const desktopDate = document.getElementById('desktop-selected-date');
+        
+        if (mobileDate) mobileDate.textContent = formattedDate;
+        if (desktopDate) desktopDate.textContent = formattedDate;
+        
+        // スマホ表示の場合は自動スクロール
+        if (window.innerWidth < 992) {
+          const eventsCard = document.getElementById('mobile-events-card');
+          if (eventsCard) {
+            eventsCard.style.display = 'block';
+            eventsCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }
       }
     }
-  });  
+  });
+  
+  // HTMX エラーハンドリング
+  document.body.addEventListener('htmx:responseError', function(event) {
+    console.error('HTMX エラー:', event.detail.xhr.status, event.detail.xhr.statusText);
+    
+    // ターゲット要素
+    const target = event.detail.target;
+    
+    // エラーメッセージ表示
+    if (target.id === 'desktop-day-events' || target.id === 'mobile-day-events') {
+      target.innerHTML = `
+        <div class="alert alert-warning m-2">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          イベントの読み込みに失敗しました。ネットワーク接続を確認してください。
+        </div>
+      `;
+    } else if (target.id === 'desktop-calendar-container' || target.id === 'mobile-calendar-container') {
+      target.innerHTML = `
+        <div class="alert alert-warning m-2">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          カレンダーの読み込みに失敗しました。ネットワーク接続を確認してください。
+        </div>
+      `;
+    }
+  });
+  
+  // イベントリスト読み込み完了イベント
+  document.body.addEventListener('htmx:afterSwap', function(event) {
+    if (event.detail.target.id === 'desktop-day-events' || event.detail.target.id === 'mobile-day-events') {
+      // イベントがロードされたら、アニメーション効果を追加
+      const items = event.detail.target.querySelectorAll('.calendar-event-item');
+      items.forEach((item, index) => {
+        // 少し遅延させて順番にフェードイン
+        item.style.opacity = '0';
+        item.style.transform = 'translateY(10px)';
+        item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        
+        setTimeout(() => {
+          item.style.opacity = '1';
+          item.style.transform = 'translateY(0)';
+        }, 50 * index);
+      });
+    }
+  });
+  
+  // HTMXリクエストにCSRFトークンを追加
+  document.body.addEventListener('htmx:configRequest', function(evt) {
+    const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+    if (!evt.detail.headers) {
+      evt.detail.headers = {};
+    }
+    evt.detail.headers['X-CSRFToken'] = csrfToken;
+  });
+});
+
+// HTMX設定
+htmx.config.defaultSwapStyle = "innerHTML";
+htmx.config.includeIndicatorStyles = true;
+htmx.config.withCredentials = true;
+
+// エラー処理を強化
+htmx.on('htmx:beforeRequest', function(evt) {
+  // インジケーター要素を取得
+  const indicatorSelector = evt.detail.elt.getAttribute('hx-indicator');
+  if (indicatorSelector) {
+    const indicator = document.querySelector(indicatorSelector);
+    if (!indicator) {
+      console.warn('Indicator not found:', indicatorSelector);
+      // インジケーターが存在しない場合は属性を削除
+      evt.detail.elt.removeAttribute('hx-indicator');
+    }
+  }
+});
+
+// オフライン状態検出
+htmx.on('htmx:beforeRequest', function(evt) {
+  if (!navigator.onLine) {
+    evt.preventDefault();
+    document.body.classList.add('is-offline');
+    
+    // オフライン通知を表示
+    const target = evt.detail.target;
+    if (target) {
+      target.innerHTML = `
+        <div class="alert alert-warning m-2">
+          <i class="bi bi-wifi-off me-2"></i>
+          現在オフライン状態です。ネットワーク接続を確認してください。
+        </div>
+      `;
+    }
+  }
+});
 </script>
 {% endblock %}
