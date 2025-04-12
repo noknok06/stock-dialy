@@ -545,3 +545,45 @@ class QuickDiaryForm {
       }
     });
   });
+
+  // quick_diary.js に追加または修正する部分
+
+/**
+ * モーダルが表示されたときのイベント - スワイプヒントの表示/非表示を制御
+ */
+this.modal.addEventListener('shown.bs.modal', () => {
+  // フォームをリセット
+  this.resetForm();
+  
+  // 日付フィールドに明示的に今日の日付を設定
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('quick_purchase_date').value = today;
+  
+  // 最初のフィールドにフォーカス
+  setTimeout(() => {
+    this.symbolInput.focus();
+  }, 300);
+  
+  // モバイルデバイスかどうかをチェック
+  const isMobile = window.innerWidth < 768 || navigator.maxTouchPoints > 1;
+  
+  // スワイプヒントの表示/非表示
+  const swipeHint = this.modal.querySelector('.swipe-hint');
+  if (swipeHint) {
+    if (isMobile) {
+      // モバイルデバイスではスワイプヒントを表示
+      swipeHint.style.display = 'block';
+      
+      // 5秒後に非表示
+      setTimeout(() => {
+        swipeHint.style.opacity = '0';
+        setTimeout(() => {
+          swipeHint.style.display = 'none';
+        }, 500);
+      }, 5000);
+    } else {
+      // デスクトップでは非表示
+      swipeHint.style.display = 'none';
+    }
+  }
+});

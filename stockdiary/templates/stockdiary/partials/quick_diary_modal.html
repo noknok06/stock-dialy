@@ -2,8 +2,8 @@
 <div class="modal fade" id="quickDiaryModal" tabindex="-1" aria-labelledby="quickDiaryModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title" id="quickDiaryModalLabel">
+      <div class="modal-header">
+        <h5 class="modal-title text-info" id="quickDiaryModalLabel">
           <i class="bi bi-lightning-fill me-2"></i>クイック日記作成
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -11,7 +11,6 @@
       <div class="modal-body">
         <form id="quickDiaryForm" action="{% url 'stockdiary:api_create' %}" method="post" class="needs-validation" novalidate>
           {% csrf_token %}
-          
           <!-- モバイル対応タブナビゲーション -->
           <ul class="nav nav-tabs nav-fill mb-3" id="quickDiaryTabs" role="tablist">
             <li class="nav-item" role="presentation">
@@ -33,8 +32,13 @@
               </button>
             </li>
           </ul>
-          
+
+          <!-- スワイプ可能なタブコンテント -->
           <div class="tab-content" id="quickDiaryTabContent">
+            <div class="swipe-hint text-center small text-muted mb-2 d-md-none">
+              <i class="bi bi-arrow-left-right me-1"></i> 左右にスワイプでタブを切り替え
+            </div>
+            
             <!-- 基本情報タブ -->
             <div class="tab-pane fade show active" id="basic-info" role="tabpanel" aria-labelledby="basic-tab">
               <div class="row g-3">
@@ -42,28 +46,39 @@
                 <div class="col-md-6">
                   <label for="quick_stock_symbol" class="form-label">銘柄コード</label>
                   <div class="input-group">
-                    <input type="text" class="form-control" id="quick_stock_symbol" name="stock_symbol" 
-                          placeholder="例: 7203" autocomplete="off">
+                    <input type="text" class="form-control validate-inline" id="quick_stock_symbol" name="stock_symbol" 
+                          placeholder="例: 7203" autocomplete="off"
+                          hx-get="{% url 'stockdiary:validate_field' 'symbol' %}"
+                          hx-trigger="change, keyup changed delay:500ms"
+                          hx-target="#symbol-feedback"
+                          hx-indicator="#symbol-indicator">
                     <button class="btn btn-outline-primary" type="button" id="quick_fetch_stock_info">
                       <i class="bi bi-search"></i>
                     </button>
+                    <div id="symbol-indicator" class="htmx-indicator position-absolute" style="right: 50px; top: 8px;">
+                      <div class="spinner-border spinner-border-sm text-primary" role="status">
+                        <span class="visually-hidden">検証中...</span>
+                      </div>
+                    </div>
                   </div>
-                  <div class="stock-info-feedback mt-1 small"></div>
+                  <div id="symbol-feedback" class="form-text"></div>
                 </div>
                 
                 <!-- 銘柄名 -->
                 <div class="col-md-6">
                   <label for="quick_stock_name" class="form-label">銘柄名 <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control" id="quick_stock_name" name="stock_name" 
-                        placeholder="例: トヨタ自動車" required>
-                  <div class="invalid-feedback">銘柄名を入力してください</div>
+                  <input type="text" class="form-control validate-inline" id="quick_stock_name" name="stock_name" 
+                        placeholder="例: トヨタ自動車" required
+                        hx-get="{% url 'stockdiary:validate_field' 'stock_name' %}"
+                        hx-trigger="change, keyup changed delay:500ms"
+                        hx-target="#name-feedback">
+                  <div id="name-feedback" class="form-text"></div>
                 </div>
                 
                 <!-- 日付 -->
                 <div class="col-md-4">
                   <label for="quick_purchase_date" class="form-label">購入/メモ日 <span class="text-danger">*</span></label>
                   <input type="date" class="form-control" id="quick_purchase_date" name="purchase_date" required>
-                  <div class="invalid-feedback">日付を入力してください</div>
                 </div>
                 
                 <!-- 購入価格 -->
@@ -140,7 +155,7 @@
               <div class="mb-3">
                 <label for="quick_reason" class="form-label">購入理由/メモ</label>
                 <textarea class="form-control" id="quick_reason" name="reason" rows="5" 
-                         placeholder="購入理由や着目点などを記録しましょう"></textarea>
+                        placeholder="購入理由や着目点などを記録しましょう"></textarea>
               </div>
               
               <!-- ナビゲーションボタン -->

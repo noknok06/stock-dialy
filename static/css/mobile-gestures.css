@@ -670,6 +670,78 @@
     }
   }
   
+  /* ========== モーダルタブスワイプ ========== */
+  
+  /* タブコンテンツのスワイプ用スタイル */
+  #quickDiaryTabContent {
+    position: relative;
+    touch-action: pan-y;
+    user-select: none;
+    overflow: hidden;
+  }
+  
+  /* タブ切り替え時のアニメーション改善 */
+  .tab-pane.fade {
+    transition: opacity 0.25s ease-out;
+  }
+  
+  /* スワイプ方向の指示表示（オプション） */
+  #quickDiaryTabContent::before,
+  #quickDiaryTabContent::after {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-top: 2px solid rgba(var(--primary-color-rgb), 0.3);
+    border-right: 2px solid rgba(var(--primary-color-rgb), 0.3);
+    top: 50%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 5;
+    pointer-events: none;
+  }
+  
+  #quickDiaryTabContent::before {
+    left: 15px;
+    transform: translateY(-50%) rotate(-135deg);
+  }
+  
+  #quickDiaryTabContent::after {
+    right: 15px;
+    transform: translateY(-50%) rotate(45deg);
+  }
+  
+  /* スワイプ中のタブに視覚的フィードバック */
+  .tab-highlight {
+    animation: tab-glow 0.3s ease-out;
+  }
+  
+  @keyframes tab-glow {
+    0% {
+      background-color: transparent;
+    }
+    50% {
+      background-color: rgba(var(--primary-color-rgb), 0.1);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+  
+  /* モーダルタブのレスポンシブ対応 */
+  @media (max-width: 576px) {
+    #quickDiaryTabs .nav-link {
+      padding: 10px 8px;
+      font-size: 0.85rem;
+    }
+    
+    /* スワイプ中のみ指示アイコンを表示 */
+    #quickDiaryTabContent.swiping::before,
+    #quickDiaryTabContent.swiping::after {
+      opacity: 0.8;
+    }
+  }
+  
   /* CSS変数の色に対応する RGB 値を追加 */
   :root {
     --primary-color-rgb: 90, 126, 197;    /* var(--primary-color) の RGB 値 */
