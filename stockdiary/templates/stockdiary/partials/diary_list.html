@@ -1,0 +1,109 @@
+<!-- diary_list.html - 日記一覧を表示する部分テンプレート -->
+
+{% load stockdiary_filters %}
+
+{% if request.htmx.target == "diary-container" and not request.GET.page %}
+  <!-- 検索結果情報を更新 -->
+  <div hx-swap-oob="true" id="search-result-info">
+    {% if request.GET.query or request.GET.tag or request.GET.status %}
+      <div class="alert alert-info d-flex justify-content-between align-items-center">
+        <div>
+          <i class="bi bi-info-circle me-2"></i>
+          <span>検索結果: {{ diaries|length }}件</span>
+          
+          {% if request.GET.query %}
+            <span class="ms-2">キーワード: "{{ request.GET.query }}"</span>
+          {% endif %}
+          
+          {% if request.GET.tag %}
+            <span class="ms-2">タグ: 
+              {% for tag in tags %}
+                {% if request.GET.tag == tag.id|stringformat:"i" %}{{ tag.name }}{% endif %}
+              {% endfor %}
+            </span>
+          {% endif %}
+          
+          {% if request.GET.status %}
+            <span class="ms-2">保有状態: 
+              {% if request.GET.status == 'active' %}保有中
+              {% elif request.GET.status == 'sold' %}売却済み
+              {% elif request.GET.status == 'memo' %}メモのみ
+              {% endif %}
+            </span>
+          {% endif %}
+        </div>
+        
+        <a href="{% url 'stockdiary:home' %}" class="btn btn-sm btn-outline-secondary"
+          hx-get="{% url 'stockdiary:diary_list' %}" 
+          hx-target="#diary-container"
+          hx-push-url="true">
+          <i class="bi bi-x"></i> クリア
+        </a>
+      </div>
+    {% else %}
+      <!-- 検索条件がない場合は空に -->
+      <div></div>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% if diaries %}
+  {% if not request.GET.page or request.GET.page == '1' %}
+    <!-- 最初のページでない場合は、古いコンテンツを置き換えない -->
+    {% for diary in diaries %}
+      {% include "stockdiary/partials/diary_card.html" with diary=diary %}
+    {% endfor %}
+  {% else %}
+    <!-- 2ページ目以降は追加表示 -->
+    {% for diary in diaries %}
+      {% include "stockdiary/partials/diary_card.html" with diary=diary %}
+    {% endfor %}
+  {% endif %}
+
+  <!-- 無限スクロール用のトリガー要素 -->
+  {% if page_obj.has_next %}
+  <div class="grid-column-span" hx-get="{% url 'stockdiary:diary_list' %}?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}"
+       hx-trigger="revealed"
+       hx-target="#diary-container"
+       hx-swap="beforeend"
+       hx-indicator="#loading-indicator-{{ page_obj.next_page_number }}">
+    <div id="loading-indicator-{{ page_obj.next_page_number }}" class="text-center py-4 htmx-indicator">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">日記を読み込んでいます...</span>
+      </div>
+      <p class="mt-2">日記を読み込んでいます...</p>
+    </div>
+  </div>
+  {% endif %}
+{% else %}
+  {% if request.GET.query or request.GET.tag or request.GET.status %}
+    <!-- 検索条件あり・結果なしの場合 -->
+    <div class="alert alert-warning grid-column-span">
+      <i class="bi bi-exclamation-triangle me-2"></i>
+      <p class="mb-0">検索条件に一致する日記が見つかりませんでした。検索条件を変更してお試しください。</p>
+    </div>
+    {% else %}
+    <!-- 検索条件なし・日記なしの場合 -->
+    <div class="alert alert-info grid-column-span">
+      <i class="bi bi-info-circle me-2"></i>
+      <p class="mb-0">日記がありません。「新規日記作成」ボタンから最初の日記を登録してください。</p>
+    </div>
+  {% endif %}
+{% endif %}
+
+<style>
+/* グリッドレイアウトでの表示調整用スタイル */
+.grid-column-span {
+  grid-column: 1 / -1; /* すべての列にまたがる */
+}
+
+/* ローディングインジケーターを中央に表示 */
+#loading-indicator {
+  width: 100%;
+}
+
+/* アラート表示を全幅に */
+.alert {
+  width: 100%;
+}
+</style>

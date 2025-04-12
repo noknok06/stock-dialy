@@ -1,57 +1,175 @@
+{% load humanize %}
+{% load stockdiary_filters %}
+
 <div class="px-1 py-2">
-    <div class="notes-timeline">
-      {% for note in notes %}
-      <div class="note-item mb-3">
-        <div class="d-flex justify-content-between align-items-start mb-1">
-            <div class="note-date">
-              <i class="bi bi-calendar-date text-muted"></i>
-              <span class="text-muted small">{{ note.date|date:"Y年m月d日" }}</span>
-            </div>
-            <span class="badge {% if note.note_type == 'analysis' %}bg-primary
+  <div class="notes-timeline">
+    {% for note in notes %}
+    <div class="note-item mb-3" data-note-type="{{ note.note_type }}" data-importance="{{ note.importance }}">
+      <div class="note-header d-flex justify-content-between align-items-center mb-2">
+        <div class="note-meta d-flex align-items-center">
+          <span class="note-date text-muted me-2">
+            <i class="bi bi-calendar-date"></i>
+            {{ note.date|date:"Y年m月d日" }}
+          </span>
+          <span class="badge {% if note.note_type == 'analysis' %}bg-primary
                   {% elif note.note_type == 'news' %}bg-info
                   {% elif note.note_type == 'earnings' %}bg-success
                   {% elif note.note_type == 'insight' %}bg-warning
                   {% elif note.note_type == 'risk' %}bg-danger
                   {% else %}bg-secondary{% endif %} small">
-              {% if note.note_type == 'analysis' %}分析更新
-              {% elif note.note_type == 'news' %}ニュース
-              {% elif note.note_type == 'earnings' %}決算情報
-              {% elif note.note_type == 'insight' %}新たな気づき
-              {% elif note.note_type == 'risk' %}リスク要因
-              {% else %}その他{% endif %}
-            </span>
-          </div>
-          
-          {% if note.current_price %}
-          <div class="note-price small mb-1">
-            <span class="text-muted">記録時価格:</span>
-            <span class="fw-medium">{{ note.current_price|floatformat:2|intcomma }}円</span>
-            
-            {% with price_change=note.get_price_change %}
-            {% if price_change %}
-            <span class="{% if price_change > 0 %}text-success{% elif price_change < 0 %}text-danger{% endif %} ms-2">
-              ({{ price_change|floatformat:2 }}%)
-            </span>
-            {% endif %}
-            {% endwith %}
-          </div>
+            {% if note.note_type == 'analysis' %}分析更新
+            {% elif note.note_type == 'news' %}ニュース
+            {% elif note.note_type == 'earnings' %}決算情報
+            {% elif note.note_type == 'insight' %}新たな気づき
+            {% elif note.note_type == 'risk' %}リスク要因
+            {% else %}その他{% endif %}
+          </span>
+        </div>
+
+        <div class="note-importance">
+          {% if note.importance == 'high' %}
+          <i class="bi bi-exclamation-triangle text-danger" title="高重要度"></i>
+          {% elif note.importance == 'medium' %}
+          <i class="bi bi-info-circle text-warning" title="中重要度"></i>
+          {% else %}
+          <i class="bi bi-info-circle text-muted" title="低重要度"></i>
           {% endif %}
-          
-          <div class="note-content bg-light p-2 rounded">
-            {{ note.content|safe|linebreaks|truncatewords_html:30 }}
-          </div>
         </div>
       </div>
-      {% empty %}
-      <p class="text-muted">継続記録はまだありません</p>
-      {% endfor %}
-      
-      {% if diary.notes.count > 3 %}
-      <div class="text-end mt-2">
-        <a href="{% url 'stockdiary:detail' diary.id %}" class="text-primary text-decoration-none small">
-          すべての記録を見る ({{ diary.notes.count }}件) <i class="bi bi-arrow-right"></i>
-        </a>
+
+      {% if note.current_price %}
+      <div class="note-price-info small mb-2 d-flex justify-content-between align-items-center">
+        <span class="text-muted">
+          <i class="bi bi-cash-coin me-1"></i>
+          記録時価格:
+          <strong>{{ note.current_price|floatformat:2|intcomma }}円</strong>
+        </span>
+
+        {% with price_change=note.get_price_change %}
+        {% if price_change %}
+        <span class="{% if price_change > 0 %}text-success{% elif price_change < 0 %}text-danger{% endif %}">
+          ({{ price_change|floatformat:2 }}%)
+        </span>
+        {% endif %}
+        {% endwith %}
       </div>
       {% endif %}
+
+      <div class="note-content bg-light rounded p-3">
+        <div class="note-text">
+          {{ note.content|safe|linebreaks|truncatewords_html:50 }}
+        </div>
+
+        {% if note.content|wordcount > 50 %}
+        <div class="text-end mt-2">
+          <a href="{% url 'stockdiary:detail' diary.id %}" class="text-primary text-decoration-none small">
+            続きを読む <i class="bi bi-arrow-right"></i>
+          </a>
+        </div>
+        {% endif %}
+      </div>
     </div>
+    {% empty %}
+    <div class="text-center text-muted py-4">
+      <i class="bi bi-journal-text me-2"></i>
+      継続記録はまだありません
+    </div>
+    {% endfor %}
+
+    {% if diary.notes.count > 3 %}
+    <div class="text-end mt-3">
+      <a href="{% url 'stockdiary:detail' diary.id %}" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-journal-richtext me-1"></i>
+        すべての記録を見る ({{ diary.notes.count }}件)
+      </a>
+    </div>
+    {% endif %}
   </div>
+</div>
+
+<style>
+.notes-timeline {
+  position: relative;
+  padding-left: 1rem;
+}
+
+.note-item {
+  position: relative;
+  margin-bottom: 1.5rem;
+  border-left: 2px solid rgba(74, 109, 167, 0.2);
+  padding-left: 1rem;
+}
+
+.note-item:last-child {
+  margin-bottom: 0;
+}
+
+.note-item::before {
+  content: '';
+  position: absolute;
+  left: -0.5rem;
+  top: 0;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  border: 2px solid white;
+}
+
+.note-item[data-importance="high"]::before {
+  background-color: var(--danger-color);
+}
+
+.note-item[data-importance="medium"]::before {
+  background-color: var(--primary-color);
+}
+
+.note-item[data-importance="low"]::before {
+  background-color: var(--light-text);
+}
+
+.note-date {
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+}
+
+.note-content {
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-color);
+}
+
+.note-price-info {
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 576px) {
+  .notes-timeline {
+    padding-left: 0.75rem;
+  }
+  
+  .note-item {
+    padding-left: 0.75rem;
+  }
+  
+  .note-content {
+    padding: 0.5rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* アニメーション効果（オプション） */
+.notes-timeline .note-item {
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.notes-timeline .note-item:hover {
+  transform: translateX(3px);
+}
+</style>

@@ -1,0 +1,173 @@
+{% load static %}
+<!-- calendar_partial.html - モバイルとデスクトップ共通のカレンダー部分テンプレート -->
+
+{% if view == 'mobile' %}
+<!-- モバイル用カレンダー -->
+<div class="calendar-header">
+  <!-- 日付表示と操作ボタン -->
+  <div class="calendar-controls">
+    <div class="calendar-date-display" id="desktop-current-year-month">
+      {{ current_date|date:"Y年n月" }}
+    </div>
+    <div class="calendar-nav-buttons">
+      <button class="calendar-nav-button" data-month="{{ prev_month|date:'Y-m' }}"
+              hx-get="{% url 'stockdiary:calendar_partial' %}?view=mobile&month={{ prev_month|date:'Y-m' }}"
+              hx-target="#mobile-calendar-container"
+              hx-indicator="#mobile-calendar-container .htmx-indicator">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+      <button class="calendar-nav-button" data-month="{{ next_month|date:'Y-m' }}"
+              hx-get="{% url 'stockdiary:calendar_partial' %}?view=mobile&month={{ next_month|date:'Y-m' }}"
+              hx-target="#mobile-calendar-container"
+              hx-indicator="#mobile-calendar-container .htmx-indicator">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+      <button class="calendar-nav-button" data-month="{{ today|date:'Y-m' }}"
+              hx-get="{% url 'stockdiary:calendar_partial' %}?view=mobile&month={{ today|date:'Y-m' }}"
+              hx-target="#mobile-calendar-container"
+              hx-indicator="#mobile-calendar-container .htmx-indicator">
+        今日
+      </button>
+    </div>
+    <button class="calendar-view-toggle d-none">月</button>
+  </div>
+<!-- カレンダー本体 -->
+<div id="mobile-calendar" class="calendar-container">
+  <table class="fc-scrollgrid-sync-table" style="width: 100%;">
+    <thead>
+      <tr>
+        <th class="text-center py-2">日</th>
+        <th class="text-center py-2">月</th>
+        <th class="text-center py-2">火</th>
+        <th class="text-center py-2">水</th>
+        <th class="text-center py-2">木</th>
+        <th class="text-center py-2">金</th>
+        <th class="text-center py-2">土</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for week in calendar_weeks %}
+        <tr>
+          {% for day in week %}
+          <!-- モバイル用 -->
+          <td class="text-center position-relative {% if day.is_today %}bg-light{% endif %} {% if day.is_other_month %}text-muted{% endif %}"
+            style="height: 60px; cursor: pointer;"
+            hx-get="{% url 'stockdiary:day_events' %}?date={{ day.date|date:'Y-m-d' }}&view=mobile"
+            hx-target="#mobile-day-events"
+            hx-swap="innerHTML"
+            hx-indicator="#day-events-loading-mobile" 
+            {% if day.has_events %}data-has-events="true"{% endif %}
+            onclick="document.querySelectorAll('td').forEach(td => td.classList.remove('fc-day-clicked')); this.classList.add('fc-day-clicked');">
+            <div class="py-1">{{ day.day }}</div>
+            {% if day.has_events %}
+                <div style="position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%);">
+                  {% for event_type in day.event_types %}
+                    <span class="d-inline-block rounded-circle" 
+                          style="width: 6px; height: 6px; margin: 0 1px; 
+                                 background-color: {% if event_type == 'purchase' %}var(--success-color)
+                                                  {% elif event_type == 'sell' %}var(--danger-color)
+                                                  {% else %}var(--info-color){% endif %};">
+                    </span>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<!-- デスクトップ用カレンダー -->
+<div class="calendar-header">
+  <!-- タイトル行 -->
+  <div class="calendar-title-row">
+    <div class="calendar-title">
+      <i class="bi bi-calendar-week"></i> 投資カレンダー
+    </div>
+    <div class="calendar-badges">
+      <span class="badge bg-success">購入</span>
+      <span class="badge bg-danger">売却</span>
+      <span class="badge bg-info">メモ</span>
+    </div>
+  </div>
+
+  <!-- 日付表示と操作ボタン -->
+  <div class="calendar-controls">
+    <div class="calendar-date-display" id="desktop-current-year-month">
+      {{ current_date|date:"Y年n月" }}
+    </div>
+    <div class="calendar-nav-buttons">
+      <button class="calendar-nav-button" 
+              hx-get="{% url 'stockdiary:calendar_partial' %}?view=desktop&month={{ prev_month|date:'Y-m' }}"
+              hx-target="#desktop-calendar-container"
+              hx-indicator="#desktop-calendar-container .htmx-indicator">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+      <button class="calendar-nav-button" 
+              hx-get="{% url 'stockdiary:calendar_partial' %}?view=desktop&month={{ next_month|date:'Y-m' }}"
+              hx-target="#desktop-calendar-container"
+              hx-indicator="#desktop-calendar-container .htmx-indicator">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+      <button class="calendar-nav-button" 
+              hx-get="{% url 'stockdiary:calendar_partial' %}?view=desktop&month={{ today|date:'Y-m' }}"
+              hx-target="#desktop-calendar-container"
+              hx-indicator="#desktop-calendar-container .htmx-indicator">
+        今日
+      </button>
+    </div>
+    <button class="calendar-view-toggle d-none">月</button>
+  </div>
+</div>
+
+<!-- カレンダー本体 -->
+<div id="desktop-calendar" class="calendar-container">
+  <table class="fc-scrollgrid-sync-table" style="width: 100%;">
+    <thead>
+      <tr>
+        <th class="text-center py-2">日</th>
+        <th class="text-center py-2">月</th>
+        <th class="text-center py-2">火</th>
+        <th class="text-center py-2">水</th>
+        <th class="text-center py-2">木</th>
+        <th class="text-center py-2">金</th>
+        <th class="text-center py-2">土</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for week in calendar_weeks %}
+        <tr>
+          {% for day in week %}
+            <!-- カレンダー日付セルの修正 -->
+            <td class="text-center position-relative {% if day.is_today %}bg-light{% endif %} {% if day.is_other_month %}text-muted{% endif %}"
+              style="height: 60px; cursor: pointer;"
+              hx-get="{% url 'stockdiary:day_events' %}?date={{ day.date|date:'Y-m-d' }}&view=desktop"
+              hx-target="#desktop-day-events"
+              hx-swap="innerHTML"
+              hx-indicator="#day-events-loading-desktop"
+              {% if day.has_events %}data-has-events="true"{% endif %}
+              onclick="document.querySelectorAll('td').forEach(td => td.classList.remove('fc-day-clicked')); this.classList.add('fc-day-clicked');">
+              <div class="py-1">{{ day.day }}</div>
+              {% if day.has_events %}
+                <div style="position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%);">
+                  {% for event_type in day.event_types %}
+                    <span class="d-inline-block rounded-circle" 
+                          style="width: 8px; height: 8px; margin: 0 2px; 
+                                 background-color: {% if event_type == 'purchase' %}var(--success-color)
+                                                  {% elif event_type == 'sell' %}var(--danger-color)
+                                                  {% else %}var(--info-color){% endif %};">
+                    </span>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}

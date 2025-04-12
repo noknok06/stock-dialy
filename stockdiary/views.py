@@ -23,12 +23,16 @@ from decimal import Decimal, InvalidOperation
 from django.core.paginator import EmptyPage, PageNotAnInteger
 
 from collections import Counter, defaultdict
-from datetime import timedelta
+from django.core.paginator import Paginator
+from django.shortcuts import render
+from django.urls import reverse
+from django.http import HttpResponse
+from datetime import datetime, timedelta
+import calendar
 
 import traceback
 
 from django.template import engines, Context
-from django.contrib.humanize.templatetags.humanize import intcomma
 from stockdiary.templatetags.stockdiary_filters import mul_filter, sub_filter, div_filter
 import html
 import json
@@ -1167,3 +1171,374 @@ class DiaryTabContentView(LoginRequiredMixin, View):
             'risk': 'リスク要因'
         }
         return type_displays.get(note_type, 'その他')
+
+def calendar_partial(request):
+    """カレンダー部分レンダリング用ビュー"""
+    try:
+        view_type = request.GET.get('view', 'desktop')
+        
+        # 月を取得（指定がなければ現在の月）
+        month_param = request.GET.get('month')
+        if month_param:
+            try:
+                year, month = map(int, month_param.split('-'))
+                current_date = datetime(year, month, 1)
+            except (ValueError, TypeError):
+                current_date = timezone.now().replace(day=1)
+        else:
+            current_date = timezone.now().replace(day=1)
+        
+        # 前月と次月
+        prev_month = (current_date - timedelta(days=1)).replace(day=1)
+        next_month = (current_date.replace(day=28) + timedelta(days=5)).replace(day=1)
+        
+        # 今日の日付
+        today = timezone.now().date()
+        
+        # カレンダーの日付を生成
+        _, days_in_month = calendar.monthrange(current_date.year, current_date.month)
+        first_day_weekday = current_date.weekday()
+        
+        # 日本のカレンダーは日曜始まり (0) なので調整
+        first_day_weekday = (first_day_weekday + 1) % 7
+        
+        # 前月の日付を埋める
+        pre_days = []
+        if first_day_weekday > 0:
+            prev_month_last_day = (current_date - timedelta(days=1)).day
+            for i in range(first_day_weekday):
+                day_date = prev_month.replace(day=prev_month_last_day - first_day_weekday + i + 1)
+                pre_days.append({
+                    'day': day_date.day,
+                    'date': day_date.date(),
+                    'is_other_month': True,
+                    'is_today': day_date.date() == today,
+                    'has_events': False,
+                    'event_types': []
+                })
+        
+        # 現在の月の日付
+        current_days = []
+        for i in range(1, days_in_month + 1):
+            day_date = current_date.replace(day=i)
+            
+            # イベントをデータベースから取得
+            date_str = day_date.date().strftime('%Y-%m-%d')
+            events = StockDiary.objects.filter(
+                user=request.user,
+                purchase_date=date_str
+            ).values('id', 'is_memo')
+            
+            sell_events = StockDiary.objects.filter(
+                user=request.user,
+                sell_date=date_str
+            ).values('id')
+            
+            has_events = events.exists() or sell_events.exists()
+            event_types = []
+            
+            if has_events:
+                # イベントタイプの決定
+                if any(not e['is_memo'] for e in events):
+                    event_types.append('purchase')
+                
+                if any(e['is_memo'] for e in events):
+                    event_types.append('memo')
+                
+                if sell_events.exists():
+                    event_types.append('sell')
+            
+            current_days.append({
+                'day': i,
+                'date': day_date.date(),
+                'is_other_month': False,
+                'is_today': day_date.date() == today,
+                'has_events': has_events,
+                'event_types': event_types
+            })
+        
+        # 翌月の日付を埋める
+        post_days = []
+        total_days = len(pre_days) + len(current_days)
+        remaining_cells = 42 - total_days  # 6行x7列=42セル
+        
+        for i in range(1, remaining_cells + 1):
+            day_date = next_month.replace(day=i)
+            post_days.append({
+                'day': i,
+                'date': day_date.date(),
+                'is_other_month': True,
+                'is_today': day_date.date() == today,
+                'has_events': False,
+                'event_types': []
+            })
+        
+        # 週ごとにグループ化
+        all_days = pre_days + current_days + post_days
+        calendar_weeks = [all_days[i:i+7] for i in range(0, len(all_days), 7)]
+        
+        context = {
+            'view': view_type,
+            'current_date': current_date,
+            'prev_month': prev_month,
+            'next_month': next_month,
+            'today': today,
+            'calendar_weeks': calendar_weeks,
+        }
+        
+        return render(request, 'stockdiary/partials/calendar_partial.html', context)
+    
+    except Exception as e:
+        import traceback
+        print(f"Calendar rendering error: {str(e)}")
+        traceback.print_exc()
+        
+        return HttpResponse(
+            f'<div class="alert alert-danger">カレンダーの読み込みに失敗しました: {str(e)}</div>',
+            status=500
+        )
+
+def day_events(request):
+    """特定の日付のイベントを表示するビュー"""
+    try:
+        date_str = request.GET.get('date')
+        view_type = request.GET.get('view', 'desktop')
+        
+        # 日付パースのエラーハンドリング
+        try:
+            event_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except (ValueError, TypeError):
+            # 無効な日付の場合は今日の日付を使用
+            event_date = timezone.now().date()
+        
+        # クエリのデバッグ
+        print(f"Fetching events for date: {event_date}, view: {view_type}")
+        
+        # 指定日付のイベントを取得
+        purchase_events = StockDiary.objects.filter(
+            user=request.user,
+            purchase_date=event_date
+        ).select_related('user')
+        
+        sell_events = StockDiary.objects.filter(
+            user=request.user,
+            sell_date=event_date
+        ).select_related('user')
+        
+        # デバッグログ
+        print(f"Found {purchase_events.count()} purchase events and {sell_events.count()} sell events")
+        
+        # イベントリストの作成
+        events = []
+        
+        for diary in purchase_events:
+            events.append({
+                'title': diary.stock_name,
+                'symbol': diary.stock_symbol,
+                'url': reverse('stockdiary:detail', kwargs={'pk': diary.id}),
+                'event_type': 'memo' if diary.is_memo else 'purchase',
+                'price': diary.purchase_price,
+                'quantity': diary.purchase_quantity
+            })
+        
+        for diary in sell_events:
+            events.append({
+                'title': diary.stock_name,
+                'symbol': diary.stock_symbol,
+                'url': reverse('stockdiary:detail', kwargs={'pk': diary.id}),
+                'event_type': 'sell',
+                'price': diary.sell_price,
+                'quantity': diary.purchase_quantity
+            })
+        
+        events_count = len(events)
+        
+        # リストの先頭5件だけを表示
+        events = events[:5]
+        
+        context = {
+            'date': event_date,
+            'events': events,
+            'events_count': events_count,
+            'view': view_type
+        }
+        
+        return render(request, 'stockdiary/partials/day_events.html', context)
+    
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Day events error: {str(e)}")
+        print(error_details)
+        
+        return HttpResponse(
+            f'<div class="alert alert-warning m-2"><i class="bi bi-exclamation-triangle me-2"></i>イベントの読み込みに失敗しました。</div>',
+            status=200  # 500ではなく200を返す
+        )
+        
+def diary_list(request):
+    """日記リストを表示するビュー（検索・フィルター機能付き）"""
+    try:
+        # StockDiaryListViewと同様の処理を実装
+        queryset = StockDiary.objects.filter(user=request.user).order_by('-purchase_date')
+        queryset = queryset.select_related('user').prefetch_related('tags', 'notes')
+        
+        # 検索フィルター
+        query = request.GET.get('query', '')
+        tag_id = request.GET.get('tag', '')
+        status = request.GET.get('status', '')
+        
+        if query:
+            queryset = queryset.filter(
+                Q(stock_name__icontains=query) | 
+                Q(stock_symbol__icontains=query) |
+                Q(reason__icontains=query) |
+                Q(memo__icontains=query)
+            )
+        
+        if tag_id:
+            queryset = queryset.filter(tags__id=tag_id)
+        
+        # 保有状態によるフィルタリング
+        if status == 'active':
+            queryset = queryset.filter(
+                sell_date__isnull=True,
+                purchase_price__isnull=False,
+                purchase_quantity__isnull=False
+            )
+        elif status == 'sold':
+            queryset = queryset.filter(sell_date__isnull=False)
+        elif status == 'memo':
+            queryset = queryset.filter(
+                Q(purchase_price__isnull=True) | 
+                Q(purchase_quantity__isnull=True) | 
+                Q(is_memo=True)
+            )
+            
+        # ページネーション
+        paginator = Paginator(queryset, 4)  # 1ページ4件
+        page = request.GET.get('page', 1)
+        
+        try:
+            diaries = paginator.page(page)
+        except (PageNotAnInteger, EmptyPage):
+            diaries = paginator.page(1)
+        
+        # タグ情報を取得
+        tags = Tag.objects.filter(user=request.user)
+        
+        context = {
+            'diaries': diaries,
+            'page_obj': diaries,
+            'tags': tags,
+            'request': request,
+        }
+        
+        return render(request, 'stockdiary/partials/diary_list.html', context)
+    
+    except Exception as e:
+        import traceback
+        print(f"Diary list error: {str(e)}")
+        traceback.print_exc()
+        
+        return HttpResponse(
+            f'<div class="alert alert-danger">日記リストの読み込みに失敗しました: {str(e)}</div>',
+            status=500
+        )
+
+def tab_content(request, diary_id, tab_type):
+    """日記カードのタブコンテンツを表示するビュー"""
+    try:
+        # 厳密なユーザー認証と日記の取得
+        try:
+            diary = StockDiary.objects.get(id=diary_id, user=request.user)
+        except StockDiary.DoesNotExist:
+            return HttpResponse(
+                '<div class="alert alert-warning">指定された日記が見つかりません。</div>', 
+                status=404
+            )
+
+        context = {'diary': diary}
+        
+        try:
+            if tab_type == 'notes':
+                notes = diary.notes.all().order_by('-date')[:3]
+                context['notes'] = notes
+                template_name = 'stockdiary/partials/tab_notes.html'
+            
+            elif tab_type == 'analysis':
+                from analysis_template.models import DiaryAnalysisValue
+                from collections import defaultdict
+                
+                template_groups = []
+                analysis_values = DiaryAnalysisValue.objects.filter(diary=diary).select_related('analysis_item__template')
+                
+                templates_map = defaultdict(list)
+                for value in analysis_values:
+                    if hasattr(value.analysis_item, 'template') and value.analysis_item.template:
+                        templates_map[value.analysis_item.template.id].append(value)
+                
+                for template_id, values in templates_map.items():
+                    if values:
+                        template = values[0].analysis_item.template
+                        template_groups.append({
+                            'template': template,
+                            'values': values[:5]  # 最初の5項目
+                        })
+                
+                context['template_groups'] = template_groups
+                template_name = 'stockdiary/partials/tab_analysis.html'
+            
+            elif tab_type == 'details':
+                if diary.purchase_price and diary.purchase_quantity:
+                    context['total_investment'] = diary.purchase_price * diary.purchase_quantity
+                    
+                    if diary.sell_price and diary.sell_date:
+                        profit = (diary.sell_price - diary.purchase_price) * diary.purchase_quantity
+                        profit_rate = ((diary.sell_price / diary.purchase_price) - 1) * 100
+                        context['profit'] = profit
+                        context['profit_rate'] = profit_rate
+                
+                template_name = 'stockdiary/partials/tab_details.html'
+            
+            else:
+                return HttpResponse(
+                    '<div class="alert alert-warning">無効なタブタイプです。</div>', 
+                    status=400
+                )
+
+            return render(request, template_name, context)
+
+        except Exception as render_error:
+            print(f"タブレンダリングエラー: {str(render_error)}")
+            return HttpResponse(
+                f'<div class="alert alert-danger">タブコンテンツの読み込み中にエラーが発生しました: {str(render_error)}</div>', 
+                status=500
+            )
+
+    except Exception as e:
+        print(f"想定外のエラー: {str(e)}")
+        return HttpResponse(
+            '<div class="alert alert-danger">予期せぬエラーが発生しました。</div>', 
+            status=500
+        )
+
+def calendar_view(request):
+    """
+    カレンダー全体ビュー - HTMLおよびJavaScriptの挿入問題を回避するために単純なビューを使用
+    """
+    # ここでカレンダーデータを準備
+    today = timezone.now().date()
+    month = today.month
+    year = today.year
+    
+    # ユーザーの日記データを取得
+    user_diaries = StockDiary.objects.filter(user=request.user)
+    
+    # 単純なレスポンスを返す
+    return render(request, 'stockdiary/calendar.html', {
+        'today': today,
+        'month': month,
+        'year': year,
+        'diaries': user_diaries
+    })    

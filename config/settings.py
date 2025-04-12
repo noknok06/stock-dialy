@@ -122,7 +122,8 @@ THIRD_PARTY_APPS = [
     'allauth.socialaccount.providers.google',
     'csp',
     'axes',
-]
+    'django_htmx',
+    ]
 
 # ローカルアプリ
 LOCAL_APPS = [
@@ -356,13 +357,16 @@ MAINTENANCE_END_TIME = '2025年3月23日 10:00 (JST)'  # メンテナンス終�
 MAINTENANCE_CONTACT_EMAIL = 'kabulog.information@gmail.com'  # 問い合わせ用メール
 
 # コンテンツセキュリティポリシー設定
-CSP_DEFAULT_SRC = ["'self'", "cdn.jsdelivr.net", "*.googleapis.com", "*.gstatic.com", "*.bootstrapcdn.com"]
+CSP_DEFAULT_SRC = ["'self'", "cdn.jsdelivr.net", "*.googleapis.com", "*.gstatic.com", "*.bootstrapcdn.com", "unpkg.com"]
 CSP_SCRIPT_SRC = ["'self'", "'unsafe-inline'", "'unsafe-eval'", 
-                  "cdn.jsdelivr.net", "*.jquery.com", "*.googleadservices.com", 
-                  "*.google.com", "*.googleapis.com", "*.gstatic.com",
-                  "*.googlesyndication.com", "*.doubleclick.net", "*.bootstrapcdn.com"]
-CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", "*.googleapis.com", "*.bootstrapcdn.com", "cdn.jsdelivr.net", "https:", "data:"]
-CSP_FONT_SRC = ["'self'", "data:", "*.googleapis.com", "*.gstatic.com", "*.bootstrapcdn.com", "cdn.jsdelivr.net"]
+                 "unpkg.com", "https://unpkg.com",
+                 "cdn.jsdelivr.net", "*.jquery.com", "*.googleadservices.com", 
+                 "*.google.com", "*.googleapis.com", "*.gstatic.com",
+                 "*.googlesyndication.com", "*.doubleclick.net", "*.bootstrapcdn.com"]
+CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", "*.googleapis.com", "*.bootstrapcdn.com", 
+                 "cdn.jsdelivr.net", "https:", "data:"]
+CSP_FONT_SRC = ["'self'", "data:", "*.googleapis.com", "*.gstatic.com", 
+                "*.bootstrapcdn.com", "cdn.jsdelivr.net"]
 CSP_IMG_SRC = ["'self'", "data:", "blob:", "*.google.com", "*.googleapis.com", "*.gstatic.com", "*.doubleclick.net"]
 CSP_CONNECT_SRC = ["'self'", "*.google.com", "*.doubleclick.net", "*.googleapis.com"]
 CSP_FRAME_SRC = ["'self'", "*.google.com", "*.doubleclick.net"]

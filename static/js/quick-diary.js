@@ -142,7 +142,7 @@ class QuickDiaryForm {
      */
     async loadTagsData() {
         try {
-          console.log('タグデータの読み込みを開始します...');
+          // console.log('タグデータの読み込みを開始します...');
           const response = await fetch('/tags/api/list/');
           
           if (!response.ok) {
@@ -150,7 +150,7 @@ class QuickDiaryForm {
           }
           
           const data = await response.json();
-          console.log('取得したタグデータ:', data);
+          // console.log('取得したタグデータ:', data);
           
           // タグのオプションを作成
           if (this.tagsSelect) {
@@ -162,12 +162,9 @@ class QuickDiaryForm {
                 option.value = tag.id;
                 option.textContent = tag.name;
                 this.tagsSelect.appendChild(option);
-                console.log(`タグを追加しました: ${tag.name} (ID: ${tag.id})`);
               });
               
-              console.log(`合計 ${data.tags.length} 個のタグを追加しました`);
             } else {
-              console.log('タグデータが空です。タグはありません。');
               // タグがない場合は「タグがありません」というオプションを追加
               const emptyOption = document.createElement('option');
               emptyOption.disabled = true;
@@ -177,18 +174,14 @@ class QuickDiaryForm {
             
             // Select2があれば初期化（オプション）
             if (typeof $ !== 'undefined' && $.fn.select2) {
-              console.log('Select2を初期化します');
               $(this.tagsSelect).select2({
                 placeholder: 'タグを選択...',
                 width: '100%'
               });
             }
           } else {
-            console.warn('タグセレクト要素が見つかりません');
           }
-        } catch (error) {
-          console.warn('タグの読み込みエラー:', error);
-          
+        } catch (error) {          
           // エラーが発生した場合の処理
           if (this.tagsSelect) {
             this.tagsSelect.innerHTML = '';
@@ -343,7 +336,7 @@ class QuickDiaryForm {
             // 日付が設定されていない場合は現在の日付を設定
             const today = new Date().toISOString().split('T')[0];
             formData.set('purchase_date', today);
-            console.log('日付が設定されていないため、現在の日付を使用します:', today);
+            // console.log('日付が設定されていないため、現在の日付を使用します:', today);
           }
           
           // APIリクエスト
@@ -406,11 +399,9 @@ class QuickDiaryForm {
             newDiaryCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }, 200);
             
-            console.log('新しい日記カードがDOMに追加されました');
             return; // 日記カード追加に成功したらここで終了
           }
           // 日記カードの直接追加に失敗した場合は、従来通りのリダイレクトまたはリロード
-          console.log('直接DOMに追加できなかったため、ページをリロードします');
           if (data.redirect_url) {
             // 作成された日記の詳細ページに遷移
             window.location.href = data.redirect_url;

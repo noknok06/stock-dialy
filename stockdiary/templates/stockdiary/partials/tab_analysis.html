@@ -1,3 +1,126 @@
+<style>
+  /* 分析タブの詳細なカスタムスタイル */
+.analysis-templates-container {
+  position: relative;
+}
+
+.analysis-template-card {
+  background-color: white;
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 1rem;
+  transition: all 0.2s ease;
+}
+
+.analysis-template-card:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+}
+
+.analysis-template-header {
+  margin-bottom: 0.75rem;
+}
+
+.analysis-template-header h6 {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.template-completion-badge .badge {
+  font-size: 0.75rem;
+  padding: 0.25em 0.5em;
+}
+
+.analysis-items-preview {
+  background-color: rgba(var(--bs-primary-rgb), 0.03);
+  border-radius: var(--border-radius);
+  padding: 0.75rem;
+}
+
+.analysis-preview-item {
+  border-bottom: 1px dotted rgba(0, 0, 0, 0.1);
+  padding: 0.5rem 0;
+  transition: background-color 0.2s ease;
+}
+
+.analysis-preview-item:last-child {
+  border-bottom: none;
+}
+
+.analysis-preview-item:hover {
+  background-color: rgba(var(--bs-primary-rgb), 0.05);
+}
+
+.analysis-item-name {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.analysis-item-value {
+  font-weight: 500;
+  text-align: right;
+}
+
+.analysis-item-value.text-success {
+  color: var(--success-color) !important;
+}
+
+.analysis-item-value.text-danger {
+  color: var(--danger-color) !important;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 576px) {
+  .analysis-template-card {
+    padding: 0.75rem;
+  }
+
+  .analysis-items-preview {
+    padding: 0.5rem;
+  }
+
+  .analysis-preview-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .analysis-item-name,
+  .analysis-item-value {
+    font-size: 0.85rem;
+  }
+
+  .analysis-item-value {
+    margin-top: 0.25rem;
+    align-self: flex-start;
+  }
+}
+
+/* アニメーション */
+@keyframes templateEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.analysis-template-card {
+  animation: templateEntrance 0.3s ease-out;
+  animation-fill-mode: backwards;
+}
+
+.analysis-template-card:nth-child(2n) {
+  animation-delay: 0.1s;
+}
+
+.analysis-template-card:nth-child(3n) {
+  animation-delay: 0.2s;
+}
+</style>
 <div class="px-1 py-2">
     {% if template_groups %}
       {% for group in template_groups %}

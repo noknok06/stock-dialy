@@ -7,25 +7,16 @@
 {% block head %}
 <!-- 共通スタイルシートを読み込み -->
 <link rel="stylesheet" href="{% static 'css/common.css' %}">
-<!-- 日記テーマCSS -->
 <link rel="stylesheet" href="{% static 'css/diary-theme.css' %}">
-<!-- モバイル最適化CSS -->
-<link rel="stylesheet" href="{% static 'css/mobile-friendly.css' %}">
 <!-- FullCalendar CSS -->
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'css/speed-dial.css' %}">
 <link rel="stylesheet" href="{% static 'css/quick-diary.css' %}">
 
 <style>
-
-/* 日記カードタブUIのスタイル */
+/* 日記カードタブのスタイル */
 .diary-card-tabs {
   margin-top: 1rem;
-}
-
-.card-tabs {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  margin-bottom: 0.75rem;
 }
 
 .card-tabs .nav-link {
@@ -67,262 +58,90 @@
   margin-right: 0.3rem;
 }
 
-/* 理由コンテンツのスタイル */
-.reason-content {
-  font-size: 0.95rem;
-  line-height: 1.5;
-  color: var(--text-color);
-  background-color: rgba(255, 255, 255, 0.6);
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  /* テキストの最大高さを設定 */
-  max-height: 300px;
-  overflow-y: auto;
+/* 検索ハイライト */
+.search-highlight {
+  background-color: #ffc107;
+  color: #000;
+  padding: 0 2px;
+  border-radius: 2px;
+  font-weight: bold;
 }
 
-/* 分析プレビューのスタイル */
-.analysis-template-summary {
-  background-color: rgba(255, 255, 255, 0.6);
-  border-radius: 0.5rem;
-  padding: 0.75rem;
+/* 日記カードの強調 */
+.diary-card-highlight {
+  border-left: 3px solid #ffc107 !important;
 }
 
-.analysis-template-summary h6 {
-  font-weight: 600;
-  color: var(--primary-color);
+/* インジケーターのスタイルを改善 */
+.htmx-indicator {
+  opacity: 0;
+  transition: opacity 200ms ease-in;
+  display: none;
 }
 
-.analysis-item-preview {
-  margin-top: 0.75rem;
+.htmx-request .htmx-indicator {
+  opacity: 1;
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
 }
 
-.analysis-preview-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.35rem 0;
-  border-bottom: 1px dotted rgba(0, 0, 0, 0.1);
-  font-size: 0.9rem;
+/* インジケーターを常に表示 */
+#day-events-loading-desktop,
+#day-events-loading-mobile {
+  display: none !important;
 }
 
-.analysis-preview-item:last-child {
-  border-bottom: none;
+.htmx-request #day-events-loading-desktop,
+.htmx-request #day-events-loading-mobile {
+  display: flex !important;
 }
 
-.analysis-preview-item .key {
-  color: var(--text-light);
-  flex: 1;
+/* 無限スクロールのローディング表示 */
+#loading-indicator {
+  padding: 1rem;
+  margin: 1rem 0;
+  text-align: center;
 }
 
-.analysis-preview-item .value {
-  font-weight: 500;
-  text-align: right;
-  padding-left: 0.5rem;
+#loading-indicator .spinner-border {
+  width: 2rem;
+  height: 2rem;
 }
 
-/* レスポンシブ対応 */
-@media (max-width: 576px) {
-  .card-tabs .nav-link {
-    padding: 0.3rem 0.5rem;
-    font-size: 0.8rem;
-  }
-  
-  .card-tabs .nav-link i {
-    margin-right: 0.2rem;
-  }
-  
-  .reason-content {
-    padding: 0.5rem;
-    font-size: 0.9rem;
-  }
-  
-  .analysis-preview-item {
-    font-size: 0.85rem;
-  }
+/* オフラインモード用 */
+.offline-alert {
+  display: none;
 }
-.notes-timeline {
-  position: relative;
-  padding-left: 1rem;
+.is-offline .offline-alert {
+  display: block;
 }
 
-.note-item {
-  position: relative;
-  margin-bottom: 1.5rem;
-  border-left: 2px solid rgba(74, 109, 167, 0.2);
-  padding-left: 1rem;
+/* PCでの2列表示用スタイル追加 */
+.home-diary-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
 }
 
-.note-item:last-child {
-  margin-bottom: 0;
-}
-
-.note-item::before {
-  content: '';
-  position: absolute;
-  left: -0.5rem;
-  top: 0;
-  width: 1rem;
-  height: 1rem;
-  border-radius: 50%;
-  background-color: var(--primary-color);
-  border: 2px solid white;
-}
-
-.note-item[data-importance="high"]::before {
-  background-color: var(--danger-color);
-}
-
-.note-item[data-importance="medium"]::before {
-  background-color: var(--primary-color);
-}
-
-.note-item[data-importance="low"]::before {
-  background-color: var(--light-text);
-}
-
-.note-date {
-  font-size: 0.85rem;
-  margin-bottom: 0.25rem;
-}
-
-.note-content {
-  background-color: rgba(255, 255, 255, 0.8);
-  border-radius: 0.5rem;
-  padding: 0.75rem;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  font-size: 0.9rem;
-  line-height: 1.5;
-  color: var(--text-color);
-  max-height: 150px;
-  overflow-y: auto;
-}
-
-.note-price {
-  margin-bottom: 0.5rem;
-  font-size: 0.85rem;
-}
-
-/* レスポンシブ対応 */
-@media (max-width: 576px) {
-  .notes-timeline {
-    padding-left: 0.75rem;
-  }
-  
-  .note-item {
-    padding-left: 0.75rem;
-  }
-  
-  .note-content {
-    padding: 0.5rem;
-    font-size: 0.85rem;
-    max-height: 120px;
+/* タブレット以上のサイズでは2列表示に */
+@media (min-width: 992px) {
+  .home-diary-grid {
+    grid-template-columns: 1fr 1fr;
   }
 }
 
-/* アニメーション効果（オプション） */
-.notes-timeline .note-item {
-  transition: transform 0.2s, opacity 0.2s;
+/* グリッドレイアウトでの表示調整用スタイル */
+.grid-column-span {
+  grid-column: 1 / -1; /* すべての列にまたがる */
 }
-
-.notes-timeline .note-item:hover {
-  transform: translateX(3px);
-}
-</style>
-
-<!-- 既存のstyleはそのまま -->
-<style>
-  /* カレンダーイベントスタイル */
-  .purchase-event {
-    background-color: var(--success-color);
-    border-color: var(--success-color);
-  }
-
-  .sell-event {
-    background-color: var(--danger-color);
-    border-color: var(--danger-color);
-  }
-
-  .memo-event {
-    background-color: var(--info-color);
-    border-color: var(--info-color);
-    opacity: 0.8;
-  }
-
-  /* 日付クリック時のスタイル */
-  .fc-day-clicked {
-    background-color: rgba(74, 109, 167, 0.2) !important;
-    box-shadow: inset 0 0 0 2px var(--primary-color) !important;
-  }
-
-  /* 今日の日付と選択日が重なった場合 */
-  .fc-day-today.fc-day-clicked {
-    background-color: rgba(74, 109, 167, 0.3) !important;
-  }
-
-  /* イベントアイテムのスタイル調整 */
-  .calendar-event-item {
-    text-decoration: none;
-    color: inherit;
-    padding: 0.75rem;
-    border-radius: 0.375rem;
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    transition: background-color 0.2s;
-    background-color: rgba(249, 250, 251, 0.5);
-  }
-
-  .calendar-event-item:hover {
-    background-color: rgba(243, 244, 246, 1);
-  }
-  
-  /* 検索キーワードハイライト */
-  .search-highlight {
-    background-color: #ffc107;
-    color: #000;
-    padding: 0 2px;
-    border-radius: 2px;
-    font-weight: bold;
-  }
-
-  /* 検索条件表示バッジ */
-  .search-badge {
-    display: inline-flex;
-    align-items: center;
-    background-color: #f1f1f1;
-    color: #333;
-    padding: 0.25rem 0.5rem;
-    border-radius: 1rem;
-    margin-right: 0.5rem;
-    font-size: 0.85rem;
-  }
-
-  .search-badge i {
-    margin-right: 0.25rem;
-  }
-
-  /* 検索関連カード装飾 */
-  .diary-card-highlight {
-    border-left: 3px solid #ffc107 !important;
-  }
-
-  /* 無限スクロール用ローディングインジケーター */
-  #loading-indicator {
-    padding: 1rem;
-    margin: 1rem 0;
-    text-align: center;
-  }
-
-  #loading-indicator .spinner-border {
-    width: 2rem;
-    height: 2rem;
-  }
-}
-
 </style>
 {% endblock %}
 
 {% block content %}
+<!-- CSRF トークンを追加 -->
+{% csrf_token %}
+
 <div class="container py-4">
   <!-- ヘッダー部分 -->
   <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
@@ -331,7 +150,8 @@
       <i class="bi bi-plus-lg me-1"></i> 新規作成
     </a>
   </div>
-  <!-- 修正済みのカレンダーセクション（PC/スマホ共通部分を修正） -->
+
+  <!-- カレンダーセクション - HTMX対応 -->
   <div class="calendar-section mb-4">
     <!-- スマホ用カレンダーアコーディオン -->
     <div class="d-lg-none">
@@ -346,27 +166,16 @@
           <div id="calendarCollapse" class="accordion-collapse collapse" aria-labelledby="calendarHeading">
             <div class="accordion-body p-0">
               <!-- モバイル用カレンダー -->
-              <div class="calendar-view">
-                <!-- カレンダーヘッダー部分 -->
-                <div class="calendar-header">
-                  <!-- 日付表示と操作ボタン -->
-                  <div class="calendar-controls">
-                    <div class="calendar-date-display" id="mobile-current-year-month">2025年3月</div>
-                    <div class="calendar-nav-buttons">
-                      <button class="calendar-nav-button" id="mobile-prev-month">
-                        <i class="bi bi-chevron-left"></i>
-                      </button>
-                      <button class="calendar-nav-button" id="mobile-next-month">
-                        <i class="bi bi-chevron-right"></i>
-                      </button>
-                      <button class="calendar-nav-button" id="mobile-today-button">今日</button>
-                    </div>
-                    <button class="calendar-view-toggle" id="mobile-month-view-toggle">月</button>
+              <div class="calendar-view" id="mobile-calendar-container"
+                   hx-get="{% url 'stockdiary:calendar_partial' %}?view=mobile"
+                   hx-trigger="revealed"
+                   hx-indicator="#mobile-calendar-loading">
+                <div id="mobile-calendar-loading" class="text-center py-4 htmx-indicator">
+                  <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
                   </div>
+                  <p class="mt-2">カレンダーを読み込んでいます...</p>
                 </div>
-
-                <!-- カレンダー本体 -->
-                <div id="mobile-calendar" class="calendar-container"></div>
               </div>
             </div>
           </div>
@@ -376,54 +185,39 @@
 
     <!-- PC用カレンダー（左右7:3の横並びレイアウト） -->
     <div class="d-none d-lg-block">
-      <div class="calendar-and-events-container">
-        <div class="row">
-          <!-- カレンダー部分：左側（7/10） -->
-          <div class="col-lg-7">
-            <div class="calendar-view pe-lg-3">
-              <!-- カレンダーヘッダー部分 -->
-              <div class="calendar-header">
-                <!-- タイトル行 -->
-                <div class="calendar-title-row">
-                  <div class="calendar-title">
-                    <i class="bi bi-calendar-week"></i> 投資カレンダー
-                  </div>
-                  <div class="calendar-badges">
-                    <span class="badge bg-success">購入</span>
-                    <span class="badge bg-danger">売却</span>
-                    <span class="badge bg-info">メモ</span>
-                  </div>
+      <div class="row">
+        <!-- カレンダー部分：左側（7/10） -->
+        <div class="col-lg-7">
+          <div class="calendar-view pe-lg-3">
+            <!-- カレンダーコンテナ -->
+            <div id="desktop-calendar-container" class="calendar-container"
+                hx-get="{% url 'stockdiary:calendar_partial' %}?view=desktop"
+                hx-trigger="load"
+                hx-indicator="#desktop-calendar-loading">
+              <!-- 以下を追加 -->
+              <div id="desktop-calendar-loading" class="text-center py-4 htmx-indicator">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Loading...</span>
                 </div>
-
-                <!-- 日付表示と操作ボタン -->
-                <div class="calendar-controls">
-                  <div class="calendar-date-display" id="desktop-current-year-month"></div>
-                  <div class="calendar-nav-buttons">
-                    <button class="calendar-nav-button" id="desktop-prev-month">
-                      <i class="bi bi-chevron-left"></i>
-                    </button>
-                    <button class="calendar-nav-button" id="desktop-next-month">
-                      <i class="bi bi-chevron-right"></i>
-                    </button>
-                    <button class="calendar-nav-button" id="desktop-today-button">今日</button>
-                  </div>
-                  <button class="calendar-view-toggle" id="desktop-month-view-toggle">月</button>
-                </div>
+                <p class="mt-2">カレンダーを読み込んでいます...</p>
               </div>
-
-              <!-- カレンダー本体 -->
-              <div id="desktop-calendar" class="calendar-container"></div>
             </div>
           </div>
+        </div>
 
-          <!-- イベント詳細部分：右側（3/10） -->
-          <div class="col-lg-5">
-            <div class="card h-100 desktop-events-card" id="desktop-events-card">
-              <div class="card-header bg-white">
-                <h6 class="mb-0" id="desktop-selected-date">選択日のイベント</h6>
-              </div>
-              <div class="card-body" id="desktop-day-events">
-                <p class="text-muted">日付を選択するとイベントが表示されます</p>
+        <!-- イベント詳細部分：右側（3/10） -->
+        <div class="col-lg-5">
+          <div class="card h-100" id="desktop-events-card">
+            <div class="card-header bg-white">
+              <h6 class="mb-0" id="desktop-selected-date">選択日のイベント</h6>
+            </div>
+            <div class="card-body" id="desktop-day-events">
+              <p class="text-muted">日付を選択するとイベントが表示されます</p>
+              <!-- イベントローディングインジケータ追加 -->
+              <div id="day-events-loading-desktop" class="htmx-indicator text-center">
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                  <span class="visually-hidden">読み込み中...</span>
+                </div>
               </div>
             </div>
           </div>
@@ -439,21 +233,33 @@
         </div>
         <div class="card-body" id="mobile-day-events">
           <p class="text-muted">日付を選択するとイベントが表示されます</p>
+          <!-- イベントローディングインジケータ追加 -->
+          <div id="day-events-loading-mobile" class="htmx-indicator text-center">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+              <span class="visually-hidden">読み込み中...</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
-  <!-- 改善された検索フォーム部分 -->
+
+  <!-- 検索フォーム部分 - HTMX対応 -->
   <div class="diary-search mb-4">
-    <form method="get" class="mb-3">
+    <form hx-get="{% url 'stockdiary:diary_list' %}" 
+          hx-target="#diary-container"
+          hx-indicator="#search-indicator"
+          hx-push-url="true"
+          class="mb-3">
       <div class="row g-2">
-        <!-- 検索フィールド - 全文検索の説明を追加 -->
+        <!-- 検索フィールド -->
         <div class="col-md-4 col-sm-12 mb-2">
           <label for="query" class="form-label">検索</label>
           <div class="position-relative">
             <i class="bi bi-search" style="position: absolute; right: 10px; top: 10px; color: #aaa;"></i>
-            <input type="text" id="query" name="query" class="form-control" placeholder="銘柄名/シンボル/内容/メモ"
-              value="{{ request.GET.query }}">
+            <input type="text" id="query" name="query" class="form-control" 
+                   placeholder="銘柄名/シンボル/内容/メモ"
+                   value="{{ request.GET.query }}">
           </div>
           <small class="form-text text-muted">日記内容も含めて検索できます</small>
         </div>
@@ -461,7 +267,11 @@
         <!-- タグ絞り込みセレクト -->
         <div class="col-md-4 col-sm-12 mb-2">
           <label for="tag" class="form-label">タグで絞り込み</label>
-          <select id="tag" name="tag" class="form-select">
+          <select id="tag" name="tag" class="form-select" 
+                 hx-get="{% url 'stockdiary:diary_list' %}" 
+                 hx-target="#diary-container" 
+                 hx-indicator="#search-indicator"
+                 hx-push-url="true">
             <option value="">すべて表示</option>
             {% for tag in tags %}
             <option value="{{ tag.id }}" {% if request.GET.tag == tag.id|stringformat:"i" %}selected{% endif %}>
@@ -471,10 +281,14 @@
           </select>
         </div>
   
-        <!-- 保有状態フィルター - 新規追加 -->
+        <!-- 保有状態フィルター -->
         <div class="col-md-4 col-sm-12 mb-2">
           <label for="status" class="form-label">保有状態</label>
-          <select id="status" name="status" class="form-select">
+          <select id="status" name="status" class="form-select" 
+                 hx-get="{% url 'stockdiary:diary_list' %}" 
+                 hx-target="#diary-container" 
+                 hx-indicator="#search-indicator"
+                 hx-push-url="true">
             <option value="" {% if not request.GET.status %}selected{% endif %}>すべて</option>
             <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>保有中</option>
             <option value="sold" {% if request.GET.status == 'sold' %}selected{% endif %}>売却済み</option>
@@ -484,18 +298,26 @@
       </div>
   
       <div class="d-flex justify-content-end mt-2">
+        <div id="search-indicator" class="htmx-indicator me-2">
+          <div class="spinner-border spinner-border-sm text-primary" role="status">
+            <span class="visually-hidden">検索中...</span>
+          </div>
+        </div>
         <button type="submit" class="btn btn-diary btn-diary-primary me-2">
           <i class="bi bi-search me-1"></i> 検索
         </button>
-        <a href="{% url 'stockdiary:home' %}" class="btn btn-diary btn-diary-outline">
+        <a href="{% url 'stockdiary:home' %}" class="btn btn-diary btn-diary-outline"
+           hx-get="{% url 'stockdiary:diary_list' %}" 
+           hx-target="#diary-container"
+           hx-push-url="true">
           <i class="bi bi-arrow-counterclockwise me-1"></i> リセット
         </a>
       </div>
     </form>
   </div>
 
-
-  <div class="mb-3">
+  <!-- 検索結果表示 -->
+  <div class="mb-3" id="search-result-info">
     {% if request.GET.query or request.GET.tag or request.GET.status %}
       <div class="alert alert-info d-flex justify-content-between align-items-center">
         <div>
@@ -524,7 +346,10 @@
           {% endif %}
         </div>
         
-        <a href="{% url 'stockdiary:home' %}" class="btn btn-sm btn-outline-secondary">
+        <a href="{% url 'stockdiary:home' %}" class="btn btn-sm btn-outline-secondary"
+           hx-get="{% url 'stockdiary:diary_list' %}" 
+           hx-target="#diary-container"
+           hx-push-url="true">
           <i class="bi bi-x"></i> クリア
         </a>
       </div>
@@ -536,1641 +361,187 @@
     <i class="bi bi-journal-richtext"></i> 株式日記リスト
   </h4>
 
-  {% if diaries %}
-  <!-- ここに infinite-scroll用のコンテナを追加 -->
-  <div class="home-diary-grid" id="diary-container">
-    {% for diary in diaries %}
-      {% include "stockdiary/partials/diary_card.html" with diary=diary %}
-    {% endfor %}
+  <!-- オフライン通知 -->
+  <div class="offline-alert alert alert-warning mb-3">
+    <i class="bi bi-wifi-off me-2"></i>
+    <span>オフライン状態です。ネットワーク接続を確認してください。</span>
   </div>
 
-  <!-- ローディングインジケーター -->
-  <div id="loading-indicator" class="text-center py-4 d-none">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">読み込み中...</span>
+  <!-- 日記リストコンテナ - HTMX対応 (PCでの2列表示のためのクラスを追加) -->
+  <div id="diary-container" class="home-diary-grid"
+       hx-get="{% url 'stockdiary:diary_list' %}"
+       hx-trigger="load"
+       hx-indicator="#diary-loading">
+    <div id="diary-loading" class="text-center py-4 htmx-indicator grid-column-span">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">日記を読み込んでいます...</span>
+      </div>
+      <p class="mt-2">日記を読み込んでいます...</p>
     </div>
-    <p class="mt-2">日記を読み込んでいます...</p>
   </div>
-
-  <!-- 無限スクロール関連情報 -->
-  <div id="infinite-scroll-data" 
-      data-page="1" 
-      data-has-next="{{ page_obj.has_next|lower }}" 
-      data-next-page="{% if page_obj.has_next %}{{ page_obj.next_page_number }}{% endif %}"
-      data-url="{% url 'stockdiary:home' %}">
-  </div>
-  {% csrf_token %}  <!-- これを追加 -->
-
-  {% else %}
-    {% if request.GET.query or request.GET.tag or request.GET.status %}
-      <!-- 検索条件あり・結果なしの場合 -->
-      <div class="alert alert-warning">
-        <i class="bi bi-exclamation-triangle me-2"></i>
-        <p class="mb-0">検索条件に一致する日記が見つかりませんでした。検索条件を変更してお試しください。</p>
-      </div>
-    {% else %}
-      <!-- 検索条件なし・日記なしの場合 -->
-      <div class="alert alert-info">
-        <i class="bi bi-info-circle me-2"></i>
-        <p class="mb-0">日記がありません。「新規日記作成」ボタンから最初の日記を登録してください。</p>
-      </div>
-    {% endif %}
-  {% endif %}
 </div>
-  {% include 'speed_dial.html' with actions=form_actions %}
-  {% include "stockdiary/partials/quick_diary_modal.html" %}
-  {% endblock %}
 
-  {% block scripts %}
-  <!-- スピードダイアル -->
-  <script src="{% static 'js/speed-dial.js' %}"></script>
-  <script src="{% static 'js/quick-diary.js' %}"></script>
-  <!-- FullCalendar JS -->
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/locales/ja.js"></script>
-  
-<!-- 日記カードタブ機能 -->
+{% include 'speed_dial.html' with actions=form_actions %}
+{% include "stockdiary/partials/quick_diary_modal.html" %}
+{% endblock %}
+
+{% block scripts %}
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/locales/ja.js"></script>
+<script src="{% static 'js/speed-dial.js' %}"></script>
+<script src="{% static 'js/quick-diary.js' %}"></script>
+
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    // 既存のスピードダイアルの初期化
-    initializeSpeedDial();
-    
-    // クラスセレクタをより具体的にして、quick-addタイプのみに適用する
-    const quickButtons = document.querySelectorAll('.speed-dial-btn.action-quick-add');
-    if (quickButtons.length > 0) {
-      quickButtons.forEach(btn => {
-        btn.addEventListener('click', function(e) {
-          e.preventDefault();
-          if (window.quickDiaryForm) {
-              window.quickDiaryForm.show();
-          }
-        });
-      });
-    }
-    
-    // 追加: 詳細作成ボタンは通常のリンクとして機能させる
-    const addButtons = document.querySelectorAll('.speed-dial-btn.action-add');
-    if (addButtons.length > 0) {
-      addButtons.forEach(btn => {
-        // クリックした時のデフォルト動作を維持（リンク遷移）
-        btn.addEventListener('click', function(e) {
-            // デフォルト動作のままにする（preventDefault不要）
-            // URLがhref属性に設定されていれば自動的にそのページに遷移する
-        });
-      });
-    }
-  });
-</script>
-<script>
-  /**
-   * 日記カードのタブUIを初期化する関数
-   */
-  // タブ初期化関数を改善して、クリックイベントをより確実に処理する
-  function initDiaryCardTabs(element) {
-    if (!element) return;
-    
-    // data-bs-toggle="tab"を持つタブ要素を取得
-    const tabElements = element.querySelectorAll('[data-bs-toggle="tab"]');
-    if (tabElements.length === 0) return;
-    
-    // 既に初期化済みならスキップ
-    if (element.getAttribute('data-tabs-initialized') === 'true') return;
-    
-    // 初期化済みとしてマーク
-    element.setAttribute('data-tabs-initialized', 'true');
-    
-    // クリックイベントリスナーを追加
-    tabElements.forEach(tabElement => {
-      tabElement.addEventListener('click', function (event) {
-        // デフォルトのアンカー動作を防止（点滅修正に重要）
-        event.preventDefault();
-        
-        // 親コンテナを取得
-        const tabsContainer = this.closest('.card-tabs');
-        if (!tabsContainer) return;
-        
-        // このコンテナ内のすべてのタブを非アクティブに
-        const allTabs = tabsContainer.querySelectorAll('.nav-link');
-        allTabs.forEach(tab => tab.classList.remove('active'));
-        
-        // クリックされたタブをアクティブに
-        this.classList.add('active');
-        
-        // ターゲットパネルのIDと要素を取得
-        const targetId = this.getAttribute('data-bs-target');
-        if (!targetId) return;
-        
-        const targetPanel = element.querySelector(targetId);
-        if (!targetPanel) return;
-        
-        // タブコンテンツコンテナを取得
-        const tabContent = targetPanel.closest('.tab-content');
-        if (!tabContent) return;
-        
-        // すべてのパネルを非表示
-        const allPanels = tabContent.querySelectorAll('.tab-pane');
-        allPanels.forEach(panel => {
-          panel.classList.remove('show', 'active');
-        });
-        
-        // ターゲットパネルを表示
-        targetPanel.classList.add('show', 'active');
-        
-        // 遅延ロード処理 - 理由タブ以外でまだロードされていないコンテンツの場合
-        if (!targetPanel.hasAttribute('data-loaded') && !targetId.includes('reason-content')) {
-          const diaryId = element.dataset.diaryId;
-          // data-tab-type属性から取得するか、IDから抽出
-          const tabType = this.getAttribute('data-tab-type') || 
-                        this.id.split('-')[0]; // notes-tab-123 -> notes
-          
-          console.log(`Loading tab content for ${diaryId}, type: ${tabType}`);
-          
-          // APIのURLを構築
-          const apiUrl = `/stockdiary/api/tab-content/${diaryId}/${tabType}/`;
-          
-          // タブコンテンツをフェッチ
-          fetch(apiUrl, {
-            headers: {
-              'X-Requested-With': 'XMLHttpRequest'
-            },
-            credentials: 'same-origin'
-          })
-          .then(response => {
-            if (!response.ok) {
-              return response.json().then(data => {
-                throw new Error(data.error || 'Network response was not ok');
-              });
-            }
-            return response.json();
-          })
-          .then(data => {
-            // コンテンツを挿入
-            targetPanel.innerHTML = data.html;
-            
-            // ロード済みとしてマーク
-            targetPanel.setAttribute('data-loaded', 'true');
-            
-            // モーダルやその他の動的要素を初期化
-            initDynamicElements(targetPanel);
-          })
-          .catch(error => {
-            console.error('Error loading tab content:', error);
-            targetPanel.innerHTML = `
-              <div class="alert alert-warning m-3">
-                <i class="bi bi-exclamation-triangle me-2"></i>
-                コンテンツの読み込みに失敗しました: ${error.message || '不明なエラー'}
-                <button class="btn btn-sm btn-outline-primary ms-2" onclick="retryLoadTab('${diaryId}', '${tabType}', '${targetId}')">
-                  再試行
-                </button>
-              </div>
-            `;
-          });
-        }
-        
-        // イベントの伝播を防止
-        event.stopPropagation();
-      }, { passive: false });
-    });
-  }
-
-  // 動的に読み込まれた要素の初期化
-  function initDynamicElements(container) {
-    // モーダルトリガーなどの初期化
-    try {
-      const modalTriggers = container.querySelectorAll('[data-bs-toggle="modal"]');
-      modalTriggers.forEach(trigger => {
-        trigger.addEventListener('click', function(event) {
-          event.preventDefault();
-          event.stopPropagation();
-          
-          const targetId = this.getAttribute('data-bs-target');
-          const modalElement = document.querySelector(targetId);
-          
-          if (modalElement) {
-            showAnalysisModalSafely(modalElement.id, event);
-          }
-        });
-      });
-    } catch (e) {
-      console.warn('Modal initialization error:', e);
-    }
-  }
-
-  // タブコンテンツ読み込みの再試行
-  function retryLoadTab(diaryId, tabType, targetId) {
-    const targetPanel = document.querySelector(targetId);
-    if (!targetPanel) return;
-    
-    // 読み込み中表示
-    targetPanel.innerHTML = `
-      <div class="d-flex justify-content-center p-4">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">読み込み中...</span>
-        </div>
-      </div>
-    `;
-    
-    // 再度APIリクエスト
-    fetch(`/stockdiary/api/tab-content/${diaryId}/${tabType}/`, {
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest'
-      },
-      credentials: 'same-origin'
-    })
-    .then(response => {
-      if (!response.ok) {
-        return response.json().then(data => {
-          throw new Error(data.error || 'リクエスト失敗');
-        });
-      }
-      return response.json();
-    })
-    .then(data => {
-      targetPanel.innerHTML = data.html;
-      targetPanel.setAttribute('data-loaded', 'true');
-      initDynamicElements(targetPanel);
-    })
-    .catch(error => {
-      console.error('Error retrying tab content:', error);
-      targetPanel.innerHTML = `
-        <div class="alert alert-danger m-3">
-          <i class="bi bi-exclamation-triangle me-2"></i>
-          コンテンツの読み込みに再び失敗しました: ${error.message || '不明なエラー'}
-        </div>
-      `;
-    });
-  }
-
-  document.addEventListener('DOMContentLoaded', function() {
-    // ページ読み込み時に全ての日記カードにタブ機能を適用
-    const diaryCards = document.querySelectorAll('.diary-card');
-    diaryCards.forEach(initDiaryCardTabs);
-    
-    // 無限スクロールとの連携
-    setupInfiniteScrollIntegration();
-  });
-  
-  /**
-   * 無限スクロールとタブ機能を連携させる
-   */
-  function setupInfiniteScrollIntegration() {
-    // 1. MutationObserverを使用して動的に追加される要素を監視
-    const diaryContainer = document.getElementById('diary-container');
-    if (!diaryContainer) return;
-    
-    // DOM変更を監視
-    const observer = new MutationObserver(function(mutations) {
-      mutations.forEach(function(mutation) {
-        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-          // 追加されたノードを検索
-          mutation.addedNodes.forEach(function(node) {
-            if (node.nodeType === 1) { // 要素ノードのみ
-              // 新しく追加された日記カードを探す
-              if (node.classList && node.classList.contains('diary-card')) {
-                // タブ機能を初期化
-                initDiaryCardTabs(node);
-              }
-              
-              // 子要素内の日記カードも探す
-              const childCards = node.querySelectorAll('.diary-card');
-              childCards.forEach(initDiaryCardTabs);
-            }
-          });
-        }
-      });
-    });
-    
-    // 監視を開始
-    observer.observe(diaryContainer, { childList: true, subtree: true });
-  }
-  
-  // 既存のinitNewEntryElement関数を拡張（既存のものを上書きしないよう注意）
-  const originalInitNewEntryElement = window.initNewEntryElement;
-  if (typeof originalInitNewEntryElement === 'function') {
-    window.initNewEntryElement = function(element) {
-      // 元の初期化処理を実行
-      originalInitNewEntryElement.call(this, element);
-      
-      // タブ機能を追加
-      try {
-        initDiaryCardTabs(element);
-      } catch (err) {
-        console.warn('タブ初期化エラー:', err);
-      }
-    };
-  }
-  </script>  
-  <script>
-    // グローバル変数
-    let scrollState = {
-      loading: false,
-      page: 1,
-      hasNext: false,
-      nextPage: null,
-      url: ''
-    };
-
-    // グローバル関数として定義
-    window.retryLoading = function() {
-      loadMoreEntries();
-    };
-
-    document.addEventListener('DOMContentLoaded', function () {
-      // ========== 初期化 ==========
-      // スピードダイアルを初期化
+    // 基本的な初期化
+    if (typeof initializeSpeedDial === 'function') {
       initializeSpeedDial();
-      
-      // ========== カレンダー機能 ==========
-      initializeCalendarFeature();
-      
-      // ========== フィルタリング機能 ==========
-      initializeFilterFeature();
-      
-      // ========== 無限スクロール機能 ==========
-      initializeInfiniteScroll();
-
-      // 無限スクロール初期化
-      initInfiniteScroll();
-      
-      // ネットワーク状態監視
-      monitorNetworkStatus();
-      
-      setupNetworkMonitoring();
+    }
+    
+    // クイック追加ボタンの処理
+    document.querySelectorAll('.speed-dial-btn.action-quick-add').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (window.quickDiaryForm) {
+          window.quickDiaryForm.show();
+        }
+      });
     });
-
-    function initInfiniteScroll() {
-      const scrollData = document.getElementById('infinite-scroll-data');
-      if (!scrollData) return;
-      
-      // 状態の初期化
-      scrollState = {
-        loading: false,
-        page: parseInt(scrollData.dataset.page || '1'),
-        hasNext: (scrollData.dataset.hasNext || 'false') === 'true',
-        nextPage: scrollData.dataset.nextPage || '',
-        url: scrollData.dataset.url || window.location.pathname
-      };
-      
-      // console.log('無限スクロール初期化:', scrollState);
-      
-      // スクロールイベントリスナー
-      window.addEventListener('scroll', function() {
-        if (scrollState.loading || !scrollState.hasNext) return;
-        
-        const scrollPos = window.scrollY;
-        const winHeight = window.innerHeight;
-        const docHeight = Math.max(
-          document.body.scrollHeight,
-          document.body.offsetHeight,
-          document.documentElement.clientHeight,
-          document.documentElement.scrollHeight,
-          document.documentElement.offsetHeight
-        );
-        
-        // 下部に近づいたら読み込み
-        if (scrollPos + winHeight >= docHeight - 200) {
-          loadMoreEntries();
-        }
-      });
-    }
-
-    /**
-     * 次のページのエントリを読み込む
-     */
-    function loadMoreEntries() {
-      // すでに読み込み中か次ページがない場合は何もしない
-      if (scrollState.loading || !scrollState.hasNext) return;
-      
-      // オフライン状態チェック
-      if (!navigator.onLine) {
-        showOfflineMessage();
-        return;
-      }
-      
-      scrollState.loading = true;
-      
-      // ローディングインジケーター表示
-      const loadingEl = document.getElementById('loading-indicator');
-      if (loadingEl) {
-        loadingEl.classList.remove('d-none');
-        loadingEl.innerHTML = `
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">読み込み中...</span>
-          </div>
-          <p class="mt-2">日記を読み込んでいます...</p>
-        `;
-      }
-      
-      // パラメータの設定
-      const params = new URLSearchParams(window.location.search);
-      params.set('page', scrollState.nextPage);
-      
-      // CSRFトークンを取得
-      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-      
-      // デバッグログ
-      console.log(`データ読み込み開始: ${scrollState.url}?${params.toString()}`);
-      console.log('ページ:', scrollState.nextPage);
-      
-      // 15秒タイムアウト
-      const timeoutLimit = 15000;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeoutLimit);
-      
-      // リクエスト実行
-      fetch(`${scrollState.url}?${params.toString()}`, {
-        method: 'GET',
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-CSRFToken': csrfToken,
-          'Accept': 'application/json'
-        },
-        credentials: 'same-origin',
-        signal: controller.signal
-      })
-      .then(response => {
-        clearTimeout(timeoutId);
-        if (!response.ok) {
-          throw new Error(`サーバーエラー: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then(data => {
-        if (loadingEl) {
-          loadingEl.classList.add('d-none');
-        }
-        
-        // 空の応答チェック
-        if (!data.html || data.html.length === 0) {
-          console.log('読み込むデータがありませんでした');
-          scrollState.hasNext = false;
-          scrollState.loading = false;
-          return;
-        }
-        
-        const container = document.getElementById('diary-container');
-        if (!container) {
-          //console.error('日記コンテナが見つかりません');
-          scrollState.loading = false;
-          return;
-        }
-        
-        // 日記エントリを追加
-        let addedCount = 0;
-        data.html.forEach(html => {
-          try {
-            const div = document.createElement('div');
-            div.innerHTML = html.trim();
-            const element = div.firstElementChild;
-            
-            if (element) {
-              container.appendChild(element);
-              addedCount++;
-              
-              // 新要素の初期化
-              initNewEntryElement(element);
-            }
-          } catch (err) {
-            //console.error('要素追加エラー:', err);
-          }
-        });
-        
-        console.log(`${addedCount}件のエントリを追加しました`);
-        
-        // 状態を更新
-        scrollState.hasNext = data.has_next;
-        scrollState.nextPage = data.next_page;
-        scrollState.page++;
-        
-        // データ属性も更新
-        const scrollData = document.getElementById('infinite-scroll-data');
-        if (scrollData) {
-          scrollData.dataset.page = scrollState.page;
-          scrollData.dataset.hasNext = scrollState.hasNext.toString();
-          scrollData.dataset.nextPage = scrollState.nextPage || '';
-        }
-        
-        scrollState.loading = false;
-      })
-      .catch(error => {
-        clearTimeout(timeoutId);
-        //console.error('読み込みエラー:', error);
-        
-        // エラーの種類により処理を分ける
-        if (error.name === 'AbortError') {
-          showErrorMessage('タイムアウトしました。ネットワーク接続を確認してください。');
-        } else if (!navigator.onLine || 
-                  error.message.includes('Failed to fetch') || 
-                  error.message.includes('NetworkError') ||
-                  error.message.includes('ERR_INTERNET_DISCONNECTED')) {
-          showOfflineMessage();
-        } else {
-          showErrorMessage(error.message);
-        }
-        
-        scrollState.loading = false;
-      });
-    }
-
-    /**
-     * 新しく追加された要素の初期化
-     */
-    function initNewEntryElement(element) {
-      if (!element) return;
-      
-      // Bootstrapコラプス初期化
-      try {
-        const btns = element.querySelectorAll('[data-bs-toggle="collapse"]');
-        btns.forEach(btn => {
-          const targetId = btn.dataset.bsTarget;
-          const target = document.querySelector(targetId);
-          
-          if (target && typeof bootstrap !== 'undefined') {
-            // 初期化済みでなければ初期化
-            if (!bootstrap.Collapse.getInstance(target)) {
-              new bootstrap.Collapse(target, { toggle: false });
-            }
-          }
-        });
-      } catch (err) {
-        console.warn('コラプス初期化エラー:', err);
-      }
-      
-      // 検索ハイライト処理
-      try {
-        const params = new URLSearchParams(window.location.search);
-        const query = params.get('query');
-        
-        if (query && query.trim() !== '') {
-          // カードハイライト
-          if (element.textContent.toLowerCase().includes(query.toLowerCase())) {
-            element.classList.add('diary-card-highlight');
-          }
-          
-          // テキストハイライト
-          const textAreas = element.querySelectorAll('.diary-card-body .mx-3');
-          textAreas.forEach(area => {
-            if (typeof window.highlightKeyword === 'function') {
-              window.highlightKeyword(area, query);
-            }
-          });
-        }
-      } catch (err) {
-        console.warn('ハイライト処理エラー:', err);
-      }
-    }
-
-    /**
-     * オフライン状態メッセージ表示
-     */
-    function showOfflineMessage() {
-      const loadingEl = document.getElementById('loading-indicator');
-      if (!loadingEl) return;
-      
-      loadingEl.classList.remove('d-none');
-      loadingEl.innerHTML = `
-        <div class="alert alert-warning">
-          <i class="bi bi-wifi-off me-2"></i>
-          インターネット接続がありません。ネットワーク接続を確認してください。
-          <button class="btn btn-sm btn-outline-secondary ms-2" onclick="retryLoading()">
-            <i class="bi bi-arrow-repeat"></i> 再試行
-          </button>
-        </div>
-      `;
-    }
-
-    /**
-     * エラーメッセージ表示
-     */
-    function showErrorMessage(message) {
-      const loadingEl = document.getElementById('loading-indicator');
-      if (!loadingEl) return;
-      
-      loadingEl.classList.remove('d-none');
-      loadingEl.innerHTML = `
-        <div class="alert alert-danger">
-          <i class="bi bi-exclamation-triangle me-2"></i>
-          データの読み込み中にエラーが発生しました
-          <button class="btn btn-sm btn-outline-secondary ms-2" onclick="retryLoading()">
-            <i class="bi bi-arrow-repeat"></i> 再試行
-          </button>
-        </div>
-        <small class="text-muted d-block mt-2">エラー詳細: ${message}</small>
-      `;
-    }
-
-    /**
-     * ネットワーク状態監視
-     */
-    function monitorNetworkStatus() {
-      // オフラインになった時
-      window.addEventListener('offline', function() {
-        // console.log('ネットワーク切断を検出');
-        showNetworkStatus(false);
-      });
-      
-      // オンラインに復帰した時
-      window.addEventListener('online', function() {
-        console.log('ネットワーク接続を検出');
-        showNetworkStatus(true);
-        
-        // 中断中の読み込みがあれば再開
-        const retryBtn = document.querySelector('#loading-indicator .btn');
-        if (retryBtn) {
-          setTimeout(loadMoreEntries, 1000);
-        }
-      });
-      
-      // 初期状態チェック
-      if (!navigator.onLine) {
-        showNetworkStatus(false);
-      }
-    }
-
-    /**
-     * ネットワーク状態通知
-     */
-    function showNetworkStatus(isOnline) {
-      // 既存の通知を削除
-      const existingNotice = document.getElementById('network-status-notice');
-      if (existingNotice) {
-        existingNotice.remove();
-      }
-      
-      if (!isOnline) {
-        // オフライン通知
-        const notice = document.createElement('div');
-        notice.id = 'network-status-notice';
-        notice.className = 'alert alert-warning position-fixed bottom-0 start-0 m-3';
-        notice.style.zIndex = '1050';
-        notice.style.animation = 'fadeIn 0.3s';
-        notice.innerHTML = '<i class="bi bi-wifi-off me-2"></i>インターネット接続がありません';
-        document.body.appendChild(notice);
-        
-        // 5秒後に非表示
-        setTimeout(() => {
-          notice.style.opacity = '0';
-          notice.style.transition = 'opacity 0.5s';
-          setTimeout(() => notice.remove(), 500);
-        }, 5000);
-      }
-    }
-
-    // CSSアニメーションを追加
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-      
-      #network-status-notice {
-        box-shadow: 0 3px 10px rgba(0,0,0,0.2);
-        max-width: 90%;
-      }
-      
-      #loading-indicator button i {
-        transition: transform 0.5s;
-      }
-      
-      #loading-indicator button:hover i {
-        transform: rotate(360deg);
-      }
-    `;
-    document.head.appendChild(style);
-
-    // ========== カレンダー機能の実装 ==========
-    function initializeCalendarFeature() {
-      // 日記データとイベント配列の初期化
-      const allDiaries = [];
-      const events = [];
-      
-      // 先にすべての日記データを取得
-      try {
-        {% for diary in all_diaries %}
-        allDiaries.push({
-          id: {{ diary.id }},
-          title: '{{ diary.stock_name }}',
-          symbol: '{{ diary.stock_symbol }}',
-          purchaseDate: '{{ diary.purchase_date|date:"Y-m-d" }}',
-          sellDate: {% if diary.sell_date %}'{{ diary.sell_date|date:"Y-m-d" }}'{% else %}null{% endif %},
-          purchasePrice: {% if diary.purchase_price %}{{ diary.purchase_price }}{% else %}null{% endif %},
-          sellPrice: {% if diary.sell_price %}{{ diary.sell_price }}{% else %}null{% endif %},
-          quantity: {% if diary.purchase_quantity %}{{ diary.purchase_quantity }}{% else %}null{% endif %},
-          url: '{% url "stockdiary:detail" diary.id %}',
-          isMemo: {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}true{% else %}false{% endif %}
-        });
-  
-        // 購入/メモイベント
-        events.push({
-          title: '{{ diary.stock_name }}',
-          start: '{{ diary.purchase_date|date:"Y-m-d" }}',
-          url: '{% url "stockdiary:detail" diary.id %}',
-          className: '{% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo-event{% else %}purchase-event{% endif %}',
-          diaryId: {{ diary.id }},
-          eventType: '{% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo{% else %}purchase{% endif %}'
-        });
-  
-        // 売却イベント（売却日がある場合のみ）
-        {% if diary.sell_date %}
-        events.push({
-          title: '{{ diary.stock_name }}',
-          start: '{{ diary.sell_date|date:"Y-m-d" }}',
-          url: '{% url "stockdiary:detail" diary.id %}',
-          className: 'sell-event',
-          diaryId: {{ diary.id }},
-          eventType: 'sell'
-        });
-        {% endif %}
-        {% endfor %}
-      } catch (e) {
-        //console.error('Data parsing error:', e);
-      }
-  
-      // DOM要素の取得
-      // PC用要素
-      const desktopCalendarEl = document.getElementById('desktop-calendar');
-      const desktopSelectedDateEl = document.getElementById('desktop-selected-date');
-      const desktopDayEventsEl = document.getElementById('desktop-day-events');
-      const desktopEventsCard = document.getElementById('desktop-events-card');
-      const desktopCurrentYearMonthEl = document.getElementById('desktop-current-year-month');
-      const desktopPrevMonthBtn = document.getElementById('desktop-prev-month');
-      const desktopNextMonthBtn = document.getElementById('desktop-next-month');
-      const desktopTodayBtn = document.getElementById('desktop-today-button');
-      const desktopMonthViewToggleBtn = document.getElementById('desktop-month-view-toggle');
-      
-      // モバイル用要素
-      const mobileCalendarEl = document.getElementById('mobile-calendar');
-      const mobileSelectedDateEl = document.getElementById('mobile-selected-date');
-      const mobileDayEventsEl = document.getElementById('mobile-day-events');
-      const mobileEventsCard = document.getElementById('mobile-events-card');
-      const calendarCollapse = document.getElementById('calendarCollapse');
-      const mobileCurrentYearMonthEl = document.getElementById('mobile-current-year-month');
-      const mobilePrevMonthBtn = document.getElementById('mobile-prev-month');
-      const mobileNextMonthBtn = document.getElementById('mobile-next-month');
-      const mobileTodayBtn = document.getElementById('mobile-today-button');
-      const mobileMonthViewToggleBtn = document.getElementById('mobile-month-view-toggle');
-      
-      // カレンダーインスタンスを格納する変数
-      let desktopCalendarInstance = null;
-      let mobileCalendarInstance = null;
-      
-      // 選択された日付に関連する日記を表示する関数
-      function showDayEvents(dateStr, isMobile = false) {
-        if (!dateStr) return;
-        
-        // 表示要素の選択
-        const selectedDateEl = isMobile ? mobileSelectedDateEl : desktopSelectedDateEl;
-        const dayEventsEl = isMobile ? mobileDayEventsEl : desktopDayEventsEl;
-        const eventsCard = isMobile ? mobileEventsCard : desktopEventsCard;
-        
-        // タイトルを更新
-        try {
-          const dateObj = new Date(dateStr);
-          const year = dateObj.getFullYear();
-          const month = dateObj.getMonth() + 1;
-          const day = dateObj.getDate();
-          
-          if (selectedDateEl) {
-            selectedDateEl.textContent = `${year}年${month}月${day}日のイベント`;
-          }
-        } catch (e) {
-          if (selectedDateEl) {
-            selectedDateEl.textContent = "選択日のイベント";
-          }
-        }
-        
-        // その日の購入・売却イベント
-        const dayEvents = events.filter(event => event.start === dateStr);
-        
-        if (dayEventsEl) {
-          if (dayEvents.length === 0) {
-            dayEventsEl.innerHTML = '<p class="text-muted">この日のイベントはありません</p>';
-          } else {
-            // イベント表示HTML生成
-            let eventsHtml = '';
-            
-            for (const event of dayEvents) {
-              // イベントの日記IDから対応する日記データを検索
-              const diary = allDiaries.find(d => d.id === event.diaryId);
-              
-              if (!diary) continue;
-                  
-              let badgeClass, badgeText, priceInfo;
-              
-              if (event.eventType === 'memo') {
-                badgeClass = 'bg-info';
-                badgeText = 'メモ';
-                priceInfo = '<div class="small">記録のみ</div>';
-              } else if (event.eventType === 'purchase') {
-                badgeClass = 'bg-success';
-                badgeText = '購入';
-                priceInfo = diary.purchasePrice ? 
-                  `<div class="small">${diary.purchasePrice.toLocaleString()}円 × ${diary.quantity}株</div>` :
-                  '<div class="small">価格情報なし</div>';
-              } else { // sell
-                badgeClass = 'bg-danger';
-                badgeText = '売却';
-                priceInfo = diary.sellPrice ? 
-                  `<div class="small">${diary.sellPrice.toLocaleString()}円 × ${diary.quantity}株</div>` :
-                  '<div class="small">価格情報なし</div>';
-              }
-              
-              eventsHtml += `
-                <a href="${event.url}" class="calendar-event-item">
-                  <span class="badge ${badgeClass}">${badgeText}</span>
-                  <div>
-                    <div class="fw-bold">${diary.title} (${diary.symbol})</div>
-                    ${priceInfo}
-                  </div>
-                </a>
-              `;
-            }
-            
-            dayEventsEl.innerHTML = eventsHtml;
-          }
-        }
-        
-        // モバイルではイベントカードを表示
-        if (isMobile && mobileEventsCard) {
-          mobileEventsCard.style.display = 'block';
-        }
-      }
-  
-      // 年月表示を更新する関数
-      function updateCurrentYearMonth(date, isMobile) {
-        const year = date.getFullYear();
-        const month = date.getMonth() + 1; // JavaScriptの月は0から始まる
-        const displayText = `${year}年${month}月`;
-        
-        if (isMobile && mobileCurrentYearMonthEl) {
-          mobileCurrentYearMonthEl.textContent = displayText;
-        } else if (!isMobile && desktopCurrentYearMonthEl) {
-          desktopCurrentYearMonthEl.textContent = displayText;
-        }
-      }
-  
-      // デスクトップカレンダーを初期化する関数
-      function initializeDesktopCalendar() {
-        if (!desktopCalendarEl) return null;
-        
-        // 既存のカレンダーインスタンスがあれば破棄
-        if (desktopCalendarInstance) {
-          desktopCalendarInstance.destroy();
-        }
-        
-        const calendar = new FullCalendar.Calendar(desktopCalendarEl, {
-          initialView: 'dayGridMonth',
-          locale: 'ja',
-          height: 450,
-          headerToolbar: false, // カスタムヘッダーを使用
-          events: events,
-          eventDisplay: 'block',
-          eventClick: function(info) {
-            info.jsEvent.preventDefault();
-            window.location.href = info.event.url;
-          },
-          dateClick: function(info) {
-            // 日付クリック時の処理（PC用）
-            showDayEvents(info.dateStr, false);
-            
-            // クリックされた日付をハイライト
-            document.querySelectorAll('.fc-day-clicked').forEach(el => {
-              el.classList.remove('fc-day-clicked');
-            });
-            info.dayEl.classList.add('fc-day-clicked');
-          },
-          datesSet: function(info) {
-            // カレンダーが新しい月/年を表示したとき
-            updateCurrentYearMonth(info.view.currentStart, false);
-          },
-          dayMaxEventRows: 3
-        });
-        
-        calendar.render();
-        return calendar;
-      }
-      
-      // モバイルカレンダーを初期化する関数
-      function initializeMobileCalendar() {
-        if (!mobileCalendarEl) return null;
-        
-        // 既存のカレンダーインスタンスがあれば破棄
-        if (mobileCalendarInstance) {
-          mobileCalendarInstance.destroy();
-        }
-        
-        const calendar = new FullCalendar.Calendar(mobileCalendarEl, {
-          initialView: 'dayGridMonth',
-          locale: 'ja',
-          height: 350,
-          headerToolbar: false, // カスタムヘッダーを使用
-          events: events,
-          eventDisplay: 'block',
-          eventClick: function(info) {
-            info.jsEvent.preventDefault();
-            window.location.href = info.event.url;
-          },
-          dateClick: function(info) {
-            // 日付クリック時の処理（モバイル用）
-            showDayEvents(info.dateStr, true);
-            
-            // クリックされた日付をハイライト
-            document.querySelectorAll('.fc-day-clicked').forEach(el => {
-              el.classList.remove('fc-day-clicked');
-            });
-            info.dayEl.classList.add('fc-day-clicked');
-            
-            // イベントカードまでスクロール
-            if (mobileEventsCard) {
-              mobileEventsCard.scrollIntoView({ behavior: 'smooth' });
-            }
-          },
-          datesSet: function(info) {
-            // カレンダーが新しい月/年を表示したとき
-            updateCurrentYearMonth(info.view.currentStart, true);
-          },
-          dayMaxEventRows: 3
-        });
-        
-        // レンダリング前にビューポートの可視性を確認
-        const isVisible = mobileCalendarEl.offsetParent !== null;
-        
-        // カレンダーをレンダリング
-        calendar.render();
-        
-        // アコーディオンが閉じている場合、表示時に遅延再レンダリング
-        if (!isVisible) {
-          mobileCalendarEl.classList.add('needs-resize');
-        }
-        
-        return calendar;
-      }
-  
-      // ボタンのイベントリスナー設定
-      function setupCalendarControls() {
-        // PC用のナビゲーションボタンのイベントリスナー
-        if (desktopPrevMonthBtn) {
-          desktopPrevMonthBtn.addEventListener('click', function() {
-            if (desktopCalendarInstance) {
-              desktopCalendarInstance.prev();
-            }
-          });
-        }
-  
-        if (desktopNextMonthBtn) {
-          desktopNextMonthBtn.addEventListener('click', function() {
-            if (desktopCalendarInstance) {
-              desktopCalendarInstance.next();
-            }
-          });
-        }
-  
-        if (desktopTodayBtn) {
-          desktopTodayBtn.addEventListener('click', function() {
-            if (desktopCalendarInstance) {
-              desktopCalendarInstance.today();
-            }
-          });
-        }
-  
-        if (desktopMonthViewToggleBtn) {
-          desktopMonthViewToggleBtn.addEventListener('click', function() {
-            if (desktopCalendarInstance) {
-              const currentView = desktopCalendarInstance.view.type;
-              if (currentView === 'dayGridMonth') {
-                desktopCalendarInstance.changeView('listMonth');
-                desktopMonthViewToggleBtn.textContent = 'リスト';
-              } else {
-                desktopCalendarInstance.changeView('dayGridMonth');
-                desktopMonthViewToggleBtn.textContent = '月';
-              }
-            }
-          });
-        }
-        
-        // モバイル用のナビゲーションボタンのイベントリスナー
-        if (mobilePrevMonthBtn) {
-          mobilePrevMonthBtn.addEventListener('click', function() {
-            if (mobileCalendarInstance) {
-              mobileCalendarInstance.prev();
-            }
-          });
-        }
-  
-        if (mobileNextMonthBtn) {
-          mobileNextMonthBtn.addEventListener('click', function() {
-            if (mobileCalendarInstance) {
-              mobileCalendarInstance.next();
-            }
-          });
-        }
-  
-        if (mobileTodayBtn) {
-          mobileTodayBtn.addEventListener('click', function() {
-            if (mobileCalendarInstance) {
-              mobileCalendarInstance.today();
-            }
-          });
-        }
-  
-        if (mobileMonthViewToggleBtn) {
-          mobileMonthViewToggleBtn.addEventListener('click', function() {
-            if (mobileCalendarInstance) {
-              const currentView = mobileCalendarInstance.view.type;
-              if (currentView === 'dayGridMonth') {
-                mobileCalendarInstance.changeView('listMonth');
-                mobileMonthViewToggleBtn.textContent = 'リスト';
-              } else {
-                mobileCalendarInstance.changeView('dayGridMonth');
-                mobileMonthViewToggleBtn.textContent = '月';
-              }
-            }
-          });
-        }
-  
-        // モバイル用アコーディオンのイベントリスナー
-        if (calendarCollapse) {
-          // Bootstrap 5のイベントを利用
-          calendarCollapse.addEventListener('shown.bs.collapse', function() {
-            // カレンダーが表示されたタイミングで再初期化
-            setTimeout(function() {
-              // resize処理が必要なカレンダーを再初期化
-              if (mobileCalendarEl && mobileCalendarEl.classList.contains('needs-resize')) {
-                mobileCalendarInstance = initializeMobileCalendar();
-                mobileCalendarEl.classList.remove('needs-resize');
-              } else if (mobileCalendarInstance) {
-                // 既存カレンダーのサイズ更新
-                mobileCalendarInstance.updateSize();
-              }
-            }, 100); // 少し遅延させて実行
-          });
-        }
-      }
-  
-      // カレンダーの初期化とイベント設定
-      function setupCalendars() {
-        // カレンダーの初期化（PCとモバイルそれぞれ）
-        desktopCalendarInstance = initializeDesktopCalendar();
-        mobileCalendarInstance = initializeMobileCalendar();
-        
-        // イベントリスナーの設定
-        setupCalendarControls();
-        
-        // 初期表示として、現在の日付のイベントを表示
-        const today = new Date().toISOString().split('T')[0];
-        showDayEvents(today, false); // PC用
-        
-        // モバイル用は、イベントがある場合のみ表示
-        const todayEvents = events.filter(event => event.start === today);
-        if (todayEvents.length > 0) {
-          showDayEvents(today, true);
-        } else if (mobileEventsCard) {
-          // モバイルでイベントがない場合は最初は非表示に
-          mobileEventsCard.style.display = 'none';
-        }
-        
-        // ウィンドウサイズ変更時の処理
-        window.addEventListener('resize', function() {
-          if (desktopCalendarInstance) {
-            desktopCalendarInstance.updateSize();
-          }
-          
-          if (mobileCalendarInstance && !mobileCalendarEl.classList.contains('needs-resize')) {
-            mobileCalendarInstance.updateSize();
-          }
-        });
-      }
-      
-      // カレンダー機能の初期化を実行
-      setupCalendars();
+    
+    // オフライン状態の監視
+    window.addEventListener('online', function() {
+      document.body.classList.remove('is-offline');
+    });
+    
+    window.addEventListener('offline', function() {
+      document.body.classList.add('is-offline');
+    });
+    
+    // 初期状態のチェック
+    if (!navigator.onLine) {
+      document.body.classList.add('is-offline');
     }
     
-    // ========== フィルタリング機能の実装 ==========
-    function initializeFilterFeature() {
-      // フィルターバッジのクリックイベント処理
-      const filterBadges = document.querySelectorAll('.filter-badge');
-      const diaryCards = document.querySelectorAll('.diary-card');
-      const diaryTypeFilter = document.getElementById('diary_type_filter');
-  
-      // URLから現在のフィルターパラメータを取得
-      const urlParams = new URLSearchParams(window.location.search);
-      const currentFilter = urlParams.get('diary_type') || '';
-  
-      // フィルターバッジのクリックイベント
-      filterBadges.forEach(badge => {
-        badge.addEventListener('click', function () {
-          const filterType = this.dataset.filterType;
-  
-          // フィルターのモード: 'js' または 'submit'
-          const filterMode = this.dataset.filterMode || 'submit';
-  
-          if (filterMode === 'js') {
-            // JS側でフィルタリング（ページ遷移なし）
-            jsFilter(this);
-          } else {
-            // フォーム送信によるフィルタリング
-            if (diaryTypeFilter) {
-              diaryTypeFilter.value = filterType;
-              const form = diaryTypeFilter.closest('form');
-              if (form) form.submit();
-            }
-          }
-        });
-      });
-  
-      // JavaScriptフィルタリング関数
-      function jsFilter(badge) {
-        // アクティブクラスの切り替え
-        filterBadges.forEach(b => b.classList.remove('active'));
-        badge.classList.add('active');
-  
-        const filterType = badge.dataset.filterType;
-  
-        // 全てのカードを処理
-        diaryCards.forEach(card => {
-          if (!filterType) {
-            // 「すべて」フィルター
-            card.style.display = 'block';
-          } else {
-            // 特定タイプのフィルター
-            const cardType = card.dataset.diaryType;
-            card.style.display = (cardType === filterType) ? 'block' : 'none';
-          }
-        });
-  
-        // フィルター状態をセッションストレージに保存
-        sessionStorage.setItem('currentFilter', filterType);
-  
-        // フィルタリング後のカウントを表示
-        updateFilterCount();
-      }
-  
-      // フィルター適用後の表示件数を更新
-      function updateFilterCount() {
-        const visibleCards = document.querySelectorAll('.diary-card[style="display: block;"]');
-        const totalCards = diaryCards.length;
-  
-        const countElement = document.getElementById('filtered-count');
-        if (countElement) {
-          if (visibleCards.length === totalCards) {
-            countElement.textContent = `全 ${totalCards} 件表示中`;
-          } else {
-            countElement.textContent = `${visibleCards.length} / ${totalCards} 件表示中`;
-          }
-        }
-      }
-  
-      // 初期状態でのフィルタリング適用
-      function applyInitialFilter() {
-        // 現在のフィルターを確認（URL、セッションストレージ、または「すべて」）
-        const filterType = currentFilter || sessionStorage.getItem('currentFilter') || '';
-  
-        // 対応するバッジを見つけて適用
-        const targetBadge = Array.from(filterBadges).find(badge =>
-          badge.dataset.filterType === filterType
-        ) || filterBadges[0]; // デフォルトは最初のバッジ（すべて）
-  
-        // フィルタリングを適用
-        if (targetBadge && diaryCards.length > 0) {
-          jsFilter(targetBadge);
-        }
-      }
-  
-      // ページ読み込み時にフィルター適用（サーバー側でフィルタリングされていない場合）
-      if (diaryCards.length > 0 && filterBadges.length > 0) {
-        // 適用モードを確認 - URL パラメータの場合はスキップ
-        if (document.querySelector('.filter-badge[data-filter-mode="js"]') || !currentFilter) {
-          setTimeout(applyInitialFilter, 100); // DOM完全読み込み後に実行
-        }
-      }
-  
-      // 検索フォーム機能拡張
-      const searchForm = document.querySelector('.diary-search form');
-      if (searchForm) {
-        searchForm.addEventListener('submit', function (e) {
-          // 現在のJSフィルター状態をフォームに反映
-          const activeFilterBadge = document.querySelector('.filter-badge.active');
-          if (activeFilterBadge && diaryTypeFilter) {
-            diaryTypeFilter.value = activeFilterBadge.dataset.filterType || '';
-          }
-        });
-      }
-  
-      // リセットボタンのイベント調整
-      const resetButton = document.querySelector('.diary-search .btn-diary-outline');
-      if (resetButton) {
-        resetButton.addEventListener('click', function (e) {
-          // セッションストレージのフィルター状態もクリア
-          sessionStorage.removeItem('currentFilter');
-        });
-      }
-    }
-    
-    // ========== 無限スクロール機能の実装 ==========
-    function initializeInfiniteScroll() {
-      const infiniteScrollData = document.getElementById('infinite-scroll-data');
-      if (!infiniteScrollData) return;
-
-      // 状態を初期化
-      infiniteScrollState = {
-        loadingData: false,
-        page: parseInt(infiniteScrollData.dataset.page || '1'),
-        hasNext: (infiniteScrollData.dataset.hasNext || 'false') === 'true',
-        nextPage: infiniteScrollData.dataset.nextPage || '',
-        url: infiniteScrollData.dataset.url || window.location.pathname
-      };
+    // HTMX エラーハンドリング
+    document.body.addEventListener('htmx:responseError', function(event) {
+      console.error('HTMX エラー:', event.detail.xhr.status, event.detail.xhr.statusText);
       
-      let loadingData = false;
-      let page = parseInt(infiniteScrollData.dataset.page);
-      let hasNext = infiniteScrollData.dataset.hasNext === 'true';
-      let nextPage = infiniteScrollData.dataset.nextPage;
-      const url = infiniteScrollData.dataset.url || window.location.pathname;
-
-      // スクロールイベントの監視
-      window.addEventListener('scroll', function() {
-        if (loadingData || !hasNext) return;
-  
-        // ページの下部に近づいたかチェック
-        const scrollPosition = window.scrollY || window.pageYOffset;
-        const windowHeight = window.innerHeight;
-        const documentHeight = Math.max(
-          document.body.scrollHeight,
-          document.body.offsetHeight,
-          document.documentElement.clientHeight,
-          document.documentElement.scrollHeight,
-          document.documentElement.offsetHeight
-        );
-  
-        // 下部から200pxの位置に来たら次のコンテンツを読み込む
-        if (scrollPosition + windowHeight >= documentHeight - 200) {
-          loadMoreDiaries();
-        }
-      });
-  
-      // 次のページのデータをロードする関数
-      function loadMoreDiaries() {
-        if (loadingData || !hasNext) return;
-
-        loadingData = true;
-        const loadingIndicator = document.getElementById('loading-indicator');
-        loadingIndicator.classList.remove('d-none');
-
-        // 接続状態を確認
-        if (!navigator.onLine) {
-          handleOfflineState();
-          return;
-        }
-        // 現在のURLから検索パラメータを取得
-        const searchParams = new URLSearchParams(window.location.search);
-        searchParams.set('page', nextPage);
-
-        // CSRFトークンを取得
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-        // AJAXリクエスト
-        fetch(`${url}?${searchParams.toString()}`, {
-          method: 'GET',
-          headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRFToken': csrfToken
-          },
-          credentials: 'same-origin' // Cookieを送信するために必要
-        })
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          return response.json();
-        })
-        .then(data => {
-          // ローディングインジケーターを非表示
-          loadingIndicator.classList.add('d-none');
-  
-          // 日記コンテナを取得
-          const diaryContainer = document.getElementById('diary-container');
-  
-          // 新しい日記エントリーを追加
-          data.html.forEach(html => {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = html;
-            const diaryElement = tempDiv.firstElementChild;
-            diaryContainer.appendChild(diaryElement);
-  
-            // 新しく追加された要素のイベントリスナーを初期化
-            initializeNewElements(diaryElement);
-          });
-  
-          // 次ページの情報を更新
-          hasNext = data.has_next;
-          nextPage = data.next_page;
-          page++;
-  
-          // スクロールデータを更新
-          infiniteScrollData.dataset.page = page;
-          infiniteScrollData.dataset.hasNext = hasNext.toString();
-          infiniteScrollData.dataset.nextPage = nextPage || '';
-  
-          loadingData = false;
-        })
-        .catch(error => {
-          //console.error('日記の読み込み中にエラーが発生しました:', error);
-          
-          // オフライン状態を検出
-          if (!navigator.onLine || error.message.includes('ERR_INTERNET_DISCONNECTED')) {
-            handleOfflineState();
-          } else {
-            // その他のエラー表示
-            loadingIndicator.innerHTML = `
-              <div class="alert alert-warning">
-                <i class="bi bi-exclamation-triangle me-2"></i>
-                データの読み込み中にエラーが発生しました。
-                <button class="btn btn-sm btn-outline-secondary ms-2" onclick="retryLoading()">
-                  <i class="bi bi-arrow-repeat"></i> 再試行
-                </button>
-              </div>
-            `;
-          }
-          
-          loadingData = false;
-        });
-      }
-  
-      // オフライン状態の処理
-      function handleOfflineState() {
-        const loadingIndicator = document.getElementById('loading-indicator');
-        
-        loadingIndicator.innerHTML = `
-          <div class="alert alert-warning">
-            <i class="bi bi-wifi-off me-2"></i>
-            インターネット接続がありません。ネットワーク接続を確認してください。
-            <button class="btn btn-sm btn-outline-secondary ms-2" onclick="retryLoading()">
-              <i class="bi bi-arrow-repeat"></i> 再試行
-            </button>
+      // ターゲット要素
+      const target = event.detail.target;
+      
+      // エラーメッセージ表示
+      if (target.id === 'desktop-day-events' || target.id === 'mobile-day-events') {
+        target.innerHTML = `
+          <div class="alert alert-warning m-2">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            イベントの読み込みに失敗しました。
           </div>
         `;
-        
-        loadingData = false;
-        
-        // オンラインに戻った時のイベントリスナー
-        window.addEventListener('online', function() {
-          retryLoading();
-        }, { once: true });
-      }
-
-      // 読み込み再試行関数
-      function retryLoading() {
-        const loadingIndicator = document.getElementById('loading-indicator');
-        loadingIndicator.innerHTML = `
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">読み込み中...</span>
+      } else if (target.id.includes('content-')) {
+        target.innerHTML = `
+          <div class="alert alert-warning m-3">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            コンテンツの読み込みに失敗しました。
           </div>
-          <p class="mt-2">日記を読み込んでいます...</p>
         `;
-        
-        // 少し遅延を入れてから再試行
-        setTimeout(function() {
-          loadMoreDiaries();
-        }, 500);
       }
-
-      // 新しく追加された要素のイベントリスナーを初期化する関数
-      function initializeNewElements(element) {
-        // Bootstrapのコラプスなどを有効化
-        const collapseButtons = element.querySelectorAll('[data-bs-toggle="collapse"]');
-        collapseButtons.forEach(button => {
-          // すでに初期化済みならスキップ
-          if (!bootstrap.Collapse.getInstance(document.querySelector(button.dataset.bsTarget))) {
-            new bootstrap.Collapse(document.querySelector(button.dataset.bsTarget), {
-              toggle: false
-            });
-          }
-        });
-        
-        // 検索キーワードのハイライト処理
+    });
+    
+    // カレンダー日付クリック時のフォールバック処理
+    document.addEventListener('click', function(e) {
+      const td = e.target.closest('td[data-date]');
+      if (td) {
+        // クリックされた日付をハイライト
+        document.querySelectorAll('td').forEach(cell => cell.classList.remove('fc-day-clicked'));
+        td.classList.add('fc-day-clicked');
+      }
+    });
+    
+    // HTMX イベントハンドラを追加
+    document.addEventListener('htmx:load', function() {
+      // ハイライト処理
+      function highlightSearchTerms() {
         const urlParams = new URLSearchParams(window.location.search);
         const query = urlParams.get('query');
+        
         if (query && query.trim() !== '') {
-          // カードのハイライト
-          if (element.textContent.toLowerCase().includes(query.toLowerCase())) {
-            element.classList.add('diary-card-highlight');
-          }
-          
-          // テキスト内のキーワードをハイライト
-          const textContainers = element.querySelectorAll('.diary-card-body .mx-3');
-          textContainers.forEach(container => {
-            highlightKeyword(container, query);
+          document.querySelectorAll('.diary-card:not(.highlighted)').forEach(card => {
+            // ハイライト済みフラグ
+            card.classList.add('highlighted');
+            
+            // カードのハイライト
+            if (card.textContent.toLowerCase().includes(query.toLowerCase())) {
+              card.classList.add('diary-card-highlight');
+            }
+            
+            // テキスト内のキーワードをハイライト
+            const textContainers = card.querySelectorAll('.diary-card-body .reason-content');
+            textContainers.forEach(container => {
+              try {
+                const regex = new RegExp(`(${query})`, 'gi');
+                container.innerHTML = container.innerHTML.replace(regex, '<span class="search-highlight">$1</span>');
+              } catch (e) {
+                console.error('Highlight error:', e);
+              }
+            });
           });
         }
       }
-    }
-
-    // ネットワーク接続監視
-    function setupNetworkMonitoring() {
-      // オフライン状態に入った時
-      window.addEventListener('offline', function() {
-        // console.log('ネットワーク接続がオフラインになりました');
-        
-        // 現在読み込み中の場合は適切に処理
-        if (infiniteScrollState.loadingData) {
-          handleOfflineState();
-        }
-        
-        // オフライン通知を表示
-        showOfflineNotification(true);
-      });
       
-      // オンライン状態に戻った時
-      window.addEventListener('online', function() {
-        console.log('ネットワーク接続が回復しました');
-        
-        // オフライン通知を非表示
-        showOfflineNotification(false);
-        
-        // 中断していた読み込みがあれば再開
-        if (document.querySelector('.offline-alert button')) {
-          retryLoading();
+      // ドキュメント読み込み時とHTMX更新後にハイライト処理を実行
+      try {
+        highlightSearchTerms();
+      } catch (e) {
+        console.error('Highlight init error:', e);
+      }
+      
+      document.body.addEventListener('htmx:afterSwap', function() {
+        try {
+          highlightSearchTerms();
+        } catch (e) {
+          console.error('Highlight afterSwap error:', e);
         }
       });
       
-      // 接続状態を初期チェック
-      if (!navigator.onLine) {
-        showOfflineNotification(true);
+      // 既存のモバイルカレンダーのアコーディオンイベントにHTMX処理を追加
+      const calendarCollapse = document.getElementById('calendarCollapse');
+      if (calendarCollapse) {
+        calendarCollapse.addEventListener('shown.bs.collapse', function() {
+          const container = document.getElementById('mobile-calendar-container');
+          if (container && !container.getAttribute('data-loaded')) {
+            htmx.trigger(container, 'revealed');
+            container.setAttribute('data-loaded', 'true');
+          }
+        });
+      }
+    });
+    
+    // HTMXリクエストにCSRFトークンを自動的に追加
+    document.body.addEventListener('htmx:configRequest', function(evt) {
+      const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+      if (!evt.detail.headers) {
+        evt.detail.headers = {};
+      }
+      evt.detail.headers['X-CSRFToken'] = csrfToken;
+    });
+  });
+  htmx.config.defaultSwapStyle = "innerHTML";
+  htmx.config.includeIndicatorStyles = true;
+  htmx.config.withCredentials = true;
+
+  // エラー処理を強化（hx-indicatorがない場合のハンドリング）
+  htmx.on('htmx:beforeRequest', function(evt) {
+    // インジケーター要素を取得
+    const indicatorSelector = evt.detail.elt.getAttribute('hx-indicator');
+    if (indicatorSelector) {
+      const indicator = document.querySelector(indicatorSelector);
+      if (!indicator) {
+        console.warn('Indicator not found:', indicatorSelector);
+        // インジケーターが存在しない場合はメッセージを出力するだけでエラーにはしない
+        evt.detail.elt.removeAttribute('hx-indicator');
       }
     }
-
-    // オフライン通知の表示/非表示
-    function showOfflineNotification(show) {
-      let notification = document.getElementById('offline-notification');
-      
-      if (show) {
-        if (!notification) {
-          notification = document.createElement('div');
-          notification.id = 'offline-notification';
-          notification.className = 'alert alert-warning position-fixed bottom-0 start-0 m-3';
-          notification.style.zIndex = '1050';
-          notification.innerHTML = '<i class="bi bi-wifi-off me-2"></i>オフライン状態です。ネットワーク接続を確認してください。';
-          document.body.appendChild(notification);
-        }
-      } else {
-        if (notification) {
-          notification.remove();
-        }
-      }
-    };
+  });  
 </script>
-  
-  <!-- 検索ハイライト機能 -->
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const query = urlParams.get('query');
-      
-      if (query && query.trim() !== '') {
-        // 日記カードに検索ヒットの強調表示を追加
-        const diaryCards = document.querySelectorAll('.diary-card');
-        diaryCards.forEach(card => {
-          const cardText = card.textContent.toLowerCase();
-          if (cardText.includes(query.toLowerCase())) {
-            card.classList.add('diary-card-highlight');
-          }
-        });
-        
-        // テキスト内のキーワードをハイライト
-        const textContainers = document.querySelectorAll('.diary-card-body .mx-3');
-        textContainers.forEach(container => {
-          highlightKeyword(container, query);
-        });
-      }
-      
-      // グローバルスコープでhighlightKeyword関数を定義
-      window.highlightKeyword = function(element, keyword) {
-        if (!keyword || keyword.trim() === '') return;
-        
-        const regex = new RegExp(`(${keyword})`, 'gi');
-        highlightTextNodes(element, regex);
-      }
-      
-      function highlightTextNodes(element, regex) {
-        if (element.nodeType === Node.TEXT_NODE) {
-          const parent = element.parentNode;
-          const content = element.textContent;
-          
-          if (regex.test(content)) {
-            const fragment = document.createDocumentFragment();
-            let lastIndex = 0;
-            let match;
-            
-            regex.lastIndex = 0;
-            while ((match = regex.exec(content)) !== null) {
-              const beforeMatch = content.substring(lastIndex, match.index);
-              if (beforeMatch) {
-                fragment.appendChild(document.createTextNode(beforeMatch));
-              }
-              
-              const highlighted = document.createElement('span');
-              highlighted.className = 'search-highlight';
-              highlighted.textContent = match[0];
-              fragment.appendChild(highlighted);
-              
-              lastIndex = regex.lastIndex;
-            }
-            
-            const afterMatch = content.substring(lastIndex);
-            if (afterMatch) {
-              fragment.appendChild(document.createTextNode(afterMatch));
-            }
-            
-            parent.replaceChild(fragment, element);
-            return true;
-          }
-        } else if (element.nodeType === Node.ELEMENT_NODE) {
-          if (element.tagName === 'SCRIPT' || element.tagName === 'STYLE') {
-            return false;
-          }
-          
-          const childNodes = Array.from(element.childNodes);
-          childNodes.forEach(child => highlightTextNodes(child, regex));
-        }
-        
-        return false;
-      }
-    });
-  </script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const query = urlParams.get('query');
-      
-      if (query && query.trim() !== '') {
-        // 日記カードに検索ヒットの強調表示を追加
-        const diaryCards = document.querySelectorAll('.diary-card');
-        diaryCards.forEach(card => {
-          const cardText = card.textContent.toLowerCase();
-          if (cardText.includes(query.toLowerCase())) {
-            card.classList.add('diary-card-highlight');
-          }
-        });
-        
-        // テキスト内のキーワードをハイライト
-        const textContainers = document.querySelectorAll('.diary-card-body .mx-3');
-        textContainers.forEach(container => {
-          highlightKeyword(container, query);
-        });
-      }
-      
-      function highlightKeyword(element, keyword) {
-        if (!keyword || keyword.trim() === '') return;
-        
-        const regex = new RegExp(`(${keyword})`, 'gi');
-        highlightTextNodes(element, regex);
-      }
-      
-      function highlightTextNodes(element, regex) {
-        if (element.nodeType === Node.TEXT_NODE) {
-          const parent = element.parentNode;
-          const content = element.textContent;
-          
-          if (regex.test(content)) {
-            const fragment = document.createDocumentFragment();
-            let lastIndex = 0;
-            let match;
-            
-            regex.lastIndex = 0;
-            while ((match = regex.exec(content)) !== null) {
-              const beforeMatch = content.substring(lastIndex, match.index);
-              if (beforeMatch) {
-                fragment.appendChild(document.createTextNode(beforeMatch));
-              }
-              
-              const highlighted = document.createElement('span');
-              highlighted.className = 'search-highlight';
-              highlighted.textContent = match[0];
-              fragment.appendChild(highlighted);
-              
-              lastIndex = regex.lastIndex;
-            }
-            
-            const afterMatch = content.substring(lastIndex);
-            if (afterMatch) {
-              fragment.appendChild(document.createTextNode(afterMatch));
-            }
-            
-            parent.replaceChild(fragment, element);
-            return true;
-          }
-        } else if (element.nodeType === Node.ELEMENT_NODE) {
-          if (element.tagName === 'SCRIPT' || element.tagName === 'STYLE') {
-            return false;
-          }
-          
-          const childNodes = Array.from(element.childNodes);
-          childNodes.forEach(child => highlightTextNodes(child, regex));
-        }
-        
-        return false;
-      }
-    });
-</script>
-  
 {% endblock %}

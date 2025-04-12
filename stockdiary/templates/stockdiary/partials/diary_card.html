@@ -63,41 +63,72 @@
       </div>
       {% endif %}
 
-      <!-- カード切り替えタブ -->
+      <!-- カード切り替えタブ (hx-swap 属性を追加) -->
       <div class="diary-card-tabs mt-3 mb-3">
         <div class="nav nav-tabs card-tabs" role="tablist">
-          <button class="nav-link active" id="reason-tab-{{ diary.id }}" data-bs-toggle="tab" 
-                  data-bs-target="#reason-content-{{ diary.id }}" type="button" role="tab" aria-selected="true"
-                  data-tab-type="reason">
-            <i class="bi bi-journal-text"></i> 購入理由
+          <button class="nav-link active" id="reason-tab-{{ diary.id }}" 
+                  data-bs-toggle="tab" 
+                  data-bs-target="#reason-content-{{ diary.id }}"
+                  type="button" role="tab">
+            <i class="bi bi-journal-text"></i> 理由
           </button>
-          <!-- 継続記録タブの追加 -->
+          
+          <!-- 継続記録タブ -->
           {% if diary.notes.exists %}
-          <button class="nav-link" id="notes-tab-{{ diary.id }}" data-bs-toggle="tab" 
-                  data-bs-target="#notes-content-{{ diary.id }}" type="button" role="tab" aria-selected="false"
-                  data-tab-type="notes">
-            <i class="bi bi-journal-richtext"></i> 継続記録
+          <button class="nav-link" id="notes-tab-{{ diary.id }}" 
+                  data-bs-toggle="tab" 
+                  data-bs-target="#notes-content-{{ diary.id }}"
+                  hx-get="{% url 'stockdiary:tab_content' diary.id 'notes' %}"
+                  hx-target="#notes-content-{{ diary.id }}"
+                  hx-trigger="click once"
+                  hx-swap="innerHTML"
+                  hx-indicator="#tab-loading-indicator-{{ diary.id }}"
+                  type="button" role="tab">
+            <i class="bi bi-journal-richtext"></i> 継続
           </button>
           {% endif %}
+          
+          <!-- 分析タブ -->
           {% if diary.analysis_values.exists %}
-          <button class="nav-link" id="analysis-tab-{{ diary.id }}" data-bs-toggle="tab" 
-                  data-bs-target="#analysis-content-{{ diary.id }}" type="button" role="tab" aria-selected="false"
-                  data-tab-type="analysis">
+          <button class="nav-link" id="analysis-tab-{{ diary.id }}"
+                  data-bs-toggle="tab" 
+                  data-bs-target="#analysis-content-{{ diary.id }}"
+                  hx-get="{% url 'stockdiary:tab_content' diary.id 'analysis' %}"
+                  hx-target="#analysis-content-{{ diary.id }}"
+                  hx-trigger="click once"
+                  hx-swap="innerHTML"
+                  hx-indicator="#tab-loading-indicator-{{ diary.id }}"
+                  type="button" role="tab">
             <i class="bi bi-clipboard-data"></i> 分析
           </button>
           {% endif %}
-          <button class="nav-link" id="details-tab-{{ diary.id }}" data-bs-toggle="tab" 
-                  data-bs-target="#details-content-{{ diary.id }}" type="button" role="tab" aria-selected="false"
-                  data-tab-type="details">
-            <i class="bi bi-graph-up"></i> 売買記録
+          
+          <!-- 詳細タブ -->
+          <button class="nav-link" id="details-tab-{{ diary.id }}"
+                  data-bs-toggle="tab" 
+                  data-bs-target="#details-content-{{ diary.id }}"
+                  hx-get="{% url 'stockdiary:tab_content' diary.id 'details' %}"
+                  hx-target="#details-content-{{ diary.id }}"
+                  hx-trigger="click once"
+                  hx-swap="innerHTML"
+                  hx-indicator="#tab-loading-indicator-{{ diary.id }}"
+                  type="button" role="tab">
+            <i class="bi bi-graph-up"></i> 売買
           </button>
+        </div>
+      </div>
+
+      <!-- 共通ローディングインジケータ -->
+      <div id="tab-loading-indicator-{{ diary.id }}" class="htmx-indicator" style="display: none; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 10;">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">読み込み中...</span>
         </div>
       </div>
 
       <!-- タブコンテンツ -->
       <div class="tab-content">
         <!-- 購入理由タブ - 常に最初から表示 -->
-        <div class="tab-pane fade show active" id="reason-content-{{ diary.id }}" role="tabpanel" data-loaded="true">
+        <div class="tab-pane fade show active" id="reason-content-{{ diary.id }}" role="tabpanel">
           <div class="px-1 py-2">
             <h6 class="mb-2">
               <i class="bi bi-journal-text"></i>
@@ -126,35 +157,23 @@
           </div>
         </div>
 
-        <!-- 継続記録タブ - 遅延ロード用プレースホルダー -->
+        <!-- 継続記録タブ -->
         {% if diary.notes.exists %}
         <div class="tab-pane fade" id="notes-content-{{ diary.id }}" role="tabpanel">
-          <div class="d-flex justify-content-center p-4">
-            <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">読み込み中...</span>
-            </div>
-          </div>
+          <!-- 空のまま - HTMXで内容を挿入 -->
         </div>
         {% endif %}
         
-        <!-- 分析テンプレートタブ - 遅延ロード用プレースホルダー -->
+        <!-- 分析テンプレートタブ -->
         {% if diary.analysis_values.exists %}
         <div class="tab-pane fade" id="analysis-content-{{ diary.id }}" role="tabpanel">
-          <div class="d-flex justify-content-center p-4">
-            <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">読み込み中...</span>
-            </div>
-          </div>
+          <!-- 空のまま - HTMXで内容を挿入 -->
         </div>
         {% endif %}
 
-        <!-- 詳細情報タブ - 遅延ロード用プレースホルダー -->
+        <!-- 詳細情報タブ -->
         <div class="tab-pane fade" id="details-content-{{ diary.id }}" role="tabpanel">
-          <div class="d-flex justify-content-center p-4">
-            <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">読み込み中...</span>
-            </div>
-          </div>
+          <!-- 空のまま - HTMXで内容を挿入 -->
         </div>
       </div>
     </div>
@@ -180,48 +199,3 @@
     </div>
   </div>
 </div>
-<script>
-// モーダルを安全に表示する関数
-function showAnalysisModalSafely(modalId, event) {
-  // イベントがある場合は伝播を停止
-  if (event) {
-    event.preventDefault();
-    event.stopPropagation();
-  } else if (window.event) {
-    window.event.preventDefault();
-    window.event.stopPropagation();
-  }
-  
-  // 処理中フラグをチェック（重複実行防止）
-  if (window.isShowingModal) return false;
-  window.isShowingModal = true;
-  
-  // 少し遅延させてモーダルを表示（競合防止）
-  setTimeout(() => {
-    try {
-      const modalElement = document.getElementById(modalId);
-      if (modalElement) {
-        // モーダルをdocument.bodyに移動（重要：位置競合を解消）
-        document.body.appendChild(modalElement);
-        
-        // モーダルの表示
-        const modal = new bootstrap.Modal(modalElement);
-        modal.show();
-        
-        // モーダルが閉じられた時の処理を追加
-        modalElement.addEventListener('hidden.bs.modal', function onHidden() {
-          // フラグをリセット
-          window.isShowingModal = false;
-          // 一度だけ実行のため、リスナーを削除
-          modalElement.removeEventListener('hidden.bs.modal', onHidden);
-        }, { once: true });
-      }
-    } catch (err) {
-      console.error('モーダル表示エラー:', err);
-      window.isShowingModal = false;
-    }
-  }, 50);
-  
-  return false;
-}
-</script>
