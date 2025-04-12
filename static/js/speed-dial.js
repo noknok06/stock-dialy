@@ -1,8 +1,10 @@
 /**
- * スピードダイアル（拡張浮動アクションボタン）実装
- * モバイルでの操作性向上のために使用
+ * Enhanced SpeedDial class - improved mobile experience
+ * - Better animations
+ * - Auto-close timer
+ * - Improved accessibility
+ * - Mobile gesture support
  */
-
 class SpeedDial {
   constructor(config = {}) {
     this.config = {
@@ -11,6 +13,7 @@ class SpeedDial {
       overlaySelector: '.speed-dial-overlay',
       containerSelector: '.speed-dial-container',
       useOverlay: true,
+      autoCloseTime: 4000, // 4秒後に自動でダイアログを閉じる
       ...config
     };
     
@@ -21,6 +24,11 @@ class SpeedDial {
     
     this.isOpen = false;
     this.singleAction = false; // 単一アクションモードのフラグ
+    this.autoCloseTimer = null; // 自動閉じるタイマー
+    
+    // タッチ操作のための変数
+    this.touchStartY = 0;
+    this.touchStartTime = 0;
     
     // アクションが1つだけかチェック
     if (this.actions && this.actions.querySelectorAll('.speed-dial-action').length === 1) {
@@ -56,8 +64,14 @@ class SpeedDial {
         // ボタンを大きく
         const btn = actionItem.querySelector('.speed-dial-btn');
         if (btn) {
-          btn.style.width = '52px';
-          btn.style.height = '52px';
+          btn.style.width = '56px';
+          btn.style.height = '56px';
+          
+          // ユーザー操作をすぐにトリガーするためにラベルを常に表示
+          if (label) {
+            label.style.opacity = '1';
+            label.style.transform = 'translateX(0)';
+          }
         }
       }
     }
@@ -72,6 +86,14 @@ class SpeedDial {
     // トリガーボタンのクリックイベント
     this.trigger.addEventListener('click', () => {
       this.toggle();
+    });
+    
+    // トリガーボタンのキーボードイベント（アクセシビリティ向上）
+    this.trigger.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        this.toggle();
+      }
     });
     
     // オーバーレイのクリックイベント
@@ -109,6 +131,14 @@ class SpeedDial {
           this.close();
         }
       });
+      
+      // キーボードアクセシビリティの強化
+      btn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          btn.click();
+        }
+      });
     });
     
     // ページ内の他の場所をクリックした時に閉じる
@@ -124,6 +154,47 @@ class SpeedDial {
         this.close();
       }
     });
+    
+    // タッチ操作のサポート（スワイプで閉じる）
+    if (this.container) {
+      this.container.addEventListener('touchstart', (e) => {
+        this.touchStartY = e.touches[0].clientY;
+        this.touchStartTime = Date.now();
+      }, { passive: true });
+      
+      this.container.addEventListener('touchmove', (e) => {
+        if (!this.isOpen) return;
+        
+        const currentY = e.touches[0].clientY;
+        const diffY = currentY - this.touchStartY;
+        
+        // 上向きのスワイプで閉じる
+        if (diffY < -50) {
+          this.close();
+        }
+      }, { passive: true });
+    }
+    
+    // スクロール時に非表示にするための監視
+    let lastScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    let scrollTimer = null;
+    
+    window.addEventListener('scroll', () => {
+      // スクロール中は処理をスキップ（パフォーマンス最適化）
+      if (scrollTimer !== null) return;
+      
+      scrollTimer = setTimeout(() => {
+        const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        // スクロール方向の判定
+        if (Math.abs(lastScrollTop - currentScrollTop) > 50) {
+          if (this.isOpen) {
+            this.close();
+          }
+          lastScrollTop = currentScrollTop;
+        }
+        scrollTimer = null;
+      }, 150);
+    }, { passive: true });
   }
   
   toggle() {
@@ -136,6 +207,11 @@ class SpeedDial {
   
   open() {
     if (!this.isOpen) {
+      // 振動フィードバック（対応デバイスのみ）
+      if (navigator.vibrate) {
+        navigator.vibrate(5);
+      }
+      
       this.trigger.classList.add('active');
       this.actions.classList.add('active');
       
@@ -143,7 +219,18 @@ class SpeedDial {
         this.overlay.classList.add('active');
       }
       
+      // アニメーションのためにタイミングを少しずらす
+      this.actions.querySelectorAll('.speed-dial-action').forEach((action, index) => {
+        action.style.transitionDelay = `${0.05 * index}s`;
+      });
+      
+      // アクセシビリティ: ARIAステートの更新
+      this.trigger.setAttribute('aria-expanded', 'true');
+      
       this.isOpen = true;
+      
+      // 自動で閉じるタイマーを設定
+      this.startAutoCloseTimer();
     }
   }
   
@@ -156,8 +243,67 @@ class SpeedDial {
         this.overlay.classList.remove('active');
       }
       
+      // トランジションディレイをリセット
+      this.actions.querySelectorAll('.speed-dial-action').forEach(action => {
+        action.style.transitionDelay = '';
+      });
+      
+      // アクセシビリティ: ARIAステートの更新
+      this.trigger.setAttribute('aria-expanded', 'false');
+      
       this.isOpen = false;
+      
+      // 自動閉じるタイマーをクリア
+      this.clearAutoCloseTimer();
     }
+  }
+  
+  // 自動で閉じるタイマーを開始
+  startAutoCloseTimer() {
+    this.clearAutoCloseTimer();
+    
+    if (this.config.autoCloseTime > 0) {
+      // タイムアウトインジケーターを追加
+      this.addTimeoutIndicator();
+      
+      this.autoCloseTimer = setTimeout(() => {
+        this.close();
+      }, this.config.autoCloseTime);
+    }
+  }
+  
+  // 自動で閉じるタイマーをクリア
+  clearAutoCloseTimer() {
+    if (this.autoCloseTimer) {
+      clearTimeout(this.autoCloseTimer);
+      this.autoCloseTimer = null;
+      
+      // タイムアウトインジケーターを削除
+      this.removeTimeoutIndicator();
+    }
+  }
+  
+  // タイムアウトインジケーターを追加
+  addTimeoutIndicator() {
+    // すでに存在するインジケーターを削除
+    this.removeTimeoutIndicator();
+    
+    // アクションボタン周りにタイムアウトインジケーターを追加
+    const indicator = document.createElement('div');
+    indicator.className = 'timeout-indicator';
+    
+    // トリガーボタンに追加
+    if (this.trigger) {
+      this.trigger.appendChild(indicator);
+    }
+  }
+  
+  // タイムアウトインジケーターを削除
+  removeTimeoutIndicator() {
+    const indicators = document.querySelectorAll('.timeout-indicator');
+    indicators.forEach(indicator => {
+      indicator.remove();
+    });
   }
 }
 
@@ -171,7 +317,8 @@ function createSpeedDial(options = {}) {
     actions: [],
     useOverlay: true,
     triggerIcon: 'bi-plus-lg',
-    position: 'bottom-right'
+    position: 'bottom-right',
+    autoCloseTime: 4000
   };
   
   const config = { ...defaults, ...options };
@@ -192,6 +339,9 @@ function createSpeedDial(options = {}) {
   // アクションボタンコンテナを作成
   const actionsContainer = document.createElement('div');
   actionsContainer.className = 'speed-dial-actions';
+  actionsContainer.setAttribute('role', 'menu');
+  actionsContainer.setAttribute('aria-orientation', 'vertical');
+  
   if (singleActionMode) {
     actionsContainer.classList.add('active');
   }
@@ -200,10 +350,20 @@ function createSpeedDial(options = {}) {
   for (const action of filteredActions) {
     const actionItem = document.createElement('div');
     actionItem.className = 'speed-dial-action';
+    actionItem.setAttribute('role', 'menuitem');
     
+    // アクションラベル
+    const label = document.createElement('span');
+    label.className = 'action-label';
+    label.textContent = action.label || '';
+    
+    // アクションボタン
     const btn = document.createElement('a');
     btn.href = action.url || '#';
     btn.className = `speed-dial-btn action-${action.type}`;
+    btn.setAttribute('role', 'button');
+    btn.setAttribute('aria-label', action.aria_label || action.label || '');
+    btn.setAttribute('title', action.label || '');
     
     // クリックイベントをdata属性として設定（あとで参照できるように）
     if (action.onclick) {
@@ -228,17 +388,7 @@ function createSpeedDial(options = {}) {
     icon.className = `bi ${action.icon}`;
     btn.appendChild(icon);
     
-    // ラベルの作成（単一アクションモードでも念のため作成するが非表示）
-    const label = document.createElement('span');
-    label.className = 'action-label';
-    label.textContent = action.label || '';
-    
-    if (singleActionMode) {
-      label.style.display = 'none';
-      btn.style.width = '52px';
-      btn.style.height = '52px';
-    }
-    
+    // 要素を組み立てる
     actionItem.appendChild(label);
     actionItem.appendChild(btn);
     actionsContainer.appendChild(actionItem);
@@ -248,6 +398,8 @@ function createSpeedDial(options = {}) {
   const trigger = document.createElement('button');
   trigger.className = 'speed-dial-trigger';
   trigger.type = 'button';
+  trigger.setAttribute('aria-haspopup', 'menu');
+  trigger.setAttribute('aria-expanded', 'false');
   trigger.setAttribute('aria-label', 'アクションメニュー');
   
   const triggerIcon = document.createElement('i');
@@ -278,7 +430,8 @@ function createSpeedDial(options = {}) {
     actionsSelector: '.speed-dial-actions',
     overlaySelector: '.speed-dial-overlay',
     containerSelector: '.speed-dial-container',
-    useOverlay: config.useOverlay
+    useOverlay: config.useOverlay,
+    autoCloseTime: config.autoCloseTime
   });
 }
 
