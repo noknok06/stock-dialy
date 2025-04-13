@@ -89,6 +89,37 @@ class AnalysisTemplateCreateView(LoginRequiredMixin, CreateView):
     template_name = 'analysis_template/form.html'
     success_url = reverse_lazy('analysis_template:list')
     
+    def form_valid(self, form):
+        context = self.get_context_data()
+        items_formset = context['items_formset']
+        
+        # ユーザーを設定
+        form.instance.user = self.request.user
+        
+        if items_formset.is_valid():
+            self.object = form.save()
+            items_formset.instance = self.object
+            items_formset.save()
+            
+            # AJAXリクエストの場合
+            if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'redirect_url': reverse_lazy('analysis_template:detail', kwargs={'pk': self.object.pk})
+                })
+            
+            # 通常のリクエストの場合
+            return redirect('analysis_template:detail', pk=self.object.pk)
+        else:
+            # AJAXリクエストの場合
+            if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'errors': items_formset.errors
+                }, status=400)
+            
+            return self.render_to_response(self.get_context_data(form=form))
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
@@ -132,7 +163,7 @@ class AnalysisTemplateUpdateView(LoginRequiredMixin, UpdateView):
     model = AnalysisTemplate
     form_class = AnalysisTemplateForm
     template_name = 'analysis_template/form.html'
-    
+
     def get_queryset(self):
         return AnalysisTemplate.objects.filter(user=self.request.user)
     
@@ -164,8 +195,23 @@ class AnalysisTemplateUpdateView(LoginRequiredMixin, UpdateView):
             self.object = form.save()
             items_formset.instance = self.object
             items_formset.save()
+            
+            # AJAXリクエストの場合
+            if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'redirect_url': reverse_lazy('analysis_template:detail', kwargs={'pk': self.object.pk})
+                })
+            
+            # 通常のリクエストの場合
             return redirect('analysis_template:detail', pk=self.object.pk)
         else:
+            if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'errors': items_formset.errors
+                }, status=400)
+            
             return self.render_to_response(self.get_context_data(form=form))
             
     def get_success_url(self):

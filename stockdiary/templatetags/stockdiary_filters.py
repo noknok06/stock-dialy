@@ -88,3 +88,24 @@ def get_analysis_value(item, diary):
         ).first()
     except Exception:
         return None
+
+        
+
+@register.filter(name='multiply')
+def multiply(value, arg):
+    """2つの値を掛け算するフィルター"""
+    try:
+        return float(value) * float(arg)
+    except (ValueError, TypeError):
+        return 0
+
+@register.filter(name='divideby')
+def divideby(value, arg):
+    """2つの値を割り算するフィルター"""
+    try:
+        arg_float = float(arg)
+        if arg_float == 0:
+            return 0
+        return float(value) / arg_float
+    except (ValueError, TypeError):
+        return 0

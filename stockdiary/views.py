@@ -135,6 +135,8 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         # 実際の取引のみをカウント
         context['active_holdings_count'] = len([d for d in transaction_entries if d.sell_date is None])
         
+        context['current_query'] = self.request.GET.urlencode()
+    
         # フォーム用のスピードダイアルアクション
         context['form_actions'] = [
             {
@@ -1377,11 +1379,19 @@ def day_events(request):
             f'<div class="alert alert-warning m-2"><i class="bi bi-exclamation-triangle me-2"></i>イベントの読み込みに失敗しました。</div>',
             status=200  # 500ではなく200を返す
         )
-        
+
 def diary_list(request):
     """日記リストを表示するビュー（検索・フィルター機能付き）"""
+    # HTMX/AJAXリクエストかどうかを確認
+    is_htmx = request.headers.get('HX-Request') == 'true' or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
+    # 通常のブラウザアクセスの場合はホームページにリダイレクト
+    if not is_htmx:
+        from django.shortcuts import redirect
+        return redirect(f'/stockdiary/?{request.GET.urlencode()}')
+    
     try:
-        # StockDiaryListViewと同様の処理を実装
+        # 以下は元のコード
         queryset = StockDiary.objects.filter(user=request.user).order_by('-purchase_date')
         queryset = queryset.select_related('user').prefetch_related('tags', 'notes')
         
@@ -1489,7 +1499,7 @@ def tab_content(request, diary_id, tab_type):
                         template = values[0].analysis_item.template
                         template_groups.append({
                             'template': template,
-                            'values': values[:5]  # 最初の5項目
+                            'values': values[:3]  # 最初の5項目
                         })
                 
                 context['template_groups'] = template_groups

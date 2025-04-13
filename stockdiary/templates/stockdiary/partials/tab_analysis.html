@@ -1,175 +1,240 @@
+{% load stockdiary_filters %}
 <style>
-  /* 分析タブの詳細なカスタムスタイル */
 .analysis-templates-container {
-  position: relative;
+  background-color: rgba(90, 126, 197, 0.03);
+  border-radius: var(--border-radius);
+  padding: 0.5rem;
 }
 
 .analysis-template-card {
   background-color: white;
-  border-radius: var(--border-radius);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  padding: 1rem;
-  transition: all 0.2s ease;
+  border-radius: 12px;
+  border: 1px solid rgba(90, 126, 197, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1rem;
+  overflow: hidden;
+  transition: all 0.3s ease;
 }
 
 .analysis-template-card:hover {
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  transform: translateY(-3px);
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+  border-color: rgba(90, 126, 197, 0.2);
 }
 
 .analysis-template-header {
-  margin-bottom: 0.75rem;
+  background-color: rgba(90, 126, 197, 0.05);
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(90, 126, 197, 0.1);
 }
 
 .analysis-template-header h6 {
+  margin: 0;
   color: var(--primary-color);
   font-weight: 600;
+  display: flex;
+  align-items: center;
 }
 
-.template-completion-badge .badge {
-  font-size: 0.75rem;
-  padding: 0.25em 0.5em;
+.analysis-template-header h6 i {
+  margin-right: 0.5rem;
+  color: var(--primary-color);
 }
 
-.analysis-items-preview {
-  background-color: rgba(var(--bs-primary-rgb), 0.03);
-  border-radius: var(--border-radius);
-  padding: 0.75rem;
+.analysis-template-progress {
+  width: 100%;
+  height: 4px;
+  background-color: rgba(90, 126, 197, 0.1);
 }
 
-.analysis-preview-item {
-  border-bottom: 1px dotted rgba(0, 0, 0, 0.1);
+.analysis-template-progress-bar {
+  height: 100%;
+  background-color: var(--primary-color);
+  transition: width 0.5s ease;
+}
+
+.analysis-items-container {
+  padding: 1rem;
+}
+
+.analysis-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 0.5rem 0;
-  transition: background-color 0.2s ease;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.analysis-preview-item:last-child {
+.analysis-item:last-child {
   border-bottom: none;
-}
-
-.analysis-preview-item:hover {
-  background-color: rgba(var(--bs-primary-rgb), 0.05);
 }
 
 .analysis-item-name {
   font-size: 0.9rem;
-  opacity: 0.8;
+  color: var(--text-light);
 }
 
 .analysis-item-value {
   font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.analysis-item-value .badge {
+  margin-left: 0.5rem;
+}
+
+.analysis-value-boolean-true {
+  color: var(--success-color);
+}
+
+.analysis-value-boolean-false {
+  color: var(--danger-color);
+}
+
+.analysis-more-link {
+  display: block;
   text-align: right;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--primary-color);
+  text-decoration: none;
 }
 
-.analysis-item-value.text-success {
-  color: var(--success-color) !important;
+.analysis-more-link:hover {
+  text-decoration: underline;
 }
 
-.analysis-item-value.text-danger {
-  color: var(--danger-color) !important;
-}
-
-/* レスポンシブ対応 */
 @media (max-width: 576px) {
   .analysis-template-card {
+    margin-bottom: 0.75rem;
+  }
+  
+  .analysis-template-header {
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .analysis-items-container {
     padding: 0.75rem;
   }
-
-  .analysis-items-preview {
-    padding: 0.5rem;
-  }
-
-  .analysis-preview-item {
+  
+  .analysis-item {
     flex-direction: column;
     align-items: flex-start;
   }
-
+  
   .analysis-item-name,
   .analysis-item-value {
-    font-size: 0.85rem;
+    width: 100%;
   }
-
+  
   .analysis-item-value {
     margin-top: 0.25rem;
-    align-self: flex-start;
+    justify-content: space-between;
   }
-}
-
-/* アニメーション */
-@keyframes templateEntrance {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.analysis-template-card {
-  animation: templateEntrance 0.3s ease-out;
-  animation-fill-mode: backwards;
-}
-
-.analysis-template-card:nth-child(2n) {
-  animation-delay: 0.1s;
-}
-
-.analysis-template-card:nth-child(3n) {
-  animation-delay: 0.2s;
 }
 </style>
-<div class="px-1 py-2">
-    {% if template_groups %}
-      {% for group in template_groups %}
-      <div class="analysis-template-summary mb-3" data-template-id="{{ group.template.id }}">
-        <h6 class="mb-2">
-          <i class="bi bi-clipboard-check"></i> {{ group.template.name }}
-        </h6>
-        
-        <div class="progress mb-2" style="height: 6px;">
-          {% with items_count=group.template.items.count %}
-          {% if items_count > 0 %}
-            {% with filled_count=group.values|length %}
-            <div class="progress-bar bg-primary" style="width: {{ filled_count|floatformat:0 }}%"></div>
-            {% endwith %}
-          {% else %}
-            <div class="progress-bar bg-primary" style="width: 0%"></div>
-          {% endif %}
+
+<div class="analysis-templates-container px-1 py-2">
+  {% if template_groups %}
+    {% for group in template_groups %}
+      <div class="analysis-template-card" data-template-id="{{ group.template.id }}">
+        <div class="analysis-template-header">
+          <h6>
+            <i class="bi bi-clipboard-check"></i> 
+            {{ group.template.name }}
+          </h6>
+          {% with items_count=group.template.items.count filled_count=group.values|length %}
+            {% if items_count > 0 %}
+              <span class="badge bg-primary bg-opacity-10 text-primary">
+                全{{ items_count }}項目（選択中のみ表示）
+              </span>
+            {% endif %}
           {% endwith %}
         </div>
         
-        <div class="analysis-item-preview">
-          {% for value in group.values|slice:":3" %}
-          <div class="analysis-preview-item">
-            <span class="key">{{ value.analysis_item.name }}:</span>
-            <span class="value">
-              {% if value.number_value != None %}
-                {{ value.number_value|floatformat:"-2" }}
-              {% elif value.boolean_value != None %}
-                {% if value.boolean_value %}はい{% else %}いいえ{% endif %}
-              {% elif value.text_value %}
-                {{ value.text_value }}
-              {% else %}
-                -
-              {% endif %}
-            </span>
-          </div>
+        <div class="analysis-template-progress">
+          {% with items_count=group.template.items.count %}
+            {% if items_count > 0 %}
+              {% with filled_count=group.values|length progress_percentage=filled_count|multiply:100|divideby:items_count %}
+                <div class="analysis-template-progress-bar" style="width: {{ progress_percentage|floatformat:0 }}%"></div>
+              {% endwith %}
+            {% else %}
+              <div class="analysis-template-progress-bar" style="width: 0%"></div>
+            {% endif %}
+          {% endwith %}
+        </div>
+        
+        <div class="analysis-items-container">
+          {% for value in group.values %}
+            <div class="analysis-item">
+              <div class="analysis-item-name">
+                {{ value.analysis_item.name }}
+              </div>
+              <div class="analysis-item-value">
+                {% if value.analysis_item.item_type == 'boolean' %}
+                  <span class="{% if value.boolean_value %}analysis-value-boolean-true{% else %}analysis-value-boolean-false{% endif %}">
+                    {% if value.boolean_value %}
+                      <span class="badge bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-check-lg me-1"></i>はい
+                      </span>
+                    {% else %}
+                      <span class="badge bg-danger bg-opacity-10 text-danger">
+                        <i class="bi bi-x-lg me-1"></i>いいえ
+                      </span>
+                    {% endif %}
+                  </span>
+                {% elif value.analysis_item.item_type == 'boolean_with_value' %}
+                  <div class="d-flex align-items-center">
+                    <span class="{% if value.boolean_value %}analysis-value-boolean-true{% else %}analysis-value-boolean-false{% endif %} me-2">
+                      {% if value.boolean_value %}
+                        <i class="bi bi-check-circle text-success"></i>
+                      {% else %}
+                        <i class="bi bi-x-circle text-danger"></i>
+                      {% endif %}
+                    </span>
+                    {% if value.number_value is not None %}
+                      <span>{{ value.number_value|floatformat:2 }}</span>
+                    {% elif value.text_value %}
+                      <span>{{ value.text_value }}</span>
+                    {% endif %}
+                  </div>
+                {% elif value.number_value is not None %}
+                  <span class="text-primary">{{ value.number_value|floatformat:2 }}</span>
+                {% elif value.analysis_item.item_type == 'select' %}
+                  <span class="badge bg-info bg-opacity-10 text-info">{{ value.text_value }}</span>
+                {% elif value.text_value %}
+                  <span class="badge bg-secondary bg-opacity-10 text-secondary">{{ value.text_value }}</span>
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </div>
+            </div>
           {% endfor %}
           
-          {% if group.values|length > 3 %}
-          <div class="text-end mt-2">
-            <a href="{% url 'stockdiary:detail' diary.id %}" class="text-primary text-decoration-none small">
-              すべて表示 <i class="bi bi-arrow-right"></i>
-            </a>
-          </div>
-          {% endif %}
+          <a href="{% url 'stockdiary:detail' diary.id %}" class="analysis-more-link">
+            すべての分析を表示 <i class="bi bi-arrow-right"></i>
+          </a>
         </div>
       </div>
-      {% endfor %}
-    {% else %}
-      <p class="text-muted">分析データはありません</p>
-    {% endif %}
-  </div>
+    {% endfor %}
+  {% else %}
+    <p class="text-muted text-center py-3">分析データはありません</p>
+  {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const progressBars = document.querySelectorAll('.analysis-template-progress-bar');
+  progressBars.forEach(bar => {
+    const width = parseInt(bar.style.width);
+    bar.style.width = '0';
+    setTimeout(() => {
+      bar.style.width = `${width}%`;
+    }, 50);
+  });
+});
+</script>

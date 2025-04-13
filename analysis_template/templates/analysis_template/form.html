@@ -6,7 +6,6 @@
 {% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'css/speed-dial.css' %}">
 <style>
   /* 共通スタイル */
   .card-header {
@@ -697,12 +696,6 @@
                   </button>
                 </div>
                 <div class="col-md-8">
-                  <div id="form-submitting" class="htmx-indicator text-center mb-2">
-                    <div class="spinner-border text-primary" role="status">
-                      <span class="visually-hidden">送信中...</span>
-                    </div>
-                    <span class="ms-2">処理中...</span>
-                  </div>
                   <button type="submit" class="btn btn-primary w-100">
                     <i class="bi bi-save me-1"></i> 保存する
                   </button>
@@ -1664,21 +1657,27 @@ function setupHtmxHandlers() {
     }
   });
   
-  // レスポンス後のイベント
+  // フォーム送信後のイベント処理
   document.body.addEventListener('htmx:afterRequest', function(event) {
     if (event.detail.elt.id === 'stepByStepForm') {
-      if (event.detail.successful) {
+      const response = event.detail.xhr.response ? JSON.parse(event.detail.xhr.response) : {};
+      
+      if (event.detail.successful && response.success) {
         showFormStatus('success', '保存しました！');
         
-        // リダイレクトする場合はHTMXからのレスポンスに含まれるヘッダーを確認
-        const redirectPath = event.detail.xhr.getResponseHeader('HX-Redirect');
-        if (redirectPath) {
+        // リダイレクトURLがある場合は遷移
+        if (response.redirect_url) {
           setTimeout(() => {
-            window.location.href = redirectPath;
+            window.location.href = response.redirect_url;
           }, 1000);
         }
       } else {
-        showFormStatus('error', '保存に失敗しました。入力内容を確認してください。');
+        // エラー処理
+        const errorMessage = response.errors 
+          ? Object.values(response.errors).flat().join(', ') 
+          : '保存に失敗しました。入力内容を確認してください。';
+        
+        showFormStatus('error', errorMessage);
       }
     }
   });
