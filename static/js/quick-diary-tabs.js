@@ -428,5 +428,5 @@ document.addEventListener('DOMContentLoaded', function() {
     initStyles();
     
     // デバッグ情報
-    console.log('Quick diary tabs swipe handler initialized');
+    // console.log('Quick diary tabs swipe handler initialized');
   });

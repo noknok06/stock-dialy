@@ -1,139 +1,49 @@
 /**
  * mobile-gestures.js - スマートフォン向けジェスチャー対応とUI改善
  * カブログでのHTMXベースのスマートフォン操作性向上のための機能
+ * デバッグ強化版
  */
 
+// デバッグモードを有効化
+const DEBUG = false;
+
+// デバッグログ関数
+function debugLog(...args) {
+  if (DEBUG) {
+    console.log('[Swipe Debug]', ...args);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+  debugLog('DOM Content Loaded - Initializing mobile gestures');
+  
   // スピードダイアルとの互換性確保
   if (typeof window.speedDialInstance !== 'undefined') {
-    console.log('Speed Dial already initialized, maintaining compatibility');
+    debugLog('Speed Dial already initialized, maintaining compatibility');
   }
 
-  // モバイルデバイス判定
-  const isMobile = window.innerWidth < 768 || navigator.maxTouchPoints > 1;
-  if (!isMobile) return; // モバイルのみ機能を有効化
+  // モバイルデバイス判定 - デバッグ用にPC検証でも常に有効化
+  const isMobile = true; // デバッグ用に常にtrue - 本番環境では元の条件に戻す
 
-  // スワイプ検出のための変数
-  let touchStartX = 0;
-  let touchStartY = 0;
-  let touchEndX = 0;
-  let touchEndY = 0;
-  let touchThreshold = 100; // スワイプと判定する最小距離（ピクセル単位）
-  let touchStartTime = 0;
-  let longPressThreshold = 500; // 長押しと判定する時間（ミリ秒）
-  const activeSwipeElements = new Set(); // アクティブにスワイプ中の要素
-  
-  // プル・トゥ・リフレッシュの変数
-  let pullStartY = 0;
-  let pullMoveY = 0;
-  let isPulling = false;
-  const pullThreshold = 120; // プルトゥリフレッシュのしきい値
-  let pullIndicator = null;
-  
-  // 初期化処理
-  initSwipeDetection();
-  initPullToRefresh();
-  initScrollToTop();
-  initTouchFeedback();
-  setupOfflineDetection();
-  
-  /**
-   * スワイプ検出の初期化
-   */
-  function initSwipeDetection() {
-    console.log('Initializing swipe detection for mobile');
+  // グローバルで共有するイベントハンドラーを定義
+  window.handleTouchStart = function(e) {
+    debugLog('Touch START on element', this.tagName, this.className, 'data-diary-id:', this.getAttribute('data-diary-id'));
     
-    // スワイプ可能な要素にクラスを追加
-    document.querySelectorAll('[hx-swipe]').forEach(elem => {
-      elem.classList.add('swipeable');
-    });
-    
-    // 日記カードにスワイプイベントを設定
-    setupAllDiaryCards();
-    
-    // カレンダーにスワイプイベントを設定
-    const calendarContainer = document.querySelector('#mobile-calendar-container, #desktop-calendar-container');
-    if (calendarContainer) {
-      setupCalendarSwipe(calendarContainer);
-    }
-    
-    // htmxがロードした新しい要素に対してもスワイプを設定
-    document.body.addEventListener('htmx:afterSwap', function(evt) {
-      console.log('HTMX afterSwap event triggered on target:', evt.detail.target.id);
-      
-      if (evt.detail.target.id === 'diary-container') {
-        // イベント発火の少し後（DOM更新後）に実行
-        setTimeout(() => {
-          console.log('Setting up swipe handlers for new diary cards');
-          setupAllDiaryCards();
-        }, 50);
-      }
-    });
-    
-    // 単一の日記追加時のイベント（クイック日記作成などで使用）
-    document.body.addEventListener('htmx:afterSettle', function(evt) {
-      if (evt.detail.target.classList.contains('diary-card')) {
-        console.log('Setting up swipe handler for newly added diary card');
-        setupSwipeHandlers(evt.detail.target);
-      }
-    });
-  }
-  
-  /**
-   * すべての日記カードにスワイプハンドラーを設定
-   */
-  function setupAllDiaryCards() {
-    const diaryCards = document.querySelectorAll('.diary-card');
-    console.log(`Found ${diaryCards.length} diary cards to setup swipe handlers`);
-    
-    diaryCards.forEach(card => {
-      // すべての日記カードに対して再設定
-      // data-swipe-initialized属性を削除してリセット
-      card.removeAttribute('data-swipe-initialized');
-      setupSwipeHandlers(card);
-    });
-  }
-  
-  /**
-   * 要素にスワイプハンドラを設定
-   */
-  function setupSwipeHandlers(element) {
-    // すでに設定済みならスキップ
-    if (element.dataset.swipeInitialized === 'true') {
-      return;
-    }
-    
-    element.dataset.swipeInitialized = 'true';
-    
-    // 既存のイベントリスナーを削除（重複防止）
-    element.removeEventListener('touchstart', handleTouchStart);
-    element.removeEventListener('touchmove', handleTouchMove);
-    element.removeEventListener('touchend', handleTouchEnd);
-    
-    // タッチイベントをセットアップ
-    element.addEventListener('touchstart', handleTouchStart, {passive: true});
-    element.addEventListener('touchmove', handleTouchMove, {passive: false});
-    element.addEventListener('touchend', handleTouchEnd, {passive: true});
-    
-    console.log('Swipe handlers set up for:', element.getAttribute('data-diary-id') || 'unknown diary');
-  }
-  
-  /**
-   * タッチ開始時の処理
-   */
-  function handleTouchStart(e) {
     const touch = e.touches[0];
-    touchStartX = touch.clientX;
-    touchStartY = touch.clientY;
-    touchStartTime = Date.now();
+    window.touchStartX = touch.clientX;
+    window.touchStartY = touch.clientY;
+    window.touchStartTime = Date.now();
+    
+    // 視覚的フィードバックを追加
+    this.style.backgroundColor = 'rgba(200, 200, 255, 0.1)';
     
     // 長押し検出用のタイマー設定
     this.longPressTimer = setTimeout(() => {
+      debugLog('Long press detected');
       const touchElement = this;
       
-      // 長押しイベントをトリガー（hx-trigger="longpress"用）
+      // 長押しイベントをトリガー
       if (this.hasAttribute('hx-trigger') && this.getAttribute('hx-trigger').includes('longpress')) {
-        // カスタムイベントをディスパッチ
         const longPressEvent = new CustomEvent('longpress', {
           bubbles: true,
           cancelable: true
@@ -145,19 +55,15 @@ document.addEventListener('DOMContentLoaded', function() {
           navigator.vibrate(50);
         }
         
-        // 視覚的フィードバック
         touchElement.classList.add('long-press-active');
         setTimeout(() => {
           touchElement.classList.remove('long-press-active');
         }, 300);
       }
-    }, longPressThreshold);
-  }
-  
-  /**
-   * タッチ移動中の処理
-   */
-  function handleTouchMove(e) {
+    }, 500);
+  };
+
+  window.handleTouchMove = function(e) {
     // 長押し検出をキャンセル
     if (this.longPressTimer) {
       clearTimeout(this.longPressTimer);
@@ -165,56 +71,70 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     const touch = e.touches[0];
-    touchEndX = touch.clientX;
-    touchEndY = touch.clientY;
+    window.touchEndX = touch.clientX;
+    window.touchEndY = touch.clientY;
     
-    // 水平方向の移動が大きい場合のみ、ページスクロールを防止
-    const diffX = Math.abs(touchEndX - touchStartX);
-    const diffY = Math.abs(touchEndY - touchStartY);
+    // 移動距離を計算
+    const diffX = window.touchEndX - window.touchStartX;
+    const diffY = Math.abs(window.touchEndY - window.touchStartY);
     
-    if (diffX > diffY && diffX > 30) {
-      // 水平スワイプの場合はページスクロールを防止
+    // 水平方向の移動が大きい場合、スワイプとして処理
+    if (Math.abs(diffX) > 30 && diffY < 50) {
+      debugLog('Swipe detected during movement', diffX, 'px');
+      
+      // ページスクロールを防止
       e.preventDefault();
       
-      // スワイプに応じてカードを動かす視覚的効果
-      const moveX = touchEndX - touchStartX;
-      if (Math.abs(moveX) > 20) {
-        // スワイプの方向に応じてカードを動かす
-        this.style.transform = `translateX(${moveX / 3}px)`;
-        
-        // スワイプの方向に応じたスタイルを適用
-        if (moveX > 0) {
-          // 右スワイプ（編集アクション）
-          this.classList.add('swipe-right-active');
-          this.classList.remove('swipe-left-active');
-        } else {
-          // 左スワイプ（削除アクション）
-          this.classList.add('swipe-left-active');
-          this.classList.remove('swipe-right-active');
-        }
-        
-        // アクティブなスワイプ要素として登録
-        activeSwipeElements.add(this);
+      // スワイプ方向に応じてカードを動かす視覚的効果
+      this.style.transition = 'none';
+      this.style.transform = `translateX(${diffX}px)`;
+      
+      // スワイプの方向に応じたスタイルを適用
+      if (diffX > 0) {
+        // 右スワイプ（編集アクション）
+        this.classList.add('swipe-right-active');
+        this.classList.remove('swipe-left-active');
+      } else {
+        // 左スワイプ（削除アクション）
+        this.classList.add('swipe-left-active');
+        this.classList.remove('swipe-right-active');
       }
     }
-  }
-  
-  /**
-   * タッチ終了時の処理
-   */
-  function handleTouchEnd(e) {
+  };
+
+  window.handleTouchEnd = function(e) {
+    debugLog('Touch END on element', this.tagName, this.className);
+    
     // 長押し検出をキャンセル
     if (this.longPressTimer) {
       clearTimeout(this.longPressTimer);
       this.longPressTimer = null;
     }
     
-    const diffX = touchEndX - touchStartX;
-    const diffY = touchEndY - touchStartY;
-    const touchDuration = Date.now() - touchStartTime;
+    // 視覚的フィードバックをリセット
+    this.style.backgroundColor = '';
     
-    // スワイプの処理
-    if (Math.abs(diffX) > touchThreshold && Math.abs(diffY) < touchThreshold) {
+    // タッチ終了時の位置を取得
+    let finalX = window.touchEndX;
+    let finalY = window.touchEndY;
+    
+    if (e.changedTouches && e.changedTouches.length > 0) {
+      finalX = e.changedTouches[0].clientX;
+      finalY = e.changedTouches[0].clientY;
+    }
+    
+    const diffX = finalX - window.touchStartX;
+    const diffY = Math.abs(finalY - window.touchStartY);
+    const touchDuration = Date.now() - window.touchStartTime;
+    
+    debugLog('Touch ended with diffX:', diffX, 'diffY:', diffY, 'duration:', touchDuration);
+    
+    // スワイプの処理 - 閾値を下げてテスト用に調整
+    const swipeThreshold = 80; // 通常は100だが、テスト用に閾値を下げる
+    
+    if (Math.abs(diffX) > swipeThreshold && diffY < 50) {
+      debugLog('SWIPE ACTION TRIGGERED!', diffX > 0 ? 'RIGHT' : 'LEFT');
+      
       // 振動フィードバック
       if (navigator.vibrate) {
         navigator.vibrate(25);
@@ -225,21 +145,26 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // スワイプに対応するアクションをトリガー
       handleSwipeAction(this, swipeDirection);
+      
+      // イベントをさらに伝播させない
+      e.stopPropagation();
     }
     
     // スワイプ中のスタイルをリセット
     resetSwipeStyles(this);
     
-    // 短いタップとして処理（100ms以下のタッチ）
-    if (touchDuration < 100 && Math.abs(diffX) < 5 && Math.abs(diffY) < 5) {
+    // 短いタップとして処理（200ms以下のタッチ）
+    if (touchDuration < 200 && Math.abs(diffX) < 10 && diffY < 10) {
+      debugLog('Short tap detected');
+      
       // タップ効果
       this.classList.add('tap-active');
       setTimeout(() => {
         this.classList.remove('tap-active');
       }, 150);
     }
-  }
-  
+  };
+
   /**
    * スワイプ時のスタイルをリセット
    */
@@ -253,10 +178,8 @@ document.addEventListener('DOMContentLoaded', function() {
       element.style.transition = '';
       element.classList.remove('swipe-left-active', 'swipe-right-active');
     }, 300);
-    
-    activeSwipeElements.delete(element);
   }
-  
+
   /**
    * スワイプアクションを処理
    */
@@ -265,18 +188,21 @@ document.addEventListener('DOMContentLoaded', function() {
     if (element.classList.contains('diary-card')) {
       const diaryId = element.getAttribute('data-diary-id');
       
+      debugLog('Processing swipe action for diary card', diaryId, 'direction:', direction);
+      
       if (direction === 'right') {
         // 右スワイプ：編集アクション
-        // アクション確認ダイアログを表示
+        debugLog('RIGHT SWIPE - Opening edit drawer for diary', diaryId);
         showActionDrawer(element, 'edit', diaryId);
       } else {
         // 左スワイプ：削除アクション
+        debugLog('LEFT SWIPE - Opening delete drawer for diary', diaryId);
         showActionDrawer(element, 'delete', diaryId);
       }
     } 
     // カレンダーの場合
     else if (element.closest('#mobile-calendar-container') || element.closest('#desktop-calendar-container')) {
-      const currentMonth = element.querySelector('#desktop-current-year-month, .calendar-date-display');
+      debugLog('Calendar swipe detected:', direction);
       
       if (direction === 'right') {
         // 右スワイプ：前月
@@ -289,58 +215,13 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
   }
-  
-  /**
-   * カレンダーのスワイプ設定
-   */
-  function setupCalendarSwipe(calendarContainer) {
-    calendarContainer.addEventListener('touchstart', function(e) {
-      const touch = e.touches[0];
-      touchStartX = touch.clientX;
-      touchStartY = touch.clientY;
-    }, {passive: true});
-    
-    calendarContainer.addEventListener('touchmove', function(e) {
-      const touch = e.touches[0];
-      touchEndX = touch.clientX;
-      touchEndY = touch.clientY;
-      
-      // 水平方向の移動が大きい場合はページスクロールを防止
-      const diffX = Math.abs(touchEndX - touchStartX);
-      const diffY = Math.abs(touchEndY - touchStartY);
-      
-      if (diffX > diffY && diffX > 30) {
-        e.preventDefault();
-      }
-    }, {passive: false});
-    
-    calendarContainer.addEventListener('touchend', function(e) {
-      const diffX = touchEndX - touchStartX;
-      const diffY = touchEndY - touchStartY;
-      
-      // 水平スワイプの場合のみ処理
-      if (Math.abs(diffX) > touchThreshold && Math.abs(diffY) < touchThreshold) {
-        // スワイプ方向を判定
-        const swipeDirection = diffX > 0 ? 'right' : 'left';
-        
-        // カレンダーナビゲーションボタンのクリックをシミュレート
-        if (swipeDirection === 'right') {
-          // 右スワイプ：前月
-          const prevButton = calendarContainer.querySelector('.calendar-nav-button:first-child');
-          if (prevButton) prevButton.click();
-        } else {
-          // 左スワイプ：翌月
-          const nextButton = calendarContainer.querySelector('.calendar-nav-button:nth-child(2)');
-          if (nextButton) nextButton.click();
-        }
-      }
-    }, {passive: true});
-  }
-  
+
   /**
    * アクションドロワーを表示
    */
   function showActionDrawer(element, actionType, diaryId) {
+    debugLog('Showing action drawer', actionType, 'for diary', diaryId);
+    
     // 既存のドロワーを削除
     const existingDrawer = document.getElementById('action-drawer');
     if (existingDrawer) {
@@ -442,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }
-  
+
   /**
    * アクションドロワーを閉じる
    */
@@ -452,514 +333,112 @@ document.addEventListener('DOMContentLoaded', function() {
       drawer.remove();
     }, 300);
   }
-  
-  /**
-   * プル・トゥ・リフレッシュの初期化
-   */
-  function initPullToRefresh() {
-    // プル・トゥ・リフレッシュ対象のコンテナ
-    const containerElement = document.getElementById('diary-container');
-    if (!containerElement) return;
-    
-    // インジケーターが存在しなければ作成
-    if (!document.getElementById('pull-indicator')) {
-      pullIndicator = document.createElement('div');
-      pullIndicator.id = 'pull-indicator';
-      pullIndicator.className = 'pull-indicator';
-      pullIndicator.innerHTML = `<div class="pull-indicator-content">
-        <div class="pull-spinner"></div>
-        <span class="pull-text">引っ張って更新</span>
-      </div>`;
-      
-      // コンテナの前に挿入
-      containerElement.parentNode.insertBefore(pullIndicator, containerElement);
-    } else {
-      pullIndicator = document.getElementById('pull-indicator');
-    }
-    
-    // タッチイベントのセットアップ
-    document.addEventListener('touchstart', handlePullStart, {passive: true});
-    document.addEventListener('touchmove', handlePullMove, {passive: false});
-    document.addEventListener('touchend', handlePullEnd, {passive: true});
-  }
-  
-  /**
-   * プル開始の処理
-   */
-  function handlePullStart(e) {
-    // スクロール位置が先頭にある場合のみ有効
-    if (window.scrollY > 0) return;
-    
-    const touch = e.touches[0];
-    pullStartY = touch.clientY;
-    isPulling = true;
-  }
-  
-  /**
-   * プル中の処理
-   */
-  function handlePullMove(e) {
-    if (!isPulling) return;
-    
-    const touch = e.touches[0];
-    pullMoveY = touch.clientY;
-    const pullDistance = pullMoveY - pullStartY;
-    
-    // 下に引っ張った場合のみ処理
-    if (pullDistance > 0 && window.scrollY <= 0) {
-      // インジケーターの表示
-      if (pullIndicator) {
-        // 引っ張りの距離に応じてインジケーターを表示
-        const height = Math.min(Math.pow(pullDistance, 0.8), pullThreshold);
-        pullIndicator.style.height = `${height}px`;
-        pullIndicator.classList.add('active');
-        
-        // しきい値を超えたらリリース可能状態に
-        if (pullDistance > pullThreshold) {
-          pullIndicator.classList.add('ready');
-          pullIndicator.querySelector('.pull-text').textContent = 'リリースして更新';
-        } else {
-          pullIndicator.classList.remove('ready');
-          pullIndicator.querySelector('.pull-text').textContent = '引っ張って更新';
-        }
-        
-        // スピナーの回転角度も引っ張りに合わせる
-        const rotation = Math.min(pullDistance / pullThreshold * 180, 180);
-        pullIndicator.querySelector('.pull-spinner').style.transform = `rotate(${rotation}deg)`;
-      }
-      
-      // スクロールを防止
-      e.preventDefault();
-    }
-  }
-  
-  /**
-   * プル終了の処理
-   */
-  function handlePullEnd(e) {
-    if (!isPulling) return;
-    
-    const pullDistance = pullMoveY - pullStartY;
-    
-    // しきい値を超えた場合はHTMXリクエストをトリガー
-    if (pullDistance > pullThreshold && window.scrollY <= 0) {
-      // リフレッシュインジケーターの表示
-      if (pullIndicator) {
-        pullIndicator.classList.add('refreshing');
-        pullIndicator.style.height = '60px';
-        pullIndicator.querySelector('.pull-text').textContent = '更新中...';
-      }
-      
-      // 振動フィードバック
-      if (navigator.vibrate) {
-        navigator.vibrate(30);
-      }
-      
-      // 日記コンテナのリロードをトリガー
-      const diaryContainer = document.getElementById('diary-container');
-      if (diaryContainer && typeof htmx !== 'undefined') {
-        console.log('Triggering pulldown event for diary container');
-        // htmxのGETリクエストをトリガー
-        htmx.trigger(diaryContainer, 'pulldown');
-        
-        // HTMX完了イベントを監視
-        document.body.addEventListener('htmx:afterSwap', function resetPullIndicator(e) {
-          // 日記コンテナへのスワップが完了したらインジケーターを非表示
-          if (e.detail.target.id === 'diary-container') {
-            setTimeout(() => {
-              if (pullIndicator) {
-                pullIndicator.classList.remove('active', 'ready', 'refreshing');
-                pullIndicator.style.height = '0';
-              }
-              
-              // リロード後に再度スワイプハンドラーを初期化
-              setupAllDiaryCards();
-            }, 500);
-            
-            // イベントリスナーを削除
-            document.body.removeEventListener('htmx:afterSwap', resetPullIndicator);
-          }
-        });
-      } else {
-        // htmxが利用できない場合は通常のページリロード
-        window.location.reload();
-      }
-    } else {
-      // しきい値未満の場合はインジケーターを非表示
-      if (pullIndicator) {
-        pullIndicator.classList.remove('active', 'ready');
-        pullIndicator.style.height = '0';
-      }
-    }
-    
-    // プル状態をリセット
-    isPulling = false;
-  }
-  
-  /**
-   * スクロールトップボタンの初期化
-   */
-  function initScrollToTop() {
-    // 既存のボタンがなければ作成
-    if (!document.getElementById('scroll-top-btn')) {
-      const scrollBtn = document.createElement('button');
-      scrollBtn.id = 'scroll-top-btn';
-      scrollBtn.className = 'scroll-top-btn';
-      scrollBtn.innerHTML = '<i class="bi bi-arrow-up"></i>';
-      scrollBtn.setAttribute('aria-label', 'トップにスクロール');
-      document.body.appendChild(scrollBtn);
-      
-      // クリックイベントの設定
-      scrollBtn.addEventListener('click', () => {
-        window.scrollTo({
-          top: 0,
-          behavior: 'smooth'
-        });
-      });
-      
-      // スクロール位置に応じて表示/非表示
-      window.addEventListener('scroll', debounce(() => {
-        if (window.scrollY > 300) {
-          scrollBtn.classList.add('visible');
-        } else {
-          scrollBtn.classList.remove('visible');
-        }
-      }, 100));
-    }
-  }
-  
-  /**
-   * タッチフィードバックの初期化
-   */
-  function initTouchFeedback() {
-    // クリック可能な要素のタッチフィードバックを強化
-    const clickableSelector = 'a, button, .btn, .action-icon-btn, [role="button"], .diary-card';
-    
-    function addTouchFeedback(elem) {
-      if (!elem.classList.contains('touch-enhanced')) {
-        elem.classList.add('touch-enhanced');
-        
-        // タッチスタート時のエフェクト
-        elem.addEventListener('touchstart', function(e) {
-          this.classList.add('touch-active');
-        }, {passive: true});
-        
-        // タッチ終了時のエフェクト
-        elem.addEventListener('touchend', function(e) {
-          this.classList.remove('touch-active');
-        }, {passive: true});
-        
-        // タッチキャンセル時のエフェクト
-        elem.addEventListener('touchcancel', function(e) {
-          this.classList.remove('touch-active');
-        }, {passive: true});
-      }
-    }
-    
-    // 既存の要素に適用
-    document.querySelectorAll(clickableSelector).forEach(addTouchFeedback);
-    
-    // 新しく追加される要素にも適用
-    // MutationObserverを使用して動的に追加される要素をキャッチ
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'childList' && mutation.addedNodes.length) {
-          mutation.addedNodes.forEach((node) => {
-            if (node.nodeType === 1) { // Element nodes only
-              if (node.matches && node.matches(clickableSelector)) {
-                addTouchFeedback(node);
-              }
-              
-              // 子孫ノードも確認
-              if (node.querySelectorAll) {
-                node.querySelectorAll(clickableSelector).forEach(addTouchFeedback);
-              }
-            }
-          });
-        }
-      });
-    });
-    
-    // ルートノードの変更を監視
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-    
-    // HTMXイベントでも適用
-    document.body.addEventListener('htmx:afterSwap', function(evt) {
-      const container = evt.detail.target;
-      if (container && container.querySelectorAll) {
-        container.querySelectorAll(clickableSelector).forEach(addTouchFeedback);
-      }
-    });
-  }
-  
-  /**
-   * オフライン状態検出の設定
-   */
-  function setupOfflineDetection() {
-    // オンライン状態の変化を検出
-    window.addEventListener('online', function() {
-      document.body.classList.remove('is-offline');
-      
-      // オフラインキューを処理（htmxの拡張機能を使用）
-      if (typeof htmx !== 'undefined' && htmx.trigger) {
-        htmx.trigger(document.body, 'online');
-      }
-      
-      // トースト通知
-      showToast('ネットワーク接続が回復しました', 'success');
-    });
-    
-    window.addEventListener('offline', function() {
-      document.body.classList.add('is-offline');
-      
-      // トースト通知
-      showToast('オフラインモードになりました', 'warning');
-    });
-    
-    // htmxリクエスト前にオフラインチェック
-    document.body.addEventListener('htmx:beforeRequest', function(evt) {
-      if (!navigator.onLine) {
-        // オフラインの場合はhtmxリクエストをキャンセル
-        evt.preventDefault();
-        
-        // オフライン通知
-        showToast('オフラインのため更新できません', 'warning');
-      }
-    });
-  }
-  
-  /**
-   * トースト通知を表示
-   */
-  function showToast(message, type = 'info') {
-    // 既存のトーストがあれば削除
-    const existingToast = document.querySelector('.mobile-toast');
-    if (existingToast) {
-      existingToast.remove();
-    }
-    
-    // トースト要素を作成
-    const toast = document.createElement('div');
-    toast.className = `mobile-toast mobile-toast-${type}`;
-    
-    // アイコンを設定
-    let icon = 'info-circle';
-    if (type === 'success') icon = 'check-circle';
-    if (type === 'warning') icon = 'exclamation-triangle';
-    if (type === 'danger') icon = 'exclamation-circle';
-    
-    toast.innerHTML = `
-      <div class="mobile-toast-content">
-        <i class="bi bi-${icon}"></i>
-        <span>${message}</span>
-      </div>
-    `;
-    
-    // DOMに追加
-    document.body.appendChild(toast);
-    
-    // 表示アニメーション
-    setTimeout(() => {
-      toast.classList.add('mobile-toast-visible');
-    }, 10);
-    
-    // 3秒後に非表示
-    setTimeout(() => {
-      toast.classList.remove('mobile-toast-visible');
-      setTimeout(() => {
-        toast.remove();
-      }, 300);
-    }, 3000);
-  }
-  
-  /**
-   * デバウンス関数
-   */
-  function debounce(func, wait) {
-    let timeout;
-    return function() {
-      const context = this;
-      const args = arguments;
-      clearTimeout(timeout);
-      timeout = setTimeout(() => {
-        func.apply(context, args);
-      }, wait);
-    };
-  }
-});
 
-/**
- * HTMXのカスタムイベントと拡張
- * モバイル向けの拡張機能
- */
-if (typeof htmx !== 'undefined') {
-  // プルトゥリフレッシュのカスタムイベント
-  htmx.defineExtension('pulldown-refresh', {
-    onEvent: function(name, evt) {
-      if (name === 'pulldown') {
-        // カスタムHTMXトリガーを発火
-        htmx.trigger(evt.target, 'pulldown-triggered');
-        
-        // GETリクエストを送信
-        const path = evt.target.getAttribute('hx-get');
-        if (path) {
-          htmx.ajax('GET', path, {
-            target: evt.target,
-            swap: evt.target.getAttribute('hx-swap') || 'innerHTML'
-          });
-        }
-        
-        return true;
-      }
-    }
-  });
-  
-  // オフラインキュー対応
-  htmx.defineExtension('offline-queue', {
-    onEvent: function(name, evt) {
-      // オフライン時にフォーム送信を保存
-      if (name === 'htmx:beforeRequest' && evt.detail.element.hasAttribute('data-hx-offline-queue')) {
-        if (!navigator.onLine) {
-          evt.preventDefault();
-          
-          // オフラインキューにリクエストを保存
-          const offlineQueue = JSON.parse(localStorage.getItem('htmx-offline-queue') || '[]');
-          
-          // リクエスト情報を保存
-          offlineQueue.push({
-            url: evt.detail.path,
-            method: evt.detail.verb,
-            body: new URLSearchParams(new FormData(evt.detail.element)).toString(),
-            target: evt.detail.target.id,
-            swap: evt.detail.swap,
-            triggerTime: new Date().getTime()
-          });
-          
-          // ローカルストレージに保存
-          localStorage.setItem('htmx-offline-queue', JSON.stringify(offlineQueue));
-          
-          // ユーザーにフィードバック
-          if (typeof showToast === 'function') {
-            showToast('オフラインで保存しました。オンラインになったら同期します', 'info');
-          }
-          
-          return false;
-        }
-      }
+  // === 日記カードのスワイプ設定 ===
+  function setupDiaryCardSwipeHandler() {
+    debugLog('Setting up swipe handlers for all diary cards');
+    
+    // すべての日記カードにスワイプハンドラーを追加
+    const diaryCards = document.querySelectorAll('.diary-card');
+    debugLog(`Found ${diaryCards.length} diary cards`);
+    
+    diaryCards.forEach((card, index) => {
+      // 既存のイベントリスナーを削除
+      card.removeEventListener('touchstart', window.handleTouchStart);
+      card.removeEventListener('touchmove', window.handleTouchMove);
+      card.removeEventListener('touchend', window.handleTouchEnd);
       
-      // オンラインに戻ったときにキューを処理
-      if (name === 'online') {
-        const offlineQueue = JSON.parse(localStorage.getItem('htmx-offline-queue') || '[]');
-        
-        if (offlineQueue.length > 0) {
-          // キューの処理
-          offlineQueue.forEach((request, idx) => {
-            setTimeout(() => {
-              // リクエストを再送信
-              const targetElem = document.getElementById(request.target);
-              if (targetElem) {
-                htmx.ajax(request.method, request.url, {
-                  target: targetElem,
-                  swap: request.swap,
-                  values: request.body
-                });
-              }
-              
-              // 処理済みのリクエストを削除
-              const updatedQueue = JSON.parse(localStorage.getItem('htmx-offline-queue') || '[]');
-              updatedQueue.splice(0, 1);
-              localStorage.setItem('htmx-offline-queue', JSON.stringify(updatedQueue));
-            }, idx * 1000); // リクエストを1秒ごとに処理
-          });
-          
-          // ユーザーにフィードバック
-          if (typeof showToast === 'function') {
-            showToast(`${offlineQueue.length}件のオフラインデータを同期しています`, 'success');
-          }
-        }
-      }
-    }
-  });
-  
-  // インラインバリデーション
-  htmx.defineExtension('inline-validation', {
-    onEvent: function(name, evt) {
-      if (name === 'htmx:afterRequest' && evt.detail.target.classList.contains('validate-inline')) {
-        // バリデーション結果を表示
-        const input = evt.detail.target;
-        const feedbackEl = document.getElementById(input.getAttribute('hx-target').substring(1));
-        
-        if (feedbackEl && evt.detail.successful) {
-          const response = evt.detail.xhr.response;
-          
-          try {
-            const result = JSON.parse(response);
-            
-            if (result.valid) {
-              input.classList.remove('is-invalid');
-              input.classList.add('is-valid');
-              feedbackEl.innerHTML = `<div class="valid-feedback d-block">${result.message}</div>`;
-            } else {
-              input.classList.remove('is-valid');
-              input.classList.add('is-invalid');
-              feedbackEl.innerHTML = `<div class="invalid-feedback d-block">${result.message}</div>`;
-            }
-          } catch (e) {
-            // JSONでない場合はそのまま表示
-            feedbackEl.innerHTML = response;
-          }
-        }
-      }
-    }
-  });
-  
-  // ページ遷移後のスワイプ再初期化
-  htmx.onLoad(function(content) {
-    // ページの主要コンテンツがロードされた後に呼び出される
-    if (content.id === 'diary-container') {
-      console.log('HTMX onLoad: Reinitializing swipe for diary container');
+      // コメントアウトを解除して新しいイベントリスナーを追加
+      card.addEventListener('touchstart', window.handleTouchStart, {passive: true});
+      card.addEventListener('touchmove', window.handleTouchMove, {passive: false});
+      card.addEventListener('touchend', window.handleTouchEnd, {passive: true});
       
-      // 少し遅延させて実行（DOMが完全に更新された後）
+      debugLog(`Set up swipe handler for card ${index+1}/${diaryCards.length}`, card.getAttribute('data-diary-id'));
+    });
+    
+    // 視覚的なデバッグ表示を追加
+    diaryCards.forEach(card => {
+      // デバッグ用インジケーターを追加
+      const debugIndicator = document.createElement('div');
+      debugIndicator.className = 'swipe-debug-indicator';
+      debugIndicator.style.position = 'absolute';
+      debugIndicator.style.top = '0';
+      debugIndicator.style.right = '0';
+      debugIndicator.style.background = 'rgba(0, 255, 0, 0.5)';
+      debugIndicator.style.padding = '2px 5px';
+      debugIndicator.style.fontSize = '10px';
+      debugIndicator.style.borderRadius = '0 0 0 5px';
+      debugIndicator.textContent = 'スワイプOK';
+      debugIndicator.style.zIndex = '10';
+      
+      // すでに存在していないことを確認
+      // const existingIndicator = card.querySelector('.swipe-debug-indicator');
+      // if (!existingIndicator) {
+      //   card.style.position = 'relative';
+      //   card.appendChild(debugIndicator);
+      // }
+    });
+  }
+
+  // 初期化関数呼び出し
+  setupDiaryCardSwipeHandler();
+
+  // HTMX イベントリスナー
+  document.body.addEventListener('htmx:afterSwap', function(evt) {
+    debugLog('HTMX afterSwap event on', evt.detail.target.id);
+    
+    if (evt.detail.target.id === 'diary-container') {
+      // DOM更新を待ってから実行
       setTimeout(() => {
-        // 日記カードにスワイプハンドラーを適用
-        const diaryCards = content.querySelectorAll('.diary-card');
-        diaryCards.forEach(card => {
-          // data-swipe-initialized属性をリセット
-          card.removeAttribute('data-swipe-initialized');
-          
-          // 既存のイベントリスナーを削除
-          card.removeEventListener('touchstart', null);
-          card.removeEventListener('touchmove', null);
-          card.removeEventListener('touchend', null);
-        });
-        
-        // イベントを発火して再初期化
-        const event = new CustomEvent('reinitialize-swipe');
-        document.dispatchEvent(event);
+        debugLog('Re-applying swipe handlers after HTMX swap');
+        setupDiaryCardSwipeHandler();
       }, 100);
     }
   });
-}
 
-// スワイプ再初期化のためのイベントリスナー
-document.addEventListener('reinitialize-swipe', function() {
-  console.log('Reinitializing swipe handlers on demand');
-  
-  // 日記カードにスワイプイベントを設定
-  document.querySelectorAll('.diary-card').forEach(card => {
-    // スワイプハンドラを再設定
-    card.removeAttribute('data-swipe-initialized');
-    
-    // 既存のイベントを削除してから再設定
-    const newCard = card.cloneNode(true);
-    card.parentNode.replaceChild(newCard, card);
-    
-    // 新しいハンドラーを設定
-    if (typeof setupSwipeHandlers === 'function') {
-      setupSwipeHandlers(newCard);
-    }
+  // タブなどの表示切り替え後にも再初期化
+  document.addEventListener('shown.bs.tab', function() {
+    debugLog('Tab shown event - reinitializing swipe handlers');
+    setTimeout(setupDiaryCardSwipeHandler, 50);
   });
+
+  // リサイズイベントでも再初期化（レイアウト変更に対応）
+  window.addEventListener('resize', function() {
+    debugLog('Window resize - reinitializing swipe handlers');
+    setTimeout(setupDiaryCardSwipeHandler, 100);
+  });
+
+  // 手動での再初期化ボタン追加（デバッグ用）
+  function addDebugControls() {
+    const controlPanel = document.createElement('div');
+    controlPanel.style.position = 'fixed';
+    controlPanel.style.bottom = '80px';
+    controlPanel.style.right = '10px';
+    controlPanel.style.zIndex = '9999';
+    controlPanel.style.background = 'rgba(0,0,0,0.7)';
+    controlPanel.style.color = 'white';
+    controlPanel.style.padding = '10px';
+    controlPanel.style.borderRadius = '5px';
+    controlPanel.style.fontSize = '12px';
+    
+    // controlPanel.innerHTML = `
+    //   <div>スワイプデバッグ</div>
+    //   <button id="reinitSwipe" style="background:#4a90e2;color:white;border:none;padding:5px;margin:5px;border-radius:3px;">
+    //     再初期化
+    //   </button>
+    //   <div id="swipeStatus">準備完了</div>
+    // `;
+    
+    // document.body.appendChild(controlPanel);
+    
+    document.getElementById('reinitSwipe').addEventListener('click', function() {
+      setupDiaryCardSwipeHandler();
+      document.getElementById('swipeStatus').textContent = '再初期化完了: ' + new Date().toLocaleTimeString();
+    });
+  }
+  
+  // デバッグコントロールパネルを追加
+  if (DEBUG) {
+    addDebugControls();
+  }
 });
