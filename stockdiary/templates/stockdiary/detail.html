@@ -2060,7 +2060,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // モバイル向け拡大縮小ボタン（左下配置）のJavaScript実装
 document.addEventListener('DOMContentLoaded', function() {
   // モバイル判定
-  const isMobile = window.innerWidth < 768;
+  const isMobile = window.innerWidth < 768 || navigator.maxTouchPoints > 1;
   
   if (isMobile) {
     // フローティング展開ボタンを追加（左下に配置）
@@ -2185,6 +2185,36 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('touchend', function() {
       isScrolling = false;
     });
+  }
+  
+  // トースト通知を作成する関数（もし定義されていない場合）
+  if (typeof window.createToast !== 'function') {
+    window.createToast = function(message, type) {
+      const toast = document.createElement('div');
+      toast.className = `toast align-items-center text-white bg-${type} border-0`;
+      toast.setAttribute('role', 'alert');
+      toast.setAttribute('aria-live', 'assertive');
+      toast.setAttribute('aria-atomic', 'true');
+      
+      const toastBody = document.createElement('div');
+      toastBody.className = 'd-flex';
+      
+      const toastContent = document.createElement('div');
+      toastContent.className = 'toast-body';
+      toastContent.textContent = message;
+      
+      const closeButton = document.createElement('button');
+      closeButton.type = 'button';
+      closeButton.className = 'btn-close btn-close-white me-2 m-auto';
+      closeButton.setAttribute('data-bs-dismiss', 'toast');
+      closeButton.setAttribute('aria-label', '閉じる');
+      
+      toastBody.appendChild(toastContent);
+      toastBody.appendChild(closeButton);
+      toast.appendChild(toastBody);
+      
+      return toast;
+    };
   }
 });
 </script>
