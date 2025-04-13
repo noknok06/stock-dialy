@@ -1029,6 +1029,48 @@
   }
 }
 </style>
+<style>
+  /* 改善されたフローティングラベルのスタイル */
+  .form-floating > label {
+    padding: 0.75rem 0.75rem;
+  }
+  
+  .form-floating > .form-control:focus ~ label,
+  .form-floating > .form-control:not(:placeholder-shown) ~ label,
+  .form-floating > .form-select ~ label {
+    opacity: 0.65;
+    transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+  }
+  
+  .form-floating > .form-control:-webkit-autofill ~ label {
+    opacity: 0.65;
+    transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+  }
+  
+  .form-floating > .form-control:focus,
+  .form-floating > .form-control:not(:placeholder-shown) {
+    padding-top: 1.625rem;
+    padding-bottom: 0.625rem;
+  }
+  
+  .form-floating > textarea.form-control {
+    padding-top: 1.625rem;
+    height: 120px;
+  }
+  
+  /* モバイル向けラベル調整 */
+  @media (max-width: 576px) {
+    .form-floating > label {
+      font-size: 0.875rem;
+    }
+    
+    .form-floating > .form-control:focus ~ label,
+    .form-floating > .form-control:not(:placeholder-shown) ~ label,
+    .form-floating > .form-select ~ label {
+      font-size: 0.75rem;
+    }
+  }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -1459,7 +1501,6 @@
               </div>
               {% endfor %}
             </div>
-            <!-- 改善された継続記録入力フォーム -->
             <div class="quick-note-form">
               <form id="quickNoteForm" method="post" action="{% url 'stockdiary:add_note' diary.id %}">
                 {% csrf_token %}
@@ -1467,7 +1508,7 @@
                 <!-- 日付入力 -->
                 <div class="form-floating mb-3">
                   <input type="date" class="form-control" id="note_date" name="date" 
-                      value="{{ note_form.date.value|date:'Y-m-d' }}" style="text-align: center;" required>
+                      value="{{ note_form.date.value|date:'Y-m-d' }}" placeholder=" " style="text-align: center;" required>
                   <label for="note_date">日付</label>
                 </div>
                 
@@ -1508,7 +1549,7 @@
                 <!-- 内容入力 -->
                 <div class="form-floating mb-3">
                   <textarea class="form-control" id="note_content" name="content" 
-                            style="height: 120px" placeholder="記録内容を入力" required></textarea>
+                            style="height: 120px" placeholder=" " required></textarea>
                   <label for="note_content">記録内容</label>
                 </div>
                 
@@ -1530,7 +1571,6 @@
               </form>
             </div>
           </div>
-          
           <!-- タイムラインタブ -->
           <div class="tab-pane fade" id="timeline-content" role="tabpanel" aria-labelledby="timeline-tab">
             {% if related_diaries %}
@@ -1716,12 +1756,17 @@
  * diary-detail-tabs.js - 日記詳細ページのタブスワイプ機能
  * 継続記録とタイムラインタブ間のスワイプ操作を実装
  */
-document.addEventListener('DOMContentLoaded', function() {
+ document.addEventListener('DOMContentLoaded', function() {
   // タブ要素を取得
   const tabContent = document.getElementById('diaryDetailTabContent');
   const basicTab = document.getElementById('basic-tab');
   const notesTab = document.getElementById('notes-tab');
   const timelineTab = document.getElementById('timeline-tab');
+  
+  // タブペイン要素を取得
+  const basicPane = document.getElementById('basic-content');
+  const notesPane = document.getElementById('notes-content');
+  const timelinePane = document.getElementById('timeline-content');
   
   // タブ要素が存在しない場合は何もしない
   if (!tabContent || !basicTab || !notesTab || !timelineTab) return;
@@ -1768,35 +1813,36 @@ document.addEventListener('DOMContentLoaded', function() {
     isDragging = false;
     isAnimating = false;
     tabContent.classList.remove('swiping');
+    
+    // すべてのタブハイライトをクリア
+    basicTab.classList.remove('tab-highlight');
+    notesTab.classList.remove('tab-highlight');
+    timelineTab.classList.remove('tab-highlight');
   }
   
   // スワイプ方向のインジケーターを更新
   function updateDirectionIndicators() {
     // スワイプの方向によって、視覚的なフィードバックを提供する
+    // すべてのハイライトをリセット
+    basicTab.classList.remove('tab-highlight');
+    notesTab.classList.remove('tab-highlight');
+    timelineTab.classList.remove('tab-highlight');
+    
     if (moveDistance > 0) {
       // 右スワイプ - 前のタブが存在する場合はハイライト
       if (currentTabIndex > 0) {
         const prevTab = currentTabIndex === 1 ? basicTab : notesTab;
-        const currentTab = currentTabIndex === 1 ? notesTab : timelineTab;
-        currentTab.classList.remove('tab-highlight');
         prevTab.classList.add('tab-highlight');
       }
     } else if (moveDistance < 0) {
       // 左スワイプ - 次のタブが存在する場合はハイライト
       if (currentTabIndex < 2) {
         const nextTab = currentTabIndex === 0 ? notesTab : timelineTab;
-        const currentTab = currentTabIndex === 0 ? basicTab : notesTab;
-        currentTab.classList.remove('tab-highlight');
         nextTab.classList.add('tab-highlight');
       }
-    } else {
-      // ハイライトをリセット
-      basicTab.classList.remove('tab-highlight');
-      notesTab.classList.remove('tab-highlight');
-      timelineTab.classList.remove('tab-highlight');
     }
   }
-  
+
   // タッチ開始イベント
   function handleTouchStart(e) {
     if (isAnimating) return;
@@ -1875,45 +1921,76 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
-  // 指定したインデックスのタブに切り替え
-  // diary-detail-tabs.js に修正を追加
+  // タブコンテンツの表示を制御
+  function setTabVisibility(index) {
+    // すべてのタブペインを非表示に
+    [basicPane, notesPane, timelinePane].forEach(pane => {
+      pane.classList.remove('show', 'active');
+      // display:noneにも強制的に設定
+      pane.style.display = 'none';
+      pane.style.opacity = '0';
+    });
+    
+    // 選択されたタブペインを表示
+    const paneToShow = [basicPane, notesPane, timelinePane][index];
+    paneToShow.classList.add('show', 'active');
+    // 表示も強制的に設定
+    paneToShow.style.display = 'block';
+    paneToShow.style.opacity = '1';
+    
+    // タブボタンのactive状態を更新
+    [basicTab, notesTab, timelineTab].forEach(tab => {
+      tab.classList.remove('active');
+      tab.setAttribute('aria-selected', 'false');
+    });
+    
+    const tabToActivate = [basicTab, notesTab, timelineTab][index];
+    tabToActivate.classList.add('active');
+    tabToActivate.setAttribute('aria-selected', 'true');
+  }
+  
+  // タブに切り替え - 修正版
   function switchToTab(index) {
-    if (index < 0 || index > 2) return;
+    if (index < 0 || index > 2 || isAnimating) return;
     
     // アニメーション中フラグをセット
     isAnimating = true;
+    console.log('切り替え開始: タブ', index);
     
-    // タブの切り替え
+    // 現在のインデックスを保存
+    const prevIndex = currentTabIndex;
+    currentTabIndex = index;
+    
+    // タブの表示を切り替え
     setTimeout(() => {
-      if (index === 0) {
-        basicTabInstance.show();
-      } else if (index === 1) {
-        notesTabInstance.show();
-      } else {
-        timelineTabInstance.show();
-      }
-      
-      // 現在のタブインデックスを更新
-      currentTabIndex = index;
-      
-      // モバイル表示時のコンテンツ表示を強制
-      const isMobile = window.innerWidth < 768;
-      if (isMobile) {
-        const activeTabPane = document.querySelector('.tab-pane.active');
-        if (activeTabPane) {
-          // 表示を強制
-          activeTabPane.style.display = 'block';
-          activeTabPane.style.opacity = '1';
+      try {
+        // 対応するBootstrapのタブを表示
+        if (index === 0) {
+          basicTabInstance.show();
+        } else if (index === 1) {
+          notesTabInstance.show();
+        } else {
+          timelineTabInstance.show();
         }
+        
+        // 明示的にタブの表示/非表示を制御
+        setTabVisibility(index);
+        
+      } catch (error) {
+        console.error('タブ切り替えエラー:', error);
+        // エラー時は手動で表示切り替え
+        setTabVisibility(index);
       }
       
       // アニメーション完了後に状態をリセット
       setTimeout(() => {
         isAnimating = false;
         resetSwipeState();
+        console.log('切り替え完了: タブ', index);
       }, TRANSITION_DURATION);
     }, 50);
   }
+  
   // イベントリスナーの設定
   function setupEventListeners() {
     // タブコンテンツにタッチイベントリスナーを追加
@@ -1925,17 +2002,42 @@ document.addEventListener('DOMContentLoaded', function() {
     // タブ切り替えイベントリスナー
     basicTab.addEventListener('shown.bs.tab', function() {
       currentTabIndex = 0;
-      setTimeout(resetSwipeState, 50);
+      setTimeout(() => {
+        setTabVisibility(0);
+        resetSwipeState();
+      }, 50);
     });
     
     notesTab.addEventListener('shown.bs.tab', function() {
       currentTabIndex = 1;
-      setTimeout(resetSwipeState, 50);
+      setTimeout(() => {
+        setTabVisibility(1);
+        resetSwipeState();
+      }, 50);
     });
     
     timelineTab.addEventListener('shown.bs.tab', function() {
       currentTabIndex = 2;
-      setTimeout(resetSwipeState, 50);
+      setTimeout(() => {
+        setTabVisibility(2);
+        resetSwipeState();
+      }, 50);
+    });
+    
+    // クリック時のイベント
+    basicTab.addEventListener('click', function() {
+      if (isAnimating) return;
+      switchToTab(0);
+    });
+    
+    notesTab.addEventListener('click', function() {
+      if (isAnimating) return;
+      switchToTab(1);
+    });
+    
+    timelineTab.addEventListener('click', function() {
+      if (isAnimating) return;
+      switchToTab(2);
     });
   }
   
@@ -1975,34 +2077,33 @@ document.addEventListener('DOMContentLoaded', function() {
         color: #6c757d;
         margin-bottom: 0.5rem;
       }
+      
+      /* 改善されたフローティングラベルのスタイル */
+      .form-floating > label {
+        opacity: 0.65;
+        transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+      }
+      
+      .form-floating > .form-control:focus ~ label,
+      .form-floating > .form-control:not(:placeholder-shown) ~ label,
+      .form-floating > .form-select ~ label {
+        opacity: 0.65;
+        transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+      }
+      
+      .form-floating > .form-control:focus,
+      .form-floating > .form-control:not(:placeholder-shown) {
+        padding-top: 1.625rem;
+        padding-bottom: 0.625rem;
+      }
+      
+      .form-floating > textarea.form-control:focus,
+      .form-floating > textarea.form-control:not(:placeholder-shown) {
+        padding-top: 1.625rem;
+        padding-bottom: 0.625rem;
+      }
     `;
     document.head.appendChild(styleEl);
-  }
-  
-  // スワイプヒントの表示/非表示を管理
-  function handleSwipeHint() {
-    const swipeHint = document.querySelector('.swipe-hint');
-    if (!swipeHint) return;
-    
-    // モバイルデバイスかどうかをチェック
-    const isMobile = window.innerWidth < 768 || navigator.maxTouchPoints > 1;
-    
-    if (isMobile) {
-      // モバイルデバイスではスワイプヒントを表示
-      swipeHint.style.display = 'block';
-      swipeHint.style.opacity = '1';
-      
-      // 5秒後に非表示
-      setTimeout(() => {
-        swipeHint.style.opacity = '0';
-        setTimeout(() => {
-          swipeHint.style.display = 'none';
-        }, 500);
-      }, 5000);
-    } else {
-      // デスクトップでは非表示
-      swipeHint.style.display = 'none';
-    }
   }
   
   // 初期化関数
@@ -2010,7 +2111,6 @@ document.addEventListener('DOMContentLoaded', function() {
     initStyles();
     initTabIndex();
     setupEventListeners();
-    handleSwipeHint();
     resetSwipeState();
   }
   
@@ -2051,108 +2151,28 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  // 継続記録削除関連の処理
-  const deleteModal = document.getElementById('deleteNoteModal');
-  const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-  const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
-  let currentNoteId = null;
-  
-  // 削除ボタンのクリックイベント
-  document.querySelectorAll('.delete-note-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-      // 削除対象のノートIDを保存
-      currentNoteId = this.getAttribute('data-note-id');
+  // フローティングラベルの改善
+  const floatingInputs = document.querySelectorAll('.form-floating input, .form-floating textarea');
+    floatingInputs.forEach(input => {
+      // プレースホルダー属性を追加して、ラベルが適切に表示されるようにする
+      input.setAttribute('placeholder', ' ');
       
-      // モーダルを表示
-      deleteModal.classList.add('active');
-    });
-  });
-  
-  // キャンセルボタンのクリックイベント
-  cancelDeleteBtn.addEventListener('click', function() {
-    deleteModal.classList.remove('active');
-    currentNoteId = null;
-  });
-  
-  // 削除確認ボタンのクリックイベント
-  confirmDeleteBtn.addEventListener('click', function() {
-    if (!currentNoteId) return;
-    
-    // CSRFトークンを取得
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    
-    // Ajax経由で削除リクエストを送信
-    fetch(`/stockdiary/{{ diary.id }}/note/${currentNoteId}/delete/`, {
-      method: 'POST',
-      headers: {
-        'X-CSRFToken': csrfToken,
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
+      // すでに値がある場合は自動的にラベルを浮かせる
+      if (input.value) {
+        input.classList.add('has-value');
       }
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('削除処理に失敗しました');
-      }
-      return response.json();
-    })
-    .then(data => {
-      if (data.success) {
-        // 成功時には該当の要素を削除
-        const noteElement = document.getElementById(`note-${currentNoteId}`);
-        if (noteElement) {
-          noteElement.style.opacity = '0';
-          noteElement.style.transform = 'translateY(-20px)';
-          noteElement.style.transition = 'opacity 0.3s, transform 0.3s';
-          
-          setTimeout(() => {
-            noteElement.remove();
-            
-            // 記録がなくなった場合のメッセージを表示
-            const notesContainer = document.querySelector('.notes-container');
-            if (notesContainer && notesContainer.children.length === 0) {
-              notesContainer.innerHTML = `
-                <div class="text-center py-4">
-                  <i class="bi bi-journal-text text-muted" style="font-size: 2rem;"></i>
-                  <p class="text-muted mt-2">継続的な記録はまだありません。</p>
-                  <p class="text-muted">上のフォームから銘柄の状況変化や新たな分析を追加できます。</p>
-                </div>
-              `;
-            }
-          }, 300);
+      
+      // 入力時のイベント処理
+      input.addEventListener('input', function() {
+        if (this.value) {
+          this.classList.add('has-value');
+        } else {
+          this.classList.remove('has-value');
         }
-        
-        // 成功メッセージをトーストで表示
-        const toast = createToast('継続記録が削除されました', 'success');
-        document.body.appendChild(toast);
-        new bootstrap.Toast(toast).show();
-      } else {
-        throw new Error(data.message || '削除処理に失敗しました');
-      }
-    })
-    .catch(error => {
-      // エラーメッセージをトーストで表示
-      const toast = createToast(error.message, 'danger');
-      document.body.appendChild(toast);
-      new bootstrap.Toast(toast).show();
-    })
-    .finally(() => {
-      // モーダルを閉じる
-      deleteModal.classList.remove('active');
-      currentNoteId = null;
-    });
+      });
+    }); 
   });
-  
-  // モーダル外クリックで閉じる
-  deleteModal.addEventListener('click', function(e) {
-    if (e.target === deleteModal) {
-      deleteModal.classList.remove('active');
-      currentNoteId = null;
-    }
-  });
-});
 </script>
-
 <script>
 // モバイル向け拡大縮小ボタン（左下配置）のJavaScript実装
 document.addEventListener('DOMContentLoaded', function() {
