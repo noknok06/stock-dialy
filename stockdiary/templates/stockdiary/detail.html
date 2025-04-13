@@ -864,49 +864,31 @@
     }
   }
 
-  /* 拡張表示モード */
-  .fullscreen-tab-mode .diary-card {
+
+  .floating-expand-button {
     position: fixed;
-    bottom: 20px;
-    left: 20px; /* 右から左に変更 */
-    width: 50px;
-    height: 50px;
-    z-index: 1040;
-    margin: 0;
-    border-radius: 0;
-    overflow-y: auto;
-    background-color: white;
+    top: 15px;          /* 下から上に変更 */
+    left: 15px;
+    width: 40px;        /* サイズを少し小さく */
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--primary-color, #5a7ec5);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    z-index: 1030;
+    transition: all 0.3s ease;
+    border: none;
   }
-  
-  .fullscreen-tab-mode .diary-tabs-container {
-    margin: -12px -8px 0;
-    border-radius: 0;
-    box-shadow: none;
-  }
-  
-  .fullscreen-tab-mode .nav-tabs {
-    position: sticky;
-    top: 0;
-    background: white;
-    z-index: 10;
-  }
-  
-  .fullscreen-tab-mode .diary-card-header,
-  .fullscreen-tab-mode .action-buttons,
-  .fullscreen-tab-mode .diary-date,
-  .fullscreen-tab-mode .masking-tape {
-    display: none;
-  }
-  
-  .fullscreen-tab-mode .diary-tab-content {
-    padding-bottom: 80px;
-  }
-  
+
+  /* フルスクリーンモード時の戻るボタンも同じ位置に */
   .fullscreen-tab-mode .back-to-normal {
     position: fixed;
     top: 15px;
-    left: 10px; /* 右から左に変更 */
-    z-index: 1050;
+    left: 15px;
+    z-index: 1050;      /* 拡大縮小ボタンより上に表示 */
     background: white;
     border-radius: 50%;
     width: 40px;
@@ -916,6 +898,47 @@
     justify-content: center;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     border: none;
+  }
+
+  /* ホバーとアクティブ状態 */
+  .floating-expand-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .floating-expand-button:active,
+  .back-to-normal:active {
+    transform: scale(0.95);
+  }
+
+  /* アイコンサイズの調整 */
+  .floating-expand-button i,
+  .back-to-normal i {
+    font-size: 1.2rem;
+  }
+
+  /* 戻るボタンをページコンテンツにかからないように調整 */
+  @media (max-width: 767.98px) {
+    .container {
+      padding-top: 40px; /* ボタンの高さ分余白を追加 */
+    }
+    
+    /* 戻るリンクなど他の左上要素と重ならないように */
+    .floating-expand-button,
+    .fullscreen-tab-mode .back-to-normal {
+      top: 15px;
+      left: 15px;
+    }
+    
+    /* フルスクリーンモード時は余白なし */
+    .fullscreen-tab-mode .container {
+      padding-top: 0;
+    }
+  }
+
+  /* フルスクリーンモード時のコンテンツ調整 */
+  .fullscreen-tab-mode .diary-card {
+    padding-top: 50px; /* ボタンの高さ + 余白 */
   }
   
   /* 継続記録フォームの最適化 */
@@ -2044,13 +2067,13 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script>
-// モバイル向け拡大縮小ボタン（左下配置）のJavaScript実装
+// 拡大縮小ボタンを左上に配置するJavaScript実装
 document.addEventListener('DOMContentLoaded', function() {
   // モバイル判定
   const isMobile = window.innerWidth < 768;
   
   if (isMobile) {
-    // フローティング展開ボタンを追加（左下に配置）
+    // フローティング展開ボタンを追加（左上に配置）
     const expandButton = document.createElement('button');
     expandButton.className = 'floating-expand-button';
     expandButton.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
@@ -2096,9 +2119,12 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
           });
           document.body.appendChild(backButton);
+          
+          // スクロール位置をトップにリセット
+          window.scrollTo(0, 0);
         }
         
-        // フローティングボタンを非表示
+        // フローティングボタンを非表示（同じ位置に戻るボタンが表示されるため）
         expandButton.style.display = 'none';
       } else {
         // フルスクリーンモード解除
@@ -2172,6 +2198,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('touchend', function() {
       isScrolling = false;
     });
+    
+    // ページ内のリンク要素と重ならないように位置を調整
+    const backLink = document.querySelector('.btn-diary-outline');
+    if (backLink) {
+      // 戻るリンクがある場合、拡大ボタンの位置を微調整
+      expandButton.style.top = (backLink.offsetTop + backLink.offsetHeight + 10) + 'px';
+    }
   }
 });
 </script>
