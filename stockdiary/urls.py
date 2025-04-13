@@ -42,5 +42,4 @@ urlpatterns = [
     # 新規：モバイル操作性向上のための追加エンドポイント
     path('search-suggestion/', login_required(views.search_suggestion), name='search_suggestion'),
     path('<int:pk>/context-actions/', login_required(views.context_actions), name='context_actions'),
-    path('validate/<str:field_type>/', login_required(views.validate_field), name='validate_field'),
 ]

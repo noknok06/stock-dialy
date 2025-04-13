@@ -13,7 +13,6 @@ class SpeedDial {
       overlaySelector: '.speed-dial-overlay',
       containerSelector: '.speed-dial-container',
       useOverlay: true,
-      autoCloseTime: 4000, // 4秒後に自動でダイアログを閉じる
       ...config
     };
     

@@ -48,12 +48,8 @@
                 <div class="col-md-6">
                   <label for="quick_stock_symbol" class="form-label">銘柄コード</label>
                   <div class="input-group">
-                    <input type="text" class="form-control validate-inline" id="quick_stock_symbol" name="stock_symbol" 
-                          placeholder="例: 7203" autocomplete="off"
-                          hx-get="{% url 'stockdiary:validate_field' 'symbol' %}"
-                          hx-trigger="change, keyup changed delay:500ms"
-                          hx-target="#symbol-feedback"
-                          hx-indicator="#symbol-indicator">
+                    <input type="text" class="form-control" id="quick_stock_symbol" name="stock_symbol" 
+                          placeholder="例: 7203" autocomplete="off">
                     <button class="btn btn-outline-primary" type="button" id="quick_fetch_stock_info">
                       <i class="bi bi-search"></i>
                     </button>
@@ -69,12 +65,10 @@
                 <!-- 銘柄名 -->
                 <div class="col-md-6">
                   <label for="quick_stock_name" class="form-label">銘柄名 <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control validate-inline" id="quick_stock_name" name="stock_name" 
-                        placeholder="例: トヨタ自動車" required
-                        hx-get="{% url 'stockdiary:validate_field' 'stock_name' %}"
-                        hx-trigger="change, keyup changed delay:500ms"
-                        hx-target="#name-feedback">
-                  <div id="name-feedback" class="form-text"></div>
+                  <label for="quick_stock_name" class="form-label">銘柄名 <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="quick_stock_name" name="stock_name" 
+                        placeholder="例: トヨタ自動車" required>
+                  <div class="invalid-feedback">銘柄名を入力してください</div>
                 </div>
                 
                 <!-- 日付 -->
