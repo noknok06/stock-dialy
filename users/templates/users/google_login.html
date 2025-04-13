@@ -1,79 +1,351 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Googleでログイン | カブログ{% endblock %}
 
 {% block head %}
 <style>
+  /* 強化されたリッチなGoogleログイン画面 */
   .google-auth-container {
-    padding: 3rem 0;
+    padding: 4rem 0;
     text-align: center;
   }
   
   .google-auth-card {
-    max-width: 450px;
+    max-width: 480px;
     margin: 0 auto;
-    border-radius: 1rem;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    border-radius: 1.5rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12), 0 10px 20px rgba(0, 0, 0, 0.08);
     overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: white;
+  }
+  
+  .google-auth-card:hover {
+    transform: translateY(-12px);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15), 0 15px 25px rgba(0, 0, 0, 0.1);
   }
   
   .google-auth-header {
     background: linear-gradient(135deg, #4285F4 0%, #0F9D58 100%);
-    padding: 2rem;
+    padding: 2.5rem 2rem;
     color: white;
+    position: relative;
+    overflow: hidden;
   }
   
   .google-auth-header h3 {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
     font-weight: 700;
+    font-size: 2rem;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    position: relative;
+    z-index: 2;
   }
   
   .google-auth-header p {
     margin-bottom: 0;
     opacity: 0.9;
+    font-size: 1.1rem;
+    position: relative;
+    z-index: 2;
+  }
+  
+  /* 装飾的な背景要素 */
+  .google-header-shape {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    z-index: 1;
+  }
+  
+  .shape-1 {
+    width: 180px;
+    height: 180px;
+    top: -60px;
+    right: -60px;
+  }
+  
+  .shape-2 {
+    width: 240px;
+    height: 240px;
+    bottom: -120px;
+    left: -80px;
+  }
+  
+  .shape-3 {
+    width: 50px;
+    height: 50px;
+    top: 40%;
+    left: 30%;
+  }
+  
+  .shape-4 {
+    width: 30px;
+    height: 30px;
+    top: 30%;
+    right: 35%;
   }
   
   .google-auth-body {
-    padding: 2.5rem;
+    padding: 3rem 2.5rem;
     background: white;
+    position: relative;
+  }
+  
+  /* Google ロゴのアニメーション */
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(66, 133, 244, 0.3);
+    }
+    70% {
+      transform: scale(1.05);
+      box-shadow: 0 0 0 15px rgba(66, 133, 244, 0);
+    }
+    100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(66, 133, 244, 0);
+    }
+  }
+  
+  .google-logo-container {
+    position: relative;
+    width: 90px;
+    height: 90px;
+    margin: 0 auto 2rem;
+    border-radius: 50%;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 25px rgba(66, 133, 244, 0.2);
+    animation: pulse 3s infinite;
   }
   
   .google-logo {
-    width: 70px;
-    height: 70px;
-    margin-bottom: 1.5rem;
+    width: 60px;
+    height: 60px;
+  }
+  
+  .auth-description {
+    margin-bottom: 2.5rem;
+    color: #64748b;
+  }
+  
+  .google-auth-body h4 {
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #334155;
   }
   
   .google-btn {
     background: #4285F4;
     color: white;
-    border-radius: 0.5rem;
-    padding: 0.75rem 2rem;
-    font-size: 1rem;
-    font-weight: 500;
+    border-radius: 0.75rem;
+    padding: 0.9rem 2.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
     border: none;
-    transition: all 0.3s;
-    display: inline-block;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
     text-decoration: none;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+  }
+  
+  .google-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 100%;
+    background: #1a73e8;
+    transition: all 0.4s;
+    z-index: -1;
   }
   
   .google-btn:hover {
-    background: #1a73e8;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(66, 133, 244, 0.3);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(66, 133, 244, 0.3);
     color: white;
+  }
+  
+  .google-btn:hover::before {
+    width: 100%;
+  }
+  
+  .google-btn svg {
+    width: 24px;
+    height: 24px;
+    transition: transform 0.3s;
+  }
+  
+  .google-btn:hover svg {
+    transform: rotate(360deg);
   }
   
   .cancel-link {
     display: inline-block;
-    margin-top: 1rem;
-    color: #6b7280;
+    margin-top: 1.5rem;
+    color: #64748b;
     text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s;
+    position: relative;
+  }
+  
+  .cancel-link::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: #64748b;
+    transition: all 0.3s;
   }
   
   .cancel-link:hover {
-    color: #4b5563;
-    text-decoration: underline;
+    color: #334155;
+  }
+  
+  .cancel-link:hover::after {
+    width: 100%;
+  }
+  
+  /* 利点リスト */
+  .benefits-list {
+    text-align: left;
+    max-width: 350px;
+    margin: 0 auto 2rem;
+  }
+  
+  .benefit-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    background: #f8fafc;
+    transition: all 0.3s;
+  }
+  
+  .benefit-item:hover {
+    transform: translateX(5px);
+    background: #f1f5f9;
+  }
+  
+  .benefit-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    color: white;
+    flex-shrink: 0;
+  }
+  
+  .benefit-icon.blue {
+    background: #4285F4;
+  }
+  
+  .benefit-icon.green {
+    background: #0F9D58;
+  }
+  
+  .benefit-icon.yellow {
+    background: #FBBC05;
+  }
+  
+  .benefit-text {
+    font-size: 0.95rem;
+    color: #334155;
+  }
+  
+  /* リアクティブなデザイン */
+  @media (max-width: 576px) {
+    .google-auth-container {
+      padding: 2rem 0;
+    }
+    
+    .google-auth-header {
+      padding: 2rem 1.5rem;
+    }
+    
+    .google-auth-header h3 {
+      font-size: 1.75rem;
+    }
+    
+    .google-auth-body {
+      padding: 2.5rem 1.5rem;
+    }
+    
+    .google-logo-container {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 1.5rem;
+    }
+    
+    .google-logo {
+      width: 50px;
+      height: 50px;
+    }
+    
+    .google-btn {
+      padding: 0.8rem 2rem;
+      font-size: 1rem;
+    }
+  }
+  
+  /* ダークモード対応 */
+  @media (prefers-color-scheme: dark) {
+    .google-auth-card {
+      background: #1e293b;
+    }
+    
+    .google-auth-body {
+      background: #1e293b;
+    }
+    
+    .google-auth-body h4 {
+      color: #e2e8f0;
+    }
+    
+    .auth-description {
+      color: #cbd5e1;
+    }
+    
+    .benefit-item {
+      background: #334155;
+    }
+    
+    .benefit-item:hover {
+      background: #475569;
+    }
+    
+    .benefit-text {
+      color: #e2e8f0;
+    }
+    
+    .cancel-link {
+      color: #94a3b8;
+    }
+    
+    .cancel-link:hover {
+      color: #cbd5e1;
+    }
+    
+    .cancel-link::after {
+      background-color: #94a3b8;
+    }
   }
 </style>
 {% endblock %}
@@ -83,20 +355,71 @@
   <div class="google-auth-card">
     <div class="google-auth-header">
       <h3>Google認証</h3>
-      <p>Googleアカウントで認証を行います</p>
-    </div>
-    <div class="google-auth-body">
-      <svg class="google-logo" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-        <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path>
-        <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path>
-        <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path>
-        <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
-      </svg>
+      <p>安全で簡単なログイン方法</p>
       
-      <a href="/accounts/google/login/" class="google-btn">Googleで続ける</a>
+      <!-- 装飾的な背景要素 -->
+      <div class="google-header-shape shape-1"></div>
+      <div class="google-header-shape shape-2"></div>
+      <div class="google-header-shape shape-3"></div>
+      <div class="google-header-shape shape-4"></div>
+    </div>
+    
+    <div class="google-auth-body">
+      <div class="google-logo-container">
+        <svg class="google-logo" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path>
+          <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path>
+          <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path>
+          <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
+        </svg>
+      </div>
+      
+      <h4>カブログにGoogleでログイン</h4>
+      <p class="auth-description">Googleアカウントを使用して簡単に安全にログインできます</p>
+      
+      <!-- 利点リスト -->
+      <div class="benefits-list">
+        <div class="benefit-item">
+          <div class="benefit-icon blue">
+            <i class="bi bi-shield-check"></i>
+          </div>
+          <div class="benefit-text">
+            安全なアカウント認証で情報を保護
+          </div>
+        </div>
+        
+        <div class="benefit-item">
+          <div class="benefit-icon green">
+            <i class="bi bi-lightning-charge"></i>
+          </div>
+          <div class="benefit-text">
+            面倒なパスワード入力なしで素早くログイン
+          </div>
+        </div>
+        
+        <div class="benefit-item">
+          <div class="benefit-icon yellow">
+            <i class="bi bi-person-check"></i>
+          </div>
+          <div class="benefit-text">
+            Googleアカウントと同期して使いやすく
+          </div>
+        </div>
+      </div>
+      
+      <a href="/accounts/google/login/" class="google-btn">
+        <svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+          <g transform="matrix(1, 0, 0, 1, 0, 0)">
+            <path d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.19,19.27 12.19,19.27C8.36,19.27 5,16.25 5,12C5,7.9 8.2,4.73 12.2,4.73C15.29,4.73 17.1,6.7 17.1,6.7L19,4.72C19,4.72 16.56,2 12.1,2C6.42,2 2.03,6.8 2.03,12C2.03,17.05 6.16,22 12.25,22C17.6,22 21.5,18.33 21.5,12.91C21.5,11.76 21.35,11.1 21.35,11.1V11.1Z" fill="#FFFFFF"></path>
+          </g>
+        </svg>
+        Googleで続ける
+      </a>
       
       <div>
-        <a href="{% url 'users:login' %}" class="cancel-link">キャンセル</a>
+        <a href="{% url 'users:login' %}" class="cancel-link">
+          <i class="bi bi-arrow-left me-1"></i>通常のログインに戻る
+        </a>
       </div>
     </div>
   </div>

@@ -4,27 +4,28 @@
 
 {% block head %}
 <style>
-  /* モダンなログインフォームのスタイル */
+  /* 強化されたリッチログインフォームのスタイル */
   .login-container {
-    padding: 2rem 0;
+    padding: 3rem 0;
   }
   
   .login-card {
     border: none;
-    border-radius: 1rem;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    border-radius: 1.25rem;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1), 0 5px 15px rgba(0, 0, 0, 0.05);
     overflow: hidden;
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: white;
   }
   
   .login-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 10px 20px rgba(0, 0, 0, 0.08);
   }
   
   .login-header {
-    background: linear-gradient(135deg, #4f46e5 0%, #3b2fd8 100%);
-    padding: 1.75rem;
+    background: linear-gradient(135deg, var(--primary-color) 0%, #3b2fd8 100%);
+    padding: 2.25rem 2rem;
     text-align: center;
     color: white;
     position: relative;
@@ -33,50 +34,85 @@
   
   .login-header h3 {
     font-weight: 700;
+    margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 2;
+    font-size: 1.75rem;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .login-header p {
+    opacity: 0.9;
     margin-bottom: 0;
     position: relative;
     z-index: 2;
   }
   
-  .login-header::before {
+  /* 背景の装飾要素 */
+  .login-header::before,
+  .login-header::after {
     content: "";
     position: absolute;
-    top: -20px;
-    right: -20px;
-    width: 120px;
-    height: 120px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.1);
     z-index: 1;
   }
   
+  .login-header::before {
+    top: -80px;
+    right: -50px;
+    width: 200px;
+    height: 200px;
+  }
+  
   .login-header::after {
-    content: "";
+    bottom: -120px;
+    left: -80px;
+    width: 280px;
+    height: 280px;
+  }
+  
+  /* 追加の装飾要素 */
+  .header-bubble-1 {
     position: absolute;
-    bottom: -40px;
-    left: -40px;
-    width: 180px;
-    height: 180px;
+    top: 20%;
+    left: 25%;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.08);
+    z-index: 1;
+  }
+  
+  .header-bubble-2 {
+    position: absolute;
+    top: 60%;
+    right: 20%;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
     z-index: 1;
   }
   
   .login-body {
-    padding: 2.5rem;
+    padding: 3rem 2.5rem;
     background-color: white;
   }
   
   .input-group {
     position: relative;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.75rem;
   }
   
   .input-group label {
-    font-weight: 500;
-    color: #4b5563;
-    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #3a4a5a;
+    margin-bottom: 0.75rem;
     display: block;
+    font-size: 0.95rem;
+    transition: all 0.2s;
   }
   
   .input-icon-wrapper {
@@ -86,47 +122,95 @@
   .input-icon {
     position: absolute;
     top: 50%;
-    left: 15px;
+    left: 18px;
     transform: translateY(-50%);
     color: #9ca3af;
+    transition: all 0.3s;
   }
   
   .form-control {
-    height: 50px;
-    border-radius: 0.5rem;
-    padding-left: 3rem;
-    border: 1px solid #e5e7eb;
+    height: 55px;
+    border-radius: 0.75rem;
+    padding-left: 3.25rem;
+    border: 1.5px solid #e5e7eb;
     font-size: 1rem;
     transition: all 0.3s;
+    background-color: #f8fafc;
+    color: #3a4a5a;
   }
   
   .form-control:focus {
-    border-color: #4f46e5;
-    box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.15);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(90, 126, 197, 0.15);
+    background-color: white;
+  }
+  
+  .form-control:focus + .input-icon {
+    color: var(--primary-color);
+  }
+  
+  .remember-me {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .remember-me input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-right: 0.5rem;
+    border-radius: 4px;
+    border: 1.5px solid #cbd5e1;
+    accent-color: var(--primary-color);
+  }
+  
+  .remember-me label {
+    color: #64748b;
+    font-size: 0.95rem;
+    margin-bottom: 0;
+    cursor: pointer;
   }
   
   .login-btn {
-    height: 50px;
-    border-radius: 0.5rem;
+    height: 55px;
+    border-radius: 0.75rem;
     font-weight: 600;
     font-size: 1rem;
-    transition: all 0.3s;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    background: linear-gradient(135deg, #4f46e5 0%, #3b2fd8 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, #3b2fd8 100%);
     border: none;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+  }
+  
+  .login-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 100%;
+    background: linear-gradient(135deg, #3b2fd8 0%, var(--primary-color) 100%);
+    transition: all 0.4s;
+    z-index: -1;
   }
   
   .login-btn:hover {
-    background: linear-gradient(135deg, #3b2fd8 0%, #2b1fc8 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(59, 47, 216, 0.3);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(59, 47, 216, 0.3);
+  }
+  
+  .login-btn:hover::after {
+    width: 100%;
   }
   
   .social-divider {
     display: flex;
     align-items: center;
-    margin: 2rem 0;
+    margin: 2.5rem 0;
   }
   
   .social-divider::before,
@@ -134,13 +218,13 @@
     content: "";
     flex: 1;
     height: 1px;
-    background-color: #e5e7eb;
+    background: linear-gradient(to right, transparent, #e5e7eb, transparent);
   }
   
   .social-divider span {
-    padding: 0 1rem;
-    color: #6b7280;
-    font-size: 0.9rem;
+    padding: 0 1.5rem;
+    color: #64748b;
+    font-size: 0.95rem;
     font-weight: 500;
   }
   
@@ -148,56 +232,94 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    height: 50px;
-    border-radius: 0.5rem;
+    gap: 12px;
+    height: 55px;
+    border-radius: 0.75rem;
     font-weight: 600;
     font-size: 1rem;
     transition: all 0.3s;
     background-color: white;
-    border: 1px solid #e5e7eb;
-    color: #4b5563;
+    border: 1.5px solid #e5e7eb;
+    color: #3a4a5a;
     width: 100%;
-    max-width: 320px;
+    max-width: 360px;
     margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+  }
+  
+  .google-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 100%;
+    background-color: #f8fafc;
+    transition: all 0.4s;
+    z-index: -1;
   }
   
   .google-btn:hover {
-    background-color: #f9fafb;
-    border-color: #d1d5db;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    border-color: #cbd5e1;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+  }
+  
+  .google-btn:hover::after {
+    width: 100%;
   }
   
   .google-btn svg {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
+    transition: all 0.3s;
+  }
+  
+  .google-btn:hover svg {
+    transform: scale(1.1);
   }
   
   .login-footer {
     text-align: center;
-    margin-top: 2rem;
+    margin-top: 2.5rem;
   }
   
   .login-footer p {
-    color: #6b7280;
+    color: #64748b;
     font-size: 0.95rem;
   }
   
   .login-footer a {
-    color: #4f46e5;
+    color: var(--primary-color);
     font-weight: 600;
     text-decoration: none;
+    transition: all 0.3s;
+    position: relative;
+  }
+  
+  .login-footer a::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: var(--primary-color);
     transition: all 0.3s;
   }
   
   .login-footer a:hover {
     color: #3b2fd8;
-    text-decoration: underline;
+  }
+  
+  .login-footer a:hover::after {
+    width: 100%;
   }
   
   .text-danger {
-    color: #dc2626;
+    color: var(--danger-color);
     font-size: 0.85rem;
     margin-top: 0.5rem;
   }
@@ -205,16 +327,124 @@
   .alert-danger {
     background-color: #fee2e2;
     border-color: #fecaca;
-    color: #b91c1c;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
+    color: var(--danger-color);
+    border-radius: 0.75rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.75rem;
     font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
   
+  .alert-danger i {
+    font-size: 1.25rem;
+  }
+  
+  .password-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.75rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .password-reset-link {
+    color: var(--primary-color);
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  .password-reset-link:hover {
+    color: #3b2fd8;
+    text-decoration: underline;
+  }
+  
+  /* アニメーション */
+  @keyframes float {
+    0% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+    100% {
+      transform: translateY(0px);
+    }
+  }
+  
+  .login-illu {
+    animation: float 6s ease-in-out infinite;
+    max-width: 100%;
+    height: auto;
+    margin-bottom: 2rem;
+  }
+  
+  /* レスポンシブ調整 */
   @media (max-width: 768px) {
     .login-body {
-      padding: 1.5rem;
+      padding: 2rem 1.5rem;
+    }
+    
+    .login-header {
+      padding: 1.75rem 1.5rem;
+    }
+    
+    .login-btn, .google-btn, .form-control {
+      height: 50px;
+    }
+  }
+  
+  /* ダークモード対応 */
+  @media (prefers-color-scheme: dark) {
+    .login-card {
+      background-color: #1e293b;
+    }
+    
+    .login-body {
+      background-color: #1e293b;
+    }
+    
+    .form-control {
+      background-color: #334155;
+      border-color: #475569;
+      color: #f8fafc;
+    }
+    
+    .form-control:focus {
+      background-color: #334155;
+    }
+    
+    .input-group label {
+      color: #e2e8f0;
+    }
+    
+    .social-divider::before,
+    .social-divider::after {
+      background: linear-gradient(to right, transparent, #475569, transparent);
+    }
+    
+    .social-divider span {
+      color: #cbd5e1;
+    }
+    
+    .google-btn {
+      background-color: #334155;
+      border-color: #475569;
+      color: #f8fafc;
+    }
+    
+    .google-btn::after {
+      background-color: #475569;
+    }
+    
+    .login-footer p {
+      color: #cbd5e1;
     }
   }
 </style>
@@ -223,10 +453,13 @@
 {% block content %}
 <div class="container login-container">
   <div class="row justify-content-center">
-    <div class="col-md-6 col-lg-5">
+    <div class="col-lg-5 col-md-7 col-sm-10">
       <div class="login-card">
         <div class="login-header">
-          <h3>ログイン</h3>
+          <h3>ようこそ！</h3>
+          <p>カブログにログインして投資管理を始めましょう</p>
+          <div class="header-bubble-1"></div>
+          <div class="header-bubble-2"></div>
         </div>
         <div class="login-body">
           <form method="post" novalidate>
@@ -234,14 +467,19 @@
             
             {% if form.non_field_errors %}
               <div class="alert alert-danger">
-                {% for error in form.non_field_errors %}
-                  {{ error }}
-                {% endfor %}
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>
+                  {% for error in form.non_field_errors %}
+                    {{ error }}
+                  {% endfor %}
+                </div>
               </div>
             {% endif %}
             
             <div class="input-group">
-              <label for="{{ form.username.id_for_label }}">ユーザー名</label>
+              <label for="{{ form.username.id_for_label }}">
+                <i class="bi bi-person me-1"></i>ユーザー名
+              </label>
               <div class="input-icon-wrapper">
                 <span class="input-icon">
                   <i class="bi bi-person-fill"></i>
@@ -249,12 +487,17 @@
                 {{ form.username }}
               </div>
               {% if form.username.errors %}
-                <div class="text-danger">{{ form.username.errors }}</div>
+                <div class="text-danger">
+                  <i class="bi bi-exclamation-circle me-1"></i>
+                  {{ form.username.errors }}
+                </div>
               {% endif %}
             </div>
             
             <div class="input-group">
-              <label for="{{ form.password.id_for_label }}">パスワード</label>
+              <label for="{{ form.password.id_for_label }}">
+                <i class="bi bi-shield-lock me-1"></i>パスワード
+              </label>
               <div class="input-icon-wrapper">
                 <span class="input-icon">
                   <i class="bi bi-lock-fill"></i>
@@ -262,13 +505,28 @@
                 {{ form.password }}
               </div>
               {% if form.password.errors %}
-                <div class="text-danger">{{ form.password.errors }}</div>
+                <div class="text-danger">
+                  <i class="bi bi-exclamation-circle me-1"></i>
+                  {{ form.password.errors }}
+                </div>
               {% endif %}
             </div>
             
-            <div class="d-grid mt-4">
+            <div class="password-options">
+              <div class="remember-me">
+                <input type="checkbox" id="remember-me" name="remember_me">
+                <label for="remember-me">ログイン状態を保存</label>
+              </div>
+              
+              <a href="{% url 'users:password_reset' %}" class="password-reset-link">
+                <i class="bi bi-question-circle"></i>
+                パスワードをお忘れですか？
+              </a>
+            </div>
+            
+            <div class="d-grid">
               <button type="submit" class="btn btn-primary login-btn">
-                ログイン
+                <i class="bi bi-box-arrow-in-right me-2"></i>ログイン
               </button>
             </div>
           </form>
@@ -288,14 +546,14 @@
             </svg>
             <span>Googleでログイン</span>
           </a>
+          
           <div class="login-footer">
-            <p>アカウントをお持ちでない場合は <a href="{% url 'users:signup' %}">アカウント登録</a> へ</p>
-          </div>
-          <!-- ここにパスワードリセットリンクを追加 -->
-          <div class="text-end mt-2">
-            <a href="{% url 'users:password_reset' %}" class="text-decoration-none small">
-              <i class="bi bi-question-circle me-1"></i>パスワードをお忘れですか？
-            </a>
+            <p>アカウントをお持ちでない場合は 
+              <a href="{% url 'users:signup' %}">
+                アカウント登録
+                <i class="bi bi-arrow-right-short"></i>
+              </a>
+            </p>
           </div>
         </div>
       </div>
