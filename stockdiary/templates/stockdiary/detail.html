@@ -875,61 +875,173 @@
     }
   }
 
-  /* 拡張表示モード */
-  .fullscreen-tab-mode .diary-card {
-    position: fixed;
-    top: 15px;
-    left: 15px;
-    z-index: 1050;      /* 拡大縮小ボタンより上に表示 */
-    color: white;
+/* 全画面表示モードの完全修正 */
+.fullscreen-tab-mode .diary-card {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1030;
+  margin: 0;
+  border-radius: 0;
+  max-height: 100vh;
+  overflow-y: auto;
+  display: block; /* 重要: flexboxをブロックに変更 */
+  width: 100%; /* 幅を100%に */
+}
+
+.fullscreen-tab-mode .diary-card-body {
+  padding: 0;
+  display: block; /* 重要: flexboxをブロックに変更 */
+  width: 100%; /* 幅を100%に */
+}
+
+.fullscreen-tab-mode .diary-tabs-container {
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+  width: 100%; /* 幅を100%に */
+}
+
+.fullscreen-tab-mode .nav-tabs {
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 10;
+  width: 100%; /* 幅を100%に */
+}
+
+.fullscreen-tab-mode .diary-card-header,
+.fullscreen-tab-mode .action-buttons,
+.fullscreen-tab-mode .diary-date,
+.fullscreen-tab-mode .masking-tape,
+.fullscreen-tab-mode .diary-card-footer {
+  display: none !important; /* !importantで確実に非表示に */
+}
+
+.fullscreen-tab-mode .back-to-normal {
+  position: fixed;
+  top: 15px;
+  left: 10px;
+  z-index: 1050;
+  background: white;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  border: none;
+}
+
+/* モバイル向け最適化追加 */
+@media (max-width: 767px) {
+  .diary-card, .diary-card-body {
+    display: block !important; /* 重要: flexboxをブロックに変更 */
+    width: 100% !important;
+  }
+  
+  .diary-card-header {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-    z-index: 1030;
-    transition: all 0.3s ease;
-    border: none;
+    width: 100%;
   }
   
-  .fullscreen-tab-mode .diary-tabs-container {
-    margin: -12px -8px 0;
-    border-radius: 0;
-    box-shadow: none;
+  .diary-tabs-container,
+  .diary-tab-content,
+  .tab-pane,
+  .notes-container,
+  .quick-note-form {
+    width: 100% !important;
+    max-width: 100% !important;
   }
   
-  .fullscreen-tab-mode .nav-tabs {
-    position: sticky;
-    top: 0;
-    background: white;
-    z-index: 10;
+  /* 全てのtd, th要素の幅を制限 */
+  td, th {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-word;
   }
   
-  .fullscreen-tab-mode .diary-card-header,
-  .fullscreen-tab-mode .action-buttons,
-  .fullscreen-tab-mode .diary-date,
-  .fullscreen-tab-mode .masking-tape {
-    display: none;
+  /* 入力フォームの調整 */
+  input[type="date"] {
+    width: 100%;
+    text-align: left !important;
   }
   
-  .fullscreen-tab-mode .diary-tab-content {
-    padding-bottom: 80px;
-  }
-  
-  .fullscreen-tab-mode .back-to-normal {
-    position: fixed;
-    top: 15px;
-    left: 10px; /* 右から左に変更 */
-    z-index: 1050;
-    background: white;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
+  /* 継続記録フォームの明示的な幅設定 */
+  .note-type-select, .importance-select {
+    width: 100%;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    border: none;
+    flex-wrap: wrap;
   }
+  
+  .note-type-option {
+    flex: 1 1 calc(33% - 0.5rem);
+    min-width: 80px;
+  }
+  
+  /* 横スクロールが発生する要素を特定して修正 */
+  .table-responsive {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  
+  /* 特に継続記録タブのレイアウト修正 */
+  #notes-content {
+    display: block !important;
+    width: 100% !important;
+  }
+  
+  /* 全画面モードでの継続記録タブ */
+  .fullscreen-tab-mode #notes-content {
+    padding: 0.5rem;
+  }
+  
+  /* 日付入力フィールドの横幅修正 */
+  #note_date {
+    width: 100%;
+  }
+}
+
+/* 特定のエレメントが横並びになる問題の修正 */
+@media (max-width: 576px) {
+  /* flexboxレイアウトをブロックに強制変換 */
+  .diary-card, 
+  .diary-card-body,
+  .diary-tabs-container,
+  .tab-content,
+  .tab-pane,
+  #notes-content,
+  #basic-content,
+  #timeline-content,
+  .notes-container,
+  .quick-note-form {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    clear: both !important;
+  }
+  
+  /* フォーム要素をスタック表示に */
+  .input-group {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .input-group > * {
+    width: 100% !important;
+    border-radius: 0.375rem !important;
+    margin-bottom: 0.5rem;
+  }
+  
+  .input-group > *:last-child {
+    margin-bottom: 0;
+  }
+}
   
   /* 継続記録フォームの最適化 */
   .quick-note-form {
