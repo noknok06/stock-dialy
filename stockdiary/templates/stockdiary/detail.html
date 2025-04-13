@@ -22,6 +22,7 @@
   box-shadow: var(--card-shadow, 0 2px 10px rgba(0, 0, 0, 0.05));
   overflow: hidden;
   margin-bottom: 2rem;
+  background-color: transparent;
 }
 
 /* タブナビゲーションのスタイル */
@@ -70,6 +71,7 @@
 .diary-tab-content {
   padding: 1.5rem;
   background-color: var(--card-bg-color, #ffffff);
+  background-color: transparent;
 }
 
 /* スワイプヒントのスタイル */
@@ -752,6 +754,160 @@
 .note-item.low {
   border-left: 3px solid var(--text-light);
 }
+
+/* モバイル最適化のための追加スタイル */
+@media (max-width: 767px) {
+  /* コンテナのパディング削減 */
+  .container {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  
+  /* 日記カードの余白削減 */
+  .diary-card {
+    padding: 12px 8px;
+    margin-bottom: 15px;
+  }
+  
+  /* マスキングテープをモバイルでは小さく */
+  .masking-tape {
+    height: 15px;
+    width: 70px;
+  }
+  
+  /* ヘッダーの簡略化 */
+  .diary-card-header {
+    margin-bottom: 10px;
+  }
+  
+  /* 日記タイトルのフォントサイズ調整 */
+  .diary-title {
+    font-size: 1.25rem;
+  }
+  
+  /* サブセクションタイトルの調整 */
+  .section-title {
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  /* 情報ブロックの調整 */
+  .info-block {
+    padding: 10px;
+  }
+  
+  .info-item {
+    padding: 8px 4px;
+  }
+  
+  /* タブナビゲーションの最適化 */
+  .diary-tabs-container .nav-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none; /* Firefox */
+  }
+  
+  .diary-tabs-container .nav-tabs::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+  
+  .diary-tabs-container .nav-link {
+    padding: 0.5rem 0.75rem;
+    white-space: nowrap;
+  }
+  
+  /* フローティングアクションボタン */
+  .floating-expand-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: var(--primary-color, #5a7ec5);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    z-index: 1030;
+    transition: all 0.3s ease;
+    border: none;
+  }
+  
+  .floating-expand-button:active {
+    transform: scale(0.95);
+  }
+  
+  .floating-expand-button i {
+    font-size: 1.5rem;
+  }
+  
+  /* 拡張表示モード */
+  .fullscreen-tab-mode .diary-card {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1040;
+    margin: 0;
+    border-radius: 0;
+    overflow-y: auto;
+    background-color: white;
+  }
+  
+  .fullscreen-tab-mode .diary-tabs-container {
+    margin: -12px -8px 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  
+  .fullscreen-tab-mode .nav-tabs {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+  }
+  
+  .fullscreen-tab-mode .diary-card-header,
+  .fullscreen-tab-mode .action-buttons,
+  .fullscreen-tab-mode .diary-date,
+  .fullscreen-tab-mode .masking-tape {
+    display: none;
+  }
+  
+  .fullscreen-tab-mode .diary-tab-content {
+    padding-bottom: 80px;
+  }
+  
+  .fullscreen-tab-mode .back-to-normal {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1050;
+    background: white;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    border: none;
+  }
+  
+  /* 継続記録フォームの最適化 */
+  .quick-note-form {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  /* タブフォーカスモード */
+  .mobile-tab-focus .diary-tab-content {
+    min-height: 85vh;
+  }
+}
 </style>
 {% endblock %}
 
@@ -811,7 +967,7 @@
     </div>
     
     <!-- 日記本文部分 -->
-    <div class="diary-card-body mx-3">
+    <div class="diary-card-body">
       <!-- メモアイコン -->
       {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
       <i class="bi bi-sticky memo-icon"></i>
@@ -1868,6 +2024,145 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
+    // モバイル判定
+    const isMobile = window.innerWidth < 768;
+    
+    if (isMobile) {
+      // フローティング展開ボタンを追加
+      const expandButton = document.createElement('button');
+      expandButton.className = 'floating-expand-button';
+      expandButton.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
+      document.body.appendChild(expandButton);
+      
+      // 全画面表示モード切り替え機能
+      expandButton.addEventListener('click', function() {
+        toggleFullscreenMode();
+      });
+      
+      // タブ切り替え時の最適化
+      const tabLinks = document.querySelectorAll('.nav-link');
+      tabLinks.forEach(tab => {
+        tab.addEventListener('click', function() {
+          // タブ切り替え時にスクロール位置をリセット
+          window.scrollTo(0, 0);
+          
+          // クリックしたタブがアクティブになるまで少し待つ
+          setTimeout(() => {
+            // タブに応じた最適化
+            const tabId = this.getAttribute('data-bs-target');
+            optimizeForTab(tabId);
+          }, 50);
+        });
+      });
+      
+      // ダブルタップでフルスクリーン切り替え
+      let lastTap = 0;
+      document.querySelector('.diary-tabs-container').addEventListener('click', function(e) {
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTap;
+        if (tapLength < 500 && tapLength > 0) {
+          // ダブルタップ検出
+          toggleFullscreenMode();
+          e.preventDefault();
+        }
+        lastTap = currentTime;
+      });
+      
+      // 全画面表示モード切り替え
+      function toggleFullscreenMode() {
+        document.body.classList.toggle('fullscreen-tab-mode');
+        
+        if (document.body.classList.contains('fullscreen-tab-mode')) {
+          // フルスクリーンモード有効化
+          
+          // 戻るボタンを追加
+          if (!document.querySelector('.back-to-normal')) {
+            const backButton = document.createElement('button');
+            backButton.className = 'back-to-normal';
+            backButton.innerHTML = '<i class="bi bi-fullscreen-exit"></i>';
+            backButton.addEventListener('click', function(e) {
+              toggleFullscreenMode();
+              e.stopPropagation();
+            });
+            document.body.appendChild(backButton);
+          }
+          
+          // フローティングボタンを非表示
+          expandButton.style.display = 'none';
+        } else {
+          // フルスクリーンモード解除
+          
+          // 戻るボタンを削除
+          const backButton = document.querySelector('.back-to-normal');
+          if (backButton) {
+            backButton.remove();
+          }
+          
+          // フローティングボタンを表示
+          expandButton.style.display = 'flex';
+        }
+      }
+      
+      // タブに合わせた最適化
+      function optimizeForTab(tabId) {
+        // タブフォーカスモードを有効化
+        document.body.classList.add('mobile-tab-focus');
+        
+        // タブコンテンツ要素
+        const tabContent = document.querySelector(tabId);
+        
+        if (tabId === '#basic-content') {
+          // 基本情報タブの最適化
+          // 特に何もしない
+        } else if (tabId === '#notes-content') {
+          // 継続記録タブの最適化
+          // フォームをより見やすく
+          const noteForm = tabContent.querySelector('.quick-note-form');
+          if (noteForm) {
+            noteForm.style.marginTop = '10px';
+            noteForm.style.marginBottom = '20px';
+          }
+        } else if (tabId === '#timeline-content') {
+          // タイムラインタブの最適化
+          // 特に何もしない
+        }
+      }
+      
+      // スワイプダウンでフルスクリーンモード解除
+      let startY = 0;
+      let isScrolling = false;
+      
+      document.addEventListener('touchstart', function(e) {
+        if (document.body.classList.contains('fullscreen-tab-mode')) {
+          const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+          
+          // 画面上部でのみスワイプダウン検出を有効にする
+          if (scrollTop <= 10) {
+            startY = e.touches[0].clientY;
+            isScrolling = true;
+          }
+        }
+      });
+      
+      document.addEventListener('touchmove', function(e) {
+        if (!isScrolling || !document.body.classList.contains('fullscreen-tab-mode')) return;
+        
+        const currentY = e.touches[0].clientY;
+        const diffY = currentY - startY;
+        
+        // 下にスワイプしたときにフルスクリーンモードを解除
+        if (diffY > 80) {
+          toggleFullscreenMode();
+          isScrolling = false;
+          e.preventDefault();
+        }
+      });
+      
+      document.addEventListener('touchend', function() {
+        isScrolling = false;
+      });
+    }
+    
     // 現在価格取得ボタンの処理
     const fetchNotePriceBtn = document.getElementById('fetch-note-price');
     if (fetchNotePriceBtn) {
