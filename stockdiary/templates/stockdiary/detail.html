@@ -937,12 +937,7 @@
 }
 
 /* モバイル向け最適化追加 */
-@media (max-width: 767px) {
-  .diary-card, .diary-card-body {
-    display: block !important; /* 重要: flexboxをブロックに変更 */
-    width: 100% !important;
-  }
-  
+@media (max-width: 767px) {  
   .diary-card-header {
     display: flex;
     width: 100%;
@@ -990,12 +985,6 @@
     overflow-x: auto;
   }
   
-  /* 特に継続記録タブのレイアウト修正 */
-  #notes-content {
-    display: block !important;
-    width: 100% !important;
-  }
-  
   /* 全画面モードでの継続記録タブ */
   .fullscreen-tab-mode #notes-content {
     padding: 0.5rem;
@@ -1009,22 +998,7 @@
 
 /* 特定のエレメントが横並びになる問題の修正 */
 @media (max-width: 576px) {
-  /* flexboxレイアウトをブロックに強制変換 */
-  .diary-card, 
-  .diary-card-body,
-  .diary-tabs-container,
-  .tab-content,
-  .tab-pane,
-  #notes-content,
-  #basic-content,
-  #timeline-content,
-  .notes-container,
-  .quick-note-form {
-    display: block !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    clear: both !important;
-  }
+
   
   /* フォーム要素をスタック表示に */
   .input-group {
@@ -1902,6 +1876,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   // 指定したインデックスのタブに切り替え
+  // diary-detail-tabs.js に修正を追加
   function switchToTab(index) {
     if (index < 0 || index > 2) return;
     
@@ -1921,6 +1896,17 @@ document.addEventListener('DOMContentLoaded', function() {
       // 現在のタブインデックスを更新
       currentTabIndex = index;
       
+      // モバイル表示時のコンテンツ表示を強制
+      const isMobile = window.innerWidth < 768;
+      if (isMobile) {
+        const activeTabPane = document.querySelector('.tab-pane.active');
+        if (activeTabPane) {
+          // 表示を強制
+          activeTabPane.style.display = 'block';
+          activeTabPane.style.opacity = '1';
+        }
+      }
+      
       // アニメーション完了後に状態をリセット
       setTimeout(() => {
         isAnimating = false;
@@ -1928,7 +1914,6 @@ document.addEventListener('DOMContentLoaded', function() {
       }, TRANSITION_DURATION);
     }, 50);
   }
-  
   // イベントリスナーの設定
   function setupEventListeners() {
     // タブコンテンツにタッチイベントリスナーを追加
