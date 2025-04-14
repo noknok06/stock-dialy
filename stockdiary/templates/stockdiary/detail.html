@@ -136,7 +136,7 @@
   }
   
   .diary-tab-content {
-    padding: 1.25rem 1rem;
+    padding: 1.25rem 0;
   }
   
   /* タブコンテンツの高さを最適化 */
@@ -1088,7 +1088,7 @@
     <div class="masking-tape {% if diary.id|divisibleby:3 %}yellow{% elif diary.id|divisibleby:2 %}green{% endif %}"></div>
     
     <!-- 日記ヘッダー -->
-    <div class="mx-3 diary-card-header d-flex justify-content-between align-items-center">
+    <div class="diary-card-header d-flex justify-content-between align-items-center">
       <div class="d-flex align-items-center">
         <h2 class="mb-0 me-2 diary-title">{{ diary.stock_name }}</h2>
         <span class="badge bg-secondary">{{ diary.stock_symbol }}</span>
@@ -1332,8 +1332,8 @@
                   <table class="table">
                     <thead>
                       <tr>
-                        <th style="width: 50%;">項目</th>
-                        <th>値</th>
+                        <th style="width: 60%;">項目</th>
+                        <th style="width: 40%;">値</th>
                       </tr>
                     </thead>
                     <tbody>
