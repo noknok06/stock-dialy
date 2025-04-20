@@ -1019,6 +1019,27 @@
     min-height: 85vh;
   }
 }
+/* テキストエリアのフローティングラベル問題を修正 */
+.form-floating > textarea.form-control {
+  height: 120px; /* 十分な高さを確保 */
+  padding-top: 1.5rem; /* 上部のパディングを増やしてラベルとの重なりを防止 */
+  padding-bottom: 0.625rem;
+}
+
+.form-floating > textarea.form-control ~ label {
+  transform: scale(0.85) translateY(-0.75rem) translateX(0.15rem);
+  height: auto;
+  padding: 1rem 0.75rem;
+  opacity: 0.65;
+}
+
+/* フォーカス時とテキスト入力時のラベル位置 */
+.form-floating > textarea.form-control:focus ~ label,
+.form-floating > textarea.form-control:not(:placeholder-shown) ~ label {
+  transform: scale(0.85) translateY(-1.85rem) translateX(0.15rem);
+  opacity: 0.65;
+}
+
 </style>
 <style>
   /* 改善されたフローティングラベルのスタイル */
@@ -1040,12 +1061,11 @@
   
   .form-floating > .form-control:focus,
   .form-floating > .form-control:not(:placeholder-shown) {
-    padding-top: 1.625rem;
+    padding-top: 1rem;
     padding-bottom: 0.625rem;
   }
   
   .form-floating > textarea.form-control {
-    padding-top: 1.625rem;
     height: 120px;
   }
   
@@ -1061,6 +1081,26 @@
       font-size: 0.75rem;
     }
   }
+  .delete-confirm-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+}
+
+.delete-confirm-modal.active {
+  opacity: 1;
+  visibility: visible;
+}  
 </style>
 {% endblock %}
 
@@ -1730,6 +1770,29 @@
     </div>
   </div>
 </div>
+<!-- 日記削除確認モーダル -->
+<div class="delete-confirm-modal" id="deleteDiaryModal">
+  <div class="delete-confirm-content">
+    <div class="delete-confirm-header">
+      <div class="icon">
+        <i class="bi bi-exclamation-triangle"></i>
+      </div>
+      <h5 class="title">日記を削除しますか？</h5>
+    </div>
+    <div class="delete-confirm-body">
+      <p>この日記「{{ diary.stock_name }}」を削除します。</p>
+      <p class="text-danger">このアクションは取り消せません。本当に削除しますか？</p>
+    </div>
+    <div class="delete-confirm-footer">
+      <button type="button" class="btn btn-outline-secondary" id="cancelDeleteDiaryBtn">
+        キャンセル
+      </button>
+      <button type="button" class="btn btn-danger" id="confirmDeleteDiaryBtn">
+        <i class="bi bi-trash me-1"></i> 削除する
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- スピードダイアルコンポーネント -->
 {% include 'speed_dial.html' with actions=diary_actions %}
@@ -2081,13 +2144,11 @@
       
       .form-floating > .form-control:focus,
       .form-floating > .form-control:not(:placeholder-shown) {
-        padding-top: 1.625rem;
         padding-bottom: 0.625rem;
       }
       
       .form-floating > textarea.form-control:focus,
       .form-floating > textarea.form-control:not(:placeholder-shown) {
-        padding-top: 1.625rem;
         padding-bottom: 0.625rem;
       }
     `;
@@ -2322,5 +2383,184 @@ document.addEventListener('DOMContentLoaded', function() {
     };
   }
 });
+document.addEventListener('DOMContentLoaded', function() {
+  // 現在株価取得ボタンのイベントリスナー
+  const fetchPriceBtn = document.getElementById('fetch-note-price');
+  if (fetchPriceBtn) {
+    fetchPriceBtn.addEventListener('click', function() {
+      // 銘柄コードを取得
+      const stockSymbol = '{{ diary.stock_symbol }}';
+      if (!stockSymbol) {
+        alert('銘柄コードが設定されていません');
+        return;
+      }
+      
+      // ローディング表示
+      fetchPriceBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> 取得中...';
+      fetchPriceBtn.disabled = true;
+      
+      // APIリクエスト
+      fetch(`/stockdiary/api/stock/price/${stockSymbol}/`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('株価の取得に失敗しました');
+          }
+          return response.json();
+        })
+        .then(data => {
+          // 株価を入力欄に設定
+          const priceInput = document.getElementById('note_current_price');
+          if (priceInput && data.price) {
+            priceInput.value = data.price;
+          }
+          
+          // 成功メッセージ
+          const feedback = document.createElement('div');
+          feedback.className = 'alert alert-success mt-2';
+          feedback.innerHTML = `<i class="bi bi-check-circle"></i> 現在株価: ${data.price}円`;
+          
+          // フィードバック表示（既存のフィードバックがあれば削除）
+          const existingFeedback = document.querySelector('.price-feedback');
+          if (existingFeedback) {
+            existingFeedback.remove();
+          }
+          
+          // フォームの後ろにフィードバックを追加
+          const inputGroup = priceInput.closest('.input-group');
+          feedback.className += ' price-feedback';
+          inputGroup.after(feedback);
+          
+          // 2秒後にフィードバックを消す
+          setTimeout(() => {
+            feedback.remove();
+          }, 3000);
+        })
+        .catch(error => {
+          // エラーメッセージ
+          alert(error.message);
+        })
+        .finally(() => {
+          // ボタン状態を元に戻す
+          fetchPriceBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> 現在株価取得';
+          fetchPriceBtn.disabled = false;
+        });
+    });
+  }
+  
+  // 削除確認モーダル関連の処理
+  const deleteNoteModal = document.getElementById('deleteNoteModal');
+  const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+  const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+  let noteIdToDelete = null;
+  
+  // 削除ボタンのイベントリスナー
+  const deleteButtons = document.querySelectorAll('.delete-note-btn');
+  deleteButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      noteIdToDelete = this.getAttribute('data-note-id');
+      
+      // モーダルを表示
+      deleteNoteModal.classList.add('active');
+    });
+  });
+  
+  // キャンセルボタン
+  if (cancelDeleteBtn) {
+    cancelDeleteBtn.addEventListener('click', function() {
+      deleteNoteModal.classList.remove('active');
+      noteIdToDelete = null;
+    });
+  }
+  
+  // 確認ボタン（実際の削除処理）
+  if (confirmDeleteBtn) {
+    confirmDeleteBtn.addEventListener('click', function() {
+      if (!noteIdToDelete) return;
+      
+      // CSRF トークンの取得
+      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+      
+      // 削除用のフォーム生成＆送信
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = `/stockdiary/{{ diary.id }}/note/${noteIdToDelete}/delete/`;
+      
+      // CSRFトークンの追加
+      const csrfInput = document.createElement('input');
+      csrfInput.type = 'hidden';
+      csrfInput.name = 'csrfmiddlewaretoken';
+      csrfInput.value = csrfToken;
+      form.appendChild(csrfInput);
+      
+      // フォームを追加して送信
+      document.body.appendChild(form);
+      form.submit();
+    });
+  }
+  
+  // モーダル外クリックで閉じる
+  if (deleteNoteModal) {
+    deleteNoteModal.addEventListener('click', function(e) {
+      if (e.target === deleteNoteModal) {
+        deleteNoteModal.classList.remove('active');
+        noteIdToDelete = null;
+      }
+    });
+  }
+});
+const deleteDiaryModal = document.getElementById('deleteDiaryModal');
+const confirmDeleteDiaryBtn = document.getElementById('confirmDeleteDiaryBtn');
+const cancelDeleteDiaryBtn = document.getElementById('cancelDeleteDiaryBtn');
+
+// 削除ボタン（日記全体の削除）のイベントリスナー
+const deleteDiaryBtn = document.querySelector('a.btn-diary-danger[href$="/delete/"]');
+if (deleteDiaryBtn) {
+  deleteDiaryBtn.addEventListener('click', function(e) {
+    e.preventDefault(); // リンクのデフォルト動作をキャンセル
+    
+    // モーダルを表示
+    deleteDiaryModal.classList.add('active');
+  });
+}
+
+// キャンセルボタン
+if (cancelDeleteDiaryBtn) {
+  cancelDeleteDiaryBtn.addEventListener('click', function() {
+    deleteDiaryModal.classList.remove('active');
+  });
+}
+
+// 確認ボタン（実際の削除処理）
+if (confirmDeleteDiaryBtn) {
+  confirmDeleteDiaryBtn.addEventListener('click', function() {
+    // CSRF トークンの取得
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    // 削除用のフォーム生成＆送信
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{% url "stockdiary:delete" diary.id %}';
+    
+    // CSRFトークンの追加
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrfmiddlewaretoken';
+    csrfInput.value = csrfToken;
+    form.appendChild(csrfInput);
+    
+    // フォームを追加して送信
+    document.body.appendChild(form);
+    form.submit();
+  });
+}
+
+// モーダル外クリックで閉じる
+if (deleteDiaryModal) {
+  deleteDiaryModal.addEventListener('click', function(e) {
+    if (e.target === deleteDiaryModal) {
+      deleteDiaryModal.classList.remove('active');
+    }
+  });
+}
 </script>
 {% endblock %}
