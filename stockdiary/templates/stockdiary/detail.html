@@ -874,19 +874,22 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 1030;
+  z-index: 2000; /* 高いz-indexを設定 */
   margin: 0;
   border-radius: 0;
   max-height: 100vh;
   overflow-y: auto;
+  overflow-x: hidden; /* 横スクロールを防止 */
   display: block; /* 重要: flexboxをブロックに変更 */
   width: 100%; /* 幅を100%に */
+  background-color: white; /* 背景色を設定して背面を隠す */
 }
 
 .fullscreen-tab-mode .diary-card-body {
   padding: 0;
   display: block; /* 重要: flexboxをブロックに変更 */
   width: 100%; /* 幅を100%に */
+  height: 100vh; /* 高さを画面いっぱいに */
 }
 
 .fullscreen-tab-mode .diary-tabs-container {
@@ -904,6 +907,7 @@
   width: 100%; /* 幅を100%に */
 }
 
+/* 全画面モード時に不要な要素を非表示 */
 .fullscreen-tab-mode .diary-card-header,
 .fullscreen-tab-mode .action-buttons,
 .fullscreen-tab-mode .diary-date,
@@ -911,11 +915,12 @@
   display: none !important; /* !importantで確実に非表示に */
 }
 
-.fullscreen-tab-mode .back-to-normal {
+/* 戻るボタンのスタイル改善 */
+.back-to-normal {
   position: fixed;
   top: 15px;
-  left: 10px;
-  z-index: 1050;
+  left: 15px;
+  z-index: 2100; /* diary-cardよりも前面に */
   background: white;
   border-radius: 50%;
   width: 40px;
@@ -923,8 +928,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
   border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.back-to-normal:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+/* フルスクリーンモード時のスタイル追加 */
+body.fullscreen-tab-mode {
+  overflow: hidden; /* スクロールを無効化 */
 }
 
 /* モバイル向け最適化追加 */
@@ -2256,15 +2273,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 50);
       });
     });
-    
-    // 全画面表示モード切り替え
+        
+    // フルスクリーンモードの改善
     function toggleFullscreenMode() {
       document.body.classList.toggle('fullscreen-tab-mode');
       
       if (document.body.classList.contains('fullscreen-tab-mode')) {
-        // フルスクリーンモード有効化
+        // フルスクリーンモード有効化時の処理
         
-        // 戻るボタンを追加（左上に配置）
+        // スクロール位置をリセット
+        window.scrollTo(0, 0);
+        
+        // スクロールを無効化（背面コンテンツが見えないようにする）
+        document.body.style.overflow = 'hidden';
+        
+        // 戻るボタンを追加
         if (!document.querySelector('.back-to-normal')) {
           const backButton = document.createElement('button');
           backButton.className = 'back-to-normal';
@@ -2277,10 +2300,22 @@ document.addEventListener('DOMContentLoaded', function() {
           document.body.appendChild(backButton);
         }
         
+        // z-indexを高くして他の要素より前面に表示
+        const diaryCard = document.querySelector('.diary-card');
+        if (diaryCard) {
+          diaryCard.style.zIndex = '2000';
+        }
+        
         // フローティングボタンを非表示
-        expandButton.style.display = 'none';
+        const expandButton = document.querySelector('.floating-expand-button');
+        if (expandButton) {
+          expandButton.style.display = 'none';
+        }
       } else {
-        // フルスクリーンモード解除
+        // フルスクリーンモード解除時の処理
+        
+        // スクロールを有効化
+        document.body.style.overflow = '';
         
         // 戻るボタンを削除
         const backButton = document.querySelector('.back-to-normal');
@@ -2288,11 +2323,62 @@ document.addEventListener('DOMContentLoaded', function() {
           backButton.remove();
         }
         
+        // z-indexを元に戻す
+        const diaryCard = document.querySelector('.diary-card');
+        if (diaryCard) {
+          diaryCard.style.zIndex = '';
+        }
+        
         // フローティングボタンを表示
-        expandButton.style.display = 'flex';
+        const expandButton = document.querySelector('.floating-expand-button');
+        if (expandButton) {
+          expandButton.style.display = 'flex';
+        }
       }
     }
-    
+
+    // リロードを防止する処理を追加
+    function preventReload() {
+      // 現在のスクロール位置を保存
+      const scrollY = window.scrollY;
+      
+      // 一定の間隔でスクロール位置をチェック
+      setInterval(() => {
+        if (document.body.classList.contains('fullscreen-tab-mode') && 
+            Math.abs(window.scrollY - scrollY) > 100) {
+          // スクロール位置が大きく変わった場合に元の位置に戻す
+          window.scrollTo(0, 0);
+        }
+      }, 100);
+    }
+
+    // タブ切り替え時のイベント処理を強化
+    function enhanceTabSwitching() {
+      const tabLinks = document.querySelectorAll('.nav-link');
+      tabLinks.forEach(tab => {
+        tab.addEventListener('click', function() {
+          // フルスクリーンモード中はスクロール位置をリセット
+          if (document.body.classList.contains('fullscreen-tab-mode')) {
+            window.scrollTo(0, 0);
+          }
+        });
+      });
+    }
+
+    // ページ読み込み時に初期化
+    document.addEventListener('DOMContentLoaded', function() {
+      // フルスクリーンモード用の関数を呼び出す
+      if (document.querySelector('.floating-expand-button')) {
+        document.querySelector('.floating-expand-button').addEventListener('click', toggleFullscreenMode);
+      }
+      
+      // リロード防止処理を初期化
+      preventReload();
+      
+      // タブ切り替え処理を強化
+      enhanceTabSwitching();
+    });
+
     // タブに合わせた最適化
     function optimizeForTab(tabId) {
       // タブフォーカスモードを有効化
