@@ -5,122 +5,302 @@
  */
 
 /* ========== 日記カードスタイル ========== */
+/* モバイル最適化カードスタイル */
 .diary-card {
-  background-color: var(--card-bg-color);
-  border-radius: var(--border-radius);
-  box-shadow: var(--card-shadow);
-  margin-bottom: var(--spacing-sm);
-  overflow: hidden;
   position: relative;
+  cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
+  margin-bottom: 1rem;
+  border-radius: var(--border-radius);
+  background-color: var(--card-bg-color);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
 }
 
-/* 日記の綴じ部分 (左側の帯) */
+/* マスキングテープなどの装飾を排除 */
 .diary-card::before {
   content: "";
   position: absolute;
   left: 0;
   top: 0;
-  width: 8px;
+  width: 6px;
   height: 100%;
-  background-color: var(--success-color);
-  opacity: 0.7;
+  opacity: 0.9;
 }
 
-.diary-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--card-shadow-hover);
-}
-
-/* メモタイプの日記スタイル */
 .diary-card.memo-card::before {
   background-color: var(--info-color);
 }
 
-/* 売却済みの日記スタイル */
 .diary-card.sold-card::before {
   background-color: var(--danger-color);
 }
 
-/* 日記カードのヘッダー */
+.diary-card:not(.memo-card):not(.sold-card)::before {
+  background-color: var(--success-color);
+}
+
+/* カードヘッダーのレイアウト修正 */
 .diary-card-header {
-  padding: var(--spacing-sm);
-  padding-left: 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1rem 1rem 0.75rem 1.25rem;
   background-color: rgba(246, 248, 250, 0.7);
   border-bottom: 1px solid var(--notebook-line);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
-/* 日記カードの本文部分 */
-.diary-card-body {
-  padding: var(--spacing-lg);
-  background-image: linear-gradient(var(--notebook-line) 1px, transparent 1px);
-  background-size: 100% var(--notebook-line-height);
-  line-height: var(--notebook-line-height);
-  position: relative;
+/* ヘッダー左側（銘柄と日付） */
+.diary-header-content {
+  flex: 1;
 }
 
-/* 日記カードのフッター */
-.diary-card-footer {
-  padding: var(--spacing-sm);
-  padding-left: 25px;
-  background-color: rgba(246, 248, 250, 0.7);
-  border-top: 1px solid var(--notebook-line);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* 銘柄名のスタイル */
+.diary-title {
+  font-size: 1.1rem;
+  color: var(--primary-color);
+  margin-bottom: 0.25rem;
+  font-weight: 600;
 }
 
-/* 日記メタ情報 */
+/* 日付と状態バッジのコンテナ */
 .diary-meta {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: 0.5rem;
   color: var(--text-light);
   font-size: 0.875rem;
 }
 
-/* 日記タイトル */
-.diary-title {
-  font-size: 1.25rem;
-  color: var(--primary-color);
-  border-bottom: 1px dashed var(--notebook-line);
-  padding-bottom: var(--spacing-sm);
-  margin-bottom: var(--spacing-md);
+/* 状態バッジ */
+.status-badge {
+  padding: 0.15rem 0.5rem;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.memo-badge {
+  background-color: rgba(93, 161, 229, 0.2);
+  color: var(--info-color);
+}
+
+.sold-badge {
+  background-color: rgba(225, 90, 90, 0.2);
+  color: var(--danger-color);
+}
+
+.purchase-badge {
+  background-color: rgba(93, 176, 117, 0.2);
+  color: var(--success-color);
+}
+
+/* ヘッダー右側（価格情報） */
+.diary-price-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 90px;
+}
+
+.price-value {
   font-weight: 600;
+  color: var(--primary-color);
+  font-size: 0.95rem;
 }
 
-/* 日付スタイル */
-.diary-date {
-  font-family: 'Courier New', monospace;
+.quantity-value {
+  font-size: 0.8rem;
   color: var(--text-light);
-  margin-bottom: var(--spacing-sm);
 }
 
-/* ========== マスキングテープ装飾 ========== */
-.masking-tape {
+.profit-rate {
+  font-weight: 600;
+  margin-top: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.profit {
+  color: var(--success-color);
+}
+
+.loss {
+  color: var(--danger-color);
+}
+
+/* タグ表示の最適化 */
+.diary-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.75rem 1rem 0.5rem;
+}
+@media (max-width: 576px) {
+  .diary-tags {
+    margin: 0px;
+    margin: 0.25rem;
+  }
+}
+
+.diary-tag {
+  background-color: rgba(90, 126, 197, 0.1);
+  color: var(--primary-color);
+  border-radius: 1rem;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.more-tags {
+  background-color: rgba(107, 114, 128, 0.1);
+  color: var(--text-light);
+}
+
+/* タブナビゲーションの最適化 */
+.diary-card-tabs {
+  position: relative;
+  margin: 0 1rem;
+}
+
+.card-tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  margin-bottom: 0.5rem;
+}
+
+.card-tabs .nav-link {
+  padding: 0.5rem 0.6rem;
+  font-size: 0.85rem;
+  color: var(--text-light);
+  border: none;
+  border-radius: 0.5rem 0.5rem 0 0;
+  position: relative;
+  flex: 1;
+  text-align: center;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-tabs .nav-link::after {
+  content: '';
   position: absolute;
-  width: 100px;
-  height: 30px;
-  background-color: var(--masking-tape);
-  transform: rotate(-3deg);
-  top: -5px;
-  right: 20px;
-  z-index: 5;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: transparent;
+  transition: background-color 0.2s;
 }
 
-/* 黄色いマスキングテープバリエーション */
-.masking-tape.yellow {
-  background-color: rgba(247, 183, 49, 0.6);
-  transform: rotate(2deg);
+.card-tabs .nav-link.active {
+  color: var(--primary-color);
+  font-weight: 500;
+  background-color: transparent;
 }
 
-/* 緑のマスキングテープバリエーション */
-.masking-tape.green {
-  background-color: rgba(93, 176, 117, 0.6);
-  transform: rotate(-2deg);
+.card-tabs .nav-link.active::after {
+  background-color: var(--primary-color);
+}
+
+.card-tabs .nav-link:hover:not(.active) {
+  color: var(--primary-color);
+  background-color: rgba(90, 126, 197, 0.05);
+}
+
+.card-tabs .nav-link i {
+  margin-right: 0.25rem;
+  font-size: 0.9rem;
+}
+
+/* スワイプインジケーター */
+.swipe-indicator {
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  opacity: 0.3;
+  transform: translateY(-50%);
+}
+
+.swipe-indicator.left {
+  left: -15px;
+  border-top: 2px solid var(--primary-color);
+  border-left: 2px solid var(--primary-color);
+  transform: translateY(-50%) rotate(-45deg);
+}
+
+.swipe-indicator.right {
+  right: -15px;
+  border-top: 2px solid var(--primary-color);
+  border-right: 2px solid var(--primary-color);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+/* 本文コンテンツエリア */
+.reason-content {
+  padding: 0.5rem 1rem;
+  line-height: 1.5;
+  max-height: none;
+  overflow: visible;
+}
+
+/* モバイル向け最適化 */
+@media (max-width: 576px) {
+  .diary-card-header {
+    padding: 0.75rem 0.75rem 0.5rem 1rem;
+  }
+  
+  .diary-title {
+    font-size: 1rem;
+  }
+  
+  .diary-meta {
+    font-size: 0.8rem;
+  }
+  
+  .diary-card-tabs {
+    margin: 0 0.75rem;
+  }
+  
+  .card-tabs .nav-link {
+    padding: 0.4rem 0.4rem;
+    font-size: 0.75rem;
+  }
+  
+  .card-tabs .nav-link i {
+    margin-right: 0.2rem;
+    font-size: 0.8rem;
+  }
+  
+  .price-value {
+    font-size: 0.9rem;
+  }
+  
+  .quantity-value {
+    font-size: 0.75rem;
+  }
+  
+  .diary-tag {
+    font-size: 0.7rem;
+    padding: 0.1rem 0.5rem;
+  }
+}
+
+/* タップフィードバック */
+@media (hover: none) {
+  .diary-card:active {
+    transform: scale(0.98);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .card-tabs .nav-link:active {
+    opacity: 0.7;
+  }
 }
 
 /* アイコンだけのアクションボタン */
@@ -381,7 +561,7 @@
 .diary-tag {
   background-color: rgba(90, 126, 197, 0.1);
   color: var(--primary-color);
-  border-radius: 20px;
+  border-radius: 5px;
   padding: 0rem 0.5rem;
   margin-top: 0.1rem;
   font-size: 0.85rem;

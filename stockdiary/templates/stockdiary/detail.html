@@ -196,7 +196,6 @@
 .timeline-list-item {
   position: relative;
   margin-bottom: 25px;
-  padding-right: 15px;
 }
 
 .timeline-list-item:last-child {
@@ -775,15 +774,10 @@
   /* 日記カードの余白削減 */
   .diary-card {
     padding: 12px 8px;
+    padding-top: 0px;
     margin-bottom: 15px;
   }
-  
-  /* マスキングテープをモバイルでは小さく */
-  .masking-tape {
-    height: 15px;
-    width: 70px;
-  }
-  
+    
   /* ヘッダーの簡略化 */
   .diary-card-header {
     margin-bottom: 10px;
@@ -913,7 +907,6 @@
 .fullscreen-tab-mode .diary-card-header,
 .fullscreen-tab-mode .action-buttons,
 .fullscreen-tab-mode .diary-date,
-.fullscreen-tab-mode .masking-tape,
 .fullscreen-tab-mode .diary-card-footer {
   display: none !important; /* !importantで確実に非表示に */
 }
@@ -1081,10 +1074,7 @@
   </div>
 
   <!-- 日記詳細カード -->
-  <div class="diary-card {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo-card{% elif diary.sell_date %}sold-card{% endif %}">
-    <!-- マスキングテープ装飾 - ランダムな色で -->
-    <div class="masking-tape {% if diary.id|divisibleby:3 %}yellow{% elif diary.id|divisibleby:2 %}green{% endif %}"></div>
-    
+  <div class="diary-card {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo-card{% elif diary.sell_date %}sold-card{% endif %}">    
     <!-- 日記ヘッダー -->
     <div class="diary-card-header d-flex justify-content-between align-items-center">
       <div class="d-flex align-items-center">
@@ -1134,7 +1124,7 @@
       {% endif %}
       
       <!-- 日付表示 -->
-      <p class="diary-date">
+      <p class="diary-date" style="padding-left: 20px;">
         <i class="bi bi-calendar-check"></i> {{ diary.purchase_date|date:"Y年m月d日" }}
       </p>
       
@@ -1690,7 +1680,7 @@
       <!-- デスクトップ向けレイアウト(中・大画面) -->
       <div class="d-none d-md-flex justify-content-between align-items-center">
         <div class="meta-info">
-          <i class="bi bi-calendar-check me-1"></i> 作成: {{ diary.created_at|date:"Y年m月d日 H:i" }}
+          <i class="bi bi-calendar-check me-1" style="padding-left: 20px;"></i> 作成: {{ diary.created_at|date:"Y年m月d日 H:i" }}
           <span class="mx-2">|</span>
           <i class="bi bi-clock-history me-1"></i> 更新: {{ diary.updated_at|date:"Y年m月d日 H:i" }}
         </div>

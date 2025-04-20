@@ -288,3 +288,93 @@ document.addEventListener('DOMContentLoaded', function() {
     debugLog('Device is now offline');
   });
 });
+/**
+ * モバイル最適化版カブログのタブスワイプ機能
+ */
+document.addEventListener('DOMContentLoaded', function() {
+  // スワイプインジケーターの追加
+  const addSwipeIndicators = function() {
+    document.querySelectorAll('.card-tabs').forEach(tabContainer => {
+      // すでに存在する場合は作成しない
+      if (tabContainer.querySelector('.swipe-indicator')) return;
+      
+      // 左右のスワイプインジケーターを追加
+      const leftIndicator = document.createElement('span');
+      leftIndicator.className = 'swipe-indicator left';
+      
+      const rightIndicator = document.createElement('span');
+      rightIndicator.className = 'swipe-indicator right';
+      
+      tabContainer.appendChild(leftIndicator);
+      tabContainer.appendChild(rightIndicator);
+    });
+  };
+  
+  // カードクリックイベントの処理
+  const setupCardClickHandler = function() {
+    document.querySelectorAll('.diary-card').forEach(card => {
+      card.addEventListener('click', function(e) {
+        // タブやボタンがクリックされた場合は何もしない
+        if (e.target.closest('.nav-link') || 
+            e.target.closest('button') || 
+            e.target.closest('a') ||
+            e.target.closest('.tab-content')) {
+          return;
+        }
+        
+        // カードのクリックで詳細ページへ移動
+        const diaryId = this.getAttribute('data-diary-id');
+        if (diaryId) {
+          window.location.href = `/stockdiary/${diaryId}/`;
+        }
+      });
+    });
+  };
+  
+  // スワイプ操作の処理強化
+  const enhanceSwipeHandling = function() {
+    // すでに定義されているスワイプ処理に追加機能を提供
+    const originalHandleSwipeAction = window.handleSwipeAction || function() {};
+    
+    window.handleSwipeAction = function(element, direction) {
+      // 元の処理を実行
+      originalHandleSwipeAction(element, direction);
+      
+      // 視覚的フィードバックを追加
+      const tabsContainer = element.querySelector('.card-tabs') || 
+                          element.closest('.diary-card')?.querySelector('.card-tabs');
+      
+      if (tabsContainer) {
+        // アクティブタブと全タブを取得
+        const activeTab = tabsContainer.querySelector('.nav-link.active');
+        const allTabs = Array.from(tabsContainer.querySelectorAll('.nav-link'));
+        
+        if (activeTab && allTabs.length > 1) {
+          const currentIndex = allTabs.indexOf(activeTab);
+          
+          // スワイプ方向に基づいて次/前のタブをハイライト
+          if (direction === 'left' && currentIndex < allTabs.length - 1) {
+            allTabs[currentIndex + 1].classList.add('tab-highlight');
+            setTimeout(() => allTabs[currentIndex + 1].classList.remove('tab-highlight'), 300);
+          } else if (direction === 'right' && currentIndex > 0) {
+            allTabs[currentIndex - 1].classList.add('tab-highlight');
+            setTimeout(() => allTabs[currentIndex - 1].classList.remove('tab-highlight'), 300);
+          }
+        }
+      }
+    };
+  };
+  
+  // 機能の初期化
+  addSwipeIndicators();
+  setupCardClickHandler();
+  enhanceSwipeHandling();
+  
+  // HTMX イベントリスナー - コンテンツ更新時に機能を再初期化
+  document.body.addEventListener('htmx:afterSwap', function(evt) {
+    setTimeout(() => {
+      addSwipeIndicators();
+      setupCardClickHandler();
+    }, 100);
+  });
+});

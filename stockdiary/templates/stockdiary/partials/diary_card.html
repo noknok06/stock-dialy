@@ -5,193 +5,173 @@
   data-diary-id="{{ diary.id }}"
   data-diary-type="{% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo{% elif diary.sell_date %}sold{% else %}active{% endif %}">
 
-  <!-- マスキングテープの装飾（ランダムな配置） -->
-  {% if forloop.counter|divisibleby:3 %}
-  <div class="masking-tape yellow"></div>
-  {% elif forloop.counter|divisibleby:5 %}
-  <div class="masking-tape green"></div>
-  {% elif forloop.counter|divisibleby:2 %}
-  <div class="masking-tape"></div>
-  {% endif %}
-
-  <!-- カードヘッダー -->
+  <!-- カードヘッダー - シンプル化 -->
   <div class="diary-card-header">
-    <div class="diary-meta">
-      <i class="bi bi-clock"></i>
-      <span>{{ diary.purchase_date|date:"Y年m月d日" }}</span>
-
-      <!-- メモバッジを追加 -->
-      {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
-      <span class="badge bg-info">メモ</span>
-      {% endif %}
-
-      <!-- 売却済みバッジ -->
-      {% if diary.sell_date %}
-      <span class="badge bg-danger">売却済み</span>
+    <div class="diary-header-content">
+      <!-- 銘柄名とシンボル -->
+      <h3 class="diary-title">
+        {{ diary.stock_name }}
+        <small class="text-muted">({{ diary.stock_symbol }})</small>
+      </h3>
+      
+      <!-- 日付と状態バッジ -->
+      <div class="diary-meta">
+        <span class="diary-date">{{ diary.purchase_date|date:"Y年m月d日" }}</span>
+        
+        {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
+          <span class="status-badge memo-badge">メモ</span>
+        {% elif diary.sell_date %}
+          <span class="status-badge sold-badge">売却済み</span>
+        {% else %}
+          <span class="status-badge purchase-badge">保有中</span>
+        {% endif %}
+      </div>
+    </div>
+    
+    <!-- 価格情報 -->
+    <div class="diary-price-info">
+      {% if not diary.is_memo and diary.purchase_price is not None %}
+        <div class="price-value">{{ diary.purchase_price|floatformat:2|intcomma }}円</div>
+        {% if diary.purchase_quantity is not None %}
+          <div class="quantity-value">{{ diary.purchase_quantity }}株</div>
+        {% endif %}
+        
+        {% if diary.sell_date and diary.sell_price %}
+          {% with profit_rate=diary.sell_price|sub:diary.purchase_price|div:diary.purchase_price|mul:100 %}
+            <div class="profit-rate {% if profit_rate > 0 %}profit{% elif profit_rate < 0 %}loss{% endif %}">
+              {{ profit_rate|floatformat:2 }}%
+            </div>
+          {% endwith %}
+        {% endif %}
       {% endif %}
     </div>
-    <button class="btn btn-sm btn-link p-0 text-decoration-none collapse-btn" type="button" data-bs-toggle="collapse"
-      data-bs-target="#collapse-{{ diary.id }}" aria-expanded="true">
-      <i class="bi bi-chevron-down"></i>
-    </button>
   </div>
 
   <!-- コンテンツ部分 -->
-  <div class="collapse show" id="collapse-{{ diary.id }}">
-    <div class="diary-card-body">
-      <!-- 日記のアイコン表示 -->
-      {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
-      <i class="bi bi-sticky memo-icon"></i>
+  <div class="diary-card-body">
+    <!-- タグ表示 - カード上部に配置 -->
+    {% if diary.tags.all %}
+    <div class="diary-tags">
+      {% for tag in diary.tags.all|slice:":3" %}
+      <span class="diary-tag"><i class="bi bi-tag"></i> {{ tag.name }}</span>
+      {% endfor %}
+      {% if diary.tags.all.count > 3 %}
+      <span class="diary-tag more-tags">+{{ diary.tags.all.count|add:"-3" }}</span>
       {% endif %}
+    </div>
+    {% endif %}
 
-      <!-- 銘柄名とタグを上下に並べる -->
-      <h3 class="diary-title">
-        <i class="bi bi-building text-muted"></i>
-        <a href="{% url 'stockdiary:detail' diary.id %}" class="view-btn diary-title-link" title="詳細"
-          style="color:var(--primary-color);text-decoration: none">
-          {{ diary.stock_name }}
-        </a>
-        <small class="text-muted">({{ diary.stock_symbol }})</small>
-      </h3>
-
-      <!-- タグ表示 - 銘柄名の下に配置 -->
-      {% if diary.tags.all %}
-      <div class="diary-tags px-2">
-        {% for tag in diary.tags.all %}
-        <span class="diary-tag"><i class="bi bi-tag"></i> {{ tag.name }}</span>
-        {% endfor %}
-      </div>
-      {% endif %}
-
-      <!-- カード切り替えタブ -->
-      <div class="diary-card-tabs mt-3 mb-3">
-        <div class="nav nav-tabs card-tabs" role="tablist">
-          <button class="nav-link active tab-btn" id="reason-tab-{{ diary.id }}" 
-                  data-bs-toggle="tab" 
-                  data-bs-target="#reason-content-{{ diary.id }}"
-                  type="button" role="tab">
-            <i class="bi bi-journal-text"></i> 理由
-          </button>
-          
-          <!-- 継続記録タブ -->
-          {% if diary.notes.exists %}
-          <button class="nav-link tab-btn" id="notes-tab-{{ diary.id }}" 
-                  data-bs-toggle="tab" 
-                  data-bs-target="#notes-content-{{ diary.id }}"
-                  hx-get="{% url 'stockdiary:tab_content' diary.id 'notes' %}"
-                  hx-target="#notes-content-{{ diary.id }}"
-                  hx-trigger="click once"
-                  hx-swap="innerHTML"
-                  hx-indicator="#tab-loading-indicator-{{ diary.id }}"
-                  type="button" role="tab">
-            <i class="bi bi-journal-richtext"></i> 継続
-          </button>
+    <!-- カード切り替えタブ -->
+    <div class="diary-card-tabs">
+      <div class="nav nav-tabs card-tabs" role="tablist">
+        <!-- 理由/メモタブ -->
+        <button class="nav-link active tab-btn" id="reason-tab-{{ diary.id }}" 
+                data-bs-toggle="tab" 
+                data-bs-target="#reason-content-{{ diary.id }}"
+                type="button" role="tab">
+          <i class="bi bi-journal-text"></i> 
+          {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
+          メモ
+          {% else %}
+          理由
           {% endif %}
-          
-          <!-- 分析タブ -->
-          {% if diary.analysis_values.exists %}
-          <button class="nav-link tab-btn" id="analysis-tab-{{ diary.id }}"
-                  data-bs-toggle="tab" 
-                  data-bs-target="#analysis-content-{{ diary.id }}"
-                  hx-get="{% url 'stockdiary:tab_content' diary.id 'analysis' %}"
-                  hx-target="#analysis-content-{{ diary.id }}"
-                  hx-trigger="click once"
-                  hx-swap="innerHTML"
-                  hx-indicator="#tab-loading-indicator-{{ diary.id }}"
-                  type="button" role="tab">
-            <i class="bi bi-clipboard-data"></i> 分析
-          </button>
-          {% endif %}
-          
-          <!-- 詳細タブ -->
-          <button class="nav-link tab-btn" id="details-tab-{{ diary.id }}"
-                  data-bs-toggle="tab" 
-                  data-bs-target="#details-content-{{ diary.id }}"
-                  hx-get="{% url 'stockdiary:tab_content' diary.id 'details' %}"
-                  hx-target="#details-content-{{ diary.id }}"
-                  hx-trigger="click once"
-                  hx-swap="innerHTML"
-                  hx-indicator="#tab-loading-indicator-{{ diary.id }}"
-                  type="button" role="tab">
-            <i class="bi bi-graph-up"></i> 売買
-          </button>
-        </div>
-      </div>
-
-      <!-- 共通ローディングインジケータ -->
-      <div id="tab-loading-indicator-{{ diary.id }}" class="htmx-indicator" style="display: none; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 10;">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">読み込み中...</span>
-        </div>
-      </div>
-
-      <!-- タブコンテンツ -->
-      <div class="tab-content">
-        <!-- 購入理由タブ - 常に最初から表示 -->
-        <div class="tab-pane fade show active" id="reason-content-{{ diary.id }}" role="tabpanel">
-          <div class="px-1 py-2">
-            <h6 class="mb-2">
-              <i class="bi bi-journal-text"></i>
-              {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
-              メモ内容:
-              {% else %}
-              購入理由:
-              {% endif %}
-            </h6>
-            <div class="mx-2 reason-content">
-              {% if request.GET.query and request.GET.query != '' %}
-                {{ diary.reason|safe|linebreaks|highlight:request.GET.query|truncatewords_html:50 }}
-              {% else %}
-                {{ diary.reason|safe|linebreaks|truncatewords_html:50 }}
-              {% endif %}
-            </div>
-            
-            <!-- 続きを読む -->
-            {% if diary.reason|wordcount > 50 %}
-            <div class="text-end mt-2">
-              <a href="{% url 'stockdiary:detail' diary.id %}" class="text-primary text-decoration-none small">
-                続きを読む <i class="bi bi-arrow-right"></i>
-              </a>
-            </div>
-            {% endif %}
-          </div>
-        </div>
-
+        </button>
+        
         <!-- 継続記録タブ -->
         {% if diary.notes.exists %}
-        <div class="tab-pane fade" id="notes-content-{{ diary.id }}" role="tabpanel">
-          <!-- 空のまま - HTMXで内容を挿入 -->
-        </div>
+        <button class="nav-link tab-btn" id="notes-tab-{{ diary.id }}" 
+                data-bs-toggle="tab" 
+                data-bs-target="#notes-content-{{ diary.id }}"
+                hx-get="{% url 'stockdiary:tab_content' diary.id 'notes' %}"
+                hx-target="#notes-content-{{ diary.id }}"
+                hx-trigger="click once"
+                hx-swap="innerHTML"
+                hx-indicator="#tab-loading-indicator-{{ diary.id }}"
+                type="button" role="tab">
+          <i class="bi bi-journal-richtext"></i> 継続
+        </button>
         {% endif %}
         
-        <!-- 分析テンプレートタブ -->
+        <!-- 分析タブ -->
         {% if diary.analysis_values.exists %}
-        <div class="tab-pane fade" id="analysis-content-{{ diary.id }}" role="tabpanel">
-          <!-- 空のまま - HTMXで内容を挿入 -->
-        </div>
+        <button class="nav-link tab-btn" id="analysis-tab-{{ diary.id }}"
+                data-bs-toggle="tab" 
+                data-bs-target="#analysis-content-{{ diary.id }}"
+                hx-get="{% url 'stockdiary:tab_content' diary.id 'analysis' %}"
+                hx-target="#analysis-content-{{ diary.id }}"
+                hx-trigger="click once"
+                hx-swap="innerHTML"
+                hx-indicator="#tab-loading-indicator-{{ diary.id }}"
+                type="button" role="tab">
+          <i class="bi bi-clipboard-data"></i> 分析
+        </button>
         {% endif %}
+        
+        <!-- 詳細タブ -->
+        <button class="nav-link tab-btn" id="details-tab-{{ diary.id }}"
+                data-bs-toggle="tab" 
+                data-bs-target="#details-content-{{ diary.id }}"
+                hx-get="{% url 'stockdiary:tab_content' diary.id 'details' %}"
+                hx-target="#details-content-{{ diary.id }}"
+                hx-trigger="click once"
+                hx-swap="innerHTML"
+                hx-indicator="#tab-loading-indicator-{{ diary.id }}"
+                type="button" role="tab">
+          <i class="bi bi-graph-up"></i> 売買
+        </button>
+      </div>
+      
+      <!-- スワイプインジケーター (JavaScript で追加) -->
+    </div>
 
-        <!-- 詳細情報タブ -->
-        <div class="tab-pane fade" id="details-content-{{ diary.id }}" role="tabpanel">
-          <!-- 空のまま - HTMXで内容を挿入 -->
-        </div>
+    <!-- 共通ローディングインジケータ -->
+    <div id="tab-loading-indicator-{{ diary.id }}" class="htmx-indicator" style="display: none; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 10;">
+      <div class="spinner-border text-primary spinner-border-sm" role="status">
+        <span class="visually-hidden">読み込み中...</span>
       </div>
     </div>
 
-    <div class="diary-card-footer">
-      <small class="text-muted">更新: {{ diary.updated_at|date:"Y/m/d" }}</small>
-      <div class="action-buttons">
-        <a href="{% url 'stockdiary:update' diary.id %}" class="action-icon-btn edit-btn" title="編集">
-          <i class="bi bi-pencil"></i>
-        </a>
-        {% if not diary.sell_date and not diary.is_memo and diary.purchase_price is not None and diary.purchase_quantity is not None %}
-        <a href="{% url 'stockdiary:sell_specific' diary.id %}" class="action-icon-btn" title="売却" style="color:var(--success-color)">
-          <i class="bi bi-cash-coin"></i>
-        </a>
-        {% endif %}
-        <a href="{% url 'stockdiary:delete' diary.id %}" class="action-icon-btn delete-btn" title="削除">
-          <i class="bi bi-trash"></i>
-        </a>
+    <!-- タブコンテンツ -->
+    <div class="tab-content">
+      <!-- 購入理由タブ - 常に最初から表示 -->
+      <div class="tab-pane fade show active" id="reason-content-{{ diary.id }}" role="tabpanel">
+        <div class="px-1 py-2">
+          <div class="reason-content">
+            {% if request.GET.query and request.GET.query != '' %}
+              {{ diary.reason|safe|linebreaks|highlight:request.GET.query|truncatewords_html:50 }}
+            {% else %}
+              {{ diary.reason|safe|linebreaks|truncatewords_html:50 }}
+            {% endif %}
+          </div>
+          
+          <!-- 続きを読む -->
+          {% if diary.reason|wordcount > 50 %}
+          <div class="text-end mt-2">
+            <a href="{% url 'stockdiary:detail' diary.id %}" class="text-primary text-decoration-none small">
+              続きを読む <i class="bi bi-arrow-right"></i>
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- 継続記録タブ -->
+      {% if diary.notes.exists %}
+      <div class="tab-pane fade" id="notes-content-{{ diary.id }}" role="tabpanel">
+        <!-- 空のまま - HTMXで内容を挿入 -->
+      </div>
+      {% endif %}
+      
+      <!-- 分析テンプレートタブ -->
+      {% if diary.analysis_values.exists %}
+      <div class="tab-pane fade" id="analysis-content-{{ diary.id }}" role="tabpanel">
+        <!-- 空のまま - HTMXで内容を挿入 -->
+      </div>
+      {% endif %}
+
+      <!-- 詳細情報タブ -->
+      <div class="tab-pane fade" id="details-content-{{ diary.id }}" role="tabpanel">
+        <!-- 空のまま - HTMXで内容を挿入 -->
       </div>
     </div>
   </div>
