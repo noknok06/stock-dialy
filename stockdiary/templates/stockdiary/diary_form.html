@@ -7,6 +7,144 @@
 {{ block.super }}
 <!-- 日記テーマCSS -->
 <link rel="stylesheet" href="{% static 'css/diary-theme.css' %}">
+<style>
+  /* 拡張テキストエリア用スタイル */
+  .enhanced-textarea-container {
+    position: relative;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+  }
+  
+  .enhanced-textarea-container.focused {
+    transform: scale(1.01);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
+  
+  .enhanced-textarea-container textarea {
+    width: 100%;
+    min-height: 150px;
+    padding: 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 16px;
+    line-height: 1.6;
+    transition: all 0.3s ease;
+    resize: none;
+  }
+  
+  .enhanced-textarea-container textarea:focus {
+    outline: none;
+    border-color: var(--primary-color, #5a7ec5);
+    box-shadow: 0 0 0 3px rgba(90, 126, 197, 0.2);
+  }
+  
+  .enhanced-textarea-container.focused textarea {
+    font-size: 17px;
+  }
+  
+  .char-counter,
+  .memo-char-counter,
+  .fullscreen-char-counter {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    font-size: 12px;
+    color: #6c757d;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 2px 6px;
+    border-radius: 12px;
+    pointer-events: none;
+  }
+  
+  /* フルスクリーンエディタ */
+  .fullscreen-editor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #f8f9fa;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .fullscreen-editor.active {
+    visibility: visible;
+    opacity: 1;
+  }
+  
+  .fullscreen-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background-color: var(--primary-color, #5a7ec5);
+    color: white;
+  }
+  
+  .btn-close-white {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    line-height: 1;
+    padding: 0;
+  }
+  
+  .fullscreen-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+  }
+  
+  .fullscreen-content {
+    flex: 1;
+    padding: 16px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .fullscreen-content textarea {
+    flex: 1;
+    width: 100%;
+    padding: 16px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 18px;
+    line-height: 1.6;
+    resize: none;
+  }
+  
+  .fullscreen-content textarea:focus {
+    outline: none;
+    border-color: var(--primary-color, #5a7ec5);
+  }
+  
+  .no-scroll {
+    overflow: hidden;
+  }
+  
+  /* モバイル対応 */
+  @media (max-width: 768px) {
+    .enhanced-textarea-container.focused {
+      transform: none;
+      margin: 0 -10px;
+      width: calc(100% + 20px);
+      border-radius: 0;
+    }
+    
+    .enhanced-textarea-container.focused textarea {
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
+    }
+  }
+  </style>
 {% endblock %}
 
 {% block content %}
@@ -251,31 +389,54 @@
 
         <!-- 詳細情報セクション -->
         <div class="form-section">
-          <h4 class="form-section-title">
-            <i class="bi bi-journal-text"></i> 詳細情報
-          </h4>
+        <h4 class="form-section-title">
+          <i class="bi bi-journal-text"></i> 詳細情報
+          <button type="button" id="expandReasonBtn" class="btn btn-sm btn-outline-primary ms-2">
+            <i class="bi bi-arrows-fullscreen"></i> 全画面表示
+          </button>
+        </h4>
 
-          <div class="mb-4">
-            <label for="{{ form.reason.id_for_label }}" class="form-label">購入理由 / 投資日記</label>
-            <small class="d-block text-muted mb-2">株式購入の理由や分析結果、将来の見通しなどを自由に記録できます</small>
-            <div class="rich-text-container">
-              {{ form.reason }}
-            </div>
-            {% if form.reason.errors %}
-            <div class="text-danger">{{ form.reason.errors }}</div>
-            {% endif %}
+        <div class="mb-4">
+          <label for="{{ form.reason.id_for_label }}" class="form-label">購入理由 / 投資日記</label>
+          <small class="d-block text-muted mb-2">株式購入の理由や分析結果、将来の見通しなどを自由に記録できます</small>
+          <div class="rich-text-container enhanced-textarea-container">
+            {{ form.reason }}
+            <div class="char-counter">0 文字</div>
           </div>
-
-          <div class="mb-3">
-            <label for="{{ form.memo.id_for_label }}" class="form-label">メモ (任意)</label>
-            {{ form.memo }}
-            <small class="form-text text-muted">その他の備考事項があれば記入してください</small>
-            {% if form.memo.errors %}
-            <div class="text-danger">{{ form.memo.errors }}</div>
-            {% endif %}
-          </div>
+          {% if form.reason.errors %}
+          <div class="text-danger">{{ form.reason.errors }}</div>
+          {% endif %}
         </div>
 
+        <div class="mb-3">
+          <label for="{{ form.memo.id_for_label }}" class="form-label">メモ (任意)</label>
+          <div class="enhanced-textarea-container">
+            {{ form.memo }}
+            <div class="memo-char-counter">0 文字</div>
+          </div>
+          <small class="form-text text-muted">その他の備考事項があれば記入してください</small>
+          {% if form.memo.errors %}
+          <div class="text-danger">{{ form.memo.errors }}</div>
+          {% endif %}
+        </div>
+        </div>
+
+        <!-- フルスクリーンモーダル -->
+        <div id="fullscreenEditor" class="fullscreen-editor">
+        <div class="fullscreen-header">
+          <button type="button" id="closeFullscreenBtn" class="btn btn-close-white">
+            <i class="bi bi-x-lg"></i>
+          </button>
+          <h5 class="fullscreen-title">購入理由 / 投資日記</h5>
+          <button type="button" id="saveFullscreenBtn" class="btn btn-primary btn-sm">
+            <i class="bi bi-check-lg"></i> 保存
+          </button>
+        </div>
+        <div class="fullscreen-content">
+          <textarea id="fullscreenTextarea"></textarea>
+          <div class="fullscreen-char-counter">0 文字</div>
+        </div>
+        </div>
         <div class="form-footer">
           <a href="{% if form.instance.pk %}{% url 'stockdiary:detail' form.instance.pk %}{% else %}{% url 'stockdiary:home' %}{% endif %}" class="btn btn-diary btn-diary-outline">
             <i class="bi bi-arrow-left me-1"></i> キャンセル
@@ -936,5 +1097,154 @@ style.textContent = `
 }
 `;
 document.head.appendChild(style);  
+
+  // 通常のテキストエリア
+  const reasonTextarea = document.getElementById('{{ form.reason.id_for_label }}');
+  const memoTextarea = document.getElementById('{{ form.memo.id_for_label }}');
+  const charCounter = document.querySelector('.char-counter');
+  const memoCharCounter = document.querySelector('.memo-char-counter');
+  
+  // フルスクリーン要素
+  const expandReasonBtn = document.getElementById('expandReasonBtn');
+  const fullscreenEditor = document.getElementById('fullscreenEditor');
+  const fullscreenTextarea = document.getElementById('fullscreenTextarea');
+  const closeFullscreenBtn = document.getElementById('closeFullscreenBtn');
+  const saveFullscreenBtn = document.getElementById('saveFullscreenBtn');
+  const fullscreenCharCounter = document.querySelector('.fullscreen-char-counter');
+  
+  // 文字数カウンター初期設定
+  if (reasonTextarea && charCounter) {
+    charCounter.textContent = `${reasonTextarea.value.length} 文字`;
+  }
+  
+  if (memoTextarea && memoCharCounter) {
+    memoCharCounter.textContent = `${memoTextarea.value.length} 文字`;
+  }
+  
+  // テキストエリアの高さを自動調整する関数
+  const adjustTextareaHeight = (textarea) => {
+    if (!textarea) return;
+    
+    // リセットして実際の高さを取得
+    textarea.style.height = 'auto';
+    
+    // スクロール高さを取得（内容に合わせた高さ）
+    const scrollHeight = textarea.scrollHeight;
+    
+    // 最小高さ150px、最大は画面の60%まで
+    const maxHeight = window.innerHeight * 0.6;
+    const newHeight = Math.min(Math.max(150, scrollHeight), maxHeight);
+    
+    textarea.style.height = `${newHeight}px`;
+  };
+  
+  // 文字数のカウント更新
+  const updateCharCount = (textarea, counter) => {
+    if (textarea && counter) {
+      counter.textContent = `${textarea.value.length} 文字`;
+    }
+  };
+  
+  // 理由テキストエリアのイベント処理
+  if (reasonTextarea) {
+    // 初期調整
+    setTimeout(() => adjustTextareaHeight(reasonTextarea), 100);
+    
+    // 入力時
+    reasonTextarea.addEventListener('input', function() {
+      adjustTextareaHeight(this);
+      updateCharCount(this, charCounter);
+    });
+    
+    // フォーカス時
+    reasonTextarea.addEventListener('focus', function() {
+      this.parentElement.classList.add('focused');
+      adjustTextareaHeight(this);
+      
+      // フォーカス時にスクロール（モバイルキーボード表示時）
+      setTimeout(() => {
+        const offset = this.getBoundingClientRect().top + window.pageYOffset - 120;
+        window.scrollTo({top: offset, behavior: 'smooth'});
+      }, 300);
+    });
+    
+    // フォーカス解除時
+    reasonTextarea.addEventListener('blur', function() {
+      this.parentElement.classList.remove('focused');
+    });
+  }
+  
+  // メモテキストエリアのイベント処理
+  if (memoTextarea) {
+    // 初期調整
+    setTimeout(() => adjustTextareaHeight(memoTextarea), 100);
+    
+    // 入力時
+    memoTextarea.addEventListener('input', function() {
+      adjustTextareaHeight(this);
+      updateCharCount(this, memoCharCounter);
+    });
+    
+    // フォーカス時
+    memoTextarea.addEventListener('focus', function() {
+      this.parentElement.classList.add('focused');
+      adjustTextareaHeight(this);
+    });
+    
+    // フォーカス解除時
+    memoTextarea.addEventListener('blur', function() {
+      this.parentElement.classList.remove('focused');
+    });
+  }
+  
+  // フルスクリーンモード
+  if (expandReasonBtn && fullscreenEditor && reasonTextarea) {
+    // フルスクリーンボタンクリック時
+    expandReasonBtn.addEventListener('click', function() {
+      // 本文をフルスクリーンエディタにコピー
+      fullscreenTextarea.value = reasonTextarea.value;
+      fullscreenCharCounter.textContent = `${fullscreenTextarea.value.length} 文字`;
+      
+      // フルスクリーン表示
+      fullscreenEditor.classList.add('active');
+      document.body.classList.add('no-scroll');
+      
+      // フォーカスを当てる
+      setTimeout(() => {
+        fullscreenTextarea.focus();
+      }, 100);
+    });
+    
+    // フルスクリーン閉じるボタン
+    closeFullscreenBtn.addEventListener('click', function() {
+      fullscreenEditor.classList.remove('active');
+      document.body.classList.remove('no-scroll');
+    });
+    
+    // フルスクリーン保存ボタン
+    saveFullscreenBtn.addEventListener('click', function() {
+      // 通常テキストエリアに値を戻す
+      reasonTextarea.value = fullscreenTextarea.value;
+      
+      // 文字数と高さを更新
+      updateCharCount(reasonTextarea, charCounter);
+      adjustTextareaHeight(reasonTextarea);
+      
+      // フルスクリーン閉じる
+      fullscreenEditor.classList.remove('active');
+      document.body.classList.remove('no-scroll');
+    });
+    
+    // フルスクリーンテキストエリアの入力時
+    fullscreenTextarea.addEventListener('input', function() {
+      updateCharCount(this, fullscreenCharCounter);
+    });
+  }
+  
+  // ウィンドウリサイズ時に高さを再調整
+  window.addEventListener('resize', function() {
+    adjustTextareaHeight(reasonTextarea);
+    adjustTextareaHeight(memoTextarea);
+  });
 </script>
 {% endblock %}
