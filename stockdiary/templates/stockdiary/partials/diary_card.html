@@ -11,7 +11,9 @@
       <!-- 銘柄名とシンボル -->
       <h3 class="diary-title">
         {{ diary.stock_name }}
-        <small class="text-muted">({{ diary.stock_symbol }})</small>
+        {% if diary.stock_symbol %}
+          <small class="text-muted">({{ diary.stock_symbol }})</small>
+        {% endif %}
       </h3>
       
       <!-- 日付と状態バッジ -->
