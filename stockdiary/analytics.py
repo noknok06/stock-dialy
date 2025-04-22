@@ -985,7 +985,8 @@ class DiaryAnalytics:
             }
 
             # 2. セクター別銘柄数と平均投資額
-            stocks_data = sorted(sector_stats, key=lambda x: x['count'], reverse=True)
+            filtered_stats = [stat for stat in sector_stats if stat['name'] != '未分類']
+            stocks_data = sorted(filtered_stats, key=lambda x: x['count'], reverse=True)
             result['sector_stocks_data'] = {
                 'labels': [stat['name'] for stat in stocks_data],
                 'counts': [int(stat['count']) for stat in stocks_data],
