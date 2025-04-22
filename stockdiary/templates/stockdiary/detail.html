@@ -971,8 +971,7 @@ body.fullscreen-tab-mode {
   
   /* 入力フォームの調整 */
   input[type="date"] {
-    width: 100%;
-    text-align: left !important;
+    text-align: center !important;
   }
   
   /* 継続記録フォームの明示的な幅設定 */
@@ -1118,6 +1117,244 @@ body.fullscreen-tab-mode {
   opacity: 1;
   visibility: visible;
 }  
+</style>
+<style>
+/* iOS デバイスでの位置調整 */
+@supports (-webkit-touch-callout: none) {
+  .floating-add-note-btn {
+    bottom: 40px; /* より高い位置に配置してセーフエリア考慮 */
+  }
+}
+
+/* スピードダイヤルとの重複を避ける */
+@media (max-width: 767px) {
+  .floating-add-note-btn {
+    bottom: 90px;
+    right: 16px;
+    width: 48px;
+    height: 48px;
+  }
+  
+  .floating-add-note-btn i {
+    font-size: 1.25rem;
+  }
+}
+
+/* モーダル内のフォーム最適化 */
+.note-type-select {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.note-type-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem 0.5rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.note-type-option i {
+  font-size: 1.25rem;
+  margin-bottom: 0.35rem;
+}
+
+.note-type-option:hover {
+  background-color: rgba(var(--primary-color-rgb, 90, 126, 197), 0.05);
+}
+
+.note-type-option.active {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+/* 重要度選択のグリッド化 */
+.importance-select {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.importance-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.85rem;
+}
+
+.importance-option.low {
+  background-color: rgba(var(--text-light-rgb, 107, 114, 128), 0.1);
+  border: 1px solid rgba(var(--text-light-rgb, 107, 114, 128), 0.2);
+}
+
+.importance-option.low.active {
+  background-color: var(--text-light, #6b7280);
+  color: white;
+}
+
+.importance-option.medium {
+  background-color: rgba(var(--primary-color-rgb, 90, 126, 197), 0.1);
+  border: 1px solid rgba(var(--primary-color-rgb, 90, 126, 197), 0.2);
+}
+
+.importance-option.medium.active {
+  background-color: var(--primary-color, #5a7ec5);
+  color: white;
+}
+
+.importance-option.high {
+  background-color: rgba(var(--danger-color-rgb, 225, 90, 90), 0.1);
+  border: 1px solid rgba(var(--danger-color-rgb, 225, 90, 90), 0.2);
+}
+
+.importance-option.high.active {
+  background-color: var(--danger-color, #e15a5a);
+  color: white;
+}
+
+/* モバイル向け改善 */
+@media (max-width: 576px) {
+  .note-type-select {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .note-type-option {
+    padding: 0.6rem 0.4rem;
+    font-size: 0.75rem;
+  }
+  
+  .note-type-option i {
+    font-size: 1rem;
+  }
+  
+  .importance-option {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.8rem;
+  }
+  
+  /* 株価取得ボタンをアイコンのみに */
+  #fetch-note-price {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  #fetch-note-price span {
+    display: none;
+  }
+}
+
+/* 継続記録のリスト表示の改善 */
+.note-item {
+  position: relative;
+  margin-bottom: 1.25rem;
+  border-radius: 12px;
+  background-color: white;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.note-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.note-header {
+  padding: 0.75rem 1rem;
+  background-color: rgba(248, 249, 250, 0.7);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.note-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.note-date {
+  font-size: 0.85rem;
+}
+
+.note-body {
+  padding: 1rem;
+}
+
+.note-price-info {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+}
+
+.note-price-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-light);
+}
+
+.note-price-value {
+  font-weight: 500;
+}
+
+.note-content {
+  line-height: 1.6;
+}
+
+.note-item.high {
+  border-left: 3px solid var(--danger-color);
+}
+
+.note-item.medium {
+  border-left: 3px solid var(--primary-color);
+}
+
+.note-item.low {
+  border-left: 3px solid var(--text-light);
+}
+
+/* タブ内のパディングを広く */
+#notes-content {
+  padding-bottom: 80px; /* フローティングボタンとの重複を避ける */
+}
+
+@media (max-width: 767px) {
+  .note-header {
+    padding: 0.6rem 0.75rem;
+  }
+  
+  .note-body {
+    padding: 0.75rem;
+  }
+  
+  .note-date {
+    font-size: 0.8rem;
+  }
+  
+  .note-content {
+    font-size: 0.9rem;
+  }
+  
+  .note-price-info {
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+}
 </style>
 {% endblock %}
 
@@ -1477,10 +1714,8 @@ body.fullscreen-tab-mode {
               </div>
             </div>
           </div>
-          
-          <!-- 継続記録タブ -->
+          <!-- 継続記録タブ部分を修正 -->
           <div class="tab-pane fade" id="notes-content" role="tabpanel" aria-labelledby="notes-tab">
-            
             <!-- 継続記録の表示 -->
             <div class="notes-container">
               {% for note in notes %}
@@ -1542,78 +1777,103 @@ body.fullscreen-tab-mode {
               <div class="text-center py-4">
                 <i class="bi bi-journal-text text-muted" style="font-size: 2rem;"></i>
                 <p class="text-muted mt-2">継続的な記録はまだありません。</p>
-                <p class="text-muted">上のフォームから銘柄の状況変化や新たな分析を追加できます。</p>
+                <p class="text-muted">下のボタンから銘柄の状況変化や新たな分析を追加できます。</p>
               </div>
               {% endfor %}
             </div>
-            <div class="quick-note-form">
-              <form id="quickNoteForm" method="post" action="{% url 'stockdiary:add_note' diary.id %}">
-                {% csrf_token %}
-                
-                <!-- 日付入力 -->
-                <div class="form-floating mb-3">
-                  <input type="date" class="form-control" id="note_date" name="date" 
-                      value="{{ note_form.date.value|date:'Y-m-d' }}" placeholder=" " style="text-align: center;" required>
-                  <label for="note_date">日付</label>
+            
+            <!-- フローティング追加ボタン -->
+            <div style="text-align: -webkit-right;">
+              <button type="button" class="btn btn-primary floating-add-note-btn" id="openNoteModalBtn">
+                <i class="bi bi-plus-lg"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- 継続記録追加用モーダル -->
+          <div class="modal fade" id="addNoteModal" tabindex="-1" aria-labelledby="addNoteModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="addNoteModalLabel">{{ diary.stock_name }} の継続記録を追加</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
                 </div>
-                
-                <!-- 記録タイプの選択（ラジオボタン的なUI） -->
-                <div class="note-type-select">
-                  <div class="note-type-option active" data-value="analysis">
-                    <i class="bi bi-graph-up"></i> 分析更新
-                  </div>
-                  <div class="note-type-option" data-value="news">
-                    <i class="bi bi-newspaper"></i> ニュース
-                  </div>
-                  <div class="note-type-option" data-value="earnings">
-                    <i class="bi bi-bar-chart"></i> 決算情報
-                  </div>
-                  <div class="note-type-option" data-value="insight">
-                    <i class="bi bi-lightbulb"></i> 気づき
-                  </div>
-                  <div class="note-type-option" data-value="risk">
-                    <i class="bi bi-exclamation-triangle"></i> リスク
-                  </div>
-                  <input type="hidden" id="note_type" name="note_type" value="analysis">
+                <div class="modal-body">
+                  <form id="quickNoteForm" method="post" action="{% url 'stockdiary:add_note' diary.id %}">
+                    {% csrf_token %}
+                    
+                    <!-- 日付入力 -->
+                    <div class="form-floating mb-3">
+                      <input type="date" class="form-control" id="note_date" name="date" 
+                          value="{{ note_form.date.value|date:'Y-m-d' }}" placeholder=" " required>
+                      <label for="note_date">日付</label>
+                    </div>
+                    
+                    <!-- 記録タイプの選択 -->
+                    <div class="mb-3">
+                      <label class="form-label">記録タイプ</label>
+                      <div class="note-type-select">
+                        <div class="note-type-option active" data-value="analysis">
+                          <i class="bi bi-graph-up"></i> 分析更新
+                        </div>
+                        <div class="note-type-option" data-value="news">
+                          <i class="bi bi-newspaper"></i> ニュース
+                        </div>
+                        <div class="note-type-option" data-value="earnings">
+                          <i class="bi bi-bar-chart"></i> 決算情報
+                        </div>
+                        <div class="note-type-option" data-value="insight">
+                          <i class="bi bi-lightbulb"></i> 気づき
+                        </div>
+                        <div class="note-type-option" data-value="risk">
+                          <i class="bi bi-exclamation-triangle"></i> リスク
+                        </div>
+                        <input type="hidden" id="note_type" name="note_type" value="analysis">
+                      </div>
+                    </div>
+                    
+                    <!-- 重要度の選択 -->
+                    <div class="mb-3">
+                      <label class="form-label">重要度</label>
+                      <div class="importance-select">
+                        <div class="importance-option low" data-value="low">
+                          <i class="bi bi-arrow-down-circle"></i> 低
+                        </div>
+                        <div class="importance-option medium active" data-value="medium">
+                          <i class="bi bi-dash-circle"></i> 中
+                        </div>
+                        <div class="importance-option high" data-value="high">
+                          <i class="bi bi-arrow-up-circle"></i> 高
+                        </div>
+                        <input type="hidden" id="note_importance" name="importance" value="medium">
+                      </div>
+                    </div>
+                    
+                    <!-- 内容入力 -->
+                    <div class="form-floating mb-3">
+                      <textarea class="form-control" id="note_content" name="content" 
+                                style="height: 120px" placeholder=" " required></textarea>
+                      <label for="note_content">記録内容</label>
+                    </div>
+                    
+                    <!-- 現在価格入力 -->
+                    <div class="input-group mb-3">
+                      <span class="input-group-text">現在価格</span>
+                      <input type="number" class="form-control" id="note_current_price" 
+                            name="current_price" placeholder="円" step="0.01">
+                      <button type="button" class="btn btn-outline-primary" id="fetch-note-price">
+                        <i class="bi bi-arrow-repeat"></i> 現在株価
+                      </button>
+                    </div>
+                    
+                    <div class="d-grid">
+                      <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-journal-plus me-1"></i> 記録を追加
+                      </button>
+                    </div>
+                  </form>
                 </div>
-                
-                <!-- 重要度の選択 -->
-                <div class="importance-select">
-                  <div class="importance-option low" data-value="low">
-                    <i class="bi bi-arrow-down-circle"></i> 低
-                  </div>
-                  <div class="importance-option medium active" data-value="medium">
-                    <i class="bi bi-dash-circle"></i> 中
-                  </div>
-                  <div class="importance-option high" data-value="high">
-                    <i class="bi bi-arrow-up-circle"></i> 高
-                  </div>
-                  <input type="hidden" id="note_importance" name="importance" value="medium">
-                </div>
-                
-                <!-- 内容入力 -->
-                <div class="form-floating mb-3">
-                  <textarea class="form-control" id="note_content" name="content" 
-                            style="height: 120px" placeholder=" " required></textarea>
-                  <label for="note_content">記録内容</label>
-                </div>
-                
-                <!-- 現在価格入力 -->
-                <div class="input-group mb-3">
-                  <span class="input-group-text">現在価格</span>
-                  <input type="number" class="form-control" id="note_current_price" 
-                         name="current_price" placeholder="円" step="0.01">
-                  <button type="button" class="btn btn-outline-primary" id="fetch-note-price">
-                    <i class="bi bi-arrow-repeat"></i> 現在株価取得
-                  </button>
-                </div>
-                
-                <div class="d-flex justify-content-end">
-                  <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-journal-plus me-1"></i> 記録を追加
-                  </button>
-                </div>
-              </form>
+              </div>
             </div>
           </div>
           <!-- タイムラインタブ -->
@@ -2649,4 +2909,216 @@ if (deleteDiaryModal) {
   });
 }
 </script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // モーダル関連の要素を取得
+    const openNoteModalBtn = document.getElementById('openNoteModalBtn');
+    const addNoteModal = document.getElementById('addNoteModal');
+    const noteTypeOptions = document.querySelectorAll('.note-type-option');
+    const noteTypeInput = document.getElementById('note_type');
+    const importanceOptions = document.querySelectorAll('.importance-option');
+    const importanceInput = document.getElementById('note_importance');
+    const noteForm = document.getElementById('quickNoteForm');
+    
+    // モーダルインスタンスを作成
+    const noteModal = new bootstrap.Modal(addNoteModal);
+    
+    // ページロード時にタブが切り替わった場合もボタンを表示制御
+    function updateButtonVisibility() {
+      if (document.querySelector('#notes-tab').classList.contains('active')) {
+        openNoteModalBtn.style.display = 'flex';
+      } else {
+        openNoteModalBtn.style.display = 'none';
+      }
+    }
+    
+    // 初期表示時の制御
+    updateButtonVisibility();
+    
+    // タブ切り替え時のイベント
+    document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tab => {
+      tab.addEventListener('shown.bs.tab', function(e) {
+        updateButtonVisibility();
+      });
+    });
+    
+    // モーダルを開くボタンのイベント
+    if (openNoteModalBtn) {
+      openNoteModalBtn.addEventListener('click', function() {
+        noteModal.show();
+      });
+    }
+    
+    // ノートタイプ選択のイベント
+    noteTypeOptions.forEach(option => {
+      option.addEventListener('click', function() {
+        // 全オプションから選択状態を削除
+        noteTypeOptions.forEach(opt => opt.classList.remove('active'));
+        
+        // クリックされたオプションを選択状態に
+        this.classList.add('active');
+        
+        // 隠しフィールドに値を設定
+        noteTypeInput.value = this.getAttribute('data-value');
+      });
+    });
+    
+    // 重要度選択のイベント
+    importanceOptions.forEach(option => {
+      option.addEventListener('click', function() {
+        // 全オプションから選択状態を削除
+        importanceOptions.forEach(opt => opt.classList.remove('active'));
+        
+        // クリックされたオプションを選択状態に
+        this.classList.add('active');
+        
+        // 隠しフィールドに値を設定
+        importanceInput.value = this.getAttribute('data-value');
+      });
+    });
+    
+    // 現在株価取得ボタンのイベント
+    const fetchPriceBtn = document.getElementById('fetch-note-price');
+    if (fetchPriceBtn) {
+      fetchPriceBtn.addEventListener('click', function() {
+        // 銘柄コードを取得
+        const stockSymbol = '{{ diary.stock_symbol }}';
+        if (!stockSymbol) {
+          alert('銘柄コードが設定されていません');
+          return;
+        }
+        
+        // ローディング表示
+        this.innerHTML = '<i class="bi bi-arrow-repeat"></i> 取得中...';
+        this.disabled = true;
+        
+        // APIリクエスト
+        fetch(`/stockdiary/api/stock/price/${stockSymbol}/`)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('株価の取得に失敗しました');
+            }
+            return response.json();
+          })
+          .then(data => {
+            // 株価を入力欄に設定
+            const priceInput = document.getElementById('note_current_price');
+            if (priceInput && data.price) {
+              priceInput.value = data.price;
+            }
+            
+            // 成功メッセージ
+            const feedback = document.createElement('div');
+            feedback.className = 'alert alert-success mt-2';
+            feedback.innerHTML = `<i class="bi bi-check-circle"></i> 現在株価: ${data.price}円`;
+            
+            // フィードバック表示（既存のフィードバックがあれば削除）
+            const existingFeedback = document.querySelector('.price-feedback');
+            if (existingFeedback) {
+              existingFeedback.remove();
+            }
+            
+            // フォームの後ろにフィードバックを追加
+            const inputGroup = priceInput.closest('.input-group');
+            feedback.className += ' price-feedback';
+            inputGroup.after(feedback);
+            
+            // 2秒後にフィードバックを消す
+            setTimeout(() => {
+              feedback.classList.add('fade-out');
+              setTimeout(() => feedback.remove(), 500);
+            }, 2000);
+          })
+          .catch(error => {
+            alert(error.message);
+          })
+          .finally(() => {
+            // ボタン状態を元に戻す
+            this.innerHTML = '<i class="bi bi-arrow-repeat"></i> 現在株価';
+            this.disabled = false;
+          });
+      });
+    }
+    
+    // フォーム送信時の処理
+    noteForm.addEventListener('submit', function() {
+      // 送信ボタンを無効化して二重送信防止
+      const submitBtn = this.querySelector('button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 送信中...';
+      }
+    });
+    
+    // モーダルが閉じられた時にフォームをリセット
+    addNoteModal.addEventListener('hidden.bs.modal', function() {
+      // 日付は今日の日付に戻す
+      const dateInput = document.getElementById('note_date');
+      if (dateInput) {
+        const today = new Date();
+        dateInput.value = today.toISOString().split('T')[0];
+      }
+      
+      // コンテンツをクリア
+      const contentInput = document.getElementById('note_content');
+      if (contentInput) {
+        contentInput.value = '';
+      }
+      
+      // 現在価格をクリア
+      const priceInput = document.getElementById('note_current_price');
+      if (priceInput) {
+        priceInput.value = '';
+      }
+      
+      // フィードバックメッセージを削除
+      const feedback = document.querySelector('.price-feedback');
+      if (feedback) {
+        feedback.remove();
+      }
+      
+      // 送信ボタンを有効化
+      const submitBtn = noteForm.querySelector('button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-journal-plus me-1"></i> 記録を追加';
+      }
+      
+      // タイプと重要度を初期値に戻す
+      noteTypeOptions.forEach(opt => {
+        if (opt.getAttribute('data-value') === 'analysis') {
+          opt.classList.add('active');
+        } else {
+          opt.classList.remove('active');
+        }
+      });
+      noteTypeInput.value = 'analysis';
+      
+      importanceOptions.forEach(opt => {
+        if (opt.getAttribute('data-value') === 'medium') {
+          opt.classList.add('active');
+        } else {
+          opt.classList.remove('active');
+        }
+      });
+      importanceInput.value = 'medium';
+    });
+    
+    // タッチ操作の改善
+    if ('ontouchstart' in window) {
+      // タッチ操作時のフィードバック
+      const buttons = document.querySelectorAll('.note-type-option, .importance-option');
+      buttons.forEach(btn => {
+        btn.addEventListener('touchstart', function() {
+          this.style.opacity = '0.7';
+        });
+        
+        btn.addEventListener('touchend', function() {
+          this.style.opacity = '1';
+        });
+      });
+    }
+  });
+  </script>
 {% endblock %}
