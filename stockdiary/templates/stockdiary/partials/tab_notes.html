@@ -1,12 +1,238 @@
 {% load humanize %}
 {% load stockdiary_filters %}
 
+<style>
+  /* メインコンテンツ表示スタイル */
+  .note-item {
+    position: relative;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+  
+  .note-header {
+    padding: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(246, 248, 250, 0.7);
+    border-bottom: 1px solid #e5e9f0;
+  }
+  
+  .note-content {
+    padding: 1rem;
+    background-color: white;
+  }
+  
+  /* フルスクリーンオーバーレイモーダル用スタイル */
+  .fullscreen-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .fullscreen-modal {
+    width: 90%;
+    max-width: 500px;
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .fullscreen-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+  }
+  
+  .fullscreen-modal-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 500;
+  }
+  
+  .fullscreen-modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    color: #6c757d;
+  }
+  
+  .fullscreen-modal-body {
+    padding: 1rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* タイプと重要度の選択肢スタイル */
+  .option-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .option-item {
+    background-color: rgba(248, 249, 250, 0.5);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 6px;
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .option-item:hover {
+    background-color: rgba(238, 242, 255, 0.5);
+  }
+  
+  .option-item.active {
+    background-color: #5a7ec5;
+    color: white;
+    border-color: #4a6eaf;
+  }
+  
+  .option-item i {
+    display: block;
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  /* フォーム要素の調整 */
+  .form-item {
+    margin-bottom: 1rem;
+  }
+  
+  .form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+  }
+  
+  .form-control {
+    display: block;
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    background-color: #fff;
+  }
+  
+  textarea.form-control {
+    min-height: 120px;
+    resize: vertical;
+  }
+  
+  /* ボタンスタイル */
+  .btn-primary {
+    background-color: #5a7ec5;
+    color: white;
+    border: none;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    width: 100%;
+  }
+  
+  .btn-outline-primary {
+    background-color: white;
+    color: #5a7ec5;
+    border: 1px solid #5a7ec5;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  
+  /* フローティングボタンスタイル */
+  .floating-add-btn {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: #5a7ec5;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    border: none;
+    font-size: 1.5rem;
+    z-index: 999;
+    cursor: pointer;
+  }
+  
+  /* アニメーション効果 */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes slideUp {
+    from { transform: translateY(50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  
+  .fade-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+  
+  .slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  /* グループ入力フィールド */
+  .input-group {
+    display: flex;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  
+  .input-group-text {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    padding: 0.75rem;
+    border-right: none;
+    white-space: nowrap;
+  }
+  
+  .input-group .form-control {
+    border-radius: 0;
+    flex: 1;
+  }
+  
+  .input-group .btn {
+    border-radius: 0 6px 6px 0;
+    border-left: none;
+  }
+</style>
+
 <div class="px-1 py-2">
   <div class="notes-timeline">
     {% for note in notes %}
-    <div class="note-item mb-3" data-note-type="{{ note.note_type }}" data-importance="{{ note.importance }}">
-      <div class="note-header d-flex justify-content-between align-items-center mb-2">
-        <div class="note-meta d-flex align-items-center">
+    <div class="note-item" data-note-type="{{ note.note_type }}" data-importance="{{ note.importance }}">
+      <div class="note-header">
+        <div class="note-meta">
           <span class="note-date text-muted me-2">
             <i class="bi bi-calendar-date"></i>
             {{ note.date|date:"Y年m月d日" }}
@@ -38,25 +264,24 @@
       </div>
 
       {% if note.current_price %}
-      <div class="note-price-info small mb-2 d-flex justify-content-between align-items-center">
-        <span class="text-muted">
-          <i class="bi bi-cash-coin me-1"></i>
-          記録時価格:
-          <strong>{{ note.current_price|floatformat:2|intcomma }}円</strong>
-        </span>
+      <div class="note-content">
+        <div class="note-price-info small mb-2 d-flex justify-content-between align-items-center">
+          <span class="text-muted">
+            <i class="bi bi-cash-coin me-1"></i>
+            記録時価格:
+            <strong>{{ note.current_price|floatformat:2|intcomma }}円</strong>
+          </span>
 
-        {% with price_change=note.get_price_change %}
-        {% if price_change %}
-        <span class="{% if price_change > 0 %}text-success{% elif price_change < 0 %}text-danger{% endif %}">
-          ({{ price_change|floatformat:2 }}%)
-        </span>
-        {% endif %}
-        {% endwith %}
-      </div>
-      {% endif %}
-
-      <div class="note-content bg-light rounded p-3">
-        <div class="note-text">
+          {% with price_change=note.get_price_change %}
+          {% if price_change %}
+          <span class="{% if price_change > 0 %}text-success{% elif price_change < 0 %}text-danger{% endif %}">
+            ({{ price_change|floatformat:2 }}%)
+          </span>
+          {% endif %}
+          {% endwith %}
+        </div>
+        
+        <div class="note-text bg-light rounded p-3">
           {{ note.content|safe|linebreaks|truncatewords_html:50 }}
         </div>
 
@@ -68,6 +293,21 @@
         </div>
         {% endif %}
       </div>
+      {% else %}
+      <div class="note-content">
+        <div class="note-text bg-light rounded p-3">
+          {{ note.content|safe|linebreaks|truncatewords_html:50 }}
+        </div>
+
+        {% if note.content|wordcount > 50 %}
+        <div class="text-end mt-2">
+          <a href="{% url 'stockdiary:detail' diary.id %}" class="text-primary text-decoration-none small">
+            続きを読む <i class="bi bi-arrow-right"></i>
+          </a>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
     </div>
     {% empty %}
     <div class="text-center text-muted py-4">
@@ -87,89 +327,301 @@
   </div>
 </div>
 
-<style>
-.notes-timeline {
-  position: relative;
-  padding-left: 1rem;
-}
+<!-- カスタムモーダルHTML構造 -->
+<div id="fullscreenModal" class="fullscreen-overlay">
+  <div class="fullscreen-modal slide-up">
+    <div class="fullscreen-modal-header">
+      <h5 class="fullscreen-modal-title">{{ diary.stock_name }} の継続記録を追加</h5>
+      <button type="button" class="fullscreen-modal-close" id="modalClose">&times;</button>
+    </div>
+    <div class="fullscreen-modal-body">
+      <form id="customNoteForm" method="post" action="/stockdiary/{{ diary.id }}/note/">
+        {% csrf_token %}
+        
+        <div class="form-item">
+          <label class="form-label" for="note_date">日付</label>
+          <input type="date" class="form-control" id="note_date" name="date" 
+                 value="{% now 'Y-m-d' %}" required>
+        </div>
+        
+        <div class="form-item">
+          <label class="form-label">記録タイプ</label>
+          <div class="option-grid note-type-grid">
+            <div class="option-item active" data-value="analysis">
+              <i class="bi bi-graph-up"></i>
+              <span>分析更新</span>
+            </div>
+            <div class="option-item" data-value="news">
+              <i class="bi bi-newspaper"></i>
+              <span>ニュース</span>
+            </div>
+            <div class="option-item" data-value="earnings">
+              <i class="bi bi-bar-chart"></i>
+              <span>決算情報</span>
+            </div>
+            <div class="option-item" data-value="insight">
+              <i class="bi bi-lightbulb"></i>
+              <span>気づき</span>
+            </div>
+            <div class="option-item" data-value="risk">
+              <i class="bi bi-exclamation-triangle"></i>
+              <span>リスク</span>
+            </div>
+          </div>
+          <input type="hidden" id="note_type" name="note_type" value="analysis">
+        </div>
+        
+        <div class="form-item">
+          <label class="form-label">重要度</label>
+          <div class="option-grid importance-grid">
+            <div class="option-item" data-value="low">
+              <i class="bi bi-arrow-down-circle"></i>
+              <span>低</span>
+            </div>
+            <div class="option-item active" data-value="medium">
+              <i class="bi bi-dash-circle"></i>
+              <span>中</span>
+            </div>
+            <div class="option-item" data-value="high">
+              <i class="bi bi-arrow-up-circle"></i>
+              <span>高</span>
+            </div>
+          </div>
+          <input type="hidden" id="note_importance" name="importance" value="medium">
+        </div>
+        
+        <div class="form-item">
+          <label class="form-label" for="note_content">記録内容</label>
+          <textarea class="form-control" id="note_content" name="content" required></textarea>
+        </div>
+        
+        <div class="form-item">
+          <div class="input-group">
+            <div class="input-group-text">現在価格</div>
+            <input type="number" class="form-control" id="note_current_price" 
+                   name="current_price" placeholder="円" step="0.01">
+            <button type="button" class="btn-outline-primary" id="fetch_price">
+              <i class="bi bi-arrow-repeat"></i> 取得
+            </button>
+          </div>
+        </div>
+        
+        <div class="form-item">
+          <button type="submit" class="btn-primary">
+            <i class="bi bi-journal-plus me-1"></i> 記録を追加
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
-.note-item {
-  position: relative;
-  margin-bottom: 1.5rem;
-  border-left: 2px solid rgba(74, 109, 167, 0.2);
-  padding-left: 1rem;
-}
+<!-- フローティング追加ボタン -->
+<button id="addNoteButton" class="floating-add-btn">
+  <i class="bi bi-plus"></i>
+</button>
 
-.note-item:last-child {
-  margin-bottom: 0;
-}
-
-.note-item::before {
-  content: '';
-  position: absolute;
-  left: -0.5rem;
-  top: 0;
-  width: 1rem;
-  height: 1rem;
-  border-radius: 50%;
-  background-color: var(--primary-color);
-  border: 2px solid white;
-}
-
-.note-item[data-importance="high"]::before {
-  background-color: var(--danger-color);
-}
-
-.note-item[data-importance="medium"]::before {
-  background-color: var(--primary-color);
-}
-
-.note-item[data-importance="low"]::before {
-  background-color: var(--light-text);
-}
-
-.note-date {
-  font-size: 0.85rem;
-  margin-bottom: 0.25rem;
-}
-
-.note-content {
-  background-color: rgba(255, 255, 255, 0.8);
-  border-radius: 0.5rem;
-  padding: 0.75rem;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  font-size: 0.9rem;
-  line-height: 1.5;
-  color: var(--text-color);
-}
-
-.note-price-info {
-  margin-bottom: 0.5rem;
-  font-size: 0.85rem;
-}
-
-/* レスポンシブ対応 */
-@media (max-width: 576px) {
-  .notes-timeline {
-    padding-left: 0.75rem;
-  }
-  
-  .note-item {
-    padding-left: 0.75rem;
-  }
-  
-  .note-content {
-    padding: 0.5rem;
-    font-size: 0.85rem;
-  }
-}
-
-/* アニメーション効果（オプション） */
-.notes-timeline .note-item {
-  transition: transform 0.2s, opacity 0.2s;
-}
-
-.notes-timeline .note-item:hover {
-  transform: translateX(3px);
-}
-</style>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // DOM要素の取得
+    const addButton = document.getElementById('addNoteButton');
+    const modal = document.getElementById('fullscreenModal');
+    const closeButton = document.getElementById('modalClose');
+    const noteForm = document.getElementById('customNoteForm');
+    
+    // 既存のモーダルを非表示にする（もし存在すれば）
+    const bsModal = document.getElementById('addNoteModal');
+    if (bsModal) {
+      bsModal.style.display = 'none';
+    }
+    
+    // フローティングボタンの処理
+    if (addButton) {
+      addButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        showModal();
+        return false;
+      });
+    }
+    
+    // モーダルを表示する関数
+    function showModal() {
+      // モーダルの背景とコンテナを表示
+      modal.style.display = 'flex';
+      // アニメーションクラスを追加
+      modal.classList.add('fade-in');
+      // スクロールを禁止
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+    }
+    
+    // モーダルを閉じる関数
+    function closeModal() {
+      modal.style.display = 'none';
+      // スクロールを有効化
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+    }
+    
+    // 閉じるボタンの処理
+    if (closeButton) {
+      closeButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeModal();
+        return false;
+      });
+    }
+    
+    // モーダル外クリックで閉じる
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+    
+    // 記録タイプの選択処理
+    const typeOptions = document.querySelectorAll('.note-type-grid .option-item');
+    const typeInput = document.getElementById('note_type');
+    
+    typeOptions.forEach(option => {
+      option.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // アクティブクラスを更新
+        typeOptions.forEach(opt => opt.classList.remove('active'));
+        this.classList.add('active');
+        
+        // 隠しフィールドを更新
+        if (typeInput) {
+          typeInput.value = this.getAttribute('data-value');
+        }
+        
+        return false;
+      });
+    });
+    
+    // 重要度の選択処理
+    const importanceOptions = document.querySelectorAll('.importance-grid .option-item');
+    const importanceInput = document.getElementById('note_importance');
+    
+    importanceOptions.forEach(option => {
+      option.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // アクティブクラスを更新
+        importanceOptions.forEach(opt => opt.classList.remove('active'));
+        this.classList.add('active');
+        
+        // 隠しフィールドを更新
+        if (importanceInput) {
+          importanceInput.value = this.getAttribute('data-value');
+        }
+        
+        return false;
+      });
+    });
+    
+    // 現在価格取得ボタンの処理
+    const fetchPriceButton = document.getElementById('fetch_price');
+    const priceInput = document.getElementById('note_current_price');
+    
+    if (fetchPriceButton && priceInput) {
+      fetchPriceButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // ボタンを無効化
+        this.disabled = true;
+        this.innerHTML = '<i class="bi bi-arrow-repeat"></i> 取得中...';
+        
+        // 銘柄コードを取得（これはテンプレート変数で置き換える必要があります）
+        const stockSymbol = '{{ diary.stock_symbol }}';
+        
+        // APIリクエスト
+        fetch(`/stockdiary/api/stock/price/${stockSymbol}/`)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('株価の取得に失敗しました');
+            }
+            return response.json();
+          })
+          .then(data => {
+            if (data.price) {
+              priceInput.value = data.price;
+            }
+            
+            // ボタンを有効化
+            fetchPriceButton.disabled = false;
+            fetchPriceButton.innerHTML = '<i class="bi bi-arrow-repeat"></i> 取得';
+          })
+          .catch(error => {
+            alert(error.message);
+            
+            // ボタンを有効化
+            fetchPriceButton.disabled = false;
+            fetchPriceButton.innerHTML = '<i class="bi bi-arrow-repeat"></i> 取得';
+          });
+          
+        return false;
+      });
+    }
+    
+    // フォーム送信処理
+    if (noteForm) {
+      noteForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // フォームデータを収集
+        const formData = new FormData(this);
+        
+        // 送信ボタンを無効化
+        const submitButton = this.querySelector('button[type="submit"]');
+        if (submitButton) {
+          submitButton.disabled = true;
+          submitButton.innerHTML = '<i class="bi bi-hourglass-split"></i> 送信中...';
+        }
+        
+        // APIリクエスト
+        fetch(this.action, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        })
+        .then(response => {
+          // レスポンスがJSONでなくてもエラーにならないように
+          if (response.headers.get('content-type')?.includes('application/json')) {
+            return response.json();
+          }
+          return response.text();
+        })
+        .then(data => {
+          // モーダルを閉じる
+          closeModal();
+          
+          // ページをリロード
+          window.location.reload();
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('送信に失敗しました。もう一度お試しください。');
+          
+          // 送信ボタンを有効化
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<i class="bi bi-journal-plus me-1"></i> 記録を追加';
+          }
+        });
+      });
+    }
+  });
+</script>
