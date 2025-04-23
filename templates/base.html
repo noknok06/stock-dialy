@@ -14,7 +14,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- base.html の head セクション内に追加 -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data:;">
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self'; 
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' 
+        https://unpkg.com 
+        https://cdn.jsdelivr.net 
+        https://www.googletagmanager.com 
+        https://www.google-analytics.com
+        https://pagead2.googlesyndication.com
+        https://googleads.g.doubleclick.net;
+        connect-src 'self' https://www.google-analytics.com; 
+        style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; 
+        font-src 'self' data: https://cdn.jsdelivr.net; 
+        img-src 'self' data: https://googleads.g.doubleclick.net;
+    ">
     <title>{% block title %}カブログ{% endblock %}</title>
     
     <!-- Google AdSense -->
