@@ -18,6 +18,7 @@ from dotenv import load_dotenv
 # .envファイルの読み込み
 load_dotenv()
 
+
 # プロジェクト内のパスを構築: BASE_DIR / 'subdir'
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -362,14 +363,18 @@ CSP_SCRIPT_SRC = ["'self'", "'unsafe-inline'", "'unsafe-eval'",
                  "unpkg.com", "https://unpkg.com",
                  "cdn.jsdelivr.net", "*.jquery.com", "*.googleadservices.com", 
                  "*.google.com", "*.googleapis.com", "*.gstatic.com",
-                 "*.googlesyndication.com", "*.doubleclick.net", "*.bootstrapcdn.com"]
+                 "*.googlesyndication.com", "pagead2.googlesyndication.com", "*.doubleclick.net", 
+                 "*.bootstrapcdn.com", "https://www.googletagmanager.com", "*.googletagmanager.com""*.googlesyndication.com", "pagead2.googlesyndication.com"]
 CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", "*.googleapis.com", "*.bootstrapcdn.com", 
                  "cdn.jsdelivr.net", "https:", "data:"]
 CSP_FONT_SRC = ["'self'", "data:", "*.googleapis.com", "*.gstatic.com", 
-                "*.bootstrapcdn.com", "cdn.jsdelivr.net"]
-CSP_IMG_SRC = ["'self'", "data:", "blob:", "*.google.com", "*.googleapis.com", "*.gstatic.com", "*.doubleclick.net"]
-CSP_CONNECT_SRC = ["'self'", "*.google.com", "*.doubleclick.net", "*.googleapis.com"]
-CSP_FRAME_SRC = ["'self'", "*.google.com", "*.doubleclick.net"]
+                "*.bootstrapcdn.com", "cdn.jsdelivr.net", "fonts.gstatic.com"]
+CSP_IMG_SRC = ["'self'", "data:", "blob:", "*.google.com", "*.googleapis.com", "*.gstatic.com", 
+               "*.doubleclick.net", "pagead2.googlesyndication.com"]
+CSP_CONNECT_SRC = ["'self'", "*.google.com", "*.doubleclick.net", "*.googleapis.com", 
+                  "www.google-analytics.com", "stats.g.doubleclick.net"]
+CSP_FRAME_SRC = ["'self'", "*.google.com", "*.doubleclick.net", "googleads.g.doubleclick.net", 
+                "tpc.googlesyndication.com", "www.googletagmanager.com", "*.googletagmanager.com""*.googlesyndication.com", "pagead2.googlesyndication.com"]
 
 # =============================================================================
 # 現在使用していない設定（コメントアウト）
