@@ -359,12 +359,21 @@ MAINTENANCE_CONTACT_EMAIL = 'kabulog.information@gmail.com'  # 問い合わせ�
 
 # コンテンツセキュリティポリシー設定
 CSP_DEFAULT_SRC = ["'self'", "cdn.jsdelivr.net", "*.googleapis.com", "*.gstatic.com", "*.bootstrapcdn.com", "unpkg.com"]
-CSP_SCRIPT_SRC = ["'self'", "'unsafe-inline'", "'unsafe-eval'", 
-                 "unpkg.com", "https://unpkg.com",
-                 "cdn.jsdelivr.net", "*.jquery.com", "*.googleadservices.com", 
-                 "*.google.com", "*.googleapis.com", "*.gstatic.com",
-                 "*.googlesyndication.com", "pagead2.googlesyndication.com", "*.doubleclick.net", 
-                 "*.bootstrapcdn.com", "https://www.googletagmanager.com", "*.googletagmanager.com", "*.googlesyndication.com", "pagead2.googlesyndication.com"]
+CSP_SCRIPT_SRC = [
+    "'self'", "'unsafe-inline'", "'unsafe-eval'", 
+    "unpkg.com", "https://unpkg.com",
+    "cdn.jsdelivr.net", "*.jquery.com", 
+    "*.googleadservices.com", 
+    "*.google.com", "*.googleapis.com", "*.gstatic.com",
+    "*.googlesyndication.com", "pagead2.googlesyndication.com", 
+    "*.doubleclick.net", 
+    "*.bootstrapcdn.com", 
+    "https://www.googletagmanager.com", 
+    "*.googletagmanager.com", 
+    "*.googlesyndication.com", 
+    "pagead2.googlesyndication.com",
+    "https://pagead2.googlesyndication.com"  # 追加
+]
 CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", "*.googleapis.com", "*.bootstrapcdn.com", 
                  "cdn.jsdelivr.net", "https:", "data:"]
 CSP_FONT_SRC = ["'self'", "data:", "*.googleapis.com", "*.gstatic.com", 
