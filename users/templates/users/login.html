@@ -158,28 +158,6 @@
     color: var(--primary-color);
   }
   
-  .remember-me {
-    display: flex;
-    align-items: center;
-    margin-bottom: 1.5rem;
-  }
-  
-  .remember-me input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    margin-right: 0.5rem;
-    border-radius: 4px;
-    border: 1.5px solid #cbd5e1;
-    accent-color: var(--primary-color);
-  }
-  
-  .remember-me label {
-    color: #64748b;
-    font-size: 0.95rem;
-    margin-bottom: 0;
-    cursor: pointer;
-  }
-  
   .login-btn {
     height: 55px;
     border-radius: 0.75rem;
@@ -350,15 +328,6 @@
     font-size: 1.25rem;
   }
   
-  .password-options {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.75rem;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-  
   .password-reset-link {
     color: var(--primary-color);
     font-size: 0.9rem;
@@ -519,18 +488,10 @@
                   {{ form.password.errors }}
                 </div>
               {% endif %}
-            </div>
-            
-            <div class="password-options">
-              <div class="remember-me">
-                <input type="checkbox" id="remember-me" name="remember_me">
-                <label for="remember-me">ログイン状態を保存</label>
-              </div>
-              
               <a href="{% url 'users:password_reset' %}" class="password-reset-link">
                 <i class="bi bi-question-circle"></i>
                 パスワードをお忘れですか？
-              </a>
+              </a>              
             </div>
             
             <div class="d-grid">
