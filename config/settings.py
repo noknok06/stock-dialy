@@ -377,6 +377,7 @@ CSP_SCRIPT_SRC = [
     "*.bootstrapcdn.com", 
     "https://www.googletagmanager.com", 
     "*.googletagmanager.com",
+    "www.googletagmanager.com"  # 追加
     "https://pagead2.googlesyndication.com"
 ]
 CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", "*.googleapis.com", "*.bootstrapcdn.com", 
