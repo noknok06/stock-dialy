@@ -1781,101 +1781,74 @@ body.fullscreen-tab-mode {
               </div>
               {% endfor %}
             </div>
-            
-            <!-- フローティング追加ボタン -->
-            <div style="text-align: -webkit-right;">
-              <button type="button" class="btn btn-primary floating-add-note-btn" id="openNoteModalBtn">
-                <i class="bi bi-plus-lg"></i>
-              </button>
-            </div>
-          </div>
 
-          <!-- 継続記録追加用モーダル -->
-          <div class="modal fade" id="addNoteModal" tabindex="-1" aria-labelledby="addNoteModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h5 class="modal-title" id="addNoteModalLabel">{{ diary.stock_name }} の継続記録を追加</h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
-                </div>
-                <div class="modal-body">
-                  <form id="quickNoteForm" method="post" action="{% url 'stockdiary:add_note' diary.id %}">
-                    {% csrf_token %}
-                    
-                    <!-- 日付入力 -->
-                    <div class="form-floating mb-3">
-                      <input type="date" class="form-control" id="note_date" name="date" 
-                          value="{{ note_form.date.value|date:'Y-m-d' }}" placeholder=" " required>
-                      <label for="note_date">日付</label>
-                    </div>
-                    
-                    <!-- 記録タイプの選択 -->
-                    <div class="mb-3">
-                      <label class="form-label">記録タイプ</label>
-                      <div class="note-type-select">
-                        <div class="note-type-option active" data-value="analysis">
-                          <i class="bi bi-graph-up"></i> 分析更新
-                        </div>
-                        <div class="note-type-option" data-value="news">
-                          <i class="bi bi-newspaper"></i> ニュース
-                        </div>
-                        <div class="note-type-option" data-value="earnings">
-                          <i class="bi bi-bar-chart"></i> 決算情報
-                        </div>
-                        <div class="note-type-option" data-value="insight">
-                          <i class="bi bi-lightbulb"></i> 気づき
-                        </div>
-                        <div class="note-type-option" data-value="risk">
-                          <i class="bi bi-exclamation-triangle"></i> リスク
-                        </div>
-                        <input type="hidden" id="note_type" name="note_type" value="analysis">
-                      </div>
-                    </div>
-                    
-                    <!-- 重要度の選択 -->
-                    <div class="mb-3">
-                      <label class="form-label">重要度</label>
-                      <div class="importance-select">
-                        <div class="importance-option low" data-value="low">
-                          <i class="bi bi-arrow-down-circle"></i> 低
-                        </div>
-                        <div class="importance-option medium active" data-value="medium">
-                          <i class="bi bi-dash-circle"></i> 中
-                        </div>
-                        <div class="importance-option high" data-value="high">
-                          <i class="bi bi-arrow-up-circle"></i> 高
-                        </div>
-                        <input type="hidden" id="note_importance" name="importance" value="medium">
-                      </div>
-                    </div>
-                    
-                    <!-- 内容入力 -->
-                    <div class="form-floating mb-3">
-                      <textarea class="form-control" id="note_content" name="content" 
-                                style="height: 120px" placeholder=" " required></textarea>
-                      <label for="note_content">記録内容</label>
-                    </div>
-                    
-                    <!-- 現在価格入力 -->
-                    <div class="input-group mb-3">
-                      <span class="input-group-text">現在価格</span>
-                      <input type="number" class="form-control" id="note_current_price" 
-                            name="current_price" placeholder="円" step="0.01">
-                      <button type="button" class="btn btn-outline-primary" id="fetch-note-price">
-                        <i class="bi bi-arrow-repeat"></i> 現在株価
-                      </button>
-                    </div>
-                    
-                    <div class="d-grid">
-                      <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-journal-plus me-1"></i> 記録を追加
-                      </button>
-                    </div>
-                  </form>
-                </div>
+          <div class="quick-note-form">
+            <form id="quickNoteForm" method="post" action="{% url 'stockdiary:add_note' diary.id %}">
+              {% csrf_token %}
+              
+              <!-- 日付入力 -->
+              <div class="form-floating mb-3">
+                <input type="date" class="form-control" id="note_date" name="date" 
+                    value="{{ note_form.date.value|date:'Y-m-d' }}" placeholder=" " style="text-align: center;" required>
+                <label for="note_date">日付</label>
               </div>
-            </div>
-          </div>
+              
+              <!-- 記録タイプの選択（ラジオボタン的なUI） -->
+              <div class="note-type-select">
+                <div class="note-type-option active" data-value="analysis">
+                  <i class="bi bi-graph-up"></i> 分析更新
+                </div>
+                <div class="note-type-option" data-value="news">
+                  <i class="bi bi-newspaper"></i> ニュース
+                </div>
+                <div class="note-type-option" data-value="earnings">
+                  <i class="bi bi-bar-chart"></i> 決算情報
+                </div>
+                <div class="note-type-option" data-value="insight">
+                  <i class="bi bi-lightbulb"></i> 気づき
+                </div>
+                <div class="note-type-option" data-value="risk">
+                  <i class="bi bi-exclamation-triangle"></i> リスク
+                </div>
+                <input type="hidden" id="note_type" name="note_type" value="analysis">
+              </div>
+              
+              <!-- 重要度の選択 -->
+              <div class="importance-select">
+                <div class="importance-option low" data-value="low">
+                  <i class="bi bi-arrow-down-circle"></i> 低
+                </div>
+                <div class="importance-option medium active" data-value="medium">
+                  <i class="bi bi-dash-circle"></i> 中
+                </div>
+                <div class="importance-option high" data-value="high">
+                  <i class="bi bi-arrow-up-circle"></i> 高
+                </div>
+                <input type="hidden" id="note_importance" name="importance" value="medium">
+              </div>
+              
+              <!-- 内容入力 -->
+              <div class="form-floating mb-3">
+                <textarea class="form-control" id="note_content" name="content" 
+                          style="height: 120px" placeholder=" " required></textarea>
+                <label for="note_content">記録内容</label>
+              </div>
+              
+              <!-- 現在価格入力 -->
+              <div class="input-group mb-3">
+                <span class="input-group-text">現在価格</span>
+                <input type="number" class="form-control" id="note_current_price" 
+                       name="current_price" placeholder="円" step="0.01">
+                <button type="button" class="btn btn-outline-primary" id="fetch-note-price">
+                  <i class="bi bi-arrow-repeat"></i> 現在株価取得
+                </button>
+              </div>
+              <div class="d-flex justify-content-end">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-journal-plus me-1"></i> 記録を追加
+                  </button>
+                </div>
+
           <!-- タイムラインタブ -->
           <div class="tab-pane fade" id="timeline-content" role="tabpanel" aria-labelledby="timeline-tab">
             {% if related_diaries %}
