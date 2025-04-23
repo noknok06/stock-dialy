@@ -364,7 +364,7 @@ CSP_SCRIPT_SRC = ["'self'", "'unsafe-inline'", "'unsafe-eval'",
                  "cdn.jsdelivr.net", "*.jquery.com", "*.googleadservices.com", 
                  "*.google.com", "*.googleapis.com", "*.gstatic.com",
                  "*.googlesyndication.com", "pagead2.googlesyndication.com", "*.doubleclick.net", 
-                 "*.bootstrapcdn.com", "https://www.googletagmanager.com", "*.googletagmanager.com""*.googlesyndication.com", "pagead2.googlesyndication.com"]
+                 "*.bootstrapcdn.com", "https://www.googletagmanager.com", "*.googletagmanager.com", "*.googlesyndication.com", "pagead2.googlesyndication.com"]
 CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", "*.googleapis.com", "*.bootstrapcdn.com", 
                  "cdn.jsdelivr.net", "https:", "data:"]
 CSP_FONT_SRC = ["'self'", "data:", "*.googleapis.com", "*.gstatic.com", 
@@ -374,7 +374,7 @@ CSP_IMG_SRC = ["'self'", "data:", "blob:", "*.google.com", "*.googleapis.com", "
 CSP_CONNECT_SRC = ["'self'", "*.google.com", "*.doubleclick.net", "*.googleapis.com", 
                   "www.google-analytics.com", "stats.g.doubleclick.net"]
 CSP_FRAME_SRC = ["'self'", "*.google.com", "*.doubleclick.net", "googleads.g.doubleclick.net", 
-                "tpc.googlesyndication.com", "www.googletagmanager.com", "*.googletagmanager.com""*.googlesyndication.com", "pagead2.googlesyndication.com"]
+                "tpc.googlesyndication.com", "www.googletagmanager.com", "*.googletagmanager.com", "*.googlesyndication.com", "pagead2.googlesyndication.com"]
 
 # =============================================================================
 # 現在使用していない設定（コメントアウト）
