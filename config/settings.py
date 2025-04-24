@@ -361,8 +361,8 @@ MAINTENANCE_CONTACT_EMAIL = 'kabulog.information@gmail.com'  # 問い合わせ�
 CSP_DEFAULT_SRC = ["'self'", "cdn.jsdelivr.net", "*.googleapis.com", "*.gstatic.com", "*.bootstrapcdn.com", "unpkg.com"]
 CSP_SCRIPT_SRC = [
     "'self'", 
-    "'unsafe-inline'",  # インラインスクリプト用
-    "'unsafe-eval'",    # eval()用
+    "'unsafe-inline'",
+    "'unsafe-eval'",
     "unpkg.com", 
     "https://unpkg.com",
     "cdn.jsdelivr.net", 
@@ -374,11 +374,19 @@ CSP_SCRIPT_SRC = [
     "*.googlesyndication.com", 
     "pagead2.googlesyndication.com", 
     "*.doubleclick.net", 
+    "googleads.g.doubleclick.net",
     "*.bootstrapcdn.com", 
-    "https://www.googletagmanager.com", 
     "*.googletagmanager.com",
     "www.googletagmanager.com",
-    "https://pagead2.googlesyndication.com"
+    "https://www.googletagmanager.com",
+    "https://pagead2.googlesyndication.com",
+    "https://www.google-analytics.com",
+    "https://ssl.google-analytics.com",
+    # 以下を追加
+    "*.adtrafficquality.google",
+    "https://adtrafficquality.google",
+    "https://ep1.adtrafficquality.google",
+    "https://ep2.adtrafficquality.google"
 ]
 
 CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", "*.googleapis.com", "*.bootstrapcdn.com", 
