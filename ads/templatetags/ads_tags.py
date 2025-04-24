@@ -72,7 +72,7 @@ def show_placement_ad(context, position):
     # JavaScript部分のために波括弧をエスケープ
     personalized_attr = '' if personalized_ads else 'data-adtest="on" data-ad-channel="non-personalized"'
     
-    # JavaScriptのコードはf-stringの外に出すか、{{}}でエスケープする
+    # 修正：data-full-width-responsive の値を "true" に変更（文字列として）
     ad_code = f"""
     <div class="ad-container ad-{position}">
         <span class="ad-label">広告</span>
@@ -81,7 +81,7 @@ def show_placement_ad(context, position):
             data-ad-client="{ad_unit.ad_client}"
             data-ad-slot="{ad_unit.ad_slot}"
             data-ad-format="{ad_unit.ad_format}"
-            data-full-width-responsive="true"  # これを追加
+            data-full-width-responsive="true"
             {personalized_attr}></ins>
         <script>
             (adsbygoogle = window.adsbygoogle || []).push({{}});

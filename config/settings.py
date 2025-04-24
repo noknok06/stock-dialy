@@ -394,8 +394,19 @@ CSP_FONT_SRC = [
 ]
 CSP_IMG_SRC = ["'self'", "data:", "https:", "blob:", "*.google.com", "*.googleapis.com", "*.gstatic.com", 
                "*.doubleclick.net", "pagead2.googlesyndication.com"]
-CSP_CONNECT_SRC = ["'self'", "*.google.com", "*.doubleclick.net", "*.googleapis.com", 
-                  "www.google-analytics.com", "stats.g.doubleclick.net"]
+CSP_CONNECT_SRC = [
+    "'self'", 
+    "*.google.com", 
+    "*.doubleclick.net", 
+    "*.googleapis.com", 
+    "www.google-analytics.com", 
+    "stats.g.doubleclick.net",
+    "*.googletagmanager.com",
+    "https://www.googletagmanager.com",
+    "https://adtrafficquality.google", 
+    "*.adtrafficquality.google",       
+    "https://ep1.adtrafficquality.google"
+]
 CSP_FRAME_SRC = [
     "'self'", 
     "*.google.com",
