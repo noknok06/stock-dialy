@@ -377,11 +377,11 @@ CSP_SCRIPT_SRC = [
     "*.bootstrapcdn.com", 
     "https://www.googletagmanager.com", 
     "*.googletagmanager.com",
-    "www.googletagmanager.com"  # 追加
+    "www.googletagmanager.com",
     "https://pagead2.googlesyndication.com"
 ]
 CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", "*.googleapis.com", "*.bootstrapcdn.com", 
-                 "cdn.jsdelivr.net", "https:", "data:"]
+                 "https://cdn.jsdelivr.net", "https:", "data:"]
 CSP_FONT_SRC = [
     "'self'", 
     "data:", 
@@ -389,9 +389,9 @@ CSP_FONT_SRC = [
     "*.gstatic.com", 
     "*.bootstrapcdn.com", 
     "cdn.jsdelivr.net", 
-    "fonts.gstatic.com"
+    "https://fonts.gstatic.com"
 ]
-CSP_IMG_SRC = ["'self'", "data:", "blob:", "*.google.com", "*.googleapis.com", "*.gstatic.com", 
+CSP_IMG_SRC = ["'self'", "data:", "https:", "blob:", "*.google.com", "*.googleapis.com", "*.gstatic.com", 
                "*.doubleclick.net", "pagead2.googlesyndication.com"]
 CSP_CONNECT_SRC = ["'self'", "*.google.com", "*.doubleclick.net", "*.googleapis.com", 
                   "www.google-analytics.com", "stats.g.doubleclick.net"]
