@@ -162,10 +162,10 @@ MIDDLEWARE = [
     'security.middleware.RateLimitMiddleware',  # レート制限
     'security.middleware.IPFilterMiddleware',   # IP制限
     'security.middleware.SecurityHeadersMiddleware',  # セキュリティヘッダー
-    'csp.middleware.CSPMiddleware',  # CSPミドルウェアを最後に配置
     'subscriptions.middleware.SubscriptionMiddleware',  # サブスクリプション
     'ads.middleware.AdsMiddleware',  # 広告表示制御
     'axes.middleware.AxesMiddleware',
+    'csp.middleware.CSPMiddleware',  # CSPミドルウェアを最後に配置
 ]
 
 # =============================================================================
@@ -361,16 +361,26 @@ MAINTENANCE_CONTACT_EMAIL = 'kabulog.information@gmail.com'  # 問い合わせ�
 CSP_DEFAULT_SRC = ["'self'", "cdn.jsdelivr.net", "*.googleapis.com", "*.gstatic.com", "*.bootstrapcdn.com", "unpkg.com"]
 CSP_SCRIPT_SRC = [
     "'self'", 
-    "*.google.com",
-    "*.doubleclick.net", 
-    "googleads.g.doubleclick.net", 
-    "tpc.googlesyndication.com", 
-    "www.googletagmanager.com", 
-    "*.googletagmanager.com",
+    "'unsafe-inline'",  # インラインスクリプト用
+    "'unsafe-eval'",    # eval()用
+    "unpkg.com", 
+    "https://unpkg.com",
+    "cdn.jsdelivr.net", 
+    "*.jquery.com", 
+    "*.googleadservices.com", 
+    "*.google.com", 
+    "*.googleapis.com", 
+    "*.gstatic.com",
     "*.googlesyndication.com", 
-    "pagead2.googlesyndication.com",
-    "https://*.doubleclick.net"
+    "pagead2.googlesyndication.com", 
+    "*.doubleclick.net", 
+    "*.bootstrapcdn.com", 
+    "https://www.googletagmanager.com", 
+    "*.googletagmanager.com",
+    "www.googletagmanager.com",
+    "https://pagead2.googlesyndication.com"
 ]
+
 CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", "*.googleapis.com", "*.bootstrapcdn.com", 
                  "https://cdn.jsdelivr.net", "https:", "data:"]
 CSP_FONT_SRC = [
@@ -386,9 +396,18 @@ CSP_IMG_SRC = ["'self'", "data:", "https:", "blob:", "*.google.com", "*.googleap
                "*.doubleclick.net", "pagead2.googlesyndication.com"]
 CSP_CONNECT_SRC = ["'self'", "*.google.com", "*.doubleclick.net", "*.googleapis.com", 
                   "www.google-analytics.com", "stats.g.doubleclick.net"]
-CSP_FRAME_SRC = ["'self'", "*.google.com", "*.doubleclick.net", "googleads.g.doubleclick.net", 
-                "tpc.googlesyndication.com", "www.googletagmanager.com", "*.googletagmanager.com", "*.googlesyndication.com", "pagead2.googlesyndication.com"]
-
+CSP_FRAME_SRC = [
+    "'self'", 
+    "*.google.com",
+    "*.doubleclick.net", 
+    "https://*.doubleclick.net",
+    "googleads.g.doubleclick.net", 
+    "tpc.googlesyndication.com", 
+    "www.googletagmanager.com", 
+    "*.googletagmanager.com",
+    "*.googlesyndication.com", 
+    "pagead2.googlesyndication.com"
+]
 # =============================================================================
 # 現在使用していない設定（コメントアウト）
 # =============================================================================
