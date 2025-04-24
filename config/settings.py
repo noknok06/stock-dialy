@@ -361,24 +361,15 @@ MAINTENANCE_CONTACT_EMAIL = 'kabulog.information@gmail.com'  # 問い合わせ�
 CSP_DEFAULT_SRC = ["'self'", "cdn.jsdelivr.net", "*.googleapis.com", "*.gstatic.com", "*.bootstrapcdn.com", "unpkg.com"]
 CSP_SCRIPT_SRC = [
     "'self'", 
-    "'unsafe-inline'", 
-    "'unsafe-eval'", 
-    "unpkg.com", 
-    "https://unpkg.com",
-    "cdn.jsdelivr.net", 
-    "*.jquery.com", 
-    "*.googleadservices.com", 
-    "*.google.com", 
-    "*.googleapis.com", 
-    "*.gstatic.com",
-    "*.googlesyndication.com", 
-    "pagead2.googlesyndication.com", 
+    "*.google.com",
     "*.doubleclick.net", 
-    "*.bootstrapcdn.com", 
-    "https://www.googletagmanager.com", 
+    "googleads.g.doubleclick.net", 
+    "tpc.googlesyndication.com", 
+    "www.googletagmanager.com", 
     "*.googletagmanager.com",
-    "www.googletagmanager.com",
-    "https://pagead2.googlesyndication.com"
+    "*.googlesyndication.com", 
+    "pagead2.googlesyndication.com",
+    "https://*.doubleclick.net"
 ]
 CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", "*.googleapis.com", "*.bootstrapcdn.com", 
                  "https://cdn.jsdelivr.net", "https:", "data:"]
