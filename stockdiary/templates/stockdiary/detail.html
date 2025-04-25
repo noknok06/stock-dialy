@@ -2765,44 +2765,124 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
   }
+});
+function moveToBodyRoot(element) {
+  if (element && element.parentElement !== document.body) {
+    document.body.appendChild(element);
+    console.log(element.id + 'をbody直下に移動しました');
+    return true;
+  }
+  return false;
+}
+
+// 日記IDを安全に取得する関数
+function getDiaryId() {
+  // 方法1: data-diary-id属性を持つ要素を探す
+  const diaryElement = document.querySelector('[data-diary-id]');
+  if (diaryElement && diaryElement.dataset.diaryId) {
+    return diaryElement.dataset.diaryId;
+  }
   
-  // 削除確認モーダル関連の処理
+  // 方法2: URLから取得
+  const urlMatch = window.location.pathname.match(/\/stockdiary\/(\d+)\//);
+  if (urlMatch && urlMatch[1]) {
+    return urlMatch[1];
+  }
+  
+  // 方法3: hidden入力フィールドから取得
+  const hiddenInput = document.querySelector('input[name="diary_id"]');
+  if (hiddenInput && hiddenInput.value) {
+    return hiddenInput.value;
+  }
+  
+  // どの方法でも取得できなかった場合はエラーを表示
+  console.error('日記IDを取得できませんでした');
+  return null;
+}
+
+// 削除モーダル処理の修正
+document.addEventListener('DOMContentLoaded', function() {
   const deleteNoteModal = document.getElementById('deleteNoteModal');
-  const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-  const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
-  let noteIdToDelete = null;
+  const deleteDiaryModal = document.getElementById('deleteDiaryModal');
   
-  // 削除ボタンのイベントリスナー
+  // 両方のモーダルをbody直下に移動
+  moveToBodyRoot(deleteNoteModal);
+  moveToBodyRoot(deleteDiaryModal);
+  
+  // 削除ボタンのイベントリスナーを修正
   const deleteButtons = document.querySelectorAll('.delete-note-btn');
   deleteButtons.forEach(button => {
-    button.addEventListener('click', function() {
-      noteIdToDelete = this.getAttribute('data-note-id');
+    // 既存のイベントリスナーを一度削除して再設定
+    const newButton = button.cloneNode(true);
+    button.parentNode.replaceChild(newButton, button);
+    
+    newButton.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
       
-      // モーダルを表示
-      deleteNoteModal.classList.add('active');
+      // モーダルをbody直下に移動（念のため再確認）
+      moveToBodyRoot(deleteNoteModal);
+      
+      // IDを取得
+      const noteId = this.getAttribute('data-note-id');
+      if (noteId) {
+        // グローバル変数に設定
+        window.noteIdToDelete = noteId;
+        
+        // モーダルを表示
+        deleteNoteModal.classList.add('active');
+      }
     });
   });
   
-  // キャンセルボタン
-  if (cancelDeleteBtn) {
-    cancelDeleteBtn.addEventListener('click', function() {
-      deleteNoteModal.classList.remove('active');
-      noteIdToDelete = null;
+  // 削除日記ボタンも修正
+  const deleteDiaryBtn = document.querySelector('a.btn-diary-danger[href$="/delete/"]');
+  if (deleteDiaryBtn) {
+    // 既存のイベントリスナーを一度削除して再設定
+    const newDiaryBtn = deleteDiaryBtn.cloneNode(true);
+    deleteDiaryBtn.parentNode.replaceChild(newDiaryBtn, deleteDiaryBtn);
+    
+    newDiaryBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // モーダルをbody直下に移動（念のため再確認）
+      moveToBodyRoot(deleteDiaryModal);
+      
+      // モーダルを表示
+      deleteDiaryModal.classList.add('active');
     });
   }
   
-  // 確認ボタン（実際の削除処理）
+  // 削除確認ボタンも修正
+  const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
   if (confirmDeleteBtn) {
-    confirmDeleteBtn.addEventListener('click', function() {
-      if (!noteIdToDelete) return;
+    // 既存のイベントリスナーを一度削除して再設定
+    const newConfirmBtn = confirmDeleteBtn.cloneNode(true);
+    confirmDeleteBtn.parentNode.replaceChild(newConfirmBtn, confirmDeleteBtn);
+    
+    newConfirmBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
       
-      // CSRF トークンの取得
+      if (!window.noteIdToDelete) {
+        console.error('削除対象のnoteIdが設定されていません');
+        return;
+      }
+      
+      const diaryId = getDiaryId();
+      if (!diaryId) {
+        alert('日記IDが見つかりませんでした。ページを再読み込みしてください。');
+        return;
+      }
+      
+      // CSRFトークンの取得
       const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
       
       // 削除用のフォーム生成＆送信
       const form = document.createElement('form');
       form.method = 'POST';
-      form.action = `/stockdiary/{{ diary.id }}/note/${noteIdToDelete}/delete/`;
+      form.action = `/stockdiary/${diaryId}/note/${window.noteIdToDelete}/delete/`;
       
       // CSRFトークンの追加
       const csrfInput = document.createElement('input');
@@ -2811,19 +2891,49 @@ document.addEventListener('DOMContentLoaded', function() {
       csrfInput.value = csrfToken;
       form.appendChild(csrfInput);
       
-      // フォームを追加して送信
+      // フォームをbody直下に追加して送信
       document.body.appendChild(form);
+      console.log('フォームを送信します:', form.action);
       form.submit();
     });
   }
   
-  // モーダル外クリックで閉じる
-  if (deleteNoteModal) {
-    deleteNoteModal.addEventListener('click', function(e) {
-      if (e.target === deleteNoteModal) {
-        deleteNoteModal.classList.remove('active');
-        noteIdToDelete = null;
+  // 日記削除確認ボタンも修正
+  const confirmDeleteDiaryBtn = document.getElementById('confirmDeleteDiaryBtn');
+  if (confirmDeleteDiaryBtn) {
+    // 既存のイベントリスナーを一度削除して再設定
+    const newConfirmDiaryBtn = confirmDeleteDiaryBtn.cloneNode(true);
+    confirmDeleteDiaryBtn.parentNode.replaceChild(newConfirmDiaryBtn, confirmDeleteDiaryBtn);
+    
+    newConfirmDiaryBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const diaryId = getDiaryId();
+      if (!diaryId) {
+        alert('日記IDが見つかりませんでした。ページを再読み込みしてください。');
+        return;
       }
+      
+      // CSRFトークンの取得
+      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+      
+      // 削除用のフォーム生成＆送信
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = `/stockdiary/${diaryId}/delete/`;
+      
+      // CSRFトークンの追加
+      const csrfInput = document.createElement('input');
+      csrfInput.type = 'hidden';
+      csrfInput.name = 'csrfmiddlewaretoken';
+      csrfInput.value = csrfToken;
+      form.appendChild(csrfInput);
+      
+      // フォームをbody直下に追加して送信
+      document.body.appendChild(form);
+      console.log('フォームを送信します:', form.action);
+      form.submit();
     });
   }
 });
