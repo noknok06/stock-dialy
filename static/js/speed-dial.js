@@ -442,6 +442,22 @@ function initializeSpeedDial() {
   // コンソールで呼び出せるようにグローバル変数に保持
   window.speedDialInstance = speedDial;
   
+  // スピードダイヤルをDOM内で適切な位置に強制移動
+  const speedDialContainer = document.querySelector('.speed-dial-container');
+  if (speedDialContainer && speedDialContainer.parentElement !== document.body) {
+    document.body.appendChild(speedDialContainer);
+    console.log('スピードダイヤルをbody直下に移動しました');
+  }
+  
+  // ページクリック時にポジションを確認・修正
+  document.addEventListener('click', function() {
+    const speedDial = document.querySelector('.speed-dial-container');
+    if (speedDial && speedDial.parentElement !== document.body) {
+      document.body.appendChild(speedDial);
+      console.log('スピードダイヤルの位置を修正しました');
+    }
+  }, true); // キャプチャリングフェーズで実行
+
   return speedDial;
 }
 
