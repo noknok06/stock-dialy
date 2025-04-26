@@ -837,144 +837,38 @@
       white-space: nowrap;
     }
 
-    /* フローティングアクションボタン */
-    .floating-expand-button {
-      position: fixed;
-      top: 15px;
-      /* 下から上に変更 */
-      left: 15px;
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      background-color: var(--primary-color, #5a7ec5);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-      z-index: 1030;
-      transition: all 0.3s ease;
-      border: none;
+  /* モバイルでdiary-cardを画面いっぱいに広げる（詳細画面のみ） */
+  @media (max-width: 767px) {
+    /* コンテナのパディング削減 */
+    .container {
+      padding-left: 8px;
+      padding-right: 8px;
     }
 
-    /* ホバーとアクティブ状態 */
-    .floating-expand-button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    }
-
-    .floating-expand-button:active {
-      transform: scale(0.95);
-    }
-
-    .floating-expand-button i {
-      font-size: 1.5rem;
-    }
-
-    /* iPhoneの左下のホームインジケーターと重ならないように調整 */
-    @media (max-width: 767.98px) {
-      .floating-expand-button {
-        bottom: 24px;
-      }
-    }
-
-    /* スピードダイヤルとの間隔を広げる */
-    @media (min-width: 768px) {
-      .floating-expand-button {
-        top: 15px;
-        left: 15px;
-      }
-    }
-
-    /* 全画面表示モードの完全修正 */
-    .fullscreen-tab-mode .diary-card {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 2000;
-      /* 高いz-indexを設定 */
-      margin: 0;
-      border-radius: 0;
-      max-height: 100vh;
-      overflow-y: auto;
-      overflow-x: hidden;
-      /* 横スクロールを防止 */
-      display: block;
-      /* 重要: flexboxをブロックに変更 */
-      width: 100%;
-      /* 幅を100%に */
-      background-color: white;
-      /* 背景色を設定して背面を隠す */
-    }
-
-    .fullscreen-tab-mode .diary-card-body {
-      padding: 0;
-      display: block;
-      /* 重要: flexboxをブロックに変更 */
-      width: 100%;
-      /* 幅を100%に */
-      height: 100vh;
-      /* 高さを画面いっぱいに */
-    }
-
-    .fullscreen-tab-mode .diary-tabs-container {
-      margin: 0;
+    /* 詳細画面のdiary-cardを画面いっぱいに表示 */
+    .diary-detail-container .diary-card {
+      margin-left: -8px;
+      margin-right: -8px;
       border-radius: 0;
       box-shadow: none;
-      width: 100%;
-      /* 幅を100%に */
     }
 
-    .fullscreen-tab-mode .nav-tabs {
-      position: sticky;
-      top: 0;
-      background: white;
-      z-index: 10;
-      width: 100%;
-      /* 幅を100%に */
+    .diary-detail-container .diary-card-header {
+      border-radius: 0;
     }
 
-    /* 全画面モード時に不要な要素を非表示 */
-    .fullscreen-tab-mode .diary-card-header,
-    .fullscreen-tab-mode .action-buttons,
-    .fullscreen-tab-mode .diary-date,
-    .fullscreen-tab-mode .diary-card-footer {
-      display: none !important;
-      /* !importantで確実に非表示に */
+    .diary-detail-container .diary-card-body {
+      padding: 0 !important;
+      padding-left: 12px !important;
     }
 
-    /* 戻るボタンのスタイル改善 */
-    .back-to-normal {
-      position: fixed;
-      top: 15px;
-      left: 15px;
-      z-index: 2100;
-      /* diary-cardよりも前面に */
-      background: white;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-      border: none;
-      cursor: pointer;
-      transition: all 0.2s ease;
+    /* タブコンテナも画面幅いっぱいに */
+    .diary-detail-container .diary-tabs-container {
+      margin-left: -8px;
+      margin-right: -8px;
+      border-radius: 0;
     }
-
-    .back-to-normal:hover {
-      transform: scale(1.1);
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-    }
-
-    /* フルスクリーンモード時のスタイル追加 */
-    body.fullscreen-tab-mode {
-      overflow: hidden;
-      /* スクロールを無効化 */
-    }
+  }
 
     /* モバイル向け最適化追加 */
     @media (max-width: 767px) {
@@ -1024,11 +918,6 @@
       .table-responsive {
         max-width: 100%;
         overflow-x: auto;
-      }
-
-      /* 全画面モードでの継続記録タブ */
-      .fullscreen-tab-mode #notes-content {
-        padding: 0.5rem;
       }
 
       /* 日付入力フィールドの横幅修正 */
@@ -1390,15 +1279,14 @@
     }
 
     .note-price-info {
-      flex-direction: column;
-      gap: 0.35rem;
+      flex-direction: row;
     }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container py-4 diary-detail-container">
   <!-- 戻るリンク -->
   <div class="mb-3">
     <a href="{% url 'stockdiary:home' %}" class="btn btn-diary btn-diary-outline">
@@ -2525,15 +2413,6 @@
         if (isMobile) {
           // フローティング展開ボタンを追加（左下に配置）
           const expandButton = document.createElement('button');
-          expandButton.className = 'floating-expand-button';
-          expandButton.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
-          expandButton.setAttribute('aria-label', '全画面表示');
-          document.body.appendChild(expandButton);
-
-          // 全画面表示モード切り替え機能
-          expandButton.addEventListener('click', function () {
-            toggleFullscreenMode();
-          });
 
           // タブ切り替え時の最適化
           const tabLinks = document.querySelectorAll('.nav-link');
@@ -2550,70 +2429,6 @@
               }, 50);
             });
           });
-
-          // フルスクリーンモードの改善
-          function toggleFullscreenMode() {
-            document.body.classList.toggle('fullscreen-tab-mode');
-
-            if (document.body.classList.contains('fullscreen-tab-mode')) {
-              // フルスクリーンモード有効化時の処理
-
-              // スクロール位置をリセット
-              window.scrollTo(0, 0);
-
-              // スクロールを無効化（背面コンテンツが見えないようにする）
-              document.body.style.overflow = 'hidden';
-
-              // 戻るボタンを追加
-              if (!document.querySelector('.back-to-normal')) {
-                const backButton = document.createElement('button');
-                backButton.className = 'back-to-normal';
-                backButton.innerHTML = '<i class="bi bi-fullscreen-exit"></i>';
-                backButton.setAttribute('aria-label', '全画面表示終了');
-                backButton.addEventListener('click', function (e) {
-                  toggleFullscreenMode();
-                  e.stopPropagation();
-                });
-                document.body.appendChild(backButton);
-              }
-
-              // z-indexを高くして他の要素より前面に表示
-              const diaryCard = document.querySelector('.diary-card');
-              if (diaryCard) {
-                diaryCard.style.zIndex = '2000';
-              }
-
-              // フローティングボタンを非表示
-              const expandButton = document.querySelector('.floating-expand-button');
-              if (expandButton) {
-                expandButton.style.display = 'none';
-              }
-            } else {
-              // フルスクリーンモード解除時の処理
-
-              // スクロールを有効化
-              document.body.style.overflow = '';
-
-              // 戻るボタンを削除
-              const backButton = document.querySelector('.back-to-normal');
-              if (backButton) {
-                backButton.remove();
-              }
-
-              // z-indexを元に戻す
-              const diaryCard = document.querySelector('.diary-card');
-              if (diaryCard) {
-                diaryCard.style.zIndex = '';
-              }
-
-              // フローティングボタンを表示
-              const expandButton = document.querySelector('.floating-expand-button');
-              if (expandButton) {
-                expandButton.style.display = 'flex';
-              }
-            }
-          }
-
           // リロードを防止する処理を追加
           function preventReload() {
             // 現在のスクロール位置を保存
@@ -2621,41 +2436,12 @@
 
             // 一定の間隔でスクロール位置をチェック
             setInterval(() => {
-              if (document.body.classList.contains('fullscreen-tab-mode') &&
-                Math.abs(window.scrollY - scrollY) > 100) {
+              if ( Math.abs(window.scrollY - scrollY) > 100) {
                 // スクロール位置が大きく変わった場合に元の位置に戻す
                 window.scrollTo(0, 0);
               }
             }, 100);
           }
-
-          // タブ切り替え時のイベント処理を強化
-          function enhanceTabSwitching() {
-            const tabLinks = document.querySelectorAll('.nav-link');
-            tabLinks.forEach(tab => {
-              tab.addEventListener('click', function () {
-                // フルスクリーンモード中はスクロール位置をリセット
-                if (document.body.classList.contains('fullscreen-tab-mode')) {
-                  window.scrollTo(0, 0);
-                }
-              });
-            });
-          }
-
-          // ページ読み込み時に初期化
-          document.addEventListener('DOMContentLoaded', function () {
-            // フルスクリーンモード用の関数を呼び出す
-            if (document.querySelector('.floating-expand-button')) {
-              document.querySelector('.floating-expand-button').addEventListener('click', toggleFullscreenMode);
-            }
-
-            // リロード防止処理を初期化
-            preventReload();
-
-            // タブ切り替え処理を強化
-            enhanceTabSwitching();
-          });
-
           // タブに合わせた最適化
           function optimizeForTab(tabId) {
             // タブフォーカスモードを有効化
@@ -2680,40 +2466,6 @@
               // 特に何もしない
             }
           }
-
-          // スワイプダウンでフルスクリーンモード解除
-          let startY = 0;
-          let isScrolling = false;
-
-          document.addEventListener('touchstart', function (e) {
-            if (document.body.classList.contains('fullscreen-tab-mode')) {
-              const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
-
-              // 画面上部でのみスワイプダウン検出を有効にする
-              if (scrollTop <= 10) {
-                startY = e.touches[0].clientY;
-                isScrolling = true;
-              }
-            }
-          });
-
-          document.addEventListener('touchmove', function (e) {
-            if (!isScrolling || !document.body.classList.contains('fullscreen-tab-mode')) return;
-
-            const currentY = e.touches[0].clientY;
-            const diffY = currentY - startY;
-
-            // 下にスワイプしたときにフルスクリーンモードを解除
-            if (diffY > 80) {
-              toggleFullscreenMode();
-              isScrolling = false;
-              e.preventDefault();
-            }
-          });
-
-          document.addEventListener('touchend', function () {
-            isScrolling = false;
-          });
         }
 
         // トースト通知を作成する関数（もし定義されていない場合）
