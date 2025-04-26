@@ -13,6 +13,7 @@ from .models import AdUnit
 
 from .models import UserAdPreference
 from subscriptions.models import UserSubscription, SubscriptionPlan
+from django.http import JsonResponse
 
 def privacy_policy(request):
     """プライバシーポリシーのビュー"""
