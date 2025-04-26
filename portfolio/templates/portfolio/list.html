@@ -441,6 +441,10 @@
         作成済みスナップショット: {{ usage.snapshots }} 枚（1日1回まで作成可能）
       </p>
     </div>
+    <!-- コンテンツ上部の広告 -->
+    {% if show_ads %}
+        {% show_placement_ad "content_top" %}
+    {% endif %}
     
     <a href="{% url 'portfolio:create_snapshot' %}" class="btn-create">
       <i class="bi bi-plus-lg"></i> 新規スナップショット

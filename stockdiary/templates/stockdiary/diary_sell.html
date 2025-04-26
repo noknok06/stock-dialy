@@ -199,6 +199,10 @@
     </div>
   </div>
 
+  <!-- コンテンツ上部の広告 -->
+  {% if show_ads %}
+      {% show_placement_ad "content_top" %}
+  {% endif %}
   {% if grouped_diaries %}
     {% for stock in grouped_diaries %}
       <div class="card stock-card mb-3 {% if highlight_symbol == stock.symbol %}stock-selected{% endif %}" data-symbol="{{ stock.symbol }}" data-name="{{ stock.name }}">
