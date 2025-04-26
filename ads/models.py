@@ -66,7 +66,7 @@ class AdUnit(models.Model):
         default=False,
         help_text=_('Fluid型広告の場合はチェック')
     )
-    
+
     # 広告フォーマット
     FORMAT_CHOICES = [
         ('auto', '自動'),
@@ -74,6 +74,7 @@ class AdUnit(models.Model):
         ('vertical', '垂直バナー'),
         ('rectangle', 'レクタングル'),
         ('responsive', 'レスポンシブ'),
+        ('fluid', '流体'),
     ]
     ad_format = models.CharField(_('広告フォーマット'), max_length=20, choices=FORMAT_CHOICES, default='auto')
     
