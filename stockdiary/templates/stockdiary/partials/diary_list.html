@@ -2,6 +2,7 @@
 
 {% load stockdiary_filters %}
 {% load humanize %}
+{% load ads_tags %}
 
 {% if request.htmx.target == "diary-container" and not request.GET.page %}
   <!-- 検索結果情報を更新 -->
@@ -53,6 +54,9 @@
     <!-- 最初のページでない場合は、古いコンテンツを置き換えない -->
     {% for diary in diaries %}
       {% include "stockdiary/partials/diary_card.html" with diary=diary %}
+      {% if forloop.counter|divisibleby:3 %}
+        {% show_template_ad 'diary_list' %}
+      {% endif %}      
     {% endfor %}
   {% else %}
     <!-- 2ページ目以降は追加表示 -->
@@ -60,7 +64,6 @@
       {% include "stockdiary/partials/diary_card.html" with diary=diary %}
 
       {% if forloop.counter|divisibleby:3 %}
-        {% load ads_tags %}
         {% show_template_ad 'diary_list' %}
       {% endif %}      
     {% endfor %}
