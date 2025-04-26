@@ -1,5 +1,5 @@
 # ads/templatetags/ads_tags.py - テンプレートタグの修正
-
+from django.conf import settings
 from django import template
 from django.utils.safestring import mark_safe
 from ..models import AdUnit, AdPlacement

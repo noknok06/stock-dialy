@@ -11,4 +11,6 @@ urlpatterns = [
     path('terms/', views.TermsView.as_view(), name='terms'),
     path('faq/', views.FAQView.as_view(), name='faq'),
     path('guide/', views.InvestmentGuideView.as_view(), name='guide'),
+
+    path('api/preview/<int:ad_unit_id>/', views.ad_preview_api, name='ad_preview_api'),
 ]
