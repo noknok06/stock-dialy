@@ -1,0 +1,125 @@
+<!-- templates/admin/ads/adunit/change_form.html -->
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls static %}
+
+{% block after_field_sets %}
+{{ block.super }}
+
+<!-- 広告プレビューセクション -->
+<fieldset class="module aligned">
+  <h2>広告プレビュー</h2>
+  
+  <div class="form-row">
+    <div>
+      <label>プレビュー:</label>
+      <div id="ad-preview-container" style="padding: 20px; background-color: #f7f7f7; border: 1px solid #ddd; border-radius: 4px; min-height: 120px;">
+        <div id="ad-preview-loading">広告の設定を変更してプレビューを更新してください</div>
+        <div id="ad-preview-content" style="display: none;"></div>
+      </div>
+      <p class="help">
+        <button type="button" class="button" id="refresh-preview-btn">プレビューを更新</button>
+        <small>※実際の広告が表示されるわけではなく、広告枠のHTMLコードが表示されます</small>
+      </p>
+    </div>
+  </div>
+  
+  <div class="form-row">
+    <div>
+      <label>生成されるHTMLコード:</label>
+      <textarea id="ad-code-display" style="width: 100%; height: 120px; font-family: monospace; font-size: 12px;" readonly></textarea>
+    </div>
+  </div>
+</fieldset>
+{% endblock %}
+
+{% block admin_change_form_document_ready %}
+{{ block.super }}
+<script>
+// フォーム値が変更されたときにプレビューを更新する関数
+function updateAdPreview() {
+  var adClient = document.getElementById('id_ad_client').value;
+  var adSlot = document.getElementById('id_ad_slot').value;
+  var adFormat = document.getElementById('id_ad_format').value;
+  var isFluid = document.getElementById('id_is_fluid').checked;
+  var adLayout = document.getElementById('id_ad_layout').value;
+  var adLayoutKey = document.getElementById('id_ad_layout_key').value;
+  var customStyle = document.getElementById('id_custom_style').value;
+  
+  if (!adClient || !adSlot) {
+    document.getElementById('ad-preview-loading').innerText = 'クライアントIDとスロットIDを入力してください';
+    document.getElementById('ad-preview-content').style.display = 'none';
+    document.getElementById('ad-code-display').value = '';
+    return;
+  }
+  
+  // 広告コードを生成
+  var style = customStyle || 'display:block;';
+  var adCode = '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + adClient + '" crossorigin="anonymous"><\/script>\n';
+  adCode += '<ins class="adsbygoogle"\n';
+  adCode += '     style="' + style + '"\n';
+  adCode += '     data-ad-client="' + adClient + '"\n';
+  adCode += '     data-ad-slot="' + adSlot + '"\n';
+  
+  if (adFormat && adFormat !== 'auto') {
+    adCode += '     data-ad-format="' + adFormat + '"\n';
+  }
+  
+  if (isFluid) {
+    adCode += '     data-ad-format="fluid"\n';
+  }
+  
+  if (adLayout) {
+    adCode += '     data-ad-layout="' + adLayout + '"\n';
+  }
+  
+  if (adLayoutKey) {
+    adCode += '     data-ad-layout-key="' + adLayoutKey + '"\n';
+  }
+  
+  adCode += '></ins>\n';
+  adCode += '<script>\n     (adsbygoogle = window.adsbygoogle || []).push({});\n<\/script>';
+  
+  // プレビューを表示
+  document.getElementById('ad-preview-loading').style.display = 'none';
+  var previewContent = document.getElementById('ad-preview-content');
+  previewContent.style.display = 'block';
+  previewContent.innerHTML = '<div style="border: 2px dashed #4CAF50; padding: 10px; text-align: center; background: #E8F5E9;">' +
+    '<span style="font-weight: bold;">広告プレビュー：</span><br>' +
+    '<div style="margin-top: 10px; padding: 8px; background: #fff; border: 1px solid #ddd;">' +
+    '<strong>クライアントID:</strong> ' + adClient + '<br>' +
+    '<strong>スロットID:</strong> ' + adSlot + '<br>' +
+    '<strong>フォーマット:</strong> ' + (isFluid ? 'fluid' : adFormat) + 
+    (adLayout ? '<br><strong>レイアウト:</strong> ' + adLayout : '') +
+    (adLayoutKey ? '<br><strong>レイアウトキー:</strong> ' + adLayoutKey : '') +
+    '</div></div>';
+  
+  // コードを表示
+  document.getElementById('ad-code-display').value = adCode;
+}
+
+// ページ読み込み時と「プレビューを更新」ボタンクリック時にプレビューを更新
+document.addEventListener('DOMContentLoaded', function() {
+  var refreshBtn = document.getElementById('refresh-preview-btn');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', updateAdPreview);
+  }
+  
+  // フォームフィールドの変更を監視
+  var fields = ['id_ad_client', 'id_ad_slot', 'id_ad_format', 'id_is_fluid', 
+                'id_ad_layout', 'id_ad_layout_key', 'id_custom_style'];
+  
+  fields.forEach(function(fieldId) {
+    var field = document.getElementById(fieldId);
+    if (field) {
+      field.addEventListener('change', updateAdPreview);
+      if (fieldId !== 'id_is_fluid') {
+        field.addEventListener('input', updateAdPreview);
+      }
+    }
+  });
+  
+  // 初期プレビューを更新
+  updateAdPreview();
+});
+</script>
+{% endblock %}
