@@ -54,7 +54,7 @@
     <!-- 最初のページでない場合は、古いコンテンツを置き換えない -->
     {% for diary in diaries %}
       {% include "stockdiary/partials/diary_card.html" with diary=diary %}
-      {% if forloop.counter|divisibleby:3 %}
+      {% if forloop.counter|divisibleby:4 %}
         {% show_template_ad 'diary_list' %}
       {% endif %}      
     {% endfor %}
@@ -63,7 +63,7 @@
     {% for diary in diaries %}
       {% include "stockdiary/partials/diary_card.html" with diary=diary %}
 
-      {% if forloop.counter|divisibleby:3 %}
+      {% if forloop.counter|divisibleby:4 %}
         {% show_template_ad 'diary_list' %}
       {% endif %}      
     {% endfor %}
