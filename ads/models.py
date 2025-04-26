@@ -33,6 +33,40 @@ class AdUnit(models.Model):
     ad_client = models.CharField(_('ad-client ID'), max_length=100, help_text=_('例: ca-pub-3954701883136363'))
     ad_slot = models.CharField(_('ad-slot ID'), max_length=100)
     
+    template_type = models.CharField(
+        _('テンプレートタイプ'), 
+        max_length=50, 
+        blank=True, 
+        help_text=_('特定のテンプレート用（例：diary_tab、diary_list）')
+    )
+    ad_layout = models.CharField(
+        _('広告レイアウト'), 
+        max_length=100, 
+        blank=True, 
+        help_text=_('data-ad-layout値（例：in-article）')
+    )
+    ad_layout_key = models.CharField(
+        _('広告レイアウトキー'), 
+        max_length=100, 
+        blank=True, 
+        help_text=_('data-ad-layout-key値（例：-h2+d+5c-9-3e）')
+    )
+    custom_style = models.TextField(
+        _('カスタムスタイル'), 
+        blank=True, 
+        help_text=_('カスタムCSSスタイル（例：display:block; text-align:center;）')
+    )
+    custom_js = models.TextField(
+        _('カスタムJS'), 
+        blank=True, 
+        help_text=_('追加のJavaScriptコード')
+    )
+    is_fluid = models.BooleanField(
+        _('Fluid広告'), 
+        default=False,
+        help_text=_('Fluid型広告の場合はチェック')
+    )
+    
     # 広告フォーマット
     FORMAT_CHOICES = [
         ('auto', '自動'),

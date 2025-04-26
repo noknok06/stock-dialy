@@ -9,12 +9,30 @@ class AdPlacementAdmin(admin.ModelAdmin):
     search_fields = ('name', 'description')
 
 
+# ads/admin.py の AdUnitAdmin クラスを拡張
+
 @admin.register(AdUnit)
 class AdUnitAdmin(admin.ModelAdmin):
-    list_display = ('name', 'placement', 'ad_format', 'is_active')
-    list_filter = ('is_active', 'placement', 'ad_format')
-    search_fields = ('name', 'ad_client', 'ad_slot')
+    list_display = ('name', 'placement', 'template_type', 'ad_format', 'is_fluid', 'is_active')
+    list_filter = ('is_active', 'placement', 'ad_format', 'template_type', 'is_fluid')
+    search_fields = ('name', 'ad_client', 'ad_slot', 'template_type')
     autocomplete_fields = ('placement',)
+    
+    fieldsets = (
+        ('基本情報', {
+            'fields': ('name', 'placement', 'is_active')
+        }),
+        ('AdSense設定', {
+            'fields': ('ad_client', 'ad_slot', 'ad_format')
+        }),
+        ('詳細設定', {
+            'fields': ('template_type', 'width', 'height', 'is_fluid', 'ad_layout', 'ad_layout_key')
+        }),
+        ('カスタマイズ', {
+            'classes': ('collapse',),
+            'fields': ('custom_style', 'custom_js')
+        }),
+    )
 
 
 @admin.register(UserAdPreference)
