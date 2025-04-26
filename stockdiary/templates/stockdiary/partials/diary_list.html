@@ -59,17 +59,10 @@
     {% for diary in diaries %}
       {% include "stockdiary/partials/diary_card.html" with diary=diary %}
 
-      <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3954701883136363"
-            crossorigin="anonymous"></script>
-      <ins class="adsbygoogle"
-            style="display:block"
-            data-ad-format="fluid"
-            data-ad-layout-key="-h2+d+5c-9-3e"
-            data-ad-client="ca-pub-3954701883136363"
-            data-ad-slot="9620670260"></ins>
-      <script>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-      </script>      
+      {% if forloop.counter|divisibleby:3 %}
+        {% load ads_tags %}
+        {% show_template_ad 'diary_list' %}
+      {% endif %}      
     {% endfor %}
   {% endif %}
 

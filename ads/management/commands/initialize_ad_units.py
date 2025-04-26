@@ -119,3 +119,39 @@ class Command(BaseCommand):
         self.stdout.write(f"フッター広告ユニット: {'作成' if created else '既存'}")
 
         self.stdout.write(self.style.SUCCESS('広告配置と広告ユニットの設定が完了しました'))
+
+
+        # 日記タブ内広告
+        diary_tab_ad, created = AdUnit.objects.get_or_create(
+            template_type='diary_tab',
+            defaults={
+                'name': '日記タブ内広告',
+                'ad_client': 'ca-pub-3954701883136363',
+                'ad_slot': '8710672022',
+                'ad_format': 'fluid',
+                'ad_layout': 'in-article',
+                'custom_style': 'display:block; text-align:center;',
+                'is_fluid': True,
+                'is_active': True,
+                'placement': content_bottom_placement,  # 既存の配置を使用
+            }
+        )
+        self.stdout.write(f"日記タブ内広告ユニット: {'作成' if created else '既存'}")
+        self.stdout.write(self.style.SUCCESS('日記タブ内広告ユニットの設定が完了しました'))
+
+        # 日記一覧広告
+        diary_list_ad, created = AdUnit.objects.get_or_create(
+            template_type='diary_list',
+            defaults={
+                'name': '日記一覧広告',
+                'ad_client': 'ca-pub-3954701883136363',
+                'ad_slot': '9620670260',
+                'ad_format': 'fluid',
+                'ad_layout_key': '-h2+d+5c-9-3e',
+                'is_fluid': True,
+                'is_active': True,
+                'placement': content_bottom_placement,  # 既存の配置を使用
+            }
+        )
+        self.stdout.write(f"日記一覧広告ユニット: {'作成' if created else '既存'}")        
+        self.stdout.write(self.style.SUCCESS('日記一覧広告の設定が完了しました'))
