@@ -330,6 +330,11 @@ class DiaryAnalytics:
                 'tension': 0.4
             })
         
+        
+        # タグのリストをJSON形式で追加
+        all_tags = Tag.objects.filter(stockdiary__in=diaries).distinct()
+        tags_json = [{'id': tag.id, 'name': tag.name} for tag in all_tags]
+        
         return {
             'tag_names': json.dumps(tag_names),
             'tag_counts': json.dumps(tag_counts_list),
@@ -337,8 +342,9 @@ class DiaryAnalytics:
             'most_profitable_tag': most_profitable_tag if most_profitable_tag else "データなし",
             'tag_performance': tag_performance,
             'tag_timeline_labels': json.dumps(months),
-            'tag_timeline_data': json.dumps(tag_timeline_data)
-        }    
+            'tag_timeline_data': json.dumps(tag_timeline_data),
+            'tags_json': json.dumps(tags_json)  # 追加
+        }
  
     def get_activity_analysis_data(self, diaries, all_diaries):
         """活動分析データを取得"""
