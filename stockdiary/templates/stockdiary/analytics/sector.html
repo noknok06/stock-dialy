@@ -185,31 +185,6 @@
     });
   }
   
-  function setupSectorAllocationChart() {
-    const sectorLabels = {{ sector_allocation_data.labels|safe|default:"[]" }};
-    const sectorValues = {{ sector_allocation_data.values|safe|default:"[]" }};
-    
-    return ChartUtils.createStyledPieChart(
-      'sectorAllocationChart', 
-      sectorLabels, 
-      sectorValues, 
-      generateColors, // セクター分析用の色生成関数
-      {
-        plugins: {
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                const label = context.label || '';
-                const value = context.raw || 0;
-                return `${label}: ${value}%`;
-              }
-            }
-          }
-        }
-      }
-    );
-  }
-  
   // セクター別銘柄数と平均投資額チャート
   function setupSectorStocksInvestmentChart() {
     const sectorLabels = {{ sector_stocks_data.labels|safe|default:"[]" }};
@@ -429,5 +404,156 @@
     }
     
     return colors;
+  }
+</script>
+<!-- チャートのJavaScriptコード - analytics/sector.html の一部として追加 -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // セクター別投資配分チャート
+    setupSectorAllocationChart();
+    
+    // セクター別銘柄数と平均投資額チャート
+    setupSectorStocksInvestmentChart();
+    
+    // セクター別リターンと成功率チャート
+    setupSectorReturnSuccessChart();
+  });
+  
+  function setupSectorAllocationChart() {
+    const sectorLabels = {{ sector_allocation_data.labels|safe|default:"[]" }};
+    const sectorValues = {{ sector_allocation_data.values|safe|default:"[]" }};
+    
+    return ChartUtils.createStyledPieChart(
+      'sectorAllocationChart', 
+      sectorLabels, 
+      sectorValues, 
+      generateColors,
+      {
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.raw || 0;
+                return `${label}: ${value}%`;
+              }
+            }
+          }
+        },
+        onClick: function(evt, elements) {
+          if (elements.length > 0) {
+            const index = elements[0].index;
+            const sectorName = sectorLabels[index];
+            const sectorValue = sectorValues[index];
+            showSectorDiariesModal(sectorName, sectorValue);
+          }
+        }
+      }
+    );
+  }
+  
+  // セクターに関連する日記一覧モーダルを表示
+  function showSectorDiariesModal(sectorName, sectorValue) {
+    // モーダルが既に存在する場合は削除
+    const existingModal = document.getElementById('sectorDiariesModal');
+    if (existingModal) {
+      existingModal.remove();
+    }
+    
+    // モーダルの作成
+    const modalHtml = `
+      <div class="modal fade" id="sectorDiariesModal" tabindex="-1" aria-labelledby="sectorDiariesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="sectorDiariesModalLabel">
+                <i class="bi bi-building me-2"></i>「${sectorName}」セクターの投資状況 (${sectorValue}%)
+              </h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="text-center my-4">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">読み込み中...</span>
+                </div>
+                <div class="mt-2">データを読み込み中...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('sectorDiariesModal'));
+    modal.show();
+    
+    // セクター名をエンコードしてリクエスト
+    const encodedSectorName = encodeURIComponent(sectorName);
+    fetchSectorDiaries(`/stockdiary/diary-list/?sector=${encodedSectorName}`, {
+      'X-Requested-With': 'XMLHttpRequest',
+      'HX-Request': 'true'
+    });
+  }
+  
+  function fetchSectorDiaries(url, headers = {}) {
+    fetch(url, {
+      headers: headers
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('データの取得に失敗しました');
+      }
+      return response.text();
+    })
+    .then(html => {
+      const modalBody = document.querySelector('#sectorDiariesModal .modal-body');
+      modalBody.innerHTML = html;
+      
+      // ページネーションを調整
+      adjustSectorModalPagination(modalBody);
+    })
+    .catch(error => {
+      showSectorModalError(error.message);
+    });
+  }
+  
+  function showSectorModalError(message) {
+    const modalBody = document.querySelector('#sectorDiariesModal .modal-body');
+    modalBody.innerHTML = `
+      <div class="alert alert-danger m-3">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        ${message}
+      </div>
+    `;
+  }
+  
+  function adjustSectorModalPagination(modalBody) {
+    const pagination = modalBody.querySelector('.pagination');
+    if (pagination) {
+      const links = pagination.querySelectorAll('a');
+      links.forEach(link => {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          const url = this.getAttribute('href');
+          if (url) {
+            fetch(url, {
+              headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'HX-Request': 'true'
+              }
+            })
+            .then(response => response.text())
+            .then(html => {
+              modalBody.innerHTML = html;
+              adjustSectorModalPagination(modalBody);
+            })
+            .catch(error => {
+              showSectorModalError('ページの読み込みに失敗しました');
+            });
+          }
+        });
+      });
+    }
   }
 </script>

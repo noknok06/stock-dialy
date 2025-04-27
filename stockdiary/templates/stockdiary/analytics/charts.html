@@ -330,16 +330,22 @@
         `;
     }
     
-    // 重複した関数を1つにまとめる
+    // チャート関連のJavaScriptコードに追加する関数
+
     function adjustModalPagination(modalBody) {
         const pagination = modalBody.querySelector('.pagination');
         if (pagination) {
-            const links = pagination.querySelectorAll('a');
+            const links = pagination.querySelectorAll('a.page-link');
             links.forEach(link => {
                 link.addEventListener('click', function(e) {
                     e.preventDefault();
-                    const url = this.getAttribute('href');
-                    if (url) {
+                    const page = this.getAttribute('data-page');
+                    const tagId = this.getAttribute('href').match(/tag=(\d+)/);
+                    
+                    if (tagId && page) {
+                        // URLを構築
+                        const url = `/stockdiary/diary-list/?tag=${tagId[1]}&page=${page}`;
+                        
                         // AJAXヘッダーを追加
                         fetch(url, {
                             headers: {
@@ -360,7 +366,46 @@
             });
         }
     }
-    
+
+    function adjustSectorModalPagination(modalBody) {
+        const pagination = modalBody.querySelector('.pagination');
+        if (pagination) {
+            const links = pagination.querySelectorAll('a.page-link');
+            links.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const page = this.getAttribute('data-page');
+                    const href = this.getAttribute('href');
+                    const sectorMatch = href.match(/sector=([^&]+)/);
+                    
+                    if (sectorMatch && page) {
+                        // セクター名をデコード
+                        const sector = decodeURIComponent(sectorMatch[1]);
+                        
+                        // URLを構築
+                        const url = `/stockdiary/diary-list/?sector=${encodeURIComponent(sector)}&page=${page}`;
+                        
+                        // AJAXヘッダーを追加
+                        fetch(url, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'HX-Request': 'true'
+                            }
+                        })
+                        .then(response => response.text())
+                        .then(html => {
+                            modalBody.innerHTML = html;
+                            adjustSectorModalPagination(modalBody);
+                        })
+                        .catch(error => {
+                            showSectorModalError('ページの読み込みに失敗しました');
+                        });
+                    }
+                });
+            });
+        }
+    }
+
     // タグの時系列変化チャート（以下同様に続く）
     function setupTagTimelineChart() {
         const ctx = document.getElementById('tagTimelineChart');

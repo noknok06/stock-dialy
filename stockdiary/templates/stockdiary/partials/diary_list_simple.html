@@ -1,3 +1,4 @@
+{% load humanize %}
 <!-- stockdiary/partials/diary_list_simple.html -->
 <div class="container-fluid px-0">
     {% if diaries %}
@@ -36,7 +37,9 @@
     <ul class="pagination justify-content-center">
         {% if page_obj.has_previous %}
             <li class="page-item">
-                <a class="page-link" href="?tag={{ request.GET.tag }}&page={{ page_obj.previous_page_number }}">
+                <a class="page-link" href="?tag={{ request.GET.tag|urlencode }}&page={{ page_obj.previous_page_number }}"
+                   onclick="return false;"
+                   data-page="{{ page_obj.previous_page_number }}">
                     <i class="bi bi-chevron-left"></i>
                 </a>
             </li>
@@ -48,7 +51,9 @@
         
         {% if page_obj.has_next %}
             <li class="page-item">
-                <a class="page-link" href="?tag={{ request.GET.tag }}&page={{ page_obj.next_page_number }}">
+                <a class="page-link" href="?tag={{ request.GET.tag|urlencode }}&page={{ page_obj.next_page_number }}"
+                   onclick="return false;"
+                   data-page="{{ page_obj.next_page_number }}">
                     <i class="bi bi-chevron-right"></i>
                 </a>
             </li>

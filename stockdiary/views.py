@@ -1397,6 +1397,7 @@ def diary_list(request):
         # 検索フィルター
         query = request.GET.get('query', '')
         tag_id = request.GET.get('tag', '')
+        sector = request.GET.get('sector', '')
         status = request.GET.get('status', '')
                 
         current_params = request.GET.copy()
@@ -1412,6 +1413,9 @@ def diary_list(request):
         
         if tag_id:
             queryset = queryset.filter(tags__id=tag_id)
+            
+        if sector:
+            queryset = queryset.filter(sector=sector)
         
         # 保有状態によるフィルタリング
         if status == 'active':
@@ -1449,8 +1453,10 @@ def diary_list(request):
             'current_params': current_params,
         }
         
-        # モーダル表示の場合はシンプルなテンプレートを使用
-        if tag_id and not query and not status:
+        # モーダル表示の場合は対応するテンプレートを使用
+        if sector and not query and not status and not tag_id:
+            return render(request, 'stockdiary/partials/diary_list_sector.html', context)
+        elif tag_id and not query and not status and not sector:
             return render(request, 'stockdiary/partials/diary_list_simple.html', context)
         else:
             return render(request, 'stockdiary/partials/diary_list.html', context)
@@ -1464,7 +1470,7 @@ def diary_list(request):
             f'<div class="alert alert-danger">日記リストの読み込みに失敗しました: {str(e)}</div>',
             status=500
         )
-        
+
 def tab_content(request, diary_id, tab_type):
     """日記カードのタブコンテンツを表示するビュー"""
     try:
