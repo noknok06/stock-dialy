@@ -1391,7 +1391,6 @@ def diary_list(request):
         return redirect(f'/stockdiary/?{request.GET.urlencode()}')
     
     try:
-        # 以下は元のコード
         queryset = StockDiary.objects.filter(user=request.user).order_by('-purchase_date')
         queryset = queryset.select_related('user').prefetch_related('tags', 'notes')
         
@@ -1431,7 +1430,7 @@ def diary_list(request):
             )
             
         # ページネーション
-        paginator = Paginator(queryset, 4)  # 1ページ4件
+        paginator = Paginator(queryset, 10)  # モーダルでは1ページ10件に設定
         page = request.GET.get('page', 1)
         
         try:
@@ -1447,10 +1446,14 @@ def diary_list(request):
             'page_obj': diaries,
             'tags': tags,
             'request': request,
-            'current_params': current_params,  # ← 追加
+            'current_params': current_params,
         }
         
-        return render(request, 'stockdiary/partials/diary_list.html', context)
+        # モーダル表示の場合はシンプルなテンプレートを使用
+        if tag_id and not query and not status:
+            return render(request, 'stockdiary/partials/diary_list_simple.html', context)
+        else:
+            return render(request, 'stockdiary/partials/diary_list.html', context)
     
     except Exception as e:
         import traceback
@@ -1461,7 +1464,7 @@ def diary_list(request):
             f'<div class="alert alert-danger">日記リストの読み込みに失敗しました: {str(e)}</div>',
             status=500
         )
-
+        
 def tab_content(request, diary_id, tab_type):
     """日記カードのタブコンテンツを表示するビュー"""
     try:
