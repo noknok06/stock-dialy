@@ -50,6 +50,10 @@ class StockDiaryForm(forms.ModelForm):
             self.fields['tags'].queryset = Tag.objects.filter(user=user)
             self.fields['analysis_template'].queryset = AnalysisTemplate.objects.filter(user=user)
         
+        if not self.instance.pk:  # Check if this is a new instance
+            from django.utils import timezone
+            self.fields['purchase_date'].initial = timezone.now().date()
+                    
         # ラベルを変更
         self.fields['stock_symbol'].label = "銘柄コード（任意）"
         self.fields['stock_symbol'].help_text = "例: 7203（トヨタ）、AAPL（アップル）など。入力すると自動検索します。"
