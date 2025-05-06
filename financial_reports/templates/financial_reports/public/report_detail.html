@@ -5,7 +5,6 @@
 {% block title %}{{ report.company.name }} - {{ report.fiscal_period }} | カブログ{% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="{% static 'css/report.css' %}">
 <style>
   /* 新しいUIスタイル - モダン化バージョン */
   :root {
@@ -1009,100 +1008,49 @@
 </div>
 
 <!-- テンプレートHTMLとJSを読み込む -->
+<!-- report_detail.html のJavaScript部分を修正 -->
+<!-- テンプレートHTMLとJSを読み込む -->
 <script src="{% static 'js/template.js' %}"></script>
 
-<!-- report_detail.html のインラインスクリプトの前に追加 -->
-<script id="report-data" type="application/json">
-  {{ report.data|safe }}
-  </script>
+<!-- データを安全に変換する方法を用意 -->
+<script>
+// デバッグ用：生データを記録
+console.log('生のデータ:', '{{ report.data|escapejs }}'.substring(0, 100) + '...');
+
+// window.reportDataをオブジェクトで直接設定（JSON.parseを使わない）
+window.reportData = {
+  companyName: "{{ report.company.name|escapejs }}",
+  companyCode: "{{ report.company.code|escapejs }}",
+  companyAbbr: "{{ report.company.abbr|escapejs }}",
+  companyColor: "{{ report.company.color|escapejs }}",
+  fiscalPeriod: "{{ report.fiscal_period|escapejs }}",
+  achievementBadge: "{{ report.achievement_badge|escapejs }}",
+  overallRating: "{{ report.overall_rating|escapejs }}",
   
-  <script>
-  // グローバルに本番データを設定
-  window.reportData = {{ report.data|safe }};
-  </script>
+  // レポートのJSONデータから主要な値を取得
+  // すべての可能性のある値をここに追加すると良い
+  overallSummary: "{{ report.data.overallSummary|default:'詳細な決算レポートをご覧ください'|escapejs }}",
+  recommendationText: "{{ report.data.recommendationText|default:'--|escapejs' }}",
+  starRating: "{{ report.data.starRating|default:'★★★☆☆'|escapejs }}",
+  investmentReason: "{{ report.data.investmentReason|default:''|escapejs }}",
   
-  <!-- 既存のインラインスクリプト -->
-  <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    console.log('レポート詳細インラインスクリプト実行開始');
-    
-    try {
-      // template.jsの処理に任せ、競合するコードは削除
-      
-      // 投資判断バッジのスタイル設定のみ残す
-      const recommendationText = document.getElementById('recommendation-text');
-      if (recommendationText) {
-        const text = recommendationText.textContent;
-        if (text && text.includes('買い')) {
-          recommendationText.classList.add('investment-buy');
-          recommendationText.classList.remove('investment-badge');
-        } else if (text && text.includes('売り')) {
-          recommendationText.classList.add('investment-sell');
-          recommendationText.classList.remove('investment-badge');
-        } else {
-          recommendationText.classList.add('investment-hold');
-          recommendationText.classList.remove('investment-badge');
-        }
-      }
-    } catch (error) {
-      console.error('データ処理中にエラーが発生しました:', error);
-    }
-    
-    // タブ切り替え機能
-    const tabButtons = document.querySelectorAll('.tab-button');
-    const tabContents = document.querySelectorAll('.tab-content');
-    const tabIndicator = document.querySelector('.tab-indicator');
-    
-    function updateTabIndicator(activeTab) {
-      if (!tabIndicator) return;
-      
-      const tabWidth = activeTab.offsetWidth;
-      const tabLeft = activeTab.offsetLeft;
-      
-      tabIndicator.style.width = `${tabWidth}px`;
-      tabIndicator.style.left = `${tabLeft}px`;
-    }
-    
-    // 初期インジケーター位置を設定
-    const activeTab = document.querySelector('.tab-button.active');
-    if (activeTab && tabIndicator) {
-      updateTabIndicator(activeTab);
-    }
-    
-    tabButtons.forEach(button => {
-      button.addEventListener('click', () => {
-        const tabId = button.getAttribute('data-tab');
-        
-        // アクティブなタブボタンとコンテンツを更新
-        tabButtons.forEach(btn => btn.classList.remove('active'));
-        tabContents.forEach(content => content.classList.remove('active'));
-        
-        button.classList.add('active');
-        document.getElementById(`tab-${tabId}`).classList.add('active');
-        
-        // タブインジケーターを更新
-        updateTabIndicator(button);
-      });
-    });
-    
-    // アコーディオン機能
-    const accordionHeaders = document.querySelectorAll('[data-toggle="collapse"]');
-    
-    accordionHeaders.forEach(header => {
-      header.addEventListener('click', () => {
-        const targetId = header.getAttribute('data-target');
-        const targetElement = document.querySelector(targetId);
-        const chevronIcon = header.querySelector('.chevron-icon');
-        
-        if (targetElement.classList.contains('show')) {
-          targetElement.classList.remove('show');
-          chevronIcon.classList.remove('rotated');
-        } else {
-          targetElement.classList.add('show');
-          chevronIcon.classList.add('rotated');
-        }
-      });
-    });
-  });
-  </script>
+  performanceRating: "{{ report.data.performanceRating|default:'5'|escapejs }}",
+  netIncome: "{{ report.data.netIncome|default:''|escapejs }}",
+  netIncomeChange: "{{ report.data.netIncomeChange|default:''|escapejs }}",
+  eps: "{{ report.data.eps|default:''|escapejs }}",
+  epsChange: "{{ report.data.epsChange|default:''|escapejs }}",
+  dividend: "{{ report.data.dividend|default:''|escapejs }}",
+  dividendChange: "{{ report.data.dividendChange|default:''|escapejs }}",
+  roe: "{{ report.data.roe|default:''|escapejs }}",
+  roeChange: "{{ report.data.roeChange|default:''|escapejs }}",
+  
+  // 空の配列またはオブジェクトをデフォルト設定
+  positivePoints: [],
+  negativePoints: [],
+  segments: []
+};
+
+// 詳細な分析のためにデータを表示
+console.log('設定したreportData:', window.reportData);
+</script>
 {% endblock %}
