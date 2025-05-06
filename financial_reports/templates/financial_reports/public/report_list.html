@@ -4,10 +4,324 @@
 
 {% block title %}企業決算レポート一覧 | カブログ{% endblock %}
 
+{% block head %}
+<style>
+  :root {
+    --primary: #3b82f6;
+    --primary-light: #eff6ff;
+    --primary-dark: #1e40af;
+    --success: #10b981;
+    --success-light: #d1fae5;
+    --warning: #f59e0b;
+    --warning-light: #fef3c7;
+    --danger: #ef4444;
+    --danger-light: #fee2e2;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-500: #6b7280;
+    --gray-700: #374151;
+    --gray-900: #111827;
+  }
+
+  body {
+    color: var(--gray-700);
+    background-color: #f8fafc;
+  }
+
+  .page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--gray-900);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .page-title i {
+    color: var(--primary);
+  }
+
+  .subtitle {
+    color: var(--gray-500);
+    margin-bottom: 1.5rem;
+  }
+
+  .title_header {
+    margin-bottom: 2rem;
+  }
+
+  .search-card {
+    border: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+
+  .search-card .card-body {
+    padding: 1.5rem;
+  }
+
+  .form-control, .form-select {
+    border-radius: 0.5rem;
+    border-color: var(--gray-200);
+    padding: 0.625rem 1rem;
+  }
+
+  .form-control:focus, .form-select:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    border-color: var(--primary);
+  }
+
+  .input-group-text {
+    background-color: var(--gray-50);
+    border-color: var(--gray-200);
+    color: var(--gray-500);
+  }
+
+  .btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    padding: 0.625rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+    font-weight: 500;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--primary-dark);
+  }
+
+  .report-card {
+    border: none;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+  }
+  
+  .report-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  .report-card .card-header {
+    padding: 1.25rem;
+  }
+
+  .report-card .card-body {
+    padding: 1.25rem;
+  }
+
+  .report-card .card-footer {
+    padding: 1rem 1.25rem;
+    background: transparent;
+  }
+
+  .company-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .badge {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 9999px;
+  }
+
+  .badge.bg-success {
+    background-color: var(--success) !important;
+  }
+
+  .badge.bg-warning {
+    background-color: var(--warning) !important;
+  }
+
+  .badge.bg-danger {
+    background-color: var(--danger) !important;
+  }
+
+  .badge.bg-light {
+    background-color: var(--gray-100) !important;
+    color: var(--gray-700) !important;
+  }
+
+  .text-success {
+    color: var(--success) !important;
+  }
+
+  .text-warning {
+    color: var(--warning) !important;
+  }
+
+  .text-danger {
+    color: var(--danger) !important;
+  }
+
+  .btn-outline-primary {
+    color: var(--primary);
+    border-color: var(--primary);
+  }
+
+  .btn-outline-primary:hover {
+    background-color: var(--primary);
+    color: white;
+  }
+
+  .pagination {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .pagination .page-link {
+    border-radius: 0.5rem;
+    margin: 0 0.25rem;
+    border: none;
+    color: var(--gray-700);
+    padding: 0.5rem 0.75rem;
+  }
+
+  .pagination .page-item.active .page-link {
+    background-color: var(--primary);
+    color: white;
+  }
+
+  .pagination .page-item.disabled .page-link {
+    color: var(--gray-300);
+    background-color: transparent;
+  }
+
+  .list-group-item {
+    border-left: none;
+    border-right: none;
+    border-color: var(--gray-100);
+    padding: 1rem;
+    transition: all 0.2s ease;
+  }
+
+  .list-group-item:hover {
+    background-color: var(--primary-light);
+  }
+
+  .list-group-item:first-child {
+    border-top: none;
+  }
+
+  .list-group-item-action:focus, .list-group-item-action:hover {
+    background-color: var(--primary-light);
+  }
+
+  .investment-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .investment-buy {
+    background-color: var(--success-light);
+    color: var(--success);
+  }
+
+  .investment-sell {
+    background-color: var(--danger-light);
+    color: var(--danger);
+  }
+
+  .investment-hold {
+    background-color: var(--warning-light);
+    color: var(--warning);
+  }
+
+  .star-rating {
+    color: #f59e0b;
+    letter-spacing: -1px;
+  }
+
+  /* モバイル対応 */
+  @media (max-width: 768px) {
+    .page-title {
+      font-size: 1.5rem;
+    }
+    
+    .report-card {
+      margin-bottom: 1rem;
+    }
+    
+    .search-form .col-md-2,
+    .search-form .col-md-3,
+    .search-form .col-md-4 {
+      margin-bottom: 1rem;
+    }
+
+    .company-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      font-size: 0.875rem;
+    }
+  }
+
+  /* アニメーション */
+  @keyframes fadeIn {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  .animated-card {
+    animation: fadeIn 0.5s ease forwards;
+  }
+
+  .report-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+  }
+
+  .empty-state i {
+    font-size: 4rem;
+    color: var(--gray-300);
+    margin-bottom: 1rem;
+  }
+
+  .empty-state h3 {
+    color: var(--gray-700);
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+
+  .empty-state p {
+    color: var(--gray-500);
+    max-width: 80%;
+    margin: 0 auto;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container">
+<div class="container py-4">
   <div class="title_header">
-    <h1 class="page-title d-flex">
+    <h1 class="page-title">
       <i class="bi bi-pie-chart"></i>
       企業決算レポート一覧
     </h1>
@@ -15,9 +329,9 @@
   </div>
   
   <!-- 検索・絞り込み -->
-  <div class="card shadow-sm mb-4">
+  <div class="card search-card">
     <div class="card-body">
-      <form method="get" action="{% url 'financial_reports:report_list' %}" class="row g-3">
+      <form method="get" action="{% url 'financial_reports:report_list' %}" class="row g-3 search-form">
         <div class="col-md-4">
           <div class="input-group">
             <span class="input-group-text"><i class="bi bi-search"></i></span>
@@ -42,7 +356,7 @@
         </div>
         <div class="col-md-2">
           <button type="submit" class="btn btn-primary w-100">
-            <i class="bi bi-filter"></i> 絞り込み
+            <i class="bi bi-filter me-2"></i> 絞り込み
           </button>
         </div>
       </form>
@@ -51,10 +365,10 @@
   
   <!-- レポート一覧 -->
   {% if reports %}
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4">
+    <div class="report-grid mb-4">
       {% for report in reports %}
-        <div class="col">
-          <div class="card shadow-sm h-100">
+        <div class="animated-card" style="animation-delay: {{ forloop.counter0|divisibleby:3 }}00ms">
+          <div class="card report-card h-100">
             <!-- レポートヘッダー -->
             <div class="card-header bg-white">
               <div class="d-flex align-items-center">
@@ -64,7 +378,7 @@
                   </div>
                 </div>
                 <div class="ms-3">
-                  <h5 class="card-title mb-0">{{ report.company.name }}</h5>
+                  <h5 class="card-title mb-0 fw-bold">{{ report.company.name }}</h5>
                   <p class="text-muted small mb-0">{{ report.company.code }}</p>
                 </div>
               </div>
@@ -72,37 +386,37 @@
             
             <!-- レポート内容 -->
             <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="d-flex justify-content-between align-items-center mb-3">
                 <span class="badge {% if report.overall_rating >= 7 %}bg-success{% elif report.overall_rating >= 4 %}bg-warning{% else %}bg-danger{% endif %}">
                   評価: {{ report.overall_rating }}
                 </span>
-                <span class="text-muted small">{{ report.fiscal_period }}</span>
+                <span class="badge bg-light">{{ report.fiscal_period }}</span>
               </div>
               
-              <p class="mb-2 card-text">{{ report.data.overallSummary|truncatechars:100 }}</p>
+              <p class="mb-3 card-text">{{ report.data.overallSummary|truncatechars:120 }}</p>
               
               <!-- 投資判断 -->
-              <div class="mt-3 p-2 bg-light rounded">
-                <div class="d-flex justify-content-between align-items-center">
-                  <span class="fw-bold">投資判断:</span>
-                  <span class="text-{% if report.data.recommendationText == '買い推奨' %}success{% elif report.data.recommendationText == '売り推奨' %}danger{% else %}warning{% endif %}">
+              <div class="p-3 rounded" style="background-color: var(--gray-50);">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="fw-bold text-sm">投資判断:</span>
+                  <span class="investment-badge {% if report.data.recommendationText == '買い推奨' %}investment-buy{% elif report.data.recommendationText == '売り推奨' %}investment-sell{% else %}investment-hold{% endif %}">
                     {{ report.data.recommendationText }}
                   </span>
                 </div>
-                <div class="text-center mt-1">
-                  <span class="text-warning">{{ report.data.starRating|default:"★★★☆☆" }}</span>
+                <div class="text-center">
+                  <span class="star-rating">{{ report.data.starRating|default:"★★★☆☆" }}</span>
                 </div>
               </div>
             </div>
             
             <!-- レポートフッター -->
-            <div class="card-footer bg-white border-top-0">
+            <div class="card-footer bg-white">
               <div class="d-flex justify-content-between align-items-center">
-                <small class="text-muted">
-                  <i class="bi bi-eye"></i> {{ report.view_count }} 閲覧
+                <small class="text-muted d-flex align-items-center">
+                  <i class="bi bi-eye me-1"></i> <span>{{ report.view_count }} 閲覧</span>
                 </small>
                 <a href="{% url 'financial_reports:report_detail' report.pk %}" class="btn btn-sm btn-outline-primary">
-                  詳細を見る <i class="bi bi-arrow-right"></i>
+                  詳細を見る <i class="bi bi-arrow-right ms-1"></i>
                 </a>
               </div>
             </div>
@@ -171,10 +485,10 @@
   {% else %}
     <!-- レポートがない場合 -->
     <div class="card shadow-sm mb-4">
-      <div class="card-body text-center py-5">
-        <i class="bi bi-file-earmark-x text-muted" style="font-size: 3rem;"></i>
-        <h3 class="mt-3">レポートがありません</h3>
-        <p class="text-muted">
+      <div class="card-body empty-state">
+        <i class="bi bi-file-earmark-x"></i>
+        <h3>レポートがありません</h3>
+        <p>
           現在公開されている決算レポートはありません。<br>
           後ほどご確認ください。
         </p>
@@ -185,26 +499,30 @@
   <!-- 最近の更新情報 -->
   <div class="card shadow-sm mb-4">
     <div class="card-header bg-white">
-      <h5 class="mb-0"><i class="bi bi-clock-history"></i> 最近の更新情報</h5>
+      <h5 class="mb-0 d-flex align-items-center">
+        <i class="bi bi-clock-history me-2 text-primary"></i> 最近の更新情報
+      </h5>
     </div>
-    <div class="card-body">
+    <div class="card-body p-0">
       <div class="list-group list-group-flush">
         {% for report in recent_reports|slice:":5" %}
           <a href="{% url 'financial_reports:report_detail' report.pk %}" class="list-group-item list-group-item-action">
             <div class="d-flex w-100 justify-content-between">
-              <h6 class="mb-1">{{ report.company.name }} ({{ report.company.code }})</h6>
+              <h6 class="mb-1 fw-bold">{{ report.company.name }} ({{ report.company.code }})</h6>
               <small class="text-muted">{{ report.updated_at|date:"Y/m/d" }}</small>
             </div>
             <p class="mb-1 small">{{ report.fiscal_period }} - {{ report.data.overallSummary|truncatechars:60 }}</p>
-            <div>
+            <div class="mt-2">
               <span class="badge {% if report.overall_rating >= 7 %}bg-success{% elif report.overall_rating >= 4 %}bg-warning{% else %}bg-danger{% endif %}">
                 評価: {{ report.overall_rating }}
               </span>
-              <span class="badge bg-light text-dark">{{ report.data.recommendationText }}</span>
+              <span class="investment-badge {% if report.data.recommendationText == '買い推奨' %}investment-buy{% elif report.data.recommendationText == '売り推奨' %}investment-sell{% else %}investment-hold{% endif %}">
+                {{ report.data.recommendationText }}
+              </span>
             </div>
           </a>
         {% empty %}
-          <div class="list-group-item text-center text-muted">
+          <div class="list-group-item text-center text-muted py-4">
             更新情報はありません
           </div>
         {% endfor %}
@@ -213,8 +531,18 @@
   </div>
   
   <!-- 免責事項 -->
-  <div class="alert alert-light small">
+  <div class="alert alert-light small p-4 rounded-3 mt-4">
     <p class="mb-0"><strong>免責事項:</strong> 当サイトの決算レポートは情報提供を目的としており、投資判断の参考情報として作成されています。投資に関する最終判断はお客様ご自身の責任において行ってください。また、本レポートの内容は作成時点での情報に基づいており、将来の運用成績等を保証するものではありません。</p>
   </div>
 </div>
+
+<script>
+  // アニメーション遅延を動的に設定 
+  document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.animated-card');
+    cards.forEach((card, index) => {
+      card.style.animationDelay = `${index * 0.1}s`;
+    });
+  });
+</script>
 {% endblock %}

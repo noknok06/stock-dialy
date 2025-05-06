@@ -65,35 +65,26 @@ function setCompanyData(data) {
     setElementText('star-rating', data.starRating || '');
     setElementText('investment-reason', data.investmentReason || '');
     
+    // 総合評価の円グラフとメーターに数値を表示して色付け
+    enhanceRatingVisuals(data);
+    
     // 業績ハイライト
     setElementText('performance-rating-badge', data.performanceRating ? `${data.performanceRating}/10` : '/10');
     setElementText('net-income', data.netIncome || '');
     setElementHTML('net-income-change', `
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-2 w-2 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-      </svg>
-      前年比 ${data.netIncomeChange || ''}
+      <i class="bi bi-graph-up-arrow me-1"></i> ${data.netIncomeChange || ''}
     `);
     setElementText('eps', data.eps || '');
     setElementHTML('eps-change', `
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-2 w-2 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-      </svg>
-      前年比 ${data.epsChange || ''}
+      <i class="bi bi-graph-up-arrow me-1"></i> ${data.epsChange || ''}
     `);
     setElementText('dividend', data.dividend || '');
     setElementHTML('dividend-change', `
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-2 w-2 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-      </svg>
-      前年比 ${data.dividendChange || ''}
+      <i class="bi bi-graph-up-arrow me-1"></i> ${data.dividendChange || ''}
     `);
     setElementText('roe', data.roe || '');
     setElementHTML('roe-change', `
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-2 w-2 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-      </svg>
-      ${data.roeChange || ''}
+      <i class="bi ${data.roeChange && data.roeChange.includes('-') ? 'bi-graph-down-arrow' : 'bi-graph-up-arrow'} me-1"></i> ${data.roeChange || ''}
     `);
     
     // 業績評価
@@ -178,7 +169,7 @@ function setCompanyData(data) {
       if (data.segments && Array.isArray(data.segments)) {
         data.segments.forEach(segment => {
           const div = document.createElement('div');
-          div.className = `bg-gradient-to-br ${segment.profit ? 'from-green-50 to-green-100 border border-green-200' : 'from-red-50 to-red-100 border border-red-200'} rounded-lg p-2`;
+          div.className = `segment-card ${segment.profit ? 'positive' : 'negative'}`;
           
           const titleDiv = document.createElement('div');
           titleDiv.className = `text-sm font-bold ${segment.profit ? 'text-green-800' : 'text-red-800'} mb-1`;
@@ -189,27 +180,16 @@ function setCompanyData(data) {
           valueDiv.textContent = segment.value || '';
           
           const changeDiv = document.createElement('div');
-          changeDiv.className = `flex items-center ${segment.profit ? 'text-green-600' : 'text-red-600'} text-xs`;
+          changeDiv.className = `change-indicator ${segment.change && segment.change.includes('-') ? 'negative' : 'positive'}`;
           
-          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-          svg.setAttribute('class', 'h-3 w-3 mr-1');
-          svg.setAttribute('fill', 'none');
-          svg.setAttribute('viewBox', '0 0 24 24');
-          svg.setAttribute('stroke', 'currentColor');
-          
-          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          path.setAttribute('stroke-linecap', 'round');
-          path.setAttribute('stroke-linejoin', 'round');
-          path.setAttribute('stroke-width', '2');
-          path.setAttribute('d', segment.profit ? 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' : 'M13 17h8m0 0V9m0 8l-8-8-4 4-6-6');
-          
-          svg.appendChild(path);
+          const icon = document.createElement('i');
+          icon.className = `bi ${segment.change && segment.change.includes('-') ? 'bi-graph-down-arrow' : 'bi-graph-up-arrow'} me-1`;
           
           const span = document.createElement('span');
           span.className = 'font-bold';
           span.textContent = segment.change || '';
           
-          changeDiv.appendChild(svg);
+          changeDiv.appendChild(icon);
           changeDiv.appendChild(span);
           
           const descP = document.createElement('p');
@@ -230,17 +210,11 @@ function setCompanyData(data) {
     setElementText('next-fiscal-rating-badge', `評価: ${data.nextFiscalRating || ''}/10`);
     setElementText('next-fiscal-net-income', data.nextFiscalNetIncome || '');
     setElementHTML('next-fiscal-net-income-change', `
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-      </svg>
-      前年比 ${data.nextFiscalNetIncomeChange || ''}
+      <i class="bi bi-graph-up-arrow me-1"></i> ${data.nextFiscalNetIncomeChange || ''}
     `);
     setElementText('next-fiscal-dividend', data.nextFiscalDividend || '');
     setElementHTML('next-fiscal-dividend-change', `
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-      </svg>
-      ${data.nextFiscalDividendChange || ''}
+      <i class="bi bi-graph-up-arrow me-1"></i> ${data.nextFiscalDividendChange || ''}
     `);
     setElementText('next-fiscal-highlight', data.nextFiscalHighlight || '');
     setElementText('next-fiscal-rating-text', data.nextFiscalRating ? `${data.nextFiscalRating}/10` : '/10');
@@ -250,36 +224,27 @@ function setCompanyData(data) {
     setElementText('next-fiscal-point-3', data.nextFiscalPoint3 || '');
     
     // 財務状態
-    setElementText('financial-rating-badge', `評価: ${data.financialRating || ''}/10`);
-    setElementText('equity-ratio', data.equityRatio || '');
-    setElementHTML('equity-ratio-change', `
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-      </svg>
-      ${data.equityRatioChange || ''}
-    `);
-    setElementText('operating-cash-flow', data.operatingCashFlow || '');
-    setElementHTML('operating-cash-flow-change', `
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-      </svg>
-      ${data.operatingCashFlowChange || ''}
-    `);
-    setElementText('liquid-assets', data.liquidAssets || '');
-    setElementHTML('liquid-assets-change', `
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-      </svg>
-      ${data.liquidAssetsChange || ''}
-    `);
-    setElementText('financial-rating-text', data.financialRating ? `${data.financialRating}/10` : '/10');
-    setElementText('financial-rating-category', data.financialRatingCategory || '');
-    setElementText('financial-point-1', data.financialPoint1 || '');
-    setElementText('financial-point-2', data.financialPoint2 || '');
-    setElementText('financial-point-3', data.financialPoint3 || '');
+    // setElementText('financial-rating-badge', `評価: ${data.financialRating || ''}/10`);
+    // setElementText('equity-ratio', data.equityRatio || '');
+    // setElementHTML('equity-ratio-change', `
+    //   <i class="bi bi-graph-up-arrow me-1"></i> ${data.equityRatioChange || ''}
+    // `);
+    // setElementText('operating-cash-flow', data.operatingCashFlow || '');
+    // setElementHTML('operating-cash-flow-change', `
+    //   <i class="bi bi-graph-up-arrow me-1"></i> ${data.operatingCashFlowChange || ''}
+    // `);
+    // setElementText('liquid-assets', data.liquidAssets || '');
+    // setElementHTML('liquid-assets-change', `
+    //   <i class="bi bi-graph-up-arrow me-1"></i> ${data.liquidAssetsChange || ''}
+    // `);
+    // setElementText('financial-rating-text', data.financialRating ? `${data.financialRating}/10` : '/10');
+    // setElementText('financial-rating-category', data.financialRatingCategory || '');
+    // setElementText('financial-point-1', data.financialPoint1 || '');
+    // setElementText('financial-point-2', data.financialPoint2 || '');
+    // setElementText('financial-point-3', data.financialPoint3 || '');
     
-    // データソース
-    setElementText('data-source', data.dataSource || '');
+    // // データソース
+    // setElementText('data-source', data.dataSource || '');
     
     // ポジティブポイント
     const positivePointsContainer = document.getElementById('positive-points');
@@ -289,8 +254,7 @@ function setCompanyData(data) {
       if (data.positivePoints && Array.isArray(data.positivePoints)) {
         data.positivePoints.forEach(point => {
           const li = document.createElement('li');
-          li.className = 'text-xs';
-          li.textContent = `• ${point}`;
+          li.textContent = point;
           positivePointsContainer.appendChild(li);
         });
       }
@@ -304,25 +268,78 @@ function setCompanyData(data) {
       if (data.negativePoints && Array.isArray(data.negativePoints)) {
         data.negativePoints.forEach(point => {
           const li = document.createElement('li');
-          li.className = 'text-xs';
-          li.textContent = `• ${point}`;
+          li.textContent = point;
           negativePointsContainer.appendChild(li);
         });
       }
     }
     
-    // 評価メーターの更新
-    updateRatingMeter('performance-rating-meter', data.performanceRating || 0);
-    updateRatingMeter('forecast-comparison-meter', data.forecastComparisonRating || 0);
-    updateRatingMeter('key-points-meter', data.keyPointsRating || 0);
-    updateRatingMeter('next-fiscal-meter', data.nextFiscalRating || 0);
-    updateRatingMeter('segment-rating-meter', data.segmentRating || 0);
-    updateRatingMeter('financial-rating-meter', data.financialRating || 0);
+    setRatingBarStyles({
+      'overview-rating-bar': data.overallRating,
+      'performance-rating-meter': data.performanceRating,
+      'forecast-comparison-meter': data.forecastComparisonRating,
+      'key-points-meter': data.keyPointsRating,
+      'next-fiscal-meter': data.nextFiscalRating,
+      'segment-rating-meter': data.segmentRating
+    });
+    
+    // 変動インジケーターのスタイル設定
+    styleChangeIndicators();
     
     console.log('データ表示完了');
   } catch (error) {
     console.error('データ表示中にエラーが発生しました:', error);
   }
+}
+
+// 評価の視覚的な表現を強化する関数
+function enhanceRatingVisuals(data) {
+  // 評価円に評価値を表示
+  const overviewRating = document.getElementById('overview-rating');
+  if (overviewRating) {
+    overviewRating.textContent = data.overallRating || '0';
+    
+    // アニメーション用のクラス追加
+    overviewRating.classList.add('animate-in');
+  }
+  
+  // 評価円のスタイルを評価に応じて変更
+  const ratingCircle = document.querySelector('.rating-circle');
+  if (ratingCircle) {
+    const rating = parseFloat(data.overallRating) || 0;
+    
+    // 評価によって円の色を変更
+    if (rating >= 7) {
+      ratingCircle.style.backgroundColor = 'rgba(16, 185, 129, 0.15)'; // success-light
+      ratingCircle.style.boxShadow = '0 0 0 6px rgba(16, 185, 129, 0.1)';
+    } else if (rating >= 4) {
+      ratingCircle.style.backgroundColor = 'rgba(245, 158, 11, 0.15)'; // warning-light
+      ratingCircle.style.boxShadow = '0 0 0 6px rgba(245, 158, 11, 0.1)';
+    } else {
+      ratingCircle.style.backgroundColor = 'rgba(239, 68, 68, 0.15)'; // danger-light
+      ratingCircle.style.boxShadow = '0 0 0 6px rgba(239, 68, 68, 0.1)';
+    }
+  }
+}
+
+// 変動インジケーターのスタイル設定
+function styleChangeIndicators() {
+  const changeIndicators = document.querySelectorAll('.change-indicator');
+  changeIndicators.forEach(indicator => {
+    const text = indicator.textContent;
+    if (!text) return;
+    
+    // 既にクラスが設定されている場合はスキップ
+    if (indicator.classList.contains('positive') || indicator.classList.contains('negative')) {
+      return;
+    }
+    
+    if (text && !text.includes('-')) {
+      indicator.classList.add('positive');
+    } else if (text) {
+      indicator.classList.add('negative');
+    }
+  });
 }
 
 // 評価メーターの更新関数
@@ -339,17 +356,246 @@ function updateRatingMeter(meterId, ratingValue) {
     const percentage = Math.min(Math.max(value * 10, 0), 100); // 0-100%の範囲に制限
     
     // 評価値に応じてメーターの幅と色を設定
-    meter.style.width = `${percentage}%`;
+    meter.style.width = '0%'; // 最初は0から始める（アニメーション用）
     
-    if (value >= 7) {
-      meter.className = 'rating-meter-value bg-green-600';
-    } else if (value >= 4) {
-      meter.className = 'rating-meter-value bg-yellow-500';
-    } else {
-      meter.className = 'rating-meter-value bg-red-500';
-    }
+    // トランジションを設定
+    meter.style.transition = 'width 1s ease-out, background-color 0.5s ease';
+    
+    // 少し遅延させてアニメーション効果を出す
+    setTimeout(() => {
+      meter.style.width = `${percentage}%`;
+      
+      // 評価に基づいて色を設定
+      if (value >= 7) {
+        meter.style.backgroundColor = 'var(--success)';
+        meter.classList.add('high-rating');
+      } else if (value >= 4) {
+        meter.style.backgroundColor = 'var(--warning)';
+        meter.classList.add('medium-rating');
+      } else {
+        meter.style.backgroundColor = 'var(--danger)';
+        meter.classList.add('low-rating');
+      }
+      
+      // 光沢エフェクトを追加
+      addShineEffect(meter);
+    }, 100);
   } catch (error) {
     console.error(`メーター「${meterId}」の更新中にエラーが発生しました:`, error);
+  }
+}
+// 評価メーターのスタイルを設定する関数 - 修正版
+function setRatingBarStyles(ratingBars) {
+  // スタイルの初期化 - 追加のスタイルがなければCSSに追加
+  addRatingBarStyles();
+  
+  // 各メーターを処理
+  Object.entries(ratingBars).forEach(([id, ratingValue], index) => {
+    const element = document.getElementById(id);
+    if (!element) {
+      console.warn(`メーター要素が見つかりません: ${id}`);
+      return;
+    }
+    
+    // 評価値を解析
+    const value = parseFloat(ratingValue) || 0;
+    const percentage = (value / 10) * 100;
+    
+    // アニメーションを準備
+    // 初期幅を0に設定してアニメーションの準備
+    element.style.width = '0%';
+    
+    // クラスをリセットして適切な色を設定
+    element.className = 'rating-bar-value';
+    
+    // 色クラスを追加
+    if (value >= 7) {
+      element.classList.add('high-rating');
+    } else if (value >= 4) {
+      element.classList.add('medium-rating');
+    } else {
+      element.classList.add('low-rating');
+    }
+    
+    // アニメーション用のクラスを追加
+    element.classList.add('animated-bar');
+    
+    // 遅延を付けてからトランジションを有効化
+    setTimeout(() => {
+      // トランジションを有効化
+      element.style.transition = 'width 1s ease-out';
+      // 実際の幅に設定
+      element.style.width = `${percentage}%`;
+    }, 50 + (index * 50));
+  });
+}
+
+// 評価バーのスタイルをCSSに追加 - 修正版
+function addRatingBarStyles() {
+  if (document.getElementById('rating-bar-styles')) return;
+  
+  const style = document.createElement('style');
+  style.id = 'rating-bar-styles';
+  style.textContent = `
+    .rating-bar-value {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .high-rating {
+      background-color: var(--success, #10b981) !important;
+    }
+    
+    .medium-rating {
+      background-color: var(--warning, #f59e0b) !important;
+    }
+    
+    .low-rating {
+      background-color: var(--danger, #ef4444) !important;
+    }
+    
+    .animated-bar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.4) 50%,
+        rgba(255, 255, 255, 0) 100%
+      );
+      background-size: 200% 100%;
+      animation: shine 2.5s infinite linear;
+      pointer-events: none;
+    }
+    
+    @keyframes shine {
+      from { background-position: -100% 0; }
+      to { background-position: 200% 0; }
+    }
+    
+    .animate-in {
+      animation: scaleIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    
+    @keyframes scaleIn {
+      0% { transform: scale(0); opacity: 0; }
+      70% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
+    .rating-circle::before {
+      content: '';
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      right: 5px;
+      bottom: 5px;
+      border-radius: 50%;
+      border: 2px dashed var(--primary, #2563eb);
+      border-left-color: transparent;
+      border-bottom-color: transparent;
+      animation: rotate 8s linear infinite;
+    }
+    
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+// 変動インジケーターのスタイル設定
+function styleChangeIndicators() {
+  const changeIndicators = document.querySelectorAll('.change-indicator');
+  changeIndicators.forEach(indicator => {
+    const text = indicator.textContent;
+    if (!text) return;
+    
+    // 既にクラスが設定されている場合はスキップ
+    if (indicator.classList.contains('positive') || indicator.classList.contains('negative')) {
+      return;
+    }
+    
+    if (text && !text.includes('-')) {
+      indicator.classList.add('positive');
+    } else if (text) {
+      indicator.classList.add('negative');
+    }
+  });
+}
+
+// 光沢エフェクトを追加する関数
+function addShineEffect(element) {
+  // すでに光沢エフェクトが適用されていたら何もしない
+  if (element.classList.contains('has-shine')) return;
+  
+  element.classList.add('has-shine');
+  element.style.position = 'relative';
+  element.style.overflow = 'hidden';
+  
+  // 光沢エフェクト用の疑似要素のスタイルを作成
+  if (!document.getElementById('shine-effect-style')) {
+    const style = document.createElement('style');
+    style.id = 'shine-effect-style';
+    style.textContent = `
+      .has-shine::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0) 0%,
+          rgba(255, 255, 255, 0.4) 50%,
+          rgba(255, 255, 255, 0) 100%
+        );
+        transform: translateX(-100%);
+        animation: shine 2s infinite;
+      }
+      
+      @keyframes shine {
+        100% {
+          transform: translateX(100%);
+        }
+      }
+      
+      .animate-in {
+        animation: scaleIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      
+      @keyframes scaleIn {
+        0% { transform: scale(0); opacity: 0; }
+        70% { transform: scale(1.1); opacity: 1; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+      
+      .rating-circle::before {
+        content: '';
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        right: 5px;
+        bottom: 5px;
+        border-radius: 50%;
+        border: 2px dashed var(--primary);
+        border-left-color: transparent;
+        border-bottom-color: transparent;
+        animation: rotate 8s linear infinite;
+      }
+      
+      @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(style);
   }
 }
 
@@ -384,26 +630,89 @@ function goToPage(pageNumber) {
   }
 }
 
+// タブ切り替え機能を初期化
+function initTabs() {
+  const tabButtons = document.querySelectorAll('.tab-button');
+  const tabContents = document.querySelectorAll('.tab-content');
+  const tabIndicator = document.querySelector('.tab-indicator');
+  
+  function updateTabIndicator(activeTab) {
+    if (!tabIndicator) return;
+    
+    const tabWidth = activeTab.offsetWidth;
+    const tabLeft = activeTab.offsetLeft;
+    
+    tabIndicator.style.width = `${tabWidth}px`;
+    tabIndicator.style.left = `${tabLeft}px`;
+  }
+  
+  // 初期インジケーター位置を設定
+  const activeTab = document.querySelector('.tab-button.active');
+  if (activeTab && tabIndicator) {
+    updateTabIndicator(activeTab);
+  }
+  
+  tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const tabId = button.getAttribute('data-tab');
+      
+      // アクティブなタブボタンとコンテンツを更新
+      tabButtons.forEach(btn => btn.classList.remove('active'));
+      tabContents.forEach(content => content.classList.remove('active'));
+      
+      button.classList.add('active');
+      document.getElementById(`tab-${tabId}`).classList.add('active');
+      
+      // タブインジケーターを更新
+      updateTabIndicator(button);
+    });
+  });
+}
+
+// アコーディオン機能を初期化
+function initAccordions() {
+  const accordionHeaders = document.querySelectorAll('[data-toggle="collapse"]');
+  
+  accordionHeaders.forEach(header => {
+    header.addEventListener('click', () => {
+      const targetId = header.getAttribute('data-target');
+      const targetElement = document.querySelector(targetId);
+      const chevronIcon = header.querySelector('.chevron-icon');
+      
+      if (targetElement.classList.contains('show')) {
+        targetElement.classList.remove('show');
+        chevronIcon.classList.remove('rotated');
+      } else {
+        targetElement.classList.add('show');
+        chevronIcon.classList.add('rotated');
+      }
+    });
+  });
+}
+
 // デバッグのためのページ読み込み完了イベントリスナー
 document.addEventListener('DOMContentLoaded', function() {
   console.log('template.js: DOMContentLoaded');
   console.log('ページ切り替え機能が利用可能です');
-});
-
-// レポートデータ初期化関数
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('レポート詳細インラインスクリプト実行開始');
   
+  // タブ切り替え機能を初期化
+  initTabs();
+  
+  // アコーディオン機能を初期化
+  initAccordions();
+  
+  // レポートデータを処理
   try {
     // レポートデータをJSONオブジェクトとして取得
     // Django テンプレートから渡されたデータがある場合はそれを使用
     let reportData;
     
     // Django テンプレートからのデータがある場合（実際の環境で使用）
-    if (typeof djangoReportData !== 'undefined') {
-      reportData = djangoReportData;
+    if (typeof report !== 'undefined' && report.data) {
+      reportData = report.data;
     } else {
       // テスト用データ（テンプレートからデータが渡されない場合）
+      console.log('レポートデータが見つかりません。テスト用データを使用します。');
       reportData = {'companyAbbr': 'MRB', 'companyColor': '#E60012', 'companyName': '丸紅株式会社', 'companyCode': '8002', 'fiscalPeriod': '2025年3月期 決算サマリー', 'achievementBadge': '過去2番目の高水準達成', 'overallRating': '8.5', 'overallRatingText': '優秀（7-9点）', 'overallSummary': '前期比6.7%増益となる5,030億円の純利益を計上し、従来見通しを上回る好業績。非資源分野は過去最高の3,230億円の実態純利益を達成。積極的な資本配分と株主還元も強化し、総合的に良好な決算内容。', 'recommendationText': '買い推奨', 'starRating': '★★★★☆', 'investmentReason': '非資源事業の安定的な収益拡大と積極的な株主還元策が評価でき、PER8.4倍と割安感もある。中期経営戦略で掲げる時価総額10兆円目標に向けた成長期待も投資魅力。', 'performanceRating': '8', 'netIncome': '5,030億円', 'netIncomeChange': '+316億円 (+6.7%)', 'eps': '302.78円', 'epsChange': '+23.16円 (+8.3%)', 'dividend': '95円', 'dividendChange': '+10円 (+11.8%)', 'roe': '14.2%', 'roeChange': '-1.0pt', 'performanceRatingCategory': '優秀', 'performancePoint1': '純利益5,030億円は従来見通しの5,000億円を上回り、過去2番目の高水準を達成', 'performancePoint2': '非資源分野の実態純利益は3,230億円と過去最高を更新（資源分野は1,300億円で減益）', 'performancePoint3': '年間配当は95円（中間45円、期末50円）と増配、自己株式取得も800億円規模で実施', 'sales': '7兆7,902億円', 'salesForecast': '7兆2,505億円', 'salesVsForecast': '+7.4%', 'operatingProfit': '2,723億円', 'operatingProfitForecast': '2,763億円', 'operatingProfitVsForecast': '-1.5%', 'netIncomeForecast': '4,714億円', 'netIncomeVsForecast': '+6.7%', 'forecastComparisonRating': '7', 'forecastComparisonCategory': '良好', 'forecastComparisonComment': '売上高と純利益は市場予想を上回り、営業利益は微減も全体として市場期待を上回る結果。特に非資源分野の好調が予想を上回る要因。', 'keyPointsRating': '8', 'keyPoints': [{'positive': true, 'text': '既存事業領域の強化により、年間4,500億円超の収益基盤を確立'}, {'positive': true, 'text': '基礎営業キャッシュフローは+6,066億円と過去最高を達成（前年度比+586億円）'}, {'positive': true, 'text': '戦略プラットフォーム型事業を中心とした非資源分野の利益成長が増益を牽引'}, {'positive': false, 'text': '資源分野の原料炭事業・石油ガス開発事業は市況下落等により減益（-160億円）'}], 'keyPointsRatingCategory': '優秀', 'keyPointsPoint1': '非資源分野の実態純利益が3,230億円と過去最高を達成し、ポートフォリオバランスの改善が進展', 'keyPointsPoint2': '基礎営業CFも+6,066億円と順調に成長（GC2021開始以降のCAGR8%）し、財務基盤が強化', 'keyPointsPoint3': '資源分野は市況下落の影響を受け1,300億円（-240億円）と減益も、全体をカバーする非資源の成長', 'nextFiscalRating': '7', 'nextFiscalNetIncome': '5,100億円', 'nextFiscalNetIncomeChange': '+70億円 (+1.4%)', 'nextFiscalDividend': '100円（予想）', 'nextFiscalDividendChange': '+5円', 'nextFiscalHighlight': '2期連続の高水準利益を目指す', 'nextFiscalRatingCategory': '良好', 'nextFiscalPoint1': '為替・市況前提を足元水準に見直し、2024年度実績対比で▲460億円の影響を見込む', 'nextFiscalPoint2': '既存事業の磨き込み、成長投資の利益貢献により、+550億円の増益を見込む', 'nextFiscalPoint3': '実態純利益は4,600億円（+90億円）と増益見通し、非資源分野が3,360億円（+130億円）と牽引', 'segmentRating': '8', 'segments': [{'name': 'ライフスタイル', 'value': '84億円', 'change': '-15億円', 'description': 'タイヤ関連事業等の減益', 'profit': true}, {'name': 'フォレストプロダクツ', 'value': '152億円', 'change': '+294億円', 'description': 'パルプ市況・販売数量増', 'profit': true}, {'name': 'アグリ事業', 'value': '457億円', 'change': '+42億円', 'description': '米国肥料卸売事業の増益', 'profit': true}, {'name': '金属', 'value': '1,235億円', 'change': '-400億円', 'description': '豪州鉄鉱石・原料炭の減益', 'profit': true}, {'name': 'エネルギー', 'value': '693億円', 'change': '+301億円', 'description': '為替換算調整勘定の実現益', 'profit': true}, {'name': '電力', 'value': '660億円', 'change': '+187億円', 'description': '海外電力IPP事業の売却益', 'profit': true}], 'segmentRatingCategory': '優秀', 'segmentPoint1': '多様な事業ポートフォリオを活かし、資源分野の下落をフォレストプロダクツ(+294億円)やエネルギー(+301億円)等でカバー', 'segmentPoint2': '食料・アグリ関連が全体として安定的に利益成長し、ポートフォリオの柱として機能', 'segmentPoint3': '次世代事業開発は先行投資段階であるが、将来的な成長領域を着実に構築中', 'financialRating': '8', 'equityRatio': '39.4%', 'equityRatioChange': '+0.6pt', 'operatingCashFlow': '+5,979億円', 'operatingCashFlowChange': '+1,555億円', 'liquidAssets': '5,691億円', 'liquidAssetsChange': '+629億円', 'financialRatingCategory': '優秀', 'financialPoint1': '親会社の所有者に帰属する持分比率が39.4%（+0.6pt）と着実に上昇し、財務安定性が向上', 'financialPoint2': '営業活動によるキャッシュフローが+5,979億円（+1,555億円）と大幅に増加し、投資余力が拡大', 'financialPoint3': 'ネットDEレシオが0.54倍（-0.01pt）と改善継続。財務健全性とリターンのバランスが良好', 'investmentDecisionText': '買い推奨', 'investmentStars': '★★★★☆', 'investmentDecisionReason': 'PER8.4倍・PBR1.13倍と割安感があり、配当利回り3.76%と株主還元も魅力的。2031年3月期までに時価総額10兆円超を目指す成長戦略も期待できる。', 'positivePoints': ['非資源分野の実態純利益が過去最高を達成し、事業ポートフォリオの安定性向上', '基礎営業キャッシュフローが過去最高を記録し、投資と株主還元の両立が可能に', '総還元性向を40%程度に引き上げ、積極的な株主還元策を継続', '年間配当を95円→100円に増配し、自己株取得も継続する株主還元の強化', 'PER8.4倍・PBR1.13倍と割安なバリュエーションで投資妙味が高い'], 'negativePoints': ['資源分野は市況下落の影響を受け減益となり、市況変動リスクが残存', '米ドル/円レートの想定が152.58円から140円へと円高前提となり、為替変動リスクあり', 'ROEが14.2%と前年度比-1.0ptの低下、資本効率のさらなる向上が課題', '世界経済の減速懸念や地政学リスクによる事業環境の不確実性が高まっている'], 'dataSource': '丸紅株式会社 2025年3月期決算IR資料（2025年5月2日公表）'};
     }
     
@@ -422,8 +731,6 @@ document.addEventListener('DOMContentLoaded', function() {
       negativePoints: []
     };
     
-    console.log('デフォルト値:', defaults);
-    
     // デフォルト値でデータを補完
     for (const [key, value] of Object.entries(defaults)) {
       if (!reportData[key] && value) {
@@ -431,12 +738,9 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
     
-    console.log('補完後データ:', reportData);
-    
     // テンプレートにデータを適用
     if (Object.keys(reportData).length > 0) {
       setCompanyData(reportData);
-      console.log('setCompanyData関数実行完了');
     } else {
       console.error('データが空のため、setCompanyData関数は実行しません');
     }
