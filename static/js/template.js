@@ -1,3 +1,5 @@
+// static/js/template.js
+
 // 企業決算データを設定するための関数
 function setCompanyData(data) {
   console.log('setCompanyData関数を実行:', data);

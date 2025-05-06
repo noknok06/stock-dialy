@@ -78,9 +78,22 @@ class CompanyDetailView(DetailView):
 class ReportDetailView(DetailView):
     model = FinancialReport
     template_name = 'financial_reports/public/report_detail.html'
+    context_object_name = 'report'  # この行を追加
     
     def get_queryset(self):
         return FinancialReport.objects.filter(is_public=True)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # デバッグ情報を追加
+        report = self.object
+        context['debug_info'] = {
+            'has_data': bool(report.data),
+            'data_keys': list(report.data.keys()) if report.data else [],
+            'data_sample': str(report.data)[:200] if report.data else 'データなし',
+            'data_type': type(report.data).__name__
+        }
+        return context
     
     def get(self, request, *args, **kwargs):
         response = super().get(request, *args, **kwargs)

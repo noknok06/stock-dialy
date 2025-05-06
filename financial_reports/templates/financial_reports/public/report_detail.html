@@ -6,7 +6,6 @@
 
 {% block head %}
 <link rel="stylesheet" href="{% static 'css/report.css' %}">
-
 {% endblock %}
 
 {% block content %}
@@ -538,31 +537,47 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    // レポートデータを設定
-    const reportData = {{ report.data|safe }};
+    console.log('レポート詳細インラインスクリプト実行開始');
     
-    // データ不足があれば基本情報で補完
-    const defaults = {
-      companyName: "{{ report.company.name }}",
-      companyCode: "{{ report.company.code }}",
-      companyAbbr: "{{ report.company.abbr }}",
-      companyColor: "{{ report.company.color }}",
-      fiscalPeriod: "{{ report.fiscal_period }}",
-      achievementBadge: "{{ report.achievement_badge }}",
-      overallRating: "{{ report.overall_rating }}",
-      positivePoints: [],
-      negativePoints: []
-    };
-    
-    // デフォルト値でデータを補完
-    for (const [key, value] of Object.entries(defaults)) {
-      if (!reportData[key]) {
-        reportData[key] = value;
+    try {
+      // レポートデータをJSONオブジェクトとして取得
+      const reportData = {{ report.data|safe }};
+      console.log('レポートデータ取得:', reportData);
+      
+      // データ不足があれば基本情報で補完
+      const defaults = {
+        companyName: "{{ report.company.name|escapejs }}",
+        companyCode: "{{ report.company.code|escapejs }}",
+        companyAbbr: "{{ report.company.abbr|escapejs }}",
+        companyColor: "{{ report.company.color|escapejs }}",
+        fiscalPeriod: "{{ report.fiscal_period|escapejs }}",
+        achievementBadge: "{{ report.achievement_badge|escapejs }}",
+        overallRating: "{{ report.overall_rating|escapejs }}",
+        positivePoints: [],
+        negativePoints: []
+      };
+      
+      console.log('デフォルト値:', defaults);
+      
+      // デフォルト値でデータを補完
+      for (const [key, value] of Object.entries(defaults)) {
+        if (!reportData[key] && value) {
+          reportData[key] = value;
+        }
       }
+      
+      console.log('補完後データ:', reportData);
+      
+      // テンプレートにデータを適用
+      if (Object.keys(reportData).length > 0) {
+        setCompanyData(reportData);
+        console.log('setCompanyData関数実行完了');
+      } else {
+        console.error('データが空のため、setCompanyData関数は実行しません');
+      }
+    } catch (error) {
+      console.error('データ処理中にエラーが発生しました:', error);
     }
-    
-    // テンプレートにデータを適用
-    setCompanyData(reportData);
   });
 </script>
 {% endblock %}
