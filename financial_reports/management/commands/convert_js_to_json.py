@@ -4,19 +4,24 @@ import sys
 import re
 
 def js_to_json(js_content):
-    # コメントを削除
+    # コメント削除
     js_content = re.sub(r'//.*?$', '', js_content, flags=re.MULTILINE)
-    
-    # 'const sampleCompanyData =' 部分を削除
+
+    # const 変数定義の削除
     js_content = re.sub(r'const\s+\w+\s*=\s*', '', js_content)
-    
-    # 末尾のセミコロンを削除
+
+    # 末尾のセミコロン削除
     js_content = js_content.strip().rstrip(';')
-    
-    # プロパティ名の引用符処理
-    js_content = re.sub(r'(\s*)([a-zA-Z0-9_]+)(\s*:)', r'\1"\2"\3', js_content)
-    
-    # 文字列として返す
+
+    # プロパティ名に引用符を追加（未対応のケースもあり）
+    js_content = re.sub(r'([,{]\s*)([a-zA-Z0-9_]+)(\s*:)', r'\1"\2"\3', js_content)
+
+    # シングルクォートをダブルクォートに変換（文字列にのみ有効）
+    js_content = re.sub(r"'", r'"', js_content)
+
+    # true/false/null → 小文字に置換（JSでは小文字、PythonもOK）
+    js_content = js_content.replace('True', 'true').replace('False', 'false').replace('None', 'null')
+
     return js_content
 
 if __name__ == "__main__":

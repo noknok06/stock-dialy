@@ -229,30 +229,6 @@
     overflow: hidden;
   }
   
-  .rating-bar-value {
-    height: 100%;
-    border-radius: 9999px;
-    transition: width 1s ease-out;
-    position: relative;
-    overflow: hidden;
-  }
-  
-  .rating-bar-value::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.2) 25%,
-      rgba(255, 255, 255, 0.3) 50%,
-      rgba(255, 255, 255, 0.2) 75%
-    );
-    background-size: 200% 100%;
-    animation: shine 2s infinite;
-  }
   
   @keyframes shine {
     0% { background-position: 100% 0; }
@@ -1035,101 +1011,38 @@
 <!-- テンプレートHTMLとJSを読み込む -->
 <script src="{% static 'js/template.js' %}"></script>
 
-<script>
+<!-- report_detail.html のインラインスクリプトの前に追加 -->
+<script id="report-data" type="application/json">
+  {{ report.data|safe }}
+  </script>
+  
+  <script>
+  // グローバルに本番データを設定
+  window.reportData = {{ report.data|safe }};
+  </script>
+  
+  <!-- 既存のインラインスクリプト -->
+  <script>
   document.addEventListener('DOMContentLoaded', function() {
     console.log('レポート詳細インラインスクリプト実行開始');
     
     try {
-      // レポートデータをJSONオブジェクトとして取得
-      const reportData = {{ report.data|safe }};
-      console.log('レポートデータ取得:', reportData);
+      // template.jsの処理に任せ、競合するコードは削除
       
-      // データ不足があれば基本情報で補完
-      const defaults = {
-        companyName: "{{ report.company.name|escapejs }}",
-        companyCode: "{{ report.company.code|escapejs }}",
-        companyAbbr: "{{ report.company.abbr|escapejs }}",
-        companyColor: "{{ report.company.color|escapejs }}",
-        fiscalPeriod: "{{ report.fiscal_period|escapejs }}",
-        achievementBadge: "{{ report.achievement_badge|escapejs }}",
-        overallRating: "{{ report.overall_rating|escapejs }}",
-        positivePoints: [],
-        negativePoints: []
-      };
-      
-      console.log('デフォルト値:', defaults);
-      
-      // デフォルト値でデータを補完
-      for (const [key, value] of Object.entries(defaults)) {
-        if (!reportData[key] && value) {
-          reportData[key] = value;
+      // 投資判断バッジのスタイル設定のみ残す
+      const recommendationText = document.getElementById('recommendation-text');
+      if (recommendationText) {
+        const text = recommendationText.textContent;
+        if (text && text.includes('買い')) {
+          recommendationText.classList.add('investment-buy');
+          recommendationText.classList.remove('investment-badge');
+        } else if (text && text.includes('売り')) {
+          recommendationText.classList.add('investment-sell');
+          recommendationText.classList.remove('investment-badge');
+        } else {
+          recommendationText.classList.add('investment-hold');
+          recommendationText.classList.remove('investment-badge');
         }
-      }
-      
-      console.log('補完後データ:', reportData);
-      
-      // テンプレートにデータを適用
-      if (Object.keys(reportData).length > 0) {
-        setCompanyData(reportData);
-        console.log('setCompanyData関数実行完了');
-        
-        // 追加: レーティングバーの設定
-        const overallRating = parseFloat(reportData.overallRating) || 0;
-        const overallPercentage = (overallRating / 10) * 100;
-        const overviewRatingBar = document.getElementById('overview-rating-bar');
-        if (overviewRatingBar) {
-          overviewRatingBar.style.width = `${overallPercentage}%`;
-          
-          setTimeout(() => {
-            if (overallRating >= 7) {
-              overviewRatingBar.classList.add('bg-success');
-              overviewRatingBar.classList.remove('bg-primary');
-            } else if (overallRating >= 4) {
-              overviewRatingBar.classList.add('bg-warning');
-              overviewRatingBar.classList.remove('bg-primary');
-            } else {
-              overviewRatingBar.classList.add('bg-danger');
-              overviewRatingBar.classList.remove('bg-primary');
-            }
-          }, 1000);
-        }
-        
-        // 概要評価表示
-        const overviewRating = document.getElementById('overview-rating');
-        if (overviewRating) {
-          overviewRating.textContent = reportData.overallRating;
-        }
-        
-        // 投資判断バッジのスタイル設定
-        const recommendationText = document.getElementById('recommendation-text');
-        if (recommendationText) {
-          const text = recommendationText.textContent;
-          if (text && text.includes('買い')) {
-            recommendationText.classList.add('investment-buy');
-            recommendationText.classList.remove('investment-badge');
-          } else if (text && text.includes('売り')) {
-            recommendationText.classList.add('investment-sell');
-            recommendationText.classList.remove('investment-badge');
-          } else {
-            recommendationText.classList.add('investment-hold');
-            recommendationText.classList.remove('investment-badge');
-          }
-        }
-        
-        // 変動インジケーターのスタイル設定
-        const changeIndicators = document.querySelectorAll('.change-indicator');
-        changeIndicators.forEach(indicator => {
-          const text = indicator.textContent;
-          if (text && !text.includes('-')) {
-            indicator.classList.add('positive');
-            indicator.innerHTML = `<i class="bi bi-graph-up-arrow me-1"></i>${text}`;
-          } else if (text) {
-            indicator.classList.add('negative');
-            indicator.innerHTML = `<i class="bi bi-graph-down-arrow me-1"></i>${text}`;
-          }
-        });
-      } else {
-        console.error('データが空のため、setCompanyData関数は実行しません');
       }
     } catch (error) {
       console.error('データ処理中にエラーが発生しました:', error);
@@ -1190,23 +1103,6 @@
         }
       });
     });
-    
-    // アニメーション
-    const animateElements = document.querySelectorAll('.rating-bar-value');
-    
-    function animateRatingBars() {
-      animateElements.forEach(element => {
-        const dataValue = element.getAttribute('data-value') || '0';
-        const value = parseFloat(dataValue);
-        const percentage = (value / 10) * 100;
-        
-        setTimeout(() => {
-          element.style.width = `${percentage}%`;
-        }, 300);
-      });
-    }
-    
-    animateRatingBars();
   });
-</script>
+  </script>
 {% endblock %}

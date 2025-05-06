@@ -384,9 +384,9 @@ function updateRatingMeter(meterId, ratingValue) {
     console.error(`メーター「${meterId}」の更新中にエラーが発生しました:`, error);
   }
 }
-// 評価メーターのスタイルを設定する関数 - 修正版
+// 評価メーターのスタイルを設定する関数 - アニメーション修正版
 function setRatingBarStyles(ratingBars) {
-  // スタイルの初期化 - 追加のスタイルがなければCSSに追加
+  // スタイルの初期化
   addRatingBarStyles();
   
   // 各メーターを処理
@@ -401,36 +401,29 @@ function setRatingBarStyles(ratingBars) {
     const value = parseFloat(ratingValue) || 0;
     const percentage = (value / 10) * 100;
     
-    // アニメーションを準備
-    // 初期幅を0に設定してアニメーションの準備
+    // 最初にトランジションをオフにして幅を0に設定
+    element.style.transition = 'none';
     element.style.width = '0%';
     
-    // クラスをリセットして適切な色を設定
+    // クラスをリセットして基本クラスを設定
     element.className = 'rating-bar-value';
-    
-    // 色クラスを追加
-    if (value >= 7) {
-      element.classList.add('high-rating');
-    } else if (value >= 4) {
-      element.classList.add('medium-rating');
-    } else {
-      element.classList.add('low-rating');
-    }
     
     // アニメーション用のクラスを追加
     element.classList.add('animated-bar');
     
-    // 遅延を付けてからトランジションを有効化
+    // 強制的なリフローを発生させてCSSの変更を確定
+    element.offsetWidth;
+    
+    // わずかな遅延を入れて処理を確実に分離
     setTimeout(() => {
-      // トランジションを有効化
+      // トランジションをオンにして幅を設定
       element.style.transition = 'width 1s ease-out';
-      // 実際の幅に設定
       element.style.width = `${percentage}%`;
-    }, 50 + (index * 50));
+    }, 100 + (index * 50));
   });
 }
 
-// 評価バーのスタイルをCSSに追加 - 修正版
+// 評価バーのスタイルをCSSに追加 - アニメーション修正版
 function addRatingBarStyles() {
   if (document.getElementById('rating-bar-styles')) return;
   
@@ -440,18 +433,10 @@ function addRatingBarStyles() {
     .rating-bar-value {
       position: relative;
       overflow: hidden;
-    }
-    
-    .high-rating {
-      background-color: var(--success, #10b981) !important;
-    }
-    
-    .medium-rating {
-      background-color: var(--warning, #f59e0b) !important;
-    }
-    
-    .low-rating {
-      background-color: var(--danger, #ef4444) !important;
+      background-color: var(--primary, #3b82f6); /* 常に同じ色を使用 */
+      width: 0%; /* 初期幅を0に設定 */
+      height: 100%;
+      border-radius: 9999px;
     }
     
     .animated-bar::after {
@@ -508,7 +493,6 @@ function addRatingBarStyles() {
   `;
   document.head.appendChild(style);
 }
-
 // 変動インジケーターのスタイル設定
 function styleChangeIndicators() {
   const changeIndicators = document.querySelectorAll('.change-indicator');
