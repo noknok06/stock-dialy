@@ -158,7 +158,8 @@
 </div>
 
 <!-- テンプレートHTMLとJSを読み込む -->
-<script src="{% static 'financial_reports/js/template.js' %}"></script>
+<!-- template.jsではなくプレビュー専用スクリプトを使用 -->
+<script src="{% static 'js/report-preview.js' %}"></script>
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
@@ -166,6 +167,38 @@
     const previewSection = document.getElementById('previewSection');
     const sampleJsonBtn = document.getElementById('sampleJsonBtn');
     const dataJsonField = document.getElementById('{{ form.data_json.id_for_label }}');
+    const reportForm = document.getElementById('reportForm');
+    
+    // フォーム送信前のデータ設定処理
+    reportForm.addEventListener('submit', function(e) {
+      try {
+        // JSONデータを取得
+        const jsonData = dataJsonField.value;
+        if (!jsonData) {
+          alert('JSONデータが入力されていません。');
+          e.preventDefault(); // 送信をキャンセル
+          return;
+        }
+        
+        // JSONデータをパース（構文チェック）
+        const data = JSON.parse(jsonData);
+        
+        // 隠しフィールドにJSONデータを設定
+        const hiddenDataField = document.querySelector('input[name="data"]');
+        if (hiddenDataField) {
+          hiddenDataField.value = JSON.stringify(data);
+          console.log('データフィールドに値を設定:', hiddenDataField.value.substring(0, 100) + '...');
+        } else {
+          console.error('data フィールドが見つかりません');
+          alert('エラー: データフィールドが見つかりません。');
+          e.preventDefault(); // 送信をキャンセル
+        }
+      } catch (e) {
+        alert('JSONデータの解析に失敗しました: ' + e.message);
+        console.error('JSONデータ解析エラー:', e);
+        e.preventDefault(); // 送信をキャンセル
+      }
+    });
     
     // プレビューボタン
     previewBtn.addEventListener('click', function() {
@@ -196,7 +229,7 @@
         
         // プレビューを表示
         previewSection.style.display = 'block';
-        setCompanyData(data);
+        setPreviewData(data); // 元の setCompanyData ではなく setPreviewData に変更
         
         // プレビューセクションまでスクロール
         previewSection.scrollIntoView({ behavior: 'smooth' });
@@ -205,7 +238,7 @@
       }
     });
     
-    // サンプルデータボタン
+    // サンプルデータボタン（この部分は変更なし）
     sampleJsonBtn.addEventListener('click', function() {
       const sampleData = {
         // 会社情報
