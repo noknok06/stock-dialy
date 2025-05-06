@@ -140,6 +140,7 @@ LOCAL_APPS = [
     'subscriptions',
     'maintenance',
     'contact',
+    'financial_reports',
 ]
 
 # インストール済みアプリ
