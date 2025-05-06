@@ -5,6 +5,7 @@
 {% block title %}{{ report.company.name }} - {{ report.fiscal_period }} | カブログ{% endblock %}
 
 {% block head %}
+<link rel="stylesheet" href="{% static 'css/report.css' %}">
 <style>
   /* 新しいUIスタイル - モダン化バージョン */
   :root {
@@ -1013,44 +1014,119 @@
 <script src="{% static 'js/template.js' %}"></script>
 
 <!-- データを安全に変換する方法を用意 -->
+<!-- 配列データ処理のための改善されたスクリプト -->
 <script>
-// デバッグ用：生データを記録
-console.log('生のデータ:', '{{ report.data|escapejs }}'.substring(0, 100) + '...');
-
-// window.reportDataをオブジェクトで直接設定（JSON.parseを使わない）
-window.reportData = {
-  companyName: "{{ report.company.name|escapejs }}",
-  companyCode: "{{ report.company.code|escapejs }}",
-  companyAbbr: "{{ report.company.abbr|escapejs }}",
-  companyColor: "{{ report.company.color|escapejs }}",
-  fiscalPeriod: "{{ report.fiscal_period|escapejs }}",
-  achievementBadge: "{{ report.achievement_badge|escapejs }}",
-  overallRating: "{{ report.overall_rating|escapejs }}",
+  // デバッグ用：生データを記録
+  console.log('生のデータ:', '{{ report.data|escapejs }}'.substring(0, 100) + '...');
   
-  // レポートのJSONデータから主要な値を取得
-  // すべての可能性のある値をここに追加すると良い
-  overallSummary: "{{ report.data.overallSummary|default:'詳細な決算レポートをご覧ください'|escapejs }}",
-  recommendationText: "{{ report.data.recommendationText|default:'--|escapejs' }}",
-  starRating: "{{ report.data.starRating|default:'★★★☆☆'|escapejs }}",
-  investmentReason: "{{ report.data.investmentReason|default:''|escapejs }}",
+  // 基本データを設定
+  window.reportData = {
+    // 基本情報
+    companyName: "{{ report.company.name|escapejs }}",
+    companyCode: "{{ report.company.code|escapejs }}",
+    companyAbbr: "{{ report.company.abbr|escapejs }}",
+    companyColor: "{{ report.company.color|escapejs }}",
+    fiscalPeriod: "{{ report.fiscal_period|escapejs }}",
+    achievementBadge: "{{ report.achievement_badge|escapejs }}",
+    overallRating: "{{ report.overall_rating|escapejs }}",
+    
+    // 総合評価
+    overallSummary: "{{ report.data.overallSummary|default:''|escapejs }}",
+    overallRatingText: "{{ report.data.overallRatingText|default:''|escapejs }}",
+    recommendationText: "{{ report.data.recommendationText|default:''|escapejs }}",
+    starRating: "{{ report.data.starRating|default:'★★★☆☆'|escapejs }}",
+    investmentReason: "{{ report.data.investmentReason|default:''|escapejs }}",
+    
+    // 業績
+    performanceRating: "{{ report.data.performanceRating|default:'5'|escapejs }}",
+    performanceRatingCategory: "{{ report.data.performanceRatingCategory|default:''|escapejs }}",
+    performancePoint1: "{{ report.data.performancePoint1|default:''|escapejs }}",
+    performancePoint2: "{{ report.data.performancePoint2|default:''|escapejs }}",
+    performancePoint3: "{{ report.data.performancePoint3|default:''|escapejs }}",
+    netIncome: "{{ report.data.netIncome|default:''|escapejs }}",
+    netIncomeChange: "{{ report.data.netIncomeChange|default:''|escapejs }}",
+    eps: "{{ report.data.eps|default:''|escapejs }}",
+    epsChange: "{{ report.data.epsChange|default:''|escapejs }}",
+    dividend: "{{ report.data.dividend|default:''|escapejs }}",
+    dividendChange: "{{ report.data.dividendChange|default:''|escapejs }}",
+    roe: "{{ report.data.roe|default:''|escapejs }}",
+    roeChange: "{{ report.data.roeChange|default:''|escapejs }}",
+    
+    // 市場予想比較
+    sales: "{{ report.data.sales|default:''|escapejs }}",
+    salesForecast: "{{ report.data.salesForecast|default:''|escapejs }}",
+    salesVsForecast: "{{ report.data.salesVsForecast|default:''|escapejs }}",
+    operatingProfit: "{{ report.data.operatingProfit|default:''|escapejs }}",
+    operatingProfitForecast: "{{ report.data.operatingProfitForecast|default:''|escapejs }}",
+    operatingProfitVsForecast: "{{ report.data.operatingProfitVsForecast|default:''|escapejs }}",
+    netIncomeForecast: "{{ report.data.netIncomeForecast|default:''|escapejs }}",
+    netIncomeVsForecast: "{{ report.data.netIncomeVsForecast|default:''|escapejs }}",
+    forecastComparisonRating: "{{ report.data.forecastComparisonRating|default:''|escapejs }}",
+    forecastComparisonCategory: "{{ report.data.forecastComparisonCategory|default:''|escapejs }}",
+    forecastComparisonComment: "{{ report.data.forecastComparisonComment|default:''|escapejs }}",
+    
+    // 決算ポイント
+    keyPointsRating: "{{ report.data.keyPointsRating|default:''|escapejs }}",
+    keyPointsRatingCategory: "{{ report.data.keyPointsRatingCategory|default:''|escapejs }}",
+    keyPointsPoint1: "{{ report.data.keyPointsPoint1|default:''|escapejs }}",
+    keyPointsPoint2: "{{ report.data.keyPointsPoint2|default:''|escapejs }}",
+    keyPointsPoint3: "{{ report.data.keyPointsPoint3|default:''|escapejs }}",
+    
+    // セグメント
+    segmentRating: "{{ report.data.segmentRating|default:''|escapejs }}",
+    segmentRatingCategory: "{{ report.data.segmentRatingCategory|default:''|escapejs }}",
+    segmentPoint1: "{{ report.data.segmentPoint1|default:''|escapejs }}",
+    segmentPoint2: "{{ report.data.segmentPoint2|default:''|escapejs }}",
+    segmentPoint3: "{{ report.data.segmentPoint3|default:''|escapejs }}",
+    
+    // 見通し
+    nextFiscalRating: "{{ report.data.nextFiscalRating|default:''|escapejs }}",
+    nextFiscalRatingCategory: "{{ report.data.nextFiscalRatingCategory|default:''|escapejs }}",
+    nextFiscalNetIncome: "{{ report.data.nextFiscalNetIncome|default:''|escapejs }}",
+    nextFiscalNetIncomeChange: "{{ report.data.nextFiscalNetIncomeChange|default:''|escapejs }}",
+    nextFiscalDividend: "{{ report.data.nextFiscalDividend|default:''|escapejs }}",
+    nextFiscalDividendChange: "{{ report.data.nextFiscalDividendChange|default:''|escapejs }}",
+    nextFiscalHighlight: "{{ report.data.nextFiscalHighlight|default:''|escapejs }}",
+    nextFiscalPoint1: "{{ report.data.nextFiscalPoint1|default:''|escapejs }}",
+    nextFiscalPoint2: "{{ report.data.nextFiscalPoint2|default:''|escapejs }}",
+    nextFiscalPoint3: "{{ report.data.nextFiscalPoint3|default:''|escapejs }}",
+    
+    // 配列データは手動で設定
+    positivePoints: [
+      {% for point in report.data.positivePoints %}
+        "{{ point|escapejs }}"{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ],
+    
+    negativePoints: [
+      {% for point in report.data.negativePoints %}
+        "{{ point|escapejs }}"{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ],
+    
+    keyPoints: [
+      {% for point in report.data.keyPoints %}
+        {
+          "positive": {% if point.positive %}true{% else %}false{% endif %},
+          "text": "{{ point.text|escapejs }}"
+        }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ],
+    
+    segments: [
+      {% for segment in report.data.segments %}
+        {
+          "name": "{{ segment.name|escapejs }}",
+          "value": "{{ segment.value|escapejs }}",
+          "change": "{{ segment.change|escapejs }}",
+          "description": "{{ segment.description|escapejs }}",
+          "profit": {% if segment.profit %}true{% else %}false{% endif %}
+        }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ]
+  };
   
-  performanceRating: "{{ report.data.performanceRating|default:'5'|escapejs }}",
-  netIncome: "{{ report.data.netIncome|default:''|escapejs }}",
-  netIncomeChange: "{{ report.data.netIncomeChange|default:''|escapejs }}",
-  eps: "{{ report.data.eps|default:''|escapejs }}",
-  epsChange: "{{ report.data.epsChange|default:''|escapejs }}",
-  dividend: "{{ report.data.dividend|default:''|escapejs }}",
-  dividendChange: "{{ report.data.dividendChange|default:''|escapejs }}",
-  roe: "{{ report.data.roe|default:''|escapejs }}",
-  roeChange: "{{ report.data.roeChange|default:''|escapejs }}",
-  
-  // 空の配列またはオブジェクトをデフォルト設定
-  positivePoints: [],
-  negativePoints: [],
-  segments: []
-};
-
-// 詳細な分析のためにデータを表示
-console.log('設定したreportData:', window.reportData);
-</script>
+  // デバッグ用
+  console.log('設定したreportData:', window.reportData);
+  </script>
 {% endblock %}
