@@ -1,0 +1,161 @@
+<!-- financial_reports/templates/financial_reports/admin/dashboard.html -->
+{% extends "base.html" %}
+
+{% block title %}決算レポート管理 | カブログ{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h1 class="h3 mb-4">決算レポート管理</h1>
+  
+  <div class="row">
+    <div class="col-md-3 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">クイックリンク</h5>
+          <div class="list-group mt-3">
+            <a href="{% url 'financial_reports:company_create' %}" class="list-group-item list-group-item-action">
+              <i class="bi bi-building-add"></i> 企業新規登録
+            </a>
+            <a href="{% url 'financial_reports:report_create' %}" class="list-group-item list-group-item-action">
+              <i class="bi bi-file-earmark-plus"></i> レポート新規作成
+            </a>
+            <a href="{% url 'financial_reports:report_list' %}" class="list-group-item list-group-item-action">
+              <i class="bi bi-eye"></i> 公開ページを表示
+            </a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card shadow-sm mt-4">
+        <div class="card-body">
+          <h5 class="card-title">統計情報</h5>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              企業数
+              <span class="badge bg-primary rounded-pill">{{ companies.count }}</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              レポート数
+              <span class="badge bg-primary rounded-pill">{{ reports.count }}</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              公開レポート数
+              <span class="badge bg-success rounded-pill">{{ reports.filter.is_public.count }}</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-9">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+          <h5 class="mb-0">レポート一覧</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>企業</th>
+                  <th>決算期</th>
+                  <th>総合評価</th>
+                  <th>更新日</th>
+                  <th>状態</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for report in reports %}
+                <tr>
+                  <td>{{ report.company.name }} ({{ report.company.code }})</td>
+                  <td>{{ report.fiscal_period }}</td>
+                  <td>{{ report.overall_rating }}</td>
+                  <td>{{ report.updated_at|date:"Y/m/d" }}</td>
+                  <td>
+                    <span class="badge bg-{% if report.is_public %}success{% else %}warning{% endif %}">
+                      {{ report.is_public|yesno:"公開中,非公開" }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="btn-group btn-group-sm">
+                      <a href="{% url 'financial_reports:report_detail' report.pk %}" class="btn btn-outline-primary">
+                        <i class="bi bi-eye"></i>
+                      </a>
+                      <a href="{% url 'financial_reports:report_update' report.pk %}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil"></i>
+                      </a>
+                      <form method="post" action="{% url 'financial_reports:report_toggle_publish' report.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-primary">
+                          <i class="bi bi-{% if report.is_public %}eye-slash{% else %}eye{% endif %}"></i>
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="6" class="text-center">レポートがありません</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <h5 class="mb-0">企業一覧</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>コード</th>
+                  <th>企業名</th>
+                  <th>略称</th>
+                  <th>レポート数</th>
+                  <th>状態</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for company in companies %}
+                <tr>
+                  <td>{{ company.code }}</td>
+                  <td>{{ company.name }}</td>
+                  <td>{{ company.abbr }}</td>
+                  <td>{{ company.reports.count }}</td>
+                  <td>
+                    <span class="badge bg-{% if company.is_public %}success{% else %}warning{% endif %}">
+                      {{ company.is_public|yesno:"公開中,非公開" }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="btn-group btn-group-sm">
+                      <a href="{% url 'financial_reports:company_detail' company.pk %}" class="btn btn-outline-primary">
+                        <i class="bi bi-eye"></i>
+                      </a>
+                      <a href="{% url 'financial_reports:company_update' company.pk %}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil"></i>
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="6" class="text-center">企業情報がありません</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

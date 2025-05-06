@@ -1,0 +1,220 @@
+<!-- financial_reports/templates/financial_reports/public/report_list.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}企業決算レポート一覧 | カブログ{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="title_header">
+    <h1 class="page-title d-flex">
+      <i class="bi bi-pie-chart"></i>
+      企業決算レポート一覧
+    </h1>
+    <p class="subtitle">企業の決算情報をわかりやすくまとめたレポートを閲覧できます。</p>
+  </div>
+  
+  <!-- 検索・絞り込み -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <form method="get" action="{% url 'financial_reports:report_list' %}" class="row g-3">
+        <div class="col-md-4">
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" name="q" class="form-control" placeholder="企業名・コード・キーワード" value="{{ request.GET.q }}">
+          </div>
+        </div>
+        <div class="col-md-3">
+          <select name="rating" class="form-select">
+            <option value="">評価で絞り込み</option>
+            <option value="high" {% if request.GET.rating == 'high' %}selected{% endif %}>高評価 (7-10点)</option>
+            <option value="medium" {% if request.GET.rating == 'medium' %}selected{% endif %}>中評価 (4-6点)</option>
+            <option value="low" {% if request.GET.rating == 'low' %}selected{% endif %}>低評価 (1-3点)</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select name="recommendation" class="form-select">
+            <option value="">投資判断で絞り込み</option>
+            <option value="buy" {% if request.GET.recommendation == 'buy' %}selected{% endif %}>買い推奨</option>
+            <option value="neutral" {% if request.GET.recommendation == 'neutral' %}selected{% endif %}>中立</option>
+            <option value="sell" {% if request.GET.recommendation == 'sell' %}selected{% endif %}>売り推奨</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-filter"></i> 絞り込み
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- レポート一覧 -->
+  {% if reports %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4">
+      {% for report in reports %}
+        <div class="col">
+          <div class="card shadow-sm h-100">
+            <!-- レポートヘッダー -->
+            <div class="card-header bg-white">
+              <div class="d-flex align-items-center">
+                <div class="flex-shrink-0">
+                  <div class="company-logo" style="background-color: {{ report.data.companyColor|default:'#3B82F6' }};">
+                    {{ report.company.abbr }}
+                  </div>
+                </div>
+                <div class="ms-3">
+                  <h5 class="card-title mb-0">{{ report.company.name }}</h5>
+                  <p class="text-muted small mb-0">{{ report.company.code }}</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- レポート内容 -->
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge {% if report.overall_rating >= 7 %}bg-success{% elif report.overall_rating >= 4 %}bg-warning{% else %}bg-danger{% endif %}">
+                  評価: {{ report.overall_rating }}
+                </span>
+                <span class="text-muted small">{{ report.fiscal_period }}</span>
+              </div>
+              
+              <p class="mb-2 card-text">{{ report.data.overallSummary|truncatechars:100 }}</p>
+              
+              <!-- 投資判断 -->
+              <div class="mt-3 p-2 bg-light rounded">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="fw-bold">投資判断:</span>
+                  <span class="text-{% if report.data.recommendationText == '買い推奨' %}success{% elif report.data.recommendationText == '売り推奨' %}danger{% else %}warning{% endif %}">
+                    {{ report.data.recommendationText }}
+                  </span>
+                </div>
+                <div class="text-center mt-1">
+                  <span class="text-warning">{{ report.data.starRating|default:"★★★☆☆" }}</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- レポートフッター -->
+            <div class="card-footer bg-white border-top-0">
+              <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                  <i class="bi bi-eye"></i> {{ report.view_count }} 閲覧
+                </small>
+                <a href="{% url 'financial_reports:report_detail' report.pk %}" class="btn btn-sm btn-outline-primary">
+                  詳細を見る <i class="bi bi-arrow-right"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    
+    <!-- ページネーション -->
+    {% if is_paginated %}
+    <nav aria-label="ページナビゲーション">
+      <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="最初">
+              <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="前へ">
+              <span aria-hidden="true">&laquo;</span>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled">
+            <span class="page-link">&laquo;&laquo;</span>
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link">&laquo;</span>
+          </li>
+        {% endif %}
+        
+        {% for i in paginator.page_range %}
+          {% if page_obj.number == i %}
+            <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+          {% elif i > page_obj.number|add:"-3" and i < page_obj.number|add:"3" %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a>
+            </li>
+          {% endif %}
+        {% endfor %}
+        
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="次へ">
+              <span aria-hidden="true">&raquo;</span>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="最後">
+              <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled">
+            <span class="page-link">&raquo;</span>
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link">&raquo;&raquo;</span>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+    
+  {% else %}
+    <!-- レポートがない場合 -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-body text-center py-5">
+        <i class="bi bi-file-earmark-x text-muted" style="font-size: 3rem;"></i>
+        <h3 class="mt-3">レポートがありません</h3>
+        <p class="text-muted">
+          現在公開されている決算レポートはありません。<br>
+          後ほどご確認ください。
+        </p>
+      </div>
+    </div>
+  {% endif %}
+  
+  <!-- 最近の更新情報 -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-white">
+      <h5 class="mb-0"><i class="bi bi-clock-history"></i> 最近の更新情報</h5>
+    </div>
+    <div class="card-body">
+      <div class="list-group list-group-flush">
+        {% for report in recent_reports|slice:":5" %}
+          <a href="{% url 'financial_reports:report_detail' report.pk %}" class="list-group-item list-group-item-action">
+            <div class="d-flex w-100 justify-content-between">
+              <h6 class="mb-1">{{ report.company.name }} ({{ report.company.code }})</h6>
+              <small class="text-muted">{{ report.updated_at|date:"Y/m/d" }}</small>
+            </div>
+            <p class="mb-1 small">{{ report.fiscal_period }} - {{ report.data.overallSummary|truncatechars:60 }}</p>
+            <div>
+              <span class="badge {% if report.overall_rating >= 7 %}bg-success{% elif report.overall_rating >= 4 %}bg-warning{% else %}bg-danger{% endif %}">
+                評価: {{ report.overall_rating }}
+              </span>
+              <span class="badge bg-light text-dark">{{ report.data.recommendationText }}</span>
+            </div>
+          </a>
+        {% empty %}
+          <div class="list-group-item text-center text-muted">
+            更新情報はありません
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  
+  <!-- 免責事項 -->
+  <div class="alert alert-light small">
+    <p class="mb-0"><strong>免責事項:</strong> 当サイトの決算レポートは情報提供を目的としており、投資判断の参考情報として作成されています。投資に関する最終判断はお客様ご自身の責任において行ってください。また、本レポートの内容は作成時点での情報に基づいており、将来の運用成績等を保証するものではありません。</p>
+  </div>
+</div>
+{% endblock %}

@@ -160,6 +160,17 @@ class IPFilterMiddleware:
             '/stripe/',
             '/webhook/'
         ]
+        
+        # financial_reports アプリのパスを除外
+        excluded_paths = [
+            '/admin/financial_reports/',
+        ]
+        
+        # 除外パスと一致する場合はチェックしない
+        for path_prefix in excluded_paths:
+            if path.startswith(path_prefix):
+                return False
+                
         return any(path.startswith(prefix) for prefix in sensitive_paths)
     
     def _is_blacklisted(self, ip):

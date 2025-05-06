@@ -1,0 +1,254 @@
+<!-- financial_reports/templates/financial_reports/admin/report_form.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+{% if form.instance.pk %}決算レポート編集{% else %}新規決算レポート{% endif %} | カブログ
+{% endblock %}
+
+{% block head %}
+<style>
+  .form-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    background-color: #f8f9fa;
+  }
+  
+  .form-section-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #4f46e5;
+  }
+  
+  .preview-section {
+    margin-top: 2rem;
+    display: none;
+  }
+  
+  .preview-container {
+    max-width: 100%;
+    margin: 0 auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  .json-sample-button {
+    position: absolute;
+    right: 20px;
+    top: 10px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="mb-4">
+    <a href="{% url 'financial_reports:admin_dashboard' %}" class="btn btn-sm btn-outline-primary">
+      <i class="bi bi-arrow-left"></i> ダッシュボードに戻る
+    </a>
+  </div>
+  
+  <h1 class="h3 mb-4">
+    {% if form.instance.pk %}決算レポート編集{% else %}新規決算レポート{% endif %}
+  </h1>
+  
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <form method="post" id="reportForm" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <!-- 基本情報 -->
+        <div class="form-section">
+          <h3 class="form-section-title">基本情報</h3>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="{{ form.company.id_for_label }}" class="form-label">企業</label>
+              {{ form.company }}
+              {% if form.company.errors %}
+                <div class="text-danger">{{ form.company.errors }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="{{ form.fiscal_period.id_for_label }}" class="form-label">決算期</label>
+              {{ form.fiscal_period }}
+              {% if form.fiscal_period.errors %}
+                <div class="text-danger">{{ form.fiscal_period.errors }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="{{ form.achievement_badge.id_for_label }}" class="form-label">業績バッジ</label>
+              {{ form.achievement_badge }}
+              {% if form.achievement_badge.errors %}
+                <div class="text-danger">{{ form.achievement_badge.errors }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-4 mb-3">
+              <label for="{{ form.overall_rating.id_for_label }}" class="form-label">総合評価 (1-10)</label>
+              {{ form.overall_rating }}
+              {% if form.overall_rating.errors %}
+                <div class="text-danger">{{ form.overall_rating.errors }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-2 mb-3">
+              <label for="{{ form.is_public.id_for_label }}" class="form-label">公開設定</label>
+              <div class="form-check form-switch mt-2">
+                {{ form.is_public }}
+                <label class="form-check-label" for="{{ form.is_public.id_for_label }}">公開する</label>
+              </div>
+              {% if form.is_public.errors %}
+                <div class="text-danger">{{ form.is_public.errors }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        
+        <!-- JSONデータ入力 -->
+        <div class="form-section position-relative">
+          <h3 class="form-section-title">レポートデータ (JSON形式)</h3>
+          
+          <button type="button" id="sampleJsonBtn" class="btn btn-sm btn-outline-secondary json-sample-button">
+            <i class="bi bi-file-earmark-code"></i> サンプルデータ
+          </button>
+          
+          <div class="mb-3">
+            <label for="{{ form.json_file.id_for_label }}" class="form-label">JSONファイル</label>
+            {{ form.json_file }}
+            <div class="form-text">{{ form.json_file.help_text }}</div>
+            {% if form.json_file.errors %}
+              <div class="text-danger">{{ form.json_file.errors }}</div>
+            {% endif %}
+          </div>
+          
+          <div class="mb-3">
+            <label for="{{ form.data_json.id_for_label }}" class="form-label">JSONデータ</label>
+            {{ form.data_json }}
+            <div class="form-text">{{ form.data_json.help_text }}</div>
+            {% if form.data_json.errors %}
+              <div class="text-danger">{{ form.data_json.errors }}</div>
+            {% endif %}
+          </div>
+          
+          {{ form.data }}
+        </div>
+        
+        <!-- プレビューセクション -->
+        <div class="preview-section" id="previewSection">
+          <h3 class="form-section-title">プレビュー</h3>
+          <div id="preview-container" class="preview-container"></div>
+        </div>
+        
+        <!-- 送信ボタン -->
+        <div class="d-flex justify-content-between mt-4">
+          <button type="button" id="previewBtn" class="btn btn-secondary">
+            <i class="bi bi-eye"></i> プレビュー
+          </button>
+          <div>
+            <a href="{% url 'financial_reports:admin_dashboard' %}" class="btn btn-light me-2">キャンセル</a>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-save"></i> 保存
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- テンプレートHTMLとJSを読み込む -->
+<script src="{% static 'financial_reports/js/template.js' %}"></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const previewBtn = document.getElementById('previewBtn');
+    const previewSection = document.getElementById('previewSection');
+    const sampleJsonBtn = document.getElementById('sampleJsonBtn');
+    const dataJsonField = document.getElementById('{{ form.data_json.id_for_label }}');
+    
+    // プレビューボタン
+    previewBtn.addEventListener('click', function() {
+      try {
+        // JSONデータを取得
+        const jsonData = dataJsonField.value;
+        if (!jsonData) {
+          alert('JSONデータが入力されていません。');
+          return;
+        }
+        
+        const data = JSON.parse(jsonData);
+        
+        // 会社情報とレポート情報を補完
+        const companySelect = document.getElementById('{{ form.company.id_for_label }}');
+        const companyName = companySelect.options[companySelect.selectedIndex].text;
+        const companyCode = companySelect.value;
+        const fiscalPeriod = document.getElementById('{{ form.fiscal_period.id_for_label }}').value;
+        const achievementBadge = document.getElementById('{{ form.achievement_badge.id_for_label }}').value;
+        const overallRating = document.getElementById('{{ form.overall_rating.id_for_label }}').value;
+        
+        // データ補完
+        if (!data.companyName) data.companyName = companyName;
+        if (!data.companyCode) data.companyCode = companyCode;
+        if (!data.fiscalPeriod) data.fiscalPeriod = fiscalPeriod;
+        if (!data.achievementBadge) data.achievementBadge = achievementBadge;
+        if (!data.overallRating) data.overallRating = overallRating;
+        
+        // プレビューを表示
+        previewSection.style.display = 'block';
+        setCompanyData(data);
+        
+        // プレビューセクションまでスクロール
+        previewSection.scrollIntoView({ behavior: 'smooth' });
+      } catch (e) {
+        alert('JSONデータの解析に失敗しました: ' + e.message);
+      }
+    });
+    
+    // サンプルデータボタン
+    sampleJsonBtn.addEventListener('click', function() {
+      const sampleData = {
+        // 会社情報
+        companyAbbr: "MRB",
+        companyColor: "#E60012", 
+        companyName: "丸紅株式会社",
+        companyCode: "8002",
+        fiscalPeriod: "2025年3月期 決算サマリー",
+        achievementBadge: "過去2番目の高水準達成",
+        
+        // 総合評価
+        overallRating: "8.5",
+        overallRatingText: "優秀（7-9点）",
+        overallSummary: "前期比6.7%増益となる5,030億円の純利益を計上し、従来見通しを上回る好業績。非資源分野は過去最高の3,230億円の実態純利益を達成。積極的な資本配分と株主還元も強化し、総合的に良好な決算内容。",
+        recommendationText: "買い推奨",
+        starRating: "★★★★☆",
+        investmentReason: "非資源事業の安定的な収益拡大と積極的な株主還元策が評価でき、PER8.4倍と割安感もある。中期経営戦略で掲げる時価総額10兆円目標に向けた成長期待も投資魅力。",
+        
+        // 業績ハイライト
+        performanceRating: "8",
+        netIncome: "5,030億円",
+        netIncomeChange: "+316億円 (+6.7%)",
+        eps: "302.78円",
+        epsChange: "+23.16円 (+8.3%)",
+        dividend: "95円",
+        dividendChange: "+10円 (+11.8%)",
+        roe: "14.2%",
+        roeChange: "-1.0pt",
+        
+        // 最低限必要なその他の項目（サンプルデータは省略）
+        positivePoints: [
+          "非資源分野の実態純利益が過去最高を達成",
+          "基礎営業キャッシュフローが過去最高を記録"
+        ],
+        negativePoints: [
+          "資源分野は市況下落の影響を受け減益",
+          "世界経済の減速懸念や地政学リスクによる不確実性"
+        ]
+      };
+      
+      // テキストエリアに設定
+      dataJsonField.value = JSON.stringify(sampleData, null, 2);
+    });
+  });
+</script>
+{% endblock %}
