@@ -101,8 +101,10 @@ class ReportDetailView(DetailView):
         
         # 閲覧履歴を記録
         report = self.object
-        ip_address = self.request.META.get('REMOTE_ADDR', '0.0.0.0')
-        user_agent = self.request.META.get('HTTP_USER_AGENT', '')
+        
+        # IPアドレスを「0.0.0.0」に固定（データベース制約を満たすため）
+        ip_address = '0.0.0.0'  # 固定値を使用
+        user_agent = request.META.get('HTTP_USER_AGENT', '')
         
         ReportView.objects.create(
             report=report,

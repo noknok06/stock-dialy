@@ -81,14 +81,6 @@ class ReportView(models.Model):
         related_name='views',
         verbose_name=_('レポート')
     )
-    ip_address = models.GenericIPAddressField(_('IPアドレス'))
+    ip_address = models.GenericIPAddressField(_('IPアドレス'), null=True, blank=True)  # ここをnull=Trueに変更
     user_agent = models.TextField(_('ユーザーエージェント'), blank=True)
     timestamp = models.DateTimeField(_('閲覧日時'), auto_now_add=True)
-
-    class Meta:
-        verbose_name = _('閲覧履歴')
-        verbose_name_plural = _('閲覧履歴')
-        ordering = ['-timestamp']
-
-    def __str__(self):
-        return f"{self.report} - {self.timestamp}"
