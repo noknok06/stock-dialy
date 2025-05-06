@@ -1,4 +1,5 @@
 # financial_reports/views.py
+from django.db import models
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, TemplateView, View
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.shortcuts import get_object_or_404
