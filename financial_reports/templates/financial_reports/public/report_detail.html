@@ -6,6 +6,7 @@
 
 {% block head %}
 <link rel="stylesheet" href="{% static 'css/report.css' %}">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
 <style>
   /* 新しいUIスタイル - モダン化バージョン */
   :root {
@@ -716,21 +717,27 @@
               
               <div class="row">
                 <div class="col-md-6">
-                  <div class="p-3 rounded" style="background-color:var(--success-light);">
-                    <h3 class="h6 text-success mb-3 d-flex align-items-center">
-                      <i class="bi bi-graph-up me-2"></i> ポジティブ要素
-                    </h3>
-                    <ul id="positive-points" class="points-list positive"></ul>
-                  </div>
+                  <h3 class="font-medium text-green-700 text-sm mb-2 border-accent border-accent-success">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    ポジティブ要素
+                  </h3>
+                  <ul id="positive-points" class="text-xs space-y-1 pl-5">
+                    <!-- 動的に生成されるポジティブポイント -->
+                  </ul>
                 </div>
-                <div class="col-md-6">
-                  <div class="p-3 rounded" style="background-color:var(--danger-light);">
-                    <h3 class="h6 text-danger mb-3 d-flex align-items-center">
-                      <i class="bi bi-graph-down me-2"></i> 注意すべき要素
-                    </h3>
-                    <ul id="negative-points" class="points-list negative"></ul>
-                  </div>
-                </div>
+                <div>
+                  <h3 class="font-medium text-red-700 text-sm mb-2 border-accent border-accent-danger">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    注意すべき要素
+                  </h3>
+                  <ul id="negative-points" class="text-xs space-y-1 pl-5">
+                    <!-- 動的に生成される注意点 -->
+                  </ul>
+                </div>      
               </div>
             </div>
           </div>
