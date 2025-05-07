@@ -1,6 +1,7 @@
 <!-- financial_reports/templates/financial_reports/public/report_detail.html -->
 {% extends "base.html" %}
 {% load static %}
+{% load ads_tags %}
 
 {% block title %}{{ report.company.name }} - {{ report.fiscal_period }} | カブログ{% endblock %}
 
@@ -621,6 +622,159 @@
   .animate-pulse {
     animation: pulse 2s infinite;
   }
+  /* Common styles for both PC and mobile */
+  .points-card {
+    padding: 1.25rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .points-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+  }
+  
+  .positive-card {
+    background-color: rgba(16, 185, 129, 0.05);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+  
+  .negative-card {
+    background-color: rgba(239, 68, 68, 0.05);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
+  
+  .points-title {
+    display: flex;
+    align-items: center;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  }
+  
+  .positive-card .points-title {
+    color: rgb(4, 120, 87);
+  }
+  
+  .negative-card .points-title {
+    color: rgb(185, 28, 28);
+  }
+  
+  .icon-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+  }
+  
+  .icon-wrapper.positive {
+    background-color: rgba(16, 185, 129, 0.15);
+  }
+  
+  .icon-wrapper.negative {
+    background-color: rgba(239, 68, 68, 0.15);
+  }
+  
+  .icon-wrapper svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .positive-card .icon-wrapper svg {
+    stroke: rgb(4, 120, 87);
+  }
+  
+  .negative-card .icon-wrapper svg {
+    stroke: rgb(185, 28, 28);
+  }
+  
+  .points-list {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 0;
+  }
+  
+  .points-list li {
+    position: relative;
+    padding-left: 1.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  
+  .points-list li:last-child {
+    margin-bottom: 0;
+  }
+  
+  .points-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.5rem;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  
+  .positive-card .points-list li::before {
+    background-color: rgb(16, 185, 129);
+  }
+  
+  .negative-card .points-list li::before {
+    background-color: rgb(239, 68, 68);
+  }
+  
+  /* Mobile-specific styles */
+  @media (max-width: 767.98px) {
+    .points-card {
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .points-title {
+      font-size: 0.95rem;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+    }
+    
+    .icon-wrapper {
+      width: 22px;
+      height: 22px;
+      margin-right: 0.5rem;
+    }
+    
+    .points-list li {
+      font-size: 0.8125rem;
+      margin-bottom: 0.625rem;
+      padding-left: 1.25rem;
+    }
+    
+    .points-list li::before {
+      width: 6px;
+      height: 6px;
+      top: 0.5rem;
+    }
+  }
+  
+  /* Larger screens */
+  @media (min-width: 992px) {
+    .points-list li {
+      font-size: 0.9375rem;
+    }
+    
+    .points-title {
+      font-size: 1.125rem;
+    }
+  }
 </style>
 {% endblock %}
 
@@ -715,29 +869,46 @@
                 <p id="investment-reason" class="mb-0"></p>
               </div>
               
+              {% if show_ads %}
+                  {% show_template_ad "diary_top" %}
+              {% endif %}
               <div class="row">
-                <div class="col-md-6">
-                  <h3 class="font-medium text-green-700 text-sm mb-2 border-accent border-accent-success">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    ポジティブ要素
-                  </h3>
-                  <ul id="positive-points" class="text-xs space-y-1 pl-5">
-                    <!-- 動的に生成されるポジティブポイント -->
-                  </ul>
+                <!-- Optimized for both PC and mobile -->
+                <div class="row gx-4">
+                  <!-- Positive elements section -->
+                  <div class="col-md-6">
+                    <div class="points-card positive-card h-100">
+                      <h3 class="points-title">
+                        <span class="icon-wrapper positive">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                          </svg>
+                        </span>
+                        ポジティブ要素
+                      </h3>
+                      <ul id="positive-points" class="points-list">
+                        <!-- Will be populated by JavaScript -->
+                      </ul>
+                    </div>
+                  </div>
+                  
+                  <!-- Negative elements section -->
+                  <div class="col-md-6">
+                    <div class="points-card negative-card h-100">
+                      <h3 class="points-title">
+                        <span class="icon-wrapper negative">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                          </svg>
+                        </span>
+                        注意すべき要素
+                      </h3>
+                      <ul id="negative-points" class="points-list">
+                        <!-- Will be populated by JavaScript -->
+                      </ul>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <h3 class="font-medium text-red-700 text-sm mb-2 border-accent border-accent-danger">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    注意すべき要素
-                  </h3>
-                  <ul id="negative-points" class="text-xs space-y-1 pl-5">
-                    <!-- 動的に生成される注意点 -->
-                  </ul>
-                </div>      
               </div>
             </div>
           </div>

@@ -1,6 +1,7 @@
 <!-- financial_reports/templates/financial_reports/public/report_list.html -->
 {% extends "base.html" %}
 {% load static %}
+{% load ads_tags %}
 
 {% block title %}企業決算レポート一覧 | カブログ{% endblock %}
 {% block head %}
@@ -361,6 +362,9 @@
       </form>
     </div>
   </div>
+  {% if show_ads %}
+      {% show_template_ad "diary_top" %}
+  {% endif %}
   
   <!-- レポート一覧 -->
   {% if reports %}
