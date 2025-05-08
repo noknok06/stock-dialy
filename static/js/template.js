@@ -72,15 +72,15 @@ function setCompanyData(data) {
     setElementText('performance-rating-badge', data.performanceRating ? `${data.performanceRating}/10` : '/10');
     setElementText('net-income', data.netIncome || '');
     setElementHTML('net-income-change', `
-      <i class="bi bi-graph-up-arrow me-1"></i> ${data.netIncomeChange || ''}
+      <i class="bi ${data.netIncomeChange && data.netIncomeChange.includes('-') ? 'bi-graph-down-arrow' : 'bi-graph-up-arrow'} me-1"></i> ${data.netIncomeChange || ''}
     `);
     setElementText('eps', data.eps || '');
     setElementHTML('eps-change', `
-      <i class="bi bi-graph-up-arrow me-1"></i> ${data.epsChange || ''}
+      <i class="bi ${data.epsChange && data.epsChange.includes('-') ? 'bi-graph-down-arrow' : 'bi-graph-up-arrow'} me-1"></i> ${data.epsChange || ''}
     `);
     setElementText('dividend', data.dividend || '');
     setElementHTML('dividend-change', `
-      <i class="bi bi-graph-up-arrow me-1"></i> ${data.dividendChange || ''}
+      <i class="bi ${data.dividendChange && data.dividendChange.includes('-') ? 'bi-graph-down-arrow' : 'bi-graph-up-arrow'} me-1"></i> ${data.dividendChange || ''}
     `);
     setElementText('roe', data.roe || '');
     setElementHTML('roe-change', `
@@ -210,11 +210,11 @@ function setCompanyData(data) {
     setElementText('next-fiscal-rating-badge', `評価: ${data.nextFiscalRating || ''}/10`);
     setElementText('next-fiscal-net-income', data.nextFiscalNetIncome || '');
     setElementHTML('next-fiscal-net-income-change', `
-      <i class="bi bi-graph-up-arrow me-1"></i> ${data.nextFiscalNetIncomeChange || ''}
+      <i class="bi ${data.nextFiscalNetIncomeChange && data.nextFiscalNetIncomeChange.includes('-') ? 'bi-graph-down-arrow' : 'bi-graph-up-arrow'} me-1"></i> ${data.nextFiscalNetIncomeChange || ''}
     `);
     setElementText('next-fiscal-dividend', data.nextFiscalDividend || '');
     setElementHTML('next-fiscal-dividend-change', `
-      <i class="bi bi-graph-up-arrow me-1"></i> ${data.nextFiscalDividendChange || ''}
+      <i class="bi ${data.nextFiscalDividendChange && data.nextFiscalDividendChange.includes('-') ? 'bi-graph-down-arrow' : 'bi-graph-up-arrow'} me-1"></i> ${data.nextFiscalDividendChange || ''}
     `);
     setElementText('next-fiscal-highlight', data.nextFiscalHighlight || '');
     setElementText('next-fiscal-rating-text', data.nextFiscalRating ? `${data.nextFiscalRating}/10` : '/10');
