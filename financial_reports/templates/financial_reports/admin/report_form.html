@@ -7,6 +7,10 @@
 {% endblock %}
 
 {% block head %}
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
 <style>
   .form-section {
     margin-bottom: 2rem;
@@ -39,6 +43,45 @@
     position: absolute;
     right: 20px;
     top: 10px;
+  }
+
+  /* 自動設定されたフィールドのスタイル */
+  .auto-filled {
+    background-color: #f0f9ff !important;
+    border-color: #3b82f6 !important;
+    transition: background-color 0.3s ease;
+  }
+  
+  /* Select2カスタマイズ */
+  .select2-container--bootstrap-5 .select2-selection {
+    border-radius: 0.5rem;
+    min-height: 38px;
+  }
+  
+  .company-option {
+    display: flex;
+    align-items: center;
+  }
+  
+  .company-code {
+    font-weight: bold;
+    margin-right: 10px;
+    color: #3b82f6;
+    min-width: 60px;
+  }
+  
+  .company-name {
+    flex-grow: 1;
+  }
+  
+  /* 会社選択フィールドがクリックされたときのガイダンス */
+  .select2-dropdown .select2-results__message {
+    padding: 8px 12px;
+    background-color: #f0f9ff;
+    border: 1px dashed #3b82f6;
+    border-radius: 4px;
+    margin: 5px;
+    font-size: 0.875rem;
   }
 </style>
 {% endblock %}
@@ -157,6 +200,11 @@
   </div>
 </div>
 
+<!-- jQuery (Select2の依存関係) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <!-- テンプレートHTMLとJSを読み込む -->
 <!-- template.jsではなくプレビュー専用スクリプトを使用 -->
 <script src="{% static 'js/report-preview.js' %}"></script>
@@ -168,6 +216,195 @@
     const sampleJsonBtn = document.getElementById('sampleJsonBtn');
     const dataJsonField = document.getElementById('{{ form.data_json.id_for_label }}');
     const reportForm = document.getElementById('reportForm');
+    const fiscalPeriodField = document.getElementById('{{ form.fiscal_period.id_for_label }}');
+    const achievementBadgeField = document.getElementById('{{ form.achievement_badge.id_for_label }}');
+    const overallRatingField = document.getElementById('{{ form.overall_rating.id_for_label }}');
+    
+    // Select2を企業選択フィールドに適用
+    $('#{{ form.company.id_for_label }}').select2({
+      theme: 'bootstrap-5',
+      width: '100%',
+      placeholder: '企業名または証券コードで検索...',
+      allowClear: true,
+      templateResult: formatCompany,
+      templateSelection: formatCompanySelection,
+      language: {
+        inputTooShort: function() {
+          return "検索するには文字を入力してください";
+        },
+        noResults: function() {
+          return "該当する企業が見つかりません";
+        },
+        searching: function() {
+          return "検索中...";
+        }
+      }
+    }).on('select2:select', function(e) {
+      // 企業が選択されたときに最近使用した企業リストを更新
+      const selectedId = e.params.data.id;
+      if (selectedId) {
+        let recentCompanies = JSON.parse(localStorage.getItem('recentCompanies') || '[]');
+        // 既に存在する場合は削除
+        recentCompanies = recentCompanies.filter(id => id !== selectedId);
+        // リストの先頭に追加
+        recentCompanies.unshift(selectedId);
+        // 最大10社まで保存
+        recentCompanies = recentCompanies.slice(0, 10);
+        localStorage.setItem('recentCompanies', JSON.stringify(recentCompanies));
+      }
+    });
+    
+    // 検索結果のフォーマット
+    function formatCompany(company) {
+      if (!company.id) {
+        return company.text;
+      }
+      
+      // company.textは通常「企業名 (証券コード)」の形式
+      const text = company.text;
+      const match = text.match(/(.+) \((.+)\)$/);
+      
+      if (match) {
+        const companyName = match[1];
+        const companyCode = match[2];
+        
+        const $container = $(
+          `<div class="company-option">
+             <span class="company-code">${companyCode}</span>
+             <span class="company-name">${companyName}</span>
+           </div>`
+        );
+        
+        return $container;
+      }
+      
+      return company.text;
+    }
+    
+    // 選択後の表示フォーマット
+    function formatCompanySelection(company) {
+      if (!company.id) {
+        return company.text;
+      }
+      
+      const text = company.text;
+      const match = text.match(/(.+) \((.+)\)$/);
+      
+      if (match) {
+        const companyName = match[1];
+        const companyCode = match[2];
+        return `${companyName} (${companyCode})`;
+      }
+      
+      return company.text;
+    }
+    
+    // フィールドに自動セットされたことを視覚的に表示
+    function flashField(field) {
+      field.classList.add('auto-filled');
+      setTimeout(() => {
+        field.classList.remove('auto-filled');
+      }, 2000);
+    }
+    
+    // JSONデータからフィールドを更新する関数
+    function updateFieldsFromJson(jsonData) {
+      try {
+        const data = (typeof jsonData === 'string') ? JSON.parse(jsonData) : jsonData;
+        let updated = false;
+        
+        // 決算期を設定
+        if (data.fiscalPeriod && !fiscalPeriodField.value) {
+          fiscalPeriodField.value = data.fiscalPeriod;
+          flashField(fiscalPeriodField);
+          updated = true;
+        }
+        
+        // 業績バッジを設定
+        if (data.achievementBadge && !achievementBadgeField.value) {
+          achievementBadgeField.value = data.achievementBadge;
+          flashField(achievementBadgeField);
+          updated = true;
+        }
+        
+        // 総合評価を設定
+        if (data.overallRating && !overallRatingField.value) {
+          // 数値に変換して設定
+          const rating = parseFloat(data.overallRating);
+          if (!isNaN(rating)) {
+            overallRatingField.value = rating;
+            flashField(overallRatingField);
+            updated = true;
+          }
+        }
+        
+        // 企業コードから企業を選択（企業が選択されていない場合のみ）
+        if (data.companyCode && $('#{{ form.company.id_for_label }}').val() === '') {
+          // 企業コードが一致するオプションを探す
+          $('#{{ form.company.id_for_label }} option').each(function() {
+            const optionText = $(this).text();
+            if (optionText.includes(`(${data.companyCode})`)) {
+              // 企業を選択
+              $('#{{ form.company.id_for_label }}').val($(this).val()).trigger('change');
+              updated = true;
+              return false; // ループを終了
+            }
+          });
+        }
+        
+        return updated;
+      } catch (e) {
+        console.error('JSONデータの解析に失敗しました:', e);
+        return false;
+      }
+    }
+
+    // JSONデータテキストエリアの変更監視
+    dataJsonField.addEventListener('change', function() {
+      updateFieldsFromJson(this.value);
+    });
+    
+    // 入力中のデバウンス処理（タイピング中の頻繁な更新を防ぐ）
+    let debounceTimer;
+    dataJsonField.addEventListener('input', function() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        updateFieldsFromJson(this.value);
+      }, 800);
+    });
+    
+    // JSONファイルアップロード処理
+    document.getElementById('{{ form.json_file.id_for_label }}').addEventListener('change', function(e) {
+      if (this.files && this.files[0]) {
+        const file = this.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+          const fileContent = e.target.result;
+          
+          // JSONテキストエリアに表示
+          dataJsonField.value = fileContent;
+          
+          // フィールドを更新
+          const updated = updateFieldsFromJson(fileContent);
+          
+          if (updated) {
+            // 通知メッセージ
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'alert alert-info mt-2';
+            messageDiv.innerHTML = '<strong>ヒント:</strong> JSONファイルから基本情報を自動設定しました';
+            document.querySelector('.form-section').appendChild(messageDiv);
+            
+            // 3秒後に消去
+            setTimeout(() => {
+              messageDiv.remove();
+            }, 3000);
+          }
+        };
+        
+        reader.readAsText(file);
+      }
+    });
     
     // フォーム送信前のデータ設定処理
     reportForm.addEventListener('submit', function(e) {
@@ -176,12 +413,37 @@
         const jsonData = dataJsonField.value;
         if (!jsonData) {
           alert('JSONデータが入力されていません。');
-          e.preventDefault(); // 送信をキャンセル
+          e.preventDefault();
           return;
         }
         
-        // JSONデータをパース（構文チェック）
+        // JSONデータをパース
         const data = JSON.parse(jsonData);
+        
+        // 必須フィールドとJSONデータの整合性を確保
+        const fiscalPeriod = fiscalPeriodField.value;
+        const achievementBadge = achievementBadgeField.value;
+        const overallRating = overallRatingField.value;
+        
+        // JSONデータを最新値で更新
+        data.fiscalPeriod = fiscalPeriod;
+        data.achievementBadge = achievementBadge;
+        data.overallRating = overallRating.toString();
+        
+        // 選択された企業の情報を取得
+        const companySelect = document.getElementById('{{ form.company.id_for_label }}');
+        if (companySelect && companySelect.selectedIndex > 0) {
+          const companyText = companySelect.options[companySelect.selectedIndex].text;
+          const match = companyText.match(/(.+) \((.+)\)$/);
+          
+          if (match) {
+            data.companyName = match[1];
+            data.companyCode = match[2];
+          }
+        }
+        
+        // 更新されたJSONをテキストエリアに戻す
+        dataJsonField.value = JSON.stringify(data, null, 2);
         
         // 隠しフィールドにJSONデータを設定
         const hiddenDataField = document.querySelector('input[name="data"]');
@@ -191,12 +453,12 @@
         } else {
           console.error('data フィールドが見つかりません');
           alert('エラー: データフィールドが見つかりません。');
-          e.preventDefault(); // 送信をキャンセル
+          e.preventDefault();
         }
       } catch (e) {
         alert('JSONデータの解析に失敗しました: ' + e.message);
         console.error('JSONデータ解析エラー:', e);
-        e.preventDefault(); // 送信をキャンセル
+        e.preventDefault();
       }
     });
     
@@ -216,9 +478,9 @@
         const companySelect = document.getElementById('{{ form.company.id_for_label }}');
         const companyName = companySelect.options[companySelect.selectedIndex].text;
         const companyCode = companySelect.value;
-        const fiscalPeriod = document.getElementById('{{ form.fiscal_period.id_for_label }}').value;
-        const achievementBadge = document.getElementById('{{ form.achievement_badge.id_for_label }}').value;
-        const overallRating = document.getElementById('{{ form.overall_rating.id_for_label }}').value;
+        const fiscalPeriod = fiscalPeriodField.value;
+        const achievementBadge = achievementBadgeField.value;
+        const overallRating = overallRatingField.value;
         
         // データ補完
         if (!data.companyName) data.companyName = companyName;
@@ -229,7 +491,7 @@
         
         // プレビューを表示
         previewSection.style.display = 'block';
-        setPreviewData(data); // 元の setCompanyData ではなく setPreviewData に変更
+        setPreviewData(data); // プレビューデータを設定
         
         // プレビューセクションまでスクロール
         previewSection.scrollIntoView({ behavior: 'smooth' });
@@ -238,7 +500,7 @@
       }
     });
     
-    // サンプルデータボタン（この部分は変更なし）
+    // サンプルデータボタン
     sampleJsonBtn.addEventListener('click', function() {
       const sampleData = {
         // 会社情報
@@ -268,7 +530,7 @@
         roe: "14.2%",
         roeChange: "-1.0pt",
         
-        // 最低限必要なその他の項目（サンプルデータは省略）
+        // 最低限必要なその他の項目
         positivePoints: [
           "非資源分野の実態純利益が過去最高を達成",
           "基礎営業キャッシュフローが過去最高を記録"
@@ -281,7 +543,105 @@
       
       // テキストエリアに設定
       dataJsonField.value = JSON.stringify(sampleData, null, 2);
+      
+      // 基本フィールドを設定
+      if (!fiscalPeriodField.value) {
+        fiscalPeriodField.value = sampleData.fiscalPeriod;
+        flashField(fiscalPeriodField);
+      }
+      
+      if (!achievementBadgeField.value) {
+        achievementBadgeField.value = sampleData.achievementBadge;
+        flashField(achievementBadgeField);
+      }
+      
+      if (!overallRatingField.value) {
+        overallRatingField.value = parseFloat(sampleData.overallRating);
+        flashField(overallRatingField);
+      }
+      
+      // 企業を選択（コード 8002 の丸紅）
+      $('#{{ form.company.id_for_label }} option').each(function() {
+        const optionText = $(this).text();
+        if (optionText.includes('(8002)')) {
+          $('#{{ form.company.id_for_label }}').val($(this).val()).trigger('change');
+          return false; // ループを終了
+        }
+      });
     });
+    
+    // 最近使用した企業を優先表示
+    try {
+      const recentCompanies = JSON.parse(localStorage.getItem('recentCompanies') || '[]');
+      if (recentCompanies.length > 0) {
+        // Select2の既存のデータを取得
+        const $select = $('#{{ form.company.id_for_label }}');
+        const existingOptions = $select.find('option').map(function() {
+          return {
+            id: $(this).val(),
+            text: $(this).text()
+          };
+        }).get();
+        
+        // 最近使用した企業を先頭に追加
+        const recentOptions = [];
+        recentCompanies.forEach(companyId => {
+          const option = existingOptions.find(opt => opt.id === companyId);
+          if (option) {
+            recentOptions.push(option);
+          }
+        });
+        
+        // 最近使用した企業がある場合、グループを作成
+        if (recentOptions.length > 0) {
+          // データを再構築
+          const data = {
+            results: [
+              {
+                text: '最近使用した企業',
+                children: recentOptions
+              },
+              {
+                text: '全ての企業',
+                children: existingOptions
+              }
+            ]
+          };
+          
+          // データフォーマットを変更
+          $select.select2('destroy').empty();
+          
+          // オプションを再構築
+          $select.append('<option></option>'); // 空のオプション
+          
+          const recentGroup = $('<optgroup label="最近使用した企業"></optgroup>');
+          recentOptions.forEach(option => {
+            recentGroup.append(`<option value="${option.id}">${option.text}</option>`);
+          });
+          $select.append(recentGroup);
+          
+          const allGroup = $('<optgroup label="全ての企業"></optgroup>');
+          existingOptions.forEach(option => {
+            if (option.id) { // 空のオプションは除外
+              allGroup.append(`<option value="${option.id}">${option.text}</option>`);
+            }
+          });
+          $select.append(allGroup);
+          
+          // Select2を再初期化
+          $select.select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: '企業名または証券コードで検索...',
+            allowClear: true,
+            templateResult: formatCompany,
+            templateSelection: formatCompanySelection
+          });
+        }
+      }
+    } catch (e) {
+      console.error('最近使用した企業の表示中にエラーが発生しました:', e);
+    }
   });
 </script>
 {% endblock %}

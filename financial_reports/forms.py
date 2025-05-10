@@ -5,6 +5,11 @@ from .models import Company, FinancialReport
 import json
 from decimal import Decimal
 
+class CompanyChoiceField(forms.ModelChoiceField):
+    """企業選択用のカスタムフィールド"""
+    def label_from_instance(self, obj):
+        return f"{obj.name} ({obj.code})"
+
 class CompanyForm(forms.ModelForm):
     class Meta:
         model = Company
@@ -14,6 +19,16 @@ class CompanyForm(forms.ModelForm):
         }
 
 class FinancialReportForm(forms.ModelForm):
+    # 企業選択フィールドをカスタマイズ
+    company = CompanyChoiceField(
+        queryset=Company.objects.all().order_by('code'),
+        label='企業',
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'data-placeholder': '企業名または証券コードで検索...'
+        })
+    )
+    
     # JSONデータをテキストエリアとして表示
     data_json = forms.CharField(
         widget=forms.Textarea(attrs={
@@ -39,6 +54,9 @@ class FinancialReportForm(forms.ModelForm):
         widgets = {
             'data': forms.HiddenInput(),
             'overall_rating': forms.NumberInput(attrs={'min': '1', 'max': '10', 'step': '0.1'}),
+            'fiscal_period': forms.TextInput(attrs={'class': 'form-control'}),
+            'achievement_badge': forms.TextInput(attrs={'class': 'form-control'}),
+            'is_public': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
     
     def __init__(self, *args, **kwargs):
