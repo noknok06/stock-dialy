@@ -315,6 +315,42 @@
     max-width: 80%;
     margin: 0 auto;
   }
+  /* 誘導バナー用スタイル */
+  .promotion-card {
+    border: none;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e0f7fa 100%);
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    overflow: hidden;
+  }
+  
+  .promotion-card:hover {
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+  }
+  
+  .feature-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+  
+  .feature-icon i {
+    font-size: 1.25rem;
+  }
+  
+  /* モバイル対応 */
+  @media (max-width: 768px) {
+    .promotion-card .col-lg-4 {
+      margin-top: 1rem;
+      text-align: center !important;
+    }
+  }
 </style>
 {% endblock %}
 
@@ -327,7 +363,22 @@
     </h1>
     <p class="subtitle">企業の決算情報をわかりやすくまとめたレポートを閲覧できます。</p>
   </div>
-  
+  <!-- 検索・絞り込みの下、レポート一覧の上に追加 -->
+  <div class="card promotion-card mb-4">
+    <div class="card-body">
+      <div class="row align-items-center">
+        <div class="col-lg-8">
+          <h5 class="mb-2"><i class="bi bi-journal-text text-primary me-2"></i>あなたの投資をもっと賢く</h5>
+          <p class="mb-lg-0">決算レポートで見つけた銘柄を自分の投資日記に記録しましょう。損益計算、分析テンプレート、継続記録など多彩な機能で投資を管理できます。</p>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+          <a href="{% url 'stockdiary:home' %}" class="btn btn-primary">
+            <i class="bi bi-arrow-right-circle me-2"></i>投資日記を始める
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
   <!-- 検索・絞り込み -->
   <div class="card search-card">
     <div class="card-body">
@@ -362,6 +413,7 @@
       </form>
     </div>
   </div>
+  
   {% if show_ads %}
       {% show_template_ad "diary_top" %}
   {% endif %}
