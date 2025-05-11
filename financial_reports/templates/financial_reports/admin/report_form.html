@@ -83,6 +83,45 @@
     margin: 5px;
     font-size: 0.875rem;
   }
+  
+  /* JSONヘルプスタイル */
+  .json-help-panel {
+    background-color: #f0f9ff;
+    border: 1px solid #dbeafe;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .json-help-heading {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #3b82f6;
+  }
+  
+  .json-help-list {
+    padding-left: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .json-code-example {
+    background-color: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    font-family: monospace;
+    font-size: 0.875rem;
+    overflow-x: auto;
+  }
+  
+  .json-important-note {
+    border-left: 4px solid #3b82f6;
+    padding-left: 0.75rem;
+    margin: 0.75rem 0;
+    font-style: italic;
+  }
 </style>
 {% endblock %}
 
@@ -172,6 +211,32 @@
             {% if form.data_json.errors %}
               <div class="text-danger">{{ form.data_json.errors }}</div>
             {% endif %}
+          </div>
+          
+          <!-- JSON書式ヘルプパネル -->
+          <div class="json-help-panel">
+            <div class="json-help-heading">
+              <i class="bi bi-info-circle me-1"></i> JSON書式ガイド
+            </div>
+            <p>評価ポイントには「positive」属性を追加すると、緑色（ポジティブ）または赤色（ネガティブ）で表示できます：</p>
+            <div class="json-code-example">
+              "performancePoint1": "純利益1,200億円は過去最高を更新（前年比+18.5%）",<br>
+              "performancePoint1Positive": true,  // ポジティブなポイント（緑色表示）<br>
+              <br>
+              "keyPointsPoint3": "原材料コスト増は利益率圧迫要因だが、コスト削減で一部相殺",<br>
+              "keyPointsPoint3Positive": false  // ネガティブなポイント（赤色表示）
+            </div>
+            <p>以下の各評価ポイントに対して「Positive」属性を設定できます：</p>
+            <ul class="json-help-list">
+              <li>keyPointsPoint1~3Positive</li>
+              <li>performancePoint1~3Positive</li>
+              <li>segmentPoint1~3Positive</li>
+              <li>nextFiscalPoint1~3Positive</li>
+              <li>financialPoint1~3Positive</li>
+            </ul>
+            <div class="json-important-note">
+              <i class="bi bi-exclamation-triangle me-1"></i> 「Positive」属性を省略した場合、デフォルトで緑色（ポジティブ）表示になります。
+            </div>
           </div>
           
           {{ form.data }}
@@ -529,16 +594,108 @@
         dividendChange: "+10円 (+11.8%)",
         roe: "14.2%",
         roeChange: "-1.0pt",
+        performanceRatingCategory: "優秀",
+        performancePoint1: "純利益5,030億円は過去2番目の高水準（前年比+6.7%）",
+        performancePoint1Positive: true,
+        performancePoint2: "配当は95円に増配（前年比+10円）、自社株買いも750億円規模で実施",
+        performancePoint2Positive: true,
+        performancePoint3: "資源分野の市況影響により減益、一部地域での事業環境悪化が課題",
+        performancePoint3Positive: false,
         
-        // 最低限必要なその他の項目
+        // 決算ポイント
+        keyPointsRating: "8",
+        keyPoints: [
+          { positive: true, text: '非資源分野が過去最高の3,230億円の純利益を達成（前年比+9.5%）' },
+          { positive: true, text: '基礎営業キャッシュフローが過去最高の7,600億円を記録' },
+          { positive: false, text: '資源分野は市況下落の影響を受け純利益1,800億円と前年比-15%' }
+        ],
+        keyPointsRatingCategory: "優秀",
+        keyPointsPoint1: "非資源分野が3,230億円の純利益で全体の64%を占め、事業ポートフォリオの安定性が向上",
+        keyPointsPoint1Positive: true,
+        keyPointsPoint2: "基礎営業キャッシュフロー7,600億円は過去最高を更新し、投資余力が拡大",
+        keyPointsPoint2Positive: true,
+        keyPointsPoint3: "資源分野の市況変動リスクが引き続き懸念材料",
+        keyPointsPoint3Positive: false,
+        
+        // 市場予想比較
+        sales: "8兆3,000億円",
+        salesForecast: "8兆2,500億円",
+        salesVsForecast: "+0.6%",
+        operatingProfit: "5,800億円",
+        operatingProfitForecast: "5,600億円",
+        operatingProfitVsForecast: "+3.6%",
+        netIncomeForecast: "4,900億円",
+        netIncomeVsForecast: "+2.7%",
+        forecastComparisonRating: "7",
+        forecastComparisonCategory: "良好",
+        forecastComparisonComment: "全ての主要指標で市場予想を上回る決算。特に非資源分野の伸長が予想以上で、収益構造の改善が進んでいる。",
+        
+        // 来期業績予想
+        nextFiscalRating: "7",
+        nextFiscalNetIncome: "5,200億円",
+        nextFiscalNetIncomeChange: "+3.4%",
+        nextFiscalDividend: "100円（21.3%）",
+        nextFiscalDividendChange: "+5円",
+        nextFiscalHighlight: "非資源分野が牽引し3期連続増益へ",
+        nextFiscalRatingCategory: "良好",
+        nextFiscalPoint1: "非資源分野は3,500億円（+8.4%）と更なる成長を予想",
+        nextFiscalPoint1Positive: true,
+        nextFiscalPoint2: "配当は100円に増配し、10期連続増配を予定",
+        nextFiscalPoint2Positive: true,
+        nextFiscalPoint3: "世界経済の減速懸念や地政学リスクによる不確実性が存在",
+        nextFiscalPoint3Positive: false,
+        
+        // セグメント評価
+        segmentRating: "8",
+        segmentRatingCategory: "優秀",
+        segmentPoint1: "金属セグメントが前年比+23%の成長を達成、特に鉄鋼製品が好調",
+        segmentPoint1Positive: true,
+        segmentPoint2: "生活産業セグメントの利益率が2.3%と前年比0.5pt改善",
+        segmentPoint2Positive: true,
+        segmentPoint3: "電力・インフラセグメントは一部案件の遅延により減益",
+        segmentPoint3Positive: false,
+        
+        // セグメント詳細
+        segments: [
+          { name: '金属', value: '1,250億円', change: '+23.5%', description: '鉄鋼製品・アルミ事業好調', profit: true },
+          { name: '生活産業', value: '1,080億円', change: '+12.3%', description: '食品流通事業伸長', profit: true },
+          { name: 'エネルギー', value: '900億円', change: '-15.1%', description: '資源価格下落の影響', profit: true },
+          { name: '電力・インフラ', value: '800億円', change: '-5.2%', description: '一部案件の遅延', profit: true }
+        ],
+        
+        // 財務状態
+        financialRating: "9",
+        equityRatio: "38.5%",
+        equityRatioChange: "+1.2pt",
+        operatingCashFlow: "7,600億円",
+        operatingCashFlowChange: "+13.4%",
+        liquidAssets: "1兆1,200億円",
+        liquidAssetsChange: "+8.7%",
+        financialRatingCategory: "極めて優秀",
+        financialPoint1: "自己資本比率38.5%と財務健全性が向上（+1.2pt）",
+        financialPoint1Positive: true,
+        financialPoint2: "基礎営業CF7,600億円は過去最高を記録し、投資余力が増大",
+        financialPoint2Positive: true,
+        financialPoint3: "NET DER 0.85倍と財務規律を維持しつつ、戦略的投資を実行",
+        financialPoint3Positive: true,
+        
+        // ポジティブ要素と注意点
         positivePoints: [
-          "非資源分野の実態純利益が過去最高を達成",
-          "基礎営業キャッシュフローが過去最高を記録"
+          "非資源分野の安定成長による収益基盤の強化",
+          "10期連続増配と積極的な株主還元策の継続",
+          "基礎営業キャッシュフローの過去最高更新",
+          "グリーンビジネスへの戦略的資本配分の加速",
+          "PER8.4倍と株価評価の割安感"
         ],
         negativePoints: [
-          "資源分野は市況下落の影響を受け減益",
-          "世界経済の減速懸念や地政学リスクによる不確実性"
-        ]
+          "資源分野の市況変動リスクによる収益変動性",
+          "世界経済の減速懸念による一部事業への影響",
+          "地政学リスクの高まりによるサプライチェーンへの懸念",
+          "一部の新興国事業における政治リスク"
+        ],
+        
+        // データソース
+        dataSource: "丸紅株式会社 2025年3月期決算短信（2025年5月8日公表）"
       };
       
       // テキストエリアに設定

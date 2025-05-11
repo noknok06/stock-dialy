@@ -931,16 +931,16 @@
               
               <div class="highlight-box mt-4">
                 <p class="fw-bold mb-2">評価根拠：<span id="key-points-rating-text"></span>（<span id="key-points-rating-category"></span>）</p>
-                <div class="mb-2">
-                  <span class="text-success me-2">●</span>
+                <div class="evaluation-point mb-2">
+                  <span id="key-points-point-1-icon" class="evaluation-point-icon text-success me-2">●</span>
                   <span id="key-points-point-1"></span>
                 </div>
-                <div class="mb-2">
-                  <span class="text-success me-2">●</span>
+                <div class="evaluation-point mb-2">
+                  <span id="key-points-point-2-icon" class="evaluation-point-icon text-success me-2">●</span>
                   <span id="key-points-point-2"></span>
                 </div>
-                <div>
-                  <span class="text-warning me-2">●</span>
+                <div class="evaluation-point">
+                  <span id="key-points-point-3-icon" class="evaluation-point-icon text-warning me-2">●</span>
                   <span id="key-points-point-3"></span>
                 </div>
               </div>
@@ -1006,16 +1006,16 @@
                   <h3 class="h6 mb-0 fw-bold">評価根拠</h3>
                 </div>
                 <div class="highlight-box">
-                  <div class="mb-2">
-                    <span class="text-success me-2">●</span>
+                  <div class="evaluation-point mb-2">
+                    <span id="performance-point-1-icon" class="evaluation-point-icon text-success me-2">●</span>
                     <span id="performance-point-1" class="text-sm"></span>
                   </div>
-                  <div class="mb-2">
-                    <span class="text-success me-2">●</span>
+                  <div class="evaluation-point mb-2">
+                    <span id="performance-point-2-icon" class="evaluation-point-icon text-success me-2">●</span>
                     <span id="performance-point-2" class="text-sm"></span>
                   </div>
-                  <div>
-                    <span class="text-success me-2">●</span>
+                  <div class="evaluation-point">
+                    <span id="performance-point-3-icon" class="evaluation-point-icon text-success me-2">●</span>
                     <span id="performance-point-3" class="text-sm"></span>
                   </div>
                 </div>
@@ -1084,16 +1084,16 @@
               
               <div class="highlight-box mt-4">
                 <p class="fw-bold mb-2">評価根拠：<span id="segment-rating-text"></span>（<span id="segment-rating-category"></span>）</p>
-                <div class="mb-2">
-                  <span class="text-success me-2">●</span>
+                <div class="evaluation-point mb-2">
+                  <span id="segment-point-1-icon" class="evaluation-point-icon text-success me-2">●</span>
                   <span id="segment-point-1" class="text-sm"></span>
                 </div>
-                <div class="mb-2">
-                  <span class="text-success me-2">●</span>
+                <div class="evaluation-point mb-2">
+                  <span id="segment-point-2-icon" class="evaluation-point-icon text-success me-2">●</span>
                   <span id="segment-point-2" class="text-sm"></span>
                 </div>
-                <div>
-                  <span class="text-warning me-2">●</span>
+                <div class="evaluation-point">
+                  <span id="segment-point-3-icon" class="evaluation-point-icon text-warning me-2">●</span>
                   <span id="segment-point-3" class="text-sm"></span>
                 </div>
               </div>
@@ -1141,16 +1141,16 @@
               
               <div class="highlight-box mt-4">
                 <p class="fw-bold mb-2">評価根拠：<span id="next-fiscal-rating-text"></span>（<span id="next-fiscal-rating-category"></span>）</p>
-                <div class="mb-2">
-                  <span class="text-success me-2">●</span>
+                <div class="evaluation-point mb-2">
+                  <span id="next-fiscal-point-1-icon" class="evaluation-point-icon text-success me-2">●</span>
                   <span id="next-fiscal-point-1" class="text-sm"></span>
                 </div>
-                <div class="mb-2">
-                  <span class="text-success me-2">●</span>
+                <div class="evaluation-point mb-2">
+                  <span id="next-fiscal-point-2-icon" class="evaluation-point-icon text-success me-2">●</span>
                   <span id="next-fiscal-point-2" class="text-sm"></span>
                 </div>
-                <div>
-                  <span class="text-warning me-2">●</span>
+                <div class="evaluation-point">
+                  <span id="next-fiscal-point-3-icon" class="evaluation-point-icon text-warning me-2">●</span>
                   <span id="next-fiscal-point-3" class="text-sm"></span>
                 </div>
               </div>
@@ -1216,6 +1216,9 @@
     performancePoint1: "{{ report.data.performancePoint1|default:''|escapejs }}",
     performancePoint2: "{{ report.data.performancePoint2|default:''|escapejs }}",
     performancePoint3: "{{ report.data.performancePoint3|default:''|escapejs }}",
+    performancePoint1Positive: {% if report.data.performancePoint1Positive == False %}false{% else %}true{% endif %},
+    performancePoint2Positive: {% if report.data.performancePoint2Positive == False %}false{% else %}true{% endif %},
+    performancePoint3Positive: {% if report.data.performancePoint3Positive == False %}false{% else %}true{% endif %},
     netIncome: "{{ report.data.netIncome|default:''|escapejs }}",
     netIncomeChange: "{{ report.data.netIncomeChange|default:''|escapejs }}",
     eps: "{{ report.data.eps|default:''|escapejs }}",
@@ -1244,6 +1247,9 @@
     keyPointsPoint1: "{{ report.data.keyPointsPoint1|default:''|escapejs }}",
     keyPointsPoint2: "{{ report.data.keyPointsPoint2|default:''|escapejs }}",
     keyPointsPoint3: "{{ report.data.keyPointsPoint3|default:''|escapejs }}",
+    keyPointsPoint1Positive: {% if report.data.keyPointsPoint1Positive == False %}false{% else %}true{% endif %},
+    keyPointsPoint2Positive: {% if report.data.keyPointsPoint2Positive == False %}false{% else %}true{% endif %},
+    keyPointsPoint3Positive: {% if report.data.keyPointsPoint3Positive == False %}false{% else %}true{% endif %},
     
     // セグメント
     segmentRating: "{{ report.data.segmentRating|default:''|escapejs }}",
@@ -1251,6 +1257,9 @@
     segmentPoint1: "{{ report.data.segmentPoint1|default:''|escapejs }}",
     segmentPoint2: "{{ report.data.segmentPoint2|default:''|escapejs }}",
     segmentPoint3: "{{ report.data.segmentPoint3|default:''|escapejs }}",
+    segmentPoint1Positive: {% if report.data.segmentPoint1Positive == False %}false{% else %}true{% endif %},
+    segmentPoint2Positive: {% if report.data.segmentPoint2Positive == False %}false{% else %}true{% endif %},
+    segmentPoint3Positive: {% if report.data.segmentPoint3Positive == False %}false{% else %}true{% endif %},
     
     // 見通し
     nextFiscalRating: "{{ report.data.nextFiscalRating|default:''|escapejs }}",
@@ -1263,6 +1272,9 @@
     nextFiscalPoint1: "{{ report.data.nextFiscalPoint1|default:''|escapejs }}",
     nextFiscalPoint2: "{{ report.data.nextFiscalPoint2|default:''|escapejs }}",
     nextFiscalPoint3: "{{ report.data.nextFiscalPoint3|default:''|escapejs }}",
+    nextFiscalPoint1Positive: {% if report.data.nextFiscalPoint1Positive == False %}false{% else %}true{% endif %},
+    nextFiscalPoint2Positive: {% if report.data.nextFiscalPoint2Positive == False %}false{% else %}true{% endif %},
+    nextFiscalPoint3Positive: {% if report.data.nextFiscalPoint3Positive == False %}false{% else %}true{% endif %},
     
     // 配列データは手動で設定
     positivePoints: [
@@ -1301,5 +1313,96 @@
   
   // デバッグ用
   console.log('設定したreportData:', window.reportData);
-  </script>
+  
+  // ページ読み込み時に初期化
+  document.addEventListener('DOMContentLoaded', function() {
+    // 基本データを設定
+    setCompanyData(window.reportData);
+    
+    // 評価ポイントのアイコン色を設定
+    function setPointIconColor(pointIdPrefix, index, isPositive) {
+      const iconElement = document.getElementById(`${pointIdPrefix}-${index}-icon`);
+      if (iconElement) {
+        iconElement.className = `evaluation-point-icon ${isPositive ? 'text-success' : 'text-danger'} me-2`;
+      }
+    }
+    
+    // 評価ポイントのアイコン色を設定
+    setPointIconColor('key-points-point', 1, window.reportData.keyPointsPoint1Positive);
+    setPointIconColor('key-points-point', 2, window.reportData.keyPointsPoint2Positive);
+    setPointIconColor('key-points-point', 3, window.reportData.keyPointsPoint3Positive);
+    
+    setPointIconColor('performance-point', 1, window.reportData.performancePoint1Positive);
+    setPointIconColor('performance-point', 2, window.reportData.performancePoint2Positive);
+    setPointIconColor('performance-point', 3, window.reportData.performancePoint3Positive);
+    
+    setPointIconColor('segment-point', 1, window.reportData.segmentPoint1Positive);
+    setPointIconColor('segment-point', 2, window.reportData.segmentPoint2Positive);
+    setPointIconColor('segment-point', 3, window.reportData.segmentPoint3Positive);
+    
+    setPointIconColor('next-fiscal-point', 1, window.reportData.nextFiscalPoint1Positive);
+    setPointIconColor('next-fiscal-point', 2, window.reportData.nextFiscalPoint2Positive);
+    setPointIconColor('next-fiscal-point', 3, window.reportData.nextFiscalPoint3Positive);
+    
+    // タブ切り替え機能の初期化
+    initTabs();
+  });
+  
+  // タブ切り替え機能
+  function initTabs() {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        // アクティブなタブを削除
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        tabContents.forEach(content => content.classList.remove('active'));
+        
+        // クリックされたタブをアクティブに
+        this.classList.add('active');
+        const tabId = this.getAttribute('data-tab');
+        document.getElementById(`tab-${tabId}`).classList.add('active');
+        
+        // タブインジケーターを更新
+        updateTabIndicator();
+      });
+    });
+    
+    // 初期タブインジケーターを設定
+    updateTabIndicator();
+    
+    // カードの開閉トグル
+    const cardHeaders = document.querySelectorAll('[data-toggle="collapse"]');
+    cardHeaders.forEach(header => {
+      header.addEventListener('click', function() {
+        const targetId = this.getAttribute('data-target').substring(1); // #を除去
+        const targetElement = document.getElementById(targetId);
+        
+        // クラスの切り替え
+        targetElement.classList.toggle('show');
+        
+        // アイコンの回転
+        const chevronIcon = this.querySelector('.chevron-icon');
+        if (chevronIcon) {
+          chevronIcon.classList.toggle('rotated');
+        }
+      });
+    });
+  }
+  
+  // タブインジケーターを更新
+  function updateTabIndicator() {
+    const activeTab = document.querySelector('.tab-button.active');
+    const tabIndicator = document.querySelector('.tab-indicator');
+    
+    if (activeTab && tabIndicator) {
+      const tabWidth = activeTab.offsetWidth;
+      const tabLeft = activeTab.offsetLeft;
+      
+      tabIndicator.style.width = `${tabWidth}px`;
+      tabIndicator.style.left = `${tabLeft}px`;
+    }
+  }
+</script>
 {% endblock %}
