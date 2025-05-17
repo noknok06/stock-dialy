@@ -1,53 +1,60 @@
-
 /* 株式日記 (カブログ) 共通テーマCSS
  * -----------------------------------------
  * 日記らしい親しみやすいデザインのための共通スタイル定義
+ * 2025年版 - 完全リニューアル
  */
 
-/* ========== 日記カードスタイル ========== */
-/* モバイル最適化カードスタイル */
+/* ========== 日記カードのコアスタイル ========== */
 .diary-card {
   position: relative;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  margin-bottom: 1rem;
-  border-radius: var(--border-radius);
+  transition: all 0.3s ease;
+  margin-bottom: 1.5rem;
+  border-radius: 12px;
   background-color: var(--card-bg-color);
-  box-shadow: var(--card-shadow);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
   overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  cursor: pointer;
 }
 
-/* マスキングテープなどの装飾を排除 */
+.diary-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.08);
+}
+
+/* カードの左側アクセントバー */
 .diary-card::before {
   content: "";
   position: absolute;
   left: 0;
   top: 0;
-  width: 6px;
+  width: 5px;
   height: 100%;
-  opacity: 0.9;
+  opacity: 1;
 }
 
 .diary-card.memo-card::before {
-  background-color: var(--info-color);
+  background: linear-gradient(to bottom, var(--info-color), var(--info-color) 70%, rgba(93, 161, 229, 0.3));
 }
 
 .diary-card.sold-card::before {
-  background-color: var(--danger-color);
+  background: linear-gradient(to bottom, var(--danger-color), var(--danger-color) 70%, rgba(225, 90, 90, 0.3));
 }
 
 .diary-card:not(.memo-card):not(.sold-card)::before {
-  background-color: var(--success-color);
+  background: linear-gradient(to bottom, var(--success-color), var(--success-color) 70%, rgba(93, 176, 117, 0.3));
 }
 
-/* カードヘッダーのレイアウト修正 */
+/* カードヘッダーのスタイル */
 .diary-card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 1rem 1rem 0.75rem 1.25rem;
-  background-color: rgba(246, 248, 250, 0.7);
-  border-bottom: 1px solid var(--notebook-line);
+  padding: 1.25rem 1.5rem 1rem;
+  background-color: rgba(248, 250, 252, 0.8);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
 }
 
 /* ヘッダー左側（銘柄と日付） */
@@ -61,6 +68,7 @@
   color: var(--primary-color);
   margin-bottom: 0.25rem;
   font-weight: 600;
+  line-height: 1.4;
 }
 
 /* 日付と状態バッジのコンテナ */
@@ -78,20 +86,22 @@
   border-radius: 5px;
   font-size: 0.75rem;
   font-weight: 500;
+  display: inline-flex;
+  align-items: center;
 }
 
 .memo-badge {
-  background-color: rgba(93, 161, 229, 0.2);
+  background-color: rgba(93, 161, 229, 0.15);
   color: var(--info-color);
 }
 
 .sold-badge {
-  background-color: rgba(225, 90, 90, 0.2);
+  background-color: rgba(225, 90, 90, 0.15);
   color: var(--danger-color);
 }
 
 .purchase-badge {
-  background-color: rgba(93, 176, 117, 0.2);
+  background-color: rgba(93, 176, 117, 0.15);
   color: var(--success-color);
 }
 
@@ -118,39 +128,52 @@
   font-weight: 600;
   margin-top: 0.25rem;
   font-size: 0.9rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
 }
 
 .profit {
   color: var(--success-color);
+  background-color: rgba(93, 176, 117, 0.1);
 }
 
 .loss {
   color: var(--danger-color);
+  background-color: rgba(225, 90, 90, 0.1);
 }
 
-/* タグ表示の最適化 */
+/* カードボディ部分 */
+.diary-card-body {
+  padding: 0.75rem;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--card-bg-color);
+}
+
+/* タグ表示のスタイル */
 .diary-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
-  margin: 0.75rem 1rem 0.5rem;
-}
-@media (max-width: 576px) {
-  .diary-tags {
-    margin: 0px;
-    margin: 0.25rem;
-  }
+  gap: 0.4rem;
+  margin: 0.75rem 0.75rem 0.5rem;
 }
 
 .diary-tag {
-  background-color: rgba(90, 126, 197, 0.1);
+  background-color: rgba(90, 126, 197, 0.08);
   color: var(--primary-color);
-  border-radius: 1rem;
-  padding: 0.15rem 0.6rem;
-  font-size: 0.75rem;
+  border-radius: 6px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(90, 126, 197, 0.1);
+}
+
+.diary-tag:hover {
+  background-color: rgba(90, 126, 197, 0.12);
+  transform: translateY(-1px);
 }
 
 .more-tags {
@@ -158,32 +181,31 @@
   color: var(--text-light);
 }
 
-/* タブナビゲーションの最適化 */
+/* タブナビゲーションのスタイル */
 .diary-card-tabs {
+  margin: 0.25rem 0.5rem 0.5rem;
   position: relative;
-  margin: 0 1rem;
 }
 
 .card-tabs {
   display: flex;
-  gap: 0.25rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  gap: 0.1rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   margin-bottom: 0.5rem;
+  padding: 0 0.25rem;
 }
 
 .card-tabs .nav-link {
-  padding: 0.5rem 0.6rem;
+  padding: 0.6rem 0.75rem;
   font-size: 0.85rem;
+  font-weight: 500;
   color: var(--text-light);
   border: none;
-  border-radius: 0.5rem 0.5rem 0 0;
+  border-radius: 6px 6px 0 0;
   position: relative;
   flex: 1;
   text-align: center;
-  min-height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  transition: all 0.2s ease;
 }
 
 .card-tabs .nav-link::after {
@@ -194,13 +216,12 @@
   width: 100%;
   height: 2px;
   background-color: transparent;
-  transition: background-color 0.2s;
+  transition: background-color 0.3s ease;
 }
 
 .card-tabs .nav-link.active {
   color: var(--primary-color);
-  font-weight: 500;
-  background-color: transparent;
+  background-color: rgba(90, 126, 197, 0.05);
 }
 
 .card-tabs .nav-link.active::after {
@@ -209,11 +230,11 @@
 
 .card-tabs .nav-link:hover:not(.active) {
   color: var(--primary-color);
-  background-color: rgba(90, 126, 197, 0.05);
+  background-color: rgba(90, 126, 197, 0.03);
 }
 
 .card-tabs .nav-link i {
-  margin-right: 0.25rem;
+  margin-right: 0.35rem;
   font-size: 0.9rem;
 }
 
@@ -241,69 +262,335 @@
   transform: translateY(-50%) rotate(45deg);
 }
 
+/* タブコンテンツエリアのスタイル */
+.tab-content {
+  position: relative;
+  padding: 0.25rem 0.5rem;
+}
+
+.tab-pane {
+  position: relative;
+  overflow: visible;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.tab-pane.fade:not(.show) {
+  display: none;
+  transform: translateY(10px);
+}
+
+.tab-pane.fade.show {
+  transform: translateY(0);
+}
+
 /* 本文コンテンツエリア */
 .reason-content {
-  padding: 0.5rem 1rem;
-  line-height: 1.5;
-  max-height: none;
-  overflow: visible;
+  padding: 0.75rem 1rem;
+  line-height: 1.6;
+  font-size: 0.95rem;
+  background-color: rgba(248, 250, 252, 0.5);
+  border-radius: 8px;
+  margin: 0.5rem 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
-/* モバイル向け最適化 */
-@media (max-width: 576px) {
-  .diary-card-header {
-    padding: 0.75rem 0.75rem 0.5rem 1rem;
+/* ========== 継続記録タブのスタイル ========== */
+.notes-timeline {
+  padding: 0.5rem;
+  max-height: 400px;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.note-item {
+  margin-bottom: 1rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.note-item:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.note-header {
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgba(248, 250, 252, 0.8);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.note-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.note-date {
+  font-size: 0.8rem;
+}
+
+.note-content {
+  padding: 1rem;
+  background-color: white;
+}
+
+.note-text {
+  background-color: rgba(248, 250, 252, 0.5);
+  border-radius: 8px;
+  padding: 1rem !important;
+  margin-bottom: 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.note-price-info {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  background-color: rgba(248, 250, 252, 0.5);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+/* ========== 分析タブのスタイル ========== */
+.analysis-templates-container {
+  background-color: rgba(90, 126, 197, 0.03);
+  border-radius: 10px;
+  padding: 0.75rem;
+  max-height: 400px;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.analysis-template-card {
+  background-color: white;
+  border-radius: 10px;
+  border: 1px solid rgba(90, 126, 197, 0.08);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.04);
+  margin-bottom: 1rem;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.analysis-template-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+}
+
+.analysis-template-header {
+  background-color: rgba(248, 250, 252, 0.8);
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(90, 126, 197, 0.08);
+}
+
+.analysis-template-header h6 {
+  margin: 0;
+  color: var(--primary-color);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+.analysis-template-header h6 i {
+  margin-right: 0.5rem;
+  color: var(--primary-color);
+}
+
+.analysis-template-progress {
+  width: 100%;
+  height: 4px;
+  background-color: rgba(90, 126, 197, 0.1);
+}
+
+.analysis-template-progress-bar {
+  height: 100%;
+  background-color: var(--primary-color);
+  transition: width 0.5s ease;
+}
+
+.analysis-items-container {
+  padding: 0.75rem 1rem;
+}
+
+.analysis-item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.5rem;
+}
+
+.analysis-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.analysis-item-name {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  margin-bottom: 0.25rem;
+}
+
+.analysis-item-value {
+  font-weight: 500;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+}
+
+.analysis-item-value .badge {
+  margin-left: 0.5rem;
+}
+
+.analysis-value-boolean-true {
+  color: var(--success-color);
+}
+
+.analysis-value-boolean-false {
+  color: var(--danger-color);
+}
+
+.analysis-more-link {
+  display: block;
+  text-align: right;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.analysis-more-link:hover {
+  text-decoration: underline;
+}
+
+/* ========== 売買情報タブのスタイル ========== */
+.info-block {
+  background-color: rgba(90, 126, 197, 0.03);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid rgba(90, 126, 197, 0.06);
+}
+
+.info-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.info-item {
+  background-color: white;
+  border-radius: 8px;
+  padding: 0.875rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.info-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.06);
+}
+
+.info-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(90, 126, 197, 0.1), rgba(90, 126, 197, 0.2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+  font-size: 1.25rem;
+}
+
+.info-content {
+  flex: 1;
+}
+
+.info-label {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  margin-bottom: 0.25rem;
+}
+
+.info-value {
+  font-weight: 600;
+  color: var(--text-color);
+  font-size: 1.05rem;
+}
+
+/* 売却情報セクション */
+.sell-info {
+  background: linear-gradient(to right, rgba(225, 90, 90, 0.03), rgba(225, 90, 90, 0.06));
+  border-radius: 10px;
+  padding: 1rem;
+  margin-top: 0.5rem;
+  border: 1px solid rgba(225, 90, 90, 0.1);
+}
+
+/* ========== スクロールバーのスタイル ========== */
+.notes-timeline::-webkit-scrollbar,
+.analysis-templates-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.notes-timeline::-webkit-scrollbar-track,
+.analysis-templates-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 10px;
+}
+
+.notes-timeline::-webkit-scrollbar-thumb,
+.analysis-templates-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.notes-timeline::-webkit-scrollbar-thumb:hover,
+.analysis-templates-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* ========== タブ切り替えアニメーション ========== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
-  
-  .diary-title {
-    font-size: 1rem;
-  }
-  
-  .diary-meta {
-    font-size: 0.8rem;
-  }
-  
-  .diary-card-tabs {
-    margin: 0 0.75rem;
-  }
-  
-  .card-tabs .nav-link {
-    padding: 0.4rem 0.4rem;
-    font-size: 0.75rem;
-  }
-  
-  .card-tabs .nav-link i {
-    margin-right: 0.2rem;
-    font-size: 0.8rem;
-  }
-  
-  .price-value {
-    font-size: 0.9rem;
-  }
-  
-  .quantity-value {
-    font-size: 0.75rem;
-  }
-  
-  .diary-tag {
-    font-size: 0.7rem;
-    padding: 0.1rem 0.5rem;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* タップフィードバック */
-@media (hover: none) {
-  .diary-card:active {
-    transform: scale(0.98);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
-  
-  .card-tabs .nav-link:active {
-    opacity: 0.7;
-  }
+.tab-pane.fade.show {
+  animation: fadeInUp 0.3s ease forwards;
 }
 
-/* アイコンだけのアクションボタン */
+/* ========== アクションボタン ========== */
 .action-icon-btn {
   width: 36px;
   height: 36px;
@@ -362,126 +649,6 @@
   background-color: var(--success-color);
   color: white;
   border-color: var(--success-color);
-}
-
-
-  /* 売買情報カード */
-  .info-block {
-    background-color: rgba(var(--primary-color-rgb), 0.02);
-    border-radius: 12px;
-    padding: 1.25rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
-  }
-  
-  .info-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-  }
-  
-  .info-item {
-    background-color: white;
-    border-radius: 8px;
-    padding: 1rem;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-  
-  .info-icon {
-    width: 45px;
-    height: 45px;
-    border-radius: 10px;
-    background-color: rgba(var(--primary-color-rgb), 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--primary-color);
-    font-size: 1.25rem;
-  }
-  
-  .info-content {
-    flex: 1;
-  }
-  
-  .info-label {
-    font-size: 0.8rem;
-    color: var(--text-light);
-    margin-bottom: 0.25rem;
-  }
-  
-  .info-value {
-    font-weight: 600;
-    color: var(--text-color);
-    font-size: 1.05rem;
-  }
-
-  /* 売却情報 */
-  .sell-info {
-    background-color: rgba(var(--danger-color-rgb), 0.03);
-    border-radius: 12px;
-    padding: 1.25rem;
-    margin-top: 1rem;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
-    border: 1px dashed rgba(var(--danger-color-rgb), 0.2);
-  }
-
-/* 利益/損失表示 */
-.profit {
-  color: var(--success-color);
-  font-weight: 600;
-}
-
-.loss {
-  color: var(--danger-color);
-  font-weight: 600;
-}
-
-/* ========== タブスタイル ========== */
-.card-tabs {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  margin-bottom: 0.75rem;
-}
-
-.card-tabs .nav-link {
-  padding: 0.4rem 0.75rem;
-  font-size: 0.85rem;
-  color: var(--text-light);
-  border: none;
-  border-radius: 0;
-  position: relative;
-}
-
-.card-tabs .nav-link::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background-color: transparent;
-  transition: background-color 0.2s;
-}
-
-.card-tabs .nav-link.active {
-  color: var(--primary-color);
-  font-weight: 500;
-  background-color: transparent;
-}
-
-.card-tabs .nav-link.active::after {
-  background-color: var(--primary-color);
-}
-
-.card-tabs .nav-link:hover:not(.active) {
-  color: var(--primary-color);
-  background-color: rgba(90, 126, 197, 0.05);
-}
-
-.card-tabs .nav-link i {
-  margin-right: 0.3rem;
 }
 
 /* ========== ボタンスタイル ========== */
@@ -558,74 +725,13 @@
 }
 
 /* ========== カレンダーイベントスタイル ========== */
-
 /* 日付クリック時のスタイル */
 .fc-day-clicked {
   background-color: rgba(90, 126, 197, 0.2) !important;
   box-shadow: inset 0 0 0 2px var(--primary-color) !important;
 }
 
-/* タグスタイル */
-.diary-tag {
-  background-color: rgba(90, 126, 197, 0.1);
-  color: var(--primary-color);
-  border-radius: 5px;
-  padding: 0rem 0.5rem;
-  margin-top: 0.1rem;
-  font-size: 0.85rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  border: 1px solid rgba(90, 126, 197, 0.2);
-}
-
-.diary-tag:hover {
-  background-color: rgba(90, 126, 197, 0.15);
-}
-
-/* 検索ハイライト */
-.search-highlight {
-  background-color: var(--warning-color);
-  color: white;
-  padding: 0 2px;
-  border-radius: 2px;
-  font-weight: bold;
-}
-
-/* 検索関連カード装飾 */
-.diary-card-highlight {
-  border-left: 3px solid #ffc107 !important;
-}
-
-/* 無限スクロール用ローディングインジケーター */
-#loading-indicator {
-  padding: 1rem;
-  margin: 1rem 0;
-  text-align: center;
-}
-
-#loading-indicator .spinner-border {
-  width: 2rem;
-  height: 2rem;
-}
-
-/* 検索条件表示バッジ */
-.search-badge {
-  display: inline-flex;
-  align-items: center;
-  background-color: #f1f1f1;
-  color: #333;
-  padding: 0.25rem 0.5rem;
-  border-radius: 1rem;
-  margin-right: 0.5rem;
-  font-size: 0.85rem;
-}
-
-.search-badge i {
-  margin-right: 0.25rem;
-}
-
-/* ========== 投資分析フィルター ========== */
+/* ========== フィルターバッジ ========== */
 .filter-badge {
   background-color: rgba(74, 109, 167, 0.1);
   color: var(--primary-color);
@@ -755,43 +861,7 @@
   gap: var(--spacing-sm);
 }
 
-/* ========== メディアクエリ ========== */
-/* タブレット */
-@media (max-width: 992px) {
-  .diary-card-body {
-    padding: var(--spacing-md);
-  }
-  
-  .info-block {
-    padding: var(--spacing-sm);
-  }
-  
-  .info-item {
-    flex: 1 1 calc(50% - var(--spacing-md));
-  }
-}
-
-/* モバイル */
-@media (max-width: 576px) {
-  .info-item {
-    flex: 1 1 100%;
-  }
-  
-  .action-buttons {
-    flex-wrap: wrap;
-  }
-  
-  .diary-card-body {
-    padding: var(--spacing-md) var(--spacing-sm);
-  }
-  
-  .form-header, 
-  .form-body, 
-  .form-footer {
-    padding: var(--spacing-md);
-  }
-}
-
+/* ========== カレンダービュー ========== */
 .calendar-view-title {
   font-size: 1.25rem;
   color: var(--primary-color);
@@ -810,78 +880,187 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
   background-color: rgba(249, 250, 251, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 .calendar-event-item:hover {
   background-color: rgba(243, 244, 246, 1);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
-/* モバイル向け視覚的改善 2025 */
+
+/* ========== メディアクエリ - レスポンシブ対応 ========== */
+@media (max-width: 992px) {
+  .diary-card-body {
+    padding: var(--spacing-md);
+  }
+  
+  .info-block {
+    padding: var(--spacing-sm);
+  }
+  
+  .info-item {
+    flex: 1 1 calc(50% - var(--spacing-md));
+  }
+  
+  .notes-timeline,
+  .analysis-templates-container {
+    max-height: 350px;
+  }
+}
+
 @media (max-width: 768px) {
-  .diary-card {
-    position: relative;
-    overflow: hidden;
-    border-radius: 12px;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
-  }
-  
-  .diary-card::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 4px;
-    opacity: 0.9;
-    border-radius: 2px 0 0 2px;
-  }
-  
   .diary-card-header {
-    padding: 0.875rem 1rem;
-    background-color: rgba(248, 249, 250, 0.6);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    padding: 1rem 1.25rem 0.75rem;
+  }
+  
+  .info-row {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+  
+  .card-tabs .nav-link {
+    padding: 0.5rem 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .card-tabs .nav-link i {
+    margin-right: 0.2rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .diary-card-header {
+    padding: 0.875rem 1rem 0.75rem;
   }
   
   .diary-title {
-    font-size: 1.05rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-    color: var(--primary-color);
+    font-size: 1rem;
   }
   
   .diary-meta {
     font-size: 0.8rem;
   }
   
-  .diary-card-tabs {
-    margin: 0.5rem 0.75rem;
+  .info-row {
+    grid-template-columns: 1fr;
   }
   
   .card-tabs .nav-link {
-    padding: 0.5rem 0.4rem;
-    font-size: 0.8rem;
-    font-weight: 500;
+    padding: 0.4rem 0.4rem;
+    font-size: 0.75rem;
   }
   
   .card-tabs .nav-link i {
-    margin-right: 0.25rem;
-    font-size: 0.85rem;
+    margin-right: 0.2rem;
+    font-size: 0.8rem;
+  }
+  
+  .price-value {
+    font-size: 0.9rem;
+  }
+  
+  .quantity-value {
+    font-size: 0.75rem;
   }
   
   .diary-tags {
-    margin: 0.5rem 0.75rem;
+    margin: 0.5rem 0.75rem 0.25rem;
   }
   
   .diary-tag {
     padding: 0.15rem 0.5rem;
-    font-size: 0.7rem;
-    border-radius: 4px;
+    font-size: 0.75rem;
   }
   
-  .status-badge {
-    font-size: 0.7rem;
-    padding: 0.1rem 0.4rem;
+  .tab-content {
+    padding: 0.25rem;
   }
+  
+  .info-item {
+    padding: 0.5rem !important;
+    min-width: 140px !important;
+  }
+  
+  .info-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+  
+  .form-header, 
+  .form-body, 
+  .form-footer {
+    padding: var(--spacing-md);
+  }
+}
+
+/* タップフィードバック */
+@media (hover: none) {
+  .diary-card:active {
+    transform: scale(0.98);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .card-tabs .nav-link:active {
+    opacity: 0.7;
+  }
+  
+  .diary-card-tabs::before,
+  .diary-card-tabs::after {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-top: 2px solid rgba(var(--primary-color-rgb, 90, 126, 197), 0.3);
+    border-right: 2px solid rgba(var(--primary-color-rgb, 90, 126, 197), 0.3);
+    top: 50%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 5;
+    pointer-events: none;
+  }
+  
+  .diary-card-tabs.swiping::before,
+  .diary-card-tabs.swiping::after {
+    opacity: 0.8;
+  }
+  
+  .diary-card-tabs::before {
+    left: 15px;
+    transform: translateY(-50%) rotate(-135deg);
+  }
+  
+  .diary-card-tabs::after {
+    right: 15px;
+    transform: translateY(-50%) rotate(45deg);
+  }
+}
+
+/* アニメーション効果 */
+@keyframes tab-glow {
+  0% {
+    background-color: transparent;
+  }
+  50% {
+    background-color: rgba(var(--primary-color-rgb, 90, 126, 197), 0.1);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.tab-highlight {
+  animation: tab-glow 0.3s ease-out;
+}
+
+/* CSS変数の色に対応する RGB 値 */
+:root {
+  --primary-color-rgb: 90, 126, 197;    /* var(--primary-color) の RGB 値 */
+  --secondary-color-rgb: 248, 194, 145; /* var(--secondary-color) の RGB 値 */
+  --success-color-rgb: 93, 176, 117;    /* var(--success-color) の RGB 値 */
+  --danger-color-rgb: 225, 90, 90;      /* var(--danger-color) の RGB 値 */
+  --warning-color-rgb: 247, 183, 49;    /* var(--warning-color) の RGB 値 */
+  --info-color-rgb: 93, 161, 229;       /* var(--info-color) の RGB 値 */
 }
