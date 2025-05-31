@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}認証済み | カブログ{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-header bg-info text-white text-center">
+          <h3><i class="bi bi-check-circle me-2"></i>認証済み</h3>
+        </div>
+        <div class="card-body p-4 text-center">
+          <div class="mb-4">
+            <i class="bi bi-check-circle-fill text-info" style="font-size: 4rem;"></i>
+          </div>
+          
+          <h4 class="mb-3">このメールアドレスは既に認証済みです</h4>
+          
+          <p class="mb-4">
+            お問い合わせは既に受け付けており、通常3営業日以内にご返信いたします。
+          </p>
+          
+          <div class="d-grid gap-2">
+            <a href="{% url 'contact:contact' %}" class="btn btn-primary">
+              <i class="bi bi-envelope me-2"></i>新しいお問い合わせ
+            </a>
+            <a href="{% url 'stockdiary:home' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-house me-2"></i>ホームに戻る
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

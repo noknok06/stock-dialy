@@ -464,3 +464,39 @@ AXES_LOCKOUT_PARAMETERS = ['username', 'ip_address']
 
 # 静的ファイルのキャッシュ期間を設定（秒単位）
 # STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+
+
+# スパム検出設定
+SPAM_DETECTION = {
+    # スパム判定の閾値
+    'SPAM_THRESHOLD': 3,
+    
+    # レート制限（同一IPからの送信制限）
+    'RATE_LIMIT_ATTEMPTS': 3,  # 1時間あたりの最大試行回数（認証が必要なため厳しく設定）
+    'RATE_LIMIT_PERIOD': 3600,  # 期間（秒）
+    
+    # スパムキーワード（随時更新）
+    'SPAM_KEYWORDS': [
+        'wkxprysmyph',
+        'accordini',
+        'gfwljsiqtrr',
+        'oyvjwyyrxg',
+        'wkxprysmyphgpfwljsiqtrrxfdwdry',
+        # 必要に応じて追加
+    ],
+    
+    # 自動削除設定
+    'AUTO_DELETE_SPAM_DAYS': 30,  # スパムメッセージの自動削除期間（日）
+}
+
+# 管理者への通知設定
+ADMIN_NOTIFICATIONS = {
+    'SPAM_ALERT_THRESHOLD': 10,  # 1日あたりのスパム件数がこの数を超えたら管理者に通知
+    'SPAM_ALERT_EMAIL': 'kabulog.information@gmail.com',
+}
+
+# メール認証設定
+EMAIL_VERIFICATION = {
+    'EXPIRATION_HOURS': 24,  # 認証リンクの有効期限（時間）
+    'CLEANUP_EXPIRED_HOURS': 48,  # 期限切れメッセージの削除期間（時間）
+}

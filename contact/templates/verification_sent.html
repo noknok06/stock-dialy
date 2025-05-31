@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}確認メール送信完了 | カブログ{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<style>
+  .verification-container {
+    padding: 3rem 0;
+  }
+  
+  .verification-card {
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .verification-header {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    padding: 2rem;
+    color: white;
+    text-align: center;
+  }
+  
+  .verification-header h2 {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  
+  .verification-body {
+    padding: 2.5rem;
+    background-color: white;
+    text-align: center;
+  }
+  
+  .info-icon {
+    font-size: 4rem;
+    color: #3b82f6;
+    margin-bottom: 1.5rem;
+  }
+  
+  .email-instructions {
+    background-color: #eff6ff;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    text-align: left;
+    border-left: 4px solid #3b82f6;
+  }
+  
+  .security-note {
+    background-color: #fef3c7;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin: 1.5rem 0;
+    font-size: 0.9rem;
+    color: #92400e;
+    border-left: 4px solid #f59e0b;
+  }
+  
+  .return-btn {
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+    border: none;
+    transition: all 0.3s ease;
+    color: white;
+  }
+  
+  .return-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(79, 70, 229, 0.3);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="verification-container">
+  <div class="verification-card">
+    <div class="verification-header">
+      <h2>確認メールを送信しました</h2>
+    </div>
+    
+    <div class="verification-body">
+      <i class="bi bi-envelope-check-fill info-icon"></i>
+      
+      <h3 class="mb-3">メールアドレスの確認が必要です</h3>
+      
+      <p>ご入力いただいたメールアドレスに確認メールを送信しました。</p>
+      
+      <div class="email-instructions">
+        <h5><i class="bi bi-info-circle me-2"></i>次の手順</h5>
+        <ol class="mb-0">
+          <li>メールボックスをご確認ください</li>
+          <li>「カブログ お問い合わせの確認」という件名のメールを探してください</li>
+          <li>メール内の確認リンクをクリックしてください</li>
+          <li>お問い合わせが正式に受け付けられます</li>
+        </ol>
+      </div>
+      
+      <div class="security-note">
+        <i class="bi bi-shield-check me-2"></i>
+        <strong>セキュリティ対策について</strong><br>
+        メールアドレスの確認により、なりすましや迷惑メールを防止しています。
+        確認リンクは24時間有効です。
+      </div>
+      
+      <p class="mb-4">
+        <strong>メールが届かない場合：</strong><br>
+        ・迷惑メールフォルダをご確認ください<br>
+        ・メールアドレスに間違いがないかご確認ください<br>
+        ・しばらく経ってからもう一度お試しください
+      </p>
+      
+      <div class="mt-4">
+        <a href="{% url 'stockdiary:home' %}" class="btn return-btn">
+          <i class="bi bi-house me-2"></i>ホームに戻る
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
