@@ -39,7 +39,10 @@ from stockdiary.templatetags.stockdiary_filters import mul_filter, sub_filter, d
 import html
 import json
 import re
+from django.conf import settings
 
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 
 class StockDiaryListView(LoginRequiredMixin, ListView):
     model = StockDiary
@@ -1648,3 +1651,24 @@ def context_actions(request, pk):
     
     html = render_to_string('stockdiary/partials/context_actions.html', context)
     return HttpResponse(html)
+
+def csrf_failure_view(request, reason=""):
+    """CSRF失敗時のカスタムハンドラー"""
+    
+    # テストアカウントの場合は親切なメッセージを表示
+    if (hasattr(request, 'user') and 
+        request.user.is_authenticated and 
+        request.user.username in getattr(settings, 'TEST_ACCOUNT_SETTINGS', {}).get('USERNAMES', [])):
+        
+        messages.warning(
+            request, 
+            "テストアカウントの同時利用により一時的なエラーが発生しました。"
+            "ページを更新するか、別のテストアカウント（test1, test2, demo1等）をお試しください。"
+        )
+        return redirect('stockdiary:home')
+    
+    # 通常ユーザーの場合
+    return render(request, 'errors/csrf_failure.html', {
+        'reason': reason,
+        'test_accounts': settings.TEST_ACCOUNT_SETTINGS.get('USERNAMES', [])
+    }, status=403)

@@ -155,6 +155,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'stockdiary.middleware.TestAccountCSRFMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -500,3 +501,11 @@ EMAIL_VERIFICATION = {
     'EXPIRATION_HOURS': 24,  # 認証リンクの有効期限（時間）
     'CLEANUP_EXPIRED_HOURS': 48,  # 期限切れメッセージの削除期間（時間）
 }
+TEST_ACCOUNT_SETTINGS = {
+    'USERNAMES': ['test', 'test1', 'test2', 'test3', 'demo1', 'demo2', 'demo3'],
+    'SESSION_TIMEOUT': 7200,  # テストアカウントは2時間
+    'CSRF_EXEMPT': True,  # テストアカウントのCSRF例外
+}
+
+# CSRFエラー時のカスタムビュー設定
+CSRF_FAILURE_VIEW = 'stockdiary.views.csrf_failure_view'
