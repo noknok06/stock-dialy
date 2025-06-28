@@ -143,6 +143,131 @@
       border-left: none;
       border-right: none;
     }
+  }/* 文字数制限関連のスタイル */
+
+  /* 文字数制限超過時のテキストエリア/入力フィールドスタイル */
+  .text-limit-exceeded {
+    border-color: #dc3545 !important;
+    background-color: rgba(220, 53, 69, 0.1) !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+  }
+
+  /* 文字数カウンターのスタイル強化 */
+  .char-counter,
+  .memo-char-counter,
+  .fullscreen-char-counter {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    font-size: 12px;
+    color: #6c757d;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 4px 8px;
+    border-radius: 12px;
+    pointer-events: none;
+    border: 1px solid #e9ecef;
+    font-weight: 500;
+    z-index: 10;
+  }
+
+  /* 警告状態（残り50文字以下） */
+  .char-counter.text-warning,
+  .memo-char-counter.text-warning,
+  .fullscreen-char-counter.text-warning {
+    color: #856404;
+    background-color: rgba(255, 243, 205, 0.9);
+    border-color: #ffeaa7;
+  }
+
+  /* エラー状態（制限超過） */
+  .char-counter.text-danger,
+  .memo-char-counter.text-danger,
+  .fullscreen-char-counter.text-danger {
+    color: #721c24;
+    background-color: rgba(248, 215, 218, 0.9);
+    border-color: #f5c6cb;
+    animation: shake 0.5s ease-in-out;
+  }
+
+  /* 文字数制限警告メッセージ */
+  .text-limit-warning {
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-top: 0.25rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .text-limit-warning::before {
+    content: "⚠️";
+    margin-right: 0.5rem;
+  }
+
+  /* アニメーション：制限超過時の振動効果 */
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+    20%, 40%, 60%, 80% { transform: translateX(2px); }
+  }
+
+  /* フルスクリーンエディタでの文字数カウンター調整 */
+  .fullscreen-content .fullscreen-char-counter {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 10001;
+  }
+
+  /* モバイル対応 */
+  @media (max-width: 768px) {
+    .char-counter,
+    .memo-char-counter {
+      font-size: 11px;
+      padding: 3px 6px;
+      bottom: 8px;
+      right: 8px;
+    }
+    
+    .text-limit-warning {
+      font-size: 0.8rem;
+    }
+    
+    .fullscreen-content .fullscreen-char-counter {
+      bottom: 15px;
+      right: 15px;
+      font-size: 11px;
+    }
+  }
+
+  /* テキストエリアのフォーカス時スタイル調整 */
+  .enhanced-textarea-container.focused .char-counter,
+  .enhanced-textarea-container.focused .memo-char-counter {
+    background-color: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  /* 入力フィールドの制限超過時のプレースホルダー色調整 */
+  .text-limit-exceeded::placeholder {
+    color: #dc3545;
+    opacity: 0.7;
+  }
+
+  /* バリデーションエラー表示の改善 */
+  .form-control.text-limit-exceeded + .invalid-feedback,
+  .form-control.text-limit-exceeded + .text-limit-warning {
+    display: block !important;
+  }
+
+  /* 制限近くでの注意喚起スタイル */
+  .text-near-limit {
+    border-color: #ffc107 !important;
+    background-color: rgba(255, 193, 7, 0.1) !important;
+  }
+
+  /* 成功状態（制限内で適切な長さ） */
+  .text-good-length {
+    border-color: #28a745 !important;
+    background-color: rgba(40, 167, 69, 0.05) !important;
   }
   </style>
 {% endblock %}
@@ -498,6 +623,62 @@
     
     // 日記ID (編集時のみ)
     const diaryId = {% if form.instance.pk %}{{ form.instance.pk }}{% else %}null{% endif %};
+
+    // 文字数制限機能付きのカウンター更新関数
+    function updateCharCountWithLimit(textarea, counter, maxLength) {
+      if (!textarea || !counter) return;
+      
+      const currentLength = textarea.value.length;
+      const remaining = maxLength - currentLength;
+      
+      // 基本のクラス名を保持
+      const baseClasses = counter.className.replace(/text-\w+/g, '').trim();
+      
+      // カウンター表示の更新
+      if (remaining >= 0) {
+        counter.textContent = `${currentLength} / ${maxLength} 文字`;
+        counter.className = baseClasses;
+        textarea.classList.remove('text-limit-exceeded');
+      } else {
+        counter.textContent = `${currentLength} / ${maxLength} 文字 (${Math.abs(remaining)}文字超過)`;
+        counter.className = baseClasses + ' text-danger';
+        textarea.classList.add('text-limit-exceeded');
+      }
+      
+      // 制限近くで警告色に変更
+      if (remaining <= 50 && remaining > 0) {
+        counter.className = baseClasses + ' text-warning';
+      }
+    }
+
+    // 入力フィールドの文字数制限チェック関数
+    function checkInputLimit(input, maxLength, fieldName) {
+      const currentLength = input.value.length;
+      
+      if (currentLength > maxLength) {
+        input.classList.add('text-limit-exceeded');
+        
+        // 制限を超えた場合の警告表示
+        let warningDiv = input.parentElement.querySelector('.text-limit-warning');
+        if (!warningDiv) {
+          warningDiv = document.createElement('div');
+          warningDiv.className = 'text-limit-warning text-danger small mt-1';
+          input.parentElement.appendChild(warningDiv);
+        }
+        
+        const excess = currentLength - maxLength;
+        warningDiv.textContent = `${fieldName}は${maxLength}文字以内で入力してください。(${excess}文字超過)`;
+        warningDiv.style.display = 'block';
+      } else {
+        input.classList.remove('text-limit-exceeded');
+        
+        // 警告表示を削除
+        const warningDiv = input.parentElement.querySelector('.text-limit-warning');
+        if (warningDiv) {
+          warningDiv.style.display = 'none';
+        }
+      }
+    }
     
     // テンプレート展開ボタンのクリックイベント
     expandAnalysisBtn.addEventListener('click', function() {
@@ -958,54 +1139,63 @@
     purchasePriceInput.addEventListener('input', updateSellFields);
     purchaseQuantityInput.addEventListener('input', updateSellFields);
     
-    // フォーム送信前のバリデーション
-    const form = document.querySelector('form');
-    form.addEventListener('submit', function(event) {
-      const sellDate = sellDateInput.value.trim();
-      const sellPrice = sellPriceInput.value.trim();
-      
-      // 片方だけ入力されている場合
-      if ((sellDate && !sellPrice) || (!sellDate && sellPrice)) {
-        event.preventDefault(); // フォーム送信をキャンセル
-        showAlert('売却日と売却価格は両方入力するか、両方入力しないでください', 'danger');
-        
-        // 不完全なフィールドをハイライト
-        if (sellDate && !sellPrice) {
-          sellPriceInput.classList.add('is-invalid');
-        } else if (!sellDate && sellPrice) {
-          sellDateInput.classList.add('is-invalid');
-        }
-      }
-    });  
-
-    // 銘柄コード入力時の処理（4桁入力時に自動検索）
-    // stockSymbolInput.addEventListener('input', function() {
-    //   const stockCode = this.value.trim();
-    //   // コードが空になった場合は情報カードを非表示
-    //   if (!stockCode) {
-    //     stockInfoCard.classList.add('d-none');
-    //   }
-      
-    //   // 4桁入力時に自動検索
-    //   if (stockCode.length === 4 && /^\d{4}$/.test(stockCode)) {
-    //     fetchStockInfo(stockCode);
-    //   }
-    // });
-
+    // 銘柄名の文字数制限チェック
+    if (stockNameInput) {
+      stockNameInput.addEventListener('input', function() {
+        checkInputLimit(this, 100, '銘柄名');
+      });
+    }
+    
     // ページ読み込み時に銘柄コードが入力済みなら情報を取得
     if (stockSymbolInput.value.trim() && /^\d{4}$/.test(stockSymbolInput.value.trim())) {
       fetchStockInfo(stockSymbolInput.value.trim());
     }
   });
+
 // 日記フォームのバリデーション強化スクリプト
 document.addEventListener('DOMContentLoaded', function() {
   // フォーム要素を取得
   const diaryForm = document.querySelector('form');
   
   if (diaryForm) {
-    // 送信イベントリスナーを追加
+    // 送信イベントリスナーを追加（文字数制限チェックを追加）
     diaryForm.addEventListener('submit', function(event) {
-      // 必須フィールドをすべて検索
+      let hasError = false;
+      
+      // 銘柄名の文字数チェック
+      const stockNameInput = document.getElementById('{{ form.stock_name.id_for_label }}');
+      if (stockNameInput && stockNameInput.value.length > 100) {
+        event.preventDefault();
+        hasError = true;
+        stockNameInput.classList.add('is-invalid');
+        alert('銘柄名は100文字以内で入力してください。');
+        stockNameInput.focus();
+        return;
+      }
+      
+      // 購入理由の文字数チェック
+      const reasonTextarea = document.getElementById('{{ form.reason.id_for_label }}');
+      if (reasonTextarea && reasonTextarea.value.length > 1000) {
+        event.preventDefault();
+        hasError = true;
+        reasonTextarea.classList.add('is-invalid');
+        alert('購入理由は1000文字以内で入力してください。');
+        reasonTextarea.focus();
+        return;
+      }
+      
+      // メモの文字数チェック
+      const memoTextarea = document.getElementById('{{ form.memo.id_for_label }}');
+      if (memoTextarea && memoTextarea.value.length > 1000) {
+        event.preventDefault();
+        hasError = true;
+        memoTextarea.classList.add('is-invalid');
+        alert('メモは1000文字以内で入力してください。');
+        memoTextarea.focus();
+        return;
+      }
+      
+      // 必須フィールドのチェック（既存の機能を維持）
       const requiredFields = diaryForm.querySelectorAll('[required]');
       let firstInvalidField = null;
       
@@ -1047,6 +1237,17 @@ document.addEventListener('DOMContentLoaded', function() {
           firstInvalidField.parentElement.classList.remove('shake-animation');
         }, 500);
       }
+
+      // 売却関連のバリデーション（既存の機能を維持）
+      const sellDate = document.getElementById('{{ form.sell_date.id_for_label }}').value.trim();
+      const sellPrice = document.getElementById('{{ form.sell_price.id_for_label }}').value.trim();
+      
+      // 片方だけ入力されている場合
+      if ((sellDate && !sellPrice) || (!sellDate && sellPrice)) {
+        event.preventDefault();
+        alert('売却日と売却価格は両方入力するか、両方入力しないでください');
+        return;
+      }
     });
     
     // ユーザーが入力を開始したら無効状態をクリアするイベントリスナー
@@ -1069,7 +1270,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-// CSSアニメーションを追加
+// CSSアニメーションを追加（既存の機能を維持）
 const style = document.createElement('style');
 style.textContent = `
 .shake-animation {
@@ -1095,6 +1296,26 @@ style.textContent = `
   border-color: #dc3545 !important;
   background-color: rgba(220, 53, 69, 0.05) !important;
 }
+
+/* 文字数制限関連のスタイル */
+.text-limit-exceeded {
+  border-color: #dc3545 !important;
+  background-color: rgba(220, 53, 69, 0.1) !important;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+
+.text-limit-warning {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+}
+
+.text-limit-warning::before {
+  content: "⚠️";
+  margin-right: 0.5rem;
+}
 `;
 document.head.appendChild(style);  
 
@@ -1112,13 +1333,40 @@ document.head.appendChild(style);
   const saveFullscreenBtn = document.getElementById('saveFullscreenBtn');
   const fullscreenCharCounter = document.querySelector('.fullscreen-char-counter');
   
-  // 文字数カウンター初期設定
+  // 文字数制限機能付きのカウンター更新関数
+  function updateCharCountWithLimit(textarea, counter, maxLength) {
+    if (!textarea || !counter) return;
+    
+    const currentLength = textarea.value.length;
+    const remaining = maxLength - currentLength;
+    
+    // 基本のクラス名を保持
+    const baseClasses = counter.className.replace(/text-\w+/g, '').trim();
+    
+    // カウンター表示の更新
+    if (remaining >= 0) {
+      counter.textContent = `${currentLength} / ${maxLength} 文字`;
+      counter.className = baseClasses;
+      textarea.classList.remove('text-limit-exceeded');
+    } else {
+      counter.textContent = `${currentLength} / ${maxLength} 文字 (${Math.abs(remaining)}文字超過)`;
+      counter.className = baseClasses + ' text-danger';
+      textarea.classList.add('text-limit-exceeded');
+    }
+    
+    // 制限近くで警告色に変更
+    if (remaining <= 50 && remaining > 0) {
+      counter.className = baseClasses + ' text-warning';
+    }
+  }
+  
+  // 文字数カウンター初期設定（制限付き）
   if (reasonTextarea && charCounter) {
-    charCounter.textContent = `${reasonTextarea.value.length} 文字`;
+    updateCharCountWithLimit(reasonTextarea, charCounter, 1000);
   }
   
   if (memoTextarea && memoCharCounter) {
-    memoCharCounter.textContent = `${memoTextarea.value.length} 文字`;
+    updateCharCountWithLimit(memoTextarea, memoCharCounter, 1000);
   }
   
   // テキストエリアの高さを自動調整する関数
@@ -1138,22 +1386,15 @@ document.head.appendChild(style);
     textarea.style.height = `${newHeight}px`;
   };
   
-  // 文字数のカウント更新
-  const updateCharCount = (textarea, counter) => {
-    if (textarea && counter) {
-      counter.textContent = `${textarea.value.length} 文字`;
-    }
-  };
-  
   // 理由テキストエリアのイベント処理
   if (reasonTextarea) {
     // 初期調整
     setTimeout(() => adjustTextareaHeight(reasonTextarea), 100);
     
-    // 入力時
+    // 入力時（制限付きカウンター）
     reasonTextarea.addEventListener('input', function() {
       adjustTextareaHeight(this);
-      updateCharCount(this, charCounter);
+      updateCharCountWithLimit(this, charCounter, 1000);
     });
     
     // フォーカス時
@@ -1179,10 +1420,10 @@ document.head.appendChild(style);
     // 初期調整
     setTimeout(() => adjustTextareaHeight(memoTextarea), 100);
     
-    // 入力時
+    // 入力時（制限付きカウンター）
     memoTextarea.addEventListener('input', function() {
       adjustTextareaHeight(this);
-      updateCharCount(this, memoCharCounter);
+      updateCharCountWithLimit(this, memoCharCounter, 1000);
     });
     
     // フォーカス時
@@ -1203,7 +1444,7 @@ document.head.appendChild(style);
     expandReasonBtn.addEventListener('click', function() {
       // 本文をフルスクリーンエディタにコピー
       fullscreenTextarea.value = reasonTextarea.value;
-      fullscreenCharCounter.textContent = `${fullscreenTextarea.value.length} 文字`;
+      updateCharCountWithLimit(fullscreenTextarea, fullscreenCharCounter, 1000);
       
       // フルスクリーン表示
       fullscreenEditor.classList.add('active');
@@ -1223,11 +1464,17 @@ document.head.appendChild(style);
     
     // フルスクリーン保存ボタン
     saveFullscreenBtn.addEventListener('click', function() {
+      // 文字数制限チェック
+      if (fullscreenTextarea.value.length > 1000) {
+        alert('購入理由は1000文字以内で入力してください。');
+        return;
+      }
+      
       // 通常テキストエリアに値を戻す
       reasonTextarea.value = fullscreenTextarea.value;
       
       // 文字数と高さを更新
-      updateCharCount(reasonTextarea, charCounter);
+      updateCharCountWithLimit(reasonTextarea, charCounter, 1000);
       adjustTextareaHeight(reasonTextarea);
       
       // フルスクリーン閉じる
@@ -1235,9 +1482,9 @@ document.head.appendChild(style);
       document.body.classList.remove('no-scroll');
     });
     
-    // フルスクリーンテキストエリアの入力時
+    // フルスクリーンテキストエリアの入力時（制限付きカウンター）
     fullscreenTextarea.addEventListener('input', function() {
-      updateCharCount(this, fullscreenCharCounter);
+      updateCharCountWithLimit(this, fullscreenCharCounter, 1000);
     });
   }
   

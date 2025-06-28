@@ -1387,7 +1387,7 @@
                 </h3>
 
                 <div class="mx-3">
-                  {{ diary.reason|safe|linebreaksbr }}
+                  {{ diary.reason|safe|linebreaks }}
                 </div>
               </div>
 
@@ -1543,7 +1543,7 @@
                         <td>
                           <strong>{{ value.analysis_item.name }}</strong>
                           {% if value.analysis_item.description %}
-                          <div class="small text-muted">{{ value.analysis_item.description|linebreaksbr }}</div>
+                          <div class="small text-muted">{{ value.analysis_item.description|linebreaks }}</div>
                           {% endif %}
                         </td>
                         <td>
@@ -1817,7 +1817,7 @@
                     {% endif %}
 
                     <div class="card-content">
-                      {{ timeline_diary.reason|safe|truncatewords_html:20 }}
+                      {{ timeline_diary.reason|linebreaks|safe|truncatewords_html:20 }}
                     </div>
                   </div>
                   {% else %}
@@ -1850,7 +1850,7 @@
                       {% endif %}
 
                       <div class="card-content">
-                        {{ timeline_diary.reason|safe|truncatewords_html:20 }}
+                        {{ timeline_diary.reason|linebreaks|safe|truncatewords_html:20 }}
                       </div>
 
                       {% if timeline_diary.tags.exists %}

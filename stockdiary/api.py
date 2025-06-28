@@ -185,13 +185,22 @@ def get_stock_price(request, stock_code):
         }, status=500)
 
 
+# APIエンドポイントでの制限チェック機能を追加
+
 @login_required
 @require_POST
 def api_create_diary(request):
     try:
         # 必須フィールドのチェック
-        stock_name = request.POST.get('stock_name')
-        purchase_date = request.POST.get('purchase_date')
+        stock_name = request.POST.get('stock_name', '').strip()
+        purchase_date = request.POST.get('purchase_date', '').strip()
+        
+        # 文字数制限のチェック
+        if len(stock_name) > 100:
+            return JsonResponse({
+                'success': False,
+                'message': '銘柄名は100文字以内で入力してください'
+            }, status=400)
         
         if not stock_name:
             return JsonResponse({
@@ -211,10 +220,33 @@ def api_create_diary(request):
             purchase_date=purchase_date
         )
         
-        # オプションフィールドの設定
-        diary.stock_symbol = request.POST.get('stock_symbol', '')
-        diary.sector = request.POST.get('sector', '')
-        diary.reason = request.POST.get('reason', '')
+        # オプションフィールドの設定と文字数制限チェック
+        stock_symbol = request.POST.get('stock_symbol', '').strip()
+        sector = request.POST.get('sector', '').strip()
+        reason = request.POST.get('reason', '').strip()
+        
+        # 各フィールドの文字数制限チェック
+        if len(stock_symbol) > 50:
+            return JsonResponse({
+                'success': False,
+                'message': '銘柄コードは50文字以内で入力してください'
+            }, status=400)
+        
+        if len(sector) > 50:
+            return JsonResponse({
+                'success': False,
+                'message': '業種は50文字以内で入力してください'
+            }, status=400)
+        
+        if len(reason) > 1000:
+            return JsonResponse({
+                'success': False,
+                'message': '購入理由は1000文字以内で入力してください'
+            }, status=400)
+        
+        diary.stock_symbol = stock_symbol
+        diary.sector = sector
+        diary.reason = reason
         
         # 数値フィールドの処理
         price = request.POST.get('purchase_price')
@@ -224,16 +256,28 @@ def api_create_diary(request):
             try:
                 diary.purchase_price = float(price)
             except ValueError:
-                pass
+                return JsonResponse({
+                    'success': False,
+                    'message': '購入価格は有効な数値を入力してください'
+                }, status=400)
                 
         if quantity:
             try:
                 diary.purchase_quantity = int(quantity)
             except ValueError:
-                pass
+                return JsonResponse({
+                    'success': False,
+                    'message': '購入数量は有効な整数を入力してください'
+                }, status=400)
         
-        # 日記を保存
-        diary.save()
+        # 日記を保存（モデルのvalidationが実行される）
+        try:
+            diary.save()
+        except ValidationError as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'入力データにエラーがあります: {str(e)}'
+            }, status=400)
         
         # タグの処理
         tags = request.POST.getlist('tags')
@@ -266,4 +310,4 @@ def api_create_diary(request):
         return JsonResponse({
             'success': False,
             'message': f'エラーが発生しました: {str(e)}'
-        }, status=500)        
+        }, status=500)

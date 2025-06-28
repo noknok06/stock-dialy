@@ -1,5 +1,6 @@
 # stockdiary/forms.py
 from django import forms
+from django.core.exceptions import ValidationError
 from .models import StockDiary
 from tags.models import Tag
 from checklist.models import Checklist
@@ -26,19 +27,39 @@ class StockDiaryForm(forms.ModelForm):
             'stock_symbol': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': '日本株: 7203, 米国株: AAPL など',
+                'maxlength': '50',  # フロントエンド制限
             }),
-            'stock_name': forms.TextInput(attrs={'class': 'form-control', 'required': 'required'}),
-            'purchase_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control', 'required': 'required'}),
+            'stock_name': forms.TextInput(attrs={
+                'class': 'form-control', 
+                'required': 'required',
+                'maxlength': '100',  # フロントエンド制限（100文字）
+            }),
+            'purchase_date': forms.DateInput(attrs={
+                'type': 'date', 
+                'class': 'form-control', 
+                'required': 'required'
+            }),
             'purchase_price': forms.NumberInput(attrs={'class': 'form-control'}),
             'purchase_quantity': forms.NumberInput(attrs={'class': 'form-control'}),
             # 購入理由欄の拡張
-            'reason': forms.Textarea(attrs={'rows': 5, 'class': 'form-control'}),
+            'reason': forms.Textarea(attrs={
+                'rows': 5, 
+                'class': 'form-control',
+                'maxlength': '1000',  # フロントエンド制限（1000文字）
+            }),
             'sell_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'sell_price': forms.NumberInput(attrs={'class': 'form-control'}),
-            'memo': forms.Textarea(attrs={'rows': 5, 'class': 'form-control'}),
+            'memo': forms.Textarea(attrs={
+                'rows': 5, 
+                'class': 'form-control',
+                'maxlength': '1000',  # フロントエンド制限（1000文字）
+            }),
             'checklist': forms.SelectMultiple(attrs={'class': 'form-control', 'size': '5'}),
             'tags': forms.SelectMultiple(attrs={'class': 'form-control', 'size': '5'}),
-            'sector': forms.TextInput(attrs={'class': 'form-control'}),  # ここを追加
+            'sector': forms.TextInput(attrs={
+                'class': 'form-control',
+                'maxlength': '50',  # フロントエンド制限
+            }),
         }
 
     def __init__(self, *args, **kwargs):
@@ -68,6 +89,41 @@ class StockDiaryForm(forms.ModelForm):
 
         self.fields['purchase_price'].help_text = "記録のみの場合は空欄でもOK"
         self.fields['purchase_quantity'].help_text = "記録のみの場合は空欄でもOK"
+
+    def clean_stock_name(self):
+        """銘柄名の文字数制限チェック"""
+        stock_name = self.cleaned_data.get('stock_name')
+        if stock_name and len(stock_name) > 100:
+            raise ValidationError('銘柄名は100文字以内で入力してください。')
+        return stock_name
+
+    def clean_reason(self):
+        """購入理由の文字数制限チェック"""
+        reason = self.cleaned_data.get('reason')
+        if reason and len(reason) > 1000:
+            raise ValidationError('購入理由は1000文字以内で入力してください。')
+        return reason
+
+    def clean_memo(self):
+        """メモの文字数制限チェック"""
+        memo = self.cleaned_data.get('memo')
+        if memo and len(memo) > 1000:
+            raise ValidationError('メモは1000文字以内で入力してください。')
+        return memo
+
+    def clean_stock_symbol(self):
+        """銘柄コードの文字数制限チェック"""
+        stock_symbol = self.cleaned_data.get('stock_symbol')
+        if stock_symbol and len(stock_symbol) > 50:
+            raise ValidationError('銘柄コードは50文字以内で入力してください。')
+        return stock_symbol
+
+    def clean_sector(self):
+        """業種の文字数制限チェック"""
+        sector = self.cleaned_data.get('sector')
+        if sector and len(sector) > 50:
+            raise ValidationError('業種は50文字以内で入力してください。')
+        return sector
 
     def clean(self):
         cleaned_data = super().clean()
@@ -108,6 +164,17 @@ class DiaryNoteForm(forms.ModelForm):
             'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'note_type': forms.Select(attrs={'class': 'form-select'}),
             'importance': forms.Select(attrs={'class': 'form-select'}),
-            'content': forms.Textarea(attrs={'rows': 5, 'class': 'form-control'}),
+            'content': forms.Textarea(attrs={
+                'rows': 5, 
+                'class': 'form-control',
+                'maxlength': '1000',  # フロントエンド制限（1000文字）
+            }),
             'current_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-        }        
+        }
+
+    def clean_content(self):
+        """記録内容の文字数制限チェック"""
+        content = self.cleaned_data.get('content')
+        if content and len(content) > 1000:
+            raise ValidationError('記録内容は1000文字以内で入力してください。')
+        return content
