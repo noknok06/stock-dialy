@@ -13,6 +13,7 @@ from company_master.models import CompanyMaster
 from .models import StockDiary
 from tags.models import Tag
 
+from rest_framework.exceptions import ValidationError
 
 # 銘柄リストをキャッシュするための変数
 STOCK_DATA_CACHE = None
