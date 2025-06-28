@@ -2,6 +2,7 @@ import os
 import django
 import random
 from datetime import datetime, timedelta
+from decimal import Decimal, ROUND_HALF_UP
 
 # Djangoの設定を読み込む
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'stockdiary.settings')
@@ -178,17 +179,17 @@ def create_test_data():
                 # 項目タイプに応じてランダムな値を設定
                 if item.item_type == 'number':
                     if '配当利回り' in item.name:
-                        value.number_value = round(random.uniform(0, 5), 2)  # 0-5%
+                        value.Decimal(str(random.uniform(0, 5))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)  # 0-5%
                     elif 'PER' in item.name:
-                        value.number_value = round(random.uniform(8, 40), 1)  # 8-40倍
+                        value.number_value = Decimal(str(random.uniform(8, 40))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)   # 8-40倍
                     elif 'PBR' in item.name:
-                        value.number_value = round(random.uniform(0.5, 3), 2)  # 0.5-3倍
+                        value.number_value = Decimal(str(random.uniform(0.5, 3))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)   # 0.5-3倍
                     elif 'ROE' in item.name:
-                        value.number_value = round(random.uniform(1, 20), 1)  # 1-20%
+                        value.number_value = Decimal(str(random.uniform(1, 20))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)   # 1-20%
                     elif 'RSI' in item.name:
-                        value.number_value = round(random.uniform(20, 80), 1)  # 20-80
+                        value.number_value = Decimal(str(random.uniform(20, 80))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)   # 20-80
                     else:
-                        value.number_value = round(random.uniform(1, 100), 2)
+                        value.number_value = Decimal(str(random.uniform(1, 100))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP) 
                 
                 elif item.item_type == 'text':
                     value.text_value = random.choice([
