@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}決算分析{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="title_header">
+    <h1 class="page-title">
+      <i class="bi bi-graph-up-arrow me-3"></i>
+      決算分析ダッシュボード
+    </h1>
+    <p class="subtitle">
+      企業の決算書類を分析して、数字に表れない経営状況の変化を早期発見します
+    </p>
+  </div>
+
+  <!-- 検索セクション -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0">
+        <i class="bi bi-search me-2"></i>企業検索・分析
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <input type="text" class="form-control" id="companySearch" 
+                 placeholder="企業コードまたは企業名を入力（例: 7203, トヨタ自動車）">
+        </div>
+        <div class="col-md-3">
+          <button class="btn btn-primary" onclick="searchCompany()">
+            <i class="bi bi-search me-1"></i>検索
+          </button>
+        </div>
+      </div>
+      <div id="searchResults" class="mt-3"></div>
+    </div>
+  </div>
+
+  <!-- 統計情報 -->
+  <div class="row mb-4">
+    <div class="col-md-3 col-6 mb-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h3 class="text-primary">{{ stats.total_companies|default:0 }}</h3>
+          <p class="text-muted mb-0">分析対象企業</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6 mb-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h3 class="text-success">{{ stats.analyzed_this_month|default:0 }}</h3>
+          <p class="text-muted mb-0">今月の分析</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6 mb-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h3 class="text-info">{{ stats.portfolio_holdings|default:0 }}</h3>
+          <p class="text-muted mb-0">保有銘柄</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6 mb-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h3 class="text-warning">{{ stats.avg_sentiment|default:0|floatformat:1 }}</h3>
+          <p class="text-muted mb-0">平均感情スコア</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 最新分析結果 -->
+  <div class="card">
+    <div class="card-header">
+      <h5 class="mb-0">
+        <i class="bi bi-clock-history me-2"></i>最新分析結果
+      </h5>
+    </div>
+    <div class="card-body">
+      {% if recent_analyses %}
+        {% for analysis in recent_analyses %}
+        <div class="border-bottom pb-3 mb-3">
+          <h6>
+            <strong>{{ analysis.company.company_name }}</strong>
+            <span class="text-muted">({{ analysis.company.company_code }})</span>
+          </h6>
+          <p class="text-muted mb-1">
+            分析日: {{ analysis.analysis_date|date:"Y年m月d日" }}
+          </p>
+          {% if analysis.sentiment_analysis %}
+          <div class="row">
+            <div class="col-md-6">
+              感情スコア: 
+              <span class="fw-bold {% if analysis.sentiment_analysis.sentiment_score > 0 %}text-success{% elif analysis.sentiment_analysis.sentiment_score < -20 %}text-danger{% else %}text-primary{% endif %}">
+                {{ analysis.sentiment_analysis.sentiment_score|floatformat:1 }}
+              </span>
+            </div>
+            <div class="col-md-6">
+              経営陣自信度: 
+              <span class="badge bg-primary">{{ analysis.sentiment_analysis.get_confidence_level_display }}</span>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="text-center py-4">
+          <i class="bi bi-graph-up-arrow" style="font-size: 3rem; color: #6c757d;"></i>
+          <h5 class="mt-3 text-muted">まだ分析結果がありません</h5>
+          <p class="text-muted">企業を検索して分析を開始してください</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+function searchCompany() {
+  const query = document.getElementById('companySearch').value.trim();
+  if (query.length < 2) {
+    alert('2文字以上入力してください');
+    return;
+  }
+  
+  fetch(`/earnings/search/?query=${encodeURIComponent(query)}`)
+    .then(response => response.text())
+    .then(html => {
+      document.getElementById('searchResults').innerHTML = html;
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      document.getElementById('searchResults').innerHTML = 
+        '<div class="alert alert-danger">検索中にエラーが発生しました</div>';
+    });
+}
+
+function analyzeCompany(companyCode, companyName) {
+  if (confirm(`${companyName}の分析を開始しますか？（1-2分程度かかります）`)) {
+    fetch(`/earnings/api/analyze/${companyCode}/`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('分析が完了しました！');
+          location.reload();
+        } else {
+          alert('分析に失敗しました: ' + data.error);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('分析中にエラーが発生しました');
+      });
+  }
+}
+</script>
+{% endblock %}

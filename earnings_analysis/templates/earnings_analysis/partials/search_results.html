@@ -1,0 +1,43 @@
+{% if results %}
+<div class="list-group">
+  {% for company in results %}
+  <div class="list-group-item d-flex justify-content-between align-items-center">
+    <div>
+      <h6 class="mb-1">
+        <strong>{{ company.company_name }}</strong>
+        <span class="text-muted">({{ company.company_code }})</span>
+      </h6>
+      <p class="mb-1 text-muted">{{ company.industry }}</p>
+      <small>
+        {% if company.has_analysis %}
+          <span class="badge bg-success">分析済み</span>
+          {% if company.latest_analysis_date %}
+            - {{ company.latest_analysis_date|date:"Y/m/d" }}
+          {% endif %}
+        {% else %}
+          <span class="badge bg-warning">未分析</span>
+        {% endif %}
+      </small>
+    </div>
+    <div>
+      {% if company.has_analysis %}
+        <button class="btn btn-primary btn-sm" 
+                onclick="analyzeCompany('{{ company.company_code }}', '{{ company.company_name }}')">
+          再分析
+        </button>
+      {% else %}
+        <button class="btn btn-success btn-sm" 
+                onclick="analyzeCompany('{{ company.company_code }}', '{{ company.company_name }}')">
+          分析開始
+        </button>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% elif query %}
+<div class="alert alert-info">
+  「{{ query }}」に一致する企業が見つかりませんでした
+</div>
+{% endif %}

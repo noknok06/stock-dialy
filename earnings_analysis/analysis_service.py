@@ -101,9 +101,11 @@ class OnDemandAnalysisService:
                 'processing_time': time.time() - start_time
             }
     
+    # earnings_analysis/analysis_service.py の search_companies メソッドを修正
+
     def search_companies(self, query: str, limit: int = 20) -> Dict:
         """
-        企業検索
+        企業検索（修正版：既存の分析済み企業も含める）
         
         Args:
             query: 検索クエリ（企業名または証券コード）
@@ -121,33 +123,77 @@ class OnDemandAnalysisService:
                 if cached_result:
                     return cached_result
             
-            # company_masterから検索
-            from company_master.models import CompanyMaster
-            
-            companies = CompanyMaster.objects.filter(
-                models.Q(name__icontains=query) | 
-                models.Q(code__icontains=query)
-            )[:limit]
-            
             results = []
-            for company in companies:
-                # 対応する決算分析企業があるかチェック
-                earnings_company = CompanyEarnings.objects.filter(
-                    company_code=company.code
-                ).first()
+            
+            # 1. まず既存の分析済み企業から検索
+            existing_companies = CompanyEarnings.objects.filter(
+                Q(company_name__icontains=query) | 
+                Q(company_code__icontains=query)
+            ).filter(is_active=True)[:limit//2]  # 半分は既存企業から
+            
+            for company in existing_companies:
+                # 最新分析日を取得
+                latest_report = EarningsReport.objects.filter(
+                    company=company,
+                    is_processed=True
+                ).order_by('-submission_date').first()
                 
                 results.append({
-                    'company_code': company.code,
-                    'company_name': company.name,
-                    'industry': company.industry_name_33 or company.industry_name_17 or "不明",
-                    'market': company.market or "東証",
-                    'has_analysis': earnings_company is not None,
-                    'latest_analysis_date': earnings_company.latest_analysis_date.isoformat() if earnings_company and earnings_company.latest_analysis_date else None
+                    'company_code': company.company_code,
+                    'company_name': company.company_name,
+                    'industry': '海運業',  # 仮の業種（後で改善）
+                    'market': '東証プライム',
+                    'has_analysis': latest_report is not None,
+                    'latest_analysis_date': latest_report.submission_date.isoformat() if latest_report else None
                 })
+            
+            # 2. company_masterからも検索（存在する場合）
+            try:
+                from company_master.models import CompanyMaster
+                
+                # 既に見つかった企業コードを除外
+                found_codes = [r['company_code'] for r in results]
+                
+                master_companies = CompanyMaster.objects.filter(
+                    Q(name__icontains=query) | 
+                    Q(code__icontains=query)
+                ).exclude(code__in=found_codes)[:limit - len(results)]
+                
+                for company in master_companies:
+                    # 対応する決算分析企業があるかチェック
+                    earnings_company = CompanyEarnings.objects.filter(
+                        company_code=company.code
+                    ).first()
+                    
+                    results.append({
+                        'company_code': company.code,
+                        'company_name': company.name,
+                        'industry': company.industry_name_33 or company.industry_name_17 or "不明",
+                        'market': company.market or "東証",
+                        'has_analysis': earnings_company is not None,
+                        'latest_analysis_date': earnings_company.latest_analysis_date.isoformat() if earnings_company and earnings_company.latest_analysis_date else None
+                    })
+                    
+            except ImportError:
+                # company_masterアプリがない場合はスキップ
+                pass
+            
+            # 3. 直接的な証券コード入力の場合は、マスタになくても候補として表示
+            if query.isdigit() and len(query) == 4:
+                found_codes = [r['company_code'] for r in results]
+                if query not in found_codes:
+                    results.append({
+                        'company_code': query,
+                        'company_name': f'企業コード{query}',
+                        'industry': '不明',
+                        'market': '不明',
+                        'has_analysis': False,
+                        'latest_analysis_date': None
+                    })
             
             result = {
                 'success': True,
-                'results': results,
+                'results': results[:limit],
                 'total_count': len(results)
             }
             
@@ -164,7 +210,7 @@ class OnDemandAnalysisService:
                 'error': str(e),
                 'results': []
             }
-    
+
     def _get_or_create_company(self, company_code: str) -> Optional[CompanyEarnings]:
         """企業情報を取得または作成"""
         try:
