@@ -1,9 +1,4 @@
-# earnings_analysis/analysis_service.py
-"""
-オンデマンド決算分析サービス
-
-特定企業の個別分析に特化したサービスクラス
-"""
+# earnings_analysis/analysis_service.py（マスタなし企業対応版）
 
 import time
 import logging
@@ -14,6 +9,7 @@ from decimal import Decimal
 from django.core.cache import cache
 from django.conf import settings
 from django.utils import timezone
+from django.db import transaction
 
 from .models import (
     CompanyEarnings, EarningsReport, CashFlowAnalysis, 
@@ -26,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class OnDemandAnalysisService:
-    """オンデマンド決算分析サービス"""
+    """オンデマンド決算分析サービス（マスタなし企業対応版）"""
     
     def __init__(self):
         self.edinet_service = EDINETAPIService()
@@ -42,7 +38,7 @@ class OnDemandAnalysisService:
     
     def get_or_analyze_company(self, company_code: str, force_refresh: bool = False) -> Dict:
         """
-        企業の分析結果を取得または新規分析を実行
+        企業の分析結果を取得または新規分析を実行（マスタなし企業対応版）
         
         Args:
             company_code: 証券コード（例: "7203"）
@@ -55,12 +51,12 @@ class OnDemandAnalysisService:
         start_time = time.time()
         
         try:
-            # 1. 企業情報の取得
-            company = self._get_or_create_company(company_code)
+            # 1. 企業情報の取得・作成（改良版）
+            company = self._get_or_create_company_enhanced(company_code)
             if not company:
                 return {
                     'success': False,
-                    'error': f'企業コード {company_code} の企業情報が見つかりません'
+                    'error': f'企業コード {company_code} の企業情報を取得できませんでした'
                 }
             
             # 2. キャッシュチェック（強制更新でない場合）
@@ -100,12 +96,130 @@ class OnDemandAnalysisService:
                 'error': f'分析処理中にエラーが発生しました: {str(e)}',
                 'processing_time': time.time() - start_time
             }
+
+    def _get_or_create_company_enhanced(self, company_code: str) -> Optional[CompanyEarnings]:
+        """企業情報を取得または作成（マスタなし企業対応版）"""
+        try:
+            # 1. 既存の企業情報を検索
+            company = CompanyEarnings.objects.filter(company_code=company_code).first()
+            if company:
+                logger.info(f"Found existing company: {company.company_name}")
+                return company
+            
+            # 2. company_masterから情報を取得を試行
+            company_info = None
+            try:
+                from company_master.models import CompanyMaster
+                
+                master_company = CompanyMaster.objects.filter(code=company_code).first()
+                if master_company:
+                    logger.info(f"Found company in master: {master_company.name}")
+                    company_info = {
+                        'company_code': company_code,
+                        'company_name': master_company.name,
+                        'edinet_code': f'E{company_code.zfill(5)}',
+                        'fiscal_year_end_month': 3,  # デフォルト
+                        'source': 'company_master'
+                    }
+                    
+            except ImportError:
+                logger.info("company_master not available, will search via EDINET API")
+            
+            # 3. マスタにない場合は、EDINET APIから企業情報を取得
+            if not company_info:
+                logger.info(f"Company {company_code} not found in master, searching via EDINET API...")
+                company_info = self.edinet_service.get_company_info_by_code(company_code)
+                
+                if not company_info:
+                    logger.warning(f"Company {company_code} not found via EDINET API either")
+                    return None
+            
+            # 4. 企業情報でCompanyEarningsレコードを作成
+            with transaction.atomic():
+                company = CompanyEarnings.objects.create(
+                    edinet_code=company_info.get('edinet_code', f'E{company_code.zfill(5)}'),
+                    company_code=company_code,
+                    company_name=company_info['company_name'],
+                    fiscal_year_end_month=company_info.get('fiscal_year_end_month', 3),
+                    is_active=True
+                )
+                
+                logger.info(f"Created new company entry: {company.company_name} (source: {company_info.get('source', 'unknown')})")
+                
+                # 企業情報の出典をログに記録
+                if company_info.get('found_document'):
+                    doc_info = company_info['found_document']
+                    logger.info(f"Company info source document: {doc_info.get('document_id')} - {doc_info.get('doc_description', '')[:50]}...")
+                
+                return company
+                
+        except Exception as e:
+            logger.error(f"Error in _get_or_create_company_enhanced for {company_code}: {str(e)}")
+            return None
     
-    # earnings_analysis/analysis_service.py の search_companies メソッドを修正
+    def _find_latest_documents(self, company: CompanyEarnings) -> list:
+        """最新の決算書類を検索（改良版）"""
+        try:
+            logger.info(f"Searching documents for {company.company_name} ({company.company_code})")
+            
+            # 過去120日分の書類を検索（期間を延長）
+            end_date = datetime.now().date()
+            start_date = end_date - timedelta(days=120)
+            
+            all_documents = []
+            current_date = start_date
+            
+            # 効率的な検索のため、週単位でスキップ
+            search_count = 0
+            while current_date <= end_date and search_count < 20:  # 最大20回検索
+                date_str = current_date.strftime('%Y-%m-%d')
+                
+                try:
+                    # 特定企業の書類を検索
+                    documents = self.edinet_service.get_document_list(date_str, company.company_code)
+                    
+                    if documents:
+                        logger.info(f"Found {len(documents)} documents on {date_str}")
+                        all_documents.extend(documents)
+                        
+                        # 十分な書類が見つかったら検索終了
+                        if len(all_documents) >= 5:
+                            break
+                
+                except Exception as e:
+                    logger.warning(f"Error searching documents for {date_str}: {str(e)}")
+                
+                # 次の検索日（3日後）
+                current_date += timedelta(days=3)
+                search_count += 1
+                
+                # APIレート制限対策
+                time.sleep(self.edinet_service.session.headers.get('rate_limit_delay', 0.5))
+            
+            # 見つからない場合は、より広範囲で検索
+            if not all_documents:
+                logger.warning(f"No documents found in recent dates, searching wider range...")
+                documents = self.edinet_service.search_company_documents(company.company_code, days_back=180)
+                all_documents.extend(documents)
+            
+            # 日付順でソート（新しい順）
+            all_documents.sort(key=lambda x: x.get('submission_date', ''), reverse=True)
+            
+            logger.info(f"Total documents found for {company.company_name}: {len(all_documents)}")
+            
+            # 詳細ログ出力
+            for i, doc in enumerate(all_documents[:3]):
+                logger.info(f"  {i+1}. {doc.get('doc_description', '')[:60]}... ({doc.get('submission_date', '')})")
+            
+            return all_documents[:10]  # 最新10件まで
+            
+        except Exception as e:
+            logger.error(f"Error finding latest documents for {company.company_code}: {str(e)}")
+            return []
 
     def search_companies(self, query: str, limit: int = 20) -> Dict:
         """
-        企業検索（修正版：既存の分析済み企業も含める）
+        企業検索（マスタなし企業対応版）
         
         Args:
             query: 検索クエリ（企業名または証券コード）
@@ -126,11 +240,11 @@ class OnDemandAnalysisService:
             
             results = []
             
-            # 1. まず既存の分析済み企業から検索
+            # 1. 既存の分析済み企業から検索
             existing_companies = CompanyEarnings.objects.filter(
                 Q(company_name__icontains=query) | 
                 Q(company_code__icontains=query)
-            ).filter(is_active=True)[:limit//2]  # 半分は既存企業から
+            ).filter(is_active=True)[:limit//2]
             
             for company in existing_companies:
                 # 最新分析日を取得
@@ -142,8 +256,8 @@ class OnDemandAnalysisService:
                 results.append({
                     'company_code': company.company_code,
                     'company_name': company.company_name,
-                    'industry': '海運業',  # 仮の業種（後で改善）
-                    'market': '東証プライム',
+                    'industry': '分析済み企業',
+                    'market': '東証',
                     'has_analysis': latest_report is not None,
                     'latest_analysis_date': latest_report.submission_date.isoformat() if latest_report else None
                 })
@@ -152,7 +266,6 @@ class OnDemandAnalysisService:
             try:
                 from company_master.models import CompanyMaster
                 
-                # 既に見つかった企業コードを除外
                 found_codes = [r['company_code'] for r in results]
                 
                 master_companies = CompanyMaster.objects.filter(
@@ -161,7 +274,6 @@ class OnDemandAnalysisService:
                 ).exclude(code__in=found_codes)[:limit - len(results)]
                 
                 for company in master_companies:
-                    # 対応する決算分析企業があるかチェック
                     earnings_company = CompanyEarnings.objects.filter(
                         company_code=company.code
                     ).first()
@@ -177,20 +289,48 @@ class OnDemandAnalysisService:
                     
             except ImportError:
                 # company_masterアプリがない場合はスキップ
-                pass
+                logger.info("company_master not available for search")
             
             # 3. 直接的な証券コード入力の場合は、マスタになくても候補として表示
             if query.isdigit() and len(query) == 4:
                 found_codes = [r['company_code'] for r in results]
                 if query not in found_codes:
-                    results.append({
-                        'company_code': query,
-                        'company_name': f'企業コード{query}',
-                        'industry': '不明',
-                        'market': '不明',
-                        'has_analysis': False,
-                        'latest_analysis_date': None
-                    })
+                    # EDINET APIで企業情報を取得を試行
+                    try:
+                        company_info = self.edinet_service.get_company_info_by_code(query, days_back=30)
+                        if company_info:
+                            results.append({
+                                'company_code': query,
+                                'company_name': company_info['company_name'],
+                                'industry': company_info.get('industry', '不明'),
+                                'market': '東証',
+                                'has_analysis': False,
+                                'latest_analysis_date': None,
+                                'source': 'edinet_api'
+                            })
+                        else:
+                            # 見つからない場合でも候補として表示
+                            results.append({
+                                'company_code': query,
+                                'company_name': f'企業コード{query}（未確認）',
+                                'industry': '不明',
+                                'market': '不明',
+                                'has_analysis': False,
+                                'latest_analysis_date': None,
+                                'source': 'user_input'
+                            })
+                    except Exception as e:
+                        logger.warning(f"Error getting company info for {query}: {str(e)}")
+                        # エラーでも候補として表示
+                        results.append({
+                            'company_code': query,
+                            'company_name': f'企業コード{query}（要確認）',
+                            'industry': '不明',
+                            'market': '不明',
+                            'has_analysis': False,
+                            'latest_analysis_date': None,
+                            'source': 'user_input'
+                        })
             
             result = {
                 'success': True,
@@ -212,38 +352,7 @@ class OnDemandAnalysisService:
                 'results': []
             }
 
-    def _get_or_create_company(self, company_code: str) -> Optional[CompanyEarnings]:
-        """企業情報を取得または作成"""
-        try:
-            # 既存の企業情報を検索
-            company = CompanyEarnings.objects.filter(company_code=company_code).first()
-            if company:
-                return company
-            
-            # company_masterから情報を取得して作成
-            from company_master.models import CompanyMaster
-            
-            master_company = CompanyMaster.objects.filter(code=company_code).first()
-            if not master_company:
-                logger.warning(f"Company {company_code} not found in company_master")
-                return None
-            
-            # 新規作成
-            company = CompanyEarnings.objects.create(
-                edinet_code=f'E{company_code.zfill(5)}',  # 仮のEDINETコード
-                company_code=company_code,
-                company_name=master_company.name,
-                fiscal_year_end_month=3,  # デフォルトは3月決算
-                is_active=True
-            )
-            
-            logger.info(f"Created new company entry for {company_code}")
-            return company
-            
-        except Exception as e:
-            logger.error(f"Error in _get_or_create_company for {company_code}: {str(e)}")
-            return None
-    
+    # 既存のメソッドはそのまま維持
     def _get_cached_analysis(self, company_code: str) -> Optional[Dict]:
         """キャッシュされた分析結果を取得"""
         if not self.enable_cache:
@@ -283,7 +392,6 @@ class OnDemandAnalysisService:
             logger.error(f"Error getting latest analysis for {company.company_code}: {str(e)}")
             return None
 
-    
     def _perform_analysis(self, company: CompanyEarnings) -> Dict:
         """新規分析を実行"""
         try:
@@ -292,7 +400,7 @@ class OnDemandAnalysisService:
             if not documents:
                 return {
                     'success': False,
-                    'error': '分析対象の決算書類が見つかりませんでした'
+                    'error': f'{company.company_name}の分析対象の決算書類が見つかりませんでした。過去120日以内に決算書類が提出されていない可能性があります。'
                 }
             
             # 2. 最新の書類を分析
@@ -303,7 +411,7 @@ class OnDemandAnalysisService:
             if not document_content:
                 return {
                     'success': False,
-                    'error': '決算書類の取得に失敗しました'
+                    'error': f'決算書類（{latest_document["document_id"]}）の取得に失敗しました'
                 }
             
             # 3. テキスト抽出
@@ -348,52 +456,8 @@ class OnDemandAnalysisService:
                 'success': False,
                 'error': f'分析処理中にエラーが発生しました: {str(e)}'
             }
-    
-    def _find_latest_documents(self, company: CompanyEarnings) -> list:
-        """最新の決算書類を検索（改良版）"""
-        try:
-            # 過去90日分の書類を検索（期間を延長）
-            end_date = datetime.now().date()
-            start_date = end_date - timedelta(days=90)
-            
-            all_documents = []
-            current_date = start_date
-            
-            while current_date <= end_date:
-                date_str = current_date.strftime('%Y-%m-%d')
-                documents = self.edinet_service.get_document_list(date_str, company.company_code)
-                
-                # より多くの書類種別を対象に含める
-                for doc in documents:
-                    doc_type = doc.get('doc_type_code', '')
-                    doc_desc = doc.get('doc_description', '').lower()
-                    
-                    # 有価証券報告書、四半期報告書、半期報告書、決算短信に加えて
-                    # より幅広い書類を対象にする
-                    if (doc_type in ['120', '130', '140', '350', '160', '170'] or 
-                        any(keyword in doc_desc for keyword in 
-                            ['決算', '四半期', '有価証券', '短信', 'キャッシュ', 'cash'])):
-                        all_documents.append(doc)
-                        logger.info(f"対象書類追加: {doc.get('doc_description', '')[:50]}...")
-                
-                current_date += timedelta(days=1)
-                
-                # APIレート制限対策
-                time.sleep(self.edinet_service.session.headers.get('rate_limit_delay', 0.5))
-            
-            # 日付順でソート（新しい順）
-            all_documents.sort(key=lambda x: x.get('submission_date', ''), reverse=True)
-            
-            logger.info(f"発見した対象書類: {len(all_documents)}件")
-            for doc in all_documents[:3]:
-                logger.info(f"  - {doc.get('doc_description', '')}")
-            
-            return all_documents[:10]  # 最新10件まで
-            
-        except Exception as e:
-            logger.error(f"Error finding latest documents for {company.company_code}: {str(e)}")
-            return []
-        
+
+    # その他の既存メソッドはそのまま（省略）
     def _create_earnings_report(self, company: CompanyEarnings, document_info: Dict) -> EarningsReport:
         """決算報告書レコードを作成"""
         # 書類種別の判定
@@ -416,12 +480,11 @@ class OnDemandAnalysisService:
         else:
             quarter = 'Q4'
         
-        # 会計年度の抽出（修正版）
+        # 会計年度の抽出
         submission_date = document_info.get('submission_date', '')
         
         if submission_date:
             try:
-                # 日付部分のみを抽出（時刻部分を除去）
                 if isinstance(submission_date, str):
                     date_part = submission_date.split(' ')[0] if ' ' in submission_date else submission_date
                     date_part = date_part.split('T')[0] if 'T' in date_part else date_part
@@ -444,7 +507,7 @@ class OnDemandAnalysisService:
             fiscal_year=fiscal_year,
             quarter=quarter,
             document_id=document_info['document_id'],
-            submission_date=submission_date_obj,  # ← 修正: date オブジェクトを使用
+            submission_date=submission_date_obj,
             is_processed=False
         )
 
