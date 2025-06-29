@@ -122,6 +122,7 @@ class EarningsMainView(LoginRequiredMixin, TemplateView):
 def search_companies_view(request):
     """企業検索のビュー（HTML返却）- 修正版"""
     try:
+        from django.db.models import Q
         query = request.GET.get('query', '').strip()
         
         if len(query) < 2:

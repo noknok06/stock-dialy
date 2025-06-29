@@ -1,7 +1,76 @@
+<!-- earnings_analysis/templates/earnings_analysis/main.html（完全版） -->
 {% extends 'base.html' %}
 {% load static %}
 
 {% block title %}決算分析{% endblock %}
+
+{% block extra_head %}
+<style>
+/* 決算分析専用CSS */
+.sentiment-score {
+  font-size: 3rem;
+  font-weight: bold;
+  text-align: center;
+}
+
+.sentiment-positive { color: #28a745; }
+.sentiment-negative { color: #dc3545; }
+.sentiment-neutral { color: #007bff; }
+
+.confidence-badge {
+  font-size: 0.9rem;
+  padding: 0.5em 1em;
+}
+
+.cf-pattern-card {
+  background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  border-left: 4px solid;
+}
+
+.cf-ideal { border-left-color: #28a745; }
+.cf-growth { border-left-color: #007bff; }
+.cf-danger { border-left-color: #dc3545; }
+.cf-recovery { border-left-color: #ffc107; }
+.cf-restructuring { border-left-color: #17a2b8; }
+.cf-unknown { border-left-color: #6c757d; }
+
+.loading-spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.search-result-item {
+  transition: all 0.3s ease;
+}
+
+.search-result-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.analysis-card {
+  border-left: 4px solid #007bff;
+  transition: all 0.3s ease;
+}
+
+.analysis-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -24,13 +93,22 @@
     </div>
     <div class="card-body">
       <div class="row">
-        <div class="col-md-6">
-          <input type="text" class="form-control" id="companySearch" 
-                 placeholder="企業コードまたは企業名を入力（例: 7203, トヨタ自動車）">
+        <div class="col-md-8">
+          <div class="input-group">
+            <input type="text" class="form-control" id="companySearch" 
+                   placeholder="企業コードまたは企業名を入力（例: 7203, トヨタ自動車）"
+                   onkeypress="handleSearchKeyPress(event)">
+            <button class="btn btn-primary" onclick="searchCompany()">
+              <i class="bi bi-search me-1"></i>検索
+            </button>
+          </div>
         </div>
-        <div class="col-md-3">
-          <button class="btn btn-primary" onclick="searchCompany()">
-            <i class="bi bi-search me-1"></i>検索
+        <div class="col-md-4">
+          <button class="btn btn-success me-2" onclick="quickAnalyze('7203')">
+            <i class="bi bi-lightning me-1"></i>トヨタで試す
+          </button>
+          <button class="btn btn-info" onclick="quickAnalyze('9984')">
+            <i class="bi bi-lightning me-1"></i>SBGで試す
           </button>
         </div>
       </div>
@@ -41,7 +119,7 @@
   <!-- 統計情報 -->
   <div class="row mb-4">
     <div class="col-md-3 col-6 mb-3">
-      <div class="card text-center">
+      <div class="card text-center analysis-card">
         <div class="card-body">
           <h3 class="text-primary">{{ stats.total_companies|default:0 }}</h3>
           <p class="text-muted mb-0">分析対象企業</p>
@@ -49,7 +127,7 @@
       </div>
     </div>
     <div class="col-md-3 col-6 mb-3">
-      <div class="card text-center">
+      <div class="card text-center analysis-card">
         <div class="card-body">
           <h3 class="text-success">{{ stats.analyzed_this_month|default:0 }}</h3>
           <p class="text-muted mb-0">今月の分析</p>
@@ -57,7 +135,7 @@
       </div>
     </div>
     <div class="col-md-3 col-6 mb-3">
-      <div class="card text-center">
+      <div class="card text-center analysis-card">
         <div class="card-body">
           <h3 class="text-info">{{ stats.portfolio_holdings|default:0 }}</h3>
           <p class="text-muted mb-0">保有銘柄</p>
@@ -65,7 +143,7 @@
       </div>
     </div>
     <div class="col-md-3 col-6 mb-3">
-      <div class="card text-center">
+      <div class="card text-center analysis-card">
         <div class="card-body">
           <h3 class="text-warning">{{ stats.avg_sentiment|default:0|floatformat:1 }}</h3>
           <p class="text-muted mb-0">平均感情スコア</p>
@@ -76,86 +154,259 @@
 
   <!-- 最新分析結果 -->
   <div class="card">
-    <div class="card-header">
+    <div class="card-header d-flex justify-content-between align-items-center">
       <h5 class="mb-0">
         <i class="bi bi-clock-history me-2"></i>最新分析結果
       </h5>
+      <button class="btn btn-outline-primary btn-sm" onclick="refreshRecentAnalyses()">
+        <i class="bi bi-arrow-clockwise me-1"></i>更新
+      </button>
     </div>
-    <div class="card-body">
-      {% if recent_analyses %}
-        {% for analysis in recent_analyses %}
-        <div class="border-bottom pb-3 mb-3">
-          <h6>
-            <strong>{{ analysis.company.company_name }}</strong>
-            <span class="text-muted">({{ analysis.company.company_code }})</span>
-          </h6>
-          <p class="text-muted mb-1">
-            分析日: {{ analysis.analysis_date|date:"Y年m月d日" }}
-          </p>
-          {% if analysis.sentiment_analysis %}
-          <div class="row">
-            <div class="col-md-6">
-              感情スコア: 
-              <span class="fw-bold {% if analysis.sentiment_analysis.sentiment_score > 0 %}text-success{% elif analysis.sentiment_analysis.sentiment_score < -20 %}text-danger{% else %}text-primary{% endif %}">
-                {{ analysis.sentiment_analysis.sentiment_score|floatformat:1 }}
-              </span>
-            </div>
-            <div class="col-md-6">
-              経営陣自信度: 
-              <span class="badge bg-primary">{{ analysis.sentiment_analysis.get_confidence_level_display }}</span>
-            </div>
-          </div>
-          {% endif %}
+    <div class="card-body" id="recentAnalysesContainer">
+      {% include 'earnings_analysis/partials/recent_analyses.html' %}
+    </div>
+  </div>
+</div>
+
+<!-- 分析詳細モーダル -->
+<div class="modal fade" id="analysisDetailModal" tabindex="-1" aria-labelledby="analysisDetailModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="analysisDetailModalLabel">
+          <i class="bi bi-graph-up-arrow me-2"></i>決算分析結果
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="analysisDetailContent">
+        <div class="text-center py-5">
+          <div class="loading-spinner me-2"></div>
+          分析結果を読み込み中...
         </div>
-        {% endfor %}
-      {% else %}
-        <div class="text-center py-4">
-          <i class="bi bi-graph-up-arrow" style="font-size: 3rem; color: #6c757d;"></i>
-          <h5 class="mt-3 text-muted">まだ分析結果がありません</h5>
-          <p class="text-muted">企業を検索して分析を開始してください</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 分析実行中モーダル -->
+<div class="modal fade" id="analysisProgressModal" tabindex="-1" aria-labelledby="analysisProgressModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="analysisProgressModalLabel">
+          <i class="bi bi-gear-fill me-2"></i>分析実行中
+        </h5>
+      </div>
+      <div class="modal-body text-center">
+        <div class="loading-spinner me-2"></div>
+        <p class="mt-3">決算書類を分析しています...</p>
+        <p class="text-muted small">1-2分程度お待ちください</p>
+        <div class="progress mt-3">
+          <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
         </div>
-      {% endif %}
+      </div>
     </div>
   </div>
 </div>
 
 <script>
+// グローバル変数
+let currentAnalysisModal = null;
+let currentProgressModal = null;
+
+// ページ読み込み時の初期化
+document.addEventListener('DOMContentLoaded', function() {
+    // Bootstrapモーダルの初期化
+    currentAnalysisModal = new bootstrap.Modal(document.getElementById('analysisDetailModal'));
+    currentProgressModal = new bootstrap.Modal(document.getElementById('analysisProgressModal'));
+    
+    // 最新分析結果の読み込み
+    refreshRecentAnalyses();
+});
+
+// 企業検索
 function searchCompany() {
-  const query = document.getElementById('companySearch').value.trim();
-  if (query.length < 2) {
-    alert('2文字以上入力してください');
-    return;
-  }
-  
-  fetch(`/earnings/search/?query=${encodeURIComponent(query)}`)
-    .then(response => response.text())
-    .then(html => {
-      document.getElementById('searchResults').innerHTML = html;
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      document.getElementById('searchResults').innerHTML = 
-        '<div class="alert alert-danger">検索中にエラーが発生しました</div>';
-    });
+    const query = document.getElementById('companySearch').value.trim();
+    if (query.length < 2) {
+        showAlert('2文字以上入力してください', 'warning');
+        return;
+    }
+    
+    // 検索結果エリアにローディング表示
+    document.getElementById('searchResults').innerHTML = `
+        <div class="text-center py-3">
+            <div class="loading-spinner me-2"></div>
+            検索中...
+        </div>
+    `;
+    
+    fetch(`/earnings/search/?query=${encodeURIComponent(query)}`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('searchResults').innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Search error:', error);
+            document.getElementById('searchResults').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    検索中にエラーが発生しました
+                </div>
+            `;
+        });
 }
 
-function analyzeCompany(companyCode, companyName) {
-  if (confirm(`${companyName}の分析を開始しますか？（1-2分程度かかります）`)) {
-    fetch(`/earnings/api/analyze/${companyCode}/`)
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          alert('分析が完了しました！');
-          location.reload();
-        } else {
-          alert('分析に失敗しました: ' + data.error);
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        alert('分析中にエラーが発生しました');
-      });
-  }
+// Enterキーでの検索
+function handleSearchKeyPress(event) {
+    if (event.key === 'Enter') {
+        searchCompany();
+    }
 }
+
+// クイック分析（テスト用）
+function quickAnalyze(companyCode) {
+    document.getElementById('companySearch').value = companyCode;
+    searchCompany();
+}
+
+// 企業分析の実行
+function analyzeCompany(companyCode, companyName, forceRefresh = false) {
+    if (!confirm(`${companyName}の分析を開始しますか？（1-2分程度かかります）`)) {
+        return;
+    }
+    
+    // 分析実行中モーダルを表示
+    currentProgressModal.show();
+    
+    const url = `/earnings/api/analyze/${companyCode}/${forceRefresh ? '?force_refresh=true' : ''}`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            currentProgressModal.hide();
+            
+            if (data.success) {
+                // 分析成功 - 詳細モーダルを表示
+                showAnalysisDetail(companyCode);
+                
+                // 最新分析結果を更新
+                refreshRecentAnalyses();
+                
+                showAlert(`${companyName}の分析が完了しました！`, 'success');
+            } else {
+                showAlert(`分析に失敗しました: ${data.error}`, 'danger');
+            }
+        })
+        .catch(error => {
+            currentProgressModal.hide();
+            console.error('Analysis error:', error);
+            showAlert('分析中にエラーが発生しました', 'danger');
+        });
+}
+
+// 分析詳細の表示
+function showAnalysisDetail(companyCode) {
+    // モーダルのタイトルを更新
+    document.getElementById('analysisDetailModalLabel').innerHTML = `
+        <i class="bi bi-graph-up-arrow me-2"></i>決算分析結果 - ${companyCode}
+    `;
+    
+    // ローディング表示
+    document.getElementById('analysisDetailContent').innerHTML = `
+        <div class="text-center py-5">
+            <div class="loading-spinner me-2"></div>
+            分析結果を読み込み中...
+        </div>
+    `;
+    
+    // モーダルを表示
+    currentAnalysisModal.show();
+    
+    // 分析詳細を取得
+    fetch(`/earnings/detail/${companyCode}/`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('analysisDetailContent').innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Detail fetch error:', error);
+            document.getElementById('analysisDetailContent').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    分析結果の読み込みに失敗しました
+                </div>
+            `;
+        });
+}
+
+// 再分析の実行
+function refreshAnalysis(companyCode) {
+    const companyName = `企業コード${companyCode}`;
+    analyzeCompany(companyCode, companyName, true);
+}
+
+// 最新分析結果の更新
+function refreshRecentAnalyses() {
+    fetch('/earnings/recent/')
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('recentAnalysesContainer').innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Recent analyses refresh error:', error);
+        });
+}
+
+// アラート表示
+function showAlert(message, type = 'info') {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            <i class="bi bi-info-circle me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    
+    // アラートを表示するコンテナを探すか作成
+    let alertContainer = document.getElementById('alertContainer');
+    if (!alertContainer) {
+        alertContainer = document.createElement('div');
+        alertContainer.id = 'alertContainer';
+        alertContainer.style.position = 'fixed';
+        alertContainer.style.top = '20px';
+        alertContainer.style.right = '20px';
+        alertContainer.style.zIndex = '9999';
+        alertContainer.style.width = '400px';
+        document.body.appendChild(alertContainer);
+    }
+    
+    alertContainer.innerHTML = alertHtml;
+    
+    // 5秒後に自動削除
+    setTimeout(() => {
+        const alert = alertContainer.querySelector('.alert');
+        if (alert) {
+            alert.remove();
+        }
+    }, 5000);
+}
+
+// エラーハンドリング
+window.addEventListener('error', function(e) {
+    console.error('JavaScript Error:', e.error);
+});
+
+// ページの前処理
+function beforeUnload() {
+    // モーダルが開いている場合は閉じる
+    if (currentAnalysisModal) {
+        currentAnalysisModal.hide();
+    }
+    if (currentProgressModal) {
+        currentProgressModal.hide();
+    }
+}
+
+window.addEventListener('beforeunload', beforeUnload);
 </script>
 {% endblock %}

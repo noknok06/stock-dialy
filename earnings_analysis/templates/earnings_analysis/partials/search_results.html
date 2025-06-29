@@ -1,43 +1,83 @@
+<!-- earnings_analysis/templates/earnings_analysis/partials/search_results.html（改善版） -->
 {% if results %}
-<div class="list-group">
+<div class="row">
   {% for company in results %}
-  <div class="list-group-item d-flex justify-content-between align-items-center">
-    <div>
-      <h6 class="mb-1">
-        <strong>{{ company.company_name }}</strong>
-        <span class="text-muted">({{ company.company_code }})</span>
-      </h6>
-      <p class="mb-1 text-muted">{{ company.industry }}</p>
-      <small>
-        {% if company.has_analysis %}
-          <span class="badge bg-success">分析済み</span>
-          {% if company.latest_analysis_date %}
-            - {{ company.latest_analysis_date|date:"Y/m/d" }}
+  <div class="col-md-6 col-lg-4 mb-3">
+    <div class="card search-result-item h-100">
+      <div class="card-body">
+        <h6 class="card-title">
+          <strong>{{ company.company_name }}</strong>
+          <span class="text-muted">({{ company.company_code }})</span>
+        </h6>
+        <p class="card-text">
+          <small class="text-muted">
+            <i class="bi bi-building me-1"></i>{{ company.industry }}
+            <br>
+            <i class="bi bi-geo-alt me-1"></i>{{ company.market }}
+          </small>
+        </p>
+        
+        <div class="mb-3">
+          {% if company.has_analysis %}
+            <span class="badge bg-success">
+              <i class="bi bi-check-circle me-1"></i>分析済み
+            </span>
+            {% if company.latest_analysis_date %}
+              <br><small class="text-muted">{{ company.latest_analysis_date|date:"Y/m/d" }}</small>
+            {% endif %}
+          {% else %}
+            <span class="badge bg-warning">
+              <i class="bi bi-clock me-1"></i>未分析
+            </span>
           {% endif %}
-        {% else %}
-          <span class="badge bg-warning">未分析</span>
-        {% endif %}
-      </small>
-    </div>
-    <div>
-      {% if company.has_analysis %}
-        <button class="btn btn-primary btn-sm" 
-                onclick="analyzeCompany('{{ company.company_code }}', '{{ company.company_name }}')">
-          再分析
-        </button>
-      {% else %}
-        <button class="btn btn-success btn-sm" 
-                onclick="analyzeCompany('{{ company.company_code }}', '{{ company.company_name }}')">
-          分析開始
-        </button>
-      {% endif %}
+        </div>
+        
+        <div class="btn-group w-100" role="group">
+          {% if company.has_analysis %}
+            <button class="btn btn-primary btn-sm" 
+                    onclick="showAnalysisDetail('{{ company.company_code }}')">
+              <i class="bi bi-eye me-1"></i>詳細表示
+            </button>
+            <button class="btn btn-outline-secondary btn-sm" 
+                    onclick="refreshAnalysis('{{ company.company_code }}')">
+              <i class="bi bi-arrow-clockwise me-1"></i>再分析
+            </button>
+          {% else %}
+            <button class="btn btn-success btn-sm w-100" 
+                    onclick="analyzeCompany('{{ company.company_code }}', '{{ company.company_name }}')">
+              <i class="bi bi-play me-1"></i>分析開始
+            </button>
+          {% endif %}
+        </div>
+      </div>
     </div>
   </div>
   {% endfor %}
 </div>
 
+{% if results|length > 6 %}
+<div class="text-center mt-3">
+  <p class="text-muted">{{ results|length }}件の結果を表示中</p>
+</div>
+{% endif %}
+
 {% elif query %}
 <div class="alert alert-info">
+  <i class="bi bi-info-circle me-2"></i>
   「{{ query }}」に一致する企業が見つかりませんでした
+  <hr>
+  <small>
+    <strong>検索のヒント:</strong><br>
+    • 企業コード（4桁の数字）で検索: 例）7203<br>
+    • 企業名の一部で検索: 例）トヨタ、ソフトバンク<br>
+    • ひらがな・カタカナでも検索可能
+  </small>
+</div>
+{% endif %}
+
+{% if error %}
+<div class="alert alert-danger">
+  <i class="bi bi-exclamation-triangle me-2"></i>
+  検索中にエラーが発生しました: {{ error }}
 </div>
 {% endif %}

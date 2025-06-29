@@ -123,11 +123,11 @@ class EDINETAPIService:
             earnings_docs = []
             for doc in results:
                 doc_type = doc.get('docTypeCode', '')
-                doc_description = doc.get('docDescription', '').lower()
+                doc_description = doc.get('docDescription', '') or ''  # ← ここを修正
                 
                 # 決算関連書類の判定
                 if (doc_type in ['120', '130', '140', '350'] or  # 有報、四半期、半期、決算短信
-                    any(keyword in doc_description for keyword in 
+                    any(keyword in doc_description.lower() for keyword in   # ← .lower() の前に None チェック
                         ['決算', '四半期', '有価証券報告書', '短信'])):
                     
                     earnings_docs.append({
@@ -140,6 +140,7 @@ class EDINETAPIService:
                         'period_start': doc.get('periodStart'),
                         'period_end': doc.get('periodEnd')
                     })
+
             
             logger.info(f"Found {len(earnings_docs)} earnings-related documents")
             return earnings_docs
@@ -683,33 +684,69 @@ class XBRLTextExtractor:
             return html_content
 
 
-# 以下のクラスも変更なし（既存のまま）
+
 class CashFlowExtractor:
-    """キャッシュフロー計算書からデータを抽出（改良版）"""
+    """キャッシュフロー計算書からデータを抽出するサービス（改良版）"""
     
     def __init__(self):
-        # より多様なパターンを追加
+        # 実際のXBRL文書に対応したパターンを追加
         self.CF_PATTERNS = {
             'operating_cf': [
-                r'営業活動によるキャッシュ・フロー.*?([△▲\-]?\d{1,3}(?:,\d{3})*)',
-                r'営業CF.*?([△▲\-]?\d{1,3}(?:,\d{3})*)',
-                r'営業活動による.*?([△▲\-]?\d{1,3}(?:,\d{3})*)',
-                r'Operating\s+Cash\s+Flow.*?([△▲\-]?\d{1,3}(?:,\d{3})*)',
-                r'営業キャッシュ・フロー.*?([△▲\-]?\d{1,3}(?:,\d{3})*)',
+                # XBRL特有のタグ名パターン
+                r'NetCashProvidedByUsedInOperatingActivities[^>]*>([^<]*)',
+                r'CashFlowsFromOperatingActivities[^>]*>([^<]*)',
+                r'営業活動によるキャッシュ・フロー[^>]*>([^<]*)',
+                
+                # 基本的なテキストパターン
+                r'営業活動によるキャッシュ・フロー[^\d]*([△▲\-]?\d{1,3}(?:,\d{3})*)',
+                r'営業CF[^\d]*([△▲\-]?\d{1,3}(?:,\d{3})*)',
+                r'営業活動による[^\d]*([△▲\-]?\d{1,3}(?:,\d{3})*)',
+                
+                # 数値のみのパターン（百万円単位）
+                r'営業.*?(\d{6,})',  # 6桁以上の数値
+                r'Operating.*?(\d{6,})',
+                
+                # より柔軟なパターン
+                r'営業.*キャッシュ.*?([△▲\-]?\d+(?:,\d{3})*)',
+                r'cash.*flow.*operating.*?([△▲\-]?\d+(?:,\d{3})*)',
             ],
             'investing_cf': [
-                r'投資活動によるキャッシュ・フロー.*?([△▲\-]?\d{1,3}(?:,\d{3})*)',
-                r'投資CF.*?([△▲\-]?\d{1,3}(?:,\d{3})*)',
-                r'投資活動による.*?([△▲\-]?\d{1,3}(?:,\d{3})*)',
-                r'Investing\s+Cash\s+Flow.*?([△▲\-]?\d{1,3}(?:,\d{3})*)',
-                r'投資キャッシュ・フロー.*?([△▲\-]?\d{1,3}(?:,\d{3})*)',
+                # XBRL特有のタグ名パターン
+                r'NetCashProvidedByUsedInInvestmentActivities[^>]*>([^<]*)',
+                r'CashFlowsFromInvestingActivities[^>]*>([^<]*)',
+                r'投資活動によるキャッシュ・フロー[^>]*>([^<]*)',
+                
+                # 基本的なテキストパターン
+                r'投資活動によるキャッシュ・フロー[^\d]*([△▲\-]?\d{1,3}(?:,\d{3})*)',
+                r'投資CF[^\d]*([△▲\-]?\d{1,3}(?:,\d{3})*)',
+                r'投資活動による[^\d]*([△▲\-]?\d{1,3}(?:,\d{3})*)',
+                
+                # 数値のみのパターン
+                r'投資.*?(\d{6,})',
+                r'Investing.*?(\d{6,})',
+                
+                # より柔軟なパターン
+                r'投資.*キャッシュ.*?([△▲\-]?\d+(?:,\d{3})*)',
+                r'cash.*flow.*investing.*?([△▲\-]?\d+(?:,\d{3})*)',
             ],
             'financing_cf': [
-                r'財務活動によるキャッシュ・フロー.*?([△▲\-]?\d{1,3}(?:,\d{3})*)',
-                r'財務CF.*?([△▲\-]?\d{1,3}(?:,\d{3})*)',
-                r'財務活動による.*?([△▲\-]?\d{1,3}(?:,\d{3})*)',
-                r'Financing\s+Cash\s+Flow.*?([△▲\-]?\d{1,3}(?:,\d{3})*)',
-                r'財務キャッシュ・フロー.*?([△▲\-]?\d{1,3}(?:,\d{3})*)',
+                # XBRL特有のタグ名パターン
+                r'NetCashProvidedByUsedInFinancingActivities[^>]*>([^<]*)',
+                r'CashFlowsFromFinancingActivities[^>]*>([^<]*)',
+                r'財務活動によるキャッシュ・フロー[^>]*>([^<]*)',
+                
+                # 基本的なテキストパターン
+                r'財務活動によるキャッシュ・フロー[^\d]*([△▲\-]?\d{1,3}(?:,\d{3})*)',
+                r'財務CF[^\d]*([△▲\-]?\d{1,3}(?:,\d{3})*)',
+                r'財務活動による[^\d]*([△▲\-]?\d{1,3}(?:,\d{3})*)',
+                
+                # 数値のみのパターン
+                r'財務.*?(\d{6,})',
+                r'Financing.*?(\d{6,})',
+                
+                # より柔軟なパターン
+                r'財務.*キャッシュ.*?([△▲\-]?\d+(?:,\d{3})*)',
+                r'cash.*flow.*financing.*?([△▲\-]?\d+(?:,\d{3})*)',
             ]
         }
     
@@ -717,57 +754,124 @@ class CashFlowExtractor:
         """テキストからキャッシュフローデータを抽出（改良版）"""
         results = {}
         
-        logger.debug("Extracting cashflow data from text")
+        logger.info("=== キャッシュフロー抽出デバッグ開始 ===")
+        logger.info(f"テキスト長: {len(text_content)}")
+        
+        # デバッグ用：キーワードの存在確認
+        keywords = ['キャッシュ', 'フロー', '営業', '投資', '財務', '活動', 'cash', 'flow']
+        for keyword in keywords:
+            count = text_content.lower().count(keyword.lower())
+            logger.info(f"キーワード '{keyword}': {count}回出現")
+        
+        # サンプルテキストの表示
+        sample_text = text_content[:2000] if len(text_content) > 2000 else text_content
+        logger.info(f"サンプルテキスト: {sample_text}")
         
         for cf_type, patterns in self.CF_PATTERNS.items():
             value = None
+            matched_pattern = None
             
-            for pattern in patterns:
-                matches = re.findall(pattern, text_content, re.IGNORECASE)
-                if matches:
-                    try:
+            logger.info(f"\n--- {cf_type} の抽出開始 ---")
+            
+            for i, pattern in enumerate(patterns):
+                try:
+                    matches = re.findall(pattern, text_content, re.IGNORECASE | re.DOTALL)
+                    if matches:
+                        logger.info(f"パターン {i}: マッチ発見 {matches[:3]}")
                         # 最初にマッチした値を使用
-                        value_str = matches[0]
-                        value = self._parse_japanese_number(value_str)
-                        logger.debug(f"Found {cf_type}: {value_str} -> {value}")
-                        break
-                    except ValueError as e:
-                        logger.debug(f"Failed to parse {cf_type} value '{matches[0]}': {str(e)}")
-                        continue
+                        value_str = matches[0].strip()
+                        if value_str:  # 空文字列でない場合のみ処理
+                            value = self._parse_japanese_number(value_str)
+                            matched_pattern = pattern
+                            logger.info(f"抽出成功: {value_str} -> {value}")
+                            break
+                except Exception as e:
+                    logger.debug(f"パターン {i} でエラー: {str(e)}")
+                    continue
+            
+            if value is None:
+                logger.warning(f"{cf_type}: 抽出失敗")
             
             results[cf_type] = value
         
         # フリーキャッシュフローを計算
         if results.get('operating_cf') is not None and results.get('investing_cf') is not None:
             results['free_cf'] = results['operating_cf'] + results['investing_cf']
-            logger.debug(f"Calculated free CF: {results['free_cf']}")
+            logger.info(f"フリーCF計算: {results['free_cf']}")
         
-        # 抽出結果をログ出力
-        logger.info(f"Extracted CF data: {results}")
-        
+        logger.info(f"=== 最終抽出結果: {results} ===")
         return results
     
     def _parse_japanese_number(self, number_str: str) -> float:
         """日本語の数値表現をfloatに変換（改良版）"""
         try:
+            original_str = number_str
+            logger.debug(f"数値解析開始: '{original_str}'")
+            
+            # 空文字やNoneチェック
+            if not number_str or number_str.strip() == '':
+                raise ValueError("空文字列")
+            
             # △や▲マークの処理
-            is_negative = number_str.startswith(('△', '▲', '-'))
+            is_negative = any(char in number_str for char in ['△', '▲', '-'])
             
-            # 数値部分のみ抽出
-            number_str = re.sub(r'[△▲\-,\s百万千万億]', '', number_str)
+            # XMLタグや特殊文字を除去
+            cleaned = re.sub(r'<[^>]*>', '', number_str)  # XMLタグ除去
+            cleaned = re.sub(r'[△▲\-,\s百万千万億円¥]', '', cleaned)
+            cleaned = re.sub(r'[^\d.]', '', cleaned)  # 数字とピリオド以外除去
             
-            if not number_str or not number_str.isdigit():
-                raise ValueError(f"Cannot extract numeric value from: {number_str}")
+            logger.debug(f"クリーニング後: '{cleaned}'")
             
-            value = float(number_str)
+            if not cleaned or not re.match(r'^\d+\.?\d*$', cleaned):
+                raise ValueError(f"数値として認識できません: {cleaned}")
             
-            # 単位を考慮（百万円単位での表記が多い）
-            # ここでは百万円単位として扱う
+            value = float(cleaned)
             
-            return -value if is_negative else value
+            # 単位の自動検出と変換
+            if '億' in original_str:
+                value *= 100  # 億円→百万円に変換
+            elif '千万' in original_str:
+                value *= 10   # 千万円→百万円に変換
+            elif value > 1000000:  # 100万を超える場合は百万円単位と仮定
+                pass
+            elif value > 1000 and value < 100000:  # 千～10万の場合は百万円に変換
+                value = value  # そのまま使用
+            
+            result = -value if is_negative else value
+            logger.debug(f"解析結果: '{original_str}' -> {result}")
+            return result
             
         except (ValueError, AttributeError) as e:
-            raise ValueError(f"Cannot parse number: {number_str}")
+            logger.debug(f"数値解析失敗: '{number_str}' - {str(e)}")
+            raise ValueError(f"数値解析エラー: {original_str}")
+
+# 5. より詳細なデバッグ用メソッドも追加
+
+    def debug_extract_cashflow_data(self, text_content: str) -> Dict:
+        """デバッグ用：すべてのパターンマッチを詳細に確認"""
+        debug_results = {
+            'text_length': len(text_content),
+            'sample_text': text_content[:500],
+            'pattern_matches': {},
+            'extracted_values': {}
+        }
+        
+        for cf_type, patterns in self.CF_PATTERNS.items():
+            debug_results['pattern_matches'][cf_type] = []
+            
+            for i, pattern in enumerate(patterns):
+                matches = re.findall(pattern, text_content, re.IGNORECASE | re.DOTALL)
+                if matches:
+                    debug_results['pattern_matches'][cf_type].append({
+                        'pattern_index': i,
+                        'pattern': pattern,
+                        'matches': matches[:3]  # 最大3つまで
+                    })
+        
+        # 実際の抽出も実行
+        debug_results['extracted_values'] = self.extract_cashflow_data(text_content)
+        
+        return debug_results
 
 
 class EarningsNotificationService:

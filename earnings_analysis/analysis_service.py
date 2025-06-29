@@ -115,6 +115,7 @@ class OnDemandAnalysisService:
             検索結果辞書
         """
         try:
+            from django.db.models import Q
             # キャッシュキーを生成
             cache_key = f"company_search_{query}_{limit}"
             
@@ -270,10 +271,6 @@ class OnDemandAnalysisService:
                 is_processed=True
             ).order_by('-submission_date').first()
 
-            for field in latest_report._meta.fields:
-                name = field.name
-                value = getattr(latest_report, name)
-                print(f"{name}: {value}")
             if not latest_report:
                 return None
             
@@ -285,6 +282,7 @@ class OnDemandAnalysisService:
         except Exception as e:
             logger.error(f"Error getting latest analysis for {company.company_code}: {str(e)}")
             return None
+
     
     def _perform_analysis(self, company: CompanyEarnings) -> Dict:
         """新規分析を実行"""
@@ -352,11 +350,11 @@ class OnDemandAnalysisService:
             }
     
     def _find_latest_documents(self, company: CompanyEarnings) -> list:
-        """最新の決算書類を検索"""
+        """最新の決算書類を検索（改良版）"""
         try:
-            # 過去30日分の書類を検索
+            # 過去90日分の書類を検索（期間を延長）
             end_date = datetime.now().date()
-            start_date = end_date - timedelta(days=30)
+            start_date = end_date - timedelta(days=90)
             
             all_documents = []
             current_date = start_date
@@ -364,21 +362,38 @@ class OnDemandAnalysisService:
             while current_date <= end_date:
                 date_str = current_date.strftime('%Y-%m-%d')
                 documents = self.edinet_service.get_document_list(date_str, company.company_code)
-                all_documents.extend(documents)
+                
+                # より多くの書類種別を対象に含める
+                for doc in documents:
+                    doc_type = doc.get('doc_type_code', '')
+                    doc_desc = doc.get('doc_description', '').lower()
+                    
+                    # 有価証券報告書、四半期報告書、半期報告書、決算短信に加えて
+                    # より幅広い書類を対象にする
+                    if (doc_type in ['120', '130', '140', '350', '160', '170'] or 
+                        any(keyword in doc_desc for keyword in 
+                            ['決算', '四半期', '有価証券', '短信', 'キャッシュ', 'cash'])):
+                        all_documents.append(doc)
+                        logger.info(f"対象書類追加: {doc.get('doc_description', '')[:50]}...")
+                
                 current_date += timedelta(days=1)
                 
                 # APIレート制限対策
-                time.sleep(self.edinet_service.session.headers.get('rate_limit_delay', 1))
+                time.sleep(self.edinet_service.session.headers.get('rate_limit_delay', 0.5))
             
             # 日付順でソート（新しい順）
             all_documents.sort(key=lambda x: x.get('submission_date', ''), reverse=True)
             
-            return all_documents[:5]  # 最新5件まで
+            logger.info(f"発見した対象書類: {len(all_documents)}件")
+            for doc in all_documents[:3]:
+                logger.info(f"  - {doc.get('doc_description', '')}")
+            
+            return all_documents[:10]  # 最新10件まで
             
         except Exception as e:
             logger.error(f"Error finding latest documents for {company.company_code}: {str(e)}")
             return []
-    
+        
     def _create_earnings_report(self, company: CompanyEarnings, document_info: Dict) -> EarningsReport:
         """決算報告書レコードを作成"""
         # 書類種別の判定
@@ -391,7 +406,7 @@ class OnDemandAnalysisService:
             report_type = 'summary'
         
         # 四半期の判定
-        doc_desc = document_info.get('doc_description', '').lower()
+        doc_desc = document_info.get('doc_description', '') or ''
         if '第1四半期' in doc_desc:
             quarter = 'Q1'
         elif '第2四半期' in doc_desc:
@@ -403,21 +418,25 @@ class OnDemandAnalysisService:
         
         # 会計年度の抽出（修正版）
         submission_date = document_info.get('submission_date', '')
-        date_part = submission_date
         
         if submission_date:
             try:
                 # 日付部分のみを抽出（時刻部分を除去）
-                date_part = submission_date.split(' ')[0] if ' ' in submission_date else submission_date
-                date_part = date_part.split('T')[0] if 'T' in date_part else date_part
-                
-                fiscal_year = str(datetime.strptime(date_part, '%Y-%m-%d').year)
+                if isinstance(submission_date, str):
+                    date_part = submission_date.split(' ')[0] if ' ' in submission_date else submission_date
+                    date_part = date_part.split('T')[0] if 'T' in date_part else date_part
+                    fiscal_year = str(datetime.strptime(date_part, '%Y-%m-%d').year)
+                    submission_date_obj = datetime.strptime(date_part, '%Y-%m-%d').date()
+                else:
+                    fiscal_year = str(submission_date.year)
+                    submission_date_obj = submission_date
             except ValueError as e:
                 logger.warning(f"Failed to parse submission_date '{submission_date}': {str(e)}")
                 fiscal_year = str(datetime.now().year)
+                submission_date_obj = datetime.now().date()
         else:
             fiscal_year = str(datetime.now().year)
-            date_part = None
+            submission_date_obj = datetime.now().date()
         
         return EarningsReport.objects.create(
             company=company,
@@ -425,9 +444,10 @@ class OnDemandAnalysisService:
             fiscal_year=fiscal_year,
             quarter=quarter,
             document_id=document_info['document_id'],
-            submission_date=date_part,  # 修正: 時刻部分を除去した日付のみ
+            submission_date=submission_date_obj,  # ← 修正: date オブジェクトを使用
             is_processed=False
         )
+
 
     def _analyze_cashflow(self, report: EarningsReport, text_sections: Dict) -> Optional[CashFlowAnalysis]:
         """キャッシュフロー分析を実行"""
@@ -581,17 +601,24 @@ class OnDemandAnalysisService:
             logger.warning(f"Failed to record analysis history for {company.company_code}: {str(e)}")
     
     def _format_analysis_result(self, company: CompanyEarnings, latest_analysis: Dict) -> Dict:
-        """分析結果をフォーマット"""
         try:
             report = latest_analysis['report']
-                        
+            
+            # 日付処理の修正
             analysis_date = latest_analysis.get('analysis_date')
             if isinstance(analysis_date, str):
                 try:
-                    analysis_date = datetime.fromisoformat(analysis_date)
+                    # 既に文字列の場合はそのまま使用
+                    analysis_date_iso = analysis_date
                 except ValueError:
-                    analysis_date = datetime.strptime(analysis_date, '%Y-%m-%d') 
-                    
+                    analysis_date_iso = timezone.now().date().isoformat()
+            elif hasattr(analysis_date, 'isoformat'):
+                # datetime オブジェクトの場合
+                analysis_date_iso = analysis_date.isoformat()
+            else:
+                # その他の場合は現在日付を使用
+                analysis_date_iso = timezone.now().date().isoformat()
+            
             result = {
                 'success': True,
                 'company': {
@@ -603,13 +630,14 @@ class OnDemandAnalysisService:
                 'report': {
                     'fiscal_year': report.fiscal_year,
                     'quarter': report.quarter,
-                    'submission_date': report.submission_date.isoformat() if report.submission_date else None,
+                    'submission_date': report.submission_date.isoformat() if hasattr(report.submission_date, 'isoformat') else str(report.submission_date),
                     'report_type': report.get_report_type_display()
                 },
-                'analysis_date': latest_analysis['analysis_date'].isoformat(),
+                'analysis_date': analysis_date_iso,  # ← ここを修正
                 'cashflow_analysis': None,
                 'sentiment_analysis': None
             }
+
             
             # キャッシュフロー分析データ
             if hasattr(report, 'cashflow_analysis'):

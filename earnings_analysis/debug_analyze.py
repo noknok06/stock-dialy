@@ -15,7 +15,7 @@ from earnings_analysis.management.commands.analyze_company import Command
 # 管理コマンドを手動で呼び出す（引数指定）
 cmd = Command()
 cmd.handle(
-    company_code="9102",
+    company_code="9983",
     force=False,
     verbose=True,
     dry_run=False
