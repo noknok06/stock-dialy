@@ -39,6 +39,7 @@ urlpatterns = [
     path('security/', include('security.urls')),
     path('contact/', include('contact.urls')),
     path('financial_reports/', include('financial_reports.urls')),
+    path('earnings/', include('earnings_analysis.urls')),
 ]
 urlpatterns += [
     path('ads.txt', RedirectView.as_view(url=staticfiles_storage.url('ads.txt'))),

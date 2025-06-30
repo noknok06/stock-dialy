@@ -1,19 +1,4 @@
-# earnings_analysis/services.py（EDINET API v2修正版）
-import requests
-import xml.etree.ElementTree as ET
-import zipfile
-import io
-import re
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
-import logging
-from django.conf import settings
-import time
-
-logger = logging.getLogger(__name__)
-
-
-# earnings_analysis/services.py（企業情報取得機能追加版）
+# earnings_analysis/services.py（効率化版）
 
 import requests
 import xml.etree.ElementTree as ET
@@ -30,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class EDINETAPIService:
-    """EDINET API v2連携サービス（企業情報取得機能付き）"""
+    """EDINET API v2連携サービス（効率化版）"""
     
     def __init__(self):
         # 設定を取得
@@ -68,9 +53,208 @@ class EDINETAPIService:
         
         self.last_request_time = time.time()
 
+    def get_company_documents_efficiently(self, company_code: str, days_back: int = 180) -> List[Dict]:
+        """
+        効率的な企業書類検索（改善版）
+        
+        Args:
+            company_code: 証券コード（例: "9983"）
+            days_back: 何日前まで検索するか
+            
+        Returns:
+            書類一覧（日付順）
+        """
+        try:
+            logger.info(f"Starting efficient document search for company: {company_code}")
+            start_time = time.time()
+            
+            # ステップ1: 大きな範囲で書類一覧を取得
+            all_documents = self._fetch_document_list_batch(days_back)
+            
+            if not all_documents:
+                logger.warning(f"No documents found in the last {days_back} days")
+                return []
+            
+            logger.info(f"Fetched {len(all_documents)} documents in {time.time() - start_time:.2f} seconds")
+            
+            # ステップ2: 対象企業の書類をフィルタリング
+            company_documents = self._filter_company_documents(all_documents, company_code)
+            
+            if not company_documents:
+                logger.warning(f"No documents found for company {company_code}")
+                return []
+            
+            # ステップ3: 決算関連書類のみに絞り込み
+            earnings_documents = self._filter_earnings_documents(company_documents)
+            
+            # ステップ4: 日付順でソート（新しい順）
+            earnings_documents.sort(key=lambda x: x.get('submission_date', ''), reverse=True)
+            
+            logger.info(f"Found {len(earnings_documents)} earnings documents for company {company_code}")
+            
+            # ステップ5: 書類の詳細情報をログ出力
+            self._log_document_details(earnings_documents[:5], company_code)
+            
+            return earnings_documents
+            
+        except Exception as e:
+            logger.error(f"Error in efficient document search for {company_code}: {str(e)}")
+            return []
+    
+    def _fetch_document_list_batch(self, days_back: int) -> List[Dict]:
+        """
+        バッチで書類一覧を取得（効率化の核心部分）
+        
+        Args:
+            days_back: 何日前まで検索するか
+            
+        Returns:
+            すべての書類一覧
+        """
+        all_documents = []
+        end_date = datetime.now().date()
+        start_date = end_date - timedelta(days=days_back)
+        
+        # 効率的な日付選択（毎日ではなく、書類が多そうな日を優先）
+        search_dates = self._generate_smart_search_dates(start_date, end_date)
+        
+        logger.info(f"Searching {len(search_dates)} dates efficiently")
+        
+        for i, search_date in enumerate(search_dates):
+            try:
+                date_str = search_date.strftime('%Y-%m-%d')
+                logger.debug(f"Fetching documents for {date_str} ({i+1}/{len(search_dates)})")
+                
+                # 書類一覧を取得（企業フィルターなし）
+                documents = self.get_document_list(date_str)
+                
+                if documents:
+                    all_documents.extend(documents)
+                    logger.debug(f"Found {len(documents)} documents on {date_str}")
+                
+                # レート制限対策
+                self._wait_for_rate_limit()
+                
+                # 十分な書類が集まったら早期終了（オプション）
+                if len(all_documents) > 1000:  # 閾値は調整可能
+                    logger.info(f"Collected sufficient documents ({len(all_documents)}), stopping early")
+                    break
+                    
+            except Exception as e:
+                logger.warning(f"Error fetching documents for {date_str}: {str(e)}")
+                continue
+        
+        logger.info(f"Total documents collected: {len(all_documents)}")
+        return all_documents
+    
+    def _generate_smart_search_dates(self, start_date: datetime, end_date: datetime) -> List[datetime]:
+        """
+        効率的な検索日付を生成
+        
+        決算発表が多い時期を優先的に検索
+        """
+        dates = []
+        current_date = end_date
+        
+        # 最近の30日は毎日検索（最新情報を確実に取得）
+        recent_threshold = end_date - timedelta(days=30)
+        while current_date >= recent_threshold:
+            dates.append(current_date)
+            current_date -= timedelta(days=1)
+        
+        # それ以前は決算発表が多そうな日を優先
+        while current_date >= start_date:
+            # 平日を優先
+            if current_date.weekday() < 5:
+                # 月末・月初（決算発表が多い）
+                if current_date.day <= 5 or current_date.day >= 25:
+                    dates.append(current_date)
+                # 15日前後（決算発表が多い）
+                elif 10 <= current_date.day <= 20:
+                    if current_date.weekday() == 0:  # 月曜日のみ
+                        dates.append(current_date)
+                # その他は週1回
+                elif current_date.weekday() == 2:  # 水曜日のみ
+                    dates.append(current_date)
+            
+            current_date -= timedelta(days=1)
+        
+        return dates
+    
+    def _filter_company_documents(self, all_documents: List[Dict], company_code: str) -> List[Dict]:
+        """
+        全書類から対象企業の書類をフィルタリング
+        
+        Args:
+            all_documents: すべての書類一覧
+            company_code: 対象企業の証券コード
+            
+        Returns:
+            対象企業の書類一覧
+        """
+        company_documents = []
+        
+        for doc in all_documents:
+            if self._is_target_company_by_code(doc, company_code):
+                company_documents.append(doc)
+        
+        logger.info(f"Filtered {len(company_documents)} documents for company {company_code}")
+        return company_documents
+    
+    def _filter_earnings_documents(self, documents: List[Dict]) -> List[Dict]:
+        """
+        決算関連書類のみに絞り込み
+        
+        Args:
+            documents: 企業の書類一覧
+            
+        Returns:
+            決算関連書類一覧
+        """
+        earnings_docs = []
+        
+        # 決算関連の書類種別コード
+        earnings_doc_types = ['120', '130', '140', '350']
+        
+        # 決算関連キーワード
+        earnings_keywords = ['決算', '四半期', '有価証券報告書', '短信', 'quarterly', 'annual']
+        
+        for doc in documents:
+            doc_type = doc.get('doc_type_code', '')
+            doc_description = doc.get('doc_description', '').lower()
+            
+            # 書類種別での判定
+            if doc_type in earnings_doc_types:
+                earnings_docs.append(doc)
+                continue
+            
+            # 書類説明での判定
+            if any(keyword in doc_description for keyword in earnings_keywords):
+                earnings_docs.append(doc)
+                continue
+        
+        logger.info(f"Filtered {len(earnings_docs)} earnings documents")
+        return earnings_docs
+    
+    def _log_document_details(self, documents: List[Dict], company_code: str):
+        """
+        書類の詳細情報をログ出力
+        """
+        if not documents:
+            return
+        
+        logger.info(f"Top documents for company {company_code}:")
+        for i, doc in enumerate(documents[:5], 1):
+            doc_id = doc.get('document_id', 'N/A')
+            submission_date = doc.get('submission_date', 'N/A')
+            doc_desc = doc.get('doc_description', 'N/A')[:50]
+            doc_type = doc.get('doc_type_code', 'N/A')
+            
+            logger.info(f"  {i}. [{doc_id}] {submission_date} - {doc_desc}... (Type: {doc_type})")
+    
     def get_company_info_by_code(self, company_code: str, days_back: int = 180) -> Optional[Dict]:
         """
-        証券コードから企業情報を取得（新機能）
+        証券コードから企業情報を取得（効率化版）
         
         Args:
             company_code: 証券コード（例: "9983"）
@@ -80,211 +264,109 @@ class EDINETAPIService:
             企業情報辞書またはNone
         """
         try:
-            logger.info(f"Searching company info for code: {company_code}")
+            logger.info(f"Getting company info for code: {company_code}")
             
-            # 過去の書類から企業情報を検索
-            end_date = datetime.now().date()
-            start_date = end_date - timedelta(days=days_back)
+            # 効率的な書類検索を使用
+            documents = self.get_company_documents_efficiently(company_code, days_back)
             
-            # 週単位でスキップして効率的に検索
-            search_dates = []
-            current_date = end_date
-            while current_date >= start_date:
-                if current_date.weekday() < 5:  # 平日のみ
-                    search_dates.append(current_date)
-                current_date -= timedelta(days=7)  # 1週間ずつ遡る
+            if not documents:
+                logger.warning(f"No documents found for company {company_code}")
+                return self._create_default_company_info(company_code)
+            
+            # 最新の書類から企業情報を抽出
+            latest_doc = documents[0]
+            company_info = self._extract_company_info_from_document(latest_doc, company_code)
+            
+            if company_info:
+                company_info['found_documents_count'] = len(documents)
+                company_info['search_efficiency'] = f"Found {len(documents)} documents efficiently"
+                logger.info(f"Successfully extracted company info: {company_info['company_name']}")
+                return company_info
+            else:
+                return self._create_default_company_info(company_code)
                 
-                if len(search_dates) >= 10:  # 最大10日分まで
-                    break
-            
-            # 各日付で検索
-            for search_date in search_dates:
-                date_str = search_date.strftime('%Y-%m-%d')
-                logger.debug(f"Searching documents for {date_str}")
-                
-                try:
-                    documents = self.get_document_list(date_str)
-                    
-                    # 該当企業の書類を検索
-                    for doc in documents:
-                        if self._is_target_company_by_code(doc, company_code):
-                            company_info = self._extract_company_info_from_document(doc, company_code)
-                            if company_info:
-                                logger.info(f"Found company info: {company_info['company_name']}")
-                                return company_info
-                    
-                    # レート制限対策
-                    time.sleep(0.5)
-                    
-                except Exception as e:
-                    logger.warning(f"Error searching date {date_str}: {str(e)}")
-                    continue
-            
-            # 見つからない場合はデフォルト情報を作成
-            logger.warning(f"Company {company_code} not found in recent documents, creating default info")
-            return self._create_default_company_info(company_code)
-            
         except Exception as e:
             logger.error(f"Error getting company info for {company_code}: {str(e)}")
             return self._create_default_company_info(company_code)
     
-    def _is_target_company_by_code(self, doc: Dict, target_company_code: str) -> bool:
-        """書類が対象企業のものかを証券コードで判定"""
-        try:
-            # 1. 証券コード（secCode）での直接判定
-            sec_code = doc.get('secCode', '') or ''
-            if sec_code and sec_code.startswith(target_company_code):
-                return True
-            
-            # 2. 企業名から判定（既知の企業マッピング）
-            company_name = doc.get('filerName', '') or ''
-            
-            # 主要企業のマッピング（拡張版）
-            company_mappings = {
-                '7203': ['トヨタ', 'TOYOTA', 'トヨタ自動車'],
-                '6758': ['ソニー', 'SONY', 'ソニーグループ'],
-                '9984': ['ソフトバンク', 'SoftBank', 'ソフトバンクグループ'],
-                '6861': ['キーエンス', 'KEYENCE'],
-                '8306': ['三菱UFJ', 'MUFG', '三菱ＵＦＪ'],
-                '9983': ['ファーストリテイリング', 'Fast Retailing', 'ユニクロ', 'UNIQLO'],  # 追加
-                '7974': ['任天堂', 'Nintendo'],
-                '6954': ['ファナック', 'FANUC'],
-                '4519': ['中外製薬', 'Chugai'],
-                '9434': ['ソフトバンク', 'SoftBank'],
-                '8035': ['東京エレクトロン', 'Tokyo Electron'],
-                '4063': ['信越化学', '信越化学工業'],
-                '6981': ['村田製作所', 'Murata'],
-                '8058': ['三菱商事'],
-                '7741': ['HOYA'],
-                '9101': ['日本郵船'],
-                '9104': ['商船三井'],
-            }
-            
-            if target_company_code in company_mappings and company_name:
-                keywords = company_mappings[target_company_code]
-                if any(keyword in company_name for keyword in keywords):
-                    logger.debug(f"Found company by name mapping: {company_name}")
-                    return True
-            
-            return False
-            
-        except Exception as e:
-            logger.warning(f"Error checking target company: {str(e)}")
-            return False
-    
-    def _extract_company_info_from_document(self, doc: Dict, company_code: str) -> Optional[Dict]:
-        """書類情報から企業情報を抽出"""
-        try:
-            company_name = doc.get('filerName', '').strip()
-            edinet_code = doc.get('edinetCode', '').strip()
-            
-            if not company_name:
-                return None
-            
-            # 決算月の推定
-            fiscal_year_end_month = self._estimate_fiscal_year_end(doc)
-            
-            company_info = {
-                'company_code': company_code,
-                'company_name': company_name,
-                'edinet_code': edinet_code,
-                'fiscal_year_end_month': fiscal_year_end_month,
-                'source': 'edinet_api',
-                'found_document': {
-                    'document_id': doc.get('docID'),
-                    'submission_date': doc.get('submitDateTime'),
-                    'doc_description': doc.get('docDescription')
-                }
-            }
-            
-            return company_info
-            
-        except Exception as e:
-            logger.error(f"Error extracting company info: {str(e)}")
-            return None
-    
-    def _estimate_fiscal_year_end(self, doc: Dict) -> int:
-        """書類から決算月を推定"""
-        try:
-            # period_endから判定
-            period_end = doc.get('periodEnd', '')
-            if period_end:
-                try:
-                    period_date = datetime.strptime(period_end, '%Y-%m-%d')
-                    return period_date.month
-                except ValueError:
-                    pass
-            
-            # 書類説明から判定
-            doc_desc = doc.get('docDescription', '') or ''
-            
-            # 決算月のパターンマッチング
-            month_patterns = {
-                3: ['3月', '3月期', '第3四半期', 'March'],
-                6: ['6月', '6月期', '第2四半期', 'June'],
-                9: ['9月', '9月期', '第1四半期', 'September'],
-                12: ['12月', '12月期', '第4四半期', 'December']
-            }
-            
-            for month, patterns in month_patterns.items():
-                if any(pattern in doc_desc for pattern in patterns):
-                    return month
-            
-            # デフォルトは3月決算
-            return 3
-            
-        except Exception:
-            return 3
-    
-    def _create_default_company_info(self, company_code: str) -> Dict:
-        """デフォルトの企業情報を作成"""
-        # 既知の企業情報
-        known_companies = {
-            '9983': {
-                'company_name': 'ファーストリテイリング',
-                'fiscal_year_end_month': 8,
-                'industry': '小売業'
-            },
-            '7203': {
-                'company_name': 'トヨタ自動車',
-                'fiscal_year_end_month': 3,
-                'industry': '自動車'
-            },
-            '6758': {
-                'company_name': 'ソニーグループ',
-                'fiscal_year_end_month': 3,
-                'industry': '電機'
-            },
-            '9984': {
-                'company_name': 'ソフトバンクグループ',
-                'fiscal_year_end_month': 3,
-                'industry': '通信'
-            }
-        }
+    def find_latest_documents_for_analysis(self, company_code: str) -> List[Dict]:
+        """
+        分析用の最新書類を効率的に検索
         
-        if company_code in known_companies:
-            known_info = known_companies[company_code]
-            return {
-                'company_code': company_code,
-                'company_name': known_info['company_name'],
-                'edinet_code': f'E{company_code.zfill(5)}',  # 仮のEDINETコード
-                'fiscal_year_end_month': known_info['fiscal_year_end_month'],
-                'source': 'default_mapping',
-                'industry': known_info.get('industry', '不明')
-            }
-        else:
-            return {
-                'company_code': company_code,
-                'company_name': f'企業コード{company_code}',
-                'edinet_code': f'E{company_code.zfill(5)}',
-                'fiscal_year_end_month': 3,
-                'source': 'auto_generated',
-                'industry': '不明'
-            }
+        Args:
+            company_code: 証券コード
+            
+        Returns:
+            分析用書類一覧（優先度順）
+        """
+        try:
+            logger.info(f"Finding latest documents for analysis: {company_code}")
+            
+            # 効率的な検索で書類を取得
+            documents = self.get_company_documents_efficiently(company_code, days_back=120)
+            
+            if not documents:
+                return []
+            
+            # 分析に最適な書類を選択
+            analysis_docs = self._select_best_documents_for_analysis(documents)
+            
+            logger.info(f"Selected {len(analysis_docs)} documents for analysis")
+            return analysis_docs
+            
+        except Exception as e:
+            logger.error(f"Error finding latest documents for {company_code}: {str(e)}")
+            return []
+    
+    def _select_best_documents_for_analysis(self, documents: List[Dict]) -> List[Dict]:
+        """
+        分析に最適な書類を選択
+        
+        優先順位:
+        1. 有価証券報告書（年次）
+        2. 四半期報告書
+        3. 決算短信
+        """
+        selected_docs = []
+        
+        # 書類を種別ごとに分類
+        annual_reports = []      # 有価証券報告書
+        quarterly_reports = []   # 四半期報告書
+        earnings_summaries = []  # 決算短信
+        
+        for doc in documents:
+            doc_type = doc.get('doc_type_code', '')
+            doc_desc = doc.get('doc_description', '').lower()
+            
+            if doc_type == '120':  # 有価証券報告書
+                annual_reports.append(doc)
+            elif doc_type in ['130', '140']:  # 四半期報告書
+                quarterly_reports.append(doc)
+            elif doc_type == '350' or '短信' in doc_desc:  # 決算短信
+                earnings_summaries.append(doc)
+        
+        # 優先順位に従って選択
+        # 1. 最新の有価証券報告書
+        if annual_reports:
+            selected_docs.append(annual_reports[0])
+        
+        # 2. 最新の四半期報告書
+        if quarterly_reports:
+            selected_docs.append(quarterly_reports[0])
+        
+        # 3. 最新の決算短信
+        if earnings_summaries:
+            selected_docs.append(earnings_summaries[0])
+        
+        # どれもない場合は最新の書類
+        if not selected_docs and documents:
+            selected_docs.append(documents[0])
+        
+        return selected_docs
 
-    # 既存のメソッドは変更なし
+    # 既存のメソッドはそのまま維持
     def get_document_list(self, date: str, company_code: str = None) -> List[Dict]:
-        """指定日の書類一覧を取得（既存メソッド）"""
+        """指定日の書類一覧を取得（既存メソッド - 変更なし）"""
         try:
             # レート制限対策
             self._wait_for_rate_limit()
@@ -299,7 +381,7 @@ class EDINETAPIService:
                 'Subscription-Key': self.api_key
             }
             
-            logger.info(f"Requesting document list for date: {date}")
+            logger.debug(f"Requesting document list for date: {date}")
             
             response = self.session.get(url, params=params, timeout=self.timeout)
             response.raise_for_status()
@@ -315,16 +397,16 @@ class EDINETAPIService:
                 return []
             
             results = data.get('results', [])
-            logger.info(f"Found {len(results)} documents for {date}")
+            logger.debug(f"Found {len(results)} documents for {date}")
             
-            # 企業コードでフィルタリング
+            # 企業コードでフィルタリング（指定されている場合）
             if company_code:
                 filtered_results = []
                 for doc in results:
                     if self._is_target_company_by_code(doc, company_code):
                         filtered_results.append(doc)
                 results = filtered_results
-                logger.info(f"Filtered to {len(results)} documents for company {company_code}")
+                logger.debug(f"Filtered to {len(results)} documents for company {company_code}")
             
             # 決算関連書類のみに絞り込み
             earnings_docs = []
@@ -347,7 +429,7 @@ class EDINETAPIService:
                         'period_end': doc.get('periodEnd')
                     })
             
-            logger.info(f"Found {len(earnings_docs)} earnings-related documents")
+            logger.debug(f"Found {len(earnings_docs)} earnings-related documents")
             return earnings_docs
             
         except requests.exceptions.HTTPError as e:
@@ -367,9 +449,9 @@ class EDINETAPIService:
             logger.error(f"Error getting document list: {str(e)}")
             return []
 
-    # その他の既存メソッドはそのまま...
+    # その他の既存メソッドも同様に維持...
     def get_document_content(self, document_id: str) -> Optional[bytes]:
-        """書類の内容を取得（既存メソッド）"""
+        """書類の内容を取得（既存メソッド - 変更なし）"""
         try:
             self._wait_for_rate_limit()
             
@@ -401,9 +483,164 @@ class EDINETAPIService:
         except Exception as e:
             logger.error(f"Error downloading document {document_id}: {str(e)}")
             return None
-    
+
+    # その他のヘルパーメソッドも維持...
+    def _is_target_company_by_code(self, doc: Dict, target_company_code: str) -> bool:
+        """書類が対象企業のものかを証券コードで判定（既存メソッド）"""
+        try:
+            # 1. 証券コード（secCode）での直接判定
+            sec_code = doc.get('secCode', '') or ''
+            if sec_code and sec_code.startswith(target_company_code):
+                return True
+            
+            # 2. 企業名から判定（既知の企業マッピング）
+            company_name = doc.get('filerName', '') or ''
+            
+            # 主要企業のマッピング（拡張版）
+            company_mappings = {
+                '7203': ['トヨタ', 'TOYOTA', 'トヨタ自動車'],
+                '6758': ['ソニー', 'SONY', 'ソニーグループ'],
+                '9984': ['ソフトバンク', 'SoftBank', 'ソフトバンクグループ'],
+                '6861': ['キーエンス', 'KEYENCE'],
+                '8306': ['三菱UFJ', 'MUFG', '三菱ＵＦＪ'],
+                '9983': ['ファーストリテイリング', 'Fast Retailing', 'ユニクロ', 'UNIQLO'],
+                '7974': ['任天堂', 'Nintendo'],
+                '6954': ['ファナック', 'FANUC'],
+                '4519': ['中外製薬', 'Chugai'],
+                '9434': ['ソフトバンク', 'SoftBank'],
+                '8035': ['東京エレクトロン', 'Tokyo Electron'],
+                '4063': ['信越化学', '信越化学工業'],
+                '6981': ['村田製作所', 'Murata'],
+                '8058': ['三菱商事'],
+                '7741': ['HOYA'],
+                '9101': ['日本郵船'],
+                '9104': ['商船三井'],
+            }
+            
+            if target_company_code in company_mappings and company_name:
+                keywords = company_mappings[target_company_code]
+                if any(keyword in company_name for keyword in keywords):
+                    logger.debug(f"Found company by name mapping: {company_name}")
+                    return True
+            
+            return False
+            
+        except Exception as e:
+            logger.warning(f"Error checking target company: {str(e)}")
+            return False
+
+    def _extract_company_info_from_document(self, doc: Dict, company_code: str) -> Optional[Dict]:
+        """書類情報から企業情報を抽出（既存メソッド）"""
+        try:
+            company_name = doc.get('company_name', '').strip() or doc.get('filerName', '').strip()
+            edinet_code = doc.get('edinet_code', '').strip() or doc.get('edinetCode', '').strip()
+            
+            if not company_name:
+                return None
+            
+            # 決算月の推定
+            fiscal_year_end_month = self._estimate_fiscal_year_end(doc)
+            
+            company_info = {
+                'company_code': company_code,
+                'company_name': company_name,
+                'edinet_code': edinet_code,
+                'fiscal_year_end_month': fiscal_year_end_month,
+                'source': 'edinet_api_efficient',
+                'found_document': {
+                    'document_id': doc.get('document_id') or doc.get('docID'),
+                    'submission_date': doc.get('submission_date') or doc.get('submitDateTime'),
+                    'doc_description': doc.get('doc_description') or doc.get('docDescription')
+                }
+            }
+            
+            return company_info
+            
+        except Exception as e:
+            logger.error(f"Error extracting company info: {str(e)}")
+            return None
+
+    def _estimate_fiscal_year_end(self, doc: Dict) -> int:
+        """書類から決算月を推定（既存メソッド）"""
+        try:
+            # period_endから判定
+            period_end = doc.get('periodEnd', '') or doc.get('period_end', '')
+            if period_end:
+                try:
+                    period_date = datetime.strptime(period_end, '%Y-%m-%d')
+                    return period_date.month
+                except ValueError:
+                    pass
+            
+            # 書類説明から判定
+            doc_desc = doc.get('docDescription', '') or doc.get('doc_description', '') or ''
+            
+            # 決算月のパターンマッチング
+            month_patterns = {
+                3: ['3月', '3月期', '第3四半期', 'March'],
+                6: ['6月', '6月期', '第2四半期', 'June'],
+                9: ['9月', '9月期', '第1四半期', 'September'],
+                12: ['12月', '12月期', '第4四半期', 'December']
+            }
+            
+            for month, patterns in month_patterns.items():
+                if any(pattern in doc_desc for pattern in patterns):
+                    return month
+            
+            # デフォルトは3月決算
+            return 3
+            
+        except Exception:
+            return 3
+
+    def _create_default_company_info(self, company_code: str) -> Dict:
+        """デフォルトの企業情報を作成（既存メソッド）"""
+        # 既知の企業情報
+        known_companies = {
+            '9983': {
+                'company_name': 'ファーストリテイリング',
+                'fiscal_year_end_month': 8,
+                'industry': '小売業'
+            },
+            '7203': {
+                'company_name': 'トヨタ自動車',
+                'fiscal_year_end_month': 3,
+                'industry': '自動車'
+            },
+            '6758': {
+                'company_name': 'ソニーグループ',
+                'fiscal_year_end_month': 3,
+                'industry': '電機'
+            },
+            '9984': {
+                'company_name': 'ソフトバンクグループ',
+                'fiscal_year_end_month': 3,
+                'industry': '通信'
+            }
+        }
+        
+        if company_code in known_companies:
+            known_info = known_companies[company_code]
+            return {
+                'company_code': company_code,
+                'company_name': known_info['company_name'],
+                'edinet_code': f'E{company_code.zfill(5)}',
+                'fiscal_year_end_month': known_info['fiscal_year_end_month'],
+                'source': 'default_mapping',
+                'industry': known_info.get('industry', '不明')
+            }
+        else:
+            return {
+                'company_code': company_code,
+                'company_name': f'企業コード{company_code}',
+                'edinet_code': f'E{company_code.zfill(5)}',
+                'fiscal_year_end_month': 3,
+                'source': 'auto_generated',
+                'industry': '不明'
+            }
+
     def _parse_submission_date(self, submit_datetime: str) -> str:
-        """提出日時を日付文字列に変換"""
+        """提出日時を日付文字列に変換（既存メソッド）"""
         try:
             if not submit_datetime:
                 return ''
@@ -419,43 +656,9 @@ class EDINETAPIService:
             logger.warning(f"Error parsing submission date '{submit_datetime}': {str(e)}")
             return submit_datetime or ''
 
-    # その他の既存メソッドもそのまま残す（省略）
-    def search_company_documents(self, company_code: str, days_back: int = 90) -> List[Dict]:
-        """特定企業の過去の書類を検索"""
-        try:
-            end_date = datetime.now().date()
-            start_date = end_date - timedelta(days=days_back)
-            
-            all_documents = []
-            current_date = start_date
-            
-            search_dates = []
-            while current_date <= end_date:
-                if current_date.weekday() < 5:
-                    search_dates.append(current_date)
-                current_date += timedelta(days=3)
-            
-            for search_date in search_dates:
-                date_str = search_date.strftime('%Y-%m-%d')
-                documents = self.get_document_list(date_str, company_code)
-                all_documents.extend(documents)
-                time.sleep(0.5)
-            
-            all_documents.sort(
-                key=lambda x: x.get('submission_date', ''), 
-                reverse=True
-            )
-            
-            logger.info(f"Found {len(all_documents)} documents for company {company_code} in last {days_back} days")
-            
-            return all_documents[:10]
-            
-        except Exception as e:
-            logger.error(f"Error searching company documents for {company_code}: {str(e)}")
-            return []
-
+    # API接続テスト系のメソッドも維持
     def test_api_connection(self) -> bool:
-        """API v2接続テスト"""
+        """API v2接続テスト（既存メソッド）"""
         try:
             today = datetime.now().strftime('%Y-%m-%d')
             url = f"{self.base_url}/api/v2/documents.json"
@@ -490,7 +693,7 @@ class EDINETAPIService:
             return False
     
     def get_api_status(self) -> Dict:
-        """API v2の状態情報を取得"""
+        """API v2の状態情報を取得（既存メソッド）"""
         try:
             if not self.api_key:
                 return {
