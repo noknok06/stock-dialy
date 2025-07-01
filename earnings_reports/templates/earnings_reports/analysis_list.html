@@ -1,0 +1,460 @@
+{% extends 'earnings_reports/base.html' %}
+
+{% block title %}分析結果一覧{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- ページヘッダー -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-1">
+                        <i class="fas fa-chart-bar text-primary me-2"></i>
+                        分析結果一覧
+                    </h1>
+                    <p class="text-muted mb-0">
+                        {% if page_obj.paginator.count %}
+                            {{ page_obj.paginator.count }}件の分析結果
+                        {% else %}
+                            分析結果なし
+                        {% endif %}
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'earnings_reports:search_company' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>新規分析
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- フィルター -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-filter me-2"></i>フィルター
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            {{ filter_form.company.label_tag }}
+                            {{ filter_form.company }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ filter_form.doc_type.label_tag }}
+                            {{ filter_form.doc_type }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ filter_form.status.label_tag }}
+                            {{ filter_form.status }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ filter_form.date_from.label_tag }}
+                            {{ filter_form.date_from }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ filter_form.date_to.label_tag }}
+                            {{ filter_form.date_to }}
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-outline-primary">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <!-- スコア範囲フィルター -->
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-2">
+                            {{ filter_form.score_min.label_tag }}
+                            {{ filter_form.score_min }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ filter_form.score_max.label_tag }}
+                            {{ filter_form.score_max }}
+                        </div>
+                        <div class="col-md-8">
+                            {% if request.GET %}
+                                <div class="pt-4">
+                                    <a href="{% url 'earnings_reports:analysis_list' %}" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-times me-1"></i>フィルターをクリア
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 分析結果テーブル -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body p-0">
+                    {% if analyses %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>企業</th>
+                                        <th>書類種別</th>
+                                        <th>提出日</th>
+                                        <th>総合スコア</th>
+                                        <th>感情傾向</th>
+                                        <th>CFパターン</th>
+                                        <th>分析日</th>
+                                        <th>状況</th>
+                                        <th width="120">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for analysis in analyses %}
+                                        <tr>
+                                            <td>
+                                                <div class="fw-bold">
+                                                    <a href="{% url 'earnings_reports:company_dashboard' analysis.document.company.stock_code %}" 
+                                                       class="text-decoration-none">
+                                                        {{ analysis.document.company.name }}
+                                                    </a>
+                                                </div>
+                                                <small class="text-muted">{{ analysis.document.company.stock_code }}</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">
+                                                    {{ analysis.document.get_doc_type_display }}
+                                                </span>
+                                            </td>
+                                            <td>{{ analysis.document.submit_date }}</td>
+                                            <td>
+                                                {% if analysis.overall_score is not None %}
+                                                    <span class="badge score-badge" id="score-{{ analysis.pk }}">
+                                                        {{ analysis.overall_score|floatformat:1 }}
+                                                    </span>
+                                                    <script>
+                                                        document.addEventListener('DOMContentLoaded', function() {
+                                                            const element = document.getElementById('score-{{ analysis.pk }}');
+                                                            if (element) {
+                                                                element.className += ' ' + getScoreBadgeClass({{ analysis.overall_score }});
+                                                            }
+                                                        });
+                                                    </script>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if analysis.sentiment %}
+                                                    {% with sentiment=analysis.sentiment %}
+                                                        {% if sentiment.dominant_sentiment == 'positive' %}
+                                                            <span class="text-success">
+                                                                <i class="fas fa-smile me-1"></i>ポジティブ
+                                                            </span>
+                                                        {% elif sentiment.dominant_sentiment == 'negative' %}
+                                                            <span class="text-danger">
+                                                                <i class="fas fa-frown me-1"></i>ネガティブ
+                                                            </span>
+                                                        {% else %}
+                                                            <span class="text-muted">
+                                                                <i class="fas fa-meh me-1"></i>ニュートラル
+                                                            </span>
+                                                        {% endif %}
+                                                    {% endwith %}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if analysis.cashflow %}
+                                                    <span class="badge bg-secondary cf-pattern-{{ analysis.cashflow.pattern }}">
+                                                        {{ analysis.cashflow.get_pattern_display }}
+                                                    </span>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div>{{ analysis.analysis_date|date:"m/d H:i" }}</div>
+                                                {% if analysis.processing_time %}
+                                                    <small class="text-muted">{{ analysis.processing_time|floatformat:1 }}秒</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="analysis-status-{{ analysis.status }}">
+                                                    {% if analysis.status == 'completed' %}
+                                                        <i class="fas fa-check-circle me-1"></i>完了
+                                                    {% elif analysis.status == 'processing' %}
+                                                        <i class="fas fa-spinner fa-spin me-1"></i>処理中
+                                                    {% elif analysis.status == 'pending' %}
+                                                        <i class="fas fa-clock me-1"></i>待機中
+                                                    {% elif analysis.status == 'failed' %}
+                                                        <i class="fas fa-exclamation-triangle me-1"></i>失敗
+                                                    {% endif %}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    {% if analysis.status == 'completed' %}
+                                                        <a href="{% url 'earnings_reports:analysis_detail' analysis.pk %}" 
+                                                           class="btn btn-outline-primary btn-sm"
+                                                           data-bs-toggle="tooltip" 
+                                                           title="詳細を見る">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                    {% elif analysis.status == 'failed' %}
+                                                        <button type="button" 
+                                                                class="btn btn-outline-warning btn-sm"
+                                                                onclick="retryAnalysis({{ analysis.pk }})"
+                                                                data-bs-toggle="tooltip" 
+                                                                title="再実行">
+                                                            <i class="fas fa-redo"></i>
+                                                        </button>
+                                                    {% elif analysis.status == 'processing' or analysis.status == 'pending' %}
+                                                        <button type="button" 
+                                                                class="btn btn-outline-info btn-sm"
+                                                                onclick="checkStatus({{ analysis.pk }})"
+                                                                data-bs-toggle="tooltip" 
+                                                                title="状況確認">
+                                                            <i class="fas fa-sync"></i>
+                                                        </button>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- ページネーション -->
+                        {% if page_obj.has_other_pages %}
+                            <div class="card-footer">
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination justify-content-center mb-0">
+                                        {% if page_obj.has_previous %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.company %}&company={{ request.GET.company }}{% endif %}{% if request.GET.doc_type %}&doc_type={{ request.GET.doc_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                                    <i class="fas fa-chevron-left"></i> 前へ
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                        
+                                        {% for num in page_obj.paginator.page_range %}
+                                            {% if page_obj.number == num %}
+                                                <li class="page-item active">
+                                                    <span class="page-link">{{ num }}</span>
+                                                </li>
+                                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page={{ num }}{% if request.GET.company %}&company={{ request.GET.company }}{% endif %}{% if request.GET.doc_type %}&doc_type={{ request.GET.doc_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">{{ num }}</a>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+                                        
+                                        {% if page_obj.has_next %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.company %}&company={{ request.GET.company }}{% endif %}{% if request.GET.doc_type %}&doc_type={{ request.GET.doc_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                                    次へ <i class="fas fa-chevron-right"></i>
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </nav>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">分析結果がありません</h5>
+                            <p class="text-muted">
+                                {% if request.GET %}
+                                    条件に一致する分析結果が見つかりませんでした。<br>
+                                    フィルターを変更して再検索してください。
+                                {% else %}
+                                    まだ分析を実行していません。<br>
+                                    企業を検索して最初の分析を開始しましょう。
+                                {% endif %}
+                            </p>
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                                <a href="{% url 'earnings_reports:search_company' %}" class="btn btn-primary">
+                                    <i class="fas fa-search me-2"></i>企業を検索
+                                </a>
+                                {% if request.GET %}
+                                    <a href="{% url 'earnings_reports:analysis_list' %}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times me-2"></i>フィルターをクリア
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 統計サマリー -->
+    {% if analyses %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-pie me-2"></i>分析統計
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h4 text-success">
+                                        {{ analyses|length }}
+                                    </div>
+                                    <div class="text-muted">表示中の分析数</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h4 text-info">
+                                        {% regroup analyses by document.company as company_groups %}
+                                        {{ company_groups|length }}
+                                    </div>
+                                    <div class="text-muted">企業数</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h4 text-warning">
+                                        {% regroup analyses by status as status_groups %}
+                                        {% for status_group in status_groups %}
+                                            {% if status_group.grouper == 'completed' %}
+                                                {{ status_group.list|length }}
+                                            {% endif %}
+                                        {% empty %}
+                                            0
+                                        {% endfor %}
+                                    </div>
+                                    <div class="text-muted">完了分析</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h4 text-primary">
+                                        {% for analysis in analyses %}
+                                            {% if analysis.overall_score and forloop.first %}
+                                                {% with total_score=0 count=0 %}
+                                                    {% for a in analyses %}
+                                                        {% if a.overall_score %}
+                                                            {% with total_score=total_score|add:a.overall_score count=count|add:1 %}
+                                                            {% endwith %}
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                    {% if count > 0 %}
+                                                        {{ total_score|div:count|floatformat:1 }}
+                                                    {% else %}
+                                                        -
+                                                    {% endif %}
+                                                {% endwith %}
+                                            {% endif %}
+                                        {% empty %}
+                                            -
+                                        {% endfor %}
+                                    </div>
+                                    <div class="text-muted">平均スコア</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function retryAnalysis(analysisId) {
+    if (confirm('この分析を再実行しますか？')) {
+        // 分析再実行のAPIコール
+        fetch(`/earnings/api/analysis/${analysisId}/retry/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('再実行の開始に失敗しました。');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('エラーが発生しました。');
+        });
+    }
+}
+
+function checkStatus(analysisId) {
+    // 分析状況確認
+    pollAnalysisStatus(analysisId, function(data) {
+        if (data.status === 'completed' || data.status === 'failed') {
+            location.reload();
+        }
+    });
+}
+
+// CSRFトークンを取得する関数
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// 処理中の分析を自動更新
+document.addEventListener('DOMContentLoaded', function() {
+    const processingRows = document.querySelectorAll('tr .analysis-status-processing, tr .analysis-status-pending');
+    
+    processingRows.forEach(statusElement => {
+        const row = statusElement.closest('tr');
+        const analysisId = extractAnalysisIdFromRow(row);
+        
+        if (analysisId) {
+            // 定期的に状況をチェック
+            setTimeout(() => checkStatus(analysisId), 5000);
+        }
+    });
+});
+
+function extractAnalysisIdFromRow(row) {
+    // 行から分析IDを抽出（適切な方法で実装）
+    const detailLink = row.querySelector('a[href*="/analysis/"]');
+    if (detailLink) {
+        const match = detailLink.href.match(/\/analysis\/(\d+)\//);
+        return match ? match[1] : null;
+    }
+    return null;
+}
+</script>
+{% endblock %}

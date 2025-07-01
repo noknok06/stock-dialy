@@ -1,4 +1,4 @@
-# earnings_analysis/services.py（効率化版）
+# earnings_analysis/services.py（効率化版 - ファイル一覧事前取得方式）
 
 import requests
 import xml.etree.ElementTree as ET
@@ -9,13 +9,14 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 import logging
 from django.conf import settings
+from django.core.cache import cache
 import time
 
 logger = logging.getLogger(__name__)
 
 
 class EDINETAPIService:
-    """EDINET API v2連携サービス（効率化版）"""
+    """EDINET API v2連携サービス（効率化版 - ファイル一覧事前取得方式）"""
     
     def __init__(self):
         # 設定を取得
@@ -53,320 +54,181 @@ class EDINETAPIService:
         
         self.last_request_time = time.time()
 
-    def get_company_documents_efficiently(self, company_code: str, days_back: int = 180) -> List[Dict]:
-        """
-        効率的な企業書類検索（改善版）
-        
-        Args:
-            company_code: 証券コード（例: "9983"）
-            days_back: 何日前まで検索するか
-            
-        Returns:
-            書類一覧（日付順）
-        """
-        try:
-            logger.info(f"Starting efficient document search for company: {company_code}")
-            start_time = time.time()
-            
-            # ステップ1: 大きな範囲で書類一覧を取得
-            all_documents = self._fetch_document_list_batch(days_back)
-            
-            if not all_documents:
-                logger.warning(f"No documents found in the last {days_back} days")
-                return []
-            
-            logger.info(f"Fetched {len(all_documents)} documents in {time.time() - start_time:.2f} seconds")
-            
-            # ステップ2: 対象企業の書類をフィルタリング
-            company_documents = self._filter_company_documents(all_documents, company_code)
-            
-            if not company_documents:
-                logger.warning(f"No documents found for company {company_code}")
-                return []
-            
-            # ステップ3: 決算関連書類のみに絞り込み
-            earnings_documents = self._filter_earnings_documents(company_documents)
-            
-            # ステップ4: 日付順でソート（新しい順）
-            earnings_documents.sort(key=lambda x: x.get('submission_date', ''), reverse=True)
-            
-            logger.info(f"Found {len(earnings_documents)} earnings documents for company {company_code}")
-            
-            # ステップ5: 書類の詳細情報をログ出力
-            self._log_document_details(earnings_documents[:5], company_code)
-            
-            return earnings_documents
-            
-        except Exception as e:
-            logger.error(f"Error in efficient document search for {company_code}: {str(e)}")
-            return []
+    # ========================================
+    # 新しい効率化メソッド群
+    # ========================================
     
-    def _fetch_document_list_batch(self, days_back: int) -> List[Dict]:
+    def get_document_list_cache_key(self, date: str) -> str:
+        """書類一覧のキャッシュキーを生成"""
+        return f"edinet_documents_{date}"
+    
+    def get_cached_document_list(self, date: str) -> Optional[List[Dict]]:
+        """キャッシュされた書類一覧を取得"""
+        cache_key = self.get_document_list_cache_key(date)
+        return cache.get(cache_key)
+    
+    def cache_document_list(self, date: str, documents: List[Dict], timeout: int = 3600):
+        """書類一覧をキャッシュに保存"""
+        cache_key = self.get_document_list_cache_key(date)
+        cache.set(cache_key, documents, timeout)
+        logger.debug(f"Cached {len(documents)} documents for {date}")
+    
+    def build_document_index_efficiently(self, days_back: int = 180) -> Dict[str, List[Dict]]:
         """
-        バッチで書類一覧を取得（効率化の核心部分）
+        効率的な書類インデックスの構築
         
         Args:
             days_back: 何日前まで検索するか
             
         Returns:
-            すべての書類一覧
+            日付別書類辞書 {日付: [書類リスト]}
         """
-        all_documents = []
+        logger.info(f"Building document index for the last {days_back} days")
+        start_time = time.time()
+        
+        document_index = {}
         end_date = datetime.now().date()
         start_date = end_date - timedelta(days=days_back)
         
-        # 効率的な日付選択（毎日ではなく、書類が多そうな日を優先）
-        search_dates = self._generate_smart_search_dates(start_date, end_date)
+        # 効率的な日付選択（決算発表が多い日を優先）
+        search_dates = self._generate_priority_search_dates(start_date, end_date)
         
-        logger.info(f"Searching {len(search_dates)} dates efficiently")
+        total_documents = 0
+        cache_hits = 0
+        api_calls = 0
         
         for i, search_date in enumerate(search_dates):
+            date_str = search_date.strftime('%Y-%m-%d')
+            logger.debug(f"Processing date {date_str} ({i+1}/{len(search_dates)})")
+            
+            # キャッシュから取得を試行
+            cached_docs = self.get_cached_document_list(date_str)
+            if cached_docs is not None:
+                document_index[date_str] = cached_docs
+                total_documents += len(cached_docs)
+                cache_hits += 1
+                logger.debug(f"Cache hit for {date_str}: {len(cached_docs)} documents")
+                continue
+            
+            # キャッシュにない場合はAPIから取得
             try:
-                date_str = search_date.strftime('%Y-%m-%d')
-                logger.debug(f"Fetching documents for {date_str} ({i+1}/{len(search_dates)})")
+                documents = self.get_document_list_raw(date_str)
+                document_index[date_str] = documents
+                total_documents += len(documents)
+                api_calls += 1
                 
-                # 書類一覧を取得（企業フィルターなし）
-                documents = self.get_document_list(date_str)
+                # キャッシュに保存
+                self.cache_document_list(date_str, documents)
                 
-                if documents:
-                    all_documents.extend(documents)
-                    logger.debug(f"Found {len(documents)} documents on {date_str}")
+                logger.debug(f"API call for {date_str}: {len(documents)} documents")
                 
                 # レート制限対策
                 self._wait_for_rate_limit()
                 
-                # 十分な書類が集まったら早期終了（オプション）
-                if len(all_documents) > 1000:  # 閾値は調整可能
-                    logger.info(f"Collected sufficient documents ({len(all_documents)}), stopping early")
-                    break
-                    
             except Exception as e:
                 logger.warning(f"Error fetching documents for {date_str}: {str(e)}")
+                document_index[date_str] = []
                 continue
         
-        logger.info(f"Total documents collected: {len(all_documents)}")
-        return all_documents
+        processing_time = time.time() - start_time
+        
+        logger.info(f"Document index built in {processing_time:.2f} seconds")
+        logger.info(f"Total documents: {total_documents}")
+        logger.info(f"Cache hits: {cache_hits}, API calls: {api_calls}")
+        logger.info(f"Cache efficiency: {cache_hits / (cache_hits + api_calls) * 100:.1f}%")
+        
+        return document_index
     
-    def _generate_smart_search_dates(self, start_date: datetime, end_date: datetime) -> List[datetime]:
+    def find_company_documents_from_index(self, company_code: str, document_index: Dict[str, List[Dict]]) -> List[Dict]:
         """
-        効率的な検索日付を生成
-        
-        決算発表が多い時期を優先的に検索
-        """
-        dates = []
-        current_date = end_date
-        
-        # 最近の30日は毎日検索（最新情報を確実に取得）
-        recent_threshold = end_date - timedelta(days=30)
-        while current_date >= recent_threshold:
-            dates.append(current_date)
-            current_date -= timedelta(days=1)
-        
-        # それ以前は決算発表が多そうな日を優先
-        while current_date >= start_date:
-            # 平日を優先
-            if current_date.weekday() < 5:
-                # 月末・月初（決算発表が多い）
-                if current_date.day <= 5 or current_date.day >= 25:
-                    dates.append(current_date)
-                # 15日前後（決算発表が多い）
-                elif 10 <= current_date.day <= 20:
-                    if current_date.weekday() == 0:  # 月曜日のみ
-                        dates.append(current_date)
-                # その他は週1回
-                elif current_date.weekday() == 2:  # 水曜日のみ
-                    dates.append(current_date)
-            
-            current_date -= timedelta(days=1)
-        
-        return dates
-    
-    def _filter_company_documents(self, all_documents: List[Dict], company_code: str) -> List[Dict]:
-        """
-        全書類から対象企業の書類をフィルタリング
-        
-        Args:
-            all_documents: すべての書類一覧
-            company_code: 対象企業の証券コード
-            
-        Returns:
-            対象企業の書類一覧
-        """
-        company_documents = []
-        
-        for doc in all_documents:
-            if self._is_target_company_by_code(doc, company_code):
-                company_documents.append(doc)
-        
-        logger.info(f"Filtered {len(company_documents)} documents for company {company_code}")
-        return company_documents
-    
-    def _filter_earnings_documents(self, documents: List[Dict]) -> List[Dict]:
-        """
-        決算関連書類のみに絞り込み
-        
-        Args:
-            documents: 企業の書類一覧
-            
-        Returns:
-            決算関連書類一覧
-        """
-        earnings_docs = []
-        
-        # 決算関連の書類種別コード
-        earnings_doc_types = ['120', '130', '140', '350']
-        
-        # 決算関連キーワード
-        earnings_keywords = ['決算', '四半期', '有価証券報告書', '短信', 'quarterly', 'annual']
-        
-        for doc in documents:
-            doc_type = doc.get('doc_type_code', '')
-            doc_description = doc.get('doc_description', '').lower()
-            
-            # 書類種別での判定
-            if doc_type in earnings_doc_types:
-                earnings_docs.append(doc)
-                continue
-            
-            # 書類説明での判定
-            if any(keyword in doc_description for keyword in earnings_keywords):
-                earnings_docs.append(doc)
-                continue
-        
-        logger.info(f"Filtered {len(earnings_docs)} earnings documents")
-        return earnings_docs
-    
-    def _log_document_details(self, documents: List[Dict], company_code: str):
-        """
-        書類の詳細情報をログ出力
-        """
-        if not documents:
-            return
-        
-        logger.info(f"Top documents for company {company_code}:")
-        for i, doc in enumerate(documents[:5], 1):
-            doc_id = doc.get('document_id', 'N/A')
-            submission_date = doc.get('submission_date', 'N/A')
-            doc_desc = doc.get('doc_description', 'N/A')[:50]
-            doc_type = doc.get('doc_type_code', 'N/A')
-            
-            logger.info(f"  {i}. [{doc_id}] {submission_date} - {doc_desc}... (Type: {doc_type})")
-    
-    def get_company_info_by_code(self, company_code: str, days_back: int = 180) -> Optional[Dict]:
-        """
-        証券コードから企業情報を取得（効率化版）
-        
-        Args:
-            company_code: 証券コード（例: "9983"）
-            days_back: 何日前まで検索するか
-            
-        Returns:
-            企業情報辞書またはNone
-        """
-        try:
-            logger.info(f"Getting company info for code: {company_code}")
-            
-            # 効率的な書類検索を使用
-            documents = self.get_company_documents_efficiently(company_code, days_back)
-            
-            if not documents:
-                logger.warning(f"No documents found for company {company_code}")
-                return self._create_default_company_info(company_code)
-            
-            # 最新の書類から企業情報を抽出
-            latest_doc = documents[0]
-            company_info = self._extract_company_info_from_document(latest_doc, company_code)
-            
-            if company_info:
-                company_info['found_documents_count'] = len(documents)
-                company_info['search_efficiency'] = f"Found {len(documents)} documents efficiently"
-                logger.info(f"Successfully extracted company info: {company_info['company_name']}")
-                return company_info
-            else:
-                return self._create_default_company_info(company_code)
-                
-        except Exception as e:
-            logger.error(f"Error getting company info for {company_code}: {str(e)}")
-            return self._create_default_company_info(company_code)
-    
-    def find_latest_documents_for_analysis(self, company_code: str) -> List[Dict]:
-        """
-        分析用の最新書類を効率的に検索
+        構築済みインデックスから企業の書類を検索
         
         Args:
             company_code: 証券コード
+            document_index: 事前構築された書類インデックス
             
         Returns:
-            分析用書類一覧（優先度順）
+            企業の決算関連書類一覧（日付順）
+        """
+        logger.info(f"Searching company documents for {company_code} from index")
+        
+        company_documents = []
+        
+        # インデックスから対象企業の書類を抽出
+        for date_str, documents in document_index.items():
+            for doc in documents:
+                if self._is_target_company_by_code(doc, company_code):
+                    # 決算関連書類のみをフィルタリング
+                    if self._is_earnings_related_document(doc):
+                        doc['search_date'] = date_str
+                        company_documents.append(doc)
+        
+        # 日付順でソート（新しい順）
+        company_documents.sort(
+            key=lambda x: x.get('submission_date', '') or x.get('submitDateTime', ''), 
+            reverse=True
+        )
+        
+        logger.info(f"Found {len(company_documents)} documents for company {company_code}")
+        
+        # 詳細ログ出力
+        if company_documents:
+            logger.info(f"Latest documents for {company_code}:")
+            for i, doc in enumerate(company_documents[:5], 1):
+                doc_id = doc.get('document_id', '') or doc.get('docID', '')
+                submission_date = doc.get('submission_date', '') or doc.get('submitDateTime', '')
+                doc_desc = (doc.get('doc_description', '') or doc.get('docDescription', ''))[:50]
+                doc_type = doc.get('doc_type_code', '') or doc.get('docTypeCode', '')
+                
+                logger.info(f"  {i}. [{doc_id}] {submission_date} - {doc_desc}... (Type: {doc_type})")
+        
+        return company_documents
+    
+    def get_company_documents_efficiently_v2(self, company_code: str, days_back: int = 180) -> List[Dict]:
+        """
+        効率化されたv2企業書類検索（インデックス利用版）
+        
+        Args:
+            company_code: 証券コード
+            days_back: 何日前まで検索するか
+            
+        Returns:
+            企業の決算関連書類一覧
         """
         try:
-            logger.info(f"Finding latest documents for analysis: {company_code}")
+            logger.info(f"Starting efficient v2 document search for company: {company_code}")
+            start_time = time.time()
             
-            # 効率的な検索で書類を取得
-            documents = self.get_company_documents_efficiently(company_code, days_back=120)
+            # ステップ1: 書類インデックスを構築（キャッシュ活用）
+            document_index = self.build_document_index_efficiently(days_back)
             
-            if not documents:
+            if not document_index:
+                logger.warning(f"No document index built")
                 return []
             
-            # 分析に最適な書類を選択
-            analysis_docs = self._select_best_documents_for_analysis(documents)
+            # ステップ2: インデックスから企業書類を検索
+            company_documents = self.find_company_documents_from_index(company_code, document_index)
             
-            logger.info(f"Selected {len(analysis_docs)} documents for analysis")
-            return analysis_docs
+            processing_time = time.time() - start_time
+            logger.info(f"Efficient v2 search completed in {processing_time:.2f} seconds")
+            logger.info(f"Found {len(company_documents)} documents for {company_code}")
+            
+            return company_documents
             
         except Exception as e:
-            logger.error(f"Error finding latest documents for {company_code}: {str(e)}")
+            logger.error(f"Error in efficient v2 document search for {company_code}: {str(e)}")
             return []
     
-    def _select_best_documents_for_analysis(self, documents: List[Dict]) -> List[Dict]:
+    def get_document_list_raw(self, date: str) -> List[Dict]:
         """
-        分析に最適な書類を選択
+        指定日の書類一覧を生データで取得（キャッシュなし）
         
-        優先順位:
-        1. 有価証券報告書（年次）
-        2. 四半期報告書
-        3. 決算短信
-        """
-        selected_docs = []
-        
-        # 書類を種別ごとに分類
-        annual_reports = []      # 有価証券報告書
-        quarterly_reports = []   # 四半期報告書
-        earnings_summaries = []  # 決算短信
-        
-        for doc in documents:
-            doc_type = doc.get('doc_type_code', '')
-            doc_desc = doc.get('doc_description', '').lower()
+        Args:
+            date: 対象日（YYYY-MM-DD）
             
-            if doc_type == '120':  # 有価証券報告書
-                annual_reports.append(doc)
-            elif doc_type in ['130', '140']:  # 四半期報告書
-                quarterly_reports.append(doc)
-            elif doc_type == '350' or '短信' in doc_desc:  # 決算短信
-                earnings_summaries.append(doc)
-        
-        # 優先順位に従って選択
-        # 1. 最新の有価証券報告書
-        if annual_reports:
-            selected_docs.append(annual_reports[0])
-        
-        # 2. 最新の四半期報告書
-        if quarterly_reports:
-            selected_docs.append(quarterly_reports[0])
-        
-        # 3. 最新の決算短信
-        if earnings_summaries:
-            selected_docs.append(earnings_summaries[0])
-        
-        # どれもない場合は最新の書類
-        if not selected_docs and documents:
-            selected_docs.append(documents[0])
-        
-        return selected_docs
-
-    # 既存のメソッドはそのまま維持
-    def get_document_list(self, date: str, company_code: str = None) -> List[Dict]:
-        """指定日の書類一覧を取得（既存メソッド - 変更なし）"""
+        Returns:
+            書類一覧（全種類）
+        """
         try:
             # レート制限対策
             self._wait_for_rate_limit()
@@ -381,7 +243,7 @@ class EDINETAPIService:
                 'Subscription-Key': self.api_key
             }
             
-            logger.debug(f"Requesting document list for date: {date}")
+            logger.debug(f"Requesting raw document list for date: {date}")
             
             response = self.session.get(url, params=params, timeout=self.timeout)
             response.raise_for_status()
@@ -399,57 +261,335 @@ class EDINETAPIService:
             results = data.get('results', [])
             logger.debug(f"Found {len(results)} documents for {date}")
             
-            # 企業コードでフィルタリング（指定されている場合）
+            # データを正規化して返却
+            normalized_docs = []
+            for doc in results:
+                normalized_doc = {
+                    'document_id': doc.get('docID'),
+                    'edinet_code': doc.get('edinetCode'),
+                    'company_name': doc.get('filerName'),
+                    'doc_type_code': doc.get('docTypeCode'),
+                    'doc_description': doc.get('docDescription'),
+                    'submission_date': self._parse_submission_date(doc.get('submitDateTime')),
+                    'period_start': doc.get('periodStart'),
+                    'period_end': doc.get('periodEnd'),
+                    'raw_data': doc  # 元データも保持
+                }
+                normalized_docs.append(normalized_doc)
+            
+            return normalized_docs
+            
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP error getting document list for {date}: {e.response.status_code}")
+            return []
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Network error getting document list for {date}: {str(e)}")
+            return []
+        except Exception as e:
+            logger.error(f"Error getting document list for {date}: {str(e)}")
+            return []
+    
+    def _generate_priority_search_dates(self, start_date: datetime, end_date: datetime) -> List[datetime]:
+        """
+        優先度に基づく検索日付を生成（効率化版）
+        
+        決算発表が多い時期を優先的に検索し、無駄な日付を削減
+        """
+        dates = []
+        current_date = end_date
+        
+        # 最新30日は毎日検索（最新情報を確実に取得）
+        recent_threshold = end_date - timedelta(days=30)
+        while current_date >= recent_threshold and current_date >= start_date:
+            dates.append(current_date)
+            current_date -= timedelta(days=1)
+        
+        # それ以前は戦略的に選択
+        while current_date >= start_date:
+            # 平日のみを対象
+            if current_date.weekday() < 5:
+                
+                # 決算発表が多い日（月末・月初）
+                if current_date.day <= 3 or current_date.day >= 28:
+                    dates.append(current_date)
+                    
+                # 決算発表が多い日（15日前後）
+                elif 13 <= current_date.day <= 17:
+                    dates.append(current_date)
+                    
+                # その他は週に2回程度
+                elif current_date.day % 7 == 0:  # 7の倍数日のみ
+                    dates.append(current_date)
+            
+            current_date -= timedelta(days=1)
+        
+        logger.debug(f"Generated {len(dates)} priority search dates from {start_date} to {end_date}")
+        return dates
+    
+    def _is_earnings_related_document(self, doc: Dict) -> bool:
+        """
+        書類が決算関連かを判定（改善版）
+        
+        Args:
+            doc: 書類情報辞書
+            
+        Returns:
+            決算関連書類かどうか
+        """
+        doc_type = doc.get('doc_type_code', '') or doc.get('docTypeCode', '')
+        doc_description = (doc.get('doc_description', '') or doc.get('docDescription', '') or '').lower()
+        
+        # 確実な決算関連書類種別
+        earnings_doc_types = {'120', '130', '140', '350'}
+        if doc_type in earnings_doc_types:
+            return True
+        
+        # 書類説明での判定（キーワードベース）
+        earnings_keywords = [
+            '決算', '四半期', '有価証券報告書', '短信', 'quarterly', 'annual',
+            '業績', '財務', 'earnings', 'financial'
+        ]
+        
+        # 除外キーワード（決算関連でない書類を除外）
+        exclude_keywords = [
+            '訂正', '訂正報告書', '臨時報告書', '内部統制', '株主総会',
+            '役員変更', '新株予約権', '自己株式', '株式分割'
+        ]
+        
+        # 除外キーワードが含まれている場合は除外
+        if any(keyword in doc_description for keyword in exclude_keywords):
+            return False
+        
+        # 決算関連キーワードが含まれている場合は採用
+        if any(keyword in doc_description for keyword in earnings_keywords):
+            return True
+        
+        return False
+    
+    # ========================================
+    # 既存メソッドとの統合・改善
+    # ========================================
+    
+    def get_company_documents_efficiently(self, company_code: str, days_back: int = 180) -> List[Dict]:
+        """
+        効率的な企業書類検索（v2インデックス利用版）
+        
+        既存のメソッドをv2版で置き換え
+        """
+        return self.get_company_documents_efficiently_v2(company_code, days_back)
+    
+    def find_latest_documents_for_analysis(self, company_code: str) -> List[Dict]:
+        """
+        分析用の最新書類を効率的に検索（v2版）
+        
+        Args:
+            company_code: 証券コード
+            
+        Returns:
+            分析用書類一覧（優先度順）
+        """
+        try:
+            logger.info(f"Finding latest documents for analysis (v2): {company_code}")
+            
+            # v2効率的検索で書類を取得
+            documents = self.get_company_documents_efficiently_v2(company_code, days_back=120)
+            
+            if not documents:
+                return []
+            
+            # 分析に最適な書類を選択
+            analysis_docs = self._select_best_documents_for_analysis(documents)
+            
+            logger.info(f"Selected {len(analysis_docs)} documents for analysis")
+            return analysis_docs
+            
+        except Exception as e:
+            logger.error(f"Error finding latest documents for {company_code}: {str(e)}")
+            return []
+    
+    def get_company_info_by_code(self, company_code: str, days_back: int = 180) -> Optional[Dict]:
+        """
+        証券コードから企業情報を取得（v2効率化版）
+        
+        Args:
+            company_code: 証券コード
+            days_back: 何日前まで検索するか
+            
+        Returns:
+            企業情報辞書またはNone
+        """
+        try:
+            logger.info(f"Getting company info for code (v2): {company_code}")
+            
+            # v2効率的検索を使用
+            documents = self.get_company_documents_efficiently_v2(company_code, days_back)
+            
+            if not documents:
+                logger.warning(f"Company {company_code} not found via v2 efficient search")
+                return self._create_default_company_info(company_code)
+            
+            # 最新の書類から企業情報を抽出
+            latest_doc = documents[0]
+            company_info = self._extract_company_info_from_document(latest_doc, company_code)
+            
+            if company_info:
+                company_info['found_documents_count'] = len(documents)
+                company_info['search_efficiency'] = f"v2: Found {len(documents)} documents efficiently"
+                company_info['search_method'] = 'efficient_v2_index'
+                logger.info(f"Successfully extracted company info: {company_info['company_name']}")
+                return company_info
+            else:
+                return self._create_default_company_info(company_code)
+                
+        except Exception as e:
+            logger.error(f"Error getting company info for {company_code}: {str(e)}")
+            return self._create_default_company_info(company_code)
+    
+    # ========================================
+    # パフォーマンス監視・デバッグメソッド
+    # ========================================
+    
+    def get_search_performance_stats(self) -> Dict:
+        """検索パフォーマンスの統計情報を取得"""
+        try:
+            # キャッシュヒット率を計算
+            cache_keys = cache.keys('edinet_documents_*') if hasattr(cache, 'keys') else []
+            cached_dates_count = len(cache_keys) if cache_keys else 0
+            
+            # 過去7日分のキャッシュ状況
+            recent_dates = []
+            today = datetime.now().date()
+            for i in range(7):
+                date = today - timedelta(days=i)
+                date_str = date.strftime('%Y-%m-%d')
+                cached_docs = self.get_cached_document_list(date_str)
+                recent_dates.append({
+                    'date': date_str,
+                    'cached': cached_docs is not None,
+                    'document_count': len(cached_docs) if cached_docs else 0
+                })
+            
+            return {
+                'cached_dates_count': cached_dates_count,
+                'recent_cache_status': recent_dates,
+                'cache_efficiency_tips': [
+                    '頻繁に分析する企業は自動的にキャッシュされます',
+                    '最新30日分は高速アクセスが可能です',
+                    'キャッシュは1時間で自動更新されます'
+                ]
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting search performance stats: {str(e)}")
+            return {
+                'cached_dates_count': 0,
+                'recent_cache_status': [],
+                'error': str(e)
+            }
+    
+    def debug_company_search(self, company_code: str) -> Dict:
+        """
+        企業検索のデバッグ情報を取得
+        
+        Args:
+            company_code: 証券コード
+            
+        Returns:
+            デバッグ情報辞書
+        """
+        debug_info = {
+            'company_code': company_code,
+            'search_method': 'efficient_v2_index',
+            'timestamp': datetime.now().isoformat(),
+            'steps': []
+        }
+        
+        try:
+            # ステップ1: インデックス構築
+            start_time = time.time()
+            document_index = self.build_document_index_efficiently(days_back=30)  # デバッグ用に短期間
+            index_time = time.time() - start_time
+            
+            debug_info['steps'].append({
+                'step': 'build_index',
+                'duration_seconds': round(index_time, 2),
+                'total_dates': len(document_index),
+                'total_documents': sum(len(docs) for docs in document_index.values())
+            })
+            
+            # ステップ2: 企業書類検索
+            start_time = time.time()
+            company_documents = self.find_company_documents_from_index(company_code, document_index)
+            search_time = time.time() - start_time
+            
+            debug_info['steps'].append({
+                'step': 'find_company_docs',
+                'duration_seconds': round(search_time, 2),
+                'found_documents': len(company_documents),
+                'latest_doc_date': company_documents[0].get('submission_date') if company_documents else None
+            })
+            
+            # ステップ3: 書類選択
+            if company_documents:
+                selected_docs = self._select_best_documents_for_analysis(company_documents)
+                debug_info['steps'].append({
+                    'step': 'select_best_docs',
+                    'selected_count': len(selected_docs),
+                    'selection_criteria': 'priority_based',
+                    'selected_types': [doc.get('doc_type_code') for doc in selected_docs]
+                })
+            
+            debug_info['success'] = True
+            debug_info['total_time'] = round(index_time + search_time, 2)
+            
+        except Exception as e:
+            debug_info['success'] = False
+            debug_info['error'] = str(e)
+        
+        return debug_info
+    
+    # ========================================
+    # 既存メソッドの維持（互換性）
+    # ========================================
+    
+    def get_document_list(self, date: str, company_code: str = None) -> List[Dict]:
+        """
+        指定日の書類一覧を取得（既存メソッド - 互換性維持）
+        
+        新しい実装では、キャッシュを活用して高速化
+        """
+        try:
+            # キャッシュから取得を試行
+            cached_docs = self.get_cached_document_list(date)
+            if cached_docs is not None:
+                logger.debug(f"Using cached documents for {date}")
+                all_docs = cached_docs
+            else:
+                # キャッシュにない場合は新規取得
+                all_docs = self.get_document_list_raw(date)
+                self.cache_document_list(date, all_docs)
+            
+            # 企業フィルタリング（指定されている場合）
             if company_code:
-                filtered_results = []
-                for doc in results:
+                filtered_docs = []
+                for doc in all_docs:
                     if self._is_target_company_by_code(doc, company_code):
-                        filtered_results.append(doc)
-                results = filtered_results
-                logger.debug(f"Filtered to {len(results)} documents for company {company_code}")
+                        filtered_docs.append(doc)
+                return filtered_docs
             
             # 決算関連書類のみに絞り込み
             earnings_docs = []
-            for doc in results:
-                doc_type = doc.get('docTypeCode', '')
-                doc_description = doc.get('docDescription', '') or ''
-                
-                if (doc_type in ['120', '130', '140', '350'] or  
-                    any(keyword in doc_description.lower() for keyword in   
-                        ['決算', '四半期', '有価証券報告書', '短信'])):
-                    
-                    earnings_docs.append({
-                        'document_id': doc.get('docID'),
-                        'edinet_code': doc.get('edinetCode'),
-                        'company_name': doc.get('filerName'),
-                        'doc_type_code': doc_type,
-                        'doc_description': doc.get('docDescription'),
-                        'submission_date': self._parse_submission_date(doc.get('submitDateTime')),
-                        'period_start': doc.get('periodStart'),
-                        'period_end': doc.get('periodEnd')
-                    })
+            for doc in all_docs:
+                if self._is_earnings_related_document(doc):
+                    earnings_docs.append(doc)
             
-            logger.debug(f"Found {len(earnings_docs)} earnings-related documents")
             return earnings_docs
             
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 401:
-                logger.error("API v2 authentication failed. Please check your API key.")
-            elif e.response.status_code == 403:
-                logger.error("API v2 access forbidden. Check your subscription and API key.")
-            elif e.response.status_code == 404:
-                logger.error("API v2 endpoint not found. Check the URL.")
-            else:
-                logger.error(f"HTTP error {e.response.status_code}: {e.response.text}")
-            return []
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Network error getting document list: {str(e)}")
-            return []
         except Exception as e:
-            logger.error(f"Error getting document list: {str(e)}")
+            logger.error(f"Error in get_document_list for {date}: {str(e)}")
             return []
-
-    # その他の既存メソッドも同様に維持...
+    
+    # その他の既存メソッドは変更なし
     def get_document_content(self, document_id: str) -> Optional[bytes]:
         """書類の内容を取得（既存メソッド - 変更なし）"""
         try:
@@ -484,7 +624,6 @@ class EDINETAPIService:
             logger.error(f"Error downloading document {document_id}: {str(e)}")
             return None
 
-    # その他のヘルパーメソッドも維持...
     def _is_target_company_by_code(self, doc: Dict, target_company_code: str) -> bool:
         """書類が対象企業のものかを証券コードで判定（既存メソッド）"""
         try:
@@ -494,7 +633,7 @@ class EDINETAPIService:
                 return True
             
             # 2. 企業名から判定（既知の企業マッピング）
-            company_name = doc.get('filerName', '') or ''
+            company_name = doc.get('filerName', '') or doc.get('company_name', '') or ''
             
             # 主要企業のマッピング（拡張版）
             company_mappings = {
@@ -529,6 +668,45 @@ class EDINETAPIService:
             logger.warning(f"Error checking target company: {str(e)}")
             return False
 
+    def _select_best_documents_for_analysis(self, documents: List[Dict]) -> List[Dict]:
+        """分析に最適な書類を選択（既存メソッド）"""
+        selected_docs = []
+        
+        # 書類を種別ごとに分類
+        annual_reports = []      # 有価証券報告書
+        quarterly_reports = []   # 四半期報告書
+        earnings_summaries = []  # 決算短信
+        
+        for doc in documents:
+            doc_type = doc.get('doc_type_code', '') or doc.get('docTypeCode', '')
+            doc_desc = (doc.get('doc_description', '') or doc.get('docDescription', '') or '').lower()
+            
+            if doc_type == '120':  # 有価証券報告書
+                annual_reports.append(doc)
+            elif doc_type in ['130', '140']:  # 四半期報告書
+                quarterly_reports.append(doc)
+            elif doc_type == '350' or '短信' in doc_desc:  # 決算短信
+                earnings_summaries.append(doc)
+        
+        # 優先順位に従って選択
+        # 1. 最新の有価証券報告書
+        if annual_reports:
+            selected_docs.append(annual_reports[0])
+        
+        # 2. 最新の四半期報告書
+        if quarterly_reports:
+            selected_docs.append(quarterly_reports[0])
+        
+        # 3. 最新の決算短信
+        if earnings_summaries:
+            selected_docs.append(earnings_summaries[0])
+        
+        # どれもない場合は最新の書類
+        if not selected_docs and documents:
+            selected_docs.append(documents[0])
+        
+        return selected_docs
+
     def _extract_company_info_from_document(self, doc: Dict, company_code: str) -> Optional[Dict]:
         """書類情報から企業情報を抽出（既存メソッド）"""
         try:
@@ -546,7 +724,7 @@ class EDINETAPIService:
                 'company_name': company_name,
                 'edinet_code': edinet_code,
                 'fiscal_year_end_month': fiscal_year_end_month,
-                'source': 'edinet_api_efficient',
+                'source': 'edinet_api_efficient_v2',
                 'found_document': {
                     'document_id': doc.get('document_id') or doc.get('docID'),
                     'submission_date': doc.get('submission_date') or doc.get('submitDateTime'),
@@ -708,7 +886,8 @@ class EDINETAPIService:
                     'message': 'API v2に正常に接続できます',
                     'api_version': 'v2',
                     'api_key_length': len(self.api_key),
-                    'base_url': self.base_url
+                    'base_url': self.base_url,
+                    'search_method': 'efficient_v2_index'
                 }
             else:
                 return {
@@ -723,7 +902,6 @@ class EDINETAPIService:
                 'message': f'APIステータス取得エラー: {str(e)}',
                 'api_version': 'v2'
             }
-
           
 # 以下のクラスは変更なし（既存のまま）
 class XBRLTextExtractor:

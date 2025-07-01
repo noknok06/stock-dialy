@@ -1,13 +1,14 @@
-# earnings_analysis/management/commands/analyze_company.py（効率化版）
+# earnings_analysis/management/commands/analyze_company_v2.py（効率化版）
 """
-個別企業の決算分析を実行するコマンド（効率化版）
+個別企業の決算分析を実行するコマンド（v2効率化版）
 
-効率的な書類検索により、大幅な高速化を実現
+インデックス事前構築による大幅な高速化を実現
 """
 
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 import logging
+import time
 
 from earnings_analysis.analysis_service import OnDemandAnalysisService
 from earnings_analysis.services import EDINETAPIService
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = '特定企業の決算分析を実行（効率化版・高速検索対応）'
+    help = '特定企業の決算分析を実行（v2効率化版・インデックス事前構築対応）'
     
     def add_arguments(self, parser):
         parser.add_argument(
@@ -47,12 +48,23 @@ class Command(BaseCommand):
         parser.add_argument(
             '--efficiency-test',
             action='store_true',
-            help='効率化テスト：新旧検索方法の比較',
+            help='v2効率化テスト：インデックス構築と検索のパフォーマンステスト',
         )
         parser.add_argument(
             '--show-stats',
             action='store_true',
-            help='分析効率の統計情報を表示',
+            help='v2分析効率の統計情報を表示',
+        )
+        parser.add_argument(
+            '--build-index',
+            action='store_true',
+            help='書類インデックスの事前構築のみ実行',
+        )
+        parser.add_argument(
+            '--days-back',
+            type=int,
+            default=180,
+            help='検索対象期間（日数、デフォルト：180日）',
         )
     
     def handle(self, *args, **options):
@@ -63,41 +75,47 @@ class Command(BaseCommand):
         search_only = options['search_only']
         efficiency_test = options['efficiency_test']
         show_stats = options['show_stats']
+        build_index = options['build_index']
+        days_back = options['days_back']
         
         if verbose:
             logging.basicConfig(level=logging.DEBUG)
         
         self.stdout.write(
-            self.style.SUCCESS(f'🚀 効率化版 企業分析 {company_code} の処理を開始します...')
+            self.style.SUCCESS(f'🚀 v2効率化版 企業分析 {company_code} の処理を開始します...')
         )
         
         if show_stats:
-            self._show_efficiency_stats()
+            self._show_efficiency_stats_v2()
+            return
+        
+        if build_index:
+            self._build_document_index(days_back)
             return
         
         if efficiency_test:
-            self._run_efficiency_test(company_code)
+            self._run_efficiency_test_v2(company_code, days_back)
             return
         
         if dry_run:
             self.stdout.write(
                 self.style.WARNING('ドライランモード: 実際の処理は行いません')
             )
-            self._show_analysis_plan(company_code)
+            self._show_analysis_plan_v2(company_code)
             return
         
         if search_only:
-            self._search_company_info_efficiently(company_code)
+            self._search_company_info_efficiently_v2(company_code, days_back)
             return
         
         start_time = timezone.now()
         
         try:
-            # 効率化された分析サービスの初期化
+            # v2効率化された分析サービスの初期化
             analysis_service = OnDemandAnalysisService()
             
-            # 効率的分析実行
-            self.stdout.write(f"⚡ 効率的分析実行中...")
+            # v2効率的分析実行
+            self.stdout.write(f"⚡ v2効率的分析実行中...")
             result = analysis_service.get_or_analyze_company(
                 company_code=company_code, 
                 force_refresh=force_refresh
@@ -107,7 +125,7 @@ class Command(BaseCommand):
             processing_time = (timezone.now() - start_time).total_seconds()
             
             if result['success']:
-                self._display_success_result_enhanced(result, processing_time)
+                self._display_success_result_v2(result, processing_time)
             else:
                 self._display_error_result(result, processing_time)
                 raise CommandError(f"分析に失敗しました: {result.get('error', '不明なエラー')}")
@@ -125,9 +143,56 @@ class Command(BaseCommand):
             )
             raise CommandError(f'分析処理に失敗しました: {str(e)}')
     
-    def _search_company_info_efficiently(self, company_code):
-        """効率的な企業情報・書類検索のみ実行"""
-        self.stdout.write(f'\n=== 効率的企業情報・書類検索: {company_code} ===')
+    def _build_document_index(self, days_back: int):
+        """書類インデックスの事前構築"""
+        self.stdout.write(f'\n=== v2書類インデックス事前構築: 過去{days_back}日分 ===')
+        
+        try:
+            edinet_service = EDINETAPIService()
+            
+            start_time = time.time()
+            self.stdout.write(f'📊 インデックス構築を開始します...')
+            
+            # インデックス構築
+            document_index = edinet_service.build_document_index_efficiently(days_back)
+            
+            build_time = time.time() - start_time
+            
+            # 結果表示
+            total_dates = len(document_index)
+            total_documents = sum(len(docs) for docs in document_index.values())
+            
+            self.stdout.write(f'\n--- 構築結果 ---')
+            self.stdout.write(f'⏱ 構築時間: {build_time:.2f}秒')
+            self.stdout.write(f'📅 対象日数: {total_dates}日')
+            self.stdout.write(f'📄 総書類数: {total_documents}件')
+            self.stdout.write(f'📊 平均書類数/日: {total_documents / max(total_dates, 1):.1f}件')
+            
+            # パフォーマンス統計
+            perf_stats = edinet_service.get_search_performance_stats()
+            self.stdout.write(f'\n--- パフォーマンス統計 ---')
+            self.stdout.write(f'💾 キャッシュ済み日数: {perf_stats.get("cached_dates_count", 0)}日')
+            
+            # 最新日のサンプル表示
+            if document_index:
+                latest_date = max(document_index.keys())
+                latest_docs = document_index[latest_date]
+                self.stdout.write(f'\n--- 最新日サンプル ({latest_date}) ---')
+                self.stdout.write(f'📄 書類数: {len(latest_docs)}件')
+                
+                for i, doc in enumerate(latest_docs[:3], 1):
+                    company_name = doc.get('company_name', '不明')[:20]
+                    doc_type = doc.get('doc_type_code', '不明')
+                    self.stdout.write(f'  {i}. {company_name}... [{doc_type}]')
+            
+            self.stdout.write(f'\n✅ インデックス構築完了！')
+            
+        except Exception as e:
+            self.stdout.write(f'❌ インデックス構築エラー: {str(e)}')
+    
+    def _search_company_info_efficiently_v2(self, company_code: str, days_back: int):
+        """v2効率的な企業情報・書類検索のみ実行"""
+        self.stdout.write(f'\n=== v2効率的企業情報・書類検索: {company_code} ===')
         
         try:
             # 1. 既存のマスタチェック
@@ -161,22 +226,22 @@ class Command(BaseCommand):
             except ImportError:
                 self.stdout.write(f'  企業マスタは利用できません')
             
-            # 3. 効率的EDINET API検索
-            self.stdout.write(f'\n--- 効率化されたEDINET API検索 ---')
+            # 3. v2効率的EDINET API検索
+            self.stdout.write(f'\n--- v2効率化されたEDINET API検索 ---')
             edinet_service = EDINETAPIService()
             
-            # 効率的な書類検索
-            start_search = timezone.now()
-            documents = edinet_service.get_company_documents_efficiently(company_code)
-            search_time = (timezone.now() - start_search).total_seconds()
+            # v2効率的な書類検索（インデックス利用版）
+            start_search = time.time()
+            documents = edinet_service.get_company_documents_efficiently_v2(company_code, days_back)
+            search_time = time.time() - start_search
             
             if documents:
                 self.stdout.write(
-                    self.style.SUCCESS(f'🎯 効率的検索成功: {len(documents)}件の書類を発見 ({search_time:.2f}秒)')
+                    self.style.SUCCESS(f'🎯 v2効率的検索成功: {len(documents)}件の書類を発見 ({search_time:.2f}秒)')
                 )
                 
                 # 書類詳細の表示
-                self.stdout.write(f'\n--- 発見書類詳細 ---')
+                self.stdout.write(f'\n--- 発見書類詳細（v2版） ---')
                 for i, doc in enumerate(documents[:5], 1):
                     doc_desc = (doc.get('doc_description', '') or doc.get('docDescription', ''))[:60]
                     doc_date = doc.get('submission_date', '') or doc.get('submitDateTime', '')
@@ -196,110 +261,136 @@ class Command(BaseCommand):
                     self.stdout.write('')
                 
                 # 最適書類の選択シミュレーション
-                selected_doc = edinet_service._select_best_documents_for_analysis(documents)
-                if selected_doc:
-                    selected = selected_doc[0]
-                    self.stdout.write(f'🎯 分析に最適な書類:')
+                selected_docs = edinet_service._select_best_documents_for_analysis(documents)
+                if selected_docs:
+                    selected = selected_docs[0]
+                    self.stdout.write(f'🎯 v2分析に最適な書類:')
                     self.stdout.write(f'   書類ID: {selected.get("document_id", "") or selected.get("docID", "")}')
                     self.stdout.write(f'   種別: {selected.get("doc_type_code", "") or selected.get("docTypeCode", "")}')
                     self.stdout.write(f'   説明: {(selected.get("doc_description", "") or selected.get("docDescription", ""))[:80]}...')
                 
             else:
                 self.stdout.write(
-                    self.style.ERROR(f'✗ 効率的検索でも書類が見つかりませんでした')
+                    self.style.ERROR(f'✗ v2効率的検索でも書類が見つかりませんでした')
                 )
                 self.stdout.write(f'  証券コードが正しいか確認してください')
-                self.stdout.write(f'  または過去180日以内に決算書類が提出されていない可能性があります')
+                self.stdout.write(f'  または過去{days_back}日以内に決算書類が提出されていない可能性があります')
             
-            # 4. 効率性の評価
-            self.stdout.write(f'\n--- 検索効率性評価 ---')
+            # 4. v2効率性の評価
+            self.stdout.write(f'\n--- v2検索効率性評価 ---')
             self.stdout.write(f'⚡ 検索時間: {search_time:.2f}秒')
             self.stdout.write(f'📊 発見書類数: {len(documents)}件')
+            self.stdout.write(f'🔧 検索方式: インデックス事前構築 + 企業フィルタリング')
             if documents:
-                self.stdout.write(f'🎯 検索効率: 優秀 (一括検索により高速化)')
+                self.stdout.write(f'🎯 検索効率: 優秀 (v2インデックス検索により大幅高速化)')
             else:
                 self.stdout.write(f'⚠ 検索効率: 書類が見つからないため判定不能')
             
+            # 5. パフォーマンス統計表示
+            perf_stats = edinet_service.get_search_performance_stats()
+            self.stdout.write(f'\n--- v2パフォーマンス統計 ---')
+            self.stdout.write(f'💾 キャッシュ済み日数: {perf_stats.get("cached_dates_count", 0)}日')
+            
+            recent_cache = perf_stats.get('recent_cache_status', [])
+            if recent_cache:
+                cached_days = sum(1 for day in recent_cache if day['cached'])
+                self.stdout.write(f'📈 直近キャッシュ率: {cached_days}/{len(recent_cache)}日 ({cached_days/len(recent_cache)*100:.1f}%)')
+            
         except Exception as e:
             self.stdout.write(
-                self.style.ERROR(f'効率的検索中にエラー: {str(e)}')
+                self.style.ERROR(f'v2効率的検索中にエラー: {str(e)}')
             )
-
-    def _run_efficiency_test(self, company_code):
-        """効率化テスト：新旧検索方法の比較"""
-        self.stdout.write(f'\n=== 効率化テスト: {company_code} ===')
+    
+    def _run_efficiency_test_v2(self, company_code: str, days_back: int):
+        """v2効率化テスト：インデックス構築と検索のパフォーマンステスト"""
+        self.stdout.write(f'\n=== v2効率化テスト: {company_code} (過去{days_back}日) ===')
         
         try:
             edinet_service = EDINETAPIService()
             
-            # 効率的検索のテスト
-            self.stdout.write(f'⚡ 効率的検索をテスト中...')
-            start_efficient = timezone.now()
-            efficient_docs = edinet_service.get_company_documents_efficiently(company_code)
-            efficient_time = (timezone.now() - start_efficient).total_seconds()
+            # v2効率的検索のテスト
+            self.stdout.write(f'⚡ v2効率的検索をテスト中...')
+            start_efficient = time.time()
+            efficient_docs = edinet_service.get_company_documents_efficiently_v2(company_code, days_back)
+            efficient_time = time.time() - start_efficient
+            
+            # デバッグ情報を取得
+            debug_info = edinet_service.debug_company_search(company_code)
             
             # 結果表示
-            self.stdout.write(f'\n--- 効率性テスト結果 ---')
-            self.stdout.write(f'⚡ 効率的検索:')
+            self.stdout.write(f'\n--- v2効率性テスト結果 ---')
+            self.stdout.write(f'⚡ v2効率的検索:')
             self.stdout.write(f'   処理時間: {efficient_time:.2f}秒')
             self.stdout.write(f'   発見書類: {len(efficient_docs)}件')
-            self.stdout.write(f'   効率度: 🚀 高速 (バッチ検索)')
+            self.stdout.write(f'   検索方式: 🚀 インデックス事前構築 + 高速フィルタリング')
             
             if efficient_docs:
                 self.stdout.write(f'   最新書類: {efficient_docs[0].get("submission_date", "不明")}')
                 self.stdout.write(f'   書類種別: {", ".join(set([d.get("doc_type_code", "不明") for d in efficient_docs[:3]]))}')
             
+            # デバッグ情報の表示
+            if debug_info.get('success'):
+                self.stdout.write(f'\n--- v2デバッグ情報 ---')
+                for step in debug_info.get('steps', []):
+                    step_name = step.get('step', 'unknown')
+                    duration = step.get('duration_seconds', 0)
+                    self.stdout.write(f'   {step_name}: {duration:.2f}秒')
+                
+                total_time = debug_info.get('total_time', 0)
+                self.stdout.write(f'   総処理時間: {total_time:.2f}秒')
+            
             # 効率性の評価
             self.stdout.write(f'\n--- 総合評価 ---')
-            if efficient_time < 10:
-                self.stdout.write(f'🎉 優秀: 10秒以内で検索完了')
-            elif efficient_time < 30:
-                self.stdout.write(f'✅ 良好: 30秒以内で検索完了') 
+            if efficient_time < 5:
+                self.stdout.write(f'🎉 優秀: 5秒以内でv2検索完了')
+            elif efficient_time < 15:
+                self.stdout.write(f'✅ 良好: 15秒以内でv2検索完了') 
             else:
-                self.stdout.write(f'⚠ 改善必要: 30秒以上かかっています')
+                self.stdout.write(f'⚠ 改善必要: 15秒以上かかっています（v2でも）')
             
             # 推奨アクション
             self.stdout.write(f'\n--- 推奨アクション ---')
             if efficient_docs:
-                self.stdout.write(f'✅ この企業は効率的分析が可能です')
-                self.stdout.write(f'   実行コマンド: python manage.py analyze_company {company_code}')
+                self.stdout.write(f'✅ この企業はv2効率的分析が可能です')
+                self.stdout.write(f'   実行コマンド: python manage.py analyze_company_v2 {company_code}')
             else:
-                self.stdout.write(f'⚠ 書類が見つからないため分析は困難です')
-                self.stdout.write(f'   企業コードを確認するか、決算時期を待ってください')
+                self.stdout.write(f'⚠ 書類が見つからないためv2でも分析は困難です')
+                self.stdout.write(f'   企業コードを確認するか、検索期間を延長してください')
         
         except Exception as e:
             self.stdout.write(
-                self.style.ERROR(f'効率化テスト中にエラー: {str(e)}')
+                self.style.ERROR(f'v2効率化テスト中にエラー: {str(e)}')
             )
-
-    def _show_analysis_plan(self, company_code):
-        """ドライラン時の処理内容表示（効率化版）"""
-        self.stdout.write('\n=== 効率化版分析処理計画 ===')
+    
+    def _show_analysis_plan_v2(self, company_code: str):
+        """ドライラン時のv2処理内容表示"""
+        self.stdout.write('\n=== v2効率化版分析処理計画 ===')
         self.stdout.write(f'対象企業: {company_code}')
-        self.stdout.write('効率化された処理手順:')
-        self.stdout.write('  1. 🔍 企業情報の効率的取得（マスタ・EDINET API一括検索）')
-        self.stdout.write('  2. ⚡ 効率的キャッシュ確認（高速レスポンス）')
-        self.stdout.write('  3. 📊 一括書類検索（過去180日分を効率的に取得）')
-        self.stdout.write('  4. 🎯 最適書類選択（AI による最適化）')
-        self.stdout.write('  5. 📥 書類ダウンロード（選択されたファイルのみ）')
+        self.stdout.write('v2効率化された処理手順:')
+        self.stdout.write('  1. 🔍 企業情報の効率的取得（マスタ・v2インデックス検索）')
+        self.stdout.write('  2. ⚡ 高速キャッシュ確認（インデックス利用）')
+        self.stdout.write('  3. 📊 v2インデックス構築（キャッシュ最大活用）')
+        self.stdout.write('  4. 🎯 企業書類の高速フィルタリング（インデックスから抽出）')
+        self.stdout.write('  5. 📥 最適書類選択・ダウンロード（選択されたファイルのみ）')
         self.stdout.write('  6. 📝 XBRLテキスト抽出（強化版）')
         self.stdout.write('  7. 💰 キャッシュフロー分析（改良版アルゴリズム）')
         self.stdout.write('  8. 😊 感情分析・経営陣自信度分析（強化版）')
         self.stdout.write('  9. 💾 分析結果の保存・効率的キャッシュ')
         self.stdout.write('  10. 📈 企業マスタへの自動登録（新規企業の場合）')
         self.stdout.write('')
-        self.stdout.write('⚡ 効率化のポイント:')
-        self.stdout.write('  • バッチ検索により API 呼び出し回数を大幅削減')
-        self.stdout.write('  • インテリジェント書類選択で最適な分析対象を自動選択')
-        self.stdout.write('  • 効率的キャッシュ戦略で高速レスポンス')
+        self.stdout.write('⚡ v2効率化のポイント:')
+        self.stdout.write('  • インデックス事前構築により検索時間を大幅短縮')
+        self.stdout.write('  • キャッシュ戦略でAPI呼び出し回数を最小化')
+        self.stdout.write('  • 企業フィルタリングの高速化')
+        self.stdout.write('  • 重複排除とデータ正規化の自動化')
         self.stdout.write('  • エラーハンドリング強化で信頼性向上')
         self.stdout.write('')
         self.stdout.write('実際に実行するには --dry-run オプションを外してください。')
-        self.stdout.write('効率化テストを行う場合は --efficiency-test オプションを使用してください。')
-
-    def _show_efficiency_stats(self):
-        """分析効率の統計情報を表示"""
-        self.stdout.write('\n=== 分析効率統計情報 ===')
+        self.stdout.write('v2効率化テストを行う場合は --efficiency-test オプションを使用してください。')
+    
+    def _show_efficiency_stats_v2(self):
+        """v2分析効率の統計情報を表示"""
+        self.stdout.write('\n=== v2分析効率統計情報 ===')
         
         try:
             analysis_service = OnDemandAnalysisService()
@@ -309,33 +400,45 @@ class Command(BaseCommand):
             self.stdout.write(f'  過去30日の分析数: {stats["recent_analyses_count"]}件')
             self.stdout.write(f'  キャッシュヒット率: {stats["cache_hit_rate"]}%')
             
-            self.stdout.write(f'\n⚡ 効率化の改善点:')
+            self.stdout.write(f'\n⚡ v2効率化の改善点:')
             for improvement in stats['efficiency_improvements']:
                 self.stdout.write(f'  • {improvement}')
             
+            # v2固有の改善点を追加
+            self.stdout.write(f'  • v2インデックス事前構築による検索高速化')
+            self.stdout.write(f'  • 企業フィルタリングの最適化')
+            self.stdout.write(f'  • 書類選択アルゴリズムの改善')
+            
             # システム状況
-            self.stdout.write(f'\n🔧 システム状況:')
+            self.stdout.write(f'\n🔧 v2システム状況:')
             edinet_service = EDINETAPIService()
             api_status = edinet_service.get_api_status()
             
             if api_status['status'] == 'ok':
-                self.stdout.write(f'  ✅ EDINET API: 正常稼働')
+                self.stdout.write(f'  ✅ EDINET API: 正常稼働 (v2)')
+                self.stdout.write(f'  🔧 検索方式: {api_status.get("search_method", "standard")}')
             else:
                 self.stdout.write(f'  ❌ EDINET API: {api_status["message"]}')
             
+            # v2パフォーマンス統計
+            perf_stats = edinet_service.get_search_performance_stats()
+            self.stdout.write(f'\n📈 v2パフォーマンス統計:')
+            self.stdout.write(f'  💾 キャッシュ済み日数: {perf_stats.get("cached_dates_count", 0)}日')
+            
             # パフォーマンスヒント
-            self.stdout.write(f'\n💡 パフォーマンスヒント:')
+            self.stdout.write(f'\n💡 v2パフォーマンスヒント:')
+            self.stdout.write(f'  • インデックス事前構築: --build-index で高速化')
             self.stdout.write(f'  • 大量分析時は --efficiency-test で事前テスト推奨')
-            self.stdout.write(f'  • キャッシュを活用するため同一企業の再分析は高速')
-            self.stdout.write(f'  • 決算発表直後は書類が見つかりやすく高速分析可能')
+            self.stdout.write(f'  • キャッシュ活用により同日の再検索は超高速')
+            self.stdout.write(f'  • 決算発表直後は新規書類が見つかりやすく高速分析可能')
             
         except Exception as e:
-            self.stdout.write(f'統計情報取得エラー: {str(e)}')
-
-    def _display_success_result_enhanced(self, result, processing_time):
-        """成功時の結果表示（効率化版）"""
+            self.stdout.write(f'v2統計情報取得エラー: {str(e)}')
+    
+    def _display_success_result_v2(self, result, processing_time):
+        """成功時の結果表示（v2版）"""
         self.stdout.write(
-            self.style.SUCCESS(f'\n🎉 効率的分析完了 (処理時間: {processing_time:.1f}秒) ===')
+            self.style.SUCCESS(f'\n🎉 v2効率的分析完了 (処理時間: {processing_time:.1f}秒) ===')
         )
         
         # 企業情報
@@ -343,10 +446,10 @@ class Command(BaseCommand):
         self.stdout.write(f"企業名: {company.get('name', '不明')}")
         self.stdout.write(f"証券コード: {company.get('code', '不明')}")
         
-        # 効率性情報
+        # v2効率性情報
         if result.get('analysis_efficiency'):
             efficiency = result['analysis_efficiency']
-            self.stdout.write(f"\n⚡ 分析効率情報:")
+            self.stdout.write(f"\n⚡ v2分析効率情報:")
             self.stdout.write(f"  検索方法: {efficiency.get('search_method', '不明')}")
             self.stdout.write(f"  発見書類数: {efficiency.get('documents_found', 0)}件")
             self.stdout.write(f"  選択書類種別: {efficiency.get('selected_document_type', '不明')}")
@@ -355,7 +458,7 @@ class Command(BaseCommand):
         # データソース情報
         if result.get('from_cache'):
             self.stdout.write(
-                self.style.WARNING('⚡ この結果はキャッシュから高速取得されました')
+                self.style.WARNING('⚡ この結果はv2キャッシュから高速取得されました')
             )
         elif result.get('from_existing'):
             self.stdout.write(
@@ -363,7 +466,7 @@ class Command(BaseCommand):
             )
         else:
             self.stdout.write(
-                self.style.SUCCESS('🆕 新規分析を実行して最新結果を取得しました')
+                self.style.SUCCESS('🆕 v2新規分析を実行して最新結果を取得しました')
             )
         
         # 分析対象期間
@@ -437,119 +540,52 @@ class Command(BaseCommand):
             if sentiment_analysis.get('analysis_summary'):
                 self.stdout.write(f"要約: {sentiment_analysis['analysis_summary']}")
         
-        # パフォーマンス情報
-        self.stdout.write(f"\n⚡ パフォーマンス情報:")
+        # v2パフォーマンス情報
+        self.stdout.write(f"\n⚡ v2パフォーマンス情報:")
         self.stdout.write(f"分析処理時間: {result.get('processing_time', processing_time):.2f}秒")
-        self.stdout.write(f"分析方法: {result.get('analysis_method', '標準')}")
+        self.stdout.write(f"分析方法: {result.get('analysis_method', 'v2_efficient')}")
         self.stdout.write(f"分析日: {result.get('analysis_date', '不明')}")
         
         # 次回分析の案内
-        self.stdout.write(f"\n💡 次回以降の分析:")
-        self.stdout.write(f"  • この企業は次回からキャッシュにより高速分析が可能です")
+        self.stdout.write(f"\n💡 次回以降のv2分析:")
+        self.stdout.write(f"  • この企業は次回からv2キャッシュにより超高速分析が可能です")
         self.stdout.write(f"  • 強制再分析: --force オプションで最新データを再取得")
-        self.stdout.write(f"  • 効率テスト: --efficiency-test オプションで性能確認")
-
+        self.stdout.write(f"  • v2効率テスト: --efficiency-test オプションで性能確認")
+        self.stdout.write(f"  • インデックス更新: --build-index オプションで事前構築")
+    
     def _display_error_result(self, result, processing_time):
         """エラー時の結果表示"""
         self.stdout.write(
-            self.style.ERROR(f'\n❌ 効率的分析失敗 (処理時間: {processing_time:.1f}秒) ===')
+            self.style.ERROR(f'\n❌ v2効率的分析失敗 (処理時間: {processing_time:.1f}秒) ===')
         )
         
         error_message = result.get('error', '不明なエラー')
         self.stdout.write(f"エラー: {error_message}")
         
-        # トラブルシューティング情報
-        self.stdout.write('\n🔧 トラブルシューティング')
+        # v2トラブルシューティング情報
+        self.stdout.write('\n🔧 v2トラブルシューティング')
         
         if '企業情報を取得できません' in error_message or '見つかりません' in error_message:
             self.stdout.write('• 証券コードが正しいか確認してください（4桁の数字）')
-            self.stdout.write('• 以下のコマンドで効率的検索をテストしてみてください:')
-            self.stdout.write(f'  python manage.py analyze_company {result.get("company_code", "XXXX")} --search-only')
-            self.stdout.write('• 効率化テストで検索能力を確認:')
-            self.stdout.write(f'  python manage.py analyze_company {result.get("company_code", "XXXX")} --efficiency-test')
-            self.stdout.write('• 過去180日以内に決算書類が提出されているか確認してください')
+            self.stdout.write('• 以下のコマンドでv2効率的検索をテストしてみてください:')
+            self.stdout.write(f'  python manage.py analyze_company_v2 {result.get("company_code", "XXXX")} --search-only')
+            self.stdout.write('• v2効率化テストで検索能力を確認:')
+            self.stdout.write(f'  python manage.py analyze_company_v2 {result.get("company_code", "XXXX")} --efficiency-test')
+            self.stdout.write('• 検索期間を延長して再試行:')
+            self.stdout.write(f'  python manage.py analyze_company_v2 {result.get("company_code", "XXXX")} --days-back 365')
+            self.stdout.write('• インデックス事前構築で高速化:')
+            self.stdout.write(f'  python manage.py analyze_company_v2 {result.get("company_code", "XXXX")} --build-index')
         elif 'API' in error_message:
             self.stdout.write('• ネットワーク接続を確認してください')
             self.stdout.write('• EDINET APIのサービス状況を確認してください')
             self.stdout.write('• APIキーが正しく設定されているか確認してください')
-            self.stdout.write('• API状況チェック: --show-stats オプションで確認')
+            self.stdout.write('• v2API状況チェック: --show-stats オプションで確認')
         elif '取得' in error_message:
             self.stdout.write('• 決算書類が公開されているか確認してください')
             self.stdout.write('• 書類の形式が対応しているか確認してください')
-            self.stdout.write('• 効率的検索で書類一覧を確認: --search-only オプション')
+            self.stdout.write('• v2効率的検索で書類一覧を確認: --search-only オプション')
         else:
             self.stdout.write('• ログファイルで詳細なエラー情報を確認してください')
-            self.stdout.write(f'• システム状況確認: --show-stats オプション')
-            self.stdout.write(f'• 効率化テスト実行: --efficiency-test オプション')
-
-
-class EfficiencyTestCommand(BaseCommand):
-    """効率化テスト専用のサブコマンド"""
-    
-    def add_arguments(self, parser):
-        parser.add_argument(
-            'companies',
-            nargs='+',
-            help='テスト対象の企業コード（複数指定可能）',
-        )
-        parser.add_argument(
-            '--iterations',
-            type=int,
-            default=3,
-            help='テスト実行回数（平均値を計算）',
-        )
-    
-    def handle(self, *args, **options):
-        companies = options['companies']
-        iterations = options['iterations']
-        
-        self.stdout.write('🧪 大規模効率化テストを開始します...')
-        
-        total_time = 0
-        total_docs = 0
-        
-        for company_code in companies:
-            self.stdout.write(f'\n📊 テスト対象: {company_code}')
-            
-            company_times = []
-            company_docs = []
-            
-            for i in range(iterations):
-                try:
-                    edinet_service = EDINETAPIService()
-                    start_time = timezone.now()
-                    docs = edinet_service.get_company_documents_efficiently(company_code)
-                    elapsed = (timezone.now() - start_time).total_seconds()
-                    
-                    company_times.append(elapsed)
-                    company_docs.append(len(docs))
-                    
-                    self.stdout.write(f'  実行{i+1}: {elapsed:.2f}秒, {len(docs)}件')
-                    
-                except Exception as e:
-                    self.stdout.write(f'  実行{i+1}: エラー - {str(e)}')
-            
-            if company_times:
-                avg_time = sum(company_times) / len(company_times)
-                avg_docs = sum(company_docs) / len(company_docs)
-                
-                self.stdout.write(f'  平均: {avg_time:.2f}秒, {avg_docs:.1f}件')
-                
-                total_time += avg_time
-                total_docs += avg_docs
-        
-        # 全体統計
-        if companies:
-            overall_avg_time = total_time / len(companies)
-            overall_avg_docs = total_docs / len(companies)
-            
-            self.stdout.write(f'\n📊 全体統計:')
-            self.stdout.write(f'  平均検索時間: {overall_avg_time:.2f}秒')
-            self.stdout.write(f'  平均発見書類数: {overall_avg_docs:.1f}件')
-            
-            if overall_avg_time < 5:
-                self.stdout.write(f'🎉 効率性評価: 優秀')
-            elif overall_avg_time < 15:
-                self.stdout.write(f'✅ 効率性評価: 良好')
-            else:
-                self.stdout.write(f'⚠️ 効率性評価: 改善の余地あり')
+            self.stdout.write(f'• v2システム状況確認: --show-stats オプション')
+            self.stdout.write(f'• v2効率化テスト実行: --efficiency-test オプション')
+            self.stdout.write(f'• インデックス再構築: --build-index オプション')

@@ -1,0 +1,351 @@
+{% extends 'earnings_reports/base.html' %}
+
+{% block title %}{{ company.name }} - 分析設定{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- ページヘッダー -->
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'earnings_reports:home' %}">ホーム</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'earnings_reports:search_company' %}">企業検索</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'earnings_reports:document_list' company.stock_code %}">{{ company.name }}</a>
+                        </li>
+                        <li class="breadcrumb-item active">分析設定</li>
+                    </ol>
+                </nav>
+                
+                <div class="text-center">
+                    <h1 class="h2 mb-2">
+                        <i class="fas fa-cogs text-primary me-2"></i>
+                        分析設定
+                    </h1>
+                    <p class="text-muted">
+                        {{ company.name }}の決算書類分析を実行します
+                    </p>
+                </div>
+            </div>
+            
+            <div class="row">
+                <!-- 選択書類一覧 -->
+                <div class="col-lg-4">
+                    <div class="card sticky-top" style="top: 1rem;">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-file-alt me-2"></i>
+                                選択書類 ({{ selected_docs|length }}件)
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            {% if selected_docs %}
+                                <div class="list-group list-group-flush">
+                                    {% for document in selected_docs %}
+                                        <div class="list-group-item">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div class="flex-grow-1">
+                                                    <h6 class="mb-1">
+                                                        <span class="badge bg-info me-2">
+                                                            {{ document.get_doc_type_display }}
+                                                        </span>
+                                                    </h6>
+                                                    <p class="mb-1 small">
+                                                        {{ document.doc_description|truncatechars:60 }}
+                                                    </p>
+                                                    <small class="text-muted">
+                                                        {{ document.submit_date }}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-3">
+                                    <i class="fas fa-file-alt fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted mb-0">書類が選択されていません</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 分析設定フォーム -->
+                <div class="col-lg-8">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-sliders-h me-2"></i>
+                                    分析オプション
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- 分析レベル -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">{{ form.analysis_depth.label }}</label>
+                                    <div class="form-text mb-3">分析の詳細レベルを選択してください</div>
+                                    
+                                    {% for choice in form.analysis_depth %}
+                                        <div class="form-check mb-2">
+                                            {{ choice.tag }}
+                                            <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                                <strong>{{ choice.choice_label }}</strong>
+                                                {% if choice.choice_value == 'basic' %}
+                                                    <div class="small text-muted">感情分析とキャッシュフロー分析の基本的な内容</div>
+                                                {% elif choice.choice_value == 'detailed' %}
+                                                    <div class="small text-muted">基本分析 + リスク分析 + トレンド分析</div>
+                                                {% elif choice.choice_value == 'comprehensive' %}
+                                                    <div class="small text-muted">詳細分析 + 過去比較 + 将来予測</div>
+                                                {% endif %}
+                                            </label>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <hr>
+                                
+                                <!-- 分析項目 -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">分析項目</label>
+                                    <div class="form-text mb-3">実行する分析の種類を選択してください</div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                {{ form.include_sentiment }}
+                                                <label class="form-check-label" for="{{ form.include_sentiment.id_for_label }}">
+                                                    <i class="fas fa-heart text-danger me-2"></i>
+                                                    {{ form.include_sentiment.label }}
+                                                </label>
+                                                <div class="form-text small">
+                                                    経営陣の自信度やリスク認識を分析
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                {{ form.include_cashflow }}
+                                                <label class="form-check-label" for="{{ form.include_cashflow.id_for_label }}">
+                                                    <i class="fas fa-chart-line text-success me-2"></i>
+                                                    {{ form.include_cashflow.label }}
+                                                </label>
+                                                <div class="form-text small">
+                                                    キャッシュフローパターンの健全性判定
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <hr>
+                                
+                                <!-- 比較・通知オプション -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">比較・通知オプション</label>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                {{ form.compare_previous }}
+                                                <label class="form-check-label" for="{{ form.compare_previous.id_for_label }}">
+                                                    <i class="fas fa-exchange-alt text-info me-2"></i>
+                                                    {{ form.compare_previous.label }}
+                                                </label>
+                                                <div class="form-text small">
+                                                    {{ form.compare_previous.help_text }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                {{ form.notify_on_completion }}
+                                                <label class="form-check-label" for="{{ form.notify_on_completion.id_for_label }}">
+                                                    <i class="fas fa-bell text-warning me-2"></i>
+                                                    {{ form.notify_on_completion.label }}
+                                                </label>
+                                                <div class="form-text small">
+                                                    {{ form.notify_on_completion.help_text }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- カスタムキーワード -->
+                                <div class="mb-4">
+                                    <label for="{{ form.custom_keywords.id_for_label }}" class="form-label fw-bold">
+                                        {{ form.custom_keywords.label }}
+                                    </label>
+                                    {{ form.custom_keywords }}
+                                    <div class="form-text">{{ form.custom_keywords.help_text }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 実行ボタン -->
+                        <div class="card mt-4">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <h5 class="mb-1">分析実行の準備が完了しました</h5>
+                                        <p class="text-muted mb-0">
+                                            {{ selected_docs|length }}件の書類を分析します。
+                                            処理時間は書類の大きさにより1〜5分程度かかる場合があります。
+                                        </p>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <button type="submit" class="btn btn-success btn-lg" id="start-analysis-btn">
+                                            <i class="fas fa-play me-2"></i>
+                                            分析を開始
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 注意事項 -->
+                        <div class="card mt-3 border-warning">
+                            <div class="card-body">
+                                <h6 class="text-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    ご注意
+                                </h6>
+                                <ul class="mb-0 small">
+                                    <li>分析結果は投資判断の参考情報であり、投資を推奨するものではありません</li>
+                                    <li>分析には時間がかかる場合があります。途中でページを閉じても分析は継続されます</li>
+                                    <li>同じ書類を複数回分析した場合、前回の結果は上書きされます</li>
+                                    <li>エラーが発生した場合は、しばらく時間をおいてから再実行してください</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <!-- 戻るボタン -->
+                        <div class="text-center mt-4">
+                            <a href="{% url 'earnings_reports:document_list' company.stock_code %}" 
+                               class="btn btn-outline-secondary me-3">
+                                <i class="fas fa-arrow-left me-2"></i>書類選択に戻る
+                            </a>
+                            <a href="{% url 'earnings_reports:home' %}" 
+                               class="btn btn-outline-primary">
+                                <i class="fas fa-home me-2"></i>ホームに戻る
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const startButton = document.getElementById('start-analysis-btn');
+    
+    // フォーム送信時の処理
+    form.addEventListener('submit', function(e) {
+        // ボタンを無効化してローディング表示
+        startButton.disabled = true;
+        startButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>分析を開始しています...';
+        
+        // 確認メッセージ
+        const confirmed = confirm(
+            '分析を開始しますか？\n\n' +
+            '対象書類: {{ selected_docs|length }}件\n' +
+            '企業: {{ company.name }}\n\n' +
+            '分析には数分かかる場合があります。'
+        );
+        
+        if (!confirmed) {
+            e.preventDefault();
+            // ボタンを元に戻す
+            startButton.disabled = false;
+            startButton.innerHTML = '<i class="fas fa-play me-2"></i>分析を開始';
+            return false;
+        }
+        
+        // 成功メッセージを表示
+        setTimeout(() => {
+            if (!form.checkValidity()) {
+                startButton.disabled = false;
+                startButton.innerHTML = '<i class="fas fa-play me-2"></i>分析を開始';
+            }
+        }, 100);
+    });
+    
+    // 分析レベルの選択による説明文の更新
+    const analysisDepthInputs = document.querySelectorAll('input[name="analysis_depth"]');
+    const estimatedTimeElement = document.createElement('div');
+    estimatedTimeElement.className = 'alert alert-info mt-3';
+    estimatedTimeElement.style.display = 'none';
+    
+    analysisDepthInputs[0].closest('.mb-4').appendChild(estimatedTimeElement);
+    
+    analysisDepthInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const selectedValue = this.value;
+            let timeEstimate = '';
+            let features = [];
+            
+            switch(selectedValue) {
+                case 'basic':
+                    timeEstimate = '約1-2分';
+                    features = ['基本的な感情分析', 'キャッシュフロー分析', '総合スコア算出'];
+                    break;
+                case 'detailed':
+                    timeEstimate = '約2-4分';
+                    features = ['詳細な感情分析', 'リスク要因の特定', 'キャッシュフロー分析', 'トレンド分析'];
+                    break;
+                case 'comprehensive':
+                    timeEstimate = '約3-5分';
+                    features = ['包括的な感情分析', '過去データとの比較', '詳細なリスク分析', '将来予測'];
+                    break;
+            }
+            
+            estimatedTimeElement.innerHTML = `
+                <h6><i class="fas fa-clock me-2"></i>予想処理時間: ${timeEstimate}</h6>
+                <ul class="mb-0">
+                    ${features.map(feature => `<li>${feature}</li>`).join('')}
+                </ul>
+            `;
+            estimatedTimeElement.style.display = 'block';
+        });
+    });
+    
+    // 初期選択の説明を表示
+    const initialSelected = document.querySelector('input[name="analysis_depth"]:checked');
+    if (initialSelected) {
+        initialSelected.dispatchEvent(new Event('change'));
+    }
+    
+    // カスタムキーワードの入力チェック
+    const customKeywordsTextarea = document.getElementById('{{ form.custom_keywords.id_for_label }}');
+    if (customKeywordsTextarea) {
+        customKeywordsTextarea.addEventListener('input', function() {
+            const keywords = this.value.split(',').filter(k => k.trim()).length;
+            const helpText = this.parentElement.querySelector('.form-text');
+            
+            if (keywords > 0) {
+                helpText.innerHTML = `${keywords}個のカスタムキーワードが設定されています`;
+                helpText.className = 'form-text text-success';
+            } else {
+                helpText.innerHTML = '{{ form.custom_keywords.help_text }}';
+                helpText.className = 'form-text';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

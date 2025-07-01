@@ -1,0 +1,521 @@
+{% extends 'earnings_reports/base.html' %}
+{% load custom_filters %}
+
+{% block title %}{{ analysis.document.company.name }} - 分析結果{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- ページヘッダー -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'earnings_reports:home' %}">ホーム</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'earnings_reports:analysis_list' %}">分析結果</a>
+                    </li>
+                    <li class="breadcrumb-item active">{{ analysis.document.company.name }}</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h1 class="h2 mb-2">
+                        <i class="fas fa-chart-line text-primary me-2"></i>
+                        {{ analysis.document.company.name }}
+                    </h1>
+                    <p class="text-muted mb-0">
+                        {{ analysis.document.get_doc_type_display }} 
+                        ({{ analysis.document.submit_date }})
+                        <span class="mx-2">|</span>
+                        分析日時: {{ analysis.analysis_date|date:"Y年m月d日 H:i" }}
+                    </p>
+                </div>
+                <div class="text-end">
+                    <div class="mb-2">
+                        {% if analysis.overall_score is not None %}
+                            <span class="score-badge" id="overall-score">
+                                総合スコア: {{ analysis.overall_score|floatformat:1 }}
+                            </span>
+                        {% endif %}
+                    </div>
+                    <div class="btn-group">
+                        {% if analysis.document.company.stock_code %}
+                            <a href="{% url 'earnings_reports:company_dashboard' analysis.document.company.stock_code %}" 
+                            class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-chart-pie me-1"></i>企業ダッシュボード
+                            </a>
+                        {% else %}
+                            <span class="btn btn-outline-secondary btn-sm disabled">
+                                <i class="fas fa-chart-pie me-1"></i>企業ダッシュボード（株式コード不明）
+                            </span>
+                        {% endif %}
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="exportAnalysis()">
+                            <i class="fas fa-download me-1"></i>エクスポート
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 分析結果概要 -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">総合スコア</h5>
+                    {% if analysis.overall_score is not None %}
+                        <div class="display-4 fw-bold" id="score-display">
+                            {{ analysis.overall_score|floatformat:1 }}
+                        </div>
+                        <small class="text-muted">信頼性: {{ analysis.get_confidence_level_display|default:"中" }}</small>
+                    {% else %}
+                        <div class="text-muted">データなし</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        {% if sentiment %}
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">感情傾向</h5>
+                        <div class="display-6 fw-bold sentiment-{{ sentiment.dominant_sentiment }}">
+                            {% if sentiment.dominant_sentiment == 'positive' %}
+                                <i class="fas fa-smile me-2"></i>ポジティブ
+                            {% elif sentiment.dominant_sentiment == 'negative' %}
+                                <i class="fas fa-frown me-2"></i>ネガティブ
+                            {% else %}
+                                <i class="fas fa-meh me-2"></i>ニュートラル
+                            {% endif %}
+                        </div>
+                        <small class="text-muted">
+                            経営陣自信度: {{ sentiment.management_confidence_index|floatformat:0 }}%
+                        </small>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        
+        {% if cashflow %}
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">CFパターン</h5>
+                        <div class="display-6 fw-bold cf-pattern-{{ cashflow.pattern }}">
+                            {{ cashflow.get_pattern_display }}
+                        </div>
+                        <small class="text-muted">
+                            健全性: {{ cashflow.cf_quality_score|floatformat:0 }}%
+                        </small>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">処理時間</h5>
+                    <div class="display-6 fw-bold text-info">
+                        {% if analysis.processing_time %}
+                            {{ analysis.processing_time|floatformat:1 }}秒
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+                    <small class="text-muted">分析完了</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- 感情分析結果 -->
+        {% if sentiment %}
+            <div class="col-lg-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-heart text-danger me-2"></i>
+                            感情分析結果
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- 感情スコア円グラフ -->
+                        <div class="chart-container mb-4">
+                            <canvas id="sentimentPieChart"></canvas>
+                        </div>
+                        
+                        <!-- キーワード分析 -->
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="text-center p-2 border rounded">
+                                    <div class="h4 text-success">{{ sentiment.confidence_keywords_count }}</div>
+                                    <small class="text-muted">自信表現</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center p-2 border rounded">
+                                    <div class="h4 text-warning">{{ sentiment.uncertainty_keywords_count }}</div>
+                                    <small class="text-muted">不確実表現</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-2">
+                            <div class="col-6">
+                                <div class="text-center p-2 border rounded">
+                                    <div class="h4 text-primary">{{ sentiment.growth_keywords_count }}</div>
+                                    <small class="text-muted">成長関連</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center p-2 border rounded">
+                                    <div class="h4 text-danger">{{ sentiment.risk_keywords_count }}</div>
+                                    <small class="text-muted">リスク言及</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- リスク深刻度 -->
+                        <div class="mt-3">
+                            <h6>リスク深刻度</h6>
+                            <div class="progress">
+                                {% if sentiment.risk_severity == 'low' %}
+                                    <div class="progress-bar bg-success" style="width: 25%">低</div>
+                                {% elif sentiment.risk_severity == 'medium' %}
+                                    <div class="progress-bar bg-warning" style="width: 50%">中</div>
+                                {% elif sentiment.risk_severity == 'high' %}
+                                    <div class="progress-bar bg-danger" style="width: 75%">高</div>
+                                {% elif sentiment.risk_severity == 'critical' %}
+                                    <div class="progress-bar bg-dark" style="width: 100%">重大</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- 重要フレーズ -->
+                        {% if sentiment.key_phrases %}
+                            <div class="mt-3">
+                                <h6>重要フレーズ</h6>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for phrase in sentiment.key_phrases %}
+                                        <span class="badge bg-light text-dark border">{{ phrase|truncatechars:50 }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        
+        <!-- キャッシュフロー分析結果 -->
+        {% if cashflow %}
+            <div class="col-lg-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-bar text-success me-2"></i>
+                            キャッシュフロー分析
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- CFパターン説明 -->
+                        <div class="alert alert-info">
+                            <strong>{{ cashflow.get_pattern_display }}</strong><br>
+                            <small>{{ cashflow.get_pattern_description }}</small>
+                        </div>
+                        
+                        <!-- CF金額棒グラフ -->
+                        <div class="chart-container mb-4">
+                            <canvas id="cashflowBarChart"></canvas>
+                        </div>
+                        
+                        <!-- CF詳細データ -->
+                        <div class="row">
+                            {% if cashflow.operating_cf is not None %}
+                                <div class="col-6 mb-2">
+                                    <div class="text-center p-2 border rounded">
+                                        <div class="h5 {% if cashflow.operating_cf >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {% if cashflow.operating_cf >= 0 %}+{% endif %}{{ cashflow.operating_cf|floatformat:0 }}百万円
+                                        </div>
+                                        <small class="text-muted">営業CF</small>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            
+                            {% if cashflow.investing_cf is not None %}
+                                <div class="col-6 mb-2">
+                                    <div class="text-center p-2 border rounded">
+                                        <div class="h5 {% if cashflow.investing_cf >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {% if cashflow.investing_cf >= 0 %}+{% endif %}{{ cashflow.investing_cf|floatformat:0 }}百万円
+                                        </div>
+                                        <small class="text-muted">投資CF</small>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            
+                            {% if cashflow.financing_cf is not None %}
+                                <div class="col-6 mb-2">
+                                    <div class="text-center p-2 border rounded">
+                                        <div class="h5 {% if cashflow.financing_cf >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {% if cashflow.financing_cf >= 0 %}+{% endif %}{{ cashflow.financing_cf|floatformat:0 }}百万円
+                                        </div>
+                                        <small class="text-muted">財務CF</small>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            
+                            {% if cashflow.free_cf is not None %}
+                                <div class="col-6 mb-2">
+                                    <div class="text-center p-2 border rounded">
+                                        <div class="h5 {% if cashflow.free_cf >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {% if cashflow.free_cf >= 0 %}+{% endif %}{{ cashflow.free_cf|floatformat:0 }}百万円
+                                        </div>
+                                        <small class="text-muted">フリーCF</small>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- 解釈 -->
+                        {% if cashflow.interpretation %}
+                            <div class="mt-3">
+                                <h6>解釈</h6>
+                                <p class="small">{{ cashflow.interpretation }}</p>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- リスク要因 -->
+                        {% if cashflow.risk_factors %}
+                            <div class="mt-3">
+                                <h6>リスク要因</h6>
+                                <ul class="list-unstyled">
+                                    {% for risk in cashflow.risk_factors %}
+                                        <li class="small text-warning">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>{{ risk }}
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- 前回との比較 -->
+    {% if previous_analysis %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-exchange-alt text-info me-2"></i>
+                            前回分析との比較
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <h6>総合スコア</h6>
+                                <div class="d-flex align-items-center">
+                                    <span class="h4 me-3">{{ analysis.overall_score|floatformat:1 }}</span>
+                                    <span class="me-2">→</span>
+                                    <span class="h5 text-muted">{{ previous_analysis.overall_score|floatformat:1 }}</span>
+                                    {% with score_diff=analysis.overall_score|add:previous_analysis.overall_score|mul:-1 %}
+                                        <span class="ms-2 {% if score_diff > 0 %}text-success{% elif score_diff < 0 %}text-danger{% else %}text-muted{% endif %}">
+                                            {% if score_diff > 0 %}+{% endif %}{{ score_diff|floatformat:1 }}
+                                        </span>
+                                    {% endwith %}
+                                </div>
+                                <small class="text-muted">前回: {{ previous_analysis.analysis_date|date:"m/d" }}</small>
+                            </div>
+                            
+                            {% if sentiment and previous_analysis.sentiment %}
+                                <div class="col-md-4">
+                                    <h6>感情スコア</h6>
+                                    {% with current_sentiment=sentiment.positive_score|add:sentiment.negative_score|mul:-1 %}
+                                        {% with prev_sentiment=previous_analysis.sentiment.positive_score|add:previous_analysis.sentiment.negative_score|mul:-1 %}
+                                            <div class="d-flex align-items-center">
+                                                <span class="h4 me-3">{{ current_sentiment|floatformat:1 }}</span>
+                                                <span class="me-2">→</span>
+                                                <span class="h5 text-muted">{{ prev_sentiment|floatformat:1 }}</span>
+                                                {% with sentiment_diff=current_sentiment|add:prev_sentiment|mul:-1 %}
+                                                    <span class="ms-2 {% if sentiment_diff > 0 %}text-success{% elif sentiment_diff < 0 %}text-danger{% else %}text-muted{% endif %}">
+                                                        {% if sentiment_diff > 0 %}+{% endif %}{{ sentiment_diff|floatformat:1 }}
+                                                    </span>
+                                                {% endwith %}
+                                            </div>
+                                        {% endwith %}
+                                    {% endwith %}
+                                </div>
+                            {% endif %}
+                            
+                            {% if cashflow and previous_analysis.cashflow %}
+                                <div class="col-md-4">
+                                    <h6>CFパターン</h6>
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-primary me-2">{{ cashflow.get_pattern_display }}</span>
+                                        {% if cashflow.pattern != previous_analysis.cashflow.pattern %}
+                                            <i class="fas fa-arrow-right mx-2"></i>
+                                            <span class="badge bg-secondary">{{ previous_analysis.cashflow.get_pattern_display }}</span>
+                                        {% else %}
+                                            <span class="text-muted ms-2">変化なし</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    
+    <!-- 書類情報 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-file-alt me-2"></i>
+                        分析対象書類
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-2">書類名:</dt>
+                        <dd class="col-sm-10">{{ analysis.document.doc_description }}</dd>
+                        
+                        <dt class="col-sm-2">書類種別:</dt>
+                        <dd class="col-sm-10">{{ analysis.document.get_doc_type_display }}</dd>
+                        
+                        <dt class="col-sm-2">提出日:</dt>
+                        <dd class="col-sm-10">{{ analysis.document.submit_date }}</dd>
+                        
+                        {% if analysis.document.period_start and analysis.document.period_end %}
+                            <dt class="col-sm-2">対象期間:</dt>
+                            <dd class="col-sm-10">{{ analysis.document.period_start }} ～ {{ analysis.document.period_end }}</dd>
+                        {% endif %}
+                        
+                        <dt class="col-sm-2">分析設定:</dt>
+                        <dd class="col-sm-10">
+                            {% for key, value in analysis.settings_json.items %}
+                                <span class="badge bg-light text-dark me-1">{{ key }}: {{ value }}</span>
+                            {% endfor %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 総合スコアの色設定
+document.addEventListener('DOMContentLoaded', function() {
+    const overallScoreElement = document.getElementById('overall-score');
+    const scoreDisplayElement = document.getElementById('score-display');
+    
+    if (overallScoreElement && {{ analysis.overall_score|default:"null" }} !== null) {
+        const score = {{ analysis.overall_score }};
+        const badgeClass = getScoreBadgeClass(score);
+        overallScoreElement.className = 'score-badge ' + badgeClass;
+        
+        if (scoreDisplayElement) {
+            scoreDisplayElement.className += ' ' + (
+                score >= 60 ? 'text-success' : 
+                score >= 0 ? 'text-warning' : 'text-danger'
+            );
+        }
+    }
+    
+    // チャートの初期化
+    initializeCharts();
+});
+
+function initializeCharts() {
+    {% if sentiment %}
+        // 感情分析円グラフ
+        const sentimentCtx = document.getElementById('sentimentPieChart').getContext('2d');
+        new Chart(sentimentCtx, {
+            type: 'pie',
+            data: {
+                labels: ['ポジティブ', 'ネガティブ', 'ニュートラル'],
+                datasets: [{
+                    data: [{{ sentiment.positive_score }}, {{ sentiment.negative_score }}, {{ sentiment.neutral_score }}],
+                    backgroundColor: ['#28a745', '#dc3545', '#6c757d'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    {% endif %}
+    
+    {% if cashflow %}
+        // キャッシュフロー棒グラフ
+        const cashflowCtx = document.getElementById('cashflowBarChart').getContext('2d');
+        new Chart(cashflowCtx, {
+            type: 'bar',
+            data: {
+                labels: ['営業CF', '投資CF', '財務CF', 'フリーCF'],
+                datasets: [{
+                    data: [
+                        {{ cashflow.operating_cf|default:"0" }},
+                        {{ cashflow.investing_cf|default:"0" }},
+                        {{ cashflow.financing_cf|default:"0" }},
+                        {{ cashflow.free_cf|default:"0" }}
+                    ],
+                    backgroundColor: function(context) {
+                        const value = context.parsed.y;
+                        return value >= 0 ? '#28a745' : '#dc3545';
+                    },
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString() + '百万円';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    {% endif %}
+}
+
+function exportAnalysis() {
+    window.open('{% url "earnings_reports:export_company_data" analysis.document.company.stock_code %}?format=json', '_blank');
+}
+</script>
+{% endblock %}

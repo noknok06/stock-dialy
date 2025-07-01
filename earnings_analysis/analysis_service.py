@@ -1,4 +1,4 @@
-# earnings_analysis/analysis_service.py（効率化版）
+# earnings_analysis/analysis_service.py（v2効率化版）
 
 import time
 import logging
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class OnDemandAnalysisService:
-    """オンデマンド決算分析サービス（効率化版）"""
+    """オンデマンド決算分析サービス（v2効率化版）"""
     
     def __init__(self):
         self.edinet_service = EDINETAPIService()
@@ -38,7 +38,7 @@ class OnDemandAnalysisService:
     
     def get_or_analyze_company(self, company_code: str, force_refresh: bool = False) -> Dict:
         """
-        企業の分析結果を取得または新規分析を実行（効率化版）
+        企業の分析結果を取得または新規分析を実行（v2効率化版）
         
         Args:
             company_code: 証券コード（例: "7203"）
@@ -47,16 +47,16 @@ class OnDemandAnalysisService:
         Returns:
             分析結果辞書
         """
-        logger.info(f"Starting efficient analysis request for company: {company_code}")
+        logger.info(f"Starting v2 efficient analysis request for company: {company_code}")
         start_time = time.time()
         
         try:
-            # 1. 企業情報の取得・作成（効率化版）
-            company = self._get_or_create_company_efficient(company_code)
+            # 1. 企業情報の取得・作成（v2効率化版）
+            company = self._get_or_create_company_efficient_v2(company_code)
             if not company:
                 return {
                     'success': False,
-                    'error': f'企業コード {company_code} の企業情報を取得できませんでした'
+                    'error': f'企業コード {company_code} の企業情報を取得できませんでした（v2検索でも発見不能）'
                 }
             
             # 2. キャッシュチェック（強制更新でない場合）
@@ -65,6 +65,7 @@ class OnDemandAnalysisService:
                 if cached_result:
                     logger.info(f"Returning cached analysis for {company_code}")
                     cached_result['from_cache'] = True
+                    cached_result['cache_version'] = 'v2'
                     return cached_result
             
             # 3. 既存の分析結果チェック
@@ -74,12 +75,13 @@ class OnDemandAnalysisService:
                 if latest_analysis['analysis_date'] > timezone.now().date() - timedelta(days=7):
                     result = self._format_analysis_result(company, latest_analysis)
                     result['from_existing'] = True
+                    result['analysis_version'] = 'v2'
                     self._cache_analysis_result(company_code, result)
                     return result
             
-            # 4. 新規分析の実行（効率化版）
-            logger.info(f"Performing efficient new analysis for {company_code}")
-            analysis_result = self._perform_efficient_analysis(company)
+            # 4. 新規分析の実行（v2効率化版）
+            logger.info(f"Performing v2 efficient new analysis for {company_code}")
+            analysis_result = self._perform_efficient_analysis_v2(company)
             
             # 5. 結果のキャッシュ
             if self.enable_cache and analysis_result['success']:
@@ -87,21 +89,23 @@ class OnDemandAnalysisService:
             
             processing_time = time.time() - start_time
             analysis_result['processing_time'] = round(processing_time, 2)
-            analysis_result['analysis_method'] = 'efficient_search'
+            analysis_result['analysis_method'] = 'v2_efficient_search'
+            analysis_result['analysis_version'] = 'v2'
             
-            logger.info(f"Completed efficient analysis for {company_code} in {processing_time:.2f} seconds")
+            logger.info(f"Completed v2 efficient analysis for {company_code} in {processing_time:.2f} seconds")
             return analysis_result
             
         except Exception as e:
-            logger.error(f"Error in efficient analysis for {company_code}: {str(e)}")
+            logger.error(f"Error in v2 efficient analysis for {company_code}: {str(e)}")
             return {
                 'success': False,
-                'error': f'分析処理中にエラーが発生しました: {str(e)}',
-                'processing_time': time.time() - start_time
+                'error': f'v2分析処理中にエラーが発生しました: {str(e)}',
+                'processing_time': time.time() - start_time,
+                'analysis_version': 'v2'
             }
 
-    def _get_or_create_company_efficient(self, company_code: str) -> Optional[CompanyEarnings]:
-        """企業情報を効率的に取得または作成"""
+    def _get_or_create_company_efficient_v2(self, company_code: str) -> Optional[CompanyEarnings]:
+        """企業情報を効率的に取得または作成（v2版）"""
         try:
             # 1. 既存の企業情報を検索
             company = CompanyEarnings.objects.filter(company_code=company_code).first()
@@ -126,15 +130,15 @@ class OnDemandAnalysisService:
                     }
                     
             except ImportError:
-                logger.info("company_master not available, will search via EDINET API")
+                logger.info("company_master not available, will search via v2 EDINET API")
             
-            # 3. マスタにない場合は、効率的なEDINET API検索
+            # 3. マスタにない場合は、v2効率的なEDINET API検索
             if not company_info:
-                logger.info(f"Company {company_code} not found in master, performing efficient EDINET search...")
+                logger.info(f"Company {company_code} not found in master, performing v2 efficient EDINET search...")
                 company_info = self.edinet_service.get_company_info_by_code(company_code)
                 
                 if not company_info:
-                    logger.warning(f"Company {company_code} not found via efficient EDINET search either")
+                    logger.warning(f"Company {company_code} not found via v2 efficient EDINET search either")
                     return None
             
             # 4. 企業情報でCompanyEarningsレコードを作成
@@ -149,38 +153,41 @@ class OnDemandAnalysisService:
                 
                 logger.info(f"Created new company entry: {company.company_name} (source: {company_info.get('source', 'unknown')})")
                 
-                # 効率性の情報をログに記録
+                # v2効率性の情報をログに記録
                 if company_info.get('found_documents_count'):
-                    logger.info(f"Efficient search found {company_info['found_documents_count']} documents")
+                    logger.info(f"v2 efficient search found {company_info['found_documents_count']} documents")
                 
                 if company_info.get('search_efficiency'):
-                    logger.info(f"Search efficiency: {company_info['search_efficiency']}")
+                    logger.info(f"v2 search efficiency: {company_info['search_efficiency']}")
+                
+                if company_info.get('search_method'):
+                    logger.info(f"v2 search method: {company_info['search_method']}")
                 
                 return company
                 
         except Exception as e:
-            logger.error(f"Error in _get_or_create_company_efficient for {company_code}: {str(e)}")
+            logger.error(f"Error in _get_or_create_company_efficient_v2 for {company_code}: {str(e)}")
             return None
 
-    def _perform_efficient_analysis(self, company: CompanyEarnings) -> Dict:
-        """効率的な新規分析を実行"""
+    def _perform_efficient_analysis_v2(self, company: CompanyEarnings) -> Dict:
+        """v2効率的な新規分析を実行"""
         try:
-            logger.info(f"Starting efficient analysis for {company.company_name}")
+            logger.info(f"Starting v2 efficient analysis for {company.company_name}")
             
-            # 1. 効率的な最新書類検索（大幅改善）
-            documents = self._find_latest_documents_efficiently(company)
+            # 1. v2効率的な最新書類検索（大幅改善）
+            documents = self._find_latest_documents_efficiently_v2(company)
             if not documents:
                 return {
                     'success': False,
-                    'error': f'{company.company_name}の分析対象の決算書類が見つかりませんでした。効率的検索でも書類を発見できませんでした。'
+                    'error': f'{company.company_name}の分析対象の決算書類が見つかりませんでした。v2効率的検索でも書類を発見できませんでした。'
                 }
             
-            logger.info(f"Efficient search found {len(documents)} documents for analysis")
+            logger.info(f"v2 efficient search found {len(documents)} documents for analysis")
             
-            # 2. 最適な書類を選択（新機能）
-            selected_document = self._select_optimal_document_for_analysis(documents)
+            # 2. 最適な書類を選択（v2改良版）
+            selected_document = self._select_optimal_document_for_analysis_v2(documents)
             
-            logger.info(f"Selected document for analysis: {selected_document.get('document_id')} - {selected_document.get('doc_description', '')[:50]}...")
+            logger.info(f"Selected document for v2 analysis: {selected_document.get('document_id')} - {selected_document.get('doc_description', '')[:50]}...")
             
             # 3. 書類の内容を取得
             document_content = self.edinet_service.get_document_content(selected_document['document_id'])
@@ -198,8 +205,8 @@ class OnDemandAnalysisService:
                     'error': '決算書類からテキストの抽出に失敗しました'
                 }
             
-            # 5. 報告書レコードの作成
-            report = self._create_earnings_report_efficient(company, selected_document)
+            # 5. 報告書レコードの作成（v2改良版）
+            report = self._create_earnings_report_efficient_v2(company, selected_document)
             
             # 6. キャッシュフロー分析
             cf_analysis = self._analyze_cashflow(report, text_sections)
@@ -226,36 +233,37 @@ class OnDemandAnalysisService:
                 'analysis_date': timezone.now().date()
             })
             
-            # 効率性の情報を追加
+            # v2効率性の情報を追加
             result['analysis_efficiency'] = {
                 'documents_found': len(documents),
-                'search_method': 'efficient_batch_search',
+                'search_method': 'v2_efficient_index_search',
                 'selected_document_type': selected_document.get('doc_type_code'),
-                'selected_document_date': selected_document.get('submission_date')
+                'selected_document_date': selected_document.get('submission_date'),
+                'analysis_version': 'v2'
             }
             
             return result
             
         except Exception as e:
-            logger.error(f"Error in _perform_efficient_analysis for {company.company_code}: {str(e)}")
+            logger.error(f"Error in _perform_efficient_analysis_v2 for {company.company_code}: {str(e)}")
             return {
                 'success': False,
-                'error': f'効率的分析処理中にエラーが発生しました: {str(e)}'
+                'error': f'v2効率的分析処理中にエラーが発生しました: {str(e)}'
             }
 
-    def _find_latest_documents_efficiently(self, company: CompanyEarnings) -> list:
-        """効率的な最新書類検索（大幅改善版）"""
+    def _find_latest_documents_efficiently_v2(self, company: CompanyEarnings) -> list:
+        """v2効率的な最新書類検索（インデックス利用版）"""
         try:
-            logger.info(f"Starting efficient document search for {company.company_name} ({company.company_code})")
+            logger.info(f"Starting v2 efficient document search for {company.company_name} ({company.company_code})")
             
-            # 効率的な検索を使用（一括で書類一覧を取得）
+            # v2効率的な検索を使用（インデックス利用で一括書類検索）
             documents = self.edinet_service.find_latest_documents_for_analysis(company.company_code)
             
             if not documents:
-                logger.warning(f"No documents found with efficient search for {company.company_name}")
+                logger.warning(f"No documents found with v2 efficient search for {company.company_name}")
                 return []
             
-            logger.info(f"Efficient search found {len(documents)} documents for {company.company_name}")
+            logger.info(f"v2 efficient search found {len(documents)} documents for {company.company_name}")
             
             # 詳細ログ出力
             for i, doc in enumerate(documents[:3]):
@@ -268,17 +276,19 @@ class OnDemandAnalysisService:
             return documents
             
         except Exception as e:
-            logger.error(f"Error in efficient document search for {company.company_code}: {str(e)}")
+            logger.error(f"Error in v2 efficient document search for {company.company_code}: {str(e)}")
             return []
 
-    def _select_optimal_document_for_analysis(self, documents: list) -> Dict:
+    def _select_optimal_document_for_analysis_v2(self, documents: list) -> Dict:
         """
-        分析に最適な書類を選択
+        分析に最適な書類を選択（v2改良版）
         
         優先順位:
         1. 有価証券報告書（最も詳細）
         2. 四半期報告書（詳細度中）  
         3. 決算短信（速報性重視）
+        
+        v2版では日付も考慮して最適化
         """
         if not documents:
             raise ValueError("No documents provided for selection")
@@ -302,24 +312,28 @@ class OnDemandAnalysisService:
             else:
                 other_docs.append(doc)
         
+        # 各カテゴリを日付順でソート（v2改良）
+        for category in [annual_reports, quarterly_reports, earnings_summaries, other_docs]:
+            category.sort(key=lambda x: x.get('submission_date', '') or x.get('submitDateTime', ''), reverse=True)
+        
         # 優先順位に従って選択
         if annual_reports:
             selected = annual_reports[0]
-            logger.info("Selected document type: 有価証券報告書（最も詳細な分析が可能）")
+            logger.info("v2 selected document type: 有価証券報告書（最も詳細な分析が可能）")
         elif quarterly_reports:
             selected = quarterly_reports[0]
-            logger.info("Selected document type: 四半期報告書（詳細な分析が可能）")
+            logger.info("v2 selected document type: 四半期報告書（詳細な分析が可能）")
         elif earnings_summaries:
             selected = earnings_summaries[0]
-            logger.info("Selected document type: 決算短信（基本的な分析が可能）")
+            logger.info("v2 selected document type: 決算短信（基本的な分析が可能）")
         else:
             selected = documents[0]
-            logger.info("Selected document type: その他（分析精度が限定的な可能性）")
+            logger.info("v2 selected document type: その他（分析精度が限定的な可能性）")
         
         return selected
 
-    def _create_earnings_report_efficient(self, company: CompanyEarnings, document_info: Dict) -> EarningsReport:
-        """効率的な決算報告書レコード作成"""
+    def _create_earnings_report_efficient_v2(self, company: CompanyEarnings, document_info: Dict) -> EarningsReport:
+        """v2効率的な決算報告書レコード作成"""
         # 書類種別の判定
         doc_type = document_info.get('doc_type_code', '') or document_info.get('docTypeCode', '')
         if doc_type == '120':
@@ -329,18 +343,39 @@ class OnDemandAnalysisService:
         else:
             report_type = 'summary'
         
-        # 四半期の判定
+        # 四半期の判定（v2改良版）
         doc_desc = (document_info.get('doc_description', '') or document_info.get('docDescription', '') or '').lower()
-        if '第1四半期' in doc_desc:
-            quarter = 'Q1'
-        elif '第2四半期' in doc_desc:
-            quarter = 'Q2'
-        elif '第3四半期' in doc_desc:
-            quarter = 'Q3'
-        else:
-            quarter = 'Q4'
         
-        # 会計年度の抽出
+        # より詳細な四半期判定
+        if '第1四半期' in doc_desc or '第１四半期' in doc_desc:
+            quarter = 'Q1'
+        elif '第2四半期' in doc_desc or '第２四半期' in doc_desc:
+            quarter = 'Q2'
+        elif '第3四半期' in doc_desc or '第３四半期' in doc_desc:
+            quarter = 'Q3'
+        elif '通期' in doc_desc or '年次' in doc_desc or '年度' in doc_desc:
+            quarter = 'Q4'
+        else:
+            # 月から推定（v2新機能）
+            import re
+            month_pattern = r'(\d{1,2})月'
+            month_match = re.search(month_pattern, doc_desc)
+            if month_match:
+                month = int(month_match.group(1))
+                if month in [1, 2, 3]:
+                    quarter = 'Q4'  # 年度末
+                elif month in [4, 5, 6]:
+                    quarter = 'Q1'
+                elif month in [7, 8, 9]:
+                    quarter = 'Q2'
+                elif month in [10, 11, 12]:
+                    quarter = 'Q3'
+                else:
+                    quarter = 'Q4'
+            else:
+                quarter = 'Q4'  # デフォルト
+        
+        # 会計年度の抽出（v2改良版）
         submission_date = document_info.get('submission_date', '') or document_info.get('submitDateTime', '')
         
         if submission_date:
@@ -373,18 +408,19 @@ class OnDemandAnalysisService:
             is_processed=False
         )
 
-    # 企業検索も効率化
+    # 企業検索もv2効率化
     def search_companies(self, query: str, limit: int = 20) -> Dict:
-        """企業検索（効率化版）"""
+        """企業検索（v2効率化版）"""
         try:
             from django.db.models import Q
-            # キャッシュキーを生成
-            cache_key = f"company_search_efficient_{query}_{limit}"
+            # v2キャッシュキーを生成
+            cache_key = f"company_search_v2_efficient_{query}_{limit}"
             
             if self.enable_cache:
                 cached_result = cache.get(cache_key)
                 if cached_result:
                     cached_result['from_cache'] = True
+                    cached_result['search_version'] = 'v2'
                     return cached_result
             
             results = []
@@ -405,11 +441,11 @@ class OnDemandAnalysisService:
                 results.append({
                     'company_code': company.company_code,
                     'company_name': company.company_name,
-                    'industry': '分析済み企業',
+                    'industry': 'v2分析済み企業',
                     'market': '東証',
                     'has_analysis': latest_report is not None,
                     'latest_analysis_date': latest_report.submission_date.isoformat() if latest_report else None,
-                    'source': 'existing_analysis'
+                    'source': 'existing_v2_analysis'
                 })
             
             # 2. company_masterからも検索（存在する場合）
@@ -440,28 +476,30 @@ class OnDemandAnalysisService:
                     
             except ImportError:
                 # company_masterアプリがない場合はスキップ
-                logger.info("company_master not available for search")
+                logger.info("company_master not available for v2 search")
             
-            # 3. 直接的な証券コード入力の場合（効率的検索準備）
+            # 3. 直接的な証券コード入力の場合（v2効率的検索準備）
             if query.isdigit() and len(query) == 4:
                 found_codes = [r['company_code'] for r in results]
                 if query not in found_codes:
                     results.append({
                         'company_code': query,
-                        'company_name': f'企業コード{query}（要分析）',
+                        'company_name': f'企業コード{query}（v2分析対応）',
                         'industry': '不明',
                         'market': '東証',
                         'has_analysis': False,
                         'latest_analysis_date': None,
-                        'source': 'user_input',
-                        'analysis_ready': True  # 効率的分析が可能
+                        'source': 'user_input_v2',
+                        'analysis_ready': True,  # v2効率的分析が可能
+                        'search_version': 'v2'
                     })
             
             result = {
                 'success': True,
                 'results': results[:limit],
                 'total_count': len(results),
-                'search_method': 'efficient'
+                'search_method': 'v2_efficient',
+                'search_version': 'v2'
             }
             
             # 検索結果をキャッシュ（短時間）
@@ -471,54 +509,15 @@ class OnDemandAnalysisService:
             return result
             
         except Exception as e:
-            logger.error(f"Error in efficient search_companies: {str(e)}")
+            logger.error(f"Error in v2 efficient search_companies: {str(e)}")
             return {
                 'success': False,
                 'error': str(e),
-                'results': []
+                'results': [],
+                'search_version': 'v2'
             }
 
-    # 既存のメソッドはそのまま維持
-    def _get_cached_analysis(self, company_code: str) -> Optional[Dict]:
-        """キャッシュされた分析結果を取得"""
-        if not self.enable_cache:
-            return None
-        
-        cache_key = f"{self.cache_settings.get('CACHE_KEY_PREFIX', 'earnings_analysis')}_{company_code}"
-        return cache.get(cache_key)
-    
-    def _cache_analysis_result(self, company_code: str, result: Dict) -> None:
-        """分析結果をキャッシュ"""
-        if not self.enable_cache:
-            return
-        
-        cache_key = f"{self.cache_settings.get('CACHE_KEY_PREFIX', 'earnings_analysis')}_{company_code}"
-        timeout = self.cache_settings.get('COMPANY_ANALYSIS_TIMEOUT', 86400)  # 24時間
-        
-        cache.set(cache_key, result, timeout)
-        logger.debug(f"Cached analysis result for {company_code}")
-    
-    def _get_latest_analysis(self, company: CompanyEarnings) -> Optional[Dict]:
-        """最新の分析結果を取得"""
-        try:
-            latest_report = EarningsReport.objects.filter(
-                company=company,
-                is_processed=True
-            ).order_by('-submission_date').first()
-
-            if not latest_report:
-                return None
-            
-            return {
-                'report': latest_report,
-                'analysis_date': latest_report.created_at.date() if latest_report.created_at else timezone.now().date()
-            }
-            
-        except Exception as e:
-            logger.error(f"Error getting latest analysis for {company.company_code}: {str(e)}")
-            return None
-
-    # その他の分析メソッドはそのまま維持（_analyze_cashflow, _analyze_sentiment等）
+    # 既存のメソッドはそのまま維持（_analyze_cashflow, _analyze_sentiment等）
     def _analyze_cashflow(self, report: EarningsReport, text_sections: Dict) -> Optional[CashFlowAnalysis]:
         """キャッシュフロー分析を実行（既存メソッド）"""
         try:
@@ -599,6 +598,50 @@ class OnDemandAnalysisService:
             logger.error(f"Error in sentiment analysis for report {report.id}: {str(e)}")
             return None
     
+    # その他の既存メソッドも維持
+    def _get_cached_analysis(self, company_code: str) -> Optional[Dict]:
+        """キャッシュされた分析結果を取得"""
+        if not self.enable_cache:
+            return None
+        
+        cache_key = f"{self.cache_settings.get('CACHE_KEY_PREFIX', 'earnings_analysis_v2')}_{company_code}"
+        return cache.get(cache_key)
+    
+    def _cache_analysis_result(self, company_code: str, result: Dict) -> None:
+        """分析結果をキャッシュ（v2版）"""
+        if not self.enable_cache:
+            return
+        
+        cache_key = f"{self.cache_settings.get('CACHE_KEY_PREFIX', 'earnings_analysis_v2')}_{company_code}"
+        timeout = self.cache_settings.get('COMPANY_ANALYSIS_TIMEOUT', 86400)  # 24時間
+        
+        # v2メタデータを追加
+        result['cache_version'] = 'v2'
+        result['cached_at'] = timezone.now().isoformat()
+        
+        cache.set(cache_key, result, timeout)
+        logger.debug(f"Cached v2 analysis result for {company_code}")
+    
+    def _get_latest_analysis(self, company: CompanyEarnings) -> Optional[Dict]:
+        """最新の分析結果を取得（既存メソッド）"""
+        try:
+            latest_report = EarningsReport.objects.filter(
+                company=company,
+                is_processed=True
+            ).order_by('-submission_date').first()
+
+            if not latest_report:
+                return None
+            
+            return {
+                'report': latest_report,
+                'analysis_date': latest_report.created_at.date() if latest_report.created_at else timezone.now().date()
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting latest analysis for {company.company_code}: {str(e)}")
+            return None
+
     def _get_previous_cashflow(self, company: CompanyEarnings) -> Optional[Dict]:
         """前期のキャッシュフローデータを取得（既存メソッド）"""
         try:
@@ -751,9 +794,9 @@ class OnDemandAnalysisService:
                 'error': f'分析結果のフォーマットに失敗しました: {str(e)}'
             }
 
-    # 新しい効率化メソッド
+    # v2効率化メソッド
     def get_analysis_efficiency_stats(self) -> Dict:
-        """分析効率の統計情報を取得"""
+        """v2分析効率の統計情報を取得"""
         try:
             # 過去30日の分析実行統計
             thirty_days_ago = timezone.now().date() - timedelta(days=30)
@@ -764,25 +807,110 @@ class OnDemandAnalysisService:
             ).count()
             
             # キャッシュヒット率
-            cache_hits = cache.get('analysis_cache_hits', 0)
-            cache_total = cache.get('analysis_cache_total', 1)
+            cache_hits = cache.get('analysis_cache_hits_v2', 0)
+            cache_total = cache.get('analysis_cache_total_v2', 1)
             cache_hit_rate = (cache_hits / cache_total) * 100 if cache_total > 0 else 0
+            
+            # v2パフォーマンス統計
+            edinet_stats = self.edinet_service.get_search_performance_stats()
             
             return {
                 'recent_analyses_count': recent_analyses,
                 'cache_hit_rate': round(cache_hit_rate, 1),
+                'v2_cached_dates': edinet_stats.get('cached_dates_count', 0),
                 'efficiency_improvements': [
-                    'バッチ書類検索による高速化',
+                    'v2インデックス事前構築による超高速化',
+                    'バッチ書類検索による効率化',
                     'インテリジェント書類選択',
-                    '効率的キャッシュ戦略',
-                    'API呼び出し最適化'
-                ]
+                    '効率的キャッシュ戦略v2',
+                    'API呼び出し最適化v2'
+                ],
+                'version': 'v2'
             }
             
         except Exception as e:
-            logger.error(f"Error getting efficiency stats: {str(e)}")
+            logger.error(f"Error getting v2 efficiency stats: {str(e)}")
             return {
                 'recent_analyses_count': 0,
                 'cache_hit_rate': 0,
-                'efficiency_improvements': []
+                'efficiency_improvements': [],
+                'version': 'v2'
+            }
+
+    def get_portfolio_analysis(self) -> Dict:
+        """ポートフォリオ分析（既存メソッド）"""
+        try:
+            # stockdiaryから保有銘柄を取得
+            from stockdiary.models import StockDiary
+            
+            # ユーザーの保有銘柄（売却していないもの）
+            held_stocks = StockDiary.objects.filter(
+                sell_date__isnull=True,
+                stock_symbol__isnull=False
+            ).exclude(stock_symbol='').values_list('stock_symbol', flat=True).distinct()
+            
+            portfolio_analysis = []
+            
+            for stock_symbol in held_stocks:
+                try:
+                    # 4桁の場合は証券コードとして扱う
+                    if len(stock_symbol) == 4 and stock_symbol.isdigit():
+                        # 分析状況のみ取得（実際の分析は実行しない）
+                        company = CompanyEarnings.objects.filter(
+                            company_code=stock_symbol
+                        ).first()
+                        
+                        if company:
+                            # 最新分析データの要約を取得
+                            latest_report = EarningsReport.objects.filter(
+                                company=company,
+                                is_processed=True
+                            ).order_by('-submission_date').first()
+                            
+                            analysis_summary = {
+                                'stock_symbol': stock_symbol,
+                                'company_name': company.company_name,
+                                'has_analysis': latest_report is not None,
+                                'latest_analysis_date': company.latest_analysis_date.isoformat() if company.latest_analysis_date else None,
+                                'cf_pattern': None,
+                                'health_score': None,
+                                'sentiment_score': None,
+                                'confidence_level': None
+                            }
+                            
+                            if latest_report:
+                                if hasattr(latest_report, 'cashflow_analysis'):
+                                    cf = latest_report.cashflow_analysis
+                                    analysis_summary.update({
+                                        'cf_pattern': cf.cf_pattern,
+                                        'health_score': cf.health_score
+                                    })
+                                
+                                if hasattr(latest_report, 'sentiment_analysis'):
+                                    sentiment = latest_report.sentiment_analysis
+                                    analysis_summary.update({
+                                        'sentiment_score': float(sentiment.sentiment_score),
+                                        'confidence_level': sentiment.confidence_level
+                                    })
+                            
+                            portfolio_analysis.append(analysis_summary)
+                    
+                except Exception as e:
+                    logger.warning(f"Error analyzing stock {stock_symbol}: {str(e)}")
+                    continue
+            
+            return {
+                'success': True,
+                'data': {
+                    'portfolio_analysis': portfolio_analysis,
+                    'total_stocks': len(held_stocks),
+                    'analyzed_stocks': len(portfolio_analysis)
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting portfolio analysis: {str(e)}")
+            return {
+                'success': False,
+                'error': str(e)
             }
