@@ -158,6 +158,7 @@ class SentimentAnalysis(models.Model):
         related_name='sentiment_analyses'
     )
     
+    custom_keyword_counts = models.JSONField(default=dict, blank=True)
     # 感情分析スコア
     positive_score = models.FloatField('ポジティブ度', default=0.0, validators=[MinValueValidator(0), MaxValueValidator(100)])
     negative_score = models.FloatField('ネガティブ度', default=0.0, validators=[MinValueValidator(0), MaxValueValidator(100)])

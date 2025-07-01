@@ -13,10 +13,9 @@ def mul(value, arg):
 
 @register.filter
 def div(value, arg):
-    """数値の除算フィルター"""
     try:
         return float(value) / float(arg)
-    except (ValueError, TypeError, ZeroDivisionError):
+    except (ValueError, ZeroDivisionError):
         return 0
 
 @register.filter
