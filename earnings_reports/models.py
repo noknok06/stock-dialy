@@ -82,7 +82,7 @@ class Document(models.Model):
 
 
 class Analysis(models.Model):
-    """分析結果メイン"""
+    """分析結果メイン（修正版）"""
     
     ANALYSIS_STATUS = [
         ('pending', '分析待ち'),
@@ -91,13 +91,23 @@ class Analysis(models.Model):
         ('failed', '分析失敗'),
     ]
     
-    document = models.OneToOneField(Document, on_delete=models.CASCADE, related_name='analysis')
+    # ユニーク制約を削除し、同じ書類を複数回分析可能にする
+    document = models.ForeignKey(
+        'Document', 
+        on_delete=models.CASCADE, 
+        related_name='analyses'  # related_nameを複数形に変更
+    )
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='analyses')
     
     status = models.CharField('分析状況', max_length=20, choices=ANALYSIS_STATUS, default='pending')
     
     # 分析結果サマリー
-    overall_score = models.FloatField('総合スコア', validators=[MinValueValidator(-100), MaxValueValidator(100)], null=True, blank=True)
+    overall_score = models.FloatField(
+        '総合スコア', 
+        validators=[MinValueValidator(-100), MaxValueValidator(100)], 
+        null=True, 
+        blank=True
+    )
     confidence_level = models.CharField('信頼性', max_length=20, blank=True, help_text='high/medium/low')
     
     # メタデータ
@@ -108,6 +118,9 @@ class Analysis(models.Model):
     # 分析設定
     settings_json = models.JSONField('分析設定', default=dict, blank=True)
     
+    # タスクID（Celery用）
+    task_id = models.CharField('タスクID', max_length=100, blank=True)
+    
     created_at = models.DateTimeField('作成日時', auto_now_add=True)
     updated_at = models.DateTimeField('更新日時', auto_now=True)
     
@@ -115,18 +128,35 @@ class Analysis(models.Model):
         verbose_name = '分析結果'
         verbose_name_plural = '分析結果一覧'
         ordering = ['-analysis_date']
+        # ユニーク制約を削除し、同じ書類・ユーザーで複数の分析を許可
+        # unique_together = ['document', 'user']  # この行を削除またはコメントアウト
     
     def __str__(self):
         return f"{self.document} - 分析結果 ({self.get_status_display()})"
     
     def get_absolute_url(self):
         return reverse('earnings_reports:analysis_detail', kwargs={'pk': self.pk})
+    
+    def is_latest_for_document(self):
+        """この分析がその書類の最新分析かどうか"""
+        latest = Analysis.objects.filter(
+            document=self.document,
+            user=self.user,
+            status='completed'
+        ).order_by('-analysis_date').first()
+        
+        return latest and latest.id == self.id
 
 
 class SentimentAnalysis(models.Model):
-    """感情・テキスト分析結果"""
+    """感情・テキスト分析結果（修正版）"""
     
-    analysis = models.OneToOneField(Analysis, on_delete=models.CASCADE, related_name='sentiment')
+    # OneToOneField から ForeignKey に変更
+    analysis = models.ForeignKey(
+        Analysis, 
+        on_delete=models.CASCADE, 
+        related_name='sentiment_analyses'
+    )
     
     # 感情分析スコア
     positive_score = models.FloatField('ポジティブ度', default=0.0, validators=[MinValueValidator(0), MaxValueValidator(100)])
@@ -155,9 +185,10 @@ class SentimentAnalysis(models.Model):
     class Meta:
         verbose_name = '感情分析'
         verbose_name_plural = '感情分析一覧'
+        ordering = ['-created_at']  # 最新順
     
     def __str__(self):
-        return f"{self.analysis.document.company.name} - 感情分析"
+        return f"{self.analysis.document.company.name} - 感情分析 ({self.created_at.strftime('%Y-%m-%d %H:%M')})"
     
     @property
     def dominant_sentiment(self):
@@ -177,17 +208,23 @@ class SentimentAnalysis(models.Model):
 
 
 class CashFlowAnalysis(models.Model):
-    """キャッシュフロー分析結果"""
+    """キャッシュフロー分析結果（修正版）"""
     
     CASHFLOW_PATTERNS = [
         ('ideal', '理想型（+営業CF, -投資CF, -財務CF）'),
         ('growth', '成長型（+営業CF, -投資CF, +財務CF）'),
         ('restructuring', '再構築型（+営業CF, +投資CF, -財務CF）'),
         ('danger', '危険型（-営業CF, +投資CF, +財務CF）'),
+        ('conservative', '保守型（+営業CF, 少額投資・財務）'),
         ('other', 'その他'),
     ]
     
-    analysis = models.OneToOneField(Analysis, on_delete=models.CASCADE, related_name='cashflow')
+    # OneToOneField から ForeignKey に変更
+    analysis = models.ForeignKey(
+        Analysis, 
+        on_delete=models.CASCADE, 
+        related_name='cashflow_analyses'
+    )
     
     # キャッシュフロー金額（百万円）
     operating_cf = models.BigIntegerField('営業キャッシュフロー', null=True, blank=True)
@@ -217,14 +254,15 @@ class CashFlowAnalysis(models.Model):
     class Meta:
         verbose_name = 'キャッシュフロー分析'
         verbose_name_plural = 'キャッシュフロー分析一覧'
+        ordering = ['-created_at']  # 最新順
     
     def __str__(self):
-        return f"{self.analysis.document.company.name} - CF分析"
+        return f"{self.analysis.document.company.name} - CF分析 ({self.created_at.strftime('%Y-%m-%d %H:%M')})"
     
     @property
     def is_healthy_pattern(self):
         """健全なCFパターンかどうか"""
-        return self.pattern in ['ideal', 'growth']
+        return self.pattern in ['ideal', 'growth', 'conservative']
     
     def get_pattern_description(self):
         """パターンの詳細説明"""
@@ -233,6 +271,7 @@ class CashFlowAnalysis(models.Model):
             'growth': 'テスラ型: 稼いで→投資して→更に資金調達。成長企業の典型パターン。',
             'restructuring': '再構築型: 事業売却等で資金調達し借金返済。一時的な構造改革パターン。',
             'danger': '破綻企業型: 赤字で→資産売却→借金増。要注意パターン。',
+            'conservative': '保守型: 堅実経営で投資も借入も控えめ。安定志向のパターン。',
             'other': 'その他のパターン。個別に詳細確認が必要。'
         }
         return descriptions.get(self.pattern, '')

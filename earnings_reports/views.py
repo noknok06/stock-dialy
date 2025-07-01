@@ -30,24 +30,24 @@ logger = logging.getLogger('earnings_analysis')
 
 @login_required
 def home(request):
-    """ホーム画面 - 分析開始"""
+    """ホーム画面 - 分析開始（修正版）"""
     # StockCodeSearchForm を POST でも処理
     if request.method == 'POST':
         return search_company(request)
     
     form = StockCodeSearchForm()
     
-    # 最近の分析結果
+    # 最近の分析結果（関連名を修正）
     recent_analyses = Analysis.objects.filter(
         user=request.user,
         status='completed'
     ).select_related('document__company').order_by('-analysis_date')[:5]
     
-    # ユーザー統計
+    # ユーザー統計（関連名を修正）
     user_stats = {
         'total_analyses': Analysis.objects.filter(user=request.user).count(),
         'companies_analyzed': Company.objects.filter(
-            documents__analysis__user=request.user
+            documents__analyses__user=request.user  # analysis → analyses に修正
         ).distinct().count(),
         'this_month_analyses': Analysis.objects.filter(
             user=request.user,
@@ -258,7 +258,7 @@ def analysis_status(request, analysis_ids):
 
 @login_required
 def analysis_detail(request, pk):
-    """分析結果詳細"""
+    """分析結果詳細（修正版）"""
     
     analysis = get_object_or_404(Analysis, pk=pk, user=request.user)
     
@@ -266,9 +266,9 @@ def analysis_detail(request, pk):
         messages.warning(request, '分析が完了していません。')
         return redirect('earnings_reports:analysis_status', analysis_ids=str(analysis.id))
     
-    # 関連データを取得
-    sentiment = getattr(analysis, 'sentiment', None)
-    cashflow = getattr(analysis, 'cashflow', None)
+    # 関連データを取得（最新のものを取得）
+    sentiment = analysis.sentiment_analyses.order_by('-created_at').first()
+    cashflow = analysis.cashflow_analyses.order_by('-created_at').first()
     
     # 前回分析との比較データ
     previous_analysis = Analysis.objects.filter(
@@ -337,7 +337,7 @@ def analysis_list(request):
 
 @login_required
 def company_dashboard(request, stock_code):
-    """企業別ダッシュボード"""
+    """企業別ダッシュボード（修正版）"""
     
     company = get_object_or_404(Company, stock_code=stock_code)
     
@@ -364,6 +364,8 @@ def company_dashboard(request, stock_code):
         document__company=company,
         user=request.user,
         status='completed'
+    ).select_related('document').prefetch_related(
+        'sentiment_analyses', 'cashflow_analyses'
     ).order_by('analysis_date')[:12]
     
     trend_data = {
@@ -375,10 +377,10 @@ def company_dashboard(request, stock_code):
     
     # 感情分析トレンドデータ
     for analysis in trend_analyses:
-        if hasattr(analysis, 'sentiment'):
-            sentiment = analysis.sentiment
-            trend_data['sentiment_positive'].append(sentiment.positive_score)
-            trend_data['sentiment_negative'].append(sentiment.negative_score)
+        latest_sentiment = analysis.sentiment_analyses.order_by('-created_at').first()
+        if latest_sentiment:
+            trend_data['sentiment_positive'].append(latest_sentiment.positive_score)
+            trend_data['sentiment_negative'].append(latest_sentiment.negative_score)
         else:
             trend_data['sentiment_positive'].append(None)
             trend_data['sentiment_negative'].append(None)
@@ -391,7 +393,51 @@ def company_dashboard(request, stock_code):
     }
     return render(request, 'earnings_reports/company_dashboard.html', context)
 
-
+def get_company_analysis_stats(company, user):
+    """企業の分析統計を取得（修正版）"""
+    
+    from django.db.models import Count, Avg, Max, Q
+    
+    # 基本統計
+    total_documents = Document.objects.filter(company=company).count()
+    total_analyses = Analysis.objects.filter(
+        document__company=company,
+        user=user
+    ).count()
+    
+    # 完了した分析の統計
+    completed_analyses = Analysis.objects.filter(
+        document__company=company,
+        user=user,
+        status='completed'
+    )
+    
+    avg_score = completed_analyses.aggregate(
+        avg_score=Avg('overall_score')
+    )['avg_score']
+    
+    latest_analysis = completed_analyses.order_by('-analysis_date').first()
+    
+    # 書類種別ごとの統計
+    doc_type_stats = Document.objects.filter(company=company).values(
+        'doc_type'
+    ).annotate(
+        count=Count('id'),
+        analyzed_count=Count(
+            'analyses', 
+            filter=Q(analyses__user=user, analyses__status='completed')
+        )
+    )
+    
+    return {
+        'total_documents': total_documents,
+        'total_analyses': total_analyses,
+        'completed_analyses': completed_analyses.count(),
+        'avg_score': round(avg_score, 2) if avg_score else None,
+        'latest_analysis': latest_analysis,
+        'doc_type_stats': list(doc_type_stats),
+        'last_sync': company.last_sync,
+    }
 # ========================================
 # API エンドポイント
 # ========================================

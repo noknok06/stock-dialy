@@ -5,7 +5,10 @@ earnings_reports/urls.py
 
 from django.urls import path, include
 from . import views
-from . import views_api
+try:
+    from . import views_api
+except ImportError:
+    views_api = None
 
 app_name = 'earnings_reports'
 
@@ -27,13 +30,16 @@ urlpatterns = [
     path('company/<str:stock_code>/', views.company_dashboard, name='company_dashboard'),
     
     # ===== エクスポート機能 =====
+] + ([
     path('export/company/<str:stock_code>/', views_api.export_company_data, name='export_company_data'),
     path('export/all/', views_api.export_all_data_api, name='export_all_data'),
+] if views_api else []) + [
     
     # ===== API エンドポイント =====
     path('api/', include([
         # 企業関連API
         path('companies/autocomplete/', views.company_autocomplete, name='company_autocomplete'),
+    ] + ([ 
         path('companies/search/', views_api.company_search_api, name='company_search_api'),
         path('company/<str:stock_code>/stats/', views_api.company_stats_api, name='company_stats_api'),
         
@@ -43,9 +49,9 @@ urlpatterns = [
         path('analysis/trends/', views_api.analysis_trends_api, name='analysis_trends_api'),
         
         # ユーザー統計API
-        path('stats/user/', views_api.user_stats_api, name='user_stats_api'),
+        path('user/stats/', views_api.user_stats_api, name='user_stats_api'),
         path('stats/industry-benchmark/', views_api.industry_benchmark_api, name='industry_benchmark_api'),
-    ])),
+    ] if views_api else []))),
     
     # ===== 管理機能（将来拡張用） =====
     path('management/', include([
