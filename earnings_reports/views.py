@@ -1,6 +1,6 @@
 """
 earnings_reports/views.py
-決算分析アプリのビュー
+改善されたビュー - 書類選択から即座に分析実行
 """
 
 from django.shortcuts import render, get_object_or_404, redirect
@@ -20,8 +20,7 @@ import logging
 from datetime import datetime, timedelta
 
 from .models import Company, Document, Analysis, SentimentAnalysis, CashFlowAnalysis, AnalysisHistory
-from .forms import (StockCodeSearchForm, DocumentSelectionForm, AnalysisSettingsForm, 
-                   CompanyRegistrationForm, AnalysisFilterForm, BulkAnalysisForm)
+from .forms import StockCodeSearchForm, AnalysisFilterForm
 from .services.edinet_service import EDINETService
 from .services.analysis_service import EarningsAnalysisService
 from .utils.company_utils import get_or_create_company_from_edinet
@@ -32,6 +31,10 @@ logger = logging.getLogger('earnings_analysis')
 @login_required
 def home(request):
     """ホーム画面 - 分析開始"""
+    # StockCodeSearchForm を POST でも処理
+    if request.method == 'POST':
+        return search_company(request)
+    
     form = StockCodeSearchForm()
     
     # 最近の分析結果
@@ -83,6 +86,8 @@ def search_company(request):
                     if not company:
                         messages.error(request, f'証券コード {stock_code} の企業が見つかりませんでした。')
                         return render(request, 'earnings_reports/search_company.html', {'form': form})
+                    
+                    messages.success(request, f'{company.name} を新規登録しました。')
                 
                 # 書類一覧画面へリダイレクト
                 return redirect('earnings_reports:document_list', stock_code=company.stock_code)
@@ -98,150 +103,155 @@ def search_company(request):
 
 
 @login_required
-def company_autocomplete(request):
-    """企業名オートコンプリート（AJAX）"""
-    
-    query = request.GET.get('q', '').strip()
-    suggestions = []
-    
-    if len(query) >= 2:
-        companies = Company.objects.filter(
-            Q(stock_code__icontains=query) | 
-            Q(name__icontains=query) |
-            Q(name_kana__icontains=query)
-        )[:10]
-        
-        suggestions = [
-            {
-                'stock_code': company.stock_code,
-                'name': company.name,
-                'display': f"{company.stock_code} - {company.name}"
-            }
-            for company in companies
-        ]
-    
-    return JsonResponse({'suggestions': suggestions})
-
-
-@login_required
+@require_http_methods(["GET", "POST"])
 def document_list(request, stock_code):
-    """書類一覧・選択"""
+    """書類一覧・選択・分析実行"""
     
     company = get_object_or_404(Company, stock_code=stock_code)
     
-    # EDINETから最新書類を同期
-    try:
-        edinet_service = EDINETService(settings.EDINET_API_KEY)
-        sync_company_documents(company, edinet_service)
-    except Exception as e:
-        logger.warning(f"書類同期エラー: {str(e)}")
-        messages.warning(request, '書類情報の同期中にエラーが発生しましたが、既存データで継続します。')
+    # 書類データの同期チェック
+    sync_requested = request.GET.get('sync') == '1'
+    if sync_requested or should_sync_documents(company):
+        try:
+            edinet_service = EDINETService(settings.EDINET_API_KEY)
+            sync_result = sync_company_documents(company, edinet_service)
+            
+            if sync_requested:
+                if sync_result['new_count'] > 0:
+                    messages.success(request, f'{sync_result["new_count"]}件の新しい書類を同期しました。')
+                else:
+                    messages.info(request, '新しい書類はありませんでした。')
+                
+        except Exception as e:
+            logger.warning(f"書類同期エラー: {str(e)}")
+            messages.warning(request, '書類情報の同期中にエラーが発生しましたが、既存データで継続します。')
     
-    # 書類一覧取得
+    # POST処理 - 書類選択→分析実行
+    if request.method == 'POST':
+        selected_doc_ids = request.POST.getlist('selected_documents')
+        
+        if not selected_doc_ids:
+            messages.error(request, '分析する書類を選択してください。')
+        else:
+            # 分析設定を収集
+            analysis_settings = {
+                'analysis_depth': request.POST.get('analysis_depth', 'basic'),
+                'include_sentiment': bool(request.POST.get('include_sentiment')),
+                'include_cashflow': bool(request.POST.get('include_cashflow')),
+                'compare_previous': bool(request.POST.get('compare_previous')),
+                'custom_keywords': [
+                    keyword.strip() 
+                    for keyword in request.POST.get('custom_keywords', '').split(',') 
+                    if keyword.strip()
+                ]
+            }
+            
+            # 選択された書類を取得
+            selected_documents = Document.objects.filter(
+                id__in=selected_doc_ids,
+                company=company
+            )
+            
+            # 分析を開始
+            analysis_results = start_document_analysis(
+                user=request.user,
+                documents=selected_documents,
+                settings=analysis_settings
+            )
+            
+            if analysis_results['success']:
+                messages.success(
+                    request, 
+                    f'{len(analysis_results["analyses"])}件の分析を開始しました。'
+                )
+                
+                # 分析状況画面へリダイレクト
+                analysis_ids = ','.join(str(a.id) for a in analysis_results['analyses'])
+                return redirect('earnings_reports:analysis_status', analysis_ids=analysis_ids)
+            else:
+                messages.error(request, f'分析開始に失敗しました: {analysis_results["error"]}')
+    
+    # GET処理 - 書類一覧表示
     documents = Document.objects.filter(
         company=company,
         doc_type__in=['120', '130', '140', '350']  # 決算関連書類のみ
     ).order_by('-submit_date')
+    
+    # 各書類の分析状況をチェック
+    for doc in documents:
+        doc.latest_analysis = Analysis.objects.filter(
+            document=doc,
+            user=request.user
+        ).order_by('-analysis_date').first()
+        
+        doc.is_analyzed = (
+            doc.latest_analysis and 
+            doc.latest_analysis.status == 'completed'
+        )
     
     # ページネーション
     paginator = Paginator(documents, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # 選択フォーム
-    if request.method == 'POST':
-        form = DocumentSelectionForm(company=company, data=request.POST)
-        
-        if form.is_valid():
-            selected_docs = form.cleaned_data['selected_documents']
-            doc_ids = [str(doc.id) for doc in selected_docs]
-            
-            # セッションに保存して分析設定画面へ
-            request.session['selected_document_ids'] = doc_ids
-            return redirect('earnings_reports:analysis_settings', stock_code=stock_code)
-    
-    else:
-        form = DocumentSelectionForm(company=company)
-    
     context = {
         'company': company,
-        'form': form,
-        'page_obj': page_obj,
         'documents': page_obj.object_list,
+        'page_obj': page_obj,
     }
     return render(request, 'earnings_reports/document_list.html', context)
 
 
 @login_required
-def analysis_settings(request, stock_code):
-    """分析設定"""
-    
-    company = get_object_or_404(Company, stock_code=stock_code)
-    
-    # セッションから選択書類を取得
-    doc_ids = request.session.get('selected_document_ids', [])
-    
-    if not doc_ids:
-        messages.error(request, '分析対象の書類が選択されていません。')
-        return redirect('earnings_reports:document_list', stock_code=stock_code)
-    
-    selected_docs = Document.objects.filter(id__in=doc_ids, company=company)
-    
-    if request.method == 'POST':
-        form = AnalysisSettingsForm(request.POST)
-        
-        if form.is_valid():
-            # 分析実行
-            settings_data = {
-                'analysis_depth': form.cleaned_data['analysis_depth'],
-                'include_sentiment': form.cleaned_data['include_sentiment'],
-                'include_cashflow': form.cleaned_data['include_cashflow'],
-                'compare_previous': form.cleaned_data['compare_previous'],
-                'notify_on_completion': form.cleaned_data['notify_on_completion'],
-                'custom_keywords': form.cleaned_data['custom_keywords'],
-            }
-            
-            # 分析実行（バックグラウンド処理）
-            analysis_ids = start_analysis_batch(request.user, selected_docs, settings_data)
-            
-            if analysis_ids:
-                messages.success(request, f'{len(analysis_ids)}件の分析を開始しました。')
-                return redirect('earnings_reports:analysis_status', analysis_ids=','.join(map(str, analysis_ids)))
-            else:
-                messages.error(request, '分析の開始に失敗しました。')
-    
-    else:
-        form = AnalysisSettingsForm()
-    
-    context = {
-        'company': company,
-        'selected_docs': selected_docs,
-        'form': form,
-    }
-    return render(request, 'earnings_reports/analysis_settings.html', context)
-
-
-@login_required
 def analysis_status(request, analysis_ids):
-    """分析状況確認"""
+    """分析状況確認・リアルタイム更新"""
     
     ids = [int(id.strip()) for id in analysis_ids.split(',') if id.strip().isdigit()]
-    analyses = Analysis.objects.filter(id__in=ids, user=request.user)
+    analyses = Analysis.objects.filter(id__in=ids, user=request.user).select_related('document__company')
     
+    if not analyses.exists():
+        messages.error(request, '指定された分析が見つかりません。')
+        return redirect('earnings_reports:analysis_list')
+    
+    # AJAX リクエストの場合はJSONで状況を返す
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        status_data = []
+        for analysis in analyses:
+            status_data.append({
+                'id': analysis.id,
+                'status': analysis.status,
+                'status_display': analysis.get_status_display(),
+                'company_name': analysis.document.company.name,
+                'doc_type': analysis.document.get_doc_type_display(),
+                'overall_score': analysis.overall_score,
+                'progress_percentage': get_analysis_progress(analysis),
+                'error_message': analysis.error_message,
+                'processing_time': analysis.processing_time,
+            })
+        
+        return JsonResponse({
+            'analyses': status_data,
+            'all_completed': all(a.status in ['completed', 'failed'] for a in analyses)
+        })
+    
+    # 通常のページ表示
     # 進行状況の集計
     status_counts = {}
     for analysis in analyses:
         status = analysis.get_status_display()
         status_counts[status] = status_counts.get(status, 0) + 1
     
-    # 完了した分析があれば結果画面へのリンクを表示
+    # 完了した分析
     completed_analyses = analyses.filter(status='completed')
+    failed_analyses = analyses.filter(status='failed')
     
     context = {
         'analyses': analyses,
         'status_counts': status_counts,
         'completed_analyses': completed_analyses,
+        'failed_analyses': failed_analyses,
         'is_all_completed': analyses.filter(status__in=['completed', 'failed']).count() == analyses.count(),
+        'company': analyses.first().document.company if analyses.exists() else None,
     }
     return render(request, 'earnings_reports/analysis_status.html', context)
 
@@ -268,15 +278,11 @@ def analysis_detail(request, pk):
         analysis_date__lt=analysis.analysis_date
     ).order_by('-analysis_date').first()
     
-    # チャート用データ
-    chart_data = prepare_chart_data(analysis, sentiment, cashflow)
-    
     context = {
         'analysis': analysis,
         'sentiment': sentiment,
         'cashflow': cashflow,
         'previous_analysis': previous_analysis,
-        'chart_data': json.dumps(chart_data),
     }
     return render(request, 'earnings_reports/analysis_detail.html', context)
 
@@ -340,18 +346,42 @@ def company_dashboard(request, stock_code):
         document__company=company,
         user=request.user,
         status='completed'
-    ).order_by('-analysis_date')[:10]
+    ).select_related('document').order_by('-analysis_date')[:10]
     
     # 企業統計
     company_stats = {
-        'total_analyses': analyses.count(),
+        'total_analyses': Analysis.objects.filter(
+            document__company=company, 
+            user=request.user
+        ).count(),
         'latest_analysis': analyses.first(),
         'avg_score': analyses.aggregate(Avg('overall_score'))['overall_score__avg'],
         'documents_count': Document.objects.filter(company=company).count(),
     }
     
-    # トレンドデータ
-    trend_data = prepare_company_trend_data(company, request.user)
+    # トレンドデータ（最近12回分）
+    trend_analyses = Analysis.objects.filter(
+        document__company=company,
+        user=request.user,
+        status='completed'
+    ).order_by('analysis_date')[:12]
+    
+    trend_data = {
+        'dates': [a.analysis_date.strftime('%Y-%m-%d') for a in trend_analyses],
+        'scores': [a.overall_score for a in trend_analyses if a.overall_score],
+        'sentiment_positive': [],
+        'sentiment_negative': []
+    }
+    
+    # 感情分析トレンドデータ
+    for analysis in trend_analyses:
+        if hasattr(analysis, 'sentiment'):
+            sentiment = analysis.sentiment
+            trend_data['sentiment_positive'].append(sentiment.positive_score)
+            trend_data['sentiment_negative'].append(sentiment.negative_score)
+        else:
+            trend_data['sentiment_positive'].append(None)
+            trend_data['sentiment_negative'].append(None)
     
     context = {
         'company': company,
@@ -363,13 +393,96 @@ def company_dashboard(request, stock_code):
 
 
 # ========================================
+# API エンドポイント
+# ========================================
+
+@login_required
+def company_autocomplete(request):
+    """企業名オートコンプリート（AJAX）"""
+    
+    query = request.GET.get('q', '').strip()
+    suggestions = []
+    
+    if len(query) >= 2:
+        companies = Company.objects.filter(
+            Q(stock_code__icontains=query) | 
+            Q(name__icontains=query) |
+            Q(name_kana__icontains=query)
+        )[:10]
+        
+        suggestions = [
+            {
+                'stock_code': company.stock_code,
+                'name': company.name,
+                'display': f"{company.stock_code} - {company.name}"
+            }
+            for company in companies
+        ]
+    
+    return JsonResponse({'suggestions': suggestions})
+
+
+@login_required
+@require_http_methods(["POST"])
+def retry_analysis(request, analysis_id):
+    """分析再実行"""
+    
+    analysis = get_object_or_404(Analysis, id=analysis_id, user=request.user)
+    
+    if analysis.status not in ['failed']:
+        return JsonResponse({
+            'success': False, 
+            'error': '再実行できない状況です'
+        })
+    
+    try:
+        # 分析状態をリセット
+        analysis.status = 'pending'
+        analysis.error_message = ''
+        analysis.processing_time = None
+        analysis.overall_score = None
+        analysis.save()
+        
+        # 関連する分析結果をクリア
+        if hasattr(analysis, 'sentiment'):
+            analysis.sentiment.delete()
+        if hasattr(analysis, 'cashflow'):
+            analysis.cashflow.delete()
+        
+        # 分析を再実行
+        execute_analysis_async.delay(analysis.id)
+        
+        return JsonResponse({'success': True})
+        
+    except Exception as e:
+        logger.error(f"分析再実行エラー: {str(e)}")
+        return JsonResponse({
+            'success': False, 
+            'error': str(e)
+        })
+
+
+# ========================================
 # ユーティリティ関数
 # ========================================
+
+def should_sync_documents(company):
+    """書類データの同期が必要かチェック"""
+    
+    if not company.last_sync:
+        return True
+    
+    # 24時間以上同期していない場合
+    hours_since_sync = (timezone.now() - company.last_sync).total_seconds() / 3600
+    return hours_since_sync > 24
+
 
 def sync_company_documents(company, edinet_service):
     """企業の書類情報をEDINETと同期"""
     
     try:
+        logger.info(f"書類同期開始: {company.name}")
+        
         # 最近30日の書類を検索
         company_docs = edinet_service.search_company_documents(
             company.stock_code, 
@@ -377,38 +490,68 @@ def sync_company_documents(company, edinet_service):
             max_results=50
         )
         
-        synced_count = 0
+        new_count = 0
+        updated_count = 0
         
         for doc_info in company_docs:
             doc_id, company_name, doc_description, submit_date, doc_type, sec_code = doc_info
             
-            # 書類が既に存在するかチェック
-            if not Document.objects.filter(doc_id=doc_id).exists():
-                # 新しい書類を作成
-                Document.objects.create(
+            try:
+                # 日付変換
+                submit_date_obj = datetime.strptime(submit_date, '%Y-%m-%d').date()
+                
+                # 既存書類をチェック
+                document, created = Document.objects.get_or_create(
                     doc_id=doc_id,
                     company=company,
-                    doc_type=doc_type,
-                    doc_description=doc_description,
-                    submit_date=datetime.strptime(submit_date, '%Y-%m-%d').date(),
+                    defaults={
+                        'doc_type': doc_type,
+                        'doc_description': doc_description,
+                        'submit_date': submit_date_obj,
+                    }
                 )
-                synced_count += 1
+                
+                if created:
+                    new_count += 1
+                else:
+                    # 既存書類の情報を更新
+                    if (document.doc_description != doc_description or 
+                        document.submit_date != submit_date_obj):
+                        document.doc_description = doc_description
+                        document.submit_date = submit_date_obj
+                        document.save()
+                        updated_count += 1
+                        
+            except Exception as e:
+                logger.warning(f"書類{doc_id}の処理エラー: {str(e)}")
+                continue
         
         # 最終同期日時を更新
         company.last_sync = timezone.now()
         company.save()
         
-        logger.info(f"企業{company.name}の書類同期完了: {synced_count}件の新規書類")
+        logger.info(f"書類同期完了: {company.name} - 新規:{new_count}件, 更新:{updated_count}件")
+        
+        return {
+            'success': True,
+            'new_count': new_count,
+            'updated_count': updated_count
+        }
         
     except Exception as e:
         logger.error(f"書類同期エラー: {str(e)}")
-        raise
+        return {
+            'success': False,
+            'error': str(e),
+            'new_count': 0,
+            'updated_count': 0
+        }
 
 
-def start_analysis_batch(user, documents, settings_data):
-    """分析バッチ開始"""
+def start_document_analysis(user, documents, settings):
+    """書類分析を開始"""
     
-    analysis_ids = []
+    analyses = []
     
     try:
         for document in documents:
@@ -416,111 +559,63 @@ def start_analysis_batch(user, documents, settings_data):
             existing_analysis = Analysis.objects.filter(
                 document=document,
                 user=user
-            ).first()
-            
-            if existing_analysis and existing_analysis.status == 'completed':
-                # 再分析確認
-                messages.info(user, f'{document.doc_description} は既に分析済みです。再分析を実行します。')
+            ).order_by('-analysis_date').first()
             
             # 新しい分析レコードを作成
             analysis = Analysis.objects.create(
                 document=document,
                 user=user,
                 status='pending',
-                settings_json=settings_data
+                settings_json=settings
             )
             
-            analysis_ids.append(analysis.id)
+            analyses.append(analysis)
         
-        # バックグラウンドで分析実行（非同期処理）
-        # 本番環境ではCeleryなどを使用
-        for analysis_id in analysis_ids:
-            execute_analysis_async.delay(analysis_id)
+        # バックグラウンドで分析実行
+        for analysis in analyses:
+            execute_analysis_async.delay(analysis.id)
         
-        return analysis_ids
+        return {
+            'success': True,
+            'analyses': analyses
+        }
         
     except Exception as e:
-        logger.error(f"分析バッチ開始エラー: {str(e)}")
-        return []
-
-
-def prepare_chart_data(analysis, sentiment, cashflow):
-    """チャート用データ準備"""
-    
-    chart_data = {
-        'sentiment': {},
-        'cashflow': {},
-        'overall': {}
-    }
-    
-    # 感情分析チャートデータ
-    if sentiment:
-        chart_data['sentiment'] = {
-            'scores': {
-                'positive': sentiment.positive_score,
-                'negative': sentiment.negative_score,
-                'neutral': sentiment.neutral_score
-            },
-            'keywords': {
-                'confidence': sentiment.confidence_keywords_count,
-                'uncertainty': sentiment.uncertainty_keywords_count,
-                'growth': sentiment.growth_keywords_count,
-                'risk': sentiment.risk_keywords_count
-            }
-        }
-    
-    # キャッシュフローチャートデータ
-    if cashflow:
-        chart_data['cashflow'] = {
-            'amounts': {
-                'operating': cashflow.operating_cf,
-                'investing': cashflow.investing_cf,
-                'financing': cashflow.financing_cf,
-                'free': cashflow.free_cf
-            },
-            'pattern': cashflow.pattern,
-            'score': cashflow.pattern_score
-        }
-    
-    # 総合データ
-    chart_data['overall'] = {
-        'score': analysis.overall_score,
-        'confidence': analysis.confidence_level
-    }
-    
-    return chart_data
-
-
-def prepare_company_trend_data(company, user):
-    """企業トレンドデータ準備"""
-    
-    analyses = Analysis.objects.filter(
-        document__company=company,
-        user=user,
-        status='completed'
-    ).order_by('analysis_date')[:12]  # 最近12回分
-    
-    trend_data = {
-        'dates': [],
-        'scores': [],
-        'sentiment_trends': {
-            'positive': [],
-            'negative': [],
-            'confidence': []
-        }
-    }
-    
-    for analysis in analyses:
-        trend_data['dates'].append(analysis.analysis_date.strftime('%Y-%m-%d'))
-        trend_data['scores'].append(analysis.overall_score)
+        logger.error(f"分析開始エラー: {str(e)}")
         
-        if hasattr(analysis, 'sentiment'):
-            sentiment = analysis.sentiment
-            trend_data['sentiment_trends']['positive'].append(sentiment.positive_score)
-            trend_data['sentiment_trends']['negative'].append(sentiment.negative_score)
-            trend_data['sentiment_trends']['confidence'].append(sentiment.management_confidence_index)
+        # 作成済みの分析レコードをクリーンアップ
+        for analysis in analyses:
+            try:
+                analysis.delete()
+            except:
+                pass
+        
+        return {
+            'success': False,
+            'error': str(e),
+            'analyses': []
+        }
+
+
+def get_analysis_progress(analysis):
+    """分析の進行状況を計算（パーセンテージ）"""
     
-    return trend_data
+    if analysis.status == 'pending':
+        return 0
+    elif analysis.status == 'processing':
+        # 処理時間から概算で進行状況を推定
+        if analysis.processing_time:
+            # 平均処理時間を3分と仮定
+            estimated_total = 180  # 秒
+            progress = min(90, (analysis.processing_time / estimated_total) * 100)
+            return int(progress)
+        return 30  # デフォルト値
+    elif analysis.status == 'completed':
+        return 100
+    elif analysis.status == 'failed':
+        return 0
+    
+    return 0
 
 
 # ========================================
@@ -533,21 +628,32 @@ class MockAsyncExecutor:
     @staticmethod
     def delay(analysis_id):
         """分析を非同期実行（開発環境では同期実行）"""
-        try:
-            analysis = Analysis.objects.get(id=analysis_id)
-            analysis.status = 'processing'
-            analysis.save()
-            
-            # 実際の分析実行
-            service = EarningsAnalysisService()
-            service.execute_analysis(analysis)
-            
-        except Exception as e:
-            logger.error(f"分析実行エラー: {str(e)}")
-            Analysis.objects.filter(id=analysis_id).update(
-                status='failed',
-                error_message=str(e)
-            )
+        import threading
+        
+        def run_analysis():
+            try:
+                analysis = Analysis.objects.get(id=analysis_id)
+                analysis.status = 'processing'
+                analysis.save()
+                
+                # 実際の分析実行
+                service = EarningsAnalysisService()
+                service.execute_analysis(analysis)
+                
+            except Exception as e:
+                logger.error(f"分析実行エラー: {str(e)}")
+                try:
+                    Analysis.objects.filter(id=analysis_id).update(
+                        status='failed',
+                        error_message=str(e)
+                    )
+                except:
+                    pass
+        
+        # バックグラウンドスレッドで実行
+        thread = threading.Thread(target=run_analysis)
+        thread.daemon = True
+        thread.start()
 
-# 開発環境では同期実行
+# 開発環境では非同期実行
 execute_analysis_async = MockAsyncExecutor()
