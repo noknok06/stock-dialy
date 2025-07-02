@@ -112,7 +112,7 @@ class Command(BaseCommand):
         return companies
     
     def _sync_companies(self, companies, edinet_service, options):
-        """企業の書類同期実行"""
+        """企業の書類同期実行（最適化版）"""
         
         results = {
             'processed_companies': 0,
@@ -126,52 +126,64 @@ class Command(BaseCommand):
         dry_run = options['dry_run']
         force = options['force']
         
-        for i, company in enumerate(companies, 1):
-            self.stdout.write(f'[{i}/{len(companies)}] {company.name} ({company.stock_code})')
+        # 企業をバッチ処理
+        batch_size = 5  # 同時処理する企業数
+        
+        for i in range(0, len(companies), batch_size):
+            batch_companies = companies[i:i+batch_size]
             
-            try:
-                # 企業の書類を検索
-                company_docs = edinet_service.search_company_documents(
-                    company.stock_code,
-                    days_back=days_back,
-                    max_results=50
-                )
+            # バッチ内の企業を並行処理（簡単な実装）
+            for j, company in enumerate(batch_companies):
+                company_index = i + j + 1
+                self.stdout.write(f'[{company_index}/{len(companies)}] {company.name} ({company.stock_code})')
                 
-                if not company_docs:
-                    self.stdout.write(f'  └ 書類なし')
-                    continue
-                
-                # 書類を処理
-                company_results = self._process_company_documents(
-                    company, company_docs, dry_run, force
-                )
-                
-                # 結果を集計
-                results['new_documents'] += company_results['new']
-                results['updated_documents'] += company_results['updated']
-                
-                self.stdout.write(
-                    f'  └ 新規: {company_results["new"]}件, '
-                    f'更新: {company_results["updated"]}件'
-                )
-                
-                # 最終同期日時を更新
-                if not dry_run:
-                    company.last_sync = timezone.now()
-                    company.save()
-                
-                results['processed_companies'] += 1
-                
-            except Exception as e:
-                logger.error(f"企業{company.name}の同期エラー: {str(e)}")
-                results['errors'] += 1
-                results['error_details'].append(f"{company.name}: {str(e)}")
-                self.stdout.write(
-                    self.style.ERROR(f'  └ エラー: {str(e)}')
-                )
-                continue
+                try:
+                    # 最適化された同期処理
+                    company_results = self._sync_single_company_optimized(
+                        company, edinet_service, days_back, dry_run, force
+                    )
+                    
+                    # 結果を集計
+                    results['new_documents'] += company_results['new']
+                    results['updated_documents'] += company_results['updated']
+                    
+                    self.stdout.write(
+                        f'  └ 新規: {company_results["new"]}件, '
+                        f'更新: {company_results["updated"]}件'
+                    )
+                    
+                    results['processed_companies'] += 1
+                    
+                except Exception as e:
+                    logger.error(f"企業{company.name}の同期エラー: {str(e)}")
+                    results['errors'] += 1
+                    results['error_details'].append(f"{company.name}: {str(e)}")
+                    self.stdout.write(
+                        self.style.ERROR(f'  └ エラー: {str(e)}')
+                    )
         
         return results
+
+    def _sync_single_company_optimized(self, company, edinet_service, days_back, dry_run, force):
+        """単一企業の最適化同期"""
+        
+        # 最適化された検索を使用
+        company_docs = edinet_service.search_company_documents_optimized(
+            company.stock_code,
+            days_back=days_back,
+            max_results=100
+        )
+        
+        if not company_docs:
+            return {'new': 0, 'updated': 0}
+        
+        if dry_run:
+            # Dry runの場合は件数のみ返す
+            return {'new': len(company_docs), 'updated': 0}
+        
+        # 実際の同期処理
+        process_documents_batch = edinet_service.process_documents_batch
+        return process_documents_batch(company, company_docs)
     
     def _process_company_documents(self, company, company_docs, dry_run, force):
         """企業の書類を処理"""

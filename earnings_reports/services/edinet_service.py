@@ -271,7 +271,110 @@ class EDINETService:
                 continue
         
         logger.info(f"企業書類検索完了: {len(company_documents)}件")
-        return company_documents[:max_results]
+        return self.search_company_documents_optimized(company_code, days_back, max_results)
+    
+    def search_company_documents_optimized(self, company_code: str, days_back: int = 30, 
+                                        max_results: int = 10) -> List[List[str]]:
+        """
+        最適化された企業書類検索（日付範囲指定）
+        
+        Args:
+            company_code: 企業コード（証券コード）
+            days_back: 何日前まで検索するか
+            max_results: 最大取得件数
+            
+        Returns:
+            List[List[str]]: 該当企業の書類情報配列
+        """
+        logger.info(f"最適化企業書類検索開始: {company_code} (過去{days_back}日)")
+        
+        # 日付範囲を計算
+        end_date = datetime.now().date()
+        start_date = end_date - timedelta(days=days_back)
+        
+        # 日付範囲で一括検索
+        all_documents = self.get_documents_by_date_range_batch(
+            start_date.strftime('%Y-%m-%d'),
+            end_date.strftime('%Y-%m-%d'),
+            company_filter=company_code  # 企業フィルターを追加
+        )
+        
+        # 対象企業の書類をフィルタリング
+        company_documents = []
+        for doc in all_documents:
+            if self._is_target_company(doc, company_code):
+                company_documents.append(doc)
+                if len(company_documents) >= max_results:
+                    break
+        
+        logger.info(f"最適化企業書類検索完了: {len(company_documents)}件")
+        return company_documents
+
+    def get_documents_by_date_range_batch(self, start_date: str, end_date: str,
+                                        company_filter: str = None) -> List[List[str]]:
+        """
+        日付範囲での書類一括取得（最適化版）
+        
+        Args:
+            start_date: 開始日 (YYYY-MM-DD)
+            end_date: 終了日 (YYYY-MM-DD)
+            company_filter: 企業コードフィルター（省略時は全企業）
+            
+        Returns:
+            List[List[str]]: 書類情報の配列
+        """
+        logger.info(f"日付範囲一括検索: {start_date} ～ {end_date}")
+        
+        all_documents = []
+        
+        try:
+            # 週単位での検索に変更（APIの負荷軽減）
+            current_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
+            
+            while current_date <= end_date_obj:
+                # 1週間分をまとめて検索
+                week_end = min(current_date + timedelta(days=6), end_date_obj)
+                
+                # 平日のみを検索対象とする（土日は書類提出が少ないため）
+                search_dates = []
+                temp_date = current_date
+                while temp_date <= week_end:
+                    if temp_date.weekday() < 5:  # 平日のみ
+                        search_dates.append(temp_date)
+                    temp_date += timedelta(days=1)
+                
+                # 平日のみAPIコール
+                for date in search_dates:
+                    date_str = date.strftime('%Y-%m-%d')
+                    daily_docs = self.get_documents_by_date(date_str, include_all_types=True)
+                    
+                    # 企業フィルターが指定されている場合は事前にフィルタリング
+                    if company_filter:
+                        filtered_docs = [
+                            doc for doc in daily_docs 
+                            if self._is_target_company(doc, company_filter)
+                        ]
+                        all_documents.extend(filtered_docs)
+                    else:
+                        all_documents.extend(daily_docs)
+                    
+                    # レート制限対策（短縮）
+                    if len(search_dates) > 1:
+                        time.sleep(1)  # 2秒から1秒に短縮
+                
+                current_date = week_end + timedelta(days=1)
+                
+                # 十分な書類が見つかった場合は早期終了
+                if company_filter and len(all_documents) >= 50:
+                    break
+            
+            logger.info(f"日付範囲一括検索完了: {len(all_documents)}件")
+            return all_documents
+            
+        except Exception as e:
+            logger.error(f"日付範囲検索エラー: {str(e)}")
+            return []
     
     def search_company_by_name(self, company_name: str, days_back: int = 30,
                               max_results: int = 10) -> List[List[str]]:

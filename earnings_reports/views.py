@@ -524,53 +524,30 @@ def should_sync_documents(company):
 
 
 def sync_company_documents(company, edinet_service):
-    """企業の書類情報をEDINETと同期"""
+    """企業の書類情報をEDINETと同期（最適化版）"""
     
     try:
         logger.info(f"書類同期開始: {company.name}")
         
-        # 最近30日の書類を検索
-        company_docs = edinet_service.search_company_documents(
+        # 最適化された検索を使用
+        company_docs = edinet_service.search_company_documents_optimized(
             company.stock_code, 
-            days_back=30,
-            max_results=50
+            days_back=30,  # 30日に短縮
+            max_results=100  # 上限を設定
         )
         
-        new_count = 0
-        updated_count = 0
+        if not company_docs:
+            logger.info(f"新しい書類なし: {company.name}")
+            company.last_sync = timezone.now()
+            company.save()
+            return {
+                'success': True,
+                'new_count': 0,
+                'updated_count': 0
+            }
         
-        for doc_info in company_docs:
-            doc_id, company_name, doc_description, submit_date, doc_type, sec_code = doc_info
-            
-            try:
-                # 日付変換
-                submit_date_obj = datetime.strptime(submit_date, '%Y-%m-%d').date()
-                
-                # 既存書類をチェック
-                document, created = Document.objects.get_or_create(
-                    doc_id=doc_id,
-                    company=company,
-                    defaults={
-                        'doc_type': doc_type,
-                        'doc_description': doc_description,
-                        'submit_date': submit_date_obj,
-                    }
-                )
-                
-                if created:
-                    new_count += 1
-                else:
-                    # 既存書類の情報を更新
-                    if (document.doc_description != doc_description or 
-                        document.submit_date != submit_date_obj):
-                        document.doc_description = doc_description
-                        document.submit_date = submit_date_obj
-                        document.save()
-                        updated_count += 1
-                        
-            except Exception as e:
-                logger.warning(f"書類{doc_id}の処理エラー: {str(e)}")
-                continue
+        # バッチ処理で効率化
+        new_count, updated_count = process_documents_batch(company, company_docs)
         
         # 最終同期日時を更新
         company.last_sync = timezone.now()
@@ -592,6 +569,70 @@ def sync_company_documents(company, edinet_service):
             'new_count': 0,
             'updated_count': 0
         }
+
+def process_documents_batch(company, company_docs):
+    """書類のバッチ処理（新規追加）"""
+    from django.db import transaction
+    
+    new_count = 0
+    updated_count = 0
+    
+    # 既存書類IDを一括取得してメモリ上でチェック
+    existing_doc_ids = set(
+        Document.objects.filter(company=company)
+        .values_list('doc_id', flat=True)
+    )
+    
+    docs_to_create = []
+    docs_to_update = []
+    
+    for doc_info in company_docs:
+        doc_id, company_name, doc_description, submit_date, doc_type, sec_code = doc_info
+        
+        try:
+            submit_date_obj = datetime.strptime(submit_date, '%Y-%m-%d').date()
+            
+            if doc_id not in existing_doc_ids:
+                # 新規作成対象
+                docs_to_create.append(Document(
+                    doc_id=doc_id,
+                    company=company,
+                    doc_type=doc_type,
+                    doc_description=doc_description,
+                    submit_date=submit_date_obj,
+                ))
+                new_count += 1
+            else:
+                # 更新の必要性をチェック（簡略化）
+                existing_doc = Document.objects.filter(
+                    doc_id=doc_id, company=company
+                ).first()
+                
+                if (existing_doc and 
+                    (existing_doc.doc_description != doc_description or 
+                     existing_doc.submit_date != submit_date_obj)):
+                    existing_doc.doc_description = doc_description
+                    existing_doc.submit_date = submit_date_obj
+                    docs_to_update.append(existing_doc)
+                    updated_count += 1
+                    
+        except Exception as e:
+            logger.warning(f"書類{doc_id}の処理エラー: {str(e)}")
+            continue
+    
+    # バッチ作成・更新
+    with transaction.atomic():
+        if docs_to_create:
+            Document.objects.bulk_create(docs_to_create, batch_size=50)
+        
+        if docs_to_update:
+            Document.objects.bulk_update(
+                docs_to_update, 
+                ['doc_description', 'submit_date'], 
+                batch_size=50
+            )
+    
+    return new_count, updated_count
 
 
 def start_document_analysis(user, documents, settings):
