@@ -1,0 +1,491 @@
+<!-- earnings_analysis/templates/earnings_analysis/stats.html -->
+{% extends 'earnings_analysis/base.html' %}
+{% load static %}
+
+{% block title %}システム統計 - 決算書類管理システム{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'earnings_analysis:index' %}">ホーム</a></li>
+        <li class="breadcrumb-item active">統計</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #3b82f6 100%);
+        color: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        border: none;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        opacity: 0.8;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin: 1rem 0;
+    }
+    
+    .batch-status-success { background: var(--success-color); }
+    .batch-status-failed { background: var(--danger-color); }
+    .batch-status-running { background: var(--warning-color); }
+    
+    .timeline-item {
+        border-left: 3px solid var(--primary-color);
+        padding-left: 1rem;
+        margin-bottom: 1rem;
+        position: relative;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -6px;
+        top: 8px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--primary-color);
+    }
+    
+    .doc-type-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+        border-left: 4px solid var(--primary-color);
+    }
+    
+    .progress-thin {
+        height: 6px;
+        border-radius: 3px;
+    }
+    
+    .refresh-btn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- ヘッダー -->
+<div class="stats-header">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="h2 mb-2">
+                <i class="fas fa-chart-bar me-3"></i>システム統計
+            </h1>
+            <p class="mb-0 opacity-90">決算書類管理システムの利用状況と統計情報</p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <div class="badge bg-light text-dark fs-6 px-3 py-2">
+                <i class="fas fa-clock me-1"></i>最終更新: {{ "now"|date:"Y/m/d H:i" }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 基本統計カード -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-4">
+        <div class="card stat-card text-center">
+            <div class="card-body">
+                <i class="fas fa-building fa-3x text-primary mb-3"></i>
+                <div class="stat-number text-primary">{{ total_companies|default:0 }}</div>
+                <div class="stat-label text-muted">登録企業数</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card stat-card text-center">
+            <div class="card-body">
+                <i class="fas fa-file-alt fa-3x text-success mb-3"></i>
+                <div class="stat-number text-success">{{ total_documents|default:0 }}</div>
+                <div class="stat-label text-muted">総書類数</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card stat-card text-center">
+            <div class="card-body">
+                <i class="fas fa-plus-circle fa-3x text-info mb-3"></i>
+                <div class="stat-number text-info">{{ this_month_documents|default:0 }}</div>
+                <div class="stat-label text-muted">今月の新着</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card stat-card text-center">
+            <div class="card-body">
+                <i class="fas fa-download fa-3x text-warning mb-3"></i>
+                <div class="stat-number text-warning">-</div>
+                <div class="stat-label text-muted">今月のDL数</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- 月別統計チャート -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line text-primary me-2"></i>月別書類数推移
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 書類種別統計 -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-pie-chart text-success me-2"></i>書類種別TOP10
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for doc_type in doc_type_stats %}
+                    <div class="doc-type-item">
+                        <div>
+                            <div class="fw-semibold">{{ doc_type.doc_type_code }}</div>
+                            <small class="text-muted">{{ doc_type.count }}件</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="badge bg-primary">
+                                {% widthratio doc_type.count total_documents 100 %}%
+                            </div>
+                        </div>
+                    </div>
+                    <div class="progress progress-thin mb-2">
+                        <div class="progress-bar bg-primary" style="width: {% widthratio doc_type.count total_documents 100 %}%"></div>
+                    </div>
+                {% empty %}
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-chart-pie fa-2x mb-2"></i>
+                        <div>データがありません</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- バッチ実行履歴 -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-tasks text-info me-2"></i>最近のバッチ実行履歴
+                </h5>
+                <a href="{% url 'earnings_analysis:batch-history' %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-list me-1"></i>全履歴
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_batches %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>実行日</th>
+                                    <th>ステータス</th>
+                                    <th>処理件数</th>
+                                    <th>エラー</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for batch in recent_batches %}
+                                    <tr>
+                                        <td>{{ batch.batch_date|date:"Y/m/d" }}</td>
+                                        <td>
+                                            {% if batch.status == 'SUCCESS' %}
+                                                <span class="badge bg-success">成功</span>
+                                            {% elif batch.status == 'FAILED' %}
+                                                <span class="badge bg-danger">失敗</span>
+                                            {% elif batch.status == 'RUNNING' %}
+                                                <span class="badge bg-warning">実行中</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="fw-semibold">{{ batch.processed_count }}</span>件
+                                        </td>
+                                        <td>
+                                            {% if batch.error_message %}
+                                                <span class="text-danger small" title="{{ batch.error_message }}">
+                                                    <i class="fas fa-exclamation-triangle"></i>
+                                                    {{ batch.error_message|truncatechars:30 }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">なし</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-tasks fa-3x mb-3"></i>
+                        <div>バッチ実行履歴がありません</div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- システム情報 -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-server text-secondary me-2"></i>システム情報
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline-item">
+                    <div class="fw-semibold">EDINET API</div>
+                    <div class="small text-muted">金融庁提供のAPI連携</div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="fw-semibold">データ収集</div>
+                    <div class="small text-muted">毎日自動実行</div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="fw-semibold">対応形式</div>
+                    <div class="small text-muted">PDF, XBRL, CSV対応</div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="fw-semibold">検索機能</div>
+                    <div class="small text-muted">企業名・証券コード検索</div>
+                </div>
+                
+                <hr class="my-3">
+                
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="fw-semibold text-primary">99.9%</div>
+                        <div class="small text-muted">稼働率</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="fw-semibold text-success">< 2s</div>
+                        <div class="small text-muted">平均応答時間</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 更新ボタン -->
+<button type="button" class="btn btn-primary refresh-btn" onclick="location.reload()" title="統計情報を更新">
+    <i class="fas fa-sync-alt"></i>
+</button>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 月別統計チャート
+    const monthlyData = {{ monthly_stats|safe }};
+    
+    if (monthlyData && monthlyData.length > 0) {
+        const ctx = document.getElementById('monthlyChart').getContext('2d');
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: monthlyData.map(item => item.month),
+                datasets: [{
+                    label: '書類数',
+                    data: monthlyData.map(item => item.count),
+                    borderColor: 'rgb(90, 126, 197)',
+                    backgroundColor: 'rgba(90, 126, 197, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: 'rgb(90, 126, 197)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: 'rgb(90, 126, 197)',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: '#6b7280'
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                }
+            }
+        });
+    }
+    
+    // 数値のアニメーション
+    function animateNumber(element, start, end, duration) {
+        const startTime = performance.now();
+        
+        function updateNumber(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            const current = Math.floor(start + (end - start) * progress);
+            element.textContent = current.toLocaleString();
+            
+            if (progress < 1) {
+                requestAnimationFrame(updateNumber);
+            }
+        }
+        
+        requestAnimationFrame(updateNumber);
+    }
+    
+    // 統計数値のアニメーション実行
+    const statNumbers = document.querySelectorAll('.stat-number');
+    statNumbers.forEach(element => {
+        const finalValue = parseInt(element.textContent.replace(/,/g, ''));
+        if (!isNaN(finalValue)) {
+            element.textContent = '0';
+            animateNumber(element, 0, finalValue, 2000);
+        }
+    });
+    
+    // プログレスバーのアニメーション
+    setTimeout(() => {
+        document.querySelectorAll('.progress-bar').forEach(bar => {
+            bar.style.transition = 'width 1.5s ease-in-out';
+        });
+    }, 500);
+    
+    // リフレッシュボタンのスピン効果
+    document.querySelector('.refresh-btn').addEventListener('click', function() {
+        const icon = this.querySelector('i');
+        icon.style.animation = 'spin 1s linear infinite';
+        
+        setTimeout(() => {
+            icon.style.animation = '';
+        }, 1000);
+    });
+});
+
+// カウンターのアニメーション用CSS
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    
+    .stat-card {
+        animation: fadeInUp 0.6s ease-out;
+        animation-fill-mode: both;
+    }
+    
+    .stat-card:nth-child(1) { animation-delay: 0.1s; }
+    .stat-card:nth-child(2) { animation-delay: 0.2s; }
+    .stat-card:nth-child(3) { animation-delay: 0.3s; }
+    .stat-card:nth-child(4) { animation-delay: 0.4s; }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

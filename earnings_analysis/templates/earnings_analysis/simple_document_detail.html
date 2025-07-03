@@ -1,0 +1,187 @@
+<!-- earnings_analysis/templates/earnings_analysis/simple_document_detail.html -->
+{% extends 'earnings_analysis/simple_base.html' %}
+
+{% block title %}{{ document.company_name }} - 決算書類管理システム{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'earnings_analysis:index' %}">ホーム</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'earnings_analysis:document-list-ui' %}">書類一覧</a></li>
+        <li class="breadcrumb-item active">{{ document.doc_id }}</li>
+    </ol>
+</nav>
+
+<!-- 書類ヘッダー -->
+<div class="bg-primary text-white rounded p-4 mb-4">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="h3 mb-2">{{ document.company_name }}</h1>
+            <p class="h5 mb-3 opacity-90">{{ document.doc_description }}</p>
+            <div class="d-flex flex-wrap gap-2">
+                {% if document.securities_code %}
+                    <span class="badge bg-light text-dark">証券コード: {{ document.securities_code }}</span>
+                {% endif %}
+                <span class="badge bg-light text-dark">書類管理番号: {{ document.doc_id }}</span>
+                <span class="badge bg-light text-dark">EDINETコード: {{ document.edinet_code }}</span>
+            </div>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            {% if document.legal_status == '1' %}
+                <span class="badge bg-success fs-6 px-3 py-2">
+                    <i class="fas fa-check-circle me-1"></i>閲覧可能
+                </span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- メイン情報 -->
+    <div class="col-lg-8">
+        <!-- 基本情報 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-2"></i>基本情報
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="small text-muted">提出日時</label>
+                        <div class="fw-semibold">{{ document.submit_date_time|date:"Y年m月d日 H:i" }}</div>
+                    </div>
+                    
+                    {% if document.period_start and document.period_end %}
+                        <div class="col-md-6 mb-3">
+                            <label class="small text-muted">対象期間</label>
+                            <div class="fw-semibold">
+                                {{ document.period_start|date:"Y/m/d" }} 〜 {{ document.period_end|date:"Y/m/d" }}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="small text-muted">書類種別コード</label>
+                        <div class="fw-semibold">{{ document.doc_type_code }}</div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="small text-muted">府令コード</label>
+                        <div class="fw-semibold">{{ document.ordinance_code }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ダウンロードセクション -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-download me-2"></i>ダウンロード
+            </div>
+            <div class="card-body">
+                <div class="bg-light rounded p-4 text-center">
+                    <h5 class="mb-3">
+                        <i class="fas fa-cloud-download-alt text-primary me-2"></i>利用可能な形式
+                    </h5>
+                    
+                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                        {% if document.pdf_flag %}
+                            <button type="button" class="btn btn-danger btn-lg"
+                                    onclick="downloadDocument('{{ document.doc_id }}', 'pdf', this)">
+                                <i class="fas fa-file-pdf me-2"></i>PDFダウンロード
+                            </button>
+                        {% endif %}
+                        
+                        {% if document.xbrl_flag %}
+                            <button type="button" class="btn btn-primary btn-lg"
+                                    onclick="downloadDocument('{{ document.doc_id }}', 'xbrl', this)">
+                                <i class="fas fa-code me-2"></i>XBRLダウンロード
+                            </button>
+                        {% endif %}
+                        
+                        {% if document.csv_flag %}
+                            <button type="button" class="btn btn-success btn-lg"
+                                    onclick="downloadDocument('{{ document.doc_id }}', 'csv', this)">
+                                <i class="fas fa-table me-2"></i>CSVダウンロード
+                            </button>
+                        {% endif %}
+                    </div>
+                    
+                    {% if not document.pdf_flag and not document.xbrl_flag and not document.csv_flag %}
+                        <div class="text-muted">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            ダウンロード可能なファイルがありません
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- サイドバー -->
+    <div class="col-lg-4">
+        <!-- 関連書類 -->
+        {% if related_documents %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-link me-2"></i>同一企業の関連書類
+                </div>
+                <div class="card-body">
+                    {% for related in related_documents %}
+                        <div class="border rounded p-3 mb-3">
+                            <h6 class="mb-1">
+                                <a href="{% url 'earnings_analysis:document-detail-ui' related.doc_id %}" 
+                                   class="text-decoration-none">
+                                    {{ related.doc_description|truncatechars:40 }}
+                                </a>
+                            </h6>
+                            <div class="small text-muted mb-2">
+                                <i class="fas fa-calendar me-1"></i>{{ related.submit_date_time|date:"Y/m/d" }}
+                            </div>
+                            <div class="small">
+                                {% if related.pdf_flag %}
+                                    <span class="badge bg-danger me-1">PDF</span>
+                                {% endif %}
+                                {% if related.xbrl_flag %}
+                                    <span class="badge bg-primary me-1">XBRL</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                    
+                    <div class="text-center mt-3">
+                        <a href="{% url 'earnings_analysis:document-list-ui' %}?company={{ document.company_name }}" 
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-list me-1"></i>この企業の全書類を見る
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- アクション -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-tools me-2"></i>アクション
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'earnings_analysis:document-list-ui' %}?company={{ document.company_name }}" 
+                       class="btn btn-outline-primary">
+                        <i class="fas fa-search me-1"></i>この企業で検索
+                    </a>
+                    <a href="{% url 'earnings_analysis:document-list-ui' %}?doc_type={{ document.doc_type_code }}" 
+                       class="btn btn-outline-success">
+                        <i class="fas fa-filter me-1"></i>同じ書類種別で検索
+                    </a>
+                    <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>前のページに戻る
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

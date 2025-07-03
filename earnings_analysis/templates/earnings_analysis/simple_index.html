@@ -1,0 +1,255 @@
+<!-- earnings_analysis/templates/earnings_analysis/simple_index.html -->
+{% extends 'earnings_analysis/simple_base.html' %}
+
+{% block title %}ホーム - 決算書類管理システム{% endblock %}
+
+{% block content %}
+<!-- ヒーローセクション -->
+<div class="bg-primary text-white rounded p-5 mb-4">
+    <div class="text-center">
+        <h1 class="display-4 fw-bold mb-3">
+            <i class="fas fa-chart-line me-3"></i>決算書類管理システム
+        </h1>
+        <p class="lead mb-4">
+            EDINET APIを活用した企業書類検索・ダウンロードシステム
+        </p>
+    </div>
+</div>
+
+<!-- 検索セクション -->
+<div class="row justify-content-center mb-5">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body p-4">
+                <h3 class="card-title text-center mb-4">
+                    <i class="fas fa-search text-primary me-2"></i>企業検索
+                </h3>
+                
+                <div class="position-relative">
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text">
+                            <i class="fas fa-building text-muted"></i>
+                        </span>
+                        <input type="text" 
+                               class="form-control" 
+                               id="companySearch" 
+                               placeholder="企業名または証券コードを入力（例: トヨタ、7203）"
+                               autocomplete="off">
+                        <button class="btn btn-primary" type="button" onclick="searchCompany()">
+                            <i class="fas fa-search me-1"></i>検索
+                        </button>
+                    </div>
+                    
+                    <!-- 検索候補 -->
+                    <div class="position-absolute w-100" style="z-index: 1000; top: 100%;">
+                        <div id="searchSuggestions" style="display: none;">
+                            <div class="bg-white border rounded shadow mt-1">
+                                <div id="suggestionsList"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 統計情報 -->
+<div class="row mb-5">
+    <div class="col-12 mb-4">
+        <h3 class="text-center">
+            <i class="fas fa-chart-bar text-primary me-2"></i>システム統計
+        </h3>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card stats-card text-center">
+            <div class="card-body">
+                <i class="fas fa-building fa-3x text-primary mb-3"></i>
+                <div class="h2 text-primary">{{ total_companies|default:0 }}</div>
+                <div class="text-muted">登録企業数</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card stats-card text-center">
+            <div class="card-body">
+                <i class="fas fa-file-alt fa-3x text-success mb-3"></i>
+                <div class="h2 text-success">{{ total_documents|default:0 }}</div>
+                <div class="text-muted">利用可能書類数</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card stats-card text-center">
+            <div class="card-body">
+                <i class="fas fa-plus-circle fa-3x text-info mb-3"></i>
+                <div class="h2 text-info">{{ recent_documents_count|default:0 }}</div>
+                <div class="text-muted">今週の新着</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- クイックアクセス -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <h3 class="text-center">
+            <i class="fas fa-bolt text-primary me-2"></i>クイックアクセス
+        </h3>
+    </div>
+    
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-list text-primary me-2"></i>書類一覧
+                </h5>
+                <p class="card-text">最近提出された書類を確認</p>
+                <a href="{% url 'earnings_analysis:document-list-ui' %}" class="btn btn-primary">
+                    <i class="fas fa-arrow-right me-1"></i>書類一覧へ
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-chart-bar text-success me-2"></i>統計情報
+                </h5>
+                <p class="card-text">システム利用状況を確認</p>
+                <a href="{% url 'earnings_analysis:stats-ui' %}" class="btn btn-success">
+                    <i class="fas fa-chart-line me-1"></i>統計情報へ
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let searchTimeout;
+
+document.getElementById('companySearch').addEventListener('input', function() {
+    const query = this.value.trim();
+    
+    clearTimeout(searchTimeout);
+    
+    if (query.length < 2) {
+        hideSearchSuggestions();
+        return;
+    }
+    
+    searchTimeout = setTimeout(() => {
+        fetchCompanySuggestions(query);
+    }, 300);
+});
+
+function fetchCompanySuggestions(query) {
+    const url = `{% url 'earnings_analysis:company-search-api' %}?q=${encodeURIComponent(query)}`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            displaySuggestions(data.results || []);
+        })
+        .catch(error => {
+            console.error('検索エラー:', error);
+            hideSearchSuggestions();
+        });
+}
+
+function displaySuggestions(companies) {
+    const suggestionsList = document.getElementById('suggestionsList');
+    const suggestionsContainer = document.getElementById('searchSuggestions');
+    
+    if (companies.length === 0) {
+        hideSearchSuggestions();
+        return;
+    }
+    
+    suggestionsList.innerHTML = '';
+    
+    companies.forEach(company => {
+        const item = document.createElement('div');
+        item.className = 'p-3 border-bottom';
+        item.style.cursor = 'pointer';
+        item.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="fw-semibold">${escapeHtml(company.company_name)}</div>
+                    <small class="text-muted">
+                        ${company.securities_code ? `証券コード: ${company.securities_code}` : ''}
+                        ${company.securities_code && company.edinet_code ? ' | ' : ''}
+                        EDINETコード: ${company.edinet_code}
+                    </small>
+                </div>
+                <small class="badge bg-primary rounded-pill">${company.document_count}件</small>
+            </div>
+        `;
+        
+        item.addEventListener('click', () => {
+            selectCompany(company);
+        });
+        
+        item.addEventListener('mouseenter', () => {
+            item.style.backgroundColor = '#f8f9fa';
+        });
+        
+        item.addEventListener('mouseleave', () => {
+            item.style.backgroundColor = '';
+        });
+        
+        suggestionsList.appendChild(item);
+    });
+    
+    suggestionsContainer.style.display = 'block';
+}
+
+function hideSearchSuggestions() {
+    document.getElementById('searchSuggestions').style.display = 'none';
+}
+
+function selectCompany(company) {
+    document.getElementById('companySearch').value = company.company_name;
+    hideSearchSuggestions();
+    
+    // 書類一覧ページに遷移
+    const url = `{% url 'earnings_analysis:document-list-ui' %}?company=${encodeURIComponent(company.company_name)}`;
+    window.location.href = url;
+}
+
+function searchCompany() {
+    const query = document.getElementById('companySearch').value.trim();
+    if (query) {
+        const url = `{% url 'earnings_analysis:document-list-ui' %}?company=${encodeURIComponent(query)}`;
+        window.location.href = url;
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Enterキーでの検索
+document.getElementById('companySearch').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        searchCompany();
+    }
+});
+
+// クリック外しで候補を隠す
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.position-relative')) {
+        hideSearchSuggestions();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,412 @@
+<!-- earnings_analysis/templates/earnings_analysis/index.html -->
+{% extends 'earnings_analysis/base.html' %}
+{% load static %}
+
+{% block title %}ホーム - 決算書類管理システム{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hero-section {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #3b82f6 100%);
+        color: white;
+        padding: 4rem 0;
+        margin: -1.5rem -15px 2rem -15px;
+    }
+    
+    .search-card {
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        border: none;
+    }
+    
+    .search-results {
+        background: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .company-item {
+        padding: 0.75rem;
+        border-bottom: 1px solid #e5e7eb;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .company-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .company-item:last-child {
+        border-bottom: none;
+    }
+    
+    .stats-card {
+        border: none;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+    
+    .search-suggestions {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        margin-top: 0.25rem;
+    }
+    
+    .search-suggestions.show {
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- ヒーローセクション -->
+<div class="hero-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <h1 class="display-4 fw-bold mb-3">
+                    <i class="fas fa-chart-line me-3"></i>決算書類管理システム
+                </h1>
+                <p class="lead mb-4">
+                    EDINET APIを活用した企業書類検索・ダウンロードシステム<br>
+                    有価証券報告書、四半期報告書等を簡単に検索・取得できます
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- メイン検索セクション -->
+<div class="row justify-content-center mb-5">
+    <div class="col-lg-8">
+        <div class="card search-card">
+            <div class="card-body p-4">
+                <h3 class="card-title text-center mb-4">
+                    <i class="fas fa-search text-primary me-2"></i>企業検索
+                </h3>
+                
+                <div class="position-relative">
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-light border-end-0">
+                            <i class="fas fa-building text-muted"></i>
+                        </span>
+                        <input type="text" 
+                               class="form-control border-start-0" 
+                               id="companySearch" 
+                               placeholder="企業名または証券コードを入力（例: トヨタ、7203）"
+                               autocomplete="off">
+                        <button class="btn btn-primary" type="button" onclick="searchCompany()">
+                            <i class="fas fa-search me-1"></i>検索
+                        </button>
+                    </div>
+                    
+                    <!-- 検索候補 -->
+                    <div class="search-suggestions" id="searchSuggestions">
+                        <div class="search-results">
+                            <div id="suggestionsList"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3 text-center">
+                    <small class="text-muted">
+                        <i class="fas fa-lightbulb me-1"></i>
+                        ヒント: 企業名の一部、証券コード、EDINETコードで検索できます
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 統計情報 -->
+<div class="row mb-5">
+    <div class="col-12 mb-4">
+        <h3 class="text-center">
+            <i class="fas fa-chart-bar text-primary me-2"></i>システム統計
+        </h3>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card stats-card text-center">
+            <div class="card-body">
+                <i class="fas fa-building fa-2x text-primary mb-3"></i>
+                <div class="stat-number">{{ total_companies|default:0 }}</div>
+                <div class="text-muted">登録企業数</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card stats-card text-center">
+            <div class="card-body">
+                <i class="fas fa-file-alt fa-2x text-success mb-3"></i>
+                <div class="stat-number">{{ total_documents|default:0 }}</div>
+                <div class="text-muted">利用可能書類数</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card stats-card text-center">
+            <div class="card-body">
+                <i class="fas fa-plus-circle fa-2x text-info mb-3"></i>
+                <div class="stat-number">{{ recent_documents_count|default:0 }}</div>
+                <div class="text-muted">今週の新着</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- クイックアクセス -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <h3 class="text-center">
+            <i class="fas fa-bolt text-primary me-2"></i>クイックアクセス
+        </h3>
+    </div>
+    
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-list text-primary me-2"></i>最新書類一覧
+                </h5>
+                <p class="card-text">最近提出された書類を確認</p>
+                <a href="{% url 'earnings_analysis:document-list-ui' %}" class="btn btn-primary">
+                    <i class="fas fa-arrow-right me-1"></i>書類一覧へ
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-filter text-success me-2"></i>詳細検索
+                </h5>
+                <p class="card-text">書類種別・期間でフィルタリング</p>
+                <a href="{% url 'earnings_analysis:document-list-ui' %}?advanced=1" class="btn btn-success">
+                    <i class="fas fa-search-plus me-1"></i>詳細検索へ
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 使い方ガイド -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-question-circle text-info me-2"></i>使い方ガイド
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="text-center">
+                            <div class="badge bg-primary rounded-circle p-3 mb-3">
+                                <i class="fas fa-search fa-2x"></i>
+                            </div>
+                            <h6>1. 企業を検索</h6>
+                            <p class="small text-muted">企業名や証券コードで検索</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="text-center">
+                            <div class="badge bg-success rounded-circle p-3 mb-3">
+                                <i class="fas fa-list fa-2x"></i>
+                            </div>
+                            <h6>2. 書類を選択</h6>
+                            <p class="small text-muted">必要な書類を一覧から選択</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="text-center">
+                            <div class="badge bg-info rounded-circle p-3 mb-3">
+                                <i class="fas fa-download fa-2x"></i>
+                            </div>
+                            <h6>3. ダウンロード</h6>
+                            <p class="small text-muted">PDF形式で書類を取得</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let searchTimeout;
+let currentFocus = -1;
+
+document.getElementById('companySearch').addEventListener('input', function() {
+    const query = this.value.trim();
+    
+    clearTimeout(searchTimeout);
+    
+    if (query.length < 2) {
+        hideSearchSuggestions();
+        return;
+    }
+    
+    searchTimeout = setTimeout(() => {
+        fetchCompanySuggestions(query);
+    }, 300);
+});
+
+document.getElementById('companySearch').addEventListener('keydown', function(e) {
+    const suggestions = document.querySelectorAll('.company-item');
+    
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        currentFocus++;
+        if (currentFocus >= suggestions.length) currentFocus = 0;
+        setActiveSuggestion(suggestions);
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        currentFocus--;
+        if (currentFocus < 0) currentFocus = suggestions.length - 1;
+        setActiveSuggestion(suggestions);
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (currentFocus > -1 && suggestions[currentFocus]) {
+            suggestions[currentFocus].click();
+        } else {
+            searchCompany();
+        }
+    } else if (e.key === 'Escape') {
+        hideSearchSuggestions();
+    }
+});
+
+// クリック外しで候補を隠す
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.search-card')) {
+        hideSearchSuggestions();
+    }
+});
+
+function fetchCompanySuggestions(query) {
+    const url = `{% url 'earnings_analysis:company-search-api' %}?q=${encodeURIComponent(query)}`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            displaySuggestions(data.results);
+        })
+        .catch(error => {
+            console.error('検索エラー:', error);
+            hideSearchSuggestions();
+        });
+}
+
+function displaySuggestions(companies) {
+    const suggestionsList = document.getElementById('suggestionsList');
+    const suggestionsContainer = document.getElementById('searchSuggestions');
+    
+    if (companies.length === 0) {
+        hideSearchSuggestions();
+        return;
+    }
+    
+    suggestionsList.innerHTML = '';
+    
+    companies.forEach(company => {
+        const item = document.createElement('div');
+        item.className = 'company-item';
+        item.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="fw-semibold">${escapeHtml(company.company_name)}</div>
+                    <small class="text-muted">
+                        ${company.securities_code ? `証券コード: ${company.securities_code}` : ''}
+                        ${company.securities_code && company.edinet_code ? ' | ' : ''}
+                        EDINETコード: ${company.edinet_code}
+                    </small>
+                </div>
+                <small class="badge bg-primary rounded-pill">${company.document_count}件</small>
+            </div>
+        `;
+        
+        item.addEventListener('click', () => {
+            selectCompany(company);
+        });
+        
+        suggestionsList.appendChild(item);
+    });
+    
+    suggestionsContainer.classList.add('show');
+    currentFocus = -1;
+}
+
+function setActiveSuggestion(suggestions) {
+    suggestions.forEach((suggestion, index) => {
+        if (index === currentFocus) {
+            suggestion.style.backgroundColor = '#e3f2fd';
+        } else {
+            suggestion.style.backgroundColor = '';
+        }
+    });
+}
+
+function hideSearchSuggestions() {
+    document.getElementById('searchSuggestions').classList.remove('show');
+    currentFocus = -1;
+}
+
+function selectCompany(company) {
+    document.getElementById('companySearch').value = company.company_name;
+    hideSearchSuggestions();
+    
+    // 書類一覧ページに遷移
+    const url = `{% url 'earnings_analysis:document-list-ui' %}?company=${encodeURIComponent(company.company_name)}`;
+    window.location.href = url;
+}
+
+function searchCompany() {
+    const query = document.getElementById('companySearch').value.trim();
+    if (query) {
+        const url = `{% url 'earnings_analysis:document-list-ui' %}?company=${encodeURIComponent(query)}`;
+        window.location.href = url;
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Enterキーでの検索
+document.getElementById('companySearch').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && currentFocus === -1) {
+        searchCompany();
+    }
+});
+</script>
+{% endblock %}

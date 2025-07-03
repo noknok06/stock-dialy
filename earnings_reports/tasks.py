@@ -1,472 +1,370 @@
-"""
-earnings_reports/tasks.py
-Celeryタスク定義 - 非同期処理
-"""
-
-import logging
-from datetime import datetime, timedelta
-from django.utils import timezone
+# earnings_analysis/tasks.py
+from celery import shared_task
+from celery.utils.log import get_task_logger
+from django.core.management import call_command
+from django.core.mail import send_mail
 from django.conf import settings
-from django.contrib.auth import get_user_model
-from django.core.mail import send_mail, send_mass_mail
-from celery import shared_task, current_task
-from celery.exceptions import Retry
+from django.utils import timezone
+from django.db.models import Count, Q
+from datetime import date, datetime, timedelta
+import traceback
 
-from .models import Analysis, Company, Document, AnalysisHistory
-from .services.analysis_service import EarningsAnalysisService
-from .services.edinet_service import EDINETService
+from .models import Company, DocumentMetadata, BatchExecution
 
-logger = logging.getLogger('earnings_analysis')
-User = get_user_model()
+logger = get_task_logger(__name__)
 
-
-@shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def execute_analysis_task(self, analysis_id):
+@shared_task(bind=True, max_retries=3)
+def daily_data_update(self, target_date=None):
     """
-    分析実行タスク（非同期）
-    
-    Args:
-        analysis_id: 分析ID
-        
-    Returns:
-        dict: 実行結果
+    日次データ更新タスク
+    毎日自動実行される主要なデータ取得処理
     """
     try:
-        # 分析オブジェクトを取得
-        analysis = Analysis.objects.get(id=analysis_id)
+        logger.info(f"日次データ更新タスク開始: {target_date or '前営業日'}")
         
-        # 現在のタスクIDを保存
-        analysis.task_id = self.request.id
-        analysis.save()
+        # management commandを実行
+        call_command(
+            'daily_update',
+            date=target_date,
+            send_notification=True,
+            verbosity=2
+        )
         
-        logger.info(f"非同期分析開始: {analysis.document.company.name} (Task: {self.request.id})")
+        logger.info("日次データ更新タスク完了")
+        return "SUCCESS"
         
-        # 分析サービスを初期化して実行
-        service = EarningsAnalysisService()
-        success = service.execute_analysis(analysis)
-        
-        if success:
-            logger.info(f"非同期分析完了: {analysis.document.company.name}")
-            
-            # 完了通知の送信
-            if analysis.settings_json.get('notify_on_completion', False):
-                send_analysis_completion_notification_task.delay(analysis_id)
-            
-            return {
-                'success': True,
-                'analysis_id': analysis_id,
-                'score': analysis.overall_score,
-                'processing_time': analysis.processing_time
-            }
-        else:
-            raise Exception("分析処理が失敗しました")
-    
-    except Analysis.DoesNotExist:
-        logger.error(f"分析オブジェクトが見つかりません: {analysis_id}")
-        return {'success': False, 'error': '分析オブジェクトが見つかりません'}
-    
     except Exception as exc:
-        logger.error(f"分析タスクエラー (ID: {analysis_id}): {str(exc)}")
+        logger.error(f"日次データ更新タスクエラー: {exc}")
         
         # リトライ処理
         if self.request.retries < self.max_retries:
-            logger.info(f"分析タスクをリトライします (試行: {self.request.retries + 1}/{self.max_retries})")
-            raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))
+            logger.info(f"リトライ実行: {self.request.retries + 1}/{self.max_retries}")
+            raise self.retry(countdown=60 * (2 ** self.request.retries))
         
-        # 最終的に失敗した場合
-        try:
-            analysis = Analysis.objects.get(id=analysis_id)
-            analysis.status = 'failed'
-            analysis.error_message = str(exc)
-            analysis.save()
-        except:
-            pass
-        
-        return {
-            'success': False,
-            'error': str(exc),
-            'analysis_id': analysis_id
-        }
-
-
-@shared_task(bind=True, max_retries=2)
-def sync_company_documents_task(self, company_id):
-    """
-    企業書類同期タスク（非同期）
-    
-    Args:
-        company_id: 企業ID
-        
-    Returns:
-        dict: 同期結果
-    """
-    try:
-        company = Company.objects.get(id=company_id)
-        edinet_service = EDINETService(settings.EDINET_API_KEY)
-        
-        logger.info(f"企業書類同期開始: {company.name}")
-        
-        # 書類同期実行
-        company_docs = edinet_service.search_company_documents_optimized(
-            company.stock_code,
-            days_back=30,
-            max_results=50
+        # 最終的に失敗した場合の通知
+        send_error_notification.delay(
+            subject="日次データ更新タスク失敗",
+            message=f"日次データ更新タスクが最終的に失敗しました。\nエラー: {str(exc)}\n\n{traceback.format_exc()}"
         )
         
-        new_count = 0
-        updated_count = 0
-        
-        for doc_info in company_docs:
-            doc_id, company_name, doc_description, submit_date, doc_type, sec_code = doc_info
-            
-            try:
-                submit_date_obj = datetime.strptime(submit_date, '%Y-%m-%d').date()
-                
-                document, created = Document.objects.get_or_create(
-                    doc_id=doc_id,
-                    company=company,
-                    defaults={
-                        'doc_type': doc_type,
-                        'doc_description': doc_description,
-                        'submit_date': submit_date_obj,
-                    }
-                )
-                
-                if created:
-                    new_count += 1
-                else:
-                    # 既存文書の更新チェック
-                    if (document.doc_description != doc_description or 
-                        document.submit_date != submit_date_obj):
-                        document.doc_description = doc_description
-                        document.submit_date = submit_date_obj
-                        document.save()
-                        updated_count += 1
-            
-            except Exception as e:
-                logger.warning(f"書類処理エラー {doc_id}: {str(e)}")
-                continue
-        
-        # 最終同期日時を更新
-        company.last_sync = timezone.now()
-        company.save()
-        
-        logger.info(f"企業書類同期完了: {company.name} - 新規:{new_count}, 更新:{updated_count}")
-        
-        return {
-            'success': True,
-            'company_name': company.name,
-            'new_documents': new_count,
-            'updated_documents': updated_count
-        }
-    
-    except Company.DoesNotExist:
-        return {'success': False, 'error': '企業が見つかりません'}
-    
-    except Exception as exc:
-        logger.error(f"書類同期エラー: {str(exc)}")
-        
-        if self.request.retries < self.max_retries:
-            raise self.retry(exc=exc, countdown=300)  # 5分後にリトライ
-        
-        return {'success': False, 'error': str(exc)}
-
+        raise exc
 
 @shared_task
-def send_analysis_completion_notification_task(analysis_id):
+def update_company_master():
     """
-    分析完了通知送信タスク
-    
-    Args:
-        analysis_id: 分析ID
+    企業マスタ更新タスク
+    書類データから企業情報を抽出・更新
     """
     try:
-        analysis = Analysis.objects.select_related(
-            'user', 'document__company'
-        ).get(id=analysis_id)
+        logger.info("企業マスタ更新タスク開始")
         
-        user = analysis.user
-        company = analysis.document.company
+        call_command('update_company_master', verbosity=2)
         
-        subject = f'【カブログ】{company.name}の分析が完了しました'
+        logger.info("企業マスタ更新タスク完了")
+        return "SUCCESS"
         
-        message = f"""
-{user.username}様
+    except Exception as exc:
+        logger.error(f"企業マスタ更新タスクエラー: {exc}")
+        raise exc
 
-{company.name}（{company.stock_code}）の決算分析が完了しました。
+@shared_task
+def weekly_cleanup():
+    """
+    週次クリーンアップタスク
+    古いデータの整理とシステム最適化
+    """
+    try:
+        logger.info("週次クリーンアップタスク開始")
+        
+        # 古いバッチ実行ログの削除（6ヶ月以上前）
+        old_date = date.today() - timedelta(days=180)
+        deleted_batches = BatchExecution.objects.filter(
+            batch_date__lt=old_date,
+            status__in=['SUCCESS', 'FAILED']
+        ).delete()
+        
+        logger.info(f"古いバッチログ削除: {deleted_batches[0]}件")
+        
+        # 非活性企業の整理
+        inactive_companies = Company.objects.filter(
+            is_active=False,
+            updated_at__lt=timezone.now() - timedelta(days=365)
+        )
+        
+        for company in inactive_companies:
+            # 関連書類がない場合は削除
+            if not DocumentMetadata.objects.filter(edinet_code=company.edinet_code).exists():
+                company.delete()
+                logger.info(f"非活性企業削除: {company.company_name}")
+        
+        logger.info("週次クリーンアップタスク完了")
+        return "SUCCESS"
+        
+    except Exception as exc:
+        logger.error(f"週次クリーンアップタスクエラー: {exc}")
+        raise exc
 
-■ 分析結果サマリー
-・総合スコア: {analysis.overall_score or 'N/A'}
-・信頼性: {analysis.get_confidence_level_display() or 'N/A'}
-・処理時間: {analysis.processing_time or 'N/A'}秒
+@shared_task
+def monthly_statistics():
+    """
+    月次統計レポート作成タスク
+    システム利用状況の分析と報告
+    """
+    try:
+        logger.info("月次統計レポート作成開始")
+        
+        # 前月の統計データ作成
+        last_month = date.today().replace(day=1) - timedelta(days=1)
+        month_start = last_month.replace(day=1)
+        
+        # 統計データ収集
+        stats = {
+            'period': f"{last_month.year}年{last_month.month}月",
+            'total_companies': Company.objects.filter(is_active=True).count(),
+            'total_documents': DocumentMetadata.objects.filter(legal_status='1').count(),
+            'monthly_documents': DocumentMetadata.objects.filter(
+                submit_date_time__gte=month_start,
+                submit_date_time__lt=month_start + timedelta(days=32),
+                legal_status='1'
+            ).count(),
+            'batch_executions': BatchExecution.objects.filter(
+                batch_date__gte=month_start,
+                batch_date__lt=month_start + timedelta(days=32)
+            ).count(),
+            'success_rate': 0,
+        }
+        
+        # 成功率計算
+        total_batches = BatchExecution.objects.filter(
+            batch_date__gte=month_start,
+            batch_date__lt=month_start + timedelta(days=32)
+        ).count()
+        
+        if total_batches > 0:
+            success_batches = BatchExecution.objects.filter(
+                batch_date__gte=month_start,
+                batch_date__lt=month_start + timedelta(days=32),
+                status='SUCCESS'
+            ).count()
+            stats['success_rate'] = round((success_batches / total_batches) * 100, 2)
+        
+        # 書類種別統計
+        doc_type_stats = DocumentMetadata.objects.filter(
+            submit_date_time__gte=month_start,
+            submit_date_time__lt=month_start + timedelta(days=32),
+            legal_status='1'
+        ).values('doc_type_code').annotate(
+            count=Count('id')
+        ).order_by('-count')[:10]
+        
+        # レポートメール作成
+        report_content = f"""
+決算書類管理システム月次レポート
 
-■ 分析対象書類
-・{analysis.document.get_doc_type_display()}
-・提出日: {analysis.document.submit_date}
+【期間】{stats['period']}
 
-詳細な分析結果は以下のリンクからご確認ください。
-{settings.SITE_URL}/earnings/analysis/{analysis.pk}/
+【基本統計】
+- 登録企業数: {stats['total_companies']:,}社
+- 総書類数: {stats['total_documents']:,}件
+- 当月新着書類: {stats['monthly_documents']:,}件
+- バッチ実行回数: {stats['batch_executions']}回
+- バッチ成功率: {stats['success_rate']}%
 
----
-カブログ決算分析システム
+【当月の書類種別TOP10】
         """.strip()
         
+        for i, doc_type in enumerate(doc_type_stats, 1):
+            report_content += f"\n{i}. {doc_type['doc_type_code']}: {doc_type['count']:,}件"
+        
+        report_content += f"""
+
+【システム状況】
+- 最新データ更新: {timezone.now().strftime('%Y-%m-%d %H:%M')}
+- システム稼働状況: 正常
+
+このレポートは自動生成されています。
+詳細な分析が必要な場合は管理画面をご確認ください。
+        """
+        
+        # メール送信
         send_mail(
-            subject=subject,
-            message=message,
+            subject=f"[決算書類管理システム] 月次レポート ({stats['period']})",
+            message=report_content,
             from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
+            recipient_list=getattr(settings, 'ADMIN_EMAIL_LIST', ['admin@example.com']),
             fail_silently=False
         )
         
-        logger.info(f"分析完了通知送信完了: {user.email}")
-        return {'success': True}
-    
-    except Exception as e:
-        logger.error(f"通知送信エラー: {str(e)}")
-        return {'success': False, 'error': str(e)}
-
+        logger.info("月次統計レポート作成完了")
+        return "SUCCESS"
+        
+    except Exception as exc:
+        logger.error(f"月次統計レポート作成エラー: {exc}")
+        raise exc
 
 @shared_task
-def daily_sync_all_companies_task():
+def health_check():
     """
-    全企業の日次書類同期タスク
+    システムヘルスチェックタスク
+    定期的なシステム状況確認
     """
     try:
-        companies = Company.objects.all()
-        total_companies = companies.count()
+        logger.info("システムヘルスチェック開始")
         
-        logger.info(f"全企業日次同期開始: {total_companies}社")
+        health_status = {
+            'database': False,
+            'api_connection': False,
+            'recent_updates': False,
+            'error_rate': 0,
+        }
+        
+        # データベース接続チェック
+        try:
+            Company.objects.count()
+            health_status['database'] = True
+        except Exception:
+            logger.error("データベース接続エラー")
+        
+        # 最近の更新チェック
+        recent_batch = BatchExecution.objects.filter(
+            batch_date__gte=date.today() - timedelta(days=3)
+        ).exists()
+        health_status['recent_updates'] = recent_batch
+        
+        # エラー率チェック
+        recent_batches = BatchExecution.objects.filter(
+            batch_date__gte=date.today() - timedelta(days=7)
+        )
+        
+        if recent_batches.exists():
+            total_batches = recent_batches.count()
+            failed_batches = recent_batches.filter(status='FAILED').count()
+            health_status['error_rate'] = round((failed_batches / total_batches) * 100, 2)
+        
+        # 異常検知とアラート
+        alerts = []
+        
+        if not health_status['database']:
+            alerts.append("データベース接続エラー")
+        
+        if not health_status['recent_updates']:
+            alerts.append("過去3日間にデータ更新がありません")
+        
+        if health_status['error_rate'] > 20:
+            alerts.append(f"エラー率が高すぎます: {health_status['error_rate']}%")
+        
+        # アラートがある場合は通知
+        if alerts and getattr(settings, 'MONITORING', {}).get('ALERT_EMAIL_ENABLED', False):
+            alert_message = "システムで以下の問題が検出されました:\n\n" + "\n".join(f"- {alert}" for alert in alerts)
+            
+            send_error_notification.delay(
+                subject="[緊急] システムアラート",
+                message=alert_message
+            )
+        
+        logger.info(f"システムヘルスチェック完了: {health_status}")
+        return health_status
+        
+    except Exception as exc:
+        logger.error(f"システムヘルスチェックエラー: {exc}")
+        raise exc
+
+@shared_task
+def send_error_notification(subject, message):
+    """
+    エラー通知メール送信タスク
+    システムエラーの通知用
+    """
+    try:
+        recipients = getattr(settings, 'ADMIN_EMAIL_LIST', ['admin@example.com'])
+        
+        send_mail(
+            subject=subject,
+            message=f"{message}\n\n発生時刻: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=recipients,
+            fail_silently=False
+        )
+        
+        logger.info(f"エラー通知メール送信完了: {subject}")
+        return "SUCCESS"
+        
+    except Exception as exc:
+        logger.error(f"エラー通知メール送信失敗: {exc}")
+        raise exc
+
+@shared_task
+def api_key_validation():
+    """
+    APIキー有効性確認タスク
+    定期的なAPIキーの動作確認
+    """
+    try:
+        logger.info("APIキー確認タスク開始")
+        
+        call_command('check_api_key', verbosity=2)
+        
+        logger.info("APIキー確認タスク完了")
+        return "SUCCESS"
+        
+    except Exception as exc:
+        logger.error(f"APIキー確認タスクエラー: {exc}")
+        
+        # APIキーエラーの場合は即座に通知
+        send_error_notification.delay(
+            subject="[緊急] EDINET APIキーエラー",
+            message=f"EDINET APIキーの確認でエラーが発生しました。\nエラー: {str(exc)}\n\nAPIキーの設定を確認してください。"
+        )
+        
+        raise exc
+
+@shared_task(bind=True)
+def bulk_document_download(self, doc_ids, doc_type='pdf'):
+    """
+    大量書類一括ダウンロードタスク
+    管理者用の一括処理機能
+    """
+    try:
+        logger.info(f"一括ダウンロードタスク開始: {len(doc_ids)}件 ({doc_type})")
+        
+        from .services import EdinetDocumentService
+        document_service = EdinetDocumentService()
         
         success_count = 0
         error_count = 0
         
-        for company in companies:
+        for i, doc_id in enumerate(doc_ids):
             try:
-                # 各企業の同期を非同期で実行
-                sync_company_documents_task.delay(company.id)
+                # プログレス更新
+                progress = int((i / len(doc_ids)) * 100)
+                self.update_state(
+                    state='PROGRESS',
+                    meta={'current': i, 'total': len(doc_ids), 'progress': progress}
+                )
+                
+                # ダウンロード実行
+                result = document_service.download_document(doc_id, doc_type)
                 success_count += 1
+                
+                logger.info(f"ダウンロード成功: {doc_id} ({result['size']} bytes)")
+                
             except Exception as e:
-                logger.error(f"企業{company.name}の同期タスク起動エラー: {str(e)}")
                 error_count += 1
+                logger.error(f"ダウンロードエラー: {doc_id} - {e}")
+                
+                # エラーが多すぎる場合は中断
+                if error_count > len(doc_ids) * 0.5:  # 50%以上がエラー
+                    raise Exception(f"エラー率が高すぎるため処理を中断しました。エラー数: {error_count}")
         
-        logger.info(f"全企業日次同期完了: 成功{success_count}社, エラー{error_count}社")
-        
-        return {
-            'success': True,
-            'total_companies': total_companies,
+        result = {
             'success_count': success_count,
-            'error_count': error_count
-        }
-    
-    except Exception as e:
-        logger.error(f"日次同期エラー: {str(e)}")
-        return {'success': False, 'error': str(e)}
-
-
-@shared_task
-def send_earnings_calendar_notifications_task():
-    """
-    決算カレンダー通知送信タスク
-    """
-    try:
-        from .utils.company_utils import get_earnings_schedule
-        
-        # 通知設定が有効なユーザーを取得
-        notification_histories = AnalysisHistory.objects.filter(
-            notify_on_earnings=True
-        ).select_related('user', 'company')
-        
-        notification_count = 0
-        
-        for history in notification_histories:
-            try:
-                # 企業の決算予定を確認（7日先まで）
-                schedule = get_earnings_schedule(history.company, days_ahead=7)
-                
-                if schedule:
-                    send_earnings_schedule_notification_task.delay(
-                        history.user.id,
-                        history.company.id,
-                        schedule
-                    )
-                    notification_count += 1
-                    
-            except Exception as e:
-                logger.warning(f"決算予定通知エラー {history.company.name}: {str(e)}")
-                continue
-        
-        logger.info(f"決算カレンダー通知送信完了: {notification_count}件")
-        
-        return {
-            'success': True,
-            'notification_count': notification_count
-        }
-    
-    except Exception as e:
-        logger.error(f"決算カレンダー通知エラー: {str(e)}")
-        return {'success': False, 'error': str(e)}
-
-
-@shared_task
-def send_earnings_schedule_notification_task(user_id, company_id, schedule):
-    """
-    決算予定通知送信タスク
-    
-    Args:
-        user_id: ユーザーID
-        company_id: 企業ID
-        schedule: 決算予定リスト
-    """
-    try:
-        user = User.objects.get(id=user_id)
-        company = Company.objects.get(id=company_id)
-        
-        subject = f'【カブログ】{company.name}の決算発表予定'
-        
-        schedule_text = '\n'.join([
-            f"・{item['date'].strftime('%m月%d日')}: {item['description']}"
-            for item in schedule
-        ])
-        
-        message = f"""
-{user.username}様
-
-{company.name}（{company.stock_code}）の決算発表が近づいています。
-
-■ 予定
-{schedule_text}
-
-分析の準備をお忘れなく。
-
----
-カブログ決算分析システム
-        """.strip()
-        
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=False
-        )
-        
-        logger.info(f"決算予定通知送信完了: {user.email} - {company.name}")
-        return {'success': True}
-    
-    except Exception as e:
-        logger.error(f"決算予定通知送信エラー: {str(e)}")
-        return {'success': False, 'error': str(e)}
-
-
-@shared_task
-def cleanup_old_analysis_data_task():
-    """
-    古い分析データのクリーンアップタスク
-    """
-    try:
-        # 90日以上前の失敗した分析を削除
-        cutoff_date = timezone.now() - timedelta(days=90)
-        
-        old_failed_analyses = Analysis.objects.filter(
-            status='failed',
-            analysis_date__lt=cutoff_date
-        )
-        
-        deleted_count = old_failed_analyses.count()
-        old_failed_analyses.delete()
-        
-        logger.info(f"古い分析データクリーンアップ完了: {deleted_count}件削除")
-        
-        return {
-            'success': True,
-            'deleted_count': deleted_count
-        }
-    
-    except Exception as e:
-        logger.error(f"データクリーンアップエラー: {str(e)}")
-        return {'success': False, 'error': str(e)}
-
-
-@shared_task
-def generate_weekly_analysis_report_task():
-    """
-    週次分析レポート生成タスク
-    """
-    try:
-        from django.template.loader import render_to_string
-        
-        # 過去7日間の分析統計
-        week_ago = timezone.now() - timedelta(days=7)
-        
-        weekly_stats = {
-            'total_analyses': Analysis.objects.filter(
-                analysis_date__gte=week_ago,
-                status='completed'
-            ).count(),
-            'unique_companies': Company.objects.filter(
-                documents__analysis__analysis_date__gte=week_ago,
-                documents__analysis__status='completed'
-            ).distinct().count(),
-            'avg_score': Analysis.objects.filter(
-                analysis_date__gte=week_ago,
-                status='completed',
-                overall_score__isnull=False
-            ).aggregate(avg=models.Avg('overall_score'))['avg'],
+            'error_count': error_count,
+            'total_count': len(doc_ids)
         }
         
-        # アクティブユーザーにレポート送信
-        active_users = User.objects.filter(
-            analyses__analysis_date__gte=week_ago
-        ).distinct()
+        logger.info(f"一括ダウンロードタスク完了: 成功{success_count}件, エラー{error_count}件")
+        return result
         
-        emails_to_send = []
-        
-        for user in active_users:
-            user_stats = Analysis.objects.filter(
-                user=user,
-                analysis_date__gte=week_ago,
-                status='completed'
-            ).count()
-            
-            if user_stats > 0:
-                subject = '【カブログ】週次分析レポート'
-                message = f"""
-{user.username}様
-
-過去7日間の分析活動をお知らせします。
-
-■ あなたの分析実績
-・分析回数: {user_stats}回
-
-■ 全体統計
-・総分析数: {weekly_stats['total_analyses']}回
-・分析企業数: {weekly_stats['unique_companies']}社
-・平均スコア: {weekly_stats['avg_score']:.1f if weekly_stats['avg_score'] else 'N/A'}
-
-継続的な分析で投資判断の精度を高めましょう！
-
----
-カブログ決算分析システム
-                """.strip()
-                
-                emails_to_send.append((
-                    subject,
-                    message,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [user.email]
-                ))
-        
-        if emails_to_send:
-            send_mass_mail(emails_to_send, fail_silently=True)
-            logger.info(f"週次レポート送信完了: {len(emails_to_send)}名")
-        
-        return {
-            'success': True,
-            'report_sent': len(emails_to_send),
-            'weekly_stats': weekly_stats
-        }
-    
-    except Exception as e:
-        logger.error(f"週次レポート生成エラー: {str(e)}")
-        return {'success': False, 'error': str(e)}
+    except Exception as exc:
+        logger.error(f"一括ダウンロードタスクエラー: {exc}")
+        raise exc

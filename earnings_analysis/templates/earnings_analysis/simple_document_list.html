@@ -1,0 +1,178 @@
+<!-- earnings_analysis/templates/earnings_analysis/simple_document_list.html -->
+{% extends 'earnings_analysis/simple_base.html' %}
+
+{% block title %}書類一覧 - 決算書類管理システム{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="fas fa-file-alt text-primary me-2"></i>書類一覧</h2>
+        {% if search_params.company %}
+            <p class="text-muted mb-0">
+                検索結果: 「{{ search_params.company }}」
+                <span class="badge bg-primary ms-2">{{ total_count }}件</span>
+            </p>
+        {% else %}
+            <p class="text-muted mb-0">
+                全書類一覧
+                <span class="badge bg-secondary ms-2">{{ total_count }}件</span>
+            </p>
+        {% endif %}
+    </div>
+    
+    <div class="btn-group" role="group">
+        <button type="button" class="btn btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+            <i class="fas fa-filter me-1"></i>フィルタ
+        </button>
+        <a href="{% url 'earnings_analysis:index' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-search me-1"></i>新規検索
+        </a>
+    </div>
+</div>
+
+<!-- フィルタセクション -->
+<div class="collapse" id="filterCollapse">
+    <div class="card bg-light p-3 mb-4">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="company" class="form-label">企業名・証券コード</label>
+                <input type="text" class="form-control" id="company" name="company" 
+                       value="{{ search_params.company }}" placeholder="企業名または証券コード">
+            </div>
+            
+            <div class="col-md-2">
+                <label for="doc_type" class="form-label">書類種別</label>
+                <select class="form-select" id="doc_type" name="doc_type">
+                    <option value="">すべて</option>
+                    {% for doc_type in doc_types %}
+                        <option value="{{ doc_type.doc_type_code }}" 
+                                {% if doc_type.doc_type_code == search_params.doc_type %}selected{% endif %}>
+                            {{ doc_type.doc_type_code }} ({{ doc_type.count }}件)
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label for="from_date" class="form-label">開始日</label>
+                <input type="date" class="form-control" id="from_date" name="from_date" 
+                       value="{{ search_params.from_date }}">
+            </div>
+            
+            <div class="col-md-2">
+                <label for="to_date" class="form-label">終了日</label>
+                <input type="date" class="form-control" id="to_date" name="to_date" 
+                       value="{{ search_params.to_date }}">
+            </div>
+            
+            <div class="col-md-3 d-flex align-items-end gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search me-1"></i>検索
+                </button>
+                <a href="{% url 'earnings_analysis:document-list-ui' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>クリア
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 検索結果 -->
+{% if documents %}
+    <!-- 書類一覧 -->
+    {% for document in documents %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h6 class="mb-1">
+                            <a href="{% url 'earnings_analysis:document-detail-ui' document.doc_id %}" 
+                               class="text-decoration-none">
+                                {{ document.company_name }}
+                            </a>
+                            {% if document.securities_code %}
+                                <span class="badge bg-secondary ms-2">{{ document.securities_code }}</span>
+                            {% endif %}
+                        </h6>
+                        <p class="mb-1 text-muted">{{ document.doc_description }}</p>
+                        <div class="small text-muted">
+                            <i class="fas fa-calendar me-1"></i>{{ document.submit_date_time|date:"Y年m月d日 H:i" }}
+                            {% if document.period_start and document.period_end %}
+                                <span class="ms-2">
+                                    <i class="fas fa-clock me-1"></i>
+                                    {{ document.period_start|date:"Y/m/d" }} 〜 {{ document.period_end|date:"Y/m/d" }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 text-md-end">
+                        <!-- ダウンロードボタン -->
+                        <div>
+                            {% if document.pdf_flag %}
+                                <button type="button" class="btn btn-danger btn-sm me-1 mb-1"
+                                        onclick="downloadDocument('{{ document.doc_id }}', 'pdf', this)">
+                                    <i class="fas fa-file-pdf me-1"></i>PDF
+                                </button>
+                            {% endif %}
+                            {% if document.xbrl_flag %}
+                                <button type="button" class="btn btn-primary btn-sm me-1 mb-1"
+                                        onclick="downloadDocument('{{ document.doc_id }}', 'xbrl', this)">
+                                    <i class="fas fa-code me-1"></i>XBRL
+                                </button>
+                            {% endif %}
+                            <a href="{% url 'earnings_analysis:document-detail-ui' document.doc_id %}" 
+                               class="btn btn-outline-secondary btn-sm mb-1">
+                                <i class="fas fa-info-circle me-1"></i>詳細
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+    <!-- ページネーション -->
+    {% if documents.has_other_pages %}
+        <nav aria-label="ページネーション" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if documents.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ documents.previous_page_number }}">
+                            前へ
+                        </a>
+                    </li>
+                {% endif %}
+                
+                <li class="page-item active">
+                    <span class="page-link">{{ documents.number }}</span>
+                </li>
+                
+                {% if documents.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ documents.next_page_number }}">
+                            次へ
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+
+{% else %}
+    <!-- 検索結果なし -->
+    <div class="text-center py-5">
+        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+        <h4 class="text-muted">検索結果が見つかりませんでした</h4>
+        <p class="text-muted">検索条件を変更して再度お試しください。</p>
+        <div class="mt-4">
+            <a href="{% url 'earnings_analysis:index' %}" class="btn btn-primary me-2">
+                <i class="fas fa-home me-1"></i>ホームに戻る
+            </a>
+            <button type="button" class="btn btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+                <i class="fas fa-filter me-1"></i>検索条件を変更
+            </button>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

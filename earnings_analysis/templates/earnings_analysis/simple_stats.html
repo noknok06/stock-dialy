@@ -1,0 +1,237 @@
+<!-- earnings_analysis/templates/earnings_analysis/simple_stats.html -->
+{% extends 'earnings_analysis/simple_base.html' %}
+
+{% block title %}システム統計 - 決算書類管理システム{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'earnings_analysis:index' %}">ホーム</a></li>
+        <li class="breadcrumb-item active">統計</li>
+    </ol>
+</nav>
+
+<!-- ヘッダー -->
+<div class="bg-primary text-white rounded p-4 mb-4">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="h2 mb-2">
+                <i class="fas fa-chart-bar me-3"></i>システム統計
+            </h1>
+            <p class="mb-0 opacity-90">決算書類管理システムの利用状況と統計情報</p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <div class="badge bg-light text-dark fs-6 px-3 py-2">
+                <i class="fas fa-clock me-1"></i>最終更新: {{ "now"|date:"Y/m/d H:i" }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 基本統計カード -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-4">
+        <div class="card stats-card text-center">
+            <div class="card-body">
+                <i class="fas fa-building fa-3x text-primary mb-3"></i>
+                <div class="h2 text-primary">{{ total_companies|default:0 }}</div>
+                <div class="text-muted">登録企業数</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card stats-card text-center">
+            <div class="card-body">
+                <i class="fas fa-file-alt fa-3x text-success mb-3"></i>
+                <div class="h2 text-success">{{ total_documents|default:0 }}</div>
+                <div class="text-muted">総書類数</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card stats-card text-center">
+            <div class="card-body">
+                <i class="fas fa-plus-circle fa-3x text-info mb-3"></i>
+                <div class="h2 text-info">{{ this_month_documents|default:0 }}</div>
+                <div class="text-muted">今月の新着</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card stats-card text-center">
+            <div class="card-body">
+                <i class="fas fa-download fa-3x text-warning mb-3"></i>
+                <div class="h2 text-warning">-</div>
+                <div class="text-muted">今月のDL数</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- 書類種別統計 -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-pie-chart text-success me-2"></i>書類種別TOP10
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for doc_type in doc_type_stats %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <div class="fw-semibold">{{ doc_type.doc_type_code }}</div>
+                            <small class="text-muted">{{ doc_type.count }}件</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="badge bg-primary">
+                                {% if total_documents > 0 %}
+                                    {% widthratio doc_type.count total_documents 100 %}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="progress mb-2" style="height: 6px;">
+                        <div class="progress-bar bg-primary" 
+                             style="width: {% if total_documents > 0 %}{% widthratio doc_type.count total_documents 100 %}{% else %}0{% endif %}%"></div>
+                    </div>
+                {% empty %}
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-chart-pie fa-2x mb-2"></i>
+                        <div>データがありません</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- バッチ実行履歴 -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-tasks text-info me-2"></i>最近のバッチ実行履歴
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_batches %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>実行日</th>
+                                    <th>ステータス</th>
+                                    <th>処理件数</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for batch in recent_batches %}
+                                    <tr>
+                                        <td>{{ batch.batch_date|date:"m/d" }}</td>
+                                        <td>
+                                            {% if batch.status == 'SUCCESS' %}
+                                                <span class="badge bg-success">成功</span>
+                                            {% elif batch.status == 'FAILED' %}
+                                                <span class="badge bg-danger">失敗</span>
+                                            {% elif batch.status == 'RUNNING' %}
+                                                <span class="badge bg-warning">実行中</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ batch.processed_count }}件</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-tasks fa-3x mb-3"></i>
+                        <div>バッチ実行履歴がありません</div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- システム情報 -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-server text-secondary me-2"></i>システム情報
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="h4 text-primary">EDINET API</div>
+                        <div class="small text-muted">金融庁提供のAPI連携</div>
+                    </div>
+                    
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="h4 text-success">日次更新</div>
+                        <div class="small text-muted">毎日自動実行</div>
+                    </div>
+                    
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="h4 text-info">対応形式</div>
+                        <div class="small text-muted">PDF, XBRL, CSV対応</div>
+                    </div>
+                    
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="h4 text-warning">検索機能</div>
+                        <div class="small text-muted">企業名・証券コード検索</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 数値のアニメーション
+    function animateNumber(element, start, end, duration) {
+        const startTime = performance.now();
+        
+        function updateNumber(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            const current = Math.floor(start + (end - start) * progress);
+            element.textContent = current.toLocaleString();
+            
+            if (progress < 1) {
+                requestAnimationFrame(updateNumber);
+            }
+        }
+        
+        requestAnimationFrame(updateNumber);
+    }
+    
+    // 統計数値のアニメーション実行
+    const statNumbers = document.querySelectorAll('.h2');
+    statNumbers.forEach(element => {
+        const text = element.textContent.trim();
+        if (text !== '-') {
+            const finalValue = parseInt(text.replace(/,/g, ''));
+            if (!isNaN(finalValue)) {
+                element.textContent = '0';
+                animateNumber(element, 0, finalValue, 2000);
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
