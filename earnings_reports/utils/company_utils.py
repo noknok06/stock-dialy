@@ -30,7 +30,7 @@ def get_or_create_company_from_edinet(stock_code: str, edinet_service: EDINETSer
         logger.info(f"EDINET企業検索開始: {stock_code}")
         
         # EDINETから企業の書類を検索
-        company_docs = edinet_service.search_company_documents(
+        company_docs = edinet_service.search_company_documents_optimized(
             stock_code, 
             days_back=30,
             max_results=1

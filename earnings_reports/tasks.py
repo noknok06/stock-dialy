@@ -107,7 +107,7 @@ def sync_company_documents_task(self, company_id):
         logger.info(f"企業書類同期開始: {company.name}")
         
         # 書類同期実行
-        company_docs = edinet_service.search_company_documents(
+        company_docs = edinet_service.search_company_documents_optimized(
             company.stock_code,
             days_back=30,
             max_results=50

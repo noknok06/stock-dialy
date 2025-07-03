@@ -1,27 +1,4 @@
-# earnings_analysis/models.py
 from django.db import models
-from django.utils import timezone
-
-class Company(models.Model):
-    """企業マスタ"""
-    edinet_code = models.CharField('EDINETコード', max_length=6, unique=True, db_index=True)
-    securities_code = models.CharField('証券コード', max_length=5, blank=True, null=True, db_index=True)
-    company_name = models.CharField('企業名', max_length=255, db_index=True)
-    company_name_kana = models.CharField('企業名カナ', max_length=255, blank=True)
-    jcn = models.CharField('法人番号', max_length=13, blank=True, null=True)
-    is_active = models.BooleanField('有効フラグ', default=True)
-    created_at = models.DateTimeField('作成日時', auto_now_add=True)
-    updated_at = models.DateTimeField('更新日時', auto_now=True)
-
-    class Meta:
-        db_table = 'earnings_analysis_company'
-        verbose_name = '企業'
-        verbose_name_plural = '企業一覧'
-        ordering = ['company_name']
-
-    def __str__(self):
-        return f"{self.securities_code or 'N/A'} {self.company_name}"
-
 
 class DocumentMetadata(models.Model):
     """書類メタデータ"""
@@ -101,30 +78,3 @@ class DocumentMetadata(models.Model):
             'attach': self.attach_doc_flag,
             'english': self.english_doc_flag,
         }
-
-
-class BatchExecution(models.Model):
-    """バッチ実行履歴"""
-    
-    STATUS_CHOICES = [
-        ('RUNNING', '実行中'),
-        ('SUCCESS', '成功'),
-        ('FAILED', '失敗'),
-    ]
-    
-    batch_date = models.DateField('対象日付', unique=True, db_index=True)
-    status = models.CharField('ステータス', max_length=20, choices=STATUS_CHOICES)
-    processed_count = models.PositiveIntegerField('処理件数', default=0)
-    error_message = models.TextField('エラーメッセージ', blank=True)
-    started_at = models.DateTimeField('開始時刻', null=True, blank=True)
-    completed_at = models.DateTimeField('完了時刻', null=True, blank=True)
-    created_at = models.DateTimeField('作成日時', auto_now_add=True)
-
-    class Meta:
-        db_table = 'earnings_analysis_batch_execution'
-        verbose_name = 'バッチ実行履歴'
-        verbose_name_plural = 'バッチ実行履歴一覧'
-        ordering = ['-batch_date']
-
-    def __str__(self):
-        return f"{self.batch_date} - {self.get_status_display()}"

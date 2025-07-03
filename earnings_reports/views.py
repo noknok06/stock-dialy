@@ -1,7 +1,4 @@
-"""
-earnings_reports/views.py
-改善されたビュー - 書類選択から即座に分析実行
-"""
+# earnings_reports/views.py (最適化版)
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
@@ -30,24 +27,21 @@ logger = logging.getLogger('earnings_analysis')
 
 @login_required
 def home(request):
-    """ホーム画面 - 分析開始（修正版）"""
-    # StockCodeSearchForm を POST でも処理
+    """ホーム画面"""
     if request.method == 'POST':
         return search_company(request)
     
     form = StockCodeSearchForm()
     
-    # 最近の分析結果（関連名を修正）
     recent_analyses = Analysis.objects.filter(
         user=request.user,
         status='completed'
     ).select_related('document__company').order_by('-analysis_date')[:5]
     
-    # ユーザー統計（関連名を修正）
     user_stats = {
         'total_analyses': Analysis.objects.filter(user=request.user).count(),
         'companies_analyzed': Company.objects.filter(
-            documents__analyses__user=request.user  # analysis → analyses に修正
+            documents__analyses__user=request.user
         ).distinct().count(),
         'this_month_analyses': Analysis.objects.filter(
             user=request.user,
@@ -75,11 +69,9 @@ def search_company(request):
             stock_code = form.cleaned_data['stock_code']
             
             try:
-                # 1. DB内検索
                 company = Company.objects.filter(stock_code=stock_code).first()
                 
                 if not company:
-                    # 2. EDINETから検索・作成
                     edinet_service = EDINETService(settings.EDINET_API_KEY)
                     company = get_or_create_company_from_edinet(stock_code, edinet_service)
                     
@@ -89,7 +81,6 @@ def search_company(request):
                     
                     messages.success(request, f'{company.name} を新規登録しました。')
                 
-                # 書類一覧画面へリダイレクト
                 return redirect('earnings_reports:document_list', stock_code=company.stock_code)
                 
             except Exception as e:
@@ -105,16 +96,16 @@ def search_company(request):
 @login_required
 @require_http_methods(["GET", "POST"])
 def document_list(request, stock_code):
-    """書類一覧・選択・分析実行"""
+    """書類一覧・選択・分析実行（最適化版）"""
     
     company = get_object_or_404(Company, stock_code=stock_code)
     
-    # 書類データの同期チェック
+    # 書類データの同期チェック（最適化）
     sync_requested = request.GET.get('sync') == '1'
-    if sync_requested or should_sync_documents(company):
+    if sync_requested or should_sync_documents_optimized(company):
         try:
             edinet_service = EDINETService(settings.EDINET_API_KEY)
-            sync_result = sync_company_documents(company, edinet_service)
+            sync_result = sync_company_documents_optimized(company, edinet_service)
             
             if sync_requested:
                 if sync_result['new_count'] > 0:
@@ -202,6 +193,119 @@ def document_list(request, stock_code):
     return render(request, 'earnings_reports/document_list.html', context)
 
 
+def should_sync_documents_optimized(company):
+    """最適化された書類データの同期判定"""
+    
+    if not company.last_sync:
+        return True
+    
+    # 最近の書類があるかチェック
+    recent_docs = Document.objects.filter(
+        company=company,
+        submit_date__gte=timezone.now().date() - timedelta(days=7)
+    ).exists()
+    
+    # 最近の書類がない場合のみ同期（頻度を削減）
+    if not recent_docs:
+        hours_since_sync = (timezone.now() - company.last_sync).total_seconds() / 3600
+        return hours_since_sync > 72  # 3日間隔に延長
+    
+    # 最近の書類がある場合は同期頻度を下げる
+    hours_since_sync = (timezone.now() - company.last_sync).total_seconds() / 3600
+    return hours_since_sync > 168  # 1週間間隔
+
+
+def sync_company_documents_optimized(company, edinet_service):
+    """最適化された企業書類同期"""
+    
+    try:
+        logger.info(f"書類同期開始: {company.name}")
+        
+        # 最適化された検索を使用（段階的検索）
+        company_docs = edinet_service.search_company_documents_optimized(
+            company.stock_code,
+            days_back=14,  # 2週間に短縮
+            max_results=30  # 上限を削減
+        )
+        
+        if not company_docs:
+            logger.info(f"新しい書類なし: {company.name}")
+            company.last_sync = timezone.now()
+            company.save()
+            return {
+                'success': True,
+                'new_count': 0,
+                'updated_count': 0
+            }
+        
+        # 最適化されたバッチ処理
+        batch_result = edinet_service.process_documents_batch(company, company_docs)
+        
+        # 最終同期日時を更新
+        company.last_sync = timezone.now()
+        company.save()
+        
+        logger.info(f"書類同期完了: {company.name} - 新規:{batch_result['new']}件, 更新:{batch_result['updated']}件")
+        
+        return {
+            'success': True,
+            'new_count': batch_result['new'],
+            'updated_count': batch_result['updated']
+        }
+        
+    except Exception as e:
+        logger.error(f"書類同期エラー: {str(e)}")
+        return {
+            'success': False,
+            'error': str(e),
+            'new_count': 0,
+            'updated_count': 0
+        }
+
+
+def start_document_analysis(user, documents, settings):
+    """書類分析を開始"""
+    
+    analyses = []
+    
+    try:
+        for document in documents:
+            # 新しい分析レコードを作成
+            analysis = Analysis.objects.create(
+                document=document,
+                user=user,
+                status='pending',
+                settings_json=settings
+            )
+            
+            analyses.append(analysis)
+        
+        # バックグラウンドで分析実行
+        for analysis in analyses:
+            execute_analysis_async.delay(analysis.id)
+        
+        return {
+            'success': True,
+            'analyses': analyses
+        }
+        
+    except Exception as e:
+        logger.error(f"分析開始エラー: {str(e)}")
+        
+        # 作成済みの分析レコードをクリーンアップ
+        for analysis in analyses:
+            try:
+                analysis.delete()
+            except:
+                pass
+        
+        return {
+            'success': False,
+            'error': str(e),
+            'analyses': []
+        }
+
+
 @login_required
 def analysis_status(request, analysis_ids):
     """分析状況確認・リアルタイム更新"""
@@ -235,13 +339,11 @@ def analysis_status(request, analysis_ids):
         })
     
     # 通常のページ表示
-    # 進行状況の集計
     status_counts = {}
     for analysis in analyses:
         status = analysis.get_status_display()
         status_counts[status] = status_counts.get(status, 0) + 1
     
-    # 完了した分析
     completed_analyses = analyses.filter(status='completed')
     failed_analyses = analyses.filter(status='failed')
     
@@ -258,7 +360,7 @@ def analysis_status(request, analysis_ids):
 
 @login_required
 def analysis_detail(request, pk):
-    """分析結果詳細（修正版）"""
+    """分析結果詳細"""
     
     analysis = get_object_or_404(Analysis, pk=pk, user=request.user)
     
@@ -291,10 +393,8 @@ def analysis_detail(request, pk):
 def analysis_list(request):
     """分析結果一覧"""
     
-    # フィルタフォーム
     filter_form = AnalysisFilterForm(request.GET or None)
     
-    # 基本クエリ
     analyses = Analysis.objects.filter(user=request.user).select_related(
         'document__company'
     ).order_by('-analysis_date')
@@ -337,18 +437,16 @@ def analysis_list(request):
 
 @login_required
 def company_dashboard(request, stock_code):
-    """企業別ダッシュボード（修正版）"""
+    """企業別ダッシュボード"""
     
     company = get_object_or_404(Company, stock_code=stock_code)
     
-    # 企業の分析履歴
     analyses = Analysis.objects.filter(
         document__company=company,
         user=request.user,
         status='completed'
     ).select_related('document').order_by('-analysis_date')[:10]
     
-    # 企業統計
     company_stats = {
         'total_analyses': Analysis.objects.filter(
             document__company=company, 
@@ -393,55 +491,8 @@ def company_dashboard(request, stock_code):
     }
     return render(request, 'earnings_reports/company_dashboard.html', context)
 
-def get_company_analysis_stats(company, user):
-    """企業の分析統計を取得（修正版）"""
-    
-    from django.db.models import Count, Avg, Max, Q
-    
-    # 基本統計
-    total_documents = Document.objects.filter(company=company).count()
-    total_analyses = Analysis.objects.filter(
-        document__company=company,
-        user=user
-    ).count()
-    
-    # 完了した分析の統計
-    completed_analyses = Analysis.objects.filter(
-        document__company=company,
-        user=user,
-        status='completed'
-    )
-    
-    avg_score = completed_analyses.aggregate(
-        avg_score=Avg('overall_score')
-    )['avg_score']
-    
-    latest_analysis = completed_analyses.order_by('-analysis_date').first()
-    
-    # 書類種別ごとの統計
-    doc_type_stats = Document.objects.filter(company=company).values(
-        'doc_type'
-    ).annotate(
-        count=Count('id'),
-        analyzed_count=Count(
-            'analyses', 
-            filter=Q(analyses__user=user, analyses__status='completed')
-        )
-    )
-    
-    return {
-        'total_documents': total_documents,
-        'total_analyses': total_analyses,
-        'completed_analyses': completed_analyses.count(),
-        'avg_score': round(avg_score, 2) if avg_score else None,
-        'latest_analysis': latest_analysis,
-        'doc_type_stats': list(doc_type_stats),
-        'last_sync': company.last_sync,
-    }
-# ========================================
-# API エンドポイント
-# ========================================
 
+# API エンドポイント
 @login_required
 def company_autocomplete(request):
     """企業名オートコンプリート（AJAX）"""
@@ -468,235 +519,17 @@ def company_autocomplete(request):
     return JsonResponse({'suggestions': suggestions})
 
 
-@login_required
-@require_http_methods(["POST"])
-def retry_analysis(request, analysis_id):
-    """分析再実行"""
-    
-    analysis = get_object_or_404(Analysis, id=analysis_id, user=request.user)
-    
-    if analysis.status not in ['failed']:
-        return JsonResponse({
-            'success': False, 
-            'error': '再実行できない状況です'
-        })
-    
-    try:
-        # 分析状態をリセット
-        analysis.status = 'pending'
-        analysis.error_message = ''
-        analysis.processing_time = None
-        analysis.overall_score = None
-        analysis.save()
-        
-        # 関連する分析結果をクリア
-        if hasattr(analysis, 'sentiment'):
-            analysis.sentiment.delete()
-        if hasattr(analysis, 'cashflow'):
-            analysis.cashflow.delete()
-        
-        # 分析を再実行
-        execute_analysis_async.delay(analysis.id)
-        
-        return JsonResponse({'success': True})
-        
-    except Exception as e:
-        logger.error(f"分析再実行エラー: {str(e)}")
-        return JsonResponse({
-            'success': False, 
-            'error': str(e)
-        })
-
-
-# ========================================
-# ユーティリティ関数
-# ========================================
-
-def should_sync_documents(company):
-    """書類データの同期が必要かチェック"""
-    
-    if not company.last_sync:
-        return True
-    
-    # 24時間以上同期していない場合
-    hours_since_sync = (timezone.now() - company.last_sync).total_seconds() / 3600
-    return hours_since_sync > 24
-
-
-def sync_company_documents(company, edinet_service):
-    """企業の書類情報をEDINETと同期（最適化版）"""
-    
-    try:
-        logger.info(f"書類同期開始: {company.name}")
-        
-        # 最適化された検索を使用
-        company_docs = edinet_service.search_company_documents_optimized(
-            company.stock_code, 
-            days_back=30,  # 30日に短縮
-            max_results=100  # 上限を設定
-        )
-        
-        if not company_docs:
-            logger.info(f"新しい書類なし: {company.name}")
-            company.last_sync = timezone.now()
-            company.save()
-            return {
-                'success': True,
-                'new_count': 0,
-                'updated_count': 0
-            }
-        
-        # バッチ処理で効率化
-        new_count, updated_count = process_documents_batch(company, company_docs)
-        
-        # 最終同期日時を更新
-        company.last_sync = timezone.now()
-        company.save()
-        
-        logger.info(f"書類同期完了: {company.name} - 新規:{new_count}件, 更新:{updated_count}件")
-        
-        return {
-            'success': True,
-            'new_count': new_count,
-            'updated_count': updated_count
-        }
-        
-    except Exception as e:
-        logger.error(f"書類同期エラー: {str(e)}")
-        return {
-            'success': False,
-            'error': str(e),
-            'new_count': 0,
-            'updated_count': 0
-        }
-
-def process_documents_batch(company, company_docs):
-    """書類のバッチ処理（新規追加）"""
-    from django.db import transaction
-    
-    new_count = 0
-    updated_count = 0
-    
-    # 既存書類IDを一括取得してメモリ上でチェック
-    existing_doc_ids = set(
-        Document.objects.filter(company=company)
-        .values_list('doc_id', flat=True)
-    )
-    
-    docs_to_create = []
-    docs_to_update = []
-    
-    for doc_info in company_docs:
-        doc_id, company_name, doc_description, submit_date, doc_type, sec_code = doc_info
-        
-        try:
-            submit_date_obj = datetime.strptime(submit_date, '%Y-%m-%d').date()
-            
-            if doc_id not in existing_doc_ids:
-                # 新規作成対象
-                docs_to_create.append(Document(
-                    doc_id=doc_id,
-                    company=company,
-                    doc_type=doc_type,
-                    doc_description=doc_description,
-                    submit_date=submit_date_obj,
-                ))
-                new_count += 1
-            else:
-                # 更新の必要性をチェック（簡略化）
-                existing_doc = Document.objects.filter(
-                    doc_id=doc_id, company=company
-                ).first()
-                
-                if (existing_doc and 
-                    (existing_doc.doc_description != doc_description or 
-                     existing_doc.submit_date != submit_date_obj)):
-                    existing_doc.doc_description = doc_description
-                    existing_doc.submit_date = submit_date_obj
-                    docs_to_update.append(existing_doc)
-                    updated_count += 1
-                    
-        except Exception as e:
-            logger.warning(f"書類{doc_id}の処理エラー: {str(e)}")
-            continue
-    
-    # バッチ作成・更新
-    with transaction.atomic():
-        if docs_to_create:
-            Document.objects.bulk_create(docs_to_create, batch_size=50)
-        
-        if docs_to_update:
-            Document.objects.bulk_update(
-                docs_to_update, 
-                ['doc_description', 'submit_date'], 
-                batch_size=50
-            )
-    
-    return new_count, updated_count
-
-
-def start_document_analysis(user, documents, settings):
-    """書類分析を開始"""
-    
-    analyses = []
-    
-    try:
-        for document in documents:
-            # 既存の分析をチェック
-            existing_analysis = Analysis.objects.filter(
-                document=document,
-                user=user
-            ).order_by('-analysis_date').first()
-            
-            # 新しい分析レコードを作成
-            analysis = Analysis.objects.create(
-                document=document,
-                user=user,
-                status='pending',
-                settings_json=settings
-            )
-            
-            analyses.append(analysis)
-        
-        # バックグラウンドで分析実行
-        for analysis in analyses:
-            execute_analysis_async.delay(analysis.id)
-        
-        return {
-            'success': True,
-            'analyses': analyses
-        }
-        
-    except Exception as e:
-        logger.error(f"分析開始エラー: {str(e)}")
-        
-        # 作成済みの分析レコードをクリーンアップ
-        for analysis in analyses:
-            try:
-                analysis.delete()
-            except:
-                pass
-        
-        return {
-            'success': False,
-            'error': str(e),
-            'analyses': []
-        }
-
-
 def get_analysis_progress(analysis):
     """分析の進行状況を計算（パーセンテージ）"""
     
     if analysis.status == 'pending':
         return 0
     elif analysis.status == 'processing':
-        # 処理時間から概算で進行状況を推定
         if analysis.processing_time:
-            # 平均処理時間を3分と仮定
             estimated_total = 180  # 秒
             progress = min(90, (analysis.processing_time / estimated_total) * 100)
             return int(progress)
-        return 30  # デフォルト値
+        return 30
     elif analysis.status == 'completed':
         return 100
     elif analysis.status == 'failed':
@@ -705,10 +538,7 @@ def get_analysis_progress(analysis):
     return 0
 
 
-# ========================================
 # 非同期処理（実際の環境ではCeleryを使用）
-# ========================================
-
 class MockAsyncExecutor:
     """開発環境用の非同期処理モック"""
     

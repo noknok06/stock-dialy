@@ -39,6 +39,7 @@ class EDINETService:
         self.rate_limit_delay = rate_limit_delay
         self.timeout = 120
         self.last_request_time = 0
+        self.company_keywords = []  # または適切な初期値
         
         # HTTPセッション設定
         self.session = requests.Session()
@@ -63,6 +64,10 @@ class EDINETService:
         
         logger.info(f"EDINET Service 初期化完了 - APIキー: ***{api_key[-4:]}")
     
+    def set_company_keywords(self, keywords):
+        """企業検索キーワードを設定"""
+        self.company_keywords = keywords
+        
     def _wait_for_rate_limit(self):
         """レート制限対策の待機"""
         current_time = time.time()
@@ -274,41 +279,223 @@ class EDINETService:
         return self.search_company_documents_optimized(company_code, days_back, max_results)
     
     def search_company_documents_optimized(self, company_code: str, days_back: int = 30, 
-                                        max_results: int = 10) -> List[List[str]]:
+                                        max_results: int = 50) -> List[List[str]]:
         """
-        最適化された企業書類検索（日付範囲指定）
+        最適化された企業書類検索
         
-        Args:
-            company_code: 企業コード（証券コード）
-            days_back: 何日前まで検索するか
-            max_results: 最大取得件数
-            
-        Returns:
-            List[List[str]]: 該当企業の書類情報配列
+        戦略：
+        1. 最近3日間を集中的に検索
+        2. 該当企業の書類が見つからない場合のみ範囲を拡大
+        3. 早期終了でAPI呼び出しを最小化
         """
-        logger.info(f"最適化企業書類検索開始: {company_code} (過去{days_back}日)")
+        logger.info(f"最適化企業書類検索開始: {company_code}")
         
-        # 日付範囲を計算
-        end_date = datetime.now().date()
-        start_date = end_date - timedelta(days=days_back)
-        
-        # 日付範囲で一括検索
-        all_documents = self.get_documents_by_date_range_batch(
-            start_date.strftime('%Y-%m-%d'),
-            end_date.strftime('%Y-%m-%d'),
-            company_filter=company_code  # 企業フィルターを追加
-        )
-        
-        # 対象企業の書類をフィルタリング
         company_documents = []
-        for doc in all_documents:
-            if self._is_target_company(doc, company_code):
-                company_documents.append(doc)
-                if len(company_documents) >= max_results:
-                    break
+        end_date = datetime.now().date()
+        
+        # 段階的検索戦略
+        search_phases = [
+            {'days': 3, 'description': '直近3日間'},
+            {'days': 7, 'description': '直近1週間'},
+            {'days': 14, 'description': '直近2週間'},
+            {'days': days_back, 'description': f'直近{days_back}日間'}
+        ]
+        
+        for phase in search_phases:
+            logger.info(f"検索フェーズ: {phase['description']}")
+            
+            # この期間での検索
+            phase_docs = self._search_company_in_period(
+                company_code, 
+                phase['days'], 
+                max_results - len(company_documents)
+            )
+            
+            company_documents.extend(phase_docs)
+            
+            # 十分な書類が見つかったら終了
+            if len(company_documents) >= max_results:
+                logger.info(f"十分な書類を発見: {len(company_documents)}件")
+                break
+            
+            # 何も見つからなかった場合は次のフェーズへ
+            if not phase_docs and phase['days'] < days_back:
+                continue
+            
+            # いくつか見つかった場合は満足する（過去を深く掘らない）
+            if phase_docs:
+                break
         
         logger.info(f"最適化企業書類検索完了: {len(company_documents)}件")
+        return company_documents[:max_results]
+    
+
+    def _search_company_in_period(self, company_code: str, days_back: int, 
+                                max_results: int) -> List[List[str]]:
+        """指定期間内での企業書類検索"""
+        
+        company_documents = []
+        end_date = datetime.now().date()
+        
+        # 平日のみを対象にして検索日数を削減
+        search_dates = self._get_business_days(end_date, days_back)
+        
+        for search_date in search_dates:
+            if len(company_documents) >= max_results:
+                break
+                
+            date_str = search_date.strftime('%Y-%m-%d')
+            
+            try:
+                # 指定日の書類を取得（キャッシュ利用）
+                daily_docs = self._get_documents_with_cache(date_str)
+                
+                # 企業フィルタリング（効率的な検索）
+                for doc in daily_docs:
+                    if self._is_target_company_optimized(doc, company_code):
+                        company_documents.append(doc)
+                        logger.info(f"発見: {doc[2][:50]}... ({date_str})")
+                        
+                        if len(company_documents) >= max_results:
+                            break
+                
+            except Exception as e:
+                logger.warning(f"{date_str} の検索でエラー: {str(e)}")
+                continue
+        
         return company_documents
+    
+    def _get_business_days(self, end_date, days_back: int) -> List:
+        """平日のみの日付リストを生成"""
+        business_days = []
+        current_date = end_date
+        
+        while len(business_days) < min(days_back, 15):  # 最大15営業日
+            if current_date.weekday() < 5:  # 平日のみ
+                business_days.append(current_date)
+            current_date -= timedelta(days=1)
+        
+        return business_days
+    
+    def _get_documents_with_cache(self, date_str: str) -> List[List[str]]:
+        """キャッシュ機能付きの書類取得"""
+        
+        # 簡易キャッシュ（本格実装ではRedisやMemcachedを使用）
+        cache_key = f"edinet_docs_{date_str}"
+        
+        # メモリキャッシュチェック（簡略版）
+        if hasattr(self, '_cache') and cache_key in self._cache:
+            cache_time, cached_docs = self._cache[cache_key]
+            if (datetime.now() - cache_time).seconds < 3600:  # 1時間有効
+                return cached_docs
+        
+        # APIから取得
+        docs = self.get_documents_by_date(date_str, include_all_types=True)
+        
+        # キャッシュに保存
+        if not hasattr(self, '_cache'):
+            self._cache = {}
+        self._cache[cache_key] = (datetime.now(), docs)
+        
+        return docs
+    
+    def _is_target_company_optimized(self, doc_info: List[str], company_code: str) -> bool:
+        """最適化された企業判定"""
+        
+        sec_code = doc_info[5]  # 証券コード
+        company_name = doc_info[1]  # 企業名
+        
+        # 1. 証券コードでの直接判定（最優先）
+        if sec_code:
+            # 完全一致
+            if sec_code == company_code:
+                return True
+            # 部分一致（証券コードが含まれる場合）
+            if company_code in sec_code:
+                return True
+        
+        # 2. 企業名での高精度判定
+        if company_code in self.company_keywords:
+            keywords = self.company_keywords[company_code]
+            
+            # 企業名の正規化
+            normalized_name = company_name.replace('株式会社', '').replace('(株)', '').strip()
+            
+            for keyword in keywords:
+                if keyword in normalized_name:
+                    return True
+        
+        # 3. 部分文字列での柔軟判定（最後の手段）
+        if len(company_code) >= 4:  # 4桁以上の場合のみ
+            if company_code in company_name:
+                return True
+        
+        return False
+    
+    def process_documents_batch(self, company, company_docs):
+        """バッチ処理の最適化版"""
+        
+        from django.db import transaction
+        from ..models import Document
+        
+        new_count = 0
+        updated_count = 0
+        
+        # 既存書類IDを一括取得
+        existing_docs = {}
+        for doc in Document.objects.filter(company=company).values('doc_id', 'doc_description', 'submit_date'):
+            existing_docs[doc['doc_id']] = doc
+        
+        # バッチ処理用リスト
+        docs_to_create = []
+        docs_to_update = []
+        
+        for doc_info in company_docs:
+            doc_id, company_name, doc_description, submit_date, doc_type, sec_code = doc_info
+            
+            try:
+                submit_date_obj = datetime.strptime(submit_date, '%Y-%m-%d').date()
+                
+                if doc_id not in existing_docs:
+                    # 新規作成
+                    docs_to_create.append(Document(
+                        doc_id=doc_id,
+                        company=company,
+                        doc_type=doc_type,
+                        doc_description=doc_description,
+                        submit_date=submit_date_obj,
+                    ))
+                    new_count += 1
+                else:
+                    # 更新チェック
+                    existing = existing_docs[doc_id]
+                    if (existing['doc_description'] != doc_description or 
+                        existing['submit_date'] != submit_date_obj):
+                        
+                        # 更新対象
+                        doc_obj = Document.objects.get(doc_id=doc_id, company=company)
+                        doc_obj.doc_description = doc_description
+                        doc_obj.submit_date = submit_date_obj
+                        docs_to_update.append(doc_obj)
+                        updated_count += 1
+                        
+            except Exception as e:
+                logger.warning(f"書類{doc_id}の処理エラー: {str(e)}")
+                continue
+        
+        # バッチ実行
+        with transaction.atomic():
+            if docs_to_create:
+                Document.objects.bulk_create(docs_to_create, batch_size=100)
+            
+            if docs_to_update:
+                Document.objects.bulk_update(
+                    docs_to_update, 
+                    ['doc_description', 'submit_date'], 
+                    batch_size=100
+                )
+        
+        return {'new': new_count, 'updated': updated_count}
 
     def get_documents_by_date_range_batch(self, start_date: str, end_date: str,
                                         company_filter: str = None) -> List[List[str]]:

@@ -1,368 +1,248 @@
-# earnings_analysis/management/commands/test_edinet_api.py（API v2対応版）
-"""
-EDINET API v2の接続テスト用コマンド
-
-APIキーを使用したAPI v2での動作確認
-"""
-
-from django.core.management.base import BaseCommand, CommandError
-from django.utils import timezone
-from datetime import datetime, timedelta
+from django.core.management.base import BaseCommand
+from datetime import date, timedelta, datetime
+import requests
+import json
 import logging
-
-from earnings_analysis.services import EDINETAPIService
 
 logger = logging.getLogger(__name__)
 
-
 class Command(BaseCommand):
-    help = 'EDINET API v2の接続テストを実行'
+    help = 'EDINET API接続テスト'
     
     def add_arguments(self, parser):
         parser.add_argument(
             '--date',
             type=str,
-            help='テスト対象日 (YYYY-MM-DD形式。未指定時は今日)',
+            default=None,
+            help='テスト日付（YYYY-MM-DD形式、デフォルト: 7日前の営業日）'
         )
         parser.add_argument(
-            '--company',
+            '--api-version',
             type=str,
-            help='特定企業の書類を検索 (証券コード)',
-        )
-        parser.add_argument(
-            '--download-test',
-            action='store_true',
-            help='書類ダウンロードもテスト',
+            choices=['v1', 'v2'],
+            default='v2',
+            help='APIバージョン（v1またはv2）'
         )
         parser.add_argument(
             '--verbose',
             action='store_true',
-            help='詳細ログを出力',
-        )
-        parser.add_argument(
-            '--api-status',
-            action='store_true',
-            help='API状態とキー情報を表示',
+            help='詳細な出力'
         )
     
     def handle(self, *args, **options):
         test_date = options['date']
-        company_code = options['company']
-        download_test = options['download_test']
-        verbose = options['verbose']
-        api_status = options['api_status']
-        
-        if verbose:
-            logging.basicConfig(level=logging.DEBUG)
-        
         if not test_date:
-            test_date = timezone.now().strftime('%Y-%m-%d')
+            # デフォルトで過去の営業日を使用
+            test_date = self._get_last_business_day(days_back=7).isoformat()
         
-        self.stdout.write(
-            self.style.SUCCESS(f'EDINET API v2 接続テストを開始します...')
-        )
+        api_version = options['api_version']
+        verbose = options['verbose']
         
+        self.stdout.write(f'EDINET API {api_version.upper()} 接続テスト開始')
+        self.stdout.write(f'テスト日付: {test_date}')
+        
+        # 日付の妥当性チェック
         try:
-            # APIサービスの初期化
-            edinet_service = EDINETAPIService()
+            test_date_obj = datetime.strptime(test_date, '%Y-%m-%d').date()
+            today = date.today()
             
-            # 1. API状態確認
-            self.stdout.write('\n=== API v2 状態確認 ===')
-            api_status_info = self._check_api_status(edinet_service)
+            if test_date_obj > today:
+                self.stdout.write(
+                    self.style.WARNING(f'未来の日付が指定されています: {test_date}')
+                )
+                test_date = self._get_last_business_day().isoformat()
+                self.stdout.write(f'営業日に変更: {test_date}')
             
-            if api_status:
-                # APIキー情報の詳細表示
-                self._display_api_status(api_status_info)
-                return
-            
-            if api_status_info['status'] != 'ok':
-                self.stdout.write(self.style.ERROR(f'✗ API状態: {api_status_info["message"]}'))
-                raise CommandError('API v2の初期化に失敗しました')
-            
-            self.stdout.write(self.style.SUCCESS('✓ API v2接続: 正常'))
-            
-            # 2. 基本接続テスト
-            self.stdout.write('\n=== 基本接続テスト ===')
-            self.stdout.write(f'テスト日: {test_date}')
-            if company_code:
-                self.stdout.write(f'対象企業: {company_code}')
-            
-            if self._test_basic_connection(edinet_service):
-                self.stdout.write(self.style.SUCCESS('✓ 基本接続: 成功'))
-            else:
-                self.stdout.write(self.style.ERROR('✗ 基本接続: 失敗'))
-                raise CommandError('基本接続テストに失敗しました')
-            
-            # 3. 書類一覧取得テスト
-            self.stdout.write('\n=== 書類一覧取得テスト ===')
-            documents = self._test_document_list(edinet_service, test_date, company_code)
-            
-            if documents:
-                self.stdout.write(self.style.SUCCESS(f'✓ 書類一覧取得: 成功 ({len(documents)}件)'))
-                self._display_documents(documents[:5])  # 最初の5件を表示
-            else:
-                self.stdout.write(self.style.WARNING('⚠ 書類一覧取得: 該当書類なし'))
-            
-            # 4. 書類ダウンロードテスト（オプション）
-            if download_test and documents:
-                self.stdout.write('\n=== 書類ダウンロードテスト ===')
-                self._test_document_download(edinet_service, documents[0])
-            
-            # 5. 特定企業検索テスト
-            if company_code:
-                self.stdout.write(f'\n=== 企業検索テスト ({company_code}) ===')
-                self._test_company_search(edinet_service, company_code)
-            
-            # 6. API使用量情報（もしあれば）
-            self.stdout.write('\n=== API使用状況 ===')
-            self._display_api_usage_info(edinet_service)
-            
+            if test_date_obj.weekday() >= 5:  # 土日
+                self.stdout.write(
+                    self.style.WARNING(f'休日が指定されています: {test_date}')
+                )
+                test_date = self._get_last_business_day().isoformat()
+                self.stdout.write(f'営業日に変更: {test_date}')
+                
+        except ValueError:
             self.stdout.write(
-                self.style.SUCCESS('\n🎉 EDINET API v2テストが完了しました！')
+                self.style.ERROR(f'無効な日付形式: {test_date}')
             )
-            
-        except KeyboardInterrupt:
-            self.stdout.write(
-                self.style.ERROR('\nテストが中断されました')
-            )
-            raise CommandError('ユーザーによってテストが中断されました')
-        
-        except Exception as e:
-            self.stdout.write(
-                self.style.ERROR(f'\nテスト中にエラーが発生しました: {str(e)}')
-            )
-            raise CommandError(f'テストに失敗しました: {str(e)}')
-    
-    def _check_api_status(self, edinet_service):
-        """API状態をチェック"""
-        try:
-            return edinet_service.get_api_status()
-        except Exception as e:
-            return {
-                'status': 'error',
-                'message': f'APIステータスチェックエラー: {str(e)}',
-                'api_version': 'v2'
-            }
-    
-    def _display_api_status(self, status_info):
-        """API状態の詳細を表示"""
-        self.stdout.write('\n=== API v2 詳細情報 ===')
-        self.stdout.write(f"ステータス: {status_info['status']}")
-        self.stdout.write(f"メッセージ: {status_info['message']}")
-        self.stdout.write(f"APIバージョン: {status_info['api_version']}")
-        
-        if status_info.get('api_key_length'):
-            self.stdout.write(f"APIキー長: {status_info['api_key_length']}文字")
-        
-        if status_info.get('base_url'):
-            self.stdout.write(f"ベースURL: {status_info['base_url']}")
-    
-    def _test_basic_connection(self, edinet_service):
-        """基本接続テスト"""
-        try:
-            return edinet_service.test_api_connection()
-        except Exception as e:
-            self.stdout.write(f"接続エラー: {str(e)}")
-            return False
-    
-    def _test_document_list(self, edinet_service, test_date, company_code):
-        """書類一覧取得テスト"""
-        try:
-            self.stdout.write(f"日付: {test_date} の書類を取得中...")
-            documents = edinet_service.get_document_list(test_date, company_code)
-            return documents
-        except Exception as e:
-            self.stdout.write(f"書類一覧取得エラー: {str(e)}")
-            return []
-    
-    def _display_documents(self, documents):
-        """書類一覧を表示"""
-        if not documents:
-            self.stdout.write("表示する書類がありません")
             return
         
-        self.stdout.write("\n取得された書類:")
-        self.stdout.write("-" * 100)
+        # APIキー確認
+        from django.conf import settings
+        api_key = getattr(settings, 'EDINET_API_SETTINGS', {}).get('API_KEY', '')
         
-        for i, doc in enumerate(documents, 1):
-            company_name = doc.get('company_name', '不明')[:20]
-            doc_description = doc.get('doc_description', '不明')[:30]
-            submission_date = doc.get('submission_date', '不明')
-            document_id = doc.get('document_id', '不明')
+        if api_version == 'v2':
+            self._test_v2_api(test_date, api_key, verbose)
+        else:
+            self._test_v1_api(test_date, verbose)
+    
+    def _get_last_business_day(self, days_back=1):
+        """最新の営業日を取得（土日を避ける）"""
+        target_date = date.today() - timedelta(days=days_back)
+        
+        # 土日を避ける
+        while target_date.weekday() >= 5:  # 5=土曜, 6=日曜
+            target_date -= timedelta(days=1)
+        
+        return target_date
+    
+    def _test_v2_api(self, test_date, api_key, verbose):
+        """EDINET API v2のテスト"""
+        url = 'https://api.edinet-fsa.go.jp/api/v2/documents.json'
+        params = {
+            'date': test_date,
+            'type': 2,
+        }
+        
+        # APIキーをパラメータとして追加（推奨方法）
+        if api_key:
+            params['Subscription-Key'] = api_key
+            self.stdout.write(f'APIキー使用: {api_key[:8]}...')
+        else:
+            self.stdout.write(self.style.WARNING('⚠️ APIキーが設定されていません'))
+            self.stdout.write('settings.pyのEDINET_API_SETTINGS["API_KEY"]を確認してください')
+        
+        # ヘッダー方式もバックアップとして設定
+        headers = {}
+        if api_key:
+            headers['Subscription-Key'] = api_key
+        
+        try:
+            self.stdout.write(f'リクエスト送信: {url}')
+            if verbose:
+                self.stdout.write(f'パラメータ: {params}')
+                self.stdout.write(f'ヘッダー: {headers}')
             
+            response = requests.get(url, params=params, headers=headers, timeout=30)
+            
+            self.stdout.write(f'レスポンスステータス: {response.status_code}')
+            self.stdout.write(f'Content-Type: {response.headers.get("Content-Type", "不明")}')
+            self.stdout.write(f'レスポンス長: {len(response.text)} 文字')
+            
+            if verbose:
+                self.stdout.write(f'レスポンスヘッダー: {dict(response.headers)}')
+                self.stdout.write(f'レスポンス内容の最初の500文字:')
+                self.stdout.write(response.text[:500])
+            
+            if response.status_code == 200:
+                if response.text.strip():
+                    if response.text.strip().startswith('<'):
+                        self.stdout.write(
+                            self.style.ERROR('❌ HTMLエラーページが返されました')
+                        )
+                        self.stdout.write('認証エラーまたはAPIキーの問題の可能性があります')
+                        if verbose:
+                            self.stdout.write('HTMLコンテンツ:')
+                            self.stdout.write(response.text[:1000])
+                    else:
+                        try:
+                            data = response.json()
+                            metadata = data.get('metadata', {})
+                            results = data.get('results', [])
+                            
+                            self.stdout.write(
+                                self.style.SUCCESS(f'✅ API v2 成功: {len(results)}件のデータを取得')
+                            )
+                            self.stdout.write(f'APIステータス: {metadata.get("status", "不明")}')
+                            self.stdout.write(f'メッセージ: {metadata.get("message", "なし")}')
+                            
+                            if verbose and results:
+                                self.stdout.write('最初のデータサンプル:')
+                                self.stdout.write(json.dumps(results[0], ensure_ascii=False, indent=2))
+                            
+                        except json.JSONDecodeError as e:
+                            self.stdout.write(
+                                self.style.ERROR(f'❌ JSONデコードエラー: {e}')
+                            )
+                            self.stdout.write(f'レスポンス内容: {response.text[:200]}...')
+                else:
+                    self.stdout.write(
+                        self.style.WARNING('⚠️ 空のレスポンス')
+                    )
+            else:
+                self.stdout.write(
+                    self.style.ERROR(f'❌ HTTPエラー: {response.status_code}')
+                )
+                self.stdout.write(f'エラー内容: {response.text[:500]}')
+                
+        except requests.exceptions.RequestException as e:
             self.stdout.write(
-                f"{i:2d}. [{document_id}] {company_name} | {doc_description} | {submission_date}"
+                self.style.ERROR(f'❌ リクエストエラー: {e}')
             )
-        
-        self.stdout.write("-" * 100)
     
-    def _test_document_download(self, edinet_service, document):
-        """書類ダウンロードテスト"""
-        try:
-            document_id = document['document_id']
-            self.stdout.write(f"書類ダウンロード中: {document_id}")
-            
-            content = edinet_service.get_document_content(document_id)
-            
-            if content:
-                size_mb = len(content) / (1024 * 1024)
-                self.stdout.write(
-                    self.style.SUCCESS(f'✓ ダウンロード成功: {size_mb:.2f}MB')
-                )
-                
-                # ZIPファイルの中身を確認
-                self._analyze_zip_content(content)
-                
-            else:
-                self.stdout.write(
-                    self.style.ERROR('✗ ダウンロード失敗')
-                )
-                
-        except Exception as e:
-            self.stdout.write(f"ダウンロードエラー: {str(e)}")
-    
-    def _analyze_zip_content(self, zip_data):
-        """ZIPファイルの内容を分析"""
-        try:
-            import zipfile
-            import io
-            
-            with zipfile.ZipFile(io.BytesIO(zip_data)) as zip_file:
-                file_list = zip_file.filelist
-                self.stdout.write(f"ZIP内容: {len(file_list)} ファイル")
-                
-                # ファイル種別を分析
-                file_types = {}
-                xbrl_files = []
-                
-                for file_info in file_list:
-                    filename = file_info.filename
-                    extension = filename.split('.')[-1].lower() if '.' in filename else 'unknown'
-                    file_types[extension] = file_types.get(extension, 0) + 1
-                    
-                    if extension in ['xbrl', 'xml', 'htm', 'html']:
-                        xbrl_files.append(filename)
-                
-                self.stdout.write(f"ファイル種別: {file_types}")
-                
-                # XBRL関連ファイルを表示（最大5件）
-                if xbrl_files:
-                    self.stdout.write("XBRL関連ファイル:")
-                    for filename in xbrl_files[:5]:
-                        self.stdout.write(f"  📄 {filename}")
-                    
-                    if len(xbrl_files) > 5:
-                        self.stdout.write(f"  ... 他 {len(xbrl_files) - 5} ファイル")
-                
-        except Exception as e:
-            self.stdout.write(f"ZIP分析エラー: {str(e)}")
-    
-    def _test_company_search(self, edinet_service, company_code):
-        """特定企業の検索テスト"""
-        try:
-            self.stdout.write(f"企業 {company_code} の過去書類を検索中...")
-            
-            documents = edinet_service.search_company_documents(company_code, days_back=30)
-            
-            if documents:
-                self.stdout.write(
-                    self.style.SUCCESS(f'✓ 企業検索成功: {len(documents)}件')
-                )
-                self._display_documents(documents[:3])
-            else:
-                self.stdout.write(
-                    self.style.WARNING('⚠ 該当する書類が見つかりませんでした')
-                )
-                
-                # 検索のヒントを提供
-                self.stdout.write("\n💡 検索のヒント:")
-                self.stdout.write("- 企業コードが正確か確認してください")
-                self.stdout.write("- 該当期間に決算書類が提出されているか確認してください")
-                self.stdout.write("- より長い期間で検索してみてください")
-                
-        except Exception as e:
-            self.stdout.write(f"企業検索エラー: {str(e)}")
-    
-    def _display_api_usage_info(self, edinet_service):
-        """API使用状況を表示"""
-        try:
-            # API v2では使用量制限の情報が取得できる場合があります
-            self.stdout.write("📊 API使用状況:")
-            self.stdout.write("- API v2では詳細な使用量情報は提供されていません")
-            self.stdout.write("- レート制限: 適切な間隔でリクエストを送信しています")
-            self.stdout.write("- APIキー: 正常に認証されています")
-            
-            # 本日のテスト実行回数を記録（簡易版）
-            today = timezone.now().strftime('%Y-%m-%d')
-            self.stdout.write(f"- 本日のテスト日付: {today}")
-            
-        except Exception as e:
-            self.stdout.write(f"使用状況取得エラー: {str(e)}")
-
-
-class QuickTestCommand(BaseCommand):
-    """クイックテスト用のサブコマンド（API v2対応）"""
-    
-    def handle(self, *args, **options):
-        self.stdout.write("🚀 EDINET API v2 クイックテスト")
+    def _test_v1_api(self, test_date, verbose):
+        """EDINET API v1のテスト（APIキー不要）"""
+        url = 'https://disclosure.edinet-fsa.go.jp/api/v1/documents.json'
+        params = {
+            'date': test_date,
+            'type': 2,
+        }
         
         try:
-            from earnings_analysis.services import EDINETAPIService
+            self.stdout.write(f'リクエスト送信: {url}')
+            if verbose:
+                self.stdout.write(f'パラメータ: {params}')
             
-            edinet_service = EDINETAPIService()
+            response = requests.get(url, params=params, timeout=30)
             
-            # API状態確認
-            status = edinet_service.get_api_status()
+            self.stdout.write(f'レスポンスステータス: {response.status_code}')
+            self.stdout.write(f'Content-Type: {response.headers.get("Content-Type", "不明")}')
+            self.stdout.write(f'レスポンス長: {len(response.text)} 文字')
             
-            if status['status'] == 'ok':
-                self.stdout.write("✅ API v2接続: 正常")
-                self.stdout.write(f"📡 ベースURL: {status.get('base_url', 'N/A')}")
-                self.stdout.write(f"🔑 APIキー: 設定済み ({status.get('api_key_length', 0)}文字)")
-            else:
-                self.stdout.write(f"❌ API v2エラー: {status['message']}")
-                return
+            if verbose:
+                self.stdout.write(f'レスポンスヘッダー: {dict(response.headers)}')
+                self.stdout.write(f'レスポンス内容の最初の500文字:')
+                self.stdout.write(response.text[:500])
             
-            # 今日の書類をテスト
-            today = timezone.now().strftime('%Y-%m-%d')
-            self.stdout.write(f"📅 今日({today})の書類を確認中...")
-            
-            documents = edinet_service.get_document_list(today)
-            
-            if documents:
-                self.stdout.write(f"✅ 成功: {len(documents)}件の書類を取得")
-                
-                # 決算関連書類があるかチェック
-                earnings_docs = [d for d in documents if any(
-                    keyword in d.get('doc_description', '').lower() 
-                    for keyword in ['決算', '四半期', '有価証券']
-                )]
-                
-                if earnings_docs:
-                    self.stdout.write(f"📊 決算関連書類: {len(earnings_docs)}件")
+            if response.status_code == 200:
+                if response.text.strip():
+                    if response.text.strip().startswith('<'):
+                        self.stdout.write(
+                            self.style.ERROR('❌ HTMLエラーページが返されました')
+                        )
+                        if verbose:
+                            self.stdout.write('HTMLコンテンツ:')
+                            self.stdout.write(response.text[:1000])
+                    else:
+                        try:
+                            data = response.json()
+                            metadata = data.get('metadata', {})
+                            results = data.get('results', [])
+                            
+                            self.stdout.write(
+                                self.style.SUCCESS(f'✅ API v1 成功: {len(results)}件のデータを取得')
+                            )
+                            self.stdout.write(f'APIステータス: {metadata.get("status", "不明")}')
+                            self.stdout.write(f'メッセージ: {metadata.get("message", "なし")}')
+                            
+                            if verbose and results:
+                                self.stdout.write('最初のデータサンプル:')
+                                self.stdout.write(json.dumps(results[0], ensure_ascii=False, indent=2))
+                            
+                        except json.JSONDecodeError as e:
+                            self.stdout.write(
+                                self.style.ERROR(f'❌ JSONデコードエラー: {e}')
+                            )
+                            self.stdout.write(f'レスポンス内容: {response.text[:200]}...')
                 else:
-                    self.stdout.write("📋 決算関連書類: なし")
-                    
+                    self.stdout.write(
+                        self.style.WARNING('⚠️ 空のレスポンス')
+                    )
+            elif response.status_code == 403:
+                self.stdout.write(
+                    self.style.ERROR('❌ 403 Forbidden - アクセス拒否')
+                )
+                self.stdout.write('可能な原因:')
+                self.stdout.write('1. IPアドレス制限')
+                self.stdout.write('2. User-Agent制限')
+                self.stdout.write('3. リクエスト頻度制限')
+                self.stdout.write('4. 未来の日付または無効な日付')
             else:
-                # 昨日もテスト
-                yesterday = (timezone.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-                self.stdout.write(f"📅 昨日({yesterday})の書類を確認中...")
+                self.stdout.write(
+                    self.style.ERROR(f'❌ HTTPエラー: {response.status_code}')
+                )
+                self.stdout.write(f'エラー内容: {response.text[:500]}')
                 
-                documents = edinet_service.get_document_list(yesterday)
-                
-                if documents:
-                    self.stdout.write(f"✅ 成功: {len(documents)}件の書類を取得")
-                else:
-                    self.stdout.write("⚠️ 書類が見つかりませんが、APIは正常に動作しています")
-            
-            self.stdout.write("✅ EDINET API v2は正常に動作しています！")
-            
-        except Exception as e:
-            self.stdout.write(f"❌ エラー: {str(e)}")
-            
-            # エラーの種類に応じたヒント
-            if "API key" in str(e).lower():
-                self.stdout.write("💡 settings.py でAPIキーが正しく設定されているか確認してください")
-            elif "network" in str(e).lower() or "connection" in str(e).lower():
-                self.stdout.write("💡 ネットワーク接続を確認してください")
-            else:
-                self.stdout.write("💡 ログファイルで詳細なエラー情報を確認してください")
+        except requests.exceptions.RequestException as e:
+            self.stdout.write(
+                self.style.ERROR(f'❌ リクエストエラー: {e}')
+            )

@@ -148,10 +148,12 @@ class Analysis(models.Model):
         return latest and latest.id == self.id
 
 
+# earnings_reports/models.py の SentimentAnalysis クラス部分（修正版）
+
 class SentimentAnalysis(models.Model):
     """感情・テキスト分析結果（修正版）"""
     
-    # OneToOneField から ForeignKey に変更
+    # ForeignKey から修正
     analysis = models.ForeignKey(
         Analysis, 
         on_delete=models.CASCADE, 
@@ -186,27 +188,50 @@ class SentimentAnalysis(models.Model):
     class Meta:
         verbose_name = '感情分析'
         verbose_name_plural = '感情分析一覧'
-        ordering = ['-created_at']  # 最新順
+        ordering = ['-created_at']
     
     def __str__(self):
         return f"{self.analysis.document.company.name} - 感情分析 ({self.created_at.strftime('%Y-%m-%d %H:%M')})"
     
     @property
     def dominant_sentiment(self):
-        """主要な感情を返す"""
-        scores = {
-            'positive': self.positive_score,
-            'negative': self.negative_score,
-            'neutral': self.neutral_score
-        }
-        return max(scores, key=scores.get)
+        """主要な感情を返す（安全版）"""
+        try:
+            scores = {
+                'positive': self.positive_score or 0,
+                'negative': self.negative_score or 0,
+                'neutral': self.neutral_score or 0
+            }
+            return max(scores, key=scores.get)
+        except Exception:
+            return 'neutral'
     
     @property
     def management_confidence_index(self):
-        """経営陣自信度指数（0-100）"""
-        confidence_ratio = self.confidence_keywords_count / max(1, self.uncertainty_keywords_count)
-        return min(100, confidence_ratio * 20)  # 最大100に制限
-
+        """経営陣自信度指数（0-100）安全版"""
+        try:
+            confidence_count = self.confidence_keywords_count or 0
+            uncertainty_count = self.uncertainty_keywords_count or 0
+            
+            # ゼロ除算回避
+            if uncertainty_count == 0:
+                if confidence_count > 0:
+                    return min(100.0, confidence_count * 10)  # 不確実性がない場合
+                else:
+                    return 50.0  # どちらもない場合はニュートラル
+            
+            confidence_ratio = confidence_count / uncertainty_count
+            index = min(100.0, confidence_ratio * 20)  # 最大100に制限
+            
+            return round(index, 1)  # 小数点1桁で丸める
+            
+        except Exception as e:
+            # エラーが発生した場合はデフォルト値
+            import logging
+            logger = logging.getLogger('earnings_analysis')
+            logger.warning(f"経営陣自信度計算エラー: {str(e)}")
+            return 50.0
+        
 
 class CashFlowAnalysis(models.Model):
     """キャッシュフロー分析結果（修正版）"""
@@ -220,7 +245,7 @@ class CashFlowAnalysis(models.Model):
         ('other', 'その他'),
     ]
     
-    # OneToOneField から ForeignKey に変更
+    # ForeignKey から修正
     analysis = models.ForeignKey(
         Analysis, 
         on_delete=models.CASCADE, 
@@ -234,8 +259,8 @@ class CashFlowAnalysis(models.Model):
     free_cf = models.BigIntegerField('フリーキャッシュフロー', null=True, blank=True)
     
     # パターン分類
-    pattern = models.CharField('CFパターン', max_length=20, choices=CASHFLOW_PATTERNS, blank=True)
-    pattern_score = models.FloatField('パターンスコア', validators=[MinValueValidator(-100), MaxValueValidator(100)], null=True, blank=True)
+    pattern = models.CharField('CFパターン', max_length=20, choices=CASHFLOW_PATTERNS, default='other')
+    pattern_score = models.FloatField('パターンスコア', validators=[MinValueValidator(-100), MaxValueValidator(100)], null=True, blank=True, default=0)
     
     # 前年同期比
     operating_cf_growth = models.FloatField('営業CF成長率(%)', null=True, blank=True)
@@ -244,10 +269,10 @@ class CashFlowAnalysis(models.Model):
     
     # 健全性指標
     cf_adequacy_ratio = models.FloatField('CF充足率', null=True, blank=True, help_text='営業CF/(設備投資+配当)')
-    cf_quality_score = models.FloatField('CF品質スコア', validators=[MinValueValidator(0), MaxValueValidator(100)], null=True, blank=True)
+    cf_quality_score = models.FloatField('CF品質スコア', validators=[MinValueValidator(0), MaxValueValidator(100)], null=True, blank=True, default=50)
     
     # 解釈とコメント
-    interpretation = models.TextField('解釈', blank=True)
+    interpretation = models.TextField('解釈', blank=True, default='')
     risk_factors = models.JSONField('リスク要因', default=list, blank=True)
     
     created_at = models.DateTimeField('作成日時', auto_now_add=True)
@@ -255,28 +280,36 @@ class CashFlowAnalysis(models.Model):
     class Meta:
         verbose_name = 'キャッシュフロー分析'
         verbose_name_plural = 'キャッシュフロー分析一覧'
-        ordering = ['-created_at']  # 最新順
+        ordering = ['-created_at']
     
     def __str__(self):
         return f"{self.analysis.document.company.name} - CF分析 ({self.created_at.strftime('%Y-%m-%d %H:%M')})"
     
     @property
     def is_healthy_pattern(self):
-        """健全なCFパターンかどうか"""
-        return self.pattern in ['ideal', 'growth', 'conservative']
+        """健全なCFパターンかどうか（安全版）"""
+        try:
+            pattern = self.pattern or 'other'
+            return pattern in ['ideal', 'growth', 'conservative']
+        except Exception:
+            return False
     
     def get_pattern_description(self):
-        """パターンの詳細説明"""
-        descriptions = {
-            'ideal': 'トヨタ型: 稼いで→投資して→借金返済。最も安定したパターン。',
-            'growth': 'テスラ型: 稼いで→投資して→更に資金調達。成長企業の典型パターン。',
-            'restructuring': '再構築型: 事業売却等で資金調達し借金返済。一時的な構造改革パターン。',
-            'danger': '破綻企業型: 赤字で→資産売却→借金増。要注意パターン。',
-            'conservative': '保守型: 堅実経営で投資も借入も控えめ。安定志向のパターン。',
-            'other': 'その他のパターン。個別に詳細確認が必要。'
-        }
-        return descriptions.get(self.pattern, '')
-
+        """パターンの詳細説明（安全版）"""
+        try:
+            descriptions = {
+                'ideal': 'トヨタ型: 稼いで→投資して→借金返済。最も安定したパターン。',
+                'growth': 'テスラ型: 稼いで→投資して→更に資金調達。成長企業の典型パターン。',
+                'restructuring': '再構築型: 事業売却等で資金調達し借金返済。一時的な構造改革パターン。',
+                'danger': '破綻企業型: 赤字で→資産売却→借金増。要注意パターン。',
+                'conservative': '保守型: 堅実経営で投資も借入も控えめ。安定志向のパターン。',
+                'other': 'その他のパターン。個別に詳細確認が必要。'
+            }
+            pattern = self.pattern or 'other'
+            return descriptions.get(pattern, descriptions['other'])
+        except Exception:
+            return 'パターン情報が取得できません。'
+        
 
 class AnalysisHistory(models.Model):
     """分析履歴・比較用"""
