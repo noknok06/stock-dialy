@@ -182,10 +182,6 @@
                                    class="btn btn-primary me-2">
                                     <i class="fas fa-eye me-1"></i>詳細結果を見る
                                 </a>
-                                <a href="{% url 'earnings_analysis:sentiment-export' %}?session_id={{ latest_session.session_id }}&format=csv" 
-                                   class="btn btn-outline-success">
-                                    <i class="fas fa-download me-1"></i>CSVエクスポート
-                                </a>
                             </div>
                         </div>
                     </div>
@@ -308,10 +304,6 @@
                     <a href="{% url 'earnings_analysis:document-detail-ui' document.doc_id %}" 
                        class="btn btn-outline-primary">
                         <i class="fas fa-arrow-left me-1"></i>書類詳細に戻る
-                    </a>
-                    <a href="{% url 'earnings_analysis:sentiment-stats' %}" 
-                       class="btn btn-outline-success">
-                        <i class="fas fa-chart-bar me-1"></i>感情分析統計
                     </a>
                     <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
                         <i class="fas fa-print me-1"></i>この画面を印刷

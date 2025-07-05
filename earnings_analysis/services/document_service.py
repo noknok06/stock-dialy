@@ -6,7 +6,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class EdinetDocumentService:
-    """書類取得サービス"""
+    """書類取得サービス（CSV削除版）"""
     
     def __init__(self, prefer_v1=False):
         # v2で問題がある場合はv1を使用
@@ -17,10 +17,11 @@ class EdinetDocumentService:
             self.edinet_client = EdinetAPIClient.create_v2_client()
             self.fallback_client = EdinetAPIClient.create_v1_client()
         
+        # CSV削除（コメントアウト）
         self.type_code_map = {
             'pdf': 2,      # PDF
             'xbrl': 1,     # XBRL
-            'csv': 5,      # CSV
+            # 'csv': 5,      # CSV（無効化）
             'attach': 3,   # 添付文書
             'english': 4,  # 英文ファイル
         }
@@ -49,7 +50,11 @@ class EdinetDocumentService:
                 raise e
     
     def download_document(self, doc_id: str, doc_type: str) -> Dict[str, Any]:
-        """書類ダウンロード実行"""
+        """書類ダウンロード実行（CSV削除版）"""
+        # CSVダウンロードを明示的に拒否
+        if doc_type == 'csv':
+            raise Exception('CSV形式のダウンロードは利用できません')
+        
         type_code = self.type_code_map.get(doc_type, 2)
         
         try:

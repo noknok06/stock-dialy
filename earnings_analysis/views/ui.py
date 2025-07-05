@@ -1,4 +1,4 @@
-# earnings_analysis/views/ui.py （バッチ履歴ビュー追加版）
+# earnings_analysis/views/ui.py（統計削除版）
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -10,7 +10,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 
-from ..models import Company, DocumentMetadata, BatchExecution
+from ..models import Company, DocumentMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class IndexView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # 統計情報
+        # 基本統計情報のみ
         try:
             total_companies = Company.objects.filter(is_active=True).count()
             total_documents = DocumentMetadata.objects.filter(legal_status='1').count()
@@ -255,141 +255,3 @@ class CompanySearchAPIView(TemplateView):
         except Exception as e:
             logger.error(f"企業検索エラー: {e}")
             return JsonResponse({'results': [], 'error': str(e)})
-
-
-class SystemStatsView(TemplateView):
-    """システム統計ページ"""
-    template_name = 'earnings_analysis/simple_stats.html'
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        
-        try:
-            # 基本統計
-            total_companies = Company.objects.filter(is_active=True).count()
-            total_documents = DocumentMetadata.objects.filter(legal_status='1').count()
-            
-            # 最近のバッチ実行状況
-            thirty_days_ago = timezone.now().date() - timedelta(days=30)
-            recent_batches = BatchExecution.objects.filter(
-                batch_date__gte=thirty_days_ago
-            ).order_by('-batch_date')[:10]
-            
-            # 今月の書類数
-            this_month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            this_month_docs = DocumentMetadata.objects.filter(
-                submit_date_time__gte=this_month_start,
-                legal_status='1'
-            ).count()
-            
-            # 書類種別統計
-            doc_type_stats = DocumentMetadata.objects.filter(
-                legal_status='1'
-            ).values('doc_type_code').annotate(
-                count=Count('id')
-            ).order_by('-count')[:10]
-            
-            # 月別統計（簡略版）
-            monthly_stats = []
-            for i in range(6):  # 過去6ヶ月
-                months_ago = timezone.now() - timedelta(days=30*i)
-                month_start = months_ago.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-                
-                if i == 0:
-                    month_end = timezone.now()
-                else:
-                    month_end = month_start.replace(month=month_start.month+1 if month_start.month < 12 else 1,
-                                                  year=month_start.year if month_start.month < 12 else month_start.year+1)
-                
-                count = DocumentMetadata.objects.filter(
-                    submit_date_time__gte=month_start,
-                    submit_date_time__lt=month_end,
-                    legal_status='1'
-                ).count()
-                
-                monthly_stats.append({
-                    'month': month_start.strftime('%Y-%m'),
-                    'count': count
-                })
-            
-            monthly_stats.reverse()
-            
-            context.update({
-                'total_companies': total_companies,
-                'total_documents': total_documents,
-                'this_month_documents': this_month_docs,
-                'recent_batches': recent_batches,
-                'doc_type_stats': list(doc_type_stats),
-                'monthly_stats': json.dumps(monthly_stats),
-            })
-            
-        except Exception as e:
-            logger.error(f"統計情報取得エラー: {e}")
-            context.update({
-                'total_companies': 0,
-                'total_documents': 0,
-                'this_month_documents': 0,
-                'recent_batches': [],
-                'doc_type_stats': [],
-                'monthly_stats': json.dumps([]),
-            })
-        
-        return context
-
-class BatchHistoryView(TemplateView):
-    """バッチ実行履歴ページ"""
-    template_name = 'earnings_analysis/batch_history.html'
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        
-        # ページネーション
-        page = self.request.GET.get('page', 1)
-        status_filter = self.request.GET.get('status', '')
-        
-        # バッチ履歴取得
-        batch_history = BatchExecution.objects.all().order_by('-batch_date')
-        
-        # ステータスフィルタ
-        if status_filter:
-            batch_history = batch_history.filter(status=status_filter)
-        
-        # ページネーション
-        paginator = Paginator(batch_history, 20)
-        try:
-            batches = paginator.page(page)
-        except PageNotAnInteger:
-            batches = paginator.page(1)
-        except EmptyPage:
-            batches = paginator.page(paginator.num_pages)
-        
-        # 統計情報
-        total_batches = BatchExecution.objects.count()
-        success_count = BatchExecution.objects.filter(status='SUCCESS').count()
-        failed_count = BatchExecution.objects.filter(status='FAILED').count()
-        running_count = BatchExecution.objects.filter(status='RUNNING').count()
-        
-        # 最近30日の成功率
-        thirty_days_ago = timezone.now().date() - timedelta(days=30)
-        recent_total = BatchExecution.objects.filter(batch_date__gte=thirty_days_ago).count()
-        recent_success = BatchExecution.objects.filter(
-            batch_date__gte=thirty_days_ago, 
-            status='SUCCESS'
-        ).count()
-        
-        success_rate = (recent_success / recent_total * 100) if recent_total > 0 else 0
-        
-        context.update({
-            'batches': batches,
-            'status_filter': status_filter,
-            'batch_stats': {
-                'total_batches': total_batches,
-                'success_count': success_count,
-                'failed_count': failed_count,
-                'running_count': running_count,
-                'success_rate': round(success_rate, 1),
-            },
-            'status_choices': BatchExecution.STATUS_CHOICES,
-        })
-        
-        return context

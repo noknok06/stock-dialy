@@ -4,10 +4,8 @@ from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q, Count
 from django_filters.rest_framework import DjangoFilterBackend
 from django_filters import rest_framework as filters
-from django.utils import timezone
-from datetime import timedelta
 
-from ..models import Company, DocumentMetadata, BatchExecution
+from ..models import Company, DocumentMetadata
 from ..serializers import (
     CompanySearchSerializer, 
     DocumentMetadataSerializer, 
@@ -71,85 +69,3 @@ class DocumentDetailView(generics.RetrieveAPIView):
     
     def get_queryset(self):
         return DocumentMetadata.objects.filter(legal_status='1')
-
-class SystemStatsView(generics.GenericAPIView):
-    """システム統計情報API"""
-    
-    def get(self, request):
-        # 基本統計
-        total_companies = Company.objects.filter(is_active=True).count()
-        total_documents = DocumentMetadata.objects.filter(legal_status='1').count()
-        
-        # 最近のバッチ実行状況
-        recent_batches = BatchExecution.objects.filter(
-            batch_date__gte=timezone.now().date() - timedelta(days=30)
-        ).order_by('-batch_date')[:10]
-        
-        # 月間統計
-        this_month_docs = DocumentMetadata.objects.filter(
-            created_at__gte=timezone.now().replace(day=1),
-            legal_status='1'
-        ).count()
-        
-        # 書類種別統計
-        doc_type_stats = DocumentMetadata.objects.filter(
-            legal_status='1'
-        ).values('doc_type_code').annotate(
-            count=Count('id')
-        ).order_by('-count')[:10]
-        
-        return Response({
-            'total_companies': total_companies,
-            'total_documents': total_documents,
-            'this_month_documents': this_month_docs,
-            'recent_batches': [
-                {
-                    'date': batch.batch_date,
-                    'status': batch.status,
-                    'processed_count': batch.processed_count,
-                    'error_message': batch.error_message[:100] if batch.error_message else None
-                }
-                for batch in recent_batches
-            ],
-            'doc_type_stats': list(doc_type_stats),
-        })
-
-class BatchHistoryView(generics.ListAPIView):
-    """バッチ実行履歴API"""
-    queryset = BatchExecution.objects.all().order_by('-batch_date')
-    pagination_class = StandardResultsSetPagination
-    
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        page = self.paginate_queryset(queryset)
-        
-        if page is not None:
-            data = [
-                {
-                    'batch_date': batch.batch_date,
-                    'status': batch.status,
-                    'processed_count': batch.processed_count,
-                    'error_message': batch.error_message,
-                    'started_at': batch.started_at,
-                    'completed_at': batch.completed_at,
-                    'duration': str(batch.completed_at - batch.started_at).split('.')[0] 
-                                if batch.started_at and batch.completed_at else None
-                }
-                for batch in page
-            ]
-            return self.get_paginated_response(data)
-        
-        data = [
-            {
-                'batch_date': batch.batch_date,
-                'status': batch.status,
-                'processed_count': batch.processed_count,
-                'error_message': batch.error_message,
-                'started_at': batch.started_at,
-                'completed_at': batch.completed_at,
-                'duration': str(batch.completed_at - batch.started_at).split('.')[0] 
-                            if batch.started_at and batch.completed_at else None
-            }
-            for batch in queryset
-        ]
-        return Response(data)

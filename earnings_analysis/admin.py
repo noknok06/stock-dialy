@@ -1,11 +1,10 @@
-# earnings_analysis/admin.py
+# earnings_analysis/admin.py（CSV削除版）
 from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.db.models import Count, Q
 from django.http import HttpResponse
-import csv
 from datetime import datetime
 
 from .models import Company, DocumentMetadata, BatchExecution
@@ -47,7 +46,7 @@ class CompanyAdmin(admin.ModelAdmin):
         }),
     )
     
-    actions = ['activate_companies', 'deactivate_companies', 'export_to_csv']
+    actions = ['activate_companies', 'deactivate_companies']
     
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(
@@ -116,29 +115,6 @@ class CompanyAdmin(admin.ModelAdmin):
         updated = queryset.update(is_active=False)
         self.message_user(request, f'{updated} 社を無効化しました。')
     deactivate_companies.short_description = "選択した企業を無効化"
-    
-    def export_to_csv(self, request, queryset):
-        """企業データをCSVエクスポート"""
-        response = HttpResponse(content_type='text/csv; charset=utf-8')
-        response['Content-Disposition'] = f'attachment; filename="companies_{datetime.now().strftime("%Y%m%d")}.csv"'
-        
-        writer = csv.writer(response)
-        writer.writerow(['EDINETコード', '証券コード', '企業名', '企業名カナ', '法人番号', '有効フラグ', '作成日', '更新日'])
-        
-        for company in queryset:
-            writer.writerow([
-                company.edinet_code,
-                company.securities_code or '',
-                company.company_name,
-                company.company_name_kana or '',
-                company.jcn or '',
-                '有効' if company.is_active else '無効',
-                company.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-                company.updated_at.strftime('%Y-%m-%d %H:%M:%S'),
-            ])
-        
-        return response
-    export_to_csv.short_description = "選択した企業をCSVエクスポート"
 
 
 @admin.register(DocumentMetadata)
@@ -174,7 +150,7 @@ class DocumentMetadataAdmin(admin.ModelAdmin):
             'description': '書類の詳細説明'
         }),
         ('利用可能フォーマット', {
-            'fields': ('xbrl_flag', 'pdf_flag', 'csv_flag', 'attach_doc_flag', 'english_doc_flag'),
+            'fields': ('xbrl_flag', 'pdf_flag', 'attach_doc_flag', 'english_doc_flag'),
             'description': 'ダウンロード可能なファイル形式'
         }),
         ('ステータス', {
@@ -193,7 +169,7 @@ class DocumentMetadataAdmin(admin.ModelAdmin):
         }),
     )
     
-    actions = ['export_to_csv', 'mark_as_reviewed']
+    actions = ['mark_as_reviewed']
     
     def doc_id_link(self, obj):
         """書類IDにダウンロードリンクを追加"""
@@ -244,14 +220,12 @@ class DocumentMetadataAdmin(admin.ModelAdmin):
     legal_status_badge.admin_order_field = 'legal_status'
     
     def format_flags(self, obj):
-        """利用可能フォーマット表示"""
+        """利用可能フォーマット表示（CSV削除）"""
         flags = []
         if obj.pdf_flag:
             flags.append('<span class="badge badge-danger">PDF</span>')
         if obj.xbrl_flag:
             flags.append('<span class="badge badge-primary">XBRL</span>')
-        if obj.csv_flag:
-            flags.append('<span class="badge badge-success">CSV</span>')
         if obj.attach_doc_flag:
             flags.append('<span class="badge badge-warning">添付</span>')
         if obj.english_doc_flag:
@@ -261,7 +235,7 @@ class DocumentMetadataAdmin(admin.ModelAdmin):
     format_flags.short_description = '利用可能フォーマット'
     
     def download_links(self, obj):
-        """ダウンロードリンクの生成"""
+        """ダウンロードリンクの生成（CSV削除）"""
         links = []
         base_url = reverse('earnings_analysis:document-download', args=[obj.doc_id])
         
@@ -269,37 +243,9 @@ class DocumentMetadataAdmin(admin.ModelAdmin):
             links.append(f'<a href="{base_url}?type=pdf" target="_blank" class="button">PDFダウンロード</a>')
         if obj.xbrl_flag:
             links.append(f'<a href="{base_url}?type=xbrl" target="_blank" class="button">XBRLダウンロード</a>')
-        if obj.csv_flag:
-            links.append(f'<a href="{base_url}?type=csv" target="_blank" class="button">CSVダウンロード</a>')
         
         return format_html('<br>'.join(links)) if links else '利用可能なダウンロードなし'
     download_links.short_description = 'ダウンロード'
-    
-    def export_to_csv(self, request, queryset):
-        """書類データをCSVエクスポート"""
-        response = HttpResponse(content_type='text/csv; charset=utf-8')
-        response['Content-Disposition'] = f'attachment; filename="documents_{datetime.now().strftime("%Y%m%d")}.csv"'
-        
-        writer = csv.writer(response)
-        writer.writerow([
-            '書類管理番号', '企業名', '証券コード', 'EDINETコード', 
-            '書類概要', '提出日時', '書類種別コード', '縦覧区分'
-        ])
-        
-        for doc in queryset:
-            writer.writerow([
-                doc.doc_id,
-                doc.company_name,
-                doc.securities_code or '',
-                doc.edinet_code,
-                doc.doc_description,
-                doc.submit_date_time.strftime('%Y-%m-%d %H:%M:%S'),
-                doc.doc_type_code,
-                doc.get_legal_status_display(),
-            ])
-        
-        return response
-    export_to_csv.short_description = "選択した書類をCSVエクスポート"
     
     def mark_as_reviewed(self, request, queryset):
         """レビュー済みとしてマーク（将来の拡張用）"""
