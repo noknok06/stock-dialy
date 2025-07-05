@@ -504,6 +504,12 @@ class TransparentSentimentAnalyzer:
                     'basic_words_found': len(basic_matches),
                     'sentences_analyzed': len(sentences),
                     'unique_words_found': len(set(word for word, _, _ in all_matches)),
+                    'positive_words_count': len([s for s in sentiment_scores if s > 0]),
+                    'negative_words_count': len([s for s in sentiment_scores if s < 0]),
+                    'positive_sentences_count': len([s for s in sentence_analysis if s['score'] > self.config.positive_threshold]),
+                    'negative_sentences_count': len([s for s in sentence_analysis if s['score'] < self.config.negative_threshold]),
+                    'threshold_positive': self.config.positive_threshold,
+                    'threshold_negative': self.config.negative_threshold,
                 },
                 'analysis_metadata': {
                     'analyzed_at': timezone.now().isoformat(),
@@ -590,8 +596,9 @@ class TransparentSentimentAnalyzer:
                 'average_score': 0.0,
                 'final_score': 0.0,
             }
-        positive_scores = [s for s in scores if s > self.config.positive_threshold]  # 0.15以上
-        negative_scores = [s for s in scores if s < self.config.negative_threshold]  # -0.15以下
+        
+        positive_scores = [s for s in scores if s > 0]
+        negative_scores = [s for s in scores if s < 0]
         
         positive_sum = sum(positive_scores)
         negative_sum = sum(negative_scores)
@@ -785,6 +792,10 @@ class TransparentSentimentAnalyzer:
             'statistics': {
                 'total_words_analyzed': 0, 'context_patterns_found': 0,
                 'basic_words_found': 0, 'sentences_analyzed': 0, 'unique_words_found': 0,
+                'positive_words_count': 0, 'negative_words_count': 0,
+                'positive_sentences_count': 0, 'negative_sentences_count': 0,
+                'threshold_positive': self.config.positive_threshold,
+                'threshold_negative': self.config.negative_threshold,
             },
             'analysis_metadata': {
                 'analyzed_at': timezone.now().isoformat(),
@@ -795,15 +806,19 @@ class TransparentSentimentAnalyzer:
         }
     
     def analyze_text_sections(self, text_sections: Dict[str, str], session_id: str = None, document_info: Dict[str, str] = None) -> Dict[str, Any]:
-        """複数セクションの分析（見解生成付き・統合結果対応）"""
+        """複数セクションの分析（統合結果修正版）"""
         try:
             section_results = {}
-            overall_scores = []
-            combined_steps = []
             all_positive_sentences = []
             all_negative_sentences = []
             all_positive_keywords = []
             all_negative_keywords = []
+            combined_steps = []
+            
+            # 統合用のスコアリスト（語彙レベル）
+            all_positive_scores = []
+            all_negative_scores = []
+            all_raw_scores = []
             
             # セクション別分析
             for section_name, text in text_sections.items():
@@ -812,8 +827,14 @@ class TransparentSentimentAnalyzer:
                 
                 result = self.analyze_text(text, session_id)
                 section_results[section_name] = result
-                overall_scores.append(result['overall_score'])
                 combined_steps.extend(result['analysis_steps'])
+                
+                # 語彙レベルの統合（修正）
+                score_calc = result.get('score_calculation', {})
+                if score_calc:
+                    all_positive_scores.extend(score_calc.get('positive_scores', []))
+                    all_negative_scores.extend(score_calc.get('negative_scores', []))
+                    all_raw_scores.extend(score_calc.get('raw_scores', []))
                 
                 # 各セクションの結果を統合リストに追加
                 sample_sentences = result.get('sample_sentences', {})
@@ -845,11 +866,14 @@ class TransparentSentimentAnalyzer:
                     keyword['section'] = section_name
                     all_negative_keywords.append(keyword)
             
-            if not overall_scores:
+            if not all_raw_scores:
                 return self._empty_result(session_id)
             
-            # 統合分析
-            combined_score_calc = self._calculate_detailed_score(overall_scores)
+            # 統合分析（修正版：語彙レベルから計算）
+            combined_score_calc = self._calculate_detailed_score(all_raw_scores)
+            combined_score_calc['positive_scores'] = all_positive_scores
+            combined_score_calc['negative_scores'] = all_negative_scores
+            
             overall_score = combined_score_calc['final_score']
             sentiment_label = self._determine_sentiment_label(overall_score)
             
@@ -891,6 +915,12 @@ class TransparentSentimentAnalyzer:
                     'negative_sentences_found': len(all_negative_sentences),
                     'total_positive_keywords': len(all_positive_keywords),
                     'total_negative_keywords': len(all_negative_keywords),
+                    'positive_words_count': sum(r['statistics'].get('positive_words_count', 0) for r in section_results.values()),
+                    'negative_words_count': sum(r['statistics'].get('negative_words_count', 0) for r in section_results.values()),
+                    'positive_sentences_count': len(all_positive_sentences),
+                    'negative_sentences_count': len(all_negative_sentences),
+                    'threshold_positive': self.config.positive_threshold,
+                    'threshold_negative': self.config.negative_threshold,
                 },
                 'analysis_metadata': {
                     'analyzed_at': timezone.now().isoformat(),

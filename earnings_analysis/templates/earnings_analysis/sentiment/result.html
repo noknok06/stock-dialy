@@ -294,21 +294,24 @@
                 </div>
             </div>
         </div>
-
         <!-- 詳細なスコア内訳 -->
         {% if session.analysis_result.score_calculation %}
             {% with calc=session.analysis_result.score_calculation %}
                 <div class="result-card card">
                     <div class="card-header">
                         <h5 class="mb-0">
-                            <i class="fas fa-calculator me-2"></i>スコア計算の詳細内訳
+                            <i class="fas fa-calculator me-2"></i>語彙レベルでのスコア計算詳細
                         </h5>
+                        <div class="small text-muted mt-1">
+                            <i class="fas fa-info-circle me-1"></i>
+                            検出された個別の語彙を集計（1つの文章に複数の語彙が含まれる場合があります）
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="word-stats-grid">
                             <div class="word-stat-item">
                                 <div class="h3 text-success mb-2">{{ calc.positive_scores|length }}</div>
-                                <div class="text-muted small">ポジティブ語数</div>
+                                <div class="text-muted small">ポジティブ語彙数</div>
                                 {% if calc.positive_sum > 0 %}
                                     <div class="small text-success mt-1">合計: +{{ calc.positive_sum|floatformat:2 }}</div>
                                 {% endif %}
@@ -316,7 +319,7 @@
                             
                             <div class="word-stat-item">
                                 <div class="h3 text-danger mb-2">{{ calc.negative_scores|length }}</div>
-                                <div class="text-muted small">ネガティブ語数</div>
+                                <div class="text-muted small">ネガティブ語彙数</div>
                                 {% if calc.negative_sum < 0 %}
                                     <div class="small text-danger mt-1">合計: {{ calc.negative_sum|floatformat:2 }}</div>
                                 {% endif %}
