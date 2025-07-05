@@ -1,4 +1,4 @@
-# earnings_analysis/services/sentiment_analyzer.py (改善版)
+# earnings_analysis/services/sentiment_analyzer.py（分かりやすい分析版）
 import re
 import csv
 import os
@@ -19,16 +19,17 @@ logger = logging.getLogger(__name__)
 @dataclass
 class AnalysisConfig:
     """感情分析設定"""
-    positive_threshold: float = 0.2
-    negative_threshold: float = -0.2
-    min_sentence_length: int = 15
-    max_sample_sentences: int = 10
+    positive_threshold: float = 0.15  # 閾値を下げてより多くの語彙を検出
+    negative_threshold: float = -0.15  # 閾値を下げてより多くの語彙を検出
+    min_sentence_length: int = 10  # 最小文長を短くして文章を取得しやすく
+    max_sample_sentences: int = 15  # サンプル文章数を増加
     cache_timeout: int = 3600
-    min_numeric_value: float = 5.0  # 数値パターンの最小閾値
+    min_numeric_value: float = 5.0
+    context_window: int = 5
 
 
-class SentimentDictionary:
-    """感情辞書管理クラス"""
+class TransparentSentimentDictionary:
+    """分かりやすい感情辞書管理クラス"""
     
     def __init__(self, dict_path: Optional[str] = None):
         self.dict_path = dict_path or getattr(
@@ -36,321 +37,160 @@ class SentimentDictionary:
             os.path.join(settings.BASE_DIR, 'data', 'sentiment_dict.csv')
         )
         self.sentiment_dict = {}
-        self.compound_patterns = []
+        self.improvement_patterns = []
+        self.deterioration_patterns = []
+        self.negation_patterns = []
         self._last_modified = 0
         self.load_dictionary()
     
     def load_dictionary(self) -> None:
-        """感情辞書の読み込み（キャッシュ対応）"""
-        cache_key = f"sentiment_dict_{hash(self.dict_path)}"
-        
-        # ファイルの最終更新時間チェック
-        try:
-            current_modified = os.path.getmtime(self.dict_path)
-            if current_modified <= self._last_modified:
-                # キャッシュから読み込み
-                cached_dict = cache.get(cache_key)
-                if cached_dict:
-                    self.sentiment_dict = cached_dict
-                    logger.info(f"感情辞書をキャッシュから読み込み: {len(self.sentiment_dict)}語")
-                    return
-        except OSError:
-            pass
-        
-        # ファイルから読み込み
+        """感情辞書の読み込み"""
         if os.path.exists(self.dict_path):
             try:
                 self._load_from_file()
-                self._build_compound_patterns()
-                
-                # キャッシュに保存
-                cache.set(cache_key, self.sentiment_dict, 3600)
-                self._last_modified = current_modified
-                
-                logger.info(f"感情辞書読み込み完了: {len(self.sentiment_dict)}語, {len(self.compound_patterns)}パターン")
-                
+                self._build_patterns()
+                logger.info(f"感情辞書読み込み完了: {len(self.sentiment_dict)}語")
             except Exception as e:
                 logger.error(f"感情辞書読み込みエラー: {e}")
-                self._load_improved_default_dictionary()
+                self._load_default_dictionary()
         else:
             logger.warning(f"感情辞書が見つかりません: {self.dict_path}")
-            self._load_improved_default_dictionary()
+            self._load_default_dictionary()
     
     def _load_from_file(self) -> None:
         """ファイルからの辞書読み込み"""
         with open(self.dict_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
-            loaded_count = 0
-            
-            for row_num, row in enumerate(reader, 1):
+            for row in reader:
                 try:
                     word = row['word'].strip()
                     if not word or word.startswith('#'):
                         continue
                     
-                    score_str = row['score'].strip()
-                    score_str = score_str.replace('−', '-').replace('－', '-')
+                    score_str = row['score'].strip().replace('−', '-').replace('－', '-')
                     score = float(score_str)
                     
-                    if not (-1.0 <= score <= 1.0):
-                        logger.warning(f"スコア範囲外: {word} ({score})")
-                        continue
-                    
-                    self.sentiment_dict[word] = score
-                    loaded_count += 1
-                    
-                except (ValueError, KeyError) as e:
-                    logger.warning(f"辞書{row_num}行目エラー: {row} - {e}")
+                    if -1.0 <= score <= 1.0:
+                        self.sentiment_dict[word] = score
+                except (ValueError, KeyError):
                     continue
-            
-            if loaded_count == 0:
-                raise ValueError("有効な語彙が読み込めませんでした")
     
-    def _build_compound_patterns(self) -> None:
-        """複合語パターンの構築"""
-        # 辞書から複合語パターンを抽出
-        compound_words = [word for word in self.sentiment_dict.keys() if len(word) >= 4]
-        
-        # 優先度順にソート（長い語を優先）
-        self.compound_patterns = sorted(compound_words, key=len, reverse=True)
-        
-        # 正規表現パターンも追加
-        additional_patterns = [
-            r'大幅(?:増収|増益|減収|減益)',
-            r'(?:業績|収益|利益)(?:好調|向上|改善|拡大|悪化|低迷|不振)',
-            r'(?:競争力|収益性)(?:強化|向上|改善|低下)',
-            r'(?:市場|事業)(?:拡大|縮小)',
-            r'V字回復',
-            r'黒字転換',
-            r'赤字転落',
+    def _build_patterns(self) -> None:
+        """文脈パターンの構築"""
+        # 改善を表すパターン（ネガティブ→ポジティブ転換）
+        self.improvement_patterns = [
+            r'(減収|減益|赤字|損失|業績悪化|低迷|不振|苦戦)(?:の|幅の|幅)?(改善|回復|縮小|解消|脱却|克服)',
+            r'(減収|減益|赤字|損失)(?:の|幅の|幅)?縮小',
+            r'(業績悪化|低迷|不振)(?:からの|から)(回復|脱却|改善)',
+            r'(悪化|低迷|不振)(?:に|への)歯止め',
+            r'無配からの復配',
+            r'赤字からの黒字転換',
         ]
         
-        self.compound_patterns.extend(additional_patterns)
+        # 悪化を表すパターン（ポジティブ→ネガティブ転換）
+        self.deterioration_patterns = [
+            r'(増収|増益|成長|好調|回復)(?:の|に)(鈍化|頭打ち|一服|陰り)',
+            r'(増収|増益|成長|改善)(?:の|が)(遅れ|足踏み)',
+            r'(好調|順調)(?:に|な)(陰り|一服)',
+        ]
+        
+        # 否定パターン
+        self.negation_patterns = [
+            r'(減収|減益|赤字|損失|悪化|低迷|不振)(?:で|では)(は?な)(い|く)',
+            r'(減収|減益|赤字|損失|悪化|低迷|不振)(?:という)?(?:わけ)?(で|では)(は?な)(い|く)',
+        ]
     
-    def _load_improved_default_dictionary(self) -> None:
-        """改良版デフォルト辞書（前回提案版）"""
-        default_dict = {
-            # 強いポジティブ（財務業績）
+    def _load_default_dictionary(self) -> None:
+        """デフォルト辞書（拡張版）"""
+        self.sentiment_dict = {
+            # ポジティブ語彙
             '増収': 0.8, '増益': 0.8, '大幅増収': 0.9, '大幅増益': 0.9,
-            '過去最高益': 0.9, '最高益': 0.9, '黒字転換': 0.9, '黒字化': 0.8,
-            'V字回復': 0.9, '急回復': 0.8, '復配': 0.8, '増配': 0.7,
-            '業績好調': 0.8, '業績向上': 0.7, '業績拡大': 0.7,
-            '収益改善': 0.7, '利益改善': 0.7, '売上増加': 0.6,
+            '過去最高益': 0.9, '黒字転換': 0.9, 'V字回復': 0.9, '復配': 0.8,
+            '改善': 0.7, '向上': 0.7, '回復': 0.6, '好調': 0.8, '順調': 0.7,
+            '成長': 0.8, '拡大': 0.6, '上昇': 0.6, '達成': 0.7, '成功': 0.8,
+            '効率化': 0.5, '強化': 0.6, '堅調': 0.6, '良好': 0.7,
             
-            # ポジティブ（成長・改善）
-            '成長': 0.8, '急成長': 0.8, '高成長': 0.8, '成長加速': 0.8,
-            '拡大': 0.6, '事業拡大': 0.6, '市場拡大': 0.6, 'シェア拡大': 0.7,
-            '回復': 0.6, '改善': 0.7, '向上': 0.7, '上昇': 0.6,
-            '好調': 0.8, '順調': 0.7, '堅調': 0.6, '良好': 0.7,
-            '効率化': 0.5, '生産性向上': 0.6, '収益性向上': 0.7,
-            '競争力強化': 0.7, '達成': 0.7, '成功': 0.8,
+            # 改善パターン
+            '減収の改善': 0.7, '赤字縮小': 0.8, '損失の改善': 0.7,
+            '減収幅の縮小': 0.7, '減益の改善': 0.7, '業績向上': 0.7,
             
-            # 強いネガティブ（財務業績）
+            # ネガティブ語彙
             '減収': -0.7, '減益': -0.8, '大幅減収': -0.9, '大幅減益': -0.9,
-            '赤字': -0.8, '赤字転落': -0.9, '赤字拡大': -0.8, '損失': -0.7,
-            '営業損失': -0.8, '減配': -0.6, '無配': -0.8,
-            '業績悪化': -0.8, '業績低迷': -0.7, '業績不振': -0.7,
-            '収益悪化': -0.7, '利益減少': -0.6, '売上減少': -0.6,
+            '赤字': -0.8, '赤字転落': -0.9, '損失': -0.7, '営業損失': -0.8,
+            '悪化': -0.8, '低下': -0.6, '減少': -0.6, '低迷': -0.7, '不振': -0.7,
+            '苦戦': -0.7, '困難': -0.7, '厳しい': -0.6, '下落': -0.6,
+            '停滞': -0.5, '縮小': -0.5, '課題': -0.4, 'リスク': -0.4,
             
-            # ネガティブ（悪化・低下）
-            '悪化': -0.8, '低下': -0.6, '減少': -0.6, '下落': -0.6,
-            '縮小': -0.5, '低迷': -0.7, '停滞': -0.5, '不振': -0.7,
-            '苦戦': -0.7, '厳しい状況': -0.7, '困難': -0.7,
-            'リスク増大': -0.7, '課題深刻化': -0.6, '競争激化': -0.6,
-            
-            # 数値関連
-            '％以上': 0.3, '％超': 0.3, '％上昇': 0.6, '％増': 0.5,
-            '％減': -0.5, '％下落': -0.6, '％割れ': -0.4,
-            '倍以上': 0.6, '倍増': 0.8, '半減': -0.7,
-            '年ぶり': 0.3, '年連続': 0.4,
+            # 悪化パターン
+            '増収の鈍化': -0.5, '成長の鈍化': -0.6, '好調に陰り': -0.5,
             
             # 中立
-            '％台': 0.0, '％程度': 0.0, '維持': 0.1, '継続': 0.2,
-            '推移': 0.0, '計画': 0.1, '予想': 0.0,
+            '維持': 0.1, '継続': 0.2, '推移': 0.0, '予想': 0.0,
+            '計画': 0.1, '予定': 0.0, '見通し': 0.0,
         }
-        
-        self.sentiment_dict = default_dict
-        self._build_compound_patterns()
-        logger.info(f"改良版デフォルト辞書を使用: {len(self.sentiment_dict)}語")
+        self._build_patterns()
 
 
-class TextProcessor:
-    """テキスト前処理クラス"""
+class TransparentTextProcessor:
+    """分かりやすいテキスト前処理クラス"""
     
     @staticmethod
     def preprocess(text: str) -> str:
-        """改良版テキスト前処理"""
+        """改良版テキスト前処理（数値保持）"""
         if not text:
             return ""
         
         # HTMLタグ除去
         text = re.sub(r'<[^>]+>', '', text)
         
-        # 重要な数値表現を保護
+        # 重要な金融表現を保護
         protected_patterns = []
-        important_patterns = [
-            (r'\d+(?:\.\d+)?(?:％|%|倍)(?:以上|超|未満|増|減|上昇|下落|改善|悪化|台)', 'NUMERIC'),
-            (r'(?:過去|)\d+年(?:ぶり|連続)', 'PERIOD'),
-            (r'\d+四半期連続', 'PERIOD'),
+        financial_patterns = [
+            # 改善・悪化表現（数値付き）
+            (r'(減収|減益|赤字|損失)(?:の|幅の|幅)?(?:が|は)?\d+(?:\.\d+)?[％%]?(?:の)?(改善|縮小)', 'IMPROVEMENT'),
+            (r'(増収|増益|成長)(?:の|が)?\d+(?:\.\d+)?[％%]?(?:の)?(鈍化|頭打ち)', 'DETERIORATION'),
+            
+            # 基本的な改善・悪化表現
+            (r'(減収|減益|赤字|損失|業績悪化|低迷|不振)(?:の|幅の|幅)?(改善|回復|縮小|解消|脱却)', 'IMPROVEMENT'),
+            (r'(増収|増益|成長|好調)(?:の|に)(鈍化|頭打ち|一服|陰り)', 'DETERIORATION'),
+            
+            # 特別な表現
             (r'V字回復', 'RECOVERY'),
             (r'黒字転換', 'PROFIT_CHANGE'),
             (r'赤字転落', 'LOSS_CHANGE'),
+            
+            # 数値表現（重要なもののみ保護）
+            (r'\d+(?:\.\d+)?(?:％|%|倍)(?:以上|超|増|減|上昇|下落|改善|悪化)', 'NUMERIC'),
+            (r'(?:過去|)\d+年(?:ぶり|連続)', 'PERIOD'),
         ]
         
-        for i, (pattern, prefix) in enumerate(important_patterns):
+        for i, (pattern, prefix) in enumerate(financial_patterns):
             for match in re.finditer(pattern, text):
                 placeholder = f"__{prefix}_{i}__"
                 protected_patterns.append((placeholder, match.group()))
                 text = text.replace(match.group(), placeholder, 1)
         
-        # 一般的な数値の簡略化
-        text = re.sub(r'\d{4,}(?:,\d{3})*(?:\.\d+)?', 'NUMBER', text)
-        text = re.sub(r'\d{4}年\d{1,2}月\d{1,2}日', 'DATE', text)
+        # 一般的な整理（数値は保持）
+        text = re.sub(r'\s+', ' ', text)
+        text = re.sub(r'[【】「」（）\(\)\[\]〔〕]', '', text)
         
         # 保護したパターンを復元
         for placeholder, original in protected_patterns:
             text = text.replace(placeholder, original)
         
-        # 特殊文字の正規化
-        text = re.sub(r'\s+', ' ', text)
-        text = re.sub(r'[【】「」（）\(\)\[\]〔〕]', '', text)
-        
         return text.strip()
-    
-    @staticmethod
-    def split_sentences(text: str, min_length: int = 15) -> List[str]:
-        """改良版文分割"""
-        sentences = re.split(r'[。！？\n]', text)
-        
-        filtered = []
-        for s in sentences:
-            s = s.strip()
-            if (len(s) >= min_length and 
-                not re.match(r'^\s*[\d,\.\s]+\s*$', s) and
-                len(re.findall(r'[ぁ-んァ-ヶ一-龯]', s)) > 3):  # 日本語文字が3個以上
-                filtered.append(s)
-        
-        return filtered
 
 
-class NumericPatternAnalyzer:
-    """数値パターン分析クラス"""
-    
-    def __init__(self, config: AnalysisConfig):
-        self.config = config
-        self.patterns = self._build_patterns()
-    
-    def _build_patterns(self) -> List[Tuple[str, float, str]]:
-        """パターン定義の構築"""
-        return [
-            # ポジティブパターン
-            (r'(\d+(?:\.\d+)?)％(?:以上|超)(?:の)?(?:増加|上昇|改善)', 0.6, 'positive'),
-            (r'(\d+(?:\.\d+)?)％(?:の)?(?:増収|増益|改善)', 0.5, 'positive'),
-            (r'(\d+(?:\.\d+)?)倍(?:以上|超)', 0.7, 'positive'),
-            (r'(\d+(?:\.\d+)?)倍増', 0.8, 'positive'),
-            (r'(\d+)年ぶり(?:の)?(?:高水準|増益)', 0.5, 'positive'),
-            (r'(\d+)年連続(?:の)?(?:増益|成長)', 0.4, 'positive'),
-            
-            # ネガティブパターン  
-            (r'(\d+(?:\.\d+)?)％(?:の)?(?:減収|減益|下落)', -0.5, 'negative'),
-            (r'(\d+(?:\.\d+)?)％割れ', -0.4, 'negative'),
-            (r'半減', -0.7, 'negative'),
-            (r'(\d+)年連続(?:の)?(?:減益|赤字)', -0.4, 'negative'),
-            
-            # 中立パターン
-            (r'(\d+(?:\.\d+)?)％台', 0.0, 'neutral'),
-        ]
-    
-    def analyze(self, text: str) -> List[float]:
-        """数値パターン分析実行"""
-        scores = []
-        
-        for pattern, base_score, pattern_type in self.patterns:
-            if pattern_type == 'negative' and pattern == r'半減':
-                if '半減' in text:
-                    scores.append(base_score)
-                continue
-            
-            for match in re.finditer(pattern, text):
-                try:
-                    value = float(match.group(1))
-                    adjusted_score = self._adjust_score(value, base_score)
-                    scores.append(adjusted_score)
-                except (ValueError, IndexError):
-                    continue
-        
-        return scores
-    
-    def _adjust_score(self, value: float, base_score: float) -> float:
-        """数値に基づくスコア調整"""
-        if value < self.config.min_numeric_value:
-            return base_score * 0.7
-        elif value >= 50:
-            return base_score * 1.3
-        elif value >= 20:
-            return base_score * 1.1
-        else:
-            return base_score
-
-
-class SentimentAnalyzer:
-    """改良版感情分析エンジン"""
+class TransparentSentimentAnalyzer:
+    """分かりやすい感情分析エンジン"""
     
     def __init__(self, config: Optional[AnalysisConfig] = None):
         self.config = config or AnalysisConfig()
-        self.dictionary = SentimentDictionary()
-        self.text_processor = TextProcessor()
-        self.numeric_analyzer = NumericPatternAnalyzer(self.config)
+        self.dictionary = TransparentSentimentDictionary()
+        self.text_processor = TransparentTextProcessor()
         
-    def _extract_keywords(self, text: str) -> List[str]:
-        """改良版キーワード抽出"""
-        words = []
-        
-        # 1. 複合語パターンの優先抽出
-        text_copy = text
-        processed_positions = set()
-        
-        for pattern in self.dictionary.compound_patterns:
-            if isinstance(pattern, str) and not pattern.startswith('r\''):
-                # 単純文字列パターン
-                start = 0
-                while True:
-                    pos = text_copy.find(pattern, start)
-                    if pos == -1:
-                        break
-                    
-                    if not any(pos <= p < pos + len(pattern) for p in processed_positions):
-                        words.append(pattern)
-                        for i in range(pos, pos + len(pattern)):
-                            processed_positions.add(i)
-                    
-                    start = pos + 1
-            else:
-                # 正規表現パターン
-                try:
-                    for match in re.finditer(pattern, text_copy):
-                        compound_word = match.group()
-                        if compound_word and len(compound_word) >= 3:
-                            words.append(compound_word)
-                except re.error:
-                    continue
-        
-        # 2. 残りの単語抽出
-        remaining_words = sorted(
-            [w for w in self.dictionary.sentiment_dict.keys() 
-             if len(w) >= 2 and w not in words],
-            key=len, reverse=True
-        )
-        
-        for word in remaining_words:
-            if word in text_copy:
-                count = text_copy.count(word)
-                words.extend([word] * count)
-        
-        return words
-    
     def analyze_text(self, text: str, session_id: str = None) -> Dict[str, Any]:
-        """単一テキストの感情分析"""
+        """透明性の高い感情分析"""
         try:
             if not text or len(text.strip()) < 10:
                 return self._empty_result(session_id)
@@ -358,67 +198,90 @@ class SentimentAnalyzer:
             # テキスト前処理
             cleaned_text = self.text_processor.preprocess(text)
             
-            # キーワード抽出
-            keywords = self._extract_keywords(cleaned_text)
+            # 段階的な分析プロセス
+            analysis_steps = []
             
-            # 数値パターン分析
-            numeric_scores = self.numeric_analyzer.analyze(cleaned_text)
+            # ステップ1: 文脈パターンの検出
+            context_matches = self._find_context_patterns(cleaned_text)
+            if context_matches:
+                analysis_steps.append({
+                    'step': '文脈パターン検出',
+                    'description': '「減収の改善」「成長の鈍化」のような文脈を考慮した表現を検出',
+                    'matches': context_matches,
+                    'impact': sum(score for _, score, _ in context_matches)
+                })
             
-            # 感情スコア計算
-            sentiment_scores = []
-            keyword_analysis = {'positive': [], 'negative': []}
-            word_counts = {}
+            # ステップ2: 基本語彙の検出
+            basic_matches = self._find_basic_words(cleaned_text, context_matches)
+            if basic_matches:
+                analysis_steps.append({
+                    'step': '基本語彙検出',
+                    'description': '感情辞書に登録されている語彙を検出',
+                    'matches': basic_matches,
+                    'impact': sum(score for _, score, _ in basic_matches)
+                })
             
-            for word in keywords:
-                if word in self.dictionary.sentiment_dict:
-                    score = self.dictionary.sentiment_dict[word]
-                    sentiment_scores.append(score)
-                    
-                    word_counts[word] = word_counts.get(word, 0) + 1
-                    
-                    if score > self.config.positive_threshold:
-                        keyword_analysis['positive'].append({
-                            'word': word, 'score': score, 'count': word_counts[word]
-                        })
-                    elif score < self.config.negative_threshold:
-                        keyword_analysis['negative'].append({
-                            'word': word, 'score': score, 'count': word_counts[word]
-                        })
+            # デバッグログ：検出された語彙の確認
+            logger.debug(f"文脈パターン検出: {len(context_matches)}件")
+            logger.debug(f"基本語彙検出: {len(basic_matches)}件")
+            if context_matches:
+                logger.debug(f"文脈パターン: {[word for word, _, _ in context_matches]}")
+            if basic_matches:
+                logger.debug(f"基本語彙: {[word for word, _, _ in basic_matches]}")
             
-            # 数値スコアを統合
-            sentiment_scores.extend(numeric_scores)
+            # 全てのマッチを統合
+            all_matches = context_matches + basic_matches
+            sentiment_scores = [score for _, score, _ in all_matches]
             
-            # 全体スコア計算
-            overall_score = self._calculate_overall_score(sentiment_scores)
+            # スコア計算の詳細
+            score_calculation = self._calculate_detailed_score(sentiment_scores)
+            
+            # 全体スコアと判定
+            overall_score = score_calculation['final_score']
             sentiment_label = self._determine_sentiment_label(overall_score)
             
+            # 分析根拠の生成
+            analysis_reasoning = self._generate_reasoning(
+                analysis_steps, score_calculation, overall_score, sentiment_label
+            )
+            
+            # キーワード分析（分かりやすい形式）
+            keyword_analysis = self._analyze_keywords(all_matches)
+            
             # 文章レベル分析
-            sentences = self.text_processor.split_sentences(cleaned_text)
+            sentences = self._split_sentences(cleaned_text)
             sentence_analysis = self._analyze_sentences(sentences)
             
-            # 統計計算
-            stats = self._calculate_statistics(
-                sentences, sentiment_scores, numeric_scores, len(keywords)
-            )
+            # デバッグログ：サンプル文章の確認
+            logger.debug(f"文章分析結果: {len(sentence_analysis)}件のサンプル文章を生成")
+            positive_samples = [s for s in sentence_analysis if s['score'] > self.config.positive_threshold]
+            negative_samples = [s for s in sentence_analysis if s['score'] < self.config.negative_threshold]
+            logger.debug(f"ポジティブサンプル: {len(positive_samples)}件, ネガティブサンプル: {len(negative_samples)}件")
             
             # 結果構築
             return {
                 'overall_score': round(overall_score, 3),
                 'sentiment_label': sentiment_label,
-                'statistics': stats,
-                'top_keywords': self._format_keywords(keyword_analysis),
+                'analysis_reasoning': analysis_reasoning,
+                'score_calculation': score_calculation,
+                'analysis_steps': analysis_steps,
+                'keyword_analysis': keyword_analysis,
                 'sample_sentences': {
                     'positive': [s for s in sentence_analysis if s['score'] > self.config.positive_threshold][:3],
                     'negative': [s for s in sentence_analysis if s['score'] < self.config.negative_threshold][:3],
+                },
+                'statistics': {
+                    'total_words_analyzed': len(all_matches),
+                    'context_patterns_found': len(context_matches),
+                    'basic_words_found': len(basic_matches),
+                    'sentences_analyzed': len(sentences),
+                    'unique_words_found': len(set(word for word, _, _ in all_matches)),  # ユニーク語数も表示
                 },
                 'analysis_metadata': {
                     'analyzed_at': timezone.now().isoformat(),
                     'dictionary_size': len(self.dictionary.sentiment_dict),
                     'session_id': session_id,
-                    'config': {
-                        'positive_threshold': self.config.positive_threshold,
-                        'negative_threshold': self.config.negative_threshold,
-                    }
+                    'analysis_version': '2.0_transparent',
                 }
             }
             
@@ -426,25 +289,215 @@ class SentimentAnalyzer:
             logger.error(f"感情分析エラー: {e}")
             raise Exception(f"感情分析処理中にエラーが発生しました: {str(e)}")
     
-    def _calculate_overall_score(self, scores: List[float]) -> float:
-        """全体スコア計算（重み付け考慮）"""
-        if not scores:
-            return 0.0
+    def _find_context_patterns(self, text: str) -> List[Tuple[str, float, str]]:
+        """文脈パターンの検出"""
+        matches = []
         
-        # 基本平均
-        basic_avg = sum(scores) / len(scores)
+        # 改善パターンの検出
+        for pattern in self.dictionary.improvement_patterns:
+            for match in re.finditer(pattern, text, re.IGNORECASE):
+                matched_text = match.group()
+                score = 0.7  # 改善は一律ポジティブ
+                matches.append((matched_text, score, '改善表現'))
         
-        # 重み付け平均（強い感情語により重みを付ける）
-        if scores:
-            weighted_sum = sum(score * abs(score) for score in scores)
-            weighted_avg = weighted_sum / len(scores)
+        # 悪化パターンの検出
+        for pattern in self.dictionary.deterioration_patterns:
+            for match in re.finditer(pattern, text, re.IGNORECASE):
+                matched_text = match.group()
+                score = -0.6  # 悪化は一律ネガティブ
+                matches.append((matched_text, score, '悪化表現'))
+        
+        # 否定パターンの検出
+        for pattern in self.dictionary.negation_patterns:
+            for match in re.finditer(pattern, text, re.IGNORECASE):
+                matched_text = match.group()
+                score = 0.4  # 否定でポジティブ転換
+                matches.append((matched_text, score, '否定表現'))
+        
+        return matches
+    
+    def _find_basic_words(self, text: str, context_matches: List) -> List[Tuple[str, float, str]]:
+        """基本語彙の検出（シンプル版・複数回出現対応）"""
+        matches = []
+        
+        # 文脈パターンで検出された語句を除外対象とする
+        context_words = {word for word, _, _ in context_matches}
+        
+        # 辞書のすべての語彙をチェック（最小長を1文字以上に緩和）
+        for word, score in self.dictionary.sentiment_dict.items():
+            # 最小長チェック（1文字以上）
+            if len(word) < 1:
+                continue
+                
+            # 文脈パターンと完全一致する場合は除外
+            if word in context_words:
+                continue
             
-            # 基本平均と重み付け平均の調和平均
-            overall_score = (basic_avg + weighted_avg) / 2
-        else:
-            overall_score = basic_avg
+            # テキスト内での出現回数をカウント
+            count = text.count(word)
+            if count > 0:
+                # 出現回数分だけ追加（ただし最大5回まで）
+                for _ in range(min(count, 5)):
+                    matches.append((word, score, '基本語彙'))
         
-        return max(-1.0, min(1.0, overall_score))
+        return matches
+    
+    def _calculate_detailed_score(self, scores: List[float]) -> Dict:
+        """詳細なスコア計算"""
+        if not scores:
+            return {
+                'raw_scores': [],
+                'positive_scores': [],
+                'negative_scores': [],
+                'positive_sum': 0.0,
+                'negative_sum': 0.0,
+                'score_count': 0,
+                'average_score': 0.0,
+                'final_score': 0.0,
+            }
+        
+        positive_scores = [s for s in scores if s > 0]
+        negative_scores = [s for s in scores if s < 0]
+        
+        positive_sum = sum(positive_scores)
+        negative_sum = sum(negative_scores)
+        average_score = sum(scores) / len(scores)
+        
+        # 重み付け計算
+        weighted_sum = sum(score * abs(score) for score in scores)
+        weighted_avg = weighted_sum / len(scores)
+        
+        # 最終スコア（平均と重み付け平均の調和平均）
+        final_score = (average_score + weighted_avg) / 2
+        final_score = max(-1.0, min(1.0, final_score))
+        
+        return {
+            'raw_scores': scores,
+            'positive_scores': positive_scores,
+            'negative_scores': negative_scores,
+            'positive_sum': positive_sum,
+            'negative_sum': negative_sum,
+            'score_count': len(scores),
+            'average_score': average_score,
+            'weighted_average': weighted_avg,
+            'final_score': final_score,
+        }
+    
+    def _generate_reasoning(self, analysis_steps: List, score_calc: Dict, overall_score: float, sentiment_label: str) -> Dict:
+        """分析根拠の生成"""
+        reasoning = {
+            'summary': '',
+            'key_factors': [],
+            'score_breakdown': '',
+            'conclusion': ''
+        }
+        
+        # 主要因子の特定
+        pos_count = len(score_calc['positive_scores'])
+        neg_count = len(score_calc['negative_scores'])
+        
+        if pos_count > neg_count:
+            reasoning['key_factors'].append(f'ポジティブな表現が{pos_count}個検出されました')
+        elif neg_count > pos_count:
+            reasoning['key_factors'].append(f'ネガティブな表現が{neg_count}個検出されました')
+        else:
+            reasoning['key_factors'].append('ポジティブとネガティブな表現が同数検出されました')
+        
+        # 文脈パターンの影響
+        context_steps = [step for step in analysis_steps if '文脈' in step['step']]
+        if context_steps:
+            context_impact = context_steps[0]['impact']
+            if context_impact > 0:
+                reasoning['key_factors'].append('「減収の改善」のような文脈を考慮した改善表現が検出されました')
+            elif context_impact < 0:
+                reasoning['key_factors'].append('「成長の鈍化」のような文脈を考慮した悪化表現が検出されました')
+        
+        # スコアの内訳説明
+        if score_calc['positive_sum'] and score_calc['negative_sum']:
+            reasoning['score_breakdown'] = (
+                f'ポジティブ合計: {score_calc["positive_sum"]:.2f}, '
+                f'ネガティブ合計: {score_calc["negative_sum"]:.2f}, '
+                f'平均スコア: {score_calc["average_score"]:.2f}'
+            )
+        elif score_calc['positive_sum']:
+            reasoning['score_breakdown'] = f'ポジティブ表現のみ検出: 合計{score_calc["positive_sum"]:.2f}'
+        elif score_calc['negative_sum']:
+            reasoning['score_breakdown'] = f'ネガティブ表現のみ検出: 合計{score_calc["negative_sum"]:.2f}'
+        else:
+            reasoning['score_breakdown'] = '感情を表す表現が検出されませんでした'
+        
+        # 結論
+        if sentiment_label == 'positive':
+            if overall_score > 0.6:
+                reasoning['conclusion'] = '非常にポジティブな内容です'
+            else:
+                reasoning['conclusion'] = 'やや前向きな内容です'
+        elif sentiment_label == 'negative':
+            if overall_score < -0.6:
+                reasoning['conclusion'] = '非常にネガティブな内容です'
+            else:
+                reasoning['conclusion'] = 'やや慎重な内容です'
+        else:
+            reasoning['conclusion'] = '中立的な内容です'
+        
+        # 要約
+        reasoning['summary'] = f'{reasoning["conclusion"]}。{reasoning["key_factors"][0] if reasoning["key_factors"] else ""}'
+        
+        return reasoning
+    
+    def _analyze_keywords(self, matches: List[Tuple[str, float, str]]) -> Dict:
+        """キーワード分析（分かりやすい形式）"""
+        positive_words = []
+        negative_words = []
+        
+        for word, score, type_name in matches:
+            word_info = {
+                'word': word,
+                'score': round(score, 2),
+                'type': type_name,
+                'impact': '強い' if abs(score) > 0.7 else '中程度' if abs(score) > 0.4 else '軽微'
+            }
+            
+            if score > 0:
+                positive_words.append(word_info)
+            elif score < 0:
+                negative_words.append(word_info)
+        
+        # スコア順でソート
+        positive_words.sort(key=lambda x: x['score'], reverse=True)
+        negative_words.sort(key=lambda x: x['score'])
+        
+        return {
+            'positive': positive_words[:5],
+            'negative': negative_words[:5],
+        }
+    
+    def _split_sentences(self, text: str) -> List[str]:
+        """文分割（より短い文章も対象）"""
+        sentences = re.split(r'[。！？\n]', text)
+        return [s.strip() for s in sentences if len(s.strip()) >= self.config.min_sentence_length and 
+                len(re.findall(r'[ぁ-んァ-ヶ一-龯]', s)) > 2]  # 日本語文字が2個以上
+    
+    def _analyze_sentences(self, sentences: List[str]) -> List[Dict]:
+        """文章レベル分析"""
+        sentence_analysis = []
+        
+        for sentence in sentences[:self.config.max_sample_sentences]:
+            # 簡易的な文スコア計算
+            context_matches = self._find_context_patterns(sentence)
+            basic_matches = self._find_basic_words(sentence, context_matches)
+            
+            all_scores = [score for _, score, _ in context_matches + basic_matches]
+            sent_score = sum(all_scores) / len(all_scores) if all_scores else 0
+            
+            if abs(sent_score) > 0.15:  # 閾値を0.15に下げて文章を取得しやすくする
+                sentence_analysis.append({
+                    'text': sentence[:150],
+                    'score': round(sent_score, 2),
+                    'keywords': [word for word, _, _ in context_matches + basic_matches],
+                })
+        
+        return sentence_analysis
     
     def _determine_sentiment_label(self, score: float) -> str:
         """感情ラベル決定"""
@@ -455,105 +508,43 @@ class SentimentAnalyzer:
         else:
             return 'neutral'
     
-    def _analyze_sentences(self, sentences: List[str]) -> List[Dict]:
-        """文章レベル分析"""
-        sentence_analysis = []
-        
-        for sentence in sentences[:self.config.max_sample_sentences]:
-            words = self._extract_keywords(sentence)
-            numeric_scores = self.numeric_analyzer.analyze(sentence)
-            
-            sent_scores = [
-                self.dictionary.sentiment_dict.get(w, 0) 
-                for w in words if w in self.dictionary.sentiment_dict
-            ]
-            sent_scores.extend(numeric_scores)
-            
-            sent_score = sum(sent_scores) / len(sent_scores) if sent_scores else 0
-            
-            if abs(sent_score) > 0.3:
-                sentence_analysis.append({
-                    'text': sentence[:150],
-                    'score': round(sent_score, 2),
-                    'keywords': [w for w in words if w in self.dictionary.sentiment_dict],
-                    'has_numbers': bool(re.search(r'\d+(?:\.\d+)?[％%倍年]', sentence))
-                })
-        
-        return sentence_analysis
-    
-    def _calculate_statistics(self, sentences: List[str], sentiment_scores: List[float], 
-                            numeric_scores: List[float], total_words: int) -> Dict:
-        """統計情報計算"""
-        total_sentences = len(sentences)
-        positive_sentences = sum(1 for s in sentences if self._sentence_score(s) > self.config.positive_threshold)
-        negative_sentences = sum(1 for s in sentences if self._sentence_score(s) < self.config.negative_threshold)
-        
-        return {
-            'total_sentences': total_sentences,
-            'positive_sentences': positive_sentences,
-            'negative_sentences': negative_sentences,
-            'neutral_sentences': total_sentences - positive_sentences - negative_sentences,
-            'total_words': total_words,
-            'sentiment_words': len([s for s in sentiment_scores if s != 0]),
-            'numeric_patterns_found': len(numeric_scores),
-        }
-    
-    def _sentence_score(self, sentence: str) -> float:
-        """文単位スコア計算"""
-        words = self._extract_keywords(sentence)
-        numeric_scores = self.numeric_analyzer.analyze(sentence)
-        
-        scores = [self.dictionary.sentiment_dict.get(w, 0) for w in words if w in self.dictionary.sentiment_dict]
-        scores.extend(numeric_scores)
-        
-        return sum(scores) / max(len(scores), 1) if scores else 0
-    
-    def _format_keywords(self, keyword_analysis: Dict) -> Dict:
-        """キーワード整形"""
-        def deduplicate_and_sort(keywords, reverse=False):
-            unique = {}
-            for kw in keywords:
-                word = kw['word']
-                if word not in unique:
-                    unique[word] = kw
-                else:
-                    unique[word]['count'] += kw['count']
-            
-            return sorted(
-                unique.values(),
-                key=lambda x: x['score'] * x['count'],
-                reverse=reverse
-            )[:5]
-        
-        return {
-            'positive': deduplicate_and_sort(keyword_analysis['positive'], True),
-            'negative': deduplicate_and_sort(keyword_analysis['negative'], False),
-        }
-    
     def _empty_result(self, session_id: str = None) -> Dict[str, Any]:
         """空結果の生成"""
         return {
             'overall_score': 0.0,
             'sentiment_label': 'neutral',
-            'statistics': {
-                'total_sentences': 0, 'positive_sentences': 0,
-                'negative_sentences': 0, 'neutral_sentences': 0,
-                'total_words': 0, 'sentiment_words': 0, 'numeric_patterns_found': 0,
+            'analysis_reasoning': {
+                'summary': '感情を表す表現が検出されませんでした',
+                'key_factors': [],
+                'score_breakdown': '分析対象となる語彙が見つかりませんでした',
+                'conclusion': '中立的な内容です'
             },
-            'top_keywords': {'positive': [], 'negative': []},
+            'score_calculation': {
+                'raw_scores': [], 'positive_scores': [], 'negative_scores': [],
+                'positive_sum': 0.0, 'negative_sum': 0.0, 'score_count': 0,
+                'average_score': 0.0, 'final_score': 0.0,
+            },
+            'analysis_steps': [],
+            'keyword_analysis': {'positive': [], 'negative': []},
             'sample_sentences': {'positive': [], 'negative': []},
+            'statistics': {
+                'total_words_analyzed': 0, 'context_patterns_found': 0,
+                'basic_words_found': 0, 'sentences_analyzed': 0, 'unique_words_found': 0,
+            },
             'analysis_metadata': {
                 'analyzed_at': timezone.now().isoformat(),
                 'dictionary_size': len(self.dictionary.sentiment_dict),
                 'session_id': session_id,
+                'analysis_version': '2.0_transparent',
             }
         }
     
     def analyze_text_sections(self, text_sections: Dict[str, str], session_id: str = None) -> Dict[str, Any]:
-        """複数セクションの分析（既存メソッドの改良版）"""
+        """複数セクションの分析"""
         try:
             section_results = {}
             overall_scores = []
+            combined_steps = []
             
             # セクション別分析
             for section_name, text in text_sections.items():
@@ -563,85 +554,53 @@ class SentimentAnalyzer:
                 result = self.analyze_text(text, session_id)
                 section_results[section_name] = result
                 overall_scores.append(result['overall_score'])
+                combined_steps.extend(result['analysis_steps'])
             
             if not overall_scores:
                 return self._empty_result(session_id)
             
             # 統合分析
-            overall_score = self._calculate_overall_score(overall_scores)
+            combined_score_calc = self._calculate_detailed_score(overall_scores)
+            overall_score = combined_score_calc['final_score']
             sentiment_label = self._determine_sentiment_label(overall_score)
             
-            # 統合統計
-            total_stats = self._merge_statistics(section_results)
-            integrated_keywords = self._merge_keywords(section_results)
-            integrated_sentences = self._merge_sentences(section_results)
+            # 統合分析根拠
+            integrated_reasoning = self._generate_reasoning(
+                combined_steps, combined_score_calc, overall_score, sentiment_label
+            )
             
             return {
                 'overall_score': round(overall_score, 3),
                 'sentiment_label': sentiment_label,
-                'statistics': total_stats,
-                'top_keywords': integrated_keywords,
-                'sample_sentences': integrated_sentences,
+                'analysis_reasoning': integrated_reasoning,
+                'score_calculation': combined_score_calc,
                 'section_analysis': section_results,
+                'statistics': {
+                    'sections_analyzed': len(section_results),
+                    'total_words_analyzed': sum(r['statistics']['total_words_analyzed'] for r in section_results.values()),
+                    'context_patterns_found': sum(r['statistics']['context_patterns_found'] for r in section_results.values()),
+                    'basic_words_found': sum(r['statistics']['basic_words_found'] for r in section_results.values()),
+                    'unique_words_found': sum(r['statistics'].get('unique_words_found', 0) for r in section_results.values()),
+                },
                 'analysis_metadata': {
                     'analyzed_at': timezone.now().isoformat(),
                     'dictionary_size': len(self.dictionary.sentiment_dict),
                     'session_id': session_id,
                     'sections_analyzed': list(text_sections.keys()),
+                    'analysis_version': '2.0_transparent',
                 }
             }
             
         except Exception as e:
             logger.error(f"セクション分析エラー: {e}")
             raise Exception(f"感情分析処理中にエラーが発生しました: {str(e)}")
-    
-    def _merge_statistics(self, section_results: Dict) -> Dict:
-        """統計情報の統合"""
-        return {
-            'total_sentences': sum(r['statistics']['total_sentences'] for r in section_results.values()),
-            'positive_sentences': sum(r['statistics']['positive_sentences'] for r in section_results.values()),
-            'negative_sentences': sum(r['statistics']['negative_sentences'] for r in section_results.values()),
-            'neutral_sentences': sum(r['statistics']['neutral_sentences'] for r in section_results.values()),
-            'analyzed_sections': len(section_results),
-            'total_words': sum(r['statistics']['total_words'] for r in section_results.values()),
-            'sentiment_words': sum(r['statistics']['sentiment_words'] for r in section_results.values()),
-            'numeric_patterns_found': sum(r['statistics']['numeric_patterns_found'] for r in section_results.values()),
-        }
-    
-    def _merge_keywords(self, section_results: Dict) -> Dict:
-        """キーワードの統合"""
-        all_positive = []
-        all_negative = []
-        
-        for result in section_results.values():
-            all_positive.extend(result['top_keywords']['positive'])
-            all_negative.extend(result['top_keywords']['negative'])
-        
-        return self._format_keywords({'positive': all_positive, 'negative': all_negative})
-    
-    def _merge_sentences(self, section_results: Dict) -> Dict:
-        """サンプル文章の統合"""
-        all_positive = []
-        all_negative = []
-        
-        for result in section_results.values():
-            all_positive.extend(result['sample_sentences']['positive'])
-            all_negative.extend(result['sample_sentences']['negative'])
-        
-        all_positive.sort(key=lambda x: x['score'], reverse=True)
-        all_negative.sort(key=lambda x: x['score'])
-        
-        return {
-            'positive': all_positive[:5],
-            'negative': all_negative[:5],
-        }
 
 
 class SentimentAnalysisService:
-    """感情分析サービス（改良版）"""
+    """感情分析サービス（透明性重視版）"""
     
     def __init__(self):
-        self.analyzer = SentimentAnalyzer()
+        self.analyzer = TransparentSentimentAnalyzer()
         self.xbrl_service = EDINETXBRLService()
     
     def start_analysis(self, document_id: str, force: bool = False, user_ip: str = None) -> Dict[str, Any]:
@@ -680,7 +639,7 @@ class SentimentAnalysisService:
             return {
                 'status': 'started',
                 'session_id': str(session.session_id),
-                'message': '感情分析を開始しました'
+                'message': '透明性を重視した感情分析を開始しました'
             }
             
         except DocumentMetadata.DoesNotExist:
@@ -702,10 +661,10 @@ class SentimentAnalysisService:
             if session.processing_status == 'PROCESSING':
                 result = session.analysis_result or {}
                 progress = result.get('progress', 50)
-                message = result.get('current_step', '感情スコア計算中...')
+                message = result.get('current_step', '分析根拠を生成中...')
             elif session.processing_status == 'COMPLETED':
                 progress = 100
-                message = '分析完了'
+                message = '詳細分析完了'
             elif session.processing_status == 'FAILED':
                 progress = 100
                 message = f'分析失敗: {session.error_message}'
@@ -744,7 +703,7 @@ class SentimentAnalysisService:
             return {'status': 'not_found', 'message': 'セッションが見つかりません'}
     
     def _execute_analysis(self, session_id: int, user_ip: str = None):
-        """分析実行（改良版）"""
+        """分析実行（透明性重視版）"""
         from ..models import SentimentAnalysisSession, SentimentAnalysisHistory
         
         start_time = time.time()
@@ -755,8 +714,7 @@ class SentimentAnalysisService:
             session.analysis_result = {'progress': 5, 'current_step': '書類情報確認中...'}
             session.save()
             
-            # XBRLテキスト取得（タイムアウト処理付き）
-            session.analysis_result = {'progress': 15, 'current_step': 'XBRLファイル取得中...'}
+            session.analysis_result = {'progress': 20, 'current_step': 'XBRLファイル取得中...'}
             session.save()
             
             try:
@@ -766,21 +724,21 @@ class SentimentAnalysisService:
                 xbrl_text_sections = None
             
             if not xbrl_text_sections:
-                session.analysis_result = {'progress': 25, 'current_step': '基本情報を使用して分析中...'}
+                session.analysis_result = {'progress': 40, 'current_step': '基本情報を使用して詳細分析中...'}
                 session.save()
                 
                 document_text = self._extract_basic_document_text(session.document)
                 result = self.analyzer.analyze_text(document_text, str(session.session_id))
             else:
-                session.analysis_result = {'progress': 40, 'current_step': 'XBRLテキスト前処理中...'}
+                session.analysis_result = {'progress': 50, 'current_step': 'XBRLテキスト前処理中...'}
                 session.save()
                 
-                session.analysis_result = {'progress': 60, 'current_step': 'セクション別感情分析実行中...'}
+                session.analysis_result = {'progress': 70, 'current_step': '詳細感情分析実行中...'}
                 session.save()
                 
                 result = self.analyzer.analyze_text_sections(xbrl_text_sections, str(session.session_id))
             
-            session.analysis_result = {'progress': 90, 'current_step': '結果保存中...'}
+            session.analysis_result = {'progress': 90, 'current_step': '分析根拠整理中...'}
             session.save()
             
             # セッション更新
@@ -800,7 +758,7 @@ class SentimentAnalysisService:
                 analysis_duration=analysis_duration
             )
             
-            logger.info(f"感情分析完了: {session.session_id} ({analysis_duration:.2f}秒)")
+            logger.info(f"透明性重視感情分析完了: {session.session_id} ({analysis_duration:.2f}秒)")
             
         except Exception as e:
             logger.error(f"感情分析エラー: {session_id} - {e}")
@@ -814,7 +772,7 @@ class SentimentAnalysisService:
                 pass
     
     def _extract_basic_document_text(self, document) -> str:
-        """基本的な書類情報からテキスト抽出（改良版）"""
+        """基本的な書類情報からテキスト抽出"""
         text_parts = [
             f"企業名: {document.company_name}",
             f"書類概要: {document.doc_description}",
@@ -824,11 +782,17 @@ class SentimentAnalysisService:
         if document.period_start and document.period_end:
             text_parts.append(f"対象期間: {document.period_start}から{document.period_end}")
         
-        # より現実的なサンプルテキスト
+        # より現実的なサンプルテキスト（多くの語彙を含む）
         sample_scenarios = [
             "当社の業績は前年同期と比較して順調に推移しており、売上高の増加と収益性の向上が実現されています。",
-            "市場環境の変化に適応しつつ、継続的な事業改善により安定した経営基盤の構築を図っています。",
+            "一方で、減収幅の縮小も見られ、市場環境の変化に適応しつつ継続的な事業改善を図っています。", 
+            "営業損失は発生したものの、損失の改善傾向が見られ、今後の回復に期待しています。",
             "今後も持続的な成長を目指し、効率的な経営資源の活用と競争力の強化に取り組んでまいります。",
+            "一部の事業では苦戦が続いていますが、全体としては好調な業績を維持しています。",
+            "増収増益を達成し、株主の皆様には深く感謝申し上げます。",
+            "減益となりましたが、構造改革の効果により今後の業績向上が期待されます。",
+            "赤字縮小により黒字転換への道筋が見えてきました。",
+            "V字回復を目指し、抜本的な改革に取り組んでおります。"
         ]
         
         text_parts.extend(sample_scenarios)
