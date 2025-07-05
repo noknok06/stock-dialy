@@ -1,6 +1,7 @@
-<!-- earnings_analysis/templates/earnings_analysis/sentiment/result.html（分かりやすい表示版） -->
+<!-- earnings_analysis/templates/earnings_analysis/sentiment/result.html（詳細表示強化版） -->
 {% extends 'earnings_analysis/base.html' %}
 {% load static %}
+{% load sentiment_filters %}
 
 {% block title %}感情分析結果 - {{ document.company_name }} - 決算書類管理システム{% endblock %}
 
@@ -56,111 +57,129 @@
         color: white;
     }
     
-    .reasoning-card {
-        background: linear-gradient(135deg, #f8f9ff, #e8f4fd);
-        border: 1px solid #d1ecf1;
+    .insight-card {
+        background: linear-gradient(135deg, #e8f4fd, #f0f9ff);
+        border: 1px solid #93c5fd;
         border-radius: 1rem;
         padding: 1.5rem;
         margin: 1rem 0;
     }
     
-    .score-breakdown {
-        background: #f8f9fa;
-        border-radius: 0.75rem;
-        padding: 1rem;
+    .word-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
         margin: 1rem 0;
     }
     
-    .analysis-step {
+    .word-stat-item {
         background: white;
-        border: 1px solid #e9ecef;
+        border: 1px solid #e5e7eb;
         border-radius: 0.75rem;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        border-left: 4px solid #007bff;
-    }
-    
-    .keyword-cloud {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        padding: 1rem;
-    }
-    
-    .keyword-item {
-        padding: 0.5rem 1rem;
-        border-radius: 2rem;
-        font-weight: 600;
+        padding: 1.5rem;
+        text-align: center;
         transition: transform 0.2s ease;
-        position: relative;
     }
     
-    .keyword-item:hover {
-        transform: scale(1.05);
+    .word-stat-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     
-    .keyword-positive {
-        background: linear-gradient(135deg, #c6f6d5, #9ae6b4);
-        color: #22543d;
-    }
-    
-    .keyword-negative {
-        background: linear-gradient(135deg, #fed7d7, #feb2b2);
-        color: #742a2a;
-    }
-    
-    .keyword-context {
-        background: linear-gradient(135deg, #bee3f8, #90cdf4);
-        color: #2c5282;
-    }
-    
-    .sample-sentence {
-        background: #f7fafc;
-        border: 1px solid #e2e8f0;
+    .detailed-breakdown {
+        background: #f8fafc;
         border-radius: 0.75rem;
         padding: 1.5rem;
         margin: 1rem 0;
+    }
+    
+    .sentence-analysis-section {
+        margin-top: 2rem;
+    }
+    
+    .analyzed-sentence {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin: 0.75rem 0;
+        border-left: 5px solid #d1d5db;
+    }
+    
+    .analyzed-sentence.positive {
+        border-left-color: #10b981;
+        background: linear-gradient(to right, #ecfdf5, #ffffff);
+    }
+    
+    .analyzed-sentence.negative {
+        border-left-color: #ef4444;
+        background: linear-gradient(to right, #fef2f2, #ffffff);
+    }
+    
+    .keyword-highlight {
+        background: #fef3c7;
+        color: #92400e;
+        padding: 0.2rem 0.4rem;
+        border-radius: 0.25rem;
+        font-weight: 600;
+        margin: 0 0.1rem;
+    }
+    
+    .insight-suggestion {
+        background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+        border: 1px solid #60a5fa;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin: 1rem 0;
+    }
+    
+    .recommendation-list {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .recommendation-list li {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin: 0.5rem 0;
         position: relative;
+        padding-left: 3rem;
     }
     
-    .sample-sentence::before {
-        content: '';
+    .recommendation-list li::before {
+        content: "💡";
         position: absolute;
-        left: -4px;
-        top: 0;
-        bottom: 0;
-        width: 4px;
-        border-radius: 2px;
+        left: 1rem;
+        top: 1rem;
+        font-size: 1.2rem;
     }
     
-    .sample-sentence.positive::before {
-        background: #48bb78;
+    .impact-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 0.5rem;
     }
     
-    .sample-sentence.negative::before {
-        background: #f56565;
+    .impact-high { background: #dc2626; }
+    .impact-medium { background: #f59e0b; }
+    .impact-low { background: #10b981; }
+    
+    .text-purple { color: #8b5cf6 !important; }
+    
+    .alert-heading {
+        margin-bottom: 0.5rem;
     }
     
-    .impact-badge {
-        font-size: 0.75rem;
-        padding: 0.25rem 0.5rem;
-        border-radius: 1rem;
-        margin-left: 0.5rem;
+    .progress {
+        background-color: #e5e7eb;
     }
     
-    .impact-strong {
-        background: #dc3545;
-        color: white;
-    }
-    
-    .impact-medium {
-        background: #ffc107;
-        color: #212529;
-    }
-    
-    .impact-light {
-        background: #6c757d;
-        color: white;
+    .badge {
+        font-size: 0.8rem;
     }
 </style>
 {% endblock %}
@@ -205,21 +224,24 @@
                             <div class="sentiment-score-large sentiment-positive">
                                 <div>{{ session.overall_score|floatformat:3 }}</div>
                                 <div class="fs-4">
-                                    <i class="fas fa-smile me-2"></i>ポジティブ
+                                    <i class="fas fa-smile me-2"></i>
+                                    <span class="badge {{ session.sentiment_label|sentiment_badge }} fs-6">ポジティブ</span>
                                 </div>
                             </div>
                         {% elif session.sentiment_label == 'negative' %}
                             <div class="sentiment-score-large sentiment-negative">
                                 <div>{{ session.overall_score|floatformat:3 }}</div>
                                 <div class="fs-4">
-                                    <i class="fas fa-frown me-2"></i>ネガティブ
+                                    <i class="fas fa-frown me-2"></i>
+                                    <span class="badge {{ session.sentiment_label|sentiment_badge }} fs-6">ネガティブ</span>
                                 </div>
                             </div>
                         {% else %}
                             <div class="sentiment-score-large sentiment-neutral">
                                 <div>{{ session.overall_score|floatformat:3 }}</div>
                                 <div class="fs-4">
-                                    <i class="fas fa-meh me-2"></i>中立
+                                    <i class="fas fa-meh me-2"></i>
+                                    <span class="badge {{ session.sentiment_label|sentiment_badge }} fs-6">中立</span>
                                 </div>
                             </div>
                         {% endif %}
@@ -273,74 +295,88 @@
             </div>
         </div>
 
-        <!-- 分析根拠の詳細表示 -->
-        {% if session.analysis_result.analysis_reasoning %}
-            {% with reasoning=session.analysis_result.analysis_reasoning %}
+        <!-- 詳細なスコア内訳 -->
+        {% if session.analysis_result.score_calculation %}
+            {% with calc=session.analysis_result.score_calculation %}
                 <div class="result-card card">
                     <div class="card-header">
                         <h5 class="mb-0">
-                            <i class="fas fa-lightbulb me-2"></i>なぜこのスコアになったのか？
+                            <i class="fas fa-calculator me-2"></i>スコア計算の詳細内訳
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="reasoning-card">
-                            <div class="h6 text-primary mb-3">
-                                <i class="fas fa-clipboard-check me-2"></i>分析結果の要約
+                        <div class="word-stats-grid">
+                            <div class="word-stat-item">
+                                <div class="h3 text-success mb-2">{{ calc.positive_scores|length }}</div>
+                                <div class="text-muted small">ポジティブ語数</div>
+                                {% if calc.positive_sum > 0 %}
+                                    <div class="small text-success mt-1">合計: +{{ calc.positive_sum|floatformat:2 }}</div>
+                                {% endif %}
                             </div>
-                            <p class="mb-3 fs-5">{{ reasoning.summary }}</p>
                             
-                            <div class="h6 text-info mb-2">
-                                <i class="fas fa-search me-2"></i>検出された特徴
+                            <div class="word-stat-item">
+                                <div class="h3 text-danger mb-2">{{ calc.negative_scores|length }}</div>
+                                <div class="text-muted small">ネガティブ語数</div>
+                                {% if calc.negative_sum < 0 %}
+                                    <div class="small text-danger mt-1">合計: {{ calc.negative_sum|floatformat:2 }}</div>
+                                {% endif %}
                             </div>
-                            {% if reasoning.key_factors %}
-                                <ul class="list-unstyled">
-                                    {% for factor in reasoning.key_factors %}
-                                        <li class="mb-2">
-                                            <i class="fas fa-check-circle text-success me-2"></i>{{ factor }}
-                                        </li>
-                                    {% endfor %}
-                                </ul>
-                            {% endif %}
-                        </div>
-                        
-                        <!-- スコア計算の詳細 -->
-                        {% if session.analysis_result.score_calculation %}
-                            {% with calc=session.analysis_result.score_calculation %}
-                                <div class="score-breakdown">
-                                    <div class="h6 mb-3">
-                                        <i class="fas fa-calculator me-2"></i>スコア計算の内訳
-                                    </div>
-                                    <div class="row text-center">
-                                        <div class="col-md-3 mb-2">
-                                            <div class="h5 text-success">{{ calc.positive_scores|length }}</div>
-                                            <div class="small text-muted">ポジティブ語数</div>
-                                        </div>
-                                        <div class="col-md-3 mb-2">
-                                            <div class="h5 text-danger">{{ calc.negative_scores|length }}</div>
-                                            <div class="small text-muted">ネガティブ語数</div>
-                                        </div>
-                                        <div class="col-md-3 mb-2">
-                                            <div class="h5 text-primary">{{ calc.average_score|floatformat:2 }}</div>
-                                            <div class="small text-muted">平均スコア</div>
-                                        </div>
-                                        <div class="col-md-3 mb-2">
-                                            <div class="h5 text-info">{{ calc.final_score|floatformat:2 }}</div>
-                                            <div class="small text-muted">最終スコア</div>
-                                        </div>
-                                    </div>
-                                    
-                                    {% if calc.positive_sum != 0 or calc.negative_sum != 0 %}
-                                        <div class="mt-3 small text-muted">
-                                            <strong>計算方法:</strong> ポジティブ語の合計({{ calc.positive_sum|floatformat:2 }})とネガティブ語の合計({{ calc.negative_sum|floatformat:2 }})から、語の重要度を考慮して最終スコアを算出
-                                        </div>
+                            
+                            <div class="word-stat-item">
+                                <div class="h3 text-primary mb-2">{{ calc.score_count }}</div>
+                                <div class="text-muted small">総分析語数</div>
+                                <div class="small text-primary mt-1">
+                                    {% if session.analysis_result.statistics.unique_words_found %}
+                                        (ユニーク: {{ session.analysis_result.statistics.unique_words_found }}語)
                                     {% endif %}
                                 </div>
-                            {% endwith %}
-                        {% endif %}
+                            </div>
+                            
+                            <div class="word-stat-item">
+                                <div class="h3 text-info mb-2">{{ calc.final_score|floatformat:2 }}</div>
+                                <div class="text-muted small">最終スコア</div>
+                                <div class="small text-info mt-1">
+                                    平均: {{ calc.average_score|floatformat:2 }}
+                                </div>
+                            </div>
+                        </div>
                         
-                        <div class="mt-3 p-3 bg-light rounded">
-                            <div class="fw-bold text-dark">
-                                <i class="fas fa-flag me-2"></i>結論: {{ reasoning.conclusion }}
+                        <div class="detailed-breakdown">
+                            <h6 class="mb-3">
+                                <i class="fas fa-chart-bar me-2"></i>計算プロセス
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="small mb-2">
+                                        <strong>検出されたポジティブ語彙:</strong>
+                                        {% for score in calc.positive_scores %}
+                                            <span class="badge bg-success me-1">+{{ score|floatformat:1 }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="small mb-2">
+                                        <strong>検出されたネガティブ語彙:</strong>
+                                        {% for score in calc.negative_scores %}
+                                            <span class="badge bg-danger me-1">{{ score|floatformat:1 }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-3 p-3 bg-white rounded">
+                                <div class="small">
+                                    <strong>計算式:</strong> 
+                                    {% if calc.positive_sum != 0 and calc.negative_sum != 0 %}
+                                        (ポジティブ合計: {{ calc.positive_sum|floatformat:2 }}) + (ネガティブ合計: {{ calc.negative_sum|floatformat:2 }}) = {{ session.overall_score|floatformat:2 }}
+                                    {% elif calc.positive_sum != 0 %}
+                                        ポジティブ語彙のみ: {{ calc.positive_sum|floatformat:2 }}
+                                    {% elif calc.negative_sum != 0 %}
+                                        ネガティブ語彙のみ: {{ calc.negative_sum|floatformat:2 }}
+                                    {% else %}
+                                        感情語彙なし: 0.0
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -348,247 +384,322 @@
             {% endwith %}
         {% endif %}
 
-        <!-- 分析ステップの詳細 -->
-        {% if session.analysis_result.analysis_steps %}
-            <div class="result-card card">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-list-ol me-2"></i>分析プロセス
-                    </h5>
-                </div>
-                <div class="card-body">
-                    {% for step in session.analysis_result.analysis_steps %}
-                        <div class="analysis-step">
-                            <div class="h6 text-primary mb-2">
-                                <i class="fas fa-cogs me-2"></i>{{ step.step }}
-                            </div>
-                            <p class="text-muted mb-2">{{ step.description }}</p>
-                            
-                            {% if step.matches %}
-                                <div class="small">
-                                    <strong>検出された語句:</strong>
-                                    {% for word, score, type in step.matches %}
-                                        <span class="badge bg-primary me-1">{{ word }} ({{ score|floatformat:1 }})</span>
-                                    {% endfor %}
-                                </div>
-                                <div class="mt-2 small text-success">
-                                    <i class="fas fa-chart-line me-1"></i>
-                                    このステップでのスコア影響: {{ step.impact|floatformat:2 }}
-                                </div>
-                            {% endif %}
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-        {% endif %}
-        
-        <!-- キーワード分析 -->
-        {% if session.analysis_result.keyword_analysis %}
-            {% with keywords=session.analysis_result.keyword_analysis %}
-                <div class="result-card card">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="fas fa-tags me-2"></i>検出されたキーワード
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        {% if keywords.positive %}
-                            <h6 class="text-success">
-                                <i class="fas fa-smile me-2"></i>ポジティブなキーワード
-                            </h6>
-                            <div class="keyword-cloud mb-4">
-                                {% for keyword in keywords.positive %}
-                                    <span class="keyword-item {% if keyword.type == '改善表現' or keyword.type == '否定表現' %}keyword-context{% else %}keyword-positive{% endif %}" 
-                                          title="{{ keyword.type }} | スコア: {{ keyword.score }}">
-                                        {{ keyword.word }}
-                                        <small>({{ keyword.score }})</small>
-                                        <span class="impact-badge impact-{{ keyword.impact|lower }}">{{ keyword.impact }}</span>
-                                        {% if keyword.type == '改善表現' %}
-                                            <i class="fas fa-arrow-up ms-1" title="改善を表す表現"></i>
-                                        {% elif keyword.type == '否定表現' %}
-                                            <i class="fas fa-exclamation-circle ms-1" title="否定による転換"></i>
-                                        {% endif %}
-                                    </span>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                        
-                        {% if keywords.negative %}
-                            <h6 class="text-danger">
-                                <i class="fas fa-frown me-2"></i>ネガティブなキーワード
-                            </h6>
-                            <div class="keyword-cloud">
-                                {% for keyword in keywords.negative %}
-                                    <span class="keyword-item {% if keyword.type == '悪化表現' %}keyword-context{% else %}keyword-negative{% endif %}" 
-                                          title="{{ keyword.type }} | スコア: {{ keyword.score }}">
-                                        {{ keyword.word }}
-                                        <small>({{ keyword.score }})</small>
-                                        <span class="impact-badge impact-{{ keyword.impact|lower }}">{{ keyword.impact }}</span>
-                                        {% if keyword.type == '悪化表現' %}
-                                            <i class="fas fa-arrow-down ms-1" title="悪化を表す表現"></i>
-                                        {% endif %}
-                                    </span>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                        
-                        {% if not keywords.positive and not keywords.negative %}
-                            <div class="text-center text-muted py-3">
-                                <i class="fas fa-search fa-2x mb-2"></i>
-                                <div>感情を表すキーワードが検出されませんでした</div>
-                            </div>
-                        {% endif %}
-                        
-                        <div class="mt-3 small text-muted">
-                            <i class="fas fa-info-circle me-1"></i>
-                            <strong>キーワードの種類:</strong>
-                            <span class="badge bg-primary me-1">基本語彙</span> 辞書に登録された語
-                            <span class="badge bg-info me-1">改善表現</span> 「減収の改善」など文脈考慮
-                            <span class="badge bg-warning">悪化表現</span> 「成長の鈍化」など文脈考慮
-                        </div>
-                    </div>
-                </div>
-            {% endwith %}
-        {% endif %}
-        
-        <!-- サンプル文章 -->
+        <!-- 判定された文章の詳細表示 -->
         {% if session.analysis_result.sample_sentences %}
+
             {% with samples=session.analysis_result.sample_sentences %}
                 <div class="result-card card">
                     <div class="card-header">
                         <h5 class="mb-0">
-                            <i class="fas fa-quote-left me-2"></i>代表的な文章
+                            <i class="fas fa-file-text me-2"></i>判定された文章の詳細
                         </h5>
                     </div>
                     <div class="card-body">
-                        {% if samples.positive %}
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6 class="text-success mb-0">
-                                    <i class="fas fa-smile me-2"></i>ポジティブな文章
-                                </h6>
-                                <span class="badge bg-success">{{ samples.positive|length }}件</span>
-                            </div>
-                            
-                            <!-- 最初の3件を表示 -->
-                            {% for sentence in samples.positive|slice:":3" %}
-                                <div class="sample-sentence positive">
-                                    <div class="mb-2">{{ sentence.text }}</div>
-                                    <div class="small text-muted">
-                                        感情スコア: <strong>{{ sentence.score }}</strong>
-                                        {% if sentence.keywords %}
-                                            | 検出キーワード: {{ sentence.keywords|join:", " }}
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            {% endfor %}
-                            
-                            <!-- 4件以上ある場合の展開可能エリア -->
-                            {% if samples.positive|length > 3 %}
-                                <div class="collapse" id="morePositiveSentences">
-                                    {% for sentence in samples.positive|slice:"3:" %}
-                                        <div class="sample-sentence positive">
-                                            <div class="mb-2">{{ sentence.text }}</div>
-                                            <div class="small text-muted">
-                                                感情スコア: <strong>{{ sentence.score }}</strong>
+                        <div class="sentence-analysis-section">
+                            {% if samples.positive %}
+                                <div class="mb-4">
+                                    <h6 class="text-success">
+                                        <i class="fas fa-smile me-2"></i>ポジティブと判定された文章 ({{ samples.positive|length }}件)
+                                    </h6>
+                                    {% for sentence in samples.positive %}
+                                        <div class="analyzed-sentence positive">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div class="fw-semibold text-success">
+                                                    <span class="impact-indicator impact-{% if sentence.score > 0.7 %}high{% elif sentence.score > 0.4 %}medium{% else %}low{% endif %}"></span>
+                                                    スコア: {{ sentence.score|floatformat:2 }}
+                                                </div>
+                                                <div class="small text-muted">
+                                                    {% if sentence.score > 0.7 %}
+                                                        強いポジティブ
+                                                    {% elif sentence.score > 0.4 %}
+                                                        中程度のポジティブ
+                                                    {% else %}
+                                                        軽微なポジティブ
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="mb-2">
                                                 {% if sentence.keywords %}
-                                                    | 検出キーワード: {{ sentence.keywords|join:", " }}
+                                                    {% for keyword in sentence.keywords %}
+                                                        {% with highlighted_text=sentence.text|highlight_keywords:keyword %}
+                                                            {{ highlighted_text|safe }}
+                                                        {% endwith %}
+                                                    {% endfor %}
+                                                {% else %}
+                                                    {{ sentence.text }}
                                                 {% endif %}
                                             </div>
+                                            {% if sentence.keywords %}
+                                                <div class="small text-muted">
+                                                    <strong>検出キーワード:</strong> 
+                                                    {% for keyword in sentence.keywords %}
+                                                        <span class="badge bg-success me-1">{{ keyword }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
                                         </div>
                                     {% endfor %}
                                 </div>
-                                
-                                <div class="text-center mt-3">
-                                    <button class="btn btn-outline-success btn-sm" type="button" 
-                                            data-bs-toggle="collapse" data-bs-target="#morePositiveSentences"
-                                            onclick="toggleButtonText(this, 'すべて表示 ({{ samples.positive|length }}件)', '閉じる')">
-                                        <i class="fas fa-chevron-down me-1"></i>すべて表示 ({{ samples.positive|length }}件)
-                                    </button>
-                                </div>
                             {% endif %}
-                        {% endif %}
-                        
-                        {% if samples.negative %}
-                            <div class="d-flex justify-content-between align-items-center mb-3 {% if samples.positive %}mt-5{% endif %}">
-                                <h6 class="text-danger mb-0">
-                                    <i class="fas fa-frown me-2"></i>ネガティブな文章
-                                </h6>
-                                <span class="badge bg-danger">{{ samples.negative|length }}件</span>
-                            </div>
                             
-                            <!-- 最初の3件を表示 -->
-                            {% for sentence in samples.negative|slice:":3" %}
-                                <div class="sample-sentence negative">
-                                    <div class="mb-2">{{ sentence.text }}</div>
-                                    <div class="small text-muted">
-                                        感情スコア: <strong>{{ sentence.score }}</strong>
-                                        {% if sentence.keywords %}
-                                            | 検出キーワード: {{ sentence.keywords|join:", " }}
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            {% endfor %}
-                            
-                            <!-- 4件以上ある場合の展開可能エリア -->
-                            {% if samples.negative|length > 3 %}
-                                <div class="collapse" id="moreNegativeSentences">
-                                    {% for sentence in samples.negative|slice:"3:" %}
-                                        <div class="sample-sentence negative">
-                                            <div class="mb-2">{{ sentence.text }}</div>
-                                            <div class="small text-muted">
-                                                感情スコア: <strong>{{ sentence.score }}</strong>
+                            {% if samples.negative %}
+                                <div class="mb-4">
+                                    <h6 class="text-danger">
+                                        <i class="fas fa-frown me-2"></i>ネガティブと判定された文章 ({{ samples.negative|length }}件)
+                                    </h6>
+                                    {% for sentence in samples.negative %}
+                                        <div class="analyzed-sentence negative">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div class="fw-semibold text-danger">
+                                                    <span class="impact-indicator impact-{% if sentence.score < -0.7 %}high{% elif sentence.score < -0.4 %}medium{% else %}low{% endif %}"></span>
+                                                    スコア: {{ sentence.score|floatformat:2 }}
+                                                </div>
+                                                <div class="small text-muted">
+                                                    {% if sentence.score < -0.7 %}
+                                                        強いネガティブ
+                                                    {% elif sentence.score < -0.4 %}
+                                                        中程度のネガティブ
+                                                    {% else %}
+                                                        軽微なネガティブ
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="mb-2">
                                                 {% if sentence.keywords %}
-                                                    | 検出キーワード: {{ sentence.keywords|join:", " }}
+                                                    {% for keyword in sentence.keywords %}
+                                                        {% with highlighted_text=sentence.text|highlight_keywords:keyword %}
+                                                            {{ highlighted_text|safe }}
+                                                        {% endwith %}
+                                                    {% endfor %}
+                                                {% else %}
+                                                    {{ sentence.text }}
                                                 {% endif %}
                                             </div>
+                                            {% if sentence.keywords %}
+                                                <div class="small text-muted">
+                                                    <strong>検出キーワード:</strong> 
+                                                    {% for keyword in sentence.keywords %}
+                                                        <span class="badge bg-danger me-1">{{ keyword }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
                                         </div>
                                     {% endfor %}
                                 </div>
-                                
-                                <div class="text-center mt-3">
-                                    <button class="btn btn-outline-danger btn-sm" type="button" 
-                                            data-bs-toggle="collapse" data-bs-target="#moreNegativeSentences"
-                                            onclick="toggleButtonText(this, 'すべて表示 ({{ samples.negative|length }}件)', '閉じる')">
-                                        <i class="fas fa-chevron-down me-1"></i>すべて表示 ({{ samples.negative|length }}件)
-                                    </button>
+                            {% endif %}
+                            
+                            {% if not samples.positive and not samples.negative %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">特徴的な文章は検出されませんでした</h5>
+                                    <p class="text-muted">感情スコアが閾値を超える文章がありませんでした</p>
                                 </div>
                             {% endif %}
-                        {% endif %}
-                        
-                        {% if not samples.positive and not samples.negative %}
-                            <div class="text-center text-muted py-3">
-                                <i class="fas fa-file-alt fa-2x mb-2"></i>
-                                <div>特徴的な文章が検出されませんでした</div>
-                                <div class="small mt-2">
-                                    感情スコアが閾値（±{{ session.analysis_result.analysis_metadata.config.positive_threshold }}）を超える文章がありませんでした
-                                </div>
-                            </div>
-                        {% endif %}
-                        
-                        <!-- 統計情報 -->
-                        {% if samples.positive or samples.negative %}
-                            <div class="mt-4 p-3 bg-light rounded">
-                                <div class="row text-center">
-                                    <div class="col-md-6">
-                                        <div class="h5 text-success mb-1">{{ samples.positive|length }}</div>
-                                        <div class="small text-muted">ポジティブ文章</div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="h5 text-danger mb-1">{{ samples.negative|length }}</div>
-                                        <div class="small text-muted">ネガティブ文章</div>
-                                    </div>
-                                </div>
-                                
-                                <div class="mt-2 text-center small text-muted">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    感情スコアが±{{ session.analysis_result.analysis_metadata.config.positive_threshold }}以上の文章を表示
-                                </div>
-                            </div>
-                        {% endif %}
+                        </div>
                     </div>
                 </div>
             {% endwith %}
         {% endif %}
+
+        <!-- ユーザー向け見解・提案 -->
+        <div class="result-card card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>分析から読み取れる見解
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if formatted_insights %}
+                    <!-- 市場への影響 -->
+                    {% if formatted_insights.market_implications %}
+                        <div class="insight-card mb-4">
+                            <h6 class="text-primary mb-3">
+                                <i class="fas fa-chart-line me-2"></i>市場への影響分析
+                            </h6>
+                            {% if formatted_insights.market_implications.sentiment %}
+                                <p><strong>市場の反応予想:</strong> {{ formatted_insights.market_implications.sentiment }}</p>
+                            {% endif %}
+                            {% if formatted_insights.market_implications.stock_impact %}
+                                <p><strong>株価への影響:</strong> {{ formatted_insights.market_implications.stock_impact }}</p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    <!-- 経営戦略の読み取り -->
+                    {% if formatted_insights.strategy_reading %}
+                        <div class="insight-card mb-4">
+                            <h6 class="text-success mb-3">
+                                <i class="fas fa-chess me-2"></i>経営戦略の読み取り
+                            </h6>
+                            {% if formatted_insights.strategy_reading.management_stance %}
+                                <p><strong>経営スタンス:</strong> {{ formatted_insights.strategy_reading.management_stance }}</p>
+                            {% endif %}
+                            {% if formatted_insights.strategy_reading.strategic_direction %}
+                                <p><strong>戦略的方向性:</strong> {{ formatted_insights.strategy_reading.strategic_direction }}</p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    <!-- 投資家視点 -->
+                    {% if formatted_insights.investor_perspective %}
+                        <div class="insight-card mb-4">
+                            <h6 class="text-info mb-3">
+                                <i class="fas fa-user-tie me-2"></i>投資家視点での評価
+                            </h6>
+                            {% if formatted_insights.investor_perspective.investment_appeal %}
+                                <p><strong>投資魅力度:</strong> {{ formatted_insights.investor_perspective.investment_appeal }}</p>
+                            {% endif %}
+                            {% if formatted_insights.investor_perspective.growth_potential %}
+                                <p><strong>成長ポテンシャル:</strong> {{ formatted_insights.investor_perspective.growth_potential }}</p>
+                            {% endif %}
+                            {% if formatted_insights.investor_perspective.dividend_outlook %}
+                                <p><strong>配当見通し:</strong> {{ formatted_insights.investor_perspective.dividend_outlook }}</p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    <!-- リスク評価 -->
+                    {% if formatted_insights.risk_assessment %}
+                        <div class="insight-card mb-4">
+                            <h6 class="text-warning mb-3">
+                                <i class="fas fa-shield-alt me-2"></i>リスク評価
+                            </h6>
+                            <p><strong>リスクレベル:</strong> 
+                                {% if formatted_insights.risk_assessment.risk_level == 'high' %}
+                                    <span class="badge bg-danger">高</span>
+                                {% elif formatted_insights.risk_assessment.risk_level == 'medium' %}
+                                    <span class="badge bg-warning">中</span>
+                                {% else %}
+                                    <span class="badge bg-success">低</span>
+                                {% endif %}
+                            </p>
+                            {% if formatted_insights.risk_assessment.identified_risks %}
+                                <p><strong>特定されたリスク:</strong></p>
+                                <ul class="small">
+                                    {% for risk in formatted_insights.risk_assessment.identified_risks %}
+                                        <li>{{ risk }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                            {% if formatted_insights.risk_assessment.monitoring_points %}
+                                <p><strong>監視ポイント:</strong></p>
+                                <ul class="small">
+                                    {% for point in formatted_insights.risk_assessment.monitoring_points %}
+                                        <li>{{ point }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    <!-- 将来展望 -->
+                    {% if formatted_insights.future_outlook %}
+                        <div class="insight-card mb-4">
+                            <h6 class="text-purple mb-3">
+                                <i class="fas fa-crystal-ball me-2"></i>将来展望
+                            </h6>
+                            {% if formatted_insights.future_outlook.short_term %}
+                                <p><strong>短期見通し:</strong> {{ formatted_insights.future_outlook.short_term }}</p>
+                            {% endif %}
+                            {% if formatted_insights.future_outlook.medium_term %}
+                                <p><strong>中期戦略:</strong> {{ formatted_insights.future_outlook.medium_term }}</p>
+                            {% endif %}
+                            {% if formatted_insights.future_outlook.long_term %}
+                                <p><strong>長期ビジョン:</strong> {{ formatted_insights.future_outlook.long_term }}</p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    <!-- ステークホルダー別推奨事項 -->
+                    {% if formatted_insights.recommendations %}
+                        <div class="insight-suggestion">
+                            <h6 class="text-primary mb-3">
+                                <i class="fas fa-users me-2"></i>ステークホルダー別推奨事項
+                            </h6>
+                            
+                            {% if formatted_insights.recommendations.investors %}
+                                <div class="mb-3">
+                                    <strong class="text-primary">投資家向け:</strong>
+                                    <ul class="recommendation-list">
+                                        {% for recommendation in formatted_insights.recommendations.investors %}
+                                            <li>{{ recommendation }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+                            
+                            {% if formatted_insights.recommendations.management %}
+                                <div class="mb-3">
+                                    <strong class="text-success">経営陣向け:</strong>
+                                    <ul class="recommendation-list">
+                                        {% for recommendation in formatted_insights.recommendations.management %}
+                                            <li>{{ recommendation }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                {% else %}
+                    <!-- フォールバック：基本的な見解 -->
+                    <div class="insight-card">
+                        <h6 class="text-primary mb-3">
+                            <i class="fas fa-chart-line me-2"></i>全体的な傾向
+                        </h6>
+                        {% if session.sentiment_label == 'positive' %}
+                            <p>この書類からは<strong>前向きな経営姿勢</strong>が読み取れます。</p>
+                            {% if session.overall_score > 0.6 %}
+                                <p>特に、成長への意欲や収益改善への取り組みが強く表現されており、投資家にとって安心感を与える内容となっています。</p>
+                            {% endif %}
+                        {% elif session.sentiment_label == 'negative' %}
+                            <p>この書類からは<strong>慎重な経営スタンス</strong>や<strong>課題への言及</strong>が多く見られます。</p>
+                            {% if session.overall_score < -0.6 %}
+                                <p>リスクや困難な状況についての記述が目立ちますが、これは企業の透明性の表れとも捉えられます。</p>
+                            {% endif %}
+                        {% else %}
+                            <p>この書類は<strong>バランスの取れた内容</strong>となっており、客観的な報告が主体となっています。</p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                
+                <!-- 業界比較 -->
+                {% if industry_stats %}
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-industry me-2"></i>業界比較
+                        </h6>
+                        <p class="mb-1">{{ industry_stats.comparison_text }}</p>
+                        <small>同種書類{{ industry_stats.industry_count }}件との比較（上位{{ industry_stats.percentile }}%）</small>
+                    </div>
+                {% endif %}
+                
+                <!-- 信頼性評価 -->
+                {% if reliability_score %}
+                    <div class="alert {% if reliability_score.level == 'very_high' or reliability_score.level == 'high' %}alert-success{% elif reliability_score.level == 'medium' %}alert-warning{% else %}alert-secondary{% endif %}">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-shield-check me-2"></i>分析の信頼性評価
+                        </h6>
+                        <p class="mb-2">{{ reliability_score.description }}</p>
+                        <div class="progress mb-2" style="height: 10px;">
+                            <div class="progress-bar {% if reliability_score.score >= 80 %}bg-success{% elif reliability_score.score >= 60 %}bg-info{% elif reliability_score.score >= 40 %}bg-warning{% else %}bg-secondary{% endif %}" 
+                                 style="width: {{ reliability_score.score|score_percentage }}%">
+                                {{ reliability_score.score|score_percentage }}%
+                            </div>
+                        </div>
+                        {% if reliability_score.factors %}
+                            <small>根拠: {{ reliability_score.factors|join:"、" }}</small>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <strong>注意事項:</strong> 
+                    この感情分析は文書の表現を機械的に分析したものです。投資判断や経営判断を行う際は、財務データや市場環境など他の要因も総合的に検討してください。
+                </div>
+            </div>
+        </div>
     </div>
     
     <!-- サイドバー -->
@@ -620,18 +731,6 @@
                                 <div class="h4 text-secondary">{{ stats.sentences_analyzed }}</div>
                                 <div class="small text-muted">分析文数</div>
                             </div>
-                            {% if stats.positive_sentences_found %}
-                                <div class="col-6 mb-3">
-                                    <div class="h4 text-success">{{ stats.positive_sentences_found }}</div>
-                                    <div class="small text-muted">ポジティブ文</div>
-                                </div>
-                            {% endif %}
-                            {% if stats.negative_sentences_found %}
-                                <div class="col-6 mb-3">
-                                    <div class="h4 text-danger">{{ stats.negative_sentences_found }}</div>
-                                    <div class="small text-muted">ネガティブ文</div>
-                                </div>
-                            {% endif %}
                         </div>
                         
                         <div class="small text-muted">
@@ -645,49 +744,6 @@
                     </div>
                 </div>
             {% endwith %}
-        {% endif %}
-        
-        <!-- 関連分析 -->
-        {% if related_analyses %}
-            <div class="result-card card">
-                <div class="card-header">
-                    <h6 class="mb-0">
-                        <i class="fas fa-link me-2"></i>同一企業の他の分析
-                    </h6>
-                </div>
-                <div class="card-body">
-                    {% for analysis in related_analyses %}
-                        <div class="border rounded p-3 mb-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <div class="fw-semibold small">
-                                        {{ analysis.document.doc_description|truncatechars:30 }}
-                                    </div>
-                                    <div class="small text-muted">
-                                        {{ analysis.analysis_date|date:"Y/m/d" }}
-                                    </div>
-                                </div>
-                                <div class="text-end">
-                                    {% if analysis.sentiment_label == 'positive' %}
-                                        <span class="badge bg-success">+{{ analysis.overall_score|floatformat:2 }}</span>
-                                    {% elif analysis.sentiment_label == 'negative' %}
-                                        <span class="badge bg-danger">{{ analysis.overall_score|floatformat:2 }}</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">{{ analysis.overall_score|floatformat:2 }}</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                    
-                    <div class="text-center">
-                        <a href="{% url 'earnings_analysis:document-list-ui' %}?company={{ document.company_name }}" 
-                           class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-building me-1"></i>企業の全書類を見る
-                        </a>
-                    </div>
-                </div>
-            </div>
         {% endif %}
         
         <!-- アクション -->
@@ -710,41 +766,9 @@
                     <button type="button" class="btn btn-outline-info" onclick="shareResult()">
                         <i class="fas fa-share me-1"></i>結果を共有
                     </button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- 分析情報 -->
-        <div class="result-card card">
-            <div class="card-header">
-                <h6 class="mb-0">
-                    <i class="fas fa-info-circle me-2"></i>分析情報
-                </h6>
-            </div>
-            <div class="card-body">
-                <div class="small">
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">分析日時:</span>
-                        <span>{{ session.created_at|date:"Y/m/d H:i:s" }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">処理時間:</span>
-                        <span>{{ session.updated_at|timesince:session.created_at }}</span>
-                    </div>
-                    {% with metadata=session.analysis_result.analysis_metadata %}
-                        {% if metadata.dictionary_size %}
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted">辞書語数:</span>
-                                <span>{{ metadata.dictionary_size }}語</span>
-                            </div>
-                        {% endif %}
-                        {% if metadata.analysis_version %}
-                            <div class="d-flex justify-content-between">
-                                <span class="text-muted">分析エンジン:</span>
-                                <span>{{ metadata.analysis_version }}</span>
-                            </div>
-                        {% endif %}
-                    {% endwith %}
+                    <button type="button" class="btn btn-outline-success" onclick="exportSummary()">
+                        <i class="fas fa-download me-1"></i>サマリーを保存
+                    </button>
                 </div>
             </div>
         </div>
@@ -772,64 +796,71 @@ function shareResult() {
     }
 }
 
-// ボタンテキストの切り替え
-function toggleButtonText(button, showText, hideText) {
-    const icon = button.querySelector('i');
-    const isExpanded = button.getAttribute('aria-expanded') === 'true';
+function exportSummary() {
+    const summary = {
+        company: '{{ document.company_name }}',
+        document: '{{ document.doc_description }}',
+        analysis_date: '{{ session.created_at|date:"Y-m-d H:i:s" }}',
+        overall_score: {{ session.overall_score }},
+        sentiment_label: '{{ session.sentiment_label }}',
+        positive_words: {{ session.analysis_result.score_calculation.positive_scores|length }},
+        negative_words: {{ session.analysis_result.score_calculation.negative_scores|length }},
+        total_analyzed_words: {{ session.analysis_result.statistics.total_words_analyzed }},
+        key_insights: [
+            {% if session.sentiment_label == 'positive' %}
+                '前向きな経営姿勢が表れている',
+                '成長への期待が持てる内容'
+            {% elif session.sentiment_label == 'negative' %}
+                'リスクや課題への言及が多い',
+                '慎重な経営スタンス'
+            {% else %}
+                'バランスの取れた客観的な内容',
+                '安定した状況を示している'
+            {% endif %}
+        ]
+    };
     
-    if (isExpanded) {
-        button.innerHTML = `<i class="fas fa-chevron-down me-1"></i>${showText}`;
-    } else {
-        button.innerHTML = `<i class="fas fa-chevron-up me-1"></i>${hideText}`;
-    }
+    const blob = new Blob([JSON.stringify(summary, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sentiment_analysis_${summary.company}_${summary.analysis_date.replace(/[: ]/g, '_')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
-// 印刷用スタイル
-function setupPrintStyles() {
-    const style = document.createElement('style');
-    style.textContent = `
-        @media print {
-            .btn, .card-header { display: none !important; }
-            .result-header { background: #f8f9fa !important; color: #000 !important; }
-            .sentiment-score-large { background: #f8f9fa !important; color: #000 !important; border: 2px solid #dee2e6 !important; }
-            .card { break-inside: avoid; margin-bottom: 1rem; }
-            .reasoning-card { background: #f8f9fa !important; }
-            .collapse { display: block !important; }
-        }
-    `;
-    document.head.appendChild(style);
-}
-
+// スムーズスクロール
 document.addEventListener('DOMContentLoaded', function() {
-    setupPrintStyles();
-    
-    // キーワードのツールチップ
-    const keywords = document.querySelectorAll('.keyword-item');
-    keywords.forEach(keyword => {
-        keyword.addEventListener('mouseenter', function() {
+    // キーワードハイライトのホバー効果
+    document.querySelectorAll('.keyword-highlight').forEach(el => {
+        el.addEventListener('mouseenter', function() {
             this.style.transform = 'scale(1.05)';
+            this.style.transition = 'transform 0.2s ease';
         });
-        keyword.addEventListener('mouseleave', function() {
+        
+        el.addEventListener('mouseleave', function() {
             this.style.transform = 'scale(1)';
         });
     });
     
-    // コラプスイベントの監視
-    const collapseElements = document.querySelectorAll('.collapse');
-    collapseElements.forEach(collapse => {
-        collapse.addEventListener('shown.bs.collapse', function() {
-            const button = document.querySelector(`[data-bs-target="#${this.id}"]`);
-            if (button) {
-                button.setAttribute('aria-expanded', 'true');
+    // 分析結果のアニメーション
+    const cards = document.querySelectorAll('.result-card');
+    const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
             }
         });
-        
-        collapse.addEventListener('hidden.bs.collapse', function() {
-            const button = document.querySelector(`[data-bs-target="#${this.id}"]`);
-            if (button) {
-                button.setAttribute('aria-expanded', 'false');
-            }
-        });
+    });
+    
+    cards.forEach(card => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(card);
     });
 });
 </script>

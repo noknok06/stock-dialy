@@ -1,0 +1,38 @@
+<!-- earnings_analysis/templates/earnings_analysis/tags/keyword_cloud.html -->
+{% load sentiment_filters %}
+
+{% if keywords %}
+    <div class="keyword-cloud d-flex flex-wrap gap-2 mb-4">
+        {% for keyword in keywords %}
+            <span class="keyword-item 
+                {% if keyword.score > 0 %}
+                    {% if keyword.type == '改善表現' or keyword.type == '否定表現' %}keyword-context{% else %}keyword-positive{% endif %}
+                {% else %}
+                    {% if keyword.type == '悪化表現' %}keyword-context{% else %}keyword-negative{% endif %}
+                {% endif %}"
+                  title="{{ keyword.type }} | スコア: {{ keyword.score }} | 影響: {{ keyword.impact }}">
+                {{ keyword.word }}
+                <small class="{{ keyword.score|sentiment_color }}">({{ keyword.score }})</small>
+                <i class="{{ keyword.impact|impact_level_icon }} ms-1"></i>
+                {% if keyword.type == '改善表現' %}
+                    <i class="fas fa-arrow-up ms-1 text-success" title="改善を表す表現"></i>
+                {% elif keyword.type == '悪化表現' %}
+                    <i class="fas fa-arrow-down ms-1 text-danger" title="悪化を表す表現"></i>
+                {% elif keyword.type == '否定表現' %}
+                    <i class="fas fa-exclamation-circle ms-1 text-warning" title="否定による転換"></i>
+                {% endif %}
+            </span>
+        {% endfor %}
+        
+        {% if total_count > keywords|length %}
+            <span class="badge bg-secondary">
+                他{{ total_count|add:keywords|length|sub }}語
+            </span>
+        {% endif %}
+    </div>
+{% else %}
+    <div class="text-center text-muted py-3">
+        <i class="fas fa-search fa-2x mb-2"></i>
+        <div>感情を表すキーワードが検出されませんでした</div>
+    </div>
+{% endif %}

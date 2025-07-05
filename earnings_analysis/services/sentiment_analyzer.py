@@ -1,4 +1,4 @@
-# earnings_analysis/services/sentiment_analyzer.py（分かりやすい分析版）
+# earnings_analysis/services/sentiment_analyzer.py（セクション統合修正版）
 import re
 import csv
 import os
@@ -181,16 +181,258 @@ class TransparentTextProcessor:
         return text.strip()
 
 
+class UserInsightGenerator:
+    """ユーザー向け見解生成クラス"""
+    
+    def __init__(self):
+        self.business_terms = {
+            'positive': [
+                '成長戦略', '収益改善', '競争力強化', '市場拡大', '効率化',
+                '業績向上', '株主価値', '持続的成長', '技術革新', '新規事業'
+            ],
+            'negative': [
+                'リスク管理', '課題対応', '構造改革', '業績改善', 'コスト削減',
+                '市場変化', '競争激化', '不確実性', '経営課題', '事業再編'
+            ]
+        }
+    
+    def generate_detailed_insights(self, analysis_result: Dict[str, Any], document_info: Dict[str, str]) -> Dict[str, Any]:
+        """詳細な見解を生成"""
+        overall_score = analysis_result.get('overall_score', 0)
+        sentiment_label = analysis_result.get('sentiment_label', 'neutral')
+        statistics = analysis_result.get('statistics', {})
+        keyword_analysis = analysis_result.get('keyword_analysis', {})
+        
+        insights = {
+            'market_implications': self._generate_market_implications(overall_score, sentiment_label, keyword_analysis),
+            'business_strategy_reading': self._generate_business_strategy_reading(analysis_result, document_info),
+            'investor_perspective': self._generate_investor_perspective(overall_score, sentiment_label, statistics),
+            'risk_assessment': self._generate_risk_assessment(analysis_result),
+            'competitive_position': self._generate_competitive_analysis(keyword_analysis, overall_score),
+            'future_outlook': self._generate_future_outlook(analysis_result),
+            'stakeholder_recommendations': self._generate_stakeholder_recommendations(overall_score, sentiment_label, statistics)
+        }
+        
+        return insights
+    
+    def _generate_market_implications(self, score: float, label: str, keywords: Dict) -> Dict[str, Any]:
+        """市場への影響分析"""
+        implications = {
+            'market_sentiment': '',
+            'stock_impact_likelihood': '',
+            'sector_comparison': '',
+            'timing_considerations': ''
+        }
+        
+        if label == 'positive':
+            if score > 0.6:
+                implications['market_sentiment'] = '非常にポジティブな市場反応が期待される内容です。'
+                implications['stock_impact_likelihood'] = '高い確率で株価にプラスの影響を与える可能性があります。'
+            else:
+                implications['market_sentiment'] = '市場に対して前向きなメッセージを発信しています。'
+                implications['stock_impact_likelihood'] = '短期的にはプラス材料として評価される可能性があります。'
+        elif label == 'negative':
+            if score < -0.6:
+                implications['market_sentiment'] = '市場の慎重な反応が予想される内容です。'
+                implications['stock_impact_likelihood'] = '一時的な株価下落要因となる可能性があります。'
+            else:
+                implications['market_sentiment'] = '市場は企業の透明性を評価する一方、慎重な姿勢を見せる可能性があります。'
+                implications['stock_impact_likelihood'] = '短期的な影響は限定的である可能性があります。'
+        else:
+            implications['market_sentiment'] = '市場反応は中立的で、他の要因により左右される可能性があります。'
+            implications['stock_impact_likelihood'] = '感情的な材料としての影響は限定的と予想されます。'
+        
+        return implications
+    
+    def _generate_business_strategy_reading(self, analysis_result: Dict, document_info: Dict) -> Dict[str, str]:
+        """経営戦略の読み取り"""
+        strategy_reading = {
+            'management_stance': '',
+            'strategic_direction': '',
+            'operational_focus': ''
+        }
+        
+        keyword_analysis = analysis_result.get('keyword_analysis', {})
+        positive_keywords = keyword_analysis.get('positive', [])
+        negative_keywords = keyword_analysis.get('negative', [])
+        
+        # ポジティブキーワードから戦略を読み取り
+        growth_words = [kw for kw in positive_keywords if any(term in kw.get('word', '') for term in ['成長', '拡大', '増収', '増益'])]
+        improvement_words = [kw for kw in positive_keywords if any(term in kw.get('word', '') for term in ['改善', '向上', '効率', '強化'])]
+        
+        if growth_words:
+            strategy_reading['strategic_direction'] = '成長志向の戦略が明確に示されており、事業拡大への積極的な姿勢が読み取れます。'
+        elif improvement_words:
+            strategy_reading['strategic_direction'] = '効率性と品質向上に重点を置いた戦略が展開されています。'
+        
+        # ネガティブキーワードからリスク対応を読み取り
+        risk_words = [kw for kw in negative_keywords if any(term in kw.get('word', '') for term in ['リスク', '課題', '困難', '厳しい'])]
+        
+        if risk_words:
+            strategy_reading['management_stance'] = 'リスクを正面から捉え、課題解決に向けた現実的なアプローチを採用しています。'
+        else:
+            strategy_reading['management_stance'] = '安定した経営基盤の上に、着実な事業運営を行っています。'
+        
+        return strategy_reading
+    
+    def _generate_investor_perspective(self, score: float, label: str, statistics: Dict) -> Dict[str, str]:
+        """投資家視点での分析"""
+        investor_view = {
+            'investment_appeal': '',
+            'risk_reward_balance': '',
+            'dividend_outlook': '',
+            'growth_potential': ''
+        }
+        
+        total_words = statistics.get('total_words_analyzed', 0)
+        
+        if label == 'positive':
+            investor_view['investment_appeal'] = '投資魅力度は高く、成長期待を持てる企業として位置づけられます。'
+            investor_view['growth_potential'] = '中長期的な成長ポテンシャルが期待できる内容となっています。'
+            if score > 0.5:
+                investor_view['dividend_outlook'] = '株主還元策の拡充や増配の可能性も期待されます。'
+        elif label == 'negative':
+            investor_view['investment_appeal'] = 'リスクを慎重に評価した上での投資判断が必要です。'
+            investor_view['risk_reward_balance'] = 'リスクは存在しますが、それに見合ったリターンの可能性もあります。'
+        else:
+            investor_view['investment_appeal'] = '安定した投資先として、ディフェンシブな投資戦略に適しています。'
+            investor_view['growth_potential'] = '急成長は期待できませんが、安定した成長が見込まれます。'
+        
+        if total_words > 50:
+            investor_view['analysis_reliability'] = f'十分な情報量（{total_words}語）に基づく分析のため、信頼性は高いと考えられます。'
+        
+        return investor_view
+    
+    def _generate_risk_assessment(self, analysis_result: Dict) -> Dict[str, Any]:
+        """リスク評価"""
+        risk_assessment = {
+            'identified_risks': [],
+            'risk_level': 'medium',
+            'mitigation_evidence': [],
+            'monitoring_points': []
+        }
+        
+        negative_keywords = analysis_result.get('keyword_analysis', {}).get('negative', [])
+        negative_sentences = analysis_result.get('sample_sentences', {}).get('negative', [])
+        
+        # リスクの特定
+        for keyword in negative_keywords:
+            word = keyword.get('word', '')
+            if any(risk_term in word for risk_term in ['リスク', '減収', '減益', '損失', '困難']):
+                risk_assessment['identified_risks'].append(f"{word}に関するリスク")
+        
+        # リスクレベルの決定
+        overall_score = analysis_result.get('overall_score', 0)
+        if overall_score < -0.5:
+            risk_assessment['risk_level'] = 'high'
+            risk_assessment['monitoring_points'].append('短期的な業績動向の注意深い監視が必要')
+        elif overall_score < -0.2:
+            risk_assessment['risk_level'] = 'medium'
+            risk_assessment['monitoring_points'].append('中期的な改善計画の進捗確認が重要')
+        else:
+            risk_assessment['risk_level'] = 'low'
+        
+        return risk_assessment
+    
+    def _generate_competitive_analysis(self, keywords: Dict, score: float) -> Dict[str, str]:
+        """競争環境分析"""
+        competitive_analysis = {
+            'competitive_position': '',
+            'market_strategy': '',
+            'differentiation_factors': ''
+        }
+        
+        positive_keywords = keywords.get('positive', [])
+        
+        # 競争力を示すキーワードの分析
+        competitive_words = [kw for kw in positive_keywords if any(term in kw.get('word', '') for term in ['競争力', '強化', 'シェア', '市場'])]
+        
+        if competitive_words:
+            competitive_analysis['competitive_position'] = '市場での競争優位性を確立し、リーディングポジションを目指しています。'
+        elif score > 0.3:
+            competitive_analysis['competitive_position'] = '業界内での地位を着実に向上させ、競争力を高めています。'
+        else:
+            competitive_analysis['competitive_position'] = '安定した事業基盤を維持し、堅実な市場参加者として位置づけられます。'
+        
+        return competitive_analysis
+    
+    def _generate_future_outlook(self, analysis_result: Dict) -> Dict[str, str]:
+        """将来展望"""
+        future_outlook = {
+            'short_term_outlook': '',
+            'medium_term_strategy': '',
+            'long_term_vision': ''
+        }
+        
+        overall_score = analysis_result.get('overall_score', 0)
+        sentiment_label = analysis_result.get('sentiment_label', 'neutral')
+        
+        if sentiment_label == 'positive':
+            future_outlook['short_term_outlook'] = '今後1-2年は継続的な成長が期待できる見通しです。'
+            future_outlook['medium_term_strategy'] = '中期的には市場シェア拡大と収益性向上の両立を図る戦略が有効です。'
+            future_outlook['long_term_vision'] = '長期的には業界のリーダー企業としての地位確立が期待されます。'
+        elif sentiment_label == 'negative':
+            future_outlook['short_term_outlook'] = '短期的には課題解決と構造改革に注力する必要があります。'
+            future_outlook['medium_term_strategy'] = '中期的な回復軌道への転換が重要な課題となります。'
+            future_outlook['long_term_vision'] = '長期的には持続可能なビジネスモデルの構築が求められます。'
+        else:
+            future_outlook['short_term_outlook'] = '現状維持を基本として、着実な成長を目指す見通しです。'
+            future_outlook['medium_term_strategy'] = '安定した事業基盤の上に、選択的な投資を行う戦略が適切です。'
+        
+        return future_outlook
+    
+    def _generate_stakeholder_recommendations(self, score: float, label: str, statistics: Dict) -> Dict[str, List[str]]:
+        """ステークホルダー別推奨事項"""
+        recommendations = {
+            'for_investors': [],
+            'for_management': [],
+            'for_employees': [],
+            'for_customers': []
+        }
+        
+        if label == 'positive':
+            recommendations['for_investors'] = [
+                '成長期待に基づく投資戦略の検討',
+                '中長期的な保有を前提とした投資判断',
+                '配当政策の動向に注目'
+            ]
+            recommendations['for_management'] = [
+                '成長戦略の着実な実行',
+                'ステークホルダーへの継続的な情報開示',
+                '持続可能な成長基盤の構築'
+            ]
+        elif label == 'negative':
+            recommendations['for_investors'] = [
+                'リスク要因の詳細な分析と評価',
+                '改善計画の進捗状況の定期的な確認',
+                '分散投資によるリスク軽減'
+            ]
+            recommendations['for_management'] = [
+                '課題解決への具体的なアクションプラン策定',
+                'ステークホルダーとの積極的なコミュニケーション',
+                '構造改革の加速化'
+            ]
+        else:
+            recommendations['for_investors'] = [
+                '安定配当を重視したポートフォリオ構築',
+                '業界動向との比較分析',
+                '長期的な視点での投資判断'
+            ]
+        
+        return recommendations
+
+
 class TransparentSentimentAnalyzer:
-    """分かりやすい感情分析エンジン"""
+    """分かりやすい感情分析エンジン（見解生成強化版）"""
     
     def __init__(self, config: Optional[AnalysisConfig] = None):
         self.config = config or AnalysisConfig()
         self.dictionary = TransparentSentimentDictionary()
         self.text_processor = TransparentTextProcessor()
+        self.insight_generator = UserInsightGenerator()
         
-    def analyze_text(self, text: str, session_id: str = None) -> Dict[str, Any]:
-        """透明性の高い感情分析"""
+    def analyze_text(self, text: str, session_id: str = None, document_info: Dict[str, str] = None) -> Dict[str, Any]:
+        """透明性の高い感情分析（見解生成付き）"""
         try:
             if not text or len(text.strip()) < 10:
                 return self._empty_result(session_id)
@@ -221,14 +463,6 @@ class TransparentSentimentAnalyzer:
                     'impact': sum(score for _, score, _ in basic_matches)
                 })
             
-            # デバッグログ：検出された語彙の確認
-            logger.debug(f"文脈パターン検出: {len(context_matches)}件")
-            logger.debug(f"基本語彙検出: {len(basic_matches)}件")
-            if context_matches:
-                logger.debug(f"文脈パターン: {[word for word, _, _ in context_matches]}")
-            if basic_matches:
-                logger.debug(f"基本語彙: {[word for word, _, _ in basic_matches]}")
-            
             # 全てのマッチを統合
             all_matches = context_matches + basic_matches
             sentiment_scores = [score for _, score, _ in all_matches]
@@ -252,14 +486,8 @@ class TransparentSentimentAnalyzer:
             sentences = self._split_sentences(cleaned_text)
             sentence_analysis = self._analyze_sentences(sentences)
             
-            # デバッグログ：サンプル文章の確認
-            logger.debug(f"文章分析結果: {len(sentence_analysis)}件のサンプル文章を生成")
-            positive_samples = [s for s in sentence_analysis if s['score'] > self.config.positive_threshold]
-            negative_samples = [s for s in sentence_analysis if s['score'] < self.config.negative_threshold]
-            logger.debug(f"ポジティブサンプル: {len(positive_samples)}件, ネガティブサンプル: {len(negative_samples)}件")
-            
-            # 結果構築
-            return {
+            # 基本結果の構築
+            basic_result = {
                 'overall_score': round(overall_score, 3),
                 'sentiment_label': sentiment_label,
                 'analysis_reasoning': analysis_reasoning,
@@ -267,23 +495,30 @@ class TransparentSentimentAnalyzer:
                 'analysis_steps': analysis_steps,
                 'keyword_analysis': keyword_analysis,
                 'sample_sentences': {
-                    'positive': [s for s in sentence_analysis if s['score'] > self.config.positive_threshold][:3],
-                    'negative': [s for s in sentence_analysis if s['score'] < self.config.negative_threshold][:3],
+                    'positive': [s for s in sentence_analysis if s['score'] > self.config.positive_threshold][:5],
+                    'negative': [s for s in sentence_analysis if s['score'] < self.config.negative_threshold][:5],
                 },
                 'statistics': {
                     'total_words_analyzed': len(all_matches),
                     'context_patterns_found': len(context_matches),
                     'basic_words_found': len(basic_matches),
                     'sentences_analyzed': len(sentences),
-                    'unique_words_found': len(set(word for word, _, _ in all_matches)),  # ユニーク語数も表示
+                    'unique_words_found': len(set(word for word, _, _ in all_matches)),
                 },
                 'analysis_metadata': {
                     'analyzed_at': timezone.now().isoformat(),
                     'dictionary_size': len(self.dictionary.sentiment_dict),
                     'session_id': session_id,
-                    'analysis_version': '2.0_transparent',
+                    'analysis_version': '2.1_insight_enhanced',
                 }
             }
+            
+            # ユーザー向け詳細見解を生成
+            if document_info:
+                user_insights = self.insight_generator.generate_detailed_insights(basic_result, document_info)
+                basic_result['user_insights'] = user_insights
+            
+            return basic_result
             
         except Exception as e:
             logger.error(f"感情分析エラー: {e}")
@@ -355,9 +590,8 @@ class TransparentSentimentAnalyzer:
                 'average_score': 0.0,
                 'final_score': 0.0,
             }
-        
-        positive_scores = [s for s in scores if s > 0]
-        negative_scores = [s for s in scores if s < 0]
+        positive_scores = [s for s in scores if s > self.config.positive_threshold]  # 0.15以上
+        negative_scores = [s for s in scores if s < self.config.negative_threshold]  # -0.15以下
         
         positive_sum = sum(positive_scores)
         negative_sum = sum(negative_scores)
@@ -468,8 +702,8 @@ class TransparentSentimentAnalyzer:
         negative_words.sort(key=lambda x: x['score'])
         
         return {
-            'positive': positive_words[:5],
-            'negative': negative_words[:5],
+            'positive': positive_words[:10],  # 上位10件
+            'negative': negative_words[:10],  # 上位10件
         }
     
     def _split_sentences(self, text: str) -> List[str]:
@@ -479,7 +713,7 @@ class TransparentSentimentAnalyzer:
                 len(re.findall(r'[ぁ-んァ-ヶ一-龯]', s)) > 2]  # 日本語文字が2個以上
     
     def _analyze_sentences(self, sentences: List[str]) -> List[Dict]:
-        """文章レベル分析"""
+        """文章レベル分析（キーワードハイライト付き）"""
         sentence_analysis = []
         
         for sentence in sentences[:self.config.max_sample_sentences]:
@@ -491,13 +725,34 @@ class TransparentSentimentAnalyzer:
             sent_score = sum(all_scores) / len(all_scores) if all_scores else 0
             
             if abs(sent_score) > 0.15:  # 閾値を0.15に下げて文章を取得しやすくする
+                keywords = [word for word, _, _ in context_matches + basic_matches]
+                highlighted_text = self._highlight_keywords_in_text(sentence, keywords)
+                
                 sentence_analysis.append({
-                    'text': sentence[:150],
+                    'text': sentence[:200],  # 文字数制限
+                    'highlighted_text': highlighted_text,
                     'score': round(sent_score, 2),
-                    'keywords': [word for word, _, _ in context_matches + basic_matches],
+                    'keywords': keywords,
                 })
         
         return sentence_analysis
+    
+    def _highlight_keywords_in_text(self, text: str, keywords: List[str]) -> str:
+        """テキスト内のキーワードをハイライト"""
+        highlighted_text = text[:200]  # 文字数制限
+        
+        # キーワードを長い順にソートして、部分マッチによる重複を避ける
+        sorted_keywords = sorted(set(keywords), key=len, reverse=True)
+        
+        for keyword in sorted_keywords:
+            if keyword and keyword in highlighted_text:
+                # HTMLエスケープされていない状態でハイライトタグを挿入
+                highlighted_text = highlighted_text.replace(
+                    keyword,
+                    f'<span class="keyword-highlight">{keyword}</span>'
+                )
+        
+        return highlighted_text
     
     def _determine_sentiment_label(self, score: float) -> str:
         """感情ラベル決定"""
@@ -535,16 +790,20 @@ class TransparentSentimentAnalyzer:
                 'analyzed_at': timezone.now().isoformat(),
                 'dictionary_size': len(self.dictionary.sentiment_dict),
                 'session_id': session_id,
-                'analysis_version': '2.0_transparent',
+                'analysis_version': '2.1_insight_enhanced',
             }
         }
     
-    def analyze_text_sections(self, text_sections: Dict[str, str], session_id: str = None) -> Dict[str, Any]:
-        """複数セクションの分析"""
+    def analyze_text_sections(self, text_sections: Dict[str, str], session_id: str = None, document_info: Dict[str, str] = None) -> Dict[str, Any]:
+        """複数セクションの分析（見解生成付き・統合結果対応）"""
         try:
             section_results = {}
             overall_scores = []
             combined_steps = []
+            all_positive_sentences = []
+            all_negative_sentences = []
+            all_positive_keywords = []
+            all_negative_keywords = []
             
             # セクション別分析
             for section_name, text in text_sections.items():
@@ -555,6 +814,36 @@ class TransparentSentimentAnalyzer:
                 section_results[section_name] = result
                 overall_scores.append(result['overall_score'])
                 combined_steps.extend(result['analysis_steps'])
+                
+                # 各セクションの結果を統合リストに追加
+                sample_sentences = result.get('sample_sentences', {})
+                keyword_analysis = result.get('keyword_analysis', {})
+                
+                # ポジティブ・ネガティブ文章の統合
+                positive_sentences = sample_sentences.get('positive', [])
+                negative_sentences = sample_sentences.get('negative', [])
+                
+                # セクション名を文章に付加
+                for sentence in positive_sentences:
+                    sentence['section'] = section_name
+                    all_positive_sentences.append(sentence)
+                
+                for sentence in negative_sentences:
+                    sentence['section'] = section_name
+                    all_negative_sentences.append(sentence)
+                
+                # キーワードの統合
+                positive_keywords = keyword_analysis.get('positive', [])
+                negative_keywords = keyword_analysis.get('negative', [])
+                
+                # セクション名を追加してキーワードを統合
+                for keyword in positive_keywords:
+                    keyword['section'] = section_name
+                    all_positive_keywords.append(keyword)
+                
+                for keyword in negative_keywords:
+                    keyword['section'] = section_name
+                    all_negative_keywords.append(keyword)
             
             if not overall_scores:
                 return self._empty_result(session_id)
@@ -569,35 +858,110 @@ class TransparentSentimentAnalyzer:
                 combined_steps, combined_score_calc, overall_score, sentiment_label
             )
             
-            return {
+            # 統合されたサンプル文章（スコア順でソート）
+            all_positive_sentences.sort(key=lambda x: x['score'], reverse=True)
+            all_negative_sentences.sort(key=lambda x: x['score'])
+            
+            # 統合されたキーワード分析（重複除去とスコア順ソート）
+            integrated_positive_keywords = self._integrate_keywords(all_positive_keywords)
+            integrated_negative_keywords = self._integrate_keywords(all_negative_keywords)
+            
+            # 基本結果の構築（統合されたデータを含む）
+            basic_result = {
                 'overall_score': round(overall_score, 3),
                 'sentiment_label': sentiment_label,
                 'analysis_reasoning': integrated_reasoning,
                 'score_calculation': combined_score_calc,
                 'section_analysis': section_results,
+                'sample_sentences': {
+                    'positive': all_positive_sentences[:10],  # 上位10件
+                    'negative': all_negative_sentences[:10],  # 上位10件
+                },
+                'keyword_analysis': {
+                    'positive': integrated_positive_keywords[:15],  # 上位15件
+                    'negative': integrated_negative_keywords[:15],  # 上位15件
+                },
                 'statistics': {
                     'sections_analyzed': len(section_results),
                     'total_words_analyzed': sum(r['statistics']['total_words_analyzed'] for r in section_results.values()),
                     'context_patterns_found': sum(r['statistics']['context_patterns_found'] for r in section_results.values()),
                     'basic_words_found': sum(r['statistics']['basic_words_found'] for r in section_results.values()),
                     'unique_words_found': sum(r['statistics'].get('unique_words_found', 0) for r in section_results.values()),
+                    'positive_sentences_found': len(all_positive_sentences),
+                    'negative_sentences_found': len(all_negative_sentences),
+                    'total_positive_keywords': len(all_positive_keywords),
+                    'total_negative_keywords': len(all_negative_keywords),
                 },
                 'analysis_metadata': {
                     'analyzed_at': timezone.now().isoformat(),
                     'dictionary_size': len(self.dictionary.sentiment_dict),
                     'session_id': session_id,
                     'sections_analyzed': list(text_sections.keys()),
-                    'analysis_version': '2.0_transparent',
+                    'analysis_version': '2.1_insight_enhanced',
+                    'integration_method': 'section_aggregation',
                 }
             }
+            
+            # ユーザー向け詳細見解を生成
+            if document_info:
+                user_insights = self.insight_generator.generate_detailed_insights(basic_result, document_info)
+                basic_result['user_insights'] = user_insights
+            
+            # デバッグログ
+            logger.info(f"セクション統合分析完了: {len(section_results)}セクション, "
+                       f"ポジティブ文章{len(all_positive_sentences)}件, "
+                       f"ネガティブ文章{len(all_negative_sentences)}件, "
+                       f"ポジティブキーワード{len(integrated_positive_keywords)}語, "
+                       f"ネガティブキーワード{len(integrated_negative_keywords)}語")
+            
+            return basic_result
             
         except Exception as e:
             logger.error(f"セクション分析エラー: {e}")
             raise Exception(f"感情分析処理中にエラーが発生しました: {str(e)}")
+    
+    def _integrate_keywords(self, keyword_list: List[Dict]) -> List[Dict]:
+        """キーワードの統合（重複除去・スコア集約）"""
+        keyword_map = {}
+        
+        for keyword_info in keyword_list:
+            word = keyword_info.get('word', '')
+            score = keyword_info.get('score', 0)
+            type_name = keyword_info.get('type', '')
+            impact = keyword_info.get('impact', '')
+            section = keyword_info.get('section', '')
+            
+            if word in keyword_map:
+                # 既存のキーワードがある場合、スコアを平均化し、セクション情報を追加
+                existing = keyword_map[word]
+                existing['score'] = (existing['score'] + score) / 2
+                existing['sections'] = existing.get('sections', []) + [section]
+                existing['occurrences'] = existing.get('occurrences', 1) + 1
+                
+                # より強い影響度を採用
+                impact_priority = {'強い': 3, '中程度': 2, '軽微': 1}
+                if impact_priority.get(impact, 0) > impact_priority.get(existing['impact'], 0):
+                    existing['impact'] = impact
+            else:
+                # 新しいキーワードの場合
+                keyword_map[word] = {
+                    'word': word,
+                    'score': score,
+                    'type': type_name,
+                    'impact': impact,
+                    'sections': [section],
+                    'occurrences': 1
+                }
+        
+        # スコア順でソート
+        integrated_keywords = list(keyword_map.values())
+        integrated_keywords.sort(key=lambda x: abs(x['score']), reverse=True)
+        
+        return integrated_keywords
 
 
 class SentimentAnalysisService:
-    """感情分析サービス（透明性重視版）"""
+    """感情分析サービス（見解生成強化版）"""
     
     def __init__(self):
         self.analyzer = TransparentSentimentAnalyzer()
@@ -639,7 +1003,7 @@ class SentimentAnalysisService:
             return {
                 'status': 'started',
                 'session_id': str(session.session_id),
-                'message': '透明性を重視した感情分析を開始しました'
+                'message': '詳細な見解を含む感情分析を開始しました'
             }
             
         except DocumentMetadata.DoesNotExist:
@@ -661,10 +1025,10 @@ class SentimentAnalysisService:
             if session.processing_status == 'PROCESSING':
                 result = session.analysis_result or {}
                 progress = result.get('progress', 50)
-                message = result.get('current_step', '分析根拠を生成中...')
+                message = result.get('current_step', '詳細見解を生成中...')
             elif session.processing_status == 'COMPLETED':
                 progress = 100
-                message = '詳細分析完了'
+                message = '詳細分析・見解生成完了'
             elif session.processing_status == 'FAILED':
                 progress = 100
                 message = f'分析失敗: {session.error_message}'
@@ -703,7 +1067,7 @@ class SentimentAnalysisService:
             return {'status': 'not_found', 'message': 'セッションが見つかりません'}
     
     def _execute_analysis(self, session_id: int, user_ip: str = None):
-        """分析実行（透明性重視版）"""
+        """分析実行（見解生成強化版）"""
         from ..models import SentimentAnalysisSession, SentimentAnalysisHistory
         
         start_time = time.time()
@@ -713,6 +1077,15 @@ class SentimentAnalysisService:
             session.processing_status = 'PROCESSING'
             session.analysis_result = {'progress': 5, 'current_step': '書類情報確認中...'}
             session.save()
+            
+            # 書類情報を準備
+            document_info = {
+                'company_name': session.document.company_name,
+                'doc_description': session.document.doc_description,
+                'doc_type_code': session.document.doc_type_code,
+                'submit_date': session.document.submit_date_time.strftime('%Y-%m-%d'),
+                'securities_code': session.document.securities_code or '',
+            }
             
             session.analysis_result = {'progress': 20, 'current_step': 'XBRLファイル取得中...'}
             session.save()
@@ -728,7 +1101,7 @@ class SentimentAnalysisService:
                 session.save()
                 
                 document_text = self._extract_basic_document_text(session.document)
-                result = self.analyzer.analyze_text(document_text, str(session.session_id))
+                result = self.analyzer.analyze_text(document_text, str(session.session_id), document_info)
             else:
                 session.analysis_result = {'progress': 50, 'current_step': 'XBRLテキスト前処理中...'}
                 session.save()
@@ -736,9 +1109,9 @@ class SentimentAnalysisService:
                 session.analysis_result = {'progress': 70, 'current_step': '詳細感情分析実行中...'}
                 session.save()
                 
-                result = self.analyzer.analyze_text_sections(xbrl_text_sections, str(session.session_id))
+                result = self.analyzer.analyze_text_sections(xbrl_text_sections, str(session.session_id), document_info)
             
-            session.analysis_result = {'progress': 90, 'current_step': '分析根拠整理中...'}
+            session.analysis_result = {'progress': 90, 'current_step': 'ユーザー向け見解生成中...'}
             session.save()
             
             # セッション更新
@@ -758,7 +1131,7 @@ class SentimentAnalysisService:
                 analysis_duration=analysis_duration
             )
             
-            logger.info(f"透明性重視感情分析完了: {session.session_id} ({analysis_duration:.2f}秒)")
+            logger.info(f"見解生成付き感情分析完了: {session.session_id} ({analysis_duration:.2f}秒)")
             
         except Exception as e:
             logger.error(f"感情分析エラー: {session_id} - {e}")
