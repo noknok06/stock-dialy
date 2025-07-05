@@ -1,4 +1,4 @@
-# earnings_analysis/services/xbrl_extractor.py
+# earnings_analysis/services/xbrl_extractor.py（財務データ抽出機能追加版）
 import xml.etree.ElementTree as ET
 import re
 import requests
@@ -7,11 +7,12 @@ import io
 import logging
 from typing import Dict, List, Optional, Tuple
 from django.core.cache import cache
+from decimal import Decimal, InvalidOperation
 
 logger = logging.getLogger(__name__)
 
-class XBRLTextExtractor:
-    """XBRLファイルからテキスト情報を抽出するクラス"""
+class XBRLFinancialExtractor:
+    """XBRLファイルから財務データを抽出するクラス"""
     
     def __init__(self):
         # XBRL名前空間の定義
@@ -25,110 +26,304 @@ class XBRLTextExtractor:
             'jpdei': 'http://disclosure.edinet-fsa.go.jp/taxonomy/jpdei/2019-11-01/',
         }
         
-        # テキスト情報を含む要素名のパターン
+        # 財務データ要素のマッピング
+        self.financial_elements = {
+            # キャッシュフロー計算書
+            'operating_cf': [
+                'CashFlowsFromOperatingActivities',
+                'NetCashProvidedByUsedInOperatingActivities',
+                'OperatingCashFlow',
+                '営業活動によるキャッシュ・フロー',
+            ],
+            'investing_cf': [
+                'CashFlowsFromInvestingActivities', 
+                'NetCashProvidedByUsedInInvestingActivities',
+                'InvestingCashFlow',
+                '投資活動によるキャッシュ・フロー',
+            ],
+            'financing_cf': [
+                'CashFlowsFromFinancingActivities',
+                'NetCashProvidedByUsedInFinancingActivities', 
+                'FinancingCashFlow',
+                '財務活動によるキャッシュ・フロー',
+            ],
+            
+            # 損益計算書
+            'net_sales': [
+                'NetSales', 'Sales', 'Revenue', 'NetRevenues',
+                '売上高', '営業収益',
+            ],
+            'operating_income': [
+                'OperatingIncome', 'OperatingProfit',
+                '営業利益', '営業損失',
+            ],
+            'ordinary_income': [
+                'OrdinaryIncome', 'OrdinaryProfit', 
+                '経常利益', '経常損失',
+            ],
+            'net_income': [
+                'NetIncome', 'ProfitLoss', 'NetProfitLoss',
+                '当期純利益', '当期純損失',
+            ],
+            
+            # 貸借対照表
+            'total_assets': [
+                'TotalAssets', 'Assets',
+                '資産合計', '総資産',
+            ],
+            'total_liabilities': [
+                'TotalLiabilities', 'Liabilities', 
+                '負債合計', '総負債',
+            ],
+            'net_assets': [
+                'NetAssets', 'TotalEquity', 'ShareholdersEquity',
+                '純資産合計', '株主資本合計',
+            ],
+        }
+        
+        # テキスト情報を含む要素名のパターン（既存）
         self.text_element_patterns = [
-            'BusinessRisks',  # 事業等のリスク
-            'BusinessPolicyBusinessEnvironmentIssuesAddressedEtc',  # 経営方針、経営環境
-            'ManagementAnalysisOfFinancialPositionOperatingResultsAndCashFlows',  # 経営者による財政状態等の分析
-            'ResearchAndDevelopmentActivities',  # 研究開発活動
-            'OverviewOfGroup',  # 企業集団の状況
-            'BusinessDescriptionTextBlock',  # 事業の内容
-            'BusinessResultsOfOperationsTextBlock',  # 業績等の概要
-            'BusinessRisksTextBlock',  # 事業等のリスク
-            'CriticalAccountingPolicies',  # 重要な会計方針
-            'OverallBusinessResultsTextBlock',  # 全般的な業績
-            'AnalysisOfBusinessResultsTextBlock',  # 業績分析
+            'BusinessRisks',
+            'BusinessPolicyBusinessEnvironmentIssuesAddressedEtc',
+            'ManagementAnalysisOfFinancialPositionOperatingResultsAndCashFlows',
+            'ResearchAndDevelopmentActivities',
+            'OverviewOfGroup',
+            'BusinessDescriptionTextBlock',
+            'BusinessResultsOfOperationsTextBlock',
+            'BusinessRisksTextBlock',
+            'CriticalAccountingPolicies',
+            'OverallBusinessResultsTextBlock',
+            'AnalysisOfBusinessResultsTextBlock',
         ]
     
-    def extract_text_from_xbrl_url(self, xbrl_url: str) -> Dict[str, str]:
-        """XBRLファイルのURLからテキストを抽出"""
+    def extract_comprehensive_data_from_xbrl_url(self, xbrl_url: str) -> Dict[str, any]:
+        """XBRLファイルから財務データとテキストを包括的に抽出"""
         try:
             # キャッシュチェック
-            cache_key = f"xbrl_text_{xbrl_url.split('/')[-1]}"
+            cache_key = f"xbrl_comprehensive_{xbrl_url.split('/')[-1]}"
             cached_result = cache.get(cache_key)
             if cached_result:
-                logger.info(f"XBRLテキスト キャッシュヒット: {xbrl_url}")
+                logger.info(f"XBRL包括データ キャッシュヒット: {xbrl_url}")
                 return cached_result
             
             # XBRLファイルをダウンロード
-            logger.info(f"XBRLファイルダウンロード開始: {xbrl_url}")
+            logger.info(f"XBRL包括データダウンロード開始: {xbrl_url}")
             response = requests.get(xbrl_url, timeout=60)
             response.raise_for_status()
             
             # ZIPファイルかXMLファイルかを判断
             if xbrl_url.endswith('.zip'):
-                extracted_text = self._extract_from_zip(response.content)
+                comprehensive_data = self._extract_comprehensive_from_zip(response.content)
             else:
-                extracted_text = self._extract_from_xml(response.content)
+                comprehensive_data = self._extract_comprehensive_from_xml(response.content)
             
-            # キャッシュに保存（1時間）
-            cache.set(cache_key, extracted_text, 3600)
+            # キャッシュに保存（2時間）
+            cache.set(cache_key, comprehensive_data, 7200)
             
-            logger.info(f"XBRLテキスト抽出完了: {len(extracted_text)} セクション")
-            return extracted_text
+            logger.info(f"XBRL包括データ抽出完了: 財務データ{len(comprehensive_data.get('financial_data', {}))}項目, テキスト{len(comprehensive_data.get('text_sections', {}))}セクション")
+            return comprehensive_data
             
         except Exception as e:
-            logger.error(f"XBRLテキスト抽出エラー: {xbrl_url} - {e}")
-            return {}
+            logger.error(f"XBRL包括データ抽出エラー: {xbrl_url} - {e}")
+            return {'financial_data': {}, 'text_sections': {}}
     
-    def _extract_from_zip(self, zip_content: bytes) -> Dict[str, str]:
-        """ZIPファイルからXBRLテキストを抽出"""
-        extracted_text = {}
+    def _extract_comprehensive_from_zip(self, zip_content: bytes) -> Dict[str, any]:
+        """ZIPファイルから財務データとテキストを抽出"""
+        comprehensive_data = {'financial_data': {}, 'text_sections': {}}
         
         try:
             with zipfile.ZipFile(io.BytesIO(zip_content)) as zip_file:
                 for file_info in zip_file.filelist:
                     if file_info.filename.endswith('.xbrl'):
-                        # XBRLファイルを読み込み
                         with zip_file.open(file_info) as xbrl_file:
                             xbrl_content = xbrl_file.read()
-                            file_text = self._extract_from_xml(xbrl_content)
-                            extracted_text.update(file_text)
+                            file_data = self._extract_comprehensive_from_xml(xbrl_content)
+                            
+                            # データをマージ
+                            comprehensive_data['financial_data'].update(file_data.get('financial_data', {}))
+                            comprehensive_data['text_sections'].update(file_data.get('text_sections', {}))
                             
         except Exception as e:
-            logger.error(f"ZIP展開エラー: {e}")
+            logger.error(f"ZIP包括展開エラー: {e}")
             
-        return extracted_text
+        return comprehensive_data
     
-    def _extract_from_xml(self, xml_content: bytes) -> Dict[str, str]:
-        """XMLファイルからテキストを抽出"""
-        extracted_text = {}
+    def _extract_comprehensive_from_xml(self, xml_content: bytes) -> Dict[str, any]:
+        """XMLファイルから財務データとテキストを抽出"""
+        comprehensive_data = {'financial_data': {}, 'text_sections': {}}
         
         try:
             # XMLパース
             root = ET.fromstring(xml_content)
             
-            # 各テキスト要素を検索
-            for pattern in self.text_element_patterns:
-                elements = self._find_elements_by_pattern(root, pattern)
-                
-                for element in elements:
-                    text_content = self._extract_element_text(element)
-                    if text_content and len(text_content.strip()) > 50:  # 50文字以上のテキストのみ
-                        section_name = self._get_section_name(pattern)
-                        extracted_text[section_name] = text_content
+            # 財務データ抽出
+            comprehensive_data['financial_data'] = self._extract_financial_data(root)
             
-            # その他のテキスト要素も検索
-            additional_text = self._extract_additional_text_elements(root)
-            extracted_text.update(additional_text)
+            # テキストデータ抽出（既存機能）
+            comprehensive_data['text_sections'] = self._extract_text_sections(root)
+            
+            # 会計期間情報の抽出
+            comprehensive_data['period_info'] = self._extract_period_info(root)
             
         except ET.ParseError as e:
-            logger.error(f"XML解析エラー: {e}")
+            logger.error(f"XML包括解析エラー: {e}")
         except Exception as e:
-            logger.error(f"テキスト抽出エラー: {e}")
+            logger.error(f"包括データ抽出エラー: {e}")
             
-        return extracted_text
+        return comprehensive_data
     
-    def _find_elements_by_pattern(self, root: ET.Element, pattern: str) -> List[ET.Element]:
-        """パターンに一致する要素を検索"""
+    def _extract_financial_data(self, root: ET.Element) -> Dict[str, Decimal]:
+        """財務データの抽出"""
+        financial_data = {}
+        
+        for data_type, element_names in self.financial_elements.items():
+            values = []
+            
+            for element_name in element_names:
+                # 各要素を検索
+                found_elements = self._find_financial_elements_by_pattern(root, element_name)
+                
+                for element in found_elements:
+                    value = self._extract_financial_value(element)
+                    if value is not None:
+                        values.append(value)
+            
+            # 最も信頼できる値を選択（通常は最新の値）
+            if values:
+                # 絶対値が最大の値を採用（より具体的な数値を優先）
+                financial_data[data_type] = max(values, key=abs)
+                logger.debug(f"財務データ抽出: {data_type} = {financial_data[data_type]}")
+        
+        return financial_data
+    
+    def _find_financial_elements_by_pattern(self, root: ET.Element, pattern: str) -> List[ET.Element]:
+        """財務要素をパターンで検索"""
         elements = []
         
         # 直接検索
         for elem in root.iter():
-            if pattern in elem.tag:
+            if pattern in elem.tag or (elem.text and pattern in elem.text):
                 elements.append(elem)
         
         # 名前空間を考慮した検索
+        for ns_prefix, ns_uri in self.namespaces.items():
+            try:
+                found = root.findall(f".//{{{ns_uri}}}{pattern}")
+                elements.extend(found)
+            except:
+                continue
+        
+        return elements
+    
+    def _extract_financial_value(self, element: ET.Element) -> Optional[Decimal]:
+        """要素から財務値を抽出"""
+        try:
+            # 要素のテキストから数値を抽出
+            text = element.text
+            if not text:
+                return None
+            
+            # 数値の正規化
+            cleaned_text = re.sub(r'[,\s]+', '', text.strip())
+            
+            # 負の値のチェック
+            is_negative = cleaned_text.startswith('-') or '△' in cleaned_text
+            
+            # 数値部分の抽出
+            number_match = re.search(r'[\d\.]+', cleaned_text)
+            if not number_match:
+                return None
+            
+            number_str = number_match.group()
+            value = Decimal(number_str)
+            
+            # 単位の調整（千円、百万円等）
+            unit_multiplier = self._determine_unit_multiplier(element, text)
+            value *= unit_multiplier
+            
+            if is_negative:
+                value = -value
+                
+            return value
+            
+        except (InvalidOperation, ValueError) as e:
+            logger.debug(f"財務値抽出エラー: {element.tag} - {e}")
+            return None
+    
+    def _determine_unit_multiplier(self, element: ET.Element, text: str) -> Decimal:
+        """単位倍率の判定"""
+        # 属性から単位情報を取得
+        unit_ref = element.get('unitRef', '')
+        decimals = element.get('decimals', '')
+        
+        # テキストから単位を推定
+        if '千円' in text or 'thousands' in text.lower():
+            return Decimal('1000')
+        elif '百万円' in text or 'millions' in text.lower():
+            return Decimal('1000000')
+        elif '億円' in text or 'billions' in text.lower():
+            return Decimal('100000000')
+        
+        # decimals属性から推定
+        if decimals:
+            try:
+                decimal_places = int(decimals)
+                if decimal_places == -3:
+                    return Decimal('1000')
+                elif decimal_places == -6:
+                    return Decimal('1000000')
+            except ValueError:
+                pass
+        
+        return Decimal('1')  # デフォルトは1（円単位）
+    
+    def _extract_text_sections(self, root: ET.Element) -> Dict[str, str]:
+        """テキストセクションの抽出（既存機能）"""
+        extracted_text = {}
+        
+        for pattern in self.text_element_patterns:
+            elements = self._find_elements_by_pattern(root, pattern)
+            
+            for element in elements:
+                text_content = self._extract_element_text(element)
+                if text_content and len(text_content.strip()) > 50:
+                    section_name = self._get_section_name(pattern)
+                    extracted_text[section_name] = text_content
+        
+        # その他のテキスト要素も検索
+        additional_text = self._extract_additional_text_elements(root)
+        extracted_text.update(additional_text)
+        
+        return extracted_text
+    
+    def _extract_period_info(self, root: ET.Element) -> Dict[str, str]:
+        """会計期間情報の抽出"""
+        period_info = {}
+        
+        # 期間情報を検索
+        period_patterns = [
+            'CurrentPeriodStartDate', 'CurrentPeriodEndDate',
+            'FiscalYearStartDate', 'FiscalYearEndDate',
+            '当期開始日', '当期終了日',
+        ]
+        
+        for pattern in period_patterns:
+            elements = self._find_elements_by_pattern(root, pattern)
+            for element in elements:
+                if element.text:
+                    period_info[pattern] = element.text.strip()
+        
+        return period_info
+    
+    # 既存のメソッド（変更なし）
+    def _find_elements_by_pattern(self, root: ET.Element, pattern: str) -> List[ET.Element]:
+        """パターンに一致する要素を検索"""
+        elements = []
+        
+        for elem in root.iter():
+            if pattern in elem.tag:
+                elements.append(elem)
+        
         for ns_prefix, ns_uri in self.namespaces.items():
             try:
                 found = root.findall(f".//{{{ns_uri}}}{pattern}")
@@ -142,23 +337,18 @@ class XBRLTextExtractor:
         """要素からテキストを抽出"""
         text_parts = []
         
-        # 要素のテキスト
         if element.text:
             text_parts.append(element.text.strip())
         
-        # 子要素のテキスト
         for child in element:
             child_text = self._extract_element_text(child)
             if child_text:
                 text_parts.append(child_text)
         
-        # 要素の末尾テキスト
         if element.tail:
             text_parts.append(element.tail.strip())
         
         full_text = ' '.join(text_parts)
-        
-        # テキストクリーニング
         cleaned_text = self._clean_text(full_text)
         
         return cleaned_text
@@ -167,17 +357,14 @@ class XBRLTextExtractor:
         """その他のテキスト要素を抽出"""
         additional_text = {}
         
-        # テキストを含む可能性のある要素を広く検索
         text_elements = []
         for elem in root.iter():
-            # テキストが長い要素を対象
             if elem.text and len(elem.text.strip()) > 100:
                 text_elements.append(elem)
         
-        # テキストの長さでソートして上位を採用
         text_elements.sort(key=lambda e: len(e.text.strip()) if e.text else 0, reverse=True)
         
-        for i, element in enumerate(text_elements[:10]):  # 上位10要素
+        for i, element in enumerate(text_elements[:10]):
             cleaned_text = self._clean_text(element.text)
             if len(cleaned_text) > 100:
                 section_name = f"その他のテキスト_{i+1}"
@@ -190,17 +377,11 @@ class XBRLTextExtractor:
         if not text:
             return ""
         
-        # HTMLタグ除去
         text = re.sub(r'<[^>]+>', '', text)
-        
-        # 特殊文字の正規化
         text = re.sub(r'\s+', ' ', text)
         text = re.sub(r'[\r\n\t]+', ' ', text)
-        
-        # 不要な文字除去
         text = re.sub(r'[【】「」（）\(\)\[\]〔〕]', '', text)
         
-        # 数字のみの行を除去
         lines = text.split('\n')
         filtered_lines = [line for line in lines if not re.match(r'^\s*[\d,\.]+\s*$', line)]
         text = '\n'.join(filtered_lines)
@@ -226,46 +407,50 @@ class XBRLTextExtractor:
 
 
 class EDINETXBRLService:
-    """EDINET APIを使用してXBRLファイルを取得・解析するサービス"""
+    """EDINET APIを使用してXBRLファイルを取得・解析するサービス（拡張版）"""
     
     def __init__(self):
-        self.extractor = XBRLTextExtractor()
+        self.extractor = XBRLFinancialExtractor()
     
-    def get_xbrl_text_from_document(self, document) -> Dict[str, str]:
-        """DocumentMetadataからXBRLテキストを取得"""
+    def get_comprehensive_analysis_from_document(self, document) -> Dict[str, any]:
+        """DocumentMetadataから包括的な分析データを取得"""
         try:
             if not document.xbrl_flag:
                 logger.warning(f"XBRLファイルが利用できません: {document.doc_id}")
-                return {}
+                return {'financial_data': {}, 'text_sections': {}}
             
             # EDINET APIからXBRLファイルを取得
             from .edinet_api import EdinetAPIClient
             api_client = EdinetAPIClient.create_v2_client()
             
             # XBRLファイルダウンロード
-            logger.info(f"XBRLファイル取得開始: {document.doc_id}")
-            xbrl_data = api_client.get_document(document.doc_id, doc_type=1)  # 1=XBRL
+            logger.info(f"包括分析用XBRLファイル取得開始: {document.doc_id}")
+            xbrl_data = api_client.get_document(document.doc_id, doc_type=1)
             
-            # バイトデータからテキスト抽出
-            extracted_text = self._extract_text_from_bytes(xbrl_data)
+            # バイトデータから包括データ抽出
+            comprehensive_data = self._extract_comprehensive_from_bytes(xbrl_data)
             
-            logger.info(f"XBRLテキスト抽出完了: {document.doc_id} - {len(extracted_text)}セクション")
-            return extracted_text
+            logger.info(f"包括分析データ抽出完了: {document.doc_id} - 財務データ{len(comprehensive_data.get('financial_data', {}))}項目")
+            return comprehensive_data
             
         except Exception as e:
-            logger.error(f"XBRLテキスト取得エラー: {document.doc_id} - {e}")
-            return {}
+            logger.error(f"包括分析データ取得エラー: {document.doc_id} - {e}")
+            return {'financial_data': {}, 'text_sections': {}}
     
-    def _extract_text_from_bytes(self, xbrl_bytes: bytes) -> Dict[str, str]:
-        """バイトデータからテキストを抽出"""
+    def _extract_comprehensive_from_bytes(self, xbrl_bytes: bytes) -> Dict[str, any]:
+        """バイトデータから包括データを抽出"""
         try:
-            # ZIPファイルかXMLファイルかを判断
-            if xbrl_bytes[:4] == b'PK\x03\x04':  # ZIPファイルのマジックナンバー
-                return self.extractor._extract_from_zip(xbrl_bytes)
+            if xbrl_bytes[:4] == b'PK\x03\x04':
+                return self.extractor._extract_comprehensive_from_zip(xbrl_bytes)
             else:
-                # XMLとして解析
-                return self.extractor._extract_from_xml(xbrl_bytes)
+                return self.extractor._extract_comprehensive_from_xml(xbrl_bytes)
                 
         except Exception as e:
-            logger.error(f"XBRLバイトデータ解析エラー: {e}")
-            return {}
+            logger.error(f"包括データバイト解析エラー: {e}")
+            return {'financial_data': {}, 'text_sections': {}}
+    
+    # 既存メソッド（下位互換性のため保持）
+    def get_xbrl_text_from_document(self, document) -> Dict[str, str]:
+        """テキストのみを取得（既存機能との互換性）"""
+        comprehensive_data = self.get_comprehensive_analysis_from_document(document)
+        return comprehensive_data.get('text_sections', {})

@@ -16,8 +16,16 @@ from .sentiment import (
     SentimentAnalysisStartView,
     SentimentAnalysisProgressView,
     SentimentAnalysisResultView,
-)   
+)
 
+from .financial import (
+    FinancialAnalysisStartView,
+    FinancialAnalysisProgressView,
+    FinancialAnalysisResultView,
+    FinancialDataAPIView,
+    FinancialAnalysisHistoryView,
+    FinancialStatsAPIView,
+)
 
 # UIビューは ui.py から直接インポートされる
 
@@ -30,4 +38,10 @@ __all__ = [
     'SentimentAnalysisStartView',
     'SentimentAnalysisProgressView',
     'SentimentAnalysisResultView',
+    'FinancialAnalysisStartView',
+    'FinancialAnalysisProgressView',
+    'FinancialAnalysisResultView',
+    'FinancialDataAPIView',
+    'FinancialAnalysisHistoryView',
+    'FinancialStatsAPIView',
 ]

@@ -141,12 +141,54 @@
                     </div>
                     <div class="col-md-4 text-md-end mt-3 mt-md-0">
                         <a href="{% url 'earnings_analysis:sentiment-analysis' document.doc_id %}" 
-                           class="btn btn-primary btn-lg">
+                           class="btn btn-primary btn-lg mb-2">
                             <i class="fas fa-brain me-2"></i>感情分析開始
                         </a>
                         <div class="mt-2">
                             <small class="text-muted">
                                 <i class="fas fa-info-circle me-1"></i>初回利用は無料
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 財務分析セクション（新規追加） -->
+        <div class="card mb-4">
+            <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white;">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>財務分析
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h6>包括的な財務健全性評価</h6>
+                        <p class="text-muted mb-3">
+                            <strong>キャッシュフロー分析:</strong> 理想型、成長型、危険型等のパターン判定<br>
+                            <strong>経営陣自信度:</strong> テキスト分析による経営陣の自信度測定<br>
+                            <strong>投資判断支援:</strong> 総合的なリスク評価と投資推奨度
+                        </p>
+                        <div class="small text-muted">
+                            <i class="fas fa-clock me-1"></i>分析時間: 約3-5分
+                            <span class="ms-3">
+                                {% if document.xbrl_flag %}
+                                    <i class="fas fa-check-circle text-success me-1"></i>XBRL対応
+                                {% else %}
+                                    <i class="fas fa-exclamation-triangle text-warning me-1"></i>XBRLなし（制限モード）
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                        <a href="{% url 'earnings_analysis:financial-analysis' document.doc_id %}" 
+                           class="btn btn-primary btn-lg mb-2">
+                            <i class="fas fa-chart-pie me-2"></i>財務分析開始
+                        </a>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>感情分析 + 財務分析
                             </small>
                         </div>
                     </div>
@@ -203,6 +245,10 @@
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
+                    <a href="{% url 'earnings_analysis:financial-analysis' document.doc_id %}" 
+                       class="btn btn-outline-primary">
+                        <i class="fas fa-chart-pie me-1"></i>財務分析実行
+                    </a>
                     <a href="{% url 'earnings_analysis:sentiment-analysis' document.doc_id %}" 
                        class="btn btn-outline-purple">
                         <i class="fas fa-brain me-1"></i>感情分析実行
