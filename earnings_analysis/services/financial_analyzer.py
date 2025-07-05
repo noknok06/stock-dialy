@@ -1,10 +1,10 @@
 # earnings_analysis/services/financial_analyzer.py（新規作成）
 import logging
-from typing import Dict, Any, Optional, List, Tuple
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from django.utils import timezone
+from typing import Dict, Any, Optional, List
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +145,7 @@ class FinancialAnalyzer:
     def analyze_comprehensive_financial_health(self, 
                                              financial_data: Dict[str, Decimal],
                                              text_sections: Dict[str, str],
-                                             document_info: Dict[str, str] = None) -> Dict[str, Any]:
+                                             document_info: Dict[str, str] = None) -> Dict[str, List]:
         """包括的な財務健全性分析"""
         try:
             # 1. キャッシュフロー分析
@@ -503,8 +503,8 @@ class FinancialAnalyzer:
             logger.error(f"財務指標計算エラー: {e}")
             return {'error': f'財務指標計算中にエラーが発生しました: {str(e)}'}
     
-    def calculate_overall_health_score(self, cf_analysis: Dict, financial_ratios: Dict, confidence_analysis: Dict) -> FinancialHealth:
-        """総合健全性スコアの算出"""
+    def calculate_overall_health_score(self, cf_analysis: Dict, financial_ratios: Dict, confidence_analysis: Dict) -> Dict[str, Any]:
+        """総合健全性スコアの算出（辞書形式で返す）"""
         try:
             # 各要素のスコア化
             cf_score = self._score_cashflow_health(cf_analysis)
@@ -523,26 +523,38 @@ class FinancialAnalyzer:
             else:
                 risk_level = 'high'
             
-            return FinancialHealth(
-                overall_score=overall_score,
-                risk_level=risk_level,
-                pattern=self.cf_patterns.get(cf_analysis.get('pattern', {}).get('name', ''), None),
-                strengths=self._compile_overall_strengths(cf_analysis, financial_ratios, confidence_analysis),
-                concerns=self._compile_overall_concerns(cf_analysis, financial_ratios, confidence_analysis),
-                recommendations=self._generate_overall_recommendations(overall_score, risk_level)
-            )
+            # パターン情報
+            pattern_info = cf_analysis.get('pattern', {})
+            
+            return {
+                'overall_score': round(overall_score, 1),
+                'risk_level': risk_level,
+                'pattern': pattern_info,
+                'strengths': self._compile_overall_strengths(cf_analysis, financial_ratios, confidence_analysis),
+                'concerns': self._compile_overall_concerns(cf_analysis, financial_ratios, confidence_analysis),
+                'recommendations': self._generate_overall_recommendations(overall_score, risk_level),
+                'component_scores': {
+                    'cashflow_score': cf_score,
+                    'ratio_score': ratio_score,
+                    'confidence_score': confidence_score,
+                }
+            }
             
         except Exception as e:
             logger.error(f"総合健全性スコア算出エラー: {e}")
-            return FinancialHealth(
-                overall_score=50.0,
-                risk_level='medium',
-                pattern=None,
-                strengths=[],
-                concerns=[f'分析中にエラーが発生しました: {str(e)}'],
-                recommendations=[]
-            )
-    
+            return {
+                'overall_score': 50.0,
+                'risk_level': 'medium',
+                'pattern': {},
+                'strengths': [],
+                'concerns': [f'分析中にエラーが発生しました: {str(e)}'],
+                'recommendations': [],
+                'component_scores': {
+                    'cashflow_score': 0,
+                    'ratio_score': 0,
+                    'confidence_score': 0,
+                }
+            } 
     def _score_cashflow_health(self, cf_analysis: Dict) -> float:
         """キャッシュフロー健全性スコア"""
         pattern_scores = {

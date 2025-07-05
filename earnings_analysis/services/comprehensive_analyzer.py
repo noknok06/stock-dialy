@@ -202,9 +202,12 @@ class ComprehensiveAnalysisService:
                 sentiment_result, financial_result, document_info
             )
             
-            # ステップ6: 最終結果の構築
+# セッション完了（完全な辞書変換処理）
             session.analysis_result = {'progress': 95, 'current_step': '結果生成中...'}
             session.save()
+            
+            # financial_resultを完全にJSONシリアライズ可能にする
+            final_financial_result = self._ensure_json_serializable(financial_result)
             
             final_result = {
                 'analysis_type': 'comprehensive',
@@ -214,14 +217,14 @@ class ComprehensiveAnalysisService:
                 # 主要結果
                 'integrated_analysis': integrated_result,
                 'sentiment_analysis': sentiment_result,
-                'financial_analysis': financial_result,
+                'financial_analysis': final_financial_result,
                 
                 # データソース情報
                 'data_sources': {
                     'xbrl_available': bool(financial_data),
                     'text_sections_count': len(text_sections),
                     'financial_data_points': len(financial_data),
-                    'data_quality': financial_result.get('analysis_metadata', {}).get('data_quality', 'unknown'),
+                    'data_quality': final_financial_result.get('analysis_metadata', {}).get('data_quality', 'unknown'),
                 },
                 
                 # メタデータ
@@ -233,11 +236,10 @@ class ComprehensiveAnalysisService:
                 }
             }
             
-            # セッション完了
             session.overall_health_score = integrated_result.get('overall_score', 0)
             session.risk_level = integrated_result.get('risk_level', 'medium')
             session.investment_stance = integrated_result.get('investment_stance', 'cautious')
-            session.cashflow_pattern = financial_result.get('cashflow_analysis', {}).get('pattern', {}).get('name', '')
+            session.cashflow_pattern = final_financial_result.get('cashflow_analysis', {}).get('pattern', {}).get('name', '')
             session.management_confidence_score = sentiment_result.get('overall_score', 0) * 100
             session.analysis_result = final_result
             session.financial_data = financial_data
@@ -337,17 +339,14 @@ class ComprehensiveAnalysisService:
             return None
     
     def _integrate_analysis_results(self, sentiment_result: Dict, financial_result: Dict, 
-                                  document_info: Dict) -> Dict[str, Any]:
+                                document_info: Dict) -> Dict[str, Any]:
         """分析結果の統合"""
         try:
             # 基本スコアの取得
             sentiment_score = sentiment_result.get('overall_score', 0) * 100  # -1~1 を 0~100 に変換
             
             financial_health = financial_result.get('overall_health', {})
-            if isinstance(financial_health, dict):
-                financial_score = financial_health.get('overall_score', 50)
-            else:
-                financial_score = getattr(financial_health, 'overall_score', 50)
+            financial_score = financial_health.get('overall_score', 50)
             
             # 統合スコアの計算
             if financial_result.get('error'):
@@ -360,7 +359,7 @@ class ComprehensiveAnalysisService:
                 sentiment_weight = 0.3
                 financial_weight = 0.7
                 overall_score = (sentiment_score * sentiment_weight + 
-                               financial_score * financial_weight)
+                            financial_score * financial_weight)
                 integration_method = 'weighted_average'
                 weights = {'sentiment': sentiment_weight, 'financial': financial_weight}
             
@@ -369,10 +368,7 @@ class ComprehensiveAnalysisService:
             financial_risk = 'medium'
             
             if not financial_result.get('error'):
-                if isinstance(financial_health, dict):
-                    financial_risk = financial_health.get('risk_level', 'medium')
-                else:
-                    financial_risk = getattr(financial_health, 'risk_level', 'medium')
+                financial_risk = financial_health.get('risk_level', 'medium')
             
             # 統合リスクレベル
             if overall_score >= 80 and financial_risk == 'low' and sentiment_label == 'positive':
@@ -422,7 +418,6 @@ class ComprehensiveAnalysisService:
                 'investment_stance': 'cautious',
                 'error': f'統合処理中にエラーが発生しました: {str(e)}'
             }
-    
     def _generate_integrated_insights(self, sentiment_result: Dict, financial_result: Dict,
                                     overall_score: float, integrated_risk: str) -> list[str]:
         """統合洞察の生成"""
