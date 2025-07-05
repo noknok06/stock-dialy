@@ -1,5 +1,5 @@
-# earnings_analysis/views/ui.py （完全修正版）
-from django.shortcuts import render, get_object_or_404
+# earnings_analysis/views/ui.py （バッチ履歴ビュー追加版）
+from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q, Count
@@ -333,5 +333,63 @@ class SystemStatsView(TemplateView):
                 'doc_type_stats': [],
                 'monthly_stats': json.dumps([]),
             })
+        
+        return context
+
+class BatchHistoryView(TemplateView):
+    """バッチ実行履歴ページ"""
+    template_name = 'earnings_analysis/batch_history.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # ページネーション
+        page = self.request.GET.get('page', 1)
+        status_filter = self.request.GET.get('status', '')
+        
+        # バッチ履歴取得
+        batch_history = BatchExecution.objects.all().order_by('-batch_date')
+        
+        # ステータスフィルタ
+        if status_filter:
+            batch_history = batch_history.filter(status=status_filter)
+        
+        # ページネーション
+        paginator = Paginator(batch_history, 20)
+        try:
+            batches = paginator.page(page)
+        except PageNotAnInteger:
+            batches = paginator.page(1)
+        except EmptyPage:
+            batches = paginator.page(paginator.num_pages)
+        
+        # 統計情報
+        total_batches = BatchExecution.objects.count()
+        success_count = BatchExecution.objects.filter(status='SUCCESS').count()
+        failed_count = BatchExecution.objects.filter(status='FAILED').count()
+        running_count = BatchExecution.objects.filter(status='RUNNING').count()
+        
+        # 最近30日の成功率
+        thirty_days_ago = timezone.now().date() - timedelta(days=30)
+        recent_total = BatchExecution.objects.filter(batch_date__gte=thirty_days_ago).count()
+        recent_success = BatchExecution.objects.filter(
+            batch_date__gte=thirty_days_ago, 
+            status='SUCCESS'
+        ).count()
+        
+        success_rate = (recent_success / recent_total * 100) if recent_total > 0 else 0
+        
+        context.update({
+            'batches': batches,
+            'status_filter': status_filter,
+            'batch_stats': {
+                'total_batches': total_batches,
+                'success_count': success_count,
+                'failed_count': failed_count,
+                'running_count': running_count,
+                'success_rate': round(success_rate, 1),
+            },
+            'status_choices': BatchExecution.STATUS_CHOICES,
+        })
         
         return context

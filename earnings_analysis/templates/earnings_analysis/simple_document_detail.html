@@ -1,4 +1,4 @@
-<!-- earnings_analysis/templates/earnings_analysis/simple_document_detail.html -->
+<!-- earnings_analysis/templates/earnings_analysis/simple_document_detail.html （感情分析機能追加版） -->
 {% extends 'earnings_analysis/simple_base.html' %}
 
 {% block title %}{{ document.company_name }} - 決算書類管理システム{% endblock %}
@@ -116,6 +116,43 @@
                 </div>
             </div>
         </div>
+
+        <!-- 感情分析セクション（新規追加） -->
+        <div class="card mb-4">
+            <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h5 class="mb-0">
+                    <i class="fas fa-brain me-2"></i>感情分析
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h6>書類の感情を自動分析</h6>
+                        <p class="text-muted mb-3">
+                            この書類に含まれるポジティブ・ネガティブな表現を自動検出し、<br>
+                            全体的な感情傾向をスコア化します。
+                        </p>
+                        <div class="small text-muted">
+                            <i class="fas fa-clock me-1"></i>分析時間: 約2-3分
+                            <span class="ms-3">
+                                <i class="fas fa-chart-line me-1"></i>スコア範囲: -1.0 〜 +1.0
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                        <a href="{% url 'earnings_analysis:sentiment-analysis' document.doc_id %}" 
+                           class="btn btn-primary btn-lg">
+                            <i class="fas fa-brain me-2"></i>感情分析開始
+                        </a>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>初回利用は無料
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- サイドバー -->
@@ -166,6 +203,10 @@
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
+                    <a href="{% url 'earnings_analysis:sentiment-analysis' document.doc_id %}" 
+                       class="btn btn-outline-purple">
+                        <i class="fas fa-brain me-1"></i>感情分析実行
+                    </a>
                     <a href="{% url 'earnings_analysis:document-list-ui' %}?company={{ document.company_name }}" 
                        class="btn btn-outline-primary">
                         <i class="fas fa-search me-1"></i>この企業で検索
@@ -182,6 +223,17 @@
         </div>
     </div>
 </div>
+
+<style>
+.btn-outline-purple {
+    color: #667eea;
+    border-color: #667eea;
+}
+
+.btn-outline-purple:hover {
+    color: white;
+    background-color: #667eea;
+    border-color: #667eea;
+}
+</style>
 {% endblock %}
-
-

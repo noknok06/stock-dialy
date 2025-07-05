@@ -1,0 +1,293 @@
+<!-- earnings_analysis/templates/earnings_analysis/batch_history.html -->
+{% extends 'earnings_analysis/simple_base.html' %}
+
+{% block title %}バッチ実行履歴 - 決算書類管理システム{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'earnings_analysis:index' %}">ホーム</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'earnings_analysis:stats-ui' %}">統計</a></li>
+        <li class="breadcrumb-item active">バッチ実行履歴</li>
+    </ol>
+</nav>
+
+<!-- ヘッダー -->
+<div class="bg-primary text-white rounded p-4 mb-4">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="h2 mb-2">
+                <i class="fas fa-tasks me-3"></i>バッチ実行履歴
+            </h1>
+            <p class="mb-0 opacity-90">日次データ更新バッチの実行履歴と統計情報</p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <div class="badge bg-light text-dark fs-6 px-3 py-2">
+                <i class="fas fa-clock me-1"></i>最終更新: {{ "now"|date:"Y/m/d H:i" }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 統計カード -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-tasks fa-2x text-primary mb-3"></i>
+                <div class="h3 text-primary">{{ batch_stats.total_batches }}</div>
+                <div class="text-muted">総実行回数</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-check-circle fa-2x text-success mb-3"></i>
+                <div class="h3 text-success">{{ batch_stats.success_count }}</div>
+                <div class="text-muted">成功回数</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-exclamation-circle fa-2x text-danger mb-3"></i>
+                <div class="h3 text-danger">{{ batch_stats.failed_count }}</div>
+                <div class="text-muted">失敗回数</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-percentage fa-2x text-info mb-3"></i>
+                <div class="h3 text-info">{{ batch_stats.success_rate }}%</div>
+                <div class="text-muted">成功率（30日間）</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- フィルタ -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="status" class="form-label">ステータス</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">すべて</option>
+                    {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if value == status_filter %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-filter me-1"></i>フィルタ
+                </button>
+                <a href="{% url 'earnings_analysis:batch-history' %}" class="btn btn-outline-secondary ms-2">
+                    <i class="fas fa-times me-1"></i>クリア
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- バッチ履歴テーブル -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-list me-2"></i>実行履歴一覧
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if batches %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>実行日</th>
+                            <th>ステータス</th>
+                            <th>処理件数</th>
+                            <th>実行時間</th>
+                            <th>開始時刻</th>
+                            <th>完了時刻</th>
+                            <th>エラー</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for batch in batches %}
+                            <tr>
+                                <td>
+                                    <strong>{{ batch.batch_date|date:"Y/m/d" }}</strong>
+                                    <div class="small text-muted">
+                                        {{ batch.batch_date|date:"l" }}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if batch.status == 'SUCCESS' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>成功
+                                        </span>
+                                    {% elif batch.status == 'FAILED' %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times me-1"></i>失敗
+                                        </span>
+                                    {% elif batch.status == 'RUNNING' %}
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-spinner fa-spin me-1"></i>実行中
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ batch.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>{{ batch.processed_count|default:0 }}</strong>件
+                                </td>
+                                <td>
+                                    {% if batch.started_at and batch.completed_at %}
+                                        {% with duration=batch.completed_at|timesince:batch.started_at %}
+                                            {{ duration }}
+                                        {% endwith %}
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if batch.started_at %}
+                                        <div>{{ batch.started_at|date:"H:i:s" }}</div>
+                                        <div class="small text-muted">{{ batch.started_at|date:"m/d" }}</div>
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if batch.completed_at %}
+                                        <div>{{ batch.completed_at|date:"H:i:s" }}</div>
+                                        <div class="small text-muted">{{ batch.completed_at|date:"m/d" }}</div>
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if batch.error_message %}
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                data-bs-toggle="modal" data-bs-target="#errorModal"
+                                                onclick="showError('{{ batch.batch_date }}', '{{ batch.error_message|escapejs }}')">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>詳細
+                                        </button>
+                                    {% else %}
+                                        <span class="text-muted small">なし</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- ページネーション -->
+            {% if batches.has_other_pages %}
+                <nav aria-label="ページネーション" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if batches.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ batches.previous_page_number }}">
+                                    前へ
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">{{ batches.number }} / {{ batches.paginator.num_pages }}</span>
+                        </li>
+                        
+                        {% if batches.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ batches.next_page_number }}">
+                                    次へ
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+            
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">バッチ実行履歴がありません</h4>
+                <p class="text-muted">
+                    {% if status_filter %}
+                        指定されたステータスの実行履歴は見つかりませんでした。
+                    {% else %}
+                        まだバッチが実行されていません。
+                    {% endif %}
+                </p>
+                {% if status_filter %}
+                    <a href="{% url 'earnings_analysis:batch-history' %}" class="btn btn-primary">
+                        <i class="fas fa-list me-1"></i>全ての履歴を表示
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- エラー詳細モーダル -->
+<div class="modal fade" id="errorModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle text-danger me-2"></i>エラー詳細
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <strong>実行日:</strong> <span id="errorDate"></span>
+                </div>
+                <div>
+                    <strong>エラーメッセージ:</strong>
+                    <pre id="errorMessage" class="bg-light p-3 mt-2 rounded"></pre>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- アクションボタン -->
+<div class="text-center mt-4">
+    <a href="{% url 'earnings_analysis:stats-ui' %}" class="btn btn-outline-primary me-2">
+        <i class="fas fa-chart-bar me-1"></i>統計に戻る
+    </a>
+    <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
+        <i class="fas fa-print me-1"></i>印刷
+    </button>
+</div>
+
+<script>
+function showError(date, message) {
+    document.getElementById('errorDate').textContent = date;
+    document.getElementById('errorMessage').textContent = message;
+}
+
+// 自動更新（実行中のバッチがある場合）
+{% if batch_stats.running_count > 0 %}
+setTimeout(function() {
+    location.reload();
+}, 30000); // 30秒後にリロード
+{% endif %}
+</script>
+{% endblock %}
