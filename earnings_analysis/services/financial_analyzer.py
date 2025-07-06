@@ -142,65 +142,6 @@ class FinancialAnalyzer:
             }
         }
     
-    def analyze_comprehensive_financial_health(self, 
-                                             financial_data: Dict[str, Decimal],
-                                             text_sections: Dict[str, str],
-                                             document_info: Dict[str, str] = None) -> Dict[str, List]:
-        """包括的な財務健全性分析"""
-        try:
-            # 1. キャッシュフロー分析
-            cf_analysis = self.analyze_cashflow_pattern(financial_data)
-            
-            # 2. 財務指標分析
-            financial_ratios = self.calculate_financial_ratios(financial_data)
-            
-            # 3. 経営陣の自信度分析
-            confidence_analysis = self.analyze_management_confidence(text_sections)
-            
-            # 4. 総合健全性スコア算出
-            overall_health = self.calculate_overall_health_score(
-                cf_analysis, financial_ratios, confidence_analysis
-            )
-            
-            # 5. 投資家向け提案生成
-            investment_recommendations = self.generate_investment_recommendations(
-                overall_health, cf_analysis, confidence_analysis
-            )
-            
-            # 6. リスク評価
-            risk_assessment = self.assess_investment_risks(
-                cf_analysis, financial_ratios, confidence_analysis
-            )
-            
-            result = {
-                'analysis_timestamp': timezone.now().isoformat(),
-                'document_info': document_info or {},
-                
-                # 主要分析結果
-                'overall_health': overall_health,
-                'cashflow_analysis': cf_analysis,
-                'financial_ratios': financial_ratios,
-                'management_confidence': confidence_analysis,
-                
-                # 投資判断支援
-                'investment_recommendations': investment_recommendations,
-                'risk_assessment': risk_assessment,
-                
-                # メタデータ
-                'analysis_metadata': {
-                    'analyzer_version': '1.0',
-                    'data_quality': self._assess_data_quality(financial_data, text_sections),
-                    'confidence_in_analysis': self._calculate_analysis_confidence(financial_data, text_sections),
-                }
-            }
-            
-            logger.info(f"包括財務分析完了: 健全性スコア{overall_health.overall_score:.1f}, パターン: {cf_analysis['pattern']['name']}")
-            return result
-            
-        except Exception as e:
-            logger.error(f"包括財務分析エラー: {e}")
-            return self._generate_error_result(str(e))
-    
     def analyze_cashflow_pattern(self, financial_data: Dict[str, Decimal]) -> Dict[str, Any]:
         """キャッシュフローパターン分析"""
         try:
@@ -503,6 +444,8 @@ class FinancialAnalyzer:
             logger.error(f"財務指標計算エラー: {e}")
             return {'error': f'財務指標計算中にエラーが発生しました: {str(e)}'}
     
+# earnings_analysis/services/financial_analyzer.py の修正箇所
+
     def calculate_overall_health_score(self, cf_analysis: Dict, financial_ratios: Dict, confidence_analysis: Dict) -> Dict[str, Any]:
         """総合健全性スコアの算出（辞書形式で返す）"""
         try:
@@ -523,8 +466,10 @@ class FinancialAnalyzer:
             else:
                 risk_level = 'high'
             
-            # パターン情報
+            # パターン情報（辞書として確実に取得）
             pattern_info = cf_analysis.get('pattern', {})
+            if not isinstance(pattern_info, dict):
+                pattern_info = {}
             
             return {
                 'overall_score': round(overall_score, 1),
@@ -554,7 +499,140 @@ class FinancialAnalyzer:
                     'ratio_score': 0,
                     'confidence_score': 0,
                 }
-            } 
+            }
+
+    def analyze_comprehensive_financial_health(self, 
+                                             financial_data: Dict[str, Decimal],
+                                             text_sections: Dict[str, str],
+                                             document_info: Dict[str, str] = None) -> Dict[str, Any]:
+        """包括的な財務健全性分析"""
+        try:
+            # 1. キャッシュフロー分析
+            cf_analysis = self.analyze_cashflow_pattern(financial_data)
+            
+            # 2. 財務指標分析
+            financial_ratios = self.calculate_financial_ratios(financial_data)
+            
+            # 3. 経営陣の自信度分析
+            confidence_analysis = self.analyze_management_confidence(text_sections)
+            
+            # 4. 総合健全性スコア算出（必ず辞書を返す）
+            overall_health = self.calculate_overall_health_score(
+                cf_analysis, financial_ratios, confidence_analysis
+            )
+            
+            # 5. 投資家向け提案生成
+            investment_recommendations = self.generate_investment_recommendations(
+                overall_health, cf_analysis, confidence_analysis
+            )
+            
+            # 6. リスク評価
+            risk_assessment = self.assess_investment_risks(
+                cf_analysis, financial_ratios, confidence_analysis
+            )
+            
+            result = {
+                'analysis_timestamp': timezone.now().isoformat(),
+                'document_info': document_info or {},
+                
+                # 主要分析結果（すべて辞書形式で統一）
+                'overall_health': overall_health,  # 必ず辞書
+                'cashflow_analysis': cf_analysis,
+                'financial_ratios': financial_ratios,
+                'management_confidence': confidence_analysis,
+                
+                # 投資判断支援
+                'investment_recommendations': investment_recommendations,
+                'risk_assessment': risk_assessment,
+                
+                # メタデータ
+                'analysis_metadata': {
+                    'analyzer_version': '1.0',
+                    'data_quality': self._assess_data_quality(financial_data, text_sections),
+                    'confidence_in_analysis': self._calculate_analysis_confidence(financial_data, text_sections),
+                }
+            }
+            
+            logger.info(f"包括財務分析完了: 健全性スコア{overall_health['overall_score']:.1f}, パターン: {cf_analysis.get('pattern', {}).get('name', '不明')}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"包括財務分析エラー: {e}")
+            return self._generate_error_result(str(e))
+        
+    def generate_investment_recommendations(self, overall_health: Dict, 
+                                          cf_analysis: Dict, confidence_analysis: Dict) -> Dict[str, Any]:
+        """投資推奨の生成（辞書形式の overall_health を受け取る）"""
+        recommendations = {
+            'investment_stance': '',
+            'key_points': [],
+            'risk_considerations': [],
+            'monitoring_items': []
+        }
+        
+        # overall_health が辞書であることを確認
+        if not isinstance(overall_health, dict):
+            logger.warning("overall_health is not a dict, converting...")
+            overall_health = {'overall_score': 50.0, 'risk_level': 'medium'}
+        
+        overall_score = overall_health.get('overall_score', 50.0)
+        risk_level = overall_health.get('risk_level', 'medium')
+        
+        # 投資スタンス決定
+        if overall_score >= 80 and risk_level == 'low':
+            recommendations['investment_stance'] = '積極的投資推奨'
+            recommendations['key_points'] = [
+                '健全な財務基盤と安定したキャッシュフロー',
+                '経営陣の前向きな姿勢',
+                '持続的な成長が期待できる'
+            ]
+        elif overall_score >= 60:
+            recommendations['investment_stance'] = '条件付き投資推奨'
+            recommendations['key_points'] = [
+                '概ね良好な財務状況',
+                '一部注意すべき点があるが投資価値あり'
+            ]
+        else:
+            recommendations['investment_stance'] = '慎重な検討が必要'
+            recommendations['key_points'] = [
+                '財務状況に課題あり',
+                '詳細な分析と継続的な監視が必要'
+            ]
+        
+        return recommendations
+    
+    def assess_investment_risks(self, cf_analysis: Dict, financial_ratios: Dict, 
+                              confidence_analysis: Dict) -> Dict[str, Any]:
+        """投資リスク評価（辞書パラメータ前提）"""
+        risks = {
+            'overall_risk_level': '',
+            'primary_risks': [],
+            'mitigation_strategies': []
+        }
+        
+        # リスク要因の特定
+        risk_factors = []
+        
+        cf_pattern = cf_analysis.get('pattern', {})
+        if isinstance(cf_pattern, dict) and cf_pattern.get('risk_level') == 'high':
+            risk_factors.append('キャッシュフロー構造リスク')
+        
+        confidence_score = confidence_analysis.get('confidence_score', 50)
+        if confidence_score < 40:
+            risk_factors.append('経営陣の消極的姿勢')
+        
+        risks['primary_risks'] = risk_factors
+        
+        # 総合リスクレベル
+        if len(risk_factors) >= 3:
+            risks['overall_risk_level'] = 'high'
+        elif len(risk_factors) >= 1:
+            risks['overall_risk_level'] = 'medium'
+        else:
+            risks['overall_risk_level'] = 'low'
+        
+        return risks
+    
     def _score_cashflow_health(self, cf_analysis: Dict) -> float:
         """キャッシュフロー健全性スコア"""
         pattern_scores = {
@@ -656,70 +734,6 @@ class FinancialAnalyzer:
             )
         }
     
-    def generate_investment_recommendations(self, overall_health: FinancialHealth, 
-                                          cf_analysis: Dict, confidence_analysis: Dict) -> Dict[str, Any]:
-        """投資推奨の生成"""
-        recommendations = {
-            'investment_stance': '',
-            'key_points': [],
-            'risk_considerations': [],
-            'monitoring_items': []
-        }
-        
-        # 投資スタンス決定
-        if overall_health.overall_score >= 80 and overall_health.risk_level == 'low':
-            recommendations['investment_stance'] = '積極的投資推奨'
-            recommendations['key_points'] = [
-                '健全な財務基盤と安定したキャッシュフロー',
-                '経営陣の前向きな姿勢',
-                '持続的な成長が期待できる'
-            ]
-        elif overall_health.overall_score >= 60:
-            recommendations['investment_stance'] = '条件付き投資推奨'
-            recommendations['key_points'] = [
-                '概ね良好な財務状況',
-                '一部注意すべき点があるが投資価値あり'
-            ]
-        else:
-            recommendations['investment_stance'] = '慎重な検討が必要'
-            recommendations['key_points'] = [
-                '財務状況に課題あり',
-                '詳細な分析と継続的な監視が必要'
-            ]
-        
-        return recommendations
-    
-    def assess_investment_risks(self, cf_analysis: Dict, financial_ratios: Dict, 
-                              confidence_analysis: Dict) -> Dict[str, Any]:
-        """投資リスク評価"""
-        risks = {
-            'overall_risk_level': '',
-            'primary_risks': [],
-            'mitigation_strategies': []
-        }
-        
-        # リスク要因の特定
-        risk_factors = []
-        
-        cf_pattern = cf_analysis.get('pattern', {})
-        if cf_pattern.get('risk_level') == 'high':
-            risk_factors.append('キャッシュフロー構造リスク')
-        
-        confidence_score = confidence_analysis.get('confidence_score', 50)
-        if confidence_score < 40:
-            risk_factors.append('経営陣の消極的姿勢')
-        
-        risks['primary_risks'] = risk_factors
-        
-        # 総合リスクレベル
-        if len(risk_factors) >= 3:
-            risks['overall_risk_level'] = 'high'
-        elif len(risk_factors) >= 1:
-            risks['overall_risk_level'] = 'medium'
-        else:
-            risks['overall_risk_level'] = 'low'
-        
-        return risks
     
     # 以下、補助メソッド（簡略化）
     def _analyze_cf_trends(self, financial_data: Dict) -> Dict[str, Any]:

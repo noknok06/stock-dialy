@@ -79,10 +79,7 @@ class FinancialResultView(TemplateView):
         ).exclude(
             document=session.document
         ).order_by('-analysis_date')[:5]
-        
-        # 同業他社比較データ（サンプル）
-        industry_comparison = self._get_industry_comparison_data(session.document)
-        
+                
         # 財務データの時系列
         historical_financial_data = CompanyFinancialData.objects.filter(
             document__edinet_code=session.document.edinet_code
@@ -92,27 +89,10 @@ class FinancialResultView(TemplateView):
             'session': session,
             'document': session.document,
             'related_analyses': related_analyses,
-            'industry_comparison': industry_comparison,
             'historical_financial_data': historical_financial_data,
         })
         
         return context
-    
-    def _get_industry_comparison_data(self, document):
-        """業界比較データの取得（簡易版）"""
-        # 実際の実装では業界分類とベンチマークデータを使用
-        from ..models import FinancialBenchmark
-        
-        # サンプルデータ（実際にはより詳細な業界分析が必要）
-        return {
-            'industry_category': '製造業',  # 実際は書類から推定
-            'benchmarks': {
-                'operating_margin': {'median': 8.5, 'top25': 15.2},
-                'roa': {'median': 4.2, 'top25': 8.1},
-                'equity_ratio': {'median': 45.3, 'top25': 62.8},
-            },
-            'comparison_note': '同業他社との比較は参考値です'
-        }
 
 
 class FinancialDataView(TemplateView):

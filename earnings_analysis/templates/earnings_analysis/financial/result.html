@@ -1,5 +1,6 @@
 <!-- earnings_analysis/templates/earnings_analysis/financial/result.html -->
 {% extends 'earnings_analysis/base.html' %}
+{% load sentiment_filters %} 
 {% load static %}
 
 {% block title %}財務分析結果 - {{ document.company_name }} - 決算書類管理システム{% endblock %}
@@ -333,7 +334,6 @@
             </div>
         </div>
 
-        <!-- キャッシュフロー分析 -->
         {% if session.analysis_result.financial_analysis.cashflow_analysis %}
             {% with cf=session.analysis_result.financial_analysis.cashflow_analysis %}
                 <div class="result-card card">
@@ -351,7 +351,7 @@
                             <div class="cf-flow-container">
                                 <div class="cf-component {% if cf.amounts.operating_cf >= 0 %}cf-positive{% else %}cf-negative{% endif %}">
                                     <div class="h5 mb-2">営業CF</div>
-                                    <div class="h4">{{ cf.amounts.operating_cf|floatformat:0 }}</div>
+                                    <div class="h4">{{ cf.amounts.operating_cf|format_compact_currency }}</div>
                                     <div class="small">本業で稼ぐ</div>
                                 </div>
                                 
@@ -359,7 +359,7 @@
                                 
                                 <div class="cf-component {% if cf.amounts.investing_cf >= 0 %}cf-positive{% else %}cf-negative{% endif %}">
                                     <div class="h5 mb-2">投資CF</div>
-                                    <div class="h4">{{ cf.amounts.investing_cf|floatformat:0 }}</div>
+                                    <div class="h4">{{ cf.amounts.investing_cf|format_compact_currency }}</div>
                                     <div class="small">将来への投資</div>
                                 </div>
                                 
@@ -367,8 +367,48 @@
                                 
                                 <div class="cf-component {% if cf.amounts.financing_cf >= 0 %}cf-positive{% else %}cf-negative{% endif %}">
                                     <div class="h5 mb-2">財務CF</div>
-                                    <div class="h4">{{ cf.amounts.financing_cf|floatformat:0 }}</div>
+                                    <div class="h4">{{ cf.amounts.financing_cf|format_compact_currency }}</div>
                                     <div class="small">資金調達・返済</div>
+                                </div>
+                            </div>
+                            
+                            <!-- 詳細数値表示 -->
+                            <div class="mt-4">
+                                <h6><i class="fas fa-calculator me-2"></i>詳細金額</h6>
+                                <div class="row text-center">
+                                    <div class="col-md-4">
+                                        <div class="border rounded p-2">
+                                            <div class="small text-muted">営業キャッシュフロー</div>
+                                            <div class="fw-bold {{ cf.amounts.operating_cf|floatformat:0|sentiment_color }}">
+                                                {{ cf.amounts.operating_cf|format_japanese_currency }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="border rounded p-2">
+                                            <div class="small text-muted">投資キャッシュフロー</div>
+                                            <div class="fw-bold {{ cf.amounts.investing_cf|floatformat:0|sentiment_color }}">
+                                                {{ cf.amounts.investing_cf|format_japanese_currency }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="border rounded p-2">
+                                            <div class="small text-muted">財務キャッシュフロー</div>
+                                            <div class="fw-bold {{ cf.amounts.financing_cf|floatformat:0|sentiment_color }}">
+                                                {{ cf.amounts.financing_cf|format_japanese_currency }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-center mt-3">
+                                    <div class="border rounded p-2 bg-light">
+                                        <div class="small text-muted">合計キャッシュフロー</div>
+                                        <div class="h5 mb-0 {{ cf.amounts.total_cf|floatformat:0|sentiment_color }}">
+                                            {{ cf.amounts.total_cf|format_japanese_currency }}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -658,54 +698,6 @@
                     </div>
                 </div>
             {% endwith %}
-        {% endif %}
-
-        <!-- 業界比較 -->
-        {% if industry_comparison %}
-            <div class="result-card card">
-                <div class="card-header">
-                    <h6 class="mb-0">
-                        <i class="fas fa-industry me-2"></i>業界比較（参考）
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div class="comparison-table">
-                        <div class="comparison-row comparison-header">
-                            <div>指標</div>
-                            <div>当社</div>
-                            <div>業界中央値</div>
-                            <div>上位25%</div>
-                        </div>
-                        
-                        {% if session.financial_data %}
-                            <div class="comparison-row">
-                                <div>営業利益率</div>
-                                <div>{{ session.financial_data.operating_margin|default:"--"|floatformat:1 }}%</div>
-                                <div>{{ industry_comparison.benchmarks.operating_margin.median }}%</div>
-                                <div>{{ industry_comparison.benchmarks.operating_margin.top25 }}%</div>
-                            </div>
-                            
-                            <div class="comparison-row">
-                                <div>ROA</div>
-                                <div>{{ session.financial_data.roa|default:"--"|floatformat:1 }}%</div>
-                                <div>{{ industry_comparison.benchmarks.roa.median }}%</div>
-                                <div>{{ industry_comparison.benchmarks.roa.top25 }}%</div>
-                            </div>
-                            
-                            <div class="comparison-row">
-                                <div>自己資本比率</div>
-                                <div>{{ session.financial_data.equity_ratio|default:"--"|floatformat:1 }}%</div>
-                                <div>{{ industry_comparison.benchmarks.equity_ratio.median }}%</div>
-                                <div>{{ industry_comparison.benchmarks.equity_ratio.top25 }}%</div>
-                            </div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mt-2 small text-muted">
-                        {{ industry_comparison.comparison_note }}
-                    </div>
-                </div>
-            </div>
         {% endif %}
 
         <!-- アクション -->

@@ -193,3 +193,137 @@ def progress_bar_width(current, maximum):
         return 0
     except (ValueError, TypeError, ZeroDivisionError):
         return 0
+    
+@register.filter
+def format_japanese_currency(value):
+    """日本円を適切な単位で表示（兆円、億円、百万円、千円）+ 異常値自動調整"""
+    try:
+        value = float(value)
+        original_value = value
+        abs_value = abs(value)
+        
+        if abs_value == 0:
+            return "0円"
+        
+        # 異常値の自動調整（表示時の最終防衛ライン）
+        if abs_value > 100_000_000_000_000:  # 100兆円以上は異常
+            # 段階的調整
+            if abs_value > 100_000_000_000_000_000:  # 100,000兆円以上
+                value = value / 1_000_000_000  # 10億分の1
+            elif abs_value > 10_000_000_000_000_000:  # 10,000兆円以上  
+                value = value / 1_000_000  # 100万分の1
+            else:  # 100-10,000兆円
+                value = value / 1_000  # 1000分の1
+            
+            abs_value = abs(value)
+            sign = "-" if value < 0 else ""
+            
+            # 調整済みの値を表示（警告付き）
+            if abs_value >= 1_000_000_000_000:  # 1兆円以上
+                formatted_value = abs_value / 1_000_000_000_000
+                result = f"{sign}{formatted_value:.1f}兆円"
+            elif abs_value >= 100_000_000:  # 1億円以上
+                formatted_value = abs_value / 100_000_000
+                result = f"{sign}{formatted_value:.1f}億円"
+            else:
+                formatted_value = abs_value / 1_000_000
+                result = f"{sign}{formatted_value:.1f}百万円"
+            
+            return f"{result} <small class='text-muted'>(調整済み)</small>"
+        
+        # 現実的な範囲での異常値警告
+        if abs_value > 10_000_000_000_000:  # 10兆円を超える場合は警告
+            return f"⚠️ 要確認: {format_normal_currency(value)}"
+        
+        # 通常の表示処理
+        return format_normal_currency(value)
+            
+    except (ValueError, TypeError):
+        return str(value)
+
+def format_normal_currency(value):
+    """通常の通貨フォーマット処理"""
+    abs_value = abs(value)
+    sign = "-" if value < 0 else ""
+    
+    # 単位を判定して変換
+    if abs_value >= 1_000_000_000_000:  # 1兆円以上
+        formatted_value = abs_value / 1_000_000_000_000
+        if formatted_value >= 100:
+            return f"{sign}{formatted_value:,.0f}兆円"
+        else:
+            return f"{sign}{formatted_value:.1f}兆円"
+    elif abs_value >= 100_000_000:  # 1億円以上
+        formatted_value = abs_value / 100_000_000
+        if formatted_value >= 100:
+            return f"{sign}{formatted_value:,.0f}億円"
+        else:
+            return f"{sign}{formatted_value:.1f}億円"
+    elif abs_value >= 1_000_000:  # 100万円以上
+        formatted_value = abs_value / 1_000_000
+        if formatted_value >= 100:
+            return f"{sign}{formatted_value:,.0f}百万円"
+        else:
+            return f"{sign}{formatted_value:.1f}百万円"
+    elif abs_value >= 1_000:  # 1000円以上
+        formatted_value = abs_value / 1_000
+        if formatted_value >= 100:
+            return f"{sign}{formatted_value:,.0f}千円"
+        else:
+            return f"{sign}{formatted_value:.1f}千円"
+    else:  # 1000円未満
+        return f"{sign}{abs_value:,.0f}円"
+
+@register.filter
+def format_compact_currency(value):
+    """コンパクトな通貨表示（キャッシュフロー図用）"""
+    try:
+        value = float(value)
+        abs_value = abs(value)
+        
+        if abs_value == 0:
+            return "0"
+        
+        sign = "-" if value < 0 else ""
+        
+        if abs_value >= 1_000_000_000_000:  # 1兆円以上
+            return f"{sign}{abs_value / 1_000_000_000_000:.1f}兆円"
+        elif abs_value >= 100_000_000:  # 1億円以上
+            return f"{sign}{abs_value / 100_000_000:.1f}億円"
+        elif abs_value >= 1_000_000:  # 100万円以上
+            return f"{sign}{abs_value / 1_000_000:.1f}百万円"
+        else:  # 100万円未満
+            return f"{sign}{abs_value / 1_000:.0f}千円"
+            
+    except (ValueError, TypeError):
+        return str(value)
+
+@register.filter
+def format_percentage_safe(value):
+    """安全なパーセンテージ表示"""
+    try:
+        value = float(value)
+        if abs(value) >= 1000:  # 既にパーセンテージの場合
+            return f"{value:.1f}%"
+        else:  # 小数点形式の場合
+            return f"{value * 100:.1f}%"
+    except (ValueError, TypeError):
+        return "--"
+
+@register.filter
+def sentiment_color(score):
+    """感情スコアに応じた色クラスを返す"""
+    try:
+        score = float(score)
+        if score >= 0.6:
+            return 'text-success'
+        elif score >= 0.2:
+            return 'text-info'
+        elif score >= -0.2:
+            return 'text-secondary'
+        elif score >= -0.6:
+            return 'text-warning'
+        else:
+            return 'text-danger'
+    except (ValueError, TypeError):
+        return 'text-secondary'

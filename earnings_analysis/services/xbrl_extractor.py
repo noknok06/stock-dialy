@@ -214,42 +214,54 @@ class XBRLFinancialExtractor:
                 continue
         
         return elements
-    
+        
     def _extract_financial_value(self, element: ET.Element) -> Optional[Decimal]:
-        """要素から財務値を抽出"""
-        try:
-            # 要素のテキストから数値を抽出
-            text = element.text
-            if not text:
-                return None
-            
-            # 数値の正規化
-            cleaned_text = re.sub(r'[,\s]+', '', text.strip())
-            
-            # 負の値のチェック
-            is_negative = cleaned_text.startswith('-') or '△' in cleaned_text
-            
-            # 数値部分の抽出
-            number_match = re.search(r'[\d\.]+', cleaned_text)
-            if not number_match:
-                return None
-            
-            number_str = number_match.group()
-            value = Decimal(number_str)
-            
-            # 単位の調整（千円、百万円等）
-            unit_multiplier = self._determine_unit_multiplier(element, text)
-            value *= unit_multiplier
-            
-            if is_negative:
-                value = -value
+            """要素から財務値を抽出"""
+            try:
+                # 要素のテキストから数値を抽出
+                text = element.text
+                if not text:
+                    return None
                 
-            return value
-            
-        except (InvalidOperation, ValueError) as e:
-            logger.debug(f"財務値抽出エラー: {element.tag} - {e}")
-            return None
-    
+                # 数値の正規化
+                cleaned_text = re.sub(r'[,\s]+', '', text.strip())
+                
+                # 負の値のチェック
+                is_negative = cleaned_text.startswith('-') or '△' in cleaned_text
+                
+                # 数値部分の抽出
+                number_match = re.search(r'[\d\.]+', cleaned_text)
+                if not number_match:
+                    return None
+                
+                number_str = number_match.group()
+                value = Decimal(number_str)
+                
+                # 単位の調整（千円、百万円等）
+                unit_multiplier = self._determine_unit_multiplier(element, text)
+                value *= unit_multiplier
+                
+                # 異常値チェック（日本企業の現実的な範囲）
+                max_reasonable_value = Decimal('1000000000000000')  # 1000兆円を上限
+                if abs(value) > max_reasonable_value:
+                    logger.warning(f"異常に大きな財務値を検出: {value} → 1/1000に調整")
+                    value = value / Decimal('1000')  # 1000で割る
+                    
+                    # それでも大きすぎる場合はさらに調整
+                    if abs(value) > max_reasonable_value:
+                        logger.warning(f"さらに異常値を検出: {value} → 1/1000000に調整")
+                        value = value / Decimal('1000000')  # さらに100万で割る
+                
+                if is_negative:
+                    value = -value
+                    
+                logger.debug(f"財務値抽出: {element.tag} = {value} (元テキスト: {text})")
+                return value
+                
+            except (InvalidOperation, ValueError) as e:
+                logger.debug(f"財務値抽出エラー: {element.tag} - {e}")
+                return None
+                        
     def _determine_unit_multiplier(self, element: ET.Element, text: str) -> Decimal:
         """単位倍率の判定"""
         # 属性から単位情報を取得
@@ -454,3 +466,101 @@ class EDINETXBRLService:
         """テキストのみを取得（既存機能との互換性）"""
         comprehensive_data = self.get_comprehensive_analysis_from_document(document)
         return comprehensive_data.get('text_sections', {})
+        
+    def debug_xbrl_structure(self, xml_content: bytes, max_elements: int = 50):
+        """XBRLファイル構造のデバッグ情報を出力"""
+        try:
+            root = ET.fromstring(xml_content)
+            
+            logger.info("=== XBRL構造デバッグ ===")
+            logger.info(f"ルート要素: {root.tag}")
+            logger.info(f"名前空間: {root.nsmap if hasattr(root, 'nsmap') else 'N/A'}")
+            
+            # 財務データ関連要素を詳細に調査
+            logger.info("\n=== 営業CF関連要素の詳細調査 ===")
+            cf_elements = ['CashFlowsFromOperatingActivities', '営業活動', 'OperatingCashFlow']
+            
+            for pattern in cf_elements:
+                elements = self._find_elements_by_pattern(root, pattern)
+                logger.info(f"\n'{pattern}' で検索: {len(elements)}個発見")
+                
+                for i, elem in enumerate(elements[:5]):  # 最初の5個のみ
+                    logger.info(f"  要素{i+1}:")
+                    logger.info(f"    タグ: {elem.tag}")
+                    logger.info(f"    属性: {dict(elem.attrib)}")
+                    logger.info(f"    テキスト: '{elem.text}'")
+                    logger.info(f"    親要素: {elem.getparent().tag if elem.getparent() is not None else 'None'}")
+            
+            # 全要素の統計
+            logger.info(f"\n=== 全要素統計 ===")
+            all_elements = list(root.iter())
+            logger.info(f"総要素数: {len(all_elements)}")
+            
+            # タグ名の頻度分析
+            tag_counts = {}
+            for elem in all_elements:
+                tag = elem.tag.split('}')[-1] if '}' in elem.tag else elem.tag  # 名前空間を除去
+                tag_counts[tag] = tag_counts.get(tag, 0) + 1
+            
+            # 頻度の高いタグトップ20
+            sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)
+            logger.info("頻度の高いタグ(トップ20):")
+            for tag, count in sorted_tags[:20]:
+                logger.info(f"  {tag}: {count}回")
+            
+            # 数値を含む要素の調査
+            logger.info(f"\n=== 数値データ要素の調査 ===")
+            numeric_elements = []
+            for elem in all_elements[:max_elements]:
+                if elem.text and elem.text.strip():
+                    text = elem.text.strip()
+                    if re.search(r'[\d,]+', text):  # 数値を含む要素
+                        try:
+                            # カンマを除去して数値に変換を試行
+                            clean_text = re.sub(r'[,\s]+', '', text)
+                            if re.match(r'^-?[\d\.]+$', clean_text):
+                                numeric_value = float(clean_text)
+                                if abs(numeric_value) > 1000000:  # 100万以上の値
+                                    numeric_elements.append({
+                                        'tag': elem.tag.split('}')[-1],
+                                        'value': numeric_value,
+                                        'original_text': text,
+                                        'attributes': dict(elem.attrib)
+                                    })
+                        except (ValueError, TypeError):
+                            pass
+            
+            # 大きな数値の要素をソート
+            numeric_elements.sort(key=lambda x: abs(x['value']), reverse=True)
+            
+            logger.info("大きな数値を持つ要素(トップ10):")
+            for elem in numeric_elements[:10]:
+                logger.info(f"  {elem['tag']}: {elem['value']:,.0f} (元テキスト: '{elem['original_text']}')")
+                logger.info(f"    属性: {elem['attributes']}")
+            
+        except Exception as e:
+            logger.error(f"XBRL構造デバッグエラー: {e}")
+
+    # EDINETXBRLService クラスに追加
+    def debug_document_xbrl(self, document) -> Dict[str, any]:
+        """書類のXBRL内容をデバッグ"""
+        try:
+            from .edinet_api import EdinetAPIClient
+            api_client = EdinetAPIClient.create_v2_client()
+            
+            logger.info(f"デバッグ用XBRLファイル取得: {document.doc_id}")
+            xbrl_data = api_client.get_document(document.doc_id, doc_type=1)
+            
+            # 構造解析
+            if xbrl_data[:4] == b'PK\x03\x04':
+                # ZIPファイルの場合
+                self.extractor.debug_xbrl_structure_from_zip(xbrl_data)
+            else:
+                # XMLファイルの場合
+                self.extractor.debug_xbrl_structure(xbrl_data)
+            
+            return {'status': 'debug_completed'}
+            
+        except Exception as e:
+            logger.error(f"XBRL デバッグエラー: {document.doc_id} - {e}")
+            return {'status': 'debug_failed', 'error': str(e)}

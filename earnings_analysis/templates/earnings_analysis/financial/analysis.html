@@ -1,5 +1,6 @@
 <!-- earnings_analysis/templates/earnings_analysis/financial/analysis.html -->
 {% extends 'earnings_analysis/base.html' %}
+{% load sentiment_filters %} 
 {% load static %}
 
 {% block title %}財務分析 - {{ document.company_name }} - 決算書類管理システム{% endblock %}
@@ -369,8 +370,7 @@
                 </div>
             </div>
         {% endif %}
-        
-        <!-- 既存財務データ -->
+
         {% if existing_financial_data %}
             <div class="analysis-card card">
                 <div class="card-header">
@@ -379,35 +379,83 @@
                     </h6>
                 </div>
                 <div class="card-body">
-                    <div class="small text-muted mb-2">
+                    <div class="small text-muted mb-3">
                         期間: {{ existing_financial_data.period_start|date:"Y/m/d" }} - {{ existing_financial_data.period_end|date:"Y/m/d" }}
                     </div>
                     
                     {% if existing_financial_data.has_complete_pl_data %}
-                        <div class="mb-2">
-                            <strong>損益計算書</strong>
-                            <div class="small">
-                                売上高: {{ existing_financial_data.net_sales|floatformat:0 }}円<br>
-                                営業利益: {{ existing_financial_data.operating_income|floatformat:0 }}円<br>
-                                当期純利益: {{ existing_financial_data.net_income|floatformat:0 }}円
+                        <div class="mb-3">
+                            <strong class="text-primary">損益計算書</strong>
+                            <div class="mt-2">
+                                <div class="d-flex justify-content-between small">
+                                    <span>売上高:</span>
+                                    <span class="fw-bold">{{ existing_financial_data.net_sales|format_japanese_currency }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between small">
+                                    <span>営業利益:</span>
+                                    <span class="fw-bold {{ existing_financial_data.operating_income|sentiment_color }}">
+                                        {{ existing_financial_data.operating_income|format_japanese_currency }}
+                                    </span>
+                                </div>
+                                <div class="d-flex justify-content-between small">
+                                    <span>当期純利益:</span>
+                                    <span class="fw-bold {{ existing_financial_data.net_income|sentiment_color }}">
+                                        {{ existing_financial_data.net_income|format_japanese_currency }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if existing_financial_data.has_complete_bs_data %}
+                        <div class="mb-3">
+                            <strong class="text-info">貸借対照表</strong>
+                            <div class="mt-2">
+                                <div class="d-flex justify-content-between small">
+                                    <span>総資産:</span>
+                                    <span class="fw-bold">{{ existing_financial_data.total_assets|format_japanese_currency }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between small">
+                                    <span>純資産:</span>
+                                    <span class="fw-bold">{{ existing_financial_data.net_assets|format_japanese_currency }}</span>
+                                </div>
+                                {% if existing_financial_data.equity_ratio %}
+                                    <div class="d-flex justify-content-between small">
+                                        <span>自己資本比率:</span>
+                                        <span class="fw-bold">{{ existing_financial_data.equity_ratio|format_percentage_safe }}</span>
+                                    </div>
+                                {% endif %}
                             </div>
                         </div>
                     {% endif %}
                     
                     {% if existing_financial_data.has_complete_cf_data %}
-                        <div class="mb-2">
-                            <strong>キャッシュフロー</strong>
-                            <div class="small">
-                                営業CF: {{ existing_financial_data.operating_cf|floatformat:0 }}円<br>
-                                投資CF: {{ existing_financial_data.investing_cf|floatformat:0 }}円<br>
-                                財務CF: {{ existing_financial_data.financing_cf|floatformat:0 }}円
+                        <div class="mb-3">
+                            <strong class="text-success">キャッシュフロー</strong>
+                            <div class="mt-2">
+                                <div class="d-flex justify-content-between small">
+                                    <span>営業CF:</span>
+                                    <span class="fw-bold {{ existing_financial_data.operating_cf|sentiment_color }}">
+                                        {{ existing_financial_data.operating_cf|format_compact_currency }}
+                                    </span>
+                                </div>
+                                <div class="d-flex justify-content-between small">
+                                    <span>投資CF:</span>
+                                    <span class="fw-bold">{{ existing_financial_data.investing_cf|format_compact_currency }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between small">
+                                    <span>財務CF:</span>
+                                    <span class="fw-bold">{{ existing_financial_data.financing_cf|format_compact_currency }}</span>
+                                </div>
                             </div>
                         </div>
                     {% endif %}
                     
-                    <div class="mt-2">
+                    <div class="mt-3 pt-2 border-top">
                         <small class="text-muted">
-                            データ完全性: {{ existing_financial_data.overall_data_completeness|floatformat:1 }}
+                            <i class="fas fa-chart-pie me-1"></i>
+                            データ完全性: 
+                            <span class="fw-bold">{{ existing_financial_data.overall_data_completeness|floatformat:1 }}%</span>
                         </small>
                     </div>
                 </div>

@@ -122,6 +122,10 @@ class ComprehensiveAnalysisService:
         except FinancialAnalysisSession.DoesNotExist:
             return {'status': 'not_found', 'message': 'セッションが見つかりません'}
     
+# earnings_analysis/services/comprehensive_analyzer.py の修正版
+
+# 283行目あたりの _execute_comprehensive_analysis メソッドの修正箇所
+
     def _execute_comprehensive_analysis(self, session_id: int, user_ip: str = None):
         """包括分析実行（メインプロセス）"""
         from ..models import FinancialAnalysisSession, FinancialAnalysisHistory, CompanyFinancialData
@@ -150,6 +154,23 @@ class ComprehensiveAnalysisService:
             comprehensive_xbrl_data = self.xbrl_service.get_comprehensive_analysis_from_document(session.document)
             financial_data = comprehensive_xbrl_data.get('financial_data', {})
             text_sections = comprehensive_xbrl_data.get('text_sections', {})
+            
+            # 財務データの検証とログ出力
+            if financial_data:
+                logger.info(f"取得した財務データ: {session.document.doc_id}")
+                for key, value in financial_data.items():
+                    if value is not None:
+                        logger.info(f"  {key}: {value}")
+                        # 異常値の追加チェック
+                        try:
+                            value_float = float(value)
+                            if abs(value_float) > 100_000_000_000_000:  # 100兆円以上
+                                logger.warning(f"異常値検出 {key}: {value_float} → 調整が必要")
+                                # 1/1000に調整
+                                financial_data[key] = value / 1000
+                                logger.info(f"  調整後 {key}: {financial_data[key]}")
+                        except (ValueError, TypeError):
+                            pass
             
             if not financial_data and not text_sections:
                 # XBRLが取得できない場合のフォールバック
@@ -202,12 +223,12 @@ class ComprehensiveAnalysisService:
                 sentiment_result, financial_result, document_info
             )
             
-# セッション完了（完全な辞書変換処理）
+            # セッション完了処理
             session.analysis_result = {'progress': 95, 'current_step': '結果生成中...'}
             session.save()
             
-            # financial_resultを完全にJSONシリアライズ可能にする
-            final_financial_result = self._ensure_json_serializable(financial_result)
+            # financial_resultを安全な形式に変換
+            safe_financial_result = self._make_json_safe(financial_result)
             
             final_result = {
                 'analysis_type': 'comprehensive',
@@ -217,14 +238,14 @@ class ComprehensiveAnalysisService:
                 # 主要結果
                 'integrated_analysis': integrated_result,
                 'sentiment_analysis': sentiment_result,
-                'financial_analysis': final_financial_result,
+                'financial_analysis': safe_financial_result,
                 
                 # データソース情報
                 'data_sources': {
                     'xbrl_available': bool(financial_data),
                     'text_sections_count': len(text_sections),
                     'financial_data_points': len(financial_data),
-                    'data_quality': final_financial_result.get('analysis_metadata', {}).get('data_quality', 'unknown'),
+                    'data_quality': safe_financial_result.get('analysis_metadata', {}).get('data_quality', 'unknown'),
                 },
                 
                 # メタデータ
@@ -236,13 +257,22 @@ class ComprehensiveAnalysisService:
                 }
             }
             
+            # セッションデータの更新（安全にアクセス）
             session.overall_health_score = integrated_result.get('overall_score', 0)
             session.risk_level = integrated_result.get('risk_level', 'medium')
             session.investment_stance = integrated_result.get('investment_stance', 'cautious')
-            session.cashflow_pattern = final_financial_result.get('cashflow_analysis', {}).get('pattern', {}).get('name', '')
+            
+            # キャッシュフローパターンの安全な取得
+            cf_pattern = ''
+            if not safe_financial_result.get('error'):
+                cf_analysis = safe_financial_result.get('cashflow_analysis', {})
+                pattern_info = cf_analysis.get('pattern', {})
+                cf_pattern = pattern_info.get('name', '') if isinstance(pattern_info, dict) else ''
+            
+            session.cashflow_pattern = cf_pattern
             session.management_confidence_score = sentiment_result.get('overall_score', 0) * 100
-            session.analysis_result = final_result
-            session.financial_data = financial_data
+            session.analysis_result = self._make_json_safe(final_result)  # JSON安全化
+            session.financial_data = self._make_json_safe(financial_data)  # JSON安全化
             session.processing_status = 'COMPLETED'
             session.save()
             
@@ -252,11 +282,11 @@ class ComprehensiveAnalysisService:
                 document=session.document,
                 overall_health_score=integrated_result.get('overall_score', 0),
                 risk_level=integrated_result.get('risk_level', 'medium'),
-                cashflow_pattern=financial_result.get('cashflow_analysis', {}).get('pattern', {}).get('name', ''),
+                cashflow_pattern=cf_pattern,
                 management_confidence_score=sentiment_result.get('overall_score', 0) * 100,
                 user_ip=user_ip,
                 analysis_duration=analysis_duration,
-                data_quality=financial_result.get('analysis_metadata', {}).get('data_quality', 'unknown'),
+                data_quality=safe_financial_result.get('analysis_metadata', {}).get('data_quality', 'unknown'),
             )
             
             logger.info(f"包括分析完了: {session.session_id} ({analysis_duration:.2f}秒)")
@@ -271,7 +301,132 @@ class ComprehensiveAnalysisService:
                 session.save()
             except:
                 pass
-    
+
+    def _make_json_safe(self, obj):
+        """オブジェクトをJSON安全な形式に変換"""
+        import json
+        from decimal import Decimal
+        from datetime import datetime, date
+        from django.utils import timezone as django_timezone
+        
+        if obj is None:
+            return None
+        elif isinstance(obj, dict):
+            return {key: self._make_json_safe(value) for key, value in obj.items()}
+        elif isinstance(obj, (list, tuple)):
+            return [self._make_json_safe(item) for item in obj]
+        elif isinstance(obj, Decimal):
+            return float(obj)
+        elif isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        elif isinstance(obj, (int, float, str, bool)):
+            return obj
+        elif hasattr(obj, '__dict__'):
+            # オブジェクトの場合は辞書に変換
+            try:
+                obj_dict = {}
+                for key, value in obj.__dict__.items():
+                    if not key.startswith('_'):  # プライベート属性を除外
+                        obj_dict[key] = self._make_json_safe(value)
+                return obj_dict
+            except:
+                return str(obj)
+        else:
+            # その他の型は文字列化を試行
+            try:
+                json.dumps(obj)  # JSON化可能かテスト
+                return obj
+            except (TypeError, ValueError):
+                return str(obj)
+
+    def _integrate_analysis_results(self, sentiment_result: Dict, financial_result: Dict, 
+                                document_info: Dict) -> Dict[str, Any]:
+        """分析結果の統合"""
+        try:
+            # 基本スコアの取得
+            sentiment_score = sentiment_result.get('overall_score', 0) * 100  # -1~1 を 0~100 に変換
+            
+            # 財務分析結果の安全な取得
+            financial_score = 50  # デフォルト値
+            financial_risk = 'medium'
+            
+            if not financial_result.get('error'):
+                overall_health = financial_result.get('overall_health', {})
+                if isinstance(overall_health, dict):
+                    financial_score = overall_health.get('overall_score', 50)
+                    financial_risk = overall_health.get('risk_level', 'medium')
+                else:
+                    # overall_healthがオブジェクトの場合
+                    financial_score = getattr(overall_health, 'overall_score', 50)
+                    financial_risk = getattr(overall_health, 'risk_level', 'medium')
+            
+            # 統合スコアの計算
+            if financial_result.get('error'):
+                # 財務データがない場合は感情分析のみ
+                overall_score = max(0, min(100, sentiment_score))
+                integration_method = 'sentiment_only'
+                weights = {'sentiment': 1.0, 'financial': 0.0}
+            else:
+                # 両方のデータがある場合は重み付け平均
+                sentiment_weight = 0.3
+                financial_weight = 0.7
+                overall_score = (sentiment_score * sentiment_weight + 
+                            financial_score * financial_weight)
+                integration_method = 'weighted_average'
+                weights = {'sentiment': sentiment_weight, 'financial': financial_weight}
+            
+            # リスクレベルの統合判定
+            sentiment_label = sentiment_result.get('sentiment_label', 'neutral')
+            
+            # 統合リスクレベル
+            if overall_score >= 80 and financial_risk == 'low' and sentiment_label == 'positive':
+                integrated_risk = 'low'
+            elif overall_score >= 60 and financial_risk != 'high':
+                integrated_risk = 'medium'
+            else:
+                integrated_risk = 'high'
+            
+            # 投資スタンスの決定
+            if integrated_risk == 'low' and overall_score >= 80:
+                investment_stance = 'aggressive'
+            elif integrated_risk == 'medium' and overall_score >= 60:
+                investment_stance = 'conditional'
+            elif integrated_risk == 'high' or overall_score < 40:
+                investment_stance = 'avoid'
+            else:
+                investment_stance = 'cautious'
+            
+            # 統合洞察の生成
+            integrated_insights = self._generate_integrated_insights(
+                sentiment_result, financial_result, overall_score, integrated_risk
+            )
+            
+            return {
+                'overall_score': round(overall_score, 1),
+                'risk_level': integrated_risk,
+                'investment_stance': investment_stance,
+                'integration_method': integration_method,
+                'component_scores': {
+                    'sentiment_score': round(sentiment_score, 1),
+                    'financial_score': round(financial_score, 1),
+                    'weights': weights,
+                },
+                'integrated_insights': integrated_insights,
+                'key_findings': self._extract_key_findings(sentiment_result, financial_result),
+                'investment_recommendation': self._generate_investment_recommendation(
+                    overall_score, integrated_risk, investment_stance
+                ),
+            }
+            
+        except Exception as e:
+            logger.error(f"分析結果統合エラー: {e}")
+            return {
+                'overall_score': 50.0,
+                'risk_level': 'medium',
+                'investment_stance': 'cautious',
+                'error': f'統合処理中にエラーが発生しました: {str(e)}'
+            }
+                     
     def _save_financial_data(self, document, financial_data: Dict) -> Optional['CompanyFinancialData']:
         """財務データの保存"""
         from ..models import CompanyFinancialData, Company
