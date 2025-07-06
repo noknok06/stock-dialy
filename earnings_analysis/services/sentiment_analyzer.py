@@ -1216,3 +1216,205 @@ class SentimentAnalysisService:
         except Exception as e:
             logger.error(f"クリーンアップエラー: {e}")
             return 0
+
+
+    def debug_zip_structure(self, zip_content: bytes, doc_id: str = None):
+        """ZIPファイル構造の詳細デバッグ"""
+        try:
+            import zipfile
+            import io
+            
+            logger.info(f"=== ZIP構造デバッグ開始: {doc_id} ===")
+            
+            with zipfile.ZipFile(io.BytesIO(zip_content)) as zip_file:
+                logger.info(f"総ファイル数: {len(zip_file.filelist)}")
+                
+                # 全ファイルリスト
+                xbrl_files = []
+                other_files = []
+                
+                for file_info in zip_file.filelist:
+                    file_details = {
+                        'filename': file_info.filename,
+                        'size': file_info.file_size,
+                        'compressed_size': file_info.compress_size,
+                        'date_time': file_info.date_time,
+                    }
+                    
+                    if file_info.filename.endswith('.xbrl'):
+                        xbrl_files.append(file_details)
+                    else:
+                        other_files.append(file_details)
+                
+                logger.info(f"\nXBRLファイル ({len(xbrl_files)}個):")
+                for i, file_info in enumerate(xbrl_files):
+                    logger.info(f"  {i+1}. {file_info['filename']}")
+                    logger.info(f"     サイズ: {file_info['size']:,} bytes")
+                    logger.info(f"     日時: {'-'.join(map(str, file_info['date_time']))}")
+                
+                logger.info(f"\nその他のファイル ({len(other_files)}個):")
+                for file_info in other_files[:10]:  # 最初の10個のみ
+                    logger.info(f"  - {file_info['filename']} ({file_info['size']:,} bytes)")
+                
+                # 各XBRLファイルの内容を簡易分析
+                if xbrl_files:
+                    logger.info(f"\n=== XBRLファイル内容分析 ===")
+                    
+                    for i, file_info in enumerate(xbrl_files):
+                        filename = file_info['filename']
+                        logger.info(f"\n--- {filename} の分析 ---")
+                        
+                        try:
+                            with zip_file.open(filename) as xbrl_file:
+                                xbrl_content = xbrl_file.read()
+                                
+                                # XMLとして解析
+                                import xml.etree.ElementTree as ET
+                                root = ET.fromstring(xbrl_content)
+                                
+                                # 基本情報
+                                logger.info(f"  ルート要素: {root.tag}")
+                                
+                                # 名前空間の確認
+                                namespaces = self._extract_namespaces(root)
+                                logger.info(f"  名前空間数: {len(namespaces)}")
+                                for prefix, uri in list(namespaces.items())[:5]:
+                                    logger.info(f"    {prefix}: {uri}")
+                                
+                                # 財務関連要素の存在確認
+                                cf_elements = self._count_financial_elements(root)
+                                logger.info(f"  財務要素数:")
+                                for element_type, count in cf_elements.items():
+                                    logger.info(f"    {element_type}: {count}個")
+                                
+                                # テキスト要素の確認
+                                text_elements = self._count_text_elements(root)
+                                logger.info(f"  テキスト要素: {text_elements}個")
+                                
+                                # データ品質の予備評価
+                                quality = self._quick_quality_assessment(root)
+                                logger.info(f"  品質スコア（予備）: {quality:.3f}")
+                                
+                        except Exception as e:
+                            logger.error(f"  ファイル分析エラー: {e}")
+            
+            logger.info("=== ZIP構造デバッグ終了 ===")
+            
+        except Exception as e:
+            logger.error(f"ZIP構造デバッグエラー: {e}")
+
+    def _extract_namespaces(self, root):
+        """XML名前空間の抽出"""
+        namespaces = {}
+        for key, value in root.attrib.items():
+            if key.startswith('xmlns'):
+                prefix = key.split(':')[1] if ':' in key else 'default'
+                namespaces[prefix] = value
+        return namespaces
+
+    def _count_financial_elements(self, root):
+        """財務関連要素のカウント"""
+        counts = {
+            'operating_cf': 0,
+            'investing_cf': 0,
+            'financing_cf': 0,
+            'sales': 0,
+            'assets': 0,
+        }
+        
+        financial_patterns = {
+            'operating_cf': ['OperatingActivities', 'OperatingCashFlow', '営業活動'],
+            'investing_cf': ['InvestingActivities', 'InvestingCashFlow', '投資活動'],
+            'financing_cf': ['FinancingActivities', 'FinancingCashFlow', '財務活動'],
+            'sales': ['NetSales', 'Sales', 'Revenue', '売上'],
+            'assets': ['TotalAssets', 'Assets', '資産'],
+        }
+        
+        for elem in root.iter():
+            elem_text = elem.tag + (elem.text or '')
+            
+            for category, patterns in financial_patterns.items():
+                for pattern in patterns:
+                    if pattern in elem_text:
+                        counts[category] += 1
+                        break
+        
+        return counts
+
+    def _count_text_elements(self, root):
+        """長いテキスト要素のカウント"""
+        count = 0
+        for elem in root.iter():
+            if elem.text and len(elem.text.strip()) > 100:
+                count += 1
+        return count
+
+    def _quick_quality_assessment(self, root):
+        """クイック品質評価"""
+        financial_counts = self._count_financial_elements(root)
+        text_count = self._count_text_elements(root)
+        
+        # 財務要素の完全性
+        financial_score = sum(1 for count in financial_counts.values() if count > 0) / len(financial_counts)
+        
+        # テキストの豊富さ
+        text_score = min(text_count / 10, 1.0)
+        
+        return financial_score * 0.7 + text_score * 0.3
+
+    # EDINETXBRLService クラスに追加するメソッド
+    def debug_zip_document(self, document):
+        """特定書類のZIP構造をデバッグ"""
+        try:
+            from .edinet_api import EdinetAPIClient
+            api_client = EdinetAPIClient.create_v2_client()
+            
+            logger.info(f"ZIP構造デバッグ開始: {document.doc_id}")
+            xbrl_data = api_client.get_document(document.doc_id, doc_type=1)
+            
+            if xbrl_data[:4] == b'PK\x03\x04':
+                self.extractor.debug_zip_structure(xbrl_data, document.doc_id)
+            else:
+                logger.info(f"ZIPファイルではありません: {document.doc_id}")
+            
+            return {'status': 'debug_completed'}
+            
+        except Exception as e:
+            logger.error(f"ZIP構造デバッグエラー: {document.doc_id} - {e}")
+            return {'status': 'debug_failed', 'error': str(e)}
+
+    def compare_extraction_methods(self, document):
+        """新旧の抽出方法を比較"""
+        try:
+            from .edinet_api import EdinetAPIClient
+            api_client = EdinetAPIClient.create_v2_client()
+            
+            logger.info(f"抽出方法比較開始: {document.doc_id}")
+            xbrl_data = api_client.get_document(document.doc_id, doc_type=1)
+            
+            if xbrl_data[:4] == b'PK\x03\x04':
+                # 新しい方法
+                logger.info("=== 新しい方法（データ欠損対策版）===")
+                new_result = self._extract_comprehensive_from_bytes_safe(xbrl_data, document.doc_id)
+                
+                logger.info(f"新方法結果:")
+                logger.info(f"  財務データ: {len(new_result.get('financial_data', {}))}項目")
+                logger.info(f"  テキスト: {len(new_result.get('text_sections', {}))}セクション")
+                if new_result.get('source_files'):
+                    logger.info(f"  ソースファイル数: {len(new_result['source_files'])}")
+                    for src in new_result['source_files']:
+                        logger.info(f"    - {src['filename']}: 品質{src['quality']}, 財務{src['financial_items']}項目")
+                
+                # 財務データの詳細
+                logger.info("  財務データ詳細:")
+                for key, value in new_result.get('financial_data', {}).items():
+                    logger.info(f"    {key}: {value}")
+                
+                return new_result
+            else:
+                logger.info("ZIPファイルではないため比較不要")
+                return {'status': 'not_zip'}
+            
+        except Exception as e:
+            logger.error(f"抽出方法比較エラー: {document.doc_id} - {e}")
+            return {'status': 'comparison_failed', 'error': str(e)}        
