@@ -76,6 +76,10 @@
     <!-- メインコンテンツ -->
     <main class="py-4">
         <div class="container">
+            <!-- コンテンツ上部の広告 -->
+            {% if show_ads %}
+                {% show_template_ad "diary_top" %}
+            {% endif %}
             {% block content %}{% endblock %}
         </div>
     </main>
