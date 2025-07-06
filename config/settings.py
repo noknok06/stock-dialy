@@ -404,6 +404,7 @@ CSP_FONT_SRC = [
     "*.gstatic.com", 
     "*.bootstrapcdn.com", 
     "cdn.jsdelivr.net", 
+    "cdnjs.cloudflare.com",
     "https://fonts.gstatic.com"
 ]
 CSP_IMG_SRC = ["'self'", "data:", "https:", "blob:", "*.google.com", "*.googleapis.com", "*.gstatic.com", 
