@@ -1418,3 +1418,4 @@ class SentimentAnalysisService:
         except Exception as e:
             logger.error(f"抽出方法比較エラー: {document.doc_id} - {e}")
             return {'status': 'comparison_failed', 'error': str(e)}        
+        
