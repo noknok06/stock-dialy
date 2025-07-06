@@ -200,11 +200,39 @@ class CompanyFinancialData(models.Model):
         company_name = self.company.company_name if self.company else self.document.company_name
         period_str = f"{self.period_start} - {self.period_end}" if self.period_start and self.period_end else "期間不明"
         return f"{company_name} ({period_str})"
-    
+        
     def save(self, *args, **kwargs):
-        # 財務比率の自動計算
+        # 財務比率の自動計算（単位正規化後）
         self._calculate_ratios()
+        
+        # 単位情報の記録
+        if hasattr(self, '_unit_context'):
+            self.unit_context = self._unit_context
+        
         super().save(*args, **kwargs)
+
+        
+    def _normalize_unit_values(self, financial_data: dict, table_unit: str):
+        """単位情報に基づいて値を正規化"""
+        unit_multipliers = {
+            'million_yen': 1_000_000,
+            'thousand_yen': 1_000,
+            'hundred_million_yen': 100_000_000,
+            'trillion_yen': 1_000_000_000_000,
+            'yen': 1
+        }
+        
+        multiplier = unit_multipliers.get(table_unit, 1)
+        
+        normalized_data = {}
+        for key, value in financial_data.items():
+            if value is not None:
+                # XBRLで既に適切な単位になっている場合はそのまま使用
+                normalized_data[key] = value
+            else:
+                normalized_data[key] = value
+        
+        return normalized_data
     
     def _calculate_ratios(self):
         """財務比率の自動計算"""

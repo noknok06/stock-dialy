@@ -122,9 +122,6 @@ class ComprehensiveAnalysisService:
         except FinancialAnalysisSession.DoesNotExist:
             return {'status': 'not_found', 'message': 'セッションが見つかりません'}
     
-# earnings_analysis/services/comprehensive_analyzer.py の修正版
-
-# 283行目あたりの _execute_comprehensive_analysis メソッドの修正箇所
 
     def _execute_comprehensive_analysis(self, session_id: int, user_ip: str = None):
         """包括分析実行（メインプロセス）"""
@@ -151,26 +148,27 @@ class ComprehensiveAnalysisService:
             session.analysis_result = {'progress': 15, 'current_step': 'XBRLデータ取得中...'}
             session.save()
             
+            # XBRLから包括的データ取得
             comprehensive_xbrl_data = self.xbrl_service.get_comprehensive_analysis_from_document(session.document)
             financial_data = comprehensive_xbrl_data.get('financial_data', {})
             text_sections = comprehensive_xbrl_data.get('text_sections', {})
+            table_unit = comprehensive_xbrl_data.get('table_unit', 'yen')  # 単位情報を取得
             
-            # 財務データの検証とログ出力
+            # 財務データの検証とログ出力（単位考慮版）
             if financial_data:
-                logger.info(f"取得した財務データ: {session.document.doc_id}")
+                logger.info(f"取得した財務データ（単位: {table_unit}）: {session.document.doc_id}")
                 for key, value in financial_data.items():
                     if value is not None:
-                        logger.info(f"  {key}: {value}")
-                        # 異常値の追加チェック
-                        try:
-                            value_float = float(value)
-                            if abs(value_float) > 100_000_000_000_000:  # 100兆円以上
-                                logger.warning(f"異常値検出 {key}: {value_float} → 調整が必要")
-                                # 1/1000に調整
-                                financial_data[key] = value / 1000
-                                logger.info(f"  調整後 {key}: {financial_data[key]}")
-                        except (ValueError, TypeError):
-                            pass
+                        logger.info(f"  {key}: {value} (単位調整済み)")
+                        
+                        # 異常値チェック（日本企業の現実的な範囲）
+                        abs_value = abs(float(value))
+                        if abs_value > 1_000_000_000_000_000:  # 1000兆円以上は異常
+                            logger.warning(f"依然として異常値: {key}: {value}")
+            
+            # 分析結果に単位情報を含める
+            final_result = {'data_sources': {}}
+            final_result['data_sources']['table_unit'] = table_unit
             
             if not financial_data and not text_sections:
                 # XBRLが取得できない場合のフォールバック

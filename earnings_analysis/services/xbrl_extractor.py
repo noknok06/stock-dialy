@@ -148,30 +148,6 @@ class XBRLFinancialExtractor:
             
         return comprehensive_data
     
-    def _extract_comprehensive_from_xml(self, xml_content: bytes) -> Dict[str, any]:
-        """XMLファイルから財務データとテキストを抽出"""
-        comprehensive_data = {'financial_data': {}, 'text_sections': {}}
-        
-        try:
-            # XMLパース
-            root = ET.fromstring(xml_content)
-            
-            # 財務データ抽出
-            comprehensive_data['financial_data'] = self._extract_financial_data(root)
-            
-            # テキストデータ抽出（既存機能）
-            comprehensive_data['text_sections'] = self._extract_text_sections(root)
-            
-            # 会計期間情報の抽出
-            comprehensive_data['period_info'] = self._extract_period_info(root)
-            
-        except ET.ParseError as e:
-            logger.error(f"XML包括解析エラー: {e}")
-        except Exception as e:
-            logger.error(f"包括データ抽出エラー: {e}")
-            
-        return comprehensive_data
-    
     def _extract_financial_data(self, root: ET.Element) -> Dict[str, Decimal]:
         """財務データの抽出"""
         financial_data = {}
@@ -214,54 +190,211 @@ class XBRLFinancialExtractor:
                 continue
         
         return elements
-        
+            
     def _extract_financial_value(self, element: ET.Element) -> Optional[Decimal]:
-            """要素から財務値を抽出"""
-            try:
-                # 要素のテキストから数値を抽出
-                text = element.text
-                if not text:
-                    return None
-                
-                # 数値の正規化
-                cleaned_text = re.sub(r'[,\s]+', '', text.strip())
-                
-                # 負の値のチェック
-                is_negative = cleaned_text.startswith('-') or '△' in cleaned_text
-                
-                # 数値部分の抽出
-                number_match = re.search(r'[\d\.]+', cleaned_text)
-                if not number_match:
-                    return None
-                
-                number_str = number_match.group()
-                value = Decimal(number_str)
-                
-                # 単位の調整（千円、百万円等）
-                unit_multiplier = self._determine_unit_multiplier(element, text)
-                value *= unit_multiplier
-                
-                # 異常値チェック（日本企業の現実的な範囲）
-                max_reasonable_value = Decimal('1000000000000000')  # 1000兆円を上限
-                if abs(value) > max_reasonable_value:
-                    logger.warning(f"異常に大きな財務値を検出: {value} → 1/1000に調整")
-                    value = value / Decimal('1000')  # 1000で割る
-                    
-                    # それでも大きすぎる場合はさらに調整
-                    if abs(value) > max_reasonable_value:
-                        logger.warning(f"さらに異常値を検出: {value} → 1/1000000に調整")
-                        value = value / Decimal('1000000')  # さらに100万で割る
-                
-                if is_negative:
-                    value = -value
-                    
-                logger.debug(f"財務値抽出: {element.tag} = {value} (元テキスト: {text})")
-                return value
-                
-            except (InvalidOperation, ValueError) as e:
-                logger.debug(f"財務値抽出エラー: {element.tag} - {e}")
+        """要素から財務値を抽出（単位情報を正しく処理）"""
+        try:
+            # 要素のテキストから数値を抽出
+            text = element.text
+            if not text:
                 return None
+            
+            # 数値の正規化
+            cleaned_text = re.sub(r'[,\s]+', '', text.strip())
+            
+            # 負の値のチェック
+            is_negative = cleaned_text.startswith('-') or '△' in cleaned_text
+            
+            # 数値部分の抽出
+            number_match = re.search(r'[\d\.]+', cleaned_text)
+            if not number_match:
+                return None
+            
+            number_str = number_match.group()
+            base_value = Decimal(number_str)
+            
+            # XBRL属性から単位情報を取得
+            decimals = element.get('decimals', '0')
+            scale = element.get('scale', '0')
+            unit_ref = element.get('unitRef', '')
+            
+            # 最終的な値を計算
+            final_value = self._calculate_actual_value(base_value, decimals, scale, unit_ref)
+            
+            if is_negative:
+                final_value = -final_value
+                
+            # ログ出力で確認
+            logger.debug(f"財務値変換: {element.tag}")
+            logger.debug(f"  元の値: {base_value}")
+            logger.debug(f"  decimals: {decimals}, scale: {scale}, unitRef: {unit_ref}")
+            logger.debug(f"  最終値: {final_value}")
+            
+            return final_value
+            
+        except (InvalidOperation, ValueError) as e:
+            logger.debug(f"財務値抽出エラー: {element.tag} - {e}")
+            return None
+        
+    def _calculate_actual_value(self, base_value: Decimal, decimals: str, scale: str, unit_ref: str) -> Decimal:
+        """XBRL属性に基づいて実際の金額を計算"""
+        try:
+            actual_value = base_value
+            
+            # decimals属性の処理
+            if decimals and decimals != '':
+                decimal_power = int(decimals)
+                if decimal_power < 0:
+                    # 負の場合は単位が大きい（-6 = 百万円単位）
+                    multiplier = Decimal(10) ** abs(decimal_power)
+                    actual_value = actual_value * multiplier
+                    logger.debug(f"  decimals調整: {base_value} × 10^{abs(decimal_power)} = {actual_value}")
+            
+            # scale属性の処理
+            if scale and scale != '0':
+                scale_power = int(scale)
+                scale_multiplier = Decimal(10) ** scale_power
+                # scaleは通常、表示用のスケーリングなので、実際の値に反映する場合は注意が必要
+                # 多くの場合、decimalsで十分
+                logger.debug(f"  scale情報: 10^{scale_power} (適用せず)")
+            
+            # 単位の確認
+            if unit_ref:
+                logger.debug(f"  単位: {unit_ref}")
+            
+            return actual_value
+            
+        except (ValueError, TypeError) as e:
+            logger.warning(f"単位計算エラー: {e}")
+            return base_value
+
+    def _detect_table_unit(self, root: ET.Element) -> str:
+        """テーブル内の単位表記を検出"""
+        unit_patterns = {
+            r'百万円': 'million_yen',
+            r'千円': 'thousand_yen', 
+            r'億円': 'hundred_million_yen',
+            r'兆円': 'trillion_yen',
+            r'\(百万円\)': 'million_yen',
+            r'\(千円\)': 'thousand_yen',
+            r'\(億円\)': 'hundred_million_yen',
+        }
+        
+        # XML全体のテキストを取得
+        xml_text = ET.tostring(root, encoding='unicode', method='text')
+        
+        for pattern, unit_type in unit_patterns.items():
+            if re.search(pattern, xml_text):
+                logger.info(f"テーブル単位検出: {pattern} -> {unit_type}")
+                return unit_type
+        
+        return 'yen'  # デフォルト
+
+    def debug_xbrl_structure(self, xml_content: bytes, max_elements: int = 50):
+        """XBRLファイル構造のデバッグ情報を出力（単位情報追加版）"""
+        try:
+            root = ET.fromstring(xml_content)
+            
+            logger.info("=== XBRL構造デバッグ（単位情報付き） ===")
+            logger.info(f"ルート要素: {root.tag}")
+            
+            # テーブル単位の検出
+            table_unit = self._detect_table_unit(root)
+            logger.info(f"検出されたテーブル単位: {table_unit}")
+            
+            # 財務データ関連要素の詳細調査（単位情報付き）
+            logger.info("\n=== 営業CF関連要素の詳細調査（単位情報付き） ===")
+            cf_elements = ['CashFlowsFromOperatingActivities', '営業活動', 'OperatingCashFlow']
+            
+            for pattern in cf_elements:
+                elements = self._find_elements_by_pattern(root, pattern)
+                logger.info(f"\n'{pattern}' で検索: {len(elements)}個発見")
+                
+                for i, elem in enumerate(elements[:5]):  # 最初の5個のみ
+                    logger.info(f"  要素{i+1}:")
+                    logger.info(f"    タグ: {elem.tag}")
+                    logger.info(f"    属性: {dict(elem.attrib)}")
+                    logger.info(f"    テキスト: '{elem.text}'")
+                    
+                    # 単位情報の詳細分析
+                    decimals = elem.get('decimals')
+                    scale = elem.get('scale')
+                    unit_ref = elem.get('unitRef')
+                    
+                    if decimals or scale or unit_ref:
+                        logger.info(f"    単位情報:")
+                        logger.info(f"      decimals: {decimals}")
+                        logger.info(f"      scale: {scale}")
+                        logger.info(f"      unitRef: {unit_ref}")
                         
+                        # 実際の計算値を表示
+                        if elem.text and elem.text.strip():
+                            try:
+                                base_value = Decimal(re.sub(r'[,\s△]+', '', elem.text.strip()))
+                                calculated_value = self._calculate_actual_value(base_value, decimals or '0', scale or '0', unit_ref or '')
+                                logger.info(f"      計算結果: {base_value} → {calculated_value}")
+                            except:
+                                pass
+            
+            # 単位情報を持つ要素の統計
+            logger.info(f"\n=== 単位情報統計 ===")
+            all_elements = list(root.iter())
+            unit_elements = []
+            
+            for elem in all_elements:
+                if elem.get('decimals') or elem.get('scale') or elem.get('unitRef'):
+                    unit_elements.append({
+                        'tag': elem.tag.split('}')[-1],
+                        'decimals': elem.get('decimals'),
+                        'scale': elem.get('scale'),
+                        'unitRef': elem.get('unitRef'),
+                        'text': elem.text
+                    })
+            
+            logger.info(f"単位情報を持つ要素数: {len(unit_elements)}")
+            
+            # 単位パターンの分析
+            unit_patterns = {}
+            for elem in unit_elements:
+                pattern = f"decimals:{elem['decimals']}, scale:{elem['scale']}, unitRef:{elem['unitRef']}"
+                unit_patterns[pattern] = unit_patterns.get(pattern, 0) + 1
+            
+            logger.info("単位パターンの分布:")
+            for pattern, count in sorted(unit_patterns.items(), key=lambda x: x[1], reverse=True):
+                logger.info(f"  {pattern}: {count}回")
+                
+        except Exception as e:
+            logger.error(f"XBRL構造デバッグエラー: {e}")
+
+    def _extract_comprehensive_from_xml(self, xml_content: bytes) -> Dict[str, any]:
+        """XMLファイルから財務データとテキストを抽出（単位処理改良版）"""
+        comprehensive_data = {'financial_data': {}, 'text_sections': {}}
+        
+        try:
+            # XMLパース
+            root = ET.fromstring(xml_content)
+            
+            # テーブル単位の検出
+            table_unit = self._detect_table_unit(root)
+            logger.info(f"検出されたテーブル単位: {table_unit}")
+            
+            # 財務データ抽出
+            comprehensive_data['financial_data'] = self._extract_financial_data(root)
+            comprehensive_data['table_unit'] = table_unit  # 単位情報を追加
+            
+            # テキストデータ抽出（既存機能）
+            comprehensive_data['text_sections'] = self._extract_text_sections(root)
+            
+            # 会計期間情報の抽出
+            comprehensive_data['period_info'] = self._extract_period_info(root)
+            
+        except ET.ParseError as e:
+            logger.error(f"XML包括解析エラー: {e}")
+        except Exception as e:
+            logger.error(f"包括データ抽出エラー: {e}")
+            
+        return comprehensive_data
+
     def _determine_unit_multiplier(self, element: ET.Element, text: str) -> Decimal:
         """単位倍率の判定"""
         # 属性から単位情報を取得
@@ -467,80 +600,6 @@ class EDINETXBRLService:
         comprehensive_data = self.get_comprehensive_analysis_from_document(document)
         return comprehensive_data.get('text_sections', {})
         
-    def debug_xbrl_structure(self, xml_content: bytes, max_elements: int = 50):
-        """XBRLファイル構造のデバッグ情報を出力"""
-        try:
-            root = ET.fromstring(xml_content)
-            
-            logger.info("=== XBRL構造デバッグ ===")
-            logger.info(f"ルート要素: {root.tag}")
-            logger.info(f"名前空間: {root.nsmap if hasattr(root, 'nsmap') else 'N/A'}")
-            
-            # 財務データ関連要素を詳細に調査
-            logger.info("\n=== 営業CF関連要素の詳細調査 ===")
-            cf_elements = ['CashFlowsFromOperatingActivities', '営業活動', 'OperatingCashFlow']
-            
-            for pattern in cf_elements:
-                elements = self._find_elements_by_pattern(root, pattern)
-                logger.info(f"\n'{pattern}' で検索: {len(elements)}個発見")
-                
-                for i, elem in enumerate(elements[:5]):  # 最初の5個のみ
-                    logger.info(f"  要素{i+1}:")
-                    logger.info(f"    タグ: {elem.tag}")
-                    logger.info(f"    属性: {dict(elem.attrib)}")
-                    logger.info(f"    テキスト: '{elem.text}'")
-                    logger.info(f"    親要素: {elem.getparent().tag if elem.getparent() is not None else 'None'}")
-            
-            # 全要素の統計
-            logger.info(f"\n=== 全要素統計 ===")
-            all_elements = list(root.iter())
-            logger.info(f"総要素数: {len(all_elements)}")
-            
-            # タグ名の頻度分析
-            tag_counts = {}
-            for elem in all_elements:
-                tag = elem.tag.split('}')[-1] if '}' in elem.tag else elem.tag  # 名前空間を除去
-                tag_counts[tag] = tag_counts.get(tag, 0) + 1
-            
-            # 頻度の高いタグトップ20
-            sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)
-            logger.info("頻度の高いタグ(トップ20):")
-            for tag, count in sorted_tags[:20]:
-                logger.info(f"  {tag}: {count}回")
-            
-            # 数値を含む要素の調査
-            logger.info(f"\n=== 数値データ要素の調査 ===")
-            numeric_elements = []
-            for elem in all_elements[:max_elements]:
-                if elem.text and elem.text.strip():
-                    text = elem.text.strip()
-                    if re.search(r'[\d,]+', text):  # 数値を含む要素
-                        try:
-                            # カンマを除去して数値に変換を試行
-                            clean_text = re.sub(r'[,\s]+', '', text)
-                            if re.match(r'^-?[\d\.]+$', clean_text):
-                                numeric_value = float(clean_text)
-                                if abs(numeric_value) > 1000000:  # 100万以上の値
-                                    numeric_elements.append({
-                                        'tag': elem.tag.split('}')[-1],
-                                        'value': numeric_value,
-                                        'original_text': text,
-                                        'attributes': dict(elem.attrib)
-                                    })
-                        except (ValueError, TypeError):
-                            pass
-            
-            # 大きな数値の要素をソート
-            numeric_elements.sort(key=lambda x: abs(x['value']), reverse=True)
-            
-            logger.info("大きな数値を持つ要素(トップ10):")
-            for elem in numeric_elements[:10]:
-                logger.info(f"  {elem['tag']}: {elem['value']:,.0f} (元テキスト: '{elem['original_text']}')")
-                logger.info(f"    属性: {elem['attributes']}")
-            
-        except Exception as e:
-            logger.error(f"XBRL構造デバッグエラー: {e}")
-
     # EDINETXBRLService クラスに追加
     def debug_document_xbrl(self, document) -> Dict[str, any]:
         """書類のXBRL内容をデバッグ"""

@@ -327,3 +327,54 @@ def sentiment_color(score):
             return 'text-danger'
     except (ValueError, TypeError):
         return 'text-secondary'
+    
+@register.filter
+def format_xbrl_currency(value, unit_info=None):
+    """XBRL単位情報を考慮した通貨表示"""
+    try:
+        value = float(value)
+        abs_value = abs(value)
+        sign = "-" if value < 0 else ""
+        
+        if abs_value == 0:
+            return "0円"
+        
+        # 基本的な日本円表示
+        if abs_value >= 1_000_000_000_000:  # 1兆円以上
+            formatted_value = abs_value / 1_000_000_000_000
+            return f"{sign}{formatted_value:.1f}兆円"
+        elif abs_value >= 100_000_000:  # 1億円以上
+            formatted_value = abs_value / 100_000_000
+            return f"{sign}{formatted_value:.1f}億円"
+        elif abs_value >= 1_000_000:  # 100万円以上
+            formatted_value = abs_value / 1_000_000
+            return f"{sign}{formatted_value:.1f}百万円"
+        elif abs_value >= 1_000:  # 1000円以上
+            formatted_value = abs_value / 1_000
+            return f"{sign}{formatted_value:.1f}千円"
+        else:
+            return f"{sign}{abs_value:,.0f}円"
+            
+    except (ValueError, TypeError):
+        return str(value)
+
+@register.filter
+def format_currency_with_unit_context(value, context=None):
+    """文脈を考慮した通貨表示"""
+    try:
+        value = float(value)
+        
+        # 文脈情報があれば活用
+        if context and 'table_unit' in context:
+            table_unit = context['table_unit']
+            if table_unit == 'million_yen':
+                # 既に百万円単位の場合は、そのまま表示
+                return f"{value:,.0f}百万円"
+            elif table_unit == 'thousand_yen':
+                return f"{value:,.0f}千円"
+        
+        # デフォルトの表示
+        return format_xbrl_currency(value)
+        
+    except (ValueError, TypeError):
+        return str(value)
