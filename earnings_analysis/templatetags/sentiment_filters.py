@@ -513,3 +513,70 @@ def format_currency_with_unit_context(value, context=None):
         
     except (ValueError, TypeError):
         return str(value)
+
+@register.filter
+def sentiment_badge(sentiment_label):
+    """感情ラベルに対応するCSSクラスを返す"""
+    badge_classes = {
+        'positive': 'bg-success',
+        'negative': 'bg-danger',
+        'neutral': 'bg-secondary'
+    }
+    return badge_classes.get(sentiment_label, 'bg-secondary')
+
+@register.filter
+def highlight_keywords(text, keyword):
+    """テキスト内のキーワードをハイライト"""
+    if not keyword or not text:
+        return text
+    
+    import re
+    
+    # HTMLエスケープされていない状態でハイライトタグを挿入
+    highlighted = re.sub(
+        re.escape(keyword),
+        f'<span class="keyword-highlight">{keyword}</span>',
+        text,
+        flags=re.IGNORECASE
+    )
+    return highlighted
+
+@register.filter
+def score_percentage(value):
+    """スコアをパーセンテージに変換"""
+    try:
+        return int(float(value))
+    except (ValueError, TypeError):
+        return 0
+
+@register.filter
+def length_filter(scores_list, threshold):
+    """指定した閾値以上のスコアの数をカウント"""
+    try:
+        threshold_val = float(threshold)
+        if isinstance(scores_list, list):
+            return len([score for score in scores_list if float(score) >= threshold_val])
+        return 0
+    except (ValueError, TypeError):
+        return 0
+
+@register.filter
+def length_filter_range(scores_list, range_str):
+    """指定した範囲内のスコアの数をカウント"""
+    try:
+        min_val, max_val = map(float, range_str.split(','))
+        if isinstance(scores_list, list):
+            return len([score for score in scores_list 
+                       if min_val <= float(score) < max_val])
+        return 0
+    except (ValueError, TypeError):
+        return 0
+
+@register.filter
+def floatformat_safe(value, decimal_places=2):
+    """安全な小数点フォーマット"""
+    try:
+        return f"{float(value):.{decimal_places}f}"
+    except (ValueError, TypeError):
+        return "0.00"
+

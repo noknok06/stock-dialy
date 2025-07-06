@@ -1,4 +1,4 @@
-# earnings_analysis/services/xbrl_extractor.py の統合改良版
+# earnings_analysis/services/xbrl_extractor.py の完全版
 
 import xml.etree.ElementTree as ET
 import re
@@ -515,10 +515,8 @@ class CashFlowExtractor:
         return min_val <= abs_value <= max_val
 
 
-# earnings_analysis/services/xbrl_extractor.py に追加する緊急修正
-
 class XBRLFinancialExtractor:
-    """XBRLファイルから財務データを抽出するクラス（緊急修正版）"""
+    """XBRLファイルから財務データを抽出するクラス（完全版）"""
     
     def __init__(self):
         # キャッシュフロー専用抽出器
@@ -529,7 +527,49 @@ class XBRLFinancialExtractor:
             self.cashflow_extractor = None
             logger.warning("CashFlowExtractor初期化失敗、基本機能で代替")
         
-        # 既存の初期化コード...
+        # テキスト要素パターンの定義
+        self.text_element_patterns = [
+            'BusinessRisks',
+            'BusinessRisksTextBlock',
+            'BusinessPolicyBusinessEnvironmentIssuesAddressedEtc',
+            'ManagementAnalysisOfFinancialPositionOperatingResultsAndCashFlows',
+            'ResearchAndDevelopmentActivities',
+            'OverviewOfGroup',
+            'BusinessDescriptionTextBlock',
+            'BusinessResultsOfOperationsTextBlock',
+            'CriticalAccountingPolicies',
+            'OverallBusinessResultsTextBlock',
+            'AnalysisOfBusinessResultsTextBlock',
+            'CashFlowsTextBlock',
+            'FinancialPositionTextBlock',
+            'ManagementPolicyTextBlock',
+            'BusinessEnvironmentTextBlock',
+            'CorporateGovernanceTextBlock',
+            'InternalControlSystemTextBlock',
+            'ComplianceTextBlock',
+            'RiskManagementTextBlock',
+            'DividendPolicyTextBlock',
+            'CapitalStructureTextBlock',
+            'LiquidityAndCapitalResourcesTextBlock',
+            'ContractualObligationsTextBlock',
+            'OffBalanceSheetArrangementsTextBlock',
+            'CriticalAccountingEstimatesTextBlock',
+            'NewAccountingPronouncementsTextBlock',
+            'SegmentInformationTextBlock',
+            'GeographicInformationTextBlock',
+            'ProductServiceInformationTextBlock',
+            'CustomerInformationTextBlock',
+            'SeasonalityTextBlock',
+            'InflationTextBlock',
+            'EnvironmentalTextBlock',
+            'LegalProceedingsTextBlock',
+            'UnregisteredSalesOfEquitySecuritiesTextBlock',
+            'RepurchasesOfEquitySecuritiesTextBlock',
+            'SelectedFinancialDataTextBlock',
+            'ManagementDiscussionAndAnalysisTextBlock',
+        ]
+        
+        # 財務要素の定義
         self.financial_elements = {
             # キャッシュフロー
             'operating_cf': [
@@ -679,28 +719,59 @@ class XBRLFinancialExtractor:
             
         return comprehensive_data
 
+    def _find_elements_by_pattern(self, root: ET.Element, pattern: str) -> List[ET.Element]:
+        """パターンに一致する要素を検索"""
+        elements = []
+        
+        try:
+            # 直接検索
+            for elem in root.iter():
+                if pattern in elem.tag:
+                    elements.append(elem)
+            
+            # 名前空間を考慮した検索
+            for ns_prefix, ns_uri in self.namespaces.items():
+                try:
+                    found = root.findall(f".//{{{ns_uri}}}{pattern}")
+                    elements.extend(found)
+                except:
+                    continue
+            
+            # 重複除去
+            unique_elements = list({(elem.tag, elem.text): elem for elem in elements}.values())
+            
+        except Exception as e:
+            logger.debug(f"要素検索エラー ({pattern}): {e}")
+            
+        return unique_elements
+
     def _extract_element_text(self, element: ET.Element) -> str:
         """要素からテキストを抽出"""
         text_parts = []
         
-        # 要素のテキスト
-        if element.text:
-            text_parts.append(element.text.strip())
-        
-        # 子要素のテキスト
-        for child in element:
-            child_text = self._extract_element_text(child)
-            if child_text:
-                text_parts.append(child_text)
-        
-        # 要素の末尾テキスト
-        if element.tail:
-            text_parts.append(element.tail.strip())
-        
-        full_text = ' '.join(text_parts)
-        
-        # テキストクリーニング
-        cleaned_text = self._clean_text(full_text)
+        try:
+            # 要素のテキスト
+            if element.text:
+                text_parts.append(element.text.strip())
+            
+            # 子要素のテキスト
+            for child in element:
+                child_text = self._extract_element_text(child)
+                if child_text:
+                    text_parts.append(child_text)
+            
+            # 要素の末尾テキスト
+            if element.tail:
+                text_parts.append(element.tail.strip())
+            
+            full_text = ' '.join(text_parts)
+            
+            # テキストクリーニング
+            cleaned_text = self._clean_text(full_text)
+            
+        except Exception as e:
+            logger.debug(f"要素テキスト抽出エラー: {e}")
+            cleaned_text = ""
         
         return cleaned_text
     
@@ -708,22 +779,26 @@ class XBRLFinancialExtractor:
         """その他のテキスト要素を抽出"""
         additional_text = {}
         
-        # テキストを含む可能性のある要素を広く検索
-        text_elements = []
-        for elem in root.iter():
-            # テキストが長い要素を対象
-            if elem.text and len(elem.text.strip()) > 100:
-                text_elements.append(elem)
+        try:
+            # テキストを含む可能性のある要素を広く検索
+            text_elements = []
+            for elem in root.iter():
+                # テキストが長い要素を対象
+                if elem.text and len(elem.text.strip()) > 100:
+                    text_elements.append(elem)
+            
+            # テキストの長さでソートして上位を採用
+            text_elements.sort(key=lambda e: len(e.text.strip()) if e.text else 0, reverse=True)
+            
+            for i, element in enumerate(text_elements[:10]):  # 上位10要素
+                cleaned_text = self._clean_text(element.text)
+                if len(cleaned_text) > 100:
+                    section_name = f"その他のテキスト_{i+1}"
+                    additional_text[section_name] = cleaned_text
         
-        # テキストの長さでソートして上位を採用
-        text_elements.sort(key=lambda e: len(e.text.strip()) if e.text else 0, reverse=True)
-        
-        for i, element in enumerate(text_elements[:10]):  # 上位10要素
-            cleaned_text = self._clean_text(element.text)
-            if len(cleaned_text) > 100:
-                section_name = f"その他のテキスト_{i+1}"
-                additional_text[section_name] = cleaned_text
-        
+        except Exception as e:
+            logger.debug(f"追加テキスト抽出エラー: {e}")
+            
         return additional_text
     
     def _prioritize_xbrl_files_emergency(self, file_list) -> List:
@@ -1000,10 +1075,80 @@ class XBRLFinancialExtractor:
         text = re.sub(r'[【】「」（）\(\)\[\]〔〕]', '', text)
         
         return text.strip()
+
+    def _get_section_name(self, pattern: str) -> str:
+        """要素パターンから日本語セクション名を取得"""
+        section_names = {
+            'BusinessRisks': '事業等のリスク',
+            'BusinessRisksTextBlock': '事業リスク詳細',
+            'BusinessPolicyBusinessEnvironmentIssuesAddressedEtc': '経営方針・経営環境',
+            'ManagementAnalysisOfFinancialPositionOperatingResultsAndCashFlows': '経営者による財政状態分析',
+            'ResearchAndDevelopmentActivities': '研究開発活動',
+            'OverviewOfGroup': '企業集団の状況',
+            'BusinessDescriptionTextBlock': '事業の内容',
+            'BusinessResultsOfOperationsTextBlock': '業績概要',
+            'CriticalAccountingPolicies': '重要な会計方針',
+            'OverallBusinessResultsTextBlock': '全般的業績',
+            'AnalysisOfBusinessResultsTextBlock': '業績分析',
+            'CashFlowsTextBlock': 'キャッシュフロー',
+            'FinancialPositionTextBlock': '財政状態',
+            'ManagementPolicyTextBlock': '経営方針',
+            'BusinessEnvironmentTextBlock': '事業環境',
+            'CorporateGovernanceTextBlock': 'コーポレートガバナンス',
+            'InternalControlSystemTextBlock': '内部統制システム',
+            'ComplianceTextBlock': 'コンプライアンス',
+            'RiskManagementTextBlock': 'リスク管理',
+            'DividendPolicyTextBlock': '配当政策',
+            'CapitalStructureTextBlock': '資本構成',
+            'LiquidityAndCapitalResourcesTextBlock': '流動性と資本源泉',
+            'ContractualObligationsTextBlock': '契約上の義務',
+            'OffBalanceSheetArrangementsTextBlock': 'オフバランス取引',
+            'CriticalAccountingEstimatesTextBlock': '重要な会計上の見積もり',
+            'NewAccountingPronouncementsTextBlock': '新しい会計基準',
+            'SegmentInformationTextBlock': 'セグメント情報',
+            'GeographicInformationTextBlock': '地域別情報',
+            'ProductServiceInformationTextBlock': '製品・サービス情報',
+            'CustomerInformationTextBlock': '顧客情報',
+            'SeasonalityTextBlock': '季節性',
+            'InflationTextBlock': 'インフレーション',
+            'EnvironmentalTextBlock': '環境',
+            'LegalProceedingsTextBlock': '法的手続き',
+            'UnregisteredSalesOfEquitySecuritiesTextBlock': '未登録株式売却',
+            'RepurchasesOfEquitySecuritiesTextBlock': '自己株式取得',
+            'SelectedFinancialDataTextBlock': '主要財務データ',
+            'ManagementDiscussionAndAnalysisTextBlock': '経営陣による討議と分析',
+        }
+        return section_names.get(pattern, pattern)
     
+    def _clean_text(self, text: str) -> str:
+        """テキストクリーニング"""
+        if not text:
+            return ""
+        
+        try:
+            # HTMLタグ除去
+            text = re.sub(r'<[^>]+>', '', text)
+            
+            # 特殊文字の正規化
+            text = re.sub(r'\s+', ' ', text)
+            text = re.sub(r'[\r\n\t]+', ' ', text)
+            
+            # 不要な文字除去
+            text = re.sub(r'[【】「」（）\(\)\[\]〔〕]', '', text)
+            
+            # 数字のみの行を除去
+            lines = text.split('\n')
+            filtered_lines = [line for line in lines if not re.match(r'^\s*[\d,\.]+\s*$', line)]
+            text = '\n'.join(filtered_lines)
+            
+        except Exception as e:
+            logger.debug(f"テキストクリーニングエラー: {e}")
+            
+        return text.strip()
+
 
 class EDINETXBRLService:
-    """EDINET APIを使用してXBRLファイルを取得・解析するサービス（キャッシュフロー統合版）"""
+    """EDINET APIを使用してXBRLファイルを取得・解析するサービス（完全版）"""
     
     def __init__(self):
         self.extractor = XBRLFinancialExtractor()
@@ -1013,7 +1158,7 @@ class EDINETXBRLService:
         try:
             if not document.xbrl_flag:
                 logger.warning(f"XBRLファイルが利用できません: {document.doc_id}")
-                return {'financial_data': {}, 'text_sections': {}}
+                return {'financial_data': {}, 'text_sections': {}, 'table_unit': 'yen'}
             
             # EDINET APIからXBRLファイルを取得
             from .edinet_api import EdinetAPIClient
@@ -1038,7 +1183,7 @@ class EDINETXBRLService:
             
         except Exception as e:
             logger.error(f"包括分析データ取得エラー: {document.doc_id} - {e}")
-            return {'financial_data': {}, 'text_sections': {}}
+            return {'financial_data': {}, 'text_sections': {}, 'table_unit': 'yen'}
     
     def _extract_comprehensive_from_bytes(self, xbrl_bytes: bytes) -> Dict[str, any]:
         """バイトデータから包括データを抽出"""
@@ -1050,7 +1195,7 @@ class EDINETXBRLService:
                 
         except Exception as e:
             logger.error(f"包括データバイト解析エラー: {e}")
-            return {'financial_data': {}, 'text_sections': {}}
+            return {'financial_data': {}, 'text_sections': {}, 'table_unit': 'yen'}
 
     def get_xbrl_text_from_document(self, document) -> Dict[str, str]:
         """DocumentMetadataからXBRLテキストを取得"""
@@ -1089,62 +1234,4 @@ class EDINETXBRLService:
                 
         except Exception as e:
             logger.error(f"XBRLバイトデータ解析エラー: {e}")
-            return {}        
-
-    def _find_elements_by_pattern(self, root: ET.Element, pattern: str) -> List[ET.Element]:
-        """パターンに一致する要素を検索"""
-        elements = []
-        
-        # 直接検索
-        for elem in root.iter():
-            if pattern in elem.tag:
-                elements.append(elem)
-        
-        # 名前空間を考慮した検索
-        for ns_prefix, ns_uri in self.namespaces.items():
-            try:
-                found = root.findall(f".//{{{ns_uri}}}{pattern}")
-                elements.extend(found)
-            except:
-                continue
-        
-        return elements
-    
-    def _clean_text(self, text: str) -> str:
-        """テキストクリーニング"""
-        if not text:
-            return ""
-        
-        # HTMLタグ除去
-        text = re.sub(r'<[^>]+>', '', text)
-        
-        # 特殊文字の正規化
-        text = re.sub(r'\s+', ' ', text)
-        text = re.sub(r'[\r\n\t]+', ' ', text)
-        
-        # 不要な文字除去
-        text = re.sub(r'[【】「」（）\(\)\[\]〔〕]', '', text)
-        
-        # 数字のみの行を除去
-        lines = text.split('\n')
-        filtered_lines = [line for line in lines if not re.match(r'^\s*[\d,\.]+\s*$', line)]
-        text = '\n'.join(filtered_lines)
-        
-        return text.strip()
-    
-    def _get_section_name(self, pattern: str) -> str:
-        """要素パターンから日本語セクション名を取得"""
-        section_names = {
-            'BusinessRisks': '事業等のリスク',
-            'BusinessPolicyBusinessEnvironmentIssuesAddressedEtc': '経営方針・経営環境',
-            'ManagementAnalysisOfFinancialPositionOperatingResultsAndCashFlows': '経営者による分析',
-            'ResearchAndDevelopmentActivities': '研究開発活動',
-            'OverviewOfGroup': '企業集団の状況',
-            'BusinessDescriptionTextBlock': '事業の内容',
-            'BusinessResultsOfOperationsTextBlock': '業績概要',
-            'BusinessRisksTextBlock': '事業リスク',
-            'CriticalAccountingPolicies': '重要な会計方針',
-            'OverallBusinessResultsTextBlock': '全般的業績',
-            'AnalysisOfBusinessResultsTextBlock': '業績分析',
-        }
-        return section_names.get(pattern, pattern)        
+            return {}
