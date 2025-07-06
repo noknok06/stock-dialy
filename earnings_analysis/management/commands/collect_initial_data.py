@@ -93,11 +93,11 @@ class Command(BaseCommand):
                 self.stdout.write(
                     self.style.WARNING(f'既存データが{existing_count}件あります。')
                 )
-                self.stdout.write('継続しますか？ (y/N): ', ending='')
-                choice = input().lower()
-                if choice != 'y':
-                    self.stdout.write('処理を中止しました。')
-                    return
+                # self.stdout.write('継続しますか？ (y/N): ', ending='')
+                # choice = input().lower()
+                # if choice != 'y':
+                #     self.stdout.write('処理を中止しました。')
+                #     return
         
         current_date = start_date
         total_processed = 0
