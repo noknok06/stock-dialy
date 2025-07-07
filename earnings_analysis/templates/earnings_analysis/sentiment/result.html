@@ -181,6 +181,124 @@
     .badge {
         font-size: 0.8rem;
     }
+.word-cloud-container {
+    min-height: 300px;
+    padding: 20px;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    background: #f9fafb;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.word-cloud-item {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    margin: 0.2rem;
+    border-radius: 2rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    position: relative;
+}
+
+.word-cloud-item:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    z-index: 10;
+}
+
+.word-cloud-item.positive {
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    color: #155724;
+    border: 2px solid #b8dacc;
+}
+
+.word-cloud-item.negative {
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+    color: #721c24;
+    border: 2px solid #f1b0b7;
+}
+
+.word-cloud-item.size-xs { font-size: 0.75rem; }
+.word-cloud-item.size-sm { font-size: 0.875rem; }
+.word-cloud-item.size-md { font-size: 1rem; }
+.word-cloud-item.size-lg { font-size: 1.25rem; }
+.word-cloud-item.size-xl { font-size: 1.5rem; }
+.word-cloud-item.size-xxl { font-size: 1.75rem; }
+
+.keyword-ranking {
+    background: white;
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+.ranking-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+}
+
+.ranking-item:hover {
+    background-color: #f9fafb;
+}
+
+.ranking-item:last-child {
+    border-bottom: none;
+}
+
+.ranking-number {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    font-size: 0.875rem;
+}
+
+.ranking-number.gold { background: linear-gradient(135deg, #ffd700, #ffed4e); color: #92400e; }
+.ranking-number.silver { background: linear-gradient(135deg, #c0c0c0, #e5e7eb); color: #374151; }
+.ranking-number.bronze { background: linear-gradient(135deg, #cd7f32, #d97706); color: white; }
+.ranking-number.other { background: #6b7280; }
+
+.keyword-info {
+    flex: 1;
+    margin: 0 1rem;
+}
+
+.keyword-text {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.keyword-meta {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.occurrence-badge {
+    background: #e5e7eb;
+    color: #374151;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.chart-container canvas {
+    max-height: 400px !important;
+}
 </style>
 {% endblock %}
 
@@ -491,10 +609,7 @@
                 </div>
             {% endwith %}
         {% endif %}
-
-        <!-- 判定された文章の詳細表示 -->
         {% if session.analysis_result.sample_sentences %}
-
             {% with samples=session.analysis_result.sample_sentences %}
                 <div class="result-card card">
                     <div class="card-header">
@@ -526,17 +641,20 @@
                                                     {% endif %}
                                                 </div>
                                             </div>
+                                            
+                                            <!-- 修正：キーワードが複数ある場合の重複表示を防ぐ -->
                                             <div class="mb-2">
-                                                {% if sentence.keywords %}
-                                                    {% for keyword in sentence.keywords %}
-                                                        {% with highlighted_text=sentence.text|highlight_keywords:keyword %}
-                                                            {{ highlighted_text|safe }}
-                                                        {% endwith %}
-                                                    {% endfor %}
+                                                {% if sentence.highlighted_text %}
+                                                    {{ sentence.highlighted_text|safe }}
+                                                {% elif sentence.keywords %}
+                                                    {% with highlighted_text=sentence.text|highlight_all_keywords:sentence.keywords %}
+                                                        {{ highlighted_text|safe }}
+                                                    {% endwith %}
                                                 {% else %}
                                                     {{ sentence.text }}
                                                 {% endif %}
                                             </div>
+                                            
                                             {% if sentence.keywords %}
                                                 <div class="small text-muted">
                                                     <strong>検出キーワード:</strong> 
@@ -572,17 +690,20 @@
                                                     {% endif %}
                                                 </div>
                                             </div>
+                                            
+                                            <!-- 修正：キーワードが複数ある場合の重複表示を防ぐ -->
                                             <div class="mb-2">
-                                                {% if sentence.keywords %}
-                                                    {% for keyword in sentence.keywords %}
-                                                        {% with highlighted_text=sentence.text|highlight_keywords:keyword %}
-                                                            {{ highlighted_text|safe }}
-                                                        {% endwith %}
-                                                    {% endfor %}
+                                                {% if sentence.highlighted_text %}
+                                                    {{ sentence.highlighted_text|safe }}
+                                                {% elif sentence.keywords %}
+                                                    {% with highlighted_text=sentence.text|highlight_all_keywords:sentence.keywords %}
+                                                        {{ highlighted_text|safe }}
+                                                    {% endwith %}
                                                 {% else %}
                                                     {{ sentence.text }}
                                                 {% endif %}
                                             </div>
+                                            
                                             {% if sentence.keywords %}
                                                 <div class="small text-muted">
                                                     <strong>検出キーワード:</strong> 
@@ -609,6 +730,166 @@
             {% endwith %}
         {% endif %}
 
+        <!-- キーワード出現頻度の視覚化セクション（新規追加） -->
+        {% if session.analysis_result.keyword_frequency_data %}
+            <div class="result-card card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-word-cloud me-2"></i>キーワード出現頻度分析
+                    </h5>
+                    <div class="small text-muted mt-1">
+                        検出されたキーワードの使用頻度を視覚的に表示
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- タブ切り替え -->
+                    <ul class="nav nav-tabs mb-3" id="visualizationTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="bubble-tab" data-bs-toggle="tab" data-bs-target="#bubble-chart" type="button" role="tab">
+                                <i class="fas fa-circle me-1"></i>バブルチャート
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="cloud-tab" data-bs-toggle="tab" data-bs-target="#word-cloud" type="button" role="tab">
+                                <i class="fas fa-cloud me-1"></i>ワードクラウド
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="ranking-tab" data-bs-toggle="tab" data-bs-target="#ranking-list" type="button" role="tab">
+                                <i class="fas fa-list-ol me-1"></i>ランキング
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="visualizationTabContent">
+                        <!-- バブルチャート -->
+                        <div class="tab-pane fade show active" id="bubble-chart" role="tabpanel">
+                            <div class="row">
+                                {% if session.analysis_result.keyword_frequency_data.positive %}
+                                    <div class="col-lg-6 mb-4">
+                                        <h6 class="text-success mb-3">
+                                            <i class="fas fa-smile me-2"></i>ポジティブキーワード
+                                        </h6>
+                                        <div class="chart-container" style="height: 400px; position: relative;">
+                                            <canvas id="positiveBubbleChart"></canvas>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                {% if session.analysis_result.keyword_frequency_data.negative %}
+                                    <div class="col-lg-6 mb-4">
+                                        <h6 class="text-danger mb-3">
+                                            <i class="fas fa-frown me-2"></i>ネガティブキーワード
+                                        </h6>
+                                        <div class="chart-container" style="height: 400px; position: relative;">
+                                            <canvas id="negativeBubbleChart"></canvas>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% if not session.analysis_result.keyword_frequency_data.positive and not session.analysis_result.keyword_frequency_data.negative %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">表示するキーワードがありません</h5>
+                                    <p class="text-muted">出現回数が十分なキーワードが見つかりませんでした</p>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- ワードクラウド風表示 -->
+                        <div class="tab-pane fade" id="word-cloud" role="tabpanel">
+                            <div class="row">
+                                {% if session.analysis_result.keyword_frequency_data.positive %}
+                                    <div class="col-lg-6 mb-4">
+                                        <h6 class="text-success mb-3">
+                                            <i class="fas fa-smile me-2"></i>ポジティブキーワード
+                                        </h6>
+                                        <div class="word-cloud-container positive-cloud" id="positiveWordCloud">
+                                            <!-- JavaScriptで動的に生成 -->
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                {% if session.analysis_result.keyword_frequency_data.negative %}
+                                    <div class="col-lg-6 mb-4">
+                                        <h6 class="text-danger mb-3">
+                                            <i class="fas fa-frown me-2"></i>ネガティブキーワード
+                                        </h6>
+                                        <div class="word-cloud-container negative-cloud" id="negativeWordCloud">
+                                            <!-- JavaScriptで動的に生成 -->
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- ランキング表示 -->
+                        <div class="tab-pane fade" id="ranking-list" role="tabpanel">
+                            <div class="row">
+                                {% if session.analysis_result.keyword_frequency_data.positive %}
+                                    <div class="col-lg-6 mb-4">
+                                        <h6 class="text-success mb-3">
+                                            <i class="fas fa-trophy me-2"></i>ポジティブキーワード TOP10
+                                        </h6>
+                                        <div id="positiveRanking" class="keyword-ranking">
+                                            <!-- JavaScriptで動的に生成 -->
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                {% if session.analysis_result.keyword_frequency_data.negative %}
+                                    <div class="col-lg-6 mb-4">
+                                        <h6 class="text-danger mb-3">
+                                            <i class="fas fa-trophy me-2"></i>ネガティブキーワード TOP10
+                                        </h6>
+                                        <div id="negativeRanking" class="keyword-ranking">
+                                            <!-- JavaScriptで動的に生成 -->
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 統計サマリー -->
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <div class="h4 text-primary" id="totalUniqueWords">
+                                    {{ session.analysis_result.keyword_frequency_data.positive|length|add:session.analysis_result.keyword_frequency_data.negative|length }}
+                                </div>
+                                <div class="small text-muted">ユニークワード数</div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="h4 text-success" id="positiveWordsCount">
+                                    {{ session.analysis_result.keyword_frequency_data.positive|length }}
+                                </div>
+                                <div class="small text-muted">ポジティブワード</div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="h4 text-danger" id="negativeWordsCount">
+                                    {{ session.analysis_result.keyword_frequency_data.negative|length }}
+                                </div>
+                                <div class="small text-muted">ネガティブワード</div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="h4 text-info" id="totalOccurrences">
+                                    {{ session.analysis_result.statistics.total_keyword_occurrences|default:0 }}
+                                </div>
+                                <div class="small text-muted">総出現回数</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 詳細情報パネル -->
+                    <div id="keywordDetailPanel" class="mt-3" style="display: none;">
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-info-circle me-2"></i>選択されたキーワード: <span id="selectedKeyword"></span>
+                            </h6>
+                            <div id="keywordDetails"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
         <!-- ユーザー向け見解・提案 -->
         <div class="result-card card">
             <div class="card-header">
@@ -898,6 +1179,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // ネガティブスコアの分布生成
     generateScoreDistribution('negativeScoreDistribution', negativeScores, 'negative');
     generateScorePreview('negativeScorePreview', negativeScores, 'negative');
+
+    const keywordData = {
+        positive: {{ session.analysis_result.keyword_frequency_data.positive|safe|default:"[]" }},
+        negative: {{ session.analysis_result.keyword_frequency_data.negative|safe|default:"[]" }}
+    };
+    
+    // 各視覚化を初期化
+    if (keywordData.positive.length > 0 || keywordData.negative.length > 0) {
+        initializeBubbleCharts(keywordData);
+        initializeWordClouds(keywordData);
+        initializeRankings(keywordData);
+    }
 });
 
 function generateScoreDistribution(containerId, scores, type) {
@@ -1038,5 +1331,223 @@ document.addEventListener('DOMContentLoaded', function() {
         observer.observe(card);
     });
 });
+
+function initializeBubbleCharts(data) {
+    // ポジティブバブルチャート
+    if (data.positive && data.positive.length > 0) {
+        createBubbleChart('positiveBubbleChart', data.positive, 'positive');
+    }
+    
+    // ネガティブバブルチャート
+    if (data.negative && data.negative.length > 0) {
+        createBubbleChart('negativeBubbleChart', data.negative, 'negative');
+    }
+}
+
+function createBubbleChart(canvasId, keywords, type) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // バブルチャート用データ変換
+    const bubbleData = keywords.map((keyword, index) => ({
+        x: Math.random() * 100, // X座標（ランダム配置）
+        y: Math.random() * 100, // Y座標（ランダム配置）
+        r: Math.max(5, Math.min(50, keyword.count * 3)), // 半径（出現回数に比例）
+        keyword: keyword.word,
+        count: keyword.count,
+        score: keyword.score
+    }));
+    
+    const color = type === 'positive' ? 'rgba(72, 187, 120, 0.7)' : 'rgba(245, 101, 101, 0.7)';
+    const borderColor = type === 'positive' ? 'rgba(72, 187, 120, 1)' : 'rgba(245, 101, 101, 1)';
+    
+    new Chart(ctx, {
+        type: 'bubble',
+        data: {
+            datasets: [{
+                label: type === 'positive' ? 'ポジティブキーワード' : 'ネガティブキーワード',
+                data: bubbleData,
+                backgroundColor: color,
+                borderColor: borderColor,
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const data = context.raw;
+                            return [
+                                `キーワード: ${data.keyword}`,
+                                `出現回数: ${data.count}回`,
+                                `スコア: ${data.score.toFixed(2)}`
+                            ];
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    display: false,
+                    min: 0,
+                    max: 100
+                },
+                y: {
+                    display: false,
+                    min: 0,
+                    max: 100
+                }
+            },
+            onClick: function(event, elements) {
+                if (elements.length > 0) {
+                    const data = elements[0].element.$context.raw;
+                    showKeywordDetails(data.keyword, data.count, data.score, type);
+                }
+            }
+        }
+    });
+}
+
+function initializeWordClouds(data) {
+    if (data.positive && data.positive.length > 0) {
+        createWordCloud('positiveWordCloud', data.positive, 'positive');
+    }
+    if (data.negative && data.negative.length > 0) {
+        createWordCloud('negativeWordCloud', data.negative, 'negative');
+    }
+}
+
+function createWordCloud(containerId, keywords, type) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    // 最大出現回数を取得してサイズを正規化
+    const maxCount = Math.max(...keywords.map(k => k.count));
+    
+    keywords.forEach(keyword => {
+        const item = document.createElement('div');
+        item.className = `word-cloud-item ${type}`;
+        item.textContent = keyword.word;
+        
+        // 出現回数に基づいてサイズを決定
+        const sizeClass = getSizeClass(keyword.count, maxCount);
+        item.classList.add(sizeClass);
+        
+        // ツールチップ情報
+        item.title = `${keyword.word}: ${keyword.count}回 (スコア: ${keyword.score.toFixed(2)})`;
+        
+        // クリックイベント
+        item.addEventListener('click', () => {
+            showKeywordDetails(keyword.word, keyword.count, keyword.score, type);
+        });
+        
+        container.appendChild(item);
+    });
+}
+
+function getSizeClass(count, maxCount) {
+    const ratio = count / maxCount;
+    if (ratio >= 0.8) return 'size-xxl';
+    if (ratio >= 0.6) return 'size-xl';
+    if (ratio >= 0.4) return 'size-lg';
+    if (ratio >= 0.2) return 'size-md';
+    if (ratio >= 0.1) return 'size-sm';
+    return 'size-xs';
+}
+
+function initializeRankings(data) {
+    if (data.positive && data.positive.length > 0) {
+        createRanking('positiveRanking', data.positive, 'positive');
+    }
+    if (data.negative && data.negative.length > 0) {
+        createRanking('negativeRanking', data.negative, 'negative');
+    }
+}
+
+function createRanking(containerId, keywords, type) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    // 出現回数でソート
+    const sortedKeywords = [...keywords].sort((a, b) => b.count - a.count);
+    
+    sortedKeywords.slice(0, 10).forEach((keyword, index) => {
+        const item = document.createElement('div');
+        item.className = 'ranking-item';
+        
+        const rankNumber = document.createElement('div');
+        rankNumber.className = `ranking-number ${getRankClass(index)}`;
+        rankNumber.textContent = index + 1;
+        
+        const keywordInfo = document.createElement('div');
+        keywordInfo.className = 'keyword-info';
+        keywordInfo.innerHTML = `
+            <div class="keyword-text">${keyword.word}</div>
+            <div class="keyword-meta">スコア: ${keyword.score.toFixed(2)}</div>
+        `;
+        
+        const badge = document.createElement('div');
+        badge.className = 'occurrence-badge';
+        badge.textContent = `${keyword.count}回`;
+        
+        item.appendChild(rankNumber);
+        item.appendChild(keywordInfo);
+        item.appendChild(badge);
+        
+        // クリックイベント
+        item.addEventListener('click', () => {
+            showKeywordDetails(keyword.word, keyword.count, keyword.score, type);
+        });
+        
+        container.appendChild(item);
+    });
+}
+
+function getRankClass(index) {
+    if (index === 0) return 'gold';
+    if (index === 1) return 'silver';
+    if (index === 2) return 'bronze';
+    return 'other';
+}
+
+function showKeywordDetails(keyword, count, score, type) {
+    const panel = document.getElementById('keywordDetailPanel');
+    const keywordSpan = document.getElementById('selectedKeyword');
+    const detailsDiv = document.getElementById('keywordDetails');
+    
+    if (!panel || !keywordSpan || !detailsDiv) return;
+    
+    keywordSpan.textContent = keyword;
+    detailsDiv.innerHTML = `
+        <div class="row">
+            <div class="col-md-4">
+                <strong>出現回数:</strong> ${count}回
+            </div>
+            <div class="col-md-4">
+                <strong>スコア:</strong> ${score.toFixed(3)}
+            </div>
+            <div class="col-md-4">
+                <strong>種別:</strong> <span class="badge ${type === 'positive' ? 'bg-success' : 'bg-danger'}">${type === 'positive' ? 'ポジティブ' : 'ネガティブ'}</span>
+            </div>
+        </div>
+        <div class="mt-2">
+            <strong>影響度:</strong> 
+            ${Math.abs(score) > 0.7 ? '<span class="badge bg-danger">高</span>' : 
+              Math.abs(score) > 0.4 ? '<span class="badge bg-warning">中</span>' : 
+              '<span class="badge bg-success">低</span>'}
+        </div>
+    `;
+    
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
 </script>
 {% endblock %}
