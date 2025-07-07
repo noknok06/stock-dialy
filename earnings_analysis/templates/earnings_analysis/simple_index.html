@@ -1,4 +1,4 @@
-<!-- earnings_analysis/templates/earnings_analysis/simple_index.html -->
+<!-- earnings_analysis/templates/earnings_analysis/simple_index.html（企業詳細対応版） -->
 {% extends 'earnings_analysis/simple_base.html' %}
 
 {% block title %}ホーム - 決算書類管理システム{% endblock %}
@@ -13,13 +13,16 @@
         <p class="lead mb-4">
             EDINET APIを活用した企業書類検索・ダウンロードシステム
         </p>
+        <div class="badge bg-warning text-dark fs-6 px-3 py-2">
+            <i class="fas fa-rocket me-1"></i>新機能: ワンクリック包括分析
+        </div>
     </div>
 </div>
 
 <!-- 検索セクション -->
 <div class="row justify-content-center mb-5">
     <div class="col-lg-8">
-        <div class="card">
+        <div class="card shadow-sm">
             <div class="card-body p-4">
                 <h3 class="card-title text-center mb-4">
                     <i class="fas fa-search text-primary me-2"></i>企業検索
@@ -27,25 +30,102 @@
                 
                 <div class="position-relative">
                     <div class="input-group input-group-lg">
-                        <span class="input-group-text">
+                        <span class="input-group-text bg-light">
                             <i class="fas fa-building text-muted"></i>
                         </span>
                         <input type="text" 
                                class="form-control" 
                                id="companySearch" 
-                               placeholder="企業名または証券コードを入力（例: トヨタ、7203）"
-                               autocomplete="off">
-                        <button class="btn btn-primary" type="button" onclick="searchCompany()">
-                            <i class="fas fa-search me-1"></i>検索
+                               placeholder="企業名または証券コードを入力（例: トヨタ、ソニー、7203）"
+                               autocomplete="off"
+                               aria-describedby="searchHelp">
+                        <button class="btn btn-primary" type="button" onclick="performDirectSearch()" title="直接検索">
+                            <i class="fas fa-search"></i>
                         </button>
                     </div>
                     
-                    <!-- 検索候補 -->
-                    <div class="position-absolute w-100" style="z-index: 1000; top: 100%;">
-                        <div id="searchSuggestions" style="display: none;">
-                            <div class="bg-white border rounded shadow mt-1">
-                                <div id="suggestionsList"></div>
+                    <!-- 検索候補ドロップダウン -->
+                    <div class="position-absolute w-100" style="z-index: 1050; top: 100%;">
+                        <div id="searchSuggestions" class="dropdown-menu w-100 shadow-lg" style="display: none; max-height: 400px; overflow-y: auto;">
+                            <div id="suggestionsList">
+                                <!-- 動的に生成される候補リスト -->
                             </div>
+                            <div id="searchStatus" class="px-3 py-2 text-muted small" style="display: none;">
+                                <i class="fas fa-spinner fa-spin me-1"></i>検索中...
+                            </div>
+                            <div id="noResults" class="px-3 py-2 text-muted text-center" style="display: none;">
+                                <i class="fas fa-search me-1"></i>該当する企業が見つかりませんでした
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-8">
+                        <small id="searchHelp" class="text-muted">
+                            <i class="fas fa-lightbulb me-1"></i>
+                            <strong>検索のコツ:</strong> 企業名の一部（「トヨタ」「ソニー」）、証券コード（「7203」）、EDINETコード（「E02144」）で検索できます
+                        </small>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <small class="text-muted">
+                            <i class="fas fa-keyboard me-1"></i>
+                            <kbd>↑</kbd><kbd>↓</kbd>で選択、<kbd>Enter</kbd>で決定
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- フロー改善の説明 -->
+<div class="row justify-content-center mb-5">
+    <div class="col-lg-10">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h4 class="text-center mb-4">
+                    <i class="fas fa-route text-success me-2"></i>簡単4ステップで分析実行
+                </h4>
+                <div class="row text-center">
+                    <div class="col-md-3 mb-3">
+                        <div class="p-3">
+                            <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 
+                                 style="width: 50px; height: 50px;">
+                                <span class="fw-bold">1</span>
+                            </div>
+                            <h6>企業検索</h6>
+                            <small class="text-muted">企業名または証券コードで検索</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="p-3">
+                            <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 
+                                 style="width: 50px; height: 50px;">
+                                <span class="fw-bold">2</span>
+                            </div>
+                            <h6>企業選択</h6>
+                            <small class="text-muted">企業詳細ページへ移動</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="p-3">
+                            <div class="bg-warning text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 
+                                 style="width: 50px; height: 50px;">
+                                <span class="fw-bold">3</span>
+                            </div>
+                            <h6>分析実行</h6>
+                            <small class="text-muted">ワンクリックまたは書類選択</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="p-3">
+                            <div class="bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 
+                                 style="width: 50px; height: 50px;">
+                                <span class="fw-bold">4</span>
+                            </div>
+                            <h6>結果確認</h6>
+                            <small class="text-muted">詳細分析結果を確認</small>
                         </div>
                     </div>
                 </div>
@@ -114,108 +194,320 @@
             </div>
         </div>
     </div>
+    
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-rocket text-warning me-2"></i>NEW: ワンクリック分析
+                </h5>
+                <p class="card-text">企業の最新決算書類を自動選択して包括分析</p>
+                <div class="small text-muted">
+                    <i class="fas fa-check me-1"></i>財務分析 + 感情分析を一括実行
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+// 検索関連のグローバル変数
 let searchTimeout;
+let currentSuggestions = [];
+let selectedIndex = -1;
+let isSearching = false;
 
-document.getElementById('companySearch').addEventListener('input', function() {
-    const query = this.value.trim();
+// DOM要素の取得
+const searchInput = document.getElementById('companySearch');
+const suggestionsContainer = document.getElementById('searchSuggestions');
+const suggestionsList = document.getElementById('suggestionsList');
+const searchStatus = document.getElementById('searchStatus');
+const noResults = document.getElementById('noResults');
+
+// 初期化
+document.addEventListener('DOMContentLoaded', function() {
+    setupSearchHandlers();
+});
+
+function setupSearchHandlers() {
+    // 入力イベント
+    searchInput.addEventListener('input', handleSearchInput);
+    
+    // キーボードナビゲーション
+    searchInput.addEventListener('keydown', handleKeyNavigation);
+    
+    // フォーカス外し
+    document.addEventListener('click', handleOutsideClick);
+    
+    // フォーカス時の候補再表示
+    searchInput.addEventListener('focus', function() {
+        if (currentSuggestions.length > 0) {
+            showSuggestions();
+        }
+    });
+}
+
+function handleSearchInput(event) {
+    const query = event.target.value.trim();
     
     clearTimeout(searchTimeout);
     
-    if (query.length < 2) {
-        hideSearchSuggestions();
+    if (query.length < 1) {
+        hideSuggestions();
         return;
     }
     
+    // デバウンス処理
     searchTimeout = setTimeout(() => {
         fetchCompanySuggestions(query);
-    }, 300);
-});
-
-function fetchCompanySuggestions(query) {
-    const url = `{% url 'earnings_analysis:company-search-api' %}?q=${encodeURIComponent(query)}`;
-    
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            displaySuggestions(data.results || []);
-        })
-        .catch(error => {
-            console.error('検索エラー:', error);
-            hideSearchSuggestions();
-        });
+    }, 200); // 200msに短縮してレスポンス向上
 }
 
-function displaySuggestions(companies) {
-    const suggestionsList = document.getElementById('suggestionsList');
-    const suggestionsContainer = document.getElementById('searchSuggestions');
+function handleKeyNavigation(event) {
+    if (!suggestionsContainer.style.display || suggestionsContainer.style.display === 'none') {
+        return;
+    }
     
+    switch (event.key) {
+        case 'ArrowDown':
+            event.preventDefault();
+            navigateDown();
+            break;
+        case 'ArrowUp':
+            event.preventDefault();
+            navigateUp();
+            break;
+        case 'Enter':
+            event.preventDefault();
+            selectCurrent();
+            break;
+        case 'Escape':
+            hideSuggestions();
+            searchInput.blur();
+            break;
+    }
+}
+
+function navigateDown() {
+    if (selectedIndex < currentSuggestions.length - 1) {
+        selectedIndex++;
+        updateSelectedItem();
+    }
+}
+
+function navigateUp() {
+    if (selectedIndex > 0) {
+        selectedIndex--;
+        updateSelectedItem();
+    } else if (selectedIndex === 0) {
+        selectedIndex = -1;
+        updateSelectedItem();
+    }
+}
+
+function updateSelectedItem() {
+    const items = suggestionsList.querySelectorAll('.suggestion-item');
+    
+    items.forEach((item, index) => {
+        if (index === selectedIndex) {
+            item.classList.add('active');
+            item.scrollIntoView({ block: 'nearest' });
+        } else {
+            item.classList.remove('active');
+        }
+    });
+    
+    // 入力フィールドの値を更新
+    if (selectedIndex >= 0) {
+        searchInput.value = currentSuggestions[selectedIndex].company_name;
+    }
+}
+
+function selectCurrent() {
+    if (selectedIndex >= 0 && selectedIndex < currentSuggestions.length) {
+        selectCompany(currentSuggestions[selectedIndex]);
+    } else {
+        performDirectSearch();
+    }
+}
+
+function handleOutsideClick(event) {
+    if (!event.target.closest('.position-relative')) {
+        hideSuggestions();
+    }
+}
+
+async function fetchCompanySuggestions(query) {
+    if (isSearching) return;
+    
+    isSearching = true;
+    showSearchStatus();
+    
+    try {
+        const url = `{% url 'earnings_analysis:company-search-api' %}?q=${encodeURIComponent(query)}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        currentSuggestions = data.results || [];
+        selectedIndex = -1;
+        
+        displaySuggestions(currentSuggestions, query);
+        
+    } catch (error) {
+        console.error('検索エラー:', error);
+        showNoResults();
+    } finally {
+        isSearching = false;
+        hideSearchStatus();
+    }
+}
+
+function displaySuggestions(companies, query) {
     if (companies.length === 0) {
-        hideSearchSuggestions();
+        showNoResults();
         return;
     }
     
     suggestionsList.innerHTML = '';
     
-    companies.forEach(company => {
-        const item = document.createElement('div');
-        item.className = 'p-3 border-bottom';
-        item.style.cursor = 'pointer';
-        item.innerHTML = `
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="fw-semibold">${escapeHtml(company.company_name)}</div>
-                    <small class="text-muted">
-                        ${company.securities_code ? `証券コード: ${company.securities_code}` : ''}
-                        ${company.securities_code && company.edinet_code ? ' | ' : ''}
-                        EDINETコード: ${company.edinet_code}
-                    </small>
-                </div>
-                <small class="badge bg-primary rounded-pill">${company.document_count}件</small>
-            </div>
-        `;
-        
-        item.addEventListener('click', () => {
-            selectCompany(company);
-        });
-        
-        item.addEventListener('mouseenter', () => {
-            item.style.backgroundColor = '#f8f9fa';
-        });
-        
-        item.addEventListener('mouseleave', () => {
-            item.style.backgroundColor = '';
-        });
-        
+    companies.forEach((company, index) => {
+        const item = createSuggestionItem(company, index, query);
         suggestionsList.appendChild(item);
     });
     
-    suggestionsContainer.style.display = 'block';
+    showSuggestions();
 }
 
-function hideSearchSuggestions() {
-    document.getElementById('searchSuggestions').style.display = 'none';
+function createSuggestionItem(company, index, query) {
+    const item = document.createElement('div');
+    item.className = 'suggestion-item dropdown-item d-flex justify-content-between align-items-center p-3 border-bottom';
+    item.style.cursor = 'pointer';
+    
+    // マッチタイプに応じたバッジ
+    const matchBadge = getMatchTypeBadge(company.match_type);
+    
+    // 分析準備状況
+    const analysisStatus = company.has_analysis_ready ? 
+        '<span class="badge bg-success ms-2">分析可能</span>' : 
+        '<span class="badge bg-secondary ms-2">書類のみ</span>';
+    
+    // 最新決算情報
+    let latestInfo = '';
+    if (company.latest_financial_date) {
+        const date = new Date(company.latest_financial_date);
+        latestInfo = `
+            <div class="small text-success mt-1">
+                <i class="fas fa-chart-line me-1"></i>
+                最新: ${company.latest_financial_type} (${date.getFullYear()}/${date.getMonth()+1}/${date.getDate()})
+            </div>
+        `;
+    }
+    
+    item.innerHTML = `
+        <div class="flex-grow-1">
+            <div class="fw-semibold">
+                ${highlightMatch(company.company_name, query)}
+                ${matchBadge}
+                ${analysisStatus}
+            </div>
+            <div class="small text-muted">
+                ${company.securities_code ? `証券コード: <strong>${company.securities_code}</strong>` : ''}
+                ${company.securities_code && company.edinet_code ? ' | ' : ''}
+                EDINETコード: ${company.edinet_code}
+            </div>
+            ${latestInfo}
+        </div>
+        <div class="text-end ms-3">
+            <div class="badge bg-primary rounded-pill mb-1">${company.document_count}件</div>
+            ${company.financial_count > 0 ? 
+                `<div class="small text-success">
+                    <i class="fas fa-rocket me-1"></i>決算${company.financial_count}件
+                 </div>` : ''}
+        </div>
+    `;
+    
+    // イベントハンドラ
+    item.addEventListener('click', () => selectCompany(company));
+    item.addEventListener('mouseenter', () => {
+        selectedIndex = index;
+        updateSelectedItem();
+    });
+    
+    return item;
+}
+
+function getMatchTypeBadge(matchType) {
+    const badges = {
+        'securities_exact': '<span class="badge bg-warning">証券コード</span>',
+        'name_prefix': '<span class="badge bg-info">前方一致</span>',
+        'securities_prefix': '<span class="badge bg-warning">証券コード</span>',
+        'name_partial': '<span class="badge bg-secondary">部分一致</span>',
+        'other': ''
+    };
+    return badges[matchType] || '';
+}
+
+function highlightMatch(text, query) {
+    if (!query) return escapeHtml(text);
+    
+    const escapedText = escapeHtml(text);
+    const escapedQuery = escapeHtml(query);
+    
+    const regex = new RegExp(`(${escapedQuery})`, 'gi');
+    return escapedText.replace(regex, '<mark class="bg-warning">$1</mark>');
 }
 
 function selectCompany(company) {
-    document.getElementById('companySearch').value = company.company_name;
-    hideSearchSuggestions();
+    searchInput.value = company.company_name;
+    hideSuggestions();
     
-    // 書類一覧ページに遷移
-    const url = `{% url 'earnings_analysis:document-list-ui' %}?company=${encodeURIComponent(company.company_name)}`;
+    // 企業詳細ページに遷移
+    const url = `{% url 'earnings_analysis:company-detail-ui' 'EDINET_CODE' %}`.replace('EDINET_CODE', company.edinet_code);
     window.location.href = url;
 }
 
-function searchCompany() {
-    const query = document.getElementById('companySearch').value.trim();
+function performDirectSearch() {
+    const query = searchInput.value.trim();
     if (query) {
+        // 直接検索の場合は書類一覧ページへ（フォールバック）
         const url = `{% url 'earnings_analysis:document-list-ui' %}?company=${encodeURIComponent(query)}`;
         window.location.href = url;
     }
+}
+
+function showSuggestions() {
+    suggestionsContainer.style.display = 'block';
+    suggestionsContainer.classList.add('show');
+    hideSearchStatus();
+    hideNoResults();
+}
+
+function hideSuggestions() {
+    suggestionsContainer.style.display = 'none';
+    suggestionsContainer.classList.remove('show');
+    selectedIndex = -1;
+}
+
+function showSearchStatus() {
+    hideNoResults();
+    searchStatus.style.display = 'block';
+    suggestionsContainer.style.display = 'block';
+}
+
+function hideSearchStatus() {
+    searchStatus.style.display = 'none';
+}
+
+function showNoResults() {
+    hideSearchStatus();
+    noResults.style.display = 'block';
+    suggestionsContainer.style.display = 'block';
+}
+
+function hideNoResults() {
+    noResults.style.display = 'none';
 }
 
 function escapeHtml(text) {
@@ -224,18 +516,68 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Enterキーでの検索
-document.getElementById('companySearch').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        searchCompany();
-    }
-});
-
-// クリック外しで候補を隠す
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('.position-relative')) {
-        hideSearchSuggestions();
+// エンターキーでの検索（レガシー対応）
+searchInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && selectedIndex === -1) {
+        performDirectSearch();
     }
 });
 </script>
+
+<style>
+/* 検索候補のスタイル */
+.suggestion-item {
+    transition: background-color 0.2s ease;
+}
+
+.suggestion-item:hover,
+.suggestion-item.active {
+    background-color: #f8f9fa !important;
+}
+
+.suggestion-item.active {
+    background-color: #e3f2fd !important;
+}
+
+.dropdown-menu {
+    border: 1px solid #dee2e6;
+    border-top: none;
+    border-radius: 0 0 0.375rem 0.375rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+mark {
+    padding: 0.1em 0.2em;
+    border-radius: 0.2em;
+}
+
+@media (max-width: 768px) {
+    .suggestion-item {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    
+    .suggestion-item .text-end {
+        align-self: flex-end;
+        margin-top: 0.5rem;
+        margin-left: 0 !important;
+    }
+}
+
+/* 検索ボックスのフォーカス時のスタイル */
+#companySearch:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    border-color: #80bdff;
+}
+
+/* キーボードナビゲーション用のヘルプ */
+kbd {
+    background-color: #e9ecef;
+    border: 1px solid #adb5bd;
+    border-radius: 0.2rem;
+    color: #495057;
+    font-size: 0.75em;
+    padding: 0.2rem 0.4rem;
+}
+</style>
 {% endblock %}

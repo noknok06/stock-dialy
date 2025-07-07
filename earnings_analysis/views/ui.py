@@ -1,4 +1,4 @@
-# earnings_analysis/views/ui.py（統計削除版）
+# earnings_analysis/views/ui.py（CompanyDetailView追加版）
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -45,6 +45,94 @@ class IndexView(TemplateView):
                 'total_documents': 0,
                 'recent_documents_count': 0,
             })
+        
+        return context
+
+
+class CompanyDetailView(TemplateView):
+    """企業詳細ページ（新規実装）"""
+    template_name = 'earnings_analysis/company_detail.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        edinet_code = kwargs.get('edinet_code')
+        
+        # 企業情報取得
+        company = get_object_or_404(
+            Company,
+            edinet_code=edinet_code,
+            is_active=True
+        )
+        
+        # 分析適合書類と その他書類を分けて取得
+        documents_data = DocumentMetadata.get_documents_by_company(
+            edinet_code=edinet_code, 
+            analysis_suitable_first=True
+        )
+        
+        suitable_documents = documents_data['suitable'][:10]  # 上位10件
+        other_documents = documents_data['others'][:20]  # 上位20件
+        
+        # 最新の決算関連書類（ワンクリック分析用）
+        latest_financial = DocumentMetadata.get_latest_financial_document(edinet_code)
+        
+        # 分析推奨書類（上位3件）
+        recommended_docs = DocumentMetadata.get_recommended_for_analysis(edinet_code, limit=3)
+        
+        # 企業の統計情報
+        try:
+            total_documents = DocumentMetadata.objects.filter(
+                edinet_code=edinet_code,
+                legal_status='1'
+            ).count()
+            
+            # 書類種別統計
+            doc_type_stats = DocumentMetadata.objects.filter(
+                edinet_code=edinet_code,
+                legal_status='1'
+            ).values('doc_type_code').annotate(
+                count=Count('id')
+            ).order_by('-count')[:5]
+            
+            # 最新書類日付
+            latest_doc = DocumentMetadata.objects.filter(
+                edinet_code=edinet_code,
+                legal_status='1'
+            ).order_by('-submit_date_time').first()
+            
+            # 分析履歴の確認
+            has_recent_analysis = False
+            if latest_financial:
+                has_recent_analysis = latest_financial.has_recent_analysis(hours=1)
+            
+        except Exception as e:
+            logger.error(f"企業統計取得エラー: {e}")
+            total_documents = 0
+            doc_type_stats = []
+            latest_doc = None
+            has_recent_analysis = False
+        
+        # 関連企業（同じ証券コードまたは類似企業名）
+        related_companies = []
+        if company.securities_code:
+            related_companies = Company.objects.filter(
+                securities_code=company.securities_code,
+                is_active=True
+            ).exclude(edinet_code=edinet_code)[:3]
+        
+        context.update({
+            'company': company,
+            'suitable_documents': suitable_documents,
+            'other_documents': other_documents,
+            'latest_financial': latest_financial,
+            'recommended_docs': recommended_docs,
+            'total_documents': total_documents,
+            'doc_type_stats': doc_type_stats,
+            'latest_doc': latest_doc,
+            'has_recent_analysis': has_recent_analysis,
+            'related_companies': related_companies,
+            'show_other_documents': len(other_documents) > 0,
+        })
         
         return context
 
@@ -203,55 +291,164 @@ class DocumentDetailView(TemplateView):
 
 
 class CompanySearchAPIView(TemplateView):
-    """企業検索API（AJAX用）"""
+    """企業検索API（高精度部分一致対応版）"""
     
     def get(self, request, *args, **kwargs):
         query = request.GET.get('q', '').strip()
         
-        if len(query) < 2:
+        if len(query) < 1:  # 1文字から検索開始
             return JsonResponse({'results': []})
         
         try:
-            # より柔軟な企業検索
-            search_conditions = Q()
-            
-            # 企業名での検索
-            search_conditions |= Q(company_name__icontains=query)
-            
-            # 証券コードでの検索（改良版）
-            if query.isdigit():
-                if len(query) == 4:
-                    # 4桁: startswithを使用
-                    search_conditions |= Q(securities_code__startswith=query)
-                elif len(query) == 5:
-                    # 5桁: exact + 4桁での検索
-                    search_conditions |= Q(securities_code__exact=query)
-                    search_conditions |= Q(securities_code__startswith=query[:4])
-                else:
-                    search_conditions |= Q(securities_code__icontains=query)
-            
-            # EDINETコードでの検索
-            if len(query) == 6:
-                search_conditions |= Q(edinet_code__iexact=query)
-            
-            companies = Company.objects.filter(
-                search_conditions,
-                is_active=True
-            ).annotate(
-                document_count=Count('documentmetadata', filter=Q(documentmetadata__legal_status='1'))
-            ).order_by('-document_count', 'company_name')[:10]
+            # 高精度な企業検索ロジック
+            companies = self._search_companies_advanced(query)
             
             results = []
-            for company in companies:
-                results.append({
+            for company in companies[:15]:  # 最大15件
+                # 最新決算書類の情報
+                latest_financial = DocumentMetadata.get_latest_financial_document(company.edinet_code)
+                
+                result = {
                     'edinet_code': company.edinet_code,
                     'securities_code': company.securities_code or '',
                     'company_name': company.company_name,
+                    'company_name_kana': company.company_name_kana or '',
                     'document_count': company.document_count,
-                })
+                    'financial_count': company.financial_count,
+                    'has_analysis_ready': company.financial_count > 0,
+                    'latest_financial_date': None,
+                    'latest_financial_type': None,
+                    'match_type': self._get_match_type(query, company),
+                    'relevance_score': self._calculate_relevance_score(query, company)
+                }
+                
+                # 最新決算情報
+                if latest_financial:
+                    result.update({
+                        'latest_financial_date': latest_financial.submit_date_time.strftime('%Y-%m-%d'),
+                        'latest_financial_type': latest_financial.doc_type_display_name,
+                    })
+                
+                results.append(result)
             
-            return JsonResponse({'results': results})
+            # 関連度順でソート
+            results.sort(key=lambda x: x['relevance_score'], reverse=True)
+            
+            return JsonResponse({
+                'results': results,
+                'query': query,
+                'total_found': len(results)
+            })
             
         except Exception as e:
             logger.error(f"企業検索エラー: {e}")
             return JsonResponse({'results': [], 'error': str(e)})
+    
+    def _search_companies_advanced(self, query):
+        """高度な企業検索ロジック"""
+        search_conditions = Q()
+        
+        # 1. 企業名での検索（複数パターン）
+        # 前方一致（高優先度）
+        search_conditions |= Q(company_name__istartswith=query)
+        
+        # 部分一致（中優先度）
+        search_conditions |= Q(company_name__icontains=query)
+        
+        # カナ名での検索
+        if hasattr(Company._meta.get_field('company_name_kana'), 'null'):
+            search_conditions |= Q(company_name_kana__icontains=query)
+        
+        # 2. 証券コードでの多様な検索パターン
+        if query.isdigit():
+            # 完全一致（最高優先度）
+            search_conditions |= Q(securities_code__exact=query)
+            
+            # 前方一致
+            search_conditions |= Q(securities_code__startswith=query)
+            
+            # 4桁の場合は5桁目が0のパターンも検索
+            if len(query) == 4:
+                search_conditions |= Q(securities_code__exact=query + '0')
+            
+            # 5桁の場合は4桁パターンも検索
+            elif len(query) == 5 and query.endswith('0'):
+                search_conditions |= Q(securities_code__exact=query[:4])
+        
+        # 3. EDINETコードでの検索
+        if len(query) == 6 and query.upper().startswith('E'):
+            search_conditions |= Q(edinet_code__iexact=query)
+        elif query.upper().startswith('E'):
+            search_conditions |= Q(edinet_code__istartswith=query.upper())
+        
+        # 4. 英数字混合の場合
+        if not query.isdigit() and any(c.isdigit() for c in query):
+            search_conditions |= Q(securities_code__icontains=query)
+            search_conditions |= Q(edinet_code__icontains=query.upper())
+        
+        return Company.objects.filter(
+            search_conditions,
+            is_active=True
+        ).annotate(
+            document_count=Count('documentmetadata', filter=Q(documentmetadata__legal_status='1')),
+            financial_count=Count('documentmetadata', filter=Q(
+                documentmetadata__legal_status='1',
+                documentmetadata__doc_type_code__in=['120', '130', '140', '150', '160']
+            ))
+        ).distinct()
+    
+    def _get_match_type(self, query, company):
+        """マッチタイプの判定"""
+        query_lower = query.lower()
+        company_name_lower = company.company_name.lower()
+        
+        # 証券コード完全一致
+        if company.securities_code and company.securities_code == query:
+            return 'securities_exact'
+        
+        # 企業名前方一致
+        if company_name_lower.startswith(query_lower):
+            return 'name_prefix'
+        
+        # 証券コード前方一致
+        if company.securities_code and company.securities_code.startswith(query):
+            return 'securities_prefix'
+        
+        # 企業名部分一致
+        if query_lower in company_name_lower:
+            return 'name_partial'
+        
+        return 'other'
+    
+    def _calculate_relevance_score(self, query, company):
+        """関連度スコアの計算"""
+        score = 0
+        query_lower = query.lower()
+        company_name_lower = company.company_name.lower()
+        
+        # マッチタイプによるスコア
+        match_type = self._get_match_type(query, company)
+        match_scores = {
+            'securities_exact': 1000,
+            'name_prefix': 900,
+            'securities_prefix': 800,
+            'name_partial': 700,
+            'other': 500
+        }
+        score += match_scores.get(match_type, 0)
+        
+        # 決算書類の有無
+        score += company.financial_count * 10
+        
+        # 総書類数
+        score += company.document_count
+        
+        # 企業名の長さ（短いほど高スコア）
+        if query_lower in company_name_lower:
+            score += max(0, 100 - len(company.company_name))
+        
+        # 証券コードの有無
+        if company.securities_code:
+            score += 50
+        
+        return score

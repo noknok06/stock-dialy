@@ -10,6 +10,8 @@ urlpatterns = [
     # トップページ
     path('', ui.IndexView.as_view(), name='index'),
     
+    path('company/<str:edinet_code>/', ui.CompanyDetailView.as_view(), name='company-detail-ui'), 
+    
     # 企業検索API（AJAX用）
     path('companies/search/', ui.CompanySearchAPIView.as_view(), name='company-search-api'),
     
@@ -20,7 +22,7 @@ urlpatterns = [
     
     # ======== 感情分析機能 ========
     # 感情分析UI
-    path('documents/<str:doc_id>/sentiment/', sentiment_ui.SentimentAnalysisView.as_view(), name='sentiment-analysis'),
+    path('sentiment/<str:doc_id>/', sentiment_ui.SentimentAnalysisView.as_view(), name='sentiment-analysis'),
     path('sentiment/result/<str:session_id>/', sentiment_ui.SentimentResultView.as_view(), name='sentiment-result'),
     
     # 感情分析API
@@ -30,7 +32,7 @@ urlpatterns = [
     
     # ======== 財務分析機能 ========
     # 財務分析UI
-    path('documents/<str:doc_id>/financial/', financial_ui.FinancialAnalysisView.as_view(), name='financial-analysis'),
+    path('financial/<str:doc_id>/', financial_ui.FinancialAnalysisView.as_view(), name='financial-analysis'),
     path('financial/result/<str:session_id>/', financial_ui.FinancialResultView.as_view(), name='financial-result'),
     path('financial/data/', financial_ui.FinancialDataView.as_view(), name='financial-data-list'),
     path('financial/stats/', financial_ui.FinancialStatsView.as_view(), name='financial-stats'),
