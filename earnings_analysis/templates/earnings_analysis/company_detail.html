@@ -1,0 +1,323 @@
+<!-- earnings_analysis/templates/earnings_analysis/company_detail.html -->
+{% extends 'earnings_analysis/simple_base.html' %}
+
+{% block title %}{{ company.company_name }} - 企業詳細 - 決算書類管理システム{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'earnings_analysis:index' %}">ホーム</a></li>
+        <li class="breadcrumb-item active">{{ company.company_name }}</li>
+    </ol>
+</nav>
+
+<!-- 企業ヘッダー -->
+<div class="bg-primary text-white rounded p-4 mb-4">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="h2 mb-2">{{ company.company_name }}</h1>
+            {% if company.company_name_kana %}
+                <p class="h5 mb-3 opacity-90">{{ company.company_name_kana }}</p>
+            {% endif %}
+            <div class="d-flex flex-wrap gap-2">
+                {% if company.securities_code %}
+                    <span class="badge bg-warning text-dark fs-6">証券コード: {{ company.securities_code }}</span>
+                {% endif %}
+                <span class="badge bg-light text-dark">EDINETコード: {{ company.edinet_code }}</span>
+                <span class="badge bg-success">書類{{ total_documents }}件</span>
+            </div>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            {% if latest_doc %}
+                <div class="badge bg-light text-dark fs-6 px-3 py-2">
+                    <i class="fas fa-calendar me-1"></i>最新: {{ latest_doc.submit_date_time|date:"Y/m/d" }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- メインコンテンツ -->
+    <div class="col-lg-8">
+        <!-- ワンクリック分析セクション -->
+        {% if latest_financial %}
+            <div class="card mb-4">
+                <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white;">
+                    <h5 class="mb-0">
+                        <i class="fas fa-rocket me-2"></i>ワンクリック包括分析
+                        <span class="badge bg-light text-dark ms-2">NEW</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h6>最新決算書類の自動分析</h6>
+                            <p class="text-muted mb-2">
+                                <strong>対象書類:</strong> {{ latest_financial.doc_description|truncatechars:80 }}<br>
+                                <strong>提出日:</strong> {{ latest_financial.submit_date_time|date:"Y年m月d日" }}
+                            </p>
+                            <div class="small text-success">
+                                <i class="fas fa-check-circle me-1"></i>財務分析 + 感情分析を自動実行
+                                <span class="ms-3">
+                                    <i class="fas fa-clock me-1"></i>約3-5分で完了
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                            <a href="{% url 'earnings_analysis:sentiment-analysis' latest_financial.doc_id %}" 
+                               class="btn btn-danger btn-lg mb-2">
+                                <i class="fas fa-rocket me-2"></i>今すぐ分析開始
+                            </a>
+                            {% if has_recent_analysis %}
+                                <div class="small text-success">
+                                    <i class="fas fa-check me-1"></i>1時間以内に分析済み
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        
+        <!-- 推奨書類セクション -->
+        {% if recommended_docs %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-star text-warning me-2"></i>分析推奨書類
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for doc in recommended_docs %}
+                        <div class="border rounded p-3 mb-3">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <h6 class="mb-1">
+                                        <a href="{% url 'earnings_analysis:document-detail-ui' doc.doc_id %}" 
+                                           class="text-decoration-none">
+                                            {{ doc.doc_description|truncatechars:60 }}
+                                        </a>
+                                    </h6>
+                                    <div class="small text-muted mb-2">
+                                        <i class="fas fa-calendar me-1"></i>{{ doc.submit_date_time|date:"Y/m/d" }}
+                                        {% if doc.period_start and doc.period_end %}
+                                            <span class="ms-3">
+                                                <i class="fas fa-clock me-1"></i>
+                                                {{ doc.period_start|date:"Y/m" }} 〜 {{ doc.period_end|date:"Y/m" }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="small">
+                                        {% if doc.xbrl_flag %}
+                                            <span class="badge bg-primary me-1">XBRL</span>
+                                        {% endif %}
+                                        {% if doc.pdf_flag %}
+                                            <span class="badge bg-danger me-1">PDF</span>
+                                        {% endif %}
+                                        <span class="badge bg-success">分析最適</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-md-end">
+                                    <div class="btn-group-vertical d-grid gap-1">
+                                        <a href="{% url 'earnings_analysis:financial-analysis' doc.doc_id %}" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-chart-pie me-1"></i>財務分析
+                                        </a>
+                                        <a href="{% url 'earnings_analysis:sentiment-analysis' doc.doc_id %}" 
+                                           class="btn btn-outline-success btn-sm">
+                                            <i class="fas fa-brain me-1"></i>感情分析
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- 決算・財務関連書類 -->
+        {% if suitable_documents %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line text-primary me-2"></i>決算・財務関連書類
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for doc in suitable_documents %}
+                        <div class="border-bottom py-2">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <div class="fw-semibold">
+                                        <a href="{% url 'earnings_analysis:document-detail-ui' doc.doc_id %}" 
+                                           class="text-decoration-none">
+                                            {{ doc.doc_description|truncatechars:50 }}
+                                        </a>
+                                    </div>
+                                    <div class="small text-muted">
+                                        {{ doc.submit_date_time|date:"Y/m/d" }}
+                                        {% if doc.xbrl_flag %}<span class="badge bg-primary ms-2">XBRL</span>{% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-md-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'earnings_analysis:financial-analysis' doc.doc_id %}" 
+                                           class="btn btn-outline-primary">
+                                            <i class="fas fa-chart-pie"></i>
+                                        </a>
+                                        <a href="{% url 'earnings_analysis:sentiment-analysis' doc.doc_id %}" 
+                                           class="btn btn-outline-success">
+                                            <i class="fas fa-brain"></i>
+                                        </a>
+                                        <a href="{% url 'earnings_analysis:document-detail-ui' doc.doc_id %}" 
+                                           class="btn btn-outline-secondary">
+                                            <i class="fas fa-info"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    
+                    {% if show_other_documents %}
+                        <div class="text-center mt-3">
+                            <button class="btn btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#otherDocuments">
+                                <i class="fas fa-plus me-1"></i>その他の書類を表示
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- その他の書類（折りたたみ） -->
+        {% if show_other_documents %}
+            <div class="collapse" id="otherDocuments">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-file-alt text-secondary me-2"></i>その他の書類
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% for doc in other_documents %}
+                            <div class="border-bottom py-2">
+                                <div class="row align-items-center">
+                                    <div class="col-md-10">
+                                        <div class="fw-semibold">
+                                            <a href="{% url 'earnings_analysis:document-detail-ui' doc.doc_id %}" 
+                                               class="text-decoration-none">
+                                                {{ doc.doc_description|truncatechars:60 }}
+                                            </a>
+                                        </div>
+                                        <div class="small text-muted">
+                                            {{ doc.submit_date_time|date:"Y/m/d" }}
+                                            <span class="ms-2">{{ doc.doc_type_code }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2 text-end">
+                                        <a href="{% url 'earnings_analysis:document-detail-ui' doc.doc_id %}" 
+                                           class="btn btn-outline-secondary btn-sm">
+                                            詳細
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- サイドバー -->
+    <div class="col-lg-4">
+        <!-- 企業統計 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>企業統計
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="h4 text-primary">{{ total_documents }}</div>
+                        <div class="small text-muted">総書類数</div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="h4 text-success">{{ doc_type_stats|length }}</div>
+                        <div class="small text-muted">書類種別数</div>
+                    </div>
+                </div>
+                
+                {% if doc_type_stats %}
+                    <h6 class="mt-3 mb-2">書類種別TOP5</h6>
+                    {% for stat in doc_type_stats %}
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small">{{ stat.doc_type_code }}</span>
+                            <span class="badge bg-primary">{{ stat.count }}件</span>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 関連企業 -->
+        {% if related_companies %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-link me-2"></i>関連企業
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for related in related_companies %}
+                        <div class="border-bottom py-2">
+                            <div class="fw-semibold">
+                                <a href="{% url 'earnings_analysis:company-detail-ui' related.edinet_code %}" 
+                                   class="text-decoration-none">
+                                    {{ related.company_name }}
+                                </a>
+                            </div>
+                            {% if related.securities_code %}
+                                <div class="small text-muted">証券コード: {{ related.securities_code }}</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- アクション -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>アクション
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if latest_financial %}
+                        <a href="{% url 'earnings_analysis:financial-analysis' latest_financial.doc_id %}" 
+                           class="btn btn-danger">
+                            <i class="fas fa-rocket me-1"></i>ワンクリック分析
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'earnings_analysis:document-list-ui' %}?company={{ company.company_name }}" 
+                       class="btn btn-outline-primary">
+                        <i class="fas fa-list me-1"></i>全書類を表示
+                    </a>
+                    <a href="{% url 'earnings_analysis:index' %}" 
+                       class="btn btn-outline-secondary">
+                        <i class="fas fa-search me-1"></i>他の企業を検索
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
