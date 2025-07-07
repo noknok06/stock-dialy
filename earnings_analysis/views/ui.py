@@ -290,32 +290,44 @@ class DocumentDetailView(TemplateView):
         return context
 
 
+# earnings_analysis/views/ui.py の CompanySearchAPIView部分を修正
+
 class CompanySearchAPIView(TemplateView):
-    """企業検索API（高精度部分一致対応版）"""
+    """企業検索API（修正版）"""
     
     def get(self, request, *args, **kwargs):
         query = request.GET.get('q', '').strip()
         
-        if len(query) < 1:  # 1文字から検索開始
+        if len(query) < 1:
             return JsonResponse({'results': []})
         
         try:
-            # 高精度な企業検索ロジック
-            companies = self._search_companies_advanced(query)
+            # 企業検索
+            companies = self._search_companies_with_stats(query)
             
             results = []
-            for company in companies[:15]:  # 最大15件
+            for company_data in companies[:15]:
+                company = company_data['company']
+                
                 # 最新決算書類の情報
-                latest_financial = DocumentMetadata.get_latest_financial_document(company.edinet_code)
+                latest_financial = None
+                try:
+                    latest_financial = DocumentMetadata.objects.filter(
+                        edinet_code=company.edinet_code,
+                        legal_status='1',
+                        doc_type_code__in=['120', '130', '140', '150', '160']
+                    ).order_by('-submit_date_time').first()
+                except Exception as e:
+                    logger.debug(f"最新決算書類取得エラー: {e}")
                 
                 result = {
                     'edinet_code': company.edinet_code,
                     'securities_code': company.securities_code or '',
                     'company_name': company.company_name,
                     'company_name_kana': company.company_name_kana or '',
-                    'document_count': company.document_count,
-                    'financial_count': company.financial_count,
-                    'has_analysis_ready': company.financial_count > 0,
+                    'document_count': company_data['document_count'],
+                    'financial_count': company_data['financial_count'],
+                    'has_analysis_ready': company_data['financial_count'] > 0,
                     'latest_financial_date': None,
                     'latest_financial_type': None,
                     'match_type': self._get_match_type(query, company),
@@ -326,7 +338,7 @@ class CompanySearchAPIView(TemplateView):
                 if latest_financial:
                     result.update({
                         'latest_financial_date': latest_financial.submit_date_time.strftime('%Y-%m-%d'),
-                        'latest_financial_type': latest_financial.doc_type_display_name,
+                        'latest_financial_type': latest_financial.doc_description[:30] + '...' if len(latest_financial.doc_description) > 30 else latest_financial.doc_description,
                     })
                 
                 results.append(result)
@@ -342,36 +354,31 @@ class CompanySearchAPIView(TemplateView):
             
         except Exception as e:
             logger.error(f"企業検索エラー: {e}")
-            return JsonResponse({'results': [], 'error': str(e)})
+            return JsonResponse({
+                'results': [], 
+                'error': str(e),
+                'query': query
+            })
     
-    def _search_companies_advanced(self, query):
-        """高度な企業検索ロジック"""
+    def _search_companies_with_stats(self, query):
+        """統計情報付きの企業検索"""
         search_conditions = Q()
         
-        # 1. 企業名での検索（複数パターン）
-        # 前方一致（高優先度）
+        # 1. 企業名での検索
         search_conditions |= Q(company_name__istartswith=query)
-        
-        # 部分一致（中優先度）
         search_conditions |= Q(company_name__icontains=query)
         
         # カナ名での検索
-        if hasattr(Company._meta.get_field('company_name_kana'), 'null'):
+        if query:
             search_conditions |= Q(company_name_kana__icontains=query)
         
-        # 2. 証券コードでの多様な検索パターン
+        # 2. 証券コードでの検索
         if query.isdigit():
-            # 完全一致（最高優先度）
             search_conditions |= Q(securities_code__exact=query)
-            
-            # 前方一致
             search_conditions |= Q(securities_code__startswith=query)
             
-            # 4桁の場合は5桁目が0のパターンも検索
             if len(query) == 4:
                 search_conditions |= Q(securities_code__exact=query + '0')
-            
-            # 5桁の場合は4桁パターンも検索
             elif len(query) == 5 and query.endswith('0'):
                 search_conditions |= Q(securities_code__exact=query[:4])
         
@@ -381,21 +388,44 @@ class CompanySearchAPIView(TemplateView):
         elif query.upper().startswith('E'):
             search_conditions |= Q(edinet_code__istartswith=query.upper())
         
-        # 4. 英数字混合の場合
-        if not query.isdigit() and any(c.isdigit() for c in query):
-            search_conditions |= Q(securities_code__icontains=query)
-            search_conditions |= Q(edinet_code__icontains=query.upper())
-        
-        return Company.objects.filter(
+        # 企業を取得
+        companies = Company.objects.filter(
             search_conditions,
             is_active=True
-        ).annotate(
-            document_count=Count('documentmetadata', filter=Q(documentmetadata__legal_status='1')),
-            financial_count=Count('documentmetadata', filter=Q(
-                documentmetadata__legal_status='1',
-                documentmetadata__doc_type_code__in=['120', '130', '140', '150', '160']
-            ))
         ).distinct()
+        
+        # 各企業の統計を取得
+        results = []
+        for company in companies:
+            try:
+                # 書類数の計算
+                total_docs = DocumentMetadata.objects.filter(
+                    edinet_code=company.edinet_code,
+                    legal_status='1'
+                ).count()
+                
+                # 決算書類数の計算
+                financial_docs = DocumentMetadata.objects.filter(
+                    edinet_code=company.edinet_code,
+                    legal_status='1',
+                    doc_type_code__in=['120', '130', '140', '150', '160']
+                ).count()
+                
+                results.append({
+                    'company': company,
+                    'document_count': total_docs,
+                    'financial_count': financial_docs
+                })
+                
+            except Exception as e:
+                logger.debug(f"企業統計取得エラー ({company.edinet_code}): {e}")
+                results.append({
+                    'company': company,
+                    'document_count': 0,
+                    'financial_count': 0
+                })
+        
+        return results
     
     def _get_match_type(self, query, company):
         """マッチタイプの判定"""
@@ -436,12 +466,6 @@ class CompanySearchAPIView(TemplateView):
             'other': 500
         }
         score += match_scores.get(match_type, 0)
-        
-        # 決算書類の有無
-        score += company.financial_count * 10
-        
-        # 総書類数
-        score += company.document_count
         
         # 企業名の長さ（短いほど高スコア）
         if query_lower in company_name_lower:

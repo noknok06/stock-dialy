@@ -461,13 +461,13 @@
                                 </div>
                             </div>
                         </div>
-                        
+<!--                         
                         <div class="detailed-breakdown">
                             <h6 class="mb-3">
                                 <i class="fas fa-chart-bar me-2"></i>スコア分布の詳細
                             </h6>
                             
-                            <!-- スコア分布の要約 -->
+
                             <div class="row mb-3">
                                 <div class="col-lg-6 mb-3">
                                     <div class="p-3 bg-success bg-opacity-10 rounded">
@@ -476,7 +476,6 @@
                                         </h6>
                                         <div id="positiveScoreDistribution"></div>
                                         
-                                        <!-- 代表的なスコア値（最初の5個） -->
                                         <div class="mt-2">
                                             <small class="text-muted">代表値:</small>
                                             <div id="positiveScorePreview" class="mt-1"></div>
@@ -491,7 +490,6 @@
                                         </h6>
                                         <div id="negativeScoreDistribution"></div>
                                         
-                                        <!-- 代表的なスコア値（最初の5個） -->
                                         <div class="mt-2">
                                             <small class="text-muted">代表値:</small>
                                             <div id="negativeScorePreview" class="mt-1"></div>
@@ -500,7 +498,6 @@
                                 </div>
                             </div>
                             
-                            <!-- 詳細表示ボタン（スマホ対応） -->
                             {% if calc.positive_scores|length > 10 or calc.negative_scores|length > 10 %}
                                 <div class="text-center mb-3">
                                     <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#scoreDetails" aria-expanded="false" aria-controls="scoreDetails">
@@ -541,7 +538,6 @@
                                     </div>
                                 </div>
                             {% else %}
-                                <!-- スコア数が少ない場合は直接表示 -->
                                 <div class="row">
                                     {% if calc.positive_scores %}
                                         <div class="col-md-6 mb-3">
@@ -570,7 +566,6 @@
                                 </div>
                             {% endif %}
                             
-                            <!-- 計算式（モバイルフレンドリー） -->
                             <div class="mt-3 p-3 bg-white rounded border">
                                 <h6 class="mb-2">
                                     <i class="fas fa-calculator me-1"></i>最終スコア計算
@@ -604,7 +599,7 @@
                                     {% endif %}
                                 </div>
                             </div>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
             {% endwith %}
@@ -731,7 +726,7 @@
         {% endif %}
 
         <!-- キーワード出現頻度の視覚化セクション（新規追加） -->
-        {% if session.analysis_result.keyword_frequency_data %}
+        <!-- {% if session.analysis_result.keyword_frequency_data %}
             <div class="result-card card">
                 <div class="card-header">
                     <h5 class="mb-0">
@@ -742,7 +737,7 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <!-- タブ切り替え -->
+
                     <ul class="nav nav-tabs mb-3" id="visualizationTabs" role="tablist">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active" id="bubble-tab" data-bs-toggle="tab" data-bs-target="#bubble-chart" type="button" role="tab">
@@ -762,7 +757,6 @@
                     </ul>
 
                     <div class="tab-content" id="visualizationTabContent">
-                        <!-- バブルチャート -->
                         <div class="tab-pane fade show active" id="bubble-chart" role="tabpanel">
                             <div class="row">
                                 {% if session.analysis_result.keyword_frequency_data.positive %}
@@ -795,7 +789,6 @@
                             {% endif %}
                         </div>
 
-                        <!-- ワードクラウド風表示 -->
                         <div class="tab-pane fade" id="word-cloud" role="tabpanel">
                             <div class="row">
                                 {% if session.analysis_result.keyword_frequency_data.positive %}
@@ -804,7 +797,6 @@
                                             <i class="fas fa-smile me-2"></i>ポジティブキーワード
                                         </h6>
                                         <div class="word-cloud-container positive-cloud" id="positiveWordCloud">
-                                            <!-- JavaScriptで動的に生成 -->
                                         </div>
                                     </div>
                                 {% endif %}
@@ -814,14 +806,12 @@
                                             <i class="fas fa-frown me-2"></i>ネガティブキーワード
                                         </h6>
                                         <div class="word-cloud-container negative-cloud" id="negativeWordCloud">
-                                            <!-- JavaScriptで動的に生成 -->
                                         </div>
                                     </div>
                                 {% endif %}
                             </div>
                         </div>
 
-                        <!-- ランキング表示 -->
                         <div class="tab-pane fade" id="ranking-list" role="tabpanel">
                             <div class="row">
                                 {% if session.analysis_result.keyword_frequency_data.positive %}
@@ -830,7 +820,6 @@
                                             <i class="fas fa-trophy me-2"></i>ポジティブキーワード TOP10
                                         </h6>
                                         <div id="positiveRanking" class="keyword-ranking">
-                                            <!-- JavaScriptで動的に生成 -->
                                         </div>
                                     </div>
                                 {% endif %}
@@ -840,15 +829,12 @@
                                             <i class="fas fa-trophy me-2"></i>ネガティブキーワード TOP10
                                         </h6>
                                         <div id="negativeRanking" class="keyword-ranking">
-                                            <!-- JavaScriptで動的に生成 -->
                                         </div>
                                     </div>
                                 {% endif %}
                             </div>
                         </div>
                     </div>
-
-                    <!-- 統計サマリー -->
                     <div class="mt-4 p-3 bg-light rounded">
                         <div class="row text-center">
                             <div class="col-md-3">
@@ -878,7 +864,6 @@
                         </div>
                     </div>
 
-                    <!-- 詳細情報パネル -->
                     <div id="keywordDetailPanel" class="mt-3" style="display: none;">
                         <div class="alert alert-info">
                             <h6 class="alert-heading">
@@ -889,7 +874,7 @@
                     </div>
                 </div>
             </div>
-        {% endif %}
+        {% endif %} -->
         <!-- ユーザー向け見解・提案 -->
         <div class="result-card card">
             <div class="card-header">

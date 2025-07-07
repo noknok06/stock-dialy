@@ -219,6 +219,16 @@ let currentSuggestions = [];
 let selectedIndex = -1;
 let isSearching = false;
 
+// デバッグモード（本番環境では false に設定）
+const DEBUG_MODE = true;
+
+// ログ出力関数
+function debugLog(message, data = null) {
+    if (DEBUG_MODE) {
+        console.log('[企業検索]', message, data || '');
+    }
+}
+
 // DOM要素の取得
 const searchInput = document.getElementById('companySearch');
 const suggestionsContainer = document.getElementById('searchSuggestions');
@@ -228,10 +238,35 @@ const noResults = document.getElementById('noResults');
 
 // 初期化
 document.addEventListener('DOMContentLoaded', function() {
+    debugLog('企業検索機能を初期化中...');
     setupSearchHandlers();
+    
+    // 接続テスト
+    testApiConnection();
 });
 
+function testApiConnection() {
+    debugLog('API接続テスト中...');
+    fetch('/earnings_analysis/companies/search/?q=test')
+        .then(response => {
+            debugLog('API応答ステータス:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            debugLog('API接続テスト成功:', data);
+        })
+        .catch(error => {
+            debugLog('API接続テストエラー:', error);
+            console.error('企業検索API接続エラー:', error);
+        });
+}
+
 function setupSearchHandlers() {
+    if (!searchInput) {
+        debugLog('エラー: 検索入力フィールドが見つかりません');
+        return;
+    }
+    
     // 入力イベント
     searchInput.addEventListener('input', handleSearchInput);
     
@@ -247,10 +282,13 @@ function setupSearchHandlers() {
             showSuggestions();
         }
     });
+    
+    debugLog('検索ハンドラー設定完了');
 }
 
 function handleSearchInput(event) {
     const query = event.target.value.trim();
+    debugLog('検索入力:', query);
     
     clearTimeout(searchTimeout);
     
@@ -262,7 +300,7 @@ function handleSearchInput(event) {
     // デバウンス処理
     searchTimeout = setTimeout(() => {
         fetchCompanySuggestions(query);
-    }, 200); // 200msに短縮してレスポンス向上
+    }, 300);
 }
 
 function handleKeyNavigation(event) {
@@ -340,15 +378,32 @@ function handleOutsideClick(event) {
 }
 
 async function fetchCompanySuggestions(query) {
-    if (isSearching) return;
+    if (isSearching) {
+        debugLog('既に検索中のためスキップ');
+        return;
+    }
     
     isSearching = true;
     showSearchStatus();
+    debugLog('企業検索開始:', query);
     
     try {
-        const url = `{% url 'earnings_analysis:company-search-api' %}?q=${encodeURIComponent(query)}`;
+        const url = `/earnings_analysis/companies/search/?q=${encodeURIComponent(query)}`;
+        debugLog('検索URL:', url);
+        
         const response = await fetch(url);
+        debugLog('レスポンス受信:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         const data = await response.json();
+        debugLog('検索結果:', data);
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
         
         currentSuggestions = data.results || [];
         selectedIndex = -1;
@@ -356,8 +411,9 @@ async function fetchCompanySuggestions(query) {
         displaySuggestions(currentSuggestions, query);
         
     } catch (error) {
-        console.error('検索エラー:', error);
-        showNoResults();
+        debugLog('検索エラー:', error);
+        console.error('企業検索エラー:', error);
+        showError(error.message);
     } finally {
         isSearching = false;
         hideSearchStatus();
@@ -365,6 +421,8 @@ async function fetchCompanySuggestions(query) {
 }
 
 function displaySuggestions(companies, query) {
+    debugLog('候補表示:', companies.length + '件');
+    
     if (companies.length === 0) {
         showNoResults();
         return;
@@ -400,7 +458,7 @@ function createSuggestionItem(company, index, query) {
         latestInfo = `
             <div class="small text-success mt-1">
                 <i class="fas fa-chart-line me-1"></i>
-                最新: ${company.latest_financial_type} (${date.getFullYear()}/${date.getMonth()+1}/${date.getDate()})
+                最新: ${company.latest_financial_type} (${date.getFullYear()}/${String(date.getMonth()+1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')})
             </div>
         `;
     }
@@ -460,19 +518,32 @@ function highlightMatch(text, query) {
 }
 
 function selectCompany(company) {
+    debugLog('企業選択:', company);
     searchInput.value = company.company_name;
     hideSuggestions();
     
     // 企業詳細ページに遷移
-    const url = `{% url 'earnings_analysis:company-detail-ui' 'EDINET_CODE' %}`.replace('EDINET_CODE', company.edinet_code);
-    window.location.href = url;
+    const url = `/earnings_analysis/company/${company.edinet_code}/`;
+    debugLog('遷移URL:', url);
+    
+    // 遷移前にローディング表示
+    searchInput.value = `${company.company_name} - 読み込み中...`;
+    searchInput.disabled = true;
+    
+    // 少し遅延を入れてから遷移（ユーザーフィードバック）
+    setTimeout(() => {
+        window.location.href = url;
+    }, 200);
 }
 
 function performDirectSearch() {
     const query = searchInput.value.trim();
+    debugLog('直接検索実行:', query);
+    
     if (query) {
-        // 直接検索の場合は書類一覧ページへ（フォールバック）
-        const url = `{% url 'earnings_analysis:document-list-ui' %}?company=${encodeURIComponent(query)}`;
+        // フォールバック: 書類一覧ページへ
+        const url = `/earnings_analysis/documents/?company=${encodeURIComponent(query)}`;
+        debugLog('フォールバック遷移URL:', url);
         window.location.href = url;
     }
 }
@@ -482,6 +553,7 @@ function showSuggestions() {
     suggestionsContainer.classList.add('show');
     hideSearchStatus();
     hideNoResults();
+    hideError();
 }
 
 function hideSuggestions() {
@@ -492,6 +564,7 @@ function hideSuggestions() {
 
 function showSearchStatus() {
     hideNoResults();
+    hideError();
     searchStatus.style.display = 'block';
     suggestionsContainer.style.display = 'block';
 }
@@ -502,12 +575,38 @@ function hideSearchStatus() {
 
 function showNoResults() {
     hideSearchStatus();
+    hideError();
     noResults.style.display = 'block';
     suggestionsContainer.style.display = 'block';
 }
 
 function hideNoResults() {
     noResults.style.display = 'none';
+}
+
+function showError(message) {
+    hideSearchStatus();
+    hideNoResults();
+    
+    // エラー表示要素を作成または更新
+    let errorDiv = document.getElementById('searchError');
+    if (!errorDiv) {
+        errorDiv = document.createElement('div');
+        errorDiv.id = 'searchError';
+        errorDiv.className = 'px-3 py-2 text-danger small';
+        suggestionsList.parentNode.insertBefore(errorDiv, suggestionsList);
+    }
+    
+    errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle me-1"></i>検索エラー: ${escapeHtml(message)}`;
+    errorDiv.style.display = 'block';
+    suggestionsContainer.style.display = 'block';
+}
+
+function hideError() {
+    const errorDiv = document.getElementById('searchError');
+    if (errorDiv) {
+        errorDiv.style.display = 'none';
+    }
 }
 
 function escapeHtml(text) {
@@ -517,10 +616,26 @@ function escapeHtml(text) {
 }
 
 // エンターキーでの検索（レガシー対応）
-searchInput.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter' && selectedIndex === -1) {
-        performDirectSearch();
+if (searchInput) {
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && selectedIndex === -1) {
+            performDirectSearch();
+        }
+    });
+}
+
+// エラー回復機能
+window.addEventListener('error', function(e) {
+    if (e.message.includes('企業検索')) {
+        debugLog('グローバルエラーキャッチ:', e.message);
+        showError('検索機能でエラーが発生しました。ページを再読み込みしてください。');
     }
+});
+
+// ページ離脱前のクリーンアップ
+window.addEventListener('beforeunload', function() {
+    clearTimeout(searchTimeout);
+    debugLog('検索機能クリーンアップ');
 });
 </script>
 

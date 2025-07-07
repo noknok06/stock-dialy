@@ -270,3 +270,142 @@ class DocumentMetadata(models.Model):
         ).exists()
         
         return has_sentiment or has_financial
+
+
+    @classmethod
+    def get_documents_by_company(cls, edinet_code, analysis_suitable_first=True):
+        """企業の書類を分析適合度順で取得"""
+        try:
+            if analysis_suitable_first:
+                # 分析に適した書類（決算関連）を優先
+                suitable_docs = cls.objects.filter(
+                    edinet_code=edinet_code,
+                    legal_status='1',
+                    doc_type_code__in=['120', '130', '140', '150', '160', '070', '080']
+                ).order_by('-submit_date_time')
+                
+                # その他の書類
+                other_docs = cls.objects.filter(
+                    edinet_code=edinet_code,
+                    legal_status='1'
+                ).exclude(
+                    doc_type_code__in=['120', '130', '140', '150', '160', '070', '080']
+                ).order_by('-submit_date_time')
+                
+                return {
+                    'suitable': list(suitable_docs),
+                    'others': list(other_docs)
+                }
+            else:
+                all_docs = cls.objects.filter(
+                    edinet_code=edinet_code,
+                    legal_status='1'
+                ).order_by('-submit_date_time')
+                
+                return {
+                    'suitable': [],
+                    'others': list(all_docs)
+                }
+                
+        except Exception as e:
+            # エラー時は空のリストを返す
+            return {'suitable': [], 'others': []}
+    
+    @classmethod
+    def get_latest_financial_document(cls, edinet_code):
+        """最新の決算関連書類を取得"""
+        try:
+            return cls.objects.filter(
+                edinet_code=edinet_code,
+                legal_status='1',
+                doc_type_code__in=['120', '130', '140', '150', '160']
+            ).order_by('-submit_date_time').first()
+        except Exception:
+            return None
+    
+    @classmethod
+    def get_recommended_for_analysis(cls, edinet_code, limit=3):
+        """分析推奨書類を取得"""
+        try:
+            # XBRLがあり、決算関連で、比較的新しい書類を優先
+            return cls.objects.filter(
+                edinet_code=edinet_code,
+                legal_status='1',
+                xbrl_flag=True,
+                doc_type_code__in=['120', '130', '140', '150', '160']
+            ).order_by('-submit_date_time')[:limit]
+        except Exception:
+            return []
+    
+    def has_recent_analysis(self, hours=1):
+        """最近分析が実行されたかチェック"""
+        try:
+            from .sentiment import SentimentAnalysisSession
+            from .financial import FinancialAnalysisSession
+            
+            cutoff_time = timezone.now() - timedelta(hours=hours)
+            
+            # 感情分析の確認
+            recent_sentiment = SentimentAnalysisSession.objects.filter(
+                document=self,
+                processing_status='COMPLETED',
+                created_at__gte=cutoff_time
+            ).exists()
+            
+            # 財務分析の確認
+            recent_financial = FinancialAnalysisSession.objects.filter(
+                document=self,
+                processing_status='COMPLETED', 
+                created_at__gte=cutoff_time
+            ).exists()
+            
+            return recent_sentiment or recent_financial
+            
+        except Exception:
+            return False
+    
+    @property
+    def doc_type_display_name(self):
+        """書類種別の表示名"""
+        doc_type_names = {
+            '120': '有価証券報告書',
+            '130': '四半期報告書', 
+            '140': '半期報告書',
+            '150': '臨時報告書',
+            '160': '有価証券届出書',
+            '070': '招集通知',
+            '080': '決算短信',
+        }
+        return doc_type_names.get(self.doc_type_code, self.doc_type_code)
+    
+    @property
+    def is_financial_document(self):
+        """決算関連書類かどうか"""
+        return self.doc_type_code in ['120', '130', '140', '150', '160', '070', '080']
+    
+    @property
+    def analysis_suitability_score(self):
+        """分析適合度スコア（高いほど分析に適している）"""
+        score = 0
+        
+        # XBRLがあると高スコア
+        if self.xbrl_flag:
+            score += 50
+            
+        # 決算関連書類は高スコア
+        if self.is_financial_document:
+            score += 30
+            
+        # 新しい書類ほど高スコア
+        if self.submit_date_time:
+            days_old = (timezone.now() - self.submit_date_time).days
+            if days_old < 30:  # 1ヶ月以内
+                score += 20
+            elif days_old < 90:  # 3ヶ月以内
+                score += 10
+                
+        # PDFがあると少しプラス
+        if self.pdf_flag:
+            score += 5
+            
+        return score    
