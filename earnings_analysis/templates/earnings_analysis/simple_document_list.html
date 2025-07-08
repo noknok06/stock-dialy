@@ -4,12 +4,15 @@
 {% block title %}書類一覧 - 決算書類管理システム{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2><i class="fas fa-file-alt text-primary me-2"></i>書類一覧</h2>
+<!-- Header Section -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+    <div class="flex-grow-1">
+        <h2 class="mb-2">
+            <i class="fas fa-file-alt text-primary me-2"></i>書類一覧
+        </h2>
         {% if search_params.company %}
             <p class="text-muted mb-0">
-                検索結果: 「{{ search_params.company }}」
+                検索結果: 「<span class="fw-semibold">{{ search_params.company }}</span>」
                 <span class="badge bg-primary ms-2">{{ total_count }}件</span>
             </p>
         {% else %}
@@ -20,9 +23,13 @@
         {% endif %}
     </div>
     
-    <div class="btn-group" role="group">
-        <button type="button" class="btn btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+    <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-md-auto">
+        <button type="button" class="btn btn-outline-primary" data-bs-toggle="collapse" 
+                data-bs-target="#filterCollapse" aria-expanded="false">
             <i class="fas fa-filter me-1"></i>フィルタ
+            {% if search_params.company or search_params.doc_type or search_params.from_date or search_params.to_date %}
+                <span class="badge bg-primary ms-1">ON</span>
+            {% endif %}
         </button>
         <a href="{% url 'earnings_analysis:index' %}" class="btn btn-outline-secondary">
             <i class="fas fa-search me-1"></i>新規検索
@@ -30,128 +37,249 @@
     </div>
 </div>
 
-<!-- フィルタセクション -->
+<!-- Filter Section -->
 <div class="collapse" id="filterCollapse">
-    <div class="card bg-light p-3 mb-4">
-        <form method="get" class="row g-3">
-            <div class="col-md-3">
-                <label for="company" class="form-label">企業名・証券コード</label>
-                <input type="text" class="form-control" id="company" name="company" 
-                       value="{{ search_params.company }}" placeholder="企業名または証券コード">
-            </div>
-            
-            <div class="col-md-2">
-                <label for="doc_type" class="form-label">書類種別</label>
-                <select class="form-select" id="doc_type" name="doc_type">
-                    <option value="">すべて</option>
-                    {% for doc_type in doc_types %}
-                        <option value="{{ doc_type.doc_type_code }}" 
-                                {% if doc_type.doc_type_code == search_params.doc_type %}selected{% endif %}>
-                            {{ doc_type.doc_type_code }} ({{ doc_type.count }}件)
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="col-md-2">
-                <label for="from_date" class="form-label">開始日</label>
-                <input type="date" class="form-control" id="from_date" name="from_date" 
-                       value="{{ search_params.from_date }}">
-            </div>
-            
-            <div class="col-md-2">
-                <label for="to_date" class="form-label">終了日</label>
-                <input type="date" class="form-control" id="to_date" name="to_date" 
-                       value="{{ search_params.to_date }}">
-            </div>
-            
-            <div class="col-md-3 d-flex align-items-end gap-2">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-search me-1"></i>検索
-                </button>
-                <a href="{% url 'earnings_analysis:document-list-ui' %}" class="btn btn-outline-secondary">
-                    <i class="fas fa-times me-1"></i>クリア
-                </a>
-            </div>
-        </form>
+    <div class="card bg-light mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-12 col-md-6 col-lg-3">
+                    <label for="company" class="form-label fw-semibold">企業名・証券コード</label>
+                    <input type="text" class="form-control" id="company" name="company" 
+                           value="{{ search_params.company }}" 
+                           placeholder="企業名または証券コード">
+                </div>
+                
+                <div class="col-12 col-md-6 col-lg-3">
+                    <label for="doc_type" class="form-label fw-semibold">書類種別</label>
+                    <select class="form-select" id="doc_type" name="doc_type">
+                        <option value="">すべて</option>
+                        {% for doc_type in doc_types %}
+                            <option value="{{ doc_type.doc_type_code }}" 
+                                    {% if doc_type.doc_type_code == search_params.doc_type %}selected{% endif %}>
+                                {{ doc_type.doc_type_code }} ({{ doc_type.count }}件)
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-6 col-md-3 col-lg-2">
+                    <label for="from_date" class="form-label fw-semibold">開始日</label>
+                    <input type="date" class="form-control" id="from_date" name="from_date" 
+                           value="{{ search_params.from_date }}">
+                </div>
+                
+                <div class="col-6 col-md-3 col-lg-2">
+                    <label for="to_date" class="form-label fw-semibold">終了日</label>
+                    <input type="date" class="form-control" id="to_date" name="to_date" 
+                           value="{{ search_params.to_date }}">
+                </div>
+                
+                <div class="col-12 col-lg-2 d-flex flex-column justify-content-end">
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-1"></i>検索
+                        </button>
+                        <a href="{% url 'earnings_analysis:document-list-ui' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>クリア
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
-<!-- 検索結果 -->
+<!-- Results Section -->
 {% if documents %}
-    <!-- 書類一覧 -->
-    {% for document in documents %}
-        <div class="card mb-3">
-            <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <h6 class="mb-1">
-                            <a href="{% url 'earnings_analysis:document-detail-ui' document.doc_id %}" 
-                               class="text-decoration-none">
-                                {{ document.company_name }}
-                            </a>
-                            {% if document.securities_code %}
-                                <span class="badge bg-secondary ms-2">{{ document.securities_code }}</span>
-                            {% endif %}
-                        </h6>
-                        <p class="mb-1 text-muted">{{ document.doc_description }}</p>
-                        <div class="small text-muted">
-                            <i class="fas fa-calendar me-1"></i>{{ document.submit_date_time|date:"Y年m月d日 H:i" }}
-                            {% if document.period_start and document.period_end %}
-                                <span class="ms-2">
-                                    <i class="fas fa-clock me-1"></i>
-                                    {{ document.period_start|date:"Y/m/d" }} 〜 {{ document.period_end|date:"Y/m/d" }}
-                                </span>
-                            {% endif %}
+    <!-- Sort and View Options -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="small text-muted">
+            {{ total_count }}件中 {{ documents.start_index }}〜{{ documents.end_index }}件を表示
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-sm" id="toggleView" data-view="card">
+                <i class="fas fa-th-list me-1"></i>
+                <span class="d-none d-sm-inline">表示切替</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Document List -->
+    <div id="documentContainer">
+        {% for document in documents %}
+            <div class="card document-card mb-3" data-document-id="{{ document.doc_id }}">
+                <div class="card-body">
+                    <div class="row align-items-center g-3">
+                        <div class="col-12 col-md-8">
+                            <!-- Company Name and Code -->
+                            <div class="d-flex align-items-center mb-2">
+                                <h6 class="mb-0 me-2">
+                                    <a href="{% url 'earnings_analysis:company-detail-ui' document.edinet_code %}" 
+                                       class="text-decoration-none fw-semibold">
+                                        {{ document.company_name }}
+                                    </a>
+                                </h6>
+                                {% if document.securities_code %}
+                                    <span class="badge bg-secondary small">{{ document.securities_code }}</span>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Document Description -->
+                            <p class="mb-2 text-muted text-truncate-3">
+                                <a href="{% url 'earnings_analysis:document-detail-ui' document.doc_id %}" 
+                                   class="text-decoration-none text-reset">
+                                    {{ document.doc_description }}
+                                </a>
+                            </p>
+                            
+                            <!-- Document Info -->
+                            <div class="small text-muted">
+                                <div class="d-flex flex-wrap gap-3">
+                                    <span>
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {{ document.submit_date_time|date:"Y/m/d" }}
+                                    </span>
+                                    {% if document.period_start and document.period_end %}
+                                        <span>
+                                            <i class="fas fa-clock me-1"></i>
+                                            {{ document.period_start|date:"Y/m/d" }} 〜 {{ document.period_end|date:"Y/m/d" }}
+                                        </span>
+                                    {% endif %}
+                                    <span>
+                                        <i class="fas fa-tag me-1"></i>
+                                        {{ document.doc_type_code }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <!-- Document Types Available -->
+                            <div class="mt-2">
+                                {% if document.pdf_flag %}
+                                    <span class="badge bg-danger me-1">PDF</span>
+                                {% endif %}
+                                {% if document.xbrl_flag %}
+                                    <span class="badge bg-primary me-1">XBRL</span>
+                                {% endif %}
+                                {% if document.csv_flag %}
+                                    <span class="badge bg-success me-1">CSV</span>
+                                {% endif %}
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="col-md-4 text-md-end">
-                        <!-- ダウンロードボタン -->
-                        <div>
-                            {% if document.pdf_flag %}
-                                <button type="button" class="btn btn-danger btn-sm me-1 mb-1"
-                                        onclick="downloadDocument('{{ document.doc_id }}', 'pdf', this)">
-                                    <i class="fas fa-file-pdf me-1"></i>PDF
-                                </button>
-                            {% endif %}
-                            {% if document.xbrl_flag %}
-                                <button type="button" class="btn btn-primary btn-sm me-1 mb-1"
-                                        onclick="downloadDocument('{{ document.doc_id }}', 'xbrl', this)">
-                                    <i class="fas fa-code me-1"></i>XBRL
-                                </button>
-                            {% endif %}
-                            <a href="{% url 'earnings_analysis:document-detail-ui' document.doc_id %}" 
-                               class="btn btn-outline-secondary btn-sm mb-1">
-                                <i class="fas fa-info-circle me-1"></i>詳細
-                            </a>
+                        
+                        <div class="col-12 col-md-4">
+                            <!-- Action Buttons -->
+                            <div class="d-grid gap-2">
+                                <!-- Download Buttons -->
+                                <div class="btn-group" role="group" aria-label="ダウンロード">
+                                    {% if document.pdf_flag %}
+                                        <button type="button" class="btn btn-danger btn-sm"
+                                                onclick="downloadDocument('{{ document.doc_id }}', 'pdf', this)"
+                                                data-bs-toggle="tooltip" title="PDFダウンロード">
+                                            <i class="fas fa-file-pdf me-1"></i>
+                                            <span class="d-sm-none">PDF</span>
+                                        </button>
+                                    {% endif %}
+                                    {% if document.xbrl_flag %}
+                                        <button type="button" class="btn btn-primary btn-sm"
+                                                onclick="downloadDocument('{{ document.doc_id }}', 'xbrl', this)"
+                                                data-bs-toggle="tooltip" title="XBRLダウンロード">
+                                            <i class="fas fa-code me-1"></i>
+                                            <span class="d-sm-none">XBRL</span>
+                                        </button>
+                                    {% endif %}
+                                    {% if document.csv_flag %}
+                                        <button type="button" class="btn btn-success btn-sm"
+                                                onclick="downloadDocument('{{ document.doc_id }}', 'csv', this)"
+                                                data-bs-toggle="tooltip" title="CSVダウンロード">
+                                            <i class="fas fa-table me-1"></i>
+                                            <span class="d-sm-none">CSV</span>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Analysis Buttons -->
+                                <div class="btn-group" role="group" aria-label="分析">
+                                    <a href="{% url 'earnings_analysis:financial-analysis' document.doc_id %}" 
+                                       class="btn btn-outline-primary btn-sm"
+                                       data-bs-toggle="tooltip" title="財務分析">
+                                        <i class="fas fa-chart-pie me-1"></i>
+                                        <span class="d-md-none">財務分析</span>
+                                    </a>
+                                    <a href="{% url 'earnings_analysis:sentiment-analysis' document.doc_id %}" 
+                                       class="btn btn-outline-success btn-sm"
+                                       data-bs-toggle="tooltip" title="感情分析">
+                                        <i class="fas fa-brain me-1"></i>
+                                        <span class="d-md-none">感情分析</span>
+                                    </a>
+                                </div>
+                                
+                                <!-- Detail Button -->
+                                <a href="{% url 'earnings_analysis:document-detail-ui' document.doc_id %}" 
+                                   class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-info-circle me-1"></i>詳細情報
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    {% endfor %}
+        {% endfor %}
+    </div>
 
-    <!-- ページネーション -->
+    <!-- Pagination -->
     {% if documents.has_other_pages %}
         <nav aria-label="ページネーション" class="mt-4">
-            <ul class="pagination justify-content-center">
+            <ul class="pagination justify-content-center flex-wrap">
                 {% if documents.has_previous %}
                     <li class="page-item">
-                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ documents.previous_page_number }}">
-                            前へ
+                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page=1"
+                           aria-label="最初のページ">
+                            <i class="fas fa-angle-double-left"></i>
+                            <span class="d-none d-sm-inline ms-1">最初</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ documents.previous_page_number }}"
+                           aria-label="前のページ">
+                            <i class="fas fa-angle-left"></i>
+                            <span class="d-none d-sm-inline ms-1">前へ</span>
                         </a>
                     </li>
                 {% endif %}
                 
-                <li class="page-item active">
-                    <span class="page-link">{{ documents.number }}</span>
-                </li>
+                <!-- Page Numbers (limited on mobile) -->
+                {% with documents.paginator.num_pages as num_pages %}
+                    {% with documents.number as current %}
+                        {% if num_pages <= 7 %}
+                            {% for page_num in documents.paginator.page_range %}
+                                <li class="page-item {% if page_num == current %}active{% endif %}">
+                                    <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_num }}">
+                                        {{ page_num }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Mobile-friendly pagination -->
+                            <li class="page-item active">
+                                <span class="page-link">{{ current }} / {{ num_pages }}</span>
+                            </li>
+                        {% endif %}
+                    {% endwith %}
+                {% endwith %}
                 
                 {% if documents.has_next %}
                     <li class="page-item">
-                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ documents.next_page_number }}">
-                            次へ
+                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ documents.next_page_number }}"
+                           aria-label="次のページ">
+                            <span class="d-none d-sm-inline me-1">次へ</span>
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ documents.paginator.num_pages }}"
+                           aria-label="最後のページ">
+                            <span class="d-none d-sm-inline me-1">最後</span>
+                            <i class="fas fa-angle-double-right"></i>
                         </a>
                     </li>
                 {% endif %}
@@ -160,19 +288,314 @@
     {% endif %}
 
 {% else %}
-    <!-- 検索結果なし -->
+    <!-- No Results -->
     <div class="text-center py-5">
-        <i class="fas fa-search fa-3x text-muted mb-3"></i>
-        <h4 class="text-muted">検索結果が見つかりませんでした</h4>
-        <p class="text-muted">検索条件を変更して再度お試しください。</p>
-        <div class="mt-4">
-            <a href="{% url 'earnings_analysis:index' %}" class="btn btn-primary me-2">
+        <i class="fas fa-search fa-4x text-muted mb-4"></i>
+        <h4 class="text-muted mb-3">検索結果が見つかりませんでした</h4>
+        <p class="text-muted mb-4">
+            検索条件を変更して再度お試しください。<br>
+            または、フィルタをクリアして全書類を表示できます。
+        </p>
+        <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+            <a href="{% url 'earnings_analysis:index' %}" class="btn btn-primary">
                 <i class="fas fa-home me-1"></i>ホームに戻る
             </a>
-            <button type="button" class="btn btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+            <button type="button" class="btn btn-outline-primary" data-bs-toggle="collapse" 
+                    data-bs-target="#filterCollapse">
                 <i class="fas fa-filter me-1"></i>検索条件を変更
             </button>
+            <a href="{% url 'earnings_analysis:document-list-ui' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-list me-1"></i>全書類を表示
+            </a>
         </div>
     </div>
 {% endif %}
+
+<!-- Back to Top -->
+<div class="text-center mt-4">
+    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+        <i class="fas fa-arrow-up me-1"></i>ページトップに戻る
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+            trigger: window.innerWidth <= 768 ? 'click' : 'hover focus'
+        });
+    });
+
+    // View toggle functionality (for future enhancement)
+    const toggleViewBtn = document.getElementById('toggleView');
+    if (toggleViewBtn) {
+        toggleViewBtn.addEventListener('click', function() {
+            const currentView = this.dataset.view;
+            const container = document.getElementById('documentContainer');
+            
+            if (currentView === 'card') {
+                // Switch to list view
+                container.classList.add('list-view');
+                this.dataset.view = 'list';
+                this.innerHTML = '<i class="fas fa-th me-1"></i><span class="d-none d-sm-inline">カード表示</span>';
+            } else {
+                // Switch to card view
+                container.classList.remove('list-view');
+                this.dataset.view = 'card';
+                this.innerHTML = '<i class="fas fa-th-list me-1"></i><span class="d-none d-sm-inline">表示切替</span>';
+            }
+        });
+    }
+
+    // Enhanced filter auto-submit for better UX
+    const filterForm = document.querySelector('#filterCollapse form');
+    if (filterForm) {
+        const inputs = filterForm.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            if (input.type === 'date' || input.tagName === 'SELECT') {
+                input.addEventListener('change', function() {
+                    // Auto-submit for date and select inputs
+                    if (this.value) {
+                        setTimeout(() => {
+                            filterForm.submit();
+                        }, 300);
+                    }
+                });
+            }
+        });
+    }
+
+    // Infinite scroll for mobile (optional enhancement)
+    if (window.innerWidth <= 768 && document.querySelector('.pagination')) {
+        let loading = false;
+        
+        window.addEventListener('scroll', function() {
+            if (loading) return;
+            
+            const scrollPosition = window.innerHeight + window.scrollY;
+            const documentHeight = document.documentElement.offsetHeight;
+            
+            if (scrollPosition >= documentHeight - 1000) {
+                const nextPageLink = document.querySelector('.page-item .page-link[aria-label="次のページ"]');
+                if (nextPageLink) {
+                    loading = true;
+                    loadNextPage(nextPageLink.href);
+                }
+            }
+        });
+    }
+
+    // Smooth animations for document cards
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const documentObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, observerOptions);
+
+    document.querySelectorAll('.document-card').forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = `opacity 0.6s ease ${index * 0.1}s, transform 0.6s ease ${index * 0.1}s`;
+        documentObserver.observe(card);
+    });
+});
+
+// Enhanced download function with progress feedback
+function downloadDocument(docId, docType, button) {
+    const originalContent = showLoading(button, 'DL中...');
+    
+    try {
+        const url = `/earnings_analysis/documents/${docId}/download/?type=${docType}`;
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Show success feedback
+        setTimeout(() => {
+            hideLoading(button, originalContent);
+            
+            // Show toast notification
+            showToast(`${docType.toUpperCase()}のダウンロードを開始しました`, 'success');
+            
+            // Visual feedback on the card
+            const card = button.closest('.document-card');
+            if (card) {
+                card.style.backgroundColor = '#d4edda';
+                setTimeout(() => {
+                    card.style.backgroundColor = '';
+                }, 2000);
+            }
+        }, 1000);
+        
+    } catch (error) {
+        console.error('Download error:', error);
+        hideLoading(button, originalContent);
+        showToast('ダウンロードに失敗しました', 'error');
+    }
+}
+
+// Toast notification function
+function showToast(message, type = 'info') {
+    // Create toast container if it doesn't exist
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'position-fixed bottom-0 end-0 p-3';
+        container.style.zIndex = '9999';
+        document.body.appendChild(container);
+    }
+
+    // Create toast
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'primary'} border-0`;
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+
+    container.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+
+    toast.addEventListener('hidden.bs.toast', () => toast.remove());
+}
+
+// Load next page for infinite scroll
+function loadNextPage(url) {
+    fetch(url)
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newCards = doc.querySelectorAll('.document-card');
+            const container = document.getElementById('documentContainer');
+            
+            newCards.forEach(card => {
+                container.appendChild(card);
+            });
+            
+            // Update pagination
+            const newPagination = doc.querySelector('.pagination');
+            const currentPagination = document.querySelector('.pagination');
+            if (newPagination && currentPagination) {
+                currentPagination.parentNode.replaceChild(newPagination, currentPagination);
+            }
+            
+            loading = false;
+        })
+        .catch(error => {
+            console.error('Error loading next page:', error);
+            loading = false;
+        });
+}
+</script>
+
+<style>
+/* List view styles */
+.list-view .document-card {
+    margin-bottom: 0.5rem;
+}
+
+.list-view .document-card .card-body {
+    padding: 1rem;
+}
+
+.list-view .document-card .row {
+    align-items: center;
+}
+
+/* Mobile optimizations */
+@media (max-width: 767.98px) {
+    .document-card .btn-group {
+        display: flex !important;
+        width: 100%;
+    }
+    
+    .document-card .btn-group .btn {
+        flex: 1;
+        font-size: 0.8rem;
+        padding: 0.375rem 0.5rem;
+    }
+    
+    .pagination .page-link {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+    }
+    
+    .pagination .page-item:not(.active) .page-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        height: 44px;
+    }
+}
+
+/* Loading animation */
+.document-card.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+/* Hover effects for desktop */
+@media (min-width: 768px) {
+    .document-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        transition: all 0.2s ease;
+    }
+}
+
+/* Focus styles for accessibility */
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+    box-shadow: 0 0 0 0.2rem rgba(79, 131, 204, 0.25);
+}
+
+/* Toast container positioning */
+#toast-container {
+    z-index: 9999;
+}
+
+@media (max-width: 767.98px) {
+    #toast-container {
+        position: fixed !important;
+        top: auto !important;
+        bottom: 20px !important;
+        left: 20px !important;
+        right: 20px !important;
+        width: auto !important;
+    }
+    
+    #toast-container .toast {
+        width: 100%;
+    }
+}
+</style>
 {% endblock %}

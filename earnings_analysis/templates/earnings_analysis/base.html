@@ -3,29 +3,47 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=1.0, maximum-scale=5.0">
     <title>{% block title %}決算書類管理システム{% endblock %}</title>
+    
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <!-- Custom CSS -->
     {% load static %}
-    <link rel="stylesheet" href="{% static 'css/common.css' %}">
-    <link rel="stylesheet" href="{% static 'css/mobile-friendly.css' %}">
+    <link rel="stylesheet" href="{% static 'css/mobile-optimized.css' %}">
     
     {% block extra_css %}{% endblock %}
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#4F83CC">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="決算書類管理">
 </head>
 <body>
-    <!-- ナビゲーションバー -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+    <!-- Skip to main content for accessibility -->
+    <a href="#main-content" class="sr-only sr-only-focusable btn btn-primary position-absolute" style="top: 10px; left: 10px; z-index: 9999;">
+        メインコンテンツへスキップ
+    </a>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'earnings_analysis:index' %}">
-                <i class="fas fa-chart-line me-2"></i>決算書類管理
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'earnings_analysis:index' %}">
+                <i class="fas fa-chart-line me-2"></i>
+                <span class="d-none d-sm-inline">決算書類管理</span>
+                <span class="d-sm-none">決算管理</span>
             </a>
             
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="ナビゲーションメニュー">
                 <span class="navbar-toggler-icon"></span>
             </button>
             
@@ -45,12 +63,16 @@
                     </li>
                 </ul>
                 
-                <!-- クイック検索 -->
-                <form class="d-flex" role="search" action="{% url 'earnings_analysis:document-list-ui' %}" method="get">
+                <!-- Search Form - Hidden on small screens in navbar -->
+                <form class="d-none d-lg-flex search-container" role="search" 
+                      action="{% url 'earnings_analysis:document-list-ui' %}" method="get">
                     <div class="input-group">
-                        <input class="form-control" type="search" name="company" placeholder="企業名・証券コード" 
-                               value="{{ request.GET.company }}" style="max-width: 200px;">
-                        <button class="btn btn-outline-light" type="submit">
+                        <input class="form-control form-control-sm" type="search" name="company" 
+                               placeholder="企業名・証券コード" 
+                               value="{{ request.GET.company }}" 
+                               style="max-width: 200px;"
+                               aria-label="企業名または証券コード検索">
+                        <button class="btn btn-outline-light btn-sm" type="submit" aria-label="検索実行">
                             <i class="fas fa-search"></i>
                         </button>
                     </div>
@@ -59,32 +81,65 @@
         </div>
     </nav>
 
-    <!-- メインコンテンツ -->
-    <main class="py-4">
+    <!-- Mobile Search Bar -->
+    <div class="d-lg-none bg-white border-bottom">
+        <div class="container py-2">
+            <form role="search" action="{% url 'earnings_analysis:document-list-ui' %}" method="get">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input class="form-control border-start-0" type="search" name="company" 
+                           placeholder="企業名・証券コード検索" 
+                           value="{{ request.GET.company }}"
+                           aria-label="企業名または証券コード検索">
+                    <button class="btn btn-primary" type="submit" aria-label="検索実行">検索</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main id="main-content" class="py-3 py-md-4">
         <div class="container">
             {% block breadcrumb %}{% endblock %}
             
-            <!-- フラッシュメッセージ -->
+            <!-- Flash Messages -->
             {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
+                <div class="messages-container">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            <div class="d-flex align-items-start">
+                                <div class="me-2">
+                                    {% if message.tags == 'success' %}
+                                        <i class="fas fa-check-circle"></i>
+                                    {% elif message.tags == 'error' or message.tags == 'danger' %}
+                                        <i class="fas fa-exclamation-circle"></i>
+                                    {% elif message.tags == 'warning' %}
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                    {% else %}
+                                        <i class="fas fa-info-circle"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1">{{ message }}</div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="閉じる"></button>
+                        </div>
+                    {% endfor %}
+                </div>
             {% endif %}
             
             {% block content %}{% endblock %}
         </div>
     </main>
 
-    <!-- フッター -->
-    <footer class="bg-light py-4 mt-5">
+    <!-- Footer -->
+    <footer class="mt-auto">
         <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <h6 class="text-muted">決算書類管理システム</h6>
-                    <p class="text-muted small mb-0">EDINET APIを活用した企業書類検索・ダウンロードシステム</p>
+            <div class="row align-items-center">
+                <div class="col-md-6 mb-2 mb-md-0">
+                    <h6 class="mb-1 text-muted">決算書類管理システム</h6>
+                    <p class="mb-0 small text-muted">EDINET APIを活用した企業書類検索・分析システム</p>
                 </div>
                 <div class="col-md-6 text-md-end">
                     <small class="text-muted">
@@ -96,52 +151,196 @@
         </div>
     </footer>
 
+    <!-- Back to Top Button -->
+    <button id="backToTop" class="btn btn-primary position-fixed" 
+            style="bottom: 20px; right: 20px; display: none; z-index: 1000; border-radius: 50%; width: 50px; height: 50px;"
+            aria-label="ページトップに戻る">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
     <!-- JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     {% block extra_js %}{% endblock %}
 
-    <!-- 共通JavaScript -->
+    <!-- Common JavaScript -->
     <script>
-        // ローディング表示
-        function showLoading(button) {
-            const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>処理中...';
-            button.disabled = true;
-            return originalText;
-        }
-
-        function hideLoading(button, originalText) {
-            button.innerHTML = originalText;
-            button.disabled = false;
-        }
-
-        // ダウンロード処理
-        function downloadDocument(docId, docType, button) {
-            const originalText = showLoading(button);
-            
-            const url = `/earnings_analysis/documents/${docId}/download/?type=${docType}`;
-            
-            // 新しいウィンドウでダウンロードを開始
-            const link = document.createElement('a');
-            link.href = url;
-            link.target = '_blank';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            // 少し遅らせてローディングを解除
-            setTimeout(() => {
-                hideLoading(button, originalText);
-            }, 1000);
-        }
-
-        // ツールチップ初期化
+        // Common functionality
         document.addEventListener('DOMContentLoaded', function() {
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            // Initialize tooltips
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
+
+            // Back to top button
+            const backToTop = document.getElementById('backToTop');
+            if (backToTop) {
+                window.addEventListener('scroll', function() {
+                    if (window.pageYOffset > 300) {
+                        backToTop.style.display = 'block';
+                    } else {
+                        backToTop.style.display = 'none';
+                    }
+                });
+
+                backToTop.addEventListener('click', function() {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+            }
+
+            // Auto-hide alerts after 5 seconds
+            const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
+            alerts.forEach(function(alert) {
+                setTimeout(function() {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }, 5000);
+            });
         });
+
+        // Loading state management
+        function showLoading(button, text = '処理中...') {
+            if (!button) return '';
+            
+            const originalContent = button.innerHTML;
+            button.innerHTML = `<i class="fas fa-spinner fa-spin me-1"></i>${text}`;
+            button.disabled = true;
+            button.classList.add('loading');
+            return originalContent;
+        }
+
+        function hideLoading(button, originalContent) {
+            if (!button || !originalContent) return;
+            
+            button.innerHTML = originalContent;
+            button.disabled = false;
+            button.classList.remove('loading');
+        }
+
+        // Download document function
+        function downloadDocument(docId, docType, button) {
+            const originalContent = showLoading(button);
+            
+            try {
+                const url = `/earnings_analysis/documents/${docId}/download/?type=${docType}`;
+                
+                // Create download link
+                const link = document.createElement('a');
+                link.href = url;
+                link.target = '_blank';
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Show success feedback
+                setTimeout(() => {
+                    hideLoading(button, originalContent);
+                    showToast('ダウンロードを開始しました', 'success');
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Download error:', error);
+                hideLoading(button, originalContent);
+                showToast('ダウンロードに失敗しました', 'error');
+            }
+        }
+
+        // Toast notification function
+        function showToast(message, type = 'info', duration = 3000) {
+            // Create toast container if it doesn't exist
+            let toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toast-container';
+                toastContainer.className = 'position-fixed top-0 end-0 p-3';
+                toastContainer.style.zIndex = '9999';
+                document.body.appendChild(toastContainer);
+            }
+
+            // Create toast element
+            const toastId = 'toast-' + Date.now();
+            const toast = document.createElement('div');
+            toast.id = toastId;
+            toast.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'primary'} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('aria-live', 'assertive');
+            toast.setAttribute('aria-atomic', 'true');
+            
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="閉じる"></button>
+                </div>
+            `;
+
+            toastContainer.appendChild(toast);
+
+            // Initialize and show toast
+            const bsToast = new bootstrap.Toast(toast, { delay: duration });
+            bsToast.show();
+
+            // Remove from DOM after hide
+            toast.addEventListener('hidden.bs.toast', () => {
+                toast.remove();
+            });
+        }
+
+        // Form validation helpers
+        function validateForm(form) {
+            if (!form) return false;
+            
+            const requiredFields = form.querySelectorAll('[required]');
+            let isValid = true;
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    field.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    field.classList.remove('is-invalid');
+                }
+            });
+            
+            return isValid;
+        }
+
+        // CSRF token helper
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Performance optimization: Lazy load images
+        if ('IntersectionObserver' in window) {
+            const imageObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        img.src = img.dataset.src;
+                        img.classList.remove('lazy');
+                        imageObserver.unobserve(img);
+                    }
+                });
+            });
+
+            document.querySelectorAll('img[data-src]').forEach(img => {
+                imageObserver.observe(img);
+            });
+        }
     </script>
 </body>
 </html>

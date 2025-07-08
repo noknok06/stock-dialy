@@ -7,66 +7,75 @@
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{% url 'earnings_analysis:index' %}">ホーム</a></li>
-        <li class="breadcrumb-item active">{{ company.company_name }}</li>
+        <li class="breadcrumb-item active text-truncate" style="max-width: 200px;">{{ company.company_name }}</li>
     </ol>
 </nav>
 
-<!-- 企業ヘッダー -->
-<div class="bg-primary text-white rounded p-4 mb-4">
+<!-- Company Header -->
+<div class="page-header mb-4">
     <div class="row align-items-center">
-        <div class="col-md-8">
-            <h1 class="h2 mb-2">{{ company.company_name }}</h1>
+        <div class="col-12 col-md-8">
+            <h1 class="h2 h-md-1 mb-2 text-truncate">{{ company.company_name }}</h1>
             {% if company.company_name_kana %}
-                <p class="h5 mb-3 opacity-90">{{ company.company_name_kana }}</p>
+                <p class="h6 h-md-5 mb-3 opacity-90 text-truncate">{{ company.company_name_kana }}</p>
             {% endif %}
             <div class="d-flex flex-wrap gap-2">
                 {% if company.securities_code %}
-                    <span class="badge bg-warning text-dark fs-6">証券コード: {{ company.securities_code }}</span>
+                    <span class="badge bg-warning text-dark">証券: {{ company.securities_code }}</span>
                 {% endif %}
-                <span class="badge bg-light text-dark">EDINETコード: {{ company.edinet_code }}</span>
+                <span class="badge bg-light text-dark">EDINET: {{ company.edinet_code }}</span>
                 <span class="badge bg-success">書類{{ total_documents }}件</span>
             </div>
         </div>
-        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
             {% if latest_doc %}
-                <div class="badge bg-light text-dark fs-6 px-3 py-2">
-                    <i class="fas fa-calendar me-1"></i>最新: {{ latest_doc.submit_date_time|date:"Y/m/d" }}
+                <div class="badge bg-white bg-opacity-20 px-3 py-2">
+                    <i class="fas fa-calendar me-1"></i>
+                    最新: {{ latest_doc.submit_date_time|date:"Y/m/d" }}
                 </div>
             {% endif %}
         </div>
     </div>
 </div>
 
-<div class="row">
-    <!-- メインコンテンツ -->
-    <div class="col-lg-8">
-        <!-- ワンクリック分析セクション -->
+<div class="row g-3 g-md-4">
+    <!-- Main Content -->
+    <div class="col-12 col-lg-8">
+        <!-- One-Click Analysis Section -->
         {% if latest_financial %}
-            <div class="card mb-4">
-                <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white;">
-                    <h5 class="mb-0">
-                        <i class="fas fa-rocket me-2"></i>ワンクリック包括分析
-                        <span class="badge bg-light text-dark ms-2">NEW</span>
+            <div class="card analysis-card mb-4">
+                <div class="card-header" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white;">
+                    <h5 class="mb-0 d-flex align-items-center">
+                        <i class="fas fa-rocket me-2"></i>
+                        ワンクリック包括分析
+                        <span class="badge bg-light text-dark ms-2 small">推奨</span>
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h6>最新決算書類の自動分析</h6>
-                            <p class="text-muted mb-2">
-                                <strong>対象書類:</strong> {{ latest_financial.doc_description|truncatechars:80 }}<br>
-                                <strong>提出日:</strong> {{ latest_financial.submit_date_time|date:"Y年m月d日" }}
-                            </p>
+                    <div class="row align-items-center g-3">
+                        <div class="col-12 col-md-8">
+                            <h6 class="mb-2">最新決算書類の自動分析</h6>
+                            <div class="mb-2">
+                                <div class="small">
+                                    <strong>対象書類:</strong> 
+                                    <span class="text-truncate d-inline-block" style="max-width: 250px;">
+                                        {{ latest_financial.doc_description }}
+                                    </span>
+                                </div>
+                                <div class="small">
+                                    <strong>提出日:</strong> {{ latest_financial.submit_date_time|date:"Y年m月d日" }}
+                                </div>
+                            </div>
                             <div class="small text-success">
                                 <i class="fas fa-check-circle me-1"></i>財務分析 + 感情分析を自動実行
-                                <span class="ms-3">
+                                <span class="d-block d-sm-inline ms-sm-3 mt-1 mt-sm-0">
                                     <i class="fas fa-clock me-1"></i>約3-5分で完了
                                 </span>
                             </div>
                         </div>
-                        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                        <div class="col-12 col-md-4 text-center text-md-end">
                             <a href="{% url 'earnings_analysis:sentiment-analysis' latest_financial.doc_id %}" 
-                               class="btn btn-danger btn-lg mb-2">
+                               class="btn btn-danger btn-lg w-100 w-md-auto mb-2">
                                 <i class="fas fa-rocket me-2"></i>今すぐ分析開始
                             </a>
                             {% if has_recent_analysis %}
@@ -80,47 +89,48 @@
             </div>
         {% endif %}
 
-        
-        <!-- 推奨書類セクション -->
+        <!-- Recommended Documents Section -->
         {% if recommended_docs %}
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-star text-warning me-2"></i>分析推奨書類
+                    <h5 class="mb-0 d-flex align-items-center">
+                        <i class="fas fa-star text-warning me-2"></i>
+                        分析推奨書類
+                        <span class="badge bg-warning text-dark ms-2 small">{{ recommended_docs|length }}件</span>
                     </h5>
                 </div>
                 <div class="card-body">
                     {% for doc in recommended_docs %}
                         <div class="border rounded p-3 mb-3">
-                            <div class="row align-items-center">
-                                <div class="col-md-8">
+                            <div class="row align-items-center g-2">
+                                <div class="col-12 col-md-8">
                                     <h6 class="mb-1">
                                         <a href="{% url 'earnings_analysis:document-detail-ui' doc.doc_id %}" 
-                                           class="text-decoration-none">
-                                            {{ doc.doc_description|truncatechars:60 }}
+                                           class="text-decoration-none text-truncate-2">
+                                            {{ doc.doc_description }}
                                         </a>
                                     </h6>
                                     <div class="small text-muted mb-2">
                                         <i class="fas fa-calendar me-1"></i>{{ doc.submit_date_time|date:"Y/m/d" }}
                                         {% if doc.period_start and doc.period_end %}
-                                            <span class="ms-3">
+                                            <span class="d-block d-sm-inline ms-sm-3">
                                                 <i class="fas fa-clock me-1"></i>
                                                 {{ doc.period_start|date:"Y/m" }} 〜 {{ doc.period_end|date:"Y/m" }}
                                             </span>
                                         {% endif %}
                                     </div>
-                                    <div class="small">
+                                    <div class="d-flex flex-wrap gap-1">
                                         {% if doc.xbrl_flag %}
-                                            <span class="badge bg-primary me-1">XBRL</span>
+                                            <span class="badge bg-primary small">XBRL</span>
                                         {% endif %}
                                         {% if doc.pdf_flag %}
-                                            <span class="badge bg-danger me-1">PDF</span>
+                                            <span class="badge bg-danger small">PDF</span>
                                         {% endif %}
-                                        <span class="badge bg-success">分析最適</span>
+                                        <span class="badge bg-success small">分析最適</span>
                                     </div>
                                 </div>
-                                <div class="col-md-4 text-md-end">
-                                    <div class="btn-group-vertical d-grid gap-1">
+                                <div class="col-12 col-md-4">
+                                    <div class="d-grid gap-1">
                                         <a href="{% url 'earnings_analysis:financial-analysis' doc.doc_id %}" 
                                            class="btn btn-outline-primary btn-sm">
                                             <i class="fas fa-chart-pie me-1"></i>財務分析
@@ -138,43 +148,57 @@
             </div>
         {% endif %}
 
-        <!-- 決算・財務関連書類 -->
+        <!-- Financial Documents -->
         {% if suitable_documents %}
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-chart-line text-primary me-2"></i>決算・財務関連書類
+                    <h5 class="mb-0 d-flex align-items-center">
+                        <i class="fas fa-chart-line text-primary me-2"></i>
+                        決算・財務関連書類
+                        <span class="badge bg-primary ms-2 small">{{ suitable_documents|length }}件</span>
                     </h5>
                 </div>
                 <div class="card-body">
                     {% for doc in suitable_documents %}
-                        <div class="border-bottom py-2">
-                            <div class="row align-items-center">
-                                <div class="col-md-8">
-                                    <div class="fw-semibold">
+                        <div class="border-bottom py-3">
+                            <div class="row align-items-center g-2">
+                                <div class="col-12 col-md-8">
+                                    <div class="fw-semibold mb-1">
                                         <a href="{% url 'earnings_analysis:document-detail-ui' doc.doc_id %}" 
-                                           class="text-decoration-none">
-                                            {{ doc.doc_description|truncatechars:50 }}
+                                           class="text-decoration-none text-truncate d-inline-block" 
+                                           style="max-width: 100%;">
+                                            {{ doc.doc_description }}
                                         </a>
                                     </div>
                                     <div class="small text-muted">
                                         {{ doc.submit_date_time|date:"Y/m/d" }}
-                                        {% if doc.xbrl_flag %}<span class="badge bg-primary ms-2">XBRL</span>{% endif %}
+                                        {% if doc.xbrl_flag %}
+                                            <span class="badge bg-primary ms-2 small">XBRL</span>
+                                        {% endif %}
+                                        {% if doc.pdf_flag %}
+                                            <span class="badge bg-danger ms-1 small">PDF</span>
+                                        {% endif %}
                                     </div>
                                 </div>
-                                <div class="col-md-4 text-md-end">
-                                    <div class="btn-group btn-group-sm">
+                                <div class="col-12 col-md-4">
+                                    <div class="btn-group w-100" role="group">
                                         <a href="{% url 'earnings_analysis:financial-analysis' doc.doc_id %}" 
-                                           class="btn btn-outline-primary">
+                                           class="btn btn-outline-primary btn-sm"
+                                           data-bs-toggle="tooltip" title="財務分析">
                                             <i class="fas fa-chart-pie"></i>
+                                            <span class="d-md-none ms-1">財務</span>
                                         </a>
                                         <a href="{% url 'earnings_analysis:sentiment-analysis' doc.doc_id %}" 
-                                           class="btn btn-outline-success">
+                                           class="btn btn-outline-success btn-sm"
+                                           data-bs-toggle="tooltip" title="感情分析">
                                             <i class="fas fa-brain"></i>
+                                            <span class="d-md-none ms-1">感情</span>
                                         </a>
                                         <a href="{% url 'earnings_analysis:document-detail-ui' doc.doc_id %}" 
-                                           class="btn btn-outline-secondary">
+                                           class="btn btn-outline-secondary btn-sm"
+                                           data-bs-toggle="tooltip" title="詳細">
                                             <i class="fas fa-info"></i>
+                                            <span class="d-md-none ms-1">詳細</span>
                                         </a>
                                     </div>
                                 </div>
@@ -184,7 +208,8 @@
                     
                     {% if show_other_documents %}
                         <div class="text-center mt-3">
-                            <button class="btn btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#otherDocuments">
+                            <button class="btn btn-outline-primary" type="button" data-bs-toggle="collapse" 
+                                    data-bs-target="#otherDocuments" aria-expanded="false">
                                 <i class="fas fa-plus me-1"></i>その他の書類を表示
                             </button>
                         </div>
@@ -193,7 +218,7 @@
             </div>
         {% endif %}
 
-        <!-- その他の書類（折りたたみ） -->
+        <!-- Other Documents (Collapsible) -->
         {% if show_other_documents %}
             <div class="collapse" id="otherDocuments">
                 <div class="card mb-4">
@@ -205,12 +230,12 @@
                     <div class="card-body">
                         {% for doc in other_documents %}
                             <div class="border-bottom py-2">
-                                <div class="row align-items-center">
-                                    <div class="col-md-10">
+                                <div class="row align-items-center g-2">
+                                    <div class="col-12 col-md-10">
                                         <div class="fw-semibold">
                                             <a href="{% url 'earnings_analysis:document-detail-ui' doc.doc_id %}" 
-                                               class="text-decoration-none">
-                                                {{ doc.doc_description|truncatechars:60 }}
+                                               class="text-decoration-none text-truncate-2">
+                                                {{ doc.doc_description }}
                                             </a>
                                         </div>
                                         <div class="small text-muted">
@@ -218,9 +243,9 @@
                                             <span class="ms-2">{{ doc.doc_type_code }}</span>
                                         </div>
                                     </div>
-                                    <div class="col-md-2 text-end">
+                                    <div class="col-12 col-md-2 text-end">
                                         <a href="{% url 'earnings_analysis:document-detail-ui' doc.doc_id %}" 
-                                           class="btn btn-outline-secondary btn-sm">
+                                           class="btn btn-outline-secondary btn-sm w-100 w-md-auto">
                                             詳細
                                         </a>
                                     </div>
@@ -233,9 +258,9 @@
         {% endif %}
     </div>
 
-    <!-- サイドバー -->
-    <div class="col-lg-4">
-        <!-- 企業統計 -->
+    <!-- Sidebar -->
+    <div class="col-12 col-lg-4">
+        <!-- Company Statistics -->
         <div class="card mb-4">
             <div class="card-header">
                 <h6 class="mb-0">
@@ -243,22 +268,23 @@
                 </h6>
             </div>
             <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-6 mb-3">
+                <div class="row text-center g-3">
+                    <div class="col-6">
                         <div class="h4 text-primary">{{ total_documents }}</div>
                         <div class="small text-muted">総書類数</div>
                     </div>
-                    <div class="col-6 mb-3">
+                    <div class="col-6">
                         <div class="h4 text-success">{{ doc_type_stats|length }}</div>
                         <div class="small text-muted">書類種別数</div>
                     </div>
                 </div>
                 
                 {% if doc_type_stats %}
-                    <h6 class="mt-3 mb-2">書類種別TOP5</h6>
+                    <hr class="my-3">
+                    <h6 class="mb-3">書類種別TOP5</h6>
                     {% for stat in doc_type_stats %}
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="small">{{ stat.doc_type_code }}</span>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="small text-truncate me-2">{{ stat.doc_type_code }}</span>
                             <span class="badge bg-primary">{{ stat.count }}件</span>
                         </div>
                     {% endfor %}
@@ -266,7 +292,7 @@
             </div>
         </div>
 
-        <!-- 関連企業 -->
+        <!-- Related Companies -->
         {% if related_companies %}
             <div class="card mb-4">
                 <div class="card-header">
@@ -279,7 +305,7 @@
                         <div class="border-bottom py-2">
                             <div class="fw-semibold">
                                 <a href="{% url 'earnings_analysis:company-detail-ui' related.edinet_code %}" 
-                                   class="text-decoration-none">
+                                   class="text-decoration-none text-truncate d-block">
                                     {{ related.company_name }}
                                 </a>
                             </div>
@@ -292,7 +318,7 @@
             </div>
         {% endif %}
 
-        <!-- アクション -->
+        <!-- Actions -->
         <div class="card">
             <div class="card-header">
                 <h6 class="mb-0">
@@ -300,24 +326,232 @@
                 </h6>
             </div>
             <div class="card-body">
-                <div class="d-grid gap-2">
+                <div class="action-buttons">
                     {% if latest_financial %}
                         <a href="{% url 'earnings_analysis:financial-analysis' latest_financial.doc_id %}" 
-                           class="btn btn-danger">
-                            <i class="fas fa-rocket me-1"></i>ワンクリック分析
+                           class="btn btn-danger w-100">
+                            <i class="fas fa-rocket me-2"></i>ワンクリック分析
                         </a>
                     {% endif %}
                     <a href="{% url 'earnings_analysis:document-list-ui' %}?company={{ company.company_name }}" 
-                       class="btn btn-outline-primary">
-                        <i class="fas fa-list me-1"></i>全書類を表示
+                       class="btn btn-outline-primary w-100">
+                        <i class="fas fa-list me-2"></i>全書類を表示
                     </a>
                     <a href="{% url 'earnings_analysis:index' %}" 
-                       class="btn btn-outline-secondary">
-                        <i class="fas fa-search me-1"></i>他の企業を検索
+                       class="btn btn-outline-secondary w-100">
+                        <i class="fas fa-search me-2"></i>他の企業を検索
                     </a>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Quick Analysis Modal -->
+<div class="modal fade" id="quickAnalysisModal" tabindex="-1" aria-labelledby="quickAnalysisModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="quickAnalysisModalLabel">
+                    <i class="fas fa-rocket me-2"></i>ワンクリック包括分析
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="閉じる"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <i class="fas fa-chart-pie fa-3x text-primary mb-3"></i>
+                    <h5>{{ company.company_name }}の包括分析を開始します</h5>
+                </div>
+                
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 h-100">
+                            <h6 class="text-primary">
+                                <i class="fas fa-chart-line me-2"></i>財務分析
+                            </h6>
+                            <ul class="list-unstyled small mb-0">
+                                <li><i class="fas fa-check text-success me-1"></i>キャッシュフロー分析</li>
+                                <li><i class="fas fa-check text-success me-1"></i>健全性評価</li>
+                                <li><i class="fas fa-check text-success me-1"></i>投資判断支援</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 h-100">
+                            <h6 class="text-success">
+                                <i class="fas fa-brain me-2"></i>感情分析
+                            </h6>
+                            <ul class="list-unstyled small mb-0">
+                                <li><i class="fas fa-check text-success me-1"></i>経営陣自信度測定</li>
+                                <li><i class="fas fa-check text-success me-1"></i>市場への影響予測</li>
+                                <li><i class="fas fa-check text-success me-1"></i>リスク要因分析</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if latest_financial %}
+                    <div class="alert alert-info mt-4">
+                        <strong>分析対象書類:</strong><br>
+                        <span class="text-truncate d-block">{{ latest_financial.doc_description }}</span>
+                        <small class="text-muted">提出日: {{ latest_financial.submit_date_time|date:"Y年m月d日" }}</small>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                {% if latest_financial %}
+                    <a href="{% url 'earnings_analysis:sentiment-analysis' latest_financial.doc_id %}" 
+                       class="btn btn-danger">
+                        <i class="fas fa-rocket me-2"></i>分析開始
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Show quick analysis modal on main button click
+    const quickAnalysisButtons = document.querySelectorAll('[data-quick-analysis]');
+    quickAnalysisButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const modal = new bootstrap.Modal(document.getElementById('quickAnalysisModal'));
+            modal.show();
+        });
+    });
+
+    // Enhanced tooltip initialization for small screens
+    if (window.innerWidth <= 768) {
+        // On mobile, show tooltips on touch
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl, {
+                trigger: 'click hover focus',
+                delay: { show: 0, hide: 100 }
+            });
+        });
+    }
+
+    // Truncate long text on mobile
+    function truncateText() {
+        const truncateElements = document.querySelectorAll('.text-truncate-mobile');
+        truncateElements.forEach(element => {
+            if (window.innerWidth <= 768) {
+                const maxLength = parseInt(element.dataset.maxLength) || 50;
+                const text = element.textContent;
+                if (text.length > maxLength) {
+                    element.textContent = text.substring(0, maxLength) + '...';
+                }
+            }
+        });
+    }
+
+    truncateText();
+    window.addEventListener('resize', truncateText);
+
+    // Smooth scroll for collapsed sections
+    const collapseElements = document.querySelectorAll('[data-bs-toggle="collapse"]');
+    collapseElements.forEach(element => {
+        element.addEventListener('click', function() {
+            setTimeout(() => {
+                const target = document.querySelector(this.getAttribute('data-bs-target'));
+                if (target && target.classList.contains('show')) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }, 350); // Wait for collapse animation
+        });
+    });
+});
+
+// Touch-friendly hover effects for mobile
+if ('ontouchstart' in window) {
+    const hoverElements = document.querySelectorAll('.card, .btn, .suggestion-item');
+    hoverElements.forEach(element => {
+        element.addEventListener('touchstart', function() {
+            this.classList.add('touch-active');
+        });
+        
+        element.addEventListener('touchend', function() {
+            setTimeout(() => {
+                this.classList.remove('touch-active');
+            }, 150);
+        });
+    });
+}
+</script>
+
+<style>
+/* Mobile-specific enhancements */
+@media (max-width: 767.98px) {
+    .btn-group {
+        display: flex !important;
+    }
+    
+    .btn-group .btn {
+        flex: 1;
+        font-size: 0.875rem;
+    }
+    
+    .touch-active {
+        transform: scale(0.98);
+        transition: transform 0.1s ease;
+    }
+    
+    .card-body .row .col-12:not(:last-child) {
+        margin-bottom: 1rem;
+    }
+    
+    /* Optimize badge display on mobile */
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    /* Better spacing for action buttons */
+    .action-buttons .btn {
+        margin-bottom: 0.5rem;
+    }
+    
+    .action-buttons .btn:last-child {
+        margin-bottom: 0;
+    }
+}
+
+/* Enhanced focus styles for accessibility */
+.btn:focus,
+.card:focus,
+a:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Loading state for analysis buttons */
+.btn.loading {
+    pointer-events: none;
+    opacity: 0.65;
+}
+
+.btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+</style>
 {% endblock %}

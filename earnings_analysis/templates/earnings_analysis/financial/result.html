@@ -16,291 +16,76 @@
 </nav>
 {% endblock %}
 
-{% block extra_css %}
-<style>
-    .result-header {
-        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-        color: white;
-        border-radius: 1rem;
-        padding: 2rem;
-        margin-bottom: 2rem;
-    }
-    
-    .result-card {
-        border: none;
-        border-radius: 1rem;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.07);
-        margin-bottom: 1.5rem;
-    }
-    
-    .health-score-large {
-        font-size: 4rem;
-        font-weight: 700;
-        text-align: center;
-        padding: 3rem 2rem;
-        border-radius: 1rem;
-        margin: 1rem 0;
-    }
-    
-    .score-excellent {
-        background: linear-gradient(135deg, #10b981, #059669);
-        color: white;
-    }
-    
-    .score-good {
-        background: linear-gradient(135deg, #3b82f6, #2563eb);
-        color: white;
-    }
-    
-    .score-fair {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
-        color: white;
-    }
-    
-    .score-poor {
-        background: linear-gradient(135deg, #ef4444, #dc2626);
-        color: white;
-    }
-    
-    .cashflow-visualization {
-        background: #f8fafc;
-        border-radius: 1rem;
-        padding: 2rem;
-        margin: 1rem 0;
-    }
-    
-    .cf-flow-container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
-    
-    .cf-component {
-        flex: 1;
-        min-width: 150px;
-        text-align: center;
-        padding: 1rem;
-        border-radius: 0.75rem;
-        border: 2px solid;
-    }
-    
-    .cf-positive {
-        background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-        border-color: #10b981;
-        color: #065f46;
-    }
-    
-    .cf-negative {
-        background: linear-gradient(135deg, #fee2e2, #fecaca);
-        border-color: #ef4444;
-        color: #991b1b;
-    }
-    
-    .cf-neutral {
-        background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
-        border-color: #64748b;
-        color: #475569;
-    }
-    
-    .cf-arrow {
-        font-size: 2rem;
-        color: #64748b;
-        margin: 0 0.5rem;
-    }
-    
-    .investment-recommendation {
-        background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-        border: 2px solid #3b82f6;
-        border-radius: 1rem;
-        padding: 1.5rem;
-        margin: 1rem 0;
-    }
-    
-    .rec-aggressive {
-        background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-        border-color: #10b981;
-    }
-    
-    .rec-conditional {
-        background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-        border-color: #3b82f6;
-    }
-    
-    .rec-cautious {
-        background: linear-gradient(135deg, #fef3c7, #fde68a);
-        border-color: #f59e0b;
-    }
-    
-    .rec-avoid {
-        background: linear-gradient(135deg, #fee2e2, #fecaca);
-        border-color: #ef4444;
-    }
-    
-    .financial-metrics-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin: 1rem 0;
-    }
-    
-    .metric-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.75rem;
-        padding: 1.5rem;
-        text-align: center;
-        transition: transform 0.2s ease;
-    }
-    
-    .metric-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    
-    .confidence-indicator {
-        background: #f8fafc;
-        border-radius: 0.75rem;
-        padding: 1.5rem;
-        margin: 1rem 0;
-    }
-    
-    .confidence-score {
-        font-size: 2rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-    }
-    
-    .analysis-insight {
-        background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-        border: 1px solid #0ea5e9;
-        border-radius: 0.75rem;
-        padding: 1.5rem;
-        margin: 1rem 0;
-    }
-    
-    .pattern-explanation {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.75rem;
-        padding: 1rem;
-        margin: 0.5rem 0;
-    }
-    
-    .risk-level-high { color: #dc2626; }
-    .risk-level-medium { color: #d97706; }
-    .risk-level-low { color: #059669; }
-    
-    .timeline-item {
-        display: flex;
-        align-items: center;
-        margin: 0.5rem 0;
-        padding: 0.75rem;
-        background: #f8fafc;
-        border-radius: 0.5rem;
-    }
-    
-    .timeline-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 1rem;
-    }
-    
-    .comparison-table {
-        background: white;
-        border-radius: 0.75rem;
-        overflow: hidden;
-    }
-    
-    .comparison-row {
-        display: grid;
-        grid-template-columns: 2fr 1fr 1fr 1fr;
-        padding: 0.75rem;
-        border-bottom: 1px solid #e5e7eb;
-        align-items: center;
-    }
-    
-    .comparison-header {
-        background: #f8fafc;
-        font-weight: 600;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
-<!-- ヘッダー -->
-<div class="result-header">
-    <div class="row align-items-center">
-        <div class="col-md-8">
-            <h1 class="h3 mb-2">
-                <i class="fas fa-chart-pie me-3"></i>財務分析結果
+<!-- Header -->
+<div class="page-header mb-4">
+    <div class="row align-items-center g-3">
+        <div class="col-12 col-md-8">
+            <h1 class="h3 h-md-2 mb-2">
+                <i class="fas fa-chart-pie me-2 me-md-3"></i>財務分析結果
             </h1>
-            <p class="h5 mb-3 opacity-90">{{ document.company_name }}</p>
-            <p class="mb-0 opacity-80">{{ document.doc_description }}</p>
+            <p class="h6 h-md-5 mb-3 opacity-90 text-truncate">{{ document.company_name }}</p>
+            <p class="mb-0 opacity-80 text-truncate-2">{{ document.doc_description }}</p>
         </div>
-        <div class="col-md-4 text-md-end mt-3 mt-md-0">
-            <div class="badge bg-light text-dark fs-6 px-3 py-2 mb-2">
-                <i class="fas fa-calendar me-1"></i>{{ session.created_at|date:"Y/m/d H:i" }}
-            </div>
-            <br>
-            <div class="badge bg-success fs-6 px-3 py-2">
-                <i class="fas fa-check me-1"></i>分析完了
+        <div class="col-12 col-md-4 text-center text-md-end">
+            <div class="d-flex flex-column gap-2">
+                <div class="badge bg-white bg-opacity-20 px-3 py-2">
+                    <i class="fas fa-calendar me-1"></i>{{ session.created_at|date:"Y/m/d H:i" }}
+                </div>
+                <div class="badge bg-success px-3 py-2">
+                    <i class="fas fa-check me-1"></i>分析完了
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row">
-    <!-- メイン結果エリア -->
-    <div class="col-lg-8">
-        <!-- 総合健全性スコア -->
-        <div class="result-card card">
+<div class="row g-3 g-md-4">
+    <!-- Main Results Area -->
+    <div class="col-12 col-lg-8">
+        <!-- Overall Health Score -->
+        <div class="analysis-card card mb-4">
             <div class="card-header">
                 <h5 class="mb-0">
                     <i class="fas fa-tachometer-alt me-2"></i>総合健全性スコア
                 </h5>
             </div>
             <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col-md-6">
+                <div class="row align-items-center g-3">
+                    <div class="col-12 col-md-6">
                         {% if session.overall_health_score >= 80 %}
-                            <div class="health-score-large score-excellent">
-                                <div>{{ session.overall_health_score|floatformat:1 }}</div>
-                                <div class="fs-4">
+                            <div class="score-display score-positive">
+                                <div class="score-number">{{ session.overall_health_score|floatformat:1 }}</div>
+                                <div class="score-label">
                                     <i class="fas fa-star me-2"></i>優秀
                                 </div>
                             </div>
                         {% elif session.overall_health_score >= 60 %}
-                            <div class="health-score-large score-good">
-                                <div>{{ session.overall_health_score|floatformat:1 }}</div>
-                                <div class="fs-4">
+                            <div class="score-display bg-primary text-white">
+                                <div class="score-number">{{ session.overall_health_score|floatformat:1 }}</div>
+                                <div class="score-label">
                                     <i class="fas fa-thumbs-up me-2"></i>良好
                                 </div>
                             </div>
                         {% elif session.overall_health_score >= 40 %}
-                            <div class="health-score-large score-fair">
-                                <div>{{ session.overall_health_score|floatformat:1 }}</div>
-                                <div class="fs-4">
+                            <div class="score-display bg-warning text-white">
+                                <div class="score-number">{{ session.overall_health_score|floatformat:1 }}</div>
+                                <div class="score-label">
                                     <i class="fas fa-balance-scale me-2"></i>普通
                                 </div>
                             </div>
                         {% else %}
-                            <div class="health-score-large score-poor">
-                                <div>{{ session.overall_health_score|floatformat:1 }}</div>
-                                <div class="fs-4">
+                            <div class="score-display score-negative">
+                                <div class="score-number">{{ session.overall_health_score|floatformat:1 }}</div>
+                                <div class="score-label">
                                     <i class="fas fa-exclamation-triangle me-2"></i>要注意
                                 </div>
                             </div>
                         {% endif %}
                     </div>
-                    <div class="col-md-6">
-                        <h6>リスク評価</h6>
+                    <div class="col-12 col-md-6">
                         <div class="mb-3">
+                            <h6>リスク評価</h6>
                             {% if session.risk_level == 'low' %}
                                 <div class="alert alert-success">
                                     <i class="fas fa-shield-check me-2"></i>
@@ -319,130 +104,142 @@
                             {% endif %}
                         </div>
                         
-                        <h6>投資スタンス</h6>
-                        {% if session.investment_stance == 'aggressive' %}
-                            <span class="badge bg-success fs-6 px-3 py-2">積極的投資推奨</span>
-                        {% elif session.investment_stance == 'conditional' %}
-                            <span class="badge bg-info fs-6 px-3 py-2">条件付き投資推奨</span>
-                        {% elif session.investment_stance == 'cautious' %}
-                            <span class="badge bg-warning fs-6 px-3 py-2">慎重な検討が必要</span>
-                        {% else %}
-                            <span class="badge bg-danger fs-6 px-3 py-2">投資非推奨</span>
-                        {% endif %}
+                        <div>
+                            <h6>投資スタンス</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                {% if session.investment_stance == 'aggressive' %}
+                                    <span class="badge bg-success fs-6 px-3 py-2">積極的投資推奨</span>
+                                {% elif session.investment_stance == 'conditional' %}
+                                    <span class="badge bg-info fs-6 px-3 py-2">条件付き投資推奨</span>
+                                {% elif session.investment_stance == 'cautious' %}
+                                    <span class="badge bg-warning fs-6 px-3 py-2">慎重な検討が必要</span>
+                                {% else %}
+                                    <span class="badge bg-danger fs-6 px-3 py-2">投資非推奨</span>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Cashflow Analysis -->
         {% if session.analysis_result.financial_analysis.cashflow_analysis %}
             {% with cf=session.analysis_result.financial_analysis.cashflow_analysis %}
-                <div class="result-card card">
+                <div class="analysis-card card mb-4">
                     <div class="card-header">
                         <h5 class="mb-0">
                             <i class="fas fa-exchange-alt me-2"></i>キャッシュフロー分析
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="cashflow-visualization">
-                            <h6 class="text-center mb-3">
+                        <!-- Pattern Display -->
+                        <div class="text-center mb-4">
+                            <h6 class="mb-3">
                                 <strong>{{ cf.pattern.name }}</strong> - {{ cf.pattern.description }}
                             </h6>
                             
-                            <div class="cf-flow-container">
-                                <div class="cf-component {% if cf.amounts.operating_cf >= 0 %}cf-positive{% else %}cf-negative{% endif %}">
-                                    <div class="h5 mb-2">営業CF</div>
-                                    <div class="h4">{{ cf.amounts.operating_cf|format_compact_currency }}</div>
-                                    <div class="small">本業で稼ぐ</div>
-                                </div>
-                                
-                                <div class="cf-arrow">→</div>
-                                
-                                <div class="cf-component {% if cf.amounts.investing_cf >= 0 %}cf-positive{% else %}cf-negative{% endif %}">
-                                    <div class="h5 mb-2">投資CF</div>
-                                    <div class="h4">{{ cf.amounts.investing_cf|format_compact_currency }}</div>
-                                    <div class="small">将来への投資</div>
-                                </div>
-                                
-                                <div class="cf-arrow">→</div>
-                                
-                                <div class="cf-component {% if cf.amounts.financing_cf >= 0 %}cf-positive{% else %}cf-negative{% endif %}">
-                                    <div class="h5 mb-2">財務CF</div>
-                                    <div class="h4">{{ cf.amounts.financing_cf|format_compact_currency }}</div>
-                                    <div class="small">資金調達・返済</div>
-                                </div>
-                            </div>
-                            
-                            <!-- 詳細数値表示 -->
-                            <div class="mt-4">
-                                <h6><i class="fas fa-calculator me-2"></i>詳細金額</h6>
-                                <div class="row text-center">
-                                    <div class="col-md-4">
-                                        <div class="border rounded p-2">
-                                            <div class="small text-muted">営業キャッシュフロー</div>
-                                            <div class="fw-bold {{ cf.amounts.operating_cf|floatformat:0|sentiment_color }}">
-                                                {{ cf.amounts.operating_cf|format_xbrl_currency }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="border rounded p-2">
-                                            <div class="small text-muted">投資キャッシュフロー</div>
-                                            <div class="fw-bold {{ cf.amounts.investing_cf|floatformat:0|sentiment_color }}">
-                                                {{ cf.amounts.investing_cf|format_xbrl_currency }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="border rounded p-2">
-                                            <div class="small text-muted">財務キャッシュフロー</div>
-                                            <div class="fw-bold {{ cf.amounts.financing_cf|floatformat:0|sentiment_color }}">
-                                                {{ cf.amounts.financing_cf|format_xbrl_currency }}
-                                            </div>
-                                        </div>
+                            <!-- Mobile-friendly CF visualization -->
+                            <div class="row g-2 mb-4">
+                                <div class="col-4">
+                                    <div class="border rounded p-2 h-100 {% if cf.amounts.operating_cf >= 0 %}border-success bg-success bg-opacity-10{% else %}border-danger bg-danger bg-opacity-10{% endif %}">
+                                        <div class="small fw-semibold">営業CF</div>
+                                        <div class="h6 mb-1">{{ cf.amounts.operating_cf|format_compact_currency }}</div>
+                                        <div class="small text-muted">本業で稼ぐ</div>
                                     </div>
                                 </div>
                                 
-                                <div class="text-center mt-3">
-                                    <div class="border rounded p-2 bg-light">
-                                        <div class="small text-muted">合計キャッシュフロー</div>
-                                        <div class="h5 mb-0 {{ cf.amounts.total_cf|floatformat:0|sentiment_color }}">
-                                            {{ cf.amounts.total_cf|format_japanese_currency }}
-                                        </div>
+                                <div class="col-4">
+                                    <div class="border rounded p-2 h-100 {% if cf.amounts.investing_cf >= 0 %}border-success bg-success bg-opacity-10{% else %}border-danger bg-danger bg-opacity-10{% endif %}">
+                                        <div class="small fw-semibold">投資CF</div>
+                                        <div class="h6 mb-1">{{ cf.amounts.investing_cf|format_compact_currency }}</div>
+                                        <div class="small text-muted">将来投資</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-4">
+                                    <div class="border rounded p-2 h-100 {% if cf.amounts.financing_cf >= 0 %}border-success bg-success bg-opacity-10{% else %}border-danger bg-danger bg-opacity-10{% endif %}">
+                                        <div class="small fw-semibold">財務CF</div>
+                                        <div class="h6 mb-1">{{ cf.amounts.financing_cf|format_compact_currency }}</div>
+                                        <div class="small text-muted">資金調達</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="pattern-explanation">
+                        <!-- Detailed amounts -->
+                        <div class="mb-4">
+                            <h6><i class="fas fa-calculator me-2"></i>詳細金額</h6>
+                            <div class="row g-2 text-center">
+                                <div class="col-12 col-md-4">
+                                    <div class="border rounded p-3">
+                                        <div class="small text-muted">営業キャッシュフロー</div>
+                                        <div class="fw-bold {{ cf.amounts.operating_cf|floatformat:0|sentiment_color }}">
+                                            {{ cf.amounts.operating_cf|format_xbrl_currency }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <div class="border rounded p-3">
+                                        <div class="small text-muted">投資キャッシュフロー</div>
+                                        <div class="fw-bold {{ cf.amounts.investing_cf|floatformat:0|sentiment_color }}">
+                                            {{ cf.amounts.investing_cf|format_xbrl_currency }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <div class="border rounded p-3">
+                                        <div class="small text-muted">財務キャッシュフロー</div>
+                                        <div class="fw-bold {{ cf.amounts.financing_cf|floatformat:0|sentiment_color }}">
+                                            {{ cf.amounts.financing_cf|format_xbrl_currency }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-center mt-3">
+                                <div class="border rounded p-3 bg-light">
+                                    <div class="small text-muted">合計キャッシュフロー</div>
+                                    <div class="h5 mb-0 {{ cf.amounts.total_cf|floatformat:0|sentiment_color }}">
+                                        {{ cf.amounts.total_cf|format_japanese_currency }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Pattern explanation -->
+                        <div class="border rounded p-3 bg-light">
                             <h6><i class="fas fa-lightbulb me-2"></i>パターン解説</h6>
-                            <p class="mb-2">{{ cf.pattern.interpretation }}</p>
+                            <p class="mb-3">{{ cf.pattern.interpretation }}</p>
                             
-                            {% if cf.analysis.strengths %}
-                                <div class="mb-2">
-                                    <strong class="text-success">強み:</strong>
-                                    <ul class="small mb-0">
-                                        {% for strength in cf.analysis.strengths %}
-                                            <li>{{ strength }}</li>
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                            {% endif %}
-                            
-                            {% if cf.analysis.concerns %}
-                                <div class="mb-2">
-                                    <strong class="text-warning">懸念点:</strong>
-                                    <ul class="small mb-0">
-                                        {% for concern in cf.analysis.concerns %}
-                                            <li>{{ concern }}</li>
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                            {% endif %}
+                            <div class="row g-3">
+                                {% if cf.analysis.strengths %}
+                                    <div class="col-12 col-md-6">
+                                        <strong class="text-success">強み:</strong>
+                                        <ul class="small mb-0 mt-1">
+                                            {% for strength in cf.analysis.strengths %}
+                                                <li>{{ strength }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endif %}
+                                
+                                {% if cf.analysis.concerns %}
+                                    <div class="col-12 col-md-6">
+                                        <strong class="text-warning">懸念点:</strong>
+                                        <ul class="small mb-0 mt-1">
+                                            {% for concern in cf.analysis.concerns %}
+                                                <li>{{ concern }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endif %}
+                            </div>
                             
                             {% if cf.analysis.key_insights %}
-                                <div>
+                                <div class="mt-3">
                                     <strong class="text-info">重要な洞察:</strong>
-                                    <ul class="small mb-0">
+                                    <ul class="small mb-0 mt-1">
                                         {% for insight in cf.analysis.key_insights %}
                                             <li>{{ insight }}</li>
                                         {% endfor %}
@@ -455,17 +252,17 @@
             {% endwith %}
         {% endif %}
 
-        <!-- 統合分析結果 -->
+        <!-- Integrated Analysis -->
         {% if session.analysis_result.integrated_analysis %}
             {% with integrated=session.analysis_result.integrated_analysis %}
-                <div class="result-card card">
+                <div class="analysis-card card mb-4">
                     <div class="card-header">
                         <h5 class="mb-0">
                             <i class="fas fa-puzzle-piece me-2"></i>統合分析結果
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="analysis-insight">
+                        <div class="alert alert-info">
                             <h6 class="text-primary mb-3">
                                 <i class="fas fa-chart-line me-2"></i>総合評価: {{ integrated.overall_score }}点
                             </h6>
@@ -473,7 +270,7 @@
                             {% if integrated.integrated_insights %}
                                 <div class="mb-3">
                                     <strong>主要な洞察:</strong>
-                                    <ul class="mt-2">
+                                    <ul class="mt-2 mb-0">
                                         {% for insight in integrated.integrated_insights %}
                                             <li>{{ insight }}</li>
                                         {% endfor %}
@@ -481,13 +278,13 @@
                                 </div>
                             {% endif %}
                             
-                            <div class="row">
-                                <div class="col-md-6">
+                            <div class="row g-3">
+                                <div class="col-6">
                                     <div class="small">
                                         <strong>感情分析スコア:</strong> {{ integrated.component_scores.sentiment_score }}
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-6">
                                     <div class="small">
                                         <strong>財務分析スコア:</strong> {{ integrated.component_scores.financial_score }}
                                     </div>
@@ -496,9 +293,9 @@
                         </div>
                         
                         {% if integrated.key_findings %}
-                            <div class="row mt-3">
+                            <div class="row g-3">
                                 {% if integrated.key_findings.strengths %}
-                                    <div class="col-md-6">
+                                    <div class="col-12 col-md-6">
                                         <h6 class="text-success">
                                             <i class="fas fa-plus-circle me-1"></i>強み
                                         </h6>
@@ -511,7 +308,7 @@
                                 {% endif %}
                                 
                                 {% if integrated.key_findings.concerns %}
-                                    <div class="col-md-6">
+                                    <div class="col-12 col-md-6">
                                         <h6 class="text-warning">
                                             <i class="fas fa-exclamation-circle me-1"></i>懸念点
                                         </h6>
@@ -529,19 +326,24 @@
             {% endwith %}
         {% endif %}
 
-        <!-- 投資推奨 -->
+        <!-- Investment Recommendation -->
         {% if session.analysis_result.integrated_analysis.investment_recommendation %}
             {% with rec=session.analysis_result.integrated_analysis.investment_recommendation %}
-                <div class="result-card card">
+                <div class="analysis-card card mb-4">
                     <div class="card-header">
                         <h5 class="mb-0">
                             <i class="fas fa-chart-bar me-2"></i>投資推奨
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="investment-recommendation rec-{{ rec.stance }}">
-                            <div class="row align-items-center">
-                                <div class="col-md-8">
+                        <div class="alert 
+                            {% if rec.stance == 'aggressive' %}alert-success
+                            {% elif rec.stance == 'conditional' %}alert-info
+                            {% elif rec.stance == 'cautious' %}alert-warning
+                            {% else %}alert-danger{% endif %}">
+                            
+                            <div class="row align-items-center g-3">
+                                <div class="col-12 col-md-8">
                                     <h6 class="mb-2">
                                         {% if rec.stance == 'aggressive' %}
                                             <i class="fas fa-rocket me-2 text-success"></i>積極的投資推奨
@@ -553,7 +355,7 @@
                                             <i class="fas fa-times-circle me-2 text-danger"></i>投資非推奨
                                         {% endif %}
                                     </h6>
-                                    <p class="mb-2">
+                                    <div class="mb-2">
                                         <strong>信頼度:</strong> 
                                         {% if rec.confidence_level == 'high' %}
                                             <span class="text-success">高</span>
@@ -562,11 +364,11 @@
                                         {% else %}
                                             <span class="text-warning">低</span>
                                         {% endif %}
-                                    </p>
-                                    <p class="small mb-0">{{ rec.timeline }}</p>
+                                    </div>
+                                    <div class="small">{{ rec.timeline }}</div>
                                 </div>
-                                <div class="col-md-4 text-center">
-                                    <div class="h3 mb-0">
+                                <div class="col-12 col-md-4 text-center">
+                                    <div class="h2 mb-0">
                                         {% if rec.stance == 'aggressive' %}
                                             <i class="fas fa-thumbs-up text-success"></i>
                                         {% elif rec.stance == 'conditional' %}
@@ -607,25 +409,23 @@
             {% endwith %}
         {% endif %}
 
-        <!-- 経営陣自信度 -->
+        <!-- Management Confidence -->
         {% if session.management_confidence_score %}
-            <div class="result-card card">
+            <div class="analysis-card card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0">
                         <i class="fas fa-user-tie me-2"></i>経営陣の自信度分析
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="confidence-indicator">
-                        <div class="text-center">
-                            <div class="confidence-score 
-                                {% if session.management_confidence_score >= 70 %}text-success
-                                {% elif session.management_confidence_score >= 50 %}text-info
-                                {% elif session.management_confidence_score >= 30 %}text-warning
-                                {% else %}text-danger{% endif %}">
-                                {{ session.management_confidence_score|floatformat:0 }}%
-                            </div>
-                            <div class="h6">
+                    <div class="text-center">
+                        <div class="score-display 
+                            {% if session.management_confidence_score >= 70 %}bg-success
+                            {% elif session.management_confidence_score >= 50 %}bg-info
+                            {% elif session.management_confidence_score >= 30 %}bg-warning
+                            {% else %}bg-danger{% endif %} text-white">
+                            <div class="score-number">{{ session.management_confidence_score|floatformat:0 }}%</div>
+                            <div class="score-label">
                                 {% if session.management_confidence_score >= 70 %}
                                     非常に自信に満ちた表現
                                 {% elif session.management_confidence_score >= 50 %}
@@ -638,7 +438,7 @@
                             </div>
                         </div>
                         
-                        <div class="mt-3 small text-muted text-center">
+                        <div class="mt-3 small text-muted">
                             決算説明書のテキスト分析により、経営陣の自信度を機械学習で測定
                         </div>
                     </div>
@@ -647,21 +447,22 @@
         {% endif %}
     </div>
     
-    <!-- サイドバー -->
-    <div class="col-lg-4">
-        <!-- データ品質情報 -->
+    <!-- Sidebar -->
+    <div class="col-12 col-lg-4">
+        <!-- Data Quality Info -->
         {% if session.analysis_result.data_sources %}
             {% with sources=session.analysis_result.data_sources %}
-                <div class="result-card card">
+                <div class="analysis-card card mb-4">
                     <div class="card-header">
                         <h6 class="mb-0">
                             <i class="fas fa-database me-2"></i>データ品質
                         </h6>
                     </div>
                     <div class="card-body">
-                        <div class="timeline-item">
-                            <div class="timeline-icon bg-{% if sources.xbrl_available %}success{% else %}warning{% endif %}">
-                                <i class="fas fa-{% if sources.xbrl_available %}check{% else %}exclamation-triangle{% endif %}"></i>
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="me-3">
+                                <i class="fas fa-{% if sources.xbrl_available %}check{% else %}exclamation-triangle{% endif %} 
+                                   fa-2x {% if sources.xbrl_available %}text-success{% else %}text-warning{% endif %}"></i>
                             </div>
                             <div>
                                 <div class="fw-semibold">XBRLデータ</div>
@@ -675,9 +476,9 @@
                             </div>
                         </div>
                         
-                        <div class="timeline-item">
-                            <div class="timeline-icon bg-primary">
-                                <i class="fas fa-file-text"></i>
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="me-3">
+                                <i class="fas fa-file-text fa-2x text-primary"></i>
                             </div>
                             <div>
                                 <div class="fw-semibold">テキストデータ</div>
@@ -685,11 +486,11 @@
                             </div>
                         </div>
                         
-                        <div class="mt-2 text-center">
+                        <div class="text-center">
                             <span class="badge 
                                 {% if sources.data_quality == 'high' %}bg-success
                                 {% elif sources.data_quality == 'medium' %}bg-warning
-                                {% else %}bg-secondary{% endif %}">
+                                {% else %}bg-secondary{% endif %} fs-6 px-3 py-2">
                                 {% if sources.data_quality == 'high' %}高品質データ
                                 {% elif sources.data_quality == 'medium' %}中品質データ
                                 {% else %}制限データ{% endif %}
@@ -700,31 +501,31 @@
             {% endwith %}
         {% endif %}
 
-        <!-- アクション -->
-        <div class="result-card card">
+        <!-- Actions -->
+        <div class="analysis-card card">
             <div class="card-header">
                 <h6 class="mb-0">
                     <i class="fas fa-tools me-2"></i>アクション
                 </h6>
             </div>
             <div class="card-body">
-                <div class="d-grid gap-2">
+                <div class="action-buttons">
                     <a href="{% url 'earnings_analysis:financial-analysis' document.doc_id %}" 
-                       class="btn btn-primary">
+                       class="btn btn-primary w-100">
                         <i class="fas fa-redo me-1"></i>再分析実行
                     </a>
                     <a href="{% url 'earnings_analysis:sentiment-analysis' document.doc_id %}" 
-                       class="btn btn-outline-purple">
+                       class="btn btn-outline-success w-100">
                         <i class="fas fa-brain me-1"></i>感情分析も実行
                     </a>
                     <a href="{% url 'earnings_analysis:document-detail-ui' document.doc_id %}" 
-                       class="btn btn-outline-secondary">
+                       class="btn btn-outline-secondary w-100">
                         <i class="fas fa-arrow-left me-1"></i>書類詳細に戻る
                     </a>
-                    <button type="button" class="btn btn-outline-info" onclick="shareResult()">
+                    <button type="button" class="btn btn-outline-info w-100" onclick="shareResult()">
                         <i class="fas fa-share me-1"></i>結果を共有
                     </button>
-                    <button type="button" class="btn btn-outline-success" onclick="exportReport()">
+                    <button type="button" class="btn btn-outline-success w-100" onclick="exportReport()">
                         <i class="fas fa-download me-1"></i>レポート保存
                     </button>
                 </div>
@@ -733,7 +534,7 @@
     </div>
 </div>
 
-<!-- 注意事項 -->
+<!-- Important Notice -->
 <div class="alert alert-info mt-4">
     <i class="fas fa-info-circle me-2"></i>
     <strong>重要な注意事項:</strong> 
@@ -753,14 +554,39 @@ function shareResult() {
         navigator.share({
             title: title,
             url: url
-        }).catch(console.error);
-    } else if (navigator.clipboard) {
-        navigator.clipboard.writeText(url).then(() => {
-            alert('URLをコピーしました');
+        }).catch(error => {
+            console.log('Share failed:', error);
+            fallbackShare(url, title);
         });
     } else {
+        fallbackShare(url, title);
+    }
+}
+
+function fallbackShare(url, title) {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(() => {
+            showToast('URLをコピーしました', 'success');
+        }).catch(() => {
+            promptShare(url);
+        });
+    } else {
+        promptShare(url);
+    }
+}
+
+function promptShare(url) {
+    const textarea = document.createElement('textarea');
+    textarea.value = url;
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+        document.execCommand('copy');
+        showToast('URLをコピーしました', 'success');
+    } catch (err) {
         prompt('URLをコピーしてください:', url);
     }
+    document.body.removeChild(textarea);
 }
 
 function exportReport() {
@@ -802,38 +628,58 @@ function exportReport() {
     URL.revokeObjectURL(url);
 }
 
-// スムーズスクロール
+// Toast notification
+function showToast(message, type = 'info') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'position-fixed top-0 end-0 p-3';
+        container.style.zIndex = '9999';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'primary'} border-0`;
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+
+    container.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    toast.addEventListener('hidden.bs.toast', () => toast.remove());
+}
+
+// Initialize page animations
 document.addEventListener('DOMContentLoaded', function() {
-    // 結果カードのアニメーション
-    const cards = document.querySelectorAll('.result-card');
-    const observer = new IntersectionObserver(entries => {
-        entries.forEach(entry => {
+    const cards = document.querySelectorAll('.analysis-card');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry, index) => {
             if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
+                setTimeout(() => {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }, index * 100);
             }
         });
-    });
-    
+    }, { threshold: 0.1 });
+
     cards.forEach(card => {
         card.style.opacity = '0';
         card.style.transform = 'translateY(20px)';
         card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
         observer.observe(card);
     });
+
+    // Scroll to top on load
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 </script>
-
-<style>
-.btn-outline-purple {
-    color: #8b5cf6;
-    border-color: #8b5cf6;
-}
-
-.btn-outline-purple:hover {
-    color: white;
-    background-color: #8b5cf6;
-    border-color: #8b5cf6;
-}
-</style>
 {% endblock %}

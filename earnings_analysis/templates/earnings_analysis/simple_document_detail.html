@@ -1,4 +1,4 @@
-<!-- earnings_analysis/templates/earnings_analysis/simple_document_detail.html （感情分析機能追加版） -->
+<!-- earnings_analysis/templates/earnings_analysis/simple_document_detail.html -->
 {% extends 'earnings_analysis/simple_base.html' %}
 
 {% block title %}{{ document.company_name }} - 決算書類管理システム{% endblock %}
@@ -7,279 +7,677 @@
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{% url 'earnings_analysis:index' %}">ホーム</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'earnings_analysis:document-list-ui' %}">書類一覧</a></li>
-        <li class="breadcrumb-item active">{{ document.doc_id }}</li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'earnings_analysis:document-list-ui' %}">書類一覧</a>
+        </li>
+        <li class="breadcrumb-item active text-truncate" style="max-width: 200px;">
+            {{ document.doc_id }}
+        </li>
     </ol>
 </nav>
 
-<!-- 書類ヘッダー -->
-<div class="bg-primary text-white rounded p-4 mb-4">
-    <div class="row align-items-center">
-        <div class="col-md-8">
-            <h1 class="h3 mb-2">{{ document.company_name }}</h1>
-            <p class="h5 mb-3 opacity-90">{{ document.doc_description }}</p>
+<!-- Document Header -->
+<div class="page-header mb-4">
+    <div class="row align-items-center g-3">
+        <div class="col-12 col-md-8">
+            <h1 class="h3 h-md-2 mb-2 text-truncate">{{ document.company_name }}</h1>
+            <p class="h6 h-md-5 mb-3 opacity-90 text-truncate-3">{{ document.doc_description }}</p>
             <div class="d-flex flex-wrap gap-2">
                 {% if document.securities_code %}
-                    <span class="badge bg-light text-dark">証券コード: {{ document.securities_code }}</span>
+                    <span class="badge bg-warning text-dark">証券: {{ document.securities_code }}</span>
                 {% endif %}
-                <span class="badge bg-light text-dark">書類管理番号: {{ document.doc_id }}</span>
-                <span class="badge bg-light text-dark">EDINETコード: {{ document.edinet_code }}</span>
+                <span class="badge bg-light text-dark">書類ID: {{ document.doc_id }}</span>
+                <span class="badge bg-light text-dark">EDINET: {{ document.edinet_code }}</span>
             </div>
         </div>
-        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        <div class="col-12 col-md-4 text-center text-md-end">
             {% if document.legal_status == '1' %}
-                <span class="badge bg-success fs-6 px-3 py-2">
+                <div class="badge bg-white bg-opacity-20 fs-6 px-3 py-2">
                     <i class="fas fa-check-circle me-1"></i>閲覧可能
-                </span>
+                </div>
+            {% else %}
+                <div class="badge bg-warning text-dark fs-6 px-3 py-2">
+                    <i class="fas fa-exclamation-triangle me-1"></i>制限あり
+                </div>
             {% endif %}
         </div>
     </div>
 </div>
 
-<div class="row">
-    <!-- メイン情報 -->
-    <div class="col-lg-8">
-        <!-- 基本情報 -->
+<div class="row g-3 g-md-4">
+    <!-- Main Content -->
+    <div class="col-12 col-lg-8">
+        <!-- Basic Information -->
         <div class="card mb-4">
             <div class="card-header">
-                <i class="fas fa-info-circle me-2"></i>基本情報
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>基本情報
+                </h5>
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="small text-muted">提出日時</label>
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label class="small text-muted fw-semibold">提出日時</label>
                         <div class="fw-semibold">{{ document.submit_date_time|date:"Y年m月d日 H:i" }}</div>
                     </div>
                     
                     {% if document.period_start and document.period_end %}
-                        <div class="col-md-6 mb-3">
-                            <label class="small text-muted">対象期間</label>
+                        <div class="col-12 col-md-6">
+                            <label class="small text-muted fw-semibold">対象期間</label>
                             <div class="fw-semibold">
                                 {{ document.period_start|date:"Y/m/d" }} 〜 {{ document.period_end|date:"Y/m/d" }}
                             </div>
                         </div>
                     {% endif %}
                     
-                    <div class="col-md-6 mb-3">
-                        <label class="small text-muted">書類種別コード</label>
+                    <div class="col-12 col-md-6">
+                        <label class="small text-muted fw-semibold">書類種別コード</label>
                         <div class="fw-semibold">{{ document.doc_type_code }}</div>
                     </div>
                     
-                    <div class="col-md-6 mb-3">
-                        <label class="small text-muted">府令コード</label>
+                    <div class="col-12 col-md-6">
+                        <label class="small text-muted fw-semibold">府令コード</label>
                         <div class="fw-semibold">{{ document.ordinance_code }}</div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ダウンロードセクション -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <i class="fas fa-download me-2"></i>ダウンロード
-            </div>
-            <div class="card-body">
-                <div class="bg-light rounded p-4 text-center">
-                    <h5 class="mb-3">
-                        <i class="fas fa-cloud-download-alt text-primary me-2"></i>利用可能な形式
-                    </h5>
                     
-                    <div class="d-flex flex-wrap justify-content-center gap-2">
-                        {% if document.pdf_flag %}
-                            <button type="button" class="btn btn-danger btn-lg"
-                                    onclick="downloadDocument('{{ document.doc_id }}', 'pdf', this)">
-                                <i class="fas fa-file-pdf me-2"></i>PDFダウンロード
-                            </button>
-                        {% endif %}
-                        
-                        {% if document.xbrl_flag %}
-                            <button type="button" class="btn btn-primary btn-lg"
-                                    onclick="downloadDocument('{{ document.doc_id }}', 'xbrl', this)">
-                                <i class="fas fa-code me-2"></i>XBRLダウンロード
-                            </button>
-                        {% endif %}
-                        
-                        {% if document.csv_flag %}
-                            <button type="button" class="btn btn-success btn-lg"
-                                    onclick="downloadDocument('{{ document.doc_id }}', 'csv', this)">
-                                <i class="fas fa-table me-2"></i>CSVダウンロード
-                            </button>
-                        {% endif %}
-                    </div>
-                    
-                    {% if not document.pdf_flag and not document.xbrl_flag and not document.csv_flag %}
-                        <div class="text-muted">
-                            <i class="fas fa-exclamation-triangle me-1"></i>
-                            ダウンロード可能なファイルがありません
+                    {% if document.submitter_name %}
+                        <div class="col-12">
+                            <label class="small text-muted fw-semibold">提出者</label>
+                            <div class="fw-semibold">{{ document.submitter_name }}</div>
                         </div>
                     {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- 感情分析セクション（新規追加） -->
+        <!-- Download Section -->
         <div class="card mb-4">
-            <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <div class="card-header">
                 <h5 class="mb-0">
-                    <i class="fas fa-brain me-2"></i>感情分析
+                    <i class="fas fa-download me-2"></i>ダウンロード
                 </h5>
             </div>
             <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <h6>書類の感情を自動分析</h6>
-                        <p class="text-muted mb-3">
-                            この書類に含まれるポジティブ・ネガティブな表現を自動検出し、<br>
-                            全体的な感情傾向をスコア化します。
-                        </p>
-                        <div class="small text-muted">
-                            <i class="fas fa-clock me-1"></i>分析時間: 約2-3分
-                            <span class="ms-3">
-                                <i class="fas fa-chart-line me-1"></i>スコア範囲: -1.0 〜 +1.0
-                            </span>
-                        </div>
+                <div class="text-center py-4">
+                    <h6 class="mb-4">
+                        <i class="fas fa-cloud-download-alt text-primary me-2"></i>利用可能な形式
+                    </h6>
+                    
+                    <div class="row g-3">
+                        {% if document.pdf_flag %}
+                            <div class="col-12 col-sm-6 col-lg-4">
+                                <div class="border rounded p-3 h-100 d-flex flex-column">
+                                    <div class="text-center mb-3">
+                                        <i class="fas fa-file-pdf fa-3x text-danger mb-2"></i>
+                                        <h6 class="mb-1">PDF形式</h6>
+                                        <small class="text-muted">読みやすい文書形式</small>
+                                    </div>
+                                    <div class="mt-auto">
+                                        <button type="button" class="btn btn-danger w-100"
+                                                onclick="downloadDocument('{{ document.doc_id }}', 'pdf', this)">
+                                            <i class="fas fa-download me-1"></i>PDFダウンロード
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        {% if document.xbrl_flag %}
+                            <div class="col-12 col-sm-6 col-lg-4">
+                                <div class="border rounded p-3 h-100 d-flex flex-column">
+                                    <div class="text-center mb-3">
+                                        <i class="fas fa-code fa-3x text-primary mb-2"></i>
+                                        <h6 class="mb-1">XBRL形式</h6>
+                                        <small class="text-muted">構造化データ形式</small>
+                                    </div>
+                                    <div class="mt-auto">
+                                        <button type="button" class="btn btn-primary w-100"
+                                                onclick="downloadDocument('{{ document.doc_id }}', 'xbrl', this)">
+                                            <i class="fas fa-download me-1"></i>XBRLダウンロード
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        {% if document.csv_flag %}
+                            <div class="col-12 col-sm-6 col-lg-4">
+                                <div class="border rounded p-3 h-100 d-flex flex-column">
+                                    <div class="text-center mb-3">
+                                        <i class="fas fa-table fa-3x text-success mb-2"></i>
+                                        <h6 class="mb-1">CSV形式</h6>
+                                        <small class="text-muted">表計算ソフト用</small>
+                                    </div>
+                                    <div class="mt-auto">
+                                        <button type="button" class="btn btn-success w-100"
+                                                onclick="downloadDocument('{{ document.doc_id }}', 'csv', this)">
+                                            <i class="fas fa-download me-1"></i>CSVダウンロード
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
                     </div>
-                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                        <a href="{% url 'earnings_analysis:sentiment-analysis' document.doc_id %}" 
-                           class="btn btn-primary btn-lg mb-2">
-                            <i class="fas fa-brain me-2"></i>感情分析開始
-                        </a>
-                        <div class="mt-2">
-                            <small class="text-muted">
-                                <i class="fas fa-info-circle me-1"></i>初回利用は無料
-                            </small>
+                    
+                    {% if not document.pdf_flag and not document.xbrl_flag and not document.csv_flag %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            現在ダウンロード可能なファイルがありません
                         </div>
-                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- 財務分析セクション（新規追加） -->
+        <!-- AI Analysis Section -->
         <div class="card mb-4">
-            <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white;">
+            <div class="card-header bg-gradient" 
+                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
                 <h5 class="mb-0">
-                    <i class="fas fa-chart-pie me-2"></i>財務分析
+                    <i class="fas fa-robot me-2"></i>AI分析機能
+                    <span class="badge bg-light text-dark ms-2 small">推奨</span>
                 </h5>
             </div>
             <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <h6>包括的な財務健全性評価</h6>
-                        <p class="text-muted mb-3">
-                            <strong>キャッシュフロー分析:</strong> 理想型、成長型、危険型等のパターン判定<br>
-                            <strong>経営陣自信度:</strong> テキスト分析による経営陣の自信度測定<br>
-                            <strong>投資判断支援:</strong> 総合的なリスク評価と投資推奨度
-                        </p>
-                        <div class="small text-muted">
-                            <i class="fas fa-clock me-1"></i>分析時間: 約3-5分
-                            <span class="ms-3">
-                                {% if document.xbrl_flag %}
-                                    <i class="fas fa-check-circle text-success me-1"></i>XBRL対応
-                                {% else %}
-                                    <i class="fas fa-exclamation-triangle text-warning me-1"></i>XBRLなし（制限モード）
-                                {% endif %}
-                            </span>
+                <div class="row g-4">
+                    <!-- Financial Analysis -->
+                    <div class="col-12 col-md-6">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-center mb-3">
+                                <i class="fas fa-chart-pie fa-3x text-primary mb-3"></i>
+                                <h6 class="mb-2">財務分析</h6>
+                                <p class="small text-muted mb-3">
+                                    包括的な財務健全性評価<br>
+                                    キャッシュフロー構造分析<br>
+                                    投資判断支援
+                                </p>
+                            </div>
+                            <div class="mt-auto">
+                                <a href="{% url 'earnings_analysis:financial-analysis' document.doc_id %}" 
+                                   class="btn btn-primary w-100 mb-2">
+                                    <i class="fas fa-chart-pie me-2"></i>財務分析開始
+                                </a>
+                                <div class="small text-muted text-center">
+                                    <i class="fas fa-clock me-1"></i>約3-5分
+                                    {% if document.xbrl_flag %}
+                                        <span class="ms-2">
+                                            <i class="fas fa-check-circle text-success me-1"></i>XBRL対応
+                                        </span>
+                                    {% else %}
+                                        <span class="ms-2">
+                                            <i class="fas fa-exclamation-triangle text-warning me-1"></i>制限モード
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                        <a href="{% url 'earnings_analysis:financial-analysis' document.doc_id %}" 
-                           class="btn btn-primary btn-lg mb-2">
-                            <i class="fas fa-chart-pie me-2"></i>財務分析開始
-                        </a>
-                        <div class="mt-2">
-                            <small class="text-muted">
-                                <i class="fas fa-info-circle me-1"></i>感情分析 + 財務分析
-                            </small>
+
+                    <!-- Sentiment Analysis -->
+                    <div class="col-12 col-md-6">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-center mb-3">
+                                <i class="fas fa-brain fa-3x text-success mb-3"></i>
+                                <h6 class="mb-2">感情分析</h6>
+                                <p class="small text-muted mb-3">
+                                    書類の感情を自動分析<br>
+                                    経営陣の自信度測定<br>
+                                    市場への影響予測
+                                </p>
+                            </div>
+                            <div class="mt-auto">
+                                <a href="{% url 'earnings_analysis:sentiment-analysis' document.doc_id %}" 
+                                   class="btn btn-success w-100 mb-2">
+                                    <i class="fas fa-brain me-2"></i>感情分析開始
+                                </a>
+                                <div class="small text-muted text-center">
+                                    <i class="fas fa-clock me-1"></i>約2-3分
+                                    <span class="ms-2">
+                                        <i class="fas fa-info-circle me-1"></i>テキスト解析
+                                    </span>
+                                </div>
+                            </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- One-Click Analysis -->
+                <div class="mt-4 p-3 bg-light rounded">
+                    <div class="text-center">
+                        <h6 class="text-primary mb-2">
+                            <i class="fas fa-rocket me-2"></i>ワンクリック包括分析
+                        </h6>
+                        <p class="small text-muted mb-3">
+                            財務分析と感情分析を一括で実行し、総合的な企業評価を提供します
+                        </p>
+                        <a href="{% url 'earnings_analysis:financial-analysis' document.doc_id %}" 
+                           class="btn btn-outline-primary">
+                            <i class="fas fa-rocket me-2"></i>包括分析を開始
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- サイドバー -->
-    <div class="col-lg-4">
-        <!-- 関連書類 -->
+    <!-- Sidebar -->
+    <div class="col-12 col-lg-4">
+        <!-- Related Documents -->
         {% if related_documents %}
             <div class="card mb-4">
                 <div class="card-header">
-                    <i class="fas fa-link me-2"></i>同一企業の関連書類
+                    <h6 class="mb-0">
+                        <i class="fas fa-link me-2"></i>同一企業の関連書類
+                        <span class="badge bg-primary ms-2 small">{{ related_documents|length }}件</span>
+                    </h6>
                 </div>
                 <div class="card-body">
                     {% for related in related_documents %}
                         <div class="border rounded p-3 mb-3">
                             <h6 class="mb-1">
                                 <a href="{% url 'earnings_analysis:document-detail-ui' related.doc_id %}" 
-                                   class="text-decoration-none">
-                                    {{ related.doc_description|truncatechars:40 }}
+                                   class="text-decoration-none text-truncate-2 d-block">
+                                    {{ related.doc_description }}
                                 </a>
                             </h6>
                             <div class="small text-muted mb-2">
                                 <i class="fas fa-calendar me-1"></i>{{ related.submit_date_time|date:"Y/m/d" }}
                             </div>
-                            <div class="small">
+                            <div class="d-flex flex-wrap gap-1">
                                 {% if related.pdf_flag %}
-                                    <span class="badge bg-danger me-1">PDF</span>
+                                    <span class="badge bg-danger small">PDF</span>
                                 {% endif %}
                                 {% if related.xbrl_flag %}
-                                    <span class="badge bg-primary me-1">XBRL</span>
+                                    <span class="badge bg-primary small">XBRL</span>
+                                {% endif %}
+                                {% if related.csv_flag %}
+                                    <span class="badge bg-success small">CSV</span>
                                 {% endif %}
                             </div>
                         </div>
                     {% endfor %}
                     
                     <div class="text-center mt-3">
-                        <a href="{% url 'earnings_analysis:document-list-ui' %}?company={{ document.company_name }}" 
-                           class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-list me-1"></i>この企業の全書類を見る
+                        <a href="{% url 'earnings_analysis:company-detail-ui' document.edinet_code %}" 
+                           class="btn btn-outline-primary btn-sm w-100">
+                            <i class="fas fa-building me-1"></i>企業詳細ページへ
                         </a>
                     </div>
                 </div>
             </div>
         {% endif %}
 
-        <!-- アクション -->
-        <div class="card">
+        <!-- Document Analysis History -->
+        <div class="card mb-4">
             <div class="card-header">
-                <i class="fas fa-tools me-2"></i>アクション
+                <h6 class="mb-0">
+                    <i class="fas fa-history me-2"></i>分析履歴
+                </h6>
             </div>
             <div class="card-body">
-                <div class="d-grid gap-2">
+                <div class="text-center py-3">
+                    <i class="fas fa-chart-bar fa-2x text-muted mb-2"></i>
+                    <p class="small text-muted mb-3">
+                        この書類の分析履歴はまだありません
+                    </p>
+                    <button class="btn btn-outline-primary btn-sm" onclick="startAnalysis()">
+                        <i class="fas fa-play me-1"></i>初回分析を開始
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>クイックアクション
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="action-buttons">
                     <a href="{% url 'earnings_analysis:financial-analysis' document.doc_id %}" 
-                       class="btn btn-outline-primary">
-                        <i class="fas fa-chart-pie me-1"></i>財務分析実行
+                       class="btn btn-outline-primary w-100">
+                        <i class="fas fa-chart-pie me-2"></i>財務分析実行
                     </a>
                     <a href="{% url 'earnings_analysis:sentiment-analysis' document.doc_id %}" 
-                       class="btn btn-outline-purple">
-                        <i class="fas fa-brain me-1"></i>感情分析実行
+                       class="btn btn-outline-success w-100">
+                        <i class="fas fa-brain me-2"></i>感情分析実行
                     </a>
                     <a href="{% url 'earnings_analysis:document-list-ui' %}?company={{ document.company_name }}" 
-                       class="btn btn-outline-primary">
-                        <i class="fas fa-search me-1"></i>この企業で検索
+                       class="btn btn-outline-info w-100">
+                        <i class="fas fa-search me-2"></i>この企業で検索
                     </a>
                     <a href="{% url 'earnings_analysis:document-list-ui' %}?doc_type={{ document.doc_type_code }}" 
-                       class="btn btn-outline-success">
-                        <i class="fas fa-filter me-1"></i>同じ書類種別で検索
+                       class="btn btn-outline-warning w-100">
+                        <i class="fas fa-filter me-2"></i>同じ書類種別
                     </a>
-                    <a href="javascript:history.back()" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left me-1"></i>前のページに戻る
-                    </a>
+                    <button onclick="shareDocument()" class="btn btn-outline-secondary w-100">
+                        <i class="fas fa-share me-2"></i>この書類を共有
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<style>
-.btn-outline-purple {
-    color: #667eea;
-    border-color: #667eea;
+<!-- Analysis Options Modal -->
+<div class="modal fade" id="analysisModal" tabindex="-1" aria-labelledby="analysisModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="analysisModalLabel">
+                    <i class="fas fa-robot me-2"></i>分析オプション選択
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="閉じる"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <h6>どの分析を実行しますか？</h6>
+                    <p class="text-muted small">分析内容に応じて適切なオプションを選択してください</p>
+                </div>
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-chart-pie fa-3x text-primary mb-3"></i>
+                                <h6>財務分析のみ</h6>
+                                <p class="small text-muted">数値データの分析に重点</p>
+                                <button class="btn btn-primary" onclick="goToFinancialAnalysis()">
+                                    <i class="fas fa-chart-pie me-1"></i>財務分析開始
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-brain fa-3x text-success mb-3"></i>
+                                <h6>感情分析のみ</h6>
+                                <p class="small text-muted">テキストの感情解析に重点</p>
+                                <button class="btn btn-success" onclick="goToSentimentAnalysis()">
+                                    <i class="fas fa-brain me-1"></i>感情分析開始
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <div class="card border-danger">
+                        <div class="card-body text-center">
+                            <i class="fas fa-rocket fa-3x text-danger mb-3"></i>
+                            <h6>包括分析（推奨）</h6>
+                            <p class="small text-muted">財務分析と感情分析を組み合わせた総合評価</p>
+                            <button class="btn btn-danger btn-lg" onclick="goToComprehensiveAnalysis()">
+                                <i class="fas fa-rocket me-2"></i>包括分析開始
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Add animation to cards
+    const cards = document.querySelectorAll('.card');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry, index) => {
+            if (entry.isIntersecting) {
+                setTimeout(() => {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }, index * 100);
+            }
+        });
+    }, { threshold: 0.1 });
+
+    cards.forEach(card => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(card);
+    });
+});
+
+// Analysis functions
+function startAnalysis() {
+    const modal = new bootstrap.Modal(document.getElementById('analysisModal'));
+    modal.show();
 }
 
-.btn-outline-purple:hover {
-    color: white;
-    background-color: #667eea;
-    border-color: #667eea;
+function goToFinancialAnalysis() {
+    window.location.href = '{% url "earnings_analysis:financial-analysis" document.doc_id %}';
+}
+
+function goToSentimentAnalysis() {
+    window.location.href = '{% url "earnings_analysis:sentiment-analysis" document.doc_id %}';
+}
+
+function goToComprehensiveAnalysis() {
+    // Start with sentiment analysis (which typically includes financial analysis)
+    window.location.href = '{% url "earnings_analysis:sentiment-analysis" document.doc_id %}';
+}
+
+// Share function
+function shareDocument() {
+    const url = window.location.href;
+    const title = '{{ document.company_name }} - {{ document.doc_description|truncatechars:50 }}';
+    
+    if (navigator.share) {
+        navigator.share({
+            title: title,
+            url: url,
+            text: '決算書類の詳細情報を確認'
+        }).catch(error => {
+            console.log('Share failed:', error);
+            fallbackShare(url, title);
+        });
+    } else {
+        fallbackShare(url, title);
+    }
+}
+
+function fallbackShare(url, title) {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(() => {
+            showToast('URLをコピーしました', 'success');
+        }).catch(() => {
+            promptShare(url);
+        });
+    } else {
+        promptShare(url);
+    }
+}
+
+function promptShare(url) {
+    const textarea = document.createElement('textarea');
+    textarea.value = url;
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+        document.execCommand('copy');
+        showToast('URLをコピーしました', 'success');
+    } catch (err) {
+        prompt('URLをコピーしてください:', url);
+    }
+    document.body.removeChild(textarea);
+}
+
+// Enhanced download function with better feedback
+function downloadDocument(docId, docType, button) {
+    const originalContent = showLoading(button, `${docType.toUpperCase()}取得中...`);
+    
+    try {
+        const url = `/earnings_analysis/documents/${docId}/download/?type=${docType}`;
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Provide user feedback
+        setTimeout(() => {
+            hideLoading(button, originalContent);
+            showToast(`${docType.toUpperCase()}のダウンロードを開始しました`, 'success');
+            
+            // Visual feedback
+            button.classList.add('btn-outline-success');
+            button.classList.remove(`btn-${docType === 'pdf' ? 'danger' : docType === 'xbrl' ? 'primary' : 'success'}`);
+            setTimeout(() => {
+                button.classList.remove('btn-outline-success');
+                button.classList.add(`btn-${docType === 'pdf' ? 'danger' : docType === 'xbrl' ? 'primary' : 'success'}`);
+            }, 2000);
+        }, 1000);
+        
+    } catch (error) {
+        console.error('Download error:', error);
+        hideLoading(button, originalContent);
+        showToast('ダウンロードに失敗しました', 'error');
+    }
+}
+
+// Toast notification function
+function showToast(message, type = 'info', duration = 3000) {
+    // Create toast container if it doesn't exist
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'position-fixed top-0 end-0 p-3';
+        container.style.zIndex = '9999';
+        document.body.appendChild(container);
+    }
+
+    // Create toast
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'primary'} border-0`;
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+
+    container.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast, { delay: duration });
+    bsToast.show();
+
+    toast.addEventListener('hidden.bs.toast', () => toast.remove());
+}
+
+// Smooth scroll for analysis sections
+function scrollToAnalysis() {
+    const analysisSection = document.querySelector('[data-section="analysis"]');
+    if (analysisSection) {
+        analysisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+</script>
+
+<style>
+/* Mobile-specific enhancements */
+@media (max-width: 767.98px) {
+    .action-buttons .btn {
+        margin-bottom: 0.5rem;
+    }
+    
+    .action-buttons .btn:last-child {
+        margin-bottom: 0;
+    }
+    
+    .row.g-4 > * {
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Optimize modal display on mobile */
+    .modal-dialog {
+        margin: 1rem;
+        max-width: calc(100vw - 2rem);
+    }
+    
+    .modal-body .row.g-3 > * {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Enhanced button states */
+.btn.loading {
+    position: relative;
+    color: transparent !important;
+}
+
+.btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    color: inherit;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Analysis section highlighting */
+[data-section="analysis"] {
+    scroll-margin-top: 2rem;
+}
+
+/* Card hover effects for desktop */
+@media (min-width: 768px) {
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        transition: all 0.2s ease;
+    }
+}
+
+/* Enhanced focus styles */
+.btn:focus,
+.card:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Download section grid improvements */
+.download-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+@media (max-width: 767.98px) {
+    .download-grid {
+        grid-template-columns: 1fr;
+    }
 }
 </style>
 {% endblock %}

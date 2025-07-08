@@ -1,74 +1,199 @@
-<!-- earnings_analysis/templates/earnings_analysis/simple_index.html（企業詳細対応版） -->
+<!-- earnings_analysis/templates/earnings_analysis/simple_index.html（検索候補改善版） -->
 {% extends 'earnings_analysis/simple_base.html' %}
 
 {% block title %}ホーム - 決算書類管理システム{% endblock %}
 
+{% block extra_css %}
+<style>
+/* 検索候補の改善スタイル */
+.search-suggestions {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border: 1px solid #dee2e6;
+    max-height: 60vh; /* ビューポートの60%までの高さ */
+    overflow-y: auto;
+    /* スマホでのスクロール改善 */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e0 #f8f9fa;
+}
+
+/* Webkit系ブラウザのスクロールバー */
+.search-suggestions::-webkit-scrollbar {
+    width: 8px;
+}
+
+.search-suggestions::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.search-suggestions::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 4px;
+}
+
+.search-suggestions::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
+}
+
+/* 候補項目の改善 */
+.suggestion-item {
+    padding: 16px !important; /* 縦幅を大幅に増加 */
+    border-bottom: 1px solid #e9ecef;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 80px; /* 最小高さを設定 */
+    display: flex;
+    align-items: center;
+}
+
+.suggestion-item:hover,
+.suggestion-item.active {
+    background-color: #f8f9fa;
+    border-left: 4px solid #007bff;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+/* スマホでのタッチ領域改善 */
+@media (max-width: 768px) {
+    .suggestion-item {
+        padding: 20px 16px !important; /* スマホでさらに大きく */
+        min-height: 90px;
+    }
+    
+    .search-suggestions {
+        max-height: 50vh; /* スマホでは少し小さく */
+    }
+    
+    /* フォントサイズを少し大きく */
+    .suggestion-item .fw-semibold {
+        font-size: 1.1rem;
+    }
+    
+    .suggestion-item .small {
+        font-size: 0.9rem;
+    }
+}
+
+/* 検索状態とエラー表示の改善 */
+#searchStatus, #noResults {
+    padding: 20px;
+    text-align: center;
+    font-size: 1rem;
+}
+
+/* mark要素の改善 */
+.suggestion-item mark {
+    background-color: #fff3cd;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-weight: 600;
+}
+
+/* バッジの改善 */
+.suggestion-item .badge {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+}
+
+/* 候補数が多い場合の表示改善 */
+.suggestion-count {
+    position: sticky;
+    top: 0;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    color: #6c757d;
+    z-index: 10;
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<!-- ヒーローセクション -->
-<div class="bg-primary text-white rounded p-5 mb-4">
-    <div class="text-center">
-        <h1 class="display-4 fw-bold mb-3">
-            <i class="fas fa-chart-line me-3"></i>決算書類管理システム
-        </h1>
-        <p class="lead mb-4">
-            EDINET APIを活用した企業書類検索・ダウンロードシステム
-        </p>
-        <div class="badge bg-warning text-dark fs-6 px-3 py-2">
-            <i class="fas fa-rocket me-1"></i>新機能: ワンクリック包括分析
+<!-- Hero Section -->
+<div class="page-header text-center mb-4">
+    <div class="row align-items-center">
+        <div class="col-12">
+            <h1 class="display-5 display-md-4 fw-bold mb-3">
+                <i class="fas fa-chart-line me-2 me-md-3"></i>
+                <span class="d-block d-sm-inline">決算書類管理システム</span>
+            </h1>
+            <p class="lead mb-3 mb-md-4">
+                EDINET APIを活用した企業書類検索・分析システム
+            </p>
         </div>
     </div>
 </div>
 
-<!-- 検索セクション -->
-<div class="row justify-content-center mb-5">
-    <div class="col-lg-8">
-        <div class="card shadow-sm">
-            <div class="card-body p-4">
-                <h3 class="card-title text-center mb-4">
+<!-- Search Section -->
+<div class="row justify-content-center mb-4 mb-md-5">
+    <div class="col-12 col-lg-10 col-xl-8">
+        <div class="card analysis-card">
+            <div class="card-body p-3 p-md-4">
+                <h3 class="card-title text-center mb-3 mb-md-4">
                     <i class="fas fa-search text-primary me-2"></i>企業検索
                 </h3>
                 
-                <div class="position-relative">
+                <div class="search-container position-relative">
                     <div class="input-group input-group-lg">
-                        <span class="input-group-text bg-light">
+                        <span class="input-group-text bg-light border-end-0">
                             <i class="fas fa-building text-muted"></i>
                         </span>
                         <input type="text" 
-                               class="form-control" 
+                               class="form-control border-start-0" 
                                id="companySearch" 
-                               placeholder="企業名または証券コードを入力（例: トヨタ、ソニー、7203）"
+                               placeholder="企業名または証券コード"
                                autocomplete="off"
                                aria-describedby="searchHelp">
-                        <button class="btn btn-primary" type="button" onclick="performDirectSearch()" title="直接検索">
+                        <button class="btn btn-primary px-3 px-md-4" type="button" onclick="performDirectSearch()" 
+                                aria-label="検索実行">
                             <i class="fas fa-search"></i>
+                            <span class="d-none d-sm-inline ms-2">検索</span>
                         </button>
                     </div>
                     
-                    <!-- 検索候補ドロップダウン -->
+                    <!-- Search Suggestions Dropdown -->
                     <div class="position-absolute w-100" style="z-index: 1050; top: 100%;">
-                        <div id="searchSuggestions" class="dropdown-menu w-100 shadow-lg" style="display: none; max-height: 400px; overflow-y: auto;">
+                        <div id="searchSuggestions" class="search-suggestions" style="display: none;">
+                            <!-- 候補数表示 -->
+                            <div id="suggestionCount" class="suggestion-count" style="display: none;">
+                                <i class="fas fa-list me-1"></i>
+                                <span id="countText">0件の候補</span>
+                            </div>
+                            
                             <div id="suggestionsList">
-                                <!-- 動的に生成される候補リスト -->
+                                <!-- Dynamic suggestions -->
                             </div>
-                            <div id="searchStatus" class="px-3 py-2 text-muted small" style="display: none;">
-                                <i class="fas fa-spinner fa-spin me-1"></i>検索中...
+                            
+                            <div id="searchStatus" class="px-4 py-3 text-muted text-center" style="display: none;">
+                                <i class="fas fa-spinner fa-spin me-2"></i>検索中...
                             </div>
-                            <div id="noResults" class="px-3 py-2 text-muted text-center" style="display: none;">
-                                <i class="fas fa-search me-1"></i>該当する企業が見つかりませんでした
+                            
+                            <div id="noResults" class="px-4 py-3 text-muted text-center" style="display: none;">
+                                <i class="fas fa-search me-2"></i>該当する企業が見つかりませんでした
+                                <div class="small mt-2">
+                                    企業名の一部や証券コードで検索してください
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="row mt-3">
-                    <div class="col-md-8">
-                        <small id="searchHelp" class="text-muted">
+                <div class="row mt-3 g-2">
+                    <div class="col-12 col-md-8">
+                        <small id="searchHelp" class="text-muted d-block">
                             <i class="fas fa-lightbulb me-1"></i>
-                            <strong>検索のコツ:</strong> 企業名の一部（「トヨタ」「ソニー」）、証券コード（「7203」）、EDINETコード（「E02144」）で検索できます
+                            <strong>検索のコツ:</strong> 企業名の一部、証券コード、EDINETコードで検索できます
                         </small>
                     </div>
-                    <div class="col-md-4 text-md-end">
-                        <small class="text-muted">
+                    <div class="col-12 col-md-4 text-md-end">
+                        <small class="text-muted d-none d-md-block">
                             <i class="fas fa-keyboard me-1"></i>
                             <kbd>↑</kbd><kbd>↓</kbd>で選択、<kbd>Enter</kbd>で決定
                         </small>
@@ -79,53 +204,53 @@
     </div>
 </div>
 
-<!-- フロー改善の説明 -->
-<div class="row justify-content-center mb-5">
-    <div class="col-lg-10">
-        <div class="card bg-light">
-            <div class="card-body">
-                <h4 class="text-center mb-4">
+<!-- Process Flow -->
+<div class="row justify-content-center mb-4 mb-md-5">
+    <div class="col-12 col-lg-11">
+        <div class="card">
+            <div class="card-body p-3 p-md-4">
+                <h4 class="text-center mb-3 mb-md-4">
                     <i class="fas fa-route text-success me-2"></i>簡単4ステップで分析実行
                 </h4>
-                <div class="row text-center">
-                    <div class="col-md-3 mb-3">
-                        <div class="p-3">
-                            <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 
-                                 style="width: 50px; height: 50px;">
-                                <span class="fw-bold">1</span>
+                <div class="row g-3">
+                    <div class="col-6 col-md-3">
+                        <div class="text-center p-2 p-md-3">
+                            <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2 mb-md-3" 
+                                 style="width: 40px; height: 40px; font-size: 1.1rem; font-weight: 600;">
+                                1
                             </div>
-                            <h6>企業検索</h6>
-                            <small class="text-muted">企業名または証券コードで検索</small>
+                            <h6 class="mb-1 mb-md-2">企業検索</h6>
+                            <small class="text-muted">企業名または証券コード</small>
                         </div>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <div class="p-3">
-                            <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 
-                                 style="width: 50px; height: 50px;">
-                                <span class="fw-bold">2</span>
+                    <div class="col-6 col-md-3">
+                        <div class="text-center p-2 p-md-3">
+                            <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2 mb-md-3" 
+                                 style="width: 40px; height: 40px; font-size: 1.1rem; font-weight: 600;">
+                                2
                             </div>
-                            <h6>企業選択</h6>
-                            <small class="text-muted">企業詳細ページへ移動</small>
+                            <h6 class="mb-1 mb-md-2">企業選択</h6>
+                            <small class="text-muted">企業詳細ページへ</small>
                         </div>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <div class="p-3">
-                            <div class="bg-warning text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 
-                                 style="width: 50px; height: 50px;">
-                                <span class="fw-bold">3</span>
+                    <div class="col-6 col-md-3">
+                        <div class="text-center p-2 p-md-3">
+                            <div class="bg-warning text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2 mb-md-3" 
+                                 style="width: 40px; height: 40px; font-size: 1.1rem; font-weight: 600;">
+                                3
                             </div>
-                            <h6>分析実行</h6>
-                            <small class="text-muted">ワンクリックまたは書類選択</small>
+                            <h6 class="mb-1 mb-md-2">分析実行</h6>
+                            <small class="text-muted">ワンクリックまたは選択</small>
                         </div>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <div class="p-3">
-                            <div class="bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 
-                                 style="width: 50px; height: 50px;">
-                                <span class="fw-bold">4</span>
+                    <div class="col-6 col-md-3">
+                        <div class="text-center p-2 p-md-3">
+                            <div class="bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2 mb-md-3" 
+                                 style="width: 40px; height: 40px; font-size: 1.1rem; font-weight: 600;">
+                                4
                             </div>
-                            <h6>結果確認</h6>
-                            <small class="text-muted">詳細分析結果を確認</small>
+                            <h6 class="mb-1 mb-md-2">結果確認</h6>
+                            <small class="text-muted">詳細分析結果</small>
                         </div>
                     </div>
                 </div>
@@ -134,77 +259,171 @@
     </div>
 </div>
 
-<!-- 統計情報 -->
-<div class="row mb-5">
-    <div class="col-12 mb-4">
+<!-- Statistics -->
+<div class="row mb-4 mb-md-5 g-3">
+    <div class="col-12 mb-3">
         <h3 class="text-center">
             <i class="fas fa-chart-bar text-primary me-2"></i>システム統計
         </h3>
     </div>
     
-    <div class="col-md-4 mb-4">
-        <div class="card stats-card text-center">
-            <div class="card-body">
-                <i class="fas fa-building fa-3x text-primary mb-3"></i>
-                <div class="h2 text-primary">{{ total_companies|default:0 }}</div>
-                <div class="text-muted">登録企業数</div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center h-100">
+            <div class="card-body p-3">
+                <i class="fas fa-building fa-2x fa-md-3x text-primary mb-2 mb-md-3"></i>
+                <div class="h3 h-md-2 text-primary" data-count="{{ total_companies|default:0 }}">0</div>
+                <div class="small text-muted">登録企業数</div>
             </div>
         </div>
     </div>
     
-    <div class="col-md-4 mb-4">
-        <div class="card stats-card text-center">
-            <div class="card-body">
-                <i class="fas fa-file-alt fa-3x text-success mb-3"></i>
-                <div class="h2 text-success">{{ total_documents|default:0 }}</div>
-                <div class="text-muted">利用可能書類数</div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center h-100">
+            <div class="card-body p-3">
+                <i class="fas fa-file-alt fa-2x fa-md-3x text-success mb-2 mb-md-3"></i>
+                <div class="h3 h-md-2 text-success" data-count="{{ total_documents|default:0 }}">0</div>
+                <div class="small text-muted">利用可能書類数</div>
             </div>
         </div>
     </div>
     
-    <div class="col-md-4 mb-4">
-        <div class="card stats-card text-center">
-            <div class="card-body">
-                <i class="fas fa-plus-circle fa-3x text-info mb-3"></i>
-                <div class="h2 text-info">{{ recent_documents_count|default:0 }}</div>
-                <div class="text-muted">今週の新着</div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center h-100">
+            <div class="card-body p-3">
+                <i class="fas fa-plus-circle fa-2x fa-md-3x text-info mb-2 mb-md-3"></i>
+                <div class="h3 h-md-2 text-info" data-count="{{ recent_documents_count|default:0 }}">0</div>
+                <div class="small text-muted">今週の新着</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-6 col-md-3">
+        <div class="card text-center h-100">
+            <div class="card-body p-3">
+                <i class="fas fa-brain fa-2x fa-md-3x text-warning mb-2 mb-md-3"></i>
+                <div class="h3 h-md-2 text-warning">AI</div>
+                <div class="small text-muted">分析機能</div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- クイックアクセス -->
-<div class="row">
-    <div class="col-12 mb-4">
+<!-- Quick Access -->
+<div class="row g-3">
+    <div class="col-12 mb-3">
         <h3 class="text-center">
             <i class="fas fa-bolt text-primary me-2"></i>クイックアクセス
         </h3>
     </div>
     
-    <div class="col-md-6 mb-3">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <i class="fas fa-list text-primary me-2"></i>書類一覧
-                </h5>
-                <p class="card-text">最近提出された書類を確認</p>
-                <a href="{% url 'earnings_analysis:document-list-ui' %}" class="btn btn-primary">
-                    <i class="fas fa-arrow-right me-1"></i>書類一覧へ
-                </a>
+    <div class="col-12 col-md-6">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex align-items-center mb-3">
+                    <i class="fas fa-list text-primary me-3 fa-2x"></i>
+                    <div>
+                        <h5 class="card-title mb-1">書類一覧</h5>
+                        <p class="card-text small text-muted mb-0">最近提出された書類を確認</p>
+                    </div>
+                </div>
+                <div class="mt-auto">
+                    <a href="{% url 'earnings_analysis:document-list-ui' %}" class="btn btn-primary w-100">
+                        <i class="fas fa-arrow-right me-2"></i>書類一覧へ
+                    </a>
+                </div>
             </div>
         </div>
     </div>
     
-    <div class="col-md-6 mb-3">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <i class="fas fa-rocket text-warning me-2"></i>NEW: ワンクリック分析
-                </h5>
-                <p class="card-text">企業の最新決算書類を自動選択して包括分析</p>
-                <div class="small text-muted">
+    <div class="col-12 col-md-6">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex align-items-center mb-3">
+                    <i class="fas fa-rocket text-warning me-3 fa-2x"></i>
+                    <div>
+                        <h5 class="card-title mb-1">
+                            ワンクリック分析
+                            <span class="badge bg-danger small ms-1">NEW</span>
+                        </h5>
+                        <p class="card-text small text-muted mb-0">企業の最新決算書類を自動選択して包括分析</p>
+                    </div>
+                </div>
+                <div class="small text-success mb-3">
                     <i class="fas fa-check me-1"></i>財務分析 + 感情分析を一括実行
                 </div>
+                <div class="mt-auto">
+                    <button class="btn btn-warning w-100" onclick="showAnalysisInfo()">
+                        <i class="fas fa-info-circle me-2"></i>詳細を見る
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Analysis Info Modal -->
+<div class="modal fade" id="analysisInfoModal" tabindex="-1" aria-labelledby="analysisInfoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="analysisInfoModalLabel">
+                    <i class="fas fa-rocket me-2"></i>ワンクリック包括分析について
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="閉じる"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-4">
+                    <div class="col-12">
+                        <h6 class="text-primary">
+                            <i class="fas fa-chart-pie me-2"></i>財務分析機能
+                        </h6>
+                        <ul class="list-unstyled ps-3">
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                キャッシュフロー構造分析（理想型、成長型、危険型等の判定）
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                財務健全性評価と投資リスク評価
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                投資推奨度の総合判定
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-12">
+                        <h6 class="text-warning">
+                            <i class="fas fa-brain me-2"></i>感情分析機能
+                        </h6>
+                        <ul class="list-unstyled ps-3">
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                経営陣の自信度測定（決算説明書のテキスト分析）
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                ポジティブ・ネガティブ表現の自動検出
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                市場への影響予測
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>分析時間:</strong> 約3-5分で包括的な分析結果をお届けします
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                <button type="button" class="btn btn-primary" onclick="startSearch()">
+                    <i class="fas fa-search me-2"></i>企業検索を開始
+                </button>
             </div>
         </div>
     </div>
@@ -213,83 +432,41 @@
 
 {% block extra_js %}
 <script>
-// 検索関連のグローバル変数
+// Search functionality
 let searchTimeout;
 let currentSuggestions = [];
 let selectedIndex = -1;
 let isSearching = false;
 
-// デバッグモード（本番環境では false に設定）
-const DEBUG_MODE = true;
-
-// ログ出力関数
-function debugLog(message, data = null) {
-    if (DEBUG_MODE) {
-        console.log('[企業検索]', message, data || '');
-    }
-}
-
-// DOM要素の取得
 const searchInput = document.getElementById('companySearch');
 const suggestionsContainer = document.getElementById('searchSuggestions');
 const suggestionsList = document.getElementById('suggestionsList');
 const searchStatus = document.getElementById('searchStatus');
 const noResults = document.getElementById('noResults');
+const suggestionCount = document.getElementById('suggestionCount');
+const countText = document.getElementById('countText');
 
-// 初期化
 document.addEventListener('DOMContentLoaded', function() {
-    debugLog('企業検索機能を初期化中...');
     setupSearchHandlers();
-    
-    // 接続テスト
-    testApiConnection();
+    animateNumbers();
 });
 
-function testApiConnection() {
-    debugLog('API接続テスト中...');
-    fetch('/earnings_analysis/companies/search/?q=test')
-        .then(response => {
-            debugLog('API応答ステータス:', response.status);
-            return response.json();
-        })
-        .then(data => {
-            debugLog('API接続テスト成功:', data);
-        })
-        .catch(error => {
-            debugLog('API接続テストエラー:', error);
-            console.error('企業検索API接続エラー:', error);
-        });
-}
-
 function setupSearchHandlers() {
-    if (!searchInput) {
-        debugLog('エラー: 検索入力フィールドが見つかりません');
-        return;
-    }
+    if (!searchInput) return;
     
-    // 入力イベント
     searchInput.addEventListener('input', handleSearchInput);
-    
-    // キーボードナビゲーション
     searchInput.addEventListener('keydown', handleKeyNavigation);
-    
-    // フォーカス外し
-    document.addEventListener('click', handleOutsideClick);
-    
-    // フォーカス時の候補再表示
     searchInput.addEventListener('focus', function() {
         if (currentSuggestions.length > 0) {
             showSuggestions();
         }
     });
     
-    debugLog('検索ハンドラー設定完了');
+    document.addEventListener('click', handleOutsideClick);
 }
 
 function handleSearchInput(event) {
     const query = event.target.value.trim();
-    debugLog('検索入力:', query);
-    
     clearTimeout(searchTimeout);
     
     if (query.length < 1) {
@@ -297,7 +474,6 @@ function handleSearchInput(event) {
         return;
     }
     
-    // デバウンス処理
     searchTimeout = setTimeout(() => {
         fetchCompanySuggestions(query);
     }, 300);
@@ -323,7 +499,6 @@ function handleKeyNavigation(event) {
             break;
         case 'Escape':
             hideSuggestions();
-            searchInput.blur();
             break;
     }
 }
@@ -351,13 +526,12 @@ function updateSelectedItem() {
     items.forEach((item, index) => {
         if (index === selectedIndex) {
             item.classList.add('active');
-            item.scrollIntoView({ block: 'nearest' });
+            item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         } else {
             item.classList.remove('active');
         }
     });
     
-    // 入力フィールドの値を更新
     if (selectedIndex >= 0) {
         searchInput.value = currentSuggestions[selectedIndex].company_name;
     }
@@ -372,34 +546,20 @@ function selectCurrent() {
 }
 
 function handleOutsideClick(event) {
-    if (!event.target.closest('.position-relative')) {
+    if (!event.target.closest('.search-container')) {
         hideSuggestions();
     }
 }
 
 async function fetchCompanySuggestions(query) {
-    if (isSearching) {
-        debugLog('既に検索中のためスキップ');
-        return;
-    }
+    if (isSearching) return;
     
     isSearching = true;
     showSearchStatus();
-    debugLog('企業検索開始:', query);
     
     try {
-        const url = `/earnings_analysis/companies/search/?q=${encodeURIComponent(query)}`;
-        debugLog('検索URL:', url);
-        
-        const response = await fetch(url);
-        debugLog('レスポンス受信:', response.status);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
+        const response = await fetch(`/earnings_analysis/companies/search/?q=${encodeURIComponent(query)}`);
         const data = await response.json();
-        debugLog('検索結果:', data);
         
         if (data.error) {
             throw new Error(data.error);
@@ -411,9 +571,8 @@ async function fetchCompanySuggestions(query) {
         displaySuggestions(currentSuggestions, query);
         
     } catch (error) {
-        debugLog('検索エラー:', error);
-        console.error('企業検索エラー:', error);
-        showError(error.message);
+        console.error('Search error:', error);
+        showError();
     } finally {
         isSearching = false;
         hideSearchStatus();
@@ -421,12 +580,13 @@ async function fetchCompanySuggestions(query) {
 }
 
 function displaySuggestions(companies, query) {
-    debugLog('候補表示:', companies.length + '件');
-    
     if (companies.length === 0) {
         showNoResults();
         return;
     }
+    
+    // 候補数の表示
+    updateSuggestionCount(companies.length);
     
     suggestionsList.innerHTML = '';
     
@@ -438,55 +598,51 @@ function displaySuggestions(companies, query) {
     showSuggestions();
 }
 
+function updateSuggestionCount(count) {
+    countText.textContent = `${count}件の候補が見つかりました`;
+    suggestionCount.style.display = count > 0 ? 'block' : 'none';
+}
+
 function createSuggestionItem(company, index, query) {
     const item = document.createElement('div');
-    item.className = 'suggestion-item dropdown-item d-flex justify-content-between align-items-center p-3 border-bottom';
-    item.style.cursor = 'pointer';
+    item.className = 'suggestion-item';
     
-    // マッチタイプに応じたバッジ
     const matchBadge = getMatchTypeBadge(company.match_type);
-    
-    // 分析準備状況
     const analysisStatus = company.has_analysis_ready ? 
         '<span class="badge bg-success ms-2">分析可能</span>' : 
         '<span class="badge bg-secondary ms-2">書類のみ</span>';
     
-    // 最新決算情報
-    let latestInfo = '';
-    if (company.latest_financial_date) {
-        const date = new Date(company.latest_financial_date);
-        latestInfo = `
-            <div class="small text-success mt-1">
-                <i class="fas fa-chart-line me-1"></i>
-                最新: ${company.latest_financial_type} (${date.getFullYear()}/${String(date.getMonth()+1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')})
-            </div>
-        `;
-    }
-    
     item.innerHTML = `
-        <div class="flex-grow-1">
-            <div class="fw-semibold">
-                ${highlightMatch(company.company_name, query)}
-                ${matchBadge}
-                ${analysisStatus}
+        <div class="d-flex justify-content-between align-items-start w-100">
+            <div class="flex-grow-1 pe-3">
+                <div class="fw-semibold mb-2" style="line-height: 1.3;">
+                    ${highlightMatch(company.company_name, query)}
+                    ${matchBadge}
+                    ${analysisStatus}
+                </div>
+                <div class="small text-muted mb-2">
+                    ${company.securities_code ? `証券: <strong>${company.securities_code}</strong>` : ''}
+                    ${company.securities_code && company.edinet_code ? ' | ' : ''}
+                    EDINET: ${company.edinet_code}
+                </div>
+                ${company.latest_financial_date ? `
+                    <div class="small text-success">
+                        <i class="fas fa-chart-line me-1"></i>
+                        最新決算: ${new Date(company.latest_financial_date).toLocaleDateString('ja-JP')}
+                    </div>
+                ` : ''}
             </div>
-            <div class="small text-muted">
-                ${company.securities_code ? `証券コード: <strong>${company.securities_code}</strong>` : ''}
-                ${company.securities_code && company.edinet_code ? ' | ' : ''}
-                EDINETコード: ${company.edinet_code}
+            <div class="text-end flex-shrink-0">
+                <div class="badge bg-primary rounded-pill mb-1">${company.document_count}件</div>
+                ${company.financial_count > 0 ? `
+                    <div class="small text-success">
+                        <i class="fas fa-rocket me-1"></i>決算${company.financial_count}件
+                    </div>
+                ` : ''}
             </div>
-            ${latestInfo}
-        </div>
-        <div class="text-end ms-3">
-            <div class="badge bg-primary rounded-pill mb-1">${company.document_count}件</div>
-            ${company.financial_count > 0 ? 
-                `<div class="small text-success">
-                    <i class="fas fa-rocket me-1"></i>決算${company.financial_count}件
-                 </div>` : ''}
         </div>
     `;
     
-    // イベントハンドラ
     item.addEventListener('click', () => selectCompany(company));
     item.addEventListener('mouseenter', () => {
         selectedIndex = index;
@@ -498,9 +654,9 @@ function createSuggestionItem(company, index, query) {
 
 function getMatchTypeBadge(matchType) {
     const badges = {
-        'securities_exact': '<span class="badge bg-warning">証券コード</span>',
+        'securities_exact': '<span class="badge bg-warning text-dark">証券コード</span>',
         'name_prefix': '<span class="badge bg-info">前方一致</span>',
-        'securities_prefix': '<span class="badge bg-warning">証券コード</span>',
+        'securities_prefix': '<span class="badge bg-warning text-dark">証券コード</span>',
         'name_partial': '<span class="badge bg-secondary">部分一致</span>',
         'other': ''
     };
@@ -514,23 +670,18 @@ function highlightMatch(text, query) {
     const escapedQuery = escapeHtml(query);
     
     const regex = new RegExp(`(${escapedQuery})`, 'gi');
-    return escapedText.replace(regex, '<mark class="bg-warning">$1</mark>');
+    return escapedText.replace(regex, '<mark>$1</mark>');
 }
 
 function selectCompany(company) {
-    debugLog('企業選択:', company);
     searchInput.value = company.company_name;
     hideSuggestions();
     
-    // 企業詳細ページに遷移
     const url = `/earnings_analysis/company/${company.edinet_code}/`;
-    debugLog('遷移URL:', url);
     
-    // 遷移前にローディング表示
-    searchInput.value = `${company.company_name} - 読み込み中...`;
+    searchInput.value = `${company.company_name} - 移動中...`;
     searchInput.disabled = true;
     
-    // 少し遅延を入れてから遷移（ユーザーフィードバック）
     setTimeout(() => {
         window.location.href = url;
     }, 200);
@@ -538,33 +689,28 @@ function selectCompany(company) {
 
 function performDirectSearch() {
     const query = searchInput.value.trim();
-    debugLog('直接検索実行:', query);
     
     if (query) {
-        // フォールバック: 書類一覧ページへ
         const url = `/earnings_analysis/documents/?company=${encodeURIComponent(query)}`;
-        debugLog('フォールバック遷移URL:', url);
         window.location.href = url;
     }
 }
 
 function showSuggestions() {
     suggestionsContainer.style.display = 'block';
-    suggestionsContainer.classList.add('show');
     hideSearchStatus();
     hideNoResults();
-    hideError();
 }
 
 function hideSuggestions() {
     suggestionsContainer.style.display = 'none';
-    suggestionsContainer.classList.remove('show');
     selectedIndex = -1;
+    suggestionCount.style.display = 'none';
 }
 
 function showSearchStatus() {
     hideNoResults();
-    hideError();
+    suggestionCount.style.display = 'none';
     searchStatus.style.display = 'block';
     suggestionsContainer.style.display = 'block';
 }
@@ -575,7 +721,7 @@ function hideSearchStatus() {
 
 function showNoResults() {
     hideSearchStatus();
-    hideError();
+    suggestionCount.style.display = 'none';
     noResults.style.display = 'block';
     suggestionsContainer.style.display = 'block';
 }
@@ -584,29 +730,11 @@ function hideNoResults() {
     noResults.style.display = 'none';
 }
 
-function showError(message) {
+function showError() {
     hideSearchStatus();
     hideNoResults();
-    
-    // エラー表示要素を作成または更新
-    let errorDiv = document.getElementById('searchError');
-    if (!errorDiv) {
-        errorDiv = document.createElement('div');
-        errorDiv.id = 'searchError';
-        errorDiv.className = 'px-3 py-2 text-danger small';
-        suggestionsList.parentNode.insertBefore(errorDiv, suggestionsList);
-    }
-    
-    errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle me-1"></i>検索エラー: ${escapeHtml(message)}`;
-    errorDiv.style.display = 'block';
-    suggestionsContainer.style.display = 'block';
-}
-
-function hideError() {
-    const errorDiv = document.getElementById('searchError');
-    if (errorDiv) {
-        errorDiv.style.display = 'none';
-    }
+    suggestionCount.style.display = 'none';
+    // Could add error display here
 }
 
 function escapeHtml(text) {
@@ -615,84 +743,56 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// エンターキーでの検索（レガシー対応）
-if (searchInput) {
-    searchInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter' && selectedIndex === -1) {
-            performDirectSearch();
-        }
+// Number animation
+function animateNumbers() {
+    const numberElements = document.querySelectorAll('[data-count]');
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const element = entry.target;
+                const finalValue = parseInt(element.dataset.count);
+                
+                if (!isNaN(finalValue)) {
+                    animateNumber(element, 0, finalValue, 2000);
+                }
+                
+                observer.unobserve(element);
+            }
+        });
     });
+    
+    numberElements.forEach(element => observer.observe(element));
 }
 
-// エラー回復機能
-window.addEventListener('error', function(e) {
-    if (e.message.includes('企業検索')) {
-        debugLog('グローバルエラーキャッチ:', e.message);
-        showError('検索機能でエラーが発生しました。ページを再読み込みしてください。');
-    }
-});
-
-// ページ離脱前のクリーンアップ
-window.addEventListener('beforeunload', function() {
-    clearTimeout(searchTimeout);
-    debugLog('検索機能クリーンアップ');
-});
-</script>
-
-<style>
-/* 検索候補のスタイル */
-.suggestion-item {
-    transition: background-color 0.2s ease;
-}
-
-.suggestion-item:hover,
-.suggestion-item.active {
-    background-color: #f8f9fa !important;
-}
-
-.suggestion-item.active {
-    background-color: #e3f2fd !important;
-}
-
-.dropdown-menu {
-    border: 1px solid #dee2e6;
-    border-top: none;
-    border-radius: 0 0 0.375rem 0.375rem;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-}
-
-mark {
-    padding: 0.1em 0.2em;
-    border-radius: 0.2em;
-}
-
-@media (max-width: 768px) {
-    .suggestion-item {
-        flex-direction: column;
-        align-items: flex-start !important;
+function animateNumber(element, start, end, duration) {
+    const startTime = performance.now();
+    
+    function updateNumber(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        const current = Math.floor(start + (end - start) * progress);
+        element.textContent = current.toLocaleString();
+        
+        if (progress < 1) {
+            requestAnimationFrame(updateNumber);
+        }
     }
     
-    .suggestion-item .text-end {
-        align-self: flex-end;
-        margin-top: 0.5rem;
-        margin-left: 0 !important;
-    }
+    requestAnimationFrame(updateNumber);
 }
 
-/* 検索ボックスのフォーカス時のスタイル */
-#companySearch:focus {
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-    border-color: #80bdff;
+// Modal functions
+function showAnalysisInfo() {
+    const modal = new bootstrap.Modal(document.getElementById('analysisInfoModal'));
+    modal.show();
 }
 
-/* キーボードナビゲーション用のヘルプ */
-kbd {
-    background-color: #e9ecef;
-    border: 1px solid #adb5bd;
-    border-radius: 0.2rem;
-    color: #495057;
-    font-size: 0.75em;
-    padding: 0.2rem 0.4rem;
+function startSearch() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('analysisInfoModal'));
+    modal.hide();
+    searchInput.focus();
 }
-</style>
+</script>
 {% endblock %}
