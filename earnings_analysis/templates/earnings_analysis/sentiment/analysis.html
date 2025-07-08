@@ -27,7 +27,7 @@
             <p class="mb-0 opacity-80 text-truncate-2">{{ document.doc_description }}</p>
         </div>
         <div class="col-12 col-md-4 text-center text-md-end">
-            <div class="badge bg-white bg-opacity-20 px-3 py-2">
+            <div class="badge bg-primary bg-opacity-20 px-3 py-2">
                 <i class="fas fa-file-alt me-1"></i>{{ document.doc_id }}
             </div>
         </div>
@@ -37,85 +37,6 @@
 <div class="row g-3 g-md-4">
     <!-- Main Analysis Area -->
     <div class="col-12 col-lg-8">
-        <!-- Latest Analysis Result -->
-        {% if latest_session %}
-            <div class="analysis-card card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0 d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
-                        <span>
-                            <i class="fas fa-chart-line me-2"></i>最新の分析結果
-                        </span>
-                        <small class="badge bg-light text-dark">{{ latest_session.created_at|date:"Y/m/d H:i" }}</small>
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-12 col-md-4">
-                            {% if latest_session.sentiment_label == 'positive' %}
-                                <div class="score-display score-positive">
-                                    <div class="score-number">{{ latest_session.overall_score|floatformat:3 }}</div>
-                                    <div class="score-label">
-                                        <i class="fas fa-smile me-1"></i>ポジティブ
-                                    </div>
-                                </div>
-                            {% elif latest_session.sentiment_label == 'negative' %}
-                                <div class="score-display score-negative">
-                                    <div class="score-number">{{ latest_session.overall_score|floatformat:3 }}</div>
-                                    <div class="score-label">
-                                        <i class="fas fa-frown me-1"></i>ネガティブ
-                                    </div>
-                                </div>
-                            {% else %}
-                                <div class="score-display score-neutral">
-                                    <div class="score-number">{{ latest_session.overall_score|floatformat:3 }}</div>
-                                    <div class="score-label">
-                                        <i class="fas fa-meh me-1"></i>中立
-                                    </div>
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="col-12 col-md-8">
-                            <h6 class="mb-3">統計情報</h6>
-                            {% with stats=latest_session.analysis_result.statistics %}
-                                <div class="row text-center g-2 mb-3">
-                                    <div class="col-6 col-sm-3">
-                                        <div class="border rounded p-2">
-                                            <div class="h6 text-primary mb-1">{{ stats.total_sentences|default:0 }}</div>
-                                            <div class="small text-muted">総文数</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6 col-sm-3">
-                                        <div class="border rounded p-2">
-                                            <div class="h6 text-success mb-1">{{ stats.positive_sentences|default:0 }}</div>
-                                            <div class="small text-muted">ポジティブ</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6 col-sm-3">
-                                        <div class="border rounded p-2">
-                                            <div class="h6 text-danger mb-1">{{ stats.negative_sentences|default:0 }}</div>
-                                            <div class="small text-muted">ネガティブ</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6 col-sm-3">
-                                        <div class="border rounded p-2">
-                                            <div class="h6 text-secondary mb-1">{{ stats.neutral_sentences|default:0 }}</div>
-                                            <div class="small text-muted">中立</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            {% endwith %}
-                            
-                            <div class="d-flex flex-column flex-sm-row gap-2">
-                                <a href="{% url 'earnings_analysis:sentiment-result' latest_session.session_id %}" 
-                                   class="btn btn-primary flex-grow-1">
-                                    <i class="fas fa-eye me-1"></i>詳細結果を見る
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        {% endif %}
         
         <!-- Analysis Execution Area -->
         <div class="analysis-card card mb-4">
