@@ -143,10 +143,10 @@ class Command(BaseCommand):
             
             while current_date <= end_date:
                 # 土日をスキップ
-                if current_date.weekday() >= 5:  # 5=土曜, 6=日曜
-                    self.stdout.write(f'スキップ（休日）: {current_date}')
-                    current_date += timedelta(days=1)
-                    continue
+                # if current_date.weekday() >= 5:  # 5=土曜, 6=日曜
+                #     self.stdout.write(f'スキップ（休日）: {current_date}')
+                #     current_date += timedelta(days=1)
+                #     continue
                 
                 self.stdout.write(f'処理中: {current_date}')
                 
