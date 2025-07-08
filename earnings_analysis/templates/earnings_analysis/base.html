@@ -29,6 +29,54 @@
     <meta name="apple-mobile-web-app-title" content="決算書類管理">
 
     <style>
+    /* キーワードハイライトスタイル */
+    .keyword-highlight {
+        background-color: #ffeb3b;
+        color: #1976d2;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-weight: 600;
+        border: 1px solid #fbc02d;
+    }
+
+    /* ダークモード対応 */
+    @media (prefers-color-scheme: dark) {
+        .keyword-highlight {
+            background-color: #f57f17;
+            color: #fff3e0;
+            border-color: #ff8f00;
+        }
+    }
+
+    /* アコーディオン内でのハイライト */
+    .accordion-body .keyword-highlight {
+        background-color: #e8f5e8;
+        color: #2e7d32;
+        border-color: #66bb6a;
+    }
+
+    /* ポジティブ文章内のハイライト */
+    .accordion-item:has(.text-success) .keyword-highlight {
+        background-color: #e8f5e8;
+        color: #1b5e20;
+        border-color: #4caf50;
+    }
+
+    /* ネガティブ文章内のハイライト */
+    .accordion-item:has(.text-danger) .keyword-highlight {
+        background-color: #ffebee;
+        color: #c62828;
+        border-color: #ef5350;
+    }
+
+    /* バッジスタイルの調整 */
+    .badge-sm {
+        font-size: 0.65rem;
+        padding: 0.25em 0.4em;
+    }
+
+/* 白ベースページ対応 スコア説明UI用スタイル（base.htmlの既存CSSを置き換え） */
+
     /* スコア説明UI用スタイル */
     .score-explanation-container {
         background: #ffffff;
@@ -337,7 +385,6 @@
     .neutral-explanation .badge .text-muted {
         color: #6c757d !important;
     }
-
     </style>
 </head>
 <body>
