@@ -5,6 +5,79 @@
 {% block title %}感情分析 - {{ document.company_name }} - 決算書類管理システム{% endblock %}
 
 {% block breadcrumb %}
+<style>
+    .score-range-card.active-range {
+        transform: translateY(-5px) scale(1.05);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        border-width: 2px;
+        background: rgba(255, 255, 255, 1);
+        z-index: 10;
+        position: relative;
+    }
+
+    .score-range-card.active-range::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        background: linear-gradient(45deg, #007bff, #28a745, #ffc107, #dc3545);
+        border-radius: inherit;
+        z-index: -1;
+        animation: borderGlow 2s ease-in-out infinite;
+    }
+
+    @keyframes borderGlow {
+        0%, 100% { opacity: 0.7; }
+        50% { opacity: 1; }
+    }
+
+    /* スコアプレビュー用スタイル */
+    .score-preview {
+        font-family: 'Courier New', monospace;
+        white-space: nowrap;
+    }
+
+    .score-preview::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 5px solid transparent;
+        border-top-color: inherit;
+    }
+
+    /* パフォーマンス最適化 */
+    .score-segment,
+    .score-range-card,
+    .neutral-marker {
+        will-change: transform;
+    }
+
+    /* アクセシビリティ改善 */
+    .score-range-card:focus {
+        outline: 3px solid #007bff;
+        outline-offset: 2px;
+    }
+
+    /* 高コントラストモード対応 */
+    @media (prefers-contrast: high) {
+        .score-explanation-container {
+            border: 2px solid #000;
+        }
+        
+        .score-range-card {
+            border-width: 2px;
+            border-style: solid;
+        }
+        
+        .score-progress {
+            border-width: 3px;
+        }
+    }
+</style>
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{% url 'earnings_analysis:index' %}">ホーム</a></li>
@@ -116,86 +189,74 @@
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-12">
-                        <div class="text-center mb-3">
-                            <h6>スコア範囲の説明</h6>
-                            <div class="d-flex justify-content-between small text-muted mb-2">
-                                <span>-1.0</span>
-                                <span>0.0</span>
-                                <span>+1.0</span>
-                            </div>
-                            <div class="progress" style="height: 20px;">
-                                <div class="progress-bar bg-danger" style="width: 25%">
-                                    <span class="small fw-bold">非常にネガティブ</span>
-                                </div>
-                                <div class="progress-bar bg-warning" style="width: 25%">
-                                    <span class="small fw-bold">やや否定的</span>
-                                </div>
-                                <div class="progress-bar bg-secondary" style="width: 0%; border-right: 2px solid white;">
-                                </div>
-                                <div class="progress-bar bg-info" style="width: 25%">
-                                    <span class="small fw-bold">やや肯定的</span>
-                                </div>
-                                <div class="progress-bar bg-success" style="width: 25%">
-                                    <span class="small fw-bold">非常にポジティブ</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-12 col-md-6">
-                        <div class="border rounded p-3 h-100 border-success bg-success bg-opacity-10">
-                            <h6 class="text-success mb-2">
-                                <i class="fas fa-smile me-1"></i>ポジティブ表現の例
-                            </h6>
-                            <div class="small">
-                                <div class="mb-2">
-                                    <strong>強いポジティブ (0.5 〜 1.0):</strong><br>
-                                    「大幅な増収」「過去最高益」「順調な成長」
-                                </div>
-                                <div>
-                                    <strong>軽微なポジティブ (0.1 〜 0.5):</strong><br>
-                                    「改善」「安定」「維持」
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-12 col-md-6">
-                        <div class="border rounded p-3 h-100 border-danger bg-danger bg-opacity-10">
-                            <h6 class="text-danger mb-2">
-                                <i class="fas fa-frown me-1"></i>ネガティブ表現の例
-                            </h6>
-                            <div class="small">
-                                <div class="mb-2">
-                                    <strong>強いネガティブ (-1.0 〜 -0.5):</strong><br>
-                                    「大幅な減収」「赤字」「深刻な問題」
-                                </div>
-                                <div>
-                                    <strong>軽微なネガティブ (-0.5 〜 -0.1):</strong><br>
-                                    「課題」「困難」「減少」
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-12">
-                        <div class="border rounded p-3 bg-light">
-                            <h6 class="text-info mb-2">
-                                <i class="fas fa-brain me-1"></i>複合表現の扱い
-                            </h6>
-                            <div class="small">
+                            <div class="score-ranges">
                                 <div class="row g-2">
-                                    <div class="col-12 col-md-6">
-                                        <strong>改善表現:</strong> 「減収の改善」「赤字からの脱却」<br>
-                                        → ネガティブワード + 改善文脈 = ポジティブ判定
+                                    <div class="col-6 col-lg-3">
+                                        <div class="score-range-card h-100 p-2 text-center border border-danger rounded">
+                                            <div class="score-range-header text-danger fw-bold mb-1">
+                                                <i class="fas fa-frown-open me-1"></i>非常にネガティブ
+                                            </div>
+                                            <div class="score-range-value text-danger fw-bold">
+                                                -1.0 〜 -0.5
+                                            </div>
+                                            <div class="score-range-description small text-muted">
+                                                深刻な問題や困難
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="col-12 col-md-6">
-                                        <strong>否定表現:</strong> 「増収とは言えない」「順調ではない」<br>
-                                        → ポジティブワード + 否定文脈 = ネガティブ判定
+                                    
+                                    <div class="col-6 col-lg-3">
+                                        <div class="score-range-card h-100 p-2 text-center border border-warning rounded">
+                                            <div class="score-range-header text-warning fw-bold mb-1">
+                                                <i class="fas fa-frown me-1"></i>やや否定的
+                                            </div>
+                                            <div class="score-range-value text-warning fw-bold">
+                                                -0.5 〜 -0.1
+                                            </div>
+                                            <div class="score-range-description small text-muted">
+                                                課題や慎重姿勢
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-6 col-lg-3">
+                                        <div class="score-range-card h-100 p-2 text-center border border-info rounded">
+                                            <div class="score-range-header text-info fw-bold mb-1">
+                                                <i class="fas fa-smile me-1"></i>やや肯定的
+                                            </div>
+                                            <div class="score-range-value text-info fw-bold">
+                                                +0.1 〜 +0.5
+                                            </div>
+                                            <div class="score-range-description small text-muted">
+                                                改善や前向き姿勢
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-6 col-lg-3">
+                                        <div class="score-range-card h-100 p-2 text-center border border-success rounded">
+                                            <div class="score-range-header text-success fw-bold mb-1">
+                                                <i class="fas fa-laugh me-1"></i>非常にポジティブ
+                                            </div>
+                                            <div class="score-range-value text-success fw-bold">
+                                                +0.5 〜 +1.0
+                                            </div>
+                                            <div class="score-range-description small text-muted">
+                                                大幅な成長や成功
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                            
+                            <!-- 中立説明 -->
+                            <div class="neutral-explanation text-center mt-3">
+                                <div class="badge bg-secondary bg-opacity-20 px-3 py-2">
+                                    <i class="fas fa-balance-scale me-2 text-secondary"></i>
+                                    <span class="text-secondary fw-bold">中立範囲（-0.1 〜 +0.1）:</span>
+                                    <span class="text-muted ms-1">客観的・事実的な表現</span>
+                                </div>
+                            </div>
                     </div>
                 </div>
             </div>
@@ -518,5 +579,133 @@ document.addEventListener('DOMContentLoaded', function() {
         }, index * 100);
     });
 });
+
+// スコア説明UIの初期化
+function initializeScoreExplanation() {
+    // ツールチップの初期化
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+            trigger: 'hover focus',
+            html: true,
+            delay: { show: 100, hide: 300 }
+        });
+    });
+
+    // プログレスバーのアニメーション
+    setTimeout(() => {
+        const progressSegments = document.querySelectorAll('.score-segment');
+        progressSegments.forEach((segment, index) => {
+            setTimeout(() => {
+                segment.style.opacity = '0';
+                segment.style.transform = 'scaleX(0)';
+                segment.style.transformOrigin = 'left center';
+                segment.style.transition = 'all 0.6s ease';
+                
+                requestAnimationFrame(() => {
+                    segment.style.opacity = '1';
+                    segment.style.transform = 'scaleX(1)';
+                });
+            }, index * 150);
+        });
+    }, 500);
+
+    // スコア範囲カードのインタラクション
+    const rangeCards = document.querySelectorAll('.score-range-card');
+    rangeCards.forEach((card, index) => {
+        // カードのアニメーション
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = 'all 0.5s ease';
+        
+        setTimeout(() => {
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, 800 + (index * 100));
+
+        // クリック時のフィードバック
+        card.addEventListener('click', function() {
+            // 全カードのアクティブクラスを削除
+            rangeCards.forEach(c => c.classList.remove('active-range'));
+            
+            // クリックされたカードにアクティブクラスを追加
+            this.classList.add('active-range');
+            
+            // 軽いバイブレーション効果（対応ブラウザのみ）
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+            
+            // 視覚的フィードバック
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = 'scale(1)';
+            }, 150);
+        });
+
+        // ホバー効果の強化
+        card.addEventListener('mouseenter', function() {
+            const correspondingSegment = document.querySelectorAll('.score-segment')[index];
+            if (correspondingSegment) {
+                correspondingSegment.style.transform = 'translateY(-2px)';
+                correspondingSegment.style.filter = 'brightness(1.15)';
+            }
+        });
+
+        card.addEventListener('mouseleave', function() {
+            const correspondingSegment = document.querySelectorAll('.score-segment')[index];
+            if (correspondingSegment) {
+                correspondingSegment.style.transform = 'translateY(0)';
+                correspondingSegment.style.filter = 'brightness(1)';
+            }
+        });
+    });
+
+    // 中立マーカーのアニメーション制御
+    const neutralMarker = document.querySelector('.neutral-marker');
+    if (neutralMarker) {
+        // マウスオーバーで一時停止
+        neutralMarker.addEventListener('mouseenter', function() {
+            this.style.animationPlayState = 'paused';
+        });
+        
+        neutralMarker.addEventListener('mouseleave', function() {
+            this.style.animationPlayState = 'running';
+        });
+    }
+
+    // レスポンシブ対応：画面サイズ変更時の調整
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            adjustScoreExplanationLayout();
+        }, 250);
+    });
+}
+
+// レイアウト調整関数
+function adjustScoreExplanationLayout() {
+    const isMobile = window.innerWidth < 768;
+    const scoreLabels = document.querySelectorAll('.score-label');
+    const mobileLabels = document.querySelector('.score-labels-mobile');
+    
+    if (isMobile) {
+        scoreLabels.forEach(label => {
+            label.style.display = 'none';
+        });
+        if (mobileLabels) {
+            mobileLabels.style.display = 'block';
+        }
+    } else {
+        scoreLabels.forEach(label => {
+            label.style.display = 'inline';
+        });
+        if (mobileLabels) {
+            mobileLabels.style.display = 'none';
+        }
+    }
+}
+
 </script>
 {% endblock %}

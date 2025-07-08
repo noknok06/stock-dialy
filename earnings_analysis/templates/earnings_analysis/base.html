@@ -1,4 +1,5 @@
 <!-- earnings_analysis/templates/earnings_analysis/base.html -->
+{% load ads_tags %}
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -26,6 +27,318 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="決算書類管理">
+
+    <style>
+    /* スコア説明UI用スタイル */
+    .score-explanation-container {
+        background: #ffffff;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .score-meter-wrapper {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .score-axis {
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .score-point {
+        display: flex;
+        align-items: center;
+        padding: 0.25rem 0.5rem;
+        border-radius: 6px;
+        background: #ffffff;
+        border: 1px solid #dee2e6;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .score-progress {
+        border: 1px solid #dee2e6;
+        overflow: visible;
+        position: relative;
+        background: #f8f9fa;
+    }
+
+    .score-segment {
+        transition: all 0.6s ease;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .score-segment:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.05);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .score-label {
+        font-size: 0.7rem;
+        line-height: 1.1;
+        text-align: center;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .neutral-line {
+        position: absolute;
+        left: 50%;
+        top: 0;
+        height: 100%;
+        width: 2px;
+        background: linear-gradient(to bottom, #ffffff, #6c757d, #ffffff);
+        z-index: 10;
+        transform: translateX(-50%);
+    }
+
+    .neutral-marker {
+        position: absolute;
+        top: -8px;
+        left: -8px;
+        width: 18px;
+        height: 18px;
+        background: #6c757d;
+        border: 3px solid #ffffff;
+        border-radius: 50%;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        animation: neutralPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes neutralPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+
+    .score-range-card {
+        background: #ffffff;
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .score-range-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border-color: #ced4da;
+    }
+
+    .score-range-header {
+        font-size: 0.8rem;
+    }
+
+    .score-range-value {
+        font-size: 1rem;
+        font-family: 'Courier New', monospace;
+    }
+
+    .score-range-description {
+        font-size: 0.7rem;
+        margin-top: 0.25rem;
+        color: #6c757d;
+    }
+
+    .neutral-explanation {
+        animation: fadeInUp 1s ease-out 0.5s both;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* アクティブなスコア範囲カード */
+    .score-range-card.active-range {
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+        border-width: 2px;
+        background: #ffffff;
+        z-index: 10;
+        position: relative;
+    }
+
+    .score-range-card.active-range::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        background: linear-gradient(45deg, #007bff, #28a745, #ffc107, #dc3545);
+        border-radius: inherit;
+        z-index: -1;
+        animation: borderGlow 2s ease-in-out infinite;
+        opacity: 0.8;
+    }
+
+    @keyframes borderGlow {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 0.9; }
+    }
+
+    /* スコアプレビュー用スタイル */
+    .score-preview {
+        font-family: 'Courier New', monospace;
+        white-space: nowrap;
+        background: rgba(33, 37, 41, 0.95) !important;
+        color: #ffffff !important;
+        border: 1px solid #495057;
+    }
+
+    .score-preview::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 5px solid transparent;
+        border-top-color: rgba(33, 37, 41, 0.95);
+    }
+
+    /* モバイル対応 */
+    @media (max-width: 768px) {
+        .score-explanation-container {
+            padding: 1rem;
+            margin: 0.5rem;
+        }
+        
+        .score-progress {
+            height: 30px !important;
+        }
+        
+        .score-range-card {
+            margin-bottom: 0.5rem;
+        }
+        
+        .score-range-header {
+            font-size: 0.7rem;
+        }
+        
+        .score-range-value {
+            font-size: 0.85rem;
+        }
+        
+        .score-point {
+            font-size: 0.8rem;
+            padding: 0.2rem 0.4rem;
+        }
+    }
+
+    /* アニメーション効果 */
+    .score-progress-container {
+        animation: slideInFromLeft 0.8s ease-out;
+    }
+
+    @keyframes slideInFromLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .score-ranges {
+        animation: fadeInStagger 0.6s ease-out 0.3s both;
+    }
+
+    @keyframes fadeInStagger {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* ツールチップカスタマイズ */
+    .tooltip-inner {
+        background-color: rgba(33, 37, 41, 0.95);
+        color: #ffffff;
+        border-radius: 6px;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+        border: 1px solid #495057;
+    }
+
+    /* ホバー効果の改善 */
+    .score-segment:hover .score-label {
+        transform: scale(1.05);
+        transition: transform 0.2s ease;
+    }
+
+    /* 段階的アニメーション */
+    .score-range-card:nth-child(1) { animation-delay: 0.1s; }
+    .score-range-card:nth-child(2) { animation-delay: 0.2s; }
+    .score-range-card:nth-child(3) { animation-delay: 0.3s; }
+    .score-range-card:nth-child(4) { animation-delay: 0.4s; }
+
+    /* パフォーマンス最適化 */
+    .score-segment,
+    .score-range-card,
+    .neutral-marker {
+        will-change: transform;
+    }
+
+    /* アクセシビリティ改善 */
+    .score-range-card:focus {
+        outline: 2px solid #007bff;
+        outline-offset: 2px;
+    }
+
+    /* 特定の境界色オーバーライド */
+    .score-range-card.border-danger:hover {
+        border-color: #dc3545;
+    }
+
+    .score-range-card.border-warning:hover {
+        border-color: #ffc107;
+    }
+
+    .score-range-card.border-info:hover {
+        border-color: #17a2b8;
+    }
+
+    .score-range-card.border-success:hover {
+        border-color: #28a745;
+    }
+
+    /* 白ベース統一感の向上 */
+    .score-explanation-container h6 {
+        color: #495057;
+        font-weight: 600;
+    }
+
+    .neutral-explanation .badge {
+        background-color: #f8f9fa !important;
+        color: #495057 !important;
+        border: 1px solid #dee2e6;
+    }
+
+    .neutral-explanation .badge .text-secondary {
+        color: #6c757d !important;
+    }
+
+    .neutral-explanation .badge .text-muted {
+        color: #6c757d !important;
+    }
+
+    </style>
 </head>
 <body>
     <!-- Skip to main content for accessibility -->
@@ -99,6 +412,10 @@
         </div>
     </div>
 
+    <!-- コンテンツ上部の広告 -->
+    {% if show_ads %}
+        {% show_template_ad "diary_top" %}
+    {% endif %}
     <!-- Main Content -->
     <main id="main-content" class="py-3 py-md-4">
         <div class="container">

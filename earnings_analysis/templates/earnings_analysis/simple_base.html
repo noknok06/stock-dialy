@@ -1,5 +1,6 @@
 <!-- earnings_analysis/templates/earnings_analysis/simple_base.html -->
 {% load static %}
+{% load ads_tags %}
 
 <!DOCTYPE html>
 <html lang="ja">
@@ -65,6 +66,10 @@
         </div>
     </nav>
 
+    <!-- コンテンツ上部の広告 -->
+    {% if show_ads %}
+        {% show_template_ad "diary_top" %}
+    {% endif %}
     <!-- Main Content -->
     <main id="main-content" class="flex-grow-1 py-3 py-md-4">
         <div class="container">
