@@ -5,6 +5,102 @@
 
 {% block title %}感情分析結果 - {{ document.company_name }} - 決算書類管理システム{% endblock %}
 
+    <style>
+        .insight-section {
+            position: relative;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .insight-section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .insight-section h6 {
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .insight-section .badge {
+            font-size: 0.85em;
+            padding: 0.4em 0.8em;
+        }
+
+        .insight-section ul {
+            padding-left: 1.5rem;
+        }
+
+        .insight-section ul li {
+            margin-bottom: 0.5rem;
+        }
+
+        .insight-section ul li:last-child {
+            margin-bottom: 0;
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 768px) {
+            .insight-section {
+                padding: 1rem !important;
+            }
+            
+            .insight-section h6 {
+                font-size: 1rem;
+            }
+        }        
+        /* ワードクラウド用CSS - 修正版 */
+        .wordcloud-canvas {
+            cursor: pointer;
+            border: 1px solid #dee2e6;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            min-height: 500px; /* 基本の高さを大きく */
+        }
+
+        .wordcloud-legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 2px;
+        }
+
+        #wordcloud-tooltip {
+            font-size: 0.875rem;
+            max-width: 200px;
+            line-height: 1.4;
+        }
+
+        /* レスポンシブ対応 - 修正版 */
+        @media (max-width: 768px) {
+            .wordcloud-canvas {
+                min-height: 400px !important; /* モバイルでも十分な高さ */
+            }
+            
+            .btn-group-sm .btn {
+                font-size: 0.75rem;
+                padding: 0.25rem 0.5rem;
+            }
+        }
+
+        /* ワードクラウド内のテキストアニメーション */
+        .wordcloud-canvas canvas {
+            transition: all 0.3s ease;
+        }
+
+        /* ローディング状態 */
+        .wordcloud-canvas .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+
+        /* ボタングループのスタイル調整 */
+        .wordcloud-container .btn-group .btn {
+            font-size: 0.875rem;
+        }
+
+        /* ワードクラウドのホバー効果強化 */
+        .wordcloud-canvas:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+    </style>
 {% block breadcrumb %}
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
@@ -225,6 +321,84 @@
             {% endwith %}
         {% endif %}
 
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cloud me-2"></i>語彙の出現頻度（ワードクラウド）- 修正版
+                    </h5>
+                </div>
+                <div class="small text-muted mt-2">
+                    <i class="fas fa-info-circle me-1"></i>
+                    語彙の大きさは出現頻度に比例します。色は感情（緑：ポジティブ、赤：ネガティブ）を表します。
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- 統計情報 -->
+                <div class="row mb-3 text-center">
+                    <div class="col-3">
+                        <div class="small text-muted">総語彙数</div>
+                        <div class="fw-bold text-primary" id="total-words">150</div>
+                    </div>
+                    <div class="col-3">
+                        <div class="small text-muted">表示語彙数</div>
+                        <div class="fw-bold text-info" id="wordcloud-displayed-count">100</div>
+                    </div>
+                    <div class="col-3">
+                        <div class="small text-muted">総出現回数</div>
+                        <div class="fw-bold text-success">1,250</div>
+                    </div>
+                    <div class="col-3">
+                        <div class="small text-muted">最大出現回数</div>
+                        <div class="fw-bold text-warning">45</div>
+                    </div>
+                </div>
+                
+                <!-- ワードクラウド表示エリア -->
+                <div class="wordcloud-container">
+                    <div id="wordcloud-canvas" class="wordcloud-canvas bg-light rounded" style="min-height: 500px; position: relative;">
+                        <div class="d-flex justify-content-center align-items-center h-100">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">ワードクラウド生成中...</span>
+                                </div>
+                                <div class="mt-2 text-muted">ワードクラウドを生成しています...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- コントロールパネル -->
+                <div class="mt-3">
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label for="wordcloud-min-count" class="form-label small">最小出現回数</label>
+                            <select class="form-select form-select-sm" id="wordcloud-min-count">
+                                <option value="1">1回以上</option>
+                                <option value="2" selected>2回以上（推奨）</option>
+                                <option value="3">3回以上</option>
+                                <option value="5">5回以上</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="wordcloud-max-words" class="form-label small">最大表示語数</label>
+                            <select class="form-select form-select-sm" id="wordcloud-max-words">
+                                <option value="100">100語</option>
+                                <option value="200">200語</option>
+                                <option value="300" selected>300語（推奨）</option>
+                                <option value="500">500語</option>
+                                <option value="0">制限なし</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="button" class="btn btn-sm btn-primary w-100" id="wordcloud-update-btn">
+                                <i class="fas fa-sync-alt me-1"></i>更新
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <!-- Sample Sentences -->
         {% if session.analysis_result.sample_sentences %}
             {% with samples=session.analysis_result.sample_sentences %}
@@ -396,7 +570,6 @@
                 </div>
             {% endwith %}
         {% endif %}
-
         <!-- User Insights -->
         <div class="analysis-card card">
             <div class="card-header">
@@ -408,55 +581,68 @@
                 {% if formatted_insights %}
                     <!-- Market Implications -->
                     {% if formatted_insights.market_implications %}
-                        <div class="alert alert-info mb-4">
+                        <div class="insight-section border rounded p-3 mb-4" style="background-color: #e7f3ff; border-color: #0d6efd !important;">
                             <h6 class="text-primary mb-3">
                                 <i class="fas fa-chart-line me-2"></i>市場への影響分析
                             </h6>
                             {% if formatted_insights.market_implications.sentiment %}
-                                <p><strong>市場の反応予想:</strong> {{ formatted_insights.market_implications.sentiment }}</p>
+                                <div class="mb-2">
+                                    <strong class="text-dark">市場の反応予想:</strong> 
+                                    <span class="text-body">{{ formatted_insights.market_implications.sentiment }}</span>
+                                </div>
                             {% endif %}
                             {% if formatted_insights.market_implications.stock_impact %}
-                                <p class="mb-0"><strong>株価への影響:</strong> {{ formatted_insights.market_implications.stock_impact }}</p>
+                                <div class="mb-0">
+                                    <strong class="text-dark">株価への影響:</strong> 
+                                    <span class="text-body">{{ formatted_insights.market_implications.stock_impact }}</span>
+                                </div>
                             {% endif %}
                         </div>
                     {% endif %}
                     
                     <!-- Strategy Reading -->
                     {% if formatted_insights.strategy_reading %}
-                        <div class="alert alert-success mb-4">
+                        <div class="insight-section border rounded p-3 mb-4" style="background-color: #e8f5e8; border-color: #198754 !important;">
                             <h6 class="text-success mb-3">
                                 <i class="fas fa-chess me-2"></i>経営戦略の読み取り
                             </h6>
                             {% if formatted_insights.strategy_reading.management_stance %}
-                                <p><strong>経営スタンス:</strong> {{ formatted_insights.strategy_reading.management_stance }}</p>
+                                <div class="mb-2">
+                                    <strong class="text-dark">経営スタンス:</strong> 
+                                    <span class="text-body">{{ formatted_insights.strategy_reading.management_stance }}</span>
+                                </div>
                             {% endif %}
                             {% if formatted_insights.strategy_reading.strategic_direction %}
-                                <p class="mb-0"><strong>戦略的方向性:</strong> {{ formatted_insights.strategy_reading.strategic_direction }}</p>
+                                <div class="mb-0">
+                                    <strong class="text-dark">戦略的方向性:</strong> 
+                                    <span class="text-body">{{ formatted_insights.strategy_reading.strategic_direction }}</span>
+                                </div>
                             {% endif %}
                         </div>
                     {% endif %}
                     
                     <!-- Risk Assessment -->
                     {% if formatted_insights.risk_assessment %}
-                        <div class="alert alert-warning mb-4">
+                        <div class="insight-section border rounded p-3 mb-4" style="background-color: #fff3cd; border-color: #ffc107 !important;">
                             <h6 class="text-warning mb-3">
                                 <i class="fas fa-shield-alt me-2"></i>リスク評価
                             </h6>
-                            <p><strong>リスクレベル:</strong> 
+                            <div class="mb-2">
+                                <strong class="text-dark">リスクレベル:</strong> 
                                 {% if formatted_insights.risk_assessment.risk_level == 'high' %}
-                                    <span class="badge bg-danger">高</span>
+                                    <span class="badge bg-danger ms-2">高</span>
                                 {% elif formatted_insights.risk_assessment.risk_level == 'medium' %}
-                                    <span class="badge bg-warning">中</span>
+                                    <span class="badge bg-warning ms-2">中</span>
                                 {% else %}
-                                    <span class="badge bg-success">低</span>
+                                    <span class="badge bg-success ms-2">低</span>
                                 {% endif %}
-                            </p>
+                            </div>
                             {% if formatted_insights.risk_assessment.identified_risks %}
-                                <div class="mb-2">
-                                    <strong>特定されたリスク:</strong>
-                                    <ul class="small mt-1 mb-0">
+                                <div class="mb-0">
+                                    <strong class="text-dark">特定されたリスク:</strong>
+                                    <ul class="mt-2 mb-0">
                                         {% for risk in formatted_insights.risk_assessment.identified_risks %}
-                                            <li>{{ risk }}</li>
+                                            <li class="text-body">{{ risk }}</li>
                                         {% endfor %}
                                     </ul>
                                 </div>
@@ -466,48 +652,67 @@
                     
                 {% else %}
                     <!-- Fallback insights -->
-                    <div class="alert alert-info">
+                    <div class="insight-section border rounded p-3 mb-4" style="background-color: #e7f3ff; border-color: #0d6efd !important;">
                         <h6 class="text-primary mb-3">
                             <i class="fas fa-chart-line me-2"></i>全体的な傾向
                         </h6>
                         {% if session.sentiment_label == 'positive' %}
-                            <p>この書類からは<strong>前向きな経営姿勢</strong>が読み取れます。</p>
+                            <div class="mb-2">
+                                <span class="text-body">この書類からは<strong class="text-success">前向きな経営姿勢</strong>が読み取れます。</span>
+                            </div>
                             {% if session.overall_score > 0.6 %}
-                                <p class="mb-0">特に、成長への意欲や収益改善への取り組みが強く表現されており、投資家にとって安心感を与える内容となっています。</p>
+                                <div class="mb-0">
+                                    <span class="text-body">特に、成長への意欲や収益改善への取り組みが強く表現されており、投資家にとって安心感を与える内容となっています。</span>
+                                </div>
                             {% endif %}
                         {% elif session.sentiment_label == 'negative' %}
-                            <p>この書類からは<strong>慎重な経営スタンス</strong>や<strong>課題への言及</strong>が多く見られます。</p>
+                            <div class="mb-2">
+                                <span class="text-body">この書類からは<strong class="text-warning">慎重な経営スタンス</strong>や<strong class="text-danger">課題への言及</strong>が多く見られます。</span>
+                            </div>
                             {% if session.overall_score < -0.6 %}
-                                <p class="mb-0">リスクや困難な状況についての記述が目立ちますが、これは企業の透明性の表れとも捉えられます。</p>
+                                <div class="mb-0">
+                                    <span class="text-body">リスクや困難な状況についての記述が目立ちますが、これは企業の透明性の表れとも捉えられます。</span>
+                                </div>
                             {% endif %}
                         {% else %}
-                            <p class="mb-0">この書類は<strong>バランスの取れた内容</strong>となっており、客観的な報告が主体となっています。</p>
+                            <div class="mb-0">
+                                <span class="text-body">この書類は<strong class="text-info">バランスの取れた内容</strong>となっており、客観的な報告が主体となっています。</span>
+                            </div>
                         {% endif %}
                     </div>
                 {% endif %}
                 
                 <!-- Reliability Assessment -->
                 {% if reliability_score %}
-                    <div class="alert {% if reliability_score.level == 'very_high' or reliability_score.level == 'high' %}alert-success{% elif reliability_score.level == 'medium' %}alert-warning{% else %}alert-secondary{% endif %}">
-                        <h6 class="alert-heading">
+                    <div class="insight-section border rounded p-3 mb-4" style="background-color: {% if reliability_score.level == 'very_high' or reliability_score.level == 'high' %}#e8f5e8{% elif reliability_score.level == 'medium' %}#fff3cd{% else %}#f8f9fa{% endif %}; border-color: {% if reliability_score.level == 'very_high' or reliability_score.level == 'high' %}#198754{% elif reliability_score.level == 'medium' %}#ffc107{% else %}#6c757d{% endif %} !important;">
+                        <h6 class="alert-heading {% if reliability_score.level == 'very_high' or reliability_score.level == 'high' %}text-success{% elif reliability_score.level == 'medium' %}text-warning{% else %}text-secondary{% endif %} mb-3">
                             <i class="fas fa-shield-check me-2"></i>分析の信頼性評価
                         </h6>
-                        <p class="mb-2">{{ reliability_score.description }}</p>
+                        <div class="mb-2">
+                            <span class="text-body">{{ reliability_score.description }}</span>
+                        </div>
                         <div class="progress mb-2" style="height: 10px;">
                             <div class="progress-bar {% if reliability_score.score >= 80 %}bg-success{% elif reliability_score.score >= 60 %}bg-info{% elif reliability_score.score >= 40 %}bg-warning{% else %}bg-secondary{% endif %}" 
-                                 style="width: {{ reliability_score.score|score_percentage }}%">
+                                style="width: {{ reliability_score.score|score_percentage }}%">
                             </div>
                         </div>
                         {% if reliability_score.factors %}
-                            <small>根拠: {{ reliability_score.factors|join:"、" }}</small>
+                            <div class="mb-0">
+                                <small class="text-muted">根拠: {{ reliability_score.factors|join:"、" }}</small>
+                            </div>
                         {% endif %}
                     </div>
                 {% endif %}
                 
-                <div class="alert alert-info">
-                    <i class="fas fa-exclamation-circle me-2"></i>
-                    <strong>注意事項:</strong> 
-                    この感情分析は文書の表現を機械的に分析したものです。投資判断や経営判断を行う際は、財務データや市場環境など他の要因も総合的に検討してください。
+                <!-- Important Notice -->
+                <div class="insight-section border rounded p-3" style="background-color: #e7f3ff; border-color: #0d6efd !important;">
+                    <div class="d-flex align-items-start">
+                        <i class="fas fa-exclamation-circle text-primary me-2 mt-1"></i>
+                        <div>
+                            <strong class="text-dark">注意事項:</strong> 
+                            <span class="text-body">この感情分析は文書の表現を機械的に分析したものです。投資判断や経営判断を行う際は、財務データや市場環境など他の要因も総合的に検討してください。</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -600,6 +805,312 @@
 {% endblock %}
 
 {% block extra_js %}
+
+    <!-- WordCloud2.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // サンプルデータ
+        const sampleWordcloudData = {
+            filtered: [
+                { text: "成長", size: 15, sentiment: "positive", score: 0.8, color: "#28a745" },
+                { text: "向上", size: 12, sentiment: "positive", score: 0.7, color: "#28a745" },
+                { text: "改善", size: 10, sentiment: "positive", score: 0.6, color: "#28a745" },
+                { text: "増加", size: 8, sentiment: "positive", score: 0.5, color: "#28a745" },
+                { text: "好調", size: 7, sentiment: "positive", score: 0.7, color: "#28a745" },
+                { text: "拡大", size: 6, sentiment: "positive", score: 0.6, color: "#28a745" },
+                { text: "強化", size: 5, sentiment: "positive", score: 0.5, color: "#28a745" },
+                { text: "安定", size: 4, sentiment: "positive", score: 0.4, color: "#28a745" },
+                { text: "減少", size: 9, sentiment: "negative", score: -0.6, color: "#dc3545" },
+                { text: "低迷", size: 7, sentiment: "negative", score: -0.7, color: "#dc3545" },
+                { text: "困難", size: 6, sentiment: "negative", score: -0.8, color: "#dc3545" },
+                { text: "悪化", size: 5, sentiment: "negative", score: -0.6, color: "#dc3545" },
+                { text: "課題", size: 4, sentiment: "negative", score: -0.5, color: "#dc3545" },
+                { text: "リスク", size: 3, sentiment: "negative", score: -0.7, color: "#dc3545" },
+                { text: "売上", size: 20, sentiment: "neutral", score: 0.0, color: "#6c757d" },
+                { text: "業績", size: 18, sentiment: "neutral", score: 0.0, color: "#6c757d" },
+                { text: "事業", size: 16, sentiment: "neutral", score: 0.0, color: "#6c757d" },
+                { text: "戦略", size: 14, sentiment: "neutral", score: 0.0, color: "#6c757d" },
+                { text: "市場", size: 13, sentiment: "neutral", score: 0.0, color: "#6c757d" },
+                { text: "投資", size: 11, sentiment: "neutral", score: 0.0, color: "#6c757d" },
+                { text: "顧客", size: 10, sentiment: "neutral", score: 0.0, color: "#6c757d" },
+                { text: "製品", size: 9, sentiment: "neutral", score: 0.0, color: "#6c757d" },
+                { text: "サービス", size: 8, sentiment: "neutral", score: 0.0, color: "#6c757d" },
+                { text: "価格", size: 7, sentiment: "neutral", score: 0.0, color: "#6c757d" },
+                { text: "競争", size: 6, sentiment: "neutral", score: 0.0, color: "#6c757d" },
+                { text: "収益", size: 5, sentiment: "neutral", score: 0.0, color: "#6c757d" },
+                { text: "利益", size: 4, sentiment: "neutral", score: 0.0, color: "#6c757d" },
+                { text: "コスト", size: 3, sentiment: "neutral", score: 0.0, color: "#6c757d" },
+                { text: "予算", size: 2, sentiment: "neutral", score: 0.0, color: "#6c757d" }
+            ],
+            unlimited: [], // 同じデータを使用
+            maxSize: 20,
+            stats: {
+                total_unique_words: 29,
+                displayed_words: 29,
+                total_occurrences: 245
+            }
+        };
+
+        sampleWordcloudData.unlimited = [...sampleWordcloudData.filtered];
+
+        // ワードクラウド関連のJavaScript - 修正版
+        let wordcloudInstance = null;
+        let currentWordcloudData = [];
+
+        // ワードクラウド初期化
+        function initializeWordcloud() {
+            // 初期データ設定
+            currentWordcloudData = sampleWordcloudData.filtered;
+            
+            // 初期ワードクラウド生成
+            setTimeout(() => {
+                generateWordcloud(currentWordcloudData);
+            }, 500);
+            
+            // イベントリスナー設定
+            setupWordcloudEvents();
+        }
+
+        // ワードクラウド生成 - 修正版
+        function generateWordcloud(wordsData) {
+            const canvas = document.getElementById('wordcloud-canvas');
+            if (!canvas || !wordsData || wordsData.length === 0) {
+                showWordcloudError('表示する語彙がありません');
+                return;
+            }
+            
+            // キャンバスクリア
+            canvas.innerHTML = '';
+            
+            // キャンバスサイズ設定 - 修正版
+            const containerWidth = canvas.offsetWidth;
+            const containerHeight = Math.max(500, containerWidth * 0.7); // 高さを大きく
+            canvas.style.height = containerHeight + 'px';
+            
+            // WordCloud2.js用のデータ変換 - 修正版
+            const wordcloudList = wordsData.map(word => {
+                // 文字サイズを大幅に増加
+                const baseSize = Math.max(20, Math.min(120, word.size * 15 + 20));
+                return [word.text, baseSize, null, null, null, null, word.color];
+            });
+            
+            try {
+                // ワードクラウド生成 - 修正版
+                WordCloud(canvas, {
+                    list: wordcloudList,
+                    gridSize: Math.round(24 * containerWidth / 1024), // グリッドサイズを大きく
+                    weightFactor: function(size) {
+                        // 重みファクターを大幅に増加
+                        return Math.pow(size, 0.9) * containerWidth / 512;
+                    },
+                    fontFamily: '"Hiragino Kaku Gothic Pro", "ヒラギノ角ゴ Pro", "Yu Gothic", "游ゴシック", Meiryo, "メイリオ", sans-serif',
+                    color: function(word, weight, fontSize, distance, theta) {
+                        // 7番目の要素（色情報）を使用
+                        const wordData = wordsData.find(w => w.text === word);
+                        return wordData ? wordData.color : '#666';
+                    },
+                    backgroundColor: 'transparent',
+                    rotateRatio: 0.3,
+                    maxRotation: Math.PI / 6,
+                    minRotation: -Math.PI / 6,
+                    shuffle: true,
+                    rotationSteps: 2,
+                    ellipticity: 0.6, // 楕円度を調整
+                    shrinkToFit: true, // フィットするように縮小
+                    hover: function(item, dimension, event) {
+                        if (item) {
+                            showWordTooltip(item[0], item[1], event);
+                        } else {
+                            hideWordTooltip();
+                        }
+                    },
+                    click: function(item, dimension, event) {
+                        if (item) {
+                            highlightWord(item[0]);
+                        }
+                    }
+                });
+                
+                // 表示語数更新
+                updateDisplayedCount(wordsData.length);
+                
+            } catch (error) {
+                console.error('ワードクラウド生成エラー:', error);
+                showWordcloudError('ワードクラウドの生成に失敗しました');
+            }
+        }
+
+        // エラー表示
+        function showWordcloudError(message) {
+            const canvas = document.getElementById('wordcloud-canvas');
+            if (canvas) {
+                canvas.innerHTML = `
+                    <div class="d-flex justify-content-center align-items-center h-100">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                            <div>${message}</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // ツールチップ表示
+        function showWordTooltip(word, weight, event) {
+            const wordData = currentWordcloudData.find(w => w.text === word);
+            if (!wordData) return;
+            
+            // 既存のツールチップ削除
+            hideWordTooltip();
+            
+            const tooltip = document.createElement('div');
+            tooltip.id = 'wordcloud-tooltip';
+            tooltip.className = 'position-absolute bg-dark text-white p-2 rounded shadow-sm small';
+            tooltip.style.zIndex = '1000';
+            tooltip.style.pointerEvents = 'none';
+            
+            const sentimentText = wordData.sentiment === 'positive' ? 'ポジティブ' : 
+                                 wordData.sentiment === 'negative' ? 'ネガティブ' : '中立';
+            tooltip.innerHTML = `
+                <div><strong>${word}</strong></div>
+                <div>出現回数: ${wordData.size}回</div>
+                <div>感情: ${sentimentText}</div>
+                <div>スコア: ${wordData.score.toFixed(2)}</div>
+            `;
+            
+            document.body.appendChild(tooltip);
+            
+            // 位置調整
+            const rect = tooltip.getBoundingClientRect();
+            tooltip.style.left = (event.pageX - rect.width / 2) + 'px';
+            tooltip.style.top = (event.pageY - rect.height - 10) + 'px';
+        }
+
+        // ツールチップ非表示
+        function hideWordTooltip() {
+            const tooltip = document.getElementById('wordcloud-tooltip');
+            if (tooltip) {
+                tooltip.remove();
+            }
+        }
+
+        // 語彙強調
+        function highlightWord(word) {
+            const wordData = currentWordcloudData.find(w => w.text === word);
+            if (wordData) {
+                const message = `「${word}」: ${wordData.size}回出現、感情スコア ${wordData.score.toFixed(2)}`;
+                showToast(message, 'info');
+            }
+        }
+
+        // イベントリスナー設定
+        function setupWordcloudEvents() {
+            // 表示切り替えボタン
+            const filteredBtn = document.getElementById('wordcloud-filtered-btn');
+            const allBtn = document.getElementById('wordcloud-all-btn');
+            
+            if (filteredBtn && allBtn) {
+                filteredBtn.addEventListener('click', function() {
+                    this.classList.add('active');
+                    allBtn.classList.remove('active');
+                    currentWordcloudData = sampleWordcloudData.filtered;
+                    generateWordcloud(currentWordcloudData);
+                });
+                
+                allBtn.addEventListener('click', function() {
+                    this.classList.add('active');
+                    filteredBtn.classList.remove('active');
+                    currentWordcloudData = sampleWordcloudData.unlimited;
+                    generateWordcloud(currentWordcloudData);
+                });
+            }
+            
+            // 更新ボタン
+            const updateBtn = document.getElementById('wordcloud-update-btn');
+            if (updateBtn) {
+                updateBtn.addEventListener('click', function() {
+                    updateWordcloudWithFilters();
+                });
+            }
+            
+            // リサイズ対応
+            let resizeTimeout;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    if (currentWordcloudData.length > 0) {
+                        generateWordcloud(currentWordcloudData);
+                    }
+                }, 300);
+            });
+        }
+
+        // フィルター適用してワードクラウド更新
+        function updateWordcloudWithFilters() {
+            const minCount = parseInt(document.getElementById('wordcloud-min-count').value);
+            const maxWords = parseInt(document.getElementById('wordcloud-max-words').value);
+            
+            // 現在のデータセットを取得
+            const isAllMode = document.getElementById('wordcloud-all-btn').classList.contains('active');
+            const sourceData = isAllMode ? sampleWordcloudData.unlimited : sampleWordcloudData.filtered;
+            
+            // フィルター適用
+            let filteredData = sourceData.filter(word => word.size >= minCount);
+            
+            // 語数制限
+            if (maxWords > 0) {
+                filteredData = filteredData.slice(0, maxWords);
+            }
+            
+            currentWordcloudData = filteredData;
+            generateWordcloud(filteredData);
+        }
+
+        // 表示語数更新
+        function updateDisplayedCount(count) {
+            const countElement = document.getElementById('wordcloud-displayed-count');
+            if (countElement) {
+                countElement.textContent = count;
+            }
+        }
+
+        // Toast notification
+        function showToast(message, type = 'info') {
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'position-fixed top-0 end-0 p-3';
+                container.style.zIndex = '9999';
+                document.body.appendChild(container);
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'primary'} border-0`;
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+
+            container.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            toast.addEventListener('hidden.bs.toast', () => toast.remove());
+        }
+
+        // ワードクラウド初期化実行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 他の初期化完了後にワードクラウド初期化
+            setTimeout(initializeWordcloud, 1000);
+        });
+    </script>
 <script>
 function shareResult() {
     const url = window.location.href;

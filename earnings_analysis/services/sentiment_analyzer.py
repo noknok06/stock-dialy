@@ -1298,6 +1298,16 @@ class TransparentSentimentAnalyzer:
             logger.error(f"セクション分析エラー: {e}")
             raise Exception(f"感情分析処理中にエラーが発生しました: {str(e)}")
 
+    def _get_impact_level(self, score: float) -> str:
+        """スコアから影響度レベルを判定"""
+        abs_score = abs(score)
+        if abs_score >= 0.7:
+            return 'high'
+        elif abs_score >= 0.4:
+            return 'medium'
+        else:
+            return 'low'
+        
 class SentimentAnalysisService:
     """感情分析サービス（見解生成強化版）"""
     
@@ -1777,16 +1787,6 @@ class SentimentAnalysisService:
             item['frequency_rank'] = i + 1
         
         return frequency_data
-
-    def _get_impact_level(self, score: float) -> str:
-        """スコアから影響度レベルを判定"""
-        abs_score = abs(score)
-        if abs_score >= 0.7:
-            return 'high'
-        elif abs_score >= 0.4:
-            return 'medium'
-        else:
-            return 'low'
 
     def analyze_text(self, text: str, session_id: str = None, document_info: Dict[str, str] = None) -> Dict[str, Any]:
         """透明性の高い感情分析（頻度分析修正版）"""

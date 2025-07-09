@@ -3,7 +3,10 @@ from django import template
 from django.utils.safestring import mark_safe
 import json
 import re
+import logging
 
+# 既存のloggingが未定義の場合
+logger = logging.getLogger(__name__)
 register = template.Library()
 
 # ====================
@@ -529,3 +532,106 @@ def highlight_all_keywords(text, keywords):
                 )
     
     return mark_safe(highlighted_text)
+
+# earnings_analysis/templatetags/sentiment_filters.py の末尾に追加
+
+@register.filter
+def prepare_wordcloud_data(keyword_frequency_data, min_count=2):
+    """ワードクラウド用データを準備"""
+    try:
+        wordcloud_words = []
+        
+        # ポジティブ語彙を処理
+        positive_words = keyword_frequency_data.get('positive', [])
+        for word_info in positive_words:
+            count = word_info.get('count', 1)
+            if count >= min_count:
+                wordcloud_words.append({
+                    'text': word_info.get('word', ''),
+                    'size': count,
+                    'sentiment': 'positive',
+                    'score': word_info.get('score', 0),
+                    'color': '#28a745'  # 緑色
+                })
+        
+        # ネガティブ語彙を処理
+        negative_words = keyword_frequency_data.get('negative', [])
+        for word_info in negative_words:
+            count = word_info.get('count', 1)
+            if count >= min_count:
+                wordcloud_words.append({
+                    'text': word_info.get('word', ''),
+                    'size': count,
+                    'sentiment': 'negative',
+                    'score': word_info.get('score', 0),
+                    'color': '#dc3545'  # 赤色
+                })
+        
+        # サイズ順でソート（頻出語を優先）
+        wordcloud_words.sort(key=lambda x: x['size'], reverse=True)
+        
+        return json.dumps(wordcloud_words[:300])  # 上位300語まで
+        
+    except Exception as e:
+        logger.error(f"ワードクラウドデータ準備エラー: {e}")
+        return json.dumps([])
+
+@register.filter
+def prepare_unlimited_wordcloud_data(keyword_frequency_data):
+    """制限なしワードクラウド用データを準備"""
+    try:
+        return prepare_wordcloud_data(keyword_frequency_data, min_count=1)
+    except Exception:
+        return json.dumps([])
+
+@register.filter
+def wordcloud_max_size(keyword_frequency_data):
+    """ワードクラウドの最大出現回数を取得"""
+    try:
+        max_count = 0
+        
+        positive_words = keyword_frequency_data.get('positive', [])
+        for word_info in positive_words:
+            max_count = max(max_count, word_info.get('count', 0))
+        
+        negative_words = keyword_frequency_data.get('negative', [])
+        for word_info in negative_words:
+            max_count = max(max_count, word_info.get('count', 0))
+            
+        return max_count
+        
+    except Exception:
+        return 0
+
+@register.filter
+def wordcloud_stats(keyword_frequency_data, min_count=2):
+    """ワードクラウド統計情報を取得"""
+    try:
+        total_words = 0
+        filtered_words = 0
+        total_occurrences = 0
+        
+        for sentiment_type in ['positive', 'negative']:
+            words = keyword_frequency_data.get(sentiment_type, [])
+            for word_info in words:
+                count = word_info.get('count', 1)
+                total_words += 1
+                total_occurrences += count
+                
+                if count >= min_count:
+                    filtered_words += 1
+        
+        return {
+            'total_unique_words': total_words,
+            'displayed_words': filtered_words,
+            'total_occurrences': total_occurrences,
+            'filter_rate': (filtered_words / total_words * 100) if total_words > 0 else 0
+        }
+        
+    except Exception:
+        return {
+            'total_unique_words': 0,
+            'displayed_words': 0,
+            'total_occurrences': 0,
+            'filter_rate': 0
+        }
