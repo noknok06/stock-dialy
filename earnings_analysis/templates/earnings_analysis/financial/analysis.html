@@ -3,7 +3,7 @@
 {% load sentiment_filters %} 
 {% load static %}
 
-{% block title %}財務分析 - {{ document.company_name }} - 決算書類管理システム{% endblock %}
+{% block title %}財務分析（開発中） - {{ document.company_name }} - 決算書類管理システム{% endblock %}
 
 {% block breadcrumb %}
 <nav aria-label="breadcrumb">
@@ -17,12 +17,55 @@
 {% endblock %}
 
 {% block content %}
+<!-- 開発中警告バナー -->
+<div class="alert alert-warning alert-dismissible fade show" role="alert" style="border-left: 5px solid #f39c12;">
+    <div class="d-flex align-items-start">
+        <div class="me-3">
+            <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
+        </div>
+        <div class="flex-grow-1">
+            <h5 class="alert-heading mb-2">
+                <i class="fas fa-hard-hat me-2"></i>開発中機能
+            </h5>
+            <p class="mb-2">
+                <strong>この財務分析機能は現在開発中です。</strong>
+                一部の機能が制限されているか、正確でない結果が表示される可能性があります。
+            </p>
+            <hr class="my-2">
+            <div class="row g-2">
+                <div class="col-12 col-md-6">
+                    <small class="text-muted">
+                        <i class="fas fa-check text-success me-1"></i>基本的なキャッシュフロー分析
+                    </small>
+                </div>
+                <div class="col-12 col-md-6">
+                    <small class="text-muted">
+                        <i class="fas fa-wrench text-warning me-1"></i>健全性スコア（調整中）
+                    </small>
+                </div>
+                <div class="col-12 col-md-6">
+                    <small class="text-muted">
+                        <i class="fas fa-wrench text-warning me-1"></i>投資推奨（調整中）
+                    </small>
+                </div>
+                <div class="col-12 col-md-6">
+                    <small class="text-muted">
+                        <i class="fas fa-flask text-info me-1"></i>経営陣自信度（実験的）
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="閉じる"></button>
+</div>
+
 <!-- Header -->
 <div class="page-header mb-4">
     <div class="row align-items-center g-3">
         <div class="col-12 col-md-8">
             <h1 class="h3 h-md-2 mb-2">
                 <i class="fas fa-chart-pie me-2 me-md-3"></i>財務分析
+                <span class="badge bg-warning text-dark ms-2">BETA</span>
             </h1>
             <p class="h6 h-md-5 mb-3 opacity-90 text-truncate">{{ document.company_name }}</p>
             <p class="mb-0 opacity-80 text-truncate-2">{{ document.doc_description }}</p>
@@ -41,6 +84,9 @@
                         <i class="fas fa-exclamation-triangle me-1"></i>XBRLなし
                     </div>
                 {% endif %}
+                <div class="badge bg-info px-3 py-2">
+                    <i class="fas fa-code-branch me-1"></i>開発版 v0.8
+                </div>
             </div>
         </div>
     </div>
@@ -51,53 +97,70 @@
     <div class="col-12 col-lg-8">
         <!-- Latest Analysis Result -->
         {% if latest_session %}
-            <div class="analysis-card card mb-4">
-                <div class="card-header">
+            <div class="analysis-card card mb-4 border-warning">
+                <div class="card-header bg-warning bg-opacity-10">
                     <h5 class="mb-0 d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
                         <span>
                             <i class="fas fa-chart-line me-2"></i>最新の財務分析結果
                         </span>
                         <div class="d-flex flex-wrap gap-2">
                             <small class="badge bg-light text-dark">{{ latest_session.created_at|date:"Y/m/d H:i" }}</small>
-                            <span class="badge bg-primary">包括分析</span>
+                            <span class="badge bg-warning text-dark">開発版</span>
                         </div>
                     </h5>
                 </div>
                 <div class="card-body">
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>注意:</strong> 以下の結果は開発中の機能により生成されたものです。参考程度にご利用ください。
+                    </div>
+                    
                     <div class="row g-3">
                         <div class="col-12 col-md-4">
                             {% if latest_session.overall_health_score >= 80 %}
-                                <div class="score-display score-positive">
+                                <div class="score-display score-positive position-relative">
                                     <div class="score-number">{{ latest_session.overall_health_score|floatformat:1 }}</div>
                                     <div class="score-label">
                                         <i class="fas fa-star me-1"></i>優秀
                                     </div>
+                                    <div class="position-absolute top-0 end-0 m-2">
+                                        <small class="badge bg-warning text-dark">BETA</small>
+                                    </div>
                                 </div>
                             {% elif latest_session.overall_health_score >= 60 %}
-                                <div class="score-display bg-primary text-white">
+                                <div class="score-display bg-primary text-white position-relative">
                                     <div class="score-number">{{ latest_session.overall_health_score|floatformat:1 }}</div>
                                     <div class="score-label">
                                         <i class="fas fa-thumbs-up me-1"></i>良好
                                     </div>
+                                    <div class="position-absolute top-0 end-0 m-2">
+                                        <small class="badge bg-warning text-dark">BETA</small>
+                                    </div>
                                 </div>
                             {% elif latest_session.overall_health_score >= 40 %}
-                                <div class="score-display bg-warning text-white">
+                                <div class="score-display bg-warning text-white position-relative">
                                     <div class="score-number">{{ latest_session.overall_health_score|floatformat:1 }}</div>
                                     <div class="score-label">
                                         <i class="fas fa-balance-scale me-1"></i>普通
                                     </div>
+                                    <div class="position-absolute top-0 end-0 m-2">
+                                        <small class="badge bg-warning text-dark">BETA</small>
+                                    </div>
                                 </div>
                             {% else %}
-                                <div class="score-display score-negative">
+                                <div class="score-display score-negative position-relative">
                                     <div class="score-number">{{ latest_session.overall_health_score|floatformat:1 }}</div>
                                     <div class="score-label">
                                         <i class="fas fa-exclamation-triangle me-1"></i>要注意
+                                    </div>
+                                    <div class="position-absolute top-0 end-0 m-2">
+                                        <small class="badge bg-warning text-dark">BETA</small>
                                     </div>
                                 </div>
                             {% endif %}
                         </div>
                         <div class="col-12 col-md-8">
-                            <h6 class="mb-3">分析結果サマリー</h6>
+                            <h6 class="mb-3">分析結果サマリー <small class="text-muted">(開発中)</small></h6>
                             <div class="row text-center g-3 mb-3">
                                 <div class="col-4">
                                     <div class="border rounded p-2">
@@ -128,20 +191,21 @@
                             
                             <div class="d-flex flex-column flex-sm-row gap-2">
                                 <a href="{% url 'earnings_analysis:financial-result' latest_session.session_id %}" 
-                                   class="btn btn-primary flex-grow-1">
-                                    <i class="fas fa-eye me-1"></i>詳細結果を見る
+                                   class="btn btn-warning flex-grow-1">
+                                    <i class="fas fa-eye me-1"></i>詳細結果を見る（開発版）
                                 </a>
                             </div>
                             
                             <div class="mt-2 small">
+                                <i class="fas fa-exclamation-triangle text-warning me-1"></i>
                                 {% if latest_session.investment_stance == 'aggressive' %}
-                                    <i class="fas fa-thumbs-up text-success me-1"></i>積極的投資推奨
+                                    積極的投資推奨（開発中の判定）
                                 {% elif latest_session.investment_stance == 'conditional' %}
-                                    <i class="fas fa-balance-scale text-info me-1"></i>条件付き投資推奨
+                                    条件付き投資推奨（開発中の判定）
                                 {% elif latest_session.investment_stance == 'cautious' %}
-                                    <i class="fas fa-exclamation-triangle text-warning me-1"></i>慎重な検討が必要
+                                    慎重な検討が必要（開発中の判定）
                                 {% else %}
-                                    <i class="fas fa-times-circle text-danger me-1"></i>投資非推奨
+                                    投資非推奨（開発中の判定）
                                 {% endif %}
                             </div>
                         </div>
@@ -151,13 +215,20 @@
         {% endif %}
         
         <!-- Analysis Execution Area -->
-        <div class="analysis-card card mb-4">
-            <div class="card-header">
+        <div class="analysis-card card mb-4 border-warning">
+            <div class="card-header bg-warning bg-opacity-10">
                 <h5 class="mb-0">
                     <i class="fas fa-play-circle me-2"></i>財務分析実行
+                    <span class="badge bg-warning text-dark ms-2">開発中</span>
                 </h5>
             </div>
             <div class="card-body">
+                <div class="alert alert-warning mb-4">
+                    <i class="fas fa-hard-hat me-2"></i>
+                    <strong>開発中の機能:</strong> この財務分析は現在開発・調整中です。
+                    結果の精度や完成度は今後のアップデートで向上予定です。
+                </div>
+                
                 {% if has_recent_analysis %}
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle me-2"></i>
@@ -166,33 +237,33 @@
                 {% endif %}
                 
                 <div class="text-center py-4">
-                    <i class="fas fa-chart-pie fa-4x text-primary mb-4"></i>
-                    <h5 class="mb-3">包括的財務分析を開始</h5>
+                    <i class="fas fa-chart-pie fa-4x text-warning mb-4"></i>
+                    <h5 class="mb-3">包括的財務分析を開始 <small class="text-muted">(BETA版)</small></h5>
                     
                     <div class="row g-3 mb-4">
                         <div class="col-12 col-md-6">
-                            <div class="border rounded p-3 h-100">
-                                <h6 class="text-primary mb-2">
-                                    <i class="fas fa-chart-line me-1"></i>分析内容
+                            <div class="border rounded p-3 h-100 border-warning">
+                                <h6 class="text-warning mb-2">
+                                    <i class="fas fa-chart-line me-1"></i>分析内容（開発中）
                                 </h6>
                                 <ul class="list-unstyled small mb-0">
                                     <li><i class="fas fa-check text-success me-1"></i>キャッシュフロー構造分析</li>
-                                    <li><i class="fas fa-check text-success me-1"></i>経営陣の自信度測定</li>
-                                    <li><i class="fas fa-check text-success me-1"></i>財務健全性評価</li>
-                                    <li><i class="fas fa-check text-success me-1"></i>投資推奨度判定</li>
+                                    <li><i class="fas fa-wrench text-warning me-1"></i>経営陣の自信度測定（調整中）</li>
+                                    <li><i class="fas fa-wrench text-warning me-1"></i>財務健全性評価（調整中）</li>
+                                    <li><i class="fas fa-flask text-info me-1"></i>投資推奨度判定（実験的）</li>
                                 </ul>
                             </div>
                         </div>
                         <div class="col-12 col-md-6">
-                            <div class="border rounded p-3 h-100">
+                            <div class="border rounded p-3 h-100 border-info">
                                 <h6 class="text-info mb-2">
                                     <i class="fas fa-info-circle me-1"></i>分析の特徴
                                 </h6>
                                 <ul class="list-unstyled small mb-0">
                                     <li><i class="fas fa-clock me-1"></i>約3-5分で完了</li>
                                     <li><i class="fas fa-database me-1"></i>XBRLデータ + テキスト分析</li>
-                                    <li><i class="fas fa-robot me-1"></i>AI自動判定</li>
-                                    <li><i class="fas fa-chart-bar me-1"></i>総合スコア算出</li>
+                                    <li><i class="fas fa-robot me-1"></i>AI自動判定（開発中）</li>
+                                    <li><i class="fas fa-chart-bar me-1"></i>総合スコア算出（BETA）</li>
                                 </ul>
                             </div>
                         </div>
@@ -206,10 +277,17 @@
                         </div>
                     {% endif %}
                     
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>開発版の注意点:</strong> 
+                        分析結果の精度は今後のアップデートで向上予定です。
+                        現在の結果は参考程度にご利用ください。
+                    </div>
+                    
                     <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
-                        <button type="button" class="btn btn-primary btn-lg" 
+                        <button type="button" class="btn btn-warning btn-lg" 
                                 onclick="startFinancialAnalysis('{{ document.doc_id }}', false)">
-                            <i class="fas fa-play me-2"></i>分析開始
+                            <i class="fas fa-play me-2"></i>開発版分析を開始
                         </button>
                         <button type="button" class="btn btn-outline-warning" 
                                 onclick="startFinancialAnalysis('{{ document.doc_id }}', true)">
@@ -228,6 +306,11 @@
                 </h5>
             </div>
             <div class="card-body">
+                <div class="alert alert-info mb-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    以下のパターン分析は開発中の機能です。分類精度は今後改善予定です。
+                </div>
+                
                 <div class="row g-3">
                     <div class="col-12 col-md-6">
                         <div class="border rounded p-3 h-100 border-success bg-success bg-opacity-10">
@@ -291,21 +374,80 @@
     
     <!-- Sidebar -->
     <div class="col-12 col-lg-4">
+        <!-- 開発状況 -->
+        <div class="analysis-card card mb-4 border-warning">
+            <div class="card-header bg-warning bg-opacity-10">
+                <h6 class="mb-0">
+                    <i class="fas fa-code-branch me-2"></i>開発状況
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small">キャッシュフロー分析</span>
+                        <span class="badge bg-success">完了</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-success" style="width: 85%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small">健全性スコア</span>
+                        <span class="badge bg-warning text-dark">調整中</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-warning" style="width: 60%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small">投資推奨</span>
+                        <span class="badge bg-warning text-dark">調整中</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-warning" style="width: 45%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small">感情分析連携</span>
+                        <span class="badge bg-info">実験的</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-info" style="width: 30%"></div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-calendar me-1"></i>
+                        次回アップデート予定: 2025年8月
+                    </small>
+                </div>
+            </div>
+        </div>
+
         <!-- Analysis History -->
         {% if analysis_history %}
             <div class="analysis-card card mb-4">
                 <div class="card-header">
                     <h6 class="mb-0">
                         <i class="fas fa-history me-2"></i>分析履歴
+                        <span class="badge bg-warning text-dark ms-2">開発版</span>
                     </h6>
                 </div>
                 <div class="card-body">
                     {% for history in analysis_history %}
-                        <div class="border rounded p-3 mb-3">
+                        <div class="border rounded p-3 mb-3 border-warning">
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <div>
                                     <div class="fw-semibold">
                                         健全性: {{ history.overall_health_score|floatformat:1 }}
+                                        <small class="text-muted">(BETA)</small>
                                     </div>
                                     <div class="small text-muted">
                                         {{ history.analysis_date|date:"m/d H:i" }}
@@ -411,6 +553,7 @@
                 <div class="small">
                     <div class="mb-2">
                         <strong>健全性スコア:</strong> 0-100の範囲で企業の財務健全性を総合評価します。
+                        <span class="badge bg-warning text-dark">調整中</span>
                     </div>
                     
                     <div class="mb-2">
@@ -419,10 +562,12 @@
                     
                     <div class="mb-2">
                         <strong>経営陣自信度:</strong> 決算書類のテキストから経営陣の自信度を機械学習で測定します。
+                        <span class="badge bg-info">実験的</span>
                     </div>
                     
-                    <div class="text-warning">
-                        <strong>注意事項:</strong> 分析結果は参考情報です。投資判断には十分な検討をお願いします。
+                    <div class="text-danger">
+                        <strong>重要:</strong> 開発中の機能のため、分析結果の精度は限定的です。
+                        投資判断には専門家の意見も参考にしてください。
                     </div>
                 </div>
             </div>
@@ -457,25 +602,31 @@
 <!-- Progress Modal -->
 <div class="modal fade" id="progressModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header border-0">
+        <div class="modal-content border-warning">
+            <div class="modal-header border-0 bg-warning bg-opacity-10">
                 <h5 class="modal-title">
                     <i class="fas fa-chart-pie me-2"></i>財務分析実行中
+                    <span class="badge bg-warning text-dark ms-2">開発版</span>
                 </h5>
             </div>
             <div class="modal-body text-center py-4">
+                <div class="alert alert-warning mb-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    開発中の機能を実行しています
+                </div>
+                
                 <div class="mb-4">
-                    <i class="fas fa-spinner fa-spin fa-4x text-primary"></i>
+                    <i class="fas fa-spinner fa-spin fa-4x text-warning"></i>
                 </div>
                 
                 <div class="progress mb-3" style="height: 20px;">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" 
                          id="progressBar" role="progressbar" style="width: 0%">
-                        <span id="progressText" class="fw-semibold">0%</span>
+                        <span id="progressText" class="fw-semibold text-dark">0%</span>
                     </div>
                 </div>
                 
-                <div id="statusMessage" class="text-muted mb-3">分析を開始しています...</div>
+                <div id="statusMessage" class="text-muted mb-3">開発版分析を開始しています...</div>
                 
                 <div class="mt-4">
                     <small class="text-muted">
@@ -485,12 +636,35 @@
                 </div>
             </div>
             <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary" id="cancelBtn" onclick="cancelAnalysis()">
+                <button type="button" class="btn btn-outline-warning" id="cancelBtn" onclick="cancelAnalysis()">
                     <i class="fas fa-times me-1"></i>キャンセル
                 </button>
             </div>
         </div>
     </div>
+</div>
+
+<!-- 開発者向け情報 -->
+<div class="alert alert-light border-info mt-4" style="display: none;" id="devInfo">
+    <h6 class="text-info">
+        <i class="fas fa-code me-2"></i>開発者向け情報
+    </h6>
+    <div class="small">
+        <p><strong>Version:</strong> 0.8.0-beta</p>
+        <p><strong>Last Updated:</strong> {{ "now"|date:"Y/m/d" }}</p>
+        <p><strong>Known Issues:</strong></p>
+        <ul>
+            <li>健全性スコアの精度調整中</li>
+            <li>投資推奨ロジックの改善予定</li>
+            <li>感情分析との連携機能開発中</li>
+        </ul>
+    </div>
+</div>
+
+<div class="text-center mt-3">
+    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleDevInfo()">
+        <i class="fas fa-code me-1"></i>開発者向け情報を表示
+    </button>
 </div>
 {% endblock %}
 
@@ -499,7 +673,25 @@
 let currentSessionId = null;
 let progressInterval = null;
 
+function toggleDevInfo() {
+    const devInfo = document.getElementById('devInfo');
+    const button = event.target;
+    
+    if (devInfo.style.display === 'none') {
+        devInfo.style.display = 'block';
+        button.innerHTML = '<i class="fas fa-code me-1"></i>開発者向け情報を非表示';
+    } else {
+        devInfo.style.display = 'none';
+        button.innerHTML = '<i class="fas fa-code me-1"></i>開発者向け情報を表示';
+    }
+}
+
 function startFinancialAnalysis(docId, force = false) {
+    // Show development warning
+    if (!confirm('これは開発中の機能です。分析結果の精度は限定的です。続行しますか？')) {
+        return;
+    }
+    
     // Show progress modal
     const modal = new bootstrap.Modal(document.getElementById('progressModal'));
     modal.show();
@@ -514,7 +706,8 @@ function startFinancialAnalysis(docId, force = false) {
         body: JSON.stringify({
             doc_id: docId,
             force: force,
-            analysis_type: 'comprehensive'
+            analysis_type: 'comprehensive',
+            beta_version: true
         })
     })
     .then(response => response.json())
@@ -541,9 +734,8 @@ function startProgressPolling() {
     
     progressInterval = setInterval(() => {
         fetchProgress();
-    }, 3000); // 3 second intervals
+    }, 3000);
     
-    // Initial execution
     fetchProgress();
 }
 
@@ -563,9 +755,9 @@ function fetchProgress() {
         } else if (data.status === 'FAILED') {
             clearInterval(progressInterval);
             document.getElementById('progressModal').querySelector('.modal-header h5').innerHTML = 
-                '<i class="fas fa-exclamation-triangle me-2"></i>分析失敗';
+                '<i class="fas fa-exclamation-triangle me-2"></i>分析失敗（開発版）';
             document.getElementById('statusMessage').innerHTML = 
-                '<span class="text-danger">分析中にエラーが発生しました</span>';
+                '<span class="text-danger">開発版分析中にエラーが発生しました</span>';
             document.getElementById('cancelBtn').innerHTML = 
                 '<i class="fas fa-times me-1"></i>閉じる';
         }
@@ -583,12 +775,13 @@ function updateProgressUI(data) {
     const progress = data.progress || 0;
     progressBar.style.width = progress + '%';
     progressText.textContent = progress + '%';
-    statusMessage.textContent = data.message || '処理中...';
+    statusMessage.textContent = (data.message || '処理中...') + ' (開発版)';
     
     if (progress >= 100) {
         progressBar.classList.remove('progress-bar-animated');
         progressBar.classList.add('bg-success');
-        statusMessage.innerHTML = '<span class="text-success">分析完了！結果画面に移動します...</span>';
+        progressText.classList.add('text-white');
+        statusMessage.innerHTML = '<span class="text-success">開発版分析完了！結果画面に移動します...</span>';
     }
 }
 
@@ -618,7 +811,6 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// Toast notification
 function showToast(message, type = 'info') {
     let container = document.getElementById('toast-container');
     if (!container) {
@@ -630,7 +822,7 @@ function showToast(message, type = 'info') {
     }
 
     const toast = document.createElement('div');
-    toast.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'primary'} border-0`;
+    toast.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'warning'} border-0`;
     toast.innerHTML = `
         <div class="d-flex">
             <div class="toast-body">
@@ -647,17 +839,14 @@ function showToast(message, type = 'info') {
     toast.addEventListener('hidden.bs.toast', () => toast.remove());
 }
 
-// Page leave warning
 window.addEventListener('beforeunload', function(e) {
     if (currentSessionId) {
         e.preventDefault();
-        e.returnValue = '財務分析実行中です。ページを離れますか？';
+        e.returnValue = '開発版財務分析実行中です。ページを離れますか？';
     }
 });
 
-// Initialize page
 document.addEventListener('DOMContentLoaded', function() {
-    // Animate cards on load
     const cards = document.querySelectorAll('.analysis-card');
     cards.forEach((card, index) => {
         card.style.opacity = '0';

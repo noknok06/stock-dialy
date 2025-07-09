@@ -364,9 +364,9 @@ class Command(BaseCommand):
 
 システム管理者による確認が必要です。
                 """.strip()
-            
-            recipients = getattr(settings, 'ADMIN_EMAIL_LIST', ['admin@example.com'])
-            
+
+            recipients = getattr(settings, 'ADMIN_EMAIL_LIST', ['kabulog.information@gmail.com'])
+
             send_mail(
                 subject=subject,
                 message=message,

@@ -338,22 +338,21 @@
                 <div class="row mb-3 text-center">
                     <div class="col-3">
                         <div class="small text-muted">総語彙数</div>
-                        <div class="fw-bold text-primary" id="total-words">150</div>
+                        <div class="fw-bold text-primary" id="total-words">-</div>
                     </div>
                     <div class="col-3">
                         <div class="small text-muted">表示語彙数</div>
-                        <div class="fw-bold text-info" id="wordcloud-displayed-count">100</div>
+                        <div class="fw-bold text-info" id="wordcloud-displayed-count">-</div>
                     </div>
                     <div class="col-3">
                         <div class="small text-muted">総出現回数</div>
-                        <div class="fw-bold text-success">1,250</div>
+                        <div class="fw-bold text-success" id="total-occurrences">-</div>
                     </div>
                     <div class="col-3">
                         <div class="small text-muted">最大出現回数</div>
-                        <div class="fw-bold text-warning">45</div>
+                        <div class="fw-bold text-warning" id="max-occurrences">-</div>
                     </div>
-                </div>
-                
+                </div>    
                 <!-- ワードクラウド表示エリア -->
                 <div class="wordcloud-container">
                     <div id="wordcloud-canvas" class="wordcloud-canvas bg-light rounded" style="min-height: 500px; position: relative;">
@@ -383,10 +382,10 @@
                         <div class="col-md-4">
                             <label for="wordcloud-max-words" class="form-label small">最大表示語数</label>
                             <select class="form-select form-select-sm" id="wordcloud-max-words">
+                                <option value="30">30語</option>
+                                <option value="50" selected>50語（推奨）</option>
                                 <option value="100">100語</option>
                                 <option value="200">200語</option>
-                                <option value="300" selected>300語（推奨）</option>
-                                <option value="500">500語</option>
                                 <option value="0">制限なし</option>
                             </select>
                         </div>
@@ -811,58 +810,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // サンプルデータ
-        const sampleWordcloudData = {
-            filtered: [
-                { text: "成長", size: 15, sentiment: "positive", score: 0.8, color: "#28a745" },
-                { text: "向上", size: 12, sentiment: "positive", score: 0.7, color: "#28a745" },
-                { text: "改善", size: 10, sentiment: "positive", score: 0.6, color: "#28a745" },
-                { text: "増加", size: 8, sentiment: "positive", score: 0.5, color: "#28a745" },
-                { text: "好調", size: 7, sentiment: "positive", score: 0.7, color: "#28a745" },
-                { text: "拡大", size: 6, sentiment: "positive", score: 0.6, color: "#28a745" },
-                { text: "強化", size: 5, sentiment: "positive", score: 0.5, color: "#28a745" },
-                { text: "安定", size: 4, sentiment: "positive", score: 0.4, color: "#28a745" },
-                { text: "減少", size: 9, sentiment: "negative", score: -0.6, color: "#dc3545" },
-                { text: "低迷", size: 7, sentiment: "negative", score: -0.7, color: "#dc3545" },
-                { text: "困難", size: 6, sentiment: "negative", score: -0.8, color: "#dc3545" },
-                { text: "悪化", size: 5, sentiment: "negative", score: -0.6, color: "#dc3545" },
-                { text: "課題", size: 4, sentiment: "negative", score: -0.5, color: "#dc3545" },
-                { text: "リスク", size: 3, sentiment: "negative", score: -0.7, color: "#dc3545" },
-                { text: "売上", size: 20, sentiment: "neutral", score: 0.0, color: "#6c757d" },
-                { text: "業績", size: 18, sentiment: "neutral", score: 0.0, color: "#6c757d" },
-                { text: "事業", size: 16, sentiment: "neutral", score: 0.0, color: "#6c757d" },
-                { text: "戦略", size: 14, sentiment: "neutral", score: 0.0, color: "#6c757d" },
-                { text: "市場", size: 13, sentiment: "neutral", score: 0.0, color: "#6c757d" },
-                { text: "投資", size: 11, sentiment: "neutral", score: 0.0, color: "#6c757d" },
-                { text: "顧客", size: 10, sentiment: "neutral", score: 0.0, color: "#6c757d" },
-                { text: "製品", size: 9, sentiment: "neutral", score: 0.0, color: "#6c757d" },
-                { text: "サービス", size: 8, sentiment: "neutral", score: 0.0, color: "#6c757d" },
-                { text: "価格", size: 7, sentiment: "neutral", score: 0.0, color: "#6c757d" },
-                { text: "競争", size: 6, sentiment: "neutral", score: 0.0, color: "#6c757d" },
-                { text: "収益", size: 5, sentiment: "neutral", score: 0.0, color: "#6c757d" },
-                { text: "利益", size: 4, sentiment: "neutral", score: 0.0, color: "#6c757d" },
-                { text: "コスト", size: 3, sentiment: "neutral", score: 0.0, color: "#6c757d" },
-                { text: "予算", size: 2, sentiment: "neutral", score: 0.0, color: "#6c757d" }
-            ],
-            unlimited: [], // 同じデータを使用
-            maxSize: 20,
-            stats: {
-                total_unique_words: 29,
-                displayed_words: 29,
-                total_occurrences: 245
-            }
-        };
-
-        sampleWordcloudData.unlimited = [...sampleWordcloudData.filtered];
-
-        // ワードクラウド関連のJavaScript - 修正版
-        let wordcloudInstance = null;
-        let currentWordcloudData = [];
-
-        // ワードクラウド初期化
         function initializeWordcloud() {
-            // 初期データ設定
-            currentWordcloudData = sampleWordcloudData.filtered;
+            // 統計情報を更新
+            document.getElementById('total-words').textContent = actualWordcloudData.stats.total_unique_words;
+            document.getElementById('total-occurrences').textContent = actualWordcloudData.stats.total_occurrences;
+            document.getElementById('max-occurrences').textContent = actualWordcloudData.maxSize;
+            
+            // 初期データ設定（実際のデータを50語に制限）
+            currentWordcloudData = actualWordcloudData.filtered.slice(0, 50);
+            
+            // 表示語数を更新
+            updateDisplayedCount(currentWordcloudData.length);
             
             // 初期ワードクラウド生成
             setTimeout(() => {
@@ -873,10 +831,122 @@
             setupWordcloudEvents();
         }
 
-        // ワードクラウド生成 - 修正版
+        // 実際の分析データを取得
+        const actualAnalysisData = {
+            keyword_frequency_data: {{ session.analysis_result.keyword_frequency_data|safe }},
+            statistics: {{ session.analysis_result.statistics|safe }}
+        };
+
+        // 実際のデータをワードクラウド用に変換
+        function convertToWordcloudData(frequencyData) {
+            const wordcloudData = [];
+            
+            // ポジティブ語彙を追加
+            if (frequencyData.positive) {
+                frequencyData.positive.forEach(item => {
+                    wordcloudData.push({
+                        text: item.word,
+                        size: item.count,
+                        sentiment: "positive",
+                        score: item.score,
+                        color: "#28a745"
+                    });
+                });
+            }
+            
+            // ネガティブ語彙を追加
+            if (frequencyData.negative) {
+                frequencyData.negative.forEach(item => {
+                    wordcloudData.push({
+                        text: item.word,
+                        size: item.count,
+                        sentiment: "negative",
+                        score: item.score,
+                        color: "#dc3545"
+                    });
+                });
+            }
+            
+            // 出現回数でソート
+            wordcloudData.sort((a, b) => b.size - a.size);
+            
+            // データが存在しない場合のフォールバック
+            if (wordcloudData.length === 0) {
+                return [{
+                    text: "データなし",
+                    size: 1,
+                    sentiment: "neutral",
+                    score: 0.0,
+                    color: "#6c757d"
+                }];
+            }
+            
+            return wordcloudData;
+        }
+        
+        // 実際のデータでワードクラウドデータを作成
+        const realWordcloudData = convertToWordcloudData(actualAnalysisData.keyword_frequency_data || {});
+
+        // ワードクラウドデータ構造
+        const actualWordcloudData = {
+            filtered: realWordcloudData,
+            unlimited: realWordcloudData,
+            maxSize: realWordcloudData.length > 0 ? Math.max(...realWordcloudData.map(w => w.size)) : 1,
+            stats: {
+                total_unique_words: realWordcloudData.length,
+                displayed_words: Math.min(50, realWordcloudData.length),
+                total_occurrences: realWordcloudData.reduce((sum, w) => sum + w.size, 0)
+            }
+        };
+
+        // ワードクラウド関連のJavaScript
+        let wordcloudInstance = null;
+        let currentWordcloudData = [];
+
+        // ワードクラウド初期化
+        function initializeWordcloud() {
+            console.log('ワードクラウド初期化開始');
+            console.log('実際のデータ:', actualWordcloudData);
+            
+            // 統計情報を更新
+            document.getElementById('total-words').textContent = actualWordcloudData.stats.total_unique_words;
+            document.getElementById('total-occurrences').textContent = actualWordcloudData.stats.total_occurrences;
+            document.getElementById('max-occurrences').textContent = actualWordcloudData.maxSize;
+            
+            // 初期データ設定（実際のデータを50語に制限）
+            currentWordcloudData = actualWordcloudData.filtered.slice(0, 50);
+            
+            // 表示語数を更新
+            updateDisplayedCount(currentWordcloudData.length);
+            
+            console.log('現在のデータ:', currentWordcloudData);
+            
+            // データが存在しない場合の処理
+            if (currentWordcloudData.length === 0) {
+                showWordcloudError('分析データが見つかりませんでした');
+                return;
+            }
+            
+            // 初期ワードクラウド生成
+            setTimeout(() => {
+                generateWordcloud(currentWordcloudData);
+            }, 500);
+            
+            // イベントリスナー設定
+            setupWordcloudEvents();
+        }
+
+        // ワードクラウド生成
         function generateWordcloud(wordsData) {
+            console.log('ワードクラウド生成開始:', wordsData);
+            
             const canvas = document.getElementById('wordcloud-canvas');
-            if (!canvas || !wordsData || wordsData.length === 0) {
+            if (!canvas) {
+                console.error('キャンバス要素が見つかりません');
+                return;
+            }
+            
+            if (!wordsData || wordsData.length === 0) {
                 showWordcloudError('表示する語彙がありません');
                 return;
             }
@@ -884,30 +954,43 @@
             // キャンバスクリア
             canvas.innerHTML = '';
             
-            // キャンバスサイズ設定 - 修正版
+            // キャンバスサイズ設定
             const containerWidth = canvas.offsetWidth;
-            const containerHeight = Math.max(500, containerWidth * 0.7); // 高さを大きく
+            const containerHeight = Math.max(500, containerWidth * 0.7);
             canvas.style.height = containerHeight + 'px';
             
-            // WordCloud2.js用のデータ変換 - 修正版
+            // WordCloud2.js用のデータ変換
             const wordcloudList = wordsData.map(word => {
-                // 文字サイズを大幅に増加
-                const baseSize = Math.max(20, Math.min(120, word.size * 15 + 20));
-                return [word.text, baseSize, null, null, null, null, word.color];
+                // 文字サイズを語彙の出現頻度に基づいて差別化
+                let fontSize;
+                
+                if (word.size >= 20) {
+                    fontSize = Math.min(100, word.size * 3 + 40);
+                } else if (word.size >= 10) {
+                    fontSize = Math.min(80, word.size * 2.5 + 30);
+                } else if (word.size >= 5) {
+                    fontSize = Math.min(60, word.size * 2 + 20);
+                } else {
+                    fontSize = Math.min(40, word.size * 1.5 + 15);
+                }
+                
+                fontSize = Math.max(16, fontSize);
+                
+                return [word.text, fontSize, null, null, null, null, word.color];
             });
             
+            console.log('WordCloud2用データ:', wordcloudList);
+            
             try {
-                // ワードクラウド生成 - 修正版
+                // ワードクラウド生成
                 WordCloud(canvas, {
                     list: wordcloudList,
-                    gridSize: Math.round(24 * containerWidth / 1024), // グリッドサイズを大きく
+                    gridSize: Math.round(24 * containerWidth / 1024),
                     weightFactor: function(size) {
-                        // 重みファクターを大幅に増加
                         return Math.pow(size, 0.9) * containerWidth / 512;
                     },
                     fontFamily: '"Hiragino Kaku Gothic Pro", "ヒラギノ角ゴ Pro", "Yu Gothic", "游ゴシック", Meiryo, "メイリオ", sans-serif',
                     color: function(word, weight, fontSize, distance, theta) {
-                        // 7番目の要素（色情報）を使用
                         const wordData = wordsData.find(w => w.text === word);
                         return wordData ? wordData.color : '#666';
                     },
@@ -917,8 +1000,8 @@
                     minRotation: -Math.PI / 6,
                     shuffle: true,
                     rotationSteps: 2,
-                    ellipticity: 0.6, // 楕円度を調整
-                    shrinkToFit: true, // フィットするように縮小
+                    ellipticity: 0.6,
+                    shrinkToFit: true,
                     hover: function(item, dimension, event) {
                         if (item) {
                             showWordTooltip(item[0], item[1], event);
@@ -935,6 +1018,8 @@
                 
                 // 表示語数更新
                 updateDisplayedCount(wordsData.length);
+                
+                console.log('ワードクラウド生成完了');
                 
             } catch (error) {
                 console.error('ワードクラウド生成エラー:', error);
@@ -972,7 +1057,7 @@
             tooltip.style.pointerEvents = 'none';
             
             const sentimentText = wordData.sentiment === 'positive' ? 'ポジティブ' : 
-                                 wordData.sentiment === 'negative' ? 'ネガティブ' : '中立';
+                                wordData.sentiment === 'negative' ? 'ネガティブ' : '中立';
             tooltip.innerHTML = `
                 <div><strong>${word}</strong></div>
                 <div>出現回数: ${wordData.size}回</div>
@@ -1007,6 +1092,89 @@
 
         // イベントリスナー設定
         function setupWordcloudEvents() {
+            // 更新ボタン
+            const updateBtn = document.getElementById('wordcloud-update-btn');
+            if (updateBtn) {
+                updateBtn.addEventListener('click', function() {
+                    updateWordcloudWithFilters();
+                });
+            }
+            
+            // リサイズ対応
+            let resizeTimeout;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    if (currentWordcloudData.length > 0) {
+                        generateWordcloud(currentWordcloudData);
+                    }
+                }, 300);
+            });
+        }
+
+        // フィルター適用してワードクラウド更新
+        function updateWordcloudWithFilters() {
+            const minCount = parseInt(document.getElementById('wordcloud-min-count').value);
+            const maxWords = parseInt(document.getElementById('wordcloud-max-words').value);
+            
+            // 出現回数でフィルター
+            let filteredData = actualWordcloudData.filtered.filter(word => word.size >= minCount);
+            
+            // 語数制限（sizeの大きい順にソート）
+            filteredData.sort((a, b) => b.size - a.size);
+            if (maxWords > 0) {
+                filteredData = filteredData.slice(0, maxWords);
+            }
+            
+            currentWordcloudData = filteredData;
+            generateWordcloud(filteredData);
+        }
+
+        // 表示語数更新
+        function updateDisplayedCount(count) {
+            const countElement = document.getElementById('wordcloud-displayed-count');
+            if (countElement) {
+                countElement.textContent = count;
+            }
+        }
+
+        // Toast notification
+        function showToast(message, type = 'info') {
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'position-fixed top-0 end-0 p-3';
+                container.style.zIndex = '9999';
+                document.body.appendChild(container);
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'primary'} border-0`;
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+
+            container.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            toast.addEventListener('hidden.bs.toast', () => toast.remove());
+        }
+
+        // ワードクラウド初期化実行
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM読み込み完了');
+            // 他の初期化完了後にワードクラウド初期化
+            setTimeout(initializeWordcloud, 1000);
+        });
+        // イベントリスナー設定
+        function setupWordcloudEvents() {
             // 表示切り替えボタン
             const filteredBtn = document.getElementById('wordcloud-filtered-btn');
             const allBtn = document.getElementById('wordcloud-all-btn');
@@ -1015,7 +1183,7 @@
                 filteredBtn.addEventListener('click', function() {
                     this.classList.add('active');
                     allBtn.classList.remove('active');
-                    currentWordcloudData = sampleWordcloudData.filtered;
+                    currentWordcloudData = sampleWordcloudData.filtered.slice(0, 50);
                     generateWordcloud(currentWordcloudData);
                 });
                 
@@ -1054,7 +1222,7 @@
             
             // 現在のデータセットを取得
             const isAllMode = document.getElementById('wordcloud-all-btn').classList.contains('active');
-            const sourceData = isAllMode ? sampleWordcloudData.unlimited : sampleWordcloudData.filtered;
+            const sourceData = isAllMode ? actualWordcloudData.unlimited : actualWordcloudData.filtered;
             
             // フィルター適用
             let filteredData = sourceData.filter(word => word.size >= minCount);
