@@ -772,160 +772,6 @@ class TransparentSentimentAnalyzer:
         except Exception as e:
             logger.debug(f"文脈パターン検出エラー: {e}")
             return []
-
-    def analyze_text_sections(self, text_sections: Dict[str, str], session_id: str = None, document_info: Dict[str, str] = None) -> Dict[str, Any]:
-        """複数セクションの分析（重複除去強化版）"""
-        try:
-            section_results = {}
-            all_positive_sentences = []
-            all_negative_sentences = []
-            all_positive_keywords = []
-            all_negative_keywords = []
-            combined_steps = []
-            
-            # 統合用のスコアリスト（語彙レベル）
-            all_positive_scores = []
-            all_negative_scores = []
-            all_raw_scores = []
-            
-            # 重複チェック用のセット
-            seen_positive_sentences = set()
-            seen_negative_sentences = set()
-            
-            # セクション別分析
-            for section_name, text in text_sections.items():
-                if len(text.strip()) < 50:
-                    continue
-                
-                result = self.analyze_text(text, session_id)
-                section_results[section_name] = result
-                combined_steps.extend(result['analysis_steps'])
-                
-                # 語彙レベルの統合
-                score_calc = result.get('score_calculation', {})
-                if score_calc:
-                    all_positive_scores.extend(score_calc.get('positive_scores', []))
-                    all_negative_scores.extend(score_calc.get('negative_scores', []))
-                    all_raw_scores.extend(score_calc.get('raw_scores', []))
-                
-                # 各セクションの結果を統合リストに追加（重複除去）
-                sample_sentences = result.get('sample_sentences', {})
-                keyword_analysis = result.get('keyword_analysis', {})
-                
-                # ポジティブ文章の統合（重複除去）
-                positive_sentences = sample_sentences.get('positive', [])
-                for sentence in positive_sentences:
-                    normalized = self._normalize_sentence_for_dedup(sentence.get('text', ''))
-                    if normalized not in seen_positive_sentences:
-                        sentence['section'] = section_name
-                        all_positive_sentences.append(sentence)
-                        seen_positive_sentences.add(normalized)
-                
-                # ネガティブ文章の統合（重複除去）
-                negative_sentences = sample_sentences.get('negative', [])
-                for sentence in negative_sentences:
-                    normalized = self._normalize_sentence_for_dedup(sentence.get('text', ''))
-                    if normalized not in seen_negative_sentences:
-                        sentence['section'] = section_name
-                        all_negative_sentences.append(sentence)
-                        seen_negative_sentences.add(normalized)
-                
-                # キーワードの統合
-                positive_keywords = keyword_analysis.get('positive', [])
-                negative_keywords = keyword_analysis.get('negative', [])
-                
-                # セクション名を追加してキーワードを統合
-                for keyword in positive_keywords:
-                    keyword['section'] = section_name
-                    all_positive_keywords.append(keyword)
-                
-                for keyword in negative_keywords:
-                    keyword['section'] = section_name
-                    all_negative_keywords.append(keyword)
-            
-            if not all_raw_scores:
-                return self._empty_result(session_id)
-            
-            # 統合分析（修正版：語彙レベルから計算）
-            combined_score_calc = self._calculate_detailed_score(all_raw_scores)
-            combined_score_calc['positive_scores'] = all_positive_scores
-            combined_score_calc['negative_scores'] = all_negative_scores
-            
-            overall_score = combined_score_calc['final_score']
-            sentiment_label = self._determine_sentiment_label(overall_score)
-            
-            # 統合分析根拠
-            integrated_reasoning = self._generate_reasoning(
-                combined_steps, combined_score_calc, overall_score, sentiment_label
-            )
-            
-            # 統合されたサンプル文章（スコア順でソート）
-            all_positive_sentences.sort(key=lambda x: x['score'], reverse=True)
-            all_negative_sentences.sort(key=lambda x: x['score'])
-            
-            # 統合されたキーワード分析（重複除去とスコア順ソート）
-            integrated_positive_keywords = self._integrate_keywords(all_positive_keywords)
-            integrated_negative_keywords = self._integrate_keywords(all_negative_keywords)
-            
-            # 基本結果の構築（統合されたデータを含む）
-            basic_result = {
-                'overall_score': round(overall_score, 3),
-                'sentiment_label': sentiment_label,
-                'analysis_reasoning': integrated_reasoning,
-                'score_calculation': combined_score_calc,
-                'section_analysis': section_results,
-                'sample_sentences': {
-                    'positive': all_positive_sentences[:10],  # 上位10件（重複除去済み）
-                    'negative': all_negative_sentences[:10],  # 上位10件（重複除去済み）
-                },
-                'keyword_analysis': {
-                    'positive': integrated_positive_keywords[:15],  # 上位15件
-                    'negative': integrated_negative_keywords[:15],  # 上位15件
-                },
-                'statistics': {
-                    'sections_analyzed': len(section_results),
-                    'total_words_analyzed': sum(r['statistics']['total_words_analyzed'] for r in section_results.values()),
-                    'context_patterns_found': sum(r['statistics']['context_patterns_found'] for r in section_results.values()),
-                    'basic_words_found': sum(r['statistics']['basic_words_found'] for r in section_results.values()),
-                    'unique_words_found': sum(r['statistics'].get('unique_words_found', 0) for r in section_results.values()),
-                    'positive_sentences_found': len(all_positive_sentences),
-                    'negative_sentences_found': len(all_negative_sentences),
-                    'total_positive_keywords': len(all_positive_keywords),
-                    'total_negative_keywords': len(all_negative_keywords),
-                    'positive_words_count': sum(r['statistics'].get('positive_words_count', 0) for r in section_results.values()),
-                    'negative_words_count': sum(r['statistics'].get('negative_words_count', 0) for r in section_results.values()),
-                    'positive_sentences_count': len(all_positive_sentences),
-                    'negative_sentences_count': len(all_negative_sentences),
-                    'threshold_positive': self.config.positive_threshold,
-                    'threshold_negative': self.config.negative_threshold,
-                },
-                'analysis_metadata': {
-                    'analyzed_at': timezone.now().isoformat(),
-                    'dictionary_size': len(self.dictionary.sentiment_dict),
-                    'session_id': session_id,
-                    'sections_analyzed': list(text_sections.keys()),
-                    'analysis_version': '2.1_dedup_enhanced',
-                    'integration_method': 'section_aggregation_with_dedup',
-                }
-            }
-            
-            # ユーザー向け詳細見解を生成
-            if document_info:
-                user_insights = self.insight_generator.generate_detailed_insights(basic_result, document_info)
-                basic_result['user_insights'] = user_insights
-            
-            # デバッグログ
-            logger.info(f"セクション統合分析完了（重複除去）: {len(section_results)}セクション, "
-                    f"ポジティブ文章{len(all_positive_sentences)}件（重複除去後）, "
-                    f"ネガティブ文章{len(all_negative_sentences)}件（重複除去後）, "
-                    f"ポジティブキーワード{len(integrated_positive_keywords)}語, "
-                    f"ネガティブキーワード{len(integrated_negative_keywords)}語")
-            
-            return basic_result
-            
-        except Exception as e:
-            logger.error(f"セクション分析エラー: {e}")
-            raise Exception(f"感情分析処理中にエラーが発生しました: {str(e)}")     
                
     def _calculate_detailed_score(self, all_matches: List[Tuple[str, float, str]]) -> Dict:
         """詳細なスコア計算（語彙情報付き完全版）"""
@@ -1273,7 +1119,7 @@ class TransparentSentimentAnalyzer:
         return integrated_keywords
 
     def analyze_text_sections(self, text_sections: Dict[str, str], session_id: str = None, document_info: Dict[str, str] = None) -> Dict[str, Any]:
-        """複数セクションの分析（データフロー修正版）"""
+        """複数セクションの分析（統計修正版）"""
         try:
             section_results = {}
             all_positive_sentences = []
@@ -1281,6 +1127,10 @@ class TransparentSentimentAnalyzer:
             all_positive_keywords = []
             all_negative_keywords = []
             combined_steps = []
+            
+            # ★修正: 統計計算用の変数を追加
+            total_context_patterns = 0
+            total_sentences_analyzed = 0
             
             # ★修正：統合用のマッチデータ（タプル形式）
             all_matches_combined = []
@@ -1298,11 +1148,15 @@ class TransparentSentimentAnalyzer:
                 section_results[section_name] = result
                 combined_steps.extend(result['analysis_steps'])
                 
+                # ★修正: 各セクションの統計を累積
+                section_stats = result.get('statistics', {})
+                total_context_patterns += section_stats.get('context_patterns_found', 0)
+                total_sentences_analyzed += section_stats.get('sentences_analyzed', 0)
+                
                 # ★修正：analysis_stepsからマッチデータを正しく取得
                 for step in result.get('analysis_steps', []):
                     matches = step.get('matches', [])
                     if matches:
-                        # データ構造を確認してから追加
                         for match in matches:
                             if isinstance(match, (tuple, list)) and len(match) == 3:
                                 all_matches_combined.append(match)
@@ -1347,9 +1201,8 @@ class TransparentSentimentAnalyzer:
             if not all_matches_combined:
                 return self._empty_result(session_id)
             
-            # ★修正：統合分析（all_matches_combinedを使用）
+            # 統合分析
             combined_score_calc = self._calculate_detailed_score(all_matches_combined)
-            
             overall_score = combined_score_calc['final_score']
             sentiment_label = self._determine_sentiment_label(overall_score)
             
@@ -1357,6 +1210,10 @@ class TransparentSentimentAnalyzer:
             integrated_reasoning = self._generate_reasoning(
                 combined_steps, combined_score_calc, overall_score, sentiment_label
             )
+            
+            # ★修正：統合キーワード頻度分析
+            integrated_keyword_frequency = self._analyze_keyword_frequency_safe(all_matches_combined)
+            
             
             # ★修正：統合キーワード頻度分析（all_matches_combinedを使用）
             logger.debug(f"統合マッチデータ確認: {len(all_matches_combined)}件")
@@ -1373,27 +1230,30 @@ class TransparentSentimentAnalyzer:
             integrated_positive_keywords = self._integrate_keywords(all_positive_keywords)
             integrated_negative_keywords = self._integrate_keywords(all_negative_keywords)
             
-            # 基本結果の構築（統合されたデータを含む）
+            # ★修正: 正しい統計情報の構築
             basic_result = {
                 'overall_score': round(overall_score, 3),
                 'sentiment_label': sentiment_label,
                 'analysis_reasoning': integrated_reasoning,
                 'score_calculation': combined_score_calc,
                 'section_analysis': section_results,
-                'keyword_frequency_data': integrated_keyword_frequency,  # ★追加
+                'keyword_frequency_data': integrated_keyword_frequency,
                 'sample_sentences': {
-                    'positive': all_positive_sentences[:10],  # 上位10件（重複除去済み）
-                    'negative': all_negative_sentences[:10],  # 上位10件（重複除去済み）
+                    'positive': all_positive_sentences[:10],
+                    'negative': all_negative_sentences[:10],
                 },
                 'keyword_analysis': {
-                    'positive': integrated_positive_keywords[:15],  # 上位15件
-                    'negative': integrated_negative_keywords[:15],  # 上位15件
+                    'positive': integrated_positive_keywords[:15],
+                    'negative': integrated_negative_keywords[:15],
                 },
                 'statistics': {
                     'sections_analyzed': len(section_results),
                     'total_words_analyzed': len(all_matches_combined),
-                    'context_patterns_found': sum(1 for step in combined_steps if '文脈' in step.get('step', '')),
-                    'basic_words_found': sum(1 for step in combined_steps if '基本' in step.get('step', '')),
+                    # ★修正: 正しい文脈パターン数
+                    'context_patterns_found': total_context_patterns,
+                    # ★修正: 正しい分析文数  
+                    'sentences_analyzed': total_sentences_analyzed,
+                    'basic_words_found': sum(r['statistics'].get('basic_words_found', 0) for r in section_results.values()),
                     'unique_words_found': len(set(word for word, _, _ in all_matches_combined)),
                     'positive_sentences_found': len(all_positive_sentences),
                     'negative_sentences_found': len(all_negative_sentences),
@@ -1405,7 +1265,7 @@ class TransparentSentimentAnalyzer:
                     'negative_sentences_count': len(all_negative_sentences),
                     'threshold_positive': self.config.positive_threshold,
                     'threshold_negative': self.config.negative_threshold,
-                    # ★統合頻度統計
+                    # 頻度統計
                     'total_keyword_occurrences': sum(item['count'] for item in integrated_keyword_frequency['positive'] + integrated_keyword_frequency['negative']),
                     'top_positive_keyword': integrated_keyword_frequency['positive'][0] if integrated_keyword_frequency['positive'] else None,
                     'top_negative_keyword': integrated_keyword_frequency['negative'][0] if integrated_keyword_frequency['negative'] else None,
@@ -1415,8 +1275,8 @@ class TransparentSentimentAnalyzer:
                     'dictionary_size': len(self.dictionary.sentiment_dict),
                     'session_id': session_id,
                     'sections_analyzed': list(text_sections.keys()),
-                    'analysis_version': '2.3_data_flow_fixed',
-                    'integration_method': 'section_aggregation_with_frequency_fixed',
+                    'analysis_version': '2.4_stats_fixed',
+                    'integration_method': 'section_aggregation_with_proper_stats',
                 }
             }
             
@@ -1426,11 +1286,11 @@ class TransparentSentimentAnalyzer:
                 basic_result['user_insights'] = user_insights
             
             # デバッグログ
-            logger.info(f"セクション統合分析完了（データフロー修正版）: {len(section_results)}セクション, "
+            logger.info(f"セクション統合分析完了（統計修正版）: {len(section_results)}セクション, "
+                    f"文脈パターン{total_context_patterns}個, "
+                    f"分析文数{total_sentences_analyzed}文, "
                     f"ポジティブ文章{len(all_positive_sentences)}件, "
-                    f"ネガティブ文章{len(all_negative_sentences)}件, "
-                    f"ユニークポジティブワード{len(integrated_keyword_frequency['positive'])}語, "
-                    f"ユニークネガティブワード{len(integrated_keyword_frequency['negative'])}語")
+                    f"ネガティブ文章{len(all_negative_sentences)}件")
             
             return basic_result
             
