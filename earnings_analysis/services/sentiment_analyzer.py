@@ -502,8 +502,8 @@ class TransparentSentimentAnalyzer:
           # 問題の根本原因と修正箇所
 
     def _analyze_keyword_frequency_safe(self, all_matches: List) -> Dict[str, List[Dict]]:
-        """安全なキーワード出現頻度の詳細分析（データ構造チェック付き）"""
-        frequency_data = {'positive': [], 'negative': []}
+        """安全なキーワード出現頻度の詳細分析（中立語彙も含む版）"""
+        frequency_data = {'positive': [], 'negative': [], 'neutral': []}  # neutralを追加
         
         try:
             # データ構造の検証
@@ -559,7 +559,7 @@ class TransparentSentimentAnalyzer:
             
             logger.info(f"キーワード集計完了: {len(keyword_counts)}個のユニークワード")
             
-            # ポジティブ・ネガティブに分類
+            # ポジティブ・ネガティブ・中立に分類
             for word, count in keyword_counts.items():
                 try:
                     score = keyword_scores[word]
@@ -573,34 +573,37 @@ class TransparentSentimentAnalyzer:
                         'frequency_rank': 0  # 後で設定
                     }
                     
-                    if score > 0:
+                    # 閾値を使って分類（より厳密に）
+                    if score > self.config.positive_threshold:  # デフォルト: 0.15
                         frequency_data['positive'].append(keyword_data)
-                    elif score < 0:
+                    elif score < self.config.negative_threshold:  # デフォルト: -0.15
                         frequency_data['negative'].append(keyword_data)
+                    else:
+                        # 中立的な語彙
+                        frequency_data['neutral'].append(keyword_data)
                         
                 except Exception as e:
                     logger.error(f"キーワード'{word}'の分類でエラー: {e}")
                     continue
             
             # 出現回数でソートしてランク付け
-            frequency_data['positive'].sort(key=lambda x: x['count'], reverse=True)
-            frequency_data['negative'].sort(key=lambda x: x['count'], reverse=True)
+            for sentiment_type in ['positive', 'negative', 'neutral']:
+                frequency_data[sentiment_type].sort(key=lambda x: x['count'], reverse=True)
+                
+                # ランク付け
+                for i, item in enumerate(frequency_data[sentiment_type]):
+                    item['frequency_rank'] = i + 1
             
-            # ランク付け
-            for i, item in enumerate(frequency_data['positive']):
-                item['frequency_rank'] = i + 1
-            
-            for i, item in enumerate(frequency_data['negative']):
-                item['frequency_rank'] = i + 1
-            
-            logger.info(f"頻度分析完了: ポジティブ{len(frequency_data['positive'])}語, ネガティブ{len(frequency_data['negative'])}語")
+            logger.info(f"頻度分析完了: ポジティブ{len(frequency_data['positive'])}語, "
+                    f"ネガティブ{len(frequency_data['negative'])}語, "
+                    f"中立{len(frequency_data['neutral'])}語")
             
             return frequency_data
             
         except Exception as e:
             logger.error(f"キーワード頻度分析エラー: {e}")
             return frequency_data
-
+        
     # ✅ 修正版のコード
     def analyze_text(self, text: str, session_id: str = None, document_info: Dict[str, str] = None) -> Dict[str, Any]:
         """透明性の高い感情分析（データ渡し問題修正版）"""
