@@ -401,8 +401,8 @@
                             <label for="wordcloud-min-count" class="form-label small">最小出現回数</label>
                             <select class="form-select form-select-sm" id="wordcloud-min-count">
                                 <option value="1">1回以上</option>
-                                <option value="2" selected>2回以上（推奨）</option>
-                                <option value="3">3回以上</option>
+                                <option value="2">2回以上</option>
+                                <option value="3 selected">3回以上（推奨）</option>
                                 <option value="5">5回以上</option>
                             </select>
                         </div>
@@ -410,8 +410,8 @@
                             <label for="wordcloud-max-words" class="form-label small">最大表示語数</label>
                             <select class="form-select form-select-sm" id="wordcloud-max-words">
                                 <option value="30">30語</option>
-                                <option value="50" selected>50語（推奨）</option>
-                                <option value="100">100語</option>
+                                <option value="50"></option>
+                                <option value="100" selected>100語（推奨）</option>
                                 <option value="200">200語</option>
                                 <option value="0">制限なし</option>
                             </select>
@@ -913,6 +913,27 @@ function initializeKuromoji() {
 // ========================================
 
 // 形態素解析を使った全語彙抽出（緩和版）
+const STOP_WORDS = new Set([
+    // 助詞
+    'の', 'に', 'は', 'を', 'が', 'で', 'と', 'から', 'まで', 'より', 'へ', 'や', 'か',
+    // 助動詞・動詞活用
+    'だ', 'である', 'です', 'ます', 'だっ', 'であっ', 'でし', 'まし', 'た', 'て', 'し',
+    // 代名詞
+    'これ', 'それ', 'あれ', 'この', 'その', 'あの', 'ここ', 'そこ', 'あそこ',
+    // 一般的な語
+    'こと', 'もの', 'ため', 'よう', 'など', 'なる', 'ある', 'いる', 'する', 'れる', 'られる', 'となりました', 'があるか',
+    // 数詞・記号
+    '一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '百', '千', '万', '億',
+    // 接頭・接尾辞
+    'ご', 'お', 'さん', 'くん', 'ちゃん', '様', '氏', '君', '社', '部', '課', '店', '号', '番', '名', '社名', '会社名', '部署名', '商品名',
+    // その他の一般的な語
+    'あのような', 'このような', 'そのような', 'あのように', 'このように', 'そのように', 'あのこと', 'このこと', 'そのこと',
+    'あのもの', 'このもの', 'そのもの', 'あのため', 'このため', 'そのため', 'あのようなこと', 'このようなこと', 'そのようなこと',
+    'あのようなもの', 'このようなもの', 'そのようなもの', 'あのようにする', 'このようにする', 'そのようにする',
+    
+]);
+
+// 形態素解析による高精度な単語抽出
 function extractAllWordsFromSentences() {
     if (!tokenizer) {
         console.warn('tokenizerが初期化されていません');
@@ -920,97 +941,58 @@ function extractAllWordsFromSentences() {
     }
     
     const wordFrequency = {};
-    
-    // ストップワード（最小限に）
-    const stopWords = new Set([
-        'の', 'に', 'は', 'を', 'た', 'が', 'で', 'て', 'と', 'し', 'も', 
-        'です', 'ます', 'でし', 'まし', 'ある', 'いる', 'する', 'これ', 'それ', 'あれ'
-    ]);
-    
-    // サンプル文章を収集
-    const sentences = [];
-    if (actualAnalysisData.sample_sentences) {
-        if (actualAnalysisData.sample_sentences.positive) {
-            sentences.push(...actualAnalysisData.sample_sentences.positive);
-        }
-        if (actualAnalysisData.sample_sentences.negative) {
-            sentences.push(...actualAnalysisData.sample_sentences.negative);
-        }
-    }
+    const sentences = collectSentences();
     
     console.log('抽出対象文章数:', sentences.length);
     
-    // デバッグ用：最初の文章を表示
-    if (sentences.length > 0 && sentences[0].text) {
-        console.log('サンプル文章:', sentences[0].text.substring(0, 100) + '...');
-    }
-    
-    // 各文章を形態素解析
     sentences.forEach((sentenceObj, index) => {
-        if (sentenceObj.text) {
-            // HTMLタグを除去
-            const cleanText = sentenceObj.text.replace(/<[^>]*>/g, '');
+        if (!sentenceObj.text) return;
+        
+        // HTMLタグと特殊文字を除去
+        const cleanText = cleanSentenceText(sentenceObj.text);
+        
+        try {
+            // 形態素解析実行
+            const tokens = tokenizer.tokenize(cleanText);
+            console.log(`文章${index + 1}: "${cleanText.substring(0, 50)}..." -> ${tokens.length}トークン`);
             
-            try {
-                // 形態素解析
-                const tokens = tokenizer.tokenize(cleanText);
-                
-                console.log(`文章${index + 1}のトークン数:`, tokens.length);
-                
-                tokens.forEach(token => {
-                    const word = token.surface_form;
-                    const pos = token.pos;
-                    const posDetail1 = token.pos_detail_1;
-                    
-                    // より緩い抽出条件
-                    if (!stopWords.has(word) &&
-                        word.length >= 2 &&                      // 2文字以上
-                        !/^[0-9０-９]+$/.test(word) &&           // 数字のみでない
-                        !/^[a-zA-Z]+$/.test(word) &&             // 英字のみでない
-                        !/^[\s　]+$/.test(word)) {               // 空白のみでない
-                        
-                        // 品詞による基本的なフィルタリング（緩和版）
-                        if (pos === '名詞' || pos === '動詞' || pos === '形容詞' || pos === '副詞') {
-                            // 非自立語と数詞は除外
-                            if (pos === '名詞' && (posDetail1 === '数' || posDetail1 === '非自立')) {
-                                return;
-                            }
-                            
-                            // 動詞は基本形に変換
-                            let normalizedWord = word;
-                            if (pos === '動詞' && token.basic_form && token.basic_form !== '*') {
-                                normalizedWord = token.basic_form;
-                            }
-                            
-                            if (!wordFrequency[normalizedWord]) {
-                                wordFrequency[normalizedWord] = 0;
-                            }
-                            wordFrequency[normalizedWord]++;
-                        }
-                    }
-                });
-            } catch (error) {
-                console.error('形態素解析エラー:', error);
-            }
+            tokens.forEach(token => {
+                const word = processToken(token);
+                if (word && isValidWord(word, token)) {
+                    wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+                }
+            });
+            
+        } catch (error) {
+            console.error(`文章${index + 1}の形態素解析エラー:`, error);
         }
     });
     
-    console.log('形態素解析完了: 抽出語彙数', Object.keys(wordFrequency).length);
-    console.log('抽出された語彙サンプル:', Object.entries(wordFrequency).slice(0, 10));
+    // 結果をログ出力
+    logExtractionResults(wordFrequency);
     
     return wordFrequency;
 }
 
-// 簡易版の単語抽出（フォールバック用）
-function extractAllWordsSimple() {
-    const wordFrequency = {};
-    const stopWords = new Set([
-        'の', 'に', 'は', 'を', 'た', 'が', 'で', 'て', 'と', 'し', 'れ', 'さ', 'ある', 'いる', 'も', 
-        'する', 'から', 'な', 'こと', 'として', 'い', 'や', 'れる', 'など', 'なっ', 'ない', 'この', 
-        'ため', 'その', 'あっ', 'よう', 'また', 'もの', 'という', 'あり', 'まで', 'られ', 'なる'
-    ]);
+function logExtractionResults(wordFrequency) {
+    const sortedWords = Object.entries(wordFrequency)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 20);
     
+    console.log('=== 形態素解析結果 ===');
+    console.log('総語彙数:', Object.keys(wordFrequency).length);
+    console.log('上位20語:');
+    sortedWords.forEach(([word, count], index) => {
+        console.log(`${index + 1}. ${word}: ${count}回`);
+    });
+    console.log('=====================');
+}
+
+
+// 文章データの収集
+function collectSentences() {
     const sentences = [];
+    
     if (actualAnalysisData.sample_sentences) {
         if (actualAnalysisData.sample_sentences.positive) {
             sentences.push(...actualAnalysisData.sample_sentences.positive);
@@ -1020,33 +1002,248 @@ function extractAllWordsSimple() {
         }
     }
     
-    console.log('簡易版: 抽出対象文章数:', sentences.length);
+    return sentences;
+}
+
+
+// 有効な単語かどうかの判定
+function isValidWord(word, token) {
+    const pos = token.pos;
+    const posDetail1 = token.pos_detail_1;
+    const posDetail2 = token.pos_detail_2;
     
-    sentences.forEach(sentenceObj => {
-        if (sentenceObj.text) {
-            const cleanText = sentenceObj.text.replace(/<[^>]*>/g, '');
-            const words = cleanText
-                .replace(/[。、！？\s\u3000（）()【】「」『』""'']/g, ' ')
-                .split(/[\s　]+/)
-                .filter(word => {
-                    return word.length > 1 && 
-                           !stopWords.has(word) && 
-                           !/^\d+$/.test(word) &&
-                           !/^[a-zA-Z]+$/.test(word);
-                });
+    // 基本的な除外条件
+    if (STOP_WORDS.has(word)) return false;
+    if (word.length < 2) return false;
+    if (/^[0-9０-９]+$/.test(word)) return false;        // 数字のみ
+    if (/^[a-zA-Z]+$/.test(word)) return false;          // 英字のみ
+    if (/^[\s　\-\+\*\/\=\<\>\!\?]+$/.test(word)) return false; // 記号のみ
+    
+    // 品詞による詳細フィルタリング
+    switch (pos) {
+        case '名詞':
+            // 有効な名詞の種類
+            const validNounTypes = ['一般', '固有名詞', 'サ変接続', '形容動詞語幹'];
+            if (!validNounTypes.includes(posDetail1)) return false;
             
-            words.forEach(word => {
-                if (!wordFrequency[word]) {
-                    wordFrequency[word] = 0;
-                }
-                wordFrequency[word]++;
-            });
+            // 特定の名詞は除外
+            if (posDetail1 === '数' || posDetail1 === '非自立') return false;
+            if (posDetail2 === '人名' || posDetail2 === '地域') return false; // 個人情報保護
+            break;
+            
+        case '動詞':
+            // 自立動詞のみ
+            if (posDetail1 === '非自立') return false;
+            break;
+            
+        case '形容詞':
+            // 自立形容詞のみ
+            if (posDetail1 === '非自立') return false;
+            break;
+            
+        case '副詞':
+            // 一般的な副詞のみ
+            if (posDetail1 !== '一般') return false;
+            break;
+            
+        default:
+            // その他の品詞は基本的に除外
+            return false;
+    }
+    
+    return true;
+}
+
+// 文章テキストのクリーニング
+function cleanSentenceText(text) {
+    return text
+        .replace(/<[^>]*>/g, '')                    // HTMLタグ除去
+        .replace(/&[a-zA-Z0-9#]+;/g, '')            // HTML実体参照除去
+        .replace(/https?:\/\/[^\s]+/g, '')          // URL除去
+        .replace(/[【】『』「」（）()［］｛｝]/g, '') // 括弧除去
+        .replace(/[・※★☆♪♫]/g, '')               // 記号除去
+        .replace(/\s+/g, ' ')                       // 空白正規化
+        .trim();
+}
+
+// トークン処理
+function processToken(token) {
+    let word = token.surface_form;
+    const pos = token.pos;
+    const posDetail1 = token.pos_detail_1;
+    const posDetail2 = token.pos_detail_2;
+    const basicForm = token.basic_form;
+    
+    // 動詞・形容詞は基本形を使用
+    if ((pos === '動詞' || pos === '形容詞') && basicForm && basicForm !== '*') {
+        word = basicForm;
+    }
+    
+    // 名詞の複合語処理
+    if (pos === '名詞' && posDetail1 === '一般' && word.length >= 4) {
+        // 長い名詞は分割を検討（例：「株式会社」→「株式」「会社」）
+        const subTokens = tokenizer.tokenize(word);
+        if (subTokens.length > 1) {
+            // 複合語の場合は元の語を使用
+            return word;
         }
+    }
+    
+    return word;
+}
+
+
+function extractAllWordsSimple() {
+    console.log('簡易版単語抽出を開始');
+    
+    const wordFrequency = {};
+    const sentences = collectSentences();
+    
+    sentences.forEach((sentenceObj, index) => {
+        if (!sentenceObj.text) return;
+        
+        const cleanText = cleanSentenceText(sentenceObj.text);
+        
+        // 日本語の単語境界を考慮した分割
+        const words = segmentJapaneseText(cleanText);
+        
+        words.forEach(word => {
+            if (isValidSimpleWord(word)) {
+                wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+            }
+        });
     });
     
     console.log('簡易版: 抽出語彙数', Object.keys(wordFrequency).length);
     
+    // 結果をログ出力
+    logExtractionResults(wordFrequency);
+    
     return wordFrequency;
+}
+
+// 日本語テキストの単語分割（簡易版）
+function segmentJapaneseText(text) {
+    const words = [];
+    
+    // 句読点と記号で分割
+    const sentences = text.split(/[。！？\n]/);
+    
+    sentences.forEach(sentence => {
+        // カンマや読点で分割
+        const phrases = sentence.split(/[、，,]/);
+        
+        phrases.forEach(phrase => {
+            // 空白で分割
+            const tokens = phrase.split(/[\s　]+/);
+            
+            tokens.forEach(token => {
+                if (token.length === 0) return;
+                
+                // 長い文字列を文字種で分割
+                const segmented = segmentByCharacterType(token);
+                words.push(...segmented);
+            });
+        });
+    });
+    
+    return words.filter(word => word.length > 0);
+}
+
+// 文字種による分割
+function segmentByCharacterType(text) {
+    const words = [];
+    let currentWord = '';
+    let currentType = '';
+    
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        let charType = getCharacterType(char);
+        
+        if (charType !== currentType) {
+            if (currentWord.length > 0) {
+                words.push(currentWord);
+            }
+            currentWord = char;
+            currentType = charType;
+        } else {
+            currentWord += char;
+        }
+    }
+    
+    if (currentWord.length > 0) {
+        words.push(currentWord);
+    }
+    
+    return words;
+}
+
+// 文字種判定
+function getCharacterType(char) {
+    const code = char.charCodeAt(0);
+    
+    if ((code >= 0x3040 && code <= 0x309F)) return 'hiragana';    // ひらがな
+    if ((code >= 0x30A0 && code <= 0x30FF)) return 'katakana';    // カタカナ
+    if ((code >= 0x4E00 && code <= 0x9FAF)) return 'kanji';       // 漢字
+    if ((code >= 0xFF10 && code <= 0xFF19) || (code >= 0x30 && code <= 0x39)) return 'number'; // 数字
+    if ((code >= 0x41 && code <= 0x5A) || (code >= 0x61 && code <= 0x7A) || 
+        (code >= 0xFF21 && code <= 0xFF3A) || (code >= 0xFF41 && code <= 0xFF5A)) return 'alphabet'; // 英字
+    
+    return 'other';
+}
+
+// 簡易版の単語有効性チェック
+function isValidSimpleWord(word) {
+    // 基本的な除外条件
+    if (STOP_WORDS.has(word)) return false;
+    if (word.length < 2) return false;
+    if (/^[0-9０-９]+$/.test(word)) return false;
+    if (/^[a-zA-Z]+$/.test(word)) return false;
+    if (/^[\s　\-\+\*\/\=\<\>\!\?、。，．]+$/.test(word)) return false;
+    
+    // ひらがなのみの短い語は除外
+    if (word.length <= 2 && /^[ぁ-ゟ]+$/.test(word)) return false;
+    
+    return true;
+}
+
+// ========================================
+// デバッグ用ヘルパー関数
+// ========================================
+
+function debugTokenization(sampleText) {
+    if (!tokenizer) {
+        console.log('Tokenizerが初期化されていません');
+        return;
+    }
+    
+    console.log('=== トークン化デバッグ ===');
+    console.log('入力:', sampleText);
+    
+    const tokens = tokenizer.tokenize(sampleText);
+    tokens.forEach((token, index) => {
+        console.log(`${index + 1}. ${token.surface_form} (${token.pos}-${token.pos_detail_1})`);
+    });
+    
+    console.log('========================');
+}
+
+// ワードクラウドデータ変換時のデバッグ情報追加
+function convertToWordcloudDataWithDebug(frequencyData, includeAll = false) {
+    console.log('=== ワードクラウドデータ変換開始 ===');
+    console.log('入力データ:', frequencyData);
+    console.log('全語彙モード:', includeAll);
+    
+    const result = convertToWordcloudData(frequencyData, includeAll);
+    
+    console.log('変換結果:', result.length, '語');
+    console.log('感情別内訳:');
+    console.log('- ポジティブ:', result.filter(w => w.sentiment === 'positive').length);
+    console.log('- ネガティブ:', result.filter(w => w.sentiment === 'negative').length);
+    console.log('- 中立:', result.filter(w => w.sentiment === 'neutral').length);
+    console.log('================================');
+    
+    return result;
 }
 
 // 実際のデータをワードクラウド用に変換（修正版）
