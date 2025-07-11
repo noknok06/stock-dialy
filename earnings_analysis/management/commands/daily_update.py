@@ -1,4 +1,4 @@
-# earnings_analysis/management/commands/daily_update.py（修正版）
+# earnings_analysis/management/commands/daily_update.py（差分更新対応版）
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.db import transaction, connection
@@ -18,7 +18,7 @@ from earnings_analysis.services import EdinetDocumentService
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    help = '日次データ更新（本番運用用・制約違反対応版）'
+    help = '日次データ更新（差分更新対応・高速化版）'
     
     def add_arguments(self, parser):
         parser.add_argument(
@@ -66,12 +66,26 @@ class Command(BaseCommand):
             action='store_true',
             help='エラー発生時に即座に停止（デフォルトは継続）'
         )
+        # 【新規追加】企業マスタ更新オプション
+        parser.add_argument(
+            '--company-update-mode',
+            choices=['incremental', 'full', 'skip'],
+            default='incremental',
+            help='企業マスタ更新モード: incremental=差分更新（推奨）, full=全件更新, skip=スキップ'
+        )
+        parser.add_argument(
+            '--skip-company-update',
+            action='store_true',
+            help='企業マスタ更新をスキップ（高速化）'
+        )
     
     def handle(self, *args, **options):
         # 初期設定
         self.chunk_size = options['chunk_size']
         self.db_retry_count = options['db_retry_count']
         self.stop_on_error = options['stop_on_error']
+        self.company_update_mode = options['company_update_mode']
+        self.skip_company_update = options['skip_company_update']
         self.initial_memory = self._get_memory_usage()
         
         target_date = options.get('date')
@@ -89,7 +103,7 @@ class Command(BaseCommand):
         if not target_date:
             return
         
-        self.stdout.write(f'日次データ更新開始: {target_date}')
+        self.stdout.write(f'日次データ更新開始: {target_date} (企業マスタ: {self.company_update_mode})')
         
         # データベース最適化設定
         self._optimize_database_settings()
@@ -110,8 +124,11 @@ class Command(BaseCommand):
                 batch_execution, target_date, api_version, retry_count
             )
             
-            # 企業マスタ更新（安全版）
-            self._update_company_master_safe()
+            # 【改善】企業マスタ更新（差分更新対応）
+            if not self.skip_company_update:
+                self._update_company_master_optimized(target_date)
+            else:
+                self.stdout.write('企業マスタ更新をスキップしました。')
             
             # 成功処理
             self._record_batch_success(batch_execution, processed_count)
@@ -147,6 +164,182 @@ class Command(BaseCommand):
         
         # メモリクリーンアップ
         self._cleanup_memory()
+    
+    # 【新規追加】最適化された企業マスタ更新
+    def _update_company_master_optimized(self, target_date):
+        """最適化された企業マスタ更新（差分更新対応）"""
+        start_time = time.time()
+        
+        if self.company_update_mode == 'skip':
+            self.stdout.write('企業マスタ更新をスキップしました。')
+            return
+        
+        self.stdout.write(f'企業マスタ更新中（{self.company_update_mode}モード）...')
+        
+        try:
+            # 更新対象の決定
+            if self.company_update_mode == 'incremental':
+                # 【差分更新】当日分の書類のみ処理
+                companies_query = DocumentMetadata.objects.filter(
+                    file_date=target_date,
+                    legal_status='1'
+                ).values('edinet_code', 'securities_code', 'company_name').distinct()
+                
+                self.stdout.write(f'差分更新: {target_date}の書類から企業情報を抽出')
+                
+            elif self.company_update_mode == 'full':
+                # 全件更新（従来方式）
+                companies_query = DocumentMetadata.objects.filter(
+                    legal_status='1'
+                ).values('edinet_code', 'securities_code', 'company_name').distinct()
+                
+                self.stdout.write('全件更新: 全ての有効書類から企業情報を抽出')
+            
+            # 対象企業数をカウント
+            total_companies = companies_query.count()
+            self.stdout.write(f'対象企業数: {total_companies}社')
+            
+            if total_companies == 0:
+                self.stdout.write('更新対象の企業が見つかりませんでした。')
+                return
+            
+            # 【最適化】既存企業を一括取得
+            existing_companies = {}
+            if self.company_update_mode == 'incremental':
+                # 差分更新時は関連企業のみ取得
+                edinet_codes = list(companies_query.values_list('edinet_code', flat=True))
+                existing_companies_qs = Company.objects.filter(edinet_code__in=edinet_codes)
+            else:
+                # 全件更新時は全企業取得
+                existing_companies_qs = Company.objects.all()
+            
+            for company in existing_companies_qs.only('edinet_code', 'securities_code', 'company_name'):
+                existing_companies[company.edinet_code] = company
+            
+            self.stdout.write(f'既存企業データ読み込み完了: {len(existing_companies)}社')
+            
+            # バッチ処理準備
+            companies_to_create = []
+            companies_to_update = []
+            created_count = updated_count = error_count = 0
+            
+            # 企業データ処理
+            for company_data in companies_query:
+                edinet_code = company_data['edinet_code']
+                securities_code = company_data['securities_code'] or ''
+                company_name = company_data['company_name'] or ''
+                
+                if not edinet_code or not company_name:
+                    error_count += 1
+                    continue
+                
+                try:
+                    if edinet_code in existing_companies:
+                        # 既存企業の更新チェック
+                        existing_company = existing_companies[edinet_code]
+                        updated = False
+                        
+                        if existing_company.securities_code != securities_code:
+                            existing_company.securities_code = securities_code
+                            updated = True
+                        if existing_company.company_name != company_name:
+                            existing_company.company_name = company_name
+                            updated = True
+                            
+                        if updated:
+                            existing_company.updated_at = timezone.now()
+                            companies_to_update.append(existing_company)
+                    else:
+                        # 新規企業
+                        new_company = Company(
+                            edinet_code=edinet_code,
+                            securities_code=securities_code,
+                            company_name=company_name,
+                            is_active=True
+                        )
+                        companies_to_create.append(new_company)
+                        
+                except Exception as e:
+                    error_count += 1
+                    logger.warning(f"企業データ処理エラー: {company_name} - {e}")
+                    if self.stop_on_error:
+                        raise
+                    continue
+            
+            # 【最適化】バルク処理実行
+            if companies_to_create:
+                try:
+                    Company.objects.bulk_create(companies_to_create, ignore_conflicts=True)
+                    created_count = len(companies_to_create)
+                    self.stdout.write(f'新規企業 {created_count}社を一括作成')
+                except Exception as e:
+                    logger.warning(f"バルク作成エラー、個別処理に切り替え: {e}")
+                    created_count = self._individual_company_create(companies_to_create)
+            
+            if companies_to_update:
+                try:
+                    Company.objects.bulk_update(
+                        companies_to_update,
+                        ['securities_code', 'company_name', 'updated_at'],
+                        batch_size=100
+                    )
+                    updated_count = len(companies_to_update)
+                    self.stdout.write(f'既存企業 {updated_count}社を一括更新')
+                except Exception as e:
+                    logger.warning(f"バルク更新エラー、個別処理に切り替え: {e}")
+                    updated_count = self._individual_company_update(companies_to_update)
+            
+            # 処理時間計算
+            end_time = time.time()
+            processing_time = end_time - start_time
+            
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f'企業マスタ更新完了: 新規{created_count}社, 更新{updated_count}社, '
+                    f'エラー{error_count}社 (処理時間: {processing_time:.1f}秒)'
+                )
+            )
+            
+        except Exception as e:
+            logger.error(f"企業マスタ更新エラー: {e}")
+            if self.stop_on_error:
+                raise
+    
+    def _individual_company_create(self, companies_to_create):
+        """個別作成のフォールバック"""
+        created_count = 0
+        for company in companies_to_create:
+            try:
+                Company.objects.get_or_create(
+                    edinet_code=company.edinet_code,
+                    defaults={
+                        'securities_code': company.securities_code,
+                        'company_name': company.company_name,
+                        'is_active': True
+                    }
+                )
+                created_count += 1
+            except Exception as e:
+                logger.warning(f"個別企業作成失敗 {company.edinet_code}: {e}")
+                if self.stop_on_error:
+                    raise
+        return created_count
+    
+    def _individual_company_update(self, companies_to_update):
+        """個別更新のフォールバック"""
+        updated_count = 0
+        for company in companies_to_update:
+            try:
+                company.save()
+                updated_count += 1
+            except Exception as e:
+                logger.warning(f"個別企業更新失敗 {company.edinet_code}: {e}")
+                if self.stop_on_error:
+                    raise
+        return updated_count
+    
+    # 【削除】元の_update_company_master_safe()は削除
+    # 以下、既存のメソッドは変更なし（省略）
     
     def _pre_execution_check(self):
         """実行前チェック"""
@@ -470,74 +663,6 @@ class Command(BaseCommand):
         
         return created_count
     
-    def _update_company_master_safe(self):
-        """企業マスタの安全な自動更新"""
-        self.stdout.write('企業マスタ更新中...')
-        
-        try:
-            # 新しい企業を抽出（効率的なクエリ）
-            unique_companies = DocumentMetadata.objects.filter(
-                legal_status='1'
-            ).values(
-                'edinet_code', 'securities_code', 'company_name'
-            ).distinct()
-            
-            created_count = 0
-            updated_count = 0
-            error_count = 0
-            
-            for company_data in unique_companies:
-                edinet_code = company_data['edinet_code']
-                securities_code = company_data['securities_code']
-                company_name = company_data['company_name']
-                
-                if not edinet_code or not company_name:
-                    continue
-                
-                try:
-                    with transaction.atomic():
-                        company, created = Company.objects.select_for_update().get_or_create(
-                            edinet_code=edinet_code,
-                            defaults={
-                                'securities_code': securities_code,
-                                'company_name': company_name,
-                                'is_active': True,
-                            }
-                        )
-                        
-                        if created:
-                            created_count += 1
-                        else:
-                            # 既存企業の情報更新
-                            updated = False
-                            if company.securities_code != securities_code:
-                                company.securities_code = securities_code
-                                updated = True
-                            if company.company_name != company_name:
-                                company.company_name = company_name
-                                updated = True
-                            
-                            if updated:
-                                company.updated_at = timezone.now()
-                                company.save()
-                                updated_count += 1
-                                
-                except Exception as e:
-                    error_count += 1
-                    logger.warning(f"企業マスタ更新エラー: {company_name} - {e}")
-                    if self.stop_on_error:
-                        raise
-                    continue
-            
-            self.stdout.write(
-                f'企業マスタ更新完了: 新規{created_count}社, 更新{updated_count}社, エラー{error_count}社'
-            )
-            
-        except Exception as e:
-            logger.error(f"企業マスタ更新エラー: {e}")
-            if self.stop_on_error:
-                raise
-    
     def _record_batch_success(self, batch_execution, processed_count):
         """バッチ成功記録"""
         try:
@@ -574,6 +699,7 @@ class Command(BaseCommand):
 
 実行日: {target_date}
 処理件数: {processed_count}件
+企業マスタ更新: {self.company_update_mode}モード
 実行時刻: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}
 メモリ使用量: {self._get_memory_usage():.1f}MB
 
@@ -585,6 +711,7 @@ class Command(BaseCommand):
 
 実行日: {target_date}
 エラー内容: {error_message}
+企業マスタ更新: {self.company_update_mode}モード
 実行時刻: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}
 停止オプション: {'有効' if self.stop_on_error else '無効'}
 
