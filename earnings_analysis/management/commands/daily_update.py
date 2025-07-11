@@ -1,4 +1,4 @@
-# earnings_analysis/management/commands/daily_update.py（差分更新対応版）
+# earnings_analysis/management/commands/daily_update.py（日付決定ロジック改善版）
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.db import transaction, connection
@@ -11,6 +11,7 @@ import traceback
 import time
 import random
 import gc
+import pytz
 
 from earnings_analysis.models import DocumentMetadata, BatchExecution, Company
 from earnings_analysis.services import EdinetDocumentService
@@ -18,18 +19,54 @@ from earnings_analysis.services import EdinetDocumentService
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    help = '日次データ更新（差分更新対応・高速化版）'
+    help = '日次データ更新（差分更新対応・高速化版・日付決定ロジック改善）'
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 日本時間タイムゾーンを明示的に設定
+        self.japan_tz = pytz.timezone('Asia/Tokyo')
+    
+    def _get_japan_now(self):
+        """日本時間での現在日時を取得"""
+        return timezone.now().astimezone(self.japan_tz)
+    
+    def _get_japan_today(self):
+        """日本時間での今日の日付を取得"""
+        return self._get_japan_now().date()
     
     def add_arguments(self, parser):
         parser.add_argument(
             '--date',
             type=str,
-            help='更新対象日（YYYY-MM-DD形式、指定しない場合は前営業日）'
+            help='更新対象日（YYYY-MM-DD形式、指定しない場合は自動決定）'
         )
         parser.add_argument(
             '--force',
             action='store_true',
             help='既存データがあっても強制実行'
+        )
+        # 【新規追加】日付決定オプション
+        parser.add_argument(
+            '--today',
+            action='store_true',
+            help='当日のデータを処理（即時実行用）'
+        )
+        parser.add_argument(
+            '--yesterday',
+            action='store_true',
+            help='前日のデータを処理（明示的指定）'
+        )
+        parser.add_argument(
+            '--night-batch-time',
+            type=str,
+            default='02:00',
+            help='夜間バッチ開始時刻（HH:MM形式、この時刻以降は前日データを処理）'
+        )
+        parser.add_argument(
+            '--auto-date-mode',
+            choices=['time_based', 'yesterday_only', 'today_only'],
+            default='time_based',
+            help='自動日付決定モード: time_based=時刻基準, yesterday_only=常に前日, today_only=常に当日'
         )
         parser.add_argument(
             '--send-notification',
@@ -66,7 +103,7 @@ class Command(BaseCommand):
             action='store_true',
             help='エラー発生時に即座に停止（デフォルトは継続）'
         )
-        # 【新規追加】企業マスタ更新オプション
+        # 企業マスタ更新オプション
         parser.add_argument(
             '--company-update-mode',
             choices=['incremental', 'full', 'skip'],
@@ -88,8 +125,14 @@ class Command(BaseCommand):
         self.skip_company_update = options['skip_company_update']
         self.initial_memory = self._get_memory_usage()
         
-        target_date = options.get('date')
+        # 【改善】日付決定オプション取得
+        target_date_str = options.get('date')
         force = options.get('force', False)
+        today_flag = options.get('today', False)
+        yesterday_flag = options.get('yesterday', False)
+        night_batch_time = options.get('night_batch_time', '22:00')
+        auto_date_mode = options.get('auto_date_mode', 'time_based')
+        
         send_notification = options.get('send_notification', False)
         api_version = options.get('api_version', 'v2')
         retry_count = options.get('retry_count', 3)
@@ -98,8 +141,10 @@ class Command(BaseCommand):
         if not self._pre_execution_check():
             return
         
-        # 対象日の決定と検証
-        target_date = self._determine_target_date(target_date)
+        # 【改善】対象日の決定と検証
+        target_date = self._determine_target_date_improved(
+            target_date_str, today_flag, yesterday_flag, night_batch_time, auto_date_mode
+        )
         if not target_date:
             return
         
@@ -124,7 +169,7 @@ class Command(BaseCommand):
                 batch_execution, target_date, api_version, retry_count
             )
             
-            # 【改善】企業マスタ更新（差分更新対応）
+            # 企業マスタ更新（差分更新対応）
             if not self.skip_company_update:
                 self._update_company_master_optimized(target_date)
             else:
@@ -165,7 +210,155 @@ class Command(BaseCommand):
         # メモリクリーンアップ
         self._cleanup_memory()
     
-    # 【新規追加】最適化された企業マスタ更新
+    # 【新規追加】改善された日付決定ロジック
+    def _determine_target_date_improved(self, target_date_str, today_flag, yesterday_flag, night_batch_time, auto_date_mode):
+        """改善された対象日決定ロジック（日本時間基準）"""
+        
+        # 【デバッグ】現在の日時情報表示
+        japan_now = self._get_japan_now()
+        utc_now = timezone.now()
+        self.stdout.write(f'=== 日時情報 ===')
+        self.stdout.write(f'UTC時刻: {utc_now.strftime("%Y-%m-%d %H:%M:%S")}')
+        self.stdout.write(f'日本時刻: {japan_now.strftime("%Y-%m-%d %H:%M:%S")}')
+        self.stdout.write(f'日本日付: {japan_now.date()}')
+        
+        # 明示的な日付指定がある場合
+        if target_date_str:
+            try:
+                target_date = datetime.strptime(target_date_str, '%Y-%m-%d').date()
+                self.stdout.write(f'明示的指定: {target_date}')
+            except ValueError:
+                self.stdout.write(
+                    self.style.ERROR('無効な日付形式です。YYYY-MM-DD形式で指定してください。')
+                )
+                return None
+        
+        # フラグによる明示的指定
+        elif today_flag and yesterday_flag:
+            self.stdout.write(
+                self.style.ERROR('--today と --yesterday は同時に指定できません。')
+            )
+            return None
+        
+        elif today_flag:
+            target_date = japan_now.date()
+            self.stdout.write(f'当日指定: {target_date}')
+        
+        elif yesterday_flag:
+            target_date = self._get_yesterday()
+            self.stdout.write(f'前日指定: {target_date}')
+        
+        # 自動決定モード
+        else:
+            target_date = self._auto_determine_date(auto_date_mode, night_batch_time)
+            self.stdout.write(f'自動決定({auto_date_mode}): {target_date}')
+        
+        # 共通検証
+        return self._validate_target_date(target_date)
+    
+    def _auto_determine_date(self, mode, night_batch_time):
+        """自動日付決定（深夜時間帯対応・日本時間基準）"""
+        # 日本時間での現在時刻と日付を取得
+        japan_now = self._get_japan_now()
+        current_time = japan_now.time()
+        current_date = japan_now.date()
+        current_hour = current_time.hour
+        
+        if mode == 'time_based':
+            # 時刻ベース判定（深夜時間帯を考慮）
+            try:
+                night_time = datetime.strptime(night_batch_time, '%H:%M').time()
+                night_hour = night_time.hour
+                
+                # 深夜時間帯の判定（0:00-6:00は前日の夜間バッチとして扱う）
+                is_midnight_early_morning = current_hour >= 0 and current_hour < 6
+                
+                # 夜間バッチ時間以降、または深夜～早朝の場合は前日データを処理
+                if current_time >= night_time or is_midnight_early_morning:
+                    target_date = self._get_yesterday()
+                    
+                    if is_midnight_early_morning:
+                        self.stdout.write(f'深夜～早朝実行({current_time.strftime("%H:%M")})のため前日データを処理')
+                    else:
+                        self.stdout.write(f'夜間バッチ時間({night_batch_time})以降のため前日データを処理')
+                else:
+                    # 日中実行の場合
+                    if current_hour >= 6 and current_hour < night_hour:
+                        # 朝～夜間バッチ前：前々日データ処理（前日データがまだ準備されていない可能性）
+                        target_date = self._get_day_before(current_date, 2)
+                        self.stdout.write(f'日中実行({current_time.strftime("%H:%M")})のため前々日データを処理')
+                    else:
+                        # その他の時間帯：前日データ処理
+                        target_date = self._get_yesterday()
+                        self.stdout.write(f'時刻({current_time.strftime("%H:%M")})に基づき前日データを処理')
+                    
+            except ValueError:
+                self.stdout.write(
+                    self.style.WARNING(f'無効な夜間バッチ時刻: {night_batch_time}。デフォルト動作に切り替え')
+                )
+                target_date = self._get_yesterday()
+        
+        elif mode == 'yesterday_only':
+            # 常に前日
+            target_date = self._get_yesterday()
+        
+        elif mode == 'today_only':
+            # 常に当日（日本時間基準）
+            target_date = current_date
+        
+        else:
+            # デフォルト：前日
+            target_date = self._get_yesterday()
+        
+        return target_date
+    
+    def _validate_target_date(self, target_date):
+        """対象日の検証（日本時間基準）"""
+        # 日本時間での今日を取得
+        current_date = self._get_japan_today()
+        
+        # 未来日チェック
+        if target_date > current_date:
+            self.stdout.write(
+                self.style.ERROR(f'未来の日付は指定できません: {target_date}')
+            )
+            return None
+        
+        # あまりに古い日付のチェック（30日以上前）
+        days_diff = (current_date - target_date).days
+        if days_diff > 30:
+            self.stdout.write(
+                self.style.WARNING(f'対象日が30日以上前です: {target_date} ({days_diff}日前)')
+            )
+            confirm = input('続行しますか？ (y/N): ')
+            if confirm.lower() != 'y':
+                self.stdout.write('処理を中止しました。')
+                return None
+        
+        return target_date
+    
+    def _get_yesterday(self):
+        """前日を取得（日本時間基準）"""
+        japan_today = self._get_japan_today()
+        yesterday = japan_today - timedelta(days=1)
+        return yesterday
+    
+    def _get_day_before(self, base_date, days_back):
+        """指定日数前の日付を取得（日本時間基準）"""
+        # base_dateがNoneの場合は日本時間での今日を使用
+        if base_date is None:
+            base_date = self._get_japan_today()
+        
+        target_date = base_date - timedelta(days=days_back)
+        return target_date
+    
+    def _adjust_to_business_day(self, target_date):
+        """営業日に調整（土日を避ける）"""
+        while target_date.weekday() >= 5:  # 土曜日(5)、日曜日(6)
+            target_date -= timedelta(days=1)
+        return target_date
+    
+    # 【改善】最適化された企業マスタ更新
     def _update_company_master_optimized(self, target_date):
         """最適化された企業マスタ更新（差分更新対応）"""
         start_time = time.time()
@@ -338,9 +531,7 @@ class Command(BaseCommand):
                     raise
         return updated_count
     
-    # 【削除】元の_update_company_master_safe()は削除
-    # 以下、既存のメソッドは変更なし（省略）
-    
+    # 既存のメソッド群（簡略化のため主要部分のみ記載）
     def _pre_execution_check(self):
         """実行前チェック"""
         try:
@@ -364,47 +555,38 @@ class Command(BaseCommand):
             )
             return False
     
-    def _determine_target_date(self, target_date_str):
-        """対象日の決定と検証"""
-        if target_date_str:
-            try:
-                target_date = datetime.strptime(target_date_str, '%Y-%m-%d').date()
-            except ValueError:
-                self.stdout.write(
-                    self.style.ERROR('無効な日付形式です。YYYY-MM-DD形式で指定してください。')
-                )
-                return None
-        else:
-            target_date = self._get_last_business_day()
-        
-        # 未来の日付チェック
-        if target_date >= date.today():
-            self.stdout.write(
-                self.style.ERROR('未来の日付は指定できません。')
-            )
-            return None
-        
-        # 土日チェック
-        if target_date.weekday() >= 5:
-            self.stdout.write(
-                self.style.WARNING(f'{target_date} は休日です。営業日に調整します。')
-            )
-            target_date = self._adjust_to_business_day(target_date)
-        
-        return target_date
-    
     def _optimize_database_settings(self):
         """データベース設定の最適化"""
         try:
-            with connection.cursor() as cursor:
-                cursor.execute("SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
-                cursor.execute("SET lock_timeout = '30s'")
-                cursor.execute("SET deadlock_timeout = '1s'")
-                cursor.execute("SET statement_timeout = '300s'")
+            # データベースエンジンを確認
+            db_engine = connection.settings_dict['ENGINE']
             
-            self.stdout.write('データベース設定を最適化しました。')
+            if 'postgresql' in db_engine.lower():
+                # PostgreSQL用の最適化
+                with connection.cursor() as cursor:
+                    cursor.execute("SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
+                    cursor.execute("SET lock_timeout = '30s'")
+                    cursor.execute("SET deadlock_timeout = '1s'")
+                    cursor.execute("SET statement_timeout = '300s'")
+                
+                self.stdout.write('PostgreSQL設定を最適化しました。')
+                
+            elif 'sqlite' in db_engine.lower():
+                # SQLite用の最適化
+                with connection.cursor() as cursor:
+                    cursor.execute("PRAGMA journal_mode=WAL")
+                    cursor.execute("PRAGMA synchronous=NORMAL")
+                    cursor.execute("PRAGMA temp_store=MEMORY")
+                    cursor.execute("PRAGMA mmap_size=268435456")  # 256MB
+                
+                self.stdout.write('SQLite設定を最適化しました。')
+                
+            else:
+                self.stdout.write(f'データベース最適化をスキップ: {db_engine}')
+                
         except Exception as e:
             logger.warning(f"データベース設定最適化エラー: {e}")
+            # エラーは記録するが処理は継続
     
     def _get_or_create_batch_safe(self, target_date, force):
         """安全なバッチ実行記録の作成・取得"""
@@ -736,14 +918,17 @@ class Command(BaseCommand):
             )
     
     def _show_statistics(self):
-        """システム統計の表示"""
+        """システム統計の表示（日本時間基準）"""
         self.stdout.write('\n=== システム統計 ===')
         
         try:
+            # 日本時間での今日を取得
+            current_date = self._get_japan_today()
+            
             total_companies = Company.objects.filter(is_active=True).count()
             total_documents = DocumentMetadata.objects.filter(legal_status='1').count()
             recent_batches = BatchExecution.objects.filter(
-                batch_date__gte=date.today() - timedelta(days=7)
+                batch_date__gte=current_date - timedelta(days=7)
             ).order_by('-batch_date')
             
             self.stdout.write(f'登録企業数: {total_companies}社')
@@ -803,18 +988,6 @@ class Command(BaseCommand):
                 self.stdout.write(f'最終メモリ使用量: {final_memory:.1f}MB (変化: {memory_change:+.1f}MB)')
         except Exception as e:
             logger.debug(f"メモリクリーンアップエラー: {e}")
-    
-    # 既存のヘルパーメソッド（変更なし）
-    def _get_last_business_day(self, days_back=1):
-        """最新の営業日を取得"""
-        target_date = date.today() - timedelta(days=days_back)
-        return self._adjust_to_business_day(target_date)
-    
-    def _adjust_to_business_day(self, target_date):
-        """営業日に調整"""
-        while target_date.weekday() >= 5:
-            target_date -= timedelta(days=1)
-        return target_date
     
     def _create_document_metadata(self, doc_data, file_date):
         """DocumentMetadataオブジェクト作成"""
