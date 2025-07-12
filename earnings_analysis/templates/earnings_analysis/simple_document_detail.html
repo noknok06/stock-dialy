@@ -90,91 +90,11 @@
             </div>
         </div>
 
-        <!-- Download Section -->
+        <!-- AI Analysis Section -->
         <div class="card mb-4">
             <div class="card-header">
                 <h5 class="mb-0">
-                    <i class="fas fa-download me-2"></i>ダウンロード
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="text-center py-4">
-                    <h6 class="mb-4">
-                        <i class="fas fa-cloud-download-alt text-primary me-2"></i>利用可能な形式
-                    </h6>
-                    
-                    <div class="row g-3">
-                        {% if document.pdf_flag %}
-                            <div class="col-12 col-sm-6 col-lg-4">
-                                <div class="border rounded p-3 h-100 d-flex flex-column">
-                                    <div class="text-center mb-3">
-                                        <i class="fas fa-file-pdf fa-3x text-danger mb-2"></i>
-                                        <h6 class="mb-1">PDF形式</h6>
-                                        <small class="text-muted">読みやすい文書形式</small>
-                                    </div>
-                                    <div class="mt-auto">
-                                        <button type="button" class="btn btn-danger w-100"
-                                                onclick="downloadDocument('{{ document.doc_id }}', 'pdf', this)">
-                                            <i class="fas fa-download me-1"></i>PDFダウンロード
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        {% endif %}
-                        
-                        {% if document.xbrl_flag %}
-                            <div class="col-12 col-sm-6 col-lg-4">
-                                <div class="border rounded p-3 h-100 d-flex flex-column">
-                                    <div class="text-center mb-3">
-                                        <i class="fas fa-code fa-3x text-primary mb-2"></i>
-                                        <h6 class="mb-1">XBRL形式</h6>
-                                        <small class="text-muted">構造化データ形式</small>
-                                    </div>
-                                    <div class="mt-auto">
-                                        <button type="button" class="btn btn-primary w-100"
-                                                onclick="downloadDocument('{{ document.doc_id }}', 'xbrl', this)">
-                                            <i class="fas fa-download me-1"></i>XBRLダウンロード
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        {% endif %}
-                        
-                        {% if document.csv_flag %}
-                            <div class="col-12 col-sm-6 col-lg-4">
-                                <div class="border rounded p-3 h-100 d-flex flex-column">
-                                    <div class="text-center mb-3">
-                                        <i class="fas fa-table fa-3x text-success mb-2"></i>
-                                        <h6 class="mb-1">CSV形式</h6>
-                                        <small class="text-muted">表計算ソフト用</small>
-                                    </div>
-                                    <div class="mt-auto">
-                                        <button type="button" class="btn btn-success w-100"
-                                                onclick="downloadDocument('{{ document.doc_id }}', 'csv', this)">
-                                            <i class="fas fa-download me-1"></i>CSVダウンロード
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        {% endif %}
-                    </div>
-                    
-                    {% if not document.pdf_flag and not document.xbrl_flag and not document.csv_flag %}
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            現在ダウンロード可能なファイルがありません
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- AI Analysis Section -->
-        <div class="card mb-4">
-            <div class="card-header bg-gradient" 
-                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                <h5 class="mb-0">
-                    <i class="fas fa-robot me-2"></i>AI分析機能
+                    <i class="fas fa-download me-2"></i>分析機能
                     <span class="badge bg-light text-dark ms-2 small">推奨</span>
                 </h5>
             </div>
@@ -255,6 +175,85 @@
                             <i class="fas fa-rocket me-2"></i>包括分析を開始
                         </a>
                     </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Download Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-download me-2"></i>ダウンロード
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center py-4">
+                    <h6 class="mb-4">
+                        <i class="fas fa-cloud-download-alt text-primary me-2"></i>利用可能な形式
+                    </h6>
+                    
+                    <div class="row g-3">
+                        {% if document.pdf_flag %}
+                            <div class="col-12 col-sm-6 col-lg-4">
+                                <div class="border rounded p-3 h-100 d-flex flex-column">
+                                    <div class="text-center mb-3">
+                                        <i class="fas fa-file-pdf fa-3x text-danger mb-2"></i>
+                                        <h6 class="mb-1">PDF形式</h6>
+                                        <small class="text-muted">読みやすい文書形式</small>
+                                    </div>
+                                    <div class="mt-auto">
+                                        <button type="button" class="btn btn-danger w-100"
+                                                onclick="downloadDocument('{{ document.doc_id }}', 'pdf', this)">
+                                            <i class="fas fa-download me-1"></i>PDFダウンロード
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        {% if document.xbrl_flag %}
+                            <div class="col-12 col-sm-6 col-lg-4">
+                                <div class="border rounded p-3 h-100 d-flex flex-column">
+                                    <div class="text-center mb-3">
+                                        <i class="fas fa-code fa-3x text-primary mb-2"></i>
+                                        <h6 class="mb-1">XBRL形式</h6>
+                                        <small class="text-muted">構造化データ形式</small>
+                                    </div>
+                                    <div class="mt-auto">
+                                        <button type="button" class="btn btn-primary w-100"
+                                                onclick="downloadDocument('{{ document.doc_id }}', 'xbrl', this)">
+                                            <i class="fas fa-download me-1"></i>XBRLダウンロード
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        {% if document.csv_flag %}
+                            <div class="col-12 col-sm-6 col-lg-4">
+                                <div class="border rounded p-3 h-100 d-flex flex-column">
+                                    <div class="text-center mb-3">
+                                        <i class="fas fa-table fa-3x text-success mb-2"></i>
+                                        <h6 class="mb-1">CSV形式</h6>
+                                        <small class="text-muted">表計算ソフト用</small>
+                                    </div>
+                                    <div class="mt-auto">
+                                        <button type="button" class="btn btn-success w-100"
+                                                onclick="downloadDocument('{{ document.doc_id }}', 'csv', this)">
+                                            <i class="fas fa-download me-1"></i>CSVダウンロード
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if not document.pdf_flag and not document.xbrl_flag and not document.csv_flag %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            現在ダウンロード可能なファイルがありません
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
