@@ -1,5 +1,7 @@
 # earnings_analysis/models/document.py（拡張版）
 from django.db import models
+from django.utils import timezone
+from datetime import date, datetime, timedelta
 
 class DocumentMetadata(models.Model):
     """書類メタデータ（分析優先度機能付き）"""

@@ -223,6 +223,11 @@
                     </div>
                 </div>
             </div>
+            {% if forloop.counter|divisibleby:8 and not forloop.last %}
+                <div class="col-12 my-4">
+                    {% include 'earnings_analysis/ads/ad_responsive.html' %}
+                </div>
+            {% endif %}
         {% endfor %}
     </div>
 
