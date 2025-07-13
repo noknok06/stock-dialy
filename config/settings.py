@@ -1,7 +1,13 @@
 """
-Django設定ファイル（config project）- テスト/開発環境用（簡略化版）
+Django設定ファイル（config project）- 本番環境用
 
-特定企業の個別分析に特化した設定
+Django 4.2.13を使用して'django-admin startproject'により生成
+
+このファイルの詳細情報：
+https://docs.djangoproject.com/en/4.2/topics/settings/
+
+全設定項目と値の詳細：
+https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
@@ -12,6 +18,7 @@ from dotenv import load_dotenv
 # .envファイルの読み込み
 load_dotenv()
 
+
 # プロジェクト内のパスを構築: BASE_DIR / 'subdir'
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -19,9 +26,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # コア設定
 # =============================================================================
 
-DEBUG = True
-SECRET_KEY = 'test-secret-key'
-ALLOWED_HOSTS = ['*']
+# セキュリティ警告: 本番環境用シークレットキー（環境変数から取得）
+SECRET_KEY = os.getenv('SECRET_KEY')
+
+# 本番環境用デバッグ設定（無効）
+DEBUG = False
+
+# ホストとCSRF設定
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+CSRF_TRUSTED_ORIGINS = [
+    'https://kabu-log.net', 'http://kabu-log.net', 
+    'http://localhost:8000', 
+]
 
 # 1. セキュリティ向上のための基本設定
 if DEBUG:
@@ -70,14 +86,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # データベース設定
 # =============================================================================
 
-# テスト用データベース設定 - ファイルベースにして明示的に削除
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'test_db.sqlite3',  # 一時的なファイル名
-        'TEST': {
-            'NAME': 'test_db.sqlite3',
-        }
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME', 'kabulog'),
+        'USER': os.getenv('DB_USER', 'naoki'),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
 
@@ -108,10 +124,9 @@ THIRD_PARTY_APPS = [
     'csp',
     'axes',
     'django_htmx',
-    # サードパーティ
-    'rest_framework',
-    'django_filters',
-    'corsheaders',
+    'rest_framework',  # ← 追加（API用）
+    'django_filters',  # ← 追加（フィルタリング用）
+    'corsheaders',     # ← 追加（CORS用、必要に応じて）
 ]
 
 # ローカルアプリ
@@ -129,7 +144,7 @@ LOCAL_APPS = [
     'maintenance',
     'contact',
     'financial_reports',
-    'earnings_analysis',  # 決算分析アプリ
+    'earnings_analysis',
 ]
 
 # インストール済みアプリ
@@ -153,10 +168,10 @@ MIDDLEWARE = [
     'security.middleware.RateLimitMiddleware',  # レート制限
     'security.middleware.IPFilterMiddleware',   # IP制限
     'security.middleware.SecurityHeadersMiddleware',  # セキュリティヘッダー
-    'csp.middleware.CSPMiddleware',  # CSPミドルウェアを最後に配置
     'subscriptions.middleware.SubscriptionMiddleware',  # サブスクリプション
     'ads.middleware.AdsMiddleware',  # 広告表示制御
     'axes.middleware.AxesMiddleware',
+    'csp.middleware.CSPMiddleware',  # CSPミドルウェアを最後に配置
 ]
 
 # =============================================================================
@@ -237,7 +252,7 @@ SOCIALACCOUNT_FORMS = {
     'signup': 'users.forms.CustomSocialSignupForm',  # カスタムサインアップフォーム
 }
 SOCIALACCOUNT_REDIRECT_URLS = {
-    'google': 'http://localhost:8000/accounts/google/login/callback/'  # 開発環境用
+    'google': 'https://kabu-log.net/accounts/google/login/callback/'
 }
 
 # Google認証設定
@@ -270,13 +285,17 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # =============================================================================
-# メール設定（開発環境用）
+# メール設定
 # =============================================================================
 
-# 開発環境ではコンソールにメールを出力
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'カブログ開発環境 <noreply@localhost>'
-
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # メールサーバー
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'kabulog.information@gmail.com'
+EMAIL_HOST_PASSWORD = 'wfsdxbdxsdusvddw'  # 注意: 環境変数を使用することをお勧めします
+# デフォルトの送信元メールアドレス
+DEFAULT_FROM_EMAIL = 'カブログ <kabulog.information@gmail.com>'
 # =============================================================================
 # ロギング設定
 # =============================================================================
@@ -284,39 +303,37 @@ DEFAULT_FROM_EMAIL = 'カブログ開発環境 <noreply@localhost>'
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {message}',
-            'style': '{',
-        },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
-    },
     'handlers': {
-        'console': {
-            'level': 'INFO',
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
-        },
-        'earnings_file': {
-            'level': 'DEBUG',
+        'file': {
+            'level': 'ERROR',
             'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'earnings-analysis.log'),
-            'formatter': 'verbose',
+            'filename': os.path.join(BASE_DIR, 'django-error.log'),
         },
-    },
-    'root': {
-        'level': 'INFO',
-        'handlers': ['console'],
     },
     'loggers': {
-        'earnings_analysis': {
-            'handlers': ['console', 'earnings_file'],
-            'level': 'DEBUG',
-            'propagate': False,
+        'django': {
+            'handlers': ['file'],
+            'level': 'ERROR',
+            'propagate': True,
         },
+    },
+}
+
+# =============================================================================
+# サードパーティアプリ設定
+# =============================================================================
+
+# TinyMCE設定
+TINYMCE_DEFAULT_CONFIG = {
+    'theme': 'silver',
+    'width': '100%',
+    'height': 300,
+    'menubar': False,
+    'plugins': 'link image lists table code',
+    'toolbar': 'bold italic | bullist numlist | link image table | code',
+    'mobile': {
+        'plugins': 'link image lists table',
+        'toolbar': 'bold italic | bullist numlist | link image'
     },
 }
 
@@ -324,41 +341,194 @@ LOGGING = {
 # カスタムアプリ設定
 # =============================================================================
 
-# 広告設定（開発環境では無効）
+# 広告設定
 ADS_SETTINGS = {
-    'DEFAULT_AD_CLIENT': 'ca-pub-test',
-    'SHOW_ADS_DEFAULT': False,  # 開発環境では広告非表示
-    'PREMIUM_USERS_NO_ADS': True,
+    'DEFAULT_AD_CLIENT': 'ca-pub-3954701883136363',  # デフォルト広告クライアントID
+    'SHOW_ADS_DEFAULT': True,  # デフォルトで広告表示
+    'PREMIUM_USERS_NO_ADS': True,  # プレミアムユーザーには広告非表示
     'SHOW_ADS_ON_AUTH_PAGES': False,
 }
 
-# CSP設定（開発環境では緩い設定）
-CSP_DEFAULT_SRC = ["'self'", "'unsafe-inline'", "'unsafe-eval'", "*"]
-CSP_SCRIPT_SRC = ["'self'", "'unsafe-inline'", "'unsafe-eval'", "*"]
-CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", "*"]
-CSP_FONT_SRC = ["'self'", "data:", "*"]
-CSP_IMG_SRC = ["'self'", "data:", "blob:", "*"]
-CSP_CONNECT_SRC = ["'self'", "*"]
-CSP_FRAME_SRC = ["'self'", "*"]
+# メンテナンスモード設定
+MAINTENANCE_MODE = False  # メンテナンスモード有効
+MAINTENANCE_ALLOWED_IPS = [
+    '193.186.4.181',  # 管理者IP
+    '192.168.1.100',  # 管理者IP
+]
+MAINTENANCE_EXEMPT_URLS = [
+    r'^/static/.*',  # 静的ファイル
+    r'^/media/.*',  # メディアファイル
+    r'^/$',        # ランディングページ（ルートURL）
+]
+MAINTENANCE_END_TIME = '2025年3月23日 10:00 (JST)'  # メンテナンス終了予定時間
+MAINTENANCE_CONTACT_EMAIL = 'kabulog.information@gmail.com'  # 問い合わせ用メール
 
+# コンテンツセキュリティポリシー設定
+CSP_DEFAULT_SRC = ["'self'", "cdn.jsdelivr.net", "*.googleapis.com", "*.gstatic.com", "*.bootstrapcdn.com", "unpkg.com"]
+CSP_SCRIPT_SRC = [
+    "'self'", 
+    "'unsafe-inline'",
+    "'unsafe-eval'",
+    "unpkg.com", 
+    "https://unpkg.com",
+    "cdn.jsdelivr.net", 
+    "*.jquery.com", 
+    "*.googleadservices.com", 
+    "*.google.com", 
+    "*.googleapis.com", 
+    "*.gstatic.com",
+    "*.googlesyndication.com", 
+    "pagead2.googlesyndication.com", 
+    "*.doubleclick.net", 
+    "googleads.g.doubleclick.net",
+    "*.bootstrapcdn.com", 
+    "*.googletagmanager.com",
+    "www.googletagmanager.com",
+    "https://www.googletagmanager.com",
+    "https://pagead2.googlesyndication.com",
+    "https://www.google-analytics.com",
+    "https://ssl.google-analytics.com",
+    # 以下を追加
+    "*.adtrafficquality.google",
+    "https://adtrafficquality.google",
+    "https://ep1.adtrafficquality.google",
+    "https://ep2.adtrafficquality.google"
+]
+
+CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", "*.googleapis.com", "*.bootstrapcdn.com", 
+                 "https://cdn.jsdelivr.net", "https:", "data:"]
+CSP_FONT_SRC = [
+    "'self'", 
+    "data:", 
+    "*.googleapis.com", 
+    "*.gstatic.com", 
+    "*.bootstrapcdn.com", 
+    "cdn.jsdelivr.net", 
+    "cdnjs.cloudflare.com",
+    "https://fonts.gstatic.com"
+]
+CSP_IMG_SRC = ["'self'", "data:", "https:", "blob:", "*.google.com", "*.googleapis.com", "*.gstatic.com", 
+               "*.doubleclick.net", "pagead2.googlesyndication.com"]
+CSP_CONNECT_SRC = [
+    "'self'", 
+    "*.google.com", 
+    "*.doubleclick.net", 
+    "*.googleapis.com", 
+    "www.google-analytics.com", 
+    "stats.g.doubleclick.net",
+    "*.googletagmanager.com",
+    "https://www.googletagmanager.com",
+    "https://adtrafficquality.google", 
+    "*.adtrafficquality.google",       
+    "https://ep1.adtrafficquality.google"
+]
+CSP_FRAME_SRC = [
+    "'self'", 
+    "*.google.com",
+    "*.doubleclick.net", 
+    "https://*.doubleclick.net",
+    "googleads.g.doubleclick.net", 
+    "tpc.googlesyndication.com", 
+    "www.googletagmanager.com", 
+    "*.googletagmanager.com",
+    "*.googlesyndication.com", 
+    "pagead2.googlesyndication.com"
+]
 # =============================================================================
-# 決算分析アプリ設定（オンデマンド分析用）
+# 現在使用していない設定（コメントアウト）
 # =============================================================================
 
-# 決算分析機能の有効化
-EARNINGS_ANALYSIS_ENABLED = True
+# Stripe設定
+# STRIPE_PUBLISHABLE_KEY = 'pk_test_your_key_here'
+# STRIPE_PUBLIC_KEY = 'pk_test_あなたのStripeパブリックキー'
+# STRIPE_SECRET_KEY = 'sk_test_あなたのStripeシークレットキー'
+# STRIPE_WEBHOOK_SECRET = 'whsec_あなたのWebhookシークレット'
 
-# EDINET API設定（v1版・APIキー不要）
+# 5. レート制限の設定
+RATE_LIMIT = {
+    'payment_attempts': {
+        'limit': 5,  # 試行回数
+        'period': 600,  # 期間（秒）
+    },
+    'login_attempts': {
+        'limit': 5,
+        'period': 300,
+    },
+}
+
+# 6. IP制限の設定
+# 日本からのアクセスのみを許可（True=有効、False=無効）
+JAPAN_ONLY_ACCESS = True
+
+# または特定の高リスク国からのアクセスをブロック (オプション、JAPAN_ONLY_ACCESSがFalseの場合に使用)
+HIGH_RISK_COUNTRIES = ['CN', 'RU', 'KP', 'IR']  # 例: 中国、ロシア、北朝鮮、イランなど
+
+# django-axes の設定
+AXES_FAILURE_LIMIT = 10  # 10回の失敗でロック
+AXES_COOLOFF_TIME = 1  # ロックアウト期間（時間単位）
+AXES_LOCKOUT_PARAMETERS = ['username', 'ip_address'] 
+
+# 静的ファイルのキャッシュ期間を設定（秒単位）
+# STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+
+
+# スパム検出設定
+SPAM_DETECTION = {
+    # スパム判定の閾値
+    'SPAM_THRESHOLD': 3,
+    
+    # レート制限（同一IPからの送信制限）
+    'RATE_LIMIT_ATTEMPTS': 3,  # 1時間あたりの最大試行回数（認証が必要なため厳しく設定）
+    'RATE_LIMIT_PERIOD': 3600,  # 期間（秒）
+    
+    # スパムキーワード（随時更新）
+    'SPAM_KEYWORDS': [
+        'wkxprysmyph',
+        'accordini',
+        'gfwljsiqtrr',
+        'oyvjwyyrxg',
+        'wkxprysmyphgpfwljsiqtrrxfdwdry',
+        # 必要に応じて追加
+    ],
+    
+    # 自動削除設定
+    'AUTO_DELETE_SPAM_DAYS': 30,  # スパムメッセージの自動削除期間（日）
+}
+
+# 管理者への通知設定
+ADMIN_NOTIFICATIONS = {
+    'SPAM_ALERT_THRESHOLD': 10,  # 1日あたりのスパム件数がこの数を超えたら管理者に通知
+    'SPAM_ALERT_EMAIL': 'kabulog.information@gmail.com',
+}
+
+# メール認証設定
+EMAIL_VERIFICATION = {
+    'EXPIRATION_HOURS': 24,  # 認証リンクの有効期限（時間）
+    'CLEANUP_EXPIRED_HOURS': 48,  # 期限切れメッセージの削除期間（時間）
+}
+TEST_ACCOUNT_SETTINGS = {
+    'USERNAMES': ['test', 'test1', 'test2', 'test3', 'demo1', 'demo2', 'demo3'],
+    'SESSION_TIMEOUT': 7200,  # テストアカウントは2時間
+    'CSRF_EXEMPT': True,  # テストアカウントのCSRF例外
+}
+
+# CSRFエラー時のカスタムビュー設定
+CSRF_FAILURE_VIEW = 'stockdiary.views.csrf_failure_view'
+
+
+# EDINET API設定
 EDINET_API_SETTINGS = {
-    'BASE_URL': 'https://disclosure.edinet-fsa.go.jp/api/v1',
-    'REQUEST_TIMEOUT': 30,
-    'RATE_LIMIT_DELAY': 2,  # v1は厳しめのレート制限
-    'MAX_RETRIES': 3,
-    'API_KEY_REQUIRED': False,  # v1はAPIキー不要
+    'API_KEY': os.getenv('EDINET_API_KEY', ''),  # 環境変数から取得
+    'BASE_URL': 'https://api.edinet-fsa.go.jp/api/v2',
+    'RATE_LIMIT_DELAY': 2,  # リクエスト間隔（秒）
+    'TIMEOUT': 120,         # タイムアウト（秒）
     'USER_AGENT': 'EarningsAnalysisBot/1.0 (https://kabu-log.net)',
 }
 
-# 決算分析設定（オンデマンド分析用）
+# 決算分析機能設定
+EARNINGS_ANALYSIS_ENABLED = True
+
+# 決算分析設定（本番環境版）
 EARNINGS_ANALYSIS_SETTINGS = {
     # 基本設定
     'ENABLE_CACHE': True,
@@ -366,7 +536,7 @@ EARNINGS_ANALYSIS_SETTINGS = {
     'MAX_DOCUMENTS_PER_SEARCH': 10,     # 検索結果最大件数
     'ANALYSIS_TIMEOUT': 300,            # 5分
     
-    # オンデマンド分析設定
+    # オンデマンド分析設定（本番環境では自動分析無効）
     'ON_DEMAND_ANALYSIS': True,
     'ENABLE_AUTO_ANALYSIS': False,      # 自動分析は無効
     'ENABLE_BATCH_ANALYSIS': False,     # バッチ処理無効
@@ -375,9 +545,9 @@ EARNINGS_ANALYSIS_SETTINGS = {
     'MAX_ANALYSIS_HISTORY': 2,          # 最新2期分のみ分析
     'ANALYSIS_RETENTION_DAYS': 365,     # 1年間保持
     
-    # デバッグ設定
-    'DEBUG_MODE': DEBUG,                # DEBUG設定に連動
-    'VERBOSE_LOGGING': DEBUG,           # 詳細ログ
+    # デバッグ設定（本番では無効）
+    'DEBUG_MODE': False,
+    'VERBOSE_LOGGING': False,
 }
 
 # 感情分析設定
@@ -406,15 +576,10 @@ SENTIMENT_ANALYSIS_SETTINGS = {
     'BATCH_SIZE': 1000,
     'MAX_TEXT_LENGTH': 100000,  # 10万文字制限
     
-    # デバッグ設定
-    'ENABLE_DETAILED_LOGGING': DEBUG,
+    # デバッグ設定（本番では無効）
+    'ENABLE_DETAILED_LOGGING': False,
     'LOG_ANALYSIS_METRICS': True,
 }
-
-# 感情辞書パスをグローバル設定として追加
-SENTIMENT_DICT_PATH = SENTIMENT_ANALYSIS_SETTINGS['DICT_PATH']
-
-
 
 # キャッシュフロー分析設定
 CASHFLOW_ANALYSIS_SETTINGS = {
@@ -428,21 +593,6 @@ CASHFLOW_ANALYSIS_SETTINGS = {
     'ENABLE_TREND_ANALYSIS': True,  # トレンド分析有効
 }
 
-# =============================================================================
-# キャッシュ設定（分析結果の高速表示用）
-# =============================================================================
-
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'earnings-analysis-cache',
-        'TIMEOUT': 3600,  # 1時間キャッシュ
-        'OPTIONS': {
-            'MAX_ENTRIES': 1000,
-        }
-    }
-}
-
 # 分析結果キャッシュ設定
 ANALYSIS_CACHE_SETTINGS = {
     'ENABLE_CACHE': True,
@@ -454,6 +604,7 @@ ANALYSIS_CACHE_SETTINGS = {
     'BATCH_HISTORY_TIMEOUT': 3600,          # バッチ履歴は1時間
 }
 
+# REST Framework設定
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 50,
@@ -463,7 +614,7 @@ REST_FRAMEWORK = {
         'rest_framework.filters.OrderingFilter',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
+        'rest_framework.permissions.AllowAny',  # 本番では制限を検討
     ],
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
@@ -471,120 +622,74 @@ REST_FRAMEWORK = {
     ],
 }
 
-# 6. レート制限設定（修正版）
-RATE_LIMIT = getattr(globals(), 'RATE_LIMIT', {})
+# レート制限設定（既存設定に追加）
+# 既存のRATE_LIMIT設定を拡張
+if 'RATE_LIMIT' not in locals():
+    RATE_LIMIT = {}
+
 RATE_LIMIT.update({
     'analysis_requests': {
-        'limit': 20,        # 1時間あたり20回に増加
+        'limit': 10,        # 本番環境では厳しく制限
         'period': 3600,     # 制限期間（秒）
     },
     'document_download': {
-        'limit': 50,        # 1時間あたり50回のダウンロード
+        'limit': 30,        # 1時間あたり30回のダウンロード
         'period': 3600,
     },
     'api_requests': {
-        'limit': 200,       # 1時間あたり200回のAPI呼び出し
+        'limit': 100,       # 1時間あたり100回のAPI呼び出し
         'period': 3600,
     }
 })
 
-# 7. ログ設定（拡張版）
-# ログ設定に感情分析ログを追加
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
-        },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'earnings_analysis.log'),
-            'formatter': 'verbose',
-        },
-        'sentiment_file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'sentiment_analysis.log'),
-            'formatter': 'verbose',
-        },
-        'console': {
-            'level': 'INFO',
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
-        },
-    },
-    'loggers': {
-        'earnings_analysis': {
-            'handlers': ['file', 'console'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-        'earnings_analysis.services.sentiment_analysis': {
-            'handlers': ['sentiment_file', 'console'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-    },
+# CSP設定への追加（既存のCSP設定に追加）
+# EDINET APIへのアクセスを許可
+CSP_CONNECT_SRC = CSP_CONNECT_SRC + [
+    'api.edinet-fsa.go.jp',
+    'disclosure.edinet-fsa.go.jp',
+]
+
+# 既存のLOGGING設定のhandlersとloggersに追加
+LOGGING['handlers']['earnings_file'] = {
+    'level': 'INFO',
+    'class': 'logging.handlers.RotatingFileHandler',
+    'filename': os.path.join(BASE_DIR, 'logs', 'earnings_analysis.log'),
+    'maxBytes': 10485760,  # 10MB
+    'backupCount': 5,
+    'formatter': 'verbose' if 'verbose' in LOGGING.get('formatters', {}) else None,
 }
 
-# ログハンドラに earnings_file が無い場合は追加
-if 'earnings_file' not in LOGGING['handlers']:
-    LOGGING['handlers']['earnings_file'] = {
-        'level': 'DEBUG',
-        'class': 'logging.FileHandler',
-        'filename': os.path.join(BASE_DIR, 'earnings-analysis.log'),
-        'formatter': 'verbose',
-    }
-    
-# =============================================================================
-# テスト・開発用設定
-# =============================================================================
-
-# レート制限の設定（開発環境では緩め）
-RATE_LIMIT = {
-    'analysis_requests': {
-        'limit': 10,  # 1時間に10回まで分析リクエスト
-        'period': 3600,
-    },
-    'login_attempts': {
-        'limit': 100,  # 開発環境では緩く設定
-        'period': 300,
-    },
+LOGGING['handlers']['sentiment_file'] = {
+    'level': 'INFO',
+    'class': 'logging.handlers.RotatingFileHandler', 
+    'filename': os.path.join(BASE_DIR, 'logs', 'sentiment_analysis.log'),
+    'maxBytes': 10485760,  # 10MB
+    'backupCount': 5,
+    'formatter': 'verbose' if 'verbose' in LOGGING.get('formatters', {}) else None,
 }
 
-# テストアカウント設定
-TEST_ACCOUNT_SETTINGS = {
-    'USERNAMES': ['test', 'test1', 'test2', 'test3', 'demo1', 'demo2', 'demo3'],
-    'SESSION_TIMEOUT': 7200,
-    'CSRF_EXEMPT': True,
+LOGGING['loggers']['earnings_analysis'] = {
+    'handlers': ['earnings_file', 'file'],  # 既存のfileハンドラーも使用
+    'level': 'INFO',
+    'propagate': True,
 }
 
-# CSRFエラー時のカスタムビュー設定
-CSRF_FAILURE_VIEW = 'stockdiary.views.csrf_failure_view'
+LOGGING['loggers']['earnings_analysis.services.sentiment_analysis'] = {
+    'handlers': ['sentiment_file', 'file'],
+    'level': 'INFO',
+    'propagate': False,
+}
 
-# =============================================================================
-# 削除された設定（不要になったもの）
-# =============================================================================
+# Celery設定（本番環境では将来的に使用）
+# 現在はthreading.Threadを使用するため、CELERY_TASK_ALWAYS_EAGERをTrueに設定
+CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 
-# Celery設定 - 削除（非同期処理不要）
-CELERY_BROKER_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+# 本番環境では当面はeager実行（同期実行）
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
 
-if os.environ.get('DJANGO_ENV') != 'production':
-    # メモリ内でのタスク実行（開発用）
-    CELERY_TASK_ALWAYS_EAGER = True
-    CELERY_TASK_EAGER_PROPAGATES = True
-    
-# Celeryの基本設定
+# Celeryの基本設定（将来的にワーカーを使用する場合の準備）
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -593,123 +698,9 @@ CELERY_TIMEZONE = 'Asia/Tokyo'
 CELERY_TASK_SOFT_TIME_LIMIT = 3600  # 1時間
 CELERY_TASK_TIME_LIMIT = 4200  # 70分
 
-# バッチ処理設定 - 削除（大量処理不要）
-# BATCH_PROCESS_SIZE = 10
-# DEFAULT_ANALYSIS_COMPANIES = 100
-
-# 自動分析設定 - 削除（手動分析のみ）
-# ENABLE_AUTO_ANALYSIS = True
-# NOTIFICATION_DAYS_BEFORE = 7
-
-print(f"🚀 Django 開発環境設定を読み込みました（オンデマンド分析版）")
+print(f"🚀 Django本番環境設定（earnings_analysis統合版）を読み込みました")
 print(f"📊 決算分析機能: {'有効' if EARNINGS_ANALYSIS_ENABLED else '無効'}")
 print(f"📧 メールバックエンド: {EMAIL_BACKEND}")
-print(f"🗄️ データベース: {DATABASES['default']['ENGINE']}")
-print(f"🔍 分析モード: オンデマンド（ユーザーリクエスト時のみ）")
-print(f"💾 キャッシュ: 有効（分析結果を{CACHES['default']['TIMEOUT']}秒間キャッシュ）")
-
-# EDINET API v2設定
-EDINET_API_SETTINGS = {
-    'API_KEY': '14fb862b5660412d82cc77373cde4170',
-    'BASE_URL': 'https://api.edinet-fsa.go.jp/api/v2',
-    'RATE_LIMIT_DELAY': 2,  # リクエスト間隔（秒）
-    'TIMEOUT': 120,         # タイムアウト（秒）
-}
-
-# 決算分析設定
-EARNINGS_ANALYSIS_SETTINGS = {
-    'ENABLE_CACHE': True,
-    'CACHE_TIMEOUT': 86400,  # 24時間
-    'MAX_DOCUMENTS_PER_SEARCH': 10,
-    'ANALYSIS_TIMEOUT': 300,  # 5分
-}
-
-# キャッシュ設定
-ANALYSIS_CACHE_SETTINGS = {
-    'ENABLE_CACHE': True,
-    'CACHE_KEY_PREFIX': 'earnings_analysis',
-    'COMPANY_ANALYSIS_TIMEOUT': 86400,  # 24時間
-    'SEARCH_RESULTS_TIMEOUT': 300,      # 5分
-}
-
-# レート制限設定
-RATE_LIMIT = {
-    'analysis_requests': {
-        'limit': 10,        # 1時間あたりのリクエスト数
-        'period': 3600,     # 制限期間（秒）
-    }
-}
-
-# settings.py に追加
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': 'earnings-analysis.log',
-        },
-        'console': {
-            'level': 'INFO',
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'loggers': {
-        'earnings_analysis': {
-            'handlers': ['file', 'console'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-    },
-}
-
-
-# 9. セキュリティ設定（EDINET API用）
-# CSP設定にEDINET APIドメインを追加
-CSP_CONNECT_SRC = getattr(globals(), 'CSP_CONNECT_SRC', ["'self'"])
-if 'api.edinet-fsa.go.jp' not in CSP_CONNECT_SRC:
-    CSP_CONNECT_SRC.append('api.edinet-fsa.go.jp')
-
-# CORS設定（必要に応じて）
-if 'corsheaders' in INSTALLED_APPS:
-    CORS_ALLOWED_ORIGINS = getattr(globals(), 'CORS_ALLOWED_ORIGINS', [])
-    if 'http://localhost:3000' not in CORS_ALLOWED_ORIGINS:
-        CORS_ALLOWED_ORIGINS.append('http://localhost:3000') 
-        
-# 11. キャッシュ設定（earnings_analysis専用）
-if 'earnings_analysis_cache' not in CACHES:
-    CACHES['earnings_analysis_cache'] = {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'earnings-analysis-cache',
-        'TIMEOUT': 3600,
-        'OPTIONS': {
-            'MAX_ENTRIES': 5000,
-        }
-    }
-
-# 12. 管理画面設定
-ADMIN_SITE_HEADER = getattr(globals(), 'ADMIN_SITE_HEADER', 'カブログ管理') + ' - 決算分析'
-
-# 13. 開発環境での追加設定
-if DEBUG:
-    # 開発環境でのAPI呼び出し制限を緩くする
-    EDINET_API_SETTINGS['RATE_LIMIT_DELAY'] = 1  # 1秒間隔
-    EARNINGS_ANALYSIS_SETTINGS['MAX_DOCUMENTS_PER_SEARCH'] = 20  # 検索結果を20件に
-    
-    # 開発環境用のテストデータ設定
-    EARNINGS_ANALYSIS_SETTINGS['ENABLE_TEST_DATA'] = True
-    EARNINGS_ANALYSIS_SETTINGS['TEST_COMPANIES'] = ['7203', '9984', '6758']  # トヨタ、ソフトバンク、ソニー
-
-# 14. 本番環境での追加設定
-else:
-    # 本番環境では厳格な制限
-    RATE_LIMIT['analysis_requests']['limit'] = 10  # 1時間10回まで
-    RATE_LIMIT['document_download']['limit'] = 30  # 1時間30回まで
-    
-    # 本番環境でのログローテーション
-    LOGGING['handlers']['earnings_file'].update({
-        'class': 'logging.handlers.RotatingFileHandler',
-        'maxBytes': 10485760,  # 10MB
-        'backupCount': 5,
-    })
+print(f"🗄️ データベース: PostgreSQL")
+print(f"🔍 分析モード: オンデマンド（本番環境）")
+print(f"⚡ Celery: 同期実行モード（threading.Thread使用）")

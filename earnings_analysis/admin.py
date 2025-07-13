@@ -13,6 +13,7 @@ import csv
 import logging
 import traceback
 
+from django.conf import settings
 from .models import (
     Company, DocumentMetadata, BatchExecution,
     SentimentAnalysisSession, SentimentAnalysisHistory,
