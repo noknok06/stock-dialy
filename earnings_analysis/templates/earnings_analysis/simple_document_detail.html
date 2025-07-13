@@ -149,6 +149,33 @@
                 {% endif %}
                 
                 <div class="row g-4">
+
+                    <!-- Sentiment Analysis -->
+                    <div class="col-12 col-md-6">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-center mb-3">
+                                <i class="fas fa-brain fa-3x text-success mb-3"></i>
+                                <h6 class="mb-2">感情分析</h6>
+                                <p class="small text-muted mb-3">
+                                    書類の感情を自動分析<br>
+                                    経営陣の自信度測定<br>
+                                    市場への影響予測
+                                </p>
+                            </div>
+                            <div class="mt-auto">
+                                <a href="{% url 'earnings_analysis:sentiment-analysis' document.doc_id %}" 
+                                   class="btn btn-success w-100 mb-2">
+                                    <i class="fas fa-brain me-2"></i>感情分析開始
+                                </a>
+                                <div class="small text-muted text-center">
+                                    <i class="fas fa-clock me-1"></i>約2-3分
+                                    <span class="ms-2">
+                                        <i class="fas fa-info-circle me-1"></i>テキスト解析
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <!-- Financial Analysis -->
                     <div class="col-12 col-md-6">
                         <div class="border rounded p-3 h-100">
@@ -177,33 +204,6 @@
                                             <i class="fas fa-exclamation-triangle text-warning me-1"></i>制限モード
                                         </span>
                                     {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Sentiment Analysis -->
-                    <div class="col-12 col-md-6">
-                        <div class="border rounded p-3 h-100">
-                            <div class="text-center mb-3">
-                                <i class="fas fa-brain fa-3x text-success mb-3"></i>
-                                <h6 class="mb-2">感情分析</h6>
-                                <p class="small text-muted mb-3">
-                                    書類の感情を自動分析<br>
-                                    経営陣の自信度測定<br>
-                                    市場への影響予測
-                                </p>
-                            </div>
-                            <div class="mt-auto">
-                                <a href="{% url 'earnings_analysis:sentiment-analysis' document.doc_id %}" 
-                                   class="btn btn-success w-100 mb-2">
-                                    <i class="fas fa-brain me-2"></i>感情分析開始
-                                </a>
-                                <div class="small text-muted text-center">
-                                    <i class="fas fa-clock me-1"></i>約2-3分
-                                    <span class="ms-2">
-                                        <i class="fas fa-info-circle me-1"></i>テキスト解析
-                                    </span>
                                 </div>
                             </div>
                         </div>
