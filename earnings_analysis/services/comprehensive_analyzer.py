@@ -425,7 +425,7 @@ class ComprehensiveAnalysisService:
                 'error': f'統合処理中にエラーが発生しました: {str(e)}'
             }
                      
-    def _save_financial_data(self, document, financial_data: Dict) -> Optional['CompanyFinancialData']:
+    def _save_financial_data(self, document, financial_data: Dict):
         """財務データの保存"""
         from ..models import CompanyFinancialData, Company
         from decimal import Decimal

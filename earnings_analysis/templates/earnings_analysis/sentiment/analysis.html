@@ -2,7 +2,7 @@
 {% extends 'earnings_analysis/base.html' %}
 {% load static %}
 
-{% block title %}感情分析 - {{ document.company_name }} - 決算書類管理システム{% endblock %}
+{% block title %}感情分析 - {{ document.company_name }} -コーポマインドリーダー{% endblock %}
 
 {% block breadcrumb %}
 <style>
@@ -105,6 +105,10 @@
             </div>
         </div>
     </div>
+</div>
+
+<div class="analysis-card card mb-4">
+    {% include 'earnings_analysis/ads/ad_responsive.html' %}
 </div>
 
 <div class="row g-3 g-md-4">
@@ -360,9 +364,7 @@
                     </button>
                 </div>
             </div>
-            <div class="analysis-card card">
-                {% include 'earnings_analysis/ads/ad_responsive.html' %}
-            </div>
+            {% include 'earnings_analysis/ads/ad_responsive.html' %}
         </div>
     </div>
 </div>

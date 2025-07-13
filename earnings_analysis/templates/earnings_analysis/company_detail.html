@@ -1,7 +1,7 @@
 <!-- earnings_analysis/templates/earnings_analysis/company_detail.html -->
 {% extends 'earnings_analysis/simple_base.html' %}
 
-{% block title %}{{ company.company_name }} - 企業詳細 - 決算書類管理システム{% endblock %}
+{% block title %}{{ company.company_name }} - 企業詳細 -コーポマインドリーダー{% endblock %}
 
 {% block content %}
 <nav aria-label="breadcrumb">
@@ -38,6 +38,10 @@
     </div>
 </div>
 
+<div class="analysis-card card mb-4">
+    {% include 'earnings_analysis/ads/ad_responsive.html' %}
+</div>
+
 <div class="row g-3 g-md-4">
     <!-- Main Content -->
     <div class="col-12 col-lg-8">
@@ -47,7 +51,7 @@
                 <div class="card-header" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white;">
                     <h5 class="mb-0 d-flex align-items-center">
                         <i class="fas fa-rocket me-2"></i>
-                        ワンクリック包括分析
+                        ワンクリック分析
                         <span class="badge bg-light text-dark ms-2 small">推奨</span>
                     </h5>
                 </div>
@@ -67,9 +71,9 @@
                                 </div>
                             </div>
                             <div class="small text-success">
-                                <i class="fas fa-check-circle me-1"></i>財務分析 + 感情分析を自動実行
+                                <i class="fas fa-check-circle me-1"></i>最新決算書類の自動分析
                                 <span class="d-block d-sm-inline ms-sm-3 mt-1 mt-sm-0">
-                                    <i class="fas fa-clock me-1"></i>約3-5分で完了
+                                    <i class="fas fa-clock me-1"></i>約1-2分で完了
                                 </span>
                             </div>
                         </div>
@@ -131,13 +135,13 @@
                                 </div>
                                 <div class="col-12 col-md-4">
                                     <div class="d-grid gap-1">
-                                        <a href="{% url 'earnings_analysis:financial-analysis' doc.doc_id %}" 
-                                           class="btn btn-outline-primary btn-sm">
-                                            <i class="fas fa-chart-pie me-1"></i>財務分析
-                                        </a>
                                         <a href="{% url 'earnings_analysis:sentiment-analysis' doc.doc_id %}" 
                                            class="btn btn-outline-success btn-sm">
                                             <i class="fas fa-brain me-1"></i>感情分析
+                                        </a>
+                                        <a href="{% url 'earnings_analysis:financial-analysis' doc.doc_id %}" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-chart-pie me-1"></i>財務分析
                                         </a>
                                     </div>
                                 </div>

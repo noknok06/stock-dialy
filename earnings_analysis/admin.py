@@ -14,8 +14,8 @@ from .models import (
 )
 
 # Admin Site の設定
-admin.site.site_header = '決算書類管理システム'
-admin.site.site_title = '決算書類管理'
+admin.site.site_header = 'コーポマインドリーダー'
+admin.site.site_title = 'CMR'
 admin.site.index_title = 'システム管理'
 
 @admin.register(Company)
@@ -693,5 +693,5 @@ admin.site.site_header = mark_safe('''
 .text-warning { color: #856404 !important; }
 .text-info { color: #17a2b8 !important; }
 </style>
-決算書類管理システム
+コーポマインドリーダー
 ''')

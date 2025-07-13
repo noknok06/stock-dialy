@@ -44,7 +44,7 @@ urlpatterns = [
     path('portfolio/', include('portfolio.urls')),
     path('financial_reports/', include('financial_reports.urls')),
     
-    # 決算書類管理システム（新機能）
+    #コーポマインドリーダー（新機能）
     path('earnings_analysis/', include('earnings_analysis.urls')),
     
     # サポート・サービス系

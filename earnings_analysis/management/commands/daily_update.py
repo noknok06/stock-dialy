@@ -873,7 +873,7 @@ class Command(BaseCommand):
     def _send_notification(self, target_date, success, processed_count, error_message):
         """実行結果の通知メール送信"""
         try:
-            subject = f'[決算書類管理システム] 日次更新結果 ({target_date})'
+            subject = f'[コーポマインドリーダー] 日次更新結果 ({target_date})'
             
             if success:
                 message = f"""
