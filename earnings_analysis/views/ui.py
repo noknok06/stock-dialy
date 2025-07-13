@@ -530,7 +530,6 @@ class DocumentTypeAPIView(TemplateView):
                 })
             
             return JsonResponse({
-                'popular_types': popular_types,
                 'categorized_types': categorized_types,
                 'all_types': all_types
             })
@@ -538,7 +537,6 @@ class DocumentTypeAPIView(TemplateView):
         except Exception as e:
             logger.error(f"書類種別API エラー: {e}")
             return JsonResponse({
-                'popular_types': [],
                 'categorized_types': [],
                 'all_types': [],
                 'error': str(e)
