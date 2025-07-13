@@ -11,6 +11,7 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 import csv
 import logging
+import traceback
 
 from .models import (
     Company, DocumentMetadata, BatchExecution,

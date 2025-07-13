@@ -1,0 +1,164 @@
+<!-- templates/admin/earnings_analysis/batchexecution/change_list.html -->
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+.batch-actions {
+    background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #e5e7eb;
+}
+
+.batch-actions h3 {
+    margin: 0 0 16px 0;
+    color: #1f2937;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.action-btn:hover {
+    transform: translateY(-1px);
+    text-decoration: none;
+}
+
+.action-btn-primary {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn-primary:hover {
+    color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn-success {
+    background: linear-gradient(135deg, #059669, #047857);
+    color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn-success:hover {
+    color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn-info {
+    background: linear-gradient(135deg, #0891b2, #0e7490);
+    color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn-info:hover {
+    color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.quick-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #d1d5db;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 12px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+.stat-value {
+    font-size: 20px;
+    font-weight: bold;
+    color: #2563eb;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #6b7280;
+    text-transform: uppercase;
+    margin-top: 4px;
+}
+
+@media (max-width: 768px) {
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .action-btn {
+        justify-content: center;
+    }
+    
+    .quick-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+</style>
+{% endblock %}
+
+{% block content_title %}
+<div class="batch-actions">
+    <h3>🚀 バッチ処理実行</h3>
+    <div class="action-buttons">
+        <a href="{% url 'admin:earnings_analysis_batchexecution_execute_batch' %}" class="action-btn action-btn-primary">
+            📊 標準バッチ実行
+        </a>
+        <a href="{% url 'admin:earnings_analysis_batchexecution_execute_daily_update' %}" class="action-btn action-btn-success">
+            ⚡ daily_update実行
+        </a>
+        <a href="{% url 'admin:earnings_analysis_documentmetadata_changelist' %}" class="action-btn action-btn-info">
+            📄 書類管理
+        </a>
+    </div>
+    
+    <!-- 簡易統計 -->
+    <div class="quick-stats">
+        <div class="stat-item">
+            <div class="stat-value">{{ total_batches|default:0 }}</div>
+            <div class="stat-label">総実行回数</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ success_batches|default:0 }}</div>
+            <div class="stat-label">成功回数</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ failed_batches|default:0 }}</div>
+            <div class="stat-label">失敗回数</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ running_batches|default:0 }}</div>
+            <div class="stat-label">実行中</div>
+        </div>
+    </div>
+</div>
+
+{{ block.super }}
+{% endblock %}

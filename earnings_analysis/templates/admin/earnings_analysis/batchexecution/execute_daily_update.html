@@ -1,0 +1,564 @@
+<!-- templates/admin/earnings_analysis/batch_execution/execute_daily_update.html -->
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block title %}daily_update実行 | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+:root {
+    --primary-color: #2563eb;
+    --primary-hover: #1d4ed8;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --secondary-color: #6b7280;
+    --light-bg: #f8fafc;
+    --white: #ffffff;
+    --border-color: #e5e7eb;
+    --text-primary: #1f2937;
+    --text-secondary: #6b7280;
+    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.batch-container {
+    max-width: 900px;
+    margin: 20px auto;
+    background: var(--white);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+}
+
+.batch-header {
+    background: linear-gradient(135deg, #059669, #047857);
+    color: white;
+    padding: 24px;
+    text-align: center;
+}
+
+.batch-header h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 600;
+}
+
+.batch-content {
+    padding: 32px;
+}
+
+.alert {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    border-radius: 8px;
+    border-left: 4px solid;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.alert-info {
+    background-color: #eff6ff;
+    border-left-color: var(--primary-color);
+    color: #1e40af;
+}
+
+.alert-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.form-section {
+    background: var(--white);
+    border-radius: 8px;
+    padding: 24px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 24px;
+}
+
+.form-section h3 {
+    margin: 0 0 20px 0;
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: 600;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.2s ease;
+    background: var(--white);
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 16px;
+    background: var(--white);
+    transition: all 0.2s ease;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-help {
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.checkbox-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.checkbox-group:hover {
+    border-color: var(--primary-color);
+    background-color: #f8fafc;
+}
+
+.checkbox-input {
+    width: 18px;
+    height: 18px;
+    margin-right: 12px;
+    cursor: pointer;
+}
+
+.checkbox-label {
+    font-weight: 500;
+    color: var(--text-primary);
+    cursor: pointer;
+    user-select: none;
+}
+
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.radio-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.radio-item:hover {
+    border-color: var(--primary-color);
+    background-color: #f8fafc;
+}
+
+.radio-item.selected {
+    border-color: var(--primary-color);
+    background-color: #eff6ff;
+}
+
+.radio-input {
+    width: 18px;
+    height: 18px;
+    margin-right: 12px;
+    cursor: pointer;
+}
+
+.radio-label {
+    font-weight: 500;
+    color: var(--text-primary);
+    cursor: pointer;
+    user-select: none;
+}
+
+.btn-group {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 32px;
+}
+
+.btn {
+    padding: 14px 28px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 140px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #059669, #047857);
+    color: white;
+    box-shadow: var(--shadow);
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
+}
+
+.btn-primary:disabled {
+    background: var(--secondary-color);
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-secondary {
+    background: var(--white);
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: var(--light-bg);
+    border-color: var(--secondary-color);
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.loading-spinner {
+    display: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid transparent;
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.btn-primary.loading .loading-spinner {
+    display: inline-block;
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 768px) {
+    .batch-container {
+        margin: 10px;
+        border-radius: 8px;
+    }
+    
+    .batch-content {
+        padding: 20px;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .checkbox-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+        margin: 4px 0;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="batch-container">
+    <div class="batch-header">
+        <h1>⚡ daily_update コマンド実行</h1>
+    </div>
+    
+    <div class="batch-content">
+        <div class="alert alert-info">
+            <svg class="alert-icon" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+            </svg>
+            <div>
+                <strong>daily_update コマンド:</strong> 日次データ更新処理を実行します。企業マスタ更新や分析処理も含まれます。
+            </div>
+        </div>
+
+        <form method="post" id="daily-update-form">
+            {% csrf_token %}
+            
+            <!-- 日付設定 -->
+            <div class="form-section">
+                <h3>📅 対象日付設定</h3>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="target_date" class="form-label">特定日付を指定</label>
+                        <input type="date" 
+                               id="target_date" 
+                               name="target_date" 
+                               class="form-input"
+                               max="{{ today|date:'Y-m-d' }}">
+                        <div class="form-help">空白の場合は自動決定されます</div>
+                    </div>
+                </div>
+
+                <div class="checkbox-grid">
+                    <div class="checkbox-group">
+                        <input type="checkbox" 
+                               id="today" 
+                               name="today" 
+                               value="1" 
+                               class="checkbox-input">
+                        <label for="today" class="checkbox-label">
+                            📆 当日データを処理
+                        </label>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" 
+                               id="yesterday" 
+                               name="yesterday" 
+                               value="1" 
+                               class="checkbox-input">
+                        <label for="yesterday" class="checkbox-label">
+                            📆 前日データを処理
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 実行オプション -->
+            <div class="form-section">
+                <h3>⚙️ 実行オプション</h3>
+                
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" 
+                               id="force" 
+                               name="force" 
+                               value="1" 
+                               class="checkbox-input">
+                        <label for="force" class="checkbox-label">
+                            🔄 既存データがあっても強制実行
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="company_update_mode" class="form-label">企業マスタ更新モード</label>
+                    <select id="company_update_mode" name="company_update_mode" class="form-select">
+                        <option value="incremental">差分更新（推奨）</option>
+                        <option value="full">全件更新</option>
+                        <option value="skip">スキップ</option>
+                    </select>
+                    <div class="form-help">差分更新は高速で、通常の運用に適しています</div>
+                </div>
+            </div>
+
+            <!-- 高度な設定 -->
+            <div class="form-section">
+                <h3>🔧 高度な設定</h3>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="api_version" class="form-label">APIバージョン</label>
+                        <select id="api_version" name="api_version" class="form-select">
+                            <option value="v2">v2（推奨）</option>
+                            <option value="v1">v1（APIキー不要）</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="retry_count" class="form-label">リトライ回数</label>
+                        <select id="retry_count" name="retry_count" class="form-select">
+                            <option value="1">1回</option>
+                            <option value="2">2回</option>
+                            <option value="3" selected>3回（推奨）</option>
+                            <option value="5">5回</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="checkbox-grid">
+                    <div class="checkbox-group">
+                        <input type="checkbox" 
+                               id="send_notification" 
+                               name="send_notification" 
+                               value="1" 
+                               class="checkbox-input">
+                        <label for="send_notification" class="checkbox-label">
+                            📧 実行結果をメール通知
+                        </label>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" 
+                               id="stop_on_error" 
+                               name="stop_on_error" 
+                               value="1" 
+                               class="checkbox-input">
+                        <label for="stop_on_error" class="checkbox-label">
+                            ⛔ エラー時即座に停止
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary" id="submit-btn">
+                    <span class="loading-spinner"></span>
+                    ⚡ daily_update実行
+                </button>
+                <a href="{% url 'admin:earnings_analysis_batchexecution_changelist' %}" class="btn btn-secondary">
+                    ↩️ キャンセル
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('daily-update-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const originalText = submitBtn.innerHTML;
+    
+    // チェックボックスの排他制御
+    const todayCheckbox = document.getElementById('today');
+    const yesterdayCheckbox = document.getElementById('yesterday');
+    const targetDateInput = document.getElementById('target_date');
+    
+    todayCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            yesterdayCheckbox.checked = false;
+            targetDateInput.value = '';
+        }
+    });
+    
+    yesterdayCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            todayCheckbox.checked = false;
+            targetDateInput.value = '';
+        }
+    });
+    
+    targetDateInput.addEventListener('change', function() {
+        if (this.value) {
+            todayCheckbox.checked = false;
+            yesterdayCheckbox.checked = false;
+        }
+    });
+    
+    // チェックボックスのクリック領域拡張
+    document.querySelectorAll('.checkbox-group').forEach(group => {
+        group.addEventListener('click', function(e) {
+            if (e.target.type !== 'checkbox') {
+                const checkbox = this.querySelector('input[type="checkbox"]');
+                checkbox.checked = !checkbox.checked;
+                checkbox.dispatchEvent(new Event('change'));
+            }
+        });
+    });
+    
+    // フォーム送信処理
+    form.addEventListener('submit', function(e) {
+        const targetDate = targetDateInput.value;
+        const today = todayCheckbox.checked;
+        const yesterday = yesterdayCheckbox.checked;
+        const force = document.getElementById('force').checked;
+        const companyUpdateMode = document.getElementById('company_update_mode').value;
+        
+        let confirmMessage = `daily_update コマンドを実行します:\n\n`;
+        
+        if (targetDate) {
+            confirmMessage += `📅 対象日付: ${targetDate}\n`;
+        } else if (today) {
+            confirmMessage += `📅 対象日付: 当日\n`;
+        } else if (yesterday) {
+            confirmMessage += `📅 対象日付: 前日\n`;
+        } else {
+            confirmMessage += `📅 対象日付: 自動決定\n`;
+        }
+        
+        confirmMessage += `🔄 強制実行: ${force ? 'はい' : 'いいえ'}\n`;
+        confirmMessage += `🏢 企業マスタ: ${companyUpdateMode}\n\n`;
+        confirmMessage += `実行しますか？`;
+        
+        if (!confirm(confirmMessage)) {
+            e.preventDefault();
+            return;
+        }
+        
+        // ボタンの状態変更
+        submitBtn.disabled = true;
+        submitBtn.classList.add('loading');
+        submitBtn.innerHTML = '<span class="loading-spinner"></span>⏳ 実行中...';
+        
+        // タイムアウト処理（15分）
+        setTimeout(function() {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('loading');
+            submitBtn.innerHTML = originalText;
+        }, 900000);
+    });
+});
+</script>
+{% endblock %}
