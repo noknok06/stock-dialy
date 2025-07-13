@@ -1,10 +1,10 @@
-# earnings_analysis/models/document.py（拡張版）
+# earnings_analysis/models/document.py（書類種別表示名対応版）
 from django.db import models
 from django.utils import timezone
 from datetime import date, datetime, timedelta
 
 class DocumentMetadata(models.Model):
-    """書類メタデータ（分析優先度機能付き）"""
+    """書類メタデータ（表示名対応版）"""
     
     # ステータス選択肢
     LEGAL_STATUS_CHOICES = [
@@ -66,7 +66,7 @@ class DocumentMetadata(models.Model):
             models.Index(fields=['securities_code', 'file_date']),
             models.Index(fields=['doc_type_code', 'legal_status']),
             models.Index(fields=['company_name', 'submit_date_time']),
-            models.Index(fields=['edinet_code', '-submit_date_time']),  # 企業詳細用
+            models.Index(fields=['edinet_code', '-submit_date_time']),
         ]
 
     def __str__(self):
@@ -83,32 +83,170 @@ class DocumentMetadata(models.Model):
             'english': self.english_doc_flag,
         }
     
-    # ========== 新規追加: 分析優先度機能 ==========
+    # ========== 書類種別表示名マッピング（拡張版） ==========
     
     # 分析適合度の高い書類種別コード
-    HIGH_PRIORITY_DOC_TYPES = ['120', '130', '140']  # 決算短信、四半期報告書、有価証券報告書
-    MEDIUM_PRIORITY_DOC_TYPES = ['150', '160']  # 半期報告書、その他四半期報告書
+    HIGH_PRIORITY_DOC_TYPES = ['120', '130', '140']
+    MEDIUM_PRIORITY_DOC_TYPES = ['150', '160', '070', '080']
     
-    # 書類種別表示名マッピング
+    # 書類種別表示名マッピング（拡張版）
     DOC_TYPE_DISPLAY_NAMES = {
-        '120': '決算短信',
+        # 決算関連書類（高優先度）
+        '120': '有価証券報告書',
         '130': '四半期報告書',
-        '140': '有価証券報告書',
-        '150': '半期報告書',
-        '160': 'その他四半期報告書',
+        '140': '半期報告書',
+        
+        # 決算関連書類（中優先度）
+        '150': '臨時報告書',
+        '160': '有価証券届出書',
+        '070': '招集通知',
+        '080': '決算短信',
+        
+        # その他の主要書類
         '110': '臨時報告書',
         '170': '確認書',
         '180': '内部統制報告書',
+        '190': '四半期レビュー報告書',
+        
+        # 公開買付関連
         '200': '公開買付届出書',
         '210': '意見表明報告書',
         '220': '対質問回答報告書',
         '230': '公開買付撤回届出書',
         '240': '公開買付報告書',
+        
+        # 大量保有報告書
         '250': '株券等大量保有報告書',
-        '260': '変更報告書',
+        '260': '変更報告書（大量保有）',
         '270': '大量保有変更報告書',
+        
+        # 投資信託・ファンド関連
+        '280': '投資信託約款',
+        '290': '運用報告書',
+        '300': '投資法人有価証券報告書',
+        '310': '投資法人半期報告書',
+        
+        # その他
         '999': 'その他',
+        '000': '不明',
     }
+    
+    # 書類種別カテゴリ分類
+    DOC_TYPE_CATEGORIES = {
+        'financial_main': {
+            'name': '主要決算書類',
+            'types': ['120', '130', '140', '080'],
+            'description': '投資判断に重要な決算関連書類',
+            'priority': 1
+        },
+        'financial_sub': {
+            'name': '補助決算書類',
+            'types': ['150', '160', '070', '170', '180', '190'],
+            'description': '追加的な財務情報を含む書類',
+            'priority': 2
+        },
+        'market_activity': {
+            'name': '市場活動関連',
+            'types': ['200', '210', '220', '230', '240'],
+            'description': '公開買付等の市場活動に関する書類',
+            'priority': 3
+        },
+        'ownership': {
+            'name': '株式保有関連',
+            'types': ['250', '260', '270'],
+            'description': '大量保有報告書等の株式保有に関する書類',
+            'priority': 4
+        },
+        'investment_trust': {
+            'name': '投資信託・REIT',
+            'types': ['280', '290', '300', '310'],
+            'description': '投資信託や不動産投資法人の書類',
+            'priority': 5
+        },
+        'others': {
+            'name': 'その他',
+            'types': ['110', '999', '000'],
+            'description': 'その他の書類',
+            'priority': 6
+        }
+    }
+    
+    @property
+    def doc_type_display_name(self):
+        """書類種別の日本語表示名"""
+        return self.DOC_TYPE_DISPLAY_NAMES.get(self.doc_type_code, f'書類種別{self.doc_type_code}')
+    
+    @property
+    def doc_type_category(self):
+        """書類種別のカテゴリを取得"""
+        for category_key, category_info in self.DOC_TYPE_CATEGORIES.items():
+            if self.doc_type_code in category_info['types']:
+                return {
+                    'key': category_key,
+                    'name': category_info['name'],
+                    'description': category_info['description'],
+                    'priority': category_info['priority']
+                }
+        return {
+            'key': 'others',
+            'name': 'その他',
+            'description': 'その他の書類',
+            'priority': 6
+        }
+    
+    @classmethod
+    def get_doc_type_choices_for_filter(cls):
+        """フィルタ用の書類種別選択肢を取得（カテゴリ別）"""
+        choices = []
+        
+        # カテゴリ別に整理
+        for category_key, category_info in cls.DOC_TYPE_CATEGORIES.items():
+            category_choices = []
+            for doc_type_code in category_info['types']:
+                display_name = cls.DOC_TYPE_DISPLAY_NAMES.get(doc_type_code, f'書類種別{doc_type_code}')
+                category_choices.append({
+                    'code': doc_type_code,
+                    'name': display_name,
+                    'full_name': f"{display_name} ({doc_type_code})"
+                })
+            
+            if category_choices:
+                choices.append({
+                    'category': category_info['name'],
+                    'priority': category_info['priority'],
+                    'choices': category_choices
+                })
+        
+        # 優先度順でソート
+        choices.sort(key=lambda x: x['priority'])
+        return choices
+    
+    @classmethod
+    def get_popular_doc_types(cls, limit=10):
+        """人気の書類種別を取得（使用頻度順）"""
+        from django.db.models import Count
+        
+        try:
+            popular_types = cls.objects.filter(
+                legal_status='1'
+            ).values('doc_type_code').annotate(
+                count=Count('id')
+            ).order_by('-count')[:limit]
+            
+            result = []
+            for item in popular_types:
+                doc_type_code = item['doc_type_code']
+                display_name = cls.DOC_TYPE_DISPLAY_NAMES.get(doc_type_code, f'書類種別{doc_type_code}')
+                result.append({
+                    'code': doc_type_code,
+                    'name': display_name,
+                    'count': item['count'],
+                    'full_name': f"{display_name} ({doc_type_code})"
+                })
+            
+            return result
+        except Exception:
+            return []
     
     @property
     def analysis_priority(self):
@@ -124,11 +262,6 @@ class DocumentMetadata(models.Model):
     def analysis_suitable(self):
         """分析に適しているか (True/False)"""
         return self.analysis_priority in ['high', 'medium']
-    
-    @property
-    def doc_type_display_name(self):
-        """書類種別の日本語表示名"""
-        return self.DOC_TYPE_DISPLAY_NAMES.get(self.doc_type_code, f'書類種別{self.doc_type_code}')
     
     @property
     def analysis_priority_badge_class(self):
@@ -153,7 +286,7 @@ class DocumentMetadata(models.Model):
     @property
     def is_financial_statement(self):
         """決算関連書類かどうか"""
-        financial_types = ['120', '130', '140', '150', '160']
+        financial_types = ['120', '130', '140', '150', '160', '070', '080']
         return self.doc_type_code in financial_types
     
     @property
@@ -174,8 +307,8 @@ class DocumentMetadata(models.Model):
             legal_status='1',
             doc_type_code__in=cls.HIGH_PRIORITY_DOC_TYPES + cls.MEDIUM_PRIORITY_DOC_TYPES
         ).order_by(
-            'doc_type_code',  # 書類種別順
-            '-submit_date_time'  # 新しい順
+            'doc_type_code',
+            '-submit_date_time'
         )[:limit]
     
     @classmethod
@@ -190,100 +323,13 @@ class DocumentMetadata(models.Model):
     @classmethod
     def get_documents_by_company(cls, edinet_code, analysis_suitable_first=True):
         """企業の書類を分析適合性順で取得"""
-        if analysis_suitable_first:
-            # 分析適合書類を先に表示
-            suitable_docs = cls.objects.filter(
-                edinet_code=edinet_code,
-                legal_status='1',
-                doc_type_code__in=cls.HIGH_PRIORITY_DOC_TYPES + cls.MEDIUM_PRIORITY_DOC_TYPES
-            ).order_by('-submit_date_time')
-            
-            other_docs = cls.objects.filter(
-                edinet_code=edinet_code,
-                legal_status='1'
-            ).exclude(
-                doc_type_code__in=cls.HIGH_PRIORITY_DOC_TYPES + cls.MEDIUM_PRIORITY_DOC_TYPES
-            ).order_by('-submit_date_time')
-            
-            return {
-                'suitable': list(suitable_docs),
-                'others': list(other_docs)
-            }
-        else:
-            return cls.objects.filter(
-                edinet_code=edinet_code,
-                legal_status='1'
-            ).order_by('-submit_date_time')
-    
-    @property
-    def financial_analysis_url(self):
-        """財務分析URL"""
-        from django.urls import reverse
-        return reverse('earnings_analysis:financial-analysis', args=[self.doc_id])
-    
-    @property
-    def sentiment_analysis_url(self):
-        """感情分析URL"""
-        from django.urls import reverse
-        return reverse('earnings_analysis:sentiment-analysis', args=[self.doc_id])
-    
-    @property
-    def comprehensive_analysis_url(self):
-        """包括分析URL"""
-        from django.urls import reverse
-        return reverse('earnings_analysis:financial-analysis', args=[self.doc_id])  # 暫定的に財務分析を使用
-    
-    @property
-    def detail_url(self):
-        """書類詳細URL"""
-        from django.urls import reverse
-        return reverse('earnings_analysis:document-detail-ui', args=[self.doc_id])
-    
-    def get_analysis_url(self, analysis_type='comprehensive'):
-        """分析URLを取得（後方互換性のため残す）"""
-        if analysis_type == 'comprehensive':
-            return self.comprehensive_analysis_url
-        elif analysis_type == 'sentiment':
-            return self.sentiment_analysis_url
-        elif analysis_type == 'financial':
-            return self.financial_analysis_url
-        else:
-            return self.detail_url
-    
-    def has_recent_analysis(self, hours=24):
-        """最近の分析実行があるかチェック"""
-        from django.utils import timezone
-        from datetime import timedelta
-        
-        recent_time = timezone.now() - timedelta(hours=hours)
-        
-        # 感情分析履歴をチェック
-        from .sentiment import SentimentAnalysisHistory
-        has_sentiment = SentimentAnalysisHistory.objects.filter(
-            document=self,
-            analysis_date__gte=recent_time
-        ).exists()
-        
-        # 財務分析履歴をチェック
-        from .financial import FinancialAnalysisHistory
-        has_financial = FinancialAnalysisHistory.objects.filter(
-            document=self,
-            analysis_date__gte=recent_time
-        ).exists()
-        
-        return has_sentiment or has_financial
-
-
-    @classmethod
-    def get_documents_by_company(cls, edinet_code, analysis_suitable_first=True):
-        """企業の書類を分析適合度順で取得"""
         try:
             if analysis_suitable_first:
                 # 分析に適した書類（決算関連）を優先
                 suitable_docs = cls.objects.filter(
                     edinet_code=edinet_code,
                     legal_status='1',
-                    doc_type_code__in=['120', '130', '140', '150', '160', '070', '080']
+                    doc_type_code__in=cls.HIGH_PRIORITY_DOC_TYPES + cls.MEDIUM_PRIORITY_DOC_TYPES
                 ).order_by('-submit_date_time')
                 
                 # その他の書類
@@ -291,7 +337,7 @@ class DocumentMetadata(models.Model):
                     edinet_code=edinet_code,
                     legal_status='1'
                 ).exclude(
-                    doc_type_code__in=['120', '130', '140', '150', '160', '070', '080']
+                    doc_type_code__in=cls.HIGH_PRIORITY_DOC_TYPES + cls.MEDIUM_PRIORITY_DOC_TYPES
                 ).order_by('-submit_date_time')
                 
                 return {
@@ -310,34 +356,7 @@ class DocumentMetadata(models.Model):
                 }
                 
         except Exception as e:
-            # エラー時は空のリストを返す
             return {'suitable': [], 'others': []}
-    
-    @classmethod
-    def get_latest_financial_document(cls, edinet_code):
-        """最新の決算関連書類を取得"""
-        try:
-            return cls.objects.filter(
-                edinet_code=edinet_code,
-                legal_status='1',
-                doc_type_code__in=['120', '130', '140', '150', '160']
-            ).order_by('-submit_date_time').first()
-        except Exception:
-            return None
-    
-    @classmethod
-    def get_recommended_for_analysis(cls, edinet_code, limit=3):
-        """分析推奨書類を取得"""
-        try:
-            # XBRLがあり、決算関連で、比較的新しい書類を優先
-            return cls.objects.filter(
-                edinet_code=edinet_code,
-                legal_status='1',
-                xbrl_flag=True,
-                doc_type_code__in=['120', '130', '140', '150', '160']
-            ).order_by('-submit_date_time')[:limit]
-        except Exception:
-            return []
     
     def has_recent_analysis(self, hours=1):
         """最近分析が実行されたかチェック"""
@@ -347,14 +366,12 @@ class DocumentMetadata(models.Model):
             
             cutoff_time = timezone.now() - timedelta(hours=hours)
             
-            # 感情分析の確認
             recent_sentiment = SentimentAnalysisSession.objects.filter(
                 document=self,
                 processing_status='COMPLETED',
                 created_at__gte=cutoff_time
             ).exists()
             
-            # 財務分析の確認
             recent_financial = FinancialAnalysisSession.objects.filter(
                 document=self,
                 processing_status='COMPLETED', 
@@ -367,25 +384,6 @@ class DocumentMetadata(models.Model):
             return False
     
     @property
-    def doc_type_display_name(self):
-        """書類種別の表示名"""
-        doc_type_names = {
-            '120': '有価証券報告書',
-            '130': '四半期報告書', 
-            '140': '半期報告書',
-            '150': '臨時報告書',
-            '160': '有価証券届出書',
-            '070': '招集通知',
-            '080': '決算短信',
-        }
-        return doc_type_names.get(self.doc_type_code, self.doc_type_code)
-    
-    @property
-    def is_financial_document(self):
-        """決算関連書類かどうか"""
-        return self.doc_type_code in ['120', '130', '140', '150', '160', '070', '080']
-    
-    @property
     def analysis_suitability_score(self):
         """分析適合度スコア（高いほど分析に適している）"""
         score = 0
@@ -395,19 +393,55 @@ class DocumentMetadata(models.Model):
             score += 50
             
         # 決算関連書類は高スコア
-        if self.is_financial_document:
+        if self.is_financial_statement:
             score += 30
             
         # 新しい書類ほど高スコア
         if self.submit_date_time:
             days_old = (timezone.now() - self.submit_date_time).days
-            if days_old < 30:  # 1ヶ月以内
+            if days_old < 30:
                 score += 20
-            elif days_old < 90:  # 3ヶ月以内
+            elif days_old < 90:
                 score += 10
                 
         # PDFがあると少しプラス
         if self.pdf_flag:
             score += 5
             
-        return score    
+        return score
+    
+    # URL関連プロパティ
+    @property
+    def financial_analysis_url(self):
+        """財務分析URL"""
+        from django.urls import reverse
+        return reverse('earnings_analysis:financial-analysis', args=[self.doc_id])
+    
+    @property
+    def sentiment_analysis_url(self):
+        """感情分析URL"""
+        from django.urls import reverse
+        return reverse('earnings_analysis:sentiment-analysis', args=[self.doc_id])
+    
+    @property
+    def comprehensive_analysis_url(self):
+        """包括分析URL"""
+        from django.urls import reverse
+        return reverse('earnings_analysis:financial-analysis', args=[self.doc_id])
+    
+    @property
+    def detail_url(self):
+        """書類詳細URL"""
+        from django.urls import reverse
+        return reverse('earnings_analysis:document-detail-ui', args=[self.doc_id])
+    
+    def get_analysis_url(self, analysis_type='comprehensive'):
+        """分析URLを取得（後方互換性のため残す）"""
+        if analysis_type == 'comprehensive':
+            return self.comprehensive_analysis_url
+        elif analysis_type == 'sentiment':
+            return self.sentiment_analysis_url
+        elif analysis_type == 'financial':
+            return self.financial_analysis_url
+        else:
+            return self.detail_url

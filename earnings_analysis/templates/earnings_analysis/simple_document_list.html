@@ -1,4 +1,4 @@
-<!-- earnings_analysis/templates/earnings_analysis/simple_document_list.html -->
+<!-- earnings_analysis/templates/earnings_analysis/simple_document_list.html（書類種別表示名対応版） -->
 {% extends 'earnings_analysis/simple_base.html' %}
 
 {% block title %}書類一覧 -コーポマインドリーダー{% endblock %}
@@ -13,6 +13,14 @@
         {% if search_params.company %}
             <p class="text-muted mb-0">
                 検索結果: 「<span class="fw-semibold">{{ search_params.company }}</span>」
+                {% if selected_doc_type_name %}
+                    , 書類種別: 「<span class="fw-semibold">{{ selected_doc_type_name }}</span>」
+                {% endif %}
+                <span class="badge bg-primary ms-2">{{ total_count }}件</span>
+            </p>
+        {% elif selected_doc_type_name %}
+            <p class="text-muted mb-0">
+                書類種別: 「<span class="fw-semibold">{{ selected_doc_type_name }}</span>」
                 <span class="badge bg-primary ms-2">{{ total_count }}件</span>
             </p>
         {% else %}
@@ -27,7 +35,7 @@
         <button type="button" class="btn btn-outline-primary" data-bs-toggle="collapse" 
                 data-bs-target="#filterCollapse" aria-expanded="false">
             <i class="fas fa-filter me-1"></i>フィルタ
-            {% if search_params.company or search_params.doc_type or search_params.from_date or search_params.to_date %}
+            {% if search_params.company or search_params.doc_type or search_params.doc_type_name or search_params.from_date or search_params.to_date %}
                 <span class="badge bg-primary ms-1">ON</span>
             {% endif %}
         </button>
@@ -50,16 +58,26 @@
                 </div>
                 
                 <div class="col-12 col-md-6 col-lg-3">
-                    <label for="doc_type" class="form-label fw-semibold">書類種別</label>
-                    <select class="form-select" id="doc_type" name="doc_type">
-                        <option value="">すべて</option>
-                        {% for doc_type in doc_types %}
-                            <option value="{{ doc_type.doc_type_code }}" 
-                                    {% if doc_type.doc_type_code == search_params.doc_type %}selected{% endif %}>
-                                {{ doc_type.doc_type_code }} ({{ doc_type.count }}件)
-                            </option>
+                    <label for="doc_type_name" class="form-label fw-semibold">書類種別</label>
+                    <select class="form-select" id="doc_type_name" name="doc_type_name">
+                        <option value="">すべての書類種別</option>
+                        
+                        <!-- カテゴリ別の書類種別 -->
+                        {% for category in categorized_choices %}
+                            <optgroup label="{{ category.category }}">
+                                {% for choice in category.choices %}
+                                    <option value="{{ choice.name }}" 
+                                            {% if choice.name == search_params.doc_type_name %}selected{% endif %}>
+                                        {{ choice.name }}
+                                    </option>
+                                {% endfor %}
+                            </optgroup>
                         {% endfor %}
                     </select>
+                    <small class="text-muted mt-1">
+                        <i class="fas fa-info-circle me-1"></i>
+                        書類の正式名称で検索できます
+                    </small>
                 </div>
                 
                 <div class="col-6 col-md-3 col-lg-2">
@@ -147,10 +165,20 @@
                                     {% endif %}
                                     <span>
                                         <i class="fas fa-tag me-1"></i>
-                                        {{ document.doc_type_code }}
+                                        <strong>{{ document.doc_type_display_name }}</strong>
+                                        <small class="text-muted">({{ document.doc_type_code }})</small>
                                     </span>
                                 </div>
                             </div>
+                            
+                            <!-- Analysis Priority Badge -->
+                            {% if document.analysis_suitable %}
+                                <div class="mt-2">
+                                    <span class="badge {{ document.analysis_priority_badge_class }} small">
+                                        <i class="fas fa-star me-1"></i>{{ document.analysis_priority_display }}
+                                    </span>
+                                </div>
+                            {% endif %}
                             
                             <!-- Document Types Available -->
                             <div class="mt-2">
@@ -301,6 +329,8 @@
             検索条件を変更して再度お試しください。<br>
             または、フィルタをクリアして全書類を表示できます。
         </p>
+    
+        
         <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
             <a href="{% url 'earnings_analysis:index' %}" class="btn btn-primary">
                 <i class="fas fa-home me-1"></i>ホームに戻る
@@ -364,7 +394,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (input.type === 'date' || input.tagName === 'SELECT') {
                 input.addEventListener('change', function() {
                     // Auto-submit for date and select inputs
-                    if (this.value) {
+                    if (this.value && this.name !== 'doc_type_name') {
                         setTimeout(() => {
                             filterForm.submit();
                         }, 300);
@@ -372,26 +402,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
         });
-    }
-
-    // Infinite scroll for mobile (optional enhancement)
-    if (window.innerWidth <= 768 && document.querySelector('.pagination')) {
-        let loading = false;
         
-        window.addEventListener('scroll', function() {
-            if (loading) return;
-            
-            const scrollPosition = window.innerHeight + window.scrollY;
-            const documentHeight = document.documentElement.offsetHeight;
-            
-            if (scrollPosition >= documentHeight - 1000) {
-                const nextPageLink = document.querySelector('.page-item .page-link[aria-label="次のページ"]');
-                if (nextPageLink) {
-                    loading = true;
-                    loadNextPage(nextPageLink.href);
+        // Special handling for document type select
+        const docTypeSelect = document.getElementById('doc_type_name');
+        if (docTypeSelect) {
+            docTypeSelect.addEventListener('change', function() {
+                if (this.value) {
+                    // Show loading indicator
+                    this.style.backgroundColor = '#e3f2fd';
+                    setTimeout(() => {
+                        filterForm.submit();
+                    }, 200);
                 }
-            }
-        });
+            });
+        }
     }
 
     // Smooth animations for document cards
@@ -414,6 +438,17 @@ document.addEventListener('DOMContentLoaded', function() {
         card.style.transform = 'translateY(20px)';
         card.style.transition = `opacity 0.6s ease ${index * 0.1}s, transform 0.6s ease ${index * 0.1}s`;
         documentObserver.observe(card);
+    });
+    
+    // Quick filter tag click animation
+    document.querySelectorAll('a[href*="doc_type_name"]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            this.style.transform = 'scale(0.95)';
+            this.style.transition = 'transform 0.1s ease';
+            setTimeout(() => {
+                this.style.transform = 'scale(1)';
+            }, 100);
+        });
     });
 });
 
@@ -489,38 +524,32 @@ function showToast(message, type = 'info') {
 
     toast.addEventListener('hidden.bs.toast', () => toast.remove());
 }
-
-// Load next page for infinite scroll
-function loadNextPage(url) {
-    fetch(url)
-        .then(response => response.text())
-        .then(html => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const newCards = doc.querySelectorAll('.document-card');
-            const container = document.getElementById('documentContainer');
-            
-            newCards.forEach(card => {
-                container.appendChild(card);
-            });
-            
-            // Update pagination
-            const newPagination = doc.querySelector('.pagination');
-            const currentPagination = document.querySelector('.pagination');
-            if (newPagination && currentPagination) {
-                currentPagination.parentNode.replaceChild(newPagination, currentPagination);
-            }
-            
-            loading = false;
-        })
-        .catch(error => {
-            console.error('Error loading next page:', error);
-            loading = false;
-        });
-}
 </script>
 
 <style>
+/* Enhanced document card styles */
+.document-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.document-card:hover {
+    border-left-color: #007bff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Document type badges */
+.document-card .badge {
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+/* Quick filter tags */
+.btn-outline-primary.btn-sm:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,123,255,0.3);
+}
+
 /* List view styles */
 .list-view .document-card {
     margin-bottom: 0.5rem;
@@ -567,13 +596,34 @@ function loadNextPage(url) {
     pointer-events: none;
 }
 
-/* Hover effects for desktop */
-@media (min-width: 768px) {
-    .document-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
-        transition: all 0.2s ease;
-    }
+/* Filter section improvements */
+#filterCollapse .form-select {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+/* Optgroup styling */
+#filterCollapse optgroup {
+    font-weight: 600;
+    color: #495057;
+}
+
+#filterCollapse optgroup option {
+    font-weight: normal;
+    padding-left: 1rem;
+}
+
+/* Analysis priority badges */
+.badge.bg-success {
+    background-color: #28a745 !important;
+}
+
+.badge.bg-info {
+    background-color: #17a2b8 !important;
+}
+
+.badge.bg-secondary {
+    background-color: #6c757d !important;
 }
 
 /* Focus styles for accessibility */
@@ -601,6 +651,16 @@ function loadNextPage(url) {
     #toast-container .toast {
         width: 100%;
     }
+}
+
+/* Search highlight animation */
+.selected-filter {
+    animation: highlightFilter 2s ease-in-out;
+}
+
+@keyframes highlightFilter {
+    0% { background-color: #fff3cd; }
+    100% { background-color: transparent; }
 }
 </style>
 {% endblock %}

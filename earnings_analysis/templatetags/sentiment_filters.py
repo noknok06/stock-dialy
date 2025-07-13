@@ -1,11 +1,10 @@
-# earnings_analysis/templatetags/sentiment_filters.py
+# earnings_analysis/templatetags/sentiment_filters.py（書類種別表示名対応版）
 from django import template
 from django.utils.safestring import mark_safe
 import json
 import re
 import logging
 
-# 既存のloggingが未定義の場合
 logger = logging.getLogger(__name__)
 register = template.Library()
 
@@ -93,6 +92,145 @@ def sentiment_progress_bar(positive_count, negative_count, total_count):
     </div>
     '''
     return mark_safe(html)
+
+# ====================
+# 書類種別表示名関連フィルター（新規追加）
+# ====================
+
+@register.filter
+def doc_type_display_name(doc_type_code):
+    """書類種別コードを表示名に変換"""
+    try:
+        from ..models import DocumentMetadata
+        return DocumentMetadata.DOC_TYPE_DISPLAY_NAMES.get(
+            str(doc_type_code), 
+            f'書類種別{doc_type_code}'
+        )
+    except Exception:
+        return f'書類種別{doc_type_code}'
+
+@register.filter
+def doc_type_category_name(doc_type_code):
+    """書類種別コードからカテゴリ名を取得"""
+    try:
+        from ..models import DocumentMetadata
+        
+        for category_key, category_info in DocumentMetadata.DOC_TYPE_CATEGORIES.items():
+            if str(doc_type_code) in category_info['types']:
+                return category_info['name']
+        return 'その他'
+    except Exception:
+        return 'その他'
+
+@register.filter
+def doc_type_category_info(doc_type_code):
+    """書類種別コードからカテゴリ情報（辞書）を取得"""
+    try:
+        from ..models import DocumentMetadata
+        
+        for category_key, category_info in DocumentMetadata.DOC_TYPE_CATEGORIES.items():
+            if str(doc_type_code) in category_info['types']:
+                return {
+                    'key': category_key,
+                    'name': category_info['name'],
+                    'description': category_info['description'],
+                    'priority': category_info['priority']
+                }
+        return {
+            'key': 'others',
+            'name': 'その他',
+            'description': 'その他の書類',
+            'priority': 6
+        }
+    except Exception:
+        return {'key': 'others', 'name': 'その他', 'description': '', 'priority': 6}
+
+@register.filter
+def is_financial_doc_type(doc_type_code):
+    """決算関連書類かどうかを判定"""
+    try:
+        from ..models import DocumentMetadata
+        financial_types = DocumentMetadata.HIGH_PRIORITY_DOC_TYPES + DocumentMetadata.MEDIUM_PRIORITY_DOC_TYPES
+        return str(doc_type_code) in financial_types
+    except Exception:
+        return False
+
+@register.filter
+def doc_type_analysis_priority(doc_type_code):
+    """書類種別の分析優先度を取得"""
+    try:
+        from ..models import DocumentMetadata
+        
+        if str(doc_type_code) in DocumentMetadata.HIGH_PRIORITY_DOC_TYPES:
+            return 'high'
+        elif str(doc_type_code) in DocumentMetadata.MEDIUM_PRIORITY_DOC_TYPES:
+            return 'medium'
+        else:
+            return 'low'
+    except Exception:
+        return 'low'
+
+@register.filter
+def doc_type_priority_badge_class(doc_type_code):
+    """書類種別優先度に応じたバッジクラス"""
+    priority = doc_type_analysis_priority(doc_type_code)
+    priority_classes = {
+        'high': 'bg-success',
+        'medium': 'bg-info',
+        'low': 'bg-secondary'
+    }
+    return priority_classes.get(priority, 'bg-secondary')
+
+@register.filter
+def doc_type_priority_display(doc_type_code):
+    """書類種別優先度の日本語表示"""
+    priority = doc_type_analysis_priority(doc_type_code)
+    priority_display = {
+        'high': '分析推奨',
+        'medium': '分析可能',
+        'low': '分析困難'
+    }
+    return priority_display.get(priority, '分析困難')
+
+
+@register.simple_tag
+def categorized_doc_types():
+    """カテゴリ別書類種別リストを取得"""
+    try:
+        from ..models import DocumentMetadata
+        return DocumentMetadata.get_doc_type_choices_for_filter()
+    except Exception:
+        return []
+
+@register.filter
+def doc_type_search_url(doc_type_code, base_url='/earnings_analysis/documents/'):
+    """書類種別での検索URLを生成"""
+    try:
+        from django.utils.http import urlencode
+        from ..models import DocumentMetadata
+        
+        display_name = DocumentMetadata.DOC_TYPE_DISPLAY_NAMES.get(
+            str(doc_type_code), 
+            f'書類種別{doc_type_code}'
+        )
+        
+        params = {'doc_type_name': display_name}
+        return f"{base_url}?{urlencode(params)}"
+    except Exception:
+        return base_url
+
+@register.filter
+def doc_type_with_code(doc_type_code):
+    """書類種別の表示名とコードを組み合わせた表示"""
+    try:
+        from ..models import DocumentMetadata
+        display_name = DocumentMetadata.DOC_TYPE_DISPLAY_NAMES.get(
+            str(doc_type_code), 
+            f'書類種別{doc_type_code}'
+        )
+        return f"{display_name} ({doc_type_code})"
+    except Exception:
+        return f'書類種別{doc_type_code}'
 
 # ====================
 # 通貨・財務データ表示フィルター
@@ -507,7 +645,7 @@ def keyword_cloud(keywords, total_count=None):
     
 @register.filter
 def highlight_all_keywords(text, keywords):
-    """複数キーワードを一度にハイライト（新規）"""
+    """複数キーワードを一度にハイライト"""
     if not text or not keywords:
         return text
     
@@ -532,8 +670,6 @@ def highlight_all_keywords(text, keywords):
                 )
     
     return mark_safe(highlighted_text)
-
-# earnings_analysis/templatetags/sentiment_filters.py の末尾に追加
 
 @register.filter
 def prepare_wordcloud_data(keyword_frequency_data, min_count=2):

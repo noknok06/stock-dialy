@@ -1,4 +1,4 @@
-# earnings_analysis/views/ui.py（CompanyDetailView追加版）
+# earnings_analysis/views/ui.py（書類種別表示名対応版）
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -50,7 +50,7 @@ class IndexView(TemplateView):
 
 
 class CompanyDetailView(TemplateView):
-    """企業詳細ページ（新規実装）"""
+    """企業詳細ページ"""
     template_name = 'earnings_analysis/company_detail.html'
     
     def get_context_data(self, **kwargs):
@@ -70,8 +70,8 @@ class CompanyDetailView(TemplateView):
             analysis_suitable_first=True
         )
         
-        suitable_documents = documents_data['suitable'][:10]  # 上位10件
-        other_documents = documents_data['others'][:20]  # 上位20件
+        suitable_documents = documents_data['suitable'][:10]
+        other_documents = documents_data['others'][:20]
         
         # 最新の決算関連書類（ワンクリック分析用）
         latest_financial = DocumentMetadata.get_latest_financial_document(edinet_code)
@@ -86,13 +86,25 @@ class CompanyDetailView(TemplateView):
                 legal_status='1'
             ).count()
             
-            # 書類種別統計
-            doc_type_stats = DocumentMetadata.objects.filter(
+            # 書類種別統計（表示名付き）
+            doc_type_stats_raw = DocumentMetadata.objects.filter(
                 edinet_code=edinet_code,
                 legal_status='1'
             ).values('doc_type_code').annotate(
                 count=Count('id')
             ).order_by('-count')[:5]
+            
+            doc_type_stats = []
+            for stat in doc_type_stats_raw:
+                doc_type_code = stat['doc_type_code']
+                display_name = DocumentMetadata.DOC_TYPE_DISPLAY_NAMES.get(
+                    doc_type_code, f'書類種別{doc_type_code}'
+                )
+                doc_type_stats.append({
+                    'doc_type_code': doc_type_code,
+                    'display_name': display_name,
+                    'count': stat['count']
+                })
             
             # 最新書類日付
             latest_doc = DocumentMetadata.objects.filter(
@@ -138,7 +150,7 @@ class CompanyDetailView(TemplateView):
 
 
 class DocumentListView(TemplateView):
-    """書類一覧ページ"""
+    """書類一覧ページ（書類種別表示名対応版）"""
     template_name = 'earnings_analysis/simple_document_list.html'
     
     def get_context_data(self, **kwargs):
@@ -147,6 +159,7 @@ class DocumentListView(TemplateView):
         # クエリパラメータ取得
         company_query = self.request.GET.get('company', '').strip()
         doc_type = self.request.GET.get('doc_type', '')
+        doc_type_name = self.request.GET.get('doc_type_name', '')  # 表示名での検索
         from_date = self.request.GET.get('from_date', '')
         to_date = self.request.GET.get('to_date', '')
         page = self.request.GET.get('page', 1)
@@ -168,15 +181,12 @@ class DocumentListView(TemplateView):
             # 2. 証券コードでの検索（改良版）
             if company_query.isdigit():
                 if len(company_query) == 4:
-                    # 4桁: 7203 → 72030にもマッチ
                     search_conditions |= Q(securities_code__startswith=company_query)
                     search_conditions |= Q(securities_code__exact=company_query)
                 elif len(company_query) == 5:
-                    # 5桁: そのまま検索、4桁でも検索
                     search_conditions |= Q(securities_code__exact=company_query)
                     search_conditions |= Q(securities_code__startswith=company_query[:4])
                 else:
-                    # その他: 部分一致
                     search_conditions |= Q(securities_code__icontains=company_query)
             
             # 3. EDINETコードでの検索
@@ -190,10 +200,21 @@ class DocumentListView(TemplateView):
             
             documents = documents.filter(search_conditions)
         
-        # その他のフィルタリング
+        # 書類種別フィルタリング
         if doc_type:
+            # 従来のコードでのフィルタリング
             documents = documents.filter(doc_type_code=doc_type)
+        elif doc_type_name:
+            # 表示名でのフィルタリング（逆引き）
+            matching_code = None
+            for code, name in DocumentMetadata.DOC_TYPE_DISPLAY_NAMES.items():
+                if name == doc_type_name:
+                    matching_code = code
+                    break
+            if matching_code:
+                documents = documents.filter(doc_type_code=matching_code)
         
+        # その他のフィルタリング
         if from_date:
             try:
                 from_dt = timezone.make_aware(datetime.strptime(from_date, '%Y-%m-%d'))
@@ -221,15 +242,23 @@ class DocumentListView(TemplateView):
         except EmptyPage:
             documents_page = paginator.page(paginator.num_pages)
         
-        # 書類種別の選択肢
+        # 書類種別の選択肢（表示名付き、カテゴリ別）
         try:
-            doc_types = DocumentMetadata.objects.filter(
-                legal_status='1'
-            ).values('doc_type_code').annotate(
-                count=Count('id')
-            ).order_by('-count')[:10]
-        except Exception:
-            doc_types = []
+            # カテゴリ別の選択肢も取得
+            categorized_choices = DocumentMetadata.get_doc_type_choices_for_filter()
+            
+        except Exception as e:
+            logger.error(f"書類種別選択肢取得エラー: {e}")
+            categorized_choices = []
+        
+        # 現在の検索パラメータの表示名を解決
+        selected_doc_type_name = ''
+        if doc_type:
+            selected_doc_type_name = DocumentMetadata.DOC_TYPE_DISPLAY_NAMES.get(
+                doc_type, f'書類種別{doc_type}'
+            )
+        elif doc_type_name:
+            selected_doc_type_name = doc_type_name
         
         # デバッグ情報
         debug_info = {
@@ -238,17 +267,21 @@ class DocumentListView(TemplateView):
             'filtered_count': paginator.count,
             'search_query': company_query,
             'has_data': total_active_documents > 0,
+            'selected_doc_type': doc_type,
+            'selected_doc_type_name': selected_doc_type_name,
         }
         
         context.update({
             'documents': documents_page,
-            'doc_types': doc_types,
+            'categorized_choices': categorized_choices,
             'search_params': {
                 'company': company_query,
                 'doc_type': doc_type,
+                'doc_type_name': doc_type_name,
                 'from_date': from_date,
                 'to_date': to_date,
             },
+            'selected_doc_type_name': selected_doc_type_name,
             'total_count': paginator.count,
             'debug_info': debug_info,
         })
@@ -290,10 +323,8 @@ class DocumentDetailView(TemplateView):
         return context
 
 
-# earnings_analysis/views/ui.py の CompanySearchAPIView部分を修正
-
 class CompanySearchAPIView(TemplateView):
-    """企業検索API（修正版）"""
+    """企業検索API"""
     
     def get(self, request, *args, **kwargs):
         query = request.GET.get('q', '').strip()
@@ -330,15 +361,17 @@ class CompanySearchAPIView(TemplateView):
                     'has_analysis_ready': company_data['financial_count'] > 0,
                     'latest_financial_date': None,
                     'latest_financial_type': None,
+                    'latest_financial_type_name': None,  # 表示名を追加
                     'match_type': self._get_match_type(query, company),
                     'relevance_score': self._calculate_relevance_score(query, company)
                 }
                 
-                # 最新決算情報
+                # 最新決算情報（表示名付き）
                 if latest_financial:
                     result.update({
                         'latest_financial_date': latest_financial.submit_date_time.strftime('%Y-%m-%d'),
                         'latest_financial_type': latest_financial.doc_description[:30] + '...' if len(latest_financial.doc_description) > 30 else latest_financial.doc_description,
+                        'latest_financial_type_name': latest_financial.doc_type_display_name,
                     })
                 
                 results.append(result)
@@ -476,3 +509,37 @@ class CompanySearchAPIView(TemplateView):
             score += 50
         
         return score
+
+
+class DocumentTypeAPIView(TemplateView):
+    """書類種別API（新規追加）"""
+    
+    def get(self, request, *args, **kwargs):
+        try:
+            
+            # カテゴリ別の書類種別
+            categorized_types = DocumentMetadata.get_doc_type_choices_for_filter()
+            
+            # 全ての書類種別マッピング
+            all_types = []
+            for code, name in DocumentMetadata.DOC_TYPE_DISPLAY_NAMES.items():
+                all_types.append({
+                    'code': code,
+                    'name': name,
+                    'full_name': f"{name} ({code})"
+                })
+            
+            return JsonResponse({
+                'popular_types': popular_types,
+                'categorized_types': categorized_types,
+                'all_types': all_types
+            })
+            
+        except Exception as e:
+            logger.error(f"書類種別API エラー: {e}")
+            return JsonResponse({
+                'popular_types': [],
+                'categorized_types': [],
+                'all_types': [],
+                'error': str(e)
+            })

@@ -1,4 +1,4 @@
-<!-- earnings_analysis/templates/earnings_analysis/simple_index.html（検索候補改善版） -->
+<!-- earnings_analysis/templates/earnings_analysis/simple_index.html（書類種別表示名対応版） -->
 {% extends 'earnings_analysis/simple_base.html' %}
 
 {% block title %}ホーム -コーポマインドリーダー{% endblock %}
@@ -11,15 +11,13 @@
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     border: 1px solid #dee2e6;
-    max-height: 60vh; /* ビューポートの60%までの高さ */
+    max-height: 60vh;
     overflow-y: auto;
-    /* スマホでのスクロール改善 */
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
     scrollbar-color: #cbd5e0 #f8f9fa;
 }
 
-/* Webkit系ブラウザのスクロールバー */
 .search-suggestions::-webkit-scrollbar {
     width: 8px;
 }
@@ -40,11 +38,11 @@
 
 /* 候補項目の改善 */
 .suggestion-item {
-    padding: 16px !important; /* 縦幅を大幅に増加 */
+    padding: 16px !important;
     border-bottom: 1px solid #e9ecef;
     cursor: pointer;
     transition: all 0.2s ease;
-    min-height: 80px; /* 最小高さを設定 */
+    min-height: 80px;
     display: flex;
     align-items: center;
 }
@@ -62,15 +60,14 @@
 /* スマホでのタッチ領域改善 */
 @media (max-width: 768px) {
     .suggestion-item {
-        padding: 20px 16px !important; /* スマホでさらに大きく */
+        padding: 20px 16px !important;
         min-height: 90px;
     }
     
     .search-suggestions {
-        max-height: 50vh; /* スマホでは少し小さく */
+        max-height: 50vh;
     }
     
-    /* フォントサイズを少し大きく */
     .suggestion-item .fw-semibold {
         font-size: 1.1rem;
     }
@@ -111,6 +108,19 @@
     font-size: 0.85rem;
     color: #6c757d;
     z-index: 10;
+}
+
+/* 書類種別表示名用のスタイル */
+.doc-type-display {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.latest-doc-info {
+    background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+    border-radius: 6px;
+    padding: 6px 10px;
+    margin-top: 8px;
 }
 </style>
 {% endblock %}
@@ -613,6 +623,18 @@ function createSuggestionItem(company, index, query) {
         '<span class="badge bg-success ms-2">分析可能</span>' : 
         '<span class="badge bg-secondary ms-2">書類のみ</span>';
     
+    // 最新決算書類の表示名対応
+    let latestDocInfo = '';
+    if (company.latest_financial_date && company.latest_financial_type_name) {
+        latestDocInfo = `
+            <div class="latest-doc-info">
+                <i class="fas fa-chart-line me-1"></i>
+                <span class="doc-type-display">${company.latest_financial_type_name}</span>
+                <small class="text-muted ms-1">(${new Date(company.latest_financial_date).toLocaleDateString('ja-JP')})</small>
+            </div>
+        `;
+    }
+    
     item.innerHTML = `
         <div class="d-flex justify-content-between align-items-start w-100">
             <div class="flex-grow-1 pe-3">
@@ -626,12 +648,7 @@ function createSuggestionItem(company, index, query) {
                     ${company.securities_code && company.edinet_code ? ' | ' : ''}
                     EDINET: ${company.edinet_code}
                 </div>
-                ${company.latest_financial_date ? `
-                    <div class="small text-success">
-                        <i class="fas fa-chart-line me-1"></i>
-                        最新決算: ${new Date(company.latest_financial_date).toLocaleDateString('ja-JP')}
-                    </div>
-                ` : ''}
+                ${latestDocInfo}
             </div>
             <div class="text-end flex-shrink-0">
                 <div class="badge bg-primary rounded-pill mb-1">${company.document_count}件</div>
@@ -735,7 +752,6 @@ function showError() {
     hideSearchStatus();
     hideNoResults();
     suggestionCount.style.display = 'none';
-    // Could add error display here
 }
 
 function escapeHtml(text) {
