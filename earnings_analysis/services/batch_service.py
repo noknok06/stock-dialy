@@ -6,7 +6,7 @@ from django.db import transaction
 from django.conf import settings
 
 from ..models import BatchExecution, DocumentMetadata, Company
-from .edinet_document_service import EdinetDocumentService
+from .document_service import EdinetDocumentService
 
 logger = logging.getLogger(__name__)
 

@@ -19,6 +19,7 @@ from .models import (
     CompanyFinancialData, FinancialBenchmark
 )
 
+# ログ設定（最優先で設定）
 logger = logging.getLogger(__name__)
 
 # Admin Site の設定
@@ -594,50 +595,61 @@ class BatchExecutionAdmin(admin.ModelAdmin):
     date_hierarchy = 'batch_date'
     ordering = ['-batch_date']
     
-    # カスタムURLとビューを追加
     def get_urls(self):
+        """カスタムURLパターンを追加"""
         urls = super().get_urls()
         custom_urls = [
-            path('execute-batch/', self.admin_site.admin_view(self.execute_batch_view), name='execute_batch'),
+            path('execute-batch/', 
+                 self.admin_site.admin_view(self.execute_batch_view), 
+                 name='earnings_analysis_batchexecution_execute_batch'),
+            path('execute-daily-update/', 
+                 self.admin_site.admin_view(self.execute_daily_update_view), 
+                 name='earnings_analysis_batchexecution_execute_daily_update'),
         ]
         return custom_urls + urls
     
-    fieldsets = (
-        ('実行情報', {
-            'fields': ('batch_date', 'status', 'started_at', 'completed_at', 'duration_display'),
-            'description': 'バッチ処理の実行状況'
-        }),
-        ('処理結果', {
-            'fields': ('processed_count',),
-            'description': '処理された書類数'
-        }),
-        ('エラー情報', {
-            'fields': ('error_message', 'error_details'),
-            'classes': ('collapse',),
-            'description': 'エラーが発生した場合の詳細情報'
-        }),
-        ('管理情報', {
-            'fields': ('created_at',),
-            'classes': ('collapse',),
-        }),
-    )
-    
-    actions = ['rerun_batch', 'mark_as_reviewed']
+    def changelist_view(self, request, extra_context=None):
+        """変更リストビューに統計データを追加"""
+        extra_context = extra_context or {}
+        
+        # 統計データの計算
+        total_batches = BatchExecution.objects.count()
+        success_batches = BatchExecution.objects.filter(status='SUCCESS').count()
+        failed_batches = BatchExecution.objects.filter(status='FAILED').count()
+        running_batches = BatchExecution.objects.filter(status='RUNNING').count()
+        
+        extra_context.update({
+            'total_batches': total_batches,
+            'success_batches': success_batches,
+            'failed_batches': failed_batches,
+            'running_batches': running_batches,
+        })
+        
+        return super().changelist_view(request, extra_context=extra_context)
     
     def execute_batch_view(self, request):
-        """バッチ実行ビュー"""
+        """標準バッチ実行ビュー"""
         if request.method == 'POST':
             batch_date = request.POST.get('batch_date')
+            force_rerun = request.POST.get('force_rerun') == '1'
+            include_analysis = request.POST.get('include_analysis') == '1'
+            
             if batch_date:
                 try:
-                    # バッチ実行ロジック（実際のバッチ処理を呼び出し）
-                    from .services.batch_service import BatchService
+                    from earnings_analysis.services import BatchService
                     
                     service = BatchService()
-                    result = service.execute_daily_batch(batch_date)
+                    result = service.execute_daily_batch(
+                        batch_date, 
+                        force_rerun=force_rerun, 
+                        include_analysis=include_analysis
+                    )
                     
                     if result['success']:
-                        messages.success(request, f"バッチ処理が正常に実行されました。処理件数: {result['processed_count']}")
+                        messages.success(
+                            request, 
+                            f"バッチ処理が正常に実行されました。処理件数: {result['processed_count']}件"
+                        )
                     else:
                         messages.error(request, f"バッチ処理でエラーが発生しました: {result['error']}")
                         
@@ -648,15 +660,135 @@ class BatchExecutionAdmin(admin.ModelAdmin):
                 return HttpResponseRedirect('../')
         
         # バッチ実行フォームを表示
+        recent_batches = BatchExecution.objects.order_by('-batch_date')[:5]
+        
         context = {
             'title': 'バッチ実行',
             'has_permission': True,
             'opts': self.model._meta,
             'today': timezone.now().date(),
+            'recent_batches': recent_batches,
         }
         
-        return render(request, 'admin/earnings_analysis/batch_execution/execute_batch.html', context)
+        return render(request, 'admin/earnings_analysis/batchexecution/execute_batch.html', context)
     
+    def execute_daily_update_view(self, request):
+        """daily_update コマンド実行ビュー（エラーハンドリング強化版）"""
+        if request.method == 'POST':
+            try:
+                # パラメータ取得
+                target_date = request.POST.get('target_date')
+                force = request.POST.get('force') == '1'
+                today_flag = request.POST.get('today') == '1'
+                yesterday_flag = request.POST.get('yesterday') == '1'
+                company_update_mode = request.POST.get('company_update_mode', 'incremental')
+                api_version = request.POST.get('api_version', 'v2')
+                retry_count = int(request.POST.get('retry_count', 3))
+                send_notification = request.POST.get('send_notification') == '1'
+                stop_on_error = request.POST.get('stop_on_error') == '1'
+                
+                logger.info(f"daily_update コマンド実行開始: 対象日={target_date}, 強制={force}")
+                
+                # daily_update コマンドを直接実行
+                from django.core.management import call_command
+                from io import StringIO
+                
+                # 出力をキャプチャ
+                output = StringIO()
+                error_output = StringIO()
+                
+                # コマンド引数の準備
+                command_kwargs = {
+                    'company_update_mode': company_update_mode,
+                    'api_version': api_version,
+                    'retry_count': retry_count,
+                    'stdout': output,
+                    'stderr': error_output,
+                }
+                
+                if target_date:
+                    command_kwargs['date'] = target_date
+                if force:
+                    command_kwargs['force'] = True
+                if today_flag:
+                    command_kwargs['today'] = True
+                if yesterday_flag:
+                    command_kwargs['yesterday'] = True
+                if send_notification:
+                    command_kwargs['send_notification'] = True
+                if stop_on_error:
+                    command_kwargs['stop_on_error'] = True
+                
+                # コマンド実行
+                logger.info(f"daily_update コマンド引数: {command_kwargs}")
+                call_command('daily_update', **command_kwargs)
+                
+                # 結果をメッセージに表示
+                output_content = output.getvalue()
+                error_content = error_output.getvalue()
+                
+                logger.info(f"daily_update コマンド実行完了")
+                
+                if error_content:
+                    logger.warning(f"daily_update エラー出力: {error_content}")
+                    messages.warning(
+                        request,
+                        f"daily_update コマンドは実行されましたが、警告があります:\n\n{error_content[:500]}{'...' if len(error_content) > 500 else ''}"
+                    )
+                
+                if output_content:
+                    messages.success(
+                        request, 
+                        f"daily_update コマンドが正常に実行されました。\n\n実行ログ:\n{output_content[:1000]}{'...' if len(output_content) > 1000 else ''}"
+                    )
+                else:
+                    messages.success(request, "daily_update コマンドが正常に実行されました。")
+                
+            except ImportError as e:
+                error_msg = f"モジュールインポートエラー: {str(e)}"
+                logger.error(error_msg)
+                logger.error(f"インポートエラー詳細: {traceback.format_exc()}")
+                messages.error(request, f"daily_update 実行中にインポートエラーが発生しました: {error_msg}")
+                messages.info(request, "解決方法: earnings_analysis/services/__init__.py ファイルが存在し、正しく設定されているか確認してください。")
+                
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(f"daily_update コマンド実行エラー: {error_msg}")
+                logger.error(f"エラー詳細: {traceback.format_exc()}")
+                
+                # エラーの種類に応じて詳細な説明を提供
+                if "No module named" in error_msg:
+                    messages.error(request, f"モジュールが見つかりません: {error_msg}")
+                    messages.info(request, "解決方法: 必要なPythonモジュールがインストールされているか確認してください。")
+                elif "API" in error_msg:
+                    messages.error(request, f"API関連エラー: {error_msg}")
+                    messages.info(request, "解決方法: APIキー設定やネットワーク接続を確認してください。")
+                elif "Database" in error_msg:
+                    messages.error(request, f"データベースエラー: {error_msg}")
+                    messages.info(request, "解決方法: データベース接続やファイル権限を確認してください。")
+                else:
+                    messages.error(request, f"daily_update 実行中にエラーが発生しました: {error_msg}")
+                
+                # デバッグ用にエラー詳細も表示（開発環境のみ）
+                if settings.DEBUG:
+                    messages.info(request, f"デバッグ情報: {traceback.format_exc()[:500]}...")
+            
+            return HttpResponseRedirect('../')
+        
+        # daily_update 実行フォームを表示
+        recent_batches = BatchExecution.objects.order_by('-batch_date')[:5]
+        
+        context = {
+            'title': 'daily_update コマンド実行',
+            'has_permission': True,
+            'opts': self.model._meta,
+            'today': timezone.now().date(),
+            'recent_batches': recent_batches,
+        }
+        
+        return render(request, 'admin/earnings_analysis/batchexecution/execute_daily_update.html', context)
+    
+    # 表示メソッド
     def status_badge(self, obj):
         """ステータスのバッジ表示"""
         status_map = {
@@ -672,7 +804,7 @@ class BatchExecutionAdmin(admin.ModelAdmin):
     def processed_count_display(self, obj):
         """処理件数の表示改善"""
         try:
-            count = int(obj.processed_count)
+            count = int(obj.processed_count or 0)
             if count > 0:
                 return format_html('<strong>{}</strong> 件', count)
             return '0 件'
@@ -718,12 +850,13 @@ class BatchExecutionAdmin(admin.ModelAdmin):
         return 'エラーなし'
     error_details.short_description = 'エラー詳細'
     
+    # アクション
     def rerun_batch(self, request, queryset):
         """バッチを再実行"""
         for batch in queryset:
             if batch.status == 'FAILED':
                 try:
-                    from .services.batch_service import BatchService
+                    from earnings_analysis.services import BatchService
                     service = BatchService()
                     service.execute_daily_batch(batch.batch_date.strftime('%Y-%m-%d'))
                     
@@ -738,7 +871,9 @@ class BatchExecutionAdmin(admin.ModelAdmin):
         count = queryset.count()
         self.message_user(request, '{} 件のバッチ実行を確認済みとしました。'.format(count))
     mark_as_reviewed.short_description = "選択したバッチを確認済みにする"
-
+    
+    actions = ['rerun_batch', 'mark_as_reviewed']
+    
 
 @admin.register(SentimentAnalysisSession)
 class SentimentAnalysisSessionAdmin(admin.ModelAdmin):
