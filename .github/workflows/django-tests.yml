@@ -54,6 +54,10 @@ jobs:
         echo "os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.test_settings')" >> conftest.py
         echo "django.setup()" >> conftest.py
 
+    - name: Create logs directory
+      run: |
+        mkdir -p logs
+        touch logs/.gitkeep
 
     - name: Lint with flake8
       run: |

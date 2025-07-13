@@ -221,33 +221,6 @@ class DocumentMetadata(models.Model):
         choices.sort(key=lambda x: x['priority'])
         return choices
     
-    @classmethod
-    def get_popular_doc_types(cls, limit=10):
-        """人気の書類種別を取得（使用頻度順）"""
-        from django.db.models import Count
-        
-        try:
-            popular_types = cls.objects.filter(
-                legal_status='1'
-            ).values('doc_type_code').annotate(
-                count=Count('id')
-            ).order_by('-count')[:limit]
-            
-            result = []
-            for item in popular_types:
-                doc_type_code = item['doc_type_code']
-                display_name = cls.DOC_TYPE_DISPLAY_NAMES.get(doc_type_code, f'書類種別{doc_type_code}')
-                result.append({
-                    'code': doc_type_code,
-                    'name': display_name,
-                    'count': item['count'],
-                    'full_name': f"{display_name} ({doc_type_code})"
-                })
-            
-            return result
-        except Exception:
-            return []
-    
     @property
     def analysis_priority(self):
         """分析適合度を返す (high/medium/low)"""
