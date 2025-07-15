@@ -777,7 +777,7 @@ class TransparentSentimentAnalyzer:
             return []
                
     def _calculate_detailed_score(self, all_matches: List[Tuple[str, float, str]]) -> Dict:
-        """詳細なスコア計算（語彙情報付き完全版）"""
+        """詳細なスコア計算（方法1：重複重み付け方式）"""
         if not all_matches:
             return {
                 'raw_scores': [], 'positive_scores': [], 'negative_scores': [],
@@ -790,69 +790,131 @@ class TransparentSentimentAnalyzer:
         logger.info(f"_calculate_detailed_score 入力: {len(all_matches)}個のマッチ")
         logger.info(f"サンプルマッチ: {all_matches[:3] if all_matches else '無し'}")
         
-        positive_items = []
-        negative_items = []
-        all_scores = []
+        # === 🔥 重複重み付け方式の実装 ===
         
-        # 重複を除去しながら集計
-        word_scores = {}
+        # 1. 語彙別の出現回数をカウント
+        word_frequency = {}
         for word, score, type_name in all_matches:
             key = f"{word}_{type_name}"
-            if key in word_scores:
-                existing = word_scores[key]
-                existing['score'] = (existing['score'] + score) / 2
-                existing['count'] += 1
-            else:
-                word_scores[key] = {
-                    'word': word, 'score': score, 'type': type_name, 'count': 1
+            if key not in word_frequency:
+                word_frequency[key] = {
+                    'word': word,
+                    'score': score,
+                    'type': type_name,
+                    'count': 0
                 }
+            word_frequency[key]['count'] += 1
         
-        # 分類とスコア集計
-        for item in word_scores.values():
-            weighted_score = item['score'] * min(item['count'], 3)
-            all_scores.append(weighted_score)
+        # 2. 重複重み付け計算
+        def calculate_repetition_weight(count: int) -> float:
+            """重複回数に応じた重み計算"""
+            if count == 1:
+                return 1.0
+            elif count == 2:
+                return 1.8  # 1.0 + 0.8
+            elif count == 3:
+                return 2.4  # 1.0 + 0.8 + 0.6
+            else:
+                # 4回目以降は0.4ずつ増加
+                return 2.4 + (count - 3) * 0.4
+        
+        # 3. 重み付けスコアの計算
+        weighted_results = []
+        positive_weighted_sum = 0.0
+        negative_weighted_sum = 0.0
+        
+        for word_data in word_frequency.values():
+            base_score = word_data['score']
+            count = word_data['count']
             
-            word_info = {
-                'word': item['word'], 'score': item['score'], 'type': item['type'],
-                'count': item['count'], 'weighted_score': weighted_score
-            }
+            # 重複重み付けの適用
+            repetition_weight = calculate_repetition_weight(count)
+            weighted_score = base_score * repetition_weight
             
-            if item['score'] > 0:
-                positive_items.append(word_info)
-            elif item['score'] < 0:
-                negative_items.append(word_info)
+            weighted_results.append({
+                'word': word_data['word'],
+                'score': base_score,
+                'type': word_data['type'],
+                'count': count,
+                'repetition_weight': repetition_weight,
+                'weighted_score': weighted_score,
+                'total_contribution': weighted_score,
+                'impact_level': self._get_impact_level(abs(weighted_score))
+            })
+            
+            # ポジティブ・ネガティブの合計
+            if weighted_score > 0:
+                positive_weighted_sum += weighted_score
+            elif weighted_score < 0:
+                negative_weighted_sum += weighted_score
         
-        # スコア計算
-        positive_scores = [item['weighted_score'] for item in positive_items]
-        negative_scores = [item['weighted_score'] for item in negative_items]
+        # 4. 最終スコアの計算
+        total_weighted_sum = positive_weighted_sum + negative_weighted_sum
+        unique_words_count = len(word_frequency)
         
-        positive_sum = sum(positive_scores)
-        negative_sum = sum(negative_scores)
-        average_score = sum(all_scores) / len(all_scores) if all_scores else 0
+        # 重要：ユニーク語彙数で割る（重複の意味を保持）
+        final_score = total_weighted_sum / unique_words_count if unique_words_count > 0 else 0.0
         
-        weighted_sum = sum(score * abs(score) for score in all_scores)
-        weighted_avg = weighted_sum / len(all_scores) if all_scores else 0
-        
-        final_score = (average_score + weighted_avg) / 2 if all_scores else 0
+        # 5. 正規化（-1.0〜1.0の範囲に制限）
         final_score = max(-1.0, min(1.0, final_score))
         
-        # スコア順でソート
-        positive_items.sort(key=lambda x: x['score'], reverse=True)
-        negative_items.sort(key=lambda x: x['score'])
+        # 6. 表示用データの準備
+        positive_words = [w for w in weighted_results if w['score'] > 0]
+        negative_words = [w for w in weighted_results if w['score'] < 0]
+        
+        # 総貢献度でソート
+        positive_words.sort(key=lambda x: x['total_contribution'], reverse=True)
+        negative_words.sort(key=lambda x: x['total_contribution'])
+        
+        # 7. 統計情報の計算
+        all_raw_scores = [score for _, score, _ in all_matches]
+        positive_raw_scores = [score for score in all_raw_scores if score > 0]
+        negative_raw_scores = [score for score in all_raw_scores if score < 0]
+        
+        # 8. デバッグ情報の出力
+        logger.info("=== 重複重み付け方式の計算結果 ===")
+        logger.info(f"ユニーク語彙数: {unique_words_count}")
+        logger.info(f"総語彙出現数: {len(all_matches)}")
+        logger.info(f"ポジティブ重み付け合計: {positive_weighted_sum:.3f}")
+        logger.info(f"ネガティブ重み付け合計: {negative_weighted_sum:.3f}")
+        logger.info(f"最終スコア: {final_score:.3f}")
+        
+        # 重複効果の詳細ログ
+        for word_data in weighted_results:
+            if word_data['count'] > 1:
+                logger.info(f"  {word_data['word']}: {word_data['score']:.2f} × {word_data['count']}回 × 重み{word_data['repetition_weight']:.1f} = {word_data['weighted_score']:.3f}")
+        
+        logger.info("=====================================")
         
         return {
-            'raw_scores': all_scores,
-            'positive_scores': positive_scores,
-            'negative_scores': negative_scores,
-            'positive_words': positive_items,  # ★新規追加
-            'negative_words': negative_items,  # ★新規追加
-            'positive_sum': positive_sum,
-            'negative_sum': negative_sum,
-            'score_count': len(all_scores),
-            'average_score': average_score,
-            'weighted_average': weighted_avg,
+            # 基本統計
+            'raw_scores': all_raw_scores,
+            'positive_scores': positive_raw_scores,
+            'negative_scores': negative_raw_scores,
+            'positive_sum': positive_weighted_sum,
+            'negative_sum': negative_weighted_sum,
+            'score_count': len(all_raw_scores),
+            'average_score': sum(all_raw_scores) / len(all_raw_scores) if all_raw_scores else 0,
             'final_score': final_score,
+            
+            # 重複重み付け特有の情報
+            'positive_words': positive_words,
+            'negative_words': negative_words,
+            'unique_words_count': unique_words_count,
+            'total_occurrences': len(all_matches),
+            'repetition_factor': len(all_matches) / unique_words_count if unique_words_count > 0 else 1.0,
+            
+            # 重み付け詳細情報
+            'weighted_positive_sum': positive_weighted_sum,
+            'weighted_negative_sum': negative_weighted_sum,
+            'weighted_total_sum': total_weighted_sum,
+            
+            # メタデータ
+            'calculation_method': 'repetition_weighted',
+            'calculation_explanation': f'重複重み付け方式：{unique_words_count}個のユニーク語彙を出現回数に応じて重み付け',
+            'weight_formula': '1回:1.0倍, 2回:1.8倍, 3回:2.4倍, 4回以降:+0.4倍ずつ'
         }
+
         
     def _generate_reasoning(self, analysis_steps: List, score_calc: Dict, overall_score: float, sentiment_label: str) -> Dict:
         """分析根拠の生成"""
@@ -1301,15 +1363,20 @@ class TransparentSentimentAnalyzer:
             logger.error(f"セクション分析エラー: {e}")
             raise Exception(f"感情分析処理中にエラーが発生しました: {str(e)}")
 
-    def _get_impact_level(self, score: float) -> str:
-        """スコアから影響度レベルを判定"""
-        abs_score = abs(score)
-        if abs_score >= 0.7:
+    # 影響レベル判定を重み付けスコアに対応
+    def _get_impact_level(self, weighted_score_abs: float) -> str:
+        """重み付けスコアによる影響レベル判定"""
+        if weighted_score_abs >= 2.0:
+            return 'very_high'
+        elif weighted_score_abs >= 1.5:
             return 'high'
-        elif abs_score >= 0.4:
+        elif weighted_score_abs >= 1.0:
             return 'medium'
-        else:
+        elif weighted_score_abs >= 0.5:
             return 'low'
+        else:
+            return 'very_low'
+
         
 class SentimentAnalysisService:
     """感情分析サービス（見解生成強化版）"""
@@ -1791,8 +1858,10 @@ class SentimentAnalysisService:
         
         return frequency_data
 
+
+    # analyze_text メソッドでのデバッグ有効化
     def analyze_text(self, text: str, session_id: str = None, document_info: Dict[str, str] = None) -> Dict[str, Any]:
-        """透明性の高い感情分析（頻度分析修正版）"""
+        """透明性の高い感情分析（方法1：重複重み付け版）"""
         try:
             if not text or len(text.strip()) < 10:
                 return self._empty_result(session_id)
@@ -1825,16 +1894,13 @@ class SentimentAnalysisService:
             
             # 全てのマッチを統合
             all_matches = context_matches + basic_matches
-            sentiment_scores = [score for _, score, _ in all_matches]
             
-            # デバッグログ追加
-            logger.debug(f"all_matches構造チェック - 最初の3件: {all_matches[:3]}")
-            logger.debug(f"all_matches型: {type(all_matches)}, 長さ: {len(all_matches)}")
+            # 🔍 デバッグ：重複重み付けの効果確認
             if all_matches:
-                logger.debug(f"最初の要素の型: {type(all_matches[0])}")
+                self.debug_method1_effect(all_matches)
             
-            # スコア計算の詳細
-            score_calculation = self._calculate_detailed_score(sentiment_scores)
+            # 📊 方法1：重複重み付け方式でのスコア計算
+            score_calculation = self._calculate_detailed_score(all_matches)
             
             # 全体スコアと判定
             overall_score = score_calculation['final_score']
@@ -1845,10 +1911,10 @@ class SentimentAnalysisService:
                 analysis_steps, score_calculation, overall_score, sentiment_label
             )
             
-            # キーワード分析（分かりやすい形式）
+            # キーワード分析
             keyword_analysis = self._analyze_keywords(all_matches)
             
-            # ★修正：キーワード頻度分析（データ構造チェック付き）
+            # キーワード頻度分析
             keyword_frequency_data = self._analyze_keyword_frequency_safe(all_matches)
             
             # 文章レベル分析
@@ -1863,33 +1929,41 @@ class SentimentAnalysisService:
                 'score_calculation': score_calculation,
                 'analysis_steps': analysis_steps,
                 'keyword_analysis': keyword_analysis,
-                'keyword_frequency_data': keyword_frequency_data,  # ★追加
+                'keyword_frequency_data': keyword_frequency_data,
                 'sample_sentences': {
                     'positive': [s for s in sentence_analysis if s['score'] > self.config.positive_threshold][:5],
                     'negative': [s for s in sentence_analysis if s['score'] < self.config.negative_threshold][:5],
                 },
                 'statistics': {
                     'total_words_analyzed': len(all_matches),
+                    'unique_words_found': score_calculation.get('unique_words_count', 0),
+                    'total_occurrences': score_calculation.get('total_occurrences', len(all_matches)),
+                    'repetition_factor': score_calculation.get('repetition_factor', 1.0),
                     'context_patterns_found': len(context_matches),
                     'basic_words_found': len(basic_matches),
                     'sentences_analyzed': len(sentences),
-                    'unique_words_found': len(set(word for word, _, _ in all_matches)),
-                    'positive_words_count': len([s for s in sentiment_scores if s > 0]),
-                    'negative_words_count': len([s for s in sentiment_scores if s < 0]),
+                    'positive_words_count': len([s for _, s, _ in all_matches if s > 0]),
+                    'negative_words_count': len([s for _, s, _ in all_matches if s < 0]),
                     'positive_sentences_count': len([s for s in sentence_analysis if s['score'] > self.config.positive_threshold]),
                     'negative_sentences_count': len([s for s in sentence_analysis if s['score'] < self.config.negative_threshold]),
                     'threshold_positive': self.config.positive_threshold,
                     'threshold_negative': self.config.negative_threshold,
-                    # ★頻度統計を追加
                     'total_keyword_occurrences': sum(item['count'] for item in keyword_frequency_data['positive'] + keyword_frequency_data['negative']),
                     'top_positive_keyword': keyword_frequency_data['positive'][0] if keyword_frequency_data['positive'] else None,
                     'top_negative_keyword': keyword_frequency_data['negative'][0] if keyword_frequency_data['negative'] else None,
+                    
+                    # 重複重み付け特有の統計
+                    'weighted_positive_sum': score_calculation.get('weighted_positive_sum', 0),
+                    'weighted_negative_sum': score_calculation.get('weighted_negative_sum', 0),
+                    'weighted_total_sum': score_calculation.get('weighted_total_sum', 0),
                 },
                 'analysis_metadata': {
                     'analyzed_at': timezone.now().isoformat(),
                     'dictionary_size': len(self.dictionary.sentiment_dict),
                     'session_id': session_id,
-                    'analysis_version': '2.2_frequency_enhanced_fixed',
+                    'analysis_version': '3.1_repetition_weighted',
+                    'calculation_method': 'repetition_weighted',
+                    'weight_formula': '1回:1.0倍, 2回:1.8倍, 3回:2.4倍, 4回以降:+0.4倍ずつ'
                 }
             }
             
