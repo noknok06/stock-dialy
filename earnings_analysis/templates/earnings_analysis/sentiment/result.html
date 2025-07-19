@@ -100,6 +100,54 @@
         .wordcloud-canvas:hover {
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
+        .risk-item {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            padding: 0.5rem 0;
+            border-radius: 0.25rem;
+        }
+
+        .risk-item:hover {
+            background-color: rgba(255, 193, 7, 0.1);
+            padding-left: 0.5rem;
+        }
+
+        .risk-item .fa-chevron-down {
+            transition: transform 0.2s ease;
+        }
+
+        .risk-item.expanded .fa-chevron-down {
+            transform: rotate(180deg);
+        }
+
+        .risk-details {
+            border-left: 3px solid #ffc107;
+            margin-left: 1rem;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* モバイル対応 */
+        @media (max-width: 768px) {
+            .risk-item {
+                font-size: 0.9rem;
+            }
+            
+            .risk-details {
+                margin-left: 0.5rem;
+                font-size: 0.85rem;
+            }
+        }
     </style>
 {% block breadcrumb %}
 <nav aria-label="breadcrumb">
@@ -414,7 +462,7 @@
                             <label for="wordcloud-max-words" class="form-label small">最大表示語数</label>
                             <select class="form-select form-select-sm" id="wordcloud-max-words">
                                 <option value="30">30語</option>
-                                <option value="50"></option>
+                                <option value="50">50語</option>
                                 <option value="100" selected>100語（推奨）</option>
                                 <option value="200">200語</option>
                                 <option value="0">制限なし</option>
@@ -609,9 +657,7 @@
             {% endwith %}
         {% endif %}
         <!-- User Insights -->
-        <div class="analysis-card card mb-4">
-            {% include 'earnings_analysis/ads/ad_responsive.html' %}
-        </div>
+
         <div class="analysis-card card">
             <div class="card-header">
                 <h5 class="mb-0">
@@ -668,7 +714,8 @@
                             <h6 class="text-warning mb-3">
                                 <i class="fas fa-shield-alt me-2"></i>リスク評価
                             </h6>
-                            <div class="mb-2">
+                            
+                            <div class="mb-3">
                                 <strong class="text-dark">リスクレベル:</strong> 
                                 {% if formatted_insights.risk_assessment.risk_level == 'high' %}
                                     <span class="badge bg-danger ms-2">高</span>
@@ -678,12 +725,51 @@
                                     <span class="badge bg-success ms-2">低</span>
                                 {% endif %}
                             </div>
+                            
                             {% if formatted_insights.risk_assessment.identified_risks %}
-                                <div class="mb-0">
+                                <div class="mb-3">
                                     <strong class="text-dark">特定されたリスク:</strong>
-                                    <ul class="mt-2 mb-0">
+                                    <ul class="mt-2 mb-0 risk-list">
                                         {% for risk in formatted_insights.risk_assessment.identified_risks %}
-                                            <li class="text-body">{{ risk }}</li>
+                                            <li class="text-body risk-item" data-risk-id="{{ risk.id }}">
+                                                <span class="risk-summary">
+                                                    {{ risk.text|truncatechars:50 }}
+                                                    {% if risk.full_details.full_text|length > 50 %}
+                                                        <i class="fas fa-chevron-down ms-1 text-muted small"></i>
+                                                    {% endif %}
+                                                </span>
+                                                <div class="risk-details d-none mt-2 p-2 bg-light rounded small">
+                                                    <div class="mb-1"><strong>詳細:</strong> {{ risk.full_details.full_text }}</div>
+                                                    {% if risk.full_details.count > 1 %}
+                                                        <div class="mb-1"><strong>出現回数:</strong> {{ risk.full_details.count }}回</div>
+                                                    {% endif %}
+                                                    {% if risk.full_details.context %}
+                                                        <div><strong>文脈:</strong> {{ risk.full_details.context }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+                            
+                            {% if formatted_insights.risk_assessment.mitigation_evidence %}
+                                <div class="mb-3">
+                                    <strong class="text-dark">リスク軽減への取り組み:</strong>
+                                    <ul class="mt-2 mb-0 small">
+                                        {% for evidence in formatted_insights.risk_assessment.mitigation_evidence %}
+                                            <li class="text-success">{{ evidence }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+                            
+                            {% if formatted_insights.risk_assessment.monitoring_points %}
+                                <div>
+                                    <strong class="text-dark">推奨モニタリング:</strong>
+                                    <ul class="mt-2 mb-0 small">
+                                        {% for point in formatted_insights.risk_assessment.monitoring_points %}
+                                            <li class="text-info">{{ point }}</li>
                                         {% endfor %}
                                     </ul>
                                 </div>
@@ -928,24 +1014,18 @@ function initializeKuromoji() {
 
 // 形態素解析を使った全語彙抽出（緩和版）
 const STOP_WORDS = new Set([
-    // 助詞
+    // 既存のストップワードに加えて
     'の', 'に', 'は', 'を', 'が', 'で', 'と', 'から', 'まで', 'より', 'へ', 'や', 'か',
-    // 助動詞・動詞活用
     'だ', 'である', 'です', 'ます', 'だっ', 'であっ', 'でし', 'まし', 'た', 'て', 'し',
-    // 代名詞
     'これ', 'それ', 'あれ', 'この', 'その', 'あの', 'ここ', 'そこ', 'あそこ',
-    // 一般的な語
-    'こと', 'もの', 'ため', 'よう', 'など', 'なる', 'ある', 'いる', 'する', 'れる', 'られる', 'となりました', 'があるか',
-    // 数詞・記号
+    'こと', 'もの', 'ため', 'よう', 'など', 'なる', 'ある', 'いる', 'する', 'れる', 'られる',
+    // 数字・記号関連を追加
     '一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '百', '千', '万', '億',
-    // 接頭・接尾辞
-    'ご', 'お', 'さん', 'くん', 'ちゃん', '様', '氏', '君', '社', '部', '課', '店', '号', '番', '名', '社名', '会社名', '部署名', '商品名',
-    // その他の一般的な語
-    'あのような', 'このような', 'そのような', 'あのように', 'このように', 'そのように', 'あのこと', 'このこと', 'そのこと',
-    'あのもの', 'このもの', 'そのもの', 'あのため', 'このため', 'そのため', 'あのようなこと', 'このようなこと', 'そのようなこと',
-    'あのようなもの', 'このようなもの', 'そのようなもの', 'あのようにする', 'このようにする', 'そのようにする',
-    
+    '年', '月', '日', '時', '分', '秒', '円', '％', '%', '第', '約', '以上', '以下',
+    '前', '後', '間', '中', '内', '外', '上', '下', '左', '右'
 ]);
+
+const MAX_WORD_LENGTH = 10;  // 10文字以上は除外
 
 // 形態素解析による高精度な単語抽出
 function extractAllWordsFromSentences() {
@@ -963,29 +1043,62 @@ function extractAllWordsFromSentences() {
         if (!sentenceObj.text) return;
         
         // HTMLタグと特殊文字を除去
-        const cleanText = cleanSentenceText(sentenceObj.text);
+        let cleanText = cleanSentenceText(sentenceObj.text);
         
-        try {
-            // 形態素解析実行
-            const tokens = tokenizer.tokenize(cleanText);
-            console.log(`文章${index + 1}: "${cleanText.substring(0, 50)}..." -> ${tokens.length}トークン`);
+        // 長文を句読点で分割（追加処理）
+        const subSentences = splitLongText(cleanText);
+        
+        subSentences.forEach(subText => {
+            if (subText.length < 5) return;  // 短すぎる文は除外
             
-            tokens.forEach(token => {
-                const word = processToken(token);
-                if (word && isValidWord(word, token)) {
-                    wordFrequency[word] = (wordFrequency[word] || 0) + 1;
-                }
-            });
-            
-        } catch (error) {
-            console.error(`文章${index + 1}の形態素解析エラー:`, error);
-        }
+            try {
+                // 形態素解析実行
+                const tokens = tokenizer.tokenize(subText);
+                
+                tokens.forEach(token => {
+                    const word = processToken(token);
+                    if (word && isValidWord(word, token) && word.length <= MAX_WORD_LENGTH) {
+                        wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+                    }
+                });
+                
+            } catch (error) {
+                console.error(`文章${index + 1}の形態素解析エラー:`, error);
+            }
+        });
     });
     
     // 結果をログ出力
     logExtractionResults(wordFrequency);
     
     return wordFrequency;
+}
+
+function splitLongText(text) {
+    const results = [];
+    
+    // まず句読点で分割
+    const primarySplit = text.split(/[。！？\n]/);
+    
+    primarySplit.forEach(segment => {
+        if (segment.length > 100) {
+            // 長すぎる場合は読点でも分割
+            const secondarySplit = segment.split(/[、，]/);
+            secondarySplit.forEach(subSegment => {
+                if (subSegment.length > 50) {
+                    // それでも長い場合は空白で分割
+                    const tertiarySplit = subSegment.split(/[\s　]+/);
+                    results.push(...tertiarySplit.filter(s => s.length > 0));
+                } else {
+                    results.push(subSegment);
+                }
+            });
+        } else {
+            results.push(segment);
+        }
+    });
+    
+    return results.filter(s => s.trim().length > 0);
 }
 
 function logExtractionResults(wordFrequency) {
@@ -1029,9 +1142,12 @@ function isValidWord(word, token) {
     // 基本的な除外条件
     if (STOP_WORDS.has(word)) return false;
     if (word.length < 2) return false;
-    if (/^[0-9０-９]+$/.test(word)) return false;        // 数字のみ
-    if (/^[a-zA-Z]+$/.test(word)) return false;          // 英字のみ
+    if (word.length > MAX_WORD_LENGTH) return false;  // 長すぎる語を除外
+    if (/^[0-9０-９]+$/.test(word)) return false;    // 数字のみ
+    if (/^[a-zA-Z]+$/.test(word)) return false;      // 英字のみ
     if (/^[\s　\-\+\*\/\=\<\>\!\?]+$/.test(word)) return false; // 記号のみ
+    if (/^\d+[年月日時分秒]$/.test(word)) return false;  // 時間表現
+    if (/^第\d+/.test(word)) return false;           // 第○○
     
     // 品詞による詳細フィルタリング
     switch (pos) {
@@ -1042,12 +1158,19 @@ function isValidWord(word, token) {
             
             // 特定の名詞は除外
             if (posDetail1 === '数' || posDetail1 === '非自立') return false;
-            if (posDetail2 === '人名' || posDetail2 === '地域') return false; // 個人情報保護
+            if (posDetail2 === '人名' || posDetail2 === '地域') return false;
+            
+            // 長い複合語は除外
+            if (word.length > 8 && !word.includes('キャッシュフロー')) return false;
             break;
             
         case '動詞':
             // 自立動詞のみ
             if (posDetail1 === '非自立') return false;
+            // 基本形のみ使用
+            if (token.basic_form && token.basic_form !== '*') {
+                return token.basic_form.length <= MAX_WORD_LENGTH;
+            }
             break;
             
         case '形容詞':
@@ -1076,6 +1199,13 @@ function cleanSentenceText(text) {
         .replace(/https?:\/\/[^\s]+/g, '')          // URL除去
         .replace(/[【】『』「」（）()［］｛｝]/g, '') // 括弧除去
         .replace(/[・※★☆♪♫]/g, '')               // 記号除去
+        .replace(/\d{4,}/g, '')                     // 4桁以上の数字除去
+        .replace(/[\d,]+千円/g, '')                 // 金額表現除去
+        .replace(/[\d,]+万円/g, '')                 // 金額表現除去
+        .replace(/[\d,]+億円/g, '')                 // 金額表現除去
+        .replace(/\d+年\d+月\d+日/g, '')            // 日付除去
+        .replace(/\d+\.?\d*[％%]/g, '')             // パーセンテージ除去
+        .replace(/前年同期比[\d.]+[％%][増減]/g, '') // 比較表現除去
         .replace(/\s+/g, ' ')                       // 空白正規化
         .trim();
 }
@@ -1116,15 +1246,20 @@ function extractAllWordsSimple() {
     sentences.forEach((sentenceObj, index) => {
         if (!sentenceObj.text) return;
         
-        const cleanText = cleanSentenceText(sentenceObj.text);
+        let cleanText = cleanSentenceText(sentenceObj.text);
         
-        // 日本語の単語境界を考慮した分割
-        const words = segmentJapaneseText(cleanText);
+        // 長文を分割
+        const subTexts = splitLongText(cleanText);
         
-        words.forEach(word => {
-            if (isValidSimpleWord(word)) {
-                wordFrequency[word] = (wordFrequency[word] || 0) + 1;
-            }
+        subTexts.forEach(subText => {
+            // 日本語の単語境界を考慮した分割
+            const words = segmentJapaneseText(subText);
+            
+            words.forEach(word => {
+                if (isValidSimpleWord(word) && word.length <= MAX_WORD_LENGTH) {
+                    wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+                }
+            });
         });
     });
     
@@ -1135,6 +1270,7 @@ function extractAllWordsSimple() {
     
     return wordFrequency;
 }
+
 
 // 日本語テキストの単語分割（簡易版）
 function segmentJapaneseText(text) {
@@ -1211,12 +1347,17 @@ function isValidSimpleWord(word) {
     // 基本的な除外条件
     if (STOP_WORDS.has(word)) return false;
     if (word.length < 2) return false;
+    if (word.length > MAX_WORD_LENGTH) return false;  // 長すぎる語を除外
     if (/^[0-9０-９]+$/.test(word)) return false;
     if (/^[a-zA-Z]+$/.test(word)) return false;
     if (/^[\s　\-\+\*\/\=\<\>\!\?、。，．]+$/.test(word)) return false;
+    if (/^\d+[年月日時分秒円％]/.test(word)) return false;  // 数値+単位
     
     // ひらがなのみの短い語は除外
     if (word.length <= 2 && /^[ぁ-ゟ]+$/.test(word)) return false;
+    
+    // カタカナのみで長すぎる語は除外
+    if (word.length > 8 && /^[ァ-ヶー]+$/.test(word)) return false;
     
     return true;
 }
@@ -1267,37 +1408,41 @@ function convertToWordcloudData(frequencyData, includeAll = false) {
     
     console.log('convertToWordcloudData開始:', { frequencyData, includeAll });
     
-    // ポジティブ語彙を追加
+    // ポジティブ語彙を追加（既存処理は変更なし）
     if (frequencyData.positive) {
         console.log('ポジティブ語彙数:', frequencyData.positive.length);
         frequencyData.positive.forEach(item => {
-            sentimentWords.add(item.word);
-            wordcloudData.push({
-                text: item.word,
-                size: item.count,
-                sentiment: "positive",
-                score: item.score,
-                color: "#28a745"
-            });
+            if (item.word && item.word.length <= MAX_WORD_LENGTH) {  // 長さチェック追加
+                sentimentWords.add(item.word);
+                wordcloudData.push({
+                    text: item.word,
+                    size: item.count,
+                    sentiment: "positive",
+                    score: item.score,
+                    color: "#28a745"
+                });
+            }
         });
     }
     
-    // ネガティブ語彙を追加
+    // ネガティブ語彙を追加（既存処理は変更なし）
     if (frequencyData.negative) {
         console.log('ネガティブ語彙数:', frequencyData.negative.length);
         frequencyData.negative.forEach(item => {
-            sentimentWords.add(item.word);
-            wordcloudData.push({
-                text: item.word,
-                size: item.count,
-                sentiment: "negative",
-                score: item.score,
-                color: "#dc3545"
-            });
+            if (item.word && item.word.length <= MAX_WORD_LENGTH) {  // 長さチェック追加
+                sentimentWords.add(item.word);
+                wordcloudData.push({
+                    text: item.word,
+                    size: item.count,
+                    sentiment: "negative",
+                    score: item.score,
+                    color: "#dc3545"
+                });
+            }
         });
     }
     
-    // 全語彙モードの場合
+    // 全語彙モードの場合（修正版）
     if (includeAll) {
         let allWords;
         if (tokenizer) {
@@ -1310,10 +1455,13 @@ function convertToWordcloudData(frequencyData, includeAll = false) {
         
         console.log('全語彙抽出結果:', Object.keys(allWords).length, '語');
         
-        // 出現回数2回以上の語彙を追加（条件を緩和）
+        // 出現回数2回以上、かつ適切な長さの語彙を追加
         Object.entries(allWords).forEach(([word, count]) => {
-            // 既に感情語彙に含まれていない、かつ出現回数1回以上
-            if (!sentimentWords.has(word) && count >= 1) {
+            // 既に感情語彙に含まれていない、かつ適切な条件を満たす
+            if (!sentimentWords.has(word) && 
+                count >= 2 && 
+                word.length >= 2 && 
+                word.length <= MAX_WORD_LENGTH) {
                 wordcloudData.push({
                     text: word,
                     size: count,
@@ -1330,17 +1478,6 @@ function convertToWordcloudData(frequencyData, includeAll = false) {
     
     console.log('最終的なワードクラウドデータ数:', wordcloudData.length);
     console.log('上位10語:', wordcloudData.slice(0, 10).map(w => `${w.text}(${w.size}回)`));
-    
-    // データが存在しない場合のフォールバック
-    if (wordcloudData.length === 0) {
-        return [{
-            text: "データなし",
-            size: 1,
-            sentiment: "neutral",
-            score: 0.0,
-            color: "#6c757d"
-        }];
-    }
     
     return wordcloudData;
 }
@@ -1779,6 +1916,52 @@ function exportSummary() {
 
 // ページ読み込み時の初期化
 document.addEventListener('DOMContentLoaded', function() {
+
+    const riskItems = document.querySelectorAll('.risk-item');
+    
+    riskItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            // 他の項目を閉じる
+            riskItems.forEach(otherItem => {
+                if (otherItem !== this) {
+                    otherItem.classList.remove('expanded');
+                    const otherDetails = otherItem.querySelector('.risk-details');
+                    if (otherDetails) {
+                        otherDetails.classList.add('d-none');
+                    }
+                }
+            });
+            
+            // クリックした項目をトグル
+            const details = this.querySelector('.risk-details');
+            if (details) {
+                this.classList.toggle('expanded');
+                details.classList.toggle('d-none');
+                
+                // アクセシビリティ対応
+                const isExpanded = !details.classList.contains('d-none');
+                this.setAttribute('aria-expanded', isExpanded);
+                
+                // スムーズスクロール（要素が画面外の場合）
+                if (isExpanded) {
+                    setTimeout(() => {
+                        const rect = details.getBoundingClientRect();
+                        if (rect.bottom > window.innerHeight) {
+                            details.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                    }, 300);
+                }
+            }
+        });
+    });
+    
+    // タッチデバイス対応
+    if ('ontouchstart' in window) {
+        riskItems.forEach(item => {
+            item.style.cursor = 'pointer';
+        });
+    }
+
     // アニメーション効果
     const cards = document.querySelectorAll('.analysis-card');
     const observer = new IntersectionObserver((entries) => {

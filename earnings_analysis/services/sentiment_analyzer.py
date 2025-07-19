@@ -29,6 +29,271 @@ class AnalysisConfig:
     # 重複カウント設定
     max_word_count_weight: int = 50  # 同一語彙の最大重み
     negation_discount_factor: float = 0.3  # 否定時の割引率
+    # 財務文脈設定（新規追加）
+    enable_financial_context: bool = True  # 財務文脈分析の有効化
+    financial_context_weight: float = 1.2  # 財務文脈の重み
+
+
+class FinancialContextAnalyzer:
+    """財務文脈を考慮した感情分析クラス"""
+    
+    # 財務項目カテゴリ定義
+    FINANCIAL_CATEGORIES = {
+        'liability': {  # 負債項目
+            'keywords': [
+                '未払金', '未払費用', '借入金', '短期借入金', '長期借入金',
+                '買掛金', '支払手形', '社債', '負債', '債務', '引当金',
+                '退職給付債務', 'リース債務', '預り金', '前受金'
+            ],
+            'positive_actions': [
+                '減少', '削減', '圧縮', '返済', '改善', '縮小', '解消',
+                '低下', '軽減', '償還', '減額', '圧縮'
+            ],
+            'negative_actions': [
+                '増加', '増大', '膨張', '悪化', '拡大', '上昇', '増額',
+                '積み上が', '膨らみ', '嵩む'
+            ]
+        },
+        'asset': {  # 資産項目
+            'keywords': [
+                '現金', '預金', '現金及び預金', '売掛金', '受取手形',
+                '有価証券', '投資有価証券', '棚卸資産', '在庫', '商品',
+                '製品', '原材料', '仕掛品', '固定資産', '流動資産',
+                '繰延税金資産', '無形固定資産', 'のれん'
+            ],
+            'positive_actions': [
+                '増加', '増大', '蓄積', '改善', '向上', '拡大', '充実',
+                '積み上が', '確保', '獲得'
+            ],
+            'negative_actions': [
+                '減少', '減損', '流出', '悪化', '毀損', '目減り', '低下',
+                '枯渇', '不足', '欠乏'
+            ]
+        },
+        'revenue': {  # 収益項目
+            'keywords': [
+                '売上', '売上高', '営業収益', '収益', '収入', '売上総利益',
+                '営業利益', '経常利益', '純利益', '当期純利益', 'EBITDA',
+                '粗利', '粗利益', '受取利息', '受取配当金', '雑収入'
+            ],
+            'positive_actions': [
+                '増加', '成長', '拡大', '向上', '伸長', '上昇', '好調',
+                '堅調', '回復', '改善', '増収', '増益', '黒字転換',
+                '過去最高', 'V字回復'
+            ],
+            'negative_actions': [
+                '減少', '縮小', '低下', '悪化', '減収', '減益', '赤字',
+                '低迷', '不振', '苦戦', '伸び悩み', '頭打ち'
+            ]
+        },
+        'expense': {  # 費用項目
+            'keywords': [
+                '費用', '経費', '原価', '売上原価', '販管費', '販売費',
+                '一般管理費', '人件費', '減価償却費', '支払利息',
+                '営業費用', '金融費用', '特別損失', '法人税'
+            ],
+            'positive_actions': [
+                '削減', '圧縮', '効率化', '合理化', '最適化', '抑制',
+                '節減', 'コストダウン', '減少'
+            ],
+            'negative_actions': [
+                '増加', '増大', '膨張', '嵩む', '拡大', '上昇',
+                'コスト増', '負担増'
+            ],
+            'context_required': True  # 文脈による判断が必要
+        },
+        'cashflow': {  # キャッシュフロー項目
+            'keywords': [
+                '営業キャッシュフロー', '投資キャッシュフロー',
+                '財務キャッシュフロー', 'フリーキャッシュフロー',
+                'キャッシュフロー', '現金流入', '現金流出'
+            ],
+            'positive_actions': [
+                '増加', '改善', '向上', '黒字', 'プラス', '流入超過'
+            ],
+            'negative_actions': [
+                '減少', '悪化', '赤字', 'マイナス', '流出超過'
+            ]
+        },
+        'efficiency': {  # 効率性指標
+            'keywords': [
+                'ROE', 'ROA', 'ROIC', '総資産回転率', '在庫回転率',
+                '売上高利益率', '営業利益率', '経常利益率', '純利益率',
+                '自己資本比率', '流動比率', '当座比率'
+            ],
+            'positive_actions': [
+                '向上', '改善', '上昇', '好転', '回復'
+            ],
+            'negative_actions': [
+                '低下', '悪化', '下落', '低迷'
+            ]
+        }
+    }
+    
+    def __init__(self, config: Optional[AnalysisConfig] = None):
+        self.config = config or AnalysisConfig()
+        self.context_patterns = self._compile_patterns()
+        logger.info(f"財務文脈アナライザー初期化完了: {len(self.FINANCIAL_CATEGORIES)}カテゴリ")
+    
+    def _compile_patterns(self) -> Dict[str, List[re.Pattern]]:
+        """正規表現パターンのコンパイル"""
+        patterns = {}
+        
+        for category, config in self.FINANCIAL_CATEGORIES.items():
+            patterns[category] = []
+            
+            # キーワードと動作の組み合わせパターンを生成
+            for keyword in config['keywords']:
+                # ポジティブアクション
+                if 'positive_actions' in config:
+                    for action in config['positive_actions']:
+                        # 様々なパターンに対応
+                        pattern_strs = [
+                            rf'{keyword}.*?{action}',
+                            rf'{action}.*?{keyword}',
+                            rf'{keyword}の{action}',
+                            rf'{keyword}が.*?{action}',
+                            rf'{keyword}は.*?{action}'
+                        ]
+                        for pattern_str in pattern_strs:
+                            patterns[category].append(
+                                (re.compile(pattern_str), 'positive', keyword, action)
+                            )
+                
+                # ネガティブアクション
+                if 'negative_actions' in config:
+                    for action in config['negative_actions']:
+                        pattern_strs = [
+                            rf'{keyword}.*?{action}',
+                            rf'{action}.*?{keyword}',
+                            rf'{keyword}の{action}',
+                            rf'{keyword}が.*?{action}',
+                            rf'{keyword}は.*?{action}'
+                        ]
+                        for pattern_str in pattern_strs:
+                            patterns[category].append(
+                                (re.compile(pattern_str), 'negative', keyword, action)
+                            )
+        
+        return patterns
+    
+    def analyze_financial_context(self, text: str) -> List[Dict[str, Any]]:
+        """財務文脈の分析"""
+        results = []
+        
+        for category, patterns in self.context_patterns.items():
+            category_config = self.FINANCIAL_CATEGORIES[category]
+            
+            for pattern, sentiment, keyword, action in patterns:
+                matches = pattern.finditer(text)
+                
+                for match in matches:
+                    # マッチした部分の前後文脈を取得
+                    start = max(0, match.start() - 50)
+                    end = min(len(text), match.end() + 50)
+                    context = text[start:end]
+                    
+                    # スコアの決定
+                    base_score = self._determine_score(
+                        category, sentiment, keyword, action, context
+                    )
+                    
+                    # 結果に追加
+                    results.append({
+                        'category': category,
+                        'keyword': keyword,
+                        'action': action,
+                        'sentiment': sentiment,
+                        'score': base_score,
+                        'matched_text': match.group(),
+                        'context': context,
+                        'confidence': self._calculate_confidence(match, context)
+                    })
+        
+        return results
+    
+    def _determine_score(self, category: str, sentiment: str, 
+                        keyword: str, action: str, context: str) -> float:
+        """財務文脈に基づくスコア決定"""
+        # カテゴリ別の基本スコア
+        base_scores = {
+            'liability': {'positive': 0.8, 'negative': -0.8},
+            'asset': {'positive': 0.7, 'negative': -0.7},
+            'revenue': {'positive': 0.9, 'negative': -0.9},
+            'expense': {'positive': 0.6, 'negative': -0.6},
+            'cashflow': {'positive': 0.8, 'negative': -0.8},
+            'efficiency': {'positive': 0.7, 'negative': -0.7}
+        }
+        
+        score = base_scores.get(category, {}).get(sentiment, 0.5)
+        
+        # 費用項目の特殊処理
+        if category == 'expense':
+            # 効率化による削減か、単なる投資不足かを判定
+            efficiency_keywords = ['効率', '合理', '最適', '改善', '見直し']
+            if any(kw in context for kw in efficiency_keywords):
+                score *= 1.2  # 効率化による削減は高評価
+            elif any(kw in context for kw in ['不足', '抑制', '見送り']):
+                score *= 0.8  # 投資不足による削減は低評価
+        
+        # 強調表現による調整
+        emphasis_patterns = {
+            '大幅': 1.3,
+            '著しく': 1.25,
+            '若干': 0.7,
+            'やや': 0.8,
+            'わずかに': 0.6
+        }
+        
+        for emphasis, multiplier in emphasis_patterns.items():
+            if emphasis in context:
+                score *= multiplier
+                break
+        
+        # 財務文脈の重み適用
+        if self.config.enable_financial_context:
+            score *= self.config.financial_context_weight
+        
+        return round(score, 3)
+    
+    def _calculate_confidence(self, match: re.Match, context: str) -> float:
+        """マッチの確信度を計算"""
+        confidence = 0.7  # 基本確信度
+        
+        # 数値が含まれている場合は確信度上昇
+        if re.search(r'\d+[,\d]*[百千万億兆]?円', context):
+            confidence += 0.15
+        
+        # パーセンテージが含まれている場合も確信度上昇
+        if re.search(r'\d+\.?\d*[％%]', context):
+            confidence += 0.1
+        
+        # 比較表現が含まれている場合
+        if any(comp in context for comp in ['前年比', '前期比', '同期比']):
+            confidence += 0.05
+        
+        return min(1.0, confidence)
+    
+    def extract_financial_metrics(self, text: str) -> Dict[str, List[Dict]]:
+        """財務指標の抽出と分類"""
+        metrics = {
+            'improvements': [],  # 改善項目
+            'deteriorations': [],  # 悪化項目
+            'neutral': []  # 中立項目
+        }
+        
+        # 財務文脈の分析
+        financial_contexts = self.analyze_financial_context(text)
+        
+        for context in financial_contexts:
+            if context['score'] > 0.3:
+                metrics['improvements'].append(context)
+            elif context['score'] < -0.3:
+                metrics['deteriorations'].append(context)
+            else:
+                metrics['neutral'].append(context)
+        
+        return metrics
 
 
 class TransparentSentimentDictionary:
@@ -565,14 +830,24 @@ class UserInsightGenerator:
 class TransparentSentimentAnalyzer:
     """分かりやすい感情分析エンジン（完全統合版）"""
     
+class TransparentSentimentAnalyzer:
+    """分かりやすい感情分析エンジン（財務文脈対応版）"""
+    
     def __init__(self, config: Optional[AnalysisConfig] = None):
         self.config = config or AnalysisConfig()
         self.dictionary = TransparentSentimentDictionary()
         self.text_processor = TransparentTextProcessor()
         self.insight_generator = UserInsightGenerator()
+        
+        # 財務文脈アナライザーの追加
+        if self.config.enable_financial_context:
+            self.financial_analyzer = FinancialContextAnalyzer(self.config)
+            logger.info("財務文脈分析機能を有効化しました")
+        else:
+            self.financial_analyzer = None
     
     def analyze_text(self, text: str, session_id: str = None, document_info: Dict[str, str] = None) -> Dict[str, Any]:
-        """透明性の高い感情分析（完全統合版）"""
+        """透明性の高い感情分析（財務文脈対応版）"""
         try:
             if not text or len(text.strip()) < 10:
                 return self._empty_result(session_id)
@@ -583,7 +858,33 @@ class TransparentSentimentAnalyzer:
             # 段階的な分析プロセス
             analysis_steps = []
             
-            # ステップ1: 文脈パターンの検出（強化版）
+            # ステップ0: 財務文脈の分析（新規追加）
+            financial_matches = []
+            if self.financial_analyzer:
+                financial_contexts = self.financial_analyzer.analyze_financial_context(cleaned_text)
+                
+                # 財務文脈の結果を感情分析用の形式に変換
+                for fc in financial_contexts:
+                    financial_matches.append((
+                        fc['matched_text'],
+                        fc['score'],
+                        f"財務文脈_{fc['category']}",
+                        1  # 出現回数は1として扱う
+                    ))
+                
+                if financial_matches:
+                    analysis_steps.append({
+                        'step': '財務文脈分析',
+                        'description': '財務項目と動作の組み合わせを考慮した分析',
+                        'matches': financial_matches,
+                        'impact': sum(score for _, score, _, _ in financial_matches),
+                        'details': {
+                            'total_contexts': len(financial_contexts),
+                            'categories': list(set(fc['category'] for fc in financial_contexts))
+                        }
+                    })
+            
+            # ステップ1: 文脈パターンの検出（既存処理）
             context_matches = self._find_context_patterns(cleaned_text)
             if context_matches:
                 analysis_steps.append({
@@ -593,8 +894,10 @@ class TransparentSentimentAnalyzer:
                     'impact': sum(score * count for _, score, _, count in context_matches)
                 })
             
-            # ステップ2: 基本語彙の検出（重複カウント対応版）
-            basic_matches = self._find_basic_words(cleaned_text, context_matches)
+            # ステップ2: 基本語彙の検出（既存処理）
+            # 財務文脈で既に検出された語彙は除外
+            financial_matched_texts = set(match[0] for match in financial_matches)
+            basic_matches = self._find_basic_words(cleaned_text, context_matches, financial_matched_texts)
             if basic_matches:
                 analysis_steps.append({
                     'step': '基本語彙検出（重複カウント対応版）',
@@ -603,25 +906,30 @@ class TransparentSentimentAnalyzer:
                     'impact': sum(score * count for _, score, _, count in basic_matches)
                 })
             
-            # 全てのマッチを統合（新形式：word, score, type, count）
-            all_matches = context_matches + basic_matches
+            # 全てのマッチを統合
+            all_matches = financial_matches + context_matches + basic_matches
             
-            # スコア計算（新形式対応）
+            # スコア計算
             score_calculation = self._calculate_detailed_score(all_matches)
             
             # 全体スコアと判定
             overall_score = score_calculation['final_score']
             sentiment_label = self._determine_sentiment_label(overall_score)
             
-            # 分析根拠の生成（強化版）
+            # 分析根拠の生成（財務文脈を含む）
             analysis_reasoning = self._generate_enhanced_reasoning(
                 analysis_steps, score_calculation, overall_score, sentiment_label
             )
             
-            # キーワード分析（新形式対応）
+            # 財務指標の抽出（新規追加）
+            financial_metrics = None
+            if self.financial_analyzer:
+                financial_metrics = self.financial_analyzer.extract_financial_metrics(cleaned_text)
+            
+            # キーワード分析
             keyword_analysis = self._analyze_enhanced_keywords(all_matches)
             
-            # キーワード頻度分析（新形式対応）
+            # キーワード頻度分析
             keyword_frequency_data = self._analyze_enhanced_keyword_frequency(all_matches)
             
             # 文章レベル分析
@@ -637,6 +945,7 @@ class TransparentSentimentAnalyzer:
                 'analysis_steps': analysis_steps,
                 'keyword_analysis': keyword_analysis,
                 'keyword_frequency_data': keyword_frequency_data,
+                'financial_metrics': financial_metrics,  # 新規追加
                 'sample_sentences': {
                     'positive': [s for s in sentence_analysis if s['score'] > self.config.positive_threshold][:5],
                     'negative': [s for s in sentence_analysis if s['score'] < self.config.negative_threshold][:5],
@@ -644,6 +953,7 @@ class TransparentSentimentAnalyzer:
                 'statistics': {
                     'total_words_analyzed': len(all_matches),
                     'total_occurrences': sum(count for _, _, _, count in all_matches),
+                    'financial_contexts_found': len(financial_matches),  # 新規追加
                     'context_patterns_found': len(context_matches),
                     'basic_words_found': len(basic_matches),
                     'sentences_analyzed': len(sentences),
@@ -662,8 +972,11 @@ class TransparentSentimentAnalyzer:
                     'analyzed_at': timezone.now().isoformat(),
                     'dictionary_size': len(self.dictionary.sentiment_dict),
                     'session_id': session_id,
-                    'analysis_version': '3.0_complete_integration',
-                    'features_enabled': ['重複カウント', '否定文対応', '複合語処理', '文脈強化']
+                    'analysis_version': '4.0_financial_context',
+                    'features_enabled': [
+                        '重複カウント', '否定文対応', '複合語処理', '文脈強化',
+                        '財務文脈分析' if self.config.enable_financial_context else None
+                    ]
                 }
             }
             
@@ -677,7 +990,7 @@ class TransparentSentimentAnalyzer:
         except Exception as e:
             logger.error(f"強化感情分析エラー: {e}")
             raise Exception(f"感情分析処理中にエラーが発生しました: {str(e)}")
-    
+        
     def _find_context_patterns(self, text: str) -> List[Tuple[str, float, str, int]]:
         """文脈パターンの検出（新形式：word, score, type, count）"""
         matches = []
@@ -722,9 +1035,101 @@ class TransparentSentimentAnalyzer:
             logger.debug(f"文脈パターン検出エラー: {e}")
             return []
     
-    def _find_basic_words(self, text: str, context_matches: List) -> List[Tuple[str, float, str, int]]:
-        """基本語彙の検出（新形式：word, score, type, count）"""
+    def _generate_enhanced_reasoning(self, analysis_steps: List, score_calc: Dict, 
+                                   overall_score: float, sentiment_label: str) -> Dict:
+        """強化された分析根拠の生成（財務文脈対応）"""
+        reasoning = {
+            'summary': '',
+            'key_factors': [],
+            'score_breakdown': '',
+            'conclusion': '',
+            'frequency_analysis': '',
+            'financial_context_summary': ''  # 新規追加
+        }
+        
+        # 財務文脈の影響を確認
+        financial_step = next((step for step in analysis_steps if '財務文脈' in step['step']), None)
+        if financial_step:
+            financial_impact = financial_step['impact']
+            if financial_impact > 0:
+                reasoning['key_factors'].append('財務指標の改善が検出されました')
+                reasoning['financial_context_summary'] = '負債の減少や収益の増加など、財務的に良好な変化が確認されています'
+            elif financial_impact < 0:
+                reasoning['key_factors'].append('財務指標の悪化が検出されました')
+                reasoning['financial_context_summary'] = '収益の減少や負債の増加など、財務的な課題が確認されています'
+            else:
+                reasoning['financial_context_summary'] = '財務指標は概ね中立的です'
+        
+        # 既存の処理を継続
+        pos_count = len(score_calc['positive_scores'])
+        neg_count = len(score_calc['negative_scores'])
+        total_occurrences = score_calc.get('total_occurrences', 0)
+        
+        if pos_count > neg_count:
+            reasoning['key_factors'].append(f'ポジティブな表現が{pos_count}個検出されました')
+        elif neg_count > pos_count:
+            reasoning['key_factors'].append(f'ネガティブな表現が{neg_count}個検出されました')
+        else:
+            reasoning['key_factors'].append('ポジティブとネガティブな表現が同数検出されました')
+        
+        # 出現頻度の分析
+        total_unique_words = len(score_calc['positive_words']) + len(score_calc['negative_words'])
+        if total_occurrences > total_unique_words:
+            reasoning['frequency_analysis'] = f'総出現回数{total_occurrences}回で、重複する表現が多く確信度が高い分析です'
+            reasoning['key_factors'].append('同じ表現の重複により信頼性が向上しています')
+        else:
+            reasoning['frequency_analysis'] = f'総出現回数{total_occurrences}回で、多様な表現による分析です'
+        
+        # 文脈パターンの影響
+        context_steps = [step for step in analysis_steps if '文脈' in step['step'] and '財務' not in step['step']]
+        if context_steps:
+            context_impact = context_steps[0]['impact']
+            if context_impact > 0:
+                reasoning['key_factors'].append('改善を示す文脈表現が検出されました')
+            elif context_impact < 0:
+                reasoning['key_factors'].append('悪化を示す文脈表現が検出されました')
+        
+        # スコアの内訳説明
+        if score_calc['positive_sum'] and score_calc['negative_sum']:
+            reasoning['score_breakdown'] = (
+                f'ポジティブ合計: {score_calc["positive_sum"]:.2f}, '
+                f'ネガティブ合計: {score_calc["negative_sum"]:.2f}, '
+                f'平均スコア: {score_calc["average_score"]:.2f}, '
+                f'重み付き平均: {score_calc.get("weighted_average", 0):.2f}'
+            )
+        elif score_calc['positive_sum']:
+            reasoning['score_breakdown'] = f'ポジティブ表現のみ検出: 合計{score_calc["positive_sum"]:.2f}'
+        elif score_calc['negative_sum']:
+            reasoning['score_breakdown'] = f'ネガティブ表現のみ検出: 合計{score_calc["negative_sum"]:.2f}'
+        else:
+            reasoning['score_breakdown'] = '感情を表す表現が検出されませんでした'
+        
+        # 結論
+        if sentiment_label == 'positive':
+            if overall_score > 0.6:
+                reasoning['conclusion'] = '非常にポジティブな内容で、財務面でも良好な結果が示されています'
+            else:
+                reasoning['conclusion'] = 'やや前向きな内容です'
+        elif sentiment_label == 'negative':
+            if overall_score < -0.6:
+                reasoning['conclusion'] = '非常にネガティブな内容で、財務面でも課題が示されています'
+            else:
+                reasoning['conclusion'] = 'やや慎重な内容です'
+        else:
+            reasoning['conclusion'] = '中立的な内容です'
+        
+        # 要約
+        reasoning['summary'] = f'{reasoning["conclusion"]}。{reasoning["frequency_analysis"]}'
+        if reasoning['financial_context_summary']:
+            reasoning['summary'] += f' {reasoning["financial_context_summary"]}'
+        
+        return reasoning
+    
+    def _find_basic_words(self, text: str, context_matches: List, 
+                         excluded_texts: set = None) -> List[Tuple[str, float, str, int]]:
+        """基本語彙の検出（財務文脈除外対応）"""
         matches = []
+        excluded_texts = excluded_texts or set()
         
         try:
             # 文脈パターンで検出された語句を除外対象とする
@@ -737,8 +1142,9 @@ class TransparentSentimentAnalyzer:
             for word, score in sorted_words:
                 if len(word) < 1:
                     continue
-                    
-                if word in context_words:
+                
+                # 除外チェック
+                if word in context_words or word in excluded_texts:
                     continue
                 
                 # テキスト内での出現位置と回数をカウント
@@ -754,7 +1160,9 @@ class TransparentSentimentAnalyzer:
                     is_overlapping = any(pos < end and word_end > start_pos 
                                        for start_pos, end in processed_positions)
                     
-                    if not is_overlapping:
+                    # 財務文脈で既に処理されていないかチェック
+                    text_segment = text[pos:word_end]
+                    if not is_overlapping and text_segment not in excluded_texts:
                         word_positions.append((pos, word_end))
                     
                     start = pos + 1
@@ -772,7 +1180,7 @@ class TransparentSentimentAnalyzer:
         except Exception as e:
             logger.debug(f"基本語彙検出エラー: {e}")
             return []
-    
+        
     def _calculate_detailed_score(self, all_matches: List[Tuple[str, float, str, int]]) -> Dict:
         """詳細なスコア計算（新形式対応）"""
         if not all_matches:
@@ -961,17 +1369,32 @@ class TransparentSentimentAnalyzer:
             logger.error(f"強化キーワード頻度分析エラー: {e}")
             return frequency_data
     
-    def _generate_enhanced_reasoning(self, analysis_steps: List, score_calc: Dict, overall_score: float, sentiment_label: str) -> Dict:
-        """強化された分析根拠の生成"""
+    def _generate_enhanced_reasoning(self, analysis_steps: List, score_calc: Dict, 
+                                   overall_score: float, sentiment_label: str) -> Dict:
+        """強化された分析根拠の生成（財務文脈対応）"""
         reasoning = {
             'summary': '',
             'key_factors': [],
             'score_breakdown': '',
             'conclusion': '',
-            'frequency_analysis': ''
+            'frequency_analysis': '',
+            'financial_context_summary': ''  # 新規追加
         }
         
-        # 主要因子の特定（重複カウント考慮）
+        # 財務文脈の影響を確認
+        financial_step = next((step for step in analysis_steps if '財務文脈' in step['step']), None)
+        if financial_step:
+            financial_impact = financial_step['impact']
+            if financial_impact > 0:
+                reasoning['key_factors'].append('財務指標の改善が検出されました')
+                reasoning['financial_context_summary'] = '負債の減少や収益の増加など、財務的に良好な変化が確認されています'
+            elif financial_impact < 0:
+                reasoning['key_factors'].append('財務指標の悪化が検出されました')
+                reasoning['financial_context_summary'] = '収益の減少や負債の増加など、財務的な課題が確認されています'
+            else:
+                reasoning['financial_context_summary'] = '財務指標は概ね中立的です'
+        
+        # 既存の処理を継続
         pos_count = len(score_calc['positive_scores'])
         neg_count = len(score_calc['negative_scores'])
         total_occurrences = score_calc.get('total_occurrences', 0)
@@ -992,18 +1415,13 @@ class TransparentSentimentAnalyzer:
             reasoning['frequency_analysis'] = f'総出現回数{total_occurrences}回で、多様な表現による分析です'
         
         # 文脈パターンの影響
-        context_steps = [step for step in analysis_steps if '文脈' in step['step']]
+        context_steps = [step for step in analysis_steps if '文脈' in step['step'] and '財務' not in step['step']]
         if context_steps:
             context_impact = context_steps[0]['impact']
             if context_impact > 0:
                 reasoning['key_factors'].append('改善を示す文脈表現が検出されました')
             elif context_impact < 0:
                 reasoning['key_factors'].append('悪化を示す文脈表現が検出されました')
-        
-        # 否定文の検出
-        negation_steps = [step for step in analysis_steps if '否定' in step.get('description', '')]
-        if negation_steps:
-            reasoning['key_factors'].append('否定文による文脈の反転が考慮されています')
         
         # スコアの内訳説明
         if score_calc['positive_sum'] and score_calc['negative_sum']:
@@ -1023,12 +1441,12 @@ class TransparentSentimentAnalyzer:
         # 結論
         if sentiment_label == 'positive':
             if overall_score > 0.6:
-                reasoning['conclusion'] = '非常にポジティブな内容で、重複する表現により確信度が高い分析です'
+                reasoning['conclusion'] = '非常にポジティブな内容で、財務面でも良好な結果が示されています'
             else:
                 reasoning['conclusion'] = 'やや前向きな内容です'
         elif sentiment_label == 'negative':
             if overall_score < -0.6:
-                reasoning['conclusion'] = '非常にネガティブな内容で、重複する表現により確信度が高い分析です'
+                reasoning['conclusion'] = '非常にネガティブな内容で、財務面でも課題が示されています'
             else:
                 reasoning['conclusion'] = 'やや慎重な内容です'
         else:
@@ -1036,9 +1454,12 @@ class TransparentSentimentAnalyzer:
         
         # 要約
         reasoning['summary'] = f'{reasoning["conclusion"]}。{reasoning["frequency_analysis"]}'
+        if reasoning['financial_context_summary']:
+            reasoning['summary'] += f' {reasoning["financial_context_summary"]}'
         
         return reasoning
-    
+
+
     def analyze_text_sections(self, text_sections: Dict[str, str], session_id: str = None, document_info: Dict[str, str] = None) -> Dict[str, Any]:
         """複数セクションの分析（完全統合版）"""
         try:
