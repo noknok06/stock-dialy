@@ -406,7 +406,7 @@
                             <select class="form-select form-select-sm" id="wordcloud-min-count">
                                 <option value="3">3回以上</option>
                                 <option value="5">5回以上</option>
-                                <option value="10 selected">10回以上</option>
+                                <option value="10" selected>10回以上</option>
                                 <option value="20">20回以上</option>
                                 <option value="50">50回以上</option>
                             </select>
@@ -1356,7 +1356,141 @@ function initializeWordcloudSimple() {
 }
 
 // ========================================
-// その他の関数は前回と同じ
+// ワードクラウド生成
+// ========================================
+// ワードクラウド生成
+function generateWordcloud(wordsData) {
+    console.log('ワードクラウド生成開始:', wordsData.length, '語');
+    
+    const canvas = document.getElementById('wordcloud-canvas');
+    if (!canvas) {
+        console.error('キャンバス要素が見つかりません');
+        return;
+    }
+    
+    if (!wordsData || wordsData.length === 0) {
+        showWordcloudError('表示する語彙がありません');
+        return;
+    }
+    
+    // キャンバスクリア
+    canvas.innerHTML = '';
+    
+    // キャンバスサイズ設定
+    const containerWidth = canvas.offsetWidth;
+    const containerHeight = Math.max(500, containerWidth * 0.7);
+    canvas.style.height = containerHeight + 'px';
+    
+    // 出現回数の最小値と最大値を取得
+    const counts = wordsData.map(w => w.size);
+    const minCount = Math.min(...counts);
+    const maxCount = Math.max(...counts);
+    
+    console.log('カウント範囲:', { minCount, maxCount });
+    
+    // WordCloud2.js用のデータ変換
+    const wordcloudList = wordsData.map(word => {
+        // 動的なサイズ計算（表示データの範囲に基づく）
+        let fontSize;
+        
+        if (maxCount === minCount) {
+            // 全て同じカウントの場合
+            fontSize = 40;
+        } else {
+            // 相対的な位置を計算（0〜1の範囲）
+            const relativePosition = (word.size - minCount) / (maxCount - minCount);
+            
+            // スケールタイプを選択（対数スケールまたは線形スケール）
+            // 範囲が広い場合は対数スケール、狭い場合は線形スケールを使用
+            let scaledValue;
+            if (maxCount / minCount > 10) {
+                // 対数スケールを使用して、より自然な分布を作成
+                scaledValue = Math.log10(1 + relativePosition * 9);
+            } else {
+                // 線形スケールを使用（範囲が狭い場合）
+                scaledValue = relativePosition;
+            }
+            
+            // 最小フォントサイズと最大フォントサイズの設定
+            const minFontSize = 16;
+            const maxFontSize = Math.min(120, containerWidth / 8); // コンテナサイズに応じて調整
+            
+            // フォントサイズの計算
+            fontSize = minFontSize + (maxFontSize - minFontSize) * scaledValue;
+            
+            // 追加の調整：上位語彙をより強調
+            if (relativePosition > 0.8) {
+                fontSize *= 1.2;
+            } else if (relativePosition > 0.6) {
+                fontSize *= 1.1;
+            }
+        }
+        
+        // 最終的なサイズの制限
+        fontSize = Math.max(14, Math.min(fontSize, 150));
+        
+        return [word.text, fontSize, null, null, null, null, word.color];
+    });
+    
+    try {
+        // ワードクラウド生成
+        WordCloud(canvas, {
+            list: wordcloudList,
+            gridSize: Math.round(24 * containerWidth / 1024),
+            weightFactor: function(size) {
+                // 動的なウェイトファクター計算
+                // サイズはすでに調整済みなので、コンテナサイズに応じたスケールのみ適用
+                const scaleFactor = containerWidth / 800; // 800pxを基準とする
+                return size * scaleFactor;
+            },
+            fontFamily: '"Hiragino Kaku Gothic Pro", "ヒラギノ角ゴ Pro", "Yu Gothic", "游ゴシック", Meiryo, "メイリオ", sans-serif',
+            color: function(word, weight, fontSize, distance, theta) {
+                const wordData = wordsData.find(w => w.text === word);
+                return wordData ? wordData.color : '#666';
+            },
+            backgroundColor: 'transparent',
+            rotateRatio: 0.3,
+            maxRotation: Math.PI / 6,
+            minRotation: -Math.PI / 6,
+            shuffle: true,
+            rotationSteps: 2,
+            ellipticity: 0.6,
+            shrinkToFit: true,
+            hover: function(item, dimension, event) {
+                if (item) {
+                    showWordTooltip(item[0], item[1], event);
+                } else {
+                    hideWordTooltip();
+                }
+            },
+            click: function(item, dimension, event) {
+                if (item) {
+                    highlightWord(item[0]);
+                }
+            }
+        });
+        
+        // 表示語数更新
+        updateDisplayedCount(wordsData.length);
+        
+        // デバッグ情報をコンソールに出力
+        console.log('ワードクラウド生成完了');
+        console.log('サイズ分布:', {
+            '0-20': wordcloudList.filter(w => w[1] < 20).length,
+            '20-40': wordcloudList.filter(w => w[1] >= 20 && w[1] < 40).length,
+            '40-60': wordcloudList.filter(w => w[1] >= 40 && w[1] < 60).length,
+            '60-80': wordcloudList.filter(w => w[1] >= 60 && w[1] < 80).length,
+            '80+': wordcloudList.filter(w => w[1] >= 80).length
+        });
+        
+    } catch (error) {
+        console.error('ワードクラウド生成エラー:', error);
+        showWordcloudError('ワードクラウドの生成に失敗しました');
+    }
+}
+
+// ========================================
+// その他の関数
 // ========================================
 
 // 統計表示の更新
@@ -1366,7 +1500,19 @@ function updateStatisticsDisplay() {
     
     document.getElementById('total-words').textContent = stats.total_unique_words;
     document.getElementById('total-occurrences').textContent = stats.total_occurrences;
-    document.getElementById('max-occurrences').textContent = currentData.length > 0 ? Math.max(...currentData.map(w => w.size)) : 0;
+    
+    // 最大出現回数と最小出現回数を表示
+    const maxOccurrences = currentData.length > 0 ? Math.max(...currentData.map(w => w.size)) : 0;
+    const minOccurrences = currentData.length > 0 ? Math.min(...currentData.map(w => w.size)) : 0;
+    
+    document.getElementById('max-occurrences').textContent = maxOccurrences;
+    
+    // 出現回数の範囲を表示（デバッグ用）
+    console.log('出現回数範囲:', {
+        min: minOccurrences,
+        max: maxOccurrences,
+        range: maxOccurrences - minOccurrences
+    });
     
     // 感情別統計の要素が存在する場合のみ更新
     const positiveCountEl = document.getElementById('positive-count');
@@ -1404,95 +1550,6 @@ function updateDisplayedCount(count) {
     const countElement = document.getElementById('wordcloud-displayed-count');
     if (countElement) {
         countElement.textContent = count;
-    }
-}
-
-// ワードクラウド生成
-function generateWordcloud(wordsData) {
-    console.log('ワードクラウド生成開始:', wordsData.length, '語');
-    
-    const canvas = document.getElementById('wordcloud-canvas');
-    if (!canvas) {
-        console.error('キャンバス要素が見つかりません');
-        return;
-    }
-    
-    if (!wordsData || wordsData.length === 0) {
-        showWordcloudError('表示する語彙がありません');
-        return;
-    }
-    
-    // キャンバスクリア
-    canvas.innerHTML = '';
-    
-    // キャンバスサイズ設定
-    const containerWidth = canvas.offsetWidth;
-    const containerHeight = Math.max(500, containerWidth * 0.7);
-    canvas.style.height = containerHeight + 'px';
-    
-    // WordCloud2.js用のデータ変換
-    const wordcloudList = wordsData.map(word => {
-        // 文字サイズを語彙の出現頻度に基づいて差別化
-        let fontSize;
-        
-        if (word.size >= 20) {
-            fontSize = Math.min(100, word.size * 3 + 40);
-        } else if (word.size >= 10) {
-            fontSize = Math.min(80, word.size * 2.5 + 30);
-        } else if (word.size >= 5) {
-            fontSize = Math.min(60, word.size * 2 + 20);
-        } else {
-            fontSize = Math.min(40, word.size * 1.5 + 15);
-        }
-        
-        fontSize = Math.max(16, fontSize);
-        
-        return [word.text, fontSize, null, null, null, null, word.color];
-    });
-    
-    try {
-        // ワードクラウド生成
-        WordCloud(canvas, {
-            list: wordcloudList,
-            gridSize: Math.round(24 * containerWidth / 1024),
-            weightFactor: function(size) {
-                return Math.pow(size, 0.9) * containerWidth / 512;
-            },
-            fontFamily: '"Hiragino Kaku Gothic Pro", "ヒラギノ角ゴ Pro", "Yu Gothic", "游ゴシック", Meiryo, "メイリオ", sans-serif',
-            color: function(word, weight, fontSize, distance, theta) {
-                const wordData = wordsData.find(w => w.text === word);
-                return wordData ? wordData.color : '#666';
-            },
-            backgroundColor: 'transparent',
-            rotateRatio: 0.3,
-            maxRotation: Math.PI / 6,
-            minRotation: -Math.PI / 6,
-            shuffle: true,
-            rotationSteps: 2,
-            ellipticity: 0.6,
-            shrinkToFit: true,
-            hover: function(item, dimension, event) {
-                if (item) {
-                    showWordTooltip(item[0], item[1], event);
-                } else {
-                    hideWordTooltip();
-                }
-            },
-            click: function(item, dimension, event) {
-                if (item) {
-                    highlightWord(item[0]);
-                }
-            }
-        });
-        
-        // 表示語数更新
-        updateDisplayedCount(wordsData.length);
-        
-        console.log('ワードクラウド生成完了');
-        
-    } catch (error) {
-        console.error('ワードクラウド生成エラー:', error);
-        showWordcloudError('ワードクラウドの生成に失敗しました');
     }
 }
 
@@ -1643,6 +1700,16 @@ function applyCurrentFilters() {
     }
     
     console.log('フィルター後のデータ数:', filteredData.length);
+    
+    // フィルター後のカウント範囲を確認
+    if (filteredData.length > 0) {
+        const counts = filteredData.map(w => w.size);
+        console.log('フィルター後のカウント範囲:', {
+            min: Math.min(...counts),
+            max: Math.max(...counts),
+            データ数: filteredData.length
+        });
+    }
     
     currentWordcloudData = filteredData;
     generateWordcloud(filteredData);
