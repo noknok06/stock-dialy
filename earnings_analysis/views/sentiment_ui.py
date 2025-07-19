@@ -146,37 +146,13 @@ class SentimentResultView(TemplateView):
             # リスク評価
             if 'risk_assessment' in insights:
                 risk_data = insights['risk_assessment']
-                
-                # identified_risksの形式を確認
-                identified_risks = []
-                raw_risks = risk_data.get('identified_risks', [])
-                
-                for risk in raw_risks:
-                    if isinstance(risk, dict):
-                        # 新形式（辞書型）の場合
-                        identified_risks.append(risk)
-                    else:
-                        # 旧形式（文字列）の場合は変換
-                        identified_risks.append({
-                            'id': f'risk_{len(identified_risks)+1}',
-                            'text': risk,
-                            'full_details': {
-                                'full_text': risk,
-                                'count': 1,
-                                'context': ''
-                            }
-                        })
-                
                 formatted['risk_assessment'] = {
                     'risk_level': risk_data.get('risk_level', 'medium'),
-                    'identified_risks': identified_risks[:5],  # 最大5件
-                    'risk_categories': risk_data.get('risk_categories', {}),
-                    'mitigation_evidence': risk_data.get('mitigation_evidence', [])[:3],
-                    'monitoring_points': risk_data.get('monitoring_points', [])[:2],
+                    'identified_risks': risk_data.get('identified_risks', []),
+                    'mitigation_evidence': risk_data.get('mitigation_evidence', []),
                 }
             
             return formatted
-            
             
         except Exception as e:
             logger.error(f"見解フォーマットエラー: {e}")
