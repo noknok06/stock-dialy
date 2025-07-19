@@ -142,34 +142,35 @@
                                 {% endif %}
                             </div>
                             
-                            <!-- Document Description -->
-                            <p class="mb-2 text-muted text-truncate-3">
-                                <a href="{% url 'earnings_analysis:document-detail-ui' document.doc_id %}" 
-                                   class="text-decoration-none text-reset">
-                                    {{ document.doc_description }}
-                                </a>
-                            </p>
-                            
                             <!-- Document Info -->
                             <div class="small text-muted">
                                 <div class="d-flex flex-wrap gap-3">
-                                    <span>
-                                        <i class="fas fa-calendar me-1"></i>
-                                        {{ document.submit_date_time|date:"Y/m/d" }}
-                                    </span>
-                                    {% if document.period_start and document.period_end %}
-                                        <span>
-                                            <i class="fas fa-clock me-1"></i>
-                                            {{ document.period_start|date:"Y/m/d" }} 〜 {{ document.period_end|date:"Y/m/d" }}
-                                        </span>
-                                    {% endif %}
+                                    <!-- 書類IDを目立たせる -->
+                                    <a href="{% url 'earnings_analysis:document-detail-ui' document.doc_id %}" 
+                                    class="text-decoration-none mb-1">
+                                        <strong class="text-primary">
+                                            <i class="fas fa-file-alt me-1"></i>{{ document.doc_id }}
+                                        </strong>
+                                    </a>
                                     <span>
                                         <i class="fas fa-tag me-1"></i>
                                         <strong>{{ document.doc_type_display_name }}</strong>
                                         <small class="text-muted">({{ document.doc_type_code }})</small>
                                     </span>
                                 </div>
+                                <!-- Document Description -->
+                                <span>
+                                    <i class="fas fa-calendar me-1"></i>
+                                    {{ document.submit_date_time|date:"Y/m/d" }}
+                                </span>
+                                {% if document.period_start and document.period_end %}
+                                    <span>
+                                        <i class="fas fa-clock me-1"></i>
+                                        {{ document.period_start|date:"Y/m/d" }} 〜 {{ document.period_end|date:"Y/m/d" }}
+                                    </span>
+                                {% endif %}
                             </div>
+                            
                             
                             <!-- Analysis Priority Badge -->
                             {% if document.analysis_suitable %}
@@ -228,13 +229,13 @@
                                 <!-- Analysis Buttons -->
                                 <div class="btn-group" role="group" aria-label="分析">
                                     <a href="{% url 'earnings_analysis:financial-analysis' document.doc_id %}" 
-                                       class="btn btn-outline-primary btn-sm"
+                                       class="btn btn-outline-success btn-sm"
                                        data-bs-toggle="tooltip" title="財務分析">
                                         <i class="fas fa-chart-pie me-1"></i>
                                         <span class="d-md-none">財務分析</span>
                                     </a>
                                     <a href="{% url 'earnings_analysis:sentiment-analysis' document.doc_id %}" 
-                                       class="btn btn-outline-success btn-sm"
+                                       class="btn btn-outline-primary btn-sm"
                                        data-bs-toggle="tooltip" title="感情分析">
                                         <i class="fas fa-brain me-1"></i>
                                         <span class="d-md-none">感情分析</span>

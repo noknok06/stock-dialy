@@ -122,63 +122,46 @@
                     <i class="fas fa-play-circle me-2"></i>感情分析実行
                 </h5>
             </div>
-            <div class="card-body">
-                {% if has_recent_analysis %}
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        1時間以内に分析が実行されています。再実行する場合は「強制実行」を選択してください。
-                    </div>
-                {% endif %}
-                
+            <div class="card-body">                
                 <div class="text-center py-4">
                     <i class="fas fa-brain fa-4x text-primary mb-4"></i>
                     <h5 class="mb-3">感情分析を開始</h5>
                     
                     <div class="row g-3 mb-4">
-                        <div class="col-12 col-md-6">
-                            <div class="border rounded p-3 h-100">
-                                <h6 class="text-primary mb-2">
-                                    <i class="fas fa-search me-1"></i>分析内容
-                                </h6>
-                                <ul class="list-unstyled small mb-0">
-                                    <li><i class="fas fa-check text-success me-1"></i>ポジティブ・ネガティブ表現検出</li>
-                                    <li><i class="fas fa-check text-success me-1"></i>感情スコア算出 (-1.0 〜 +1.0)</li>
-                                    <li><i class="fas fa-check text-success me-1"></i>キーワード頻度分析</li>
-                                    <li><i class="fas fa-check text-success me-1"></i>経営陣の自信度測定</li>
-                                </ul>
-                            </div>
+                    {% if has_recent_analysis %}
+                        <div class="alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>既に分析結果があります</strong><br>
+                            <small>最新の分析: {{ latest_session.created_at|date:"Y/m/d H:i" }}</small>
                         </div>
-                        <div class="col-12 col-md-6">
-                            <div class="border rounded p-3 h-100">
-                                <h6 class="text-info mb-2">
-                                    <i class="fas fa-info-circle me-1"></i>分析の特徴
-                                </h6>
-                                <ul class="list-unstyled small mb-0">
-                                    <li><i class="fas fa-clock me-1"></i>約2-3分で完了</li>
-                                    <li><i class="fas fa-file-text me-1"></i>全文テキスト解析</li>
-                                    <li><i class="fas fa-robot me-1"></i>機械学習による自動判定</li>
-                                    <li><i class="fas fa-chart-bar me-1"></i>視覚的な結果表示</li>
-                                </ul>
-                            </div>
+                        
+                        <!-- 既存結果がある場合のボタン -->
+                        <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
+                            <a href="{% url 'earnings_analysis:sentiment-result' latest_session.session_id %}" 
+                            class="btn btn-primary btn-lg">
+                                <i class="fas fa-chart-line me-2"></i>分析結果を表示
+                            </a>
+                            <button type="button" class="btn btn-outline-warning" 
+                                    onclick="startSentimentAnalysis('{{ document.doc_id }}', true)">
+                                <i class="fas fa-redo me-2"></i>再分析（結果を更新）
+                            </button>
                         </div>
+                    {% else %}
+                        <!-- 初回分析の場合 -->
+                        <div class="text-center py-4">
+                            <button type="button" class="btn btn-primary btn-lg" 
+                                    onclick="startSentimentAnalysis('{{ document.doc_id }}', false)">
+                                <i class="fas fa-play me-2"></i>分析を実行
+                            </button>
+                        </div>
+                    {% endif %}
+                    <!-- 分析説明を簡潔に -->
+                    <div class="mt-4 text-center">
+                        <small class="text-muted">
+                            <i class="fas fa-clock me-1"></i>分析には約1-2分かかる場合があります。
+                        </small>
                     </div>
-                    
-                    <div class="alert alert-info">
-                        <i class="fas fa-lightbulb me-2"></i>
-                        <strong>分析対象:</strong> 書類内のテキスト全体から感情を表現する語彙を抽出し、統計的に分析します。
-                        市場への影響や経営戦略の読み取りも行います。
-                    </div>
-                    
-                    <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
-                        <button type="button" class="btn btn-primary btn-lg" 
-                                onclick="startSentimentAnalysis('{{ document.doc_id }}', false)">
-                            <i class="fas fa-play me-2"></i>分析開始
-                        </button>
-                        <button type="button" class="btn btn-outline-warning" 
-                                onclick="startSentimentAnalysis('{{ document.doc_id }}', true)">
-                            <i class="fas fa-redo me-2"></i>強制実行
-                        </button>
-                    </div>
+                    </div>                                
                 </div>
             </div>
         </div>

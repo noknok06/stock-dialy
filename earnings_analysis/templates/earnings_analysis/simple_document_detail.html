@@ -139,7 +139,7 @@
                         </div>
                     </div>
                 {% else %}
-                    <div class="alert alert-warning d-flex align-items-center mb-4">
+                    <div class="alert-warning d-flex align-items-center mb-4">
                         <i class="fas fa-exclamation-triangle fa-lg me-3"></i>
                         <div>
                             <strong>この書類は分析機能が制限されます</strong><br>
@@ -154,7 +154,7 @@
                     <div class="col-12 col-md-6">
                         <div class="border rounded p-3 h-100">
                             <div class="text-center mb-3">
-                                <i class="fas fa-brain fa-3x text-success mb-3"></i>
+                                <i class="fas fa-brain fa-3x text-primary mb-3"></i>
                                 <h6 class="mb-2">感情分析</h6>
                                 <p class="small text-muted mb-3">
                                     書類の感情を自動分析<br>
@@ -164,7 +164,7 @@
                             </div>
                             <div class="mt-auto">
                                 <a href="{% url 'earnings_analysis:sentiment-analysis' document.doc_id %}" 
-                                   class="btn btn-success w-100 mb-2">
+                                   class="btn btn-primary w-100 mb-2">
                                     <i class="fas fa-brain me-2"></i>感情分析開始
                                 </a>
                                 <div class="small text-muted text-center">
@@ -180,7 +180,7 @@
                     <div class="col-12 col-md-6">
                         <div class="border rounded p-3 h-100">
                             <div class="text-center mb-3">
-                                <i class="fas fa-chart-pie fa-3x text-primary mb-3"></i>
+                                <i class="fas fa-chart-pie fa-3x text-success mb-3"></i>
                                 <h6 class="mb-2">財務分析</h6>
                                 <p class="small text-muted mb-3">
                                     包括的な財務健全性評価<br>
@@ -190,7 +190,7 @@
                             </div>
                             <div class="mt-auto">
                                 <a href="{% url 'earnings_analysis:financial-analysis' document.doc_id %}" 
-                                   class="btn btn-primary w-100 mb-2">
+                                   class="btn btn-success w-100 mb-2">
                                     <i class="fas fa-chart-pie me-2"></i>財務分析開始
                                 </a>
                                 <div class="small text-muted text-center">
@@ -207,22 +207,6 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- One-Click Analysis -->
-                <div class="mt-4 p-3 bg-light rounded">
-                    <div class="text-center">
-                        <h6 class="text-primary mb-2">
-                            <i class="fas fa-rocket me-2"></i>ワンクリック包括分析
-                        </h6>
-                        <p class="small text-muted mb-3">
-                            財務分析と感情分析を一括で実行し、総合的な企業評価を提供します
-                        </p>
-                        <a href="{% url 'earnings_analysis:financial-analysis' document.doc_id %}" 
-                           class="btn btn-outline-primary">
-                            <i class="fas fa-rocket me-2"></i>包括分析を開始
-                        </a>
                     </div>
                 </div>
             </div>
