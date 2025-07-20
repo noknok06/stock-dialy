@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 # Admin Site の設定
 admin.site.site_header = 'コーポマインドリーダー'
-admin.site.site_title = 'CMR Admin'
+admin.site.site_title = 'CorpMindReader Admin'
 admin.site.index_title = 'システム管理ダッシュボード'
 
 # カスタムフィルター
