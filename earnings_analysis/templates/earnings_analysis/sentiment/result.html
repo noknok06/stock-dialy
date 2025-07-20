@@ -241,6 +241,285 @@
                 transition: none !important;
             }
         }
+        .score-circle-container {
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+        }
+
+        .point-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .point-item i {
+            margin-top: 0.125rem;
+            flex-shrink: 0;
+        }
+
+        .score-range-item {
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .score-range-item:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+            border-color: rgba(255,255,255,0.3);
+        }
+
+        .interpretation-main .alert {
+            border-radius: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* 星評価関連CSS */
+        .rating-item {
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.1);
+            min-height: 70px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .rating-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .star-rating {
+            letter-spacing: 1px;
+            line-height: 1;
+            transition: all 0.3s ease;
+        }
+
+        .x-small {
+            font-size: 0.7rem;
+        }
+
+        /* 信頼性メトリクス関連CSS */
+        .reliability-gauge {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+
+        .reliability-circle-container {
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        }
+
+        .data-quality-metrics,
+        .analysis-methods {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            transition: all 0.3s ease;
+        }
+
+        .data-quality-metrics:hover,
+        .analysis-methods:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .metric-item {
+            padding: 0.25rem 0;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .metric-item:last-child {
+            border-bottom: none;
+        }
+
+        .feature-item {
+            padding: 0.125rem 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .feature-item i {
+            flex-shrink: 0;
+        }
+
+        /* 信頼性レベル別の色分け */
+        .reliability-exceptional { background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); }
+        .reliability-very-high { background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%); }
+        .reliability-high { background: linear-gradient(135deg, #e2e3e5 0%, #d6d8db 100%); }
+        .reliability-medium { background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); }
+        .reliability-low { background: linear-gradient(135deg, #f8d7da 0%, #f1b0b7 100%); }
+
+        @media (max-width: 768px) {
+            .score-circle-container {
+                width: 150px !important;
+                height: 150px !important;
+            }
+            
+            .score-circle-container svg {
+                width: 150px !important;
+                height: 150px !important;
+            }
+            
+            .score-circle-container circle {
+                cx: 75 !important;
+                cy: 75 !important;
+                r: 60 !important;
+            }
+            
+            .score-number-large {
+                font-size: 1.8rem !important;
+            }
+            
+            .score-range-item {
+                margin-bottom: 0.5rem;
+                min-height: 50px;
+                padding: 0.5rem !important;
+            }
+            
+            .score-range-item .fw-bold {
+                font-size: 0.8rem;
+            }
+            
+            .score-range-item .x-small {
+                font-size: 0.65rem;
+            }
+            
+            .reliability-circle-container {
+                width: 80px !important;
+                height: 80px !important;
+            }
+            
+            .reliability-circle-container svg {
+                width: 80px !important;
+                height: 80px !important;
+            }
+            
+            .reliability-circle-container circle {
+                cx: 40 !important;
+                cy: 40 !important;
+                r: 28 !important;
+            }
+            
+            .data-quality-metrics,
+            .analysis-methods {
+                margin-bottom: 1rem;
+            }
+            
+            /* 星評価のモバイル調整 */
+            .rating-item {
+                min-height: 60px;
+                padding: 0.75rem !important;
+            }
+            
+            .star-rating {
+                font-size: 0.8rem !important;
+            }
+            
+            /* 投資家向けポイントの調整 */
+            .point-item {
+                margin-bottom: 0.5rem;
+            }
+            
+            .point-item .fw-semibold {
+                font-size: 0.9rem;
+            }
+            
+            .point-item .small {
+                font-size: 0.8rem;
+            }
+            
+            /* アラート内の調整 */
+            .interpretation-main .alert {
+                padding: 1rem;
+            }
+            
+            .interpretation-main .alert h6 {
+                font-size: 1rem;
+            }
+            
+            .interpretation-main .alert p {
+                font-size: 0.9rem;
+                margin-bottom: 1rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .score-circle-container {
+                width: 120px !important;
+                height: 120px !important;
+            }
+            
+            .score-circle-container svg {
+                width: 120px !important;
+                height: 120px !important;
+            }
+            
+            .score-circle-container circle {
+                cx: 60 !important;
+                cy: 60 !important;
+                r: 45 !important;
+            }
+            
+            .score-number-large {
+                font-size: 1.5rem !important;
+            }
+            
+            .reliability-circle-container {
+                width: 70px !important;
+                height: 70px !important;
+            }
+            
+            .reliability-circle-container svg {
+                width: 70px !important;
+                height: 70px !important;
+            }
+            
+            .reliability-circle-container circle {
+                cx: 35 !important;
+                cy: 35 !important;
+                r: 25 !important;
+            }
+            
+            .rating-item {
+                min-height: 55px;
+                padding: 0.5rem !important;
+            }
+            
+            .rating-item .small {
+                font-size: 0.75rem;
+            }
+            
+            .star-rating {
+                font-size: 0.75rem !important;
+            }
+            
+            .score-range-item {
+                min-height: 45px;
+                padding: 0.4rem !important;
+            }
+            
+            .score-range-item .fw-bold {
+                font-size: 0.7rem;
+            }
+            
+            .score-range-item .x-small {
+                font-size: 0.6rem;
+            }
+        }
+
+        /* アクセシビリティ：アニメーション無効化 */
+        @media (prefers-reduced-motion: reduce) {
+            .score-circle-container *,
+            .reliability-circle-container *,
+            .score-range-item,
+            .rating-item,
+            .point-item,
+            .interpretation-main,
+            .metric-item,
+            .feature-item {
+                animation: none !important;
+                transition: none !important;
+            }
+        }        
     </style>
 {% block breadcrumb %}
 <nav aria-label="breadcrumb">
@@ -292,83 +571,147 @@
                 </h5>
             </div>
             <div class="card-body">
-                <div class="row align-items-center g-3">
-                    <div class="col-12 col-md-6">
-                        {% if session.sentiment_label == 'positive' %}
-                            <div class="score-display score-positive">
-                                <div class="score-number">{{ session.overall_score|floatformat:3 }}</div>
-                                <div class="score-label">
-                                    <i class="fas fa-smile me-2"></i>
-                                    <span class="badge {{ session.sentiment_label|sentiment_badge }} fs-6">ポジティブ</span>
+                <!-- スコア表示エリア -->
+                <div class="row align-items-center g-4">
+                    <!-- 左側：メインスコア表示 -->
+                    <div class="col-12 col-lg-6">
+                        <div class="score-main-display text-center">
+                            <!-- 大きなスコア数値 -->
+                            <div class="score-circle-container mb-3" style="position: relative; width: 200px; height: 200px; margin: 0 auto;">
+                                <!-- 背景円 -->
+                                <svg width="200" height="200" style="position: absolute; top: 0; left: 0;">
+                                    <circle cx="100" cy="100" r="80" fill="none" stroke="#e9ecef" stroke-width="12"></circle>
+                                    <!-- スコア円弧 -->
+                                    <circle id="score-arc" cx="100" cy="100" r="80" fill="none" 
+                                            stroke-width="12" 
+                                            stroke-dasharray="502.65" 
+                                            stroke-dashoffset="502.65"
+                                            style="transform: rotate(-90deg); transform-origin: 100px 100px; transition: stroke-dashoffset 2s ease-in-out;">
+                                    </circle>
+                                </svg>
+                                
+                                <!-- 中央のスコア表示 -->
+                                <div class="score-center-content" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                                    <div class="score-number-large" style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;" 
+                                        id="animated-score">0.000</div>
+                                    <div class="score-sentiment-badge">
+                                        {% if session.sentiment_label == 'positive' %}
+                                            <span class="badge bg-success fs-6" id="sentiment-badge">
+                                                <i class="fas fa-smile me-1"></i>ポジティブ
+                                            </span>
+                                        {% elif session.sentiment_label == 'negative' %}
+                                            <span class="badge bg-danger fs-6" id="sentiment-badge">
+                                                <i class="fas fa-frown me-1"></i>ネガティブ
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary fs-6" id="sentiment-badge">
+                                                <i class="fas fa-meh me-1"></i>中立
+                                            </span>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
-                        {% elif session.sentiment_label == 'negative' %}
-                            <div class="score-display score-negative">
-                                <div class="score-number">{{ session.overall_score|floatformat:3 }}</div>
-                                <div class="score-label">
-                                    <i class="fas fa-frown me-2"></i>
-                                    <span class="badge {{ session.sentiment_label|sentiment_badge }} fs-6">ネガティブ</span>
+                            
+                            <!-- スコア範囲ガイド -->
+                            <div class="score-range-guide">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <small class="text-danger fw-bold">-1.0</small>
+                                    <small class="text-muted">スコア範囲</small>
+                                    <small class="text-success fw-bold">+1.0</small>
                                 </div>
-                            </div>
-                        {% else %}
-                            <div class="score-display score-neutral">
-                                <div class="score-number">{{ session.overall_score|floatformat:3 }}</div>
-                                <div class="score-label">
-                                    <i class="fas fa-meh me-2"></i>
-                                    <span class="badge {{ session.sentiment_label|sentiment_badge }} fs-6">中立</span>
+                                <div class="position-relative">
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-danger" style="width: 50%"></div>
+                                        <div class="progress-bar bg-success" style="width: 50%"></div>
+                                    </div>
+                                    <!-- 現在位置インジケーター -->
+                                    <div class="score-indicator" id="score-position" 
+                                        style="position: absolute; top: -2px; width: 12px; height: 12px; 
+                                                background: #007bff; border: 2px solid white; border-radius: 50%; 
+                                                box-shadow: 0 2px 4px rgba(0,0,0,0.3); transform: translateX(-50%);
+                                                transition: left 2s ease-in-out;">
+                                    </div>
                                 </div>
-                            </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <h6>スコア解釈</h6>
-                        <div class="small text-muted mb-3">
-                            <div class="d-flex justify-content-between">
-                                <span>-1.0</span>
-                                <span>0.0</span>
-                                <span>+1.0</span>
-                            </div>
-                            <div class="progress mb-2" style="height: 10px;">
-                                <div class="progress-bar bg-danger" style="width: 50%"></div>
-                                <div class="progress-bar bg-success" style="width: 50%"></div>
-                            </div>
-                            <div class="d-flex justify-content-between">
-                                <span>ネガティブ</span>
-                                <span>ポジティブ</span>
+                                <div class="d-flex justify-content-between mt-1">
+                                    <small class="text-muted">非常にネガティブ</small>
+                                    <small class="text-muted">非常にポジティブ</small>
+                                </div>
                             </div>
                         </div>
-                        
-                        {% if session.overall_score > 0.5 %}
-                            <div class="alert alert-success">
-                                <i class="fas fa-thumbs-up me-2"></i>
-                                非常にポジティブな内容です
+                    </div>
+                    
+                    <!-- 右側：詳細解釈 -->
+                    <div class="col-12 col-lg-6">
+                        <div class="score-interpretation">
+                            
+                            <!-- 分析から読み取れるポイント -->
+                            <div class="investment-points">
+                                <h6 class="fw-bold mb-3">
+                                    <i class="fas fa-lightbulb text-warning me-2"></i>分析から読み取れるポイント
+                                </h6>
+                                
+                                {% if session.overall_score > 0.4 %}
+                                    <div class="point-item mb-2">
+                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                        <span class="fw-semibold">非常に前向きな表現が多用されている</span>
+                                        <div class="small text-muted ms-4">成長や改善への強い意欲が文章に表れています</div>
+                                    </div>
+                                    <div class="point-item mb-2">
+                                        <i class="fas fa-arrow-trend-up text-success me-2"></i>
+                                        <span class="fw-semibold">楽観的な将来展望を示している</span>
+                                        <div class="small text-muted ms-4">ポジティブな語彙が多く、明るい見通しを表現</div>
+                                    </div>
+                                {% elif session.overall_score > 0.15 %}
+                                    <div class="point-item mb-2">
+                                        <i class="fas fa-balance-scale text-primary me-2"></i>
+                                        <span class="fw-semibold">堅実で建設的な表現を使用している</span>
+                                        <div class="small text-muted ms-4">過度に楽観的でなく、現実的な見通しを示しています</div>
+                                    </div>
+                                    <div class="point-item mb-2">
+                                        <i class="fas fa-clock text-primary me-2"></i>
+                                        <span class="fw-semibold">段階的な改善への意欲を表明</span>
+                                        <div class="small text-muted ms-4">着実な取り組みを重視する姿勢が読み取れます</div>
+                                    </div>
+                                {% elif session.overall_score >= -0.15 %}
+                                    <div class="point-item mb-2">
+                                        <i class="fas fa-file-text text-secondary me-2"></i>
+                                        <span class="fw-semibold">客観的で事実ベースの記述が中心</span>
+                                        <div class="small text-muted ms-4">感情的な表現を避け、冷静な報告を心がけています</div>
+                                    </div>
+                                    <div class="point-item mb-2">
+                                        <i class="fas fa-search text-secondary me-2"></i>
+                                        <span class="fw-semibold">バランスの取れた情報開示</span>
+                                        <div class="small text-muted ms-4">ポジティブとネガティブな要素を公平に記載</div>
+                                    </div>
+                                {% elif session.overall_score >= -0.4 %}
+                                    <div class="point-item mb-2">
+                                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                        <span class="fw-semibold">課題や困難について率直に言及</span>
+                                        <div class="small text-muted ms-4">リスクを隠さず、透明性の高い情報開示を実施</div>
+                                    </div>
+                                    <div class="point-item mb-2">
+                                        <i class="fas fa-chart-bar text-warning me-2"></i>
+                                        <span class="fw-semibold">慎重で現実的な表現を採用</span>
+                                        <div class="small text-muted ms-4">過度な楽観論を避け、地に足ついた記述</div>
+                                    </div>
+                                {% else %}
+                                    <div class="point-item mb-2">
+                                        <i class="fas fa-hand-paper text-danger me-2"></i>
+                                        <span class="fw-semibold">困難な状況について詳細に記載</span>
+                                        <div class="small text-muted ms-4">厳しい現実を正面から捉えた誠実な情報開示</div>
+                                    </div>
+                                    <div class="point-item mb-2">
+                                        <i class="fas fa-search-plus text-danger me-2"></i>
+                                        <span class="fw-semibold">リスクや課題への高い透明性</span>
+                                        <div class="small text-muted ms-4">ステークホルダーへの責任ある情報提供</div>
+                                    </div>
+                                {% endif %}
                             </div>
-                        {% elif session.overall_score > 0.2 %}
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle me-2"></i>
-                                やや前向きな内容です
-                            </div>
-                        {% elif session.overall_score < -0.5 %}
-                            <div class="alert alert-danger">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                非常にネガティブな内容です
-                            </div>
-                        {% elif session.overall_score < -0.2 %}
-                            <div class="alert alert-warning">
-                                <i class="fas fa-minus-circle me-2"></i>
-                                やや慎重な内容です
-                            </div>
-                        {% else %}
-                            <div class="alert alert-secondary">
-                                <i class="fas fa-balance-scale me-2"></i>
-                                中立的な内容です
-                            </div>
-                        {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-
         <!-- Detailed Score Breakdown -->
         {% if session.analysis_result.score_calculation %}
             {% with calc=session.analysis_result.score_calculation %}
@@ -2433,6 +2776,280 @@ document.addEventListener('DOMContentLoaded', function() {
         mainElements.forEach(element => {
             element.style.transform = 'translateZ(0)';
             element.style.backfaceVisibility = 'hidden';
+        });
+    }
+    // 実際のスコア値
+    const actualScore = {{ session.overall_score }};
+    const sentimentLabel = '{{ session.sentiment_label }}';
+    
+    // スコア円弧のアニメーション
+    function animateScoreArc() {
+        const arc = document.getElementById('score-arc');
+        const radius = 80;
+        const circumference = 2 * Math.PI * radius; // 502.65
+        
+        // スコアに基づく色の決定
+        let strokeColor;
+        if (actualScore > 0.4) {
+            strokeColor = '#198754'; // 緑
+        } else if (actualScore > 0.15) {
+            strokeColor = '#0dcaf0'; // 水色
+        } else if (actualScore >= -0.15) {
+            strokeColor = '#6c757d'; // グレー
+        } else if (actualScore >= -0.4) {
+            strokeColor = '#fd7e14'; // オレンジ
+        } else {
+            strokeColor = '#dc3545'; // 赤
+        }
+        
+        arc.style.stroke = strokeColor;
+        
+        // スコアを0-100%に変換（-1.0 to 1.0 → 0% to 100%）
+        const percentage = (actualScore + 1) / 2;
+        const offset = circumference - (percentage * circumference);
+        
+        setTimeout(() => {
+            arc.style.strokeDashoffset = offset;
+        }, 500);
+    }
+    
+    // スコア数値のアニメーション
+    function animateScoreNumber() {
+        const scoreElement = document.getElementById('animated-score');
+        const duration = 2000;
+        const startTime = performance.now();
+        
+        function updateScore(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // イージング関数（easeOutCubic）
+            const easedProgress = 1 - Math.pow(1 - progress, 3);
+            const currentScore = actualScore * easedProgress;
+            
+            scoreElement.textContent = currentScore.toFixed(3);
+            
+            if (progress < 1) {
+                requestAnimationFrame(updateScore);
+            }
+        }
+        
+        requestAnimationFrame(updateScore);
+    }
+    
+    // ポジションインジケーターのアニメーション
+    function animatePositionIndicator() {
+        const indicator = document.getElementById('score-position');
+        
+        // スコアを0-100%に変換
+        const percentage = (actualScore + 1) / 2;
+        const leftPosition = percentage * 100;
+        
+        setTimeout(() => {
+            indicator.style.left = leftPosition + '%';
+        }, 1000);
+    }
+    
+    // バッジのアニメーション
+    function animateBadge() {
+        const badge = document.getElementById('sentiment-badge');
+        
+        setTimeout(() => {
+            badge.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                badge.style.transform = 'scale(1)';
+            }, 200);
+        }, 2000);
+    }
+    
+    // 星評価のアニメーション
+    function animateStars() {
+        const starRatings = document.querySelectorAll('.star-rating');
+        starRatings.forEach((rating, index) => {
+            setTimeout(() => {
+                rating.style.transform = 'scale(1.2)';
+                rating.style.color = '#ffc107';
+                setTimeout(() => {
+                    rating.style.transform = 'scale(1)';
+                }, 300);
+            }, 2500 + (index * 100));
+        });
+    }
+    
+    // インタープリテーションエリアのアニメーション
+    function animateInterpretation() {
+        const interpretation = document.querySelector('.interpretation-main');
+        if (interpretation) {
+            interpretation.style.opacity = '0';
+            interpretation.style.transform = 'translateY(20px)';
+            interpretation.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+            
+            setTimeout(() => {
+                interpretation.style.opacity = '1';
+                interpretation.style.transform = 'translateY(0)';
+            }, 1500);
+        }
+    }
+    
+    // ポイントアイテムのシーケンシャルアニメーション
+    function animatePoints() {
+        const points = document.querySelectorAll('.point-item');
+        points.forEach((point, index) => {
+            point.style.opacity = '0';
+            point.style.transform = 'translateX(-20px)';
+            point.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            
+            setTimeout(() => {
+                point.style.opacity = '1';
+                point.style.transform = 'translateX(0)';
+            }, 3000 + (index * 200));
+        });
+    }
+    
+    // 信頼性ゲージのアニメーション
+    function animateReliabilityGauge() {
+        const reliabilityArc = document.getElementById('reliability-arc');
+        const reliabilityPercentage = document.getElementById('reliability-percentage');
+        
+        if (!reliabilityArc || !reliabilityPercentage) return;
+        
+        const percentage = {{ reliability_score.confidence_percentage|default:50 }};
+        const radius = 35;
+        const circumference = 2 * Math.PI * radius; // 219.91
+        
+        // パーセンテージに基づく色の決定
+        let strokeColor;
+        if (percentage >= 85) {
+            strokeColor = '#198754'; // 緑
+        } else if (percentage >= 70) {
+            strokeColor = '#0dcaf0'; // 水色
+        } else if (percentage >= 55) {
+            strokeColor = '#ffc107'; // 黄色
+        } else {
+            strokeColor = '#6c757d'; // グレー
+        }
+        
+        reliabilityArc.style.stroke = strokeColor;
+        
+        // パーセンテージを0-100%に変換
+        const offset = circumference - ((percentage / 100) * circumference);
+        
+        setTimeout(() => {
+            reliabilityArc.style.strokeDashoffset = offset;
+        }, 3500);
+        
+        // パーセンテージ数値のアニメーション
+        const startTime = performance.now();
+        const duration = 1500;
+        
+        function updatePercentage(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            const easedProgress = 1 - Math.pow(1 - progress, 3);
+            const currentPercentage = Math.floor(percentage * easedProgress);
+            
+            reliabilityPercentage.textContent = currentPercentage + '%';
+            
+            if (progress < 1) {
+                requestAnimationFrame(updatePercentage);
+            }
+        }
+        
+        setTimeout(() => {
+            requestAnimationFrame(updatePercentage);
+        }, 3500);
+    }
+    
+    // メトリクスアイテムのアニメーション
+    function animateMetrics() {
+        const metricItems = document.querySelectorAll('.metric-item, .feature-item');
+        metricItems.forEach((item, index) => {
+            item.style.opacity = '0';
+            item.style.transform = 'translateY(10px)';
+            item.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+            
+            setTimeout(() => {
+                item.style.opacity = '1';
+                item.style.transform = 'translateY(0)';
+            }, 4000 + (index * 100));
+        });
+    }
+    
+    // 信頼性メトリクス全体のアニメーション
+    function animateReliabilitySection() {
+        const reliabilitySection = document.querySelector('.mt-4.pt-4.border-top:has([class*="reliability"])');
+        if (reliabilitySection) {
+            reliabilitySection.style.opacity = '0';
+            reliabilitySection.style.transform = 'translateY(30px)';
+            reliabilitySection.style.transition = 'opacity 1s ease, transform 1s ease';
+            
+            setTimeout(() => {
+                reliabilitySection.style.opacity = '1';
+                reliabilitySection.style.transform = 'translateY(0)';
+            }, 3000);
+        }
+    }
+    
+    // スコア範囲アイテムのアニメーション
+    function animateScoreRanges() {
+        const ranges = document.querySelectorAll('.score-range-item');
+        ranges.forEach((range, index) => {
+            range.style.opacity = '0';
+            range.style.transform = 'scale(0.8)';
+            range.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+            
+            setTimeout(() => {
+                range.style.opacity = '1';
+                range.style.transform = 'scale(1)';
+                
+                // 現在のスコア範囲をハイライト
+                const scoreValue = actualScore;
+                let isCurrentRange = false;
+                
+                if (index === 0 && scoreValue <= -0.5) isCurrentRange = true;
+                else if (index === 1 && scoreValue > -0.5 && scoreValue <= -0.15) isCurrentRange = true;
+                else if (index === 2 && scoreValue > -0.15 && scoreValue <= 0.15) isCurrentRange = true;
+                else if (index === 3 && scoreValue > 0.15 && scoreValue <= 0.4) isCurrentRange = true;
+                else if (index === 4 && scoreValue > 0.4 && scoreValue <= 0.7) isCurrentRange = true;
+                else if (index === 5 && scoreValue > 0.7) isCurrentRange = true;
+                
+                if (isCurrentRange) {
+                    setTimeout(() => {
+                        range.style.transform = 'scale(1.1)';
+                        range.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+                        setTimeout(() => {
+                            range.style.transform = 'scale(1)';
+                        }, 500);
+                    }, 200);
+                }
+            }, 5500 + (index * 100));
+        });
+    }
+    
+    // 全アニメーションの実行
+    animateScoreArc();
+    animateScoreNumber();
+    animatePositionIndicator();
+    animateBadge();
+    animateStars();
+    animateInterpretation();
+    animatePoints();
+    animateReliabilitySection();
+    animateReliabilityGauge();
+    animateMetrics();
+    animateScoreRanges();
+    
+    // ホバー効果
+    const scoreCircle = document.querySelector('.score-circle-container');
+    if (scoreCircle) {
+        scoreCircle.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.05)';
+            this.style.transition = 'transform 0.3s ease';
+        });
+        
+        scoreCircle.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
         });
     }
 });
