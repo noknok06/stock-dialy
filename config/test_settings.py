@@ -114,6 +114,9 @@ THIRD_PARTY_APPS = [
     'csp',
     'axes',
     'django_htmx',
+    'rest_framework',  # ← 追加（API用）
+    'django_filters',  # ← 追加（フィルタリング用）
+    'corsheaders',     # ← 追加（CORS用、必要に応じて）
     ]
 
 # ローカルアプリ
@@ -130,6 +133,8 @@ LOCAL_APPS = [
     'subscriptions',
     'maintenance',
     'contact',
+    'financial_reports',
+    'earnings_analysis',
 ]
 
 # インストール済みアプリ
@@ -144,6 +149,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'stockdiary.middleware.TestAccountCSRFMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -152,10 +158,10 @@ MIDDLEWARE = [
     'security.middleware.RateLimitMiddleware',  # レート制限
     'security.middleware.IPFilterMiddleware',   # IP制限
     'security.middleware.SecurityHeadersMiddleware',  # セキュリティヘッダー
-    'csp.middleware.CSPMiddleware',  # CSPミドルウェアを最後に配置
     'subscriptions.middleware.SubscriptionMiddleware',  # サブスクリプション
     'ads.middleware.AdsMiddleware',  # 広告表示制御
     'axes.middleware.AxesMiddleware',
+    'csp.middleware.CSPMiddleware',  # CSPミドルウェアを最後に配置
 ]
 
 # =============================================================================
