@@ -8,12 +8,6 @@
     <style>
         .insight-section {
             position: relative;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .insight-section:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         .insight-section h6 {
@@ -38,6 +32,22 @@
             margin-bottom: 0;
         }
 
+        /* デスクトップのみでホバー効果 */
+        @media (hover: hover) and (pointer: fine) {
+            .insight-section {
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+            }
+            
+            .insight-section:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+            
+            .wordcloud-canvas:hover {
+                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            }
+        }
+
         /* レスポンシブ対応 */
         @media (max-width: 768px) {
             .insight-section {
@@ -48,6 +58,7 @@
                 font-size: 1rem;
             }
         }        
+        
         /* ワードクラウド用CSS - モバイル対応強化版 */
         .wordcloud-canvas {
             cursor: pointer;
@@ -56,6 +67,10 @@
             min-height: 500px; /* デスクトップの基本高さ */
             width: 100%;
             overflow: hidden;
+            /* モバイル最適化 */
+            -webkit-overflow-scrolling: touch;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
         }
 
         .wordcloud-legend-color {
@@ -90,6 +105,21 @@
             .row.mb-3.text-center .fw-bold {
                 font-size: 1.1rem; /* 統計数値を少し大きく */
             }
+            
+            /* モバイルでアニメーション無効化 */
+            .analysis-card {
+                animation: none !important;
+                transition: none !important;
+                transform: none !important;
+                opacity: 1 !important;
+            }
+            
+            /* スクロール最適化 */
+            .card, .analysis-card {
+                will-change: auto;
+                transform: translateZ(0);
+                -webkit-transform: translateZ(0);
+            }
         }
 
         /* 極小画面向け */
@@ -100,9 +130,11 @@
             }
         }
 
-        /* ワードクラウド内のテキストアニメーション */
-        .wordcloud-canvas canvas {
-            transition: all 0.3s ease;
+        /* ワードクラウド内のテキストアニメーション - デスクトップのみ */
+        @media (hover: hover) and (pointer: fine) {
+            .wordcloud-canvas canvas {
+                transition: all 0.3s ease;
+            }
         }
 
         /* ローディング状態 */
@@ -116,9 +148,34 @@
             font-size: 0.875rem;
         }
 
-        /* ワードクラウドのホバー効果強化 */
-        .wordcloud-canvas:hover {
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        /* モバイルでのreduced motionサポート */
+        @media (prefers-reduced-motion: reduce) {
+            .analysis-card,
+            .insight-section,
+            .wordcloud-canvas canvas {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+
+        /* モバイルの描画最適化 */
+        @media (max-width: 768px) {
+            * {
+                -webkit-tap-highlight-color: transparent;
+            }
+            
+            .container-fluid,
+            .container,
+            .row {
+                contain: layout;
+            }
+            
+            /* 固定要素の最適化 */
+            .sticky-top,
+            .fixed-top {
+                transform: translateZ(0);
+                -webkit-transform: translateZ(0);
+            }
         }
     </style>
 {% block breadcrumb %}
@@ -1963,27 +2020,40 @@ function exportSummary() {
     URL.revokeObjectURL(url);
 }
 
-// ページ読み込み時の初期化（モバイル対応強化）
+// ページ読み込み時の初期化（モバイル対応強化版）
 document.addEventListener('DOMContentLoaded', function() {
-    // アニメーション効果
-    const cards = document.querySelectorAll('.analysis-card');
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry, index) => {
-            if (entry.isIntersecting) {
-                setTimeout(() => {
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0)';
-                }, index * 100);
-            }
-        });
-    }, { threshold: 0.1 });
+    // デバイス判定
+    const isMobile = isMobileDevice();
+    
+    // アニメーション効果（デスクトップのみ）
+    if (!isMobile) {
+        const cards = document.querySelectorAll('.analysis-card');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry, index) => {
+                if (entry.isIntersecting) {
+                    setTimeout(() => {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }, index * 100);
+                }
+            });
+        }, { threshold: 0.1 });
 
-    cards.forEach(card => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        observer.observe(card);
-    });
+        cards.forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(card);
+        });
+    } else {
+        // モバイルでは即座に表示（アニメーションなし）
+        const cards = document.querySelectorAll('.analysis-card');
+        cards.forEach(card => {
+            card.style.opacity = '1';
+            card.style.transform = 'none';
+            card.style.transition = 'none';
+        });
+    }
 
     // kuromoji初期化（辞書読み込みを含む）
     initializeKuromoji();
@@ -1992,7 +2062,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
     // モバイル向けの追加初期化
-    if (isMobileDevice()) {
+    if (isMobile) {
         console.log('モバイルデバイス検出 - 追加初期化実行');
         
         // ワードクラウドコンテナのモバイル最適化
@@ -2012,11 +2082,29 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // モバイルでのスクロール改善
         document.body.style.overflowX = 'hidden';
+        document.body.style.webkitOverflowScrolling = 'touch';
         
         // タッチ操作の改善
         const touchElements = document.querySelectorAll('.btn, .card, .analysis-card');
         touchElements.forEach(element => {
             element.style.touchAction = 'manipulation';
+        });
+        
+        // モバイル特有の最適化
+        const allElements = document.querySelectorAll('*');
+        allElements.forEach(element => {
+            // アニメーションを無効化
+            element.style.animationDuration = '0s';
+            element.style.animationDelay = '0s';
+            element.style.transitionDuration = '0s';
+            element.style.transitionDelay = '0s';
+        });
+        
+        // GPU加速の最適化
+        const mainElements = document.querySelectorAll('.card, .analysis-card, .page-header');
+        mainElements.forEach(element => {
+            element.style.transform = 'translateZ(0)';
+            element.style.backfaceVisibility = 'hidden';
         });
     }
 });
@@ -2033,22 +2121,23 @@ window.addEventListener('orientationchange', function() {
     }
 });
 
-// スクロール最適化（モバイル用）
-let ticking = false;
-function updateOnScroll() {
-    // モバイルでのスクロール性能最適化
-    if (isMobileDevice() && !ticking) {
-        requestAnimationFrame(function() {
-            // ここでスクロール時の処理を行う（現在は特になし）
-            ticking = false;
-        });
-        ticking = true;
+// スクロール最適化（モバイルでは無効化）
+if (!isMobileDevice()) {
+    let ticking = false;
+    function updateOnScroll() {
+        if (!ticking) {
+            requestAnimationFrame(function() {
+                // ここでスクロール時の処理を行う（現在は特になし）
+                ticking = false;
+            });
+            ticking = true;
+        }
     }
+    window.addEventListener('scroll', updateOnScroll);
 }
-window.addEventListener('scroll', updateOnScroll);
 
-// パフォーマンス監視（開発用）
-if (typeof performance !== 'undefined' && performance.mark) {
+// パフォーマンス監視（開発用・モバイルでは無効化）
+if (!isMobileDevice() && typeof performance !== 'undefined' && performance.mark) {
     performance.mark('wordcloud-init-start');
     
     // 初期化完了時にマーク
