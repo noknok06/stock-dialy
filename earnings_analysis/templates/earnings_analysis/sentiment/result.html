@@ -402,7 +402,7 @@
             {% endwith %}
         {% endif %}
 
-        <!-- ワードクラウドセクションを以下に置き換え -->
+        <!-- ワードクラウドセクション -->
         <div class="card">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
@@ -421,7 +421,7 @@
                 </div>
                 <div class="small text-muted mt-2">
                     <i class="fas fa-info-circle me-1"></i>
-                    語彙の大きさは出現頻度に比例します。（緑：ポジティブ、赤：ネガティブ、灰：中立）
+                    語彙の大きさは出現頻度に比例します。クリックすると詳細情報を表示します。（緑：ポジティブ、赤：ネガティブ、灰：中立）
                 </div>
             </div>
             <div class="card-body">
@@ -921,9 +921,96 @@
         </div>
     </div>
 </div>
+
+<!-- 語彙詳細モーダル -->
+<div class="modal fade" id="wordDetailModal" tabindex="-1" aria-labelledby="wordDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content word-detail-modal">
+            <div class="modal-header">
+                <h5 class="modal-title" id="wordDetailModalLabel">
+                    <i class="fas fa-search me-2"></i>語彙詳細分析
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <!-- 語彙基本情報 -->
+                    <div class="col-md-6">
+                        <div class="text-center mb-3">
+                            <h3 class="mb-0" id="selected-word">語彙</h3>
+                            <div class="mt-2">
+                                <span class="badge fs-6" id="word-sentiment-badge">感情</span>
+                            </div>
+                        </div>
+                        
+                        <div class="row text-center mb-3">
+                            <div class="col-6">
+                                <div class="border rounded p-3">
+                                    <div class="h4 mb-1 text-primary" id="word-frequency">0</div>
+                                    <div class="small text-muted">出現回数</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="border rounded p-3">
+                                    <div class="h4 mb-1 text-info" id="word-score">0.0</div>
+                                    <div class="small text-muted">感情スコア</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 語彙タイプ -->
+                        <div class="mb-3">
+                            <h6>語彙分類</h6>
+                            <span class="badge bg-secondary" id="word-type">分類</span>
+                        </div>
+                        
+                        <!-- 影響度 -->
+                        <div class="mb-3">
+                            <h6>影響度</h6>
+                            <div class="progress">
+                                <div class="progress-bar" id="word-impact-bar" role="progressbar" style="width: 0%">
+                                    <span id="word-impact-text">軽微</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 出現文脈 -->
+                    <div class="col-md-6">
+                        <h6>出現文脈</h6>
+                        <div class="word-context-examples" id="word-context-list">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <div class="mt-2">文脈を検索中...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 関連語彙 -->
+                <div class="mt-4">
+                    <h6>関連語彙</h6>
+                    <div id="related-words" class="d-flex flex-wrap gap-2">
+                        <!-- 関連語彙がここに動的に追加される -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>閉じる
+                </button>
+                <button type="button" class="btn btn-primary" onclick="highlightWordInCloud()">
+                    <i class="fas fa-search me-1"></i>ワードクラウドで強調
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
+
+<!-- WordCloud2.js CDN -->
 
 <!-- WordCloud2.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.min.js"></script>
@@ -933,7 +1020,7 @@
 
 <script>
 // ========================================
-// グローバル変数（モバイル固定機能追加）
+// 既存のワードクラウド関連変数とコード（変更なし）
 // ========================================
 let wordcloudInstance = null;
 let currentWordcloudData = [];
@@ -959,8 +1046,292 @@ const actualWordcloudData = {
 };
 
 // ========================================
-// モバイル判定関数（新規追加）
+// 新機能：スコアゲージのアニメーション
 // ========================================
+function animateScoreGauge() {
+    const needle = document.getElementById('scoreNeedle');
+    const score = {{ session.overall_score }};
+    
+    if (needle) {
+        // スコアを角度に変換（-1.0 to 1.0 -> -90deg to 90deg）
+        const angle = score * 90;
+        
+        setTimeout(() => {
+            needle.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+        }, 500);
+    }
+}
+
+// ========================================
+// 新機能：語彙詳細モーダル関連
+// ========================================
+let selectedWordData = null;
+let wordDetailModal = null;
+
+function showWordDetail(wordText) {
+    console.log('語彙詳細表示:', wordText);
+    
+    // 語彙データを検索
+    selectedWordData = findWordData(wordText);
+    
+    if (!selectedWordData) {
+        console.warn('語彙データが見つかりません:', wordText);
+        showToast('語彙の詳細情報が見つかりませんでした', 'warning');
+        return;
+    }
+    
+    // モーダルに情報を設定
+    populateWordDetailModal(selectedWordData);
+    
+    // 文脈を検索して表示
+    findWordContexts(wordText);
+    
+    // モーダル表示
+    if (!wordDetailModal) {
+        wordDetailModal = new bootstrap.Modal(document.getElementById('wordDetailModal'));
+    }
+    wordDetailModal.show();
+}
+
+function findWordData(wordText) {
+    // 現在表示中のワードクラウドデータから検索
+    for (const word of currentWordcloudData) {
+        if (word.text === wordText) {
+            return word;
+        }
+    }
+    
+    // 元の分析データからも検索
+    const allFrequencyData = [
+        ...(actualAnalysisData.keyword_frequency_data.positive || []),
+        ...(actualAnalysisData.keyword_frequency_data.negative || []),
+        ...(actualAnalysisData.keyword_frequency_data.neutral || [])
+    ];
+    
+    for (const item of allFrequencyData) {
+        if (item.word === wordText) {
+            return {
+                text: item.word,
+                size: item.count,
+                sentiment: item.score > 0 ? 'positive' : item.score < 0 ? 'negative' : 'neutral',
+                score: item.score,
+                type: item.type || '基本語彙',
+                color: item.score > 0 ? '#28a745' : item.score < 0 ? '#dc3545' : '#6c757d'
+            };
+        }
+    }
+    
+    return null;
+}
+
+function populateWordDetailModal(wordData) {
+    // 基本情報設定
+    document.getElementById('selected-word').textContent = wordData.text;
+    document.getElementById('word-frequency').textContent = wordData.size;
+    document.getElementById('word-score').textContent = wordData.score ? wordData.score.toFixed(2) : '0.0';
+    document.getElementById('word-type').textContent = wordData.type || '基本語彙';
+    
+    // 感情バッジ設定
+    const sentimentBadge = document.getElementById('word-sentiment-badge');
+    const sentimentText = wordData.sentiment === 'positive' ? 'ポジティブ' : 
+                         wordData.sentiment === 'negative' ? 'ネガティブ' : '中立';
+    const sentimentClass = wordData.sentiment === 'positive' ? 'bg-success' : 
+                          wordData.sentiment === 'negative' ? 'bg-danger' : 'bg-secondary';
+    
+    sentimentBadge.textContent = sentimentText;
+    sentimentBadge.className = `badge fs-6 ${sentimentClass}`;
+    
+    // 影響度バー設定
+    const impactBar = document.getElementById('word-impact-bar');
+    const impactText = document.getElementById('word-impact-text');
+    
+    const absScore = Math.abs(wordData.score || 0);
+    let impactLevel, impactPercentage, impactColor;
+    
+    if (absScore >= 0.8) {
+        impactLevel = '非常に強い';
+        impactPercentage = 100;
+        impactColor = 'bg-danger';
+    } else if (absScore >= 0.6) {
+        impactLevel = '強い';
+        impactPercentage = 80;
+        impactColor = 'bg-warning';
+    } else if (absScore >= 0.4) {
+        impactLevel = '中程度';
+        impactPercentage = 60;
+        impactColor = 'bg-info';
+    } else if (absScore >= 0.2) {
+        impactLevel = '軽微';
+        impactPercentage = 40;
+        impactColor = 'bg-success';
+    } else {
+        impactLevel = '微弱';
+        impactPercentage = 20;
+        impactColor = 'bg-secondary';
+    }
+    
+    impactText.textContent = impactLevel;
+    impactBar.className = `progress-bar ${impactColor}`;
+    impactBar.style.width = `${impactPercentage}%`;
+}
+
+function findWordContexts(wordText) {
+    const contextList = document.getElementById('word-context-list');
+    
+    // ローディング表示
+    contextList.innerHTML = `
+        <div class="text-center text-muted py-3">
+            <i class="fas fa-spinner fa-spin"></i>
+            <div class="mt-2">文脈を検索中...</div>
+        </div>
+    `;
+    
+    // サンプル文章から該当語彙を含む文を検索
+    const contexts = [];
+    const sentences = [
+        ...(actualAnalysisData.sample_sentences.positive || []),
+        ...(actualAnalysisData.sample_sentences.negative || [])
+    ];
+    
+    sentences.forEach(sentence => {
+        if (sentence.text && sentence.text.includes(wordText)) {
+            // 語彙をハイライト
+            const highlightedText = sentence.text.replace(
+                new RegExp(wordText, 'g'),
+                `<span class="highlighted-word">${wordText}</span>`
+            );
+            
+            contexts.push({
+                text: highlightedText,
+                score: sentence.score || 0,
+                sentiment: sentence.score > 0 ? 'positive' : sentence.score < 0 ? 'negative' : 'neutral'
+            });
+        }
+    });
+    
+    // 結果表示
+    setTimeout(() => {
+        if (contexts.length === 0) {
+            contextList.innerHTML = `
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-search"></i>
+                    <div class="mt-2">この語彙の文脈は見つかりませんでした</div>
+                </div>
+            `;
+        } else {
+            const contextHTML = contexts.slice(0, 5).map(context => {
+                const sentimentClass = context.sentiment === 'positive' ? 'border-success' : 
+                                     context.sentiment === 'negative' ? 'border-danger' : 'border-secondary';
+                
+                return `
+                    <div class="context-sentence ${sentimentClass}">
+                        <div class="mb-2">${context.text}</div>
+                        <small class="text-muted">
+                            <i class="fas fa-star me-1"></i>
+                            スコア: ${context.score.toFixed(2)}
+                        </small>
+                    </div>
+                `;
+            }).join('');
+            
+            contextList.innerHTML = contextHTML;
+            
+            if (contexts.length > 5) {
+                contextList.innerHTML += `
+                    <div class="text-center mt-2">
+                        <small class="text-muted">他${contexts.length - 5}件の文脈があります</small>
+                    </div>
+                `;
+            }
+        }
+        
+        // 関連語彙も更新
+        updateRelatedWords(wordText);
+    }, 500);
+}
+
+function updateRelatedWords(wordText) {
+    const relatedWordsContainer = document.getElementById('related-words');
+    
+    // 同じ感情カテゴリの語彙を関連語彙として表示
+    const relatedWords = currentWordcloudData
+        .filter(word => word.text !== wordText && word.sentiment === selectedWordData.sentiment)
+        .sort((a, b) => b.size - a.size)
+        .slice(0, 8);
+    
+    if (relatedWords.length === 0) {
+        relatedWordsContainer.innerHTML = '<span class="text-muted">関連語彙はありません</span>';
+    } else {
+        const relatedHTML = relatedWords.map(word => {
+            const badgeClass = word.sentiment === 'positive' ? 'bg-success' : 
+                              word.sentiment === 'negative' ? 'bg-danger' : 'bg-secondary';
+            
+            return `
+                <button class="btn btn-sm btn-outline-primary" 
+                        onclick="showWordDetail('${word.text}')"
+                        title="出現回数: ${word.size}回">
+                    ${word.text}
+                    <span class="badge ${badgeClass} ms-1">${word.size}</span>
+                </button>
+            `;
+        }).join('');
+        
+        relatedWordsContainer.innerHTML = relatedHTML;
+    }
+}
+
+function highlightWordInCloud() {
+    if (selectedWordData) {
+        // モーダルを閉じる
+        if (wordDetailModal) {
+            wordDetailModal.hide();
+        }
+        
+        // ワードクラウドで語彙を強調（既存機能）
+        highlightWord(selectedWordData.text);
+        
+        // 画面をワードクラウドまでスクロール
+        const wordcloudElement = document.getElementById('wordcloud-canvas');
+        if (wordcloudElement) {
+            wordcloudElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+}
+
+// ========================================
+// 既存のワードクラウド機能に統合（クリック処理の拡張）
+// ========================================
+
+// 既存のhighlightWord関数を拡張
+const originalHighlightWord = highlightWord;
+function highlightWord(word) {
+    // 既存の処理
+    if (typeof originalHighlightWord === 'function') {
+        originalHighlightWord(word);
+    }
+    
+    // 新機能：詳細表示
+    const wordData = currentWordcloudData.find(w => w.text === word);
+    if (wordData) {
+        const sentimentText = wordData.sentiment === 'positive' ? 'ポジティブ' : 
+                            wordData.sentiment === 'negative' ? 'ネガティブ' : '中立';
+        const message = `「${word}」: ${wordData.size}回出現、${sentimentText}`;
+        showToast(message, 'info');
+        
+        // 自動的に詳細モーダルを表示（デスクトップのみ）
+        if (!isMobileDevice()) {
+            setTimeout(() => {
+                showWordDetail(word);
+            }, 1000);
+        }
+    }
+}
+
+// ========================================
+// 既存のワードクラウド機能（変更なし）
+// ========================================
+
+// モバイル判定関数
 function isMobileDevice() {
     return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
@@ -969,13 +1340,10 @@ function isSmallMobile() {
     return window.innerWidth <= 576;
 }
 
-// ========================================
-// kuromoji初期化（CSPエラー対処版）
-// ========================================
+// kuromoji初期化
 function initializeKuromoji() {
     console.log('kuromoji.js初期化開始...');
     
-    // ローディング表示
     const canvas = document.getElementById('wordcloud-canvas');
     if (canvas) {
         canvas.innerHTML = `
@@ -993,7 +1361,6 @@ function initializeKuromoji() {
         `;
     }
     
-    // CSPエラー対策: 直接簡易版を使用
     if (typeof kuromoji === 'undefined') {
         console.warn('kuromoji.jsが利用できません。簡易版を使用します。');
         tokenizer = null;
@@ -1001,12 +1368,11 @@ function initializeKuromoji() {
         return;
     }
     
-    // kuromoji初期化（タイムアウト付き）
     let initTimeout = setTimeout(() => {
         console.warn('kuromoji初期化タイムアウト - 簡易版で続行');
         tokenizer = null;
         initializeWordcloud();
-    }, 10000); // 10秒でタイムアウト
+    }, 10000);
     
     try {
         kuromoji.builder({ 
@@ -1024,8 +1390,6 @@ function initializeKuromoji() {
             
             console.log('kuromoji.js初期化完了');
             tokenizer = _tokenizer;
-            
-            // ワードクラウド初期化
             initializeWordcloud();
         });
     } catch (error) {
@@ -1037,32 +1401,440 @@ function initializeKuromoji() {
     }
 }
 
+// ワードクラウド初期化
+function initializeWordcloud() {
+    console.log('ワードクラウド初期化開始');
+    console.log('分析データ:', actualAnalysisData);
+    
+    // 感情語彙のみのデータを作成
+    actualWordcloudData.sentiment = convertToWordcloudData(actualAnalysisData.keyword_frequency_data || {}, false);
+    
+    // 全語彙のデータは遅延生成（クリック時）
+    actualWordcloudData.all = [];
+    
+    console.log('感情語彙数:', actualWordcloudData.sentiment.length);
+    
+    // 初期表示は感情語彙のみ
+    currentDisplayMode = 'sentiment';
+    applyCurrentFilters();
+    
+    // イベントリスナー設定
+    setupWordcloudEvents();
+}
+
+// データをワードクラウド用に変換
+function convertToWordcloudData(frequencyData, includeAll = false) {
+    const wordcloudData = [];
+    const sentimentWords = new Set();
+    
+    console.log('convertToWordcloudData開始:', { frequencyData, includeAll });
+    
+    if (frequencyData.positive) {
+        console.log('ポジティブ語彙数:', frequencyData.positive.length);
+        frequencyData.positive.forEach(item => {
+            sentimentWords.add(item.word);
+            wordcloudData.push({
+                text: item.word,
+                size: item.count,
+                sentiment: "positive",
+                score: item.score,
+                color: "#28a745"
+            });
+        });
+    }
+    
+    if (frequencyData.negative) {
+        console.log('ネガティブ語彙数:', frequencyData.negative.length);
+        frequencyData.negative.forEach(item => {
+            sentimentWords.add(item.word);
+            wordcloudData.push({
+                text: item.word,
+                size: item.count,
+                sentiment: "negative",
+                score: item.score,
+                color: "#dc3545"
+            });
+        });
+    }
+    
+    if (includeAll) {
+        let allWords;
+        if (tokenizer) {
+            console.log('kuromojiで全語彙抽出');
+            allWords = extractAllWordsFromSentences();
+        } else {
+            console.log('簡易版で全語彙抽出');
+            allWords = extractAllWordsSimple();
+        }
+        
+        console.log('全語彙抽出結果:', Object.keys(allWords).length, '語');
+        
+        Object.entries(allWords).forEach(([word, count]) => {
+            if (!sentimentWords.has(word) && count >= 1) {
+                wordcloudData.push({
+                    text: word,
+                    size: count,
+                    sentiment: "neutral",
+                    score: 0,
+                    color: "#6c757d"
+                });
+            }
+        });
+    }
+    
+    wordcloudData.sort((a, b) => b.size - a.size);
+    
+    console.log('最終的なワードクラウドデータ数:', wordcloudData.length);
+    console.log('上位10語:', wordcloudData.slice(0, 10).map(w => `${w.text}(${w.size}回)`));
+    
+    if (wordcloudData.length === 0) {
+        return [{
+            text: "データなし",
+            size: 1,
+            sentiment: "neutral",
+            score: 0.0,
+            color: "#6c757d"
+        }];
+    }
+    
+    return wordcloudData;
+}
+
+// ワードクラウド生成（クリック機能統合版）
+function generateWordcloud(wordsData) {
+    console.log('ワードクラウド生成開始:', wordsData.length, '語');
+    
+    const canvas = document.getElementById('wordcloud-canvas');
+    if (!canvas) {
+        console.error('キャンバス要素が見つかりません');
+        return;
+    }
+    
+    if (!wordsData || wordsData.length === 0) {
+        showWordcloudError('表示する語彙がありません');
+        return;
+    }
+    
+    const isMobile = isMobileDevice();
+    if (isMobile && isWordcloudLocked) {
+        console.log('モバイルでワードクラウドがロック中 - 再生成をスキップ');
+        return;
+    }
+    
+    if (wordcloudGenerationInProgress) {
+        console.log('ワードクラウド生成中 - 重複実行をスキップ');
+        return;
+    }
+    
+    wordcloudGenerationInProgress = true;
+    canvas.innerHTML = '';
+    
+    try {
+        const isSmall = isSmallMobile();
+        const containerWidth = Math.floor(canvas.offsetWidth);
+        let containerHeight;
+        
+        if (isSmall) {
+            containerHeight = Math.floor(Math.max(400, Math.min(containerWidth * 1.3, 500)));
+        } else if (isMobile) {
+            containerHeight = Math.floor(Math.max(450, Math.min(containerWidth * 1.4, 600)));
+        } else {
+            containerHeight = Math.floor(Math.max(500, containerWidth * 0.7));
+        }
+        
+        if (containerWidth <= 0 || containerHeight <= 0) {
+            console.warn('無効なキャンバスサイズ、デフォルト値を使用');
+            const defaultWidth = isMobile ? 320 : 800;
+            const defaultHeight = isMobile ? 450 : 500;
+            canvas.style.width = defaultWidth + 'px';
+            canvas.style.height = defaultHeight + 'px';
+        } else {
+            canvas.style.height = containerHeight + 'px';
+            canvas.style.width = containerWidth + 'px';
+        }
+        
+        console.log('キャンバスサイズ:', { containerWidth, containerHeight, isMobile, isSmall });
+        
+        const counts = wordsData.map(w => w.size);
+        const minCount = Math.min(...counts);
+        const maxCount = Math.max(...counts);
+        
+        console.log('カウント範囲:', { minCount, maxCount });
+        
+        const wordcloudList = wordsData.map(word => {
+            let fontSize;
+            
+            if (maxCount === minCount) {
+                fontSize = isMobile ? 20 : 32;
+            } else {
+                const relativePosition = (word.size - minCount) / (maxCount - minCount);
+                
+                let scaledValue;
+                if (maxCount / minCount > 10) {
+                    scaledValue = Math.log10(1 + relativePosition * 9);
+                } else {
+                    scaledValue = relativePosition;
+                }
+                
+                let minFontSize, maxFontSize;
+                
+                if (isSmall) {
+                    minFontSize = 12;
+                    maxFontSize = Math.min(50, Math.floor(containerWidth / 8));
+                } else if (isMobile) {
+                    minFontSize = 14;
+                    maxFontSize = Math.min(60, Math.floor(containerWidth / 6));
+                } else {
+                    minFontSize = 16;
+                    maxFontSize = Math.min(120, Math.floor(containerWidth / 8));
+                }
+                
+                fontSize = minFontSize + (maxFontSize - minFontSize) * scaledValue;
+                
+                if (isMobile) {
+                    if (relativePosition > 0.8) {
+                        fontSize *= 1.05;
+                    }
+                } else {
+                    if (relativePosition > 0.8) {
+                        fontSize *= 1.2;
+                    } else if (relativePosition > 0.6) {
+                        fontSize *= 1.1;
+                    }
+                }
+            }
+            
+            let minLimit, maxLimit;
+            if (isSmall) {
+                minLimit = 12;
+                maxLimit = Math.min(40, Math.floor(containerHeight / 12));
+            } else if (isMobile) {
+                minLimit = 14;
+                maxLimit = Math.min(50, Math.floor(containerHeight / 10));
+            } else {
+                minLimit = 16;
+                maxLimit = Math.min(120, Math.floor(containerHeight / 8));
+            }
+            
+            fontSize = Math.floor(Math.max(minLimit, Math.min(fontSize, maxLimit)));
+            
+            if (fontSize <= 0 || !isFinite(fontSize)) {
+                fontSize = minLimit;
+            }
+            
+            return [word.text, fontSize, null, null, null, null, word.color];
+        });
+        
+        // WordCloud2.js設定（クリック機能強化版）
+        const options = {
+            list: wordcloudList,
+            gridSize: Math.max(2, Math.floor((isMobile ? 8 : 16) * containerWidth / 1024)),
+            weightFactor: function(size) {
+                let scaleFactor;
+                if (isSmall) {
+                    scaleFactor = Math.min(1.5, containerWidth / 300);
+                } else if (isMobile) {
+                    scaleFactor = Math.min(2.0, containerWidth / 400);
+                } else {
+                    scaleFactor = containerWidth / 800;
+                }
+                const result = Math.max(0.5, size * scaleFactor);
+                return isFinite(result) ? result : 1;
+            },
+            fontFamily: '"Hiragino Kaku Gothic Pro", "ヒラギノ角ゴ Pro", "Yu Gothic", "游ゴシック", Meiryo, "メイリオ", sans-serif',
+            color: function(word, weight, fontSize, distance, theta) {
+                try {
+                    const wordData = wordsData.find(w => w.text === word);
+                    return wordData ? wordData.color : '#666';
+                } catch (e) {
+                    return '#666';
+                }
+            },
+            backgroundColor: 'transparent',
+            rotateRatio: isMobile ? 0.0 : 0.3,
+            maxRotation: 0,
+            minRotation: 0,
+            shuffle: true,
+            rotationSteps: 0,
+            ellipticity: isMobile ? 1.0 : 0.6,
+            shrinkToFit: true,
+            drawOutOfBound: false,
+            hover: isMobile ? null : function(item, dimension, event) {
+                try {
+                    if (item) {
+                        showWordTooltip(item[0], item[1], event);
+                    }
+                } catch (e) {
+                    console.warn('ホバーイベントエラー:', e);
+                }
+            },
+            click: function(item, dimension, event) {
+                try {
+                    if (item && item[0]) {
+                        console.log('ワードクリック:', item[0]);
+                        
+                        // ツールチップを非表示
+                        hideWordTooltip();
+                        
+                        // 詳細モーダルを表示
+                        showWordDetail(item[0]);
+                    }
+                } catch (e) {
+                    console.warn('クリックイベントエラー:', e);
+                }
+            }
+        };
+        
+        // データの事前検証
+        const validList = wordcloudList.filter(item => {
+            const [text, size] = item;
+            return text && 
+                   typeof text === 'string' && 
+                   text.length > 0 &&
+                   typeof size === 'number' && 
+                   size > 0 && 
+                   isFinite(size);
+        });
+        
+        if (validList.length === 0) {
+            showWordcloudError('有効な語彙データがありません');
+            wordcloudGenerationInProgress = false;
+            return;
+        }
+        
+        console.log('検証済みデータ数:', validList.length, '/ 元データ数:', wordcloudList.length);
+        
+        options.list = validList;
+        
+        // WordCloud実行（エラーハンドリング強化）
+        try {
+            WordCloud(canvas, options);
+            
+            updateDisplayedCount(validList.length);
+            
+            console.log('ワードクラウド生成完了');
+            const sizeDistribution = {
+                '0-20': validList.filter(w => w[1] < 20).length,
+                '20-40': validList.filter(w => w[1] >= 20 && w[1] < 40).length,
+                '40-60': validList.filter(w => w[1] >= 40 && w[1] < 60).length,
+                '60+': validList.filter(w => w[1] >= 60).length
+            };
+            console.log('サイズ分布:', sizeDistribution);
+            
+            if (isMobile) {
+                setTimeout(() => {
+                    const canvasElement = canvas.querySelector('canvas');
+                    if (canvasElement) {
+                        canvasElement.style.touchAction = 'manipulation';
+                        canvasElement.style.userSelect = 'none';
+                        canvasElement.style.pointerEvents = 'auto'; // クリック有効
+                        canvasElement.style.position = 'static';
+                        canvasElement.style.transform = 'none';
+                        canvasElement.style.willChange = 'auto';
+                        
+                        isWordcloudLocked = true;
+                        console.log('モバイル用ワードクラウドロック有効化（クリック機能付き）');
+                        
+                        const canvasRect = canvasElement.getBoundingClientRect();
+                        console.log('最終キャンバスサイズ:', canvasRect);
+                    }
+                    wordcloudGenerationInProgress = false;
+                }, 1000);
+            } else {
+                wordcloudGenerationInProgress = false;
+            }
+            
+        } catch (wordcloudError) {
+            console.error('WordCloud2.js実行エラー:', wordcloudError);
+            wordcloudGenerationInProgress = false;
+            
+            if (isMobile) {
+                showSimpleWordList(validList);
+            } else {
+                showWordcloudError('ワードクラウドの生成に失敗しました（技術的問題）');
+            }
+        }
+        
+    } catch (error) {
+        console.error('ワードクラウド生成エラー:', error);
+        wordcloudGenerationInProgress = false;
+        
+        if (isMobileDevice()) {
+            showSimpleWordList(wordsData);
+        } else {
+            showWordcloudError('ワードクラウドの生成に失敗しました');
+        }
+    }
+}
+
+// モバイル用簡易語彙リスト表示（クリック機能付き）
+function showSimpleWordList(wordsData) {
+    const canvas = document.getElementById('wordcloud-canvas');
+    if (!canvas || !wordsData || wordsData.length === 0) return;
+    
+    const sortedWords = wordsData
+        .sort((a, b) => b.size - a.size)
+        .slice(0, 30);
+    
+    let html = `
+        <div class="p-3">
+            <div class="text-center mb-3 text-muted">
+                <i class="fas fa-list me-2"></i>
+                <strong>語彙一覧表示</strong>
+                <small class="d-block">（ワードクラウドの代替表示）</small>
+            </div>
+            <div class="row g-2">
+    `;
+    
+    sortedWords.forEach(word => {
+        const [text, size, , , , , color] = word;
+        const isArray = Array.isArray(word);
+        const actualText = isArray ? text : word.text;
+        const actualSize = isArray ? size : word.size;
+        const actualColor = isArray ? color : word.color;
+        
+        const fontSize = Math.max(0.8, Math.min(2.0, actualSize / 10)) + 'rem';
+        
+        html += `
+            <div class="col-6 col-sm-4 col-md-3">
+                <div class="border rounded p-2 text-center" 
+                     style="background-color: ${actualColor}15; cursor: pointer;"
+                     onclick="showWordDetail('${actualText}')">
+                    <div style="color: ${actualColor}; font-size: ${fontSize}; font-weight: bold;">
+                        ${actualText}
+                    </div>
+                    <small class="text-muted">${actualSize}回</small>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += `
+            </div>
+            <div class="text-center mt-3">
+                <button class="btn btn-sm btn-primary" onclick="location.reload()">
+                    <i class="fas fa-redo me-1"></i>ワードクラウドで再試行
+                </button>
+            </div>
+        </div>
+    `;
+    
+    canvas.innerHTML = html;
+    updateDisplayedCount(sortedWords.length);
+}
+
 // ========================================
-// データ処理関数（kuromoji版）- 修正版
+// その他の既存機能（継続）
 // ========================================
 
-// 形態素解析を使った全語彙抽出（緩和版）
+// 全語彙抽出（既存コードを使用）
 const STOP_WORDS = new Set([
-    // 助詞
     'の', 'に', 'は', 'を', 'が', 'で', 'と', 'から', 'まで', 'より', 'へ', 'や', 'か',
-    // 助動詞・動詞活用
     'だ', 'である', 'です', 'ます', 'だっ', 'であっ', 'でし', 'まし', 'た', 'て', 'し',
-    // 代名詞
     'これ', 'それ', 'あれ', 'この', 'その', 'あの', 'ここ', 'そこ', 'あそこ',
-    // 一般的な語
-    'こと', 'もの', 'ため', 'よう', 'など', 'なる', 'ある', 'いる', 'する', 'れる', 'られる', 'となりました', 'があるか',
-    // 数詞・記号
-    '一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '百', '千', '万', '億',
-    // 接頭・接尾辞
-    'ご', 'お', 'さん', 'くん', 'ちゃん', '様', '氏', '君', '社', '部', '課', '店', '号', '番', '名', '社名', '会社名', '部署名', '商品名',
-    // その他の一般的な語
-    'あのような', 'このような', 'そのような', 'あのように', 'このように', 'そのように', 'あのこと', 'このこと', 'そのこと',
-    'あのもの', 'このもの', 'そのもの', 'あのため', 'このため', 'そのため', 'あのようなこと', 'このようなこと', 'そのようなこと',
-    'あのようなもの', 'このようなもの', 'そのようなもの', 'あのようにする', 'このようにする', 'そのようにする',
-    
+    'こと', 'もの', 'ため', 'よう', 'など', 'なる', 'ある', 'いる', 'する', 'れる', 'られる'
 ]);
 
-// 形態素解析による高精度な単語抽出
 function extractAllWordsFromSentences() {
     if (!tokenizer) {
         console.warn('tokenizerが初期化されていません');
@@ -1072,18 +1844,13 @@ function extractAllWordsFromSentences() {
     const wordFrequency = {};
     const sentences = collectSentences();
     
-    console.log('抽出対象文章数:', sentences.length);
-    
-    sentences.forEach((sentenceObj, index) => {
+    sentences.forEach((sentenceObj) => {
         if (!sentenceObj.text) return;
         
-        // HTMLタグと特殊文字を除去
         const cleanText = cleanSentenceText(sentenceObj.text);
         
         try {
-            // 形態素解析実行
             const tokens = tokenizer.tokenize(cleanText);
-            console.log(`文章${index + 1}: "${cleanText.substring(0, 50)}..." -> ${tokens.length}トークン`);
             
             tokens.forEach(token => {
                 const word = processToken(token);
@@ -1093,32 +1860,35 @@ function extractAllWordsFromSentences() {
             });
             
         } catch (error) {
-            console.error(`文章${index + 1}の形態素解析エラー:`, error);
+            console.error('形態素解析エラー:', error);
         }
     });
-    
-    // 結果をログ出力
-    logExtractionResults(wordFrequency);
     
     return wordFrequency;
 }
 
-function logExtractionResults(wordFrequency) {
-    const sortedWords = Object.entries(wordFrequency)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 20);
+function extractAllWordsSimple() {
+    console.log('簡易版単語抽出を開始');
     
-    console.log('=== 形態素解析結果 ===');
-    console.log('総語彙数:', Object.keys(wordFrequency).length);
-    console.log('上位20語:');
-    sortedWords.forEach(([word, count], index) => {
-        console.log(`${index + 1}. ${word}: ${count}回`);
+    const wordFrequency = {};
+    const sentences = collectSentences();
+    
+    sentences.forEach((sentenceObj) => {
+        if (!sentenceObj.text) return;
+        
+        const cleanText = cleanSentenceText(sentenceObj.text);
+        const words = segmentJapaneseText(cleanText);
+        
+        words.forEach(word => {
+            if (isValidSimpleWord(word)) {
+                wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+            }
+        });
     });
-    console.log('=====================');
+    
+    return wordFrequency;
 }
 
-
-// 文章データの収集
 function collectSentences() {
     const sentences = [];
     
@@ -1134,142 +1904,71 @@ function collectSentences() {
     return sentences;
 }
 
+function cleanSentenceText(text) {
+    return text
+        .replace(/<[^>]*>/g, '')
+        .replace(/&[a-zA-Z0-9#]+;/g, '')
+        .replace(/https?:\/\/[^\s]+/g, '')
+        .replace(/[【】『』「」（）()［］｛｝]/g, '')
+        .replace(/[・※★☆♪♫]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
 
-// 有効な単語かどうかの判定
+function processToken(token) {
+    let word = token.surface_form;
+    const pos = token.pos;
+    const basicForm = token.basic_form;
+    
+    if ((pos === '動詞' || pos === '形容詞') && basicForm && basicForm !== '*') {
+        word = basicForm;
+    }
+    
+    return word;
+}
+
 function isValidWord(word, token) {
     const pos = token.pos;
     const posDetail1 = token.pos_detail_1;
-    const posDetail2 = token.pos_detail_2;
     
-    // 基本的な除外条件
     if (STOP_WORDS.has(word)) return false;
     if (word.length < 2) return false;
-    if (/^[0-9０-９]+$/.test(word)) return false;        // 数字のみ
-    if (/^[a-zA-Z]+$/.test(word)) return false;          // 英字のみ
-    if (/^[\s　\-\+\*\/\=\<\>\!\?]+$/.test(word)) return false; // 記号のみ
+    if (/^[0-9０-９]+$/.test(word)) return false;
+    if (/^[a-zA-Z]+$/.test(word)) return false;
+    if (/^[\s　\-\+\*\/\=\<\>\!\?]+$/.test(word)) return false;
     
-    // 品詞による詳細フィルタリング
     switch (pos) {
         case '名詞':
-            // 有効な名詞の種類
             const validNounTypes = ['一般', '固有名詞', 'サ変接続', '形容動詞語幹'];
             if (!validNounTypes.includes(posDetail1)) return false;
-            
-            // 特定の名詞は除外
             if (posDetail1 === '数' || posDetail1 === '非自立') return false;
-            if (posDetail2 === '人名' || posDetail2 === '地域') return false; // 個人情報保護
             break;
-            
         case '動詞':
-            // 自立動詞のみ
             if (posDetail1 === '非自立') return false;
             break;
-            
         case '形容詞':
-            // 自立形容詞のみ
             if (posDetail1 === '非自立') return false;
             break;
-            
         case '副詞':
-            // 一般的な副詞のみ
             if (posDetail1 !== '一般') return false;
             break;
-            
         default:
-            // その他の品詞は基本的に除外
             return false;
     }
     
     return true;
 }
 
-// 文章テキストのクリーニング
-function cleanSentenceText(text) {
-    return text
-        .replace(/<[^>]*>/g, '')                    // HTMLタグ除去
-        .replace(/&[a-zA-Z0-9#]+;/g, '')            // HTML実体参照除去
-        .replace(/https?:\/\/[^\s]+/g, '')          // URL除去
-        .replace(/[【】『』「」（）()［］｛｝]/g, '') // 括弧除去
-        .replace(/[・※★☆♪♫]/g, '')               // 記号除去
-        .replace(/\s+/g, ' ')                       // 空白正規化
-        .trim();
-}
-
-// トークン処理
-function processToken(token) {
-    let word = token.surface_form;
-    const pos = token.pos;
-    const posDetail1 = token.pos_detail_1;
-    const posDetail2 = token.pos_detail_2;
-    const basicForm = token.basic_form;
-    
-    // 動詞・形容詞は基本形を使用
-    if ((pos === '動詞' || pos === '形容詞') && basicForm && basicForm !== '*') {
-        word = basicForm;
-    }
-    
-    // 名詞の複合語処理
-    if (pos === '名詞' && posDetail1 === '一般' && word.length >= 4) {
-        // 長い名詞は分割を検討（例：「株式会社」→「株式」「会社」）
-        const subTokens = tokenizer.tokenize(word);
-        if (subTokens.length > 1) {
-            // 複合語の場合は元の語を使用
-            return word;
-        }
-    }
-    
-    return word;
-}
-
-
-function extractAllWordsSimple() {
-    console.log('簡易版単語抽出を開始');
-    
-    const wordFrequency = {};
-    const sentences = collectSentences();
-    
-    sentences.forEach((sentenceObj, index) => {
-        if (!sentenceObj.text) return;
-        
-        const cleanText = cleanSentenceText(sentenceObj.text);
-        
-        // 日本語の単語境界を考慮した分割
-        const words = segmentJapaneseText(cleanText);
-        
-        words.forEach(word => {
-            if (isValidSimpleWord(word)) {
-                wordFrequency[word] = (wordFrequency[word] || 0) + 1;
-            }
-        });
-    });
-    
-    console.log('簡易版: 抽出語彙数', Object.keys(wordFrequency).length);
-    
-    // 結果をログ出力
-    logExtractionResults(wordFrequency);
-    
-    return wordFrequency;
-}
-
-// 日本語テキストの単語分割（簡易版）
 function segmentJapaneseText(text) {
     const words = [];
-    
-    // 句読点と記号で分割
     const sentences = text.split(/[。！？\n]/);
     
     sentences.forEach(sentence => {
-        // カンマや読点で分割
         const phrases = sentence.split(/[、，,]/);
-        
         phrases.forEach(phrase => {
-            // 空白で分割
             const tokens = phrase.split(/[\s　]+/);
-            
             tokens.forEach(token => {
                 if (token.length === 0) return;
-                
-                // 長い文字列を文字種で分割
                 const segmented = segmentByCharacterType(token);
                 words.push(...segmented);
             });
@@ -1279,7 +1978,6 @@ function segmentJapaneseText(text) {
     return words.filter(word => word.length > 0);
 }
 
-// 文字種による分割
 function segmentByCharacterType(text) {
     const words = [];
     let currentWord = '';
@@ -1307,527 +2005,29 @@ function segmentByCharacterType(text) {
     return words;
 }
 
-// 文字種判定
 function getCharacterType(char) {
     const code = char.charCodeAt(0);
     
-    if ((code >= 0x3040 && code <= 0x309F)) return 'hiragana';    // ひらがな
-    if ((code >= 0x30A0 && code <= 0x30FF)) return 'katakana';    // カタカナ
-    if ((code >= 0x4E00 && code <= 0x9FAF)) return 'kanji';       // 漢字
-    if ((code >= 0xFF10 && code <= 0xFF19) || (code >= 0x30 && code <= 0x39)) return 'number'; // 数字
+    if ((code >= 0x3040 && code <= 0x309F)) return 'hiragana';
+    if ((code >= 0x30A0 && code <= 0x30FF)) return 'katakana';
+    if ((code >= 0x4E00 && code <= 0x9FAF)) return 'kanji';
+    if ((code >= 0xFF10 && code <= 0xFF19) || (code >= 0x30 && code <= 0x39)) return 'number';
     if ((code >= 0x41 && code <= 0x5A) || (code >= 0x61 && code <= 0x7A) || 
-        (code >= 0xFF21 && code <= 0xFF3A) || (code >= 0xFF41 && code <= 0xFF5A)) return 'alphabet'; // 英字
+        (code >= 0xFF21 && code <= 0xFF3A) || (code >= 0xFF41 && code <= 0xFF5A)) return 'alphabet';
     
     return 'other';
 }
 
-// 簡易版の単語有効性チェック
 function isValidSimpleWord(word) {
-    // 基本的な除外条件
     if (STOP_WORDS.has(word)) return false;
     if (word.length < 2) return false;
     if (/^[0-9０-９]+$/.test(word)) return false;
     if (/^[a-zA-Z]+$/.test(word)) return false;
     if (/^[\s　\-\+\*\/\=\<\>\!\?、。，．]+$/.test(word)) return false;
-    
-    // ひらがなのみの短い語は除外
     if (word.length <= 2 && /^[ぁ-ゟ]+$/.test(word)) return false;
     
     return true;
 }
-
-// ========================================
-// デバッグ用ヘルパー関数
-// ========================================
-
-function debugTokenization(sampleText) {
-    if (!tokenizer) {
-        console.log('Tokenizerが初期化されていません');
-        return;
-    }
-    
-    console.log('=== トークン化デバッグ ===');
-    console.log('入力:', sampleText);
-    
-    const tokens = tokenizer.tokenize(sampleText);
-    tokens.forEach((token, index) => {
-        console.log(`${index + 1}. ${token.surface_form} (${token.pos}-${token.pos_detail_1})`);
-    });
-    
-    console.log('========================');
-}
-
-// ワードクラウドデータ変換時のデバッグ情報追加
-function convertToWordcloudDataWithDebug(frequencyData, includeAll = false) {
-    console.log('=== ワードクラウドデータ変換開始 ===');
-    console.log('入力データ:', frequencyData);
-    console.log('全語彙モード:', includeAll);
-    
-    const result = convertToWordcloudData(frequencyData, includeAll);
-    
-    console.log('変換結果:', result.length, '語');
-    console.log('感情別内訳:');
-    console.log('- ポジティブ:', result.filter(w => w.sentiment === 'positive').length);
-    console.log('- ネガティブ:', result.filter(w => w.sentiment === 'negative').length);
-    console.log('- 中立:', result.filter(w => w.sentiment === 'neutral').length);
-    console.log('================================');
-    
-    return result;
-}
-
-// 実際のデータをワードクラウド用に変換（修正版）
-function convertToWordcloudData(frequencyData, includeAll = false) {
-    const wordcloudData = [];
-    const sentimentWords = new Set();
-    
-    console.log('convertToWordcloudData開始:', { frequencyData, includeAll });
-    
-    // ポジティブ語彙を追加
-    if (frequencyData.positive) {
-        console.log('ポジティブ語彙数:', frequencyData.positive.length);
-        frequencyData.positive.forEach(item => {
-            sentimentWords.add(item.word);
-            wordcloudData.push({
-                text: item.word,
-                size: item.count,
-                sentiment: "positive",
-                score: item.score,
-                color: "#28a745"
-            });
-        });
-    }
-    
-    // ネガティブ語彙を追加
-    if (frequencyData.negative) {
-        console.log('ネガティブ語彙数:', frequencyData.negative.length);
-        frequencyData.negative.forEach(item => {
-            sentimentWords.add(item.word);
-            wordcloudData.push({
-                text: item.word,
-                size: item.count,
-                sentiment: "negative",
-                score: item.score,
-                color: "#dc3545"
-            });
-        });
-    }
-    
-    // 全語彙モードの場合
-    if (includeAll) {
-        let allWords;
-        if (tokenizer) {
-            console.log('kuromojiで全語彙抽出');
-            allWords = extractAllWordsFromSentences();
-        } else {
-            console.log('簡易版で全語彙抽出');
-            allWords = extractAllWordsSimple();
-        }
-        
-        console.log('全語彙抽出結果:', Object.keys(allWords).length, '語');
-        
-        // 出現回数2回以上の語彙を追加（条件を緩和）
-        Object.entries(allWords).forEach(([word, count]) => {
-            // 既に感情語彙に含まれていない、かつ出現回数1回以上
-            if (!sentimentWords.has(word) && count >= 1) {
-                wordcloudData.push({
-                    text: word,
-                    size: count,
-                    sentiment: "neutral",
-                    score: 0,
-                    color: "#6c757d"
-                });
-            }
-        });
-    }
-    
-    // 出現回数でソート
-    wordcloudData.sort((a, b) => b.size - a.size);
-    
-    console.log('最終的なワードクラウドデータ数:', wordcloudData.length);
-    console.log('上位10語:', wordcloudData.slice(0, 10).map(w => `${w.text}(${w.size}回)`));
-    
-    // データが存在しない場合のフォールバック
-    if (wordcloudData.length === 0) {
-        return [{
-            text: "データなし",
-            size: 1,
-            sentiment: "neutral",
-            score: 0.0,
-            color: "#6c757d"
-        }];
-    }
-    
-    return wordcloudData;
-}
-
-// ========================================
-// 簡易版フォールバック
-// ========================================
-function initializeWordcloudSimple() {
-    console.log('簡易版ワードクラウドで初期化');
-    tokenizer = null; // tokenizerをnullに設定
-    initializeWordcloud();
-}
-
-// ========================================
-// ワードクラウド生成（モバイル固定機能付き）
-// ========================================
-function generateWordcloud(wordsData) {
-    console.log('ワードクラウド生成開始:', wordsData.length, '語');
-    
-    const canvas = document.getElementById('wordcloud-canvas');
-    if (!canvas) {
-        console.error('キャンバス要素が見つかりません');
-        return;
-    }
-    
-    if (!wordsData || wordsData.length === 0) {
-        showWordcloudError('表示する語彙がありません');
-        return;
-    }
-    
-    // モバイルロック機能
-    const isMobile = isMobileDevice();
-    if (isMobile && isWordcloudLocked) {
-        console.log('モバイルでワードクラウドがロック中 - 再生成をスキップ');
-        return;
-    }
-    
-    // 生成中の重複実行防止
-    if (wordcloudGenerationInProgress) {
-        console.log('ワードクラウド生成中 - 重複実行をスキップ');
-        return;
-    }
-    
-    wordcloudGenerationInProgress = true;
-    
-    // キャンバスクリア
-    canvas.innerHTML = '';
-    
-    try {
-        // デバイス判定
-        const isSmall = isSmallMobile();
-        
-        // キャンバスサイズ設定（モバイル対応強化・整数化）
-        const containerWidth = Math.floor(canvas.offsetWidth);
-        let containerHeight;
-        
-        if (isSmall) {
-            // 極小画面: より高めに設定して文字が収まるように
-            containerHeight = Math.floor(Math.max(400, Math.min(containerWidth * 1.3, 500)));
-        } else if (isMobile) {
-            // モバイル: 縦横比を1:1.4程度に拡大
-            containerHeight = Math.floor(Math.max(450, Math.min(containerWidth * 1.4, 600)));
-        } else {
-            // デスクトップ: 従来通り
-            containerHeight = Math.floor(Math.max(500, containerWidth * 0.7));
-        }
-        
-        // サイズが無効な場合はデフォルト値を使用
-        if (containerWidth <= 0 || containerHeight <= 0) {
-            console.warn('無効なキャンバスサイズ、デフォルト値を使用');
-            const defaultWidth = isMobile ? 320 : 800;
-            const defaultHeight = isMobile ? 450 : 500;
-            canvas.style.width = defaultWidth + 'px';
-            canvas.style.height = defaultHeight + 'px';
-            containerWidth = defaultWidth;
-            containerHeight = defaultHeight;
-        } else {
-            canvas.style.height = containerHeight + 'px';
-            canvas.style.width = containerWidth + 'px';
-        }
-        
-        console.log('キャンバスサイズ:', { containerWidth, containerHeight, isMobile, isSmall });
-        
-        // 出現回数の最小値と最大値を取得
-        const counts = wordsData.map(w => w.size);
-        const minCount = Math.min(...counts);
-        const maxCount = Math.max(...counts);
-        
-        console.log('カウント範囲:', { minCount, maxCount });
-        
-        // WordCloud2.js用のデータ変換（モバイル対応強化・サイズバランス調整版）
-        const wordcloudList = wordsData.map(word => {
-            // 動的なサイズ計算（モバイル対応強化版・サイズ抑制）
-            let fontSize;
-            
-            if (maxCount === minCount) {
-                // 全て同じカウントの場合（モバイル考慮・サイズ抑制）
-                fontSize = isMobile ? 20 : 32;
-            } else {
-                // 相対的な位置を計算（0〜1の範囲）
-                const relativePosition = (word.size - minCount) / (maxCount - minCount);
-                
-                // スケールタイプを選択（対数スケールまたは線形スケール）
-                let scaledValue;
-                if (maxCount / minCount > 10) {
-                    // 対数スケールを使用して、より自然な分布を作成
-                    scaledValue = Math.log10(1 + relativePosition * 9);
-                } else {
-                    // 線形スケールを使用（範囲が狭い場合）
-                    scaledValue = relativePosition;
-                }
-                
-                // 最小フォントサイズと最大フォントサイズの設定（モバイル対応・サイズ抑制）
-                let minFontSize, maxFontSize;
-                
-                if (isSmall) {
-                    // 極小画面: サイズを抑制
-                    minFontSize = 12;
-                    maxFontSize = Math.min(50, Math.floor(containerWidth / 8)); // より控えめ
-                } else if (isMobile) {
-                    // モバイル: サイズを抑制
-                    minFontSize = 14;
-                    maxFontSize = Math.min(60, Math.floor(containerWidth / 6)); // より控えめ
-                } else {
-                    // デスクトップ: 従来通り
-                    minFontSize = 16;
-                    maxFontSize = Math.min(120, Math.floor(containerWidth / 8));
-                }
-                
-                // フォントサイズの計算
-                fontSize = minFontSize + (maxFontSize - minFontSize) * scaledValue;
-                
-                // 追加の調整：上位語彙をより強調（モバイルでは控えめに）
-                if (isMobile) {
-                    // モバイルでは強調を控えめに
-                    if (relativePosition > 0.8) {
-                        fontSize *= 1.05;
-                    }
-                } else {
-                    // デスクトップでは従来通り
-                    if (relativePosition > 0.8) {
-                        fontSize *= 1.2;
-                    } else if (relativePosition > 0.6) {
-                        fontSize *= 1.1;
-                    }
-                }
-            }
-            
-            // 最終的なサイズの制限（モバイル対応・整数化・安全な上限設定）
-            let minLimit, maxLimit;
-            if (isSmall) {
-                minLimit = 12;
-                maxLimit = Math.min(40, Math.floor(containerHeight / 12)); // コンテナ高さの1/12以下
-            } else if (isMobile) {
-                minLimit = 14;
-                maxLimit = Math.min(50, Math.floor(containerHeight / 10)); // コンテナ高さの1/10以下
-            } else {
-                minLimit = 16;
-                maxLimit = Math.min(120, Math.floor(containerHeight / 8)); // コンテナ高さの1/8以下
-            }
-            
-            fontSize = Math.floor(Math.max(minLimit, Math.min(fontSize, maxLimit))); // 整数化
-            
-            // 安全性チェック
-            if (fontSize <= 0 || !isFinite(fontSize)) {
-                fontSize = minLimit;
-            }
-            
-            return [word.text, fontSize, null, null, null, null, word.color];
-        });
-        
-        // ワードクラウド生成（モバイル対応パラメータ・エラー処理強化・バランス調整）
-        const options = {
-            list: wordcloudList,
-            gridSize: Math.max(2, Math.floor((isMobile ? 8 : 16) * containerWidth / 1024)), // グリッドサイズをさらに小さく
-            weightFactor: function(size) {
-                // モバイル対応のウェイトファクター計算（より控えめ）
-                let scaleFactor;
-                if (isSmall) {
-                    scaleFactor = Math.min(1.5, containerWidth / 300); // スケール抑制
-                } else if (isMobile) {
-                    scaleFactor = Math.min(2.0, containerWidth / 400); // スケール抑制
-                } else {
-                    scaleFactor = containerWidth / 800; // デスクトップは従来通り
-                }
-                const result = Math.max(0.5, size * scaleFactor); // 最小値0.5
-                return isFinite(result) ? result : 1; // 安全性チェック
-            },
-            fontFamily: '"Hiragino Kaku Gothic Pro", "ヒラギノ角ゴ Pro", "Yu Gothic", "游ゴシック", Meiryo, "メイリオ", sans-serif',
-            color: function(word, weight, fontSize, distance, theta) {
-                try {
-                    const wordData = wordsData.find(w => w.text === word);
-                    return wordData ? wordData.color : '#666';
-                } catch (e) {
-                    return '#666';
-                }
-            },
-            backgroundColor: 'transparent',
-            rotateRatio: isMobile ? 0.0 : 0.3, // モバイルでは回転完全無効
-            maxRotation: 0, // モバイルでは回転なし
-            minRotation: 0,
-            shuffle: true,
-            rotationSteps: 0, // 回転ステップ完全無効
-            ellipticity: isMobile ? 1.0 : 0.6, // モバイルでは円形に
-            shrinkToFit: true, // 確実に収まるように
-            drawOutOfBound: false, // 境界外描画を禁止
-            hover: null, // モバイルではホバー完全無効
-            click: isMobile ? null : function(item, dimension, event) {
-                try {
-                    if (item) {
-                        highlightWord(item[0]);
-                    }
-                } catch (e) {
-                    console.warn('クリックイベントエラー:', e);
-                }
-            }
-        };
-        
-        // データの事前検証
-        const validList = wordcloudList.filter(item => {
-            const [text, size] = item;
-            return text && 
-                   typeof text === 'string' && 
-                   text.length > 0 &&
-                   typeof size === 'number' && 
-                   size > 0 && 
-                   isFinite(size);
-        });
-        
-        if (validList.length === 0) {
-            showWordcloudError('有効な語彙データがありません');
-            wordcloudGenerationInProgress = false;
-            return;
-        }
-        
-        console.log('検証済みデータ数:', validList.length, '/ 元データ数:', wordcloudList.length);
-        
-        // 最終オプション設定
-        options.list = validList;
-        
-        // エラーハンドリング付きでWordCloud実行
-        try {
-            WordCloud(canvas, options);
-            
-            // 表示語数更新
-            updateDisplayedCount(validList.length);
-            
-            // デバッグ情報をコンソールに出力
-            console.log('ワードクラウド生成完了');
-            const sizeDistribution = {
-                '0-20': validList.filter(w => w[1] < 20).length,
-                '20-40': validList.filter(w => w[1] >= 20 && w[1] < 40).length,
-                '40-60': validList.filter(w => w[1] >= 40 && w[1] < 60).length,
-                '60+': validList.filter(w => w[1] >= 60).length
-            };
-            console.log('サイズ分布:', sizeDistribution);
-            
-            // モバイルでは生成完了後にロック
-            if (isMobile) {
-                setTimeout(() => {
-                    const canvasElement = canvas.querySelector('canvas');
-                    if (canvasElement) {
-                        // タッチ操作の改善
-                        canvasElement.style.touchAction = 'manipulation';
-                        canvasElement.style.userSelect = 'none';
-                        
-                        // キャンバスを完全に静的化
-                        canvasElement.style.pointerEvents = 'none'; // イベント無効化
-                        canvasElement.style.position = 'static'; // 位置固定
-                        canvasElement.style.transform = 'none'; // トランスフォーム無効
-                        canvasElement.style.willChange = 'auto'; // アニメーション最適化無効
-                        
-                        // モバイルロック有効化
-                        isWordcloudLocked = true;
-                        console.log('モバイル用ワードクラウドロック有効化');
-                        
-                        // キャンバスサイズの最終確認
-                        const canvasRect = canvasElement.getBoundingClientRect();
-                        console.log('最終キャンバスサイズ:', canvasRect);
-                    }
-                    wordcloudGenerationInProgress = false;
-                }, 1000); // 1秒後にロック
-            } else {
-                wordcloudGenerationInProgress = false;
-            }
-            
-        } catch (wordcloudError) {
-            console.error('WordCloud2.js実行エラー:', wordcloudError);
-            wordcloudGenerationInProgress = false;
-            
-            // モバイルでエラーが発生した場合は簡易表示にフォールバック
-            if (isMobile) {
-                showSimpleWordList(validList);
-            } else {
-                showWordcloudError('ワードクラウドの生成に失敗しました（技術的問題）');
-            }
-        }
-        
-    } catch (error) {
-        console.error('ワードクラウド生成エラー:', error);
-        wordcloudGenerationInProgress = false;
-        
-        // モバイルでエラーが発生した場合は簡易表示にフォールバック
-        if (isMobileDevice()) {
-            showSimpleWordList(wordsData);
-        } else {
-            showWordcloudError('ワードクラウドの生成に失敗しました');
-        }
-    }
-}
-
-// ========================================
-// モバイル用簡易語彙リスト表示（フォールバック）
-// ========================================
-function showSimpleWordList(wordsData) {
-    const canvas = document.getElementById('wordcloud-canvas');
-    if (!canvas || !wordsData || wordsData.length === 0) return;
-    
-    // 語彙を出現回数順にソート
-    const sortedWords = wordsData
-        .sort((a, b) => b.size - a.size)
-        .slice(0, 30); // 上位30語のみ表示
-    
-    let html = `
-        <div class="p-3">
-            <div class="text-center mb-3 text-muted">
-                <i class="fas fa-list me-2"></i>
-                <strong>語彙一覧表示</strong>
-                <small class="d-block">（ワードクラウドの代替表示）</small>
-            </div>
-            <div class="row g-2">
-    `;
-    
-    sortedWords.forEach(word => {
-        const [text, size, , , , , color] = word;
-        const isArray = Array.isArray(word);
-        const actualText = isArray ? text : word.text;
-        const actualSize = isArray ? size : word.size;
-        const actualColor = isArray ? color : word.color;
-        
-        // フォントサイズを相対的に調整
-        const fontSize = Math.max(0.8, Math.min(2.0, actualSize / 10)) + 'rem';
-        
-        html += `
-            <div class="col-6 col-sm-4 col-md-3">
-                <div class="border rounded p-2 text-center" style="background-color: ${actualColor}15;">
-                    <div style="color: ${actualColor}; font-size: ${fontSize}; font-weight: bold;">
-                        ${actualText}
-                    </div>
-                    <small class="text-muted">${actualSize}回</small>
-                </div>
-            </div>
-        `;
-    });
-    
-    html += `
-            </div>
-            <div class="text-center mt-3">
-                <button class="btn btn-sm btn-primary" onclick="location.reload()">
-                    <i class="fas fa-redo me-1"></i>ワードクラウドで再試行
-                </button>
-            </div>
-        </div>
-    `;
-    
-    canvas.innerHTML = html;
-    updateDisplayedCount(sortedWords.length);
-}
-
-// ========================================
-// その他の関数
-// ========================================
 
 // 統計表示の更新
 function updateStatisticsDisplay() {
@@ -1837,20 +2037,9 @@ function updateStatisticsDisplay() {
     document.getElementById('total-words').textContent = stats.total_unique_words;
     document.getElementById('total-occurrences').textContent = stats.total_occurrences;
     
-    // 最大出現回数と最小出現回数を表示
     const maxOccurrences = currentData.length > 0 ? Math.max(...currentData.map(w => w.size)) : 0;
-    const minOccurrences = currentData.length > 0 ? Math.min(...currentData.map(w => w.size)) : 0;
-    
     document.getElementById('max-occurrences').textContent = maxOccurrences;
     
-    // 出現回数の範囲を表示（デバッグ用）
-    console.log('出現回数範囲:', {
-        min: minOccurrences,
-        max: maxOccurrences,
-        range: maxOccurrences - minOccurrences
-    });
-    
-    // 感情別統計の要素が存在する場合のみ更新
     const positiveCountEl = document.getElementById('positive-count');
     const negativeCountEl = document.getElementById('negative-count');
     const neutralCountEl = document.getElementById('neutral-count');
@@ -1859,7 +2048,6 @@ function updateStatisticsDisplay() {
     if (negativeCountEl) negativeCountEl.textContent = stats.negative_count;
     if (neutralCountEl) neutralCountEl.textContent = stats.neutral_count;
     
-    // 全語彙モードの場合は感情別統計を表示
     const sentimentStatsElement = document.getElementById('sentiment-stats');
     if (sentimentStatsElement) {
         if (currentDisplayMode === 'all') {
@@ -1870,7 +2058,6 @@ function updateStatisticsDisplay() {
     }
 }
 
-// 統計情報の計算
 function calculateStats(wordcloudData) {
     return {
         total_unique_words: wordcloudData.length,
@@ -1881,7 +2068,6 @@ function calculateStats(wordcloudData) {
     };
 }
 
-// 表示語数更新
 function updateDisplayedCount(count) {
     const countElement = document.getElementById('wordcloud-displayed-count');
     if (countElement) {
@@ -1889,7 +2075,6 @@ function updateDisplayedCount(count) {
     }
 }
 
-// エラー表示
 function showWordcloudError(message) {
     const canvas = document.getElementById('wordcloud-canvas');
     if (canvas) {
@@ -1898,8 +2083,8 @@ function showWordcloudError(message) {
                 <div class="text-center text-muted">
                     <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
                     <div>${message}</div>
-                    <button class="btn btn-sm btn-primary mt-3" onclick="initializeWordcloudSimple()">
-                        簡易版で再試行
+                    <button class="btn btn-sm btn-primary mt-3" onclick="initializeWordcloud()">
+                        再試行
                     </button>
                 </div>
             </div>
@@ -1907,12 +2092,11 @@ function showWordcloudError(message) {
     }
 }
 
-// ツールチップ表示（モバイル対応）
+// ツールチップ表示（改良版）
 function showWordTooltip(word, weight, event) {
     const wordData = currentWordcloudData.find(w => w.text === word);
     if (!wordData) return;
     
-    // 既存のツールチップ削除
     hideWordTooltip();
     
     const tooltip = document.createElement('div');
@@ -1928,26 +2112,23 @@ function showWordTooltip(word, weight, event) {
         <div>出現回数: ${wordData.size}回</div>
         <div>感情: ${sentimentText}</div>
         ${wordData.score !== 0 ? `<div>スコア: ${wordData.score.toFixed(2)}</div>` : ''}
+        <small class="text-info"><i class="fas fa-click me-1"></i>クリックで詳細表示</small>
     `;
     
     document.body.appendChild(tooltip);
     
-    // 位置調整（モバイル対応）
     const rect = tooltip.getBoundingClientRect();
     const isMobile = isMobileDevice();
     
     let left, top;
     
     if (isMobile) {
-        // モバイルでは画面上部中央に表示
         left = (window.innerWidth - rect.width) / 2;
         top = 10;
     } else {
-        // デスクトップでは従来通り
         left = event.pageX - rect.width / 2;
         top = event.pageY - rect.height - 10;
         
-        // 画面外に出ないよう調整
         left = Math.max(10, Math.min(left, window.innerWidth - rect.width - 10));
         top = Math.max(10, top);
     }
@@ -1955,13 +2136,11 @@ function showWordTooltip(word, weight, event) {
     tooltip.style.left = left + 'px';
     tooltip.style.top = top + 'px';
     
-    // モバイルでは自動的に消す
     if (isMobile) {
         setTimeout(hideWordTooltip, 2000);
     }
 }
 
-// ツールチップ非表示
 function hideWordTooltip() {
     const tooltip = document.getElementById('wordcloud-tooltip');
     if (tooltip) {
@@ -1969,21 +2148,9 @@ function hideWordTooltip() {
     }
 }
 
-// 語彙強調
-function highlightWord(word) {
-    const wordData = currentWordcloudData.find(w => w.text === word);
-    if (wordData) {
-        const sentimentText = wordData.sentiment === 'positive' ? 'ポジティブ' : 
-                            wordData.sentiment === 'negative' ? 'ネガティブ' : '中立';
-        const message = `「${word}」: ${wordData.size}回出現、${sentimentText}`;
-        showToast(message, 'info');
-    }
-}
-
-// イベントリスナー設定（モバイル対応強化・エラー防止版）
+// イベントリスナー設定
 function setupWordcloudEvents() {
     try {
-        // 表示切り替えボタン
         const sentimentBtn = document.getElementById('wordcloud-sentiment-btn');
         const allBtn = document.getElementById('wordcloud-all-btn');
         
@@ -1997,7 +2164,6 @@ function setupWordcloudEvents() {
                         allBtn.classList.remove('active', 'btn-primary');
                         allBtn.classList.add('btn-outline-primary');
                         
-                        // 感情語彙のみのデータに切り替え
                         applyCurrentFilters();
                     }
                 } catch (e) {
@@ -2014,13 +2180,11 @@ function setupWordcloudEvents() {
                         sentimentBtn.classList.remove('active', 'btn-primary');
                         sentimentBtn.classList.add('btn-outline-primary');
                         
-                        // 全語彙が未生成の場合は生成
                         if (actualWordcloudData.all.length === 0) {
                             console.log('全語彙データ生成開始');
                             actualWordcloudData.all = convertToWordcloudData(actualAnalysisData.keyword_frequency_data || {}, true);
                         }
                         
-                        // 全語彙のデータに切り替え
                         applyCurrentFilters();
                     }
                 } catch (e) {
@@ -2029,7 +2193,6 @@ function setupWordcloudEvents() {
             });
         }
         
-        // 更新ボタン
         const updateBtn = document.getElementById('wordcloud-update-btn');
         if (updateBtn) {
             updateBtn.addEventListener('click', function() {
@@ -2041,13 +2204,12 @@ function setupWordcloudEvents() {
             });
         }
         
-        // リサイズ対応（モバイル対応強化・エラー防止）
         let resizeTimeout;
         let isResizing = false;
         
         window.addEventListener('resize', function() {
             try {
-                if (isResizing) return; // 連続実行を防止
+                if (isResizing) return;
                 
                 clearTimeout(resizeTimeout);
                 resizeTimeout = setTimeout(() => {
@@ -2057,7 +2219,6 @@ function setupWordcloudEvents() {
                         if (currentWordcloudData.length > 0) {
                             console.log('リサイズによる再生成');
                             
-                            // キャンバスサイズを再チェック
                             const canvas = document.getElementById('wordcloud-canvas');
                             if (canvas && canvas.offsetWidth > 0) {
                                 generateWordcloud(currentWordcloudData);
@@ -2068,24 +2229,23 @@ function setupWordcloudEvents() {
                     } finally {
                         isResizing = false;
                     }
-                }, 500); // 遅延を増やしてエラーを防止
+                }, 500);
             } catch (e) {
                 console.error('リサイズイベントエラー:', e);
             }
         });
         
-        // モバイル用のタッチイベント対応
         if (isMobileDevice()) {
             const canvas = document.getElementById('wordcloud-canvas');
             if (canvas) {
-                // タッチ時のツールチップ表示を無効化（代わりにタップで詳細表示）
                 canvas.addEventListener('touchstart', function(e) {
                     try {
-                        e.preventDefault(); // デフォルトのタッチ動作を無効化
+                        // タッチでもクリック機能を有効にするため、preventDefaultは使わない
+                        // e.preventDefault();
                     } catch (error) {
                         console.warn('タッチイベントエラー:', error);
                     }
-                }, { passive: false });
+                }, { passive: true });
             }
         }
         
@@ -2094,47 +2254,29 @@ function setupWordcloudEvents() {
     }
 }
 
-// フィルター適用（エラー処理強化版）
 function applyCurrentFilters() {
     try {
         const minCount = parseInt(document.getElementById('wordcloud-min-count')?.value || '2');
         const maxWords = parseInt(document.getElementById('wordcloud-max-words')?.value || '50');
         
-        // 現在のモードに応じたデータを取得
         const sourceData = currentDisplayMode === 'all' ? actualWordcloudData.all : actualWordcloudData.sentiment;
         
         console.log('フィルター適用:', { mode: currentDisplayMode, sourceDataLength: sourceData.length, minCount, maxWords });
         
-        // データが存在しない場合の対処
         if (!sourceData || sourceData.length === 0) {
             console.warn('フィルター対象データが存在しません');
             showWordcloudError('表示する語彙がありません');
             return;
         }
         
-        // 出現回数でフィルター
         let filteredData = sourceData.filter(word => word && word.size >= minCount);
         
-        // 語数制限
         if (maxWords > 0) {
             filteredData = filteredData.slice(0, maxWords);
         }
         
         console.log('フィルター後のデータ数:', filteredData.length);
         
-        // フィルター後のカウント範囲を確認
-        if (filteredData.length > 0) {
-            const counts = filteredData.map(w => w.size).filter(size => !isNaN(size));
-            if (counts.length > 0) {
-                console.log('フィルター後のカウント範囲:', {
-                    min: Math.min(...counts),
-                    max: Math.max(...counts),
-                    データ数: filteredData.length
-                });
-            }
-        }
-        
-        // データが無い場合は適切なメッセージを表示
         if (filteredData.length === 0) {
             showWordcloudError('選択した条件に一致する語彙がありません');
             updateStatisticsDisplay();
@@ -2149,27 +2291,6 @@ function applyCurrentFilters() {
         console.error('フィルター適用エラー:', error);
         showWordcloudError('フィルター処理中にエラーが発生しました');
     }
-}
-
-// ワードクラウド初期化
-function initializeWordcloud() {
-    console.log('ワードクラウド初期化開始');
-    console.log('分析データ:', actualAnalysisData);
-    
-    // 感情語彙のみのデータを作成
-    actualWordcloudData.sentiment = convertToWordcloudData(actualAnalysisData.keyword_frequency_data || {}, false);
-    
-    // 全語彙のデータは遅延生成（クリック時）
-    actualWordcloudData.all = [];
-    
-    console.log('感情語彙数:', actualWordcloudData.sentiment.length);
-    
-    // 初期表示は感情語彙のみ
-    currentDisplayMode = 'sentiment';
-    applyCurrentFilters();
-    
-    // イベントリスナー設定
-    setupWordcloudEvents();
 }
 
 // Toast notification
@@ -2201,7 +2322,7 @@ function showToast(message, type = 'info') {
     toast.addEventListener('hidden.bs.toast', () => toast.remove());
 }
 
-// その他の機能（共有・エクスポート）
+// その他の機能
 function shareResult() {
     const url = window.location.href;
     const title = `感情分析結果: {{ document.company_name }} (スコア: {{ session.overall_score|floatformat:2 }})`;
@@ -2280,9 +2401,8 @@ function exportSummary() {
     URL.revokeObjectURL(url);
 }
 
-// ページ読み込み時の初期化（モバイル対応強化版）
+// ページ読み込み時の初期化
 document.addEventListener('DOMContentLoaded', function() {
-    // デバイス判定
     const isMobile = isMobileDevice();
     
     // アニメーション効果（デスクトップのみ）
@@ -2306,7 +2426,6 @@ document.addEventListener('DOMContentLoaded', function() {
             observer.observe(card);
         });
     } else {
-        // モバイルでは即座に表示（アニメーションなし）
         const cards = document.querySelectorAll('.analysis-card');
         cards.forEach(card => {
             card.style.opacity = '1';
@@ -2315,7 +2434,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // kuromoji初期化（辞書読み込みを含む）
+    // スコアゲージのアニメーション
+    animateScoreGauge();
+
+    // kuromoji初期化
     initializeKuromoji();
     
     // ページトップへスクロール
@@ -2325,13 +2447,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (isMobile) {
         console.log('モバイルデバイス検出 - 追加初期化実行');
         
-        // ワードクラウドコンテナのモバイル最適化
         const wordcloudContainer = document.querySelector('.wordcloud-container');
         if (wordcloudContainer) {
             wordcloudContainer.style.touchAction = 'manipulation';
         }
         
-        // ビューポート設定の確認
         let viewport = document.querySelector('meta[name=viewport]');
         if (!viewport) {
             viewport = document.createElement('meta');
@@ -2340,27 +2460,22 @@ document.addEventListener('DOMContentLoaded', function() {
             document.head.appendChild(viewport);
         }
         
-        // モバイルでのスクロール改善
         document.body.style.overflowX = 'hidden';
         document.body.style.webkitOverflowScrolling = 'touch';
         
-        // タッチ操作の改善
         const touchElements = document.querySelectorAll('.btn, .card, .analysis-card');
         touchElements.forEach(element => {
             element.style.touchAction = 'manipulation';
         });
         
-        // モバイル特有の最適化
         const allElements = document.querySelectorAll('*');
         allElements.forEach(element => {
-            // アニメーションを無効化
             element.style.animationDuration = '0s';
             element.style.animationDelay = '0s';
             element.style.transitionDuration = '0s';
             element.style.transitionDelay = '0s';
         });
         
-        // GPU加速の最適化
         const mainElements = document.querySelectorAll('.card, .analysis-card, .page-header');
         mainElements.forEach(element => {
             element.style.transform = 'translateZ(0)';
@@ -2369,7 +2484,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// 画面向き変更対応（モバイル用・エラー処理強化版）
+// 画面向き変更対応
 window.addEventListener('orientationchange', function() {
     if (isMobileDevice()) {
         try {
@@ -2385,33 +2500,17 @@ window.addEventListener('orientationchange', function() {
                 } catch (error) {
                     console.error('画面向き変更時の再生成エラー:', error);
                 }
-            }, 800); // 向き変更の完了を待つ（時間を延長）
+            }, 800);
         } catch (error) {
             console.error('画面向き変更イベントエラー:', error);
         }
     }
 });
 
-// スクロール最適化（モバイルでは無効化）
-if (!isMobileDevice()) {
-    let ticking = false;
-    function updateOnScroll() {
-        if (!ticking) {
-            requestAnimationFrame(function() {
-                // ここでスクロール時の処理を行う（現在は特になし）
-                ticking = false;
-            });
-            ticking = true;
-        }
-    }
-    window.addEventListener('scroll', updateOnScroll);
-}
-
-// パフォーマンス監視（開発用・モバイルでは無効化）
+// パフォーマンス監視（デスクトップのみ）
 if (!isMobileDevice() && typeof performance !== 'undefined' && performance.mark) {
     performance.mark('wordcloud-init-start');
     
-    // 初期化完了時にマーク
     setTimeout(() => {
         performance.mark('wordcloud-init-end');
         performance.measure('wordcloud-init', 'wordcloud-init-start', 'wordcloud-init-end');
