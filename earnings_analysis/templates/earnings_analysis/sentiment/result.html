@@ -968,7 +968,7 @@ function isSmallMobile() {
 }
 
 // ========================================
-// kuromoji初期化
+// kuromoji初期化（CSPエラー対処版）
 // ========================================
 function initializeKuromoji() {
     console.log('kuromoji.js初期化開始...');
@@ -980,35 +980,59 @@ function initializeKuromoji() {
             <div class="d-flex justify-content-center align-items-center h-100">
                 <div class="text-center">
                     <div class="spinner-border text-primary mb-3" role="status">
-                        <span class="visually-hidden">辞書読み込み中...</span>
+                        <span class="visually-hidden">初期化中...</span>
                     </div>
                     <div class="text-muted">
-                        <div>日本語解析エンジンを初期化しています...</div>
-                        <small>初回は少し時間がかかる場合があります</small>
+                        <div>ワードクラウドを初期化しています...</div>
+                        <small>少々お待ちください</small>
                     </div>
                 </div>
             </div>
         `;
     }
     
-    // kuromoji初期化
-    kuromoji.builder({ 
-        dicPath: "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/" 
-    }).build(function (err, _tokenizer) {
-        if (err) {
-            console.error('kuromoji初期化エラー:', err);
-            showWordcloudError('日本語解析エンジンの初期化に失敗しました');
-            // フォールバックとして簡易版を使用
-            initializeWordcloudSimple();
-            return;
-        }
-        
-        console.log('kuromoji.js初期化完了');
-        tokenizer = _tokenizer;
-        
-        // ワードクラウド初期化
+    // CSPエラー対策: 直接簡易版を使用
+    if (typeof kuromoji === 'undefined') {
+        console.warn('kuromoji.jsが利用できません。簡易版を使用します。');
+        tokenizer = null;
         initializeWordcloud();
-    });
+        return;
+    }
+    
+    // kuromoji初期化（タイムアウト付き）
+    let initTimeout = setTimeout(() => {
+        console.warn('kuromoji初期化タイムアウト - 簡易版で続行');
+        tokenizer = null;
+        initializeWordcloud();
+    }, 10000); // 10秒でタイムアウト
+    
+    try {
+        kuromoji.builder({ 
+            dicPath: "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/" 
+        }).build(function (err, _tokenizer) {
+            clearTimeout(initTimeout);
+            
+            if (err) {
+                console.warn('kuromoji初期化エラー:', err);
+                console.log('簡易版で続行します');
+                tokenizer = null;
+                initializeWordcloud();
+                return;
+            }
+            
+            console.log('kuromoji.js初期化完了');
+            tokenizer = _tokenizer;
+            
+            // ワードクラウド初期化
+            initializeWordcloud();
+        });
+    } catch (error) {
+        clearTimeout(initTimeout);
+        console.warn('kuromoji.js初期化で例外発生:', error);
+        console.log('簡易版で続行します');
+        tokenizer = null;
+        initializeWordcloud();
+    }
 }
 
 // ========================================
@@ -1444,7 +1468,7 @@ function initializeWordcloudSimple() {
 }
 
 // ========================================
-// ワードクラウド生成（モバイル対応強化版）
+// ワードクラウド生成（モバイル対応強化版・エラー修正版）
 // ========================================
 function generateWordcloud(wordsData) {
     console.log('ワードクラウド生成開始:', wordsData.length, '語');
@@ -1463,101 +1487,108 @@ function generateWordcloud(wordsData) {
     // キャンバスクリア
     canvas.innerHTML = '';
     
-    // デバイス判定
-    const isMobile = isMobileDevice();
-    const isSmall = isSmallMobile();
-    
-    // キャンバスサイズ設定（モバイル対応強化）
-    const containerWidth = canvas.offsetWidth;
-    let containerHeight;
-    
-    if (isSmall) {
-        // 極小画面: 縦横比を1:1に近づける
-        containerHeight = Math.max(350, Math.min(containerWidth * 1.0, 450));
-    } else if (isMobile) {
-        // モバイル: 縦横比を1:1.2程度
-        containerHeight = Math.max(400, Math.min(containerWidth * 1.2, 550));
-    } else {
-        // デスクトップ: 従来通り
-        containerHeight = Math.max(500, containerWidth * 0.7);
-    }
-    
-    canvas.style.height = containerHeight + 'px';
-    
-    console.log('キャンバスサイズ:', { containerWidth, containerHeight, isMobile, isSmall });
-    
-    // 出現回数の最小値と最大値を取得
-    const counts = wordsData.map(w => w.size);
-    const minCount = Math.min(...counts);
-    const maxCount = Math.max(...counts);
-    
-    console.log('カウント範囲:', { minCount, maxCount });
-    
-    // WordCloud2.js用のデータ変換（モバイル対応強化）
-    const wordcloudList = wordsData.map(word => {
-        // 動的なサイズ計算（モバイル対応強化版）
-        let fontSize;
+    try {
+        // デバイス判定
+        const isMobile = isMobileDevice();
+        const isSmall = isSmallMobile();
         
-        if (maxCount === minCount) {
-            // 全て同じカウントの場合（モバイル考慮）
-            fontSize = isMobile ? 28 : 40;
+        // キャンバスサイズ設定（モバイル対応強化・整数化）
+        const containerWidth = Math.floor(canvas.offsetWidth); // 整数化
+        let containerHeight;
+        
+        if (isSmall) {
+            // 極小画面: 縦横比を1:1に近づける
+            containerHeight = Math.floor(Math.max(350, Math.min(containerWidth * 1.0, 450)));
+        } else if (isMobile) {
+            // モバイル: 縦横比を1:1.2程度
+            containerHeight = Math.floor(Math.max(400, Math.min(containerWidth * 1.2, 550)));
         } else {
-            // 相対的な位置を計算（0〜1の範囲）
-            const relativePosition = (word.size - minCount) / (maxCount - minCount);
-            
-            // スケールタイプを選択（対数スケールまたは線形スケール）
-            // 範囲が広い場合は対数スケール、狭い場合は線形スケールを使用
-            let scaledValue;
-            if (maxCount / minCount > 10) {
-                // 対数スケールを使用して、より自然な分布を作成
-                scaledValue = Math.log10(1 + relativePosition * 9);
-            } else {
-                // 線形スケールを使用（範囲が狭い場合）
-                scaledValue = relativePosition;
-            }
-            
-            // 最小フォントサイズと最大フォントサイズの設定（モバイル対応）
-            let minFontSize, maxFontSize;
-            
-            if (isSmall) {
-                // 極小画面: より大きなフォントサイズ
-                minFontSize = 18;
-                maxFontSize = Math.min(80, containerWidth / 4);
-            } else if (isMobile) {
-                // モバイル: 大きなフォントサイズ
-                minFontSize = 20;
-                maxFontSize = Math.min(100, containerWidth / 3.5);
-            } else {
-                // デスクトップ: 従来通り
-                minFontSize = 16;
-                maxFontSize = Math.min(120, containerWidth / 8);
-            }
-            
-            // フォントサイズの計算
-            fontSize = minFontSize + (maxFontSize - minFontSize) * scaledValue;
-            
-            // 追加の調整：上位語彙をより強調（モバイルでは控えめに）
-            const emphasisMultiplier = isMobile ? 1.1 : 1.2;
-            if (relativePosition > 0.8) {
-                fontSize *= emphasisMultiplier;
-            } else if (relativePosition > 0.6) {
-                fontSize *= (emphasisMultiplier - 0.1);
-            }
+            // デスクトップ: 従来通り
+            containerHeight = Math.floor(Math.max(500, containerWidth * 0.7));
         }
         
-        // 最終的なサイズの制限（モバイル対応）
-        const minLimit = isMobile ? 16 : 14;
-        const maxLimit = isMobile ? 100 : 150;
-        fontSize = Math.max(minLimit, Math.min(fontSize, maxLimit));
+        // サイズが無効な場合はデフォルト値を使用
+        if (containerWidth <= 0 || containerHeight <= 0) {
+            console.warn('無効なキャンバスサイズ、デフォルト値を使用');
+            containerWidth = isMobile ? 320 : 800;
+            containerHeight = isMobile ? 400 : 500;
+        }
         
-        return [word.text, fontSize, null, null, null, null, word.color];
-    });
-    
-    try {
-        // ワードクラウド生成（モバイル対応パラメータ）
-        WordCloud(canvas, {
+        canvas.style.height = containerHeight + 'px';
+        canvas.style.width = containerWidth + 'px';
+        
+        console.log('キャンバスサイズ:', { containerWidth, containerHeight, isMobile, isSmall });
+        
+        // 出現回数の最小値と最大値を取得
+        const counts = wordsData.map(w => w.size);
+        const minCount = Math.min(...counts);
+        const maxCount = Math.max(...counts);
+        
+        console.log('カウント範囲:', { minCount, maxCount });
+        
+        // WordCloud2.js用のデータ変換（モバイル対応強化・エラー修正版）
+        const wordcloudList = wordsData.map(word => {
+            // 動的なサイズ計算（モバイル対応強化版）
+            let fontSize;
+            
+            if (maxCount === minCount) {
+                // 全て同じカウントの場合（モバイル考慮）
+                fontSize = isMobile ? 28 : 40;
+            } else {
+                // 相対的な位置を計算（0〜1の範囲）
+                const relativePosition = (word.size - minCount) / (maxCount - minCount);
+                
+                // スケールタイプを選択（対数スケールまたは線形スケール）
+                let scaledValue;
+                if (maxCount / minCount > 10) {
+                    // 対数スケールを使用して、より自然な分布を作成
+                    scaledValue = Math.log10(1 + relativePosition * 9);
+                } else {
+                    // 線形スケールを使用（範囲が狭い場合）
+                    scaledValue = relativePosition;
+                }
+                
+                // 最小フォントサイズと最大フォントサイズの設定（モバイル対応）
+                let minFontSize, maxFontSize;
+                
+                if (isSmall) {
+                    // 極小画面: より大きなフォントサイズ
+                    minFontSize = 18;
+                    maxFontSize = Math.min(80, Math.floor(containerWidth / 4));
+                } else if (isMobile) {
+                    // モバイル: 大きなフォントサイズ
+                    minFontSize = 20;
+                    maxFontSize = Math.min(100, Math.floor(containerWidth / 3.5));
+                } else {
+                    // デスクトップ: 従来通り
+                    minFontSize = 16;
+                    maxFontSize = Math.min(120, Math.floor(containerWidth / 8));
+                }
+                
+                // フォントサイズの計算
+                fontSize = minFontSize + (maxFontSize - minFontSize) * scaledValue;
+                
+                // 追加の調整：上位語彙をより強調（モバイルでは控えめに）
+                const emphasisMultiplier = isMobile ? 1.1 : 1.2;
+                if (relativePosition > 0.8) {
+                    fontSize *= emphasisMultiplier;
+                } else if (relativePosition > 0.6) {
+                    fontSize *= (emphasisMultiplier - 0.1);
+                }
+            }
+            
+            // 最終的なサイズの制限（モバイル対応・整数化）
+            const minLimit = isMobile ? 16 : 14;
+            const maxLimit = isMobile ? 100 : 150;
+            fontSize = Math.floor(Math.max(minLimit, Math.min(fontSize, maxLimit))); // 整数化
+            
+            return [word.text, fontSize, null, null, null, null, word.color];
+        });
+        
+        // ワードクラウド生成（モバイル対応パラメータ・エラー処理強化）
+        const options = {
             list: wordcloudList,
-            gridSize: Math.round((isMobile ? 16 : 24) * containerWidth / 1024), // モバイルでグリッドサイズを調整
+            gridSize: Math.max(1, Math.floor((isMobile ? 16 : 24) * containerWidth / 1024)), // 最小値1、整数化
             weightFactor: function(size) {
                 // モバイル対応のウェイトファクター計算
                 let scaleFactor;
@@ -1568,7 +1599,7 @@ function generateWordcloud(wordsData) {
                 } else {
                     scaleFactor = containerWidth / 800; // デスクトップは従来通り
                 }
-                return size * scaleFactor;
+                return Math.max(1, size * scaleFactor); // 最小値1
             },
             fontFamily: '"Hiragino Kaku Gothic Pro", "ヒラギノ角ゴ Pro", "Yu Gothic", "游ゴシック", Meiryo, "メイリオ", sans-serif',
             color: function(word, weight, fontSize, distance, theta) {
@@ -1584,43 +1615,60 @@ function generateWordcloud(wordsData) {
             ellipticity: isMobile ? 0.8 : 0.6, // モバイルでは楕円率を調整
             shrinkToFit: true,
             hover: function(item, dimension, event) {
-                if (item) {
-                    showWordTooltip(item[0], item[1], event);
-                } else {
-                    hideWordTooltip();
+                try {
+                    if (item && !isMobile) { // モバイルではホバー無効
+                        showWordTooltip(item[0], item[1], event);
+                    } else {
+                        hideWordTooltip();
+                    }
+                } catch (e) {
+                    console.warn('ホバーイベントエラー:', e);
                 }
             },
             click: function(item, dimension, event) {
-                if (item) {
-                    highlightWord(item[0]);
+                try {
+                    if (item) {
+                        highlightWord(item[0]);
+                    }
+                } catch (e) {
+                    console.warn('クリックイベントエラー:', e);
                 }
             }
-        });
+        };
         
-        // 表示語数更新
-        updateDisplayedCount(wordsData.length);
-        
-        // デバッグ情報をコンソールに出力
-        console.log('ワードクラウド生成完了');
-        console.log('サイズ分布:', {
-            '0-20': wordcloudList.filter(w => w[1] < 20).length,
-            '20-40': wordcloudList.filter(w => w[1] >= 20 && w[1] < 40).length,
-            '40-60': wordcloudList.filter(w => w[1] >= 40 && w[1] < 60).length,
-            '60-80': wordcloudList.filter(w => w[1] >= 60 && w[1] < 80).length,
-            '80+': wordcloudList.filter(w => w[1] >= 80).length
-        });
-        
-        // モバイル特有の調整
-        if (isMobile) {
-            // モバイルでは生成後に少し待ってから最終調整
-            setTimeout(() => {
-                const canvasElement = canvas.querySelector('canvas');
-                if (canvasElement) {
-                    // タッチ操作の改善
-                    canvasElement.style.touchAction = 'manipulation';
-                    canvasElement.style.userSelect = 'none';
-                }
-            }, 500);
+        // エラーハンドリング付きでWordCloud実行
+        try {
+            WordCloud(canvas, options);
+            
+            // 表示語数更新
+            updateDisplayedCount(wordsData.length);
+            
+            // デバッグ情報をコンソールに出力
+            console.log('ワードクラウド生成完了');
+            console.log('サイズ分布:', {
+                '0-20': wordcloudList.filter(w => w[1] < 20).length,
+                '20-40': wordcloudList.filter(w => w[1] >= 20 && w[1] < 40).length,
+                '40-60': wordcloudList.filter(w => w[1] >= 40 && w[1] < 60).length,
+                '60-80': wordcloudList.filter(w => w[1] >= 60 && w[1] < 80).length,
+                '80+': wordcloudList.filter(w => w[1] >= 80).length
+            });
+            
+            // モバイル特有の調整
+            if (isMobile) {
+                // モバイルでは生成後に少し待ってから最終調整
+                setTimeout(() => {
+                    const canvasElement = canvas.querySelector('canvas');
+                    if (canvasElement) {
+                        // タッチ操作の改善
+                        canvasElement.style.touchAction = 'manipulation';
+                        canvasElement.style.userSelect = 'none';
+                    }
+                }, 500);
+            }
+            
+        } catch (wordcloudError) {
+            console.error('WordCloud2.js実行エラー:', wordcloudError);
+            showWordcloudError('ワードクラウドの生成に失敗しました（技術的問題）');
         }
         
     } catch (error) {
@@ -1784,75 +1832,117 @@ function highlightWord(word) {
     }
 }
 
-// イベントリスナー設定（モバイル対応強化）
+// イベントリスナー設定（モバイル対応強化・エラー防止版）
 function setupWordcloudEvents() {
-    // 表示切り替えボタン
-    const sentimentBtn = document.getElementById('wordcloud-sentiment-btn');
-    const allBtn = document.getElementById('wordcloud-all-btn');
-    
-    if (sentimentBtn && allBtn) {
-        sentimentBtn.addEventListener('click', function() {
-            if (currentDisplayMode !== 'sentiment') {
-                currentDisplayMode = 'sentiment';
-                this.classList.add('active', 'btn-primary');
-                this.classList.remove('btn-outline-primary');
-                allBtn.classList.remove('active', 'btn-primary');
-                allBtn.classList.add('btn-outline-primary');
+    try {
+        // 表示切り替えボタン
+        const sentimentBtn = document.getElementById('wordcloud-sentiment-btn');
+        const allBtn = document.getElementById('wordcloud-all-btn');
+        
+        if (sentimentBtn && allBtn) {
+            sentimentBtn.addEventListener('click', function() {
+                try {
+                    if (currentDisplayMode !== 'sentiment') {
+                        currentDisplayMode = 'sentiment';
+                        this.classList.add('active', 'btn-primary');
+                        this.classList.remove('btn-outline-primary');
+                        allBtn.classList.remove('active', 'btn-primary');
+                        allBtn.classList.add('btn-outline-primary');
+                        
+                        // 感情語彙のみのデータに切り替え
+                        applyCurrentFilters();
+                    }
+                } catch (e) {
+                    console.error('感情語彙ボタンエラー:', e);
+                }
+            });
+            
+            allBtn.addEventListener('click', function() {
+                try {
+                    if (currentDisplayMode !== 'all') {
+                        currentDisplayMode = 'all';
+                        this.classList.add('active', 'btn-primary');
+                        this.classList.remove('btn-outline-primary');
+                        sentimentBtn.classList.remove('active', 'btn-primary');
+                        sentimentBtn.classList.add('btn-outline-primary');
+                        
+                        // 全語彙が未生成の場合は生成
+                        if (actualWordcloudData.all.length === 0) {
+                            console.log('全語彙データ生成開始');
+                            actualWordcloudData.all = convertToWordcloudData(actualAnalysisData.keyword_frequency_data || {}, true);
+                        }
+                        
+                        // 全語彙のデータに切り替え
+                        applyCurrentFilters();
+                    }
+                } catch (e) {
+                    console.error('全語彙ボタンエラー:', e);
+                }
+            });
+        }
+        
+        // 更新ボタン
+        const updateBtn = document.getElementById('wordcloud-update-btn');
+        if (updateBtn) {
+            updateBtn.addEventListener('click', function() {
+                try {
+                    applyCurrentFilters();
+                } catch (e) {
+                    console.error('更新ボタンエラー:', e);
+                }
+            });
+        }
+        
+        // リサイズ対応（モバイル対応強化・エラー防止）
+        let resizeTimeout;
+        let isResizing = false;
+        
+        window.addEventListener('resize', function() {
+            try {
+                if (isResizing) return; // 連続実行を防止
                 
-                // 感情語彙のみのデータに切り替え
-                applyCurrentFilters();
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    try {
+                        isResizing = true;
+                        
+                        if (currentWordcloudData.length > 0) {
+                            console.log('リサイズによる再生成');
+                            
+                            // キャンバスサイズを再チェック
+                            const canvas = document.getElementById('wordcloud-canvas');
+                            if (canvas && canvas.offsetWidth > 0) {
+                                generateWordcloud(currentWordcloudData);
+                            }
+                        }
+                    } catch (e) {
+                        console.error('リサイズ処理エラー:', e);
+                    } finally {
+                        isResizing = false;
+                    }
+                }, 500); // 遅延を増やしてエラーを防止
+            } catch (e) {
+                console.error('リサイズイベントエラー:', e);
             }
         });
         
-        allBtn.addEventListener('click', function() {
-            if (currentDisplayMode !== 'all') {
-                currentDisplayMode = 'all';
-                this.classList.add('active', 'btn-primary');
-                this.classList.remove('btn-outline-primary');
-                sentimentBtn.classList.remove('active', 'btn-primary');
-                sentimentBtn.classList.add('btn-outline-primary');
-                
-                // 全語彙が未生成の場合は生成
-                if (actualWordcloudData.all.length === 0) {
-                    console.log('全語彙データ生成開始');
-                    actualWordcloudData.all = convertToWordcloudData(actualAnalysisData.keyword_frequency_data || {}, true);
-                }
-                
-                // 全語彙のデータに切り替え
-                applyCurrentFilters();
+        // モバイル用のタッチイベント対応
+        if (isMobileDevice()) {
+            const canvas = document.getElementById('wordcloud-canvas');
+            if (canvas) {
+                // タッチ時のツールチップ表示を無効化（代わりにタップで詳細表示）
+                canvas.addEventListener('touchstart', function(e) {
+                    try {
+                        e.preventDefault(); // デフォルトのタッチ動作を無効化
+                    } catch (error) {
+                        console.warn('タッチイベントエラー:', error);
+                    }
+                }, { passive: false });
             }
-        });
-    }
-    
-    // 更新ボタン
-    const updateBtn = document.getElementById('wordcloud-update-btn');
-    if (updateBtn) {
-        updateBtn.addEventListener('click', function() {
-            applyCurrentFilters();
-        });
-    }
-    
-    // リサイズ対応（モバイル対応強化）
-    let resizeTimeout;
-    window.addEventListener('resize', function() {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-            if (currentWordcloudData.length > 0) {
-                console.log('リサイズによる再生成');
-                generateWordcloud(currentWordcloudData);
-            }
-        }, 300);
-    });
-    
-    // モバイル用のタッチイベント対応
-    if (isMobileDevice()) {
-        const canvas = document.getElementById('wordcloud-canvas');
-        if (canvas) {
-            // タッチ時のツールチップ表示を無効化（代わりにタップで詳細表示）
-            canvas.addEventListener('touchstart', function(e) {
-                e.preventDefault(); // デフォルトのタッチ動作を無効化
-            });
         }
+        
+    } catch (error) {
+        console.error('イベントリスナー設定エラー:', error);
     }
 }
 
