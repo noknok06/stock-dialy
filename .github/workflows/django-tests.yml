@@ -85,56 +85,10 @@ jobs:
             
     - name: Run migrations in order
       run: |
-        # まず、データベースファイルがあれば削除して新規作成
         rm -f test_db.sqlite3
+        python manage.py makemigrations --settings=config.test_settings
+        python manage.py migrate --settings=config.test_settings
         
-        # カスタムユーザーモデルを持つusersアプリのマイグレーションを作成
-        mkdir -p users/migrations
-        echo "from django.db import migrations" > users/migrations/__init__.py
-        echo "from django.db import migrations, models" > users/migrations/0001_initial.py
-        echo "import django.contrib.auth.models" >> users/migrations/0001_initial.py
-        echo "import django.contrib.auth.validators" >> users/migrations/0001_initial.py
-        echo "import django.utils.timezone" >> users/migrations/0001_initial.py
-        echo "" >> users/migrations/0001_initial.py
-        echo "class Migration(migrations.Migration):" >> users/migrations/0001_initial.py
-        echo "    initial = True" >> users/migrations/0001_initial.py
-        echo "    dependencies = [('auth', '0012_alter_user_first_name_max_length'),]" >> users/migrations/0001_initial.py
-        echo "    operations = [" >> users/migrations/0001_initial.py
-        echo "        migrations.CreateModel(" >> users/migrations/0001_initial.py
-        echo "            name='CustomUser'," >> users/migrations/0001_initial.py
-        echo "            fields=[" >> users/migrations/0001_initial.py
-        echo "                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'))," >> users/migrations/0001_initial.py
-        echo "                ('password', models.CharField(max_length=128, verbose_name='password'))," >> users/migrations/0001_initial.py
-        echo "                ('last_login', models.DateTimeField(blank=True, null=True, verbose_name='last login'))," >> users/migrations/0001_initial.py
-        echo "                ('is_superuser', models.BooleanField(default=False, verbose_name='superuser status'))," >> users/migrations/0001_initial.py
-        echo "                ('username', models.CharField(max_length=150, unique=True, verbose_name='username'))," >> users/migrations/0001_initial.py
-        echo "                ('first_name', models.CharField(blank=True, max_length=150, verbose_name='first name'))," >> users/migrations/0001_initial.py
-        echo "                ('last_name', models.CharField(blank=True, max_length=150, verbose_name='last name'))," >> users/migrations/0001_initial.py
-        echo "                ('email', models.EmailField(max_length=254, unique=True))," >> users/migrations/0001_initial.py
-        echo "                ('is_staff', models.BooleanField(default=False, verbose_name='staff status'))," >> users/migrations/0001_initial.py
-        echo "                ('is_active', models.BooleanField(default=True, verbose_name='active'))," >> users/migrations/0001_initial.py
-        echo "                ('date_joined', models.DateTimeField(default=django.utils.timezone.now, verbose_name='date joined'))," >> users/migrations/0001_initial.py
-        echo "            ]," >> users/migrations/0001_initial.py
-        echo "            options={" >> users/migrations/0001_initial.py
-        echo "                'verbose_name': 'user'," >> users/migrations/0001_initial.py
-        echo "                'verbose_name_plural': 'users'," >> users/migrations/0001_initial.py
-        echo "            }," >> users/migrations/0001_initial.py
-        echo "        )," >> users/migrations/0001_initial.py
-        echo "    ]" >> users/migrations/0001_initial.py
-        
-        # 基本的なDjangoアプリのマイグレーションを順番に実行
-        python manage.py migrate contenttypes --settings=config.test_settings
-        python manage.py migrate auth --settings=config.test_settings
-        python manage.py migrate users --settings=config.test_settings
-        python manage.py migrate admin --settings=config.test_settings
-        python manage.py migrate sessions --settings=config.test_settings
-        python manage.py migrate sites --settings=config.test_settings
-        python manage.py migrate axes --settings=config.test_settings
-        python manage.py migrate account --settings=config.test_settings
-        python manage.py migrate socialaccount --settings=config.test_settings
-        
-        # 残りのマイグレーションは実行せず、テストだけ実行する
-      
     - name: Test
       run: |
         export DJANGO_SETTINGS_MODULE=config.test_settings
