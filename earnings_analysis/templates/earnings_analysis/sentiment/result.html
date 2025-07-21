@@ -520,6 +520,110 @@
                 transition: none !important;
             }
         }        
+    .context-item {
+        display: flex;
+        padding: 1.25rem;
+        margin-bottom: 0.75rem;
+        border: 1px solid;
+        border-radius: 0.75rem;
+        background: rgba(255, 255, 255, 0.8);
+        border-left: 4px solid;
+        transition: all 0.2s ease;
+    }
+
+    .context-item:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        background: white;
+    }
+
+    .context-item:last-of-type {
+        margin-bottom: 0;
+    }
+
+    .context-number {
+        flex-shrink: 0;
+        margin-right: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: center;
+        width: 60px; /* ← 必要に応じて調整（例: 60〜80px） */
+    }
+
+    .context-index {
+        width: 24px;
+        height: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-size: 14px;
+        color: #fff;
+    }
+
+    .context-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .context-text {
+        margin-bottom: 0.75rem;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        color: #2c3e50;
+    }
+
+    .context-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .context-divider {
+        margin: 1rem 0;
+        border: none;
+        border-top: 2px dashed #dee2e6;
+        opacity: 0.6;
+    }
+
+    /* 既存のhighlighted-wordスタイルを強化 */
+    .highlighted-word {
+        background: linear-gradient(120deg, #fff3cd 0%, #ffeaa7 100%);
+        padding: 0.15rem 0.3rem;
+        border-radius: 0.25rem;
+        font-weight: 600;
+        border: 1px solid #ffc107;
+        box-shadow: 0 1px 2px rgba(255, 193, 7, 0.3);
+    }
+
+    /* モバイル対応 */
+    @media (max-width: 768px) {
+        .context-item {
+            padding: 1rem;
+            flex-direction: column;
+            margin-bottom: 1rem;
+        }
+        
+        .context-number {
+            flex-direction: row;
+            align-items: center;
+            margin-right: 0;
+            margin-bottom: 0.75rem;
+        }
+        
+        .context-meta {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
+        
+        .context-text {
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+    }
     </style>
 {% block breadcrumb %}
 <nav aria-label="breadcrumb">
@@ -1394,6 +1498,9 @@
                     </div>
                 </div>
             </div>
+            <div class="analysis-card card mb-4">
+                {% include 'earnings_analysis/ads/ad_responsive.html' %}
+            </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="fas fa-times me-1"></i>閉じる
@@ -1555,6 +1662,8 @@ function populateWordDetailModal(wordData) {
 }
 
 function findWordContexts(wordText) {
+    console.log('語彙の文脈検索開始:', wordText);
+    
     const contextList = document.getElementById('word-context-list');
     
     // ローディング表示
@@ -1588,6 +1697,8 @@ function findWordContexts(wordText) {
         }
     });
     
+    console.log('検索された文脈数:', contexts.length);
+    
     // 結果表示
     setTimeout(() => {
         if (contexts.length === 0) {
@@ -1598,27 +1709,50 @@ function findWordContexts(wordText) {
                 </div>
             `;
         } else {
-            const contextHTML = contexts.slice(0, 5).map(context => {
+            // 改善案2: シンプル + 番号付きのHTML生成
+            const contextHTML = contexts.slice(0, 5).map((context, index) => {
                 const sentimentClass = context.sentiment === 'positive' ? 'border-success' : 
                                      context.sentiment === 'negative' ? 'border-danger' : 'border-secondary';
+                const iconClass = context.sentiment === 'positive' ? 'fa-smile text-success' : 
+                                 context.sentiment === 'negative' ? 'fa-frown text-danger' : 'fa-meh text-secondary';
+                const numberBg = context.sentiment === 'positive' ? 'bg-success' : 
+                                context.sentiment === 'negative' ? 'bg-danger' : 'bg-secondary';
+                const sentimentLabel = context.sentiment === 'positive' ? 'ポジティブ' : 
+                                      context.sentiment === 'negative' ? 'ネガティブ' : '中立';
                 
                 return `
-                    <div class="context-sentence ${sentimentClass}">
-                        <div class="mb-2">${context.text}</div>
-                        <small class="text-muted">
-                            <i class="fas fa-star me-1"></i>
-                            スコア: ${context.score.toFixed(2)}
-                        </small>
+                    <div class="context-item ${sentimentClass}">
+                        <div class="context-number">
+                            <span class="context-index">${index + 1}</span>
+                            <i class="fas ${iconClass} ms-2"></i>
+                        </div>
+                        <div class="context-content">
+                            <div class="context-text">${context.text}</div>
+                            <div class="context-meta">
+                                <small class="text-muted">
+                                    <i class="fas fa-chart-bar me-1"></i>
+                                    感情スコア: ${context.score.toFixed(2)}
+                                </small>
+                                <small class="text-muted">
+                                    ${sentimentLabel}な文脈
+                                </small>
+                            </div>
+                        </div>
                     </div>
+                    ${index < contexts.slice(0, 5).length - 1 ? '<hr class="context-divider">' : ''}
                 `;
             }).join('');
             
             contextList.innerHTML = contextHTML;
             
+            // 5件を超える場合の表示
             if (contexts.length > 5) {
                 contextList.innerHTML += `
-                    <div class="text-center mt-2">
-                        <small class="text-muted">他${contexts.length - 5}件の文脈があります</small>
+                    <div class="text-center mt-3 pt-3 border-top">
+                        <small class="text-muted">
+                            <i class="fas fa-plus-circle me-1"></i>
+                            他${contexts.length - 5}件の文脈があります
+                        </small>
                     </div>
                 `;
             }
