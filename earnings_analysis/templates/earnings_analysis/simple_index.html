@@ -5,17 +5,32 @@
 
 {% block extra_css %}
 <style>
+/* カードのoverflow設定 */
+.analysis-card {
+    overflow: visible !important;
+}
+
+.analysis-card .card-body {
+    overflow: visible !important;
+}
+
 /* 検索候補の改善スタイル */
 .search-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
     background: white;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
     border: 1px solid #dee2e6;
     max-height: 60vh;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
     scrollbar-color: #cbd5e0 #f8f9fa;
+    z-index: 9999;
+    margin-top: 4px;
 }
 
 .search-suggestions::-webkit-scrollbar {
