@@ -660,8 +660,6 @@
     </div>
 </div>
 
-{% include 'earnings_analysis/ads/ad_responsive.html' %}
-
 <div class="row g-3 g-md-4">
     <!-- Main Results Area -->
     <div class="col-12 col-lg-8">
@@ -814,6 +812,8 @@
                 </div>
             </div>
         </div>
+
+        {% include 'earnings_analysis/ads/ad_responsive.html' %}
         <!-- Detailed Score Breakdown -->
         {% if session.analysis_result.score_calculation %}
             {% with calc=session.analysis_result.score_calculation %}
