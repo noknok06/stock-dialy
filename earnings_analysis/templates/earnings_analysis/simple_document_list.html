@@ -4,6 +4,8 @@
 {% block title %}書類一覧 -コーポマインドリーダー{% endblock %}
 
 {% block content %}
+
+
 <!-- Header Section -->
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
     <div class="flex-grow-1">
@@ -31,11 +33,12 @@
         {% endif %}
     </div>
     
-    <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-md-auto">
+    <!-- Desktop Actions -->
+    <div class="d-none d-md-flex gap-2">
         <button type="button" class="btn btn-outline-primary" data-bs-toggle="collapse" 
                 data-bs-target="#filterCollapse" aria-expanded="false">
             <i class="fas fa-filter me-1"></i>フィルタ
-            {% if search_params.company or search_params.doc_type or search_params.doc_type_name or search_params.from_date or search_params.to_date %}
+            {% if search_params.company or search_params.doc_type_name or search_params.from_date or search_params.to_date %}
                 <span class="badge bg-primary ms-1">ON</span>
             {% endif %}
         </button>
@@ -114,12 +117,6 @@
         <div class="small text-muted">
             {{ total_count }}件中 {{ documents.start_index }}〜{{ documents.end_index }}件を表示
         </div>
-        <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary btn-sm" id="toggleView" data-view="card">
-                <i class="fas fa-th-list me-1"></i>
-                <span class="d-none d-sm-inline">表示切替</span>
-            </button>
-        </div>
     </div>
 
     <!-- Document List -->
@@ -180,19 +177,6 @@
                                     </span>
                                 </div>
                             {% endif %}
-                            
-                            <!-- Document Types Available -->
-                            <div class="mt-2">
-                                {% if document.pdf_flag %}
-                                    <span class="badge bg-danger me-1">PDF</span>
-                                {% endif %}
-                                {% if document.xbrl_flag %}
-                                    <span class="badge bg-primary me-1">XBRL</span>
-                                {% endif %}
-                                {% if document.csv_flag %}
-                                    <span class="badge bg-success me-1">CSV</span>
-                                {% endif %}
-                            </div>
                         </div>
                         
                         <div class="col-12 col-md-4">
@@ -204,24 +188,21 @@
                                         <button type="button" class="btn btn-danger btn-sm"
                                                 onclick="downloadDocument('{{ document.doc_id }}', 'pdf', this)"
                                                 data-bs-toggle="tooltip" title="PDFダウンロード">
-                                            <i class="fas fa-file-pdf me-1"></i>
-                                            <span class="d-sm-none">PDF</span>
+                                            <i class="fas fa-file-pdf me-1"></i>PDF
                                         </button>
                                     {% endif %}
                                     {% if document.xbrl_flag %}
                                         <button type="button" class="btn btn-primary btn-sm"
                                                 onclick="downloadDocument('{{ document.doc_id }}', 'xbrl', this)"
                                                 data-bs-toggle="tooltip" title="XBRLダウンロード">
-                                            <i class="fas fa-code me-1"></i>
-                                            <span class="d-sm-none">XBRL</span>
+                                            <i class="fas fa-code me-1"></i>XBRL
                                         </button>
                                     {% endif %}
                                     {% if document.csv_flag %}
                                         <button type="button" class="btn btn-success btn-sm"
                                                 onclick="downloadDocument('{{ document.doc_id }}', 'csv', this)"
                                                 data-bs-toggle="tooltip" title="CSVダウンロード">
-                                            <i class="fas fa-table me-1"></i>
-                                            <span class="d-sm-none">CSV</span>
+                                            <i class="fas fa-table me-1"></i>CSV
                                         </button>
                                     {% endif %}
                                 </div>
@@ -231,14 +212,12 @@
                                     <a href="{% url 'earnings_analysis:financial-analysis' document.doc_id %}" 
                                        class="btn btn-outline-success btn-sm"
                                        data-bs-toggle="tooltip" title="財務分析">
-                                        <i class="fas fa-chart-pie me-1"></i>
-                                        <span class="d-md-none">財務分析</span>
+                                        <i class="fas fa-chart-pie me-1"></i>財務分析
                                     </a>
                                     <a href="{% url 'earnings_analysis:sentiment-analysis' document.doc_id %}" 
                                        class="btn btn-outline-primary btn-sm"
                                        data-bs-toggle="tooltip" title="感情分析">
-                                        <i class="fas fa-brain me-1"></i>
-                                        <span class="d-md-none">感情分析</span>
+                                        <i class="fas fa-brain me-1"></i>感情分析
                                     </a>
                                 </div>
                                 
@@ -365,27 +344,6 @@ document.addEventListener('DOMContentLoaded', function() {
             trigger: window.innerWidth <= 768 ? 'click' : 'hover focus'
         });
     });
-
-    // View toggle functionality (for future enhancement)
-    const toggleViewBtn = document.getElementById('toggleView');
-    if (toggleViewBtn) {
-        toggleViewBtn.addEventListener('click', function() {
-            const currentView = this.dataset.view;
-            const container = document.getElementById('documentContainer');
-            
-            if (currentView === 'card') {
-                // Switch to list view
-                container.classList.add('list-view');
-                this.dataset.view = 'list';
-                this.innerHTML = '<i class="fas fa-th me-1"></i><span class="d-none d-sm-inline">カード表示</span>';
-            } else {
-                // Switch to card view
-                container.classList.remove('list-view');
-                this.dataset.view = 'card';
-                this.innerHTML = '<i class="fas fa-th-list me-1"></i><span class="d-none d-sm-inline">表示切替</span>';
-            }
-        });
-    }
 
     // Enhanced filter auto-submit for better UX
     const filterForm = document.querySelector('#filterCollapse form');
