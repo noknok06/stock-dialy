@@ -77,7 +77,7 @@ if settings.DEBUG:
         pass
 
 # カスタムエラーページ（本番環境用）
-if not settings.DEBUG:
+#if not settings.DEBUG:
     # 404, 500エラーページのハンドラー
-    handler404 = 'config.views.custom_404'
-    handler500 = 'config.views.custom_500'
+    #handler404 = 'config.views.custom_404'
+    #handler500 = 'config.views.custom_500'
