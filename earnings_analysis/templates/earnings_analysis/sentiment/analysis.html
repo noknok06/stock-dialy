@@ -77,6 +77,125 @@
             border-width: 3px;
         }
     }
+    /* Progress Overlay (Modal風スタイル) */
+    .progress-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1050;
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .progress-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1040;
+    }
+
+    .progress-container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        z-index: 1055;
+    }
+
+    .progress-content {
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        max-width: 600px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        position: relative;
+    }
+
+    .progress-header {
+        padding: 1.5rem 1.5rem 0;
+        border-bottom: none;
+    }
+
+    .progress-title {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #333;
+        text-align: center;
+    }
+
+    .progress-body {
+        padding: 1.5rem;
+    }
+
+    .progress-footer {
+        padding: 0 1.5rem 1.5rem;
+        text-align: center;
+        border-top: none;
+    }
+
+    /* 広告コンテナ */
+    .progress-ad-container {
+        min-height: 250px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        border: 2px dashed #dee2e6;
+    }
+
+    /* アニメーション */
+    .progress-overlay {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .progress-content {
+        animation: slideInDown 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* モバイル対応 */
+    @media (max-width: 768px) {
+        .progress-container {
+            padding: 0.5rem;
+        }
+        
+        .progress-content {
+            max-height: 95vh;
+            border-radius: 0.5rem;
+        }
+        
+        .progress-ad-container {
+            min-height: 200px;
+        }
+    }    
 </style>
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
@@ -349,16 +468,19 @@
     </div>
 </div>
 
-<!-- Progress Modal -->
-<div class="modal fade" id="progressModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header border-0">
-                <h5 class="modal-title">
+
+<!-- Progress Overlay (Modal風だが通常のDOM要素) -->
+<div id="progressOverlay" class="progress-overlay" style="display: none;">
+    <div class="progress-backdrop"></div>
+    <div class="progress-container">
+        <div class="progress-content">
+            <div class="progress-header">
+                <h5 class="progress-title">
                     <i class="fas fa-brain me-2"></i>感情分析実行中
                 </h5>
             </div>
-            <div class="modal-body text-center py-4">
+            
+            <div class="progress-body text-center py-4">
                 <div class="mb-4">
                     <i class="fas fa-spinner fa-spin fa-4x text-primary"></i>
                 </div>
@@ -372,6 +494,11 @@
                 
                 <div id="statusMessage" class="text-muted mb-3">分析を開始しています...</div>
                 
+                <!-- 広告スペース -->
+                <div class="progress-ad-container my-4">
+                    {% include 'earnings_analysis/ads/ad_responsive.html' %}
+                </div>
+                
                 <div class="mt-4">
                     <small class="text-muted">
                         この処理には数分かかる場合があります。<br>
@@ -379,9 +506,8 @@
                     </small>
                 </div>
             </div>
-
-            {% include 'earnings_analysis/ads/ad_responsive.html' %}
-            <div class="modal-footer border-0">
+            
+            <div class="progress-footer">
                 <button type="button" class="btn btn-secondary" id="cancelBtn" onclick="cancelAnalysis()">
                     <i class="fas fa-times me-1"></i>キャンセル
                 </button>
@@ -389,19 +515,18 @@
         </div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
 let currentSessionId = null;
 let progressInterval = null;
-
 function startSentimentAnalysis(docId, force = false) {
-    // Show progress modal
-    const modal = new bootstrap.Modal(document.getElementById('progressModal'));
-    modal.show();
+    // Show progress overlay (モーダルの代わり)
+    showProgressOverlay();
     
-    // Start analysis
+    // 以下は既存のコードと同じ
     fetch('{% url "earnings_analysis:sentiment-start" %}', {
         method: 'POST',
         headers: {
@@ -419,7 +544,7 @@ function startSentimentAnalysis(docId, force = false) {
             currentSessionId = data.session_id;
             startProgressPolling();
         } else if (data.status === 'already_analyzed') {
-            modal.hide();
+            hideProgressOverlay();
             window.location.href = `{% url "earnings_analysis:sentiment-result" "SESSION_ID" %}`.replace('SESSION_ID', data.session_id);
         } else {
             throw new Error(data.message || '分析開始に失敗しました');
@@ -427,7 +552,7 @@ function startSentimentAnalysis(docId, force = false) {
     })
     .catch(error => {
         console.error('Analysis start error:', error);
-        modal.hide();
+        hideProgressOverlay();
         showToast('分析開始に失敗しました: ' + error.message, 'error');
     });
 }
@@ -441,6 +566,25 @@ function startProgressPolling() {
     
     // Initial execution
     fetchProgress();
+}
+
+function showProgressOverlay() {
+    document.getElementById('progressOverlay').style.display = 'block';
+    document.body.style.overflow = 'hidden'; // スクロール防止
+}
+
+function hideProgressOverlay() {
+    document.getElementById('progressOverlay').style.display = 'none';
+    document.body.style.overflow = ''; // スクロール復元
+}
+
+function cancelAnalysis() {
+    if (progressInterval) {
+        clearInterval(progressInterval);
+    }
+    
+    hideProgressOverlay();
+    currentSessionId = null;
 }
 
 function fetchProgress() {
