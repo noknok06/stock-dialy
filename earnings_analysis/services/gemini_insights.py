@@ -4,6 +4,7 @@ import logging
 from django.conf import settings
 from typing import Dict, Any, Optional
 import json
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -45,110 +46,110 @@ class GeminiInsightsGenerator:
         except Exception as e:
             logger.error(f"Gemini API呼び出しエラー: {e}")
             return self._generate_fallback_insights(analysis_result, document_info)
-    
+        
     def _build_investment_prompt(self, analysis_result: Dict[str, Any], document_info: Dict[str, str]) -> str:
         """投資家向けプロンプトを構築"""
         overall_score = analysis_result.get('overall_score', 0)
         sentiment_label = analysis_result.get('sentiment_label', 'neutral')
         statistics = analysis_result.get('statistics', {})
         
-        # キーワード情報の準備
         keyword_analysis = analysis_result.get('keyword_analysis', {})
         positive_keywords = [kw.get('word', '') for kw in keyword_analysis.get('positive', [])[:5]]
         negative_keywords = [kw.get('word', '') for kw in keyword_analysis.get('negative', [])[:5]]
-        
-        # サンプル文章の準備
+
         sample_sentences = analysis_result.get('sample_sentences', {})
         positive_sentences = [s.get('text', '')[:100] for s in sample_sentences.get('positive', [])[:3]]
         negative_sentences = [s.get('text', '')[:100] for s in sample_sentences.get('negative', [])[:3]]
-        
+
         prompt = f"""
-あなたは金融アナリストとして、企業の決算書類の感情分析結果を基に、投資家向けの見解を作成してください。
+    あなたは金融アナリストとして、企業の決算書類の感情分析結果を基に、投資家向けの見解を作成してください。
 
-【企業情報】
-企業名: {document_info.get('company_name', '不明')}
-書類種別: {document_info.get('doc_description', '不明')}
-提出日: {document_info.get('submit_date', '不明')}
-証券コード: {document_info.get('securities_code', '不明')}
+    【企業情報】
+    企業名: {document_info.get('company_name', '不明')}
+    書類種別: {document_info.get('doc_description', '不明')}
+    提出日: {document_info.get('submit_date', '不明')}
+    証券コード: {document_info.get('securities_code', '不明')}
 
-【感情分析結果】
-総合スコア: {overall_score:.3f} ({sentiment_label})
-分析語彙数: {statistics.get('total_words_analyzed', 0)}語
-検出パターン数: {statistics.get('context_patterns_found', 0)}個
-文章数: {statistics.get('sentences_analyzed', 0)}文
+    【感情分析結果】
+    総合スコア: {overall_score:.3f} ({sentiment_label})
+    分析語彙数: {statistics.get('total_words_analyzed', 0)}語
+    検出パターン数: {statistics.get('context_patterns_found', 0)}個
+    文章数: {statistics.get('sentences_analyzed', 0)}文
 
-【検出されたキーワード】
-ポジティブ語彙: {', '.join(positive_keywords) if positive_keywords else 'なし'}
-ネガティブ語彙: {', '.join(negative_keywords) if negative_keywords else 'なし'}
+    【検出されたキーワード】
+    ポジティブ語彙: {', '.join(positive_keywords) or 'なし'}
+    ネガティブ語彙: {', '.join(negative_keywords) or 'なし'}
 
-【サンプル文章】
-ポジティブ文章例:
-{chr(10).join(positive_sentences) if positive_sentences else 'なし'}
+    【サンプル文章】
+    ポジティブ文章例:
+    {chr(10).join(positive_sentences) or 'なし'}
 
-ネガティブ文章例:
-{chr(10).join(negative_sentences) if negative_sentences else 'なし'}
+    ネガティブ文章例:
+    {chr(10).join(negative_sentences) or 'なし'}
 
-以下の観点から、3-5個の具体的で実用的な投資判断ポイントを日本語で作成してください：
+    以下の観点から、3〜5個の実用的な投資判断ポイントを日本語で作成してください：
 
-1. **経営姿勢の読み取り**: 経営陣の姿勢や戦略的方向性について
-2. **業績トレンド**: 現在の業績動向と将来への示唆
-3. **リスク要因**: 注意すべきリスクや課題
-4. **投資機会**: 投資検討における着目点
-5. **市場反応**: 株価や市場への影響予想
+    1. 経営姿勢の読み取り（経営陣の方針・戦略）
+    2. 業績トレンド（現在の動向と将来性）
+    3. リスク要因（注意すべき課題）
+    4. 投資機会（注目すべき分野や動き）
+    5. 市場反応（株価・市場インパクト）
 
-各ポイントは以下の形式で出力してください：
-- **ポイントタイトル**: 具体的な説明（50-80文字程度）
+    各ポイントは以下の形式で出力してください：
+    - 見出しタイトル: 説明（50〜80文字程度）
 
-回答は投資家にとって実用的で、感情分析の結果を適切に反映した内容にしてください。
-"""
+    Markdownなどの記号（**など）は使用せず、自然な文章で記述してください。
+    """
         return prompt.strip()
-    
+
     def _parse_gemini_response(self, response_text: str, analysis_result: Dict[str, Any]) -> Dict[str, Any]:
         """Gemini APIの応答を解析してポイントリストに変換"""
         try:
             points = []
             lines = response_text.strip().split('\n')
-            
+
+            # タイトル:説明 形式をマッチする正規表現（記号なし）
+            pattern = re.compile(r'^\s*(\d+\.?|・|\-)?\s*(.+?)[:：]\s*(.+)$')
+
             for line in lines:
                 line = line.strip()
-                # 箇条書きのポイントを抽出
-                if line.startswith('•') or line.startswith('*') or line.startswith('-'):
-                    # マークダウン記号を除去
-                    clean_line = line.lstrip('•*- ').strip()
-                    if clean_line and len(clean_line) > 10:  # 最小長チェック
-                        # **タイトル**: 説明 の形式を分析
-                        if '**' in clean_line and ':' in clean_line:
-                            title_end = clean_line.find('**', 2)
-                            if title_end > 0:
-                                title = clean_line[2:title_end].strip()
-                                description = clean_line[title_end+2:].lstrip(': ').strip()
-                                points.append({
-                                    'title': title,
-                                    'description': description,
-                                    'source': 'gemini_generated'
-                                })
-                        else:
-                            # タイトルと説明を分離できない場合
-                            points.append({
-                                'title': 'AI分析ポイント',
-                                'description': clean_line,
-                                'source': 'gemini_generated'
-                            })
-            
-            # ポイントが少ない場合の補完
+                if not line or len(line) < 10:
+                    continue
+
+                match = pattern.match(line)
+                if match:
+                    title = match.group(2).strip()
+                    description = match.group(3).strip()
+                    if title and description:
+                        points.append({
+                            'title': title,
+                            'description': description,
+                            'source': 'gemini_generated'
+                        })
+                    continue
+
+                # フォーマットに合わないが十分長い行も一応拾う
+                if len(line) > 20:
+                    points.append({
+                        'title': 'AI分析ポイント',
+                        'description': line,
+                        'source': 'gemini_generated'
+                    })
+
             if len(points) < 3:
                 fallback_points = self._generate_fallback_points(analysis_result)
                 points.extend(fallback_points[len(points):])
-            
+
             return {
-                'investment_points': points[:5],  # 最大5個
+                'investment_points': points[:5],
                 'generated_by': 'gemini_api',
                 'response_quality': 'high' if len(points) >= 3 else 'medium'
             }
-            
+
         except Exception as e:
             logger.error(f"Gemini応答解析エラー: {e}")
             return self._generate_fallback_insights(analysis_result, {})
+
     
     def _generate_fallback_insights(self, analysis_result: Dict[str, Any], document_info: Dict[str, str]) -> Dict[str, Any]:
         """Gemini APIが利用できない場合のフォールバック見解"""
