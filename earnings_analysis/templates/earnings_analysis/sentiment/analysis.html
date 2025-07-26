@@ -147,15 +147,26 @@
 
     /* 広告コンテナ */
     .progress-ad-container {
-        min-height: 250px;
+        min-height: 280px;
         display: flex;
         align-items: center;
         justify-content: center;
         background-color: #f8f9fa;
         border-radius: 8px;
-        border: 2px dashed #dee2e6;
+        border: 1px solid #dee2e6;
+        width: 100%;
     }
 
+    .ad-placeholder {
+        text-align: center;
+        color: #6c757d;
+    }
+
+    /* 実際の広告が表示されたときのスタイル */
+    .progress-ad-container .adsbygoogle {
+        width: 100% !important;
+        min-height: 250px;
+    }
     /* アニメーション */
     .progress-overlay {
         animation: fadeIn 0.3s ease-out;
@@ -468,8 +479,7 @@
     </div>
 </div>
 
-
-<!-- Progress Overlay (Modal風だが通常のDOM要素) -->
+<!-- Progress Overlay -->
 <div id="progressOverlay" class="progress-overlay" style="display: none;">
     <div class="progress-backdrop"></div>
     <div class="progress-container">
@@ -494,9 +504,12 @@
                 
                 <div id="statusMessage" class="text-muted mb-3">分析を開始しています...</div>
                 
-                <!-- 広告スペース -->
-                <div class="progress-ad-container my-4">
-                    {% include 'earnings_analysis/ads/ad_responsive.html' %}
+                <!-- 広告コンテナ（動的挿入用） -->
+                <div id="progressAdContainer" class="progress-ad-container my-4">
+                    <div class="ad-placeholder">
+                        <i class="fas fa-ad text-muted fa-2x mb-2"></i>
+                        <div class="text-muted">広告を読み込み中...</div>
+                    </div>
                 </div>
                 
                 <div class="mt-4">
@@ -570,12 +583,60 @@ function startProgressPolling() {
 
 function showProgressOverlay() {
     document.getElementById('progressOverlay').style.display = 'block';
-    document.body.style.overflow = 'hidden'; // スクロール防止
+    document.body.style.overflow = 'hidden';
+    
+    // オーバーレイ表示後に広告を初期化
+    setTimeout(initializeProgressAd, 500);
+}
+function initializeProgressAd() {
+    const adContainer = document.getElementById('progressAdContainer');
+    
+    if (adContainer && !adContainer.querySelector('.adsbygoogle')) {
+        // 広告HTMLを動的に作成
+        const adHTML = `
+            <ins class="adsbygoogle"
+                 style="display:block; width:100%; min-height:250px;"
+                 data-ad-client="ca-pub-3954701883136363"
+                 data-ad-slot="2912928129"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+        `;
+        
+        // プレースホルダーを広告に置き換え
+        adContainer.innerHTML = adHTML;
+        
+        // AdSenseを初期化
+        try {
+            if (window.adsbygoogle) {
+                (adsbygoogle = window.adsbygoogle || []).push({});
+            }
+        } catch (error) {
+            console.warn('広告の初期化に失敗:', error);
+            // エラー時はプレースホルダーを表示
+            adContainer.innerHTML = `
+                <div class="ad-placeholder">
+                    <i class="fas fa-info-circle text-muted fa-2x mb-2"></i>
+                    <div class="text-muted">広告をスキップしました</div>
+                </div>
+            `;
+        }
+    }
 }
 
 function hideProgressOverlay() {
     document.getElementById('progressOverlay').style.display = 'none';
-    document.body.style.overflow = ''; // スクロール復元
+    document.body.style.overflow = '';
+    
+    // 広告コンテナをリセット
+    const adContainer = document.getElementById('progressAdContainer');
+    if (adContainer) {
+        adContainer.innerHTML = `
+            <div class="ad-placeholder">
+                <i class="fas fa-ad text-muted fa-2x mb-2"></i>
+                <div class="text-muted">広告を読み込み中...</div>
+            </div>
+        `;
+    }
 }
 
 function cancelAnalysis() {
@@ -630,17 +691,6 @@ function updateProgressUI(data) {
         progressBar.classList.add('bg-success');
         statusMessage.innerHTML = '<span class="text-success">分析完了！結果画面に移動します...</span>';
     }
-}
-
-function cancelAnalysis() {
-    if (progressInterval) {
-        clearInterval(progressInterval);
-    }
-    
-    const modal = bootstrap.Modal.getInstance(document.getElementById('progressModal'));
-    modal.hide();
-    
-    currentSessionId = null;
 }
 
 function getCookie(name) {
