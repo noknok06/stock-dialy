@@ -563,11 +563,33 @@ function updateSelectedItem() {
     }
 }
 
-function selectCurrent() {
-    if (selectedIndex >= 0 && selectedIndex < currentSuggestions.length) {
-        selectCompany(currentSuggestions[selectedIndex]);
-    } else {
-        performDirectSearch();
+function handleKeyNavigation(event) {
+    // 候補が表示されていない場合はキーナビゲーションを無効化
+    if (!suggestionsContainer.style.display || suggestionsContainer.style.display === 'none') {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            // 何もしない（直接検索を防ぐ）
+            return;
+        }
+        return;
+    }
+    
+    switch (event.key) {
+        case 'ArrowDown':
+            event.preventDefault();
+            navigateDown();
+            break;
+        case 'ArrowUp':
+            event.preventDefault();
+            navigateUp();
+            break;
+        case 'Enter':
+            event.preventDefault();
+            selectCurrent();
+            break;
+        case 'Escape':
+            hideSuggestions();
+            break;
     }
 }
 
