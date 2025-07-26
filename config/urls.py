@@ -45,7 +45,7 @@ urlpatterns = [
     path('financial_reports/', include('financial_reports.urls')),
     
     #コーポマインドリーダー（新機能）
-    path('earnings_analysis/', include('earnings_analysis.urls')),
+    path('copomo/', include('earnings_analysis.urls')),
     
     # サポート・サービス系
     path('subscriptions/', include('subscriptions.urls')),
@@ -66,15 +66,6 @@ urlpatterns += [
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    
-    # 開発用デバッグツール（もしインストールされている場合）
-    try:
-        import debug_toolbar
-        urlpatterns = [
-            path('__debug__/', include(debug_toolbar.urls)),
-        ] + urlpatterns
-    except ImportError:
-        pass
 
 # カスタムエラーページ（本番環境用）
 #if not settings.DEBUG:

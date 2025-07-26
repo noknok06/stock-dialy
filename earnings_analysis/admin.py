@@ -25,8 +25,8 @@ from .models import (
 logger = logging.getLogger(__name__)
 
 # Admin Site の設定
-admin.site.site_header = 'コーポマインドリーダー'
-admin.site.site_title = 'CorpMindReader Admin'
+admin.site.site_header = 'コポモ（CopoMo）'
+admin.site.site_title = 'コポモ（CopoMo）'
 admin.site.index_title = 'システム管理ダッシュボード'
 
 # カスタムフィルター
@@ -1417,5 +1417,5 @@ admin.site.site_header = mark_safe('''
     text-transform: uppercase;
 }
 </style>
-コーポマインドリーダー
+コポモ
 ''')
