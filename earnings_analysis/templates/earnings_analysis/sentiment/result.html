@@ -743,67 +743,50 @@
                     <!-- 右側：詳細解釈 -->
                     <div class="col-12 col-lg-6">
                         <div class="score-interpretation">
-                            
-                            <!-- 分析から読み取れるポイント -->
                             <div class="investment-points">
                                 <h6 class="fw-bold mb-3">
                                     <i class="fas fa-lightbulb text-warning me-2"></i>分析から読み取れるポイント
+                                    {% if formatted_insights.gemini_metadata.generated_by == 'gemini_api' %}
+                                        <span class="badge bg-info ms-2">
+                                            <i class="fas fa-robot me-1"></i>AI分析
+                                        </span>
+                                    {% elif formatted_insights.gemini_metadata.generated_by == 'fallback_logic' %}
+                                        <span class="badge bg-secondary ms-2">
+                                            <i class="fas fa-cog me-1"></i>標準分析
+                                        </span>
+                                    {% endif %}
                                 </h6>
                                 
-                                {% if session.overall_score > 0.4 %}
-                                    <div class="point-item mb-2">
-                                        <i class="fas fa-check-circle text-success me-2"></i>
-                                        <span class="fw-semibold">非常に前向きな表現が多用されている</span>
-                                        <div class="small text-muted ms-4">成長や改善への強い意欲が文章に表れています</div>
-                                    </div>
-                                    <div class="point-item mb-2">
-                                        <i class="fas fa-arrow-trend-up text-success me-2"></i>
-                                        <span class="fw-semibold">楽観的な将来展望を示している</span>
-                                        <div class="small text-muted ms-4">ポジティブな語彙が多く、明るい見通しを表現</div>
-                                    </div>
-                                {% elif session.overall_score > 0.15 %}
-                                    <div class="point-item mb-2">
-                                        <i class="fas fa-balance-scale text-primary me-2"></i>
-                                        <span class="fw-semibold">堅実で建設的な表現を使用している</span>
-                                        <div class="small text-muted ms-4">過度に楽観的でなく、現実的な見通しを示しています</div>
-                                    </div>
-                                    <div class="point-item mb-2">
-                                        <i class="fas fa-clock text-primary me-2"></i>
-                                        <span class="fw-semibold">段階的な改善への意欲を表明</span>
-                                        <div class="small text-muted ms-4">着実な取り組みを重視する姿勢が読み取れます</div>
-                                    </div>
-                                {% elif session.overall_score >= -0.15 %}
-                                    <div class="point-item mb-2">
-                                        <i class="fas fa-file-text text-secondary me-2"></i>
-                                        <span class="fw-semibold">客観的で事実ベースの記述が中心</span>
-                                        <div class="small text-muted ms-4">感情的な表現を避け、冷静な報告を心がけています</div>
-                                    </div>
-                                    <div class="point-item mb-2">
-                                        <i class="fas fa-search text-secondary me-2"></i>
-                                        <span class="fw-semibold">バランスの取れた情報開示</span>
-                                        <div class="small text-muted ms-4">ポジティブとネガティブな要素を公平に記載</div>
-                                    </div>
-                                {% elif session.overall_score >= -0.4 %}
-                                    <div class="point-item mb-2">
-                                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
-                                        <span class="fw-semibold">課題や困難について率直に言及</span>
-                                        <div class="small text-muted ms-4">リスクを隠さず、透明性の高い情報開示を実施</div>
-                                    </div>
-                                    <div class="point-item mb-2">
-                                        <i class="fas fa-chart-bar text-warning me-2"></i>
-                                        <span class="fw-semibold">慎重で現実的な表現を採用</span>
-                                        <div class="small text-muted ms-4">過度な楽観論を避け、地に足ついた記述</div>
-                                    </div>
+                                {% if formatted_insights.gemini_investment_points %}
+                                    <!-- 生成されたポイント -->
+                                    {% for point in formatted_insights.gemini_investment_points %}
+                                        <div class="point-item mb-3">
+                                            <i class="fas fa-{% if point.source == 'gemini_generated' %}robot text-info{% else %}lightbulb text-primary{% endif %} me-2"></i>
+                                            <div>
+                                                <span class="fw-semibold">{{ point.title }}</span>
+                                                <div class="small text-muted ms-0">{{ point.description }}</div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                    
+                                    <!-- 簡素な品質表示 -->
+                                    {% if formatted_insights.gemini_metadata.api_available %}
+                                        <div class="small text-success mt-2">
+                                            <i class="fas fa-check-circle me-1"></i>
+                                            AI分析による見解が含まれています
+                                        </div>
+                                    {% else %}
+                                        <div class="small text-muted mt-2">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            標準的な分析ロジックによる見解です
+                                        </div>
+                                    {% endif %}
+                                    
                                 {% else %}
-                                    <div class="point-item mb-2">
-                                        <i class="fas fa-hand-paper text-danger me-2"></i>
-                                        <span class="fw-semibold">困難な状況について詳細に記載</span>
-                                        <div class="small text-muted ms-4">厳しい現実を正面から捉えた誠実な情報開示</div>
-                                    </div>
-                                    <div class="point-item mb-2">
-                                        <i class="fas fa-search-plus text-danger me-2"></i>
-                                        <span class="fw-semibold">リスクや課題への高い透明性</span>
-                                        <div class="small text-muted ms-4">ステークホルダーへの責任ある情報提供</div>
+                                    <!-- エラー時のフォールバック表示 -->
+                                    <div class="text-center py-3">
+                                        <i class="fas fa-info-circle text-muted fa-2x mb-2"></i>
+                                        <div class="text-muted">投資判断ポイントの生成ができませんでした</div>
                                     </div>
                                 {% endif %}
                             </div>

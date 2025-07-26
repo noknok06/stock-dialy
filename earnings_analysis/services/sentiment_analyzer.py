@@ -13,6 +13,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 from .xbrl_extractor import EDINETXBRLService
+from .gemini_insights import GeminiInsightsGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -323,7 +324,7 @@ class TransparentTextProcessor:
 
 
 class UserInsightGenerator:
-    """ユーザー向け見解生成クラス"""
+    """ユーザー向け見解生成クラス（Gemini API統合版）"""
     
     def __init__(self):
         self.business_terms = {
@@ -336,13 +337,19 @@ class UserInsightGenerator:
                 '市場変化', '競争激化', '不確実性', '経営課題', '事業再編'
             ]
         }
+        # Gemini APIサービスを初期化
+        self.gemini_generator = GeminiInsightsGenerator()
+
     
     def generate_detailed_insights(self, analysis_result: Dict[str, Any], document_info: Dict[str, str]) -> Dict[str, Any]:
-        """詳細な見解を生成"""
+        """詳細な見解を生成（Gemini API統合版）"""
         overall_score = analysis_result.get('overall_score', 0)
         sentiment_label = analysis_result.get('sentiment_label', 'neutral')
         statistics = analysis_result.get('statistics', {})
         keyword_analysis = analysis_result.get('keyword_analysis', {})
+        
+        # Gemini APIで投資家向けポイントを生成
+        gemini_insights = self.gemini_generator.generate_investment_insights(analysis_result, document_info)
         
         insights = {
             'market_implications': self._generate_market_implications(overall_score, sentiment_label, keyword_analysis),
@@ -351,7 +358,15 @@ class UserInsightGenerator:
             'risk_assessment': self._generate_risk_assessment(analysis_result),
             'competitive_position': self._generate_competitive_analysis(keyword_analysis, overall_score),
             'future_outlook': self._generate_future_outlook(analysis_result),
-            'stakeholder_recommendations': self._generate_stakeholder_recommendations(overall_score, sentiment_label, statistics)
+            'stakeholder_recommendations': self._generate_stakeholder_recommendations(overall_score, sentiment_label, statistics),
+            
+            # Gemini API生成のポイントを追加
+            'gemini_investment_points': gemini_insights.get('investment_points', []),
+            'gemini_metadata': {
+                'generated_by': gemini_insights.get('generated_by', 'fallback'),
+                'response_quality': gemini_insights.get('response_quality', 'basic'),
+                'generation_timestamp': timezone.now().isoformat()
+            }
         }
         
         return insights

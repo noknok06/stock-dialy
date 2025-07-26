@@ -151,6 +151,13 @@ class SentimentResultView(TemplateView):
                     'identified_risks': risk_data.get('identified_risks', []),
                     'mitigation_evidence': risk_data.get('mitigation_evidence', []),
                 }
+                
+            # Gemini生成ポイントの処理を追加
+            if 'gemini_investment_points' in insights:
+                formatted['gemini_investment_points'] = insights['gemini_investment_points']
+            
+            if 'gemini_metadata' in insights:
+                formatted['gemini_metadata'] = insights['gemini_metadata']
             
             return formatted
             
