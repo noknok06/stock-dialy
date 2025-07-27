@@ -117,7 +117,7 @@ class CompanyAdmin(admin.ModelAdmin):
     
     def company_name_link(self, obj):
         """企業名にリンクを追加"""
-        url = reverse('admin:earnings_analysis_documentmetadata_changelist')
+        url = reverse('admin:copomo_documentmetadata_changelist')
         return format_html(
             '<a href="{}?edinet_code={}" title="この企業の書類を表示">{}</a>',
             url, obj.edinet_code, obj.company_name
@@ -603,10 +603,10 @@ class BatchExecutionAdmin(admin.ModelAdmin):
         custom_urls = [
             path('execute-batch/', 
                  self.admin_site.admin_view(self.execute_batch_view), 
-                 name='earnings_analysis_batchexecution_execute_batch'),
+                 name='copomo_batchexecution_execute_batch'),
             path('execute-daily-update/', 
                  self.admin_site.admin_view(self.execute_daily_update_view), 
-                 name='earnings_analysis_batchexecution_execute_daily_update'),
+                 name='copomo_analysis_batchexecution_execute_daily_update'),
         ]
         return custom_urls + urls
     
