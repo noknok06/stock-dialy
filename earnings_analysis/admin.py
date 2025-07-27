@@ -597,16 +597,17 @@ class BatchExecutionAdmin(admin.ModelAdmin):
     date_hierarchy = 'batch_date'
     ordering = ['-batch_date']
     
+
     def get_urls(self):
         """カスタムURLパターンを追加"""
         urls = super().get_urls()
         custom_urls = [
             path('execute-batch/', 
                  self.admin_site.admin_view(self.execute_batch_view), 
-                 name='copomo_batchexecution_execute_batch'),
+                 name='earnings_analysis_batchexecution_execute_batch'),
             path('execute-daily-update/', 
                  self.admin_site.admin_view(self.execute_daily_update_view), 
-                 name='copomo_analysis_batchexecution_execute_daily_update'),
+                 name='earnings_analysis_batchexecution_execute_daily_update'),
         ]
         return custom_urls + urls
     

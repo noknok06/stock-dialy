@@ -4,7 +4,7 @@ from django.views.generic import RedirectView
 from . import views
 from .views import ui, sentiment_ui, sentiment, financial_ui, financial
 
-app_name = 'comopo'
+app_name = 'copomo'
 
 urlpatterns = [
     # ======== ユーザー画面 ========
