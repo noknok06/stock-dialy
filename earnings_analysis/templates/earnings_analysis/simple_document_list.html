@@ -42,7 +42,7 @@
                 <span class="badge bg-primary ms-1">ON</span>
             {% endif %}
         </button>
-        <a href="{% url 'earnings_analysis:index' %}" class="btn btn-outline-secondary">
+        <a href="{% url 'copomo:index' %}" class="btn btn-outline-secondary">
             <i class="fas fa-search me-1"></i>新規検索
         </a>
     </div>
@@ -100,7 +100,7 @@
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-search me-1"></i>検索
                         </button>
-                        <a href="{% url 'earnings_analysis:document-list-ui' %}" class="btn btn-outline-secondary">
+                        <a href="{% url 'copomo:document-list-ui' %}" class="btn btn-outline-secondary">
                             <i class="fas fa-times me-1"></i>クリア
                         </a>
                     </div>
@@ -129,7 +129,7 @@
                             <!-- Company Name and Code -->
                             <div class="d-flex align-items-center mb-2">
                                 <h6 class="mb-0 me-2">
-                                    <a href="{% url 'earnings_analysis:company-detail-ui' document.edinet_code %}" 
+                                    <a href="{% url 'copomo:company-detail-ui' document.edinet_code %}" 
                                        class="text-decoration-none fw-semibold">
                                         {{ document.company_name }}
                                     </a>
@@ -143,7 +143,7 @@
                             <div class="small text-muted">
                                 <div class="d-flex flex-wrap gap-3">
                                     <!-- 書類IDを目立たせる -->
-                                    <a href="{% url 'earnings_analysis:document-detail-ui' document.doc_id %}" 
+                                    <a href="{% url 'copomo:document-detail-ui' document.doc_id %}" 
                                     class="text-decoration-none mb-1">
                                         <strong class="text-primary">
                                             <i class="fas fa-file-alt me-1"></i>{{ document.doc_id }}
@@ -209,12 +209,12 @@
                                 
                                 <!-- Analysis Buttons -->
                                 <div class="btn-group" role="group" aria-label="分析">
-                                    <a href="{% url 'earnings_analysis:financial-analysis' document.doc_id %}" 
+                                    <a href="{% url 'copomo:financial-analysis' document.doc_id %}" 
                                        class="btn btn-outline-success btn-sm"
                                        data-bs-toggle="tooltip" title="財務分析">
                                         <i class="fas fa-chart-pie me-1"></i>財務分析
                                     </a>
-                                    <a href="{% url 'earnings_analysis:sentiment-analysis' document.doc_id %}" 
+                                    <a href="{% url 'copomo:sentiment-analysis' document.doc_id %}" 
                                        class="btn btn-outline-primary btn-sm"
                                        data-bs-toggle="tooltip" title="感情分析">
                                         <i class="fas fa-brain me-1"></i>感情分析
@@ -222,7 +222,7 @@
                                 </div>
                                 
                                 <!-- Detail Button -->
-                                <a href="{% url 'earnings_analysis:document-detail-ui' document.doc_id %}" 
+                                <a href="{% url 'copomo:document-detail-ui' document.doc_id %}" 
                                    class="btn btn-outline-secondary btn-sm">
                                     <i class="fas fa-info-circle me-1"></i>詳細情報
                                 </a>
@@ -312,14 +312,14 @@
     
         
         <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
-            <a href="{% url 'earnings_analysis:index' %}" class="btn btn-primary">
+            <a href="{% url 'copomo:index' %}" class="btn btn-primary">
                 <i class="fas fa-home me-1"></i>ホームに戻る
             </a>
             <button type="button" class="btn btn-outline-primary" data-bs-toggle="collapse" 
                     data-bs-target="#filterCollapse">
                 <i class="fas fa-filter me-1"></i>検索条件を変更
             </button>
-            <a href="{% url 'earnings_analysis:document-list-ui' %}" class="btn btn-outline-secondary">
+            <a href="{% url 'copomo:document-list-ui' %}" class="btn btn-outline-secondary">
                 <i class="fas fa-list me-1"></i>全書類を表示
             </a>
         </div>
@@ -416,7 +416,7 @@ function downloadDocument(docId, docType, button) {
     const originalContent = showLoading(button, 'DL中...');
     
     try {
-        const url = `/earnings_analysis/documents/${docId}/download/?type=${docType}`;
+        const url = `/copomo/documents/${docId}/download/?type=${docType}`;
         
         // Create download link
         const link = document.createElement('a');

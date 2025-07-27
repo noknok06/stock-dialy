@@ -8,9 +8,9 @@
 {% block breadcrumb %}
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{% url 'earnings_analysis:index' %}">ホーム</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'earnings_analysis:document-list-ui' %}">書類一覧</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'earnings_analysis:document-detail-ui' document.doc_id %}">{{ document.doc_id }}</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'copomo:index' %}">ホーム</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'copomo:document-list-ui' %}">書類一覧</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'copomo:document-detail-ui' document.doc_id %}">{{ document.doc_id }}</a></li>
         <li class="breadcrumb-item active">財務分析</li>
     </ol>
 </nav>
@@ -192,7 +192,7 @@
                             </div>
                             
                             <div class="d-flex flex-column flex-sm-row gap-2">
-                                <a href="{% url 'earnings_analysis:financial-result' latest_session.session_id %}" 
+                                <a href="{% url 'copomo:financial-result' latest_session.session_id %}" 
                                    class="btn btn-warning flex-grow-1">
                                     <i class="fas fa-eye me-1"></i>詳細結果を見る（開発版）
                                 </a>
@@ -584,11 +584,11 @@
             </div>
             <div class="card-body">
                 <div class="action-buttons">
-                    <a href="{% url 'earnings_analysis:sentiment-analysis' document.doc_id %}" 
+                    <a href="{% url 'copomo:sentiment-analysis' document.doc_id %}" 
                        class="btn btn-outline-success w-100">
                         <i class="fas fa-brain me-1"></i>感情分析も実行
                     </a>
-                    <a href="{% url 'earnings_analysis:document-detail-ui' document.doc_id %}" 
+                    <a href="{% url 'copomo:document-detail-ui' document.doc_id %}" 
                        class="btn btn-outline-secondary w-100">
                         <i class="fas fa-arrow-left me-1"></i>書類詳細に戻る
                     </a>
@@ -699,7 +699,7 @@ function startFinancialAnalysis(docId, force = false) {
     modal.show();
     
     // Start analysis
-    fetch('{% url "earnings_analysis:financial-start" %}', {
+    fetch('{% url "copomo:financial-start" %}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -719,7 +719,7 @@ function startFinancialAnalysis(docId, force = false) {
             startProgressPolling();
         } else if (data.status === 'already_analyzed') {
             modal.hide();
-            window.location.href = `{% url "earnings_analysis:financial-result" "SESSION_ID" %}`.replace('SESSION_ID', data.session_id);
+            window.location.href = `{% url "copomo:financial-result" "SESSION_ID" %}`.replace('SESSION_ID', data.session_id);
         } else {
             throw new Error(data.message || '分析開始に失敗しました');
         }
@@ -744,7 +744,7 @@ function startProgressPolling() {
 function fetchProgress() {
     if (!currentSessionId) return;
     
-    fetch(`{% url "earnings_analysis:financial-progress" %}?session_id=${currentSessionId}`)
+    fetch(`{% url "copomo:financial-progress" %}?session_id=${currentSessionId}`)
     .then(response => response.json())
     .then(data => {
         updateProgressUI(data);
@@ -752,7 +752,7 @@ function fetchProgress() {
         if (data.status === 'COMPLETED') {
             clearInterval(progressInterval);
             setTimeout(() => {
-                window.location.href = `{% url "earnings_analysis:financial-result" "SESSION_ID" %}`.replace('SESSION_ID', currentSessionId);
+                window.location.href = `{% url "copomo:financial-result" "SESSION_ID" %}`.replace('SESSION_ID', currentSessionId);
             }, 1000);
         } else if (data.status === 'FAILED') {
             clearInterval(progressInterval);

@@ -81,21 +81,21 @@ class SentimentResultView(TemplateView):
         except Exception as e:
             logger.error(f"セッション取得エラー: {e}")
             messages.error(request, 'セッションが見つかりません。')
-            return redirect('earnings_analysis:index')
+            return redirect('copomo:index')
         
         # 期限切れチェック
         if session.is_expired:
             messages.error(request, 'セッションが期限切れです。')
-            return redirect('earnings_analysis:document-detail-ui', doc_id=session.document.doc_id)
+            return redirect('copomo:document-detail-ui', doc_id=session.document.doc_id)
         
         # 分析完了チェック
         if session.processing_status != 'COMPLETED':
             if session.processing_status == 'FAILED':
                 messages.error(request, '分析処理中にエラーが発生しました。')
-                return redirect('earnings_analysis:sentiment-analysis', doc_id=session.document.doc_id)
+                return redirect('copomo:sentiment-analysis', doc_id=session.document.doc_id)
             else:
                 messages.info(request, '分析がまだ完了していません。')
-                return redirect('earnings_analysis:sentiment-analysis', doc_id=session.document.doc_id)
+                return redirect('copomo:sentiment-analysis', doc_id=session.document.doc_id)
         
         # 通常のテンプレート表示
         return super().get(request, *args, **kwargs)

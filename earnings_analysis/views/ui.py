@@ -317,7 +317,7 @@ class DocumentDetailView(TemplateView):
         context.update({
             'document': document,
             'related_documents': related_documents,
-            'download_url_base': reverse('earnings_analysis:document-download', args=[doc_id]),
+            'download_url_base': reverse('copomo:document-download', args=[doc_id]),
         })
         
         return context

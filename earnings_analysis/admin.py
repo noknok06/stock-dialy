@@ -403,7 +403,7 @@ class DocumentMetadataAdmin(admin.ModelAdmin):
     def doc_id_link(self, obj):
         """書類IDにダウンロードリンクを追加"""
         if obj.pdf_flag:
-            download_url = reverse('earnings_analysis:document-download', args=[obj.doc_id])
+            download_url = reverse('copomo:document-download', args=[obj.doc_id])
             return format_html(
                 '<a href="{}" target="_blank" title="PDFダウンロード">{}</a>',
                 "{}?type=pdf".format(download_url), obj.doc_id
@@ -529,7 +529,7 @@ class DocumentMetadataAdmin(admin.ModelAdmin):
     def download_links(self, obj):
         """ダウンロードリンクの生成"""
         links = []
-        base_url = reverse('earnings_analysis:document-download', args=[obj.doc_id])
+        base_url = reverse('copomo:document-download', args=[obj.doc_id])
         
         if obj.pdf_flag:
             links.append('<a href="{}?type=pdf" target="_blank" class="button">PDFダウンロード</a>'.format(base_url))

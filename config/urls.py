@@ -45,8 +45,7 @@ urlpatterns = [
     path('financial_reports/', include('financial_reports.urls')),
     
     #コーポマインドリーダー（新機能）
-    path('earnings_analysis/', include('earnings_analysis.urls')),  # 従来のまま
-    path('copomo/', include('earnings_analysis.urls')),  # 新UI用 or テスト用
+    path('copomo/', include('earnings_analysis.urls', namespace='copomo')),
     
     # サポート・サービス系
     path('subscriptions/', include('subscriptions.urls')),

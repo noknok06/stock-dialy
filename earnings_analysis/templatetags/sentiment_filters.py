@@ -203,7 +203,7 @@ def categorized_doc_types():
         return []
 
 @register.filter
-def doc_type_search_url(doc_type_code, base_url='/earnings_analysis/documents/'):
+def doc_type_search_url(doc_type_code, base_url='/copomo/documents/'):
     """書類種別での検索URLを生成"""
     try:
         from django.utils.http import urlencode

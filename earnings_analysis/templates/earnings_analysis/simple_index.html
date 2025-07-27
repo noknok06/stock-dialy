@@ -353,7 +353,7 @@
                     </div>
                 </div>
                 <div class="mt-auto">
-                    <a href="{% url 'earnings_analysis:document-list-ui' %}" class="btn btn-primary w-100">
+                    <a href="{% url 'copomo:document-list-ui' %}" class="btn btn-primary w-100">
                         <i class="fas fa-arrow-right me-2"></i>書類一覧へ
                     </a>
                 </div>
@@ -606,7 +606,7 @@ async function fetchCompanySuggestions(query) {
     showSearchStatus();
     
     try {
-        const response = await fetch(`/earnings_analysis/companies/search/?q=${encodeURIComponent(query)}`);
+        const response = await fetch(`/copomo/companies/search/?q=${encodeURIComponent(query)}`);
         const data = await response.json();
         
         if (data.error) {
@@ -732,7 +732,7 @@ function selectCompany(company) {
     searchInput.value = company.company_name;
     hideSuggestions();
     
-    const url = `/earnings_analysis/company/${company.edinet_code}/`;
+    const url = `/copomo/company/${company.edinet_code}/`;
     
     searchInput.value = `${company.company_name} - 移動中...`;
     searchInput.disabled = true;
@@ -746,7 +746,7 @@ function performDirectSearch() {
     const query = searchInput.value.trim();
     
     if (query) {
-        const url = `/earnings_analysis/documents/?company=${encodeURIComponent(query)}`;
+        const url = `/copomo/documents/?company=${encodeURIComponent(query)}`;
         window.location.href = url;
     }
 }

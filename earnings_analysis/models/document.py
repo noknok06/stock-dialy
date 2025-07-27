@@ -428,25 +428,25 @@ class DocumentMetadata(models.Model):
     def financial_analysis_url(self):
         """財務分析URL"""
         from django.urls import reverse
-        return reverse('earnings_analysis:financial-analysis', args=[self.doc_id])
+        return reverse('copomo:financial-analysis', args=[self.doc_id])
     
     @property
     def sentiment_analysis_url(self):
         """感情分析URL"""
         from django.urls import reverse
-        return reverse('earnings_analysis:sentiment-analysis', args=[self.doc_id])
+        return reverse('copomo:sentiment-analysis', args=[self.doc_id])
     
     @property
     def comprehensive_analysis_url(self):
         """包括分析URL"""
         from django.urls import reverse
-        return reverse('earnings_analysis:financial-analysis', args=[self.doc_id])
+        return reverse('copomo:financial-analysis', args=[self.doc_id])
     
     @property
     def detail_url(self):
         """書類詳細URL"""
         from django.urls import reverse
-        return reverse('earnings_analysis:document-detail-ui', args=[self.doc_id])
+        return reverse('copomo:document-detail-ui', args=[self.doc_id])
     
     def get_analysis_url(self, analysis_type='comprehensive'):
         """分析URLを取得（後方互換性のため残す）"""

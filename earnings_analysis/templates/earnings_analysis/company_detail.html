@@ -1,4 +1,4 @@
-<!-- earnings_analysis/templates/earnings_analysis/company_detail.html -->
+<!-- earnings_analysis/templates/copomo/company_detail.html -->
 {% extends 'earnings_analysis/simple_base.html' %}
 
 {% block title %}{{ company.company_name }} - 企業詳細 -コポモ{% endblock %}
@@ -6,7 +6,7 @@
 {% block content %}
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{% url 'earnings_analysis:index' %}">ホーム</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'copomo:index' %}">ホーム</a></li>
         <li class="breadcrumb-item active text-truncate" style="max-width: 200px;">{{ company.company_name }}</li>
     </ol>
 </nav>
@@ -74,7 +74,7 @@
                             </div>
                         </div>
                         <div class="col-12 col-md-4 text-center text-md-end">
-                            <a href="{% url 'earnings_analysis:sentiment-analysis' latest_financial.doc_id %}" 
+                            <a href="{% url 'copomo:sentiment-analysis' latest_financial.doc_id %}" 
                                class="btn btn-danger btn-lg w-100 w-md-auto mb-2">
                                 <i class="fas fa-rocket me-2"></i>今すぐ分析開始
                             </a>
@@ -107,7 +107,7 @@
                             <div class="row align-items-center g-2">
                                 <div class="col-12 col-md-8">
                                     <h6 class="mb-1">
-                                        <a href="{% url 'earnings_analysis:document-detail-ui' doc.doc_id %}" 
+                                        <a href="{% url 'copomo:document-detail-ui' doc.doc_id %}" 
                                            class="text-decoration-none text-truncate-2">
                                             {{ doc.doc_description }}
                                         </a>
@@ -133,11 +133,11 @@
                                 </div>
                                 <div class="col-12 col-md-4">
                                     <div class="d-grid gap-1">
-                                        <a href="{% url 'earnings_analysis:sentiment-analysis' doc.doc_id %}" 
+                                        <a href="{% url 'copomo:sentiment-analysis' doc.doc_id %}" 
                                            class="btn btn-outline-success btn-sm">
                                             <i class="fas fa-brain me-1"></i>感情分析
                                         </a>
-                                        <a href="{% url 'earnings_analysis:financial-analysis' doc.doc_id %}" 
+                                        <a href="{% url 'copomo:financial-analysis' doc.doc_id %}" 
                                            class="btn btn-outline-primary btn-sm">
                                             <i class="fas fa-chart-pie me-1"></i>財務分析
                                         </a>
@@ -166,7 +166,7 @@
                             <div class="row align-items-center g-2">
                                 <div class="col-12 col-md-8">
                                     <div class="fw-semibold mb-1">
-                                        <a href="{% url 'earnings_analysis:document-detail-ui' doc.doc_id %}" 
+                                        <a href="{% url 'copomo:document-detail-ui' doc.doc_id %}" 
                                            class="text-decoration-none text-truncate d-inline-block" 
                                            style="max-width: 100%;">
                                             {{ doc.doc_description }}
@@ -184,19 +184,19 @@
                                 </div>
                                 <div class="col-12 col-md-4">
                                     <div class="btn-group w-100" role="group">
-                                        <a href="{% url 'earnings_analysis:financial-analysis' doc.doc_id %}" 
+                                        <a href="{% url 'copomo:financial-analysis' doc.doc_id %}" 
                                            class="btn btn-outline-primary btn-sm"
                                            data-bs-toggle="tooltip" title="財務分析">
                                             <i class="fas fa-chart-pie"></i>
                                             <span class="d-md-none ms-1">財務</span>
                                         </a>
-                                        <a href="{% url 'earnings_analysis:sentiment-analysis' doc.doc_id %}" 
+                                        <a href="{% url 'copomo:sentiment-analysis' doc.doc_id %}" 
                                            class="btn btn-outline-success btn-sm"
                                            data-bs-toggle="tooltip" title="感情分析">
                                             <i class="fas fa-brain"></i>
                                             <span class="d-md-none ms-1">感情</span>
                                         </a>
-                                        <a href="{% url 'earnings_analysis:document-detail-ui' doc.doc_id %}" 
+                                        <a href="{% url 'copomo:document-detail-ui' doc.doc_id %}" 
                                            class="btn btn-outline-secondary btn-sm"
                                            data-bs-toggle="tooltip" title="詳細">
                                             <i class="fas fa-info"></i>
@@ -235,7 +235,7 @@
                                 <div class="row align-items-center g-2">
                                     <div class="col-12 col-md-10">
                                         <div class="fw-semibold">
-                                            <a href="{% url 'earnings_analysis:document-detail-ui' doc.doc_id %}" 
+                                            <a href="{% url 'copomo:document-detail-ui' doc.doc_id %}" 
                                                class="text-decoration-none text-truncate-2">
                                                 {{ doc.doc_description }}
                                             </a>
@@ -246,7 +246,7 @@
                                         </div>
                                     </div>
                                     <div class="col-12 col-md-2 text-end">
-                                        <a href="{% url 'earnings_analysis:document-detail-ui' doc.doc_id %}" 
+                                        <a href="{% url 'copomo:document-detail-ui' doc.doc_id %}" 
                                            class="btn btn-outline-secondary btn-sm w-100 w-md-auto">
                                             詳細
                                         </a>
@@ -306,7 +306,7 @@
                     {% for related in related_companies %}
                         <div class="border-bottom py-2">
                             <div class="fw-semibold">
-                                <a href="{% url 'earnings_analysis:company-detail-ui' related.edinet_code %}" 
+                                <a href="{% url 'copomo:company-detail-ui' related.edinet_code %}" 
                                    class="text-decoration-none text-truncate d-block">
                                     {{ related.company_name }}
                                 </a>
@@ -330,16 +330,16 @@
             <div class="card-body">
                 <div class="action-buttons">
                     {% if latest_financial %}
-                        <a href="{% url 'earnings_analysis:financial-analysis' latest_financial.doc_id %}" 
+                        <a href="{% url 'copomo:financial-analysis' latest_financial.doc_id %}" 
                            class="btn btn-danger w-100">
                             <i class="fas fa-rocket me-2"></i>ワンクリック分析
                         </a>
                     {% endif %}
-                    <a href="{% url 'earnings_analysis:document-list-ui' %}?company={{ company.company_name }}" 
+                    <a href="{% url 'copomo:document-list-ui' %}?company={{ company.company_name }}" 
                        class="btn btn-outline-primary w-100">
                         <i class="fas fa-list me-2"></i>全書類を表示
                     </a>
-                    <a href="{% url 'earnings_analysis:index' %}" 
+                    <a href="{% url 'copomo:index' %}" 
                        class="btn btn-outline-secondary w-100">
                         <i class="fas fa-search me-2"></i>他の企業を検索
                     </a>
@@ -404,7 +404,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
                 {% if latest_financial %}
-                    <a href="{% url 'earnings_analysis:sentiment-analysis' latest_financial.doc_id %}" 
+                    <a href="{% url 'copomo:sentiment-analysis' latest_financial.doc_id %}" 
                        class="btn btn-danger">
                         <i class="fas fa-rocket me-2"></i>分析開始
                     </a>

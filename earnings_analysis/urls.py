@@ -4,7 +4,7 @@ from django.views.generic import RedirectView
 from . import views
 from .views import ui, sentiment_ui, sentiment, financial_ui, financial
 
-app_name = 'earnings_analysis'
+app_name = 'comopo'
 
 urlpatterns = [
     # ======== ユーザー画面 ========
@@ -70,15 +70,15 @@ urlpatterns = [
     # ======== レガシーリダイレクト（後方互換性） ========
     # 旧URL形式のリダイレクト
     path('document/<str:doc_id>/', 
-         RedirectView.as_view(pattern_name='earnings_analysis:document-detail-ui', permanent=True)),
+         RedirectView.as_view(pattern_name='copomo:document-detail-ui', permanent=True)),
     path('company/<str:edinet_code>/documents/', 
-         RedirectView.as_view(pattern_name='earnings_analysis:company-detail-ui', permanent=True)),
+         RedirectView.as_view(pattern_name='copomo:company-detail-ui', permanent=True)),
     
     # 旧API形式のリダイレクト
     path('search/companies/', 
-         RedirectView.as_view(pattern_name='earnings_analysis:company-search-api', permanent=False)),
+         RedirectView.as_view(pattern_name='copomo:company-search-api', permanent=False)),
     path('search/documents/', 
-         RedirectView.as_view(pattern_name='earnings_analysis:document-list-ui', permanent=False)),
+         RedirectView.as_view(pattern_name='copomo:document-list-ui', permanent=False)),
     
     # ======== 開発・デバッグ用URL ========
 ]

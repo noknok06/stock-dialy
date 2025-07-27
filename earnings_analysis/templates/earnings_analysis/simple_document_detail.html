@@ -6,9 +6,9 @@
 {% block content %}
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{% url 'earnings_analysis:index' %}">ホーム</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'copomo:index' %}">ホーム</a></li>
         <li class="breadcrumb-item">
-            <a href="{% url 'earnings_analysis:document-list-ui' %}">書類一覧</a>
+            <a href="{% url 'copomo:document-list-ui' %}">書類一覧</a>
         </li>
         <li class="breadcrumb-item active text-truncate" style="max-width: 200px;">
             {{ document.doc_id }}
@@ -163,7 +163,7 @@
                                 </p>
                             </div>
                             <div class="mt-auto">
-                                <a href="{% url 'earnings_analysis:sentiment-analysis' document.doc_id %}" 
+                                <a href="{% url 'copomo:sentiment-analysis' document.doc_id %}" 
                                    class="btn btn-primary w-100 mb-2">
                                     <i class="fas fa-brain me-2"></i>感情分析開始
                                 </a>
@@ -189,7 +189,7 @@
                                 </p>
                             </div>
                             <div class="mt-auto">
-                                <a href="{% url 'earnings_analysis:financial-analysis' document.doc_id %}" 
+                                <a href="{% url 'copomo:financial-analysis' document.doc_id %}" 
                                    class="btn btn-success w-100 mb-2">
                                     <i class="fas fa-chart-pie me-2"></i>財務分析開始
                                 </a>
@@ -337,7 +337,7 @@
                 
                 <!-- Quick Links -->
                 <div class="d-grid gap-2">
-                    <a href="{% url 'earnings_analysis:document-list-ui' %}?doc_type_name={{ document.doc_type_display_name|urlencode }}" 
+                    <a href="{% url 'copomo:document-list-ui' %}?doc_type_name={{ document.doc_type_display_name|urlencode }}" 
                        class="btn btn-outline-primary btn-sm">
                         <i class="fas fa-search me-1"></i>同じ種別の書類を検索
                     </a>
@@ -358,7 +358,7 @@
                     {% for related in related_documents %}
                         <div class="border rounded p-3 mb-3">
                             <h6 class="mb-1">
-                                <a href="{% url 'earnings_analysis:document-detail-ui' related.doc_id %}" 
+                                <a href="{% url 'copomo:document-detail-ui' related.doc_id %}" 
                                    class="text-decoration-none text-truncate-2 d-block">
                                     {{ related.doc_description }}
                                 </a>
@@ -387,7 +387,7 @@
                     {% endfor %}
                     
                     <div class="text-center mt-3">
-                        <a href="{% url 'earnings_analysis:company-detail-ui' document.edinet_code %}" 
+                        <a href="{% url 'copomo:company-detail-ui' document.edinet_code %}" 
                            class="btn btn-outline-primary btn-sm w-100">
                             <i class="fas fa-building me-1"></i>企業詳細ページへ
                         </a>
@@ -425,19 +425,19 @@
             </div>
             <div class="card-body">
                 <div class="action-buttons">
-                    <a href="{% url 'earnings_analysis:financial-analysis' document.doc_id %}" 
+                    <a href="{% url 'copomo:financial-analysis' document.doc_id %}" 
                        class="btn btn-outline-primary w-100">
                         <i class="fas fa-chart-pie me-2"></i>財務分析実行
                     </a>
-                    <a href="{% url 'earnings_analysis:sentiment-analysis' document.doc_id %}" 
+                    <a href="{% url 'copomo:sentiment-analysis' document.doc_id %}" 
                        class="btn btn-outline-success w-100">
                         <i class="fas fa-brain me-2"></i>感情分析実行
                     </a>
-                    <a href="{% url 'earnings_analysis:document-list-ui' %}?company={{ document.company_name }}" 
+                    <a href="{% url 'copomo:document-list-ui' %}?company={{ document.company_name }}" 
                        class="btn btn-outline-info w-100">
                         <i class="fas fa-search me-2"></i>この企業で検索
                     </a>
-                    <a href="{% url 'earnings_analysis:document-list-ui' %}?doc_type_name={{ document.doc_type_display_name|urlencode }}" 
+                    <a href="{% url 'copomo:document-list-ui' %}?doc_type_name={{ document.doc_type_display_name|urlencode }}" 
                        class="btn btn-outline-warning w-100">
                         <i class="fas fa-filter me-2"></i>同じ書類種別
                     </a>
@@ -474,10 +474,10 @@
                     <div class="col-md-6">
                         <div class="card h-100">
                             <div class="card-body text-center">
-                                <i class="fas fa-chart-pie fa-3x text-primary mb-3"></i>
+                                <i class="fas fa-chart-pie fa-3x text-success mb-3"></i>
                                 <h6>財務分析のみ</h6>
                                 <p class="small text-muted">数値データの分析に重点</p>
-                                <button class="btn btn-primary" onclick="goToFinancialAnalysis()">
+                                <button class="btn btn-success" onclick="goToFinancialAnalysis()">
                                     <i class="fas fa-chart-pie me-1"></i>財務分析開始
                                 </button>
                             </div>
@@ -486,26 +486,13 @@
                     <div class="col-md-6">
                         <div class="card h-100">
                             <div class="card-body text-center">
-                                <i class="fas fa-brain fa-3x text-success mb-3"></i>
+                                <i class="fas fa-brain fa-3x text-primary mb-3"></i>
                                 <h6>感情分析のみ</h6>
                                 <p class="small text-muted">テキストの感情解析に重点</p>
-                                <button class="btn btn-success" onclick="goToSentimentAnalysis()">
+                                <button class="btn btn-primary" onclick="goToSentimentAnalysis()">
                                     <i class="fas fa-brain me-1"></i>感情分析開始
                                 </button>
                             </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="mt-4">
-                    <div class="card border-danger">
-                        <div class="card-body text-center">
-                            <i class="fas fa-rocket fa-3x text-danger mb-3"></i>
-                            <h6>包括分析（推奨）</h6>
-                            <p class="small text-muted">財務分析と感情分析を組み合わせた総合評価</p>
-                            <button class="btn btn-danger btn-lg" onclick="goToComprehensiveAnalysis()">
-                                <i class="fas fa-rocket me-2"></i>包括分析開始
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -552,15 +539,15 @@ function startAnalysis() {
 }
 
 function goToFinancialAnalysis() {
-    window.location.href = '{% url "earnings_analysis:financial-analysis" document.doc_id %}';
+    window.location.href = '{% url "copomo:financial-analysis" document.doc_id %}';
 }
 
 function goToSentimentAnalysis() {
-    window.location.href = '{% url "earnings_analysis:sentiment-analysis" document.doc_id %}';
+    window.location.href = '{% url "copomo:sentiment-analysis" document.doc_id %}';
 }
 
 function goToComprehensiveAnalysis() {
-    window.location.href = '{% url "earnings_analysis:sentiment-analysis" document.doc_id %}';
+    window.location.href = '{% url "copomo:sentiment-analysis" document.doc_id %}';
 }
 
 // Share function
@@ -613,7 +600,7 @@ function downloadDocument(docId, docType, button) {
     const originalContent = showLoading(button, `${docType.toUpperCase()}取得中...`);
     
     try {
-        const url = `/earnings_analysis/documents/${docId}/download/?type=${docType}`;
+        const url = `/copomo/documents/${docId}/download/?type=${docType}`;
         
         // Create download link
         const link = document.createElement('a');

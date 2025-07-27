@@ -72,7 +72,7 @@ class FinancialResultView(TemplateView):
         
         if session.is_expired:
             messages.error(self.request, 'セッションが期限切れです。')
-            return redirect('earnings_analysis:document-detail-ui', doc_id=session.document.doc_id)
+            return redirect('copomo:document-detail-ui', doc_id=session.document.doc_id)
         
         # 関連データの取得
         related_analyses = FinancialAnalysisHistory.objects.filter(
