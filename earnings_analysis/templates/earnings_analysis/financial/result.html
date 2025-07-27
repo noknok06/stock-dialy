@@ -501,22 +501,36 @@
             {% endwith %}
         {% endif %}
 
-        <!-- Actions -->
         <div class="analysis-card card">
             <div class="card-header">
                 <h6 class="mb-0">
                     <i class="fas fa-tools me-2"></i>アクション
+                    {% if dev_mode %}
+                        <span class="badge bg-warning ms-2">
+                            <i class="fas fa-wrench me-1"></i>開発モード
+                        </span>
+                    {% endif %}
                 </h6>
             </div>
             <div class="card-body">
                 <div class="action-buttons">
+                    {% if dev_mode %}
+                        <!-- 開発モードの場合は再分析ボタンを表示 -->
+                        <a href="{% url 'earnings_analysis:sentiment-analysis' document.doc_id %}" 
+                           class="btn btn-warning w-100">
+                            <i class="fas fa-redo me-1"></i>再分析実行（開発用）
+                        </a>
+                    {% else %}
+                        <!-- 本番モードでは分析ページに戻るだけ -->
+                        <a href="{% url 'earnings_analysis:sentiment-analysis' document.doc_id %}" 
+                           class="btn btn-outline-primary w-100">
+                            <i class="fas fa-arrow-left me-1"></i>分析ページに戻る
+                        </a>
+                    {% endif %}
+                    
                     <a href="{% url 'earnings_analysis:financial-analysis' document.doc_id %}" 
-                       class="btn btn-primary w-100">
-                        <i class="fas fa-redo me-1"></i>再分析実行
-                    </a>
-                    <a href="{% url 'earnings_analysis:sentiment-analysis' document.doc_id %}" 
-                       class="btn btn-outline-success w-100">
-                        <i class="fas fa-brain me-1"></i>感情分析も実行
+                       class="btn btn-outline-primary w-100">
+                        <i class="fas fa-chart-pie me-1"></i>財務分析も実行
                     </a>
                     <a href="{% url 'earnings_analysis:document-detail-ui' document.doc_id %}" 
                        class="btn btn-outline-secondary w-100">
@@ -525,8 +539,8 @@
                     <button type="button" class="btn btn-outline-info w-100" onclick="shareResult()">
                         <i class="fas fa-share me-1"></i>結果を共有
                     </button>
-                    <button type="button" class="btn btn-outline-success w-100" onclick="exportReport()">
-                        <i class="fas fa-download me-1"></i>レポート保存
+                    <button type="button" class="btn btn-outline-success w-100" onclick="exportSummary()">
+                        <i class="fas fa-download me-1"></i>サマリー保存
                     </button>
                 </div>
             </div>

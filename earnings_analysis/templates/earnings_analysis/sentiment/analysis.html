@@ -241,53 +241,63 @@
     <!-- Main Analysis Area -->
     <div class="col-12 col-lg-8">
         
-        <!-- Analysis Execution Area -->
         <div class="analysis-card card mb-4">
             <div class="card-header">
                 <h5 class="mb-0">
                     <i class="fas fa-play-circle me-2"></i>感情分析実行
+                    {% if dev_mode %}
+                        <span class="badge bg-warning ms-2">
+                            <i class="fas fa-wrench me-1"></i>開発モード
+                        </span>
+                    {% endif %}
                 </h5>
             </div>
             <div class="card-body">                
                 <div class="text-center py-4">
                     <i class="fas fa-brain fa-4x text-primary mb-4"></i>
-                    <h5 class="mb-3">感情分析を開始</h5>
                     
-                    <div class="row g-3 mb-4">
-                    {% if has_recent_analysis %}
-                        <div class="alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            <strong>既に分析結果があります</strong><br>
-                            <small>最新の分析: {{ latest_session.created_at|date:"Y/m/d H:i" }}</small>
-                        </div>
-                        
-                        <!-- 既存結果がある場合のボタン -->
-                        <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
-                            <a href="{% url 'earnings_analysis:sentiment-result' latest_session.session_id %}" 
-                            class="btn btn-primary btn-lg">
-                                <i class="fas fa-chart-line me-2"></i>分析結果を表示
-                            </a>
-                            <button type="button" class="btn btn-outline-warning" 
-                                    onclick="startSentimentAnalysis('{{ document.doc_id }}', true)">
-                                <i class="fas fa-redo me-2"></i>再分析（結果を更新）
-                            </button>
-                        </div>
-                    {% else %}
+                    {% if not has_analysis_result %}
                         <!-- 初回分析の場合 -->
+                        <h5 class="mb-3">感情分析を開始</h5>
                         <div class="text-center py-4">
                             <button type="button" class="btn btn-primary btn-lg" 
                                     onclick="startSentimentAnalysis('{{ document.doc_id }}', false)">
                                 <i class="fas fa-play me-2"></i>分析を実行
                             </button>
                         </div>
+                        
+                    {% elif has_analysis_result %}
+                        <!-- 分析結果がある場合 -->
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>分析結果があります</strong><br>
+                            <small>最新の分析: {{ latest_session.created_at|date:"Y/m/d H:i" }}</small>
+                        </div>
+                        
+                        <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
+                            <!-- 分析結果表示ボタン（常に表示） -->
+                            <a href="{% url 'earnings_analysis:sentiment-result' latest_session.session_id %}" 
+                               class="btn btn-primary btn-lg">
+                                <i class="fas fa-chart-line me-2"></i>分析結果を表示
+                            </a>
+                            
+                            {% if dev_mode %}
+                                <!-- 開発モードの場合のみ再分析ボタン表示 -->
+                                <button type="button" class="btn btn-outline-warning" 
+                                        onclick="startSentimentAnalysis('{{ document.doc_id }}', true)">
+                                    <i class="fas fa-redo me-2"></i>再分析（開発用）
+                                </button>
+                            {% endif %}
+                        </div>
+                        
                     {% endif %}
+                    
                     <!-- 分析説明を簡潔に -->
                     <div class="mt-4 text-center">
                         <small class="text-muted">
                             <i class="fas fa-clock me-1"></i>分析には約1-2分かかる場合があります。
                         </small>
                     </div>
-                    </div>                                
                 </div>
             </div>
         </div>

@@ -1,10 +1,11 @@
-# earnings_analysis/views/sentiment_ui.py（リダイレクト問題修正版）
+# earnings_analysis/views/sentiment_ui.py（開発モード対応版）
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.views.generic import TemplateView
 from django.contrib import messages
 from django.urls import reverse
 from django.utils import timezone
+from django.conf import settings
 from datetime import timedelta
 import logging
 
@@ -13,7 +14,7 @@ from ..models import DocumentMetadata, SentimentAnalysisSession, SentimentAnalys
 logger = logging.getLogger(__name__)
 
 class SentimentAnalysisView(TemplateView):
-    """感情分析専用ページ"""
+    """感情分析専用ページ（開発モード対応版）"""
     template_name = 'earnings_analysis/sentiment/analysis.html'
     
     def get_context_data(self, **kwargs):
@@ -38,11 +39,26 @@ class SentimentAnalysisView(TemplateView):
             document=document
         ).order_by('-analysis_date')[:5]
         
+        # 開発モード設定取得
+        dev_mode = getattr(settings, 'SENTIMENT_ANALYSIS_DEV_MODE', False)
+        
+        # 分析結果の存在確認
+        has_analysis_result = latest_session is not None
+        
+        # 最近の分析があるかどうか（1時間以内）
+        has_recent_analysis = (
+            latest_session and 
+            latest_session.created_at >= timezone.now() - timedelta(hours=1)
+        )
+        
         context.update({
             'document': document,
             'latest_session': latest_session,
             'analysis_history': analysis_history,
-            'has_recent_analysis': latest_session and latest_session.created_at >= timezone.now() - timedelta(hours=1),
+            'has_analysis_result': has_analysis_result,
+            'has_recent_analysis': has_recent_analysis,
+            'dev_mode': dev_mode,
+            'show_reanalysis_option': dev_mode and has_analysis_result,
         })
         
         return context
@@ -110,12 +126,16 @@ class SentimentResultView(TemplateView):
             formatted_insights = self._format_user_insights(session.analysis_result['user_insights'])
             reliability_score = self._calculate_reliability_score(session.analysis_result)
         
+        # 開発モード設定
+        dev_mode = getattr(settings, 'SENTIMENT_ANALYSIS_DEV_MODE', False)
+        
         context.update({
             'session': session,
             'document': session.document,
             'related_analyses': related_analyses,
             'formatted_insights': formatted_insights,
             'reliability_score': reliability_score,
+            'dev_mode': dev_mode,
         })
         
         return context

@@ -324,7 +324,7 @@ class TransparentTextProcessor:
 
 
 class UserInsightGenerator:
-    """ユーザー向け見解生成クラス（Gemini API統合版）"""
+    """ユーザー向け見解生成クラス（Gemini API統合版・最終修正）"""
     
     def __init__(self):
         self.business_terms = {
@@ -338,18 +338,70 @@ class UserInsightGenerator:
             ]
         }
         # Gemini APIサービスを初期化
-        self.gemini_generator = GeminiInsightsGenerator()
-
+        try:
+            self.gemini_generator = GeminiInsightsGenerator()
+            logger.info("Gemini APIサービス初期化成功")
+        except Exception as e:
+            logger.warning(f"Gemini APIサービス初期化失敗: {e}")
+            self.gemini_generator = None
     
+
     def generate_detailed_insights(self, analysis_result: Dict[str, Any], document_info: Dict[str, str]) -> Dict[str, Any]:
-        """詳細な見解を生成（Gemini API統合版）"""
+        """詳細な見解を生成（Gemini API統合版・最終修正）"""
         overall_score = analysis_result.get('overall_score', 0)
         sentiment_label = analysis_result.get('sentiment_label', 'neutral')
         statistics = analysis_result.get('statistics', {})
         keyword_analysis = analysis_result.get('keyword_analysis', {})
         
         # Gemini APIで投資家向けポイントを生成
-        gemini_insights = self.gemini_generator.generate_investment_insights(analysis_result, document_info)
+        gemini_insights = {}
+        
+        if self.gemini_generator:
+            try:
+                logger.info("Gemini API投資家向けポイント生成開始")
+                gemini_insights = self.gemini_generator.generate_investment_insights(analysis_result, document_info)
+                logger.info(f"Gemini API呼び出し完了: {gemini_insights.get('generated_by', 'unknown')}")
+                
+            except Exception as e:
+                logger.error(f"Gemini API投資家向けポイント生成エラー: {e}")
+                # エラー時の情報を保持
+                gemini_insights = {
+                    'investment_points': [],
+                    'generated_by': 'api_error',
+                    'api_available': False,
+                    'api_success': False,
+                    'fallback_used': True,
+                    'error_message': str(e),
+                    'generation_timestamp': timezone.now().isoformat(),
+                    'points_count': 0
+                }
+        else:
+            logger.info("Gemini APIサービスが利用できないため、フォールバック処理を使用")
+            # Gemini APIサービス自体が初期化されていない場合
+            gemini_insights = {
+                'investment_points': [],
+                'generated_by': 'service_unavailable',
+                'api_available': False,
+                'api_success': False,
+                'fallback_used': True,
+                'error_message': 'Gemini APIサービスが初期化されていません',
+                'generation_timestamp': timezone.now().isoformat(),
+                'points_count': 0
+            }
+        
+        # フォールバック処理: Gemini APIが失敗した場合の基本ポイント生成
+        if not gemini_insights.get('investment_points') or gemini_insights.get('generated_by') in ['api_error', 'service_unavailable', 'fallback_logic']:
+            if not gemini_insights.get('investment_points'):
+                logger.info("Gemini APIポイントが空のため、フォールバックポイントを生成")
+                fallback_points = self._generate_fallback_investment_points(overall_score, sentiment_label, keyword_analysis)
+                gemini_insights['investment_points'] = fallback_points.get('investment_points', [])
+                
+                # フォールバック使用の記録
+                if gemini_insights.get('generated_by') not in ['api_error', 'service_unavailable']:
+                    gemini_insights['generated_by'] = 'fallback_logic'
+                    gemini_insights['fallback_used'] = True
+                
+                gemini_insights['points_count'] = len(gemini_insights['investment_points'])
         
         insights = {
             'market_implications': self._generate_market_implications(overall_score, sentiment_label, keyword_analysis),
@@ -360,17 +412,158 @@ class UserInsightGenerator:
             'future_outlook': self._generate_future_outlook(analysis_result),
             'stakeholder_recommendations': self._generate_stakeholder_recommendations(overall_score, sentiment_label, statistics),
             
-            # Gemini API生成のポイントを追加
+            # Gemini API生成のポイントを追加（最終修正版）
             'gemini_investment_points': gemini_insights.get('investment_points', []),
             'gemini_metadata': {
-                'generated_by': gemini_insights.get('generated_by', 'fallback'),
+                'generated_by': gemini_insights.get('generated_by', 'unknown'),
+                'api_available': gemini_insights.get('api_available', False),
+                'api_success': gemini_insights.get('api_success', False),
                 'response_quality': gemini_insights.get('response_quality', 'basic'),
-                'generation_timestamp': timezone.now().isoformat()
+                'generation_timestamp': gemini_insights.get('generation_timestamp', timezone.now().isoformat()),
+                'error_message': gemini_insights.get('error_message'),
+                'fallback_used': gemini_insights.get('fallback_used', True),
+                'points_count': gemini_insights.get('points_count', 0),
+                'model_used': gemini_insights.get('model_used'),
+                'successful_parses': gemini_insights.get('successful_parses'),
+                'fallback_reason': gemini_insights.get('fallback_reason')
             }
         }
         
+        # デバッグ情報をログ出力
+        logger.info(f"見解生成完了 - generated_by: {insights['gemini_metadata']['generated_by']}, "
+                   f"api_success: {insights['gemini_metadata']['api_success']}, "
+                   f"points_count: {insights['gemini_metadata']['points_count']}")
+        
         return insights
     
+    def _generate_fallback_investment_points(self, overall_score: float, sentiment_label: str, keyword_analysis: Dict) -> Dict[str, Any]:
+        """Gemini API失敗時のフォールバック投資ポイント生成（最終修正版）"""
+        points = []
+        
+        try:
+            # 基本的な投資ポイントを生成
+            if sentiment_label == 'positive':
+                if overall_score > 0.6:
+                    points.extend([
+                        {
+                            'title': '強いポジティブシグナル',
+                            'description': f'感情分析スコア{overall_score:.2f}は非常に前向きな内容を示しており、成長期待が持てる企業として評価されます。',
+                            'source': 'fallback_generated'
+                        },
+                        {
+                            'title': '投資魅力度の向上',
+                            'description': '市場での評価向上が期待され、中長期的な投資戦略に適している可能性があります。',
+                            'source': 'fallback_generated'
+                        },
+                        {
+                            'title': '成長モメンタムの継続',
+                            'description': 'ポジティブな表現の一貫性から、持続的な成長軌道にあることが示唆されます。',
+                            'source': 'fallback_generated'
+                        }
+                    ])
+                else:
+                    points.extend([
+                        {
+                            'title': '安定した成長基盤',
+                            'description': 'ポジティブな要素が確認され、着実な事業運営が期待されます。',
+                            'source': 'fallback_generated'
+                        },
+                        {
+                            'title': '継続的な改善',
+                            'description': '経営陣の前向きな取り組みが感じられ、今後の成長に期待が持てます。',
+                            'source': 'fallback_generated'
+                        }
+                    ])
+                    
+            elif sentiment_label == 'negative':
+                if overall_score < -0.6:
+                    points.extend([
+                        {
+                            'title': 'リスク要因の認識',
+                            'description': f'感情分析スコア{overall_score:.2f}は課題や困難な状況への言及を示し、慎重な投資判断が必要です。',
+                            'source': 'fallback_generated'
+                        },
+                        {
+                            'title': '構造改革の機会',
+                            'description': '現在の困難は将来の抜本的な改革や戦略転換への重要な契機となる可能性があります。',
+                            'source': 'fallback_generated'
+                        },
+                        {
+                            'title': '透明性の高い経営',
+                            'description': '困難な状況への率直な言及は、誠実で透明性の高い経営姿勢として評価できます。',
+                            'source': 'fallback_generated'
+                        }
+                    ])
+                else:
+                    points.extend([
+                        {
+                            'title': '課題解決への取り組み',
+                            'description': 'リスクを認識した上での透明性のある経営姿勢が評価されます。',
+                            'source': 'fallback_generated'
+                        },
+                        {
+                            'title': '回復への道筋',
+                            'description': '一時的な困難はあるものの、中長期的な改善が期待されます。',
+                            'source': 'fallback_generated'
+                        }
+                    ])
+                    
+            else:  # neutral
+                points.extend([
+                    {
+                        'title': '安定した事業基盤',
+                        'description': 'バランスの取れた経営により、安定したパフォーマンスが期待されます。',
+                        'source': 'fallback_generated'
+                    },
+                    {
+                        'title': 'ディフェンシブ投資適性',
+                        'description': '大きな変動リスクは低く、ディフェンシブな投資戦略に適しています。',
+                        'source': 'fallback_generated'
+                    },
+                    {
+                        'title': '冷静な経営判断',
+                        'description': '客観的で事実ベースの報告姿勢は、冷静な経営判断力を示しています。',
+                        'source': 'fallback_generated'
+                    }
+                ])
+            
+            # キーワード分析に基づく追加ポイント
+            positive_keywords = keyword_analysis.get('positive', [])
+            negative_keywords = keyword_analysis.get('negative', [])
+            
+            if len(positive_keywords) > 5:
+                points.append({
+                    'title': '多様なポジティブ要素',
+                    'description': f'{len(positive_keywords)}個のポジティブキーワードが検出され、多角的な成長要因が確認されます。',
+                    'source': 'fallback_generated'
+                })
+            
+            if len(negative_keywords) > 5:
+                points.append({
+                    'title': 'リスク要因の多様性',
+                    'description': f'{len(negative_keywords)}個のリスク要因が特定され、注意深い監視が必要です。',
+                    'source': 'fallback_generated'
+                })
+            
+            return {
+                'investment_points': points[:4],  # 最大4個まで
+                'response_quality': 'fallback',
+                'generated_by': 'fallback_logic'
+            }
+            
+        except Exception as e:
+            logger.error(f"フォールバック投資ポイント生成エラー: {e}")
+            return {
+                'investment_points': [{
+                    'title': '基本的な分析結果',
+                    'description': '詳細な投資判断ポイントの生成ができませんでした。財務データと合わせてご判断ください。',
+                    'source': 'fallback_generated'
+                }],
+                'response_quality': 'basic',
+                'generated_by': 'fallback_logic'
+            }
+
+    # 既存のメソッドは変更なし
     def _generate_market_implications(self, score: float, label: str, keywords: Dict) -> Dict[str, Any]:
         """市場への影響分析"""
         implications = {
@@ -575,7 +768,6 @@ class UserInsightGenerator:
             ]
         
         return recommendations
-
 
 class TransparentSentimentAnalyzer:
     """分かりやすい感情分析エンジン（完全統合版）"""
