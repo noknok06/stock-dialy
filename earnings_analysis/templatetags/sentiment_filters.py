@@ -771,3 +771,12 @@ def wordcloud_stats(keyword_frequency_data, min_count=2):
             'total_occurrences': 0,
             'filter_rate': 0
         }
+        
+
+@register.filter
+def div(value, divisor):
+    """値を除数で割る"""
+    try:
+        return int(float(value) / float(divisor))
+    except (ValueError, TypeError, ZeroDivisionError):
+        return 0

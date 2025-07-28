@@ -1601,33 +1601,52 @@ class SentimentAnalysisService:
     def __init__(self):
         self.analyzer = TransparentSentimentAnalyzer()
         self.xbrl_service = EDINETXBRLService()
-    
+        
     def start_analysis(self, document_id: str, force: bool = False, user_ip: str = None) -> Dict[str, Any]:
-        """感情分析開始"""
+        """感情分析開始（期限切れセッション対応版）"""
         from ..models import DocumentMetadata, SentimentAnalysisSession
         
         try:
             document = DocumentMetadata.objects.get(doc_id=document_id, legal_status='1')
             
+            # 期限切れセッションのクリーンアップ（定期的に実行）
+            self._cleanup_expired_sessions_if_needed()
+            
             if not force:
+                # 有効な最新セッションのみをチェック（期限切れでない、かつ1時間以内）
                 recent_session = SentimentAnalysisSession.objects.filter(
                     document=document,
                     processing_status='COMPLETED',
-                    created_at__gte=timezone.now() - timedelta(hours=1)
+                    created_at__gte=timezone.now() - timedelta(hours=1),
+                    expires_at__gt=timezone.now()  # 期限切れでないもののみ
                 ).first()
                 
                 if recent_session:
+                    logger.info(f"有効な最新セッションが存在: {recent_session.session_id}")
                     return {
                         'status': 'already_analyzed',
                         'session_id': str(recent_session.session_id),
                         'result': recent_session.analysis_result,
                         'message': '1時間以内に分析済みです（完全統合版）'
                     }
+                else:
+                    # 期限切れセッションがある場合はログに記録
+                    expired_session = SentimentAnalysisSession.objects.filter(
+                        document=document,
+                        processing_status='COMPLETED',
+                        expires_at__lte=timezone.now()
+                    ).order_by('-created_at').first()
+                    
+                    if expired_session:
+                        logger.info(f"期限切れセッションを無視して新規分析開始: 期限切れID={expired_session.session_id}")
             
+            # 新しいセッションを作成
             session = SentimentAnalysisSession.objects.create(
                 document=document,
                 processing_status='PENDING'
             )
+            
+            logger.info(f"新規感情分析セッション作成: {session.session_id}")
             
             threading.Thread(
                 target=self._execute_analysis,
@@ -1646,7 +1665,37 @@ class SentimentAnalysisService:
         except Exception as e:
             logger.error(f"分析開始エラー: {e}")
             raise Exception(f"分析開始に失敗しました: {str(e)}")
-    
+
+    def cleanup_expired_sessions(self) -> int:
+        """期限切れセッションのクリーンアップ（改良版）"""
+        from ..models import SentimentAnalysisSession
+        
+        try:
+            # 期限切れから1時間経過したセッションを削除（即座に削除すると結果確認できない）
+            cutoff_time = timezone.now() - timedelta(hours=1)
+            expired_count = SentimentAnalysisSession.objects.filter(
+                expires_at__lt=cutoff_time
+            ).delete()[0]
+            
+            if expired_count > 0:
+                logger.info(f"期限切れセッション削除: {expired_count}件")
+            
+            return expired_count
+            
+        except Exception as e:
+            logger.error(f"クリーンアップエラー: {e}")
+            return 0
+
+    def _cleanup_expired_sessions_if_needed(self):
+        """期限切れセッションのクリーンアップ（必要時のみ実行）"""
+        try:
+            # 10分に1回程度の頻度でクリーンアップを実行
+            import random
+            if random.randint(1, 100) <= 10:  # 10%の確率で実行
+                self.cleanup_expired_sessions()
+        except Exception as e:
+            logger.warning(f"自動クリーンアップエラー: {e}")
+            
     def get_progress(self, session_id: str) -> Dict[str, Any]:
         """進行状況取得"""
         from ..models import SentimentAnalysisSession

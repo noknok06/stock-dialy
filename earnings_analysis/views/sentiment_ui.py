@@ -1,4 +1,4 @@
-# earnings_analysis/views/sentiment_ui.py（開発モード対応版）
+# earnings_analysis/views/sentiment_ui.py（期限切れ時再分析促進版）
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.views.generic import TemplateView
@@ -28,8 +28,15 @@ class SentimentAnalysisView(TemplateView):
             legal_status='1'
         )
         
-        # 最新の分析結果確認
-        latest_session = SentimentAnalysisSession.objects.filter(
+        # 最新の分析結果確認（期限切れでないもののみ）
+        latest_valid_session = SentimentAnalysisSession.objects.filter(
+            document=document,
+            processing_status='COMPLETED',
+            expires_at__gt=timezone.now()  # 期限切れでないもののみ
+        ).order_by('-created_at').first()
+        
+        # 期限切れを含む最新セッション（履歴表示用）
+        latest_session_any = SentimentAnalysisSession.objects.filter(
             document=document,
             processing_status='COMPLETED'
         ).order_by('-created_at').first()
@@ -42,21 +49,30 @@ class SentimentAnalysisView(TemplateView):
         # 開発モード設定取得
         dev_mode = getattr(settings, 'SENTIMENT_ANALYSIS_DEV_MODE', False)
         
-        # 分析結果の存在確認
-        has_analysis_result = latest_session is not None
+        # 有効な分析結果の存在確認（期限切れでないもののみ）
+        has_analysis_result = latest_valid_session is not None
         
-        # 最近の分析があるかどうか（1時間以内）
+        # 最近の分析があるかどうか（1時間以内かつ期限切れでない）
         has_recent_analysis = (
-            latest_session and 
-            latest_session.created_at >= timezone.now() - timedelta(hours=1)
+            latest_valid_session and 
+            latest_valid_session.created_at >= timezone.now() - timedelta(hours=1)
+        )
+        
+        # 期限切れセッション情報（表示目的のみ）
+        has_expired_session = (
+            latest_session_any and 
+            latest_session_any.is_expired and
+            not has_analysis_result  # 有効なセッションがない場合のみ表示
         )
         
         context.update({
             'document': document,
-            'latest_session': latest_session,
+            'latest_session': latest_valid_session,  # 有効なセッションのみ
+            'latest_session_any': latest_session_any,  # 履歴表示用
             'analysis_history': analysis_history,
             'has_analysis_result': has_analysis_result,
             'has_recent_analysis': has_recent_analysis,
+            'has_expired_session': has_expired_session,
             'dev_mode': dev_mode,
             'show_reanalysis_option': dev_mode and has_analysis_result,
         })
@@ -65,11 +81,11 @@ class SentimentAnalysisView(TemplateView):
 
 
 class SentimentResultView(TemplateView):
-    """感情分析結果表示ページ（修正版）"""
+    """感情分析結果表示ページ（期限切れ対応修正版）"""
     template_name = 'earnings_analysis/sentiment/result.html'
     
     def get(self, request, *args, **kwargs):
-        """GETリクエスト処理（期限切れチェック）"""
+        """GETリクエスト処理（期限切れ時の改善処理）"""
         session_id = kwargs.get('session_id')
         
         # セッション情報取得
@@ -80,21 +96,31 @@ class SentimentResultView(TemplateView):
             )
         except Exception as e:
             logger.error(f"セッション取得エラー: {e}")
-            messages.error(request, 'セッションが見つかりません。')
+            messages.error(request, 'セッションが見つかりません。新しい分析を開始してください。')
             return redirect('copomo:index')
         
-        # 期限切れチェック
+        # 期限切れチェック（改善版）
         if session.is_expired:
-            messages.error(request, 'セッションが期限切れです。')
-            return redirect('copomo:document-detail-ui', doc_id=session.document.doc_id)
+            # より親切なメッセージで感情分析ページにリダイレクト
+            messages.warning(
+                request, 
+                f'分析結果の表示期限が切れています。{session.document.company_name}の感情分析を再度実行してください。'
+            )
+            return redirect('copomo:sentiment-analysis', doc_id=session.document.doc_id)
         
         # 分析完了チェック
         if session.processing_status != 'COMPLETED':
             if session.processing_status == 'FAILED':
-                messages.error(request, '分析処理中にエラーが発生しました。')
+                messages.error(
+                    request, 
+                    f'分析処理中にエラーが発生しました。{session.document.company_name}の感情分析を再度お試しください。'
+                )
                 return redirect('copomo:sentiment-analysis', doc_id=session.document.doc_id)
             else:
-                messages.info(request, '分析がまだ完了していません。')
+                messages.info(
+                    request, 
+                    f'{session.document.company_name}の感情分析がまだ完了していません。しばらくお待ちください。'
+                )
                 return redirect('copomo:sentiment-analysis', doc_id=session.document.doc_id)
         
         # 通常のテンプレート表示
@@ -129,6 +155,11 @@ class SentimentResultView(TemplateView):
         # 開発モード設定
         dev_mode = getattr(settings, 'SENTIMENT_ANALYSIS_DEV_MODE', False)
         
+        # セッション有効期限情報を追加
+        time_remaining = None
+        if not session.is_expired:
+            time_remaining = session.expires_at - timezone.now()
+        
         context.update({
             'session': session,
             'document': session.document,
@@ -136,6 +167,8 @@ class SentimentResultView(TemplateView):
             'formatted_insights': formatted_insights,
             'reliability_score': reliability_score,
             'dev_mode': dev_mode,
+            'time_remaining': time_remaining,
+            'session_expires_at': session.expires_at,
         })
         
         return context

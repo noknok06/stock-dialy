@@ -1,7 +1,9 @@
-# earnings_analysis/views/sentiment.py（エクスポート・統計削除版）
+# earnings_analysis/views/sentiment.py（CSRFデバッグログ追加版）
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.utils.decorators import method_decorator
 import logging
 
 from ..models import SentimentAnalysisSession
@@ -9,10 +11,20 @@ from ..services.sentiment_analyzer import SentimentAnalysisService
 
 logger = logging.getLogger(__name__)
 
+@method_decorator(ensure_csrf_cookie, name='dispatch')
 class SentimentAnalysisStartView(APIView):
-    """感情分析開始API"""
+    """感情分析開始API（CSRFデバッグ強化版）"""
     
     def post(self, request):
+        # CSRFデバッグ情報
+        csrf_token_from_header = request.META.get('HTTP_X_CSRFTOKEN')
+        csrf_token_from_cookie = request.COOKIES.get('csrftoken')
+        
+        logger.info(f"CSRF Token - Header: {csrf_token_from_header[:8] + '...' if csrf_token_from_header else 'None'}")
+        logger.info(f"CSRF Token - Cookie: {csrf_token_from_cookie[:8] + '...' if csrf_token_from_cookie else 'None'}")
+        logger.info(f"Request Method: {request.method}")
+        logger.info(f"Content Type: {request.content_type}")
+        
         doc_id = request.data.get('doc_id')
         force = request.data.get('force', False)
         

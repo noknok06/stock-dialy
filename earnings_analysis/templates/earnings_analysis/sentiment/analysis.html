@@ -219,6 +219,9 @@
 {% endblock %}
 
 {% block content %}
+<form style="display: none;" id="csrf-form">
+    {% csrf_token %}
+</form>
 <!-- Header -->
 <div class="page-header mb-4">
     <div class="row align-items-center g-3">
@@ -256,7 +259,7 @@
                 <div class="text-center py-4">
                     <i class="fas fa-brain fa-4x text-primary mb-4"></i>
                     
-                    {% if not has_analysis_result %}
+                    {% if not has_analysis_result or has_expired_session %} 
                         <!-- 初回分析の場合 -->
                         <h5 class="mb-3">感情分析を開始</h5>
                         <div class="text-center py-4">
@@ -545,24 +548,121 @@
 <script>
 let currentSessionId = null;
 let progressInterval = null;
+
+
+// CSRFトークンを動的に取得する関数
+function getCSRFToken() {
+    // 1. メタタグから取得を試行
+    const metaCsrf = document.querySelector('meta[name=csrf-token]');
+    if (metaCsrf) {
+        return metaCsrf.getAttribute('content');
+    }
+    
+    // 2. クッキーから取得を試行
+    const cookieCsrf = getCookie('csrftoken');
+    if (cookieCsrf) {
+        return cookieCsrf;
+    }
+    
+    // 3. 隠しフィールドから取得を試行
+    const hiddenCsrf = document.querySelector('input[name=csrfmiddlewaretoken]');
+    if (hiddenCsrf) {
+        return hiddenCsrf.value;
+    }
+    
+    // 4. Djangoテンプレートから取得（最後の手段）
+    try {
+        return '{{ csrf_token }}';
+    } catch (e) {
+        console.warn('CSRFトークンの取得に失敗しました');
+        return null;
+    }
+}
+
+// CSRFトークンが有効かチェックする関数
+async function validateCSRFToken() {
+    const token = getCSRFToken();
+    if (!token) {
+        console.warn('CSRFトークンが見つかりません');
+        return false;
+    }
+    
+    try {
+        // 簡単なHEADリクエストでトークンの有効性をチェック
+        const response = await fetch(window.location.href, {
+            method: 'HEAD',
+            headers: {
+                'X-CSRFToken': token,
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.ok;
+    } catch (error) {
+        console.warn('CSRFトークンの検証に失敗:', error);
+        return false;
+    }
+}
+
+// ページリロードしてCSRFトークンを更新する関数
+function refreshCSRFToken() {
+    console.log('CSRFトークンを更新するためページをリロードします');
+    showToast('認証情報を更新しています...', 'info');
+    setTimeout(() => {
+        window.location.reload();
+    }, 1000);
+}
+
 function startSentimentAnalysis(docId, force = false) {
     // Show progress overlay (モーダルの代わり)
     showProgressOverlay();
     
-    // 以下は既存のコードと同じ
+    // CSRFトークンを取得
+    const csrfToken = getCSRFToken();
+    if (!csrfToken) {
+        hideProgressOverlay();
+        showToast('認証に必要な情報が取得できません。ページをリロードしてください。', 'error');
+        setTimeout(refreshCSRFToken, 2000);
+        return;
+    }
+    
+    console.log('感情分析開始:', { docId, force, csrfToken: csrfToken.substring(0, 8) + '...' });
+    
     fetch('{% url "copomo:sentiment-start" %}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken')
+            'X-CSRFToken': csrfToken
         },
+        credentials: 'same-origin', // 重要: クッキーを含める
         body: JSON.stringify({
             doc_id: docId,
             force: force
         })
     })
-    .then(response => response.json())
+    .then(async response => {
+        console.log('API応答ステータス:', response.status);
+        
+        if (response.status === 403) {
+            // CSRF エラーの場合
+            hideProgressOverlay();
+            showToast('認証エラーが発生しました。ページをリロードして再試行してください。', 'error');
+            setTimeout(refreshCSRFToken, 2000);
+            return null;
+        }
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('API エラー応答:', errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+        
+        return response.json();
+    })
     .then(data => {
+        if (!data) return; // CSRF エラー時は何もしない
+        
+        console.log('API応答データ:', data);
+        
         if (data.status === 'started') {
             currentSessionId = data.session_id;
             startProgressPolling();
@@ -576,7 +676,14 @@ function startSentimentAnalysis(docId, force = false) {
     .catch(error => {
         console.error('Analysis start error:', error);
         hideProgressOverlay();
-        showToast('分析開始に失敗しました: ' + error.message, 'error');
+        
+        // CSRF関連のエラーかチェック
+        if (error.message.includes('403') || error.message.includes('Forbidden') || error.message.includes('Failed to fetch')) {
+            showToast('認証エラーが発生しました。ページをリロードして再試行してください。', 'error');
+            setTimeout(refreshCSRFToken, 3000);
+        } else {
+            showToast('分析開始に失敗しました: ' + error.message, 'error');
+        }
     });
 }
 
@@ -598,6 +705,7 @@ function showProgressOverlay() {
     // オーバーレイ表示後に広告を初期化
     setTimeout(initializeProgressAd, 500);
 }
+
 function initializeProgressAd() {
     const adContainer = document.getElementById('progressAdContainer');
     
@@ -661,8 +769,15 @@ function cancelAnalysis() {
 function fetchProgress() {
     if (!currentSessionId) return;
     
-    fetch(`{% url "copomo:sentiment-progress" %}?session_id=${currentSessionId}`)
-    .then(response => response.json())
+    fetch(`{% url "copomo:sentiment-progress" %}?session_id=${currentSessionId}`, {
+        credentials: 'same-origin' // クッキーを含める
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         updateProgressUI(data);
         
@@ -683,6 +798,7 @@ function fetchProgress() {
     })
     .catch(error => {
         console.error('Progress fetch error:', error);
+        // プログレス取得エラーは比較的軽微なので、ユーザーには表示しない
     });
 }
 
@@ -718,7 +834,52 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// Toast notification
+// 改良版CSRFトークン取得関数
+function getCSRFTokenImproved() {
+    let token = null;
+    
+    // 1. メタタグから取得
+    const metaCsrf = document.querySelector('meta[name=csrf-token]');
+    if (metaCsrf && metaCsrf.getAttribute('content')) {
+        token = metaCsrf.getAttribute('content');
+        console.log('CSRFトークンをメタタグから取得');
+        return token;
+    }
+    
+    // 2. 隠しフォームから取得
+    const hiddenCsrf = document.querySelector('#csrf-form input[name=csrfmiddlewaretoken]');
+    if (hiddenCsrf && hiddenCsrf.value) {
+        token = hiddenCsrf.value;
+        console.log('CSRFトークンを隠しフォームから取得');
+        return token;
+    }
+    
+    // 3. クッキーから取得
+    const cookieCsrf = getCookie('csrftoken');
+    if (cookieCsrf) {
+        token = cookieCsrf;
+        console.log('CSRFトークンをクッキーから取得');
+        return token;
+    }
+    
+    // 4. その他の隠しフィールドから取得
+    const anyHiddenCsrf = document.querySelector('input[name=csrfmiddlewaretoken]');
+    if (anyHiddenCsrf && anyHiddenCsrf.value) {
+        token = anyHiddenCsrf.value;
+        console.log('CSRFトークンを任意の隠しフィールドから取得');
+        return token;
+    }
+    
+    console.error('CSRFトークンが見つかりません');
+    return null;
+}
+
+// CSRFトークン取得関数をより確実なものに変更
+function getCSRFToken() {
+    return getCSRFTokenImproved();
+}
+
+// Toast notification（改良版）
 function showToast(message, type = 'info') {
     let container = document.getElementById('toast-container');
     if (!container) {
@@ -729,12 +890,14 @@ function showToast(message, type = 'info') {
         document.body.appendChild(container);
     }
 
+    const toastId = 'toast-' + Date.now();
     const toast = document.createElement('div');
-    toast.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'primary'} border-0`;
+    toast.id = toastId;
+    toast.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'primary'} border-0`;
     toast.innerHTML = `
         <div class="d-flex">
             <div class="toast-body">
-                <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+                <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
                 ${message}
             </div>
             <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
@@ -742,8 +905,11 @@ function showToast(message, type = 'info') {
     `;
 
     container.appendChild(toast);
-    const bsToast = new bootstrap.Toast(toast);
+    const bsToast = new bootstrap.Toast(toast, {
+        delay: type === 'error' ? 8000 : 5000 // エラーは長めに表示
+    });
     bsToast.show();
+    
     toast.addEventListener('hidden.bs.toast', () => toast.remove());
 }
 
@@ -755,8 +921,35 @@ window.addEventListener('beforeunload', function(e) {
     }
 });
 
-// Initialize page
+// ページ読み込み時の初期化（デバッグ情報追加版）
 document.addEventListener('DOMContentLoaded', function() {
+    // CSRFトークンのデバッグ情報
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        console.log('=== CSRF デバッグ情報 ===');
+        const token = getCSRFToken();
+        if (token) {
+            console.log('CSRFトークン取得成功:', token.substring(0, 8) + '...');
+        } else {
+            console.error('CSRFトークン取得失敗');
+        }
+        
+        // 利用可能なCSRFソースを確認
+        const sources = [];
+        if (document.querySelector('meta[name=csrf-token]')) sources.push('メタタグ');
+        if (document.querySelector('#csrf-form input[name=csrfmiddlewaretoken]')) sources.push('隠しフォーム');
+        if (getCookie('csrftoken')) sources.push('クッキー');
+        console.log('利用可能なCSRFソース:', sources.join(', '));
+        console.log('========================');
+    }
+    
+    // CSRFトークンの有効性をチェック
+    validateCSRFToken().then(isValid => {
+        if (!isValid) {
+            console.warn('CSRFトークンが無効です');
+            // ユーザーには見えない形で準備
+        }
+    });
+    
     // Animate cards on load
     const cards = document.querySelectorAll('.analysis-card');
     cards.forEach((card, index) => {
