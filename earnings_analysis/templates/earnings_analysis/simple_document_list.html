@@ -32,7 +32,21 @@
             </p>
         {% endif %}
     </div>
-    
+    <!-- Mobile Actions -->
+    <div class="d-md-none d-flex flex-column gap-2">
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-primary flex-fill" data-bs-toggle="collapse" 
+                    data-bs-target="#filterCollapse" aria-expanded="false">
+                <i class="fas fa-filter me-1"></i>フィルタ・検索
+                {% if search_params.company or search_params.doc_type_name or search_params.from_date or search_params.to_date %}
+                    <span class="badge bg-primary ms-1">ON</span>
+                {% endif %}
+            </button>
+            <a href="{% url 'copomo:index' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-home"></i>
+            </a>
+        </div>
+    </div>    
     <!-- Desktop Actions -->
     <div class="d-none d-md-flex gap-2">
         <button type="button" class="btn btn-outline-primary" data-bs-toggle="collapse" 
