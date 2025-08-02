@@ -1,8 +1,10 @@
+# contact/admin.py に追加・更新
 from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.utils import timezone
+from django.contrib import messages
 from .models import ContactMessage
 
 @admin.register(ContactMessage)
@@ -121,7 +123,6 @@ class ContactMessageAdmin(admin.ModelAdmin):
     
     def mark_as_read(self, request, queryset):
         """選択された項目を既読にする"""
-        # 認証済みのもののみ既読にする
         verified_queryset = queryset.filter(is_verified=True)
         updated = verified_queryset.update(is_read=True)
         self.message_user(request, f'{updated}件の認証済みメッセージを既読にしました。')
@@ -132,6 +133,89 @@ class ContactMessageAdmin(admin.ModelAdmin):
         updated = queryset.update(is_spam=True)
         self.message_user(request, f'{updated}件のメッセージをスパムとしてマークしました。')
     mark_as_spam.short_description = "選択された項目をスパムとしてマーク"
+    
+    def block_ip_addresses(self, request, queryset):
+        """選択されたメッセージのIPアドレスをブロック"""
+        from security.models import BlockedIP
+        
+        blocked_count = 0
+        for message in queryset:
+            if message.ip_address:
+                blocked_ip, created = BlockedIP.objects.get_or_create(
+                    ip_address=message.ip_address,
+                    defaults={
+                        'reason': 'spam',
+                        'description': f'問い合わせスパムによる自動ブロック: {message.name} ({message.email})',
+                        'created_by': request.user,
+                    }
+                )
+                if created:
+                    blocked_count += 1
+        
+        self.message_user(
+            request, 
+            f'{blocked_count}件のIPアドレスをブロックリストに追加しました。',
+            messages.SUCCESS
+        )
+    block_ip_addresses.short_description = "IPアドレスをブロックリストに追加"
+    
+    def block_email_addresses(self, request, queryset):
+        """選択されたメッセージのメールアドレスをブロック"""
+        from security.models import BlockedEmail
+        
+        blocked_count = 0
+        for message in queryset:
+            if message.email:
+                blocked_email, created = BlockedEmail.objects.get_or_create(
+                    email_pattern=message.email.lower(),
+                    defaults={
+                        'block_type': 'exact',
+                        'reason': 'spam',
+                        'description': f'問い合わせスパムによる自動ブロック: {message.name}',
+                        'created_by': request.user,
+                    }
+                )
+                if created:
+                    blocked_count += 1
+        
+        self.message_user(
+            request, 
+            f'{blocked_count}件のメールアドレスをブロックリストに追加しました。',
+            messages.SUCCESS
+        )
+    block_email_addresses.short_description = "メールアドレスをブロックリストに追加"
+    
+    def block_email_domains(self, request, queryset):
+        """選択されたメッセージのメールドメインをブロック"""
+        from security.models import BlockedEmail
+        
+        blocked_count = 0
+        domains_added = set()
+        
+        for message in queryset:
+            if message.email and '@' in message.email:
+                domain = '@' + message.email.split('@')[1].lower()
+                
+                if domain not in domains_added:
+                    blocked_email, created = BlockedEmail.objects.get_or_create(
+                        email_pattern=domain,
+                        defaults={
+                            'block_type': 'domain',
+                            'reason': 'spam',
+                            'description': f'問い合わせスパムによる自動ブロック (ドメイン): {message.email}',
+                            'created_by': request.user,
+                        }
+                    )
+                    if created:
+                        blocked_count += 1
+                        domains_added.add(domain)
+        
+        self.message_user(
+            request, 
+            f'{blocked_count}件のメールドメインをブロックリストに追加しました。',
+            messages.SUCCESS
+        )
+    block_email_domains.short_description = "メールドメインをブロックリストに追加"
     
     def delete_unverified_expired(self, request, queryset):
         """期限切れの未認証メッセージを削除"""
@@ -155,6 +239,9 @@ class ContactMessageAdmin(admin.ModelAdmin):
     actions = [
         'mark_as_read', 
         'mark_as_spam', 
+        'block_ip_addresses',
+        'block_email_addresses', 
+        'block_email_domains',
         'delete_unverified_expired',
         'delete_spam'
     ]
@@ -162,7 +249,6 @@ class ContactMessageAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         """クエリセットをカスタマイズ"""
         qs = super().get_queryset(request)
-        # 認証済みを優先的に表示し、その後未認証、最後にスパム
         return qs.extra(
             select={
                 'priority': """

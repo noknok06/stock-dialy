@@ -1,4 +1,4 @@
-# contact/views.py
+# contact/views.py の更新部分
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.core.mail import send_mail
@@ -34,7 +34,6 @@ def contact_view(request):
         honeypot = request.POST.get('website', '')
         if honeypot:
             logger.warning(f"ハニーポット検出: IP={get_client_ip(request)}, honeypot={honeypot}")
-            # ボットには成功したように見せかける
             return redirect('contact:verification_sent')
         
         # 基本バリデーション
@@ -45,6 +44,12 @@ def contact_view(request):
         if not privacy_agreement:
             messages.error(request, 'プライバシーポリシーへの同意が必要です。')
             return render(request, 'contact.html')
+        
+        # メールアドレスのブロックチェック
+        if is_blocked_email(email):
+            logger.warning(f"ブロック済みメールアドレスからの問い合わせ: {email}")
+            # ブロックされていても攻撃者に分からないよう、認証送信画面に遷移
+            return redirect('contact:verification_sent')
         
         # メールアドレスの形式チェック
         if not is_valid_email_domain(email):
@@ -58,13 +63,12 @@ def contact_view(request):
             subject=subject,
             message=message,
             ip_address=get_client_ip(request),
-            is_verified=False  # 未認証状態
+            is_verified=False
         )
         
         # スパム判定
         if contact_message.is_spam:
             logger.warning(f"スパム判定のため認証メール送信をスキップ: {email}")
-            # スパムでも認証メール送信画面に遷移（攻撃者に検出されないよう）
             return redirect('contact:verification_sent')
         
         # 認証メールの送信
@@ -76,7 +80,7 @@ def contact_view(request):
         except Exception as e:
             logger.error(f"認証メール送信エラー: {str(e)}")
             messages.error(request, 'メールの送信に失敗しました。しばらく経ってからもう一度お試しください。')
-            contact_message.delete()  # 失敗した場合は削除
+            contact_message.delete()
             return render(request, 'contact.html')
     
     # GETリクエスト時
@@ -94,13 +98,19 @@ def verify_email(request, token):
     # 認証期限切れの場合
     if contact_message.is_verification_expired():
         messages.error(request, '認証期限が切れています。もう一度お問い合わせフォームからお送りください。')
-        contact_message.delete()  # 期限切れのデータを削除
+        contact_message.delete()
         return redirect('contact:verification_expired')
     
     # スパム判定の場合（念のため再チェック）
     if contact_message.is_spam:
         logger.warning(f"スパム判定のため認証を拒否: {contact_message.email}")
         messages.error(request, '認証に失敗しました。')
+        return redirect('contact:verification_failed')
+    
+    # メールアドレスの再ブロックチェック（認証時にも確認）
+    if is_blocked_email(contact_message.email):
+        logger.warning(f"認証時にブロック済みメールを検出: {contact_message.email}")
+        contact_message.delete()
         return redirect('contact:verification_failed')
     
     # メール認証完了
@@ -120,6 +130,7 @@ def verify_email(request, token):
         messages.error(request, 'お問い合わせの処理中にエラーが発生しました。')
         return redirect('contact:verification_failed')
 
+# 他のビュー関数は既存のまま...
 def verification_sent_view(request):
     """認証メール送信完了ページ"""
     return render(request, 'verification_sent.html')
@@ -141,6 +152,52 @@ def contact_success_view(request):
     return render(request, 'contact_success.html')
 
 # ヘルパー関数
+
+def is_blocked_email(email):
+    """メールアドレスがブロックされているかチェック"""
+    if not email:
+        return False
+    
+    # キャッシュキーを生成
+    cache_key = f"blocked_email_check_{email.lower()}"
+    
+    # キャッシュから結果を取得（5分間キャッシュ）
+    cached_result = cache.get(cache_key)
+    if cached_result is not None:
+        return cached_result
+    
+    try:
+        from security.models import BlockedEmail
+        
+        # アクティブで期限切れでないブロックをチェック
+        blocked_emails = BlockedEmail.objects.filter(is_active=True)
+        
+        for blocked_email in blocked_emails:
+            if blocked_email.is_blocking_email(email):
+                # ブロック対象として結果をキャッシュ
+                cache.set(cache_key, True, 300)  # 5分間キャッシュ
+                
+                # ブロック試行をログに記録
+                try:
+                    from security.models import BlockLog
+                    BlockLog.objects.create(
+                        block_type='email',
+                        blocked_value=email,
+                        ip_address=None,  # この時点ではリクエストオブジェクトがない
+                        request_path='/contact/',
+                    )
+                except:
+                    pass
+                
+                return True
+        
+        # ブロック対象外として結果をキャッシュ
+        cache.set(cache_key, False, 300)  # 5分間キャッシュ
+        return False
+        
+    except Exception as e:
+        logger.error(f"Error checking blocked email: {e}")
+        return False
 
 def send_verification_email(contact_message, request):
     """認証メールを送信"""
@@ -225,7 +282,6 @@ URL: https://kabulog.net
 
 def is_valid_email_domain(email):
     """メールドメインの妥当性をチェック"""
-    # 使い捨てメールサービスのドメインをブロック
     blocked_domains = [
         '10minutemail.com', 'tempmail.org', 'guerrillamail.com',
         'mailinator.com', 'trash-mail.com', 'yopmail.com',
@@ -244,13 +300,11 @@ def check_contact_rate_limit(request):
     client_ip = get_client_ip(request)
     cache_key = f"contact_rate_limit_{client_ip}"
     
-    # 同一IPから1時間に3回まで（認証が必要になったため制限を厳しく）
     attempts = cache.get(cache_key, 0)
     if attempts >= 3:
         return False
     
-    # カウントアップ
-    cache.set(cache_key, attempts + 1, 3600)  # 1時間
+    cache.set(cache_key, attempts + 1, 3600)
     return True
 
 def get_client_ip(request):

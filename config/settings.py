@@ -704,3 +704,33 @@ print(f"📧 メールバックエンド: {EMAIL_BACKEND}")
 print(f"🗄️ データベース: PostgreSQL")
 print(f"🔍 分析モード: オンデマンド（本番環境）")
 print(f"⚡ Celery: 同期実行モード（threading.Thread使用）")
+
+BLOCK_SYSTEM_SETTINGS = {
+    # ブロックリストのキャッシュ時間（秒）
+    'CACHE_TIMEOUT': 300,  # 5分
+    
+    # 自動ブロック設定
+    'AUTO_BLOCK_THRESHOLD': 5,  # スパムスコアがこの値以上で自動ブロック
+    'AUTO_BLOCK_ENABLED': True,
+    
+    # ブロックログの保持期間（日）
+    'LOG_RETENTION_DAYS': 90,
+    
+    # IP範囲ブロック設定
+    'ENABLE_CIDR_BLOCKING': True,
+}
+
+# ログ設定にブロックシステム用を追加
+LOGGING['handlers']['security_file'] = {
+    'level': 'INFO',
+    'class': 'logging.handlers.RotatingFileHandler',
+    'filename': os.path.join(BASE_DIR, 'logs', 'security.log'),
+    'maxBytes': 10485760,  # 10MB
+    'backupCount': 5,
+}
+
+LOGGING['loggers']['security'] = {
+    'handlers': ['security_file', 'file'],
+    'level': 'INFO',
+    'propagate': True,
+}
