@@ -7,7 +7,6 @@
 
 {% block head %}
 <!-- 共通スタイルシートを読み込み -->
-<link rel="stylesheet" href="{% static 'css/diary-theme.css' %}">
 <!-- FullCalendar CSS -->
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'css/quick-diary.css' %}">
@@ -144,6 +143,368 @@
 .offline-badge {
   display: none;
 }
+
+/* ========== 1. 日記カードグリッドの調整 ========== */
+.home-diary-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem; /* ギャップを統一 */
+  width: 100%;
+  max-width: 100%;
+}
+
+/* タブレット以上での2列表示を改善 */
+@media (min-width: 992px) {
+  .home-diary-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem; /* PCでは少し広いギャップ */
+  }
+}
+
+/* 超大画面では最大幅を制限 */
+@media (min-width: 1400px) {
+  .home-diary-grid {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+}
+
+/* ========== 2. カレンダーの幅調整 ========== */
+.calendar-view {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden; /* はみ出し防止 */
+}
+
+.calendar-container {
+  width: 100%;
+  min-height: 350px;
+}
+
+/* デスクトップでのカレンダーとイベントの幅比率調整 */
+@media (min-width: 992px) {
+  .calendar-view .col-lg-7 {
+    padding-right: 1rem;
+  }
+  
+  .calendar-view .col-lg-5 {
+    padding-left: 1rem;
+  }
+}
+
+/* ========== 3. 検索フォームの調整 ========== */
+.diary-search .row.g-2 > .col-md-4 {
+  margin-bottom: 0.75rem;
+}
+
+@media (max-width: 767.98px) {
+  .diary-search .row.g-2 > .col-md-4 {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+}
+
+/* ========== 4. 日記カードの内部調整 ========== */
+.diary-card {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.diary-card-header {
+  padding: 1.25rem 1.5rem 1rem;
+  min-height: auto;
+}
+
+.diary-card-body {
+  padding: 0.75rem 1.25rem 1.25rem;
+}
+
+/* タブの幅調整 */
+.card-tabs {
+  margin: 0 -0.25rem 0.75rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.card-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.card-tabs .nav-link {
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 80px;
+}
+
+/* ========== 5. 情報ブロックの幅調整 ========== */
+.info-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+@media (max-width: 576px) {
+  .info-row {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
+.info-item {
+  min-width: 0; /* グリッドアイテムの幅制限を解除 */
+  margin-bottom: 0;
+}
+
+/* ========== 6. ボタン配置の調整 ========== */
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+@media (max-width: 576px) {
+  .action-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .action-buttons .btn {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* ========== 7. カードタイトル部分の調整 ========== */
+.diary-title {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.4;
+  margin-bottom: 0.5rem;
+}
+
+.diary-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* ========== 8. 価格情報表示の調整 ========== */
+.diary-price-info {
+  text-align: right;
+  min-width: 90px;
+  max-width: 120px;
+}
+
+@media (max-width: 576px) {
+  .diary-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .diary-price-info {
+    text-align: left;
+    margin-top: 0.75rem;
+    min-width: auto;
+    max-width: none;
+    width: 100%;
+  }
+}
+
+/* ========== 9. タグ表示の調整 ========== */
+.diary-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0.5rem;
+  max-width: 100%;
+}
+
+.diary-tag {
+  flex-shrink: 0;
+  word-break: keep-all;
+  white-space: nowrap;
+}
+
+/* ========== 10. モーダルの幅調整 ========== */
+@media (max-width: 767.98px) {
+  .modal-dialog {
+    margin: 0.5rem;
+    max-width: calc(100vw - 1rem);
+    width: calc(100vw - 1rem);
+  }
+  
+  .modal-content {
+    border-radius: 0.75rem;
+  }
+}
+
+/* ========== 11. フォーム要素の調整 ========== */
+.form-control, .form-select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.input-group {
+  width: 100%;
+}
+
+.input-group .form-control {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ========== 12. テーブルの調整 ========== */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 767.98px) {
+  .table-responsive {
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    padding: 0 0.5rem;
+  }
+}
+
+/* ========== 13. アコーディオンの調整 ========== */
+.accordion-item {
+  border-left: none;
+  border-right: none;
+}
+
+.accordion-button {
+  padding: 1rem 1.25rem;
+}
+
+.accordion-body {
+  padding: 0;
+}
+
+/* ========== 14. カレンダーテーブルの調整 ========== */
+.fc-scrollgrid-sync-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.fc-scrollgrid-sync-table td,
+.fc-scrollgrid-sync-table th {
+  width: calc(100% / 7);
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* ========== 15. コンテナの最大幅調整 ========== */
+@media (min-width: 1200px) {
+  .container {
+    max-width: 1140px;
+  }
+}
+
+@media (min-width: 1400px) {
+  .container {
+    max-width: 1200px; /* 超大画面でも適度な幅に制限 */
+  }
+}
+
+/* ========== 16. スピードダイアルボタンの位置調整 ========== */
+.speed-dial-container {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 1040;
+}
+
+@media (max-width: 768px) {
+  .speed-dial-container {
+    bottom: 1rem;
+    right: 1rem;
+  }
+}
+
+/* ========== 17. 広告コンテナの調整 ========== */
+.ad-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 1.5rem auto;
+  text-align: center;
+  overflow: hidden;
+}
+
+@media (max-width: 767.98px) {
+  .ad-container {
+    margin: 1rem auto;
+    padding: 0 0.5rem;
+  }
+}
+
+/* ========== 18. グリッドアイテムの調整 ========== */
+.grid-column-span {
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* ========== 19. ナビゲーション調整 ========== */
+.floating-nav-button {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1041;
+}
+
+/* ========== 20. レスポンシブ画像 ========== */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ========== 21. オーバーフロー修正 ========== */
+.card, .modal-content, .alert, .form-control, .btn {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* ========== 22. フレックスアイテムの調整 ========== */
+.d-flex {
+  min-width: 0; /* フレックスアイテムの縮小を許可 */
+}
+
+.flex-shrink-0 {
+  flex-shrink: 0;
+}
+
+.flex-grow-1 {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+/* ========== 23. 小さなデバイス用の追加調整 ========== */
+@media (max-width: 360px) {
+  .container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  
+  .diary-card-header,
+  .diary-card-body {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .card-tabs .nav-link {
+    padding: 0.5rem 0.4rem;
+    font-size: 0.8rem;
+  }
+}
+
 </style>
 {% endblock %}
 
@@ -169,10 +530,9 @@
     </a>
   </div>
 
-  <!-- カレンダーセクション - HTMX対応 -->
+  <!-- カレンダーセクションの改善 -->
   <div class="calendar-section mb-4">
     <!-- スマホ用カレンダーアコーディオン -->
-    <!-- Mobile Calendar Accordion - Improved HTMX Loading -->
     <div class="d-lg-none">
       <div class="accordion" id="calendarAccordion">
         <div class="accordion-item">
@@ -183,8 +543,8 @@
             </button>
           </h2>
           <div id="calendarCollapse" class="accordion-collapse collapse" aria-labelledby="calendarHeading">
-            <div class="accordion-body p-0">
-              <!-- Mobile Calendar - Improved Loading Handling -->
+            <div class="accordion-body p-1"> <!-- p-0からp-1に変更 -->
+              <!-- モバイルカレンダーコンテナ -->
               <div class="calendar-view" id="mobile-calendar-container"
                   hx-get="{% url 'stockdiary:calendar_partial' %}?view=mobile"
                   hx-trigger="revealed"
@@ -194,7 +554,7 @@
                   <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>
                   </div>
-                  <p class="mt-2">カレンダーを読み込んでいます...</p>
+                  <p class="mt-2 mb-0">カレンダーを読み込んでいます...</p>
                 </div>
               </div>
             </div>
@@ -203,37 +563,12 @@
       </div>
     </div>
 
-    <!-- Enhanced Event Display Section for Mobile -->
-    <div class="d-lg-none">
-      <div class="card mt-3 mb-4" id="mobile-events-card">
-        <div class="card-header bg-white">
-          <h6 class="mb-0" id="mobile-selected-date">選択日のイベント</h6>
-        </div>
-        <div class="card-body" id="mobile-day-events"
-            hx-get="{% url 'stockdiary:day_events' %}"
-            hx-trigger="date-selected from:body"
-            hx-target="#mobile-day-events"
-            hx-swap="innerHTML"
-            hx-include="[name='date'], [name='view']">
-          <p class="text-muted">日付を選択するとイベントが表示されます</p>
-          <!-- Event Loading Indicator -->
-          <div id="day-events-loading-mobile" class="htmx-indicator text-center mt-3">
-            <div class="spinner-border spinner-border-sm text-primary" role="status">
-              <span class="visually-hidden">読み込み中...</span>
-            </div>
-          </div>
-          <input type="hidden" name="view" value="mobile">
-          <input type="hidden" name="date" value="">
-        </div>
-      </div>
-    </div>
-
-    <!-- Desktop Calendar Container - Enhanced HTMX Loading -->
+    <!-- デスクトップカレンダーコンテナ -->
     <div class="d-none d-lg-block">
-      <div class="row">
-        <!-- Calendar Part: Left Side (7/10) -->
-        <div class="col-lg-7">
-          <div class="calendar-view pe-lg-3">
+      <div class="row g-3"> <!-- g-0からg-3に変更 -->
+        <!-- カレンダー部分: 左側 (8/12) -->
+        <div class="col-lg-8"> <!-- col-lg-7からcol-lg-8に変更 -->
+          <div class="calendar-view">
             <div id="desktop-calendar-container" class="calendar-container"
                 hx-get="{% url 'stockdiary:calendar_partial' %}?view=desktop"
                 hx-trigger="load"
@@ -243,26 +578,25 @@
                 <div class="spinner-border text-primary" role="status">
                   <span class="visually-hidden">Loading...</span>
                 </div>
-                <p class="mt-2">カレンダーを読み込んでいます...</p>
+                <p class="mt-2 mb-0">カレンダーを読み込んでいます...</p>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Events Part: Right Side (3/10) -->
-        <div class="col-lg-5">
+        <!-- イベント部分: 右側 (4/12) -->
+        <div class="col-lg-4"> <!-- col-lg-5からcol-lg-4に変更 -->
           <div class="card h-100" id="desktop-events-card">
             <div class="card-header bg-white">
               <h6 class="mb-0" id="desktop-selected-date">選択日のイベント</h6>
             </div>
-            <div class="card-body" id="desktop-day-events"
+            <div class="card-body p-2" id="desktop-day-events" 
                 hx-get="{% url 'stockdiary:day_events' %}"
                 hx-trigger="date-selected from:body"
                 hx-target="#desktop-day-events"
                 hx-swap="innerHTML"
                 hx-include="[name='date'], [name='view']">
-              <p class="text-muted">日付を選択するとイベントが表示されます</p>
-              <!-- Event Loading Indicator -->
+              <p class="text-muted mb-0">日付を選択するとイベントが表示されます</p>
               <div id="day-events-loading-desktop" class="htmx-indicator text-center mt-3">
                 <div class="spinner-border spinner-border-sm text-primary" role="status">
                   <span class="visually-hidden">読み込み中...</span>
@@ -270,23 +604,6 @@
               </div>
               <input type="hidden" name="view" value="desktop">
               <input type="hidden" name="date" value="">
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- スマホ用のイベント表示カード -->
-    <div class="d-lg-none">
-      <div class="card mt-3 mb-4" id="mobile-events-card" style="display: none;">
-        <div class="card-header bg-white">
-          <h6 class="mb-0" id="mobile-selected-date">選択日のイベント</h6>
-        </div>
-        <div class="card-body" id="mobile-day-events">
-          <p class="text-muted">日付を選択するとイベントが表示されます</p>
-          <!-- イベントローディングインジケータ追加 -->
-          <div id="day-events-loading-mobile" class="htmx-indicator text-center">
-            <div class="spinner-border spinner-border-sm text-primary" role="status">
-              <span class="visually-hidden">読み込み中...</span>
             </div>
           </div>
         </div>
@@ -300,31 +617,33 @@
           hx-indicator="#search-indicator"
           hx-push-url="true"
           class="mb-3">
-      <div class="row g-2">
+      <!-- グリッドレイアウトを微調整 -->
+      <div class="row g-3"> <!-- g-2からg-3に変更 -->
         <!-- 検索フィールド -->
-        <div class="col-md-4 col-sm-12 mb-2">
+        <div class="col-lg-4 col-md-6 col-sm-12"> <!-- col-md-4からcol-lg-4 col-md-6に変更 -->
           <label for="query" class="form-label">検索</label>
           <div class="position-relative">
-            <i class="bi bi-search" style="position: absolute; right: 10px; top: 10px; color: #aaa;"></i>
+            <i class="bi bi-search" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #aaa; z-index: 5;"></i>
             <input type="text" id="query" name="query" class="form-control validate-inline" 
-                   placeholder="銘柄名/シンボル/内容/メモ"
-                   value="{{ request.GET.query }}"
-                   hx-get="{% url 'stockdiary:search_suggestion' %}"
-                   hx-trigger="keyup changed delay:500ms"
-                   hx-target="#search-suggestion">
+                  placeholder="銘柄名/シンボル/内容/メモ"
+                  value="{{ request.GET.query }}"
+                  hx-get="{% url 'stockdiary:search_suggestion' %}"
+                  hx-trigger="keyup changed delay:500ms"
+                  hx-target="#search-suggestion"
+                  style="padding-right: 2.5rem;">
           </div>
           <div id="search-suggestion" class="small"></div>
           <small class="form-text text-muted">日記内容も含めて検索できます</small>
         </div>
-  
+
         <!-- タグ絞り込みセレクト -->
-        <div class="col-md-4 col-sm-12 mb-2">
+        <div class="col-lg-4 col-md-6 col-sm-12"> <!-- col-md-4からcol-lg-4 col-md-6に変更 -->
           <label for="tag" class="form-label">タグで絞り込み</label>
           <select id="tag" name="tag" class="form-select" 
-                 hx-get="{% url 'stockdiary:diary_list' %}" 
-                 hx-target="#diary-container" 
-                 hx-indicator="#search-indicator"
-                 hx-push-url="true">
+                hx-get="{% url 'stockdiary:diary_list' %}" 
+                hx-target="#diary-container" 
+                hx-indicator="#search-indicator"
+                hx-push-url="true">
             <option value="">すべて表示</option>
             {% for tag in tags %}
             <option value="{{ tag.id }}" {% if request.GET.tag == tag.id|stringformat:"i" %}selected{% endif %}>
@@ -333,15 +652,15 @@
             {% endfor %}
           </select>
         </div>
-  
+
         <!-- 保有状態フィルター -->
-        <div class="col-md-4 col-sm-12 mb-2">
+        <div class="col-lg-4 col-md-12 col-sm-12"> <!-- col-md-4からcol-lg-4 col-md-12に変更 -->
           <label for="status" class="form-label">保有状態</label>
           <select id="status" name="status" class="form-select" 
-                 hx-get="{% url 'stockdiary:diary_list' %}" 
-                 hx-target="#diary-container" 
-                 hx-indicator="#search-indicator"
-                 hx-push-url="true">
+                hx-get="{% url 'stockdiary:diary_list' %}" 
+                hx-target="#diary-container" 
+                hx-indicator="#search-indicator"
+                hx-push-url="true">
             <option value="" {% if not request.GET.status %}selected{% endif %}>すべて</option>
             <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>保有中</option>
             <option value="sold" {% if request.GET.status == 'sold' %}selected{% endif %}>売却済み</option>
@@ -349,25 +668,27 @@
           </select>
         </div>
       </div>
-  
-      <div class="d-flex justify-content-end mt-2">
-        <div id="search-indicator" class="htmx-indicator me-2">
+
+      <!-- ボタンエリアの改善 -->
+      <div class="d-flex flex-column flex-md-row justify-content-end align-items-stretch align-items-md-center gap-2 mt-3">
+        <div id="search-indicator" class="htmx-indicator">
           <div class="spinner-border spinner-border-sm text-primary" role="status">
             <span class="visually-hidden">検索中...</span>
           </div>
         </div>
-        <button type="submit" class="btn btn-diary btn-diary-primary me-2">
+        <button type="submit" class="btn btn-diary btn-diary-primary">
           <i class="bi bi-search me-1"></i> 検索
         </button>
         <a href="{% url 'stockdiary:home' %}" class="btn btn-diary btn-diary-outline"
-           hx-get="{% url 'stockdiary:diary_list' %}" 
-           hx-target="#diary-container"
-           hx-push-url="true">
+          hx-get="{% url 'stockdiary:diary_list' %}" 
+          hx-target="#diary-container"
+          hx-push-url="true">
           <i class="bi bi-arrow-counterclockwise me-1"></i> リセット
         </a>
       </div>
     </form>
   </div>
+
 
   <!-- 日記カード一覧 -->
   <h4 class="mb-3 diary-title px-2">

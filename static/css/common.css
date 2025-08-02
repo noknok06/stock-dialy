@@ -135,6 +135,19 @@ body {
   box-shadow: var(--card-shadow);
   padding: var(--spacing-lg);
   margin-bottom: var(--spacing-lg);
+  width: 100%; /* 追加 */
+  max-width: 100%; /* 追加 */
+  overflow: hidden; /* 追加 */
+}
+/* PCでのカレンダー列調整 */
+@media (min-width: 992px) {
+  .calendar-view .row > .col-lg-7 {
+    padding-right: 1rem; /* デフォルトより少し狭く */
+  }
+  
+  .calendar-view .row > .col-lg-5 {
+    padding-left: 1rem; /* デフォルトより少し狭く */
+  }
 }
 
 /* カレンダーヘッダー部分のレイアウト */
@@ -219,6 +232,7 @@ body {
   width: 100%;
   border-radius: 8px;
   overflow: hidden;
+  box-sizing: border-box; /* 追加 */
 }
 
 /* イベントスタイル */
@@ -380,6 +394,26 @@ body {
   border-radius: 0.5rem;
   box-shadow: var(--card-shadow);
   transition: transform 0.2s, box-shadow 0.2s;
+  margin-bottom: var(--spacing-lg);
+  width: 100%; /* 追加 */
+  max-width: 100%; /* 追加 */
+  box-sizing: border-box; /* 追加 */
+}
+
+/* テーブルレスポンシブの改善 */
+@media (max-width: 767.98px) {
+  .table-responsive {
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--gray-200);
+    margin: 0 -0.5rem; /* 左右マージンを調整 */
+    width: calc(100% + 1rem); /* 幅を調整 */
+  }
+  
+  .table {
+    margin-bottom: 0;
+    font-size: 0.875rem;
+    min-width: 500px; /* 最小幅を設定 */
+  }
 }
 
 .card:hover {
@@ -396,6 +430,46 @@ body {
 .card-title {
   font-weight: 600;
   margin-bottom: 0;
+}
+
+/* モバイルフレンドリーなボタン調整 */
+.btn {
+  border-radius: var(--border-radius-md);
+  font-weight: 500;
+  min-height: var(--button-height-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none !important;
+  transition: all 0.2s ease;
+  border-width: 1px;
+  border-style: solid;
+  padding: 0.5rem 1rem; /* パディングを明示 */
+  line-height: 1.2; /* 行間を調整 */
+}
+
+/* 検索コンテナの調整 */
+.search-container {
+  position: relative;
+  width: 100%; /* 追加 */
+}
+
+/* 検索候補の調整 */
+.search-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid var(--gray-300);
+  border-top: none;
+  border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 1050;
+  max-height: 300px; /* 最大高さを制限 */
+  overflow-y: auto;
+  width: 100%; /* 追加 */
+  box-sizing: border-box; /* 追加 */
 }
 
 /* ボタンスタイル */
@@ -528,12 +602,15 @@ body {
 }
 
 /* フォームスタイル */
-.form-control,
-.form-select {
-  border-radius: 0.375rem;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+.form-control, .form-select {
+  min-height: var(--button-height-md);
+  border: 1px solid var(--gray-300);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  width: 100%; /* 追加 */
+  box-sizing: border-box; /* 追加 */
 }
 
 .form-control:focus,
@@ -597,11 +674,33 @@ body {
 }
 
 .info-item {
-  flex: 1 1 50%;
+  flex: 1 1 200px; /* 最小幅を200pxに統一 */
   min-width: 200px;
   margin-bottom: 1rem;
   display: flex;
   align-items: flex-start;
+  box-sizing: border-box; /* 追加 */
+}
+
+/* モバイルでの情報アイテム調整 */
+@media (max-width: 767.98px) {
+  .info-item {
+    flex: 1 1 100%;
+    min-width: auto;
+    margin-bottom: 0.75rem;
+  }
+}
+
+/* 超小型デバイス用調整 */
+@media (max-width: 576px) {
+  .info-item {
+    padding: 0.5rem !important;
+    min-width: 140px !important;
+  }
+  
+  .info-row {
+    gap: 0.5rem !important;
+  }
 }
 
 .info-content {
@@ -637,8 +736,25 @@ body {
 .action-buttons {
   display: flex;
   gap: var(--spacing-sm);
+  flex-wrap: wrap; /* 追加 */
+  align-items: center; /* 追加 */
 }
 
+@media (max-width: 576px) {
+  .action-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .action-buttons .btn {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  .action-buttons .btn:last-child {
+    margin-bottom: 0;
+  }
+}
+  
 /* スピナースタイル */
 .spinner-container {
   display: flex;

@@ -1,18 +1,48 @@
 {% load stockdiary_filters %}
 {% load humanize %}
 
+<style>
+/* 即座に適用したい調整 */
+@media (max-width: 576px) {
+  .card-tabs .nav-link span.d-none.d-sm-inline {
+    display: none !important;
+  }
+  
+  .diary-card-header {
+    min-height: auto;
+  }
+  
+  .diary-title {
+    word-break: break-word;
+    hyphens: auto;
+  }
+}
+
+/* グリッドシステムの微調整 */
+.home-diary-grid {
+  container-type: inline-size; /* コンテナクエリ対応 */
+}
+
+@container (min-width: 768px) {
+  .home-diary-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+}
+</style>
+
 <div class="diary-card {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo-card{% elif diary.sell_date %}sold-card{% endif %} swipeable"
   data-diary-id="{{ diary.id }}"
   data-diary-type="{% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo{% elif diary.sell_date %}sold{% else %}active{% endif %}">
 
-  <!-- カードヘッダー - シンプル化 -->
+  <!-- カードヘッダー - レスポンシブ対応強化 -->
   <div class="diary-card-header">
     <div class="diary-header-content">
       <!-- 銘柄名とシンボル -->
       <h3 class="diary-title">
-        {{ diary.stock_name }}
+        <span class="d-inline-block">{{ diary.stock_name }}</span>
         {% if diary.stock_symbol %}
-          <small class="text-muted">({{ diary.stock_symbol }})</small>
+          <small class="text-muted d-inline-block">({{ diary.stock_symbol }})</small>
         {% endif %}
       </h3>
       
@@ -30,7 +60,7 @@
       </div>
     </div>
     
-    <!-- 価格情報 -->
+    <!-- 価格情報 - レスポンシブ対応 -->
     <div class="diary-price-info">
       {% if not diary.is_memo and diary.purchase_price is not None %}
         <div class="price-value">{{ diary.purchase_price|floatformat:2|intcomma }}円</div>
@@ -51,11 +81,14 @@
 
   <!-- コンテンツ部分 -->
   <div class="diary-card-body">
-    <!-- タグ表示 - カード上部に配置 -->
+    <!-- タグ表示 - 改善されたレイアウト -->
     {% if diary.tags.all %}
     <div class="diary-tags">
       {% for tag in diary.tags.all|slice:":3" %}
-      <span class="diary-tag"><i class="bi bi-tag"></i> {{ tag.name }}</span>
+      <span class="diary-tag">
+        <i class="bi bi-tag" style="font-size: 0.7rem;"></i> 
+        <span>{{ tag.name }}</span>
+      </span>
       {% endfor %}
       {% if diary.tags.all.count > 3 %}
       <span class="diary-tag more-tags">+{{ diary.tags.all.count|add:"-3" }}</span>
@@ -63,7 +96,7 @@
     </div>
     {% endif %}
 
-    <!-- カード切り替えタブ -->
+    <!-- カード切り替えタブ - 改善されたレスポンシブ対応 -->
     <div class="diary-card-tabs">
       <div class="nav nav-tabs card-tabs" role="tablist">
         <!-- 理由/メモタブ -->
@@ -72,11 +105,13 @@
                 data-bs-target="#reason-content-{{ diary.id }}"
                 type="button" role="tab">
           <i class="bi bi-journal-text"></i> 
-          {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
-          メモ
-          {% else %}
-          理由
-          {% endif %}
+          <span class="d-none d-sm-inline">
+            {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
+            メモ
+            {% else %}
+            理由
+            {% endif %}
+          </span>
         </button>
         
         <!-- 継続記録タブ -->
@@ -90,7 +125,8 @@
                 hx-swap="innerHTML"
                 hx-indicator="#tab-loading-indicator-{{ diary.id }}"
                 type="button" role="tab">
-          <i class="bi bi-journal-richtext"></i> 継続
+          <i class="bi bi-journal-richtext"></i> 
+          <span class="d-none d-sm-inline">継続</span>
         </button>
         {% endif %}
         
@@ -105,7 +141,8 @@
                 hx-swap="innerHTML"
                 hx-indicator="#tab-loading-indicator-{{ diary.id }}"
                 type="button" role="tab">
-          <i class="bi bi-clipboard-data"></i> 分析
+          <i class="bi bi-clipboard-data"></i> 
+          <span class="d-none d-sm-inline">分析</span>
         </button>
         {% endif %}
         
@@ -119,11 +156,10 @@
                 hx-swap="innerHTML"
                 hx-indicator="#tab-loading-indicator-{{ diary.id }}"
                 type="button" role="tab">
-          <i class="bi bi-graph-up"></i> 売買
+          <i class="bi bi-graph-up"></i> 
+          <span class="d-none d-sm-inline">売買</span>
         </button>
       </div>
-      
-      <!-- スワイプインジケーター (JavaScript で追加) -->
     </div>
 
     <!-- 共通ローディングインジケータ -->

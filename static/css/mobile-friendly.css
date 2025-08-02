@@ -1,348 +1,536 @@
 /* モバイル表示の改善用スタイル
  * diary-theme.css の後に読み込む
+ * 改善版 - レイアウト微調整対応
  */
 
 /* モバイル対応の基本調整 */
 @media (max-width: 768px) {
-    /* コンテナのパディング調整 */
-    .container {
-      padding-left: 10px !important;
-      padding-right: 10px !important;
-    }
-    
-    /* 日記カードのパディング調整 */
-    .diary-card-body {
-      padding: 1rem 0.75rem !important;
-    }
-    
-    .diary-card-header,
-    .diary-card-footer {
-      padding: 1rem !important;
-    }
-    
-    /* フォントサイズの最適化 */
-    .diary-title {
-      font-size: 1.2rem !important;
-    }
-    
-    h3.section-title {
-      font-size: 1.1rem !important;
-    }
-    
-    /* 情報アイテムの調整 */
-    .info-item {
-      padding: 0.5rem !important;
-      min-width: 140px !important;
-    }
-    
-    .info-row {
-      gap: 0.5rem !important;
-    }
-    
-    /* フォーム要素の調整 */
-    .form-body {
-      padding: 1rem 0.75rem !important;
-    }
-    
-    .form-section {
-      margin-bottom: 1.5rem !important;
-    }
-    
-    /* マスキングテープをモバイルでは小さく */
-    .masking-tape {
-      width: 70px !important;
-      height: 20px !important;
-    }
-    
-    /* タグの表示調整 */
-    .diary-tag {
-      padding: 0.25rem 0.5rem !important;
-      font-size: 0.75rem !important;
-    }
-    
-    /* ボタンの調整 */
-    .btn-diary {
-      padding: 0.4rem 0.75rem !important;
-      font-size: 0.875rem !important;
-    }
-    
-    /* アクションボタンの間隔調整 */
-    .action-buttons {
-      gap: 0.375rem !important;
-    }
-    
-    /* カレンダーの高さ調整 */
-    #calendar {
-      height: 350px !important;
-    }
-    
-    /* カレンダーイベント表示の調整 */
-    .calendar-event-item {
-      padding: 0.5rem !important;
-      gap: 0.5rem !important;
-    }
+  /* コンテナのパディング調整 - 微調整 */
+  .container {
+    padding-left: 0.75rem !important; /* 10pxから12pxに微調整 */
+    padding-right: 0.75rem !important;
+    max-width: 100% !important; /* 追加：最大幅制限 */
   }
   
-  /* 超小型デバイス用 */
-  @media (max-width: 576px) {
-    /* 余白のさらなる最適化 */
-    .container {
-      padding-left: 8px !important;
-      padding-right: 8px !important;
-    }
-    
-    /* 日記カード内の要素をより縮小 */
-    .diary-card-body {
-      padding: 0.875rem 0.625rem !important;
-    }
-    
-    /* 情報ブロックの調整 */
-    .info-block {
-      padding: 0.75rem !important;
-    }
-    
-    /* 情報アイテムを縦並びにする */
-    .info-item {
-      flex: 1 1 100% !important;
-      margin-bottom: 0.5rem !important;
-    }
-    
-    /* より小さいアイコン */
-    .info-icon {
-      width: 32px !important;
-      height: 32px !important;
-      font-size: 0.875rem !important;
-    }
-    
-    /* テーブルのスクロール調整 */
-    .table-responsive {
-      margin-left: -0.5rem !important;
-      margin-right: -0.5rem !important;
-      padding: 0 0.5rem !important;
-    }
-    
-    /* フォームラベルのサイズ調整 */
-    .form-label {
-      font-size: 0.875rem !important;
-      margin-bottom: 0.25rem !important;
-    }
-    
-    /* 内部余白調整 */
-    .py-4 {
-      padding-top: 1rem !important;
-      padding-bottom: 1rem !important;
-    }
-    
-    .mb-4 {
-      margin-bottom: 1rem !important;
-    }
-    
-    /* ボタンをアイコンのみに簡略化 */
-    .d-xs-none {
-      display: none !important;
-    }
-    
-    .btn-icon-only {
-      width: 36px !important;
-      padding-left: 0 !important;
-      padding-right: 0 !important;
-      justify-content: center !important;
-    }
-    
-    .btn-icon-only i {
-      margin-right: 0 !important;
-    }
-    
-    /* タイムラインの調整 */
-    .timeline {
-      padding-left: 1.5rem !important;
-    }
-    
-    .timeline-marker {
-      left: -1.5rem !important;
-    }
-    
-    /* フォーム入力欄の高さ削減 */
-    .form-control,
-    .form-select {
-      padding: 0.375rem 0.5rem !important;
-    }
+  /* 日記カードのパディング調整 */
+  .diary-card-body {
+    padding: 1rem 0.875rem !important;
+    width: 100% !important; /* 追加：幅制限 */
+    box-sizing: border-box !important; /* 追加：ボックスサイジング */
   }
   
-  /* フルカレンダーのレスポンシブ対応 */
-  @media (max-width: 768px) {
-    .fc .fc-toolbar {
-      flex-direction: column !important;
-      gap: 0.5rem !important;
-    }
-    
-    .fc .fc-toolbar-title {
-      font-size: 1.2rem !important;
-    }
-    
-    .fc-header-toolbar {
-      margin-bottom: 0.75rem !important;
-    }
-    
-    .fc .fc-button {
-      padding: 0.25rem 0.5rem !important;
-      font-size: 0.75rem !important;
-    }
-    
-    .fc-day-header {
-      font-size: 0.75rem !important;
-    }
+  .diary-card-header,
+  .diary-card-footer {
+    padding: 1rem 0.875rem !important;
+    width: 100% !important; /* 追加 */
+    box-sizing: border-box !important; /* 追加 */
   }
   
-  /* CKEditor調整（編集フォーム用） */
-  @media (max-width: 768px) {
-    .cke_chrome {
-      border-width: 1px !important;
-    }
-    
-    .cke_top {
-      padding: 3px !important;
-    }
-    
-    .cke_toolgroup {
-      margin: 1px !important;
-    }
-    
-    .cke_button {
-      padding: 3px !important;
-    }
-    
-    .cke_toolbar_separator {
-      margin: 0 2px !important;
-    }
+  /* フォントサイズの最適化 */
+  .diary-title {
+    font-size: 1.1rem !important; /* 1.2remから微調整 */
+    word-break: break-word !important; /* 追加：長いテキスト対応 */
+    overflow-wrap: break-word !important; /* 追加 */
   }
   
-  /* フィルターバッジのモバイル調整 */
-  @media (max-width: 576px) {
-    .filter-badge {
-      padding: 0.35rem 0.75rem !important;
-      font-size: 0.75rem !important;
-      margin-right: 0.25rem !important;
-      margin-bottom: 0.25rem !important;
-    }
-    
-    .diary-search {
-      padding: 1rem !important;
-    }
+  h3.section-title {
+    font-size: 1.05rem !important; /* 1.1remから微調整 */
   }
   
-  /* タッチデバイス用の調整 */
-  @media (hover: none) {
-    /* タップ領域を広げる */
-    .action-icon-btn {
-      width: 40px !important;
-      height: 40px !important;
-    }
-    
-    /* タップ時のフィードバック */
-    .btn:active,
-    .btn-diary:active,
-    .action-icon-btn:active,
-    .filter-badge:active {
-      transform: scale(0.95) !important;
-    }
+  /* 情報アイテムの調整改善 */
+  .info-item {
+    padding: 0.75rem !important; /* 0.5remから微調整 */
+    min-width: 160px !important; /* 140pxから微調整 */
+    margin-bottom: 0.75rem !important; /* 追加 */
+    width: 100% !important; /* 追加 */
+    box-sizing: border-box !important; /* 追加 */
   }
   
-  /* より視認性の高いフォーカス表示 */
-  .form-control:focus,
-  .form-select:focus,
-  .btn:focus,
-  .btn-diary:focus {
-    box-shadow: 0 0 0 3px rgba(74, 109, 167, 0.3) !important;
+  .info-row {
+    gap: 0.75rem !important;
+    width: 100% !important; /* 追加 */
+    display: grid !important; /* 追加：グリッドレイアウト */
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important; /* 追加 */
   }
   
-  /* 行間調整 */
-  @media (max-width: 768px) {
-    p, .timeline-text, .card-text {
-      line-height: 1.5 !important;
-      margin-bottom: 0.75rem !important;
-      overflow-wrap: break-word;
-      word-wrap: break-word;
-      white-space: pre-wrap;
+  /* フォーム要素の調整 */
+  .form-body {
+    padding: 1rem 0.875rem !important;
+  }
+  
+  .form-section {
+    margin-bottom: 1.25rem !important; /* 1.5remから微調整 */
+  }
+  
+  /* マスキングテープをモバイルでは小さく */
+  .masking-tape {
+    width: 60px !important; /* 70pxから微調整 */
+    height: 18px !important; /* 20pxから微調整 */
+  }
+  
+  /* タグの表示調整 */
+  .diary-tag {
+    padding: 0.3rem 0.6rem !important; /* パディング微調整 */
+    font-size: 0.8rem !important; /* 0.75remから微調整 */
+    margin-bottom: 0.4rem !important; /* 追加 */
+    word-break: keep-all !important; /* 追加：テキスト分割防止 */
+    white-space: nowrap !important; /* 追加 */
+  }
+  
+  /* ボタンの調整 */
+  .btn-diary {
+    padding: 0.5rem 1rem !important; /* パディング微調整 */
+    font-size: 0.9rem !important; /* 0.875remから微調整 */
+    min-height: 44px !important; /* 追加：タッチ領域確保 */
+  }
+  
+  /* アクションボタンの間隔調整 */
+  .action-buttons {
+    gap: 0.5rem !important; /* 0.375remから微調整 */
+    margin-bottom: 1rem !important; /* 追加 */
+    display: flex !important; /* 追加 */
+    flex-wrap: wrap !important; /* 追加 */
+  }
+  
+  /* カレンダーの高さ調整 */
+  #calendar {
+    height: 320px !important; /* 300pxから微調整 */
+  }
+  
+  /* カレンダーイベント表示の調整 */
+  .calendar-event-item {
+    padding: 0.75rem !important; /* 0.5remから微調整 */
+    gap: 0.75rem !important; /* 0.5remから微調整 */
+  }
+  
+  /* タブナビゲーションの改善 */
+  .card-tabs {
+    overflow-x: auto !important; /* 追加：横スクロール対応 */
+    overflow-y: hidden !important; /* 追加 */
+    scrollbar-width: none !important; /* 追加：Firefox用 */
+    -ms-overflow-style: none !important; /* 追加：IE用 */
+  }
+  
+  .card-tabs::-webkit-scrollbar {
+    display: none !important; /* 追加：Webkit用 */
+  }
+  
+  .card-tabs .nav-link {
+    white-space: nowrap !important; /* 追加：テキスト折り返し防止 */
+    flex-shrink: 0 !important; /* 追加：タブサイズ維持 */
+    min-width: 70px !important; /* 追加：最小幅確保 */
+  }
+}
 
-    }
-    
-    .table td, .table th {
-      padding: 0.5rem !important;
-    }
-    
-    .diary-card-body {
-      background-size: 100% 1.75rem !important;
-      line-height: 1.75rem !important;
-    }
+/* 超小型デバイス用の改善 */
+@media (max-width: 576px) {
+  /* 余白のさらなる最適化 */
+  .container {
+    padding-left: 0.5rem !important; /* 8pxから微調整 */
+    padding-right: 0.5rem !important;
   }
   
-  /* ホームページの日記一覧のグリッド表示（オプション） */
-  @media (min-width: 992px) {
-    .home-diary-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1.5rem;
-    }
+  /* 日記カード内の要素をより縮小 */
+  .diary-card-body {
+    padding: 0.75rem 0.5rem !important; /* パディング微調整 */
   }
   
-  /* スピードダイアルの位置調整 */
-  @media (max-width: 768px) {
-    .speed-dial-container {
-      right: 15px !important;
-      bottom: 15px !important;
-    }
-    
-    .speed-dial-trigger {
-      width: 48px !important;
-      height: 48px !important;
-    }
-    
-    .speed-dial-btn {
-      width: 36px !important;
-      height: 36px !important;
-    }
-  }
-  @media (max-width: 768px) {
-    /* ボタン間の間隔を調整 */
-    .d-flex.justify-content-between.mt-4 {
-      gap: 10px;
-    }
-    
-    /* ボタンの幅を調整 */
-    .d-flex.justify-content-between.mt-4 .btn {
-      padding-left: 0.75rem;
-      padding-right: 0.75rem;
-    }
+  .diary-card-header {
+    padding: 0.75rem 0.5rem !important; /* パディング微調整 */
+    flex-direction: column !important; /* 追加：縦並び */
+    align-items: flex-start !important; /* 追加 */
+    gap: 0.5rem !important; /* 追加 */
   }
   
-  /* 特に小さい画面（スマートフォン）では縦に配置 */
-  @media (max-width: 576px) {
-    .d-flex.justify-content-between.mt-4 {
-      flex-direction: column-reverse;
-      gap: 8px;
-    }
-    
-    .d-flex.justify-content-between.mt-4 .btn {
-      width: 100%;
-    }
+  /* 価格情報の調整 */
+  .diary-price-info {
+    align-items: flex-start !important; /* 追加 */
+    min-width: auto !important; /* 追加 */
+    max-width: none !important; /* 追加 */
+    width: 100% !important; /* 追加 */
   }
+  
+  /* 情報ブロックの調整 */
+  .info-block {
+    padding: 0.5rem !important; /* 0.75remから微調整 */
+    margin-bottom: 1rem !important; /* 追加 */
+  }
+  
+  /* 情報アイテムを縦並びにする */
+  .info-item {
+    flex: 1 1 100% !important;
+    padding: 0.5rem !important; /* 0.75remから微調整 */
+    min-width: auto !important; /* 追加 */
+    margin-bottom: 0.5rem !important;
+  }
+  
+  .info-row {
+    grid-template-columns: 1fr !important; /* 追加：単一列 */
+    gap: 0.5rem !important; /* 微調整 */
+  }
+  
+  /* より小さいアイコン */
+  .info-icon {
+    width: 28px !important; /* 32pxから微調整 */
+    height: 28px !important;
+    font-size: 0.8rem !important; /* 0.875remから微調整 */
+  }
+  
+  /* テーブルのスクロール調整 */
+  .table-responsive {
+    margin-left: -0.25rem !important; /* -0.5remから微調整 */
+    margin-right: -0.25rem !important;
+    padding: 0 0.25rem !important; /* 0.5remから微調整 */
+  }
+  
+  /* フォームラベルのサイズ調整 */
+  .form-label {
+    font-size: 0.85rem !important; /* 0.875remから微調整 */
+    margin-bottom: 0.4rem !important; /* 0.25remから微調整 */
+  }
+  
+  /* 内部余白調整 */
+  .py-4 {
+    padding-top: 0.75rem !important; /* 1remから微調整 */
+    padding-bottom: 0.75rem !important;
+  }
+  
+  .mb-4 {
+    margin-bottom: 0.75rem !important; /* 1remから微調整 */
+  }
+  
+  /* ボタンをアイコンのみに簡略化 */
+  .d-xs-none {
+    display: none !important;
+  }
+  
+  .btn-icon-only {
+    width: 40px !important; /* 36pxから微調整 */
+    height: 40px !important;
+    padding: 0.5rem !important; /* パディング追加 */
+    justify-content: center !important;
+  }
+  
+  .btn-icon-only i {
+    margin-right: 0 !important;
+  }
+  
+  /* タイムラインの調整 */
+  .timeline {
+    padding-left: 1.25rem !important; /* 1.5remから微調整 */
+  }
+  
+  .timeline-marker {
+    left: -1.25rem !important; /* -1.5remから微調整 */
+  }
+  
+  /* フォーム入力欄の高さ改善 */
+  .form-control,
+  .form-select {
+    padding: 0.5rem 0.75rem !important; /* パディング微調整 */
+    min-height: 44px !important; /* 追加：最小高さ確保 */
+  }
+  
+  /* 検索フィールドの調整 */
+  .search-input {
+    padding-left: 2.5rem !important; /* 追加：アイコン用スペース */
+  }
+  
+  /* モーダルの調整 */
+  .modal-dialog {
+    margin: 0.5rem !important;
+    max-width: calc(100vw - 1rem) !important;
+    width: calc(100vw - 1rem) !important;
+  }
+}
 
-  /* タップフィードバックの強化 */
+/* 特に小さなデバイス用（360px以下） */
+@media (max-width: 360px) {
+  .container {
+    padding-left: 0.25rem !important;
+    padding-right: 0.25rem !important;
+  }
+  
+  .diary-card {
+    margin-bottom: 1rem !important;
+  }
+  
+  .card-tabs .nav-link {
+    padding: 0.25rem 0.3rem !important;
+    font-size: 0.7rem !important;
+    min-width: 60px !important;
+  }
+  
+  .diary-tag {
+    padding: 0.2rem 0.4rem !important;
+    font-size: 0.7rem !important;
+  }
+}
+
+/* フルカレンダーのレスポンシブ対応改善 */
+@media (max-width: 768px) {
+  .fc .fc-toolbar {
+    flex-direction: column !important;
+    gap: 0.75rem !important; /* 0.5remから微調整 */
+    align-items: center !important; /* 追加 */
+  }
+  
+  .fc .fc-toolbar-title {
+    font-size: 1.1rem !important; /* 1.2remから微調整 */
+    order: -1 !important; /* 追加：最初に表示 */
+  }
+  
+  .fc-header-toolbar {
+    margin-bottom: 0.5rem !important; /* 0.75remから微調整 */
+  }
+  
+  .fc .fc-button {
+    padding: 0.375rem 0.75rem !important; /* パディング微調整 */
+    font-size: 0.8rem !important; /* 0.75remから微調整 */
+    margin: 0 0.125rem !important; /* 追加：間隔調整 */
+  }
+  
+  .fc-day-header {
+    font-size: 0.8rem !important; /* 0.75remから微調整 */
+    padding: 0.5rem 0.25rem !important; /* 追加：パディング */
+  }
+  
+  /* カレンダーセルの最小高さ */
+  .fc-daygrid-day {
+    min-height: 2.5rem !important; /* 追加：2remから微調整 */
+  }
+  
+  /* イベント表示の改善 */
+  .fc-daygrid-event {
+    margin: 1px 2px !important; /* 追加：マージン調整 */
+    padding: 0 3px !important; /* 追加：パディング調整 */
+    font-size: 0.7rem !important; /* 0.65remから微調整 */
+  }
+}
+
+/* CKEditor調整（編集フォーム用） */
+@media (max-width: 768px) {
+  .cke_chrome {
+    border-width: 1px !important;
+  }
+  
+  .cke_top {
+    padding: 3px !important;
+  }
+  
+  .cke_toolgroup {
+    margin: 1px !important;
+  }
+  
+  .cke_button {
+    padding: 3px !important;
+  }
+  
+  .cke_toolbar_separator {
+    margin: 0 2px !important;
+  }
+}
+
+/* フィルターバッジのモバイル調整 */
+@media (max-width: 576px) {
+  .filter-badge {
+    padding: 0.35rem 0.75rem !important;
+    font-size: 0.75rem !important;
+    margin-right: 0.25rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+  
+  .diary-search {
+    padding: 1rem !important;
+  }
+}
+
+/* タッチデバイス用の調整改善 */
 @media (hover: none) {
+  /* タップ領域をより広く */
+  .action-icon-btn {
+    width: 44px !important; /* 40pxから微調整 */
+    height: 44px !important;
+    margin: 0.25rem !important; /* 追加：マージン */
+  }
+  
+  /* タップ時のフィードバック改善 */
+  .btn:active,
+  .btn-diary:active,
+  .action-icon-btn:active,
+  .filter-badge:active {
+    transform: scale(0.95) !important;
+    transition: transform 0.1s !important; /* 追加：アニメーション */
+  }
+  
+  /* 日記カードのタッチフィードバック */
   .diary-card:active {
-    background-color: rgba(90, 126, 197, 0.05);
+    background-color: rgba(90, 126, 197, 0.05) !important;
+    transform: scale(0.98) !important; /* 追加 */
   }
   
   .nav-link:active {
-    opacity: 0.7;
-    transition: opacity 0.15s;
+    opacity: 0.7 !important;
+    transition: opacity 0.15s !important;
   }
   
   /* タブのアクティブ状態をより明確に */
   .card-tabs .nav-link.active {
-    background-color: var(--primary-color);
-    color: white;
-    border-radius: 8px 8px 0 0;
+    background-color: var(--primary-color) !important;
+    color: white !important;
+    border-radius: 8px 8px 0 0 !important;
+  }
+}
+
+/* より視認性の高いフォーカス表示 */
+.form-control:focus,
+.form-select:focus,
+.btn:focus,
+.btn-diary:focus {
+  box-shadow: 0 0 0 3px rgba(74, 109, 167, 0.3) !important;
+  outline: none !important; /* 追加：デフォルトアウトライン削除 */
+}
+
+/* 行間調整とテキスト処理改善 */
+@media (max-width: 768px) {
+  p, .timeline-text, .card-text {
+    line-height: 1.5 !important;
+    margin-bottom: 0.75rem !important;
+    overflow-wrap: break-word !important;
+    word-wrap: break-word !important;
+    white-space: pre-wrap !important;
+    hyphens: auto !important; /* 追加：ハイフネーション */
+  }
+  
+  .table td, .table th {
+    padding: 0.5rem !important;
+    word-break: break-word !important; /* 追加 */
+  }
+  
+  .diary-card-body {
+    background-size: 100% 1.75rem !important;
+    line-height: 1.75rem !important;
+  }
+}
+
+/* ホームページの日記一覧のグリッド表示改善 */
+@media (min-width: 992px) {
+  .home-diary-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 2rem !important; /* 1.5remから微調整 */
+    max-width: 1200px !important; /* 追加：最大幅制限 */
+    margin: 0 auto !important; /* 追加：中央揃え */
+  }
+}
+
+/* 超大画面での調整 */
+@media (min-width: 1400px) {
+  .home-diary-grid {
+    max-width: 1200px !important;
+    margin: 0 auto !important;
+  }
+  
+  .container {
+    max-width: 1200px !important;
+  }
+}
+
+/* スピードダイアルの位置調整 */
+@media (max-width: 768px) {
+  .speed-dial-container {
+    right: 1rem !important; /* 15pxから微調整 */
+    bottom: 1rem !important; /* 15pxから微調整 */
+  }
+  
+  .speed-dial-trigger {
+    width: 48px !important;
+    height: 48px !important;
+  }
+  
+  .speed-dial-btn {
+    width: 36px !important;
+    height: 36px !important;
+  }
+}
+
+/* ボタン配置の改善 */
+@media (max-width: 768px) {
+  /* ボタン間の間隔を調整 */
+  .d-flex.justify-content-between.mt-4 {
+    gap: 0.75rem !important; /* 10pxから微調整 */
+    flex-wrap: wrap !important; /* 追加 */
+  }
+  
+  /* ボタンの幅を調整 */
+  .d-flex.justify-content-between.mt-4 .btn {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    min-height: 44px !important; /* 追加 */
+  }
+}
+
+/* 特に小さい画面（スマートフォン）では縦に配置 */
+@media (max-width: 576px) {
+  .d-flex.justify-content-between.mt-4 {
+    flex-direction: column-reverse !important;
+    gap: 0.5rem !important; /* 8pxから微調整 */
+  }
+  
+  .d-flex.justify-content-between.mt-4 .btn {
+    width: 100% !important;
+    margin-bottom: 0.5rem !important; /* 追加 */
+  }
+  
+  .d-flex.justify-content-between.mt-4 .btn:last-child {
+    margin-bottom: 0 !important; /* 追加 */
+  }
+}
+
+/* アクセシビリティ改善 */
+@media (prefers-reduced-motion: reduce) {
+  /* アニメーションを削減 */
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ハイコントラストモード対応 */
+@media (prefers-contrast: high) {
+  .diary-card {
+    border-width: 2px !important;
+  }
+  
+  .btn {
+    border-width: 2px !important;
+  }
+  
+  .form-control,
+  .form-select {
+    border-width: 2px !important;
+  }
+}
+
+/* ダークモード対応の基礎 */
+@media (prefers-color-scheme: dark) {
+  .diary-card {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+  }
+}
+
+/* 印刷用スタイル */
+@media print {
+  .speed-dial-container,
+  .floating-nav-button,
+  .action-buttons {
+    display: none !important;
+  }
+  
+  .diary-card {
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+    break-inside: avoid !important;
   }
 }

@@ -15,6 +15,9 @@
   overflow: hidden;
   border: 1px solid rgba(0, 0, 0, 0.05);
   cursor: pointer;
+  width: 100%; /* 追加 */
+  max-width: 100%; /* 追加 */
+  box-sizing: border-box; /* 追加 */
 }
 
 .diary-card:hover {
@@ -55,11 +58,16 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
+  min-height: auto; /* 追加 */
+  flex-wrap: wrap; /* 追加 - 小画面での折り返し対応 */
+  gap: 0.75rem; /* 追加 */
 }
 
 /* ヘッダー左側（銘柄と日付） */
 .diary-header-content {
   flex: 1;
+  min-width: 0; /* 追加 - テキストの縮小を許可 */
+  max-width: 100%; /* 追加 */
 }
 
 /* 銘柄名のスタイル */
@@ -69,6 +77,8 @@
   margin-bottom: 0.25rem;
   font-weight: 600;
   line-height: 1.4;
+  word-break: break-word; /* 追加 */
+  overflow-wrap: break-word; /* 追加 */
 }
 
 /* 日付と状態バッジのコンテナ */
@@ -78,6 +88,7 @@
   gap: 0.5rem;
   color: var(--text-light);
   font-size: 0.875rem;
+  flex-wrap: wrap; /* 追加 */
 }
 
 /* 状態バッジ */
@@ -111,6 +122,8 @@
   flex-direction: column;
   align-items: flex-end;
   min-width: 90px;
+  max-width: 120px; /* 追加 - 最大幅制限 */
+  flex-shrink: 0; /* 追加 */
 }
 
 .price-value {
@@ -144,10 +157,12 @@
 
 /* カードボディ部分 */
 .diary-card-body {
-  padding: 0.75rem;
+  padding: 0.75rem 1.25rem 1.25rem; /* パディングを微調整 */
   position: relative;
   overflow: hidden;
   background-color: var(--card-bg-color);
+  width: 100%; /* 追加 */
+  box-sizing: border-box; /* 追加 */
 }
 
 /* タグ表示のスタイル */
@@ -156,6 +171,8 @@
   flex-wrap: wrap;
   gap: 0.4rem;
   margin: 0.75rem 0.75rem 0.5rem;
+  width: 100%; /* 追加 */
+  max-width: 100%; /* 追加 */
 }
 
 .diary-tag {
@@ -169,6 +186,9 @@
   gap: 0.25rem;
   transition: all 0.2s ease;
   border: 1px solid rgba(90, 126, 197, 0.1);
+  flex-shrink: 0; /* 追加 */
+  white-space: nowrap; /* 追加 */
+  word-break: keep-all; /* 追加 */
 }
 
 .diary-tag:hover {
@@ -185,6 +205,8 @@
 .diary-card-tabs {
   margin: 0.25rem 0.5rem 0.5rem;
   position: relative;
+  width: 100%; /* 追加 */
+  overflow: hidden; /* 追加 */
 }
 
 .card-tabs {
@@ -193,6 +215,15 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   margin-bottom: 0.5rem;
   padding: 0 0.25rem;
+  overflow-x: auto; /* 追加 - 横スクロール対応 */
+  overflow-y: hidden; /* 追加 */
+  scrollbar-width: none; /* 追加 - Firefox */
+  -ms-overflow-style: none; /* 追加 - IE */
+}
+
+/* Webkit系ブラウザでスクロールバーを非表示 */
+.card-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .card-tabs .nav-link {
@@ -217,6 +248,9 @@
   height: 2px;
   background-color: transparent;
   transition: background-color 0.3s ease;
+  white-space: nowrap; /* 追加 */
+  flex-shrink: 0; /* 追加 */
+  min-width: 80px; /* 追加 */
 }
 
 .card-tabs .nav-link.active {
@@ -266,6 +300,8 @@
 .tab-content {
   position: relative;
   padding: 0.25rem 0.5rem;
+  width: 100%; /* 追加 */
+  box-sizing: border-box; /* 追加 */
 }
 
 .tab-pane {
@@ -293,6 +329,9 @@
   margin: 0.5rem 0;
   word-break: break-word;
   overflow-wrap: break-word;
+  width: 100%; /* 追加 */
+  max-width: 100%; /* 追加 */
+  box-sizing: border-box; /* 追加 */
 }
 
 /* ========== 継続記録タブのスタイル ========== */
@@ -488,12 +527,15 @@
   padding: 1rem;
   margin-bottom: 1.25rem;
   border: 1px solid rgba(90, 126, 197, 0.06);
+  width: 100%; /* 追加 */
+  box-sizing: border-box; /* 追加 */
 }
 
 .info-row {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 0.75rem;
+  width: 100%; /* 追加 */
 }
 
 .info-item {
@@ -506,6 +548,9 @@
   gap: 0.75rem;
   transition: all 0.2s ease;
   border: 1px solid rgba(0, 0, 0, 0.03);
+  min-width: 0; /* 追加 */
+  width: 100%; /* 追加 */
+  box-sizing: border-box; /* 追加 */
 }
 
 .info-item:hover {
@@ -930,9 +975,20 @@
   }
 }
 
+/* モバイル向けの追加調整 */
 @media (max-width: 576px) {
   .diary-card-header {
-    padding: 0.875rem 1rem 0.75rem;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem;
+    gap: 0.5rem;
+  }
+  
+  .diary-price-info {
+    align-items: flex-start;
+    min-width: auto;
+    max-width: none;
+    width: 100%;
   }
   
   .diary-title {
@@ -943,59 +999,21 @@
     font-size: 0.8rem;
   }
   
-  .info-row {
-    grid-template-columns: 1fr;
-  }
-  
   .card-tabs .nav-link {
     padding: 0.4rem 0.4rem;
     font-size: 0.75rem;
+    min-width: 70px;
   }
   
-  .card-tabs .nav-link i {
-    margin-right: 0.2rem;
-    font-size: 0.8rem;
-  }
-  
-  .price-value {
-    font-size: 0.9rem;
-  }
-  
-  .quantity-value {
-    font-size: 0.75rem;
-  }
-  
-  .diary-tags {
-    margin: 0.5rem 0.75rem 0.25rem;
-  }
-  
-  .diary-tag {
-    padding: 0.15rem 0.5rem;
-    font-size: 0.75rem;
-  }
-  
-  .tab-content {
-    padding: 0.25rem;
+  .info-row {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
   }
   
   .info-item {
-    padding: 0.5rem !important;
-    min-width: 140px !important;
-  }
-  
-  .info-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 1rem;
-  }
-  
-  .form-header, 
-  .form-body, 
-  .form-footer {
-    padding: var(--spacing-md);
+    padding: 0.5rem;
   }
 }
-
 /* タップフィードバック */
 @media (hover: none) {
   .diary-card:active {
