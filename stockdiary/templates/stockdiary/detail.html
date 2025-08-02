@@ -17,13 +17,11 @@
 <style>
   /* タブコンテナのスタイル */
   .diary-tabs-container {
-    background-color: var(--card-bg-color, #ffffff);
+    background-color: transparent;
     border-radius: var(--border-radius, 8px);
     overflow: hidden;
     margin-bottom: 2rem;
-    background-color: transparent;
   }
-
 
   .diary-tabs-container .nav-tabs {
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
@@ -80,7 +78,6 @@
   /* タブコンテンツのスタイル */
   .diary-tab-content {
     padding: 1.5rem;
-    background-color: var(--card-bg-color, #ffffff);
     background-color: transparent;
   }
 
@@ -94,22 +91,9 @@
   }
 
   @keyframes pulse-hint {
-    0% {
-      opacity: 0.7;
-    }
-
-    50% {
-      opacity: 0.4;
-    }
-
-    100% {
-      opacity: 0.7;
-    }
-  }
-
-  /* スワイプ中の視覚的フィードバック */
-  .tab-highlight {
-    background-color: rgba(var(--primary-color-rgb, 90, 126, 197), 0.1);
+    0% { opacity: 0.7; }
+    50% { opacity: 0.4; }
+    100% { opacity: 0.7; }
   }
 
   /* タッチデバイス用の最適化 */
@@ -117,63 +101,9 @@
     .diary-tabs-container .nav-link {
       padding: 1rem 0.75rem;
     }
-
-    .diary-tabs-container .nav-tabs {
-      display: flex;
-    }
-
-    .diary-tabs-container .nav-tabs .nav-item {
-      flex: 1;
-      text-align: center;
-    }
-
-    .diary-tabs-container .nav-tabs .nav-link {
-      width: 100%;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
   }
 
-  /* モバイル向け最適化 */
-  @media (max-width: 767.98px) {
-    .diary-tabs-container .nav-link {
-      padding: 0.85rem 0.5rem;
-      font-size: 0.9rem;
-    }
-
-    .diary-tab-content {
-      padding: 1.25rem 0;
-    }
-
-    /* タブコンテンツの高さを最適化 */
-    .diary-tab-content .tab-pane {
-      min-height: 300px;
-    }
-
-    /* スクロール位置の調整 */
-    .diary-tabs-container:target {
-      scroll-margin-top: 1rem;
-    }
-  }
-
-  /* 小型モバイルデバイス向け最適化 */
-  @media (max-width: 375px) {
-    .diary-tabs-container .nav-link {
-      padding: 0.75rem 0.4rem;
-      font-size: 0.85rem;
-    }
-
-    .diary-tabs-container .nav-link i {
-      display: none;
-      /* アイコンを非表示に */
-    }
-
-    .diary-tab-content {
-      padding: 1rem 0.75rem;
-    }
-  }
-
+  /* タイムライン関連スタイル */
   .section-title {
     font-size: 1.25rem;
   }
@@ -183,7 +113,6 @@
     margin-bottom: 2rem;
   }
 
-  /* タイムラインリスト */
   .timeline-list {
     position: relative;
     list-style: none;
@@ -191,7 +120,6 @@
     margin: 0;
   }
 
-  /* 縦線 */
   .timeline-list::before {
     content: '';
     position: absolute;
@@ -202,7 +130,6 @@
     background-color: var(--notebook-line);
   }
 
-  /* リストアイテム */
   .timeline-list-item {
     position: relative;
     margin-bottom: 25px;
@@ -212,7 +139,6 @@
     margin-bottom: 0;
   }
 
-  /* マーカーの代わりにリストアイテムの::before疑似要素を使用 */
   .timeline-list-item::before {
     content: '';
     position: absolute;
@@ -225,70 +151,6 @@
     border: 2px solid white;
     box-shadow: 0 0 0 2px rgba(74, 109, 167, 0.3);
     z-index: 2;
-  }
-
-  /* 継続記録の操作ボタン用スタイル */
-  .timeline-item .timeline-content {
-    position: relative;
-  }
-
-  .timeline-item .badge-and-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .timeline-item .btn-outline-danger {
-    border-color: rgba(220, 53, 69, 0.5);
-    color: #dc3545;
-    padding: 0.25rem 0.5rem;
-    line-height: 1;
-  }
-
-  .timeline-item {
-    background-color: #dc3545;
-    color: white;
-  }
-
-  /* モバイル向け調整 */
-  @media (max-width: 768px) {
-    .timeline-item .d-flex.justify-content-between {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    .timeline-item .timeline-date {
-      margin-bottom: 0.5rem;
-    }
-
-    .timeline-item .badge-and-actions {
-      width: 100%;
-      justify-content: space-between;
-    }
-  }
-
-  /* 削除ボタンのホバーエフェクト */
-  .timeline-item .btn-outline-danger {
-    transition: all 0.2s;
-  }
-
-  .timeline-item {
-    transform: translateY(-2px);
-    box-shadow: 0 2px 5px rgba(220, 53, 69, 0.3);
-  }
-
-  /* 削除確認ページのスタイル調整 */
-  .card-header.bg-danger {
-    background-color: var(--danger-color) !important;
-  }
-
-  .alert-light {
-    background-color: #f8f9fa;
-    border-color: #eaecf0;
-  }
-
-  .alert-light strong {
-    color: var(--primary-color);
   }
 
   /* タイプ別のマーカーカラー */
@@ -319,40 +181,22 @@
   }
 
   @keyframes pulse {
-    0% {
-      box-shadow: 0 0 0 0 rgba(232, 168, 124, 0.7);
-    }
-
-    70% {
-      box-shadow: 0 0 0 10px rgba(232, 168, 124, 0);
-    }
-
-    100% {
-      box-shadow: 0 0 0 0 rgba(232, 168, 124, 0);
-    }
+    0% { box-shadow: 0 0 0 0 rgba(232, 168, 124, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(232, 168, 124, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(232, 168, 124, 0); }
   }
 
-  /* 日付表示 */
-  .timeline-date {
-    font-family: 'Courier New', monospace;
-    color: var(--text-light);
-    margin-bottom: 8px;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
+  /* カード関連スタイル */
+  .simple-card {
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+    position: relative;
+    border-left: 3px solid var(--primary-color);
+    transition: box-shadow 0.2s;
   }
 
-  .current-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    margin-left: 8px;
-    border-radius: 12px;
-    background-color: var(--secondary-color);
-    color: white;
-    font-size: 0.75rem;
-  }
-
-  /* カードリンク - 単純化したバージョン */
   .timeline-card-link {
     display: block;
     color: inherit;
@@ -366,22 +210,10 @@
     text-decoration: none;
   }
 
-  /* シンプルカード */
-  .simple-card {
-    background-color: white;
-    border-radius: var(--border-radius);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    padding: 15px;
-    position: relative;
-    border-left: 3px solid var(--primary-color);
-    transition: box-shadow 0.2s;
-  }
-
   .timeline-card-link:hover .simple-card {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
   }
 
-  /* カード種類による色分け */
   .item-sold .simple-card {
     border-left-color: var(--success-color);
   }
@@ -390,128 +222,13 @@
     border-left-color: var(--info-color);
   }
 
-  /* 現在表示中のカード */
   .current-card {
     border: 2px solid var(--secondary-color);
     border-left-width: 5px;
     box-shadow: 0 3px 10px rgba(232, 168, 124, 0.2);
   }
 
-  /* カード内の要素 */
-  .card-badge {
-    margin-bottom: 10px;
-  }
-
-  .card-title {
-    margin-bottom: 10px;
-    font-size: 1rem;
-    color: var(--primary-color);
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-    white-space: pre-wrap;  
-  }
-
-  .card-price {
-    margin-bottom: 10px;
-    font-size: 0.9rem;
-  }
-
-  .card-content {
-    font-size: 0.9rem;
-    line-height: 1.5;
-    color: var(--text-color);
-    margin-bottom: 10px;
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-    white-space: pre-wrap;
-  }
-
-  .card-tag {
-    display: inline-block;
-    padding: 3px 8px;
-    margin-top: 5px;
-    margin-right: 5px;
-    font-size: 0.75rem;
-    border-radius: 12px;
-    background-color: rgba(74, 109, 167, 0.1);
-    color: var(--primary-color);
-  }
-
-  /* レスポンシブ対応 */
-  @media (max-width: 767.98px) {
-    .timeline-list {
-      padding-left: 30px;
-    }
-
-    .timeline-list::before {
-      left: 12px;
-    }
-
-    .timeline-list-item::before {
-      left: -25px;
-      width: 12px;
-      height: 12px;
-    }
-
-    .timeline-current::before {
-      width: 16px;
-      height: 16px;
-      left: -27px;
-    }
-
-    .simple-card {
-      padding: 12px;
-    }
-
-    .card-title {
-      font-size: 0.95rem;
-    }
-
-    .card-content,
-    .card-price {
-      font-size: 0.85rem;
-    }
-  }
-
-  /* モバイル最適化 */
-  @media (max-width: 575.98px) {
-    .timeline-list {
-      padding-left: 25px;
-    }
-
-    .timeline-list::before {
-      left: 10px;
-    }
-
-    .timeline-list-item::before {
-      left: -20px;
-      width: 10px;
-      height: 10px;
-      top: 16px;
-    }
-
-    .timeline-current::before {
-      width: 14px;
-      height: 14px;
-      left: -22px;
-      top: 14px;
-    }
-
-    .timeline-date {
-      font-size: 0.8rem;
-    }
-
-    .current-badge {
-      font-size: 0.7rem;
-      padding: 1px 6px;
-    }
-
-    .simple-card {
-      padding: 10px;
-    }
-  }
-
-  /* 継続記録のUI改善用スタイル */
+  /* 継続記録関連スタイル */
   .quick-note-form {
     border-radius: var(--border-radius);
     background-color: rgba(255, 255, 255, 0.8);
@@ -524,7 +241,7 @@
     margin-bottom: 1rem;
   }
 
-  .quick-note-form .form-floating>label {
+  .quick-note-form .form-floating > label {
     padding-left: 1rem;
     color: var(--text-light);
   }
@@ -612,28 +329,6 @@
     color: white;
   }
 
-  /* モバイル最適化 */
-  @media (max-width: 767px) {
-    .quick-note-form {
-      padding: 1rem;
-    }
-
-    .quick-note-form .note-type-select {
-      flex-wrap: wrap;
-    }
-
-    .quick-note-form .note-type-option {
-      flex: 1 1 calc(33% - 0.5rem);
-      padding: 0.5rem 0.25rem;
-      font-size: 0.8rem;
-    }
-
-    .quick-note-form .importance-option {
-      padding: 0.4rem 0.75rem;
-      font-size: 0.8rem;
-    }
-  }
-
   /* 削除確認モーダル */
   .delete-confirm-modal {
     position: fixed;
@@ -673,179 +368,29 @@
     opacity: 1;
   }
 
-  .delete-confirm-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 1rem;
-  }
-
-  .delete-confirm-header .icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background-color: rgba(var(--danger-color-rgb, 225, 90, 90), 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--danger-color, #e15a5a);
-    margin-right: 1rem;
-  }
-
-  .delete-confirm-header .title {
-    font-weight: 600;
-    color: var(--danger-color, #e15a5a);
-    margin: 0;
-  }
-
-  .delete-confirm-body {
-    margin-bottom: 1.5rem;
-  }
-
-  .delete-confirm-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-  }
-
-  /* 継続記録のアイテムスタイル改善 */
-  .note-item {
-    overflow: hidden;
-    margin-bottom: 1.5rem;
-    background-color: white;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    border: 1px solid rgba(0, 0, 0, 0.05);
-  }
-
-  .note-header {
-    padding: 0.75rem 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  }
-
-  .note-header-left {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .note-date {
-    font-weight: 500;
-    color: var(--text-color);
-  }
-
-  .note-actions {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .note-body {
-    padding: 1rem;
-  }
-
-  .note-price-info {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 0.75rem;
-    padding: 0.5rem;
-    background-color: rgba(0, 0, 0, 0.02);
-    border-radius: 8px;
-  }
-
-  .note-price-item {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .note-price-label {
-    font-size: 0.8rem;
-    color: var(--text-light);
-  }
-
-  .note-price-value {
-    font-weight: 500;
-  }
-
-  .note-content {
-    line-height: 1.6;
-  }
-
-  .note-item.high {
-    border-left: 3px solid var(--danger-color);
-  }
-
-  .note-item.medium {
-    border-left: 3px solid var(--primary-color);
-  }
-
-  .note-item.low {
-    border-left: 3px solid var(--text-light);
-  }
-
-  /* モバイル最適化のための追加スタイル */
-  @media (max-width: 767px) {
-
-    /* コンテナのパディング削減 */
-    .container {
-      padding-left: 10px;
-      padding-right: 10px;
-    }
-
-    /* 日記カードの余白削減 */
-    .diary-card {
-      padding: 12px 8px;
-      padding-top: 0px;
-      margin-bottom: 15px;
-    }
-
-    /* ヘッダーの簡略化 */
-    .diary-card-header {
-      margin-bottom: 10px;
-    }
-
-    /* 日記タイトルのフォントサイズ調整 */
-    .diary-title {
-      font-size: 1.25rem;
-    }
-
-    /* サブセクションタイトルの調整 */
-    .section-title {
-      font-size: 1.1rem;
-      margin-bottom: 0.75rem;
-    }
-
-    /* タブナビゲーションの最適化 */
-    .diary-tabs-container .nav-tabs {
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      scrollbar-width: none;
-      /* Firefox */
-    }
-
-    .diary-tabs-container .nav-tabs::-webkit-scrollbar {
-      display: none;
-      /* Chrome, Safari, Opera */
-    }
-
+  /* モバイル向け最適化 */
+  @media (max-width: 767.98px) {
     .diary-tabs-container .nav-link {
-      padding: 0.5rem 0.75rem;
-      white-space: nowrap;
+      padding: 0.85rem 0.5rem;
+      font-size: 0.9rem;
     }
 
-  /* モバイルでdiary-cardを画面いっぱいに広げる（詳細画面のみ） */
-  @media (max-width: 767px) {
-    /* コンテナのパディング削減 */
-    .container {
-      padding-left: 8px;
-      padding-right: 8px;
+    .diary-tab-content {
+      padding: 1.25rem 1rem;
     }
 
-    /* 詳細画面のdiary-cardを画面いっぱいに表示 */
+    .diary-tab-content .tab-pane {
+      min-height: 300px;
+    }
+
+    .diary-tabs-container:target {
+      scroll-margin-top: 1rem;
+    }
+
+    /* モバイルでdiary-cardを画面いっぱいに広げる */
     .diary-detail-container .diary-card {
-      margin-left: -8px;
-      margin-right: -8px;
+      margin-left: -0.75rem;
+      margin-right: -0.75rem;
       border-radius: 0;
       box-shadow: none;
     }
@@ -855,198 +400,142 @@
     }
 
     .diary-detail-container .diary-card-body {
-      padding: 0 !important;
-      padding-left: 12px !important;
+      padding-left: 1rem;
+      padding-right: 1rem;
     }
 
     /* タブコンテナも画面幅いっぱいに */
     .diary-detail-container .diary-tabs-container {
-      margin-left: -8px;
-      margin-right: -8px;
+      margin-left: -0.75rem;
+      margin-right: -0.75rem;
       border-radius: 0;
-    }
-  }
-
-    /* モバイル向け最適化追加 */
-    @media (max-width: 767px) {
-      .diary-card-header {
-        display: flex;
-        width: 100%;
-      }
-
-      .diary-tabs-container,
-      .diary-tab-content,
-      .tab-pane,
-      .notes-container,
-      .quick-note-form {
-        width: 100% !important;
-        max-width: 100% !important;
-      }
-
-      /* 全てのtd, th要素の幅を制限 */
-      td,
-      th {
-        max-width: 200px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: normal;
-        word-break: break-word;
-      }
-
-      /* 入力フォームの調整 */
-      input[type="date"] {
-        text-align: center !important;
-      }
-
-      /* 継続記録フォームの明示的な幅設定 */
-      .note-type-select,
-      .importance-select {
-        width: 100%;
-        display: flex;
-        flex-wrap: wrap;
-      }
-
-      .note-type-option {
-        flex: 1 1 calc(33% - 0.5rem);
-        min-width: 80px;
-      }
-
-      /* 横スクロールが発生する要素を特定して修正 */
-      .table-responsive {
-        max-width: 100%;
-        overflow-x: auto;
-      }
-
-      /* 日付入力フィールドの横幅修正 */
-      #note_date {
-        width: 100%;
-      }
-    }
-
-    /* 特定のエレメントが横並びになる問題の修正 */
-    @media (max-width: 576px) {
-
-
-      /* フォーム要素をスタック表示に */
-      .input-group {
-        display: flex;
-        flex-direction: column;
-      }
-
-      .input-group>* {
-        width: 100% !important;
-        border-radius: 0.375rem !important;
-        margin-bottom: 0.5rem;
-      }
-
-      .input-group>*:last-child {
-        margin-bottom: 0;
-      }
     }
 
     /* 継続記録フォームの最適化 */
     .quick-note-form {
-      padding: 0.75rem;
+      padding: 1rem;
       margin-bottom: 1rem;
     }
 
-    /* タブフォーカスモード */
-    .mobile-tab-focus .diary-tab-content {
-      min-height: 85vh;
+    .quick-note-form .note-type-select {
+      flex-wrap: wrap;
+    }
+
+    .quick-note-form .note-type-option {
+      flex: 1 1 calc(33.333% - 0.5rem);
+      padding: 0.5rem 0.25rem;
+      font-size: 0.8rem;
+      min-width: 0;
+    }
+
+    .quick-note-form .importance-option {
+      padding: 0.4rem 0.75rem;
+      font-size: 0.8rem;
+    }
+
+    /* 情報アイテムの調整 */
+    .info-item {
+      padding: 0.75rem;
+      min-width: 160px;
+      margin-bottom: 0.75rem;
+    }
+    
+    .info-row {
+      gap: 0.75rem;
+    }
+
+    /* タイムラインの調整 */
+    .timeline-list {
+      padding-left: 30px;
+    }
+
+    .timeline-list::before {
+      left: 12px;
+    }
+
+    .timeline-list-item::before {
+      left: -25px;
+      width: 12px;
+      height: 12px;
+    }
+
+    .timeline-current::before {
+      width: 16px;
+      height: 16px;
+      left: -27px;
+    }
+
+    .simple-card {
+      padding: 12px;
     }
   }
 
-  /* テキストエリアのフローティングラベル問題を修正 */
-  .form-floating>textarea.form-control {
-    height: 120px;
-    /* 十分な高さを確保 */
-    padding-top: 1.5rem;
-    /* 上部のパディングを増やしてラベルとの重なりを防止 */
+  /* 小型モバイルデバイス向け最適化 */
+  @media (max-width: 375px) {
+    .diary-tabs-container .nav-link {
+      padding: 0.75rem 0.4rem;
+      font-size: 0.85rem;
+    }
+
+    .diary-tabs-container .nav-link i {
+      display: none;
+    }
+
+    .diary-tab-content {
+      padding: 1rem 0.75rem;
+    }
+
+    .info-row {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
+
+    .info-item {
+      padding: 0.5rem;
+    }
+  }
+
+  /* フローティングラベルの改善 */
+  .form-floating > label {
+    padding: 0.75rem 0.75rem;
+  }
+
+  .form-floating > .form-control:focus ~ label,
+  .form-floating > .form-control:not(:placeholder-shown) ~ label,
+  .form-floating > .form-select ~ label {
+    opacity: 0.65;
+    transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+  }
+
+  .form-floating > .form-control:focus,
+  .form-floating > .form-control:not(:placeholder-shown) {
+    padding-top: 1rem;
     padding-bottom: 0.625rem;
   }
 
-  .form-floating>textarea.form-control~label {
+  .form-floating > textarea.form-control {
+    height: 120px;
+    padding-top: 1.5rem;
+    padding-bottom: 0.625rem;
+  }
+
+  .form-floating > textarea.form-control ~ label {
     transform: scale(0.85) translateY(-0.75rem) translateX(0.15rem);
     height: auto;
     padding: 1rem 0.75rem;
     opacity: 0.65;
   }
 
-  /* フォーカス時とテキスト入力時のラベル位置 */
-  .form-floating>textarea.form-control:focus~label,
-  .form-floating>textarea.form-control:not(:placeholder-shown)~label {
+  .form-floating > textarea.form-control:focus ~ label,
+  .form-floating > textarea.form-control:not(:placeholder-shown) ~ label {
     transform: scale(0.85) translateY(-1.85rem) translateX(0.15rem);
     opacity: 0.65;
   }
-</style>
-<style>
-  /* 改善されたフローティングラベルのスタイル */
-  .form-floating>label {
-    padding: 0.75rem 0.75rem;
-  }
 
-  .form-floating>.form-control:focus~label,
-  .form-floating>.form-control:not(:placeholder-shown)~label,
-  .form-floating>.form-select~label {
-    opacity: 0.65;
-    transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
-  }
-
-  .form-floating>.form-control:-webkit-autofill~label {
-    opacity: 0.65;
-    transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
-  }
-
-  .form-floating>.form-control:focus,
-  .form-floating>.form-control:not(:placeholder-shown) {
-    padding-top: 1rem;
-    padding-bottom: 0.625rem;
-  }
-
-  .form-floating>textarea.form-control {
-    height: 120px;
-  }
-
-  /* モバイル向けラベル調整 */
-  @media (max-width: 576px) {
-    .form-floating>label {
-      font-size: 0.875rem;
-    }
-
-    .form-floating>.form-control:focus~label,
-    .form-floating>.form-control:not(:placeholder-shown)~label,
-    .form-floating>.form-select~label {
-      font-size: 0.75rem;
-    }
-  }
-
-  .delete-confirm-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1050;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s, visibility 0.3s;
-  }
-
-  .delete-confirm-modal.active {
-    opacity: 1;
-    visibility: visible;
-  }
-</style>
-<style>
   /* iOS デバイスでの位置調整 */
   @supports (-webkit-touch-callout: none) {
     .floating-add-note-btn {
       bottom: 40px;
-      /* より高い位置に配置してセーフエリア考慮 */
     }
   }
 
@@ -1061,122 +550,6 @@
 
     .floating-add-note-btn i {
       font-size: 1.25rem;
-    }
-  }
-
-  /* モーダル内のフォーム最適化 */
-  .note-type-select {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .note-type-option {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0.75rem 0.5rem;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 0.85rem;
-    text-align: center;
-  }
-
-  .note-type-option i {
-    font-size: 1.25rem;
-    margin-bottom: 0.35rem;
-  }
-
-  .note-type-option:hover {
-    background-color: rgba(var(--primary-color-rgb, 90, 126, 197), 0.05);
-  }
-
-  .note-type-option.active {
-    background-color: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
-  }
-
-  /* 重要度選択のグリッド化 */
-  .importance-select {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.5rem;
-  }
-
-  .importance-option {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.65rem 0.5rem;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 0.85rem;
-  }
-
-  .importance-option.low {
-    background-color: rgba(var(--text-light-rgb, 107, 114, 128), 0.1);
-    border: 1px solid rgba(var(--text-light-rgb, 107, 114, 128), 0.2);
-  }
-
-  .importance-option.low.active {
-    background-color: var(--text-light, #6b7280);
-    color: white;
-  }
-
-  .importance-option.medium {
-    background-color: rgba(var(--primary-color-rgb, 90, 126, 197), 0.1);
-    border: 1px solid rgba(var(--primary-color-rgb, 90, 126, 197), 0.2);
-  }
-
-  .importance-option.medium.active {
-    background-color: var(--primary-color, #5a7ec5);
-    color: white;
-  }
-
-  .importance-option.high {
-    background-color: rgba(var(--danger-color-rgb, 225, 90, 90), 0.1);
-    border: 1px solid rgba(var(--danger-color-rgb, 225, 90, 90), 0.2);
-  }
-
-  .importance-option.high.active {
-    background-color: var(--danger-color, #e15a5a);
-    color: white;
-  }
-
-  /* モバイル向け改善 */
-  @media (max-width: 576px) {
-    .note-type-select {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    .note-type-option {
-      padding: 0.6rem 0.4rem;
-      font-size: 0.75rem;
-    }
-
-    .note-type-option i {
-      font-size: 1rem;
-    }
-
-    .importance-option {
-      padding: 0.5rem 0.25rem;
-      font-size: 0.8rem;
-    }
-
-    /* 株価取得ボタンをアイコンのみに */
-    #fetch-note-price {
-      padding-left: 0.5rem;
-      padding-right: 0.5rem;
-    }
-
-    #fetch-note-price span {
-      display: none;
     }
   }
 
@@ -1209,10 +582,6 @@
     flex-wrap: wrap;
   }
 
-  .note-date {
-    font-size: 0.85rem;
-  }
-
   .note-body {
     padding: 1rem;
   }
@@ -1224,20 +593,7 @@
     padding: 0.5rem;
     background-color: rgba(0, 0, 0, 0.02);
     border-radius: 8px;
-  }
-
-  .note-price-label {
-    display: block;
-    font-size: 0.75rem;
-    color: var(--text-light);
-  }
-
-  .note-price-value {
-    font-weight: 500;
-  }
-
-  .note-content {
-    line-height: 1.6;
+    flex-wrap: wrap;
   }
 
   .note-item.high {
@@ -1255,7 +611,6 @@
   /* タブ内のパディングを広く */
   #notes-content {
     padding-bottom: 80px;
-    /* フローティングボタンとの重複を避ける */
   }
 
   @media (max-width: 767px) {
@@ -1265,14 +620,6 @@
 
     .note-body {
       padding: 0.75rem;
-    }
-
-    .note-date {
-      font-size: 0.8rem;
-    }
-
-    .note-content {
-      font-size: 0.9rem;
     }
 
     .note-price-info {
@@ -1293,8 +640,7 @@
   </div>
 
   <!-- 日記詳細カード -->
-  <div
-    class="diary-card {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo-card{% elif diary.sell_date %}sold-card{% endif %}">
+  <div class="diary-card {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo-card{% elif diary.sell_date %}sold-card{% endif %}">
     <!-- 日記ヘッダー -->
     <div class="diary-card-header d-flex justify-content-between align-items-center">
       <div class="d-flex align-items-center">
@@ -1486,11 +832,12 @@
                         {% with profit=diary.sell_price|sub:diary.purchase_price|mul:diary.purchase_quantity %}
                         {% if profit > 0 %}
                         <span class="profit">+{{ profit|floatformat:2|intcomma }}円</span>
-                        {% elif profit < 0 %} <span class="loss">{{ profit|floatformat:2|intcomma }}円</span>
-                          {% else %}
-                          <span class="text-muted">{{ profit|floatformat:2|intcomma }}円</span>
-                          {% endif %}
-                          {% endwith %}
+                        {% elif profit < 0 %}
+                        <span class="loss">{{ profit|floatformat:2|intcomma }}円</span>
+                        {% else %}
+                        <span class="text-muted">{{ profit|floatformat:2|intcomma }}円</span>
+                        {% endif %}
+                        {% endwith %}
                       </div>
                     </div>
 
@@ -1503,11 +850,12 @@
                         {% with rate=diary.sell_price|sub:diary.purchase_price|div:diary.purchase_price|mul:100 %}
                         {% if rate > 0 %}
                         <span class="profit">+{{ rate|floatformat:2 }}%</span>
-                        {% elif rate < 0 %} <span class="loss">{{ rate|floatformat:2 }}%</span>
-                          {% else %}
-                          <span class="text-muted">{{ rate|floatformat:2 }}%</span>
-                          {% endif %}
-                          {% endwith %}
+                        {% elif rate < 0 %}
+                        <span class="loss">{{ rate|floatformat:2 }}%</span>
+                        {% else %}
+                        <span class="text-muted">{{ rate|floatformat:2 }}%</span>
+                        {% endif %}
+                        {% endwith %}
                       </div>
                     </div>
                   </div>
@@ -1540,7 +888,7 @@
                     <thead>
                       <tr>
                         <th style="width: 60%;">項目</th>
-                        <th style="width: %;">値</th>
+                        <th style="width: 40%;">値</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1639,7 +987,8 @@
               </div>
             </div>
           </div>
-          <!-- 継続記録タブ部分を修正 -->
+
+          <!-- 継続記録タブ -->
           <div class="tab-pane fade" id="notes-content" role="tabpanel" aria-labelledby="notes-tab">
             <!-- 継続記録の表示 -->
             <div class="notes-container">
@@ -1777,7 +1126,8 @@
                 </div>
               </form>
             </div>
-          </div>               
+          </div>
+
           <!-- タイムラインタブ -->
           <div class="tab-pane fade" id="timeline-content" role="tabpanel" aria-labelledby="timeline-tab">
             {% if related_diaries %}
