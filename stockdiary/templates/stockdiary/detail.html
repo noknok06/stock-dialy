@@ -852,6 +852,290 @@
       display: none;
     }
   }
+
+/* === 分析テンプレート表示の改善 === */
+  .analysis-templates-summary {
+    width: 100%;
+  }
+
+  .analysis-template-item {
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(248, 249, 250, 0.8), rgba(255, 255, 255, 0.9));
+    border: 1px solid rgba(90, 126, 197, 0.1);
+    border-radius: 10px;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+
+  .analysis-template-item:hover {
+    border-color: rgba(90, 126, 197, 0.2);
+    box-shadow: 0 2px 8px rgba(90, 126, 197, 0.1);
+    transform: translateY(-1px);
+  }
+
+  .analysis-template-item .template-name a {
+    font-size: 1rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    transition: color 0.2s ease;
+  }
+
+  .analysis-template-item .template-name a:hover {
+    color: var(--primary-color) !important;
+  }
+
+  .completion-badge .badge {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 12px;
+  }
+
+  .template-description {
+    line-height: 1.4;
+    margin-top: 0.5rem;
+    padding-left: 1.5rem;
+  }
+
+  .progress {
+    border-radius: 10px;
+    background-color: rgba(90, 126, 197, 0.1);
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    border-radius: 10px;
+    background: linear-gradient(90deg, var(--primary-color), rgba(90, 126, 197, 0.8));
+    transition: width 0.3s ease;
+  }
+
+  /* 完了率に応じた色分け */
+  .analysis-template-item[data-completion="100"] .progress-bar {
+    background: linear-gradient(90deg, var(--success-color), rgba(93, 176, 117, 0.8));
+  }
+
+  .analysis-template-item[data-completion="0"] .progress-bar {
+    background: linear-gradient(90deg, var(--text-light), rgba(107, 114, 128, 0.8));
+  }
+
+  /* テンプレートアクションボタン */
+  .template-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .analysis-template-item .btn-outline-primary,
+  .analysis-template-item .btn-outline-secondary {
+    border-color: rgba(90, 126, 197, 0.3);
+    transition: all 0.2s ease;
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .analysis-template-item .btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(90, 126, 197, 0.3);
+  }
+
+  .analysis-template-item .btn-outline-secondary:hover {
+    background-color: var(--text-light);
+    border-color: var(--text-light);
+    color: white;
+  }
+
+  /* === 分析項目詳細表示 === */
+  .analysis-items-detail {
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.8), rgba(255, 255, 255, 0.9));
+    border: 1px solid rgba(90, 126, 197, 0.1);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .analysis-items-title {
+    color: var(--primary-color);
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(90, 126, 197, 0.2);
+  }
+
+  .analysis-item-detail {
+    padding: 0.75rem;
+    background-color: white;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .analysis-item-detail:hover {
+    border-color: rgba(90, 126, 197, 0.2);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .analysis-item-question {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-color);
+  }
+
+  .item-order {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background-color: rgba(90, 126, 197, 0.1);
+    color: var(--primary-color);
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .item-name {
+    flex: 1;
+  }
+
+  .item-description {
+    margin-left: 0.25rem;
+    cursor: help;
+  }
+
+  .analysis-item-answer {
+    padding-left: 2rem;
+    font-size: 0.9rem;
+  }
+
+  .answer-value {
+    display: inline-flex;
+    align-items: center;
+    font-weight: 500;
+  }
+
+  .answer-preview {
+    line-height: 1.4;
+  }
+
+  .answer-full {
+    background-color: rgba(248, 249, 250, 0.5);
+    padding: 0.5rem;
+    border-radius: 4px;
+    border-left: 3px solid var(--primary-color);
+    line-height: 1.5;
+    font-size: 0.85rem;
+  }
+
+  /* 回答タイプ別のスタイル */
+  .answer-value.text-success i {
+    color: var(--success-color);
+  }
+
+  .answer-value.text-danger i {
+    color: var(--danger-color);
+  }
+
+  .answer-value.text-primary i {
+    color: var(--primary-color);
+  }
+
+  .answer-value.text-info i {
+    color: var(--info-color);
+  }
+
+  /* 未回答バッジ */
+  .analysis-item-detail .badge.bg-warning {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+  }
+
+  /* モバイル対応 */
+  @media (max-width: 768px) {
+    .analysis-template-item {
+      padding: 0.75rem;
+    }
+
+    .analysis-template-item .d-flex {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .completion-badge {
+      align-self: flex-end;
+    }
+
+    .template-description {
+      padding-left: 0;
+    }
+
+    .template-actions {
+      flex-direction: column;
+      width: 100%;
+      gap: 0.25rem;
+    }
+
+    .template-actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .analysis-item-question {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.25rem;
+    }
+
+    .item-order {
+      margin-right: 0;
+      margin-bottom: 0.25rem;
+    }
+
+    .analysis-item-answer {
+      padding-left: 1rem;
+    }
+
+    .analysis-items-detail {
+      padding: 0.75rem;
+    }
+  }
+
+  /* アニメーション効果 */
+  @keyframes template-highlight {
+    0% {
+      background-color: rgba(90, 126, 197, 0.1);
+    }
+    50% {
+      background-color: rgba(90, 126, 197, 0.2);
+    }
+    100% {
+      background-color: rgba(90, 126, 197, 0.1);
+    }
+  }
+
+  .analysis-template-item:target {
+    animation: template-highlight 1s ease-out;
+  }
+
+  /* 続きを読むボタン */
+  .btn-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.8rem;
+  }
+
+  .btn-link:hover {
+    color: var(--primary-color);
+    text-decoration: underline;
+  }
 </style>
 {% endblock %}
 
@@ -1114,6 +1398,147 @@
               </div>
             </div>
           </div>
+
+          <!-- 分析テンプレート情報 -->
+          {% if analysis_templates_info %}
+          <div class="info-grid mb-4">
+            <div class="info-card" style="grid-column: 1 / -1;">
+              <div class="info-card-title">
+                <i class="bi bi-clipboard-data"></i>
+                使用した分析テンプレート
+              </div>
+              <div class="analysis-templates-summary">
+                {% for template_info in analysis_templates_info %}
+                <div class="analysis-template-item mb-3">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="template-name">
+                      <a href="{% url 'analysis_template:detail' template_info.template.id %}" 
+                         class="text-decoration-none text-primary fw-semibold">
+                        <i class="bi bi-clipboard-check me-1"></i>
+                        {{ template_info.template.name }}
+                      </a>
+                    </div>
+                    <div class="completion-badge">
+                      <span class="badge bg-primary bg-opacity-10 text-primary">
+                        {{ template_info.completed_items }}/{{ template_info.total_items }} 項目
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {% if template_info.template.description %}
+                  <div class="template-description text-muted small mb-2">
+                    {{ template_info.template.description }}
+                  </div>
+                  {% endif %}
+                  
+                  <div class="progress mb-2" style="height: 8px;">
+                    <div class="progress-bar bg-primary" 
+                         style="width: {{ template_info.completion_rate }}%"
+                         aria-valuenow="{{ template_info.completion_rate }}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                    </div>
+                  </div>
+                  
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">完了率: {{ template_info.completion_rate }}%</span>
+                    <div class="template-actions">
+                      <button class="btn btn-sm btn-outline-secondary me-1" 
+                              type="button" 
+                              data-bs-toggle="collapse" 
+                              data-bs-target="#template-details-{{ template_info.template.id }}" 
+                              aria-expanded="false">
+                        <i class="bi bi-list-ul me-1"></i>
+                        回答詳細
+                      </button>
+                      <a href="{% url 'analysis_template:detail' template_info.template.id %}" 
+                         class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-eye me-1"></i>
+                        テンプレート詳細
+                      </a>
+                    </div>
+                  </div>
+                  
+                  <!-- 分析項目詳細（折りたたみ可能） -->
+                  <div class="collapse mt-3" id="template-details-{{ template_info.template.id }}">
+                    <div class="analysis-items-detail">
+                      <h6 class="analysis-items-title">
+                        <i class="bi bi-checklist me-1"></i>
+                        分析項目と回答
+                      </h6>
+                      
+                      {% for item_data in template_info.items_with_values %}
+                      <div class="analysis-item-detail mb-2">
+                        <div class="analysis-item-question">
+                          <span class="item-order">#{{ item_data.item.order }}</span>
+                          <span class="item-name">{{ item_data.item.name }}</span>
+                          {% if item_data.item.description %}
+                          <span class="item-description text-muted">
+                            <i class="bi bi-info-circle ms-1" 
+                               title="{{ item_data.item.description }}" 
+                               data-bs-toggle="tooltip"></i>
+                          </span>
+                          {% endif %}
+                        </div>
+                        
+                        <div class="analysis-item-answer">
+                          {% if item_data.item.item_type == 'boolean' %}
+                            <span class="answer-value {% if item_data.value.boolean_value %}text-success{% else %}text-danger{% endif %}">
+                              <i class="bi {% if item_data.value.boolean_value %}bi-check-circle{% else %}bi-x-circle{% endif %} me-1"></i>
+                              {{ item_data.display_value }}
+                            </span>
+                          {% elif item_data.item.item_type == 'boolean_with_value' %}
+                            <span class="answer-value {% if item_data.value.boolean_value %}text-success{% else %}text-danger{% endif %}">
+                              {{ item_data.display_value }}
+                            </span>
+                          {% elif item_data.item.item_type == 'number' %}
+                            <span class="answer-value text-primary">
+                              <i class="bi bi-123 me-1"></i>
+                              {{ item_data.display_value }}
+                            </span>
+                          {% elif item_data.item.item_type == 'select' %}
+                            <span class="answer-value text-info">
+                              <i class="bi bi-list-check me-1"></i>
+                              {{ item_data.display_value }}
+                            </span>
+                          {% else %}
+                            <span class="answer-value text-dark">
+                              <i class="bi bi-text-left me-1"></i>
+                              {% if item_data.value.text_value|length > 50 %}
+                                <span class="answer-preview">{{ item_data.value.text_value|truncatechars:50 }}</span>
+                                <button class="btn btn-link btn-sm p-0 ms-1" 
+                                        type="button" 
+                                        data-bs-toggle="collapse" 
+                                        data-bs-target="#full-answer-{{ template_info.template.id }}-{{ item_data.item.id }}"
+                                        aria-expanded="false">
+                                  続きを読む
+                                </button>
+                                <div class="collapse mt-1" id="full-answer-{{ template_info.template.id }}-{{ item_data.item.id }}">
+                                  <div class="answer-full">{{ item_data.value.text_value|linebreaks }}</div>
+                                </div>
+                              {% else %}
+                                {{ item_data.display_value }}
+                              {% endif %}
+                            </span>
+                          {% endif %}
+                          
+                          {% if not item_data.is_completed %}
+                          <span class="badge bg-warning bg-opacity-10 text-warning ms-2">未回答</span>
+                          {% endif %}
+                        </div>
+                      </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </div>
+                {% if not forloop.last %}
+                <hr class="my-3">
+                {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          {% endif %}
 
           <!-- タグとメモ -->
           <div class="info-grid">

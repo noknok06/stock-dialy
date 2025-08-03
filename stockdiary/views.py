@@ -253,6 +253,7 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         request.session['current_diary_id'] = self.object.id
         return response
     
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
@@ -262,10 +263,13 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         # 継続記録一覧を追加
         context['notes'] = self.object.notes.all().order_by('-date')
         
+        # 分析テンプレート情報を取得
+        analysis_templates_info = self._get_analysis_templates_info()
+        context['analysis_templates_info'] = analysis_templates_info
+        
         # 関連日記（同じ銘柄コードを持つ日記）を取得
         diary = self.object
-        # if diary.stock_symbol:  # 銘柄コードが存在する場合のみ
-            # 現在の日記を含むすべての関連日記を取得（日付順）
+        # 現在の日記を含むすべての関連日記を取得（日付順）
         all_related_diaries = StockDiary.objects.filter(
             user=self.request.user,
             stock_symbol=diary.stock_symbol
@@ -327,8 +331,122 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
                 'label': '削除'
             }
         ]
-    
+
         return context
+    
+    def _get_analysis_templates_info(self):
+        """この日記で使用されている分析テンプレート情報を取得"""
+        from analysis_template.models import DiaryAnalysisValue
+        from collections import defaultdict
+        
+        diary = self.object
+        
+        # この日記の分析値を取得
+        analysis_values = DiaryAnalysisValue.objects.filter(
+            diary=diary
+        ).select_related('analysis_item__template').order_by('analysis_item__order')
+        
+        if not analysis_values.exists():
+            return []
+        
+        # テンプレートごとにグループ化
+        templates_data = defaultdict(lambda: {
+            'template': None,
+            'total_items': 0,
+            'completed_items': 0,
+            'completion_rate': 0,
+            'values': [],
+            'items_with_values': []  # 項目と値のペアを保存
+        })
+        
+        for value in analysis_values:
+            template = value.analysis_item.template
+            template_id = template.id
+            
+            # テンプレート情報を設定
+            if templates_data[template_id]['template'] is None:
+                templates_data[template_id]['template'] = template
+                templates_data[template_id]['total_items'] = template.items.count()
+            
+            # 値を追加
+            templates_data[template_id]['values'].append(value)
+            
+            # 項目と値の詳細情報を追加
+            item_with_value = {
+                'item': value.analysis_item,
+                'value': value,
+                'display_value': self._get_analysis_display_value(value),
+                'is_completed': self._is_analysis_item_completed(value)
+            }
+            templates_data[template_id]['items_with_values'].append(item_with_value)
+            
+            # 完了判定
+            if item_with_value['is_completed']:
+                templates_data[template_id]['completed_items'] += 1
+        
+        # 完了率を計算
+        result = []
+        for template_data in templates_data.values():
+            if template_data['total_items'] > 0:
+                completion_rate = (template_data['completed_items'] / template_data['total_items']) * 100
+                template_data['completion_rate'] = round(completion_rate, 1)
+            
+            result.append(template_data)
+        
+        # テンプレート名でソート
+        result.sort(key=lambda x: x['template'].name)
+        
+        return result
+
+    def _get_analysis_display_value(self, analysis_value):
+        """分析値の表示用テキストを取得"""
+        item = analysis_value.analysis_item
+        
+        if item.item_type == 'boolean':
+            return "はい" if analysis_value.boolean_value else "いいえ"
+        
+        elif item.item_type == 'boolean_with_value':
+            result = "✓" if analysis_value.boolean_value else "✗"
+            if analysis_value.boolean_value:
+                if analysis_value.number_value is not None:
+                    result += f" {analysis_value.number_value}"
+                    if analysis_value.analysis_item.value_label:
+                        result += f" {analysis_value.analysis_item.value_label}"
+                elif analysis_value.text_value:
+                    result += f" {analysis_value.text_value}"
+            return result
+        
+        elif item.item_type == 'number':
+            if analysis_value.number_value is not None:
+                return f"{analysis_value.number_value}"
+            return "-"
+        
+        elif item.item_type == 'select':
+            return analysis_value.text_value if analysis_value.text_value else "-"
+        
+        elif item.item_type == 'text':
+            return analysis_value.text_value if analysis_value.text_value else "-"
+        
+        return "-"
+
+    def _is_analysis_item_completed(self, analysis_value):
+        """分析項目が完了しているかどうかを判定"""
+        item = analysis_value.analysis_item
+        
+        if item.item_type == 'boolean':
+            return analysis_value.boolean_value is True
+        
+        elif item.item_type == 'boolean_with_value':
+            return analysis_value.boolean_value is True
+        
+        elif item.item_type == 'number':
+            return analysis_value.number_value is not None
+        
+        elif item.item_type in ['text', 'select']:
+            return bool(analysis_value.text_value and analysis_value.text_value.strip())
+        
+        return False
+
 
 class StockDiaryCreateView(LoginRequiredMixin, CreateView):
     model = StockDiary
