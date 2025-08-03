@@ -530,7 +530,7 @@ img {
     </a>
   </div>
 
-  <!-- カレンダーセクションの改善 -->
+  <!-- カレンダーセクションの改善 - 修正版 -->
   <div class="calendar-section mb-4">
     <!-- スマホ用カレンダーアコーディオン -->
     <div class="d-lg-none">
@@ -543,7 +543,7 @@ img {
             </button>
           </h2>
           <div id="calendarCollapse" class="accordion-collapse collapse" aria-labelledby="calendarHeading">
-            <div class="accordion-body p-1"> <!-- p-0からp-1に変更 -->
+            <div class="accordion-body p-1">
               <!-- モバイルカレンダーコンテナ -->
               <div class="calendar-view" id="mobile-calendar-container"
                   hx-get="{% url 'stockdiary:calendar_partial' %}?view=mobile"
@@ -557,6 +557,21 @@ img {
                   <p class="mt-2 mb-0">カレンダーを読み込んでいます...</p>
                 </div>
               </div>
+              
+              <!-- ★ モバイル用イベント表示エリアを追加 ★ -->
+              <div class="card mt-3" id="mobile-events-card" style="display: none;">
+                <div class="card-header bg-white">
+                  <h6 class="mb-0" id="mobile-selected-date">選択日のイベント</h6>
+                </div>
+                <div class="card-body p-2" id="mobile-day-events">
+                  <p class="text-muted mb-0">日付を選択するとイベントが表示されます</p>
+                  <div id="day-events-loading-mobile" class="htmx-indicator text-center mt-3" style="display: none;">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                      <span class="visually-hidden">読み込み中...</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -565,9 +580,9 @@ img {
 
     <!-- デスクトップカレンダーコンテナ -->
     <div class="d-none d-lg-block">
-      <div class="row g-3"> <!-- g-0からg-3に変更 -->
+      <div class="row g-3">
         <!-- カレンダー部分: 左側 (8/12) -->
-        <div class="col-lg-8"> <!-- col-lg-7からcol-lg-8に変更 -->
+        <div class="col-lg-8">
           <div class="calendar-view">
             <div id="desktop-calendar-container" class="calendar-container"
                 hx-get="{% url 'stockdiary:calendar_partial' %}?view=desktop"
@@ -585,25 +600,18 @@ img {
         </div>
 
         <!-- イベント部分: 右側 (4/12) -->
-        <div class="col-lg-4"> <!-- col-lg-5からcol-lg-4に変更 -->
+        <div class="col-lg-4">
           <div class="card h-100" id="desktop-events-card">
             <div class="card-header bg-white">
               <h6 class="mb-0" id="desktop-selected-date">選択日のイベント</h6>
             </div>
-            <div class="card-body p-2" id="desktop-day-events" 
-                hx-get="{% url 'stockdiary:day_events' %}"
-                hx-trigger="date-selected from:body"
-                hx-target="#desktop-day-events"
-                hx-swap="innerHTML"
-                hx-include="[name='date'], [name='view']">
+            <div class="card-body p-2" id="desktop-day-events">
               <p class="text-muted mb-0">日付を選択するとイベントが表示されます</p>
-              <div id="day-events-loading-desktop" class="htmx-indicator text-center mt-3">
+              <div id="day-events-loading-desktop" class="htmx-indicator text-center mt-3" style="display: none;">
                 <div class="spinner-border spinner-border-sm text-primary" role="status">
                   <span class="visually-hidden">読み込み中...</span>
                 </div>
               </div>
-              <input type="hidden" name="view" value="desktop">
-              <input type="hidden" name="date" value="">
             </div>
           </div>
         </div>
@@ -743,11 +751,6 @@ document.addEventListener('DOMContentLoaded', function() {
       if (container && !container.getAttribute('data-loaded')) {
         htmx.trigger(container, 'revealed');
         container.setAttribute('data-loaded', 'true');
-        // モバイルイベントカードを表示
-        const mobileEventsCard = document.getElementById('mobile-events-card');
-        if (mobileEventsCard) {
-          mobileEventsCard.style.display = 'block';
-        }
       }
     });
   }
@@ -766,57 +769,130 @@ document.addEventListener('DOMContentLoaded', function() {
     document.body.classList.add('is-offline');
   }
   
-  // カレンダー日付クリック処理を強化
-  document.addEventListener('click', function(e) {
-    const td = e.target.closest('td[data-date]');
-    if (td) {
-      // クリックされた日付をハイライト
-      document.querySelectorAll('td').forEach(cell => cell.classList.remove('fc-day-clicked'));
-      td.classList.add('fc-day-clicked');
-      
-      // データと日付を取得して、イベントをトリガー
-      const dateStr = td.getAttribute('data-date');
-      if (dateStr) {
-        // 日付を入力フィールドに設定
-        document.querySelectorAll('input[name="date"]').forEach(input => {
-          input.value = dateStr;
-        });
-        
-        // カスタムイベントをディスパッチ
-        htmx.trigger('body', 'date-selected');
-        
-        // 選択日の表示を更新
-        const dateObj = new Date(dateStr);
-        const formattedDate = dateObj.getFullYear() + '年' + 
-                             (dateObj.getMonth() + 1) + '月' + 
-                             dateObj.getDate() + '日のイベント';
-        
-        const mobileDate = document.getElementById('mobile-selected-date');
-        const desktopDate = document.getElementById('desktop-selected-date');
-        
-        if (mobileDate) mobileDate.textContent = formattedDate;
-        if (desktopDate) desktopDate.textContent = formattedDate;
-        
-        // スマホ表示の場合は自動スクロール
-        if (window.innerWidth < 992) {
-          const eventsCard = document.getElementById('mobile-events-card');
-          if (eventsCard) {
-            eventsCard.style.display = 'block';
-            eventsCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          }
-        }
+  // ★ 修正: カレンダー日付クリック処理の統合 ★
+  function setupCalendarClicks() {
+    // 既存のクリックハンドラーを削除
+    document.querySelectorAll('.calendar-cell').forEach(cell => {
+      cell.removeEventListener('click', handleCalendarClick);
+    });
+    
+    // 新しいクリックハンドラーを追加
+    document.querySelectorAll('.calendar-cell').forEach(cell => {
+      cell.addEventListener('click', handleCalendarClick);
+    });
+  }
+  
+  function handleCalendarClick(e) {
+    const cell = e.currentTarget;
+    const dateStr = cell.getAttribute('data-date');
+    const view = cell.getAttribute('data-view');
+    
+    if (!dateStr || !view) return;
+    
+    // すべてのセルからクリック状態を削除
+    document.querySelectorAll('.calendar-cell').forEach(c => {
+      c.classList.remove('fc-day-clicked');
+    });
+    
+    // クリックされたセルをハイライト
+    cell.classList.add('fc-day-clicked');
+    
+    // 日付表示を更新
+    updateSelectedDateDisplay(dateStr, view);
+    
+    // イベントを取得・表示
+    loadDayEvents(dateStr, view);
+    
+    // モバイルの場合はイベントカードを表示してスクロール
+    if (view === 'mobile') {
+      const eventsCard = document.getElementById('mobile-events-card');
+      if (eventsCard) {
+        eventsCard.style.display = 'block';
+        setTimeout(() => {
+          eventsCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
       }
     }
-  });
+  }
+  
+  function updateSelectedDateDisplay(dateStr, view) {
+    try {
+      const dateObj = new Date(dateStr);
+      const formattedDate = dateObj.getFullYear() + '年' + 
+                           (dateObj.getMonth() + 1) + '月' + 
+                           dateObj.getDate() + '日のイベント';
+      
+      const targetId = view === 'mobile' ? 'mobile-selected-date' : 'desktop-selected-date';
+      const dateElement = document.getElementById(targetId);
+      
+      if (dateElement) {
+        dateElement.textContent = formattedDate;
+      }
+    } catch (e) {
+      console.warn('日付の解析に失敗しました:', dateStr);
+    }
+  }
+  
+  function loadDayEvents(dateStr, view) {
+    const targetId = view === 'mobile' ? 'mobile-day-events' : 'desktop-day-events';
+    const loadingId = view === 'mobile' ? 'day-events-loading-mobile' : 'day-events-loading-desktop';
+    
+    const target = document.getElementById(targetId);
+    const loading = document.getElementById(loadingId);
+    
+    if (!target) {
+      console.warn('イベント表示ターゲットが見つかりません:', targetId);
+      return;
+    }
+    
+    // ローディング表示
+    if (loading) {
+      loading.style.display = 'block';
+    }
+    
+    // HTMXでイベントを取得
+    htmx.ajax('GET', `/stockdiary/day-events/?date=${dateStr}&view=${view}`, {
+      target: `#${targetId}`,
+      swap: 'innerHTML'
+    }).then(() => {
+      // ローディング非表示
+      if (loading) {
+        loading.style.display = 'none';
+      }
+      
+      // アニメーション効果
+      const items = target.querySelectorAll('.calendar-event-item');
+      items.forEach((item, index) => {
+        item.style.opacity = '0';
+        item.style.transform = 'translateY(10px)';
+        item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        
+        setTimeout(() => {
+          item.style.opacity = '1';
+          item.style.transform = 'translateY(0)';
+        }, 50 * index);
+      });
+    }).catch((error) => {
+      console.error('イベントの読み込みに失敗しました:', error);
+      if (loading) {
+        loading.style.display = 'none';
+      }
+      
+      target.innerHTML = `
+        <div class="alert alert-warning m-2">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          イベントの読み込みに失敗しました。ネットワーク接続を確認してください。
+        </div>
+      `;
+    });
+  }
   
   // HTMX エラーハンドリング
   document.body.addEventListener('htmx:responseError', function(event) {
     console.error('HTMX エラー:', event.detail.xhr.status, event.detail.xhr.statusText);
     
-    // ターゲット要素
     const target = event.detail.target;
     
-    // エラーメッセージ表示
     if (target.id === 'desktop-day-events' || target.id === 'mobile-day-events') {
       target.innerHTML = `
         <div class="alert alert-warning m-2">
@@ -834,13 +910,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  // イベントリスト読み込み完了イベント
+  // カレンダー読み込み完了時の処理
   document.body.addEventListener('htmx:afterSwap', function(event) {
-    if (event.detail.target.id === 'desktop-day-events' || event.detail.target.id === 'mobile-day-events') {
-      // イベントがロードされたら、アニメーション効果を追加
+    const targetId = event.detail.target.id;
+    
+    if (targetId === 'desktop-calendar-container' || targetId === 'mobile-calendar-container') {
+      // カレンダーが更新されたらクリックハンドラーを再設定
+      setTimeout(setupCalendarClicks, 100);
+    }
+    
+    if (targetId === 'desktop-day-events' || targetId === 'mobile-day-events') {
+      // イベントリストのアニメーション
       const items = event.detail.target.querySelectorAll('.calendar-event-item');
       items.forEach((item, index) => {
-        // 少し遅延させて順番にフェードイン
         item.style.opacity = '0';
         item.style.transform = 'translateY(10px)';
         item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
@@ -861,6 +943,32 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     evt.detail.headers['X-CSRFToken'] = csrfToken;
   });
+  
+  // 初期セットアップ
+  setTimeout(setupCalendarClicks, 1000);
+});
+
+// HTMX設定
+htmx.config.defaultSwapStyle = "innerHTML";
+htmx.config.includeIndicatorStyles = true;
+htmx.config.withCredentials = true;
+
+// オフライン状態検出
+htmx.on('htmx:beforeRequest', function(evt) {
+  if (!navigator.onLine) {
+    evt.preventDefault();
+    document.body.classList.add('is-offline');
+    
+    const target = evt.detail.target;
+    if (target) {
+      target.innerHTML = `
+        <div class="alert alert-warning m-2">
+          <i class="bi bi-wifi-off me-2"></i>
+          現在オフライン状態です。ネットワーク接続を確認してください。
+        </div>
+      `;
+    }
+  }
 });
 
 // HTMX設定
