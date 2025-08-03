@@ -13,111 +13,693 @@
 <!-- Bootstrap Icons -->
 <link rel="stylesheet" href="{% static 'css/speed-dial.css' %}">
 
-<!-- タブ関連のCSS -->
+<!-- 改善されたスタイル -->
 <style>
-  /* タブコンテナのスタイル */
-  .diary-tabs-container {
-    background-color: transparent;
-    border-radius: var(--border-radius, 8px);
-    overflow: hidden;
-    margin-bottom: 2rem;
+  /* === ヘッダー情報の整理 === */
+  .diary-header-improved {
+    padding: 1.25rem 1.5rem;
+    background: linear-gradient(135deg, rgba(90, 126, 197, 0.05), rgba(90, 126, 197, 0.02));
+    border-bottom: 1px solid rgba(90, 126, 197, 0.1);
+    border-radius: 12px 12px 0 0;
   }
 
-  .diary-tabs-container .nav-tabs {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    background-color: rgba(248, 249, 250, 0.7);
+  .header-main-info {
     display: flex;
-    width: 100%;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    gap: 1rem;
   }
 
-  .diary-tabs-container .nav-item {
+  .stock-identity {
     flex: 1;
-    text-align: center;
+    min-width: 0;
   }
 
-  .diary-tabs-container .nav-link {
-    padding: 1rem;
-    color: var(--text-color, #3a4a5a);
-    border: none;
-    border-radius: 0;
-    position: relative;
-    transition: all 0.2s ease;
-    font-weight: 500;
-    text-align: center;
-    width: 100%;
-    white-space: nowrap;
+  .stock-name-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .stock-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin: 0;
+    word-break: break-word;
+  }
+
+  .stock-symbol-badge {
+    background-color: rgba(90, 126, 197, 0.1);
+    color: var(--primary-color);
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+
+  .header-meta-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .purchase-date {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-light);
+    font-size: 0.9rem;
+  }
+
+  .status-badges {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .status-badge-improved {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .status-badge-memo {
+    background-color: rgba(93, 161, 229, 0.15);
+    color: var(--info-color);
+  }
+
+  .status-badge-sold {
+    background-color: rgba(225, 90, 90, 0.15);
+    color: var(--danger-color);
+  }
+
+  .status-badge-active {
+    background-color: rgba(93, 176, 117, 0.15);
+    color: var(--success-color);
+  }
+
+  .price-summary {
+    text-align: right;
+    min-width: 120px;
+    flex-shrink: 0;
+  }
+
+  .main-price {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+  }
+
+  .sub-info {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    margin-bottom: 0.25rem;
+  }
+
+  .profit-indicator {
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+  }
+
+  .profit-positive {
+    background-color: rgba(93, 176, 117, 0.15);
+    color: var(--success-color);
+  }
+
+  .profit-negative {
+    background-color: rgba(225, 90, 90, 0.15);
+    color: var(--danger-color);
+  }
+
+  /* === 改善されたタブナビゲーション === */
+  .tabs-section {
+    background-color: transparent;
+    border-radius: 0 0 12px 12px;
     overflow: hidden;
-    text-overflow: ellipsis;
+    margin-bottom: 1.5rem;
   }
 
-  .diary-tabs-container .nav-link::after {
+  .improved-tabs {
+    display: flex;
+    background-color: rgba(248, 249, 250, 0.8);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .improved-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .improved-tab-item {
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+  }
+
+  .improved-tab-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 0.75rem;
+    color: var(--text-light);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: none;
+    background: none;
+    width: 100%;
+    position: relative;
+    min-height: 80px;
+  }
+
+  .improved-tab-link::after {
     content: '';
     position: absolute;
-    bottom: -1px;
+    bottom: 0;
     left: 0;
     width: 100%;
-    height: 2px;
+    height: 3px;
     background-color: transparent;
-    transition: background-color 0.2s;
+    transition: background-color 0.3s ease;
   }
 
-  .diary-tabs-container .nav-link.active {
-    color: var(--primary-color, #5a7ec5);
-    background-color: transparent;
+  .improved-tab-link.active {
+    color: var(--primary-color);
     font-weight: 600;
   }
 
-  .diary-tabs-container .nav-link.active::after {
-    background-color: var(--primary-color, #5a7ec5);
+  .improved-tab-link.active::after {
+    background-color: var(--primary-color);
   }
 
-  .diary-tabs-container .nav-link:hover:not(.active) {
+  .improved-tab-link:hover:not(.active) {
     background-color: rgba(90, 126, 197, 0.05);
+    color: var(--primary-color);
   }
 
-  /* タブコンテンツのスタイル */
-  .diary-tab-content {
-    padding: 1.5rem;
-    background-color: transparent;
+  .tab-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
   }
 
-  /* スワイプヒントのスタイル */
-  .swipe-hint {
-    font-size: 0.8rem;
-    padding: 0.5rem;
+  .tab-label {
+    font-size: 0.9rem;
+    line-height: 1.2;
+  }
+
+  .tab-count {
+    font-size: 0.7rem;
+    color: var(--text-light);
+    margin-top: 0.25rem;
+  }
+
+  /* === タブコンテンツの改善 === */
+  .tab-content-improved {
+    padding: 2rem 1.5rem;
+    background-color: white;
+    border-radius: 0 0 12px 12px;
+    min-height: 400px;
+  }
+
+  /* === スワイプヒントの改善 === */
+  .swipe-hint-improved {
+    background: linear-gradient(135deg, rgba(90, 126, 197, 0.1), rgba(90, 126, 197, 0.05));
+    border: 1px solid rgba(90, 126, 197, 0.2);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    text-align: center;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    color: var(--primary-color);
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.5s ease;
+    display: none;
+  }
+
+  .swipe-hint-improved.show {
+    opacity: 1;
+    transform: translateY(0);
+    display: block;
+  }
+
+  .swipe-hint-improved.fade-out {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  /* === 継続記録フォームの簡素化 === */
+  .simplified-note-form {
+    background: linear-gradient(135deg, rgba(248, 249, 250, 0.8), rgba(255, 255, 255, 0.9));
+    border: 1px solid rgba(0, 0, 0, 0.05);
     border-radius: 12px;
-    background-color: rgba(var(--primary-color-rgb, 90, 126, 197), 0.05);
-    animation: pulse-hint 2s infinite;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
   }
 
-  @keyframes pulse-hint {
-    0% { opacity: 0.7; }
-    50% { opacity: 0.4; }
-    100% { opacity: 0.7; }
+  .form-section {
+    margin-bottom: 1.25rem;
   }
 
-  /* タッチデバイス用の最適化 */
-  @media (hover: none) {
-    .diary-tabs-container .nav-link {
-      padding: 1rem 0.75rem;
+  .form-section:last-child {
+    margin-bottom: 0;
+  }
+
+  .section-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .option-pills {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .option-pill {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background-color: white;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .option-pill:hover {
+    background-color: rgba(90, 126, 197, 0.05);
+    border-color: rgba(90, 126, 197, 0.3);
+  }
+
+  .option-pill.active {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+  }
+
+  .importance-pill.low {
+    border-color: rgba(107, 114, 128, 0.3);
+  }
+
+  .importance-pill.low.active {
+    background-color: var(--text-light);
+    border-color: var(--text-light);
+  }
+
+  .importance-pill.high {
+    border-color: rgba(225, 90, 90, 0.3);
+  }
+
+  .importance-pill.high.active {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+  }
+
+  /* === レスポンシブ改善 === */
+  @media (max-width: 768px) {
+    .diary-header-improved {
+      padding: 1rem;
+    }
+
+    .header-main-info {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 1rem;
+    }
+
+    .stock-name-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .stock-title {
+      font-size: 1.25rem;
+    }
+
+    .header-meta-info {
+      justify-content: space-between;
+    }
+
+    .price-summary {
+      text-align: left;
+      min-width: auto;
+    }
+
+    .improved-tab-link {
+      min-height: 70px;
+      padding: 0.75rem 0.5rem;
+    }
+
+    .tab-icon {
+      font-size: 1.25rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .tab-label {
+      font-size: 0.8rem;
+    }
+
+    .tab-content-improved {
+      padding: 1.5rem 1rem;
+    }
+
+    .simplified-note-form {
+      padding: 1rem;
+    }
+
+    .option-pills {
+      gap: 0.375rem;
+    }
+
+    .option-pill {
+      padding: 0.375rem 0.75rem;
+      font-size: 0.8rem;
     }
   }
 
-  /* タイムライン関連スタイル */
-  .section-title {
-    font-size: 1.25rem;
+  @media (max-width: 576px) {
+    .stock-name-row {
+      align-items: center;
+    }
+
+    .stock-title {
+      font-size: 1.1rem;
+    }
+
+    .stock-symbol-badge {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.6rem;
+    }
+
+    .improved-tab-item {
+      min-width: 100px;
+    }
+
+    .improved-tab-link {
+      min-height: 60px;
+      padding: 0.5rem 0.25rem;
+    }
+
+    .tab-icon {
+      font-size: 1.1rem;
+    }
+
+    .tab-label {
+      font-size: 0.75rem;
+    }
+
+    .tab-count {
+      display: none;
+    }
   }
 
-  .investment-timeline {
-    padding: 20px 0;
-    margin-bottom: 2rem;
+  /* === アクセシビリティとタッチ改善 === */
+  @media (hover: none) {
+    .improved-tab-link:active {
+      background-color: rgba(90, 126, 197, 0.1);
+    }
+
+    .option-pill:active {
+      transform: scale(0.95);
+    }
+  }
+
+  /* === 情報ブロックの改善 === */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .info-card {
+    background: linear-gradient(135deg, rgba(248, 249, 250, 0.8), rgba(255, 255, 255, 0.9));
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .info-card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .info-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .info-item-improved {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background-color: white;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.03);
+  }
+
+  .info-icon-improved {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(90, 126, 197, 0.1), rgba(90, 126, 197, 0.2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  .info-content-improved {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .info-label-improved {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    margin-bottom: 0.25rem;
+  }
+
+  .info-value-improved {
+    font-weight: 600;
+    color: var(--text-color);
+    word-break: break-word;
+  }
+
+  @media (max-width: 768px) {
+    .info-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .info-items {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+
+    .info-card {
+      padding: 1rem;
+    }
+
+    .info-item-improved {
+      padding: 0.5rem;
+    }
+
+    .info-icon-improved {
+      width: 32px;
+      height: 32px;
+      font-size: 1rem;
+    }
+  }
+
+  /* === 継続記録カードのスタイル === */
+  .note-card {
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .note-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .note-card-header {
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, rgba(248, 249, 250, 0.8), rgba(255, 255, 255, 0.9));
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .note-meta-left {
+    flex: 1;
+  }
+
+  .note-date {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .note-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .importance-indicator {
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .importance-indicator.high {
+    background-color: rgba(225, 90, 90, 0.15);
+    color: var(--danger-color);
+  }
+
+  .importance-indicator.medium {
+    background-color: rgba(90, 126, 197, 0.15);
+    color: var(--primary-color);
+  }
+
+  .note-price-summary {
+    text-align: right;
+    min-width: 100px;
+    flex-shrink: 0;
+  }
+
+  .price-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+  }
+
+  .price-label {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    margin-bottom: 0.25rem;
+  }
+
+  .price-change {
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.1rem 0.4rem;
+    border-radius: 8px;
+  }
+
+  .price-change.positive {
+    background-color: rgba(93, 176, 117, 0.15);
+    color: var(--success-color);
+  }
+
+  .price-change.negative {
+    background-color: rgba(225, 90, 90, 0.15);
+    color: var(--danger-color);
+  }
+
+  .note-card-body {
+    padding: 1.25rem;
+  }
+
+  .note-content-text {
+    line-height: 1.6;
+    color: var(--text-color);
+  }
+
+  .note-content-text p {
+    margin-bottom: 0.75rem;
+  }
+
+  .note-content-text p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* === 空の状態表示 === */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    background: linear-gradient(135deg, rgba(248, 249, 250, 0.5), rgba(255, 255, 255, 0.8));
+    border-radius: 12px;
+    border: 2px dashed rgba(0, 0, 0, 0.1);
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    color: var(--text-light);
+    margin-bottom: 1rem;
+  }
+
+  .empty-state h4 {
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+  }
+
+  .empty-state p {
+    color: var(--text-light);
+    margin-bottom: 0;
+  }
+
+  /* === タイムライン関連スタイル === */
+  .timeline-section {
+    padding: 1rem 0;
   }
 
   .timeline-list {
     position: relative;
-    list-style: none;
-    padding-left: 40px;
+    padding-left: 2rem;
     margin: 0;
+    list-style: none;
   }
 
   .timeline-list::before {
@@ -127,19 +709,16 @@
     left: 18px;
     height: 100%;
     width: 2px;
-    background-color: var(--notebook-line);
+    background-color: rgba(90, 126, 197, 0.2);
   }
 
-  .timeline-list-item {
+  .timeline-item {
     position: relative;
-    margin-bottom: 25px;
+    margin-bottom: 2rem;
+    list-style: none;
   }
 
-  .timeline-list-item:last-child {
-    margin-bottom: 0;
-  }
-
-  .timeline-list-item::before {
+  .timeline-item::before {
     content: '';
     position: absolute;
     top: 15px;
@@ -148,863 +727,541 @@
     height: 14px;
     border-radius: 50%;
     background-color: var(--primary-color);
-    border: 2px solid white;
-    box-shadow: 0 0 0 2px rgba(74, 109, 167, 0.3);
+    border: 3px solid white;
+    box-shadow: 0 0 0 2px rgba(90, 126, 197, 0.3);
     z-index: 2;
   }
 
-  /* タイプ別のマーカーカラー */
-  .item-active::before {
-    background-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(74, 109, 167, 0.3);
-  }
-
-  .item-sold::before {
-    background-color: var(--success-color);
-    box-shadow: 0 0 0 2px rgba(90, 154, 120, 0.3);
-  }
-
-  .item-memo::before {
-    background-color: var(--info-color);
-    box-shadow: 0 0 0 2px rgba(124, 155, 210, 0.3);
-  }
-
-  /* 現在表示中の項目 */
-  .timeline-current::before {
+  .timeline-item.current::before {
     width: 18px;
     height: 18px;
     left: -32px;
     top: 14px;
     background-color: var(--secondary-color);
-    box-shadow: 0 0 0 3px rgba(232, 168, 124, 0.4);
+    box-shadow: 0 0 0 3px rgba(248, 194, 145, 0.4);
     animation: pulse 2s infinite;
   }
 
+  .timeline-item.sold::before {
+    background-color: var(--success-color);
+    box-shadow: 0 0 0 2px rgba(93, 176, 117, 0.3);
+  }
+
+  .timeline-item.memo::before {
+    background-color: var(--info-color);
+    box-shadow: 0 0 0 2px rgba(93, 161, 229, 0.3);
+  }
+
   @keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(232, 168, 124, 0.7); }
-    70% { box-shadow: 0 0 0 10px rgba(232, 168, 124, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(232, 168, 124, 0); }
+    0% { box-shadow: 0 0 0 0 rgba(248, 194, 145, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(248, 194, 145, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(248, 194, 145, 0); }
   }
 
-  /* カード関連スタイル */
-  .simple-card {
-    background-color: white;
-    border-radius: var(--border-radius);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    padding: 15px;
-    position: relative;
-    border-left: 3px solid var(--primary-color);
-    transition: box-shadow 0.2s;
-  }
-
-  .timeline-card-link {
-    display: block;
-    color: inherit;
-    text-decoration: none;
-    transition: transform 0.2s;
-  }
-
-  .timeline-card-link:hover {
-    transform: translateY(-3px);
-    color: inherit;
-    text-decoration: none;
-  }
-
-  .timeline-card-link:hover .simple-card {
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  }
-
-  .item-sold .simple-card {
-    border-left-color: var(--success-color);
-  }
-
-  .item-memo .simple-card {
-    border-left-color: var(--info-color);
-  }
-
-  .current-card {
-    border: 2px solid var(--secondary-color);
-    border-left-width: 5px;
-    box-shadow: 0 3px 10px rgba(232, 168, 124, 0.2);
-  }
-
-  /* 継続記録関連スタイル */
-  .quick-note-form {
-    border-radius: var(--border-radius);
-    background-color: rgba(255, 255, 255, 0.8);
+  .timeline-card {
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
     padding: 1.25rem;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    text-decoration: none;
+    color: inherit;
+    display: block;
   }
 
-  .quick-note-form .form-floating {
+  .timeline-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .timeline-card.current {
+    border: 2px solid var(--secondary-color);
+    box-shadow: 0 4px 12px rgba(248, 194, 145, 0.2);
+  }
+
+  .timeline-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
     margin-bottom: 1rem;
   }
 
-  .quick-note-form .form-floating > label {
-    padding-left: 1rem;
-    color: var(--text-light);
+  .timeline-stock-info h6 {
+    margin: 0;
+    color: var(--primary-color);
+    font-weight: 600;
   }
 
-  .quick-note-form .form-control {
-    border-radius: 8px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-  }
-
-  .quick-note-form .note-type-select {
+  .timeline-badges {
     display: flex;
     gap: 0.5rem;
-    flex-wrap: wrap;
-    margin-bottom: 1rem;
   }
 
-  .quick-note-form .note-type-option {
-    flex: 1;
-    min-width: 100px;
-    padding: 0.5rem;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    text-align: center;
-    cursor: pointer;
+  .timeline-price-info {
     font-size: 0.9rem;
-    transition: all 0.2s;
-  }
-
-  .quick-note-form .note-type-option:hover {
-    background-color: rgba(var(--primary-color-rgb, 90, 126, 197), 0.05);
-  }
-
-  .quick-note-form .note-type-option.active {
-    background-color: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
-  }
-
-  .quick-note-form .importance-select {
-    display: flex;
-    justify-content: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .quick-note-form .importance-option {
-    padding: 0.5rem 1rem;
-    border-radius: 30px;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .quick-note-form .importance-option:hover {
-    transform: translateY(-2px);
-  }
-
-  .quick-note-form .importance-option.low {
-    background-color: rgba(var(--text-light-rgb, 107, 114, 128), 0.1);
-    border: 1px solid rgba(var(--text-light-rgb, 107, 114, 128), 0.2);
-  }
-
-  .quick-note-form .importance-option.low.active {
-    background-color: var(--text-light, #6b7280);
-    color: white;
-  }
-
-  .quick-note-form .importance-option.medium {
-    background-color: rgba(var(--primary-color-rgb, 90, 126, 197), 0.1);
-    border: 1px solid rgba(var(--primary-color-rgb, 90, 126, 197), 0.2);
-  }
-
-  .quick-note-form .importance-option.medium.active {
-    background-color: var(--primary-color, #5a7ec5);
-    color: white;
-  }
-
-  .quick-note-form .importance-option.high {
-    background-color: rgba(var(--danger-color-rgb, 225, 90, 90), 0.1);
-    border: 1px solid rgba(var(--danger-color-rgb, 225, 90, 90), 0.2);
-  }
-
-  .quick-note-form .importance-option.high.active {
-    background-color: var(--danger-color, #e15a5a);
-    color: white;
-  }
-
-  /* 削除確認モーダル */
-  .delete-confirm-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1050;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s, visibility 0.3s;
-  }
-
-  .delete-confirm-modal.active {
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .delete-confirm-content {
-    background-color: white;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 400px;
-    padding: 1.5rem;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    transform: translateY(20px);
-    opacity: 0;
-    transition: transform 0.3s, opacity 0.3s;
-  }
-
-  .delete-confirm-modal.active .delete-confirm-content {
-    transform: translateY(0);
-    opacity: 1;
-  }
-
-  /* モバイル向け最適化 */
-  @media (max-width: 767.98px) {
-    .diary-tabs-container .nav-link {
-      padding: 0.85rem 0.5rem;
-      font-size: 0.9rem;
-    }
-
-    .diary-tab-content {
-      padding: 1.25rem 1rem;
-    }
-
-    .diary-tab-content .tab-pane {
-      min-height: 300px;
-    }
-
-    .diary-tabs-container:target {
-      scroll-margin-top: 1rem;
-    }
-
-    /* モバイルでdiary-cardを画面いっぱいに広げる */
-    .diary-detail-container .diary-card {
-      margin-left: -0.75rem;
-      margin-right: -0.75rem;
-      border-radius: 0;
-      box-shadow: none;
-    }
-
-    .diary-detail-container .diary-card-header {
-      border-radius: 0;
-    }
-
-    .diary-detail-container .diary-card-body {
-      padding-left: 1rem;
-      padding-right: 1rem;
-    }
-
-    /* タブコンテナも画面幅いっぱいに */
-    .diary-detail-container .diary-tabs-container {
-      margin-left: -0.75rem;
-      margin-right: -0.75rem;
-      border-radius: 0;
-    }
-
-    /* 継続記録フォームの最適化 */
-    .quick-note-form {
-      padding: 1rem;
-      margin-bottom: 1rem;
-    }
-
-    .quick-note-form .note-type-select {
-      flex-wrap: wrap;
-    }
-
-    .quick-note-form .note-type-option {
-      flex: 1 1 calc(33.333% - 0.5rem);
-      padding: 0.5rem 0.25rem;
-      font-size: 0.8rem;
-      min-width: 0;
-    }
-
-    .quick-note-form .importance-option {
-      padding: 0.4rem 0.75rem;
-      font-size: 0.8rem;
-    }
-
-    /* 情報アイテムの調整 */
-    .info-item {
-      padding: 0.75rem;
-      min-width: 160px;
-      margin-bottom: 0.75rem;
-    }
-    
-    .info-row {
-      gap: 0.75rem;
-    }
-
-    /* タイムラインの調整 */
-    .timeline-list {
-      padding-left: 30px;
-    }
-
-    .timeline-list::before {
-      left: 12px;
-    }
-
-    .timeline-list-item::before {
-      left: -25px;
-      width: 12px;
-      height: 12px;
-    }
-
-    .timeline-current::before {
-      width: 16px;
-      height: 16px;
-      left: -27px;
-    }
-
-    .simple-card {
-      padding: 12px;
-    }
-  }
-
-  /* 小型モバイルデバイス向け最適化 */
-  @media (max-width: 375px) {
-    .diary-tabs-container .nav-link {
-      padding: 0.75rem 0.4rem;
-      font-size: 0.85rem;
-    }
-
-    .diary-tabs-container .nav-link i {
-      display: none;
-    }
-
-    .diary-tab-content {
-      padding: 1rem 0.75rem;
-    }
-
-    .info-row {
-      grid-template-columns: 1fr;
-      gap: 0.5rem;
-    }
-
-    .info-item {
-      padding: 0.5rem;
-    }
-  }
-
-  /* フローティングラベルの改善 */
-  .form-floating > label {
-    padding: 0.75rem 0.75rem;
-  }
-
-  .form-floating > .form-control:focus ~ label,
-  .form-floating > .form-control:not(:placeholder-shown) ~ label,
-  .form-floating > .form-select ~ label {
-    opacity: 0.65;
-    transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
-  }
-
-  .form-floating > .form-control:focus,
-  .form-floating > .form-control:not(:placeholder-shown) {
-    padding-top: 1rem;
-    padding-bottom: 0.625rem;
-  }
-
-  .form-floating > textarea.form-control {
-    height: 120px;
-    padding-top: 1.5rem;
-    padding-bottom: 0.625rem;
-  }
-
-  .form-floating > textarea.form-control ~ label {
-    transform: scale(0.85) translateY(-0.75rem) translateX(0.15rem);
-    height: auto;
-    padding: 1rem 0.75rem;
-    opacity: 0.65;
-  }
-
-  .form-floating > textarea.form-control:focus ~ label,
-  .form-floating > textarea.form-control:not(:placeholder-shown) ~ label {
-    transform: scale(0.85) translateY(-1.85rem) translateX(0.15rem);
-    opacity: 0.65;
-  }
-
-  /* iOS デバイスでの位置調整 */
-  @supports (-webkit-touch-callout: none) {
-    .floating-add-note-btn {
-      bottom: 40px;
-    }
-  }
-
-  /* スピードダイヤルとの重複を避ける */
-  @media (max-width: 767px) {
-    .floating-add-note-btn {
-      bottom: 90px;
-      right: 16px;
-      width: 48px;
-      height: 48px;
-    }
-
-    .floating-add-note-btn i {
-      font-size: 1.25rem;
-    }
-  }
-
-  /* 継続記録のリスト表示の改善 */
-  .note-item {
-    position: relative;
-    margin-bottom: 1.25rem;
-    border-radius: 12px;
-    background-color: white;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-
-  .note-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
-
-  .note-header {
-    padding: 0.75rem 1rem;
-    background-color: rgba(248, 249, 250, 0.7);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  }
-
-  .note-header-left {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-  }
-
-  .note-body {
-    padding: 1rem;
-  }
-
-  .note-price-info {
-    display: flex;
-    gap: 1rem;
+    color: var(--text-light);
     margin-bottom: 0.75rem;
-    padding: 0.5rem;
-    background-color: rgba(0, 0, 0, 0.02);
-    border-radius: 8px;
-    flex-wrap: wrap;
   }
 
-  .note-item.high {
-    border-left: 3px solid var(--danger-color);
+  .timeline-content {
+    color: var(--text-color);
+    line-height: 1.5;
   }
 
-  .note-item.medium {
-    border-left: 3px solid var(--primary-color);
+  /* === 操作ボタンの配置改善 === */
+  .action-bar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: linear-gradient(135deg, rgba(248, 249, 250, 0.95), rgba(255, 255, 255, 0.95));
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 0.75rem 1rem;
+    margin: -1rem -1rem 1rem -1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 
-  .note-item.low {
-    border-left: 3px solid var(--text-light);
+  .back-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
   }
 
-  /* タブ内のパディングを広く */
-  #notes-content {
-    padding-bottom: 80px;
+  .back-link:hover {
+    color: var(--primary-color);
+    transform: translateX(-2px);
   }
 
-  @media (max-width: 767px) {
-    .note-header {
-      padding: 0.6rem 0.75rem;
-    }
+  .desktop-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
 
-    .note-body {
-      padding: 0.75rem;
-    }
-
-    .note-price-info {
-      flex-direction: row;
+  @media (max-width: 768px) {
+    .desktop-actions {
+      display: none;
     }
   }
 </style>
-
 {% endblock %}
 
 {% block content %}
-<div class="container py-4 diary-detail-container">
-  <!-- 戻るリンク -->
-  <div class="mb-3">
-    <a href="{% url 'stockdiary:home' %}" class="btn btn-diary btn-diary-outline">
-      <i class="bi bi-arrow-left"></i> 日記一覧に戻る
+<div class="container py-2 diary-detail-container">
+  <!-- 改善されたヘッダー -->
+  <div class="action-bar">
+    <a href="{% url 'stockdiary:home' %}" class="back-link">
+      <i class="bi bi-arrow-left"></i>
+      <span class="d-none d-sm-inline">日記一覧に戻る</span>
+      <span class="d-sm-none">戻る</span>
     </a>
+    
+    <!-- デスクトップ用操作ボタン -->
+    <div class="desktop-actions">
+      {% if not diary.sell_date and not diary.is_memo and diary.purchase_price is not None and diary.purchase_quantity is not None %}
+      <a href="{% url 'stockdiary:sell_specific' diary.id %}" class="btn btn-success btn-sm">
+        <i class="bi bi-cash-coin"></i>
+        <span class="d-none d-lg-inline ms-1">売却</span>
+      </a>
+      {% endif %}
+
+      {% if diary.sell_date %}
+      <a href="{% url 'stockdiary:cancel_sell' diary.id %}" class="btn btn-success btn-sm">
+        <i class="bi bi-arrow-counterclockwise"></i>
+        <span class="d-none d-lg-inline ms-1">売却取消</span>
+      </a>
+      {% endif %}
+
+      <a href="{% url 'stockdiary:update' diary.id %}" class="btn btn-warning btn-sm">
+        <i class="bi bi-pencil"></i>
+        <span class="d-none d-lg-inline ms-1">編集</span>
+      </a>
+
+      <a href="{% url 'stockdiary:delete' diary.id %}" class="btn btn-danger btn-sm">
+        <i class="bi bi-trash"></i>
+        <span class="d-none d-lg-inline ms-1">削除</span>
+      </a>
+    </div>
   </div>
 
-  <!-- 日記詳細カード -->
-  <div class="diary-card {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo-card{% elif diary.sell_date %}sold-card{% endif %}">
-    <!-- 日記ヘッダー -->
-    <div class="diary-card-header d-flex justify-content-between align-items-center">
-      <div class="d-flex align-items-center">
-        <h2 class="mb-0 me-2 diary-title">{{ diary.stock_name }}</h2>
-        <span class="badge bg-secondary">{{ diary.stock_symbol }}</span>
-
-        <!-- メモバッジ -->
-        {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
-        <span class="badge bg-info ms-2">メモ</span>
+  <!-- 改善されたメインカード -->
+  <div class="card border-0 shadow-sm">
+    <!-- 改善されたヘッダー -->
+    <div class="diary-header-improved">
+      <div class="header-main-info">
+        <div class="stock-identity">
+          <div class="stock-name-row">
+            <h1 class="stock-title">{{ diary.stock_name }}</h1>
+            {% if diary.stock_symbol %}
+            <span class="stock-symbol-badge">{{ diary.stock_symbol }}</span>
+            {% endif %}
+          </div>
+          
+          <div class="header-meta-info">
+            <div class="purchase-date">
+              <i class="bi bi-calendar-check"></i>
+              <span>{{ diary.purchase_date|date:"Y年m月d日" }}</span>
+            </div>
+            
+            <div class="status-badges">
+              {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
+              <span class="status-badge-improved status-badge-memo">
+                <i class="bi bi-sticky"></i>
+                メモ
+              </span>
+              {% elif diary.sell_date %}
+              <span class="status-badge-improved status-badge-sold">
+                <i class="bi bi-check-circle"></i>
+                売却済み
+              </span>
+              {% else %}
+              <span class="status-badge-improved status-badge-active">
+                <i class="bi bi-graph-up"></i>
+                保有中
+              </span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        
+        <!-- 価格サマリー -->
+        {% if not diary.is_memo and diary.purchase_price is not None %}
+        <div class="price-summary">
+          <div class="main-price">{{ diary.purchase_price|floatformat:2|intcomma }}円</div>
+          {% if diary.purchase_quantity %}
+          <div class="sub-info">{{ diary.purchase_quantity }}株</div>
+          {% endif %}
+          
+          {% if diary.sell_date and diary.sell_price %}
+          {% with profit_rate=diary.sell_price|sub:diary.purchase_price|div:diary.purchase_price|mul:100 %}
+          <div class="profit-indicator {% if profit_rate > 0 %}profit-positive{% elif profit_rate < 0 %}profit-negative{% endif %}">
+            {% if profit_rate > 0 %}+{% endif %}{{ profit_rate|floatformat:2 }}%
+          </div>
+          {% endwith %}
+          {% endif %}
+        </div>
         {% endif %}
-
-        <!-- 売却済みバッジ -->
-        {% if diary.sell_date %}
-        <span class="badge bg-danger ms-2">売却済み</span>
-        {% endif %}
-      </div>
-
-      <!-- PC用の操作ボタン群 -->
-      <div class="action-buttons d-none d-md-flex">
-        {% if not diary.sell_date and not diary.is_memo and diary.purchase_price is not None and diary.purchase_quantity is not None %}
-        <a href="{% url 'stockdiary:sell_specific' diary.id %}" class="btn btn-diary btn-diary-success">
-          <i class="bi bi-cash-coin me-1"></i> 売却
-        </a>
-        {% endif %}
-
-        {% if diary.sell_date %}
-        <a href="{% url 'stockdiary:cancel_sell' diary.id %}" class="btn btn-diary btn-diary-success">
-          <i class="bi bi-arrow-counterclockwise me-1"></i> 売却取消
-        </a>
-        {% endif %}
-
-        <a href="{% url 'stockdiary:update' diary.id %}" class="btn btn-diary btn-diary-warning ms-2">
-          <i class="bi bi-pencil me-1"></i> 編集
-        </a>
-
-        <a href="{% url 'stockdiary:delete' diary.id %}" class="btn btn-diary btn-diary-danger ms-2">
-          <i class="bi bi-trash me-1"></i> 削除
-        </a>
       </div>
     </div>
 
-    <!-- 日記本文部分 -->
-    <div class="diary-card-body">
-      <!-- メモアイコン -->
-      {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
-      <i class="bi bi-sticky memo-icon"></i>
-      {% endif %}
+    <!-- 改善されたタブナビゲーション -->
+    <div class="tabs-section">
+      <!-- 改善されたスワイプヒント -->
+      <div class="swipe-hint-improved d-md-none" id="swipeHint">
+        <i class="bi bi-arrow-left-right me-1"></i>
+        左右にスワイプしてタブを切り替えできます
+        <button type="button" class="btn-close btn-close-sm ms-2" onclick="hideSwipeHint()"></button>
+      </div>
 
-      <!-- 日付表示 -->
-      <p class="diary-date" style="padding-left: 20px;">
-        <i class="bi bi-calendar-check"></i> {{ diary.purchase_date|date:"Y年m月d日" }}
-      </p>
-
-      <!-- タブナビゲーション -->
-      <div class="diary-tabs-container mt-4">
-        <!-- スワイプヒント（モバイルのみ表示） -->
-        <div class="swipe-hint text-center text-muted mb-2 d-md-none">
-          <i class="bi bi-arrow-left-right me-1"></i> 左右にスワイプでタブを切り替え
-        </div>
-
-        <ul class="nav nav-tabs" id="diaryDetailTabs" role="tablist">
-          <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic-content"
-              type="button" role="tab" aria-controls="basic-content" aria-selected="true">
-              <i class="bi bi-info-circle me-1"></i> 基本情報
-            </button>
-          </li>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes-content" type="button"
-              role="tab" aria-controls="notes-content" aria-selected="false">
-              <i class="bi bi-journal-richtext me-1"></i> 継続記録
-            </button>
-          </li>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline-content"
-              type="button" role="tab" aria-controls="timeline-content" aria-selected="false">
-              <i class="bi bi-link-45deg me-1"></i> タイムライン
-            </button>
-          </li>
-        </ul>
-
-        <!-- タブコンテンツ -->
-        <div class="tab-content diary-tab-content" id="diaryDetailTabContent">
-          <!-- 基本情報タブ -->
-          <div class="tab-pane fade show active" id="basic-content" role="tabpanel" aria-labelledby="basic-tab">
-            <div class="row">
-              <!-- 購入理由セクション -->
-              <div class="col-lg-6 mb-4">
-                <h3 class="section-title mb-3">
-                  <i class="bi bi-journal-text"></i>
-                  {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
-                  メモ内容
-                  {% else %}
-                  購入理由
-                  {% endif %}
-                </h3>
-
-                <div class="mx-3">
-                  {{ diary.reason|safe|linebreaks }}
-                </div>
-              </div>
-
-              <!-- 基本情報セクション -->
-              <div class="col-lg-6 mb-4">
-                <h3 class="section-title mb-3">
-                  <i class="bi bi-info-circle"></i> 売買情報
-                </h3>
-
-                <div class="info-block">
-                  <div class="info-row">
-                    <div class="info-item">
-                      <div class="info-icon">
-                        <i class="bi bi-calendar-date"></i>
-                      </div>
-                      <div class="info-content">
-                        <span class="info-label">購入/メモ日</span>
-                        <span class="info-value">{{ diary.purchase_date|date:"Y年m月d日" }}</span>
-                      </div>
-                    </div>
-
-                    {% if not diary.is_memo and diary.purchase_price is not None %}
-                    <div class="info-item">
-                      <div class="info-icon">
-                        <i class="bi bi-currency-yen"></i>
-                      </div>
-                      <div class="info-content">
-                        <span class="info-label">購入価格</span>
-                        <span class="info-value">{{ diary.purchase_price|floatformat:2|intcomma }}円</span>
-                      </div>
-                    </div>
-                    {% endif %}
-
-                    {% if not diary.is_memo and diary.purchase_quantity is not None %}
-                    <div class="info-item">
-                      <div class="info-icon">
-                        <i class="bi bi-graph-up"></i>
-                      </div>
-                      <div class="info-content">
-                        <span class="info-label">購入数量</span>
-                        <span class="info-value">{{ diary.purchase_quantity }}株</span>
-                      </div>
-                    </div>
-                    {% endif %}
-
-                    {% if not diary.is_memo and diary.purchase_price is not None and diary.purchase_quantity is not None %}
-                    <div class="info-item">
-                      <div class="info-icon">
-                        <i class="bi bi-cash-stack"></i>
-                      </div>
-                      <div class="info-content">
-                        <span class="info-label">総購入額</span>
-                        <span class="info-value">{{ diary.purchase_price|mul:diary.purchase_quantity|floatformat:2|intcomma }}円</span>
-                      </div>
-                    </div>
-                    {% endif %}
-                  </div>
-
-                  <!-- 売却情報 -->
-                  {% if diary.sell_date %}
-                  <hr class="my-3" style="border-style: dashed;">
-
-                  <div class="info-row">
-                    <div class="info-item">
-                      <div class="info-icon">
-                        <i class="bi bi-calendar-check"></i>
-                      </div>
-                      <div class="info-content">
-                        <span class="info-label">売却日</span>
-                        <span class="info-value">{{ diary.sell_date|date:"Y年m月d日" }}</span>
-                      </div>
-                    </div>
-
-                    <div class="info-item">
-                      <div class="info-icon">
-                        <i class="bi bi-currency-yen"></i>
-                      </div>
-                      <div class="info-content">
-                        <span class="info-label">売却価格</span>
-                        <span class="info-value">{{ diary.sell_price|floatformat:2|intcomma }}円</span>
-                      </div>
-                    </div>
-
-                    <div class="info-item">
-                      <div class="info-icon">
-                        <i class="bi bi-graph-up-arrow"></i>
-                      </div>
-                      <div class="info-content">
-                        <span class="info-label">損益</span>
-                        {% with profit=diary.sell_price|sub:diary.purchase_price|mul:diary.purchase_quantity %}
-                        {% if profit > 0 %}
-                        <span class="profit">+{{ profit|floatformat:2|intcomma }}円</span>
-                        {% elif profit < 0 %}
-                        <span class="loss">{{ profit|floatformat:2|intcomma }}円</span>
-                        {% else %}
-                        <span class="text-muted">{{ profit|floatformat:2|intcomma }}円</span>
-                        {% endif %}
-                        {% endwith %}
-                      </div>
-                    </div>
-
-                    <div class="info-item">
-                      <div class="info-icon">
-                        <i class="bi bi-percent"></i>
-                      </div>
-                      <div class="info-content">
-                        <span class="info-label">損益率</span>
-                        {% with rate=diary.sell_price|sub:diary.purchase_price|div:diary.purchase_price|mul:100 %}
-                        {% if rate > 0 %}
-                        <span class="profit">+{{ rate|floatformat:2 }}%</span>
-                        {% elif rate < 0 %}
-                        <span class="loss">{{ rate|floatformat:2 }}%</span>
-                        {% else %}
-                        <span class="text-muted">{{ rate|floatformat:2 }}%</span>
-                        {% endif %}
-                        {% endwith %}
-                      </div>
-                    </div>
-                  </div>
-                  {% endif %}
-                </div>
-              </div>
+      <ul class="improved-tabs" id="diaryDetailTabs" role="tablist">
+        <li class="improved-tab-item" role="presentation">
+          <button class="improved-tab-link active" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic-content"
+            type="button" role="tab" aria-controls="basic-content" aria-selected="true">
+            <div class="tab-icon">
+              <i class="bi bi-info-circle"></i>
             </div>
-
-            <!-- 分析データセクション -->
-            {% if diary.analysis_values.exists %}
-            <div class="col-lg-12 mb-4">
-              <h3 class="section-title mb-3">
-                <i class="bi bi-clipboard-data"></i> 分析データ
-              </h3>
-
-              {% regroup diary.analysis_values.all|dictsort:"analysis_item.template.id" by analysis_item.template as template_groups %}
-
-              {% for template_group in template_groups %}
-              <div class="info-block mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                  <h4 class="mb-0" style="color: var(--primary-color);">{{ template_group.grouper.name }}</h4>
-                  <a href="{% url 'analysis_template:report' template_group.grouper.id %}"
-                    class="btn btn-diary btn-diary-outline">
-                    <i class="bi bi-clipboard-data"></i> レポート
-                  </a>
-                </div>
-
-                <div class="table-responsive">
-                  <table class="table">
-                    <thead>
-                      <tr>
-                        <th style="width: 60%;">項目</th>
-                        <th style="width: 40%;">値</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {% for value in template_group.list|dictsort:"analysis_item.order" %}
-                      <tr>
-                        <td>
-                          <strong>{{ value.analysis_item.name }}</strong>
-                          {% if value.analysis_item.description %}
-                          <div class="small text-muted">{{ value.analysis_item.description|linebreaks }}</div>
-                          {% endif %}
-                        </td>
-                        <td>
-                          {% if value.analysis_item.item_type == 'boolean_with_value' %}
-                          <div class="d-flex align-items-center gap-2">
-                            <!-- チェックボックス状態の表示 -->
-                            <div class="status-indicator">
-                              {% if value.boolean_value %}
-                              <span class="badge bg-success" data-bs-toggle="tooltip" title="条件を満たしています">
-                                <i class="bi bi-check-lg"></i>
-                              </span>
-                              {% else %}
-                              <span class="badge bg-secondary" data-bs-toggle="tooltip" title="条件を満たしていません">
-                                <i class="bi bi-x-lg"></i>
-                              </span>
-                              {% endif %}
-                            </div>
-
-                            <!-- 値の表示 -->
-                            <div class="value-display">
-                              {% if value.number_value != None %}
-                              <span class="fw-medium">{{ value.number_value|floatformat:"-2" }}</span>
-                              {% elif value.text_value %}
-                              <span class="text-value">{{ value.text_value }}</span>
-                              {% else %}
-                              <span class="text-muted small">-</span>
-                              {% endif %}
-                            </div>
-                          </div>
-                          {% elif value.analysis_item.item_type == 'number' %}
-                          <span class="fw-bold">{{ value.number_value|floatformat:"-2" }}</span>
-                          {% elif value.analysis_item.item_type == 'boolean' %}
-                          {% if value.boolean_value %}
-                          <span class="badge bg-success">
-                            <i class="bi bi-check-lg"></i> はい
-                          </span>
-                          {% else %}
-                          <span class="badge bg-secondary">
-                            <i class="bi bi-x-lg"></i> いいえ
-                          </span>
-                          {% endif %}
-                          {% elif value.analysis_item.item_type == 'select' %}
-                          <span class="badge bg-info">{{ value.text_value }}</span>
-                          {% else %}
-                          {{ value.text_value|default:"-" }}
-                          {% endif %}
-                        </td>
-                      </tr>
-                      {% endfor %}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              {% endfor %}
+            <div class="tab-label">基本情報</div>
+          </button>
+        </li>
+        <li class="improved-tab-item" role="presentation">
+          <button class="improved-tab-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes-content" 
+            type="button" role="tab" aria-controls="notes-content" aria-selected="false">
+            <div class="tab-icon">
+              <i class="bi bi-journal-richtext"></i>
             </div>
+            <div class="tab-label">継続記録</div>
+            {% if notes.count > 0 %}
+            <div class="tab-count">{{ notes.count }}件</div>
             {% endif %}
+          </button>
+        </li>
+        <li class="improved-tab-item" role="presentation">
+          <button class="improved-tab-link" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline-content"
+            type="button" role="tab" aria-controls="timeline-content" aria-selected="false">
+            <div class="tab-icon">
+              <i class="bi bi-link-45deg"></i>
+            </div>
+            <div class="tab-label">タイムライン</div>
+            {% if related_diaries %}
+            <div class="tab-count">{{ related_diaries|length }}件</div>
+            {% endif %}
+          </button>
+        </li>
+      </ul>
 
-            <div class="row">
-              <!-- タグセクション -->
-              <div class="col-lg-6 mb-4">
-                <h3 class="section-title mb-1">
-                  <i class="bi bi-tags"></i> タグ
-                </h3>
-
-                <div style="background-color:rgba(255,255,255,0.5); padding:15px; border-radius:8px;">
-                  {% for tag in diary.tags.all %}
-                  <span class="diary-tag my-1">{{ tag.name }}</span>
-                  {% empty %}
-                  <p class="text-muted mb-0">タグはありません</p>
-                  {% endfor %}
-                </div>
+      <!-- 改善されたタブコンテンツ -->
+      <div class="tab-content tab-content-improved" id="diaryDetailTabContent">
+        <!-- 基本情報タブ -->
+        <div class="tab-pane fade show active" id="basic-content" role="tabpanel" aria-labelledby="basic-tab">
+          <div class="info-grid">
+            <!-- 購入理由/メモ -->
+            <div class="info-card">
+              <div class="info-card-title">
+                <i class="bi bi-journal-text"></i>
+                {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
+                メモ内容
+                {% else %}
+                購入理由
+                {% endif %}
               </div>
+              <div class="reason-content">
+                {{ diary.reason|safe|linebreaks }}
+              </div>
+            </div>
 
-              <!-- メモセクション -->
-              <div class="col-lg-6 mb-4">
-                <h3 class="section-title mb-3">
-                  <i class="bi bi-sticky"></i> メモ
-                </h3>
-
-                <div style="background-color:rgba(255,255,255,0.5); padding:15px; border-radius:8px; min-height:100px;">
-                  {% if diary.memo %}
-                  <div class="rich-content">{{ diary.memo|linebreaks }}</div>
-                  {% else %}
-                  <p class="text-muted mb-0">メモはありません</p>
-                  {% endif %}
+            <!-- 売買情報 -->
+            <div class="info-card">
+              <div class="info-card-title">
+                <i class="bi bi-cash-coin"></i>
+                売買情報
+              </div>
+              <div class="info-items">
+                <div class="info-item-improved">
+                  <div class="info-icon-improved">
+                    <i class="bi bi-calendar-date"></i>
+                  </div>
+                  <div class="info-content-improved">
+                    <div class="info-label-improved">購入/メモ日</div>
+                    <div class="info-value-improved">{{ diary.purchase_date|date:"Y年m月d日" }}</div>
+                  </div>
                 </div>
+
+                {% if not diary.is_memo and diary.purchase_price is not None %}
+                <div class="info-item-improved">
+                  <div class="info-icon-improved">
+                    <i class="bi bi-currency-yen"></i>
+                  </div>
+                  <div class="info-content-improved">
+                    <div class="info-label-improved">購入価格</div>
+                    <div class="info-value-improved">{{ diary.purchase_price|floatformat:2|intcomma }}円</div>
+                  </div>
+                </div>
+                {% endif %}
+
+                {% if not diary.is_memo and diary.purchase_quantity is not None %}
+                <div class="info-item-improved">
+                  <div class="info-icon-improved">
+                    <i class="bi bi-graph-up"></i>
+                  </div>
+                  <div class="info-content-improved">
+                    <div class="info-label-improved">購入数量</div>
+                    <div class="info-value-improved">{{ diary.purchase_quantity }}株</div>
+                  </div>
+                </div>
+                {% endif %}
+
+                {% if not diary.is_memo and diary.purchase_price is not None and diary.purchase_quantity is not None %}
+                <div class="info-item-improved">
+                  <div class="info-icon-improved">
+                    <i class="bi bi-cash-stack"></i>
+                  </div>
+                  <div class="info-content-improved">
+                    <div class="info-label-improved">総購入額</div>
+                    <div class="info-value-improved">{{ diary.purchase_price|mul:diary.purchase_quantity|floatformat:2|intcomma }}円</div>
+                  </div>
+                </div>
+                {% endif %}
+
+                <!-- 売却情報 -->
+                {% if diary.sell_date %}
+                <div class="info-item-improved">
+                  <div class="info-icon-improved">
+                    <i class="bi bi-calendar-check"></i>
+                  </div>
+                  <div class="info-content-improved">
+                    <div class="info-label-improved">売却日</div>
+                    <div class="info-value-improved">{{ diary.sell_date|date:"Y年m月d日" }}</div>
+                  </div>
+                </div>
+
+                <div class="info-item-improved">
+                  <div class="info-icon-improved">
+                    <i class="bi bi-currency-yen"></i>
+                  </div>
+                  <div class="info-content-improved">
+                    <div class="info-label-improved">売却価格</div>
+                    <div class="info-value-improved">{{ diary.sell_price|floatformat:2|intcomma }}円</div>
+                  </div>
+                </div>
+
+                <div class="info-item-improved">
+                  <div class="info-icon-improved">
+                    <i class="bi bi-graph-up-arrow"></i>
+                  </div>
+                  <div class="info-content-improved">
+                    <div class="info-label-improved">損益</div>
+                    {% with profit=diary.sell_price|sub:diary.purchase_price|mul:diary.purchase_quantity %}
+                    {% if profit > 0 %}
+                    <div class="info-value-improved text-success">+{{ profit|floatformat:2|intcomma }}円</div>
+                    {% elif profit < 0 %}
+                    <div class="info-value-improved text-danger">{{ profit|floatformat:2|intcomma }}円</div>
+                    {% else %}
+                    <div class="info-value-improved text-muted">{{ profit|floatformat:2|intcomma }}円</div>
+                    {% endif %}
+                    {% endwith %}
+                  </div>
+                </div>
+                {% endif %}
               </div>
             </div>
           </div>
 
-          <!-- 継続記録タブ -->
-          <div class="tab-pane fade" id="notes-content" role="tabpanel" aria-labelledby="notes-tab">
-            <!-- 継続記録の表示 -->
-            <div class="notes-container">
-              {% for note in notes %}
-              <div class="note-item {{ note.importance }}" id="note-{{ note.id }}">
-                <div class="note-header">
-                  <div class="note-header-left">
-                    <span class="note-date">
-                      <i class="bi bi-calendar-date"></i> {{ note.date|date:"Y年m月d日" }}
-                    </span>
-                    <span class="badge {% if note.note_type == 'analysis' %}bg-primary
-                          {% elif note.note_type == 'news' %}bg-info
-                          {% elif note.note_type == 'earnings' %}bg-success
-                          {% elif note.note_type == 'insight' %}bg-warning
-                          {% elif note.note_type == 'risk' %}bg-danger
-                          {% else %}bg-secondary{% endif %}">
+          <!-- タグとメモ -->
+          <div class="info-grid">
+            <div class="info-card">
+              <div class="info-card-title">
+                <i class="bi bi-tags"></i>
+                タグ
+              </div>
+              {% for tag in diary.tags.all %}
+              <span class="badge bg-primary bg-opacity-10 text-primary me-1 mb-1">{{ tag.name }}</span>
+              {% empty %}
+              <p class="text-muted mb-0">タグはありません</p>
+              {% endfor %}
+            </div>
+
+            <div class="info-card">
+              <div class="info-card-title">
+                <i class="bi bi-sticky"></i>
+                メモ
+              </div>
+              {% if diary.memo %}
+              <div class="memo-content">{{ diary.memo|linebreaks }}</div>
+              {% else %}
+              <p class="text-muted mb-0">メモはありません</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- 継続記録タブ -->
+        <div class="tab-pane fade" id="notes-content" role="tabpanel" aria-labelledby="notes-tab">
+          <!-- 簡素化された継続記録フォーム -->
+          <div class="simplified-note-form">
+            <form id="quickNoteForm" method="post" action="{% url 'stockdiary:add_note' diary.id %}">
+              {% csrf_token %}
+              
+              <div class="form-section">
+                <label for="note_date" class="section-title">
+                  <i class="bi bi-calendar-date"></i>
+                  日付
+                </label>
+                <input type="date" class="form-control" id="note_date" name="date" 
+                       value="{% now 'Y-m-d' %}" required>
+              </div>
+              
+              <div class="form-section">
+                <div class="section-title">
+                  <i class="bi bi-tag"></i>
+                  記録タイプ
+                </div>
+                <div class="option-pills">
+                  <div class="option-pill active" data-value="analysis" data-target="note_type">
+                    <i class="bi bi-graph-up"></i>
+                    分析更新
+                  </div>
+                  <div class="option-pill" data-value="news" data-target="note_type">
+                    <i class="bi bi-newspaper"></i>
+                    ニュース
+                  </div>
+                  <div class="option-pill" data-value="earnings" data-target="note_type">
+                    <i class="bi bi-bar-chart"></i>
+                    決算
+                  </div>
+                  <div class="option-pill" data-value="insight" data-target="note_type">
+                    <i class="bi bi-lightbulb"></i>
+                    気づき
+                  </div>
+                  <div class="option-pill" data-value="risk" data-target="note_type">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    リスク
+                  </div>
+                </div>
+                <input type="hidden" id="note_type" name="note_type" value="analysis">
+              </div>
+              
+              <div class="form-section">
+                <div class="section-title">
+                  <i class="bi bi-exclamation-circle"></i>
+                  重要度
+                </div>
+                <div class="option-pills">
+                  <div class="option-pill importance-pill low" data-value="low" data-target="note_importance">
+                    <i class="bi bi-arrow-down-circle"></i>
+                    低
+                  </div>
+                  <div class="option-pill importance-pill medium active" data-value="medium" data-target="note_importance">
+                    <i class="bi bi-dash-circle"></i>
+                    中
+                  </div>
+                  <div class="option-pill importance-pill high" data-value="high" data-target="note_importance">
+                    <i class="bi bi-arrow-up-circle"></i>
+                    高
+                  </div>
+                </div>
+                <input type="hidden" id="note_importance" name="importance" value="medium">
+              </div>
+              
+              <div class="form-section">
+                <label for="note_content" class="section-title">
+                  <i class="bi bi-journal-text"></i>
+                  記録内容
+                </label>
+                <textarea class="form-control" id="note_content" name="content" rows="4" 
+                          placeholder="状況の変化や新たな情報を記録しましょう" required></textarea>
+              </div>
+              
+              <div class="form-section">
+                <label for="note_current_price" class="section-title">
+                  <i class="bi bi-currency-yen"></i>
+                  現在価格（オプション）
+                </label>
+                <div class="input-group">
+                  <input type="number" class="form-control" id="note_current_price" name="current_price" 
+                         placeholder="円" step="0.01">
+                  <button type="button" class="btn btn-outline-primary" id="fetch-note-price">
+                    <i class="bi bi-arrow-repeat"></i>
+                    <span class="d-none d-sm-inline ms-1">取得</span>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary">
+                  <i class="bi bi-journal-plus me-1"></i>
+                  記録を追加
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- 継続記録一覧 -->
+          <div class="notes-list">
+            {% for note in notes %}
+            <div class="note-card mb-4">
+              <div class="note-card-header">
+                <div class="note-meta-left">
+                  <div class="note-date">
+                    <i class="bi bi-calendar-date"></i>
+                    {{ note.date|date:"Y年m月d日" }}
+                  </div>
+                  <div class="note-badges">
+                    <span class="badge 
+                      {% if note.note_type == 'analysis' %}bg-primary
+                      {% elif note.note_type == 'news' %}bg-info
+                      {% elif note.note_type == 'earnings' %}bg-success
+                      {% elif note.note_type == 'insight' %}bg-warning
+                      {% elif note.note_type == 'risk' %}bg-danger
+                      {% else %}bg-secondary{% endif %}">
                       {% if note.note_type == 'analysis' %}分析更新
                       {% elif note.note_type == 'news' %}ニュース
                       {% elif note.note_type == 'earnings' %}決算情報
@@ -1012,142 +1269,82 @@
                       {% elif note.note_type == 'risk' %}リスク要因
                       {% else %}その他{% endif %}
                     </span>
-                  </div>
-                  <div class="note-actions">
-                    <button type="button" class="btn btn-sm btn-outline-danger delete-note-btn"
-                      data-note-id="{{ note.id }}" title="削除">
-                      <i class="bi bi-trash"></i>
-                    </button>
+                    {% if note.importance == 'high' %}
+                    <span class="importance-indicator high">
+                      <i class="bi bi-exclamation-triangle"></i>
+                      重要
+                    </span>
+                    {% elif note.importance == 'medium' %}
+                    <span class="importance-indicator medium">
+                      <i class="bi bi-info-circle"></i>
+                      中
+                    </span>
+                    {% endif %}
                   </div>
                 </div>
-
-                <div class="note-body">
-                  {% if note.current_price %}
-                  <div class="note-price-info">
-                    <div class="note-price-item">
-                      <span class="note-price-label">記録時価格</span>
-                      <span class="note-price-value">{{ note.current_price|floatformat:2|intcomma }}円</span>
-                    </div>
-
-                    {% with price_change=note.get_price_change %}
-                    {% if price_change %}
-                    <div class="note-price-item">
-                      <span class="note-price-label">購入時からの変動</span>
-                      <span
-                        class="note-price-value {% if price_change > 0 %}text-success{% elif price_change < 0 %}text-danger{% endif %}">
-                        {{ price_change|floatformat:2 }}%
-                      </span>
-                    </div>
-                    {% endif %}
-                    {% endwith %}
+                {% if note.current_price %}
+                <div class="note-price-summary">
+                  <div class="price-value">{{ note.current_price|floatformat:2|intcomma }}円</div>
+                  <div class="price-label">記録時価格</div>
+                  {% with price_change=note.get_price_change %}
+                  {% if price_change %}
+                  <div class="price-change {% if price_change > 0 %}positive{% elif price_change < 0 %}negative{% endif %}">
+                    {% if price_change > 0 %}+{% endif %}{{ price_change|floatformat:2 }}%
                   </div>
                   {% endif %}
-
-                  <div class="note-content">
-                    {{ note.content|safe|linebreaks }}
-                  </div>
+                  {% endwith %}
                 </div>
+                {% endif %}
               </div>
-              {% empty %}
-              <div class="text-center py-4">
-                <i class="bi bi-journal-text text-muted" style="font-size: 2rem;"></i>
-                <p class="text-muted mt-2">継続的な記録はまだありません。</p>
-                <p class="text-muted">下のボタンから銘柄の状況変化や新たな分析を追加できます。</p>
+              
+              <div class="note-card-body">
+                <div class="note-content-text">{{ note.content|linebreaks }}</div>
               </div>
-              {% endfor %}
             </div>
-
-            <div class="quick-note-form">
-              <form id="quickNoteForm" method="post" action="{% url 'stockdiary:add_note' diary.id %}">
-                {% csrf_token %}
-
-                <!-- 日付入力 -->
-                <div class="form-floating mb-3">
-                  <input type="date" class="form-control" id="note_date" name="date"
-                    value="{{ note_form.date.value|date:'Y-m-d' }}" placeholder=" " style="text-align: center;"
-                    required>
-                  <label for="note_date">日付</label>
-                </div>
-
-                <!-- 記録タイプの選択（ラジオボタン的なUI） -->
-                <div class="note-type-select">
-                  <div class="note-type-option active" data-value="analysis">
-                    <i class="bi bi-graph-up"></i> 分析更新
-                  </div>
-                  <div class="note-type-option" data-value="news">
-                    <i class="bi bi-newspaper"></i> ニュース
-                  </div>
-                  <div class="note-type-option" data-value="earnings">
-                    <i class="bi bi-bar-chart"></i> 決算情報
-                  </div>
-                  <div class="note-type-option" data-value="insight">
-                    <i class="bi bi-lightbulb"></i> 気づき
-                  </div>
-                  <div class="note-type-option" data-value="risk">
-                    <i class="bi bi-exclamation-triangle"></i> リスク
-                  </div>
-                  <input type="hidden" id="note_type" name="note_type" value="analysis">
-                </div>
-
-                <!-- 重要度の選択 -->
-                <div class="importance-select">
-                  <div class="importance-option low" data-value="low">
-                    <i class="bi bi-arrow-down-circle"></i> 低
-                  </div>
-                  <div class="importance-option medium active" data-value="medium">
-                    <i class="bi bi-dash-circle"></i> 中
-                  </div>
-                  <div class="importance-option high" data-value="high">
-                    <i class="bi bi-arrow-up-circle"></i> 高
-                  </div>
-                  <input type="hidden" id="note_importance" name="importance" value="medium">
-                </div>
-
-                <!-- 内容入力 -->
-                <div class="form-floating mb-3">
-                  <textarea class="form-control" id="note_content" name="content" style="height: 120px" placeholder=" "
-                    required></textarea>
-                  <label for="note_content">記録内容</label>
-                </div>
-
-                <!-- 現在価格入力 -->
-                <div class="input-group mb-3">
-                  <span class="input-group-text">現在価格</span>
-                  <input type="number" class="form-control" id="note_current_price" name="current_price" placeholder="円"
-                    step="0.01">
-                  <button type="button" class="btn btn-outline-primary" id="fetch-note-price">
-                    <i class="bi bi-arrow-repeat"></i> 現在株価取得
-                  </button>
-                </div>
-                <div class="d-flex justify-content-end">
-                  <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-journal-plus me-1"></i> 記録を追加
-                  </button>
-                </div>
-              </form>
+            {% empty %}
+            <div class="empty-state">
+              <div class="empty-icon">
+                <i class="bi bi-journal-text"></i>
+              </div>
+              <h4>継続記録はまだありません</h4>
+              <p>上のフォームから最初の記録を追加しましょう</p>
             </div>
+            {% endfor %}
           </div>
+        </div>
 
-          <!-- タイムラインタブ -->
-          <div class="tab-pane fade" id="timeline-content" role="tabpanel" aria-labelledby="timeline-tab">
-            {% if related_diaries %}
-            <div class="investment-timeline">
-              <!-- タイムラインリスト - すべての日記を日付順に表示 -->
-              <ol class="timeline-list">
-                {% for timeline_diary in timeline_diaries %}
-                <li
-                  class="timeline-list-item {% if timeline_diary.sell_date %}item-sold{% elif timeline_diary.is_memo or timeline_diary.purchase_price is None or timeline_diary.purchase_quantity is None %}item-memo{% else %}item-active{% endif %} {% if timeline_diary.id == diary.id %}timeline-current{% endif %}">
-                  <div class="timeline-date">
-                    {{ timeline_diary.purchase_date|date:"Y年m月d日" }}
-                    {% if timeline_diary.id == diary.id %}
-                    <span class="current-badge">現在表示中</span>
-                    {% endif %}
-                  </div>
-
+        <!-- タイムラインタブ -->
+        <div class="tab-pane fade" id="timeline-content" role="tabpanel" aria-labelledby="timeline-tab">
+          {% if related_diaries %}
+          <div class="timeline-section">
+            <h3 class="section-title mb-4">
+              <i class="bi bi-clock-history"></i>
+              {{ diary.stock_symbol }} の投資履歴
+            </h3>
+            
+            <ol class="timeline-list">
+              {% for timeline_diary in timeline_diaries %}
+              <li class="timeline-item 
+                {% if timeline_diary.sell_date %}sold
+                {% elif timeline_diary.is_memo or timeline_diary.purchase_price is None or timeline_diary.purchase_quantity is None %}memo
+                {% else %}active{% endif %}
+                {% if timeline_diary.id == diary.id %}current{% endif %}">
+                
+                <div class="timeline-date mb-2">
+                  {{ timeline_diary.purchase_date|date:"Y年m月d日" }}
                   {% if timeline_diary.id == diary.id %}
-                  <!-- 現在表示中の日記 -->
-                  <div class="simple-card current-card">
-                    <div class="card-badge">
+                  <span class="badge bg-warning ms-2">現在表示中</span>
+                  {% endif %}
+                </div>
+
+                {% if timeline_diary.id == diary.id %}
+                <!-- 現在表示中の日記 -->
+                <div class="timeline-card current">
+                  <div class="timeline-card-header">
+                    <div class="timeline-stock-info">
+                      <h6>{{ timeline_diary.stock_name }}</h6>
+                    </div>
+                    <div class="timeline-badges">
                       {% if timeline_diary.sell_date %}
                       <span class="badge bg-danger">売却済み</span>
                       {% elif timeline_diary.is_memo or timeline_diary.purchase_price is None or timeline_diary.purchase_quantity is None %}
@@ -1156,1196 +1353,193 @@
                       <span class="badge bg-success">保有中</span>
                       {% endif %}
                     </div>
+                  </div>
 
-                    <h6 class="card-title">{{ timeline_diary.stock_name }}</h6>
-
-                    {% if not timeline_diary.is_memo and timeline_diary.purchase_price is not None and timeline_diary.purchase_quantity is not None %}
-                    <div class="card-price">
-                      {{ timeline_diary.purchase_price|floatformat:2|intcomma }}円 × {{ timeline_diary.purchase_quantity }}株
-                      {% if timeline_diary.sell_date %}
-                      {% with profit=timeline_diary.sell_price|sub:timeline_diary.purchase_price|div:timeline_diary.purchase_price|mul:100 %}
-                      <span class="{% if profit > 0 %}text-success{% elif profit < 0 %}text-danger{% endif %}">
-                        ({{ profit|floatformat:2 }}%)
-                      </span>
-                      {% endwith %}
-                      {% endif %}
-                    </div>
+                  {% if not timeline_diary.is_memo and timeline_diary.purchase_price is not None and timeline_diary.purchase_quantity is not None %}
+                  <div class="timeline-price-info">
+                    {{ timeline_diary.purchase_price|floatformat:2|intcomma }}円 × {{ timeline_diary.purchase_quantity }}株
+                    {% if timeline_diary.sell_date %}
+                    {% with profit=timeline_diary.sell_price|sub:timeline_diary.purchase_price|div:timeline_diary.purchase_price|mul:100 %}
+                    <span class="{% if profit > 0 %}text-success{% elif profit < 0 %}text-danger{% endif %}">
+                      ({% if profit > 0 %}+{% endif %}{{ profit|floatformat:2 }}%)
+                    </span>
+                    {% endwith %}
                     {% endif %}
+                  </div>
+                  {% endif %}
 
-                    <div class="card-content">
-                      {{ timeline_diary.reason|linebreaks|safe|truncatewords_html:20 }}
+                  <div class="timeline-content">
+                    {{ timeline_diary.reason|linebreaks|safe|truncatewords_html:30 }}
+                  </div>
+                </div>
+                {% else %}
+                <!-- その他の関連日記 -->
+                <a href="{% url 'stockdiary:detail' timeline_diary.id %}" class="timeline-card">
+                  <div class="timeline-card-header">
+                    <div class="timeline-stock-info">
+                      <h6>{{ timeline_diary.stock_name }}</h6>
+                    </div>
+                    <div class="timeline-badges">
+                      {% if timeline_diary.sell_date %}
+                      <span class="badge bg-danger">売却済み</span>
+                      {% elif timeline_diary.is_memo or timeline_diary.purchase_price is None or timeline_diary.purchase_quantity is None %}
+                      <span class="badge bg-info">メモ</span>
+                      {% else %}
+                      <span class="badge bg-success">保有中</span>
+                      {% endif %}
                     </div>
                   </div>
-                  {% else %}
-                  <!-- その他の関連日記 -->
-                  <a href="{% url 'stockdiary:detail' timeline_diary.id %}" class="timeline-card-link">
-                    <div class="simple-card">
-                      <div class="card-badge">
-                        {% if timeline_diary.sell_date %}
-                        <span class="badge bg-danger">売却済み</span>
-                        {% elif timeline_diary.is_memo or timeline_diary.purchase_price is None or timeline_diary.purchase_quantity is None %}
-                        <span class="badge bg-info">メモ</span>
-                        {% else %}
-                        <span class="badge bg-success">保有中</span>
-                        {% endif %}
-                      </div>
 
-                      <h6 class="card-title">{{ timeline_diary.stock_name }}</h6>
-
-                      {% if not timeline_diary.is_memo and timeline_diary.purchase_price is not None and timeline_diary.purchase_quantity is not None %}
-                        <div class="card-price">
-                          {{ timeline_diary.purchase_price|floatformat:2|intcomma }}円 × {{ timeline_diary.purchase_quantity }}株
-                          {% if timeline_diary.sell_date %}
-                          {% with profit=timeline_diary.sell_price|sub:timeline_diary.purchase_price|div:timeline_diary.purchase_price|mul:100 %}
-                          <span class="{% if profit > 0 %}text-success{% elif profit < 0 %}text-danger{% endif %}">
-                            ({{ profit|floatformat:2 }}%)
-                          </span>
-                          {% endwith %}
-                          {% endif %}
-                        </div>
-                      {% endif %}
-
-                      <div class="card-content">
-                        {{ timeline_diary.reason|linebreaks|safe|truncatewords_html:20 }}
-                      </div>
-
-                      {% if timeline_diary.tags.exists %}
-                      <div class="card-tags">
-                        {% for tag in timeline_diary.tags.all|slice:":3" %}
-                        <span class="card-tag">{{ tag.name }}</span>
-                        {% endfor %}
-                      </div>
-                      {% endif %}
-                    </div>
-                  </a>
+                  {% if not timeline_diary.is_memo and timeline_diary.purchase_price is not None and timeline_diary.purchase_quantity is not None %}
+                  <div class="timeline-price-info">
+                    {{ timeline_diary.purchase_price|floatformat:2|intcomma }}円 × {{ timeline_diary.purchase_quantity }}株
+                    {% if timeline_diary.sell_date %}
+                    {% with profit=timeline_diary.sell_price|sub:timeline_diary.purchase_price|div:timeline_diary.purchase_price|mul:100 %}
+                    <span class="{% if profit > 0 %}text-success{% elif profit < 0 %}text-danger{% endif %}">
+                      ({% if profit > 0 %}+{% endif %}{{ profit|floatformat:2 }}%)
+                    </span>
+                    {% endwith %}
+                    {% endif %}
+                  </div>
                   {% endif %}
-                </li>
-                {% endfor %}
-              </ol>
 
-              {% if related_diaries_count > 10 %}
-              <div class="text-center mt-4">
-                <a href="{% url 'stockdiary:home' %}?query={{ diary.stock_symbol }}"
-                  class="btn btn-outline-primary btn-sm">
-                  すべての記録を表示 (全{{ total_related_count }}件)
+                  <div class="timeline-content">
+                    {{ timeline_diary.reason|linebreaks|safe|truncatewords_html:20 }}
+                  </div>
+
+                  {% if timeline_diary.tags.exists %}
+                  <div class="timeline-tags mt-2">
+                    {% for tag in timeline_diary.tags.all|slice:":3" %}
+                    <span class="badge bg-light text-dark me-1">{{ tag.name }}</span>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
                 </a>
-              </div>
-              {% endif %}
+                {% endif %}
+              </li>
+              {% endfor %}
+            </ol>
 
-              <!-- 位置情報（オプション） -->
-              {% if current_diary_index is not None %}
-              <div class="text-center text-muted mt-3 small">
-                <span>{{ current_diary_index|add:1 }}</span> / <span>{{ total_related_count }}</span> 件目
-              </div>
-              {% endif %}
+            {% if related_diaries_count > 10 %}
+            <div class="text-center mt-4">
+              <a href="{% url 'stockdiary:home' %}?query={{ diary.stock_symbol }}"
+                class="btn btn-outline-primary">
+                すべての記録を表示 (全{{ total_related_count }}件)
+              </a>
             </div>
-            {% else %}
-            <div class="alert alert-info">
-              <i class="bi bi-info-circle me-2"></i>
-              この銘柄の他の日記記録はありません。
+            {% endif %}
+
+            <!-- 位置情報 -->
+            {% if current_diary_index is not None %}
+            <div class="text-center text-muted mt-3 small">
+              <span>{{ current_diary_index|add:1 }}</span> / <span>{{ total_related_count }}</span> 件目
             </div>
             {% endif %}
           </div>
-
-          <!-- デスクトップ向けレイアウト(中・大画面) -->
-          <div class="d-none d-md-flex justify-content-between align-items-center">
-            <div class="meta-info">
-              <i class="bi bi-calendar-check me-1" style="padding-left: 20px;"></i> 作成: {{ diary.created_at|date:"Y年m月d日 H:i" }}
-              <span class="mx-2">|</span>
-              <i class="bi bi-clock-history me-1"></i> 更新: {{ diary.updated_at|date:"Y年m月d日 H:i" }}
+          {% else %}
+          <div class="empty-state">
+            <div class="empty-icon">
+              <i class="bi bi-link-45deg"></i>
             </div>
+            <h4>関連する投資記録はありません</h4>
+            <p>この銘柄の他の投資記録が作成されると、ここに表示されます。</p>
           </div>
-        </div>
-
-        <!-- カード内フッター部分 -->
-        <div class="diary-card-footer">
-          <!-- モバイル向けレイアウト(小さい画面) -->
-          <div class="d-md-none">
-            <div class="d-flex flex-column">
-              <!-- メタ情報を上部に -->
-              <div class="meta-info mb-2 text-center small">
-                <span class="d-block mb-1">
-                  <i class="bi bi-calendar-check me-1"></i> 作成: {{ diary.created_at|date:"Y/m/d H:i" }}
-                </span>
-                <span class="d-block">
-                  <i class="bi bi-clock-history me-1"></i> 更新: {{ diary.updated_at|date:"Y/m/d H:i" }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- 継続記録削除確認モーダル -->
-    <div class="delete-confirm-modal" id="deleteNoteModal">
-      <div class="delete-confirm-content">
-        <div class="delete-confirm-header">
-          <div class="icon">
-            <i class="bi bi-exclamation-triangle"></i>
-          </div>
-          <h5 class="title">継続記録を削除しますか？</h5>
-        </div>
-        <div class="delete-confirm-body">
-          <p>このアクションは取り消せません。本当に削除しますか？</p>
-        </div>
-        <div class="delete-confirm-footer">
-          <button type="button" class="btn btn-outline-secondary" id="cancelDeleteBtn">
-            キャンセル
-          </button>
-          <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
-            <i class="bi bi-trash me-1"></i> 削除する
-          </button>
+          {% endif %}
         </div>
       </div>
     </div>
-    <!-- 日記削除確認モーダル -->
-    <div class="delete-confirm-modal" id="deleteDiaryModal">
-      <div class="delete-confirm-content">
-        <div class="delete-confirm-header">
-          <div class="icon">
-            <i class="bi bi-exclamation-triangle"></i>
-          </div>
-          <h5 class="title">日記を削除しますか？</h5>
-        </div>
-        <div class="delete-confirm-body">
-          <p>この日記「{{ diary.stock_name }}」を削除します。</p>
-          <p class="text-danger">このアクションは取り消せません。本当に削除しますか？</p>
-        </div>
-        <div class="delete-confirm-footer">
-          <button type="button" class="btn btn-outline-secondary" id="cancelDeleteDiaryBtn">
-            キャンセル
-          </button>
-          <button type="button" class="btn btn-danger" id="confirmDeleteDiaryBtn">
-            <i class="bi bi-trash me-1"></i> 削除する
-          </button>
-        </div>
-      </div>
-    </div>
+  </div>
+</div>
 
-    <!-- スピードダイアルコンポーネント -->
-    {% include 'speed_dial.html' with actions=diary_actions %}
-    {% endblock %}
+<!-- スピードダイアルコンポーネント -->
+{% include 'speed_dial.html' with actions=diary_actions %}
 
-    {% block scripts %}
-    {{ block.super }}
+<script>
+// 改善されたスワイプヒント制御
+function hideSwipeHint() {
+  const hint = document.getElementById('swipeHint');
+  if (hint) {
+    hint.classList.add('fade-out');
+    setTimeout(() => {
+      hint.style.display = 'none';
+    }, 500);
+    
+    // ローカルストレージに保存（今後表示しない）
+    localStorage.setItem('swipeHintDismissed', 'true');
+  }
+}
 
-    <!-- タブスワイプ機能スクリプト -->
-    <script>
-      /**
-       * diary-detail-tabs.js - 日記詳細ページのタブスワイプ機能
-       * 継続記録とタイムラインタブ間のスワイプ操作を実装
-       */
-      document.addEventListener('DOMContentLoaded', function () {
-        // タブ要素を取得
-        const tabContent = document.getElementById('diaryDetailTabContent');
-        const basicTab = document.getElementById('basic-tab');
-        const notesTab = document.getElementById('notes-tab');
-        const timelineTab = document.getElementById('timeline-tab');
-
-        // タブペイン要素を取得
-        const basicPane = document.getElementById('basic-content');
-        const notesPane = document.getElementById('notes-content');
-        const timelinePane = document.getElementById('timeline-content');
-
-        // タブ要素が存在しない場合は何もしない
-        if (!tabContent || !basicTab || !notesTab || !timelineTab) return;
-
-        // Bootstrap Tab インスタンスを取得
-        const basicTabInstance = new bootstrap.Tab(basicTab);
-        const notesTabInstance = new bootstrap.Tab(notesTab);
-        const timelineTabInstance = new bootstrap.Tab(timelineTab);
-
-        // スワイプ関連の変数
-        let touchStartX = 0;
-        let touchEndX = 0;
-        let touchMoveX = 0;
-        let startTime = 0;
-        let moveDistance = 0;
-        let currentTabIndex = 0;
-        let isDragging = false;
-        let isAnimating = false;
-
-        // 定数
-        const TRANSITION_DURATION = 300; // ミリ秒
-        const DRAG_THRESHOLD = 80; // スワイプと判定する最小距離（px）
-        const VELOCITY_THRESHOLD = 0.5; // スワイプと判定する最小速度（px/ms）
-
-        // 現在のタブインデックスを設定
-        function initTabIndex() {
-          if (basicTab.classList.contains('active')) {
-            currentTabIndex = 0;
-          } else if (notesTab.classList.contains('active')) {
-            currentTabIndex = 1;
-          } else if (timelineTab.classList.contains('active')) {
-            currentTabIndex = 2;
-          } else {
-            currentTabIndex = 0;
-          }
-        }
-
-        // スワイプ状態のリセット
-        function resetSwipeState() {
-          touchStartX = 0;
-          touchEndX = 0;
-          touchMoveX = 0;
-          moveDistance = 0;
-          isDragging = false;
-          isAnimating = false;
-          tabContent.classList.remove('swiping');
-
-          // すべてのタブハイライトをクリア
-          basicTab.classList.remove('tab-highlight');
-          notesTab.classList.remove('tab-highlight');
-          timelineTab.classList.remove('tab-highlight');
-        }
-
-        // スワイプ方向のインジケーターを更新
-        function updateDirectionIndicators() {
-          // スワイプの方向によって、視覚的なフィードバックを提供する
-          // すべてのハイライトをリセット
-          basicTab.classList.remove('tab-highlight');
-          notesTab.classList.remove('tab-highlight');
-          timelineTab.classList.remove('tab-highlight');
-
-          if (moveDistance > 0) {
-            // 右スワイプ - 前のタブが存在する場合はハイライト
-            if (currentTabIndex > 0) {
-              const prevTab = currentTabIndex === 1 ? basicTab : notesTab;
-              prevTab.classList.add('tab-highlight');
-            }
-          } else if (moveDistance < 0) {
-            // 左スワイプ - 次のタブが存在する場合はハイライト
-            if (currentTabIndex < 2) {
-              const nextTab = currentTabIndex === 0 ? notesTab : timelineTab;
-              nextTab.classList.add('tab-highlight');
-            }
-          }
-        }
-
-        // タッチ開始イベント
-        function handleTouchStart(e) {
-          if (isAnimating) return;
-
-          touchStartX = e.touches[0].clientX;
-          startTime = Date.now();
-          isDragging = true;
-          moveDistance = 0;
-
-          // トランジションを無効化してスワイプ中であることを示す
-          tabContent.classList.add('swiping');
-
-          // タップ振動フィードバック（対応ブラウザのみ）
-          if (navigator.vibrate) {
-            navigator.vibrate(5);
-          }
-        }
-
-        // タッチ移動イベント
-        function handleTouchMove(e) {
-          if (!isDragging || isAnimating) return;
-
-          touchMoveX = e.touches[0].clientX;
-          moveDistance = touchMoveX - touchStartX;
-
-          // スワイプ方向の視覚的フィードバックを更新
-          updateDirectionIndicators();
-        }
-
-        // タッチ終了イベント
-        function handleTouchEnd(e) {
-          if (!isDragging || isAnimating) return;
-
-          isDragging = false;
-          touchEndX = e.changedTouches[0].clientX;
-
-          // スワイプの終了時間と速度を計算
-          const endTime = Date.now();
-          const duration = endTime - startTime;
-          const velocity = Math.abs(moveDistance) / duration; // 速度（px/ms）
-
-          // トランジションを有効化
-          tabContent.classList.remove('swiping');
-
-          // スワイプ距離
-          const swipeDistance = touchEndX - touchStartX;
-
-          // 素早いスワイプまたは十分な距離があればタブ切り替え
-          if (Math.abs(swipeDistance) > DRAG_THRESHOLD || velocity > VELOCITY_THRESHOLD) {
-            // 左スワイプ（次のタブへ）
-            if (swipeDistance < 0 && currentTabIndex < 2) {
-              switchToTab(currentTabIndex + 1);
-            }
-            // 右スワイプ（前のタブへ）
-            else if (swipeDistance > 0 && currentTabIndex > 0) {
-              switchToTab(currentTabIndex - 1);
-            } else {
-              resetSwipeState();
-            }
-          } else {
-            resetSwipeState();
-          }
-
-          // 完了時のフィードバック振動
-          if (navigator.vibrate) {
-            navigator.vibrate(10);
-          }
-        }
-
-        // タッチキャンセルイベント
-        function handleTouchCancel() {
-          if (isDragging) {
-            isDragging = false;
-            tabContent.classList.remove('swiping');
-            resetSwipeState();
-          }
-        }
-
-        // タブコンテンツの表示を制御
-        function setTabVisibility(index) {
-          // すべてのタブペインを非表示に
-          [basicPane, notesPane, timelinePane].forEach(pane => {
-            pane.classList.remove('show', 'active');
-            // display:noneにも強制的に設定
-            pane.style.display = 'none';
-            pane.style.opacity = '0';
-          });
-
-          // 選択されたタブペインを表示
-          const paneToShow = [basicPane, notesPane, timelinePane][index];
-          paneToShow.classList.add('show', 'active');
-          // 表示も強制的に設定
-          paneToShow.style.display = 'block';
-          paneToShow.style.opacity = '1';
-
-          // タブボタンのactive状態を更新
-          [basicTab, notesTab, timelineTab].forEach(tab => {
-            tab.classList.remove('active');
-            tab.setAttribute('aria-selected', 'false');
-          });
-
-          const tabToActivate = [basicTab, notesTab, timelineTab][index];
-          tabToActivate.classList.add('active');
-          tabToActivate.setAttribute('aria-selected', 'true');
-        }
-
-        // タブに切り替え - 修正版
-        function switchToTab(index) {
-          if (index < 0 || index > 2 || isAnimating) return;
-
-          // アニメーション中フラグをセット
-          isAnimating = true;
-          console.log('切り替え開始: タブ', index);
-
-          // 現在のインデックスを保存
-          const prevIndex = currentTabIndex;
-          currentTabIndex = index;
-
-          // タブの表示を切り替え
-          setTimeout(() => {
-            try {
-              // 対応するBootstrapのタブを表示
-              if (index === 0) {
-                basicTabInstance.show();
-              } else if (index === 1) {
-                notesTabInstance.show();
-              } else {
-                timelineTabInstance.show();
-              }
-
-              // 明示的にタブの表示/非表示を制御
-              setTabVisibility(index);
-
-            } catch (error) {
-              console.error('タブ切り替えエラー:', error);
-              // エラー時は手動で表示切り替え
-              setTabVisibility(index);
-            }
-
-            // アニメーション完了後に状態をリセット
-            setTimeout(() => {
-              isAnimating = false;
-              resetSwipeState();
-              console.log('切り替え完了: タブ', index);
-            }, TRANSITION_DURATION);
-          }, 50);
-        }
-
-        // イベントリスナーの設定
-        function setupEventListeners() {
-          // タブコンテンツにタッチイベントリスナーを追加
-          tabContent.addEventListener('touchstart', handleTouchStart, { passive: true });
-          tabContent.addEventListener('touchmove', handleTouchMove, { passive: true });
-          tabContent.addEventListener('touchend', handleTouchEnd, { passive: true });
-          tabContent.addEventListener('touchcancel', handleTouchCancel, { passive: true });
-
-          // タブ切り替えイベントリスナー
-          basicTab.addEventListener('shown.bs.tab', function () {
-            currentTabIndex = 0;
-            setTimeout(() => {
-              setTabVisibility(0);
-              resetSwipeState();
-            }, 50);
-          });
-
-          notesTab.addEventListener('shown.bs.tab', function () {
-            currentTabIndex = 1;
-            setTimeout(() => {
-              setTabVisibility(1);
-              resetSwipeState();
-            }, 50);
-          });
-
-          timelineTab.addEventListener('shown.bs.tab', function () {
-            currentTabIndex = 2;
-            setTimeout(() => {
-              setTabVisibility(2);
-              resetSwipeState();
-            }, 50);
-          });
-
-          // クリック時のイベント
-          basicTab.addEventListener('click', function () {
-            if (isAnimating) return;
-            switchToTab(0);
-          });
-
-          notesTab.addEventListener('click', function () {
-            if (isAnimating) return;
-            switchToTab(1);
-          });
-
-          timelineTab.addEventListener('click', function () {
-            if (isAnimating) return;
-            switchToTab(2);
-          });
-        }
-
-        // スタイルの初期化
-        function initStyles() {
-          // スワイプ用のスタイルを追加
-          const styleEl = document.createElement('style');
-          styleEl.textContent = `
-      #diaryDetailTabContent {
-        position: relative;
-        touch-action: pan-y;
-        overflow: hidden;
-      }
+// オプションピルの制御
+document.addEventListener('DOMContentLoaded', function() {
+  // スワイプヒントの制御
+  const swipeHint = document.getElementById('swipeHint');
+  const isMobile = window.innerWidth < 768;
+  const isDismissed = localStorage.getItem('swipeHintDismissed');
+  
+  if (swipeHint && isMobile && !isDismissed) {
+    setTimeout(() => {
+      swipeHint.classList.add('show');
+    }, 1000);
+    
+    // 8秒後に自動で非表示
+    setTimeout(() => {
+      hideSwipeHint();
+    }, 8000);
+  }
+  
+  // オプションピルのイベントリスナー
+  document.querySelectorAll('.option-pill').forEach(pill => {
+    pill.addEventListener('click', function() {
+      const target = this.getAttribute('data-target');
+      const value = this.getAttribute('data-value');
+      const targetInput = document.getElementById(target);
       
-      #diaryDetailTabContent.swiping {
-        transition: none;
+      if (targetInput) {
+        // 同じグループの他のピルからactiveクラスを削除
+        const group = this.closest('.option-pills');
+        group.querySelectorAll('.option-pill').forEach(p => p.classList.remove('active'));
+        
+        // このピルにactiveクラスを追加
+        this.classList.add('active');
+        
+        // 隠しフィールドに値を設定
+        targetInput.value = value;
       }
+    });
+  });
+  
+  // 株価取得ボタンの処理
+  const fetchPriceBtn = document.getElementById('fetch-note-price');
+  if (fetchPriceBtn) {
+    fetchPriceBtn.addEventListener('click', function() {
+      const stockSymbol = '{{ diary.stock_symbol }}';
+      const priceInput = document.getElementById('note_current_price');
       
-      .tab-pane {
-        transition: opacity ${TRANSITION_DURATION}ms ease;
-      }
+      this.disabled = true;
+      this.innerHTML = '<i class="bi bi-hourglass-split"></i><span class="d-none d-sm-inline ms-1">取得中...</span>';
       
-      .tab-highlight {
-        animation: tab-glow 0.3s ease-out;
-      }
-      
-      @keyframes tab-glow {
-        0% { background-color: transparent; }
-        50% { background-color: rgba(var(--primary-color-rgb, 90, 126, 197), 0.1); }
-        100% { background-color: transparent; }
-      }
-      
-      .swipe-hint {
-        opacity: 1;
-        transition: opacity 0.5s ease;
-        font-size: 0.8rem;
-        color: #6c757d;
-        margin-bottom: 0.5rem;
-      }
-      
-      /* 改善されたフローティングラベルのスタイル */
-      .form-floating > label {
-        opacity: 0.65;
-        transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
-      }
-      
-      .form-floating > .form-control:focus ~ label,
-      .form-floating > .form-control:not(:placeholder-shown) ~ label,
-      .form-floating > .form-select ~ label {
-        opacity: 0.65;
-        transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
-      }
-      
-      .form-floating > .form-control:focus,
-      .form-floating > .form-control:not(:placeholder-shown) {
-        padding-bottom: 0.625rem;
-      }
-      
-      .form-floating > textarea.form-control:focus,
-      .form-floating > textarea.form-control:not(:placeholder-shown) {
-        padding-bottom: 0.625rem;
-      }
-    `;
-          document.head.appendChild(styleEl);
-        }
-
-        // 初期化関数
-        function init() {
-          initStyles();
-          initTabIndex();
-          setupEventListeners();
-          resetSwipeState();
-        }
-
-        // 初期化を実行
-        init();
-
-        // 継続記録フォーム関連の処理
-        const noteTypeOptions = document.querySelectorAll('.note-type-option');
-        const noteTypeInput = document.getElementById('note_type');
-
-        noteTypeOptions.forEach(option => {
-          option.addEventListener('click', function () {
-            // 選択状態をリセット
-            noteTypeOptions.forEach(opt => opt.classList.remove('active'));
-
-            // クリックされた要素をアクティブに
-            this.classList.add('active');
-
-            // 隠しフィールドに値を設定
-            noteTypeInput.value = this.getAttribute('data-value');
-          });
-        });
-
-        // 重要度オプションの処理
-        const importanceOptions = document.querySelectorAll('.importance-option');
-        const importanceInput = document.getElementById('note_importance');
-
-        importanceOptions.forEach(option => {
-          option.addEventListener('click', function () {
-            // 選択状態をリセット
-            importanceOptions.forEach(opt => opt.classList.remove('active'));
-
-            // クリックされた要素をアクティブに
-            this.classList.add('active');
-
-            // 隠しフィールドに値を設定
-            importanceInput.value = this.getAttribute('data-value');
-          });
-        });
-
-        // フローティングラベルの改善
-        const floatingInputs = document.querySelectorAll('.form-floating input, .form-floating textarea');
-        floatingInputs.forEach(input => {
-          // プレースホルダー属性を追加して、ラベルが適切に表示されるようにする
-          input.setAttribute('placeholder', ' ');
-
-          // すでに値がある場合は自動的にラベルを浮かせる
-          if (input.value) {
-            input.classList.add('has-value');
+      fetch(`/stockdiary/api/stock/price/${stockSymbol}/`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.price && priceInput) {
+            priceInput.value = data.price;
           }
-
-          // 入力時のイベント処理
-          input.addEventListener('input', function () {
-            if (this.value) {
-              this.classList.add('has-value');
-            } else {
-              this.classList.remove('has-value');
-            }
-          });
+        })
+        .catch(error => {
+          console.error('価格取得エラー:', error);
+        })
+        .finally(() => {
+          this.disabled = false;
+          this.innerHTML = '<i class="bi bi-arrow-repeat"></i><span class="d-none d-sm-inline ms-1">取得</span>';
         });
-      });
-    </script>
-    <script>
-      // モバイル向け拡大縮小ボタン（左下配置）のJavaScript実装
-      document.addEventListener('DOMContentLoaded', function () {
-        // モバイル判定
-        const isMobile = window.innerWidth < 768 || navigator.maxTouchPoints > 1;
-
-        if (isMobile) {
-          // フローティング展開ボタンを追加（左下に配置）
-          const expandButton = document.createElement('button');
-
-          // タブ切り替え時の最適化
-          const tabLinks = document.querySelectorAll('.nav-link');
-          tabLinks.forEach(tab => {
-            tab.addEventListener('click', function () {
-              // タブ切り替え時にスクロール位置をリセット
-              window.scrollTo(0, 0);
-
-              // クリックしたタブがアクティブになるまで少し待つ
-              setTimeout(() => {
-                // タブに応じた最適化
-                const tabId = this.getAttribute('data-bs-target');
-                optimizeForTab(tabId);
-              }, 50);
-            });
-          });
-          // リロードを防止する処理を追加
-          function preventReload() {
-            // 現在のスクロール位置を保存
-            const scrollY = window.scrollY;
-
-            // 一定の間隔でスクロール位置をチェック
-            setInterval(() => {
-              if ( Math.abs(window.scrollY - scrollY) > 100) {
-                // スクロール位置が大きく変わった場合に元の位置に戻す
-                window.scrollTo(0, 0);
-              }
-            }, 100);
-          }
-          // タブに合わせた最適化
-          function optimizeForTab(tabId) {
-            // タブフォーカスモードを有効化
-            document.body.classList.add('mobile-tab-focus');
-
-            // タブコンテンツ要素
-            const tabContent = document.querySelector(tabId);
-
-            if (tabId === '#basic-content') {
-              // 基本情報タブの最適化
-              // 特に何もしない
-            } else if (tabId === '#notes-content') {
-              // 継続記録タブの最適化
-              // フォームをより見やすく
-              const noteForm = tabContent.querySelector('.quick-note-form');
-              if (noteForm) {
-                noteForm.style.marginTop = '10px';
-                noteForm.style.marginBottom = '20px';
-              }
-            } else if (tabId === '#timeline-content') {
-              // タイムラインタブの最適化
-              // 特に何もしない
-            }
-          }
-        }
-
-        // トースト通知を作成する関数（もし定義されていない場合）
-        if (typeof window.createToast !== 'function') {
-          window.createToast = function (message, type) {
-            const toast = document.createElement('div');
-            toast.className = `toast align-items-center text-white bg-${type} border-0`;
-            toast.setAttribute('role', 'alert');
-            toast.setAttribute('aria-live', 'assertive');
-            toast.setAttribute('aria-atomic', 'true');
-
-            const toastBody = document.createElement('div');
-            toastBody.className = 'd-flex';
-
-            const toastContent = document.createElement('div');
-            toastContent.className = 'toast-body';
-            toastContent.textContent = message;
-
-            const closeButton = document.createElement('button');
-            closeButton.type = 'button';
-            closeButton.className = 'btn-close btn-close-white me-2 m-auto';
-            closeButton.setAttribute('data-bs-dismiss', 'toast');
-            closeButton.setAttribute('aria-label', '閉じる');
-
-            toastBody.appendChild(toastContent);
-            toastBody.appendChild(closeButton);
-            toast.appendChild(toastBody);
-
-            return toast;
-          };
-        }
-      });
-      document.addEventListener('DOMContentLoaded', function () {
-        // 現在株価取得ボタンのイベントリスナー
-        const fetchPriceBtn = document.getElementById('fetch-note-price');
-        if (fetchPriceBtn) {
-          fetchPriceBtn.addEventListener('click', function () {
-            // 銘柄コードを取得
-            const stockSymbol = '{{ diary.stock_symbol }}';
-            if (!stockSymbol) {
-              alert('銘柄コードが設定されていません');
-              return;
-            }
-
-            // ローディング表示
-            fetchPriceBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> 取得中...';
-            fetchPriceBtn.disabled = true;
-
-            // APIリクエスト
-            fetch(`/stockdiary/api/stock/price/${stockSymbol}/`)
-              .then(response => {
-                if (!response.ok) {
-                  throw new Error('株価の取得に失敗しました');
-                }
-                return response.json();
-              })
-              .then(data => {
-                // 株価を入力欄に設定
-                const priceInput = document.getElementById('note_current_price');
-                if (priceInput && data.price) {
-                  priceInput.value = data.price;
-                }
-
-                // 成功メッセージ
-                const feedback = document.createElement('div');
-                feedback.className = 'alert alert-success mt-2';
-                feedback.innerHTML = `<i class="bi bi-check-circle"></i> 現在株価: ${data.price}円`;
-
-                // フィードバック表示（既存のフィードバックがあれば削除）
-                const existingFeedback = document.querySelector('.price-feedback');
-                if (existingFeedback) {
-                  existingFeedback.remove();
-                }
-
-                // フォームの後ろにフィードバックを追加
-                const inputGroup = priceInput.closest('.input-group');
-                feedback.className += ' price-feedback';
-                inputGroup.after(feedback);
-
-                // 2秒後にフィードバックを消す
-                setTimeout(() => {
-                  feedback.remove();
-                }, 3000);
-              })
-              .catch(error => {
-                // エラーメッセージ
-                alert(error.message);
-              })
-              .finally(() => {
-                // ボタン状態を元に戻す
-                fetchPriceBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> 現在株価取得';
-                fetchPriceBtn.disabled = false;
-              });
-          });
-        }
-      });
-      function moveToBodyRoot(element) {
-        if (element && element.parentElement !== document.body) {
-          document.body.appendChild(element);
-          console.log(element.id + 'をbody直下に移動しました');
-          return true;
-        }
-        return false;
-      }
-
-      // 日記IDを安全に取得する関数
-      function getDiaryId() {
-        // 方法1: data-diary-id属性を持つ要素を探す
-        const diaryElement = document.querySelector('[data-diary-id]');
-        if (diaryElement && diaryElement.dataset.diaryId) {
-          return diaryElement.dataset.diaryId;
-        }
-
-        // 方法2: URLから取得
-        const urlMatch = window.location.pathname.match(/\/stockdiary\/(\d+)\//);
-        if (urlMatch && urlMatch[1]) {
-          return urlMatch[1];
-        }
-
-        // 方法3: hidden入力フィールドから取得
-        const hiddenInput = document.querySelector('input[name="diary_id"]');
-        if (hiddenInput && hiddenInput.value) {
-          return hiddenInput.value;
-        }
-
-        // どの方法でも取得できなかった場合はエラーを表示
-        console.error('日記IDを取得できませんでした');
-        return null;
-      }
-
-      // 削除モーダル処理の修正
-      document.addEventListener('DOMContentLoaded', function () {
-        const deleteNoteModal = document.getElementById('deleteNoteModal');
-        const deleteDiaryModal = document.getElementById('deleteDiaryModal');
-
-        // 両方のモーダルをbody直下に移動
-        moveToBodyRoot(deleteNoteModal);
-        moveToBodyRoot(deleteDiaryModal);
-
-        // 削除ボタンのイベントリスナーを修正
-        const deleteButtons = document.querySelectorAll('.delete-note-btn');
-        deleteButtons.forEach(button => {
-          // 既存のイベントリスナーを一度削除して再設定
-          const newButton = button.cloneNode(true);
-          button.parentNode.replaceChild(newButton, button);
-
-          newButton.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            // モーダルをbody直下に移動（念のため再確認）
-            moveToBodyRoot(deleteNoteModal);
-
-            // IDを取得
-            const noteId = this.getAttribute('data-note-id');
-            if (noteId) {
-              // グローバル変数に設定
-              window.noteIdToDelete = noteId;
-
-              // モーダルを表示
-              deleteNoteModal.classList.add('active');
-            }
-          });
-        });
-
-        // 削除日記ボタンも修正
-        const deleteDiaryBtn = document.querySelector('a.btn-diary-danger[href$="/delete/"]');
-        if (deleteDiaryBtn) {
-          // 既存のイベントリスナーを一度削除して再設定
-          const newDiaryBtn = deleteDiaryBtn.cloneNode(true);
-          deleteDiaryBtn.parentNode.replaceChild(newDiaryBtn, deleteDiaryBtn);
-
-          newDiaryBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            // モーダルをbody直下に移動（念のため再確認）
-            moveToBodyRoot(deleteDiaryModal);
-
-            // モーダルを表示
-            deleteDiaryModal.classList.add('active');
-          });
-        }
-
-        // 削除確認ボタンも修正
-        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-        if (confirmDeleteBtn) {
-          // 既存のイベントリスナーを一度削除して再設定
-          const newConfirmBtn = confirmDeleteBtn.cloneNode(true);
-          confirmDeleteBtn.parentNode.replaceChild(newConfirmBtn, confirmDeleteBtn);
-
-          newConfirmBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            if (!window.noteIdToDelete) {
-              console.error('削除対象のnoteIdが設定されていません');
-              return;
-            }
-
-            const diaryId = getDiaryId();
-            if (!diaryId) {
-              alert('日記IDが見つかりませんでした。ページを再読み込みしてください。');
-              return;
-            }
-
-            // CSRFトークンの取得
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-            // 削除用のフォーム生成＆送信
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `/stockdiary/${diaryId}/note/${window.noteIdToDelete}/delete/`;
-
-            // CSRFトークンの追加
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = 'csrfmiddlewaretoken';
-            csrfInput.value = csrfToken;
-            form.appendChild(csrfInput);
-
-            // フォームをbody直下に追加して送信
-            document.body.appendChild(form);
-            console.log('フォームを送信します:', form.action);
-            form.submit();
-          });
-        }
-
-        // 日記削除確認ボタンも修正
-        const confirmDeleteDiaryBtn = document.getElementById('confirmDeleteDiaryBtn');
-        if (confirmDeleteDiaryBtn) {
-          // 既存のイベントリスナーを一度削除して再設定
-          const newConfirmDiaryBtn = confirmDeleteDiaryBtn.cloneNode(true);
-          confirmDeleteDiaryBtn.parentNode.replaceChild(newConfirmDiaryBtn, confirmDeleteDiaryBtn);
-
-          newConfirmDiaryBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const diaryId = getDiaryId();
-            if (!diaryId) {
-              alert('日記IDが見つかりませんでした。ページを再読み込みしてください。');
-              return;
-            }
-
-            // CSRFトークンの取得
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-            // 削除用のフォーム生成＆送信
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `/stockdiary/${diaryId}/delete/`;
-
-            // CSRFトークンの追加
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = 'csrfmiddlewaretoken';
-            csrfInput.value = csrfToken;
-            form.appendChild(csrfInput);
-
-            // フォームをbody直下に追加して送信
-            document.body.appendChild(form);
-            console.log('フォームを送信します:', form.action);
-            form.submit();
-          });
-        }
-      });
-      const deleteDiaryModal = document.getElementById('deleteDiaryModal');
-      const confirmDeleteDiaryBtn = document.getElementById('confirmDeleteDiaryBtn');
-      const cancelDeleteDiaryBtn = document.getElementById('cancelDeleteDiaryBtn');
-
-      // 削除ボタン（日記全体の削除）のイベントリスナー
-      const deleteDiaryBtn = document.querySelector('a.btn-diary-danger[href$="/delete/"]');
-      if (deleteDiaryBtn) {
-        deleteDiaryBtn.addEventListener('click', function (e) {
-          e.preventDefault(); // リンクのデフォルト動作をキャンセル
-
-          // モーダルを表示
-          deleteDiaryModal.classList.add('active');
-        });
-      }
-
-      // キャンセルボタン
-      if (cancelDeleteDiaryBtn) {
-        cancelDeleteDiaryBtn.addEventListener('click', function () {
-          deleteDiaryModal.classList.remove('active');
-        });
-      }
-
-      // 確認ボタン（実際の削除処理）
-      if (confirmDeleteDiaryBtn) {
-        confirmDeleteDiaryBtn.addEventListener('click', function () {
-          // CSRF トークンの取得
-          const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-          // 削除用のフォーム生成＆送信
-          const form = document.createElement('form');
-          form.method = 'POST';
-          form.action = '{% url "stockdiary:delete" diary.id %}';
-
-          // CSRFトークンの追加
-          const csrfInput = document.createElement('input');
-          csrfInput.type = 'hidden';
-          csrfInput.name = 'csrfmiddlewaretoken';
-          csrfInput.value = csrfToken;
-          form.appendChild(csrfInput);
-
-          // フォームを追加して送信
-          document.body.appendChild(form);
-          form.submit();
-        });
-      }
-
-      // モーダル外クリックで閉じる
-      if (deleteDiaryModal) {
-        deleteDiaryModal.addEventListener('click', function (e) {
-          if (e.target === deleteDiaryModal) {
-            deleteDiaryModal.classList.remove('active');
-          }
-        });
-      }
-    </script>
-
-    <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        // モーダル関連の要素を取得
-        const openNoteModalBtn = document.getElementById('openNoteModalBtn');
-        const addNoteModal = document.getElementById('addNoteModal');
-        const noteTypeOptions = document.querySelectorAll('.note-type-option');
-        const noteTypeInput = document.getElementById('note_type');
-        const importanceOptions = document.querySelectorAll('.importance-option');
-        const importanceInput = document.getElementById('note_importance');
-        const noteForm = document.getElementById('quickNoteForm');
-
-        // モーダルインスタンスを作成
-        const noteModal = new bootstrap.Modal(addNoteModal);
-
-        // ページロード時にタブが切り替わった場合もボタンを表示制御
-        function updateButtonVisibility() {
-          if (document.querySelector('#notes-tab').classList.contains('active')) {
-            openNoteModalBtn.style.display = 'flex';
-          } else {
-            openNoteModalBtn.style.display = 'none';
-          }
-        }
-
-        // 初期表示時の制御
-        updateButtonVisibility();
-
-        // タブ切り替え時のイベント
-        document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tab => {
-          tab.addEventListener('shown.bs.tab', function (e) {
-            updateButtonVisibility();
-          });
-        });
-
-        // モーダルを開くボタンのイベント
-        if (openNoteModalBtn) {
-          openNoteModalBtn.addEventListener('click', function () {
-            noteModal.show();
-          });
-        }
-
-        // ノートタイプ選択のイベント
-        noteTypeOptions.forEach(option => {
-          option.addEventListener('click', function () {
-            // 全オプションから選択状態を削除
-            noteTypeOptions.forEach(opt => opt.classList.remove('active'));
-
-            // クリックされたオプションを選択状態に
-            this.classList.add('active');
-
-            // 隠しフィールドに値を設定
-            noteTypeInput.value = this.getAttribute('data-value');
-          });
-        });
-
-        // 重要度選択のイベント
-        importanceOptions.forEach(option => {
-          option.addEventListener('click', function () {
-            // 全オプションから選択状態を削除
-            importanceOptions.forEach(opt => opt.classList.remove('active'));
-
-            // クリックされたオプションを選択状態に
-            this.classList.add('active');
-
-            // 隠しフィールドに値を設定
-            importanceInput.value = this.getAttribute('data-value');
-          });
-        });
-
-        // 現在株価取得ボタンのイベント
-        const fetchPriceBtn = document.getElementById('fetch-note-price');
-        if (fetchPriceBtn) {
-          fetchPriceBtn.addEventListener('click', function () {
-            // 銘柄コードを取得
-            const stockSymbol = '{{ diary.stock_symbol }}';
-            if (!stockSymbol) {
-              alert('銘柄コードが設定されていません');
-              return;
-            }
-
-            // ローディング表示
-            this.innerHTML = '<i class="bi bi-arrow-repeat"></i> 取得中...';
-            this.disabled = true;
-
-            // APIリクエスト
-            fetch(`/stockdiary/api/stock/price/${stockSymbol}/`)
-              .then(response => {
-                if (!response.ok) {
-                  throw new Error('株価の取得に失敗しました');
-                }
-                return response.json();
-              })
-              .then(data => {
-                // 株価を入力欄に設定
-                const priceInput = document.getElementById('note_current_price');
-                if (priceInput && data.price) {
-                  priceInput.value = data.price;
-                }
-
-                // 成功メッセージ
-                const feedback = document.createElement('div');
-                feedback.className = 'alert alert-success mt-2';
-                feedback.innerHTML = `<i class="bi bi-check-circle"></i> 現在株価: ${data.price}円`;
-
-                // フィードバック表示（既存のフィードバックがあれば削除）
-                const existingFeedback = document.querySelector('.price-feedback');
-                if (existingFeedback) {
-                  existingFeedback.remove();
-                }
-
-                // フォームの後ろにフィードバックを追加
-                const inputGroup = priceInput.closest('.input-group');
-                feedback.className += ' price-feedback';
-                inputGroup.after(feedback);
-
-                // 2秒後にフィードバックを消す
-                setTimeout(() => {
-                  feedback.classList.add('fade-out');
-                  setTimeout(() => feedback.remove(), 500);
-                }, 2000);
-              })
-              .catch(error => {
-                alert(error.message);
-              })
-              .finally(() => {
-                // ボタン状態を元に戻す
-                this.innerHTML = '<i class="bi bi-arrow-repeat"></i> 現在株価';
-                this.disabled = false;
-              });
-          });
-        }
-
-        // フォーム送信時の処理
-        noteForm.addEventListener('submit', function () {
-          // 送信ボタンを無効化して二重送信防止
-          const submitBtn = this.querySelector('button[type="submit"]');
-          if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 送信中...';
-          }
-        });
-
-        // モーダルが閉じられた時にフォームをリセット
-        addNoteModal.addEventListener('hidden.bs.modal', function () {
-          // 日付は今日の日付に戻す
-          const dateInput = document.getElementById('note_date');
-          if (dateInput) {
-            const today = new Date();
-            dateInput.value = today.toISOString().split('T')[0];
-          }
-
-          // コンテンツをクリア
-          const contentInput = document.getElementById('note_content');
-          if (contentInput) {
-            contentInput.value = '';
-          }
-
-          // 現在価格をクリア
-          const priceInput = document.getElementById('note_current_price');
-          if (priceInput) {
-            priceInput.value = '';
-          }
-
-          // フィードバックメッセージを削除
-          const feedback = document.querySelector('.price-feedback');
-          if (feedback) {
-            feedback.remove();
-          }
-
-          // 送信ボタンを有効化
-          const submitBtn = noteForm.querySelector('button[type="submit"]');
-          if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="bi bi-journal-plus me-1"></i> 記録を追加';
-          }
-
-          // タイプと重要度を初期値に戻す
-          noteTypeOptions.forEach(opt => {
-            if (opt.getAttribute('data-value') === 'analysis') {
-              opt.classList.add('active');
-            } else {
-              opt.classList.remove('active');
-            }
-          });
-          noteTypeInput.value = 'analysis';
-
-          importanceOptions.forEach(opt => {
-            if (opt.getAttribute('data-value') === 'medium') {
-              opt.classList.add('active');
-            } else {
-              opt.classList.remove('active');
-            }
-          });
-          importanceInput.value = 'medium';
-        });
-
-        // タッチ操作の改善
-        if ('ontouchstart' in window) {
-          // タッチ操作時のフィードバック
-          const buttons = document.querySelectorAll('.note-type-option, .importance-option');
-          buttons.forEach(btn => {
-            btn.addEventListener('touchstart', function () {
-              this.style.opacity = '0.7';
-            });
-
-            btn.addEventListener('touchend', function () {
-              this.style.opacity = '1';
-            });
-          });
-        }
-      });
-    </script>
-    {% endblock %}
+    });
+  }
+});
+</script>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<!-- タブスワイプ機能スクリプト -->
+<script src="{% static 'js/diary-detail-tabs.js' %}"></script>
+{% endblock %}
