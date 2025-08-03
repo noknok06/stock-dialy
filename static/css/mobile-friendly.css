@@ -4,6 +4,164 @@
  */
 
 /* モバイル対応の基本調整 */
+/* 基本のタブコンテナ設定を強化 */
+.card-tabs {
+  display: flex !important;
+  flex-wrap: nowrap !important; /* 折り返しを防ぐ */
+  gap: 0.05rem !important; /* ギャップを狭める */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  margin-bottom: 0.5rem;
+  padding: 0 0.25rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* スクロールバーを非表示 */
+.card-tabs::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* タブリンクの基本設定 */
+.card-tabs .nav-link {
+  padding: 0.5rem 0.4rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 500;
+  color: var(--text-light);
+  border: none;
+  border-radius: 6px 6px 0 0;
+  position: relative;
+  text-align: center;
+  transition: all 0.2s ease;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  flex-basis: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* iPhone用の詳細調整 */
+@media (max-width: 430px) {
+  .card-tabs .nav-link {
+    padding: 0.4rem 0.3rem !important;
+    font-size: 0.7rem !important;
+    min-width: 0 !important;
+    flex: 0 0 auto !important;
+  }
+  
+  .card-tabs .nav-link i {
+    margin-right: 0.2rem !important;
+    font-size: 0.8rem !important;
+  }
+  
+  /* 4つのタブが均等に収まるよう計算 */
+  .card-tabs .nav-link {
+    width: calc(25% - 0.1rem) !important;
+    max-width: calc(25% - 0.1rem) !important;
+  }
+}
+
+/* 特に小さい画面（iPhone SE等）用 */
+@media (max-width: 375px) {
+  .card-tabs .nav-link {
+    padding: 0.35rem 0.2rem !important;
+    font-size: 0.65rem !important;
+    width: calc(25% - 0.05rem) !important;
+    max-width: calc(25% - 0.05rem) !important;
+  }
+  
+  .card-tabs .nav-link i {
+    margin-right: 0.15rem !important;
+    font-size: 0.75rem !important;
+  }
+}
+
+/* 超小型デバイス（iPhone 12 mini等）用 */
+@media (max-width: 360px) {
+  .card-tabs .nav-link {
+    padding: 0.3rem 0.15rem !important;
+    font-size: 0.6rem !important;
+    width: calc(25% - 0.05rem) !important;
+    max-width: calc(25% - 0.05rem) !important;
+  }
+  
+  .card-tabs .nav-link i {
+    margin-right: 0.1rem !important;
+    font-size: 0.7rem !important;
+  }
+}
+
+/* アクティブ状態の調整 */
+.card-tabs .nav-link.active {
+  color: var(--primary-color) !important;
+  background-color: rgba(90, 126, 197, 0.05) !important;
+}
+
+.card-tabs .nav-link.active::after {
+  background-color: var(--primary-color) !important;
+}
+
+/* ホバー状態の調整 */
+.card-tabs .nav-link:hover:not(.active) {
+  color: var(--primary-color) !important;
+  background-color: rgba(90, 126, 197, 0.03) !important;
+}
+
+/* タブコンテナ全体の幅確保 */
+.diary-card-tabs {
+  margin: 0.25rem 0.5rem 0.5rem;
+  position: relative;
+  width: 100% !important;
+  overflow: hidden;
+}
+
+/* タッチデバイス用のタップ領域確保 */
+@media (hover: none) {
+  .card-tabs .nav-link {
+    min-height: 40px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+}
+
+/* 横スクロール時のインジケーター（オプション） */
+.card-tabs::before,
+.card-tabs::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.card-tabs::before {
+  left: 0;
+  background: linear-gradient(to right, rgba(255,255,255,1), rgba(255,255,255,0));
+}
+
+.card-tabs::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0));
+}
+
+/* スクロール可能な場合にインジケーター表示 */
+.card-tabs.scrollable::before,
+.card-tabs.scrollable::after {
+  opacity: 1;
+}
+
 @media (max-width: 768px) {
   /* コンテナのパディング調整 - 微調整 */
   .container {
