@@ -269,6 +269,208 @@
     border-color: #28a745 !important;
     background-color: rgba(40, 167, 69, 0.05) !important;
   }
+
+  /* 基本的なフォーム要素のスタイル強化 */
+  .form-control, 
+  .form-select {
+    border: 2px solid #d1d5db !important; /* ボーダーを太く、濃く */
+    background-color: #ffffff !important; /* 背景を明確に白に */
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1) !important; /* 内側に影を追加 */
+    transition: all 0.2s ease !important;
+  }
+
+  /* フォーカス時のスタイル */
+  .form-control:focus, 
+  .form-select:focus {
+    border-color: #5a7ec5 !important; /* プライマリカラーでフォーカス */
+    box-shadow: 
+      inset 0 1px 3px rgba(0, 0, 0, 0.1),
+      0 0 0 3px rgba(90, 126, 197, 0.25) !important; /* 外側にもフォーカスリング */
+    outline: none !important;
+  }
+
+  /* ホバー時のスタイル */
+  .form-control:hover:not(:focus), 
+  .form-select:hover:not(:focus) {
+    border-color: #9ca3af !important; /* ホバー時に少し濃く */
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+  }
+
+  /* テキストエリアの特別なスタイル */
+  textarea.form-control {
+    border: 2px solid #d1d5db !important;
+    background-color: #ffffff !important;
+    min-height: 120px;
+    resize: vertical; /* 縦方向のみリサイズ可能 */
+  }
+
+  textarea.form-control:focus {
+    border-color: #5a7ec5 !important;
+    box-shadow: 
+      inset 0 1px 3px rgba(0, 0, 0, 0.1),
+      0 0 0 3px rgba(90, 126, 197, 0.25) !important;
+  }
+
+  /* フォームラベルのスタイル強化 */
+  .form-label {
+    font-weight: 600 !important;
+    color: #374151 !important;
+    margin-bottom: 0.5rem !important;
+    font-size: 0.95rem !important;
+  }
+
+  /* 必須マークの強調 */
+  .form-label .text-danger {
+    color: #dc2626 !important;
+    font-weight: 700 !important;
+  }
+
+  /* 入力グループのスタイル */
+  .input-group .form-control {
+    border-right: none !important;
+  }
+
+  .input-group .btn {
+    border: 2px solid #d1d5db !important;
+    border-left: none !important;
+    background-color: #f9fafb !important;
+    color: #374151 !important;
+  }
+
+  .input-group .btn:hover {
+    background-color: #f3f4f6 !important;
+    border-color: #9ca3af !important;
+  }
+
+  /* セレクト要素の矢印アイコンを強調 */
+  .form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23374151' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0.75rem center !important;
+    background-size: 16px 12px !important;
+  }
+
+  /* プレースホルダーのスタイル */
+  .form-control::placeholder {
+    color: #9ca3af !important;
+    opacity: 1 !important;
+  }
+
+  /* 無効状態のスタイル */
+  .form-control:disabled,
+  .form-select:disabled {
+    background-color: #f3f4f6 !important;
+    border-color: #d1d5db !important;
+    color: #6b7280 !important;
+    opacity: 1 !important;
+  }
+
+  /* エラー状態のスタイル */
+  .form-control.is-invalid,
+  .form-select.is-invalid {
+    border-color: #dc2626 !important;
+    background-color: #fef2f2 !important;
+    box-shadow: 
+      inset 0 1px 3px rgba(0, 0, 0, 0.1),
+      0 0 0 3px rgba(220, 38, 38, 0.1) !important;
+  }
+
+  /* 成功状態のスタイル */
+  .form-control.is-valid,
+  .form-select.is-valid {
+    border-color: #059669 !important;
+    background-color: #f0fdf4 !important;
+    box-shadow: 
+      inset 0 1px 3px rgba(0, 0, 0, 0.1),
+      0 0 0 3px rgba(5, 150, 105, 0.1) !important;
+  }
+
+  /* チェックボックスとラジオボタンのスタイル */
+  .form-check-input {
+    border: 2px solid #d1d5db !important;
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+  }
+
+  .form-check-input:checked {
+    background-color: #5a7ec5 !important;
+    border-color: #5a7ec5 !important;
+  }
+
+  .form-check-input:focus {
+    box-shadow: 0 0 0 3px rgba(90, 126, 197, 0.25) !important;
+  }
+
+  /* フォームヘルプテキストのスタイル */
+  .form-text {
+    color: #6b7280 !important;
+    font-size: 0.875rem !important;
+    margin-top: 0.25rem !important;
+  }
+
+  /* Safari特有の問題への対応 */
+  @supports (-webkit-appearance: none) {
+    .form-control,
+    .form-select {
+      -webkit-appearance: none !important;
+      appearance: none !important;
+    }
+    
+    input[type="date"].form-control,
+    input[type="time"].form-control,
+    input[type="datetime-local"].form-control {
+      -webkit-appearance: none !important;
+      background-color: #ffffff !important;
+    }
+  }
+
+  /* フォームセクションの視覚的区切り */
+  .form-section {
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .form-section-title {
+    color: #374151 !important;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  /* 株価情報カードの境界線強化 */
+  .info-block {
+    border: 1px solid #e5e7eb !important;
+    background-color: #f9fafb !important;
+  }
+
+  /* レスポンシブ対応 - タブレット以上でのみ適用 */
+  @media (min-width: 768px) {
+    .form-control,
+    .form-select {
+      min-height: 44px; /* タッチターゲットサイズを確保 */
+    }
+  }
+
+  /* 高コントラストモード対応 */
+  @media (prefers-contrast: high) {
+    .form-control,
+    .form-select {
+      border-width: 3px !important;
+      border-color: #000000 !important;
+    }
+    
+    .form-control:focus,
+    .form-select:focus {
+      border-color: #0066cc !important;
+      box-shadow: 0 0 0 3px #ffff00 !important;
+    }
+  }
   </style>
 {% endblock %}
 
