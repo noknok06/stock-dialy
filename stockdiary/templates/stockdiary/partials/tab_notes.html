@@ -24,6 +24,35 @@
     padding: 1rem;
     background-color: white;
   }
+
+  /* 削除ボタンのスタイル */
+  .note-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .note-delete-btn {
+    background: none;
+    border: none;
+    color: #dc3545;
+    font-size: 0.9rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+  }
+
+  .note-delete-btn:hover {
+    opacity: 1;
+    background-color: rgba(220, 53, 69, 0.1);
+    transform: scale(1.05);
+  }
+
+  .note-delete-btn:active {
+    transform: scale(0.95);
+  }
   
   /* フルスクリーンオーバーレイモーダル用スタイル */
   .fullscreen-overlay {
@@ -161,6 +190,26 @@
     font-weight: 500;
     cursor: pointer;
   }
+
+  .btn-danger {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .btn-secondary {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+  }
   
   /* フローティングボタンスタイル */
   .floating-add-btn {
@@ -225,6 +274,39 @@
     border-radius: 0 6px 6px 0;
     border-left: none;
   }
+
+  /* 削除確認モーダル用スタイル */
+  .delete-confirmation-modal {
+    background-color: white;
+    border-radius: 8px;
+    padding: 0;
+    max-width: 400px;
+    width: 90%;
+  }
+
+  .delete-modal-header {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 1rem;
+    border-bottom: 1px solid #f5c6cb;
+  }
+
+  .delete-modal-body {
+    padding: 1.5rem;
+    text-align: center;
+  }
+
+  .delete-modal-footer {
+    padding: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    border-top: 1px solid #dee2e6;
+  }
+
+  .delete-modal-footer .btn {
+    min-width: 80px;
+  }
 </style>
 
 <div class="px-1 py-2">
@@ -252,14 +334,23 @@
           </span>
         </div>
 
-        <div class="note-importance">
-          {% if note.importance == 'high' %}
-          <i class="bi bi-exclamation-triangle text-danger" title="高重要度"></i>
-          {% elif note.importance == 'medium' %}
-          <i class="bi bi-info-circle text-warning" title="中重要度"></i>
-          {% else %}
-          <i class="bi bi-info-circle text-muted" title="低重要度"></i>
-          {% endif %}
+        <div class="note-actions">
+          <div class="note-importance">
+            {% if note.importance == 'high' %}
+            <i class="bi bi-exclamation-triangle text-danger" title="高重要度"></i>
+            {% elif note.importance == 'medium' %}
+            <i class="bi bi-info-circle text-warning" title="中重要度"></i>
+            {% else %}
+            <i class="bi bi-info-circle text-muted" title="低重要度"></i>
+            {% endif %}
+          </div>
+          
+          <!-- 削除ボタン -->
+          <button class="note-delete-btn" 
+                  onclick="confirmDeleteNote({{ note.id }}, '{{ note.date|date:"Y年m月d日" }}', '{{ note.get_note_type_display }}')" 
+                  title="この記録を削除">
+            <i class="bi bi-trash"></i>
+          </button>
         </div>
       </div>
 
@@ -327,7 +418,7 @@
   </div>
 </div>
 
-<!-- カスタムモーダルHTML構造 -->
+<!-- 新規作成モーダル -->
 <div id="fullscreenModal" class="fullscreen-overlay">
   <div class="fullscreen-modal slide-up">
     <div class="fullscreen-modal-header">
@@ -416,11 +507,37 @@
   </div>
 </div>
 
+<!-- 削除確認モーダル -->
+<div id="deleteConfirmModal" class="fullscreen-overlay">
+  <div class="delete-confirmation-modal slide-up">
+    <div class="delete-modal-header">
+      <h5 class="fullscreen-modal-title">
+        <i class="bi bi-exclamation-triangle me-2"></i>継続記録の削除
+      </h5>
+    </div>
+    <div class="delete-modal-body">
+      <p class="mb-3">以下の継続記録を削除しますか？</p>
+      <div class="border rounded p-3 bg-light mb-3">
+        <div class="fw-bold" id="deleteTargetInfo"></div>
+        <div class="text-muted small">この操作は元に戻せません。</div>
+      </div>
+    </div>
+    <div class="delete-modal-footer">
+      <button type="button" class="btn-secondary" id="cancelDelete">キャンセル</button>
+      <button type="button" class="btn-danger" id="confirmDelete">削除する</button>
+    </div>
+  </div>
+</div>
+
 <script>
+  // グローバル変数
+  let deleteNoteId = null;
+
   document.addEventListener('DOMContentLoaded', function() {
     // DOM要素の取得
     const addButton = document.getElementById('addNoteButton');
     const modal = document.getElementById('fullscreenModal');
+    const deleteModal = document.getElementById('deleteConfirmModal');
     const closeButton = document.getElementById('modalClose');
     const noteForm = document.getElementById('customNoteForm');
     
@@ -442,11 +559,8 @@
     
     // モーダルを表示する関数
     function showModal() {
-      // モーダルの背景とコンテナを表示
       modal.style.display = 'flex';
-      // アニメーションクラスを追加
       modal.classList.add('fade-in');
-      // スクロールを禁止
       document.body.style.overflow = 'hidden';
       document.body.style.position = 'fixed';
       document.body.style.width = '100%';
@@ -456,11 +570,24 @@
     // モーダルを閉じる関数
     function closeModal() {
       modal.style.display = 'none';
-      // スクロールを有効化
       document.body.style.overflow = '';
       document.body.style.position = '';
       document.body.style.width = '';
       document.body.style.height = '';
+    }
+
+    // 削除確認モーダルを表示する関数
+    function showDeleteModal() {
+      deleteModal.style.display = 'flex';
+      deleteModal.classList.add('fade-in');
+      document.body.style.overflow = 'hidden';
+    }
+
+    // 削除確認モーダルを閉じる関数
+    function closeDeleteModal() {
+      deleteModal.style.display = 'none';
+      document.body.style.overflow = '';
+      deleteNoteId = null;
     }
     
     // 閉じるボタンの処理
@@ -472,11 +599,25 @@
         return false;
       });
     }
+
+    // 削除確認モーダルのボタンイベント
+    document.getElementById('cancelDelete').addEventListener('click', closeDeleteModal);
+    document.getElementById('confirmDelete').addEventListener('click', function() {
+      if (deleteNoteId) {
+        executeDelete(deleteNoteId);
+      }
+    });
     
     // モーダル外クリックで閉じる
     modal.addEventListener('click', function(e) {
       if (e.target === modal) {
         closeModal();
+      }
+    });
+
+    deleteModal.addEventListener('click', function(e) {
+      if (e.target === deleteModal) {
+        closeDeleteModal();
       }
     });
     
@@ -489,11 +630,9 @@
         e.preventDefault();
         e.stopPropagation();
         
-        // アクティブクラスを更新
         typeOptions.forEach(opt => opt.classList.remove('active'));
         this.classList.add('active');
         
-        // 隠しフィールドを更新
         if (typeInput) {
           typeInput.value = this.getAttribute('data-value');
         }
@@ -511,11 +650,9 @@
         e.preventDefault();
         e.stopPropagation();
         
-        // アクティブクラスを更新
         importanceOptions.forEach(opt => opt.classList.remove('active'));
         this.classList.add('active');
         
-        // 隠しフィールドを更新
         if (importanceInput) {
           importanceInput.value = this.getAttribute('data-value');
         }
@@ -533,14 +670,11 @@
         e.preventDefault();
         e.stopPropagation();
         
-        // ボタンを無効化
         this.disabled = true;
         this.innerHTML = '<i class="bi bi-arrow-repeat"></i> 取得中...';
         
-        // 銘柄コードを取得（これはテンプレート変数で置き換える必要があります）
         const stockSymbol = '{{ diary.stock_symbol }}';
         
-        // APIリクエスト
         fetch(`/stockdiary/api/stock/price/${stockSymbol}/`)
           .then(response => {
             if (!response.ok) {
@@ -553,14 +687,12 @@
               priceInput.value = data.price;
             }
             
-            // ボタンを有効化
             fetchPriceButton.disabled = false;
             fetchPriceButton.innerHTML = '<i class="bi bi-arrow-repeat"></i> 取得';
           })
           .catch(error => {
             alert(error.message);
             
-            // ボタンを有効化
             fetchPriceButton.disabled = false;
             fetchPriceButton.innerHTML = '<i class="bi bi-arrow-repeat"></i> 取得';
           });
@@ -574,17 +706,14 @@
       noteForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
-        // フォームデータを収集
         const formData = new FormData(this);
-        
-        // 送信ボタンを無効化
         const submitButton = this.querySelector('button[type="submit"]');
+        
         if (submitButton) {
           submitButton.disabled = true;
           submitButton.innerHTML = '<i class="bi bi-hourglass-split"></i> 送信中...';
         }
         
-        // APIリクエスト
         fetch(this.action, {
           method: 'POST',
           body: formData,
@@ -593,24 +722,19 @@
           }
         })
         .then(response => {
-          // レスポンスがJSONでなくてもエラーにならないように
           if (response.headers.get('content-type')?.includes('application/json')) {
             return response.json();
           }
           return response.text();
         })
         .then(data => {
-          // モーダルを閉じる
           closeModal();
-          
-          // ページをリロード
           window.location.reload();
         })
         .catch(error => {
           console.error('Error:', error);
           alert('送信に失敗しました。もう一度お試しください。');
           
-          // 送信ボタンを有効化
           if (submitButton) {
             submitButton.disabled = false;
             submitButton.innerHTML = '<i class="bi bi-journal-plus me-1"></i> 記録を追加';
@@ -618,5 +742,37 @@
         });
       });
     }
+
+    // グローバル関数として削除確認を追加
+    window.confirmDeleteNote = function(noteId, noteDate, noteType) {
+      deleteNoteId = noteId;
+      document.getElementById('deleteTargetInfo').innerHTML = 
+        `<i class="bi bi-calendar-date me-2"></i>${noteDate}<br><span class="text-muted">${noteType}</span>`;
+      showDeleteModal();
+    };
+
+    // 削除実行関数
+    window.executeDelete = function(noteId) {
+      fetch(`/stockdiary/{{ diary.id }}/note/${noteId}/delete/`, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+      })
+      .then(response => {
+        if (response.ok) {
+          closeDeleteModal();
+          window.location.reload();
+        } else {
+          throw new Error('削除に失敗しました');
+        }
+      })
+      .catch(error => {
+        console.error('Delete error:', error);
+        alert('削除に失敗しました。もう一度お試しください。');
+        closeDeleteModal();
+      });
+    };
   });
 </script>
