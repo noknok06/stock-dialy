@@ -1705,6 +1705,14 @@
                       中
                     </span>
                     {% endif %}
+                    
+                    <!-- 削除ボタンを追加 -->
+                    <button class="btn btn-sm" 
+                            onclick="confirmDeleteNote({{ note.id }}, '{{ note.date|date:"Y年m月d日" }}', '{% if note.note_type == 'analysis' %}分析更新{% elif note.note_type == 'news' %}ニュース{% elif note.note_type == 'earnings' %}決算情報{% elif note.note_type == 'insight' %}新たな気づき{% elif note.note_type == 'risk' %}リスク要因{% else %}その他{% endif %}', {{ diary.id }})"
+                            title="この記録を削除"
+                            style="background: none; border: none; color: #dc3545; padding: 0.25rem 0.5rem; margin-left: 0.5rem;">
+                      <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
+                    </button>
                   </div>
                 </div>
                 {% if note.current_price %}
@@ -1875,10 +1883,204 @@
     </div>
   </div>
 </div>
+<div id="deleteConfirmModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); z-index: 9999; display: none; align-items: center; justify-content: center;">
+  <div style="background-color: white; border-radius: 8px; padding: 0; max-width: 400px; width: 90%;">
+    <div style="background-color: #f8d7da; color: #721c24; padding: 1rem; border-bottom: 1px solid #f5c6cb;">
+      <h5 style="margin: 0; font-size: 1.25rem; font-weight: 500;">
+        <i class="bi bi-exclamation-triangle me-2"></i>継続記録の削除
+      </h5>
+    </div>
+    <div style="padding: 1.5rem; text-align: center;">
+      <p style="margin-bottom: 1rem;">以下の継続記録を削除しますか？</p>
+      <div id="deleteTargetInfo" style="border: 1px solid #dee2e6; border-radius: 8px; padding: 1rem; background-color: #f8f9fa; margin-bottom: 1rem;">
+        <div style="font-weight: bold;"></div>
+        <div style="color: #6c757d; font-size: 0.875rem;">この操作は元に戻せません。</div>
+      </div>
+    </div>
+    <div style="padding: 1rem; display: flex; gap: 0.5rem; justify-content: flex-end; border-top: 1px solid #dee2e6;">
+      <button type="button" id="cancelDelete" style="background-color: #6c757d; color: white; border: none; padding: 0.75rem 1rem; border-radius: 6px; font-weight: 500; cursor: pointer; min-width: 80px;">キャンセル</button>
+      <button type="button" id="confirmDelete" style="background-color: #dc3545; color: white; border: none; padding: 0.75rem 1rem; border-radius: 6px; font-weight: 500; cursor: pointer; min-width: 80px;">削除する</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- スピードダイアルコンポーネント -->
 {% include 'speed_dial.html' with actions=diary_actions %}
 
+<script>
+// 継続記録削除関連のJavaScript
+(function() {
+  let deleteNoteId = null;
+
+  // 削除確認モーダルを表示
+  function showDeleteModal() {
+    const modal = document.getElementById('deleteConfirmModal');
+    if (modal) {
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  // 削除確認モーダルを閉じる
+  function closeDeleteModal() {
+    const modal = document.getElementById('deleteConfirmModal');
+    if (modal) {
+      modal.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+    deleteNoteId = null;
+  }
+
+  // detail画面専用の削除確認関数（モーダル版）
+  window.confirmDeleteNoteModal = function(noteId, noteDate, noteType) {
+    deleteNoteId = noteId;
+    const deleteTargetInfo = document.getElementById('deleteTargetInfo');
+    if (deleteTargetInfo) {
+      deleteTargetInfo.querySelector('div').innerHTML = 
+        `<i class="bi bi-calendar-date me-2"></i>${noteDate}<br><span class="text-muted">${noteType}</span>`;
+    }
+    showDeleteModal();
+  };
+
+  // detail画面の継続記録削除機能
+  if (typeof window.confirmDeleteNote === 'undefined') {
+    window.confirmDeleteNote = function(noteId, noteDate, noteType, diaryId) {
+      if (confirm(`${noteDate}の${noteType}を削除しますか？\n\nこの操作は元に戻せません。`)) {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                        document.querySelector('input[name="csrfmiddlewaretoken"]')?.value;
+        
+        if (!csrfToken) {
+          alert('CSRFトークンが見つかりません。ページを再読み込みしてください。');
+          return;
+        }
+
+        fetch(`/stockdiary/${diaryId}/note/${noteId}/delete/`, {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrfToken
+          }
+        })
+        .then(response => {
+          if (response.ok) {
+            window.location.reload();
+          } else {
+            throw new Error('削除に失敗しました');
+          }
+        })
+        .catch(error => {
+          console.error('Delete error:', error);
+          alert('削除に失敗しました。もう一度お試しください。');
+        });
+      }
+    };
+  }
+
+  // 削除実行関数（detail画面専用）
+  function executeDelete(noteId) {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                     document.querySelector('input[name="csrfmiddlewaretoken"]')?.value;
+    
+    if (!csrfToken) {
+      alert('CSRFトークンが見つかりません。ページを再読み込みしてください。');
+      return;
+    }
+
+    fetch(`/stockdiary/{{ diary.id }}/note/${noteId}/delete/`, {
+      method: 'POST',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': csrfToken
+      }
+    })
+    .then(response => {
+      if (response.ok) {
+        closeDeleteModal();
+        window.location.reload();
+      } else {
+        throw new Error('削除に失敗しました');
+      }
+    })
+    .catch(error => {
+      console.error('Delete error:', error);
+      alert('削除に失敗しました。もう一度お試しください。');
+      closeDeleteModal();
+    });
+  }
+
+  // グローバル削除実行関数（tab_notes.htmlで使用）
+  if (typeof window.executeDeleteNote === 'undefined') {
+    window.executeDeleteNote = function(noteId, diaryId) {
+      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                       document.querySelector('input[name="csrfmiddlewaretoken"]')?.value;
+      
+      if (!csrfToken) {
+        alert('CSRFトークンが見つかりません。ページを再読み込みしてください。');
+        return;
+      }
+
+      fetch(`/stockdiary/${diaryId}/note/${noteId}/delete/`, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': csrfToken
+        }
+      })
+      .then(response => {
+        if (response.ok) {
+          // home画面の場合はタブコンテンツを再読み込み
+          if (window.location.pathname === '/stockdiary/') {
+            const activeTab = document.querySelector(`#notes-tab-${diaryId}`);
+            if (activeTab) {
+              activeTab.click();
+            } else {
+              window.location.reload();
+            }
+          } else {
+            window.location.reload();
+          }
+        } else {
+          throw new Error('削除に失敗しました');
+        }
+      })
+      .catch(error => {
+        console.error('Delete error:', error);
+        alert('削除に失敗しました。もう一度お試しください。');
+      });
+    };
+  }
+
+  // イベントリスナーの設定
+  document.addEventListener('DOMContentLoaded', function() {
+    // キャンセルボタン
+    const cancelBtn = document.getElementById('cancelDelete');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', closeDeleteModal);
+    }
+
+    // 削除実行ボタン
+    const confirmBtn = document.getElementById('confirmDelete');
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', function() {
+        if (deleteNoteId) {
+          executeDelete(deleteNoteId);
+        }
+      });
+    }
+
+    // モーダル外クリックで閉じる
+    const modal = document.getElementById('deleteConfirmModal');
+    if (modal) {
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+          closeDeleteModal();
+        }
+      });
+    }
+  });
+})();
+</script>
 <script>
 // 改善されたスワイプヒント制御
 function hideSwipeHint() {

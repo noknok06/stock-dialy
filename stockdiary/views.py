@@ -1604,7 +1604,15 @@ def tab_content(request, diary_id, tab_type):
                 status=404
             )
 
-        context = {'diary': diary}
+        # リファラーから判定（デバッグ用にログ出力）
+        referer = request.META.get('HTTP_REFERER', '')
+        full_path = request.get_full_path()
+        
+        # 削除ボタンは常に表示（home画面でもdetail画面でも）
+        context = {
+            'diary': diary,
+            'is_detail_view': True,  # 常にTrueで削除ボタンを表示
+        }
         
         try:
             if tab_type == 'notes':
@@ -1629,7 +1637,7 @@ def tab_content(request, diary_id, tab_type):
                         template = values[0].analysis_item.template
                         template_groups.append({
                             'template': template,
-                            'values': values[:3]  # 最初の5項目
+                            'values': values[:3]  # 最初の3項目
                         })
                 
                 context['template_groups'] = template_groups
@@ -1657,6 +1665,8 @@ def tab_content(request, diary_id, tab_type):
 
         except Exception as render_error:
             print(f"タブレンダリングエラー: {str(render_error)}")
+            import traceback
+            traceback.print_exc()
             return HttpResponse(
                 f'<div class="alert alert-danger">タブコンテンツの読み込み中にエラーが発生しました: {str(render_error)}</div>', 
                 status=500
@@ -1664,11 +1674,13 @@ def tab_content(request, diary_id, tab_type):
 
     except Exception as e:
         print(f"想定外のエラー: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return HttpResponse(
             '<div class="alert alert-danger">予期せぬエラーが発生しました。</div>', 
             status=500
         )
-
+                     
 def calendar_view(request):
     """
     カレンダー全体ビュー - HTMLおよびJavaScriptの挿入問題を回避するために単純なビューを使用
