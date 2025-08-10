@@ -624,106 +624,7 @@
             margin-bottom: 0.5rem;
         }
     }
-
-    /* 既存のCSSに加えて、Langextract用の新しいスタイル */
-    .langextract-badge {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-    }
-    
-    .contextual-analysis-item {
-        transition: all 0.3s ease;
-        border-left: 4px solid transparent;
-    }
-    
-    .contextual-analysis-item:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    
-    .contextual-analysis-item.positive {
-        border-left-color: #28a745;
-        background-color: rgba(40, 167, 69, 0.05);
-    }
-    
-    .contextual-analysis-item.negative {
-        border-left-color: #dc3545;
-        background-color: rgba(220, 53, 69, 0.05);
-    }
-    
-    .contextual-analysis-item.neutral {
-        border-left-color: #6c757d;
-        background-color: rgba(108, 117, 125, 0.05);
-    }
-    
-    .theme-card {
-        transition: all 0.3s ease;
-        border: 1px solid #dee2e6;
-    }
-    
-    .theme-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-        border-color: #007bff;
-    }
-    
-    .ai-analysis-indicator {
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .ai-analysis-indicator::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 2px;
-        background: linear-gradient(90deg, transparent, #007bff, transparent);
-        animation: shimmer 2s infinite;
-    }
-    
-    @keyframes shimmer {
-        0% { left: -100%; }
-        100% { left: 100%; }
-    }
-    
-    .confidence-meter {
-        height: 8px;
-        background: #e9ecef;
-        border-radius: 4px;
-        overflow: hidden;
-    }
-    
-    .confidence-fill {
-        height: 100%;
-        transition: width 1s ease-in-out;
-        border-radius: 4px;
-    }
-    
-    .investment-point-enhanced {
-        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-        border: 1px solid #e9ecef;
-        border-radius: 0.75rem;
-        transition: all 0.3s ease;
-    }
-    
-    .investment-point-enhanced:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        border-color: #007bff;
-    }
-    
-    @media (max-width: 768px) {
-        .contextual-analysis-item,
-        .theme-card,
-        .investment-point-enhanced {
-            transform: none !important;
-            transition: none !important;
-        }
-    }
-</style>
+    </style>
 {% block breadcrumb %}
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
@@ -742,11 +643,6 @@
         <div class="col-12 col-md-8">
             <h1 class="h3 h-md-2 mb-2">
                 <i class="fas fa-chart-line me-2 me-md-3"></i>感情分析結果
-                {% if session.analysis_result|has_langextract_analysis %}
-                    <span class="badge langextract-badge ms-2">
-                        <i class="fas fa-robot me-1"></i>AI高精度
-                    </span>
-                {% endif %}
             </h1>
             <p class="h6 h-md-5 mb-3 opacity-90 text-truncate">{{ document.company_name }}</p>
             <p class="mb-0 opacity-80 text-truncate-2">{{ document.doc_description }}</p>
@@ -759,11 +655,7 @@
                 <div class="badge bg-success px-3 py-2">
                     <i class="fas fa-check me-1"></i>分析完了
                 </div>
-                {% if session.analysis_result.analysis_method %}
-                    <div class="badge {{ session.analysis_result.analysis_method|analysis_method_badge }} px-3 py-2">
-                        <i class="fas fa-cog me-1"></i>{{ session.analysis_result.analysis_method|analysis_method_display }}
-                    </div>
-                {% endif %}
+                <!-- 有効期限情報を追加 -->
                 {% if time_remaining %}
                     <div class="badge bg-info px-3 py-2">
                         <i class="fas fa-clock me-1"></i>
@@ -778,114 +670,15 @@
 <div class="row g-3 g-md-4">
     <!-- Main Results Area -->
     <div class="col-12 col-lg-8">
-        <!-- Langextract Analysis Results (if available) -->
-        {% if session.analysis_result|has_langextract_analysis %}
-            <div class="analysis-card card mb-4 border-primary ai-analysis-indicator">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-robot me-2"></i>AI高精度分析結果
-                        <span class="badge bg-light text-primary ms-2">Langextract</span>
-                    </h5>
-                    <small class="opacity-90">
-                        Googleの最新AI技術による文脈理解に基づく高精度感情分析
-                    </small>
-                </div>
-                <div class="card-body">
-                    <div class="row mb-4">
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                <div class="display-6 {{ session.overall_score|sentiment_color }} mb-2">
-                                    {{ session.overall_score|floatformat:3 }}
-                                </div>
-                                <div class="text-muted">感情スコア</div>
-                                <div class="small text-muted mt-1">(-1.0 〜 +1.0)</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                <div class="display-6 {{ session.analysis_result.confidence_score|confidence_level_color }} mb-2">
-                                    {{ session.analysis_result.confidence_score|floatformat:2 }}
-                                </div>
-                                <div class="text-muted">AI信頼度</div>
-                                <div class="confidence-meter mt-2">
-                                    <div class="confidence-fill {{ session.analysis_result.confidence_score|confidence_level_color }}" 
-                                         style="width: {{ session.analysis_result.confidence_score|score_percentage }}%; background-color: currentColor;"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                <div class="h4 {{ session.analysis_result.analysis_quality|analysis_quality_color }} mb-2">
-                                    {{ session.analysis_result.analysis_quality|analysis_quality_display }}
-                                </div>
-                                <div class="text-muted">分析品質</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                <div class="h5 text-info mb-2">
-                                    <i class="fas fa-clock"></i>
-                                    {{ session.analysis_result.processing_time|format_processing_time|default:"高速" }}
-                                </div>
-                                <div class="text-muted">処理時間</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    {% if session.analysis_result.reasoning %}
-                        <div class="alert alert-info border-0">
-                            <h6 class="alert-heading">
-                                <i class="fas fa-lightbulb me-2"></i>AI分析の根拠
-                            </h6>
-                            <p class="mb-0">{{ session.analysis_result.reasoning }}</p>
-                        </div>
-                    {% endif %}
-                    
-                    <!-- 統計情報 -->
-                    {% with stats=session.analysis_result|get_langextract_stats %}
-                        {% if stats %}
-                            <div class="row text-center">
-                                <div class="col-3">
-                                    <div class="small text-muted">分析セグメント</div>
-                                    <div class="fw-bold text-primary">{{ stats.segments_analyzed }}</div>
-                                </div>
-                                <div class="col-3">
-                                    <div class="small text-muted">検出テーマ</div>
-                                    <div class="fw-bold text-info">{{ stats.themes_identified }}</div>
-                                </div>
-                                <div class="col-3">
-                                    <div class="small text-muted">処理時間</div>
-                                    <div class="fw-bold text-success">{{ stats.processing_time|format_processing_time }}</div>
-                                </div>
-                                <div class="col-3">
-                                    <div class="small text-muted">分析品質</div>
-                                    <div class="fw-bold {{ stats.analysis_quality|analysis_quality_color }}">
-                                        {{ stats.analysis_quality|analysis_quality_display }}
-                                    </div>
-                                </div>
-                            </div>
-                        {% endif %}
-                    {% endwith %}
-                </div>
-            </div>
-        {% endif %}
-
         <!-- Overall Sentiment Score -->
         <div class="analysis-card card mb-4">
             <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-thermometer-half me-2"></i>全体感情スコア
-                    </h5>
-                    {% if session.analysis_result.analysis_method and not session.analysis_result|has_langextract_analysis %}
-                        <span class="badge {{ session.analysis_result.analysis_method|analysis_method_badge }}">
-                            {{ session.analysis_result.analysis_method|analysis_method_display }}
-                        </span>
-                    {% endif %}
-                </div>
+                <h5 class="mb-0">
+                    <i class="fas fa-thermometer-half me-2"></i>全体感情スコア
+                </h5>
             </div>
             <div class="card-body">
-                <!-- 既存のスコア表示エリアのコード（score-circle-container等）をそのまま継続 -->
+                <!-- スコア表示エリア -->
                 <div class="row align-items-center g-4">
                     <!-- 左側：メインスコア表示 -->
                     <div class="col-12 col-lg-6">
@@ -960,11 +753,7 @@
                             <div class="investment-points">
                                 <h6 class="fw-bold mb-3">
                                     <i class="fas fa-lightbulb text-warning me-2"></i>分析から読み取れるポイント
-                                    {% if formatted_insights.gemini_metadata.generated_by == 'langextract_analysis' %}
-                                        <span class="badge langextract-badge ms-2">
-                                            <i class="fas fa-robot me-1"></i>AI分析
-                                        </span>
-                                    {% elif formatted_insights.gemini_metadata.generated_by == 'gemini_api' %}
+                                    {% if formatted_insights.gemini_metadata.generated_by == 'gemini_api' %}
                                         <span class="badge bg-info ms-2">
                                             <i class="fas fa-robot me-1"></i>AI分析
                                         </span>
@@ -979,7 +768,7 @@
                                     <!-- 生成されたポイント -->
                                     {% for point in formatted_insights.gemini_investment_points %}
                                         <div class="point-item mb-3">
-                                            <i class="fas fa-{% if point.source == 'langextract_analysis' %}robot text-primary{% elif point.source == 'gemini_generated' %}robot text-info{% else %}lightbulb text-primary{% endif %} me-2"></i>
+                                            <i class="fas fa-{% if point.source == 'gemini_generated' %}robot text-info{% else %}lightbulb text-primary{% endif %} me-2"></i>
                                             <div>
                                                 <span class="fw-semibold">{{ point.title }}</span>
                                                 <div class="small text-muted ms-0">{{ point.description }}</div>
@@ -987,13 +776,8 @@
                                         </div>
                                     {% endfor %}
                                     
-                                    <!-- 品質表示 -->
-                                    {% if formatted_insights.gemini_metadata.generated_by == 'langextract_analysis' %}
-                                        <div class="small text-primary mt-2">
-                                            <i class="fas fa-check-circle me-1"></i>
-                                            AI高精度分析による見解が含まれています
-                                        </div>
-                                    {% elif formatted_insights.gemini_metadata.api_available %}
+                                    <!-- 簡素な品質表示 -->
+                                    {% if formatted_insights.gemini_metadata.api_available %}
                                         <div class="small text-success mt-2">
                                             <i class="fas fa-check-circle me-1"></i>
                                             AI分析による見解が含まれています
@@ -1019,119 +803,6 @@
             </div>
         </div>
 
-        <!-- Langextract専用セクション：文脈別分析 -->
-        {% if session.analysis_result.contextual_analysis %}
-            <div class="analysis-card card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-search-plus me-2"></i>文脈別詳細分析
-                        <span class="badge langextract-badge ms-2">AI解析</span>
-                    </h5>
-                    <small class="text-muted d-block mt-1">
-                        AIが文書の文脈を理解して個別セグメントの感情を分析
-                    </small>
-                </div>
-                <div class="card-body">
-                    {% for context in session.analysis_result.contextual_analysis|format_contextual_analysis %}
-                        <div class="contextual-analysis-item p-3 mb-3 rounded {% if context.score > 0.1 %}positive{% elif context.score < -0.1 %}negative{% else %}neutral{% endif %}">
-                            <div class="row">
-                                <div class="col-md-8">
-                                    <div class="context-text mb-2">
-                                        {{ context.highlighted_text|safe }}
-                                    </div>
-                                    <div class="context-meta small">
-                                        <span class="me-3">
-                                            <i class="fas fa-chart-bar me-1"></i>
-                                            スコア: <span class="{{ context.score_color }} fw-bold">{{ context.score|floatformat:2 }}</span>
-                                        </span>
-                                        <span class="me-3">
-                                            <i class="fas fa-layer-group me-1"></i>
-                                            文脈: {{ context.context }}
-                                        </span>
-                                        <span class="badge bg-light text-dark">
-                                            <i class="fas fa-impact me-1"></i>
-                                            {{ context.impact|impact_level_display }}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    {% if context.key_phrases %}
-                                        <div class="key-phrases">
-                                            <small class="text-muted d-block mb-1">
-                                                <i class="fas fa-tags me-1"></i>重要フレーズ:
-                                            </small>
-                                            {% for phrase in context.key_phrases %}
-                                                <span class="badge bg-primary bg-opacity-20 text-primary me-1 mb-1">{{ phrase }}</span>
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-        {% endif %}
-
-        <!-- Langextract専用セクション：主要テーマ -->
-        {% if session.analysis_result.key_themes %}
-            <div class="analysis-card card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-tags me-2"></i>主要テーマ分析
-                        <span class="badge langextract-badge ms-2">AI解析</span>
-                    </h5>
-                    <small class="text-muted d-block mt-1">
-                        AIが特定した文書内の重要テーマと感情傾向
-                    </small>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        {% for theme in session.analysis_result.key_themes|format_key_themes %}
-                            <div class="col-md-6">
-                                <div class="theme-card card h-100">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-start mb-2">
-                                            <h6 class="card-title mb-0">
-                                                <i class="{{ theme.icon }} me-2"></i>{{ theme.theme }}
-                                            </h6>
-                                            <div class="theme-badges">
-                                                <span class="badge {{ theme.importance_badge }}">
-                                                    {{ theme.importance|upper }}
-                                                </span>
-                                                <span class="{{ theme.sentiment_icon }} ms-1"></span>
-                                            </div>
-                                        </div>
-                                        
-                                        {% if theme.evidence %}
-                                            <div class="theme-evidence">
-                                                <small class="text-muted d-block mb-2">
-                                                    <i class="fas fa-quote-left me-1"></i>根拠:
-                                                </small>
-                                                <ul class="list-unstyled small">
-                                                    {% for evidence in theme.evidence|slice:":3" %}
-                                                        <li class="mb-1">
-                                                            <i class="fas fa-caret-right text-primary me-1"></i>
-                                                            {{ evidence|truncatechars:80 }}
-                                                        </li>
-                                                    {% endfor %}
-                                                    {% if theme.evidence|length > 3 %}
-                                                        <li class="text-muted small">
-                                                            <i class="fas fa-ellipsis-h me-1"></i>
-                                                            他{{ theme.evidence|length|add:"-3" }}件の根拠があります
-                                                        </li>
-                                                    {% endif %}
-                                                </ul>
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-        {% endif %}
         {% include 'earnings_analysis/ads/ad_responsive.html' %}
         <!-- Detailed Score Breakdown -->
         {% if session.analysis_result.score_calculation %}
@@ -1517,60 +1188,11 @@
             <div class="card-header">
                 <h5 class="mb-0">
                     <i class="fas fa-lightbulb me-2"></i>分析から読み取れる見解
-                    {% if session.analysis_result.analysis_method == 'langextract' %}
-                        <span class="badge langextract-badge ms-2">
-                            <i class="fas fa-robot me-1"></i>AI高精度分析
-                        </span>
-                    {% endif %}
                 </h5>
             </div>
             <div class="card-body">
                 {% if formatted_insights %}
                     <!-- Market Implications -->
-                    {% if session.analysis_result.investment_points %}
-                        <div class="insight-section border rounded p-3 mb-4" style="background-color: #e7f3ff; border-color: #0d6efd !important;">
-                            <h6 class="text-primary mb-3">
-                                <i class="fas fa-chart-line me-2"></i>AI投資分析ポイント
-                                <span class="badge langextract-badge ms-2">Langextract</span>
-                            </h6>
-                            
-                            <div class="row g-3">
-                                {% for point in session.analysis_result.investment_points %}
-                                    <div class="col-md-6">
-                                        <div class="investment-point-enhanced p-3">
-                                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                                <h6 class="mb-0">
-                                                    {% if point.category_icon %}
-                                                        <i class="{{ point.category_icon }} me-2 text-primary"></i>
-                                                    {% endif %}
-                                                    {{ point.title }}
-                                                </h6>
-                                                <div class="point-badges">
-                                                    {% if point.impact_level %}
-                                                        <span class="badge {{ point.impact_level|impact_level_color }} bg-opacity-20">
-                                                            {{ point.impact_level|impact_level_display }}
-                                                        </span>
-                                                    {% endif %}
-                                                </div>
-                                            </div>
-                                            <p class="mb-2 small">{{ point.description }}</p>
-                                            <div class="point-meta d-flex justify-content-between align-items-center">
-                                                {% if point.time_horizon %}
-                                                    <small class="text-muted">
-                                                        <i class="fas fa-clock me-1"></i>
-                                                        {{ point.time_horizon|time_horizon_display }}的影響
-                                                    </small>
-                                                {% endif %}
-                                                <small class="text-primary">
-                                                    <i class="fas fa-robot me-1"></i>AI分析
-                                                </small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    {% endif %}
                     {% if formatted_insights.market_implications %}
                         <div class="insight-section border rounded p-3 mb-4" style="background-color: #e7f3ff; border-color: #0d6efd !important;">
                             <h6 class="text-primary mb-3">
@@ -3213,54 +2835,6 @@ function exportSummary() {
 
 // ページ読み込み時の初期化（モバイル最適化版）
 document.addEventListener('DOMContentLoaded', function() {
-    // AIバッジのアニメーション
-    const aiBadges = document.querySelectorAll('.langextract-badge');
-    aiBadges.forEach((badge, index) => {
-        setTimeout(() => {
-            badge.style.transform = 'scale(1.1)';
-            setTimeout(() => {
-                badge.style.transform = 'scale(1)';
-            }, 200);
-        }, 1000 + (index * 500));
-    });
-    
-    // 文脈分析アイテムのシーケンシャルアニメーション
-    const contextItems = document.querySelectorAll('.contextual-analysis-item');
-    contextItems.forEach((item, index) => {
-        item.style.opacity = '0';
-        item.style.transform = 'translateY(20px)';
-        item.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-        
-        setTimeout(() => {
-            item.style.opacity = '1';
-            item.style.transform = 'translateY(0)';
-        }, 2000 + (index * 200));
-    });
-    
-    // テーマカードのアニメーション
-    const themeCards = document.querySelectorAll('.theme-card');
-    themeCards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'scale(0.9)';
-        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        
-        setTimeout(() => {
-            card.style.opacity = '1';
-            card.style.transform = 'scale(1)';
-        }, 3000 + (index * 150));
-    });
-    
-    // 信頼度メーターのアニメーション
-    const confidenceFill = document.querySelector('.confidence-fill');
-    if (confidenceFill) {
-        setTimeout(() => {
-            const width = confidenceFill.style.width;
-            confidenceFill.style.width = '0%';
-            setTimeout(() => {
-                confidenceFill.style.width = width;
-            }, 100);
-        }, 1500);
-    }
     const isMobile = isMobileDevice();
     
     // アニメーション効果（デスクトップのみ）
@@ -3651,42 +3225,5 @@ if (!isMobileDevice() && typeof performance !== 'undefined' && performance.mark)
         }
     }, 5000);
 }
-
-// AIアナリシスのツールチップ機能
-function initAITooltips() {
-    const aiElements = document.querySelectorAll('[data-ai-tooltip]');
-    aiElements.forEach(element => {
-        element.addEventListener('mouseenter', function() {
-            showAITooltip(this);
-        });
-        element.addEventListener('mouseleave', function() {
-            hideAITooltip();
-        });
-    });
-}
-
-function showAITooltip(element) {
-    const tooltip = document.createElement('div');
-    tooltip.className = 'ai-tooltip position-absolute bg-dark text-white p-2 rounded shadow';
-    tooltip.innerHTML = element.getAttribute('data-ai-tooltip');
-    tooltip.style.zIndex = '1000';
-    tooltip.style.pointerEvents = 'none';
-    
-    document.body.appendChild(tooltip);
-    
-    const rect = element.getBoundingClientRect();
-    tooltip.style.left = (rect.left + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
-    tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
-}
-
-function hideAITooltip() {
-    const tooltip = document.querySelector('.ai-tooltip');
-    if (tooltip) {
-        tooltip.remove();
-    }
-}
-
-// 初期化
-initAITooltips();
 </script>
 {% endblock %}
