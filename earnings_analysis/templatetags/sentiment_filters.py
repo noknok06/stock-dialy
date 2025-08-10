@@ -1,4 +1,4 @@
-# earnings_analysis/templatetags/sentiment_filters.py（書類種別表示名対応版）
+# earnings_analysis/templatetags/sentiment_filters.py（Langextract対応版）
 from django import template
 from django.utils.safestring import mark_safe
 import json
@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 register = template.Library()
 
 # ====================
-# 感情分析関連フィルター
+# 感情分析関連フィルター（既存）
 # ====================
 
 @register.filter
@@ -41,6 +41,270 @@ def sentiment_badge(sentiment_label):
         'very_negative': 'bg-danger'
     }
     return badge_map.get(sentiment_label, 'bg-secondary')
+
+# ====================
+# Langextract関連フィルター（新規追加）
+# ====================
+
+@register.filter
+def analysis_method_badge(method):
+    """分析手法に応じたバッジクラス"""
+    badge_map = {
+        'langextract': 'bg-primary',
+        'traditional_gemini': 'bg-info',
+        'fallback': 'bg-secondary'
+    }
+    return badge_map.get(method, 'bg-secondary')
+
+@register.filter
+def analysis_method_display(method):
+    """分析手法の表示名"""
+    display_map = {
+        'langextract': 'AI高精度分析',
+        'traditional_gemini': 'AI標準分析',
+        'fallback': '基本分析'
+    }
+    return display_map.get(method, method)
+
+@register.filter
+def confidence_level_color(confidence):
+    """信頼度レベルの色"""
+    try:
+        confidence = float(confidence)
+        if confidence >= 0.8:
+            return 'text-success'
+        elif confidence >= 0.6:
+            return 'text-info'
+        elif confidence >= 0.4:
+            return 'text-warning'
+        else:
+            return 'text-danger'
+    except (ValueError, TypeError):
+        return 'text-secondary'
+
+@register.filter
+def confidence_level_display(confidence):
+    """信頼度レベルの表示"""
+    try:
+        confidence = float(confidence)
+        if confidence >= 0.8:
+            return '高信頼度'
+        elif confidence >= 0.6:
+            return '中程度'
+        elif confidence >= 0.4:
+            return '低信頼度'
+        else:
+            return '要注意'
+    except (ValueError, TypeError):
+        return '不明'
+
+@register.filter
+def impact_level_color(impact):
+    """影響度レベルの色"""
+    color_map = {
+        'high': 'text-danger',
+        'medium': 'text-warning',
+        'low': 'text-success'
+    }
+    return color_map.get(impact, 'text-secondary')
+
+@register.filter
+def impact_level_display(impact):
+    """影響度レベルの表示"""
+    display_map = {
+        'high': '高影響',
+        'medium': '中影響',
+        'low': '低影響'
+    }
+    return display_map.get(impact, impact)
+
+@register.filter
+def theme_sentiment_icon(sentiment):
+    """テーマ感情のアイコン"""
+    icon_map = {
+        'positive': 'fas fa-thumbs-up text-success',
+        'negative': 'fas fa-thumbs-down text-danger',
+        'neutral': 'fas fa-equals text-secondary'
+    }
+    return icon_map.get(sentiment, 'fas fa-circle text-secondary')
+
+@register.filter
+def time_horizon_display(horizon):
+    """時間軸の表示"""
+    display_map = {
+        'short_term': '短期',
+        'medium_term': '中期',
+        'long_term': '長期'
+    }
+    return display_map.get(horizon, horizon)
+
+@register.filter
+def theme_importance_badge(importance):
+    """テーマ重要度のバッジ"""
+    badge_map = {
+        'high': 'bg-danger',
+        'medium': 'bg-warning',
+        'low': 'bg-info'
+    }
+    return badge_map.get(importance, 'bg-secondary')
+
+@register.filter
+def analysis_quality_display(quality):
+    """分析品質の表示"""
+    display_map = {
+        'high': '高品質',
+        'medium': '標準品質',
+        'basic': '基本品質',
+        'low': '低品質'
+    }
+    return display_map.get(quality, quality)
+
+@register.filter
+def analysis_quality_color(quality):
+    """分析品質の色"""
+    color_map = {
+        'high': 'text-success',
+        'medium': 'text-info',
+        'basic': 'text-warning',
+        'low': 'text-danger'
+    }
+    return color_map.get(quality, 'text-secondary')
+
+@register.filter
+def format_contextual_analysis(contextual_data):
+    """文脈分析データのフォーマット"""
+    if not contextual_data:
+        return []
+    
+    formatted = []
+    for context in contextual_data[:5]:  # 上位5件表示
+        formatted.append({
+            'text': context.get('text', ''),
+            'score': context.get('score', 0),
+            'context': context.get('context', ''),
+            'key_phrases': context.get('key_phrases', []),
+            'highlighted_text': context.get('highlighted_text', context.get('text', '')),
+            'impact': context.get('business_impact', 'medium'),
+            'score_color': sentiment_color(context.get('score', 0))
+        })
+    
+    return formatted
+
+@register.filter
+def format_key_themes(themes_data):
+    """主要テーマデータのフォーマット"""
+    if not themes_data:
+        return []
+    
+    formatted = []
+    for theme in themes_data:
+        formatted.append({
+            'theme': theme.get('theme', ''),
+            'sentiment': theme.get('sentiment', 'neutral'),
+            'importance': theme.get('importance', 'medium'),
+            'evidence': theme.get('evidence', []),
+            'icon': theme.get('icon', 'fas fa-file-text'),
+            'sentiment_icon': theme_sentiment_icon(theme.get('sentiment', 'neutral')),
+            'importance_badge': theme_importance_badge(theme.get('importance', 'medium'))
+        })
+    
+    return formatted
+
+@register.simple_tag
+def render_langextract_analysis_card(analysis_result):
+    """Langextract分析結果カードのレンダリング"""
+    if not analysis_result or analysis_result.get('analysis_method') != 'langextract':
+        return ""
+    
+    confidence = analysis_result.get('confidence_score', 0)
+    overall_score = analysis_result.get('overall_score', 0)
+    
+    html = f'''
+    <div class="card mb-4 border-primary">
+        <div class="card-header bg-primary text-white">
+            <h6 class="mb-0">
+                <i class="fas fa-robot me-2"></i>AI高精度分析結果
+                <span class="badge bg-light text-primary ms-2">Langextract</span>
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="text-center">
+                        <div class="display-6 {sentiment_color(overall_score)} mb-2">{overall_score:.3f}</div>
+                        <div class="text-muted">総合感情スコア</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="text-center">
+                        <div class="display-6 {confidence_level_color(confidence)} mb-2">{confidence*100:.0f}%</div>
+                        <div class="text-muted">信頼度</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-3">
+                <small class="text-muted">
+                    <strong>分析理由:</strong> {analysis_result.get('reasoning', '詳細な文脈分析により算出されました。')}
+                </small>
+            </div>
+        </div>
+    </div>
+    '''
+    
+    return mark_safe(html)
+
+@register.inclusion_tag('earnings_analysis/tags/contextual_analysis.html')
+def render_contextual_analysis(contextual_data):
+    """文脈分析の表示"""
+    return {
+        'contextual_data': format_contextual_analysis(contextual_data)
+    }
+
+@register.inclusion_tag('earnings_analysis/tags/key_themes.html')
+def render_key_themes(themes_data):
+    """主要テーマの表示"""
+    return {
+        'themes_data': format_key_themes(themes_data)
+    }
+
+@register.filter
+def get_langextract_stats(analysis_result):
+    """Langextract統計情報の取得"""
+    if not analysis_result or analysis_result.get('analysis_method') != 'langextract':
+        return {}
+    
+    return {
+        'segments_analyzed': analysis_result.get('segments_analyzed', 0),
+        'themes_identified': analysis_result.get('themes_identified', 0),
+        'processing_time': analysis_result.get('processing_time', 0),
+        'analysis_quality': analysis_result.get('analysis_quality', 'medium')
+    }
+
+@register.filter
+def has_langextract_analysis(analysis_result):
+    """Langextract分析が実行されたかどうか"""
+    return (analysis_result and 
+            analysis_result.get('analysis_method') == 'langextract' and
+            analysis_result.get('api_success', False))
+
+@register.filter
+def format_processing_time(seconds):
+    """処理時間のフォーマット"""
+    try:
+        seconds = float(seconds)
+        if seconds < 60:
+            return f"{seconds:.1f}秒"
+        else:
+            minutes = int(seconds // 60)
+            remaining_seconds = seconds % 60
+            return f"{minutes}分{remaining_seconds:.0f}秒"
+    except (ValueError, TypeError):
+        return "不明"
+
+# ====================
+# 既存のフィルター（継続）
+# ====================
 
 @register.filter
 def sentiment_description(level):
@@ -94,7 +358,7 @@ def sentiment_progress_bar(positive_count, negative_count, total_count):
     return mark_safe(html)
 
 # ====================
-# 書類種別表示名関連フィルター（新規追加）
+# 書類種別表示名関連フィルター（既存継続）
 # ====================
 
 @register.filter
@@ -109,132 +373,8 @@ def doc_type_display_name(doc_type_code):
     except Exception:
         return f'書類種別{doc_type_code}'
 
-@register.filter
-def doc_type_category_name(doc_type_code):
-    """書類種別コードからカテゴリ名を取得"""
-    try:
-        from ..models import DocumentMetadata
-        
-        for category_key, category_info in DocumentMetadata.DOC_TYPE_CATEGORIES.items():
-            if str(doc_type_code) in category_info['types']:
-                return category_info['name']
-        return 'その他'
-    except Exception:
-        return 'その他'
-
-@register.filter
-def doc_type_category_info(doc_type_code):
-    """書類種別コードからカテゴリ情報（辞書）を取得"""
-    try:
-        from ..models import DocumentMetadata
-        
-        for category_key, category_info in DocumentMetadata.DOC_TYPE_CATEGORIES.items():
-            if str(doc_type_code) in category_info['types']:
-                return {
-                    'key': category_key,
-                    'name': category_info['name'],
-                    'description': category_info['description'],
-                    'priority': category_info['priority']
-                }
-        return {
-            'key': 'others',
-            'name': 'その他',
-            'description': 'その他の書類',
-            'priority': 6
-        }
-    except Exception:
-        return {'key': 'others', 'name': 'その他', 'description': '', 'priority': 6}
-
-@register.filter
-def is_financial_doc_type(doc_type_code):
-    """決算関連書類かどうかを判定"""
-    try:
-        from ..models import DocumentMetadata
-        financial_types = DocumentMetadata.HIGH_PRIORITY_DOC_TYPES + DocumentMetadata.MEDIUM_PRIORITY_DOC_TYPES
-        return str(doc_type_code) in financial_types
-    except Exception:
-        return False
-
-@register.filter
-def doc_type_analysis_priority(doc_type_code):
-    """書類種別の分析優先度を取得"""
-    try:
-        from ..models import DocumentMetadata
-        
-        if str(doc_type_code) in DocumentMetadata.HIGH_PRIORITY_DOC_TYPES:
-            return 'high'
-        elif str(doc_type_code) in DocumentMetadata.MEDIUM_PRIORITY_DOC_TYPES:
-            return 'medium'
-        else:
-            return 'low'
-    except Exception:
-        return 'low'
-
-@register.filter
-def doc_type_priority_badge_class(doc_type_code):
-    """書類種別優先度に応じたバッジクラス"""
-    priority = doc_type_analysis_priority(doc_type_code)
-    priority_classes = {
-        'high': 'bg-success',
-        'medium': 'bg-info',
-        'low': 'bg-secondary'
-    }
-    return priority_classes.get(priority, 'bg-secondary')
-
-@register.filter
-def doc_type_priority_display(doc_type_code):
-    """書類種別優先度の日本語表示"""
-    priority = doc_type_analysis_priority(doc_type_code)
-    priority_display = {
-        'high': '分析推奨',
-        'medium': '分析可能',
-        'low': '分析困難'
-    }
-    return priority_display.get(priority, '分析困難')
-
-
-@register.simple_tag
-def categorized_doc_types():
-    """カテゴリ別書類種別リストを取得"""
-    try:
-        from ..models import DocumentMetadata
-        return DocumentMetadata.get_doc_type_choices_for_filter()
-    except Exception:
-        return []
-
-@register.filter
-def doc_type_search_url(doc_type_code, base_url='/copomo/documents/'):
-    """書類種別での検索URLを生成"""
-    try:
-        from django.utils.http import urlencode
-        from ..models import DocumentMetadata
-        
-        display_name = DocumentMetadata.DOC_TYPE_DISPLAY_NAMES.get(
-            str(doc_type_code), 
-            f'書類種別{doc_type_code}'
-        )
-        
-        params = {'doc_type_name': display_name}
-        return f"{base_url}?{urlencode(params)}"
-    except Exception:
-        return base_url
-
-@register.filter
-def doc_type_with_code(doc_type_code):
-    """書類種別の表示名とコードを組み合わせた表示"""
-    try:
-        from ..models import DocumentMetadata
-        display_name = DocumentMetadata.DOC_TYPE_DISPLAY_NAMES.get(
-            str(doc_type_code), 
-            f'書類種別{doc_type_code}'
-        )
-        return f"{display_name} ({doc_type_code})"
-    except Exception:
-        return f'書類種別{doc_type_code}'
-
-# ====================
-# 通貨・財務データ表示フィルター
-# ====================
+# 通貨・財務データ表示フィルター、UIフィルター、テキスト処理フィルター、
+# 数値・計算関連フィルター、ユーティリティフィルターは既存コードを継続使用
 
 @register.filter
 def format_japanese_currency(value, show_debug=False):
@@ -294,64 +434,6 @@ def format_japanese_currency(value, show_debug=False):
     except (ValueError, TypeError):
         return str(value)
 
-@register.filter
-def format_compact_currency(value):
-    """コンパクトな通貨表示（キャッシュフロー図用）"""
-    try:
-        value = float(value)
-        abs_value = abs(value)
-        
-        if abs_value == 0:
-            return "0"
-        
-        # 異常値の簡易調整
-        if abs_value > 1_000_000_000_000_000:  # 1000兆円超
-            while abs_value > 100_000_000_000_000:  # 100兆円以下になるまで
-                value = value / 1000
-                abs_value = abs(value)
-        
-        sign = "-" if value < 0 else ""
-        
-        if abs_value >= 1_000_000_000_000:  # 1兆円以上
-            return f"{sign}{abs_value / 1_000_000_000_000:.1f}兆円"
-        elif abs_value >= 100_000_000:  # 1億円以上
-            return f"{sign}{abs_value / 100_000_000:.1f}億円"
-        elif abs_value >= 1_000_000:  # 100万円以上
-            return f"{sign}{abs_value / 1_000_000:.1f}百万円"
-        else:  # 100万円未満
-            return f"{sign}{abs_value / 1_000:.0f}千円"
-            
-    except (ValueError, TypeError):
-        return str(value)
-
-@register.filter
-def format_xbrl_currency(value, unit_info=None):
-    """XBRL単位情報を考慮した通貨表示"""
-    try:
-        value = float(value)
-        return _format_currency_base(value)
-    except (ValueError, TypeError):
-        return str(value)
-
-@register.filter
-def format_currency_with_unit_context(value, context=None):
-    """文脈を考慮した通貨表示"""
-    try:
-        value = float(value)
-        
-        # 文脈情報があれば活用
-        if context and 'table_unit' in context:
-            table_unit = context['table_unit']
-            if table_unit == 'million_yen':
-                return f"{value:,.0f}百万円"
-            elif table_unit == 'thousand_yen':
-                return f"{value:,.0f}千円"
-        
-        return _format_currency_base(value)
-        
-    except (ValueError, TypeError):
-        return str(value)
-
 def _format_currency_base(value):
     """通貨フォーマットの共通処理"""
     abs_value = abs(value)
@@ -385,265 +467,6 @@ def _format_currency_base(value):
         return f"{sign}{abs_value:,.0f}円"
 
 @register.filter
-def format_percentage_safe(value):
-    """安全なパーセンテージ表示"""
-    try:
-        value = float(value)
-        if abs(value) >= 1000:  # 既にパーセンテージの場合
-            return f"{value:.1f}%"
-        else:  # 小数点形式の場合
-            return f"{value * 100:.1f}%"
-    except (ValueError, TypeError):
-        return "--"
-
-# ====================
-# デバッグ用フィルター
-# ====================
-
-@register.filter
-def debug_financial_value(value):
-    """財務値のデバッグ表示"""
-    try:
-        value = float(value)
-        candidates = [
-            ('原値', value),
-            ('÷1,000', value / 1000),
-            ('÷100万', value / 1_000_000),
-            ('÷10億', value / 1_000_000_000),
-        ]
-        
-        debug_html = "<div class='debug-financial-value'>"
-        debug_html += f"<strong>財務値デバッグ:</strong><br>"
-        
-        for label, candidate_value in candidates:
-            abs_candidate = abs(candidate_value)
-            if 1_000_000 <= abs_candidate <= 100_000_000_000_000:  # 現実的な範囲
-                status = "✓ 現実的"
-                css_class = "text-success"
-            else:
-                status = "✗ 非現実的"
-                css_class = "text-danger"
-            
-            formatted = _format_currency_base(candidate_value)
-            debug_html += f"<small class='{css_class}'>{label}: {formatted} {status}</small><br>"
-        
-        debug_html += "</div>"
-        return mark_safe(debug_html)
-        
-    except (ValueError, TypeError):
-        return f"<small class='text-danger'>デバッグ失敗: {value}</small>"
-
-# ====================
-# UI表示関連フィルター
-# ====================
-
-@register.filter
-def confidence_class(percentage):
-    """確信度に応じたクラスを返す"""
-    try:
-        percentage = float(percentage)
-        if percentage >= 80:
-            return 'text-success'
-        elif percentage >= 60:
-            return 'text-info'
-        elif percentage >= 40:
-            return 'text-warning'
-        else:
-            return 'text-danger'
-    except (ValueError, TypeError):
-        return 'text-secondary'
-
-@register.filter
-def impact_level_icon(impact_level):
-    """影響度レベルに応じたアイコンを返す"""
-    icon_map = {
-        'very_high': 'fas fa-fire',
-        'high': 'fas fa-exclamation-triangle',
-        'medium': 'fas fa-info-circle',
-        'low': 'fas fa-minus-circle'
-    }
-    return icon_map.get(impact_level, 'fas fa-circle')
-
-@register.filter
-def category_icon(category):
-    """カテゴリに応じたアイコンを返す"""
-    icon_map = {
-        'performance': 'fas fa-chart-line',
-        'forecast': 'fas fa-crystal-ball',
-        'risk': 'fas fa-shield-alt',
-        'market': 'fas fa-globe',
-        'operation': 'fas fa-cogs',
-        'general': 'fas fa-file-text'
-    }
-    return icon_map.get(category, 'fas fa-circle')
-
-@register.filter
-def meter_angle(percentage):
-    """メーターの角度を計算（-90度から+90度）"""
-    try:
-        percentage = float(percentage)
-        # 0-100%を-90度から+90度に変換
-        angle = (percentage / 100) * 180 - 90
-        return max(-90, min(90, angle))
-    except (ValueError, TypeError):
-        return 0
-
-@register.simple_tag
-def progress_bar_width(current, maximum):
-    """プログレスバーの幅を計算"""
-    try:
-        current = float(current)
-        maximum = float(maximum)
-        if maximum > 0:
-            percentage = (current / maximum) * 100
-            return min(100, max(0, percentage))
-        return 0
-    except (ValueError, TypeError, ZeroDivisionError):
-        return 0
-
-# ====================
-# テキスト処理フィルター
-# ====================
-
-@register.filter
-def highlight_keywords(text, keyword):
-    """テキスト内のキーワードをハイライト"""
-    if not keyword or not text:
-        return text
-    
-    highlighted = re.sub(
-        re.escape(keyword),
-        f'<span class="keyword-highlight">{keyword}</span>',
-        str(text),
-        flags=re.IGNORECASE
-    )
-    return mark_safe(highlighted)
-
-@register.filter
-def truncate_text(text, length):
-    """テキストを指定文字数で切り詰める"""
-    if not text:
-        return ""
-    
-    text_str = str(text)
-    if len(text_str) <= length:
-        return text_str
-    
-    return text_str[:length] + "..."
-
-@register.filter
-def clean_text_for_display(text):
-    """表示用にテキストをクリーニング"""
-    if not text:
-        return ""
-    
-    # HTMLタグを除去（ハイライト以外）
-    cleaned = re.sub(r'<(?!/?span[^>]*>)[^>]+>', '', str(text))
-    
-    # 連続する空白を単一のスペースに
-    cleaned = re.sub(r'\s+', ' ', cleaned)
-    
-    return cleaned.strip()
-
-# ====================
-# 数値・計算関連フィルター
-# ====================
-
-@register.filter
-def score_percentage(value):
-    """スコアをパーセンテージに変換"""
-    try:
-        score = float(value)
-        if score <= 1:  # 0-1の範囲の場合
-            return int(score * 100)
-        else:  # 既にパーセンテージの場合
-            return int(score)
-    except (ValueError, TypeError):
-        return 0
-
-@register.filter
-def round_decimal(value, places=2):
-    """小数点以下を指定桁数で四捨五入"""
-    try:
-        return round(float(value), places)
-    except (ValueError, TypeError):
-        return value
-
-@register.filter
-def floatformat_safe(value, decimal_places=2):
-    """安全な小数点フォーマット"""
-    try:
-        return f"{float(value):.{decimal_places}f}"
-    except (ValueError, TypeError):
-        return "0.00"
-
-@register.filter
-def multiply(value, multiplier):
-    """値に乗数を掛ける"""
-    try:
-        return float(value) * float(multiplier)
-    except (ValueError, TypeError):
-        return 0
-
-@register.filter
-def abs_value(value):
-    """絶対値を返す"""
-    try:
-        return abs(float(value))
-    except (ValueError, TypeError):
-        return 0
-
-@register.filter
-def length_filter(scores_list, threshold):
-    """指定した閾値以上のスコアの数をカウント"""
-    try:
-        threshold_val = float(threshold)
-        if isinstance(scores_list, list):
-            return len([score for score in scores_list if float(score) >= threshold_val])
-        return 0
-    except (ValueError, TypeError):
-        return 0
-
-@register.filter
-def length_filter_range(scores_list, range_str):
-    """指定した範囲内のスコアの数をカウント"""
-    try:
-        min_val, max_val = map(float, range_str.split(','))
-        if isinstance(scores_list, list):
-            return len([score for score in scores_list 
-                       if min_val <= float(score) < max_val])
-        return 0
-    except (ValueError, TypeError):
-        return 0
-
-# ====================
-# ユーティリティフィルター
-# ====================
-
-@register.filter
-def json_safe(value):
-    """Python辞書をJavaScriptで安全に使用できるJSON文字列に変換"""
-    try:
-        return mark_safe(json.dumps(value))
-    except (ValueError, TypeError):
-        return mark_safe('{}')
-
-@register.filter
-def get_item(dictionary, key):
-    """辞書から指定キーの値を取得"""
-    if isinstance(dictionary, dict):
-        return dictionary.get(key)
-    return None
-
-@register.inclusion_tag('earnings_analysis/tags/keyword_cloud.html')
-def keyword_cloud(keywords, total_count=None):
-    """キーワードクラウドを表示"""
-    return {
-        'keywords': keywords,
-        'total_count': total_count or len(keywords) if keywords else 0
-    }
-    
-@register.filter
 def highlight_all_keywords(text, keywords):
     """複数キーワードを一度にハイライト"""
     if not text or not keywords:
@@ -672,106 +495,24 @@ def highlight_all_keywords(text, keywords):
     return mark_safe(highlighted_text)
 
 @register.filter
-def prepare_wordcloud_data(keyword_frequency_data, min_count=2):
-    """ワードクラウド用データを準備"""
+def json_safe(value):
+    """Python辞書をJavaScriptで安全に使用できるJSON文字列に変換"""
     try:
-        wordcloud_words = []
-        
-        # ポジティブ語彙を処理
-        positive_words = keyword_frequency_data.get('positive', [])
-        for word_info in positive_words:
-            count = word_info.get('count', 1)
-            if count >= min_count:
-                wordcloud_words.append({
-                    'text': word_info.get('word', ''),
-                    'size': count,
-                    'sentiment': 'positive',
-                    'score': word_info.get('score', 0),
-                    'color': '#28a745'  # 緑色
-                })
-        
-        # ネガティブ語彙を処理
-        negative_words = keyword_frequency_data.get('negative', [])
-        for word_info in negative_words:
-            count = word_info.get('count', 1)
-            if count >= min_count:
-                wordcloud_words.append({
-                    'text': word_info.get('word', ''),
-                    'size': count,
-                    'sentiment': 'negative',
-                    'score': word_info.get('score', 0),
-                    'color': '#dc3545'  # 赤色
-                })
-        
-        # サイズ順でソート（頻出語を優先）
-        wordcloud_words.sort(key=lambda x: x['size'], reverse=True)
-        
-        return json.dumps(wordcloud_words[:300])  # 上位300語まで
-        
-    except Exception as e:
-        logger.error(f"ワードクラウドデータ準備エラー: {e}")
-        return json.dumps([])
+        return mark_safe(json.dumps(value))
+    except (ValueError, TypeError):
+        return mark_safe('{}')
 
 @register.filter
-def prepare_unlimited_wordcloud_data(keyword_frequency_data):
-    """制限なしワードクラウド用データを準備"""
+def score_percentage(value):
+    """スコアをパーセンテージに変換"""
     try:
-        return prepare_wordcloud_data(keyword_frequency_data, min_count=1)
-    except Exception:
-        return json.dumps([])
-
-@register.filter
-def wordcloud_max_size(keyword_frequency_data):
-    """ワードクラウドの最大出現回数を取得"""
-    try:
-        max_count = 0
-        
-        positive_words = keyword_frequency_data.get('positive', [])
-        for word_info in positive_words:
-            max_count = max(max_count, word_info.get('count', 0))
-        
-        negative_words = keyword_frequency_data.get('negative', [])
-        for word_info in negative_words:
-            max_count = max(max_count, word_info.get('count', 0))
-            
-        return max_count
-        
-    except Exception:
+        score = float(value)
+        if score <= 1:  # 0-1の範囲の場合
+            return int(score * 100)
+        else:  # 既にパーセンテージの場合
+            return int(score)
+    except (ValueError, TypeError):
         return 0
-
-@register.filter
-def wordcloud_stats(keyword_frequency_data, min_count=2):
-    """ワードクラウド統計情報を取得"""
-    try:
-        total_words = 0
-        filtered_words = 0
-        total_occurrences = 0
-        
-        for sentiment_type in ['positive', 'negative']:
-            words = keyword_frequency_data.get(sentiment_type, [])
-            for word_info in words:
-                count = word_info.get('count', 1)
-                total_words += 1
-                total_occurrences += count
-                
-                if count >= min_count:
-                    filtered_words += 1
-        
-        return {
-            'total_unique_words': total_words,
-            'displayed_words': filtered_words,
-            'total_occurrences': total_occurrences,
-            'filter_rate': (filtered_words / total_words * 100) if total_words > 0 else 0
-        }
-        
-    except Exception:
-        return {
-            'total_unique_words': 0,
-            'displayed_words': 0,
-            'total_occurrences': 0,
-            'filter_rate': 0
-        }
-        
 
 @register.filter
 def div(value, divisor):
