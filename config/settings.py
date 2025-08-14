@@ -1104,3 +1104,19 @@ cloudinary.config(
 )
 
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+SESSION_SAVE_EVERY_REQUEST = True
+
+# 圧縮機能用の設定
+IMAGE_COMPRESSION_SETTINGS = {
+    'DIARY': {
+        'MAX_WIDTH': 800,
+        'MAX_HEIGHT': 600,
+        'QUALITY': 0.85,
+    },
+    'NOTE': {
+        'MAX_WIDTH': 600,
+        'MAX_HEIGHT': 400,
+        'QUALITY': 0.7,
+    }
+}

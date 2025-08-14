@@ -1414,4 +1414,67 @@
     });
   });
 </script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // 日記作成用の画像圧縮設定
+  if (document.getElementById('id_image')) {
+    const handler = setupImageCompression({
+      inputId: 'id_image',
+      previewId: 'image-preview',
+      containerId: 'image-preview-container',
+      uploadAreaSelector: '.image-upload-area',
+      removeBtnId: 'remove-image',
+      options: {
+        maxWidth: 800,
+        maxHeight: 600,
+        quality: 0.85,
+        compressionThreshold: 1 * 1024 * 1024, // 3MB以上で圧縮
+        maxFileSize: 8 * 1024 * 1024, // 最大8MB
+        onCompressionStart: (file) => {
+          showCompressionMessage('画像を圧縮中...');
+        },
+        onCompressionEnd: (original, compressed) => {
+          const originalSize = handler.formatFileSize(original.size);
+          const compressedSize = handler.formatFileSize(compressed.size);
+          showCompressionMessage(`圧縮完了: ${originalSize} → ${compressedSize}`, 3000);
+        }
+      }
+    });
+  }
+
+  // 圧縮メッセージ表示関数
+  function showCompressionMessage(message, duration = 0) {
+    let messageElement = document.getElementById('compression-message');
+    
+    if (!messageElement) {
+      messageElement = document.createElement('div');
+      messageElement.id = 'compression-message';
+      messageElement.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #007bff;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 9999;
+        font-size: 14px;
+        display: none;
+      `;
+      document.body.appendChild(messageElement);
+    }
+    
+    messageElement.textContent = message;
+    messageElement.style.display = 'block';
+    
+    if (duration > 0) {
+      setTimeout(() => {
+        messageElement.style.display = 'none';
+      }, duration);
+    }
+  }
+});
+</script>
 {% endblock %}

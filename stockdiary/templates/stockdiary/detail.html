@@ -1714,36 +1714,28 @@
                 <textarea class="form-control" id="note_content" name="content" rows="4" 
                           placeholder="状況の変化や新たな情報を記録しましょう" required></textarea>
               </div>
-              
-              <!-- 画像アップロードセクション -->
+                            
+              <!-- 継続記録フォーム用 -->
               <div class="form-section">
                 <label for="note_image" class="section-title">
                   <i class="bi bi-image"></i>
                   画像添付（オプション）
                 </label>
                 
-                <!-- ファイル選択ボタン -->
                 <div class="image-upload-area-note mb-3" onclick="document.getElementById('note_image').click();">
                   <i class="bi bi-cloud-upload text-muted" style="font-size: 2rem;"></i>
-                  <p class="text-muted mb-0">
-                    ここをクリックして画像を選択
-                  </p>
-                  <small class="text-muted">最大10MB、JPEG/PNG/GIF/WebP形式</small>
+                  <p class="text-muted mb-0">ここをクリックして画像を選択</p>
+                  <small class="text-muted">最大5MB、自動圧縮対応</small>
                 </div>
                 
                 <input type="file" class="form-control d-none" id="note_image" name="image" 
-                       accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
+                      accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
                 
-                <small class="form-text text-muted">
-                  チャート、ニュース記事等の画像を添付できます（最大10MB）
-                </small>
-                
-                <!-- 画像プレビュー -->
                 <div id="note-image-preview-container" class="mt-3" style="display: none;">
                   <div class="card" style="max-width: 300px;">
                     <img id="note-image-preview" class="card-img-top" style="max-height: 200px; object-fit: cover;" alt="プレビュー">
                     <div class="card-body p-2">
-                      <small class="text-muted">選択された画像のプレビュー</small>
+                      <small class="text-muted">選択された画像</small>
                       <button type="button" id="note-remove-image" class="btn btn-sm btn-outline-danger float-end">
                         <i class="bi bi-x"></i> 削除
                       </button>
@@ -1751,6 +1743,7 @@
                   </div>
                 </div>
               </div>
+
               
               <div class="form-section">
                 <label for="note_current_price" class="section-title">
@@ -2287,119 +2280,37 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<!-- 画像アップロード用のJavaScript -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // 継続記録の画像プレビュー機能
-  const noteImageInput = document.getElementById('note_image');
-  const noteImagePreviewContainer = document.getElementById('note-image-preview-container');
-  const noteImagePreview = document.getElementById('note-image-preview');
-  const noteRemoveImageBtn = document.getElementById('note-remove-image');
-
-  if (noteImageInput) {
-    noteImageInput.addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (file) {
-        // ファイルサイズチェック（10MB）
-        if (file.size > 10 * 1024 * 1024) {
-          alert('ファイルサイズが10MBを超えています。');
-          this.value = '';
-          noteImagePreviewContainer.style.display = 'none';
-          return;
+  // 継続記録用の画像圧縮設定
+  if (document.getElementById('note_image')) {
+    setupImageCompression({
+      inputId: 'note_image',
+      previewId: 'note-image-preview',
+      containerId: 'note-image-preview-container',
+      uploadAreaSelector: '.image-upload-area-note',
+      removeBtnId: 'note-remove-image',
+      options: {
+        maxWidth: 600,
+        maxHeight: 400,
+        quality: 0.7,
+        compressionThreshold: 1 * 1024 * 1024, // 2MB以上で圧縮
+        onCompressionStart: (file) => {
+          console.log('圧縮開始:', file.name);
+        },
+        onCompressionEnd: (original, compressed) => {
+          console.log(`圧縮完了: ${handler.formatFileSize(original.size)} → ${handler.formatFileSize(compressed.size)}`);
+        },
+        onError: (message, error) => {
+          alert(message);
+          console.error('画像エラー:', error);
         }
-
-        // ファイルタイプチェック
-        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-        if (!validTypes.includes(file.type)) {
-          alert('JPEG、PNG、GIF、WebP形式の画像ファイルのみアップロード可能です。');
-          this.value = '';
-          noteImagePreviewContainer.style.display = 'none';
-          return;
-        }
-
-        // プレビュー表示
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          noteImagePreview.src = e.target.result;
-          noteImagePreviewContainer.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-      } else {
-        noteImagePreviewContainer.style.display = 'none';
       }
-    });
-  }
-
-  // 継続記録の画像削除ボタン
-  if (noteRemoveImageBtn) {
-    noteRemoveImageBtn.addEventListener('click', function() {
-      noteImageInput.value = '';
-      noteImagePreviewContainer.style.display = 'none';
-    });
-  }
-
-  // 継続記録用のドラッグ&ドロップ機能
-  const noteUploadArea = document.querySelector('.image-upload-area-note');
-  if (noteUploadArea && noteImageInput) {
-    // ドラッグ&ドロップイベント
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-      noteUploadArea.addEventListener(eventName, preventDefaults, false);
-    });
-
-    ['dragenter', 'dragover'].forEach(eventName => {
-      noteUploadArea.addEventListener(eventName, highlightNote, false);
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-      noteUploadArea.addEventListener(eventName, unhighlightNote, false);
-    });
-
-    noteUploadArea.addEventListener('drop', handleNoteDrop, false);
-
-    function preventDefaults(e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-
-    function highlightNote(e) {
-      noteUploadArea.classList.add('dragover');
-    }
-
-    function unhighlightNote(e) {
-      noteUploadArea.classList.remove('dragover');
-    }
-
-    function handleNoteDrop(e) {
-      const dt = e.dataTransfer;
-      const files = dt.files;
-
-      if (files.length > 0) {
-        // ファイル入力に設定
-        const dataTransfer = new DataTransfer();
-        dataTransfer.items.add(files[0]);
-        noteImageInput.files = dataTransfer.files;
-        
-        // change イベントをトリガー
-        const event = new Event('change', { bubbles: true });
-        noteImageInput.dispatchEvent(event);
-      }
-    }
-  }
-
-  // フォーム送信後の処理（成功時に画像プレビューをクリア）
-  const quickNoteForm = document.getElementById('quickNoteForm');
-  if (quickNoteForm) {
-    quickNoteForm.addEventListener('submit', function(e) {
-      // フォーム送信時の処理
-      setTimeout(() => {
-        // 送信成功後に画像プレビューをクリア（リダイレクトされる前に実行）
-        if (noteImageInput) noteImageInput.value = '';
-        if (noteImagePreviewContainer) noteImagePreviewContainer.style.display = 'none';
-      }, 100);
     });
   }
 });
 </script>
+
 {% endblock %}
 
 {% block scripts %}
