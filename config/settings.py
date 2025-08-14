@@ -645,10 +645,17 @@ CSP_CONNECT_SRC = CSP_CONNECT_SRC + [
     'api.edinet-fsa.go.jp',
     'disclosure.edinet-fsa.go.jp',
 ]
-isable_existing_loggers': False,
+
+# =============================================================================
+# ロギング設定
+# =============================================================================
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'format': '{levelname} {asctime} {module} {message}',
             'style': '{',
         },
         'simple': {
@@ -657,33 +664,26 @@ isable_existing_loggers': False,
         },
     },
     'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'earnings_analysis.log'),
-            'formatter': 'verbose',
-        },
-        'sentiment_file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'sentiment_analysis.log'),
-            'formatter': 'verbose',
-        },
         'console': {
             'level': 'INFO',
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
         },
+        'earnings_file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'earnings-analysis.log'),
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'level': 'INFO',
+        'handlers': ['console'],
     },
     'loggers': {
         'earnings_analysis': {
-            'handlers': ['file', 'console'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-        'earnings_analysis.services.sentiment_analysis': {
-            'handlers': ['sentiment_file', 'console'],
-            'level': 'INFO',
+            'handlers': ['console', 'earnings_file'],
+            'level': 'DEBUG',
             'propagate': False,
         },
     },
