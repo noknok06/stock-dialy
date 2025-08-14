@@ -734,3 +734,339 @@ LOGGING['loggers']['security'] = {
     'level': 'INFO',
     'propagate': True,
 }
+
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+
+# Langextract設定（新規追加）
+LANGEXTRACT_ENABLED = os.environ.get('LANGEXTRACT_ENABLED', 'True').lower() == 'true'
+
+# 感情分析の高度な設定
+SENTIMENT_ANALYSIS_SETTINGS = {
+    # 基本設定
+    'MAX_TEXT_LENGTH': int(os.environ.get('SENTIMENT_MAX_TEXT_LENGTH', '50000')),  # 分析対象テキストの最大長
+    'MIN_TEXT_LENGTH': int(os.environ.get('SENTIMENT_MIN_TEXT_LENGTH', '100')),   # 分析対象テキストの最小長
+    
+    # Langextract設定
+    'LANGEXTRACT_TIMEOUT': int(os.environ.get('LANGEXTRACT_TIMEOUT', '180')),     # Langextractタイムアウト（秒）
+    'LANGEXTRACT_MAX_RETRIES': int(os.environ.get('LANGEXTRACT_MAX_RETRIES', '2')), # リトライ回数
+    'LANGEXTRACT_CHUNK_SIZE': int(os.environ.get('LANGEXTRACT_CHUNK_SIZE', '10000')), # チャンク分割サイズ
+    
+    # フォールバック設定
+    'ENABLE_TRADITIONAL_FALLBACK': os.environ.get('ENABLE_TRADITIONAL_FALLBACK', 'True').lower() == 'true',
+    'ENABLE_GEMINI_FALLBACK': os.environ.get('ENABLE_GEMINI_FALLBACK', 'True').lower() == 'true',
+    
+    # 品質設定
+    'MIN_CONFIDENCE_THRESHOLD': float(os.environ.get('SENTIMENT_MIN_CONFIDENCE', '0.3')),
+    'HIGH_QUALITY_THRESHOLD': float(os.environ.get('SENTIMENT_HIGH_QUALITY', '0.8')),
+    
+    # キャッシュ設定
+    'ENABLE_ANALYSIS_CACHE': os.environ.get('ENABLE_ANALYSIS_CACHE', 'True').lower() == 'true',
+    'CACHE_EXPIRE_HOURS': int(os.environ.get('ANALYSIS_CACHE_HOURS', '24')),
+}
+
+# パフォーマンス設定
+if LANGEXTRACT_ENABLED:
+    # Langextract使用時のメモリ設定調整
+    DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50MB
+    FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+
+
+# Langextract感情分析設定
+LANGEXTRACT_SETTINGS = {
+    # Langextract機能の有効/無効
+    'ENABLED': True,
+    
+    # フォールバック設定（Langextract失敗時に従来型を使用）
+    'FALLBACK_TO_TRADITIONAL': True,
+    
+    # 信頼度閾値（これ以下の場合は従来型と併用）
+    'CONFIDENCE_THRESHOLD': 0.7,
+    
+    # タイムアウト設定（秒）
+    'TIMEOUT': 30,
+    
+    # 最大テキスト長（文字数）
+    'MAX_TEXT_LENGTH': 10000,
+    
+    # キャッシュ設定
+    'CACHE_RESULTS': True,
+    'CACHE_TIMEOUT': 3600,  # 1時間
+    
+    # デバッグログ
+    'DEBUG_LOGGING': False,
+}
+
+SENTIMENT_ANALYSIS_MIGRATION = {
+    # 移行段階: 'traditional_only', 'langextract_test', 'hybrid', 'langextract_primary'
+    'STAGE': 'hybrid',
+    
+    # テスト対象の企業コード（段階的移行時）
+    'TEST_COMPANIES': ['E00000', 'E00001'],  # 特定企業での先行テスト
+    
+    # 比較分析の有効化
+    'ENABLE_COMPARISON': True,
+}
+
+
+AUTO_GENERATE_SUMMARY = True  # 自動要約生成を有効化
+
+# langextract設定（オプション）
+LANGEXTRACT_SETTINGS = {
+    'MODEL_NAME': 'japanese-summarization',  # 使用するモデル
+    'MAX_LENGTH': 500,  # 最大要約長
+    'MIN_LENGTH': 300,  # 最小要約長
+    'DEVICE': 'cpu',    # GPU使用時は 'cuda'
+}
+
+
+# 要約機能の設定
+SUMMARY_FEATURE_SETTINGS = {
+    # 基本設定
+    'ENABLED': True,  # 要約機能の有効化
+    'AUTO_GENERATE': False,  # 自動要約生成（デフォルトは無効）
+    'DEFAULT_CACHE_TIME': 24 * 60 * 60,  # 24時間
+    
+    # langextract設定
+    'LANGEXTRACT_ENABLED': True,
+    'LANGEXTRACT_MODEL_PATH': None,  # カスタムモデルパス（オプション）
+    'LANGEXTRACT_CACHE_DIR': os.path.join(BASE_DIR, 'cache', 'langextract'),
+    
+    # 要約パラメータ
+    'TARGET_LENGTHS': {
+        'comprehensive': 600,
+        'business': 200,
+        'policy': 180,
+        'risks': 180,
+    },
+    
+    # 品質設定
+    'MIN_CONFIDENCE_THRESHOLD': 0.3,
+    'MIN_COMPLETENESS_THRESHOLD': 0.5,
+    
+    # パフォーマンス設定
+    'MAX_CONCURRENT_SUMMARIES': 3,
+    'TIMEOUT_SECONDS': 300,  # 5分
+}
+
+GEMINI_SETTINGS = {
+    'MODEL_NAME': 'gemini-2.5-flash',
+    'TEMPERATURE': 0.3,  # 要約では低めの温度設定
+    'MAX_TOKENS': 2048,
+    'TIMEOUT': 30,
+}
+# Langextract設定（新規追加）
+LANGEXTRACT_ENABLED = os.environ.get('LANGEXTRACT_ENABLED', 'True').lower() == 'true'
+
+# 感情分析の高度な設定
+SENTIMENT_ANALYSIS_SETTINGS = {
+    # 基本設定
+    'MAX_TEXT_LENGTH': int(os.environ.get('SENTIMENT_MAX_TEXT_LENGTH', '50000')),  # 分析対象テキストの最大長
+    'MIN_TEXT_LENGTH': int(os.environ.get('SENTIMENT_MIN_TEXT_LENGTH', '100')),   # 分析対象テキストの最小長
+    
+    # Langextract設定
+    'LANGEXTRACT_TIMEOUT': int(os.environ.get('LANGEXTRACT_TIMEOUT', '180')),     # Langextractタイムアウト（秒）
+    'LANGEXTRACT_MAX_RETRIES': int(os.environ.get('LANGEXTRACT_MAX_RETRIES', '2')), # リトライ回数
+    'LANGEXTRACT_CHUNK_SIZE': int(os.environ.get('LANGEXTRACT_CHUNK_SIZE', '10000')), # チャンク分割サイズ
+    
+    # フォールバック設定
+    'ENABLE_TRADITIONAL_FALLBACK': os.environ.get('ENABLE_TRADITIONAL_FALLBACK', 'True').lower() == 'true',
+    'ENABLE_GEMINI_FALLBACK': os.environ.get('ENABLE_GEMINI_FALLBACK', 'True').lower() == 'true',
+    
+    # 品質設定
+    'MIN_CONFIDENCE_THRESHOLD': float(os.environ.get('SENTIMENT_MIN_CONFIDENCE', '0.3')),
+    'HIGH_QUALITY_THRESHOLD': float(os.environ.get('SENTIMENT_HIGH_QUALITY', '0.8')),
+    
+    # キャッシュ設定
+    'ENABLE_ANALYSIS_CACHE': os.environ.get('ENABLE_ANALYSIS_CACHE', 'True').lower() == 'true',
+    'CACHE_EXPIRE_HOURS': int(os.environ.get('ANALYSIS_CACHE_HOURS', '24')),
+}
+
+# パフォーマンス設定
+if LANGEXTRACT_ENABLED:
+    # Langextract使用時のメモリ設定調整
+    DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50MB
+    FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+
+
+SENTIMENT_ANALYSIS_MIGRATION = {
+    # 移行段階: 'traditional_only', 'langextract_test', 'hybrid', 'langextract_primary'
+    'STAGE': 'hybrid',
+    
+    # テスト対象の企業コード（段階的移行時）
+    'TEST_COMPANIES': ['E00000', 'E00001'],  # 特定企業での先行テスト
+    
+    # 比較分析の有効化
+    'ENABLE_COMPARISON': True,
+}
+
+
+AUTO_GENERATE_SUMMARY = True  # 自動要約生成を有効化
+
+# 要約機能の基本設定
+SUMMARY_FEATURE_SETTINGS = {
+    'ENABLED': True,  # 要約機能の有効/無効
+    'AUTO_GENERATE': False,  # 自動要約生成（通常はFalse）
+    'ENHANCED_MODE_DEFAULT': True,  # デフォルトで強化モードを使用
+}
+
+# langextract設定
+LANGEXTRACT_SETTINGS = {
+    'CHUNK_SIZE': 4000,  # Geminiの最大トークン数に合わせて調整
+    'CHUNK_OVERLAP': 200,  # チャンク間のオーバーラップ
+    'LANGUAGE': 'ja',  # 日本語指定
+    'MAX_CHUNKS_PER_DOCUMENT': 20,  # 1文書あたりの最大チャンク数
+}
+
+# Gemini API設定
+GEMINI_API_SETTINGS = {
+    'MODEL_NAME': 'gemini-2.5-flash',  # 要件で指定されたモデル
+    'MAX_TOKENS_PER_REQUEST': 8192,  # リクエストあたりの最大トークン数
+    'TEMPERATURE': 0.3,  # 創造性 vs 一貫性のバランス（要約なので低め）
+    'TOP_P': 0.9,
+    'TOP_K': 40,
+    'SAFETY_SETTINGS': [
+        {
+            "category": "HARM_CATEGORY_HARASSMENT",
+            "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+        },
+        {
+            "category": "HARM_CATEGORY_HATE_SPEECH", 
+            "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+        },
+        {
+            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+        },
+        {
+            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+            "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+        }
+    ],
+    'REQUEST_DELAY': 1.0,  # API制限対策（秒）
+    'MAX_RETRIES': 3,  # リトライ回数
+}
+
+# 要約品質設定
+SUMMARY_QUALITY_SETTINGS = {
+    'TARGET_LENGTHS': {
+        'comprehensive': 500,  # 要件: 500文字以内
+        'chunk_summary': 300,  # 要件: 300文字以内
+        'section_summary': 200,
+    },
+    'MIN_LENGTHS': {
+        'comprehensive': 300,
+        'chunk_summary': 150,
+        'section_summary': 100,
+    },
+    'MAX_LENGTHS': {
+        'comprehensive': 600,
+        'chunk_summary': 400,
+        'section_summary': 250,
+    },
+    'QUALITY_THRESHOLDS': {
+        'min_confidence': 0.3,  # 最低信頼度
+        'min_completeness': 0.5,  # 最低完全性
+        'min_processing_success_rate': 0.7,  # 最低処理成功率
+    }
+}
+
+# XBRL処理設定
+XBRL_PROCESSING_SETTINGS = {
+    'MAX_TEXT_LENGTH': 50000,  # 処理対象の最大文字数
+    'FINANCIAL_DATA_EXTRACTION': True,  # 財務データ抽出の有効化
+    'SECTION_DETECTION': True,  # セクション自動検出
+    'NUMERIC_PRESERVATION': True,  # 数値情報の保持
+}
+
+# パフォーマンス設定
+SUMMARY_PERFORMANCE_SETTINGS = {
+    'MAX_PROCESSING_TIME': 300,  # 最大処理時間（秒）
+    'BACKGROUND_PROCESSING': True,  # バックグラウンド処理
+    'CACHE_RESULTS': True,  # 結果のキャッシュ
+    'CLEANUP_INTERVAL': 3600,  # クリーンアップ間隔（秒）
+}
+
+# API制限設定
+API_RATE_LIMITS = {
+    'GEMINI_API': {
+        'requests_per_minute': 60,
+        'requests_per_day': 1500,
+        'tokens_per_minute': 32000,
+    },
+    'EDINET_API': {
+        'requests_per_second': 0.5,  # 2秒に1回
+        'max_concurrent': 1,
+    }
+}
+
+# ログ設定（要約機能用）
+LOGGING_SETTINGS_SUMMARY = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'summary_detailed': {
+            'format': '{levelname} {asctime} [{name}] {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'summary_file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': 'logs/summary.log',
+            'maxBytes': 1024*1024*15,  # 15MB
+            'backupCount': 5,
+            'formatter': 'summary_detailed',
+        },
+    },
+    'loggers': {
+        'earnings_analysis.services.enhanced_document_summarizer': {
+            'handlers': ['summary_file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'earnings_analysis.services.langextract_processor': {
+            'handlers': ['summary_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
+
+# メトリクス・監視設定
+SUMMARY_MONITORING_SETTINGS = {
+    'TRACK_PERFORMANCE': True,  # パフォーマンス追跡
+    'COLLECT_METRICS': True,  # メトリクス収集
+    'ALERT_ON_ERRORS': True,  # エラー時のアラート
+    'QUALITY_MONITORING': True,  # 品質監視
+}
+
+
+SUMMARY_FEATURES = {
+    'langextract_enabled': True,
+    'gemini_enabled': True,
+    'hybrid_mode': True,
+    'auto_table_conversion': True,
+    'target_lengths': {
+        'comprehensive': 1200,  # 600→800に拡張
+        'business': 800,       # 200→300に拡張
+        'policy': 800,         # 180→250に拡張
+        'risks': 800,          # 180→250に拡張
+    }
+}
+
+
+# 文書要約設定
+DOCUMENT_SUMMARY_CONFIG = {
+    'enabled': True,
+    'auto_generate': False,  # 自動生成は無効（手動起動）
+    'gemini_model': 'gemini-2.5-flash',
+    'max_retries': 3,
+    'timeout': 300,  # 5分
+    'langextract_config': {
+        'use_gemini': True,
+        'chunk_size': 4000,
+        'overlap': 300,
+        'min_chunk': 1000,
+    }
+}
