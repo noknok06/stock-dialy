@@ -14,12 +14,12 @@
     transition: all 0.3s ease;
     border-radius: 8px;
   }
-  
+
   .enhanced-textarea-container.focused {
     transform: scale(1.01);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   }
-  
+
   .enhanced-textarea-container textarea {
     width: 100%;
     min-height: 150px;
@@ -31,17 +31,17 @@
     transition: all 0.3s ease;
     resize: none;
   }
-  
+
   .enhanced-textarea-container textarea:focus {
     outline: none;
     border-color: var(--primary-color, #5a7ec5);
     box-shadow: 0 0 0 3px rgba(90, 126, 197, 0.2);
   }
-  
+
   .enhanced-textarea-container.focused textarea {
     font-size: 17px;
   }
-  
+
   .char-counter,
   .memo-char-counter,
   .fullscreen-char-counter {
@@ -55,7 +55,7 @@
     border-radius: 12px;
     pointer-events: none;
   }
-  
+
   /* フルスクリーンエディタ */
   .fullscreen-editor {
     position: fixed;
@@ -71,12 +71,12 @@
     opacity: 0;
     transition: opacity 0.3s ease;
   }
-  
+
   .fullscreen-editor.active {
     visibility: visible;
     opacity: 1;
   }
-  
+
   .fullscreen-header {
     display: flex;
     justify-content: space-between;
@@ -85,7 +85,7 @@
     background-color: var(--primary-color, #5a7ec5);
     color: white;
   }
-  
+
   .btn-close-white {
     background: none;
     border: none;
@@ -94,13 +94,13 @@
     line-height: 1;
     padding: 0;
   }
-  
+
   .fullscreen-title {
     margin: 0;
     font-size: 1.1rem;
     font-weight: 500;
   }
-  
+
   .fullscreen-content {
     flex: 1;
     padding: 16px;
@@ -108,7 +108,7 @@
     display: flex;
     flex-direction: column;
   }
-  
+
   .fullscreen-content textarea {
     flex: 1;
     width: 100%;
@@ -119,12 +119,12 @@
     line-height: 1.6;
     resize: none;
   }
-  
+
   .fullscreen-content textarea:focus {
     outline: none;
     border-color: var(--primary-color, #5a7ec5);
   }
-  
+
   .no-scroll {
     overflow: hidden;
   }
@@ -154,13 +154,30 @@
   }
 
   @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
-    20%, 40%, 60%, 80% { transform: translateX(2px); }
+
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+      transform: translateX(-2px);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+      transform: translateX(2px);
+    }
   }
 
   /* 基本的なフォーム要素のスタイル強化 */
-  .form-control, 
+  .form-control,
   .form-select {
     border: 2px solid #d1d5db !important;
     background-color: #ffffff !important;
@@ -168,10 +185,10 @@
     transition: all 0.2s ease !important;
   }
 
-  .form-control:focus, 
+  .form-control:focus,
   .form-select:focus {
     border-color: #5a7ec5 !important;
-    box-shadow: 
+    box-shadow:
       inset 0 1px 3px rgba(0, 0, 0, 0.1),
       0 0 0 3px rgba(90, 126, 197, 0.25) !important;
     outline: none !important;
@@ -210,7 +227,7 @@
 
   #image-preview-container .card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   }
 
   /* フォームセクションの視覚的区切り */
@@ -240,7 +257,7 @@
       width: calc(100% + 20px);
       border-radius: 0;
     }
-    
+
     .enhanced-textarea-container.focused textarea {
       border-radius: 0;
       border-left: none;
@@ -250,7 +267,7 @@
     .image-upload-area {
       padding: 0.75rem;
     }
-    
+
     #image-preview-container .card {
       max-width: 100% !important;
     }
@@ -270,7 +287,7 @@
       <i class="bi bi-journal-text"></i> {% if form.instance.pk %}日記の編集{% else %}新規日記作成{% endif %}
     </h1>
   </div>
-  
+
   <!-- フォームカード -->
   <div class="diary-form">
     <div class="form-body">
@@ -351,7 +368,8 @@
             </div>
 
             <div class="col-md-6 mb-3">
-              <label for="{{ form.stock_name.id_for_label }}" class="form-label">銘柄名/メモタイトル<span class="text-danger">*</span></label>
+              <label for="{{ form.stock_name.id_for_label }}" class="form-label">銘柄名/メモタイトル<span
+                  class="text-danger">*</span></label>
               {{ form.stock_name }}
               {% if form.stock_name.errors %}
               <div class="text-danger">{{ form.stock_name.errors }}</div>
@@ -369,7 +387,8 @@
           <div class="row">
             <div class="col-md-6">
               <div class="mb-3">
-                <label for="{{ form.purchase_date.id_for_label }}" class="form-label">購入/メモ日<span class="text-danger">*</span></label>
+                <label for="{{ form.purchase_date.id_for_label }}" class="form-label">購入/メモ日<span
+                    class="text-danger">*</span></label>
                 {{ form.purchase_date }}
                 <div class="invalid-feedback">
                   購入/メモ日を入力してください
@@ -424,7 +443,7 @@
                 <div class="text-danger">{{ form.sell_price.errors }}</div>
                 {% endif %}
               </div>
-              
+
               <div class="alert alert-info" id="sell-warning-message" style="display:none;">
                 <i class="bi bi-info-circle me-2"></i>
                 購入価格と株数を入力すると売却情報を登録できるようになります
@@ -476,7 +495,7 @@
               {{ form.analysis_template }}
               <small class="form-text text-muted">{{ form.analysis_template.help_text }}</small>
               {% if form.analysis_template.errors %}
-                <div class="text-danger">{{ form.analysis_template.errors }}</div>
+              <div class="text-danger">{{ form.analysis_template.errors }}</div>
               {% endif %}
             </div>
             <div class="col-md-4 d-flex align-items-end">
@@ -518,7 +537,7 @@
             {% if form.image.errors %}
             <div class="text-danger">{{ form.image.errors }}</div>
             {% endif %}
-            
+
             <!-- 画像プレビュー -->
             <div id="image-preview-container" class="mt-3" style="display: none;">
               <div class="card" style="max-width: 300px;">
@@ -536,7 +555,8 @@
             {% if form.instance.image_url %}
             <div class="mt-3">
               <div class="card" style="max-width: 300px;">
-                <img src="{{ form.instance.image_url }}" class="card-img-top" style="max-height: 200px; object-fit: cover;" alt="現在の画像">
+                <img src="{{ form.instance.image_url }}" class="card-img-top"
+                  style="max-height: 200px; object-fit: cover;" alt="現在の画像">
                 <div class="card-body p-2">
                   <small class="text-muted">現在の画像</small>
                   <div class="form-check mt-1">
@@ -563,57 +583,58 @@
 
         <!-- 詳細情報セクション -->
         <div class="form-section">
-        <h4 class="form-section-title">
-          <i class="bi bi-journal-text"></i> 詳細情報
-          <button type="button" id="expandReasonBtn" class="btn btn-sm btn-outline-primary ms-2">
-            <i class="bi bi-arrows-fullscreen"></i> 全画面表示
-          </button>
-        </h4>
+          <h4 class="form-section-title">
+            <i class="bi bi-journal-text"></i> 詳細情報
+            <button type="button" id="expandReasonBtn" class="btn btn-sm btn-outline-primary ms-2">
+              <i class="bi bi-arrows-fullscreen"></i> 全画面表示
+            </button>
+          </h4>
 
-        <div class="mb-4">
-          <label for="{{ form.reason.id_for_label }}" class="form-label">購入理由 / 投資日記</label>
-          <small class="d-block text-muted mb-2">株式購入の理由や分析結果、将来の見通しなどを自由に記録できます</small>
-          <div class="rich-text-container enhanced-textarea-container">
-            {{ form.reason }}
-            <div class="char-counter">0 文字</div>
+          <div class="mb-4">
+            <label for="{{ form.reason.id_for_label }}" class="form-label">購入理由 / 投資日記</label>
+            <small class="d-block text-muted mb-2">株式購入の理由や分析結果、将来の見通しなどを自由に記録できます</small>
+            <div class="rich-text-container enhanced-textarea-container">
+              {{ form.reason }}
+              <div class="char-counter">0 文字</div>
+            </div>
+            {% if form.reason.errors %}
+            <div class="text-danger">{{ form.reason.errors }}</div>
+            {% endif %}
           </div>
-          {% if form.reason.errors %}
-          <div class="text-danger">{{ form.reason.errors }}</div>
-          {% endif %}
-        </div>
 
-        <div class="mb-3">
-          <label for="{{ form.memo.id_for_label }}" class="form-label">メモ (任意)</label>
-          <div class="enhanced-textarea-container">
-            {{ form.memo }}
-            <div class="memo-char-counter">0 文字</div>
+          <div class="mb-3">
+            <label for="{{ form.memo.id_for_label }}" class="form-label">メモ (任意)</label>
+            <div class="enhanced-textarea-container">
+              {{ form.memo }}
+              <div class="memo-char-counter">0 文字</div>
+            </div>
+            <small class="form-text text-muted">その他の備考事項があれば記入してください</small>
+            {% if form.memo.errors %}
+            <div class="text-danger">{{ form.memo.errors }}</div>
+            {% endif %}
           </div>
-          <small class="form-text text-muted">その他の備考事項があれば記入してください</small>
-          {% if form.memo.errors %}
-          <div class="text-danger">{{ form.memo.errors }}</div>
-          {% endif %}
-        </div>
         </div>
 
         <!-- フルスクリーンモーダル -->
         <div id="fullscreenEditor" class="fullscreen-editor">
-        <div class="fullscreen-header">
-          <button type="button" id="closeFullscreenBtn" class="btn btn-close-white">
-            <i class="bi bi-x-lg"></i>
-          </button>
-          <h5 class="fullscreen-title">購入理由 / 投資日記</h5>
-          <button type="button" id="saveFullscreenBtn" class="btn btn-primary btn-sm">
-            <i class="bi bi-check-lg"></i> 保存
-          </button>
+          <div class="fullscreen-header">
+            <button type="button" id="closeFullscreenBtn" class="btn btn-close-white">
+              <i class="bi bi-x-lg"></i>
+            </button>
+            <h5 class="fullscreen-title">購入理由 / 投資日記</h5>
+            <button type="button" id="saveFullscreenBtn" class="btn btn-primary btn-sm">
+              <i class="bi bi-check-lg"></i> 保存
+            </button>
+          </div>
+          <div class="fullscreen-content">
+            <textarea id="fullscreenTextarea"></textarea>
+            <div class="fullscreen-char-counter">0 文字</div>
+          </div>
         </div>
-        <div class="fullscreen-content">
-          <textarea id="fullscreenTextarea"></textarea>
-          <div class="fullscreen-char-counter">0 文字</div>
-        </div>
-        </div>
-        
+
         <div class="form-footer">
-          <a href="{% if form.instance.pk %}{% url 'stockdiary:detail' form.instance.pk %}{% else %}{% url 'stockdiary:home' %}{% endif %}" class="btn btn-diary btn-diary-outline">
+          <a href="{% if form.instance.pk %}{% url 'stockdiary:detail' form.instance.pk %}{% else %}{% url 'stockdiary:home' %}{% endif %}"
+            class="btn btn-diary btn-diary-outline">
             <i class="bi bi-arrow-left me-1"></i> キャンセル
           </a>
           <button type="submit" class="btn btn-diary btn-diary-primary">
@@ -631,229 +652,285 @@
 {% block scripts %}
 {{ block.super }}
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // スピードダイアルを初期化
-    initializeSpeedDial();
-    
-    // フォーム要素
-    const stockSymbolInput = document.getElementById('{{ form.stock_symbol.id_for_label }}');
-    const stockNameInput = document.getElementById('{{ form.stock_name.id_for_label }}');
-    const purchasePriceInput = document.getElementById('{{ form.purchase_price.id_for_label }}');
-    const purchaseQuantityInput = document.getElementById('{{ form.purchase_quantity.id_for_label }}');
-        
-    const sellDateInput = document.getElementById('{{ form.sell_date.id_for_label }}');
-    const sellPriceInput = document.getElementById('{{ form.sell_price.id_for_label }}');
-    const fetchPriceButton = document.getElementById('fetch-current-price-sell');
-    
-    // ボタン要素
-    const fetchStockInfoBtn = document.getElementById('fetchStockInfo');
-    const fetchCurrentPriceBtn = document.getElementById('fetch-current-price');
-    const fetchCurrentPriceSellBtn = document.getElementById('fetch-current-price-sell');
-    
-    // UI要素
-    const symbolSpinnerContainer = document.getElementById('symbolSpinnerContainer');
-    const stockInfoCard = document.getElementById('stockInfoCard');
-    const stockInfoTitle = document.getElementById('stockInfoTitle');
-    const stockInfoCode = document.getElementById('stockInfoCode');
-    const stockInfoPrice = document.getElementById('stockInfoPrice');
-    const stockInfoChange = document.getElementById('stockInfoChange');
-    const stockInfoMarket = document.getElementById('stockInfoMarket');
-    const stockInfoIndustry = document.getElementById('stockInfoIndustry');
-    
-    const templateSelect = document.getElementById('{{ form.analysis_template.id_for_label }}');
-    const expandAnalysisBtn = document.getElementById('expandAnalysisBtn');
-    const analysisItemsContainer = document.getElementById('analysisItemsContainer');
-    const analysisItemsContent = document.getElementById('analysisItemsContent');
-    
-    // 売却情報フォームの警告メッセージ
-    const sellWarningMessage = document.getElementById('sell-warning-message');
-    
-    // テンプレートID
-    let selectedTemplateId = templateSelect.value;
-    
-    // 日記ID (編集時のみ)
-    const diaryId = {% if form.instance.pk %}{{ form.instance.pk }}{% else %}null{% endif %};
+  document.addEventListener('DOMContentLoaded', function () {
+  // スピードダイアルを初期化
+  initializeSpeedDial();
 
-    // 画像プレビュー機能
-    const imageInput = document.getElementById('id_image');
-    const imagePreviewContainer = document.getElementById('image-preview-container');
-    const imagePreview = document.getElementById('image-preview');
-    const removeImageBtn = document.getElementById('remove-image');
-    const uploadArea = document.querySelector('.image-upload-area');
+  // WebP対応チェック機能
+  function checkWebPSupport() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    try {
+      const dataURL = canvas.toDataURL('image/webp', 0.1);
+      return dataURL.startsWith('data:image/webp');
+    } catch (e) {
+      return false;
+    }
+  }
 
-    // ファイル処理関数
-    function handleFileSelect(file) {
-        if (!file) {
-            imagePreviewContainer.style.display = 'none';
-            if (uploadArea) uploadArea.style.display = 'block';
-            return;
+  const supportsWebP = checkWebPSupport();
+  console.log('WebP対応:', supportsWebP ? 'はい' : 'いいえ');
+
+  // フォーム要素
+  const stockSymbolInput = document.getElementById('{{ form.stock_symbol.id_for_label }}');
+  const stockNameInput = document.getElementById('{{ form.stock_name.id_for_label }}');
+  const purchasePriceInput = document.getElementById('{{ form.purchase_price.id_for_label }}');
+  const purchaseQuantityInput = document.getElementById('{{ form.purchase_quantity.id_for_label }}');
+
+  const sellDateInput = document.getElementById('{{ form.sell_date.id_for_label }}');
+  const sellPriceInput = document.getElementById('{{ form.sell_price.id_for_label }}');
+  const fetchPriceButton = document.getElementById('fetch-current-price-sell');
+
+  // ボタン要素
+  const fetchStockInfoBtn = document.getElementById('fetchStockInfo');
+  const fetchCurrentPriceBtn = document.getElementById('fetch-current-price');
+  const fetchCurrentPriceSellBtn = document.getElementById('fetch-current-price-sell');
+
+  // UI要素
+  const symbolSpinnerContainer = document.getElementById('symbolSpinnerContainer');
+  const stockInfoCard = document.getElementById('stockInfoCard');
+  const stockInfoTitle = document.getElementById('stockInfoTitle');
+  const stockInfoCode = document.getElementById('stockInfoCode');
+  const stockInfoPrice = document.getElementById('stockInfoPrice');
+  const stockInfoChange = document.getElementById('stockInfoChange');
+  const stockInfoMarket = document.getElementById('stockInfoMarket');
+  const stockInfoIndustry = document.getElementById('stockInfoIndustry');
+
+  const templateSelect = document.getElementById('{{ form.analysis_template.id_for_label }}');
+  const expandAnalysisBtn = document.getElementById('expandAnalysisBtn');
+  const analysisItemsContainer = document.getElementById('analysisItemsContainer');
+  const analysisItemsContent = document.getElementById('analysisItemsContent');
+
+  // 売却情報フォームの警告メッセージ
+  const sellWarningMessage = document.getElementById('sell-warning-message');
+
+  // テンプレートID
+  let selectedTemplateId = templateSelect.value;
+
+  // 日記ID (編集時のみ)
+  const diaryId = {% if form.instance.pk %}{{ form.instance.pk }}{% else %}null{% endif %};
+
+
+  if (document.getElementById('id_image')) {
+    const handler = setupImageCompression({
+      inputId: 'id_image',
+      previewId: 'image-preview',
+      containerId: 'image-preview-container',
+      uploadAreaSelector: '.image-upload-area',
+      removeBtnId: 'remove-image',
+      options: {
+        maxWidth: 600,                    // WebP対応でサイズ維持
+        maxHeight: 450,                   // WebP対応でサイズ維持
+        quality: 0.75,                    // WebP対応で品質向上（0.7→0.75）
+        compressionThreshold: 0,          // 全ファイル圧縮
+        maxFileSize: 5 * 1024 * 1024,     // 最大5MB
+        onCompressionStart: (file) => {
+          // 使用される圧縮形式を取得
+          const format = handler.getBestImageFormat();
+          const formatName = format.replace('image/', '').toUpperCase();
+          showCompressionMessage(`画像を${formatName}形式で圧縮中...`);
+          console.log(`圧縮開始: ${file.name} (${handler.formatFileSize(file.size)}) → ${formatName}`);
+        },
+        onCompressionEnd: (original, compressed) => {
+          const originalSize = handler.formatFileSize(original.size);
+          const compressedSize = handler.formatFileSize(compressed.size);
+          const reductionRate = ((original.size - compressed.size) / original.size * 100).toFixed(1);
+          const format = handler.getBestImageFormat().replace('image/', '').toUpperCase();
+          
+          showCompressionMessage(
+            `${format}圧縮完了: ${originalSize} → ${compressedSize} (${reductionRate}% 削減)`, 
+            4000
+          );
+          console.log(`圧縮完了: ${originalSize} → ${compressedSize} (${format})`);
+        },
+        onError: (message, error) => {
+          showCompressionMessage(`エラー: ${message}`, 5000);
+          console.error('画像エラー:', error);
         }
+      }
+    });
+  }
+  // 画像プレビュー機能
+  const imageInput = document.getElementById('id_image');
+  const imagePreviewContainer = document.getElementById('image-preview-container');
+  const imagePreview = document.getElementById('image-preview');
+  const removeImageBtn = document.getElementById('remove-image');
+  const uploadArea = document.querySelector('.image-upload-area');
 
-        // ファイルサイズチェック（10MB）
-        if (file.size > 10 * 1024 * 1024) {
-            alert('ファイルサイズが10MBを超えています。');
-            imageInput.value = '';
-            imagePreviewContainer.style.display = 'none';
-            if (uploadArea) uploadArea.style.display = 'block';
-            return;
-        }
-
-        // 画像ファイルタイプチェック
-        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-        if (!validTypes.includes(file.type)) {
-            alert('JPEG、PNG、GIF、WebP形式の画像ファイルのみアップロード可能です。');
-            imageInput.value = '';
-            imagePreviewContainer.style.display = 'none';
-            if (uploadArea) uploadArea.style.display = 'block';
-            return;
-        }
-
-        // プレビュー表示
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            imagePreview.src = e.target.result;
-            imagePreviewContainer.style.display = 'block';
-            if (uploadArea) uploadArea.style.display = 'none';
-        };
-        reader.readAsDataURL(file);
+  // ファイル処理関数
+  function handleFileSelect(file) {
+    if (!file) {
+      imagePreviewContainer.style.display = 'none';
+      if (uploadArea) uploadArea.style.display = 'block';
+      return;
     }
 
-    // ファイル選択時の処理
-    if (imageInput) {
-        imageInput.addEventListener('change', function(e) {
-            handleFileSelect(e.target.files[0]);
-        });
+    // ファイルサイズチェック（10MB）
+    if (file.size > 10 * 1024 * 1024) {
+      alert('ファイルサイズが10MBを超えています。');
+      imageInput.value = '';
+      imagePreviewContainer.style.display = 'none';
+      if (uploadArea) uploadArea.style.display = 'block';
+      return;
     }
 
-    // 画像削除ボタン
-    if (removeImageBtn) {
-        removeImageBtn.addEventListener('click', function() {
-            imageInput.value = '';
-            imagePreviewContainer.style.display = 'none';
-            if (uploadArea) uploadArea.style.display = 'block';
-        });
+    // 画像ファイルタイプチェック
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      alert('JPEG、PNG、GIF、WebP形式の画像ファイルのみアップロード可能です。');
+      imageInput.value = '';
+      imagePreviewContainer.style.display = 'none';
+      if (uploadArea) uploadArea.style.display = 'block';
+      return;
     }
 
-    // 既存の画像削除チェックボックス
-    const clearImageCheckbox = document.getElementById('clear-image');
-    if (clearImageCheckbox) {
-        clearImageCheckbox.addEventListener('change', function() {
-            if (this.checked) {
-                imageInput.value = '';
-                imagePreviewContainer.style.display = 'none';
-                if (uploadArea) uploadArea.style.display = 'block';
-            }
-        });
+    // プレビュー表示
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      imagePreview.src = e.target.result;
+      imagePreviewContainer.style.display = 'block';
+      if (uploadArea) uploadArea.style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ファイル選択時の処理
+  if (imageInput) {
+    imageInput.addEventListener('change', function (e) {
+      handleFileSelect(e.target.files[0]);
+    });
+  }
+
+  // 画像削除ボタン
+  if (removeImageBtn) {
+    removeImageBtn.addEventListener('click', function () {
+      imageInput.value = '';
+      imagePreviewContainer.style.display = 'none';
+      if (uploadArea) uploadArea.style.display = 'block';
+    });
+  }
+
+  // 既存の画像削除チェックボックス
+  const clearImageCheckbox = document.getElementById('clear-image');
+  if (clearImageCheckbox) {
+    clearImageCheckbox.addEventListener('change', function () {
+      if (this.checked) {
+        imageInput.value = '';
+        imagePreviewContainer.style.display = 'none';
+        if (uploadArea) uploadArea.style.display = 'block';
+      }
+    });
+  }
+
+  // ドラッグ&ドロップ機能
+  if (uploadArea) {
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      uploadArea.addEventListener(eventName, preventDefaults, false);
+    });
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      uploadArea.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      uploadArea.addEventListener(eventName, unhighlight, false);
+    });
+
+    uploadArea.addEventListener('drop', handleDrop, false);
+
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
     }
 
-    // ドラッグ&ドロップ機能
-    if (uploadArea) {
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            uploadArea.addEventListener(eventName, preventDefaults, false);
-        });
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            uploadArea.addEventListener(eventName, highlight, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            uploadArea.addEventListener(eventName, unhighlight, false);
-        });
-
-        uploadArea.addEventListener('drop', handleDrop, false);
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        function highlight(e) {
-            uploadArea.classList.add('dragover');
-        }
-
-        function unhighlight(e) {
-            uploadArea.classList.remove('dragover');
-        }
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-
-            if (files.length > 0) {
-                // ファイル入力に設定
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(files[0]);
-                imageInput.files = dataTransfer.files;
-                
-                // ファイル処理
-                handleFileSelect(files[0]);
-            }
-        }
+    function highlight(e) {
+      uploadArea.classList.add('dragover');
     }
 
-    // 文字数制限機能付きのカウンター更新関数
-    function updateCharCountWithLimit(textarea, counter, maxLength) {
-      if (!textarea || !counter) return;
-      
-      const currentLength = textarea.value.length;
-      const remaining = maxLength - currentLength;
-      
-      // 基本のクラス名を保持
-      const baseClasses = counter.className.replace(/text-\w+/g, '').trim();
-      
-      // カウンター表示の更新
-      if (remaining >= 0) {
-        counter.textContent = `${currentLength} / ${maxLength} 文字`;
-        counter.className = baseClasses;
-        textarea.classList.remove('text-limit-exceeded');
+    function unhighlight(e) {
+      uploadArea.classList.remove('dragover');
+    }
+
+    function handleDrop(e) {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+
+      if (files.length > 0) {
+        // ファイル入力に設定
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(files[0]);
+        imageInput.files = dataTransfer.files;
+
+        // ファイル処理
+        handleFileSelect(files[0]);
+      }
+    }
+  }
+
+  // 文字数制限機能付きのカウンター更新関数
+  function updateCharCountWithLimit(textarea, counter, maxLength) {
+    if (!textarea || !counter) return;
+
+    const currentLength = textarea.value.length;
+    const remaining = maxLength - currentLength;
+
+    // 基本のクラス名を保持
+    const baseClasses = counter.className.replace(/text-\w+/g, '').trim();
+
+    // カウンター表示の更新
+    if (remaining >= 0) {
+      counter.textContent = `${currentLength} / ${maxLength} 文字`;
+      counter.className = baseClasses;
+      textarea.classList.remove('text-limit-exceeded');
+    } else {
+      counter.textContent = `${currentLength} / ${maxLength} 文字 (${Math.abs(remaining)}文字超過)`;
+      counter.className = baseClasses + ' text-danger';
+      textarea.classList.add('text-limit-exceeded');
+    }
+
+    // 制限近くで警告色に変更
+    if (remaining <= 50 && remaining > 0) {
+      counter.className = baseClasses + ' text-warning';
+    }
+  }
+
+  // テンプレート展開ボタンのクリックイベント
+  if (expandAnalysisBtn) {
+    expandAnalysisBtn.addEventListener('click', function () {
+      selectedTemplateId = templateSelect.value;
+
+      if (selectedTemplateId) {
+        // テンプレートが選択されていれば分析項目を表示
+        analysisItemsContainer.classList.remove('d-none');
+        fetchAnalysisItems(selectedTemplateId);
       } else {
-        counter.textContent = `${currentLength} / ${maxLength} 文字 (${Math.abs(remaining)}文字超過)`;
-        counter.className = baseClasses + ' text-danger';
-        textarea.classList.add('text-limit-exceeded');
+        // テンプレートが選択されていなければアラート表示
+        alert('分析テンプレートを選択してください');
       }
-      
-      // 制限近くで警告色に変更
-      if (remaining <= 50 && remaining > 0) {
-        counter.className = baseClasses + ' text-warning';
-      }
-    }
+    });
+  }
 
-    // テンプレート展開ボタンのクリックイベント
-    if (expandAnalysisBtn) {
-      expandAnalysisBtn.addEventListener('click', function() {
-        selectedTemplateId = templateSelect.value;
-        
+  // テンプレート選択変更イベント
+  if (templateSelect) {
+    templateSelect.addEventListener('change', function () {
+      selectedTemplateId = this.value;
+
+      // コンテナが表示されている場合は項目を更新
+      if (!analysisItemsContainer.classList.contains('d-none')) {
         if (selectedTemplateId) {
-          // テンプレートが選択されていれば分析項目を表示
-          analysisItemsContainer.classList.remove('d-none');
           fetchAnalysisItems(selectedTemplateId);
         } else {
-          // テンプレートが選択されていなければアラート表示
-          alert('分析テンプレートを選択してください');
+          analysisItemsContainer.classList.add('d-none');
         }
-      });
-    }
-    
-    // テンプレート選択変更イベント
-    if (templateSelect) {
-      templateSelect.addEventListener('change', function() {
-        selectedTemplateId = this.value;
-        
-        // コンテナが表示されている場合は項目を更新
-        if (!analysisItemsContainer.classList.contains('d-none')) {
-          if (selectedTemplateId) {
-            fetchAnalysisItems(selectedTemplateId);
-          } else {
-            analysisItemsContainer.classList.add('d-none');
-          }
-        }
-      });
-    }
-    
-    // 分析テンプレートの項目を取得する関数
-    function fetchAnalysisItems(templateId) {
-      // ローディング表示
-      analysisItemsContent.innerHTML = `
+      }
+    });
+  }
+
+  // 分析テンプレートの項目を取得する関数
+  function fetchAnalysisItems(templateId) {
+    // ローディング表示
+    analysisItemsContent.innerHTML = `
         <div class="text-center p-3">
           <div class="spinner-border text-primary" role="status">
             <span class="visually-hidden">Loading...</span>
@@ -861,48 +938,48 @@
           <p class="mt-2 text-muted">分析項目を読み込んでいます...</p>
         </div>
       `;
-      
-      // APIリクエスト用のURL
-      let url = `/analysis_template/api/items/?template_id=${templateId}`;
-      if (diaryId) {
-        url += `&diary_id=${diaryId}`;
-      }
-      
-      // APIリクエストを送信
-      fetch(url)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('分析項目の取得に失敗しました');
-          }
-          return response.json();
-        })
-        .then(data => {
-          renderAnalysisItems(data.items, data.values || {});
-        })
-        .catch(error => {
-          analysisItemsContent.innerHTML = `
+
+    // APIリクエスト用のURL
+    let url = `/analysis_template/api/items/?template_id=${templateId}`;
+    if (diaryId) {
+      url += `&diary_id=${diaryId}`;
+    }
+
+    // APIリクエストを送信
+    fetch(url)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('分析項目の取得に失敗しました');
+        }
+        return response.json();
+      })
+      .then(data => {
+        renderAnalysisItems(data.items, data.values || {});
+      })
+      .catch(error => {
+        analysisItemsContent.innerHTML = `
             <div class="alert alert-danger">
               <i class="bi bi-exclamation-triangle me-2"></i>
               ${error.message}
             </div>
           `;
-        });
-    }
-    
-    // 分析項目を表示する関数
-    function renderAnalysisItems(items, values) {
-      if (!items || items.length === 0) {
-        analysisItemsContent.innerHTML = `
+      });
+  }
+
+  // 分析項目を表示する関数
+  function renderAnalysisItems(items, values) {
+    if (!items || items.length === 0) {
+      analysisItemsContent.innerHTML = `
           <div class="alert alert-info">
             <i class="bi bi-info-circle me-2"></i>
             このテンプレートには分析項目がありません
           </div>
         `;
-        return;
-      }
-      
-      // テーブル要素を作成
-      let html = `
+      return;
+    }
+
+    // テーブル要素を作成
+    let html = `
         <div class="table-responsive">
           <table class="table">
             <thead>
@@ -913,17 +990,17 @@
             </thead>
             <tbody>
       `;
-      
-      // 各項目のフォームフィールドを作成
-      items.forEach(item => {
-        const itemId = item.id;
-        const fieldName = `analysis_item_${itemId}`;
-        const fieldId = `id_${fieldName}`;
-        
-        // 既存の値があれば取得
-        let currentValue = values[itemId] || null;
-        
-        html += `
+
+    // 各項目のフォームフィールドを作成
+    items.forEach(item => {
+      const itemId = item.id;
+      const fieldName = `analysis_item_${itemId}`;
+      const fieldId = `id_${fieldName}`;
+
+      // 既存の値があれば取得
+      let currentValue = values[itemId] || null;
+
+      html += `
           <tr>
             <td>
               <label for="${fieldId}" class="form-label mb-0 fw-bold">${item.name}</label>
@@ -931,33 +1008,33 @@
             </td>
             <td>
         `;
-        
-        // 項目タイプに応じたフォームフィールドを生成
-        if (item.item_type === 'boolean_with_value') {
-          // チェックボックスと値入力フィールドの両方を表示
-          const booleanFieldName = `analysis_item_${itemId}_boolean`;
-          const valueFieldName = `analysis_item_${itemId}_value`;
-          const booleanFieldId = `id_${booleanFieldName}`;
-          const valueFieldId = `id_${valueFieldName}`;
-          
-          // 現在の値を取得（ブール値、テキスト値、数値）
-          let booleanValue = false;
-          let textValue = '';
-          let numberValue = null;
-          
-          if (currentValue) {
-            if (typeof currentValue === 'object') {
-              // オブジェクト形式の場合（API側で複合型として返された場合）
-              booleanValue = currentValue.boolean_value === true;
-              textValue = currentValue.text_value || '';
-              numberValue = currentValue.number_value !== null ? currentValue.number_value : null;
-            }
+
+      // 項目タイプに応じたフォームフィールドを生成
+      if (item.item_type === 'boolean_with_value') {
+        // チェックボックスと値入力フィールドの両方を表示
+        const booleanFieldName = `analysis_item_${itemId}_boolean`;
+        const valueFieldName = `analysis_item_${itemId}_value`;
+        const booleanFieldId = `id_${booleanFieldName}`;
+        const valueFieldId = `id_${valueFieldName}`;
+
+        // 現在の値を取得（ブール値、テキスト値、数値）
+        let booleanValue = false;
+        let textValue = '';
+        let numberValue = null;
+
+        if (currentValue) {
+          if (typeof currentValue === 'object') {
+            // オブジェクト形式の場合（API側で複合型として返された場合）
+            booleanValue = currentValue.boolean_value === true;
+            textValue = currentValue.text_value || '';
+            numberValue = currentValue.number_value !== null ? currentValue.number_value : null;
           }
-          
-          // 入力値として表示する値（数値優先）
-          const displayValue = numberValue !== null ? numberValue : textValue;
-          
-          html += `
+        }
+
+        // 入力値として表示する値（数値優先）
+        const displayValue = numberValue !== null ? numberValue : textValue;
+
+        html += `
             <div class="d-flex align-items-center">
               <div class="form-check me-2">
                 <input type="checkbox" 
@@ -979,9 +1056,9 @@
               </div>
             </div>
           `;
-        } else if (item.item_type === 'boolean') {
-          // 通常のチェックボックス
-          html += `
+      } else if (item.item_type === 'boolean') {
+        // 通常のチェックボックス
+        html += `
             <div class="form-check">
               <input type="checkbox" id="${fieldId}" name="${fieldName}" 
                 class="form-check-input" ${currentValue === true ? 'checked' : ''}>
@@ -990,491 +1067,513 @@
               </label>
             </div>
           `;
-        } else if (item.item_type === 'number') {
-          html += `
+      } else if (item.item_type === 'number') {
+        html += `
               <input type="number" id="${fieldId}" name="${fieldName}" 
                 class="form-control" step="0.01" 
                 value="${currentValue !== null ? currentValue : ''}" />
           `;
-        } else if (item.item_type === 'select' && item.choices) {
-          const choices = item.choices.split(',').map(c => c.trim());
-          html += `<select id="${fieldId}" name="${fieldName}" class="form-select">`;
-          html += `<option value="">選択してください</option>`;
-          
-          choices.forEach(choice => {
-            const selected = currentValue === choice ? 'selected' : '';
-            html += `<option value="${choice}" ${selected}>${choice}</option>`;
-          });
-          
-          html += `</select>`;
-        } else {
-          // テキストフィールド
-          html += `
+      } else if (item.item_type === 'select' && item.choices) {
+        const choices = item.choices.split(',').map(c => c.trim());
+        html += `<select id="${fieldId}" name="${fieldName}" class="form-select">`;
+        html += `<option value="">選択してください</option>`;
+
+        choices.forEach(choice => {
+          const selected = currentValue === choice ? 'selected' : '';
+          html += `<option value="${choice}" ${selected}>${choice}</option>`;
+        });
+
+        html += `</select>`;
+      } else {
+        // テキストフィールド
+        html += `
               <input type="text" id="${fieldId}" name="${fieldName}" 
                 class="form-control" value="${currentValue || ''}" />
           `;
-        }
-        
-        html += `
+      }
+
+      html += `
             </td>
           </tr>
         `;
-      });
-      
-      html += `
+    });
+
+    html += `
             </tbody>
           </table>
         </div>
       `;
-      
-      // 内容を更新
-      analysisItemsContent.innerHTML = html;
+
+    // 内容を更新
+    analysisItemsContent.innerHTML = html;
+  }
+
+  // 初期表示時にテンプレートが選択済みなら項目を表示
+  if (templateSelect && templateSelect.value) {
+    if (expandAnalysisBtn) {
+      expandAnalysisBtn.click();
+    }
+  }
+
+  // 銘柄情報検索ボタンのクリックイベント
+  if (fetchStockInfoBtn) {
+    fetchStockInfoBtn.addEventListener('click', function () {
+      const stockCode = stockSymbolInput.value.trim();
+      if (stockCode) {
+        fetchStockInfo(stockCode);
+      }
+    });
+  }
+
+  // 株式情報を取得する関数
+  function fetchStockInfo(stockCode) {
+    // スピナーを表示
+    if (symbolSpinnerContainer) {
+      symbolSpinnerContainer.classList.remove('d-none');
+    }
+    if (fetchStockInfoBtn) {
+      fetchStockInfoBtn.disabled = true;
     }
 
-    // 初期表示時にテンプレートが選択済みなら項目を表示
-    if (templateSelect && templateSelect.value) {
-      if (expandAnalysisBtn) {
-        expandAnalysisBtn.click();
-      }
-    }
-    
-    // 銘柄情報検索ボタンのクリックイベント
-    if (fetchStockInfoBtn) {
-      fetchStockInfoBtn.addEventListener('click', function() {
-        const stockCode = stockSymbolInput.value.trim();
-        if (stockCode) {
-          fetchStockInfo(stockCode);
+    // APIリクエストを送信
+    fetch(`/stockdiary/api/stock/info/${stockCode}/`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('会社情報の取得に失敗しました');
+        }
+        return response.json();
+      })
+      .then(data => {
+        // 会社名を設定
+        if (!stockNameInput.value.trim()) {
+          stockNameInput.value = data.company_name;
+        }
+
+        // 業種情報を設定
+        const sectorInput = document.getElementById('id_sector');
+        if (sectorInput && data.industry) {
+          sectorInput.value = data.industry;
+        }
+
+        // 株価情報カードを更新して表示
+        if (stockInfoTitle) stockInfoTitle.textContent = data.company_name;
+        if (stockInfoCode) stockInfoCode.textContent = stockCode;
+        if (stockInfoPrice) stockInfoPrice.textContent = data.price ? `${data.price.toLocaleString()}円` : '取得中...';
+
+        if (data.change_percent && stockInfoChange) {
+          const isPositive = data.change_percent > 0;
+          const changeText = `${isPositive ? '+' : ''}${data.change_percent.toFixed(2)}%`;
+          stockInfoChange.textContent = changeText;
+          stockInfoChange.className = `info-value ${isPositive ? 'profit' : 'loss'}`;
+        } else if (stockInfoChange) {
+          stockInfoChange.textContent = '--';
+          stockInfoChange.className = 'info-value';
+        }
+
+        // 市場と業種の情報を更新
+        if (stockInfoMarket) stockInfoMarket.textContent = data.market || '--';
+        if (stockInfoIndustry) stockInfoIndustry.textContent = data.industry || '--';
+
+        // 情報カードを表示
+        if (stockInfoCard) {
+          stockInfoCard.classList.remove('d-none');
+        }
+
+        // 現在株価が取得できていれば購入価格にセット
+        if (data.price && purchasePriceInput && !purchasePriceInput.value) {
+          purchasePriceInput.value = data.price;
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showAlert(error.message, 'danger');
+      })
+      .finally(() => {
+        // スピナーを非表示
+        if (symbolSpinnerContainer) {
+          symbolSpinnerContainer.classList.add('d-none');
+        }
+        if (fetchStockInfoBtn) {
+          fetchStockInfoBtn.disabled = false;
         }
       });
+  }
+
+  function showAlert(message, type) {
+    // 既存のアラートを削除
+    const existingAlert = document.querySelector('.alert-feedback');
+    if (existingAlert) {
+      existingAlert.remove();
     }
 
-    // 株式情報を取得する関数
-    function fetchStockInfo(stockCode) {
-      // スピナーを表示
-      if (symbolSpinnerContainer) {
-        symbolSpinnerContainer.classList.remove('d-none');
-      }
-      if (fetchStockInfoBtn) {
-        fetchStockInfoBtn.disabled = true;
-      }
-      
-      // APIリクエストを送信
-      fetch(`/stockdiary/api/stock/info/${stockCode}/`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('会社情報の取得に失敗しました');
-          }
-          return response.json();
-        })
-        .then(data => {
-          // 会社名を設定
-          if (!stockNameInput.value.trim()) {
-            stockNameInput.value = data.company_name;
-          }
-          
-          // 業種情報を設定
-          const sectorInput = document.getElementById('id_sector');
-          if (sectorInput && data.industry) {
-            sectorInput.value = data.industry;
-          }
-          
-          // 株価情報カードを更新して表示
-          if (stockInfoTitle) stockInfoTitle.textContent = data.company_name;
-          if (stockInfoCode) stockInfoCode.textContent = stockCode;
-          if (stockInfoPrice) stockInfoPrice.textContent = data.price ? `${data.price.toLocaleString()}円` : '取得中...';
-          
-          if (data.change_percent && stockInfoChange) {
-            const isPositive = data.change_percent > 0;
-            const changeText = `${isPositive ? '+' : ''}${data.change_percent.toFixed(2)}%`;
-            stockInfoChange.textContent = changeText;
-            stockInfoChange.className = `info-value ${isPositive ? 'profit' : 'loss'}`;
-          } else if (stockInfoChange) {
-            stockInfoChange.textContent = '--';
-            stockInfoChange.className = 'info-value';
-          }
-          
-          // 市場と業種の情報を更新
-          if (stockInfoMarket) stockInfoMarket.textContent = data.market || '--';
-          if (stockInfoIndustry) stockInfoIndustry.textContent = data.industry || '--';
-          
-          // 情報カードを表示
-          if (stockInfoCard) {
-            stockInfoCard.classList.remove('d-none');
-          }
-          
-          // 現在株価が取得できていれば購入価格にセット
-          if (data.price && purchasePriceInput && !purchasePriceInput.value) {
-            purchasePriceInput.value = data.price;
-          }
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          showAlert(error.message, 'danger');
-        })
-        .finally(() => {
-          // スピナーを非表示
-          if (symbolSpinnerContainer) {
-            symbolSpinnerContainer.classList.add('d-none');
-          }
-          if (fetchStockInfoBtn) {
-            fetchStockInfoBtn.disabled = false;
-          }
-        });
+    // 新しいアラートを作成
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-feedback`;
+    alertDiv.role = 'alert';
+
+    // アイコンを追加
+    let icon = '';
+    if (type === 'success') {
+      icon = '<i class="bi bi-check-circle-fill me-2"></i>';
+    } else if (type === 'danger') {
+      icon = '<i class="bi bi-exclamation-triangle-fill me-2"></i>';
+    } else if (type === 'warning') {
+      icon = '<i class="bi bi-exclamation-circle-fill me-2"></i>';
+    } else if (type === 'info') {
+      icon = '<i class="bi bi-info-circle-fill me-2"></i>';
     }
-    
-    function showAlert(message, type) {
-      // 既存のアラートを削除
-      const existingAlert = document.querySelector('.alert-feedback');
-      if (existingAlert) {
-        existingAlert.remove();
-      }
-      
-      // 新しいアラートを作成
-      const alertDiv = document.createElement('div');
-      alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-feedback`;
-      alertDiv.role = 'alert';
-      
-      // アイコンを追加
-      let icon = '';
-      if (type === 'success') {
-        icon = '<i class="bi bi-check-circle-fill me-2"></i>';
-      } else if (type === 'danger') {
-        icon = '<i class="bi bi-exclamation-triangle-fill me-2"></i>';
-      } else if (type === 'warning') {
-        icon = '<i class="bi bi-exclamation-circle-fill me-2"></i>';
-      } else if (type === 'info') {
-        icon = '<i class="bi bi-info-circle-fill me-2"></i>';
-      }
-      
-      alertDiv.innerHTML = `
+
+    alertDiv.innerHTML = `
         ${icon}${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       `;
-      
-      // フォームの先頭に挿入
-      const form = document.querySelector('form');
-      if (form) {
-        form.insertAdjacentElement('afterbegin', alertDiv);
+
+    // フォームの先頭に挿入
+    const form = document.querySelector('form');
+    if (form) {
+      form.insertAdjacentElement('afterbegin', alertDiv);
+    }
+
+    // 5秒後に自動的に閉じる
+    setTimeout(() => {
+      if (alertDiv.parentNode) {
+        alertDiv.classList.remove('show');
+        setTimeout(() => alertDiv.remove(), 150);
       }
-      
-      // 5秒後に自動的に閉じる
-      setTimeout(() => {
-        if (alertDiv.parentNode) {
-          alertDiv.classList.remove('show');
-          setTimeout(() => alertDiv.remove(), 150);
-        }
-      }, 5000);
-    }
+    }, 5000);
+  }
 
-    // 現在株価取得ボタンのイベント
-    if (fetchCurrentPriceBtn) {
-      fetchCurrentPriceBtn.addEventListener('click', function() {
-        const stockCode = stockSymbolInput.value.trim();
-        if (stockCode) {
-          fetchCurrentPrice(stockCode, purchasePriceInput, fetchCurrentPriceBtn);
-        }
-      });
-    }
-
-    if (fetchCurrentPriceSellBtn) {
-      fetchCurrentPriceSellBtn.addEventListener('click', function() {
-        const stockCode = stockSymbolInput.value.trim();
-        if (stockCode) {
-          fetchCurrentPrice(stockCode, sellPriceInput, fetchCurrentPriceSellBtn);
-        }
-      });
-    }
-    
-    // 現在株価を取得する関数
-    function fetchCurrentPrice(stockCode, inputField, buttonElement) {
-      // ボタンを無効化してローディング状態を表示
-      buttonElement.disabled = true;
-      const originalBtnText = buttonElement.innerHTML;
-      buttonElement.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 取得中...';
-
-      // APIリクエストを送信
-      fetch(`/stockdiary/api/stock/price/${stockCode}/`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('株価の取得に失敗しました');
-          }
-          return response.json();
-        })
-        .then(data => {
-          // 現在株価を設定
-          inputField.value = data.price;
-          
-          // 株価情報カードの価格も更新
-          if (!stockInfoCard.classList.contains('d-none') && stockInfoPrice) {
-            stockInfoPrice.textContent = `${data.price.toLocaleString()}円`;
-          }
-          
-          // 成功メッセージを表示
-          showAlert('現在株価を取得しました', 'success');
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          showAlert(error.message, 'danger');
-        })
-        .finally(() => {
-          // ボタンを元に戻す
-          buttonElement.disabled = false;
-          buttonElement.innerHTML = originalBtnText;
-        });
-    }
-
-    // 売却フィールドの状態を更新する関数
-    function updateSellFields() {
-      const hasPrice = purchasePriceInput && purchasePriceInput.value.trim() !== '';
-      const hasQuantity = purchaseQuantityInput && purchaseQuantityInput.value.trim() !== '';
-      
-      // 両方入力されている場合のみ売却フィールドを有効化
-      const canSell = hasPrice && hasQuantity;
-      
-      if (sellDateInput) sellDateInput.disabled = !canSell;
-      if (sellPriceInput) sellPriceInput.disabled = !canSell;
-      if (fetchPriceButton) fetchPriceButton.disabled = !canSell;
-      
-      // 視覚的なフィードバック
-      if (canSell) {
-        if (sellDateInput) sellDateInput.classList.remove('bg-light');
-        if (sellPriceInput) sellPriceInput.classList.remove('bg-light');
-        
-        // 売却セクションの警告メッセージを非表示
-        if (sellWarningMessage) {
-          sellWarningMessage.style.display = 'none';
-        }
-      } else {
-        if (sellDateInput) sellDateInput.classList.add('bg-light');
-        if (sellPriceInput) sellPriceInput.classList.add('bg-light');
-        
-        // 売却セクションに警告メッセージを表示
-        if (sellWarningMessage) {
-          sellWarningMessage.style.display = 'block';
-        }
+  // 現在株価取得ボタンのイベント
+  if (fetchCurrentPriceBtn) {
+    fetchCurrentPriceBtn.addEventListener('click', function () {
+      const stockCode = stockSymbolInput.value.trim();
+      if (stockCode) {
+        fetchCurrentPrice(stockCode, purchasePriceInput, fetchCurrentPriceBtn);
       }
-    }
-
-    // 初期状態を設定
-    updateSellFields();
-    
-    // 購入価格と株数の変更を監視
-    if (purchasePriceInput) {
-      purchasePriceInput.addEventListener('input', updateSellFields);
-    }
-    if (purchaseQuantityInput) {
-      purchaseQuantityInput.addEventListener('input', updateSellFields);
-    }
-    
-    // ページ読み込み時に銘柄コードが入力済みなら情報を取得
-    if (stockSymbolInput && stockSymbolInput.value.trim() && /^\d{4}$/.test(stockSymbolInput.value.trim())) {
-      fetchStockInfo(stockSymbolInput.value.trim());
-    }
-
-    // テキストエリア用の処理
-    const reasonTextarea = document.getElementById('{{ form.reason.id_for_label }}');
-    const memoTextarea = document.getElementById('{{ form.memo.id_for_label }}');
-    const charCounter = document.querySelector('.char-counter');
-    const memoCharCounter = document.querySelector('.memo-char-counter');
-    
-    // フルスクリーン要素
-    const expandReasonBtn = document.getElementById('expandReasonBtn');
-    const fullscreenEditor = document.getElementById('fullscreenEditor');
-    const fullscreenTextarea = document.getElementById('fullscreenTextarea');
-    const closeFullscreenBtn = document.getElementById('closeFullscreenBtn');
-    const saveFullscreenBtn = document.getElementById('saveFullscreenBtn');
-    const fullscreenCharCounter = document.querySelector('.fullscreen-char-counter');
-    
-    // 文字数カウンター初期設定（制限付き）
-    if (reasonTextarea && charCounter) {
-      updateCharCountWithLimit(reasonTextarea, charCounter, 1000);
-    }
-    
-    if (memoTextarea && memoCharCounter) {
-      updateCharCountWithLimit(memoTextarea, memoCharCounter, 1000);
-    }
-    
-    // テキストエリアの高さを自動調整する関数
-    const adjustTextareaHeight = (textarea) => {
-      if (!textarea) return;
-      
-      // リセットして実際の高さを取得
-      textarea.style.height = 'auto';
-      
-      // スクロール高さを取得（内容に合わせた高さ）
-      const scrollHeight = textarea.scrollHeight;
-      
-      // 最小高さ150px、最大は画面の60%まで
-      const maxHeight = window.innerHeight * 0.6;
-      const newHeight = Math.min(Math.max(150, scrollHeight), maxHeight);
-      
-      textarea.style.height = `${newHeight}px`;
-    };
-    
-    // 理由テキストエリアのイベント処理
-    if (reasonTextarea) {
-      // 初期調整
-      setTimeout(() => adjustTextareaHeight(reasonTextarea), 100);
-      
-      // 入力時（制限付きカウンター）
-      reasonTextarea.addEventListener('input', function() {
-        adjustTextareaHeight(this);
-        updateCharCountWithLimit(this, charCounter, 1000);
-      });
-      
-      // フォーカス時
-      reasonTextarea.addEventListener('focus', function() {
-        this.parentElement.classList.add('focused');
-        adjustTextareaHeight(this);
-      });
-      
-      // フォーカス解除時
-      reasonTextarea.addEventListener('blur', function() {
-        this.parentElement.classList.remove('focused');
-      });
-    }
-    
-    // メモテキストエリアのイベント処理
-    if (memoTextarea) {
-      // 初期調整
-      setTimeout(() => adjustTextareaHeight(memoTextarea), 100);
-      
-      // 入力時（制限付きカウンター）
-      memoTextarea.addEventListener('input', function() {
-        adjustTextareaHeight(this);
-        updateCharCountWithLimit(this, memoCharCounter, 1000);
-      });
-      
-      // フォーカス時
-      memoTextarea.addEventListener('focus', function() {
-        this.parentElement.classList.add('focused');
-        adjustTextareaHeight(this);
-      });
-      
-      // フォーカス解除時
-      memoTextarea.addEventListener('blur', function() {
-        this.parentElement.classList.remove('focused');
-      });
-    }
-    
-    // フルスクリーンモード
-    if (expandReasonBtn && fullscreenEditor && reasonTextarea) {
-      // フルスクリーンボタンクリック時
-      expandReasonBtn.addEventListener('click', function() {
-        // 本文をフルスクリーンエディタにコピー
-        fullscreenTextarea.value = reasonTextarea.value;
-        updateCharCountWithLimit(fullscreenTextarea, fullscreenCharCounter, 1000);
-        
-        // フルスクリーン表示
-        fullscreenEditor.classList.add('active');
-        document.body.classList.add('no-scroll');
-        
-        // フォーカスを当てる
-        setTimeout(() => {
-          fullscreenTextarea.focus();
-        }, 100);
-      });
-      
-      // フルスクリーン閉じるボタン
-      closeFullscreenBtn.addEventListener('click', function() {
-        fullscreenEditor.classList.remove('active');
-        document.body.classList.remove('no-scroll');
-      });
-      
-      // フルスクリーン保存ボタン
-      saveFullscreenBtn.addEventListener('click', function() {
-        // 文字数制限チェック
-        if (fullscreenTextarea.value.length > 1000) {
-          alert('購入理由は1000文字以内で入力してください。');
-          return;
-        }
-        
-        // 通常テキストエリアに値を戻す
-        reasonTextarea.value = fullscreenTextarea.value;
-        
-        // 文字数と高さを更新
-        updateCharCountWithLimit(reasonTextarea, charCounter, 1000);
-        adjustTextareaHeight(reasonTextarea);
-        
-        // フルスクリーン閉じる
-        fullscreenEditor.classList.remove('active');
-        document.body.classList.remove('no-scroll');
-      });
-      
-      // フルスクリーンテキストエリアの入力時（制限付きカウンター）
-      fullscreenTextarea.addEventListener('input', function() {
-        updateCharCountWithLimit(this, fullscreenCharCounter, 1000);
-      });
-    }
-    
-    // ウィンドウリサイズ時に高さを再調整
-    window.addEventListener('resize', function() {
-      adjustTextareaHeight(reasonTextarea);
-      adjustTextareaHeight(memoTextarea);
     });
+  }
+
+  if (fetchCurrentPriceSellBtn) {
+    fetchCurrentPriceSellBtn.addEventListener('click', function () {
+      const stockCode = stockSymbolInput.value.trim();
+      if (stockCode) {
+        fetchCurrentPrice(stockCode, sellPriceInput, fetchCurrentPriceSellBtn);
+      }
+    });
+  }
+
+  // 現在株価を取得する関数
+  function fetchCurrentPrice(stockCode, inputField, buttonElement) {
+    // ボタンを無効化してローディング状態を表示
+    buttonElement.disabled = true;
+    const originalBtnText = buttonElement.innerHTML;
+    buttonElement.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 取得中...';
+
+    // APIリクエストを送信
+    fetch(`/stockdiary/api/stock/price/${stockCode}/`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('株価の取得に失敗しました');
+        }
+        return response.json();
+      })
+      .then(data => {
+        // 現在株価を設定
+        inputField.value = data.price;
+
+        // 株価情報カードの価格も更新
+        if (!stockInfoCard.classList.contains('d-none') && stockInfoPrice) {
+          stockInfoPrice.textContent = `${data.price.toLocaleString()}円`;
+        }
+
+        // 成功メッセージを表示
+        showAlert('現在株価を取得しました', 'success');
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showAlert(error.message, 'danger');
+      })
+      .finally(() => {
+        // ボタンを元に戻す
+        buttonElement.disabled = false;
+        buttonElement.innerHTML = originalBtnText;
+      });
+  }
+
+  // 売却フィールドの状態を更新する関数
+  function updateSellFields() {
+    const hasPrice = purchasePriceInput && purchasePriceInput.value.trim() !== '';
+    const hasQuantity = purchaseQuantityInput && purchaseQuantityInput.value.trim() !== '';
+
+    // 両方入力されている場合のみ売却フィールドを有効化
+    const canSell = hasPrice && hasQuantity;
+
+    if (sellDateInput) sellDateInput.disabled = !canSell;
+    if (sellPriceInput) sellPriceInput.disabled = !canSell;
+    if (fetchPriceButton) fetchPriceButton.disabled = !canSell;
+
+    // 視覚的なフィードバック
+    if (canSell) {
+      if (sellDateInput) sellDateInput.classList.remove('bg-light');
+      if (sellPriceInput) sellPriceInput.classList.remove('bg-light');
+
+      // 売却セクションの警告メッセージを非表示
+      if (sellWarningMessage) {
+        sellWarningMessage.style.display = 'none';
+      }
+    } else {
+      if (sellDateInput) sellDateInput.classList.add('bg-light');
+      if (sellPriceInput) sellPriceInput.classList.add('bg-light');
+
+      // 売却セクションに警告メッセージを表示
+      if (sellWarningMessage) {
+        sellWarningMessage.style.display = 'block';
+      }
+    }
+  }
+
+  // 初期状態を設定
+  updateSellFields();
+
+  // 購入価格と株数の変更を監視
+  if (purchasePriceInput) {
+    purchasePriceInput.addEventListener('input', updateSellFields);
+  }
+  if (purchaseQuantityInput) {
+    purchaseQuantityInput.addEventListener('input', updateSellFields);
+  }
+
+  // ページ読み込み時に銘柄コードが入力済みなら情報を取得
+  if (stockSymbolInput && stockSymbolInput.value.trim() && /^\d{4}$/.test(stockSymbolInput.value.trim())) {
+    fetchStockInfo(stockSymbolInput.value.trim());
+  }
+
+  // テキストエリア用の処理
+  const reasonTextarea = document.getElementById('{{ form.reason.id_for_label }}');
+  const memoTextarea = document.getElementById('{{ form.memo.id_for_label }}');
+  const charCounter = document.querySelector('.char-counter');
+  const memoCharCounter = document.querySelector('.memo-char-counter');
+
+  // フルスクリーン要素
+  const expandReasonBtn = document.getElementById('expandReasonBtn');
+  const fullscreenEditor = document.getElementById('fullscreenEditor');
+  const fullscreenTextarea = document.getElementById('fullscreenTextarea');
+  const closeFullscreenBtn = document.getElementById('closeFullscreenBtn');
+  const saveFullscreenBtn = document.getElementById('saveFullscreenBtn');
+  const fullscreenCharCounter = document.querySelector('.fullscreen-char-counter');
+
+  // 文字数カウンター初期設定（制限付き）
+  if (reasonTextarea && charCounter) {
+    updateCharCountWithLimit(reasonTextarea, charCounter, 1000);
+  }
+
+  if (memoTextarea && memoCharCounter) {
+    updateCharCountWithLimit(memoTextarea, memoCharCounter, 1000);
+  }
+
+  // テキストエリアの高さを自動調整する関数
+  const adjustTextareaHeight = (textarea) => {
+    if (!textarea) return;
+
+    // リセットして実際の高さを取得
+    textarea.style.height = 'auto';
+
+    // スクロール高さを取得（内容に合わせた高さ）
+    const scrollHeight = textarea.scrollHeight;
+
+    // 最小高さ150px、最大は画面の60%まで
+    const maxHeight = window.innerHeight * 0.6;
+    const newHeight = Math.min(Math.max(150, scrollHeight), maxHeight);
+
+    textarea.style.height = `${newHeight}px`;
+  };
+
+  // 理由テキストエリアのイベント処理
+  if (reasonTextarea) {
+    // 初期調整
+    setTimeout(() => adjustTextareaHeight(reasonTextarea), 100);
+
+    // 入力時（制限付きカウンター）
+    reasonTextarea.addEventListener('input', function () {
+      adjustTextareaHeight(this);
+      updateCharCountWithLimit(this, charCounter, 1000);
+    });
+
+    // フォーカス時
+    reasonTextarea.addEventListener('focus', function () {
+      this.parentElement.classList.add('focused');
+      adjustTextareaHeight(this);
+    });
+
+    // フォーカス解除時
+    reasonTextarea.addEventListener('blur', function () {
+      this.parentElement.classList.remove('focused');
+    });
+  }
+
+  // メモテキストエリアのイベント処理
+  if (memoTextarea) {
+    // 初期調整
+    setTimeout(() => adjustTextareaHeight(memoTextarea), 100);
+
+    // 入力時（制限付きカウンター）
+    memoTextarea.addEventListener('input', function () {
+      adjustTextareaHeight(this);
+      updateCharCountWithLimit(this, memoCharCounter, 1000);
+    });
+
+    // フォーカス時
+    memoTextarea.addEventListener('focus', function () {
+      this.parentElement.classList.add('focused');
+      adjustTextareaHeight(this);
+    });
+
+    // フォーカス解除時
+    memoTextarea.addEventListener('blur', function () {
+      this.parentElement.classList.remove('focused');
+    });
+  }
+
+  // フルスクリーンモード
+  if (expandReasonBtn && fullscreenEditor && reasonTextarea) {
+    // フルスクリーンボタンクリック時
+    expandReasonBtn.addEventListener('click', function () {
+      // 本文をフルスクリーンエディタにコピー
+      fullscreenTextarea.value = reasonTextarea.value;
+      updateCharCountWithLimit(fullscreenTextarea, fullscreenCharCounter, 1000);
+
+      // フルスクリーン表示
+      fullscreenEditor.classList.add('active');
+      document.body.classList.add('no-scroll');
+
+      // フォーカスを当てる
+      setTimeout(() => {
+        fullscreenTextarea.focus();
+      }, 100);
+    });
+
+    // フルスクリーン閉じるボタン
+    closeFullscreenBtn.addEventListener('click', function () {
+      fullscreenEditor.classList.remove('active');
+      document.body.classList.remove('no-scroll');
+    });
+
+    // フルスクリーン保存ボタン
+    saveFullscreenBtn.addEventListener('click', function () {
+      // 文字数制限チェック
+      if (fullscreenTextarea.value.length > 1000) {
+        alert('購入理由は1000文字以内で入力してください。');
+        return;
+      }
+
+      // 通常テキストエリアに値を戻す
+      reasonTextarea.value = fullscreenTextarea.value;
+
+      // 文字数と高さを更新
+      updateCharCountWithLimit(reasonTextarea, charCounter, 1000);
+      adjustTextareaHeight(reasonTextarea);
+
+      // フルスクリーン閉じる
+      fullscreenEditor.classList.remove('active');
+      document.body.classList.remove('no-scroll');
+    });
+
+    // フルスクリーンテキストエリアの入力時（制限付きカウンター）
+    fullscreenTextarea.addEventListener('input', function () {
+      updateCharCountWithLimit(this, fullscreenCharCounter, 1000);
+    });
+  }
+
+  // ウィンドウリサイズ時に高さを再調整
+  window.addEventListener('resize', function () {
+    adjustTextareaHeight(reasonTextarea);
+    adjustTextareaHeight(memoTextarea);
+  });
   });
 </script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  // 日記作成用の画像圧縮設定
-  if (document.getElementById('id_image')) {
-    const handler = setupImageCompression({
-      inputId: 'id_image',
-      previewId: 'image-preview',
-      containerId: 'image-preview-container',
-      uploadAreaSelector: '.image-upload-area',
-      removeBtnId: 'remove-image',
-      options: {
-        maxWidth: 800,
-        maxHeight: 600,
-        quality: 0.85,
-        compressionThreshold: 1 * 1024 * 1024, // 3MB以上で圧縮
-        maxFileSize: 8 * 1024 * 1024, // 最大8MB
-        onCompressionStart: (file) => {
-          showCompressionMessage('画像を圧縮中...');
-        },
-        onCompressionEnd: (original, compressed) => {
-          const originalSize = handler.formatFileSize(original.size);
-          const compressedSize = handler.formatFileSize(compressed.size);
-          showCompressionMessage(`圧縮完了: ${originalSize} → ${compressedSize}`, 3000);
+  document.addEventListener('DOMContentLoaded', function () {
+    // 日記作成用の画像圧縮設定
+    if (document.getElementById('id_image')) {
+      const handler = setupImageCompression({
+        inputId: 'id_image',
+        previewId: 'image-preview',
+        containerId: 'image-preview-container',
+        uploadAreaSelector: '.image-upload-area',
+        removeBtnId: 'remove-image',
+        options: {
+          maxWidth: 800,
+          maxHeight: 600,
+          quality: 0.85,
+          compressionThreshold: 1 * 1024 * 1024, // 3MB以上で圧縮
+          maxFileSize: 8 * 1024 * 1024, // 最大8MB
+          onCompressionStart: (file) => {
+            showCompressionMessage('画像を圧縮中...');
+          },
+          onCompressionEnd: (original, compressed) => {
+            const originalSize = handler.formatFileSize(original.size);
+            const compressedSize = handler.formatFileSize(compressed.size);
+            showCompressionMessage(`圧縮完了: ${originalSize} → ${compressedSize}`, 3000);
+          }
         }
-      }
-    });
-  }
+      });
+    }
 
-  // 圧縮メッセージ表示関数
-  function showCompressionMessage(message, duration = 0) {
-    let messageElement = document.getElementById('compression-message');
-    
-    if (!messageElement) {
-      messageElement = document.createElement('div');
-      messageElement.id = 'compression-message';
-      messageElement.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background-color: #007bff;
-        color: white;
-        padding: 12px 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        z-index: 9999;
-        font-size: 14px;
-        display: none;
-      `;
-      document.body.appendChild(messageElement);
-    }
-    
-    messageElement.textContent = message;
-    messageElement.style.display = 'block';
-    
-    if (duration > 0) {
-      setTimeout(() => {
-        messageElement.style.display = 'none';
-      }, duration);
-    }
-  }
-});
+    // 圧縮メッセージ表示関数
+    function showCompressionMessage(message, duration = 0) {
+      let messageElement = document.getElementById('compression-message');
+      
+      if (!messageElement) {
+        messageElement = document.createElement('div');
+        messageElement.id = 'compression-message';
+        messageElement.style.cssText = `
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: linear-gradient(135deg, #007bff, #0056b3);
+          color: white;
+          padding: 12px 20px;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          z-index: 9999;
+          font-size: 14px;
+          display: none;
+          animation: slideIn 0.3s ease-out;
+          max-width: 300px;
+          word-wrap: break-word;
+        `;
+        
+        // アニメーション追加
+        const style = document.createElement('style');
+        style.textContent = `
+          @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+          }
+          @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+          }
+        `;
+        document.head.appendChild(style);
+        
+        document.body.appendChild(messageElement);
+      }
+      
+      messageElement.textContent = message;
+      messageElement.style.display = 'block';
+      
+      if (duration > 0) {
+        setTimeout(() => {
+          messageElement.style.animation = 'slideOut 0.3s ease-in';
+          setTimeout(() => {
+            messageElement.style.display = 'none';
+            messageElement.style.animation = '';
+          }, 300);
+        }, duration);
+      }
+    }  
+  });
 </script>
 {% endblock %}

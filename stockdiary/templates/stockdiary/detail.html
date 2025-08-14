@@ -1725,7 +1725,7 @@
                 <div class="image-upload-area-note mb-3" onclick="document.getElementById('note_image').click();">
                   <i class="bi bi-cloud-upload text-muted" style="font-size: 2rem;"></i>
                   <p class="text-muted mb-0">ここをクリックして画像を選択</p>
-                  <small class="text-muted">最大5MB、自動圧縮対応</small>
+                  <small class="text-muted">自動圧縮対応</small>
                 </div>
                 
                 <input type="file" class="form-control d-none" id="note_image" name="image" 
@@ -2282,31 +2282,117 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  function checkWebPSupport() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    try {
+      const dataURL = canvas.toDataURL('image/webp', 0.1);
+      return dataURL.startsWith('data:image/webp');
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  const supportsWebP = checkWebPSupport();
+  console.log('継続記録 WebP対応:', supportsWebP ? 'はい' : 'いいえ');
+  
   // 継続記録用の画像圧縮設定
   if (document.getElementById('note_image')) {
-    setupImageCompression({
+    const handler = setupImageCompression({
       inputId: 'note_image',
       previewId: 'note-image-preview',
       containerId: 'note-image-preview-container',
       uploadAreaSelector: '.image-upload-area-note',
       removeBtnId: 'note-remove-image',
       options: {
-        maxWidth: 600,
-        maxHeight: 400,
-        quality: 0.7,
-        compressionThreshold: 1 * 1024 * 1024, // 2MB以上で圧縮
+        maxWidth: 500,                    // 継続記録はコンパクトに
+        maxHeight: 375,                   // 継続記録はコンパクトに
+        quality: 0.7,                     // WebP対応で品質維持
+        compressionThreshold: 0,          // 全ファイル圧縮
+        maxFileSize: 3 * 1024 * 1024,     // 最大3MB（継続記録は小さめ）
         onCompressionStart: (file) => {
-          console.log('圧縮開始:', file.name);
+          const format = handler.getBestImageFormat();
+          const formatName = format.replace('image/', '').toUpperCase();
+          console.log(`継続記録画像圧縮開始: ${file.name} → ${formatName}形式`);
+          
+          // 継続記録用の圧縮メッセージ表示
+          showNoteCompressionMessage(`${formatName}形式で圧縮中...`);
         },
         onCompressionEnd: (original, compressed) => {
-          console.log(`圧縮完了: ${handler.formatFileSize(original.size)} → ${handler.formatFileSize(compressed.size)}`);
+          const originalSize = handler.formatFileSize(original.size);
+          const compressedSize = handler.formatFileSize(compressed.size);
+          const reductionRate = ((original.size - compressed.size) / original.size * 100).toFixed(1);
+          const format = handler.getBestImageFormat().replace('image/', '').toUpperCase();
+          
+          console.log(`継続記録画像圧縮完了: ${originalSize} → ${compressedSize} (${reductionRate}% 削減, ${format})`);
+          
+          // 継続記録用の完了メッセージ表示
+          showNoteCompressionMessage(
+            `${format}圧縮完了: ${originalSize} → ${compressedSize} (${reductionRate}% 削減)`, 
+            3000
+          );
         },
         onError: (message, error) => {
-          alert(message);
-          console.error('画像エラー:', error);
+          console.error('継続記録画像エラー:', error);
+          showNoteCompressionMessage(`エラー: ${message}`, 4000);
         }
       }
     });
+  }
+  // 継続記録用の圧縮メッセージ表示関数
+  function showNoteCompressionMessage(message, duration = 0) {
+    let messageElement = document.getElementById('note-compression-message');
+    
+    if (!messageElement) {
+      messageElement = document.createElement('div');
+      messageElement.id = 'note-compression-message';
+      messageElement.style.cssText = `
+        position: fixed;
+        top: 70px;
+        right: 20px;
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        padding: 10px 16px;
+        border-radius: 6px;
+        box-shadow: 0 3px 10px rgba(40, 167, 69, 0.3);
+        z-index: 9998;
+        font-size: 13px;
+        display: none;
+        animation: noteSlideIn 0.3s ease-out;
+        max-width: 280px;
+        word-wrap: break-word;
+      `;
+      
+      // 継続記録用アニメーション
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes noteSlideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes noteSlideOut {
+          from { transform: translateX(0); opacity: 1; }
+          to { transform: translateX(100%); opacity: 0; }
+        }
+      `;
+      document.head.appendChild(style);
+      
+      document.body.appendChild(messageElement);
+    }
+    
+    messageElement.textContent = message;
+    messageElement.style.display = 'block';
+    
+    if (duration > 0) {
+      setTimeout(() => {
+        messageElement.style.animation = 'noteSlideOut 0.3s ease-in';
+        setTimeout(() => {
+          messageElement.style.display = 'none';
+          messageElement.style.animation = '';
+        }, 300);
+      }, duration);
+    }
   }
 });
 </script>
