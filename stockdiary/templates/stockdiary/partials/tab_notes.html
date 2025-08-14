@@ -49,6 +49,15 @@
 
       {% if note.current_price %}
       <div class="note-content" style="padding: 1rem; background-color: white;">
+        {% if note.image %}
+        <div class="note-image mb-2">
+          <img src="{{ note.image.url }}" 
+               class="img-fluid rounded note-attached-image" 
+               alt="継続記録画像"
+               style="max-height: 150px; object-fit: cover; width: 100%; cursor: pointer;"
+               onclick="showImageModal('{{ note.image.url }}', '{{ note.date|date:"Y年m月d日" }}の記録')">
+        </div>
+        {% endif %}
         <div class="note-price-info small mb-2 d-flex justify-content-between align-items-center">
           <span class="text-muted">
             <i class="bi bi-cash-coin me-1"></i>
@@ -79,6 +88,15 @@
       </div>
       {% else %}
       <div class="note-content" style="padding: 1rem; background-color: white;">
+        {% if note.image %}
+        <div class="note-image mb-2">
+          <img src="{{ note.image.url }}" 
+               class="img-fluid rounded note-attached-image" 
+               alt="継続記録画像"
+               style="max-height: 150px; object-fit: cover; width: 100%; cursor: pointer;"
+               onclick="showImageModal('{{ note.image.url }}', '{{ note.date|date:"Y年m月d日" }}の記録')">
+        </div>
+        {% endif %}
         <div class="note-text bg-light rounded p-3">
           {{ note.content|safe|linebreaks|truncatewords_html:50 }}
         </div>

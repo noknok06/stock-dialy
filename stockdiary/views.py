@@ -496,6 +496,13 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
         # 親クラスのform_validを呼び出し、レスポンスを取得
         response = super().form_valid(form)
         
+        # 画像ファイルの処理
+        image_file = form.cleaned_data.get('image')
+        if image_file:
+            success = self.object.upload_image(image_file)
+            if not success:
+                messages.warning(self.request, '日記は作成されましたが、画像のアップロードに失敗しました。')
+        
         # 分析テンプレートが選択されていれば、分析値を処理
         analysis_template_id = self.request.POST.get('analysis_template')
         if analysis_template_id:
@@ -548,6 +555,39 @@ class StockDiaryUpdateView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Upda
         kwargs['user'] = self.request.user
         return kwargs
     
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        
+        # 画像削除チェックボックスがチェックされている場合
+        if request.POST.get('clear_image'):
+            success = self.object.delete_image()
+            if not success:
+                messages.warning(request, '画像の削除に失敗しました。')
+        
+        return super().post(request, *args, **kwargs)
+    
+    def form_valid(self, form):
+        # 親クラスのform_validを呼び出し
+        response = super().form_valid(form)
+        
+        # 新しい画像ファイルの処理
+        image_file = form.cleaned_data.get('image')
+        if image_file:
+            success = self.object.upload_image(image_file)
+            if not success:
+                messages.warning(self.request, '日記は更新されましたが、画像のアップロードに失敗しました。')
+        
+        # 分析テンプレートが選択されていれば、分析値を処理
+        analysis_template_id = self.request.POST.get('analysis_template')
+        if analysis_template_id:
+            # 既存の分析値を削除（テンプレートが変更された場合に対応）
+            DiaryAnalysisValue.objects.filter(diary_id=self.object.id).delete()
+            
+            # 新しい分析値を処理
+            process_analysis_values(self.request, self.object, analysis_template_id)
+        
+        return response
+    
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         
@@ -569,21 +609,6 @@ class StockDiaryUpdateView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Upda
     
     def get_success_url(self):
         return reverse_lazy('stockdiary:detail', kwargs={'pk': self.object.pk})
-
-    def form_valid(self, form):
-        # 親クラスのform_validを呼び出し
-        response = super().form_valid(form)
-        
-        # 分析テンプレートが選択されていれば、分析値を処理
-        analysis_template_id = self.request.POST.get('analysis_template')
-        if analysis_template_id:
-            # 既存の分析値を削除（テンプレートが変更された場合に対応）
-            DiaryAnalysisValue.objects.filter(diary_id=self.object.id).delete()
-            
-            # 新しい分析値を処理
-            process_analysis_values(self.request, self.object, analysis_template_id)
-        
-        return response
 
 
 class StockDiaryDeleteView(LoginRequiredMixin, DeleteView):
@@ -736,8 +761,31 @@ class AddDiaryNoteView(LoginRequiredMixin, CreateView):
         diary_id = self.kwargs.get('pk')
         diary = get_object_or_404(StockDiary, id=diary_id, user=self.request.user)
         form.instance.diary = diary
+        
+        # 親クラスのform_validを呼び出し、オブジェクトを保存
+        response = super().form_valid(form)
+        
+        # 画像ファイルの処理
+        image_file = self.request.FILES.get('image')
+        if image_file:
+            # ファイルサイズのチェック（10MB以下）
+            if image_file.size > 10 * 1024 * 1024:
+                messages.error(self.request, '画像ファイルのサイズは10MB以下にしてください')
+                return self.form_invalid(form)
+            
+            # ファイル形式のチェック
+            valid_formats = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+            if hasattr(image_file, 'content_type') and image_file.content_type not in valid_formats:
+                messages.error(self.request, 'JPEG、PNG、GIF、WebP形式の画像ファイルのみアップロード可能です')
+                return self.form_invalid(form)
+            
+            # Cloudinaryにアップロード
+            success = self.object.upload_image(image_file)
+            if not success:
+                messages.warning(self.request, '継続記録は追加されましたが、画像のアップロードに失敗しました。')
+        
         messages.success(self.request, "継続記録を追加しました")
-        return super().form_valid(form)
+        return response
     
     def get_success_url(self):
         return reverse_lazy('stockdiary:detail', kwargs={'pk': self.kwargs.get('pk')})
@@ -745,7 +793,7 @@ class AddDiaryNoteView(LoginRequiredMixin, CreateView):
     def form_invalid(self, form):
         diary_id = self.kwargs.get('pk')
         return redirect('stockdiary:detail', pk=diary_id)
-
+    
 
 class CancelSellView(LoginRequiredMixin, View):
     """売却情報を取り消すビュー"""

@@ -436,6 +436,64 @@
       .footer-social {
         margin-top: 1rem;
       }
+      /* 画像関連のスタイル */
+      .diary-attached-image,
+      .note-attached-image,
+      .diary-main-image {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .diary-attached-image:hover,
+      .note-attached-image:hover,
+      .diary-main-image:hover {
+        transform: scale(1.02);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+      }
+
+      .image-upload-area {
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+      }
+
+      .image-upload-area:hover {
+        border-color: var(--primary-color, #5a7ec5);
+        background-color: rgba(90, 126, 197, 0.05);
+      }
+
+      .image-upload-area.dragover {
+        border-color: var(--primary-color, #5a7ec5);
+        background-color: rgba(90, 126, 197, 0.1);
+      }
+
+      .note-image img,
+      .diary-image img {
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+
+      /* レスポンシブ対応 */
+      @media (max-width: 768px) {
+        .modal-lg {
+          max-width: 95%;
+        }
+        
+        #modalImage {
+          max-height: 60vh;
+        }
+        
+        .diary-main-image {
+          max-height: 200px !important;
+        }
+        
+        .diary-attached-image,
+        .note-attached-image {
+          max-height: 120px !important;
+        }
+      }
     </style>
     
     {% block head %}{% endblock %}
@@ -765,6 +823,27 @@
   </div>
   {% endif %}
 
+  <!-- 画像モーダル -->
+  <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="imageModalLabel">画像表示</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-center p-0">
+          <img id="modalImage" class="img-fluid" alt="画像" style="max-width: 100%; max-height: 70vh; object-fit: contain;">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+          <a id="modalImageDownload" class="btn btn-primary" download>
+            <i class="bi bi-download"></i> ダウンロード
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Bootstrap JavaScript Bundle with Popper -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   
@@ -806,6 +885,76 @@
       });
   </script>
   <script src="{% static 'js/speed-dial.js' %}"></script>
+
+<script>
+// 画像モーダル表示機能
+function showImageModal(imageUrl, title) {
+  const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+  const modalImage = document.getElementById('modalImage');
+  const modalTitle = document.getElementById('imageModalLabel');
+  const downloadBtn = document.getElementById('modalImageDownload');
+  
+  modalImage.src = imageUrl;
+  modalTitle.textContent = title || '画像表示';
+  downloadBtn.href = imageUrl;
+  
+  // ダウンロードファイル名を設定
+  const fileName = title ? `${title.replace(/[^a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/g, '_')}.jpg` : 'image.jpg';
+  downloadBtn.setAttribute('download', fileName);
+  
+  modal.show();
+}
+
+// ドラッグ&ドロップ機能（オプション）
+document.addEventListener('DOMContentLoaded', function() {
+  const fileInputs = document.querySelectorAll('input[type="file"][accept*="image"]');
+  
+  fileInputs.forEach(input => {
+    const parent = input.closest('.form-section, .mb-3');
+    if (!parent) return;
+    
+    // ドラッグオーバー処理
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      parent.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+      parent.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+      parent.addEventListener(eventName, unhighlight, false);
+    });
+    
+    parent.addEventListener('drop', handleDrop, false);
+    
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    function highlight(e) {
+      parent.classList.add('dragover');
+    }
+    
+    function unhighlight(e) {
+      parent.classList.remove('dragover');
+    }
+    
+    function handleDrop(e) {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      
+      if (files.length > 0) {
+        input.files = files;
+        // change イベントをトリガー
+        const event = new Event('change', { bubbles: true });
+        input.dispatchEvent(event);
+      }
+    }
+  });
+});
+</script>
   {% endif %}
   
   {% block scripts %}

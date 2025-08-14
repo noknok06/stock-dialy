@@ -128,49 +128,14 @@
   .no-scroll {
     overflow: hidden;
   }
-  
-  /* モバイル対応 */
-  @media (max-width: 768px) {
-    .enhanced-textarea-container.focused {
-      transform: none;
-      margin: 0 -10px;
-      width: calc(100% + 20px);
-      border-radius: 0;
-    }
-    
-    .enhanced-textarea-container.focused textarea {
-      border-radius: 0;
-      border-left: none;
-      border-right: none;
-    }
-  }/* 文字数制限関連のスタイル */
 
-  /* 文字数制限超過時のテキストエリア/入力フィールドスタイル */
+  /* 文字数制限関連のスタイル */
   .text-limit-exceeded {
     border-color: #dc3545 !important;
     background-color: rgba(220, 53, 69, 0.1) !important;
     box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
   }
 
-  /* 文字数カウンターのスタイル強化 */
-  .char-counter,
-  .memo-char-counter,
-  .fullscreen-char-counter {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    font-size: 12px;
-    color: #6c757d;
-    background-color: rgba(255, 255, 255, 0.9);
-    padding: 4px 8px;
-    border-radius: 12px;
-    pointer-events: none;
-    border: 1px solid #e9ecef;
-    font-weight: 500;
-    z-index: 10;
-  }
-
-  /* 警告状態（残り50文字以下） */
   .char-counter.text-warning,
   .memo-char-counter.text-warning,
   .fullscreen-char-counter.text-warning {
@@ -179,7 +144,6 @@
     border-color: #ffeaa7;
   }
 
-  /* エラー状態（制限超過） */
   .char-counter.text-danger,
   .memo-char-counter.text-danger,
   .fullscreen-char-counter.text-danger {
@@ -189,239 +153,64 @@
     animation: shake 0.5s ease-in-out;
   }
 
-  /* 文字数制限警告メッセージ */
-  .text-limit-warning {
-    font-size: 0.875rem;
-    font-weight: 500;
-    margin-top: 0.25rem;
-    display: flex;
-    align-items: center;
-  }
-
-  .text-limit-warning::before {
-    content: "⚠️";
-    margin-right: 0.5rem;
-  }
-
-  /* アニメーション：制限超過時の振動効果 */
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
     10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
     20%, 40%, 60%, 80% { transform: translateX(2px); }
   }
 
-  /* フルスクリーンエディタでの文字数カウンター調整 */
-  .fullscreen-content .fullscreen-char-counter {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 10001;
-  }
-
-  /* モバイル対応 */
-  @media (max-width: 768px) {
-    .char-counter,
-    .memo-char-counter {
-      font-size: 11px;
-      padding: 3px 6px;
-      bottom: 8px;
-      right: 8px;
-    }
-    
-    .text-limit-warning {
-      font-size: 0.8rem;
-    }
-    
-    .fullscreen-content .fullscreen-char-counter {
-      bottom: 15px;
-      right: 15px;
-      font-size: 11px;
-    }
-  }
-
-  /* テキストエリアのフォーカス時スタイル調整 */
-  .enhanced-textarea-container.focused .char-counter,
-  .enhanced-textarea-container.focused .memo-char-counter {
-    background-color: rgba(255, 255, 255, 0.95);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-
-  /* 入力フィールドの制限超過時のプレースホルダー色調整 */
-  .text-limit-exceeded::placeholder {
-    color: #dc3545;
-    opacity: 0.7;
-  }
-
-  /* バリデーションエラー表示の改善 */
-  .form-control.text-limit-exceeded + .invalid-feedback,
-  .form-control.text-limit-exceeded + .text-limit-warning {
-    display: block !important;
-  }
-
-  /* 制限近くでの注意喚起スタイル */
-  .text-near-limit {
-    border-color: #ffc107 !important;
-    background-color: rgba(255, 193, 7, 0.1) !important;
-  }
-
-  /* 成功状態（制限内で適切な長さ） */
-  .text-good-length {
-    border-color: #28a745 !important;
-    background-color: rgba(40, 167, 69, 0.05) !important;
-  }
-
   /* 基本的なフォーム要素のスタイル強化 */
   .form-control, 
   .form-select {
-    border: 2px solid #d1d5db !important; /* ボーダーを太く、濃く */
-    background-color: #ffffff !important; /* 背景を明確に白に */
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1) !important; /* 内側に影を追加 */
+    border: 2px solid #d1d5db !important;
+    background-color: #ffffff !important;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1) !important;
     transition: all 0.2s ease !important;
   }
 
-  /* フォーカス時のスタイル */
   .form-control:focus, 
   .form-select:focus {
-    border-color: #5a7ec5 !important; /* プライマリカラーでフォーカス */
-    box-shadow: 
-      inset 0 1px 3px rgba(0, 0, 0, 0.1),
-      0 0 0 3px rgba(90, 126, 197, 0.25) !important; /* 外側にもフォーカスリング */
-    outline: none !important;
-  }
-
-  /* ホバー時のスタイル */
-  .form-control:hover:not(:focus), 
-  .form-select:hover:not(:focus) {
-    border-color: #9ca3af !important; /* ホバー時に少し濃く */
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15) !important;
-  }
-
-  /* テキストエリアの特別なスタイル */
-  textarea.form-control {
-    border: 2px solid #d1d5db !important;
-    background-color: #ffffff !important;
-    min-height: 120px;
-    resize: vertical; /* 縦方向のみリサイズ可能 */
-  }
-
-  textarea.form-control:focus {
     border-color: #5a7ec5 !important;
     box-shadow: 
       inset 0 1px 3px rgba(0, 0, 0, 0.1),
       0 0 0 3px rgba(90, 126, 197, 0.25) !important;
+    outline: none !important;
   }
 
-  /* フォームラベルのスタイル強化 */
-  .form-label {
-    font-weight: 600 !important;
-    color: #374151 !important;
-    margin-bottom: 0.5rem !important;
-    font-size: 0.95rem !important;
+  /* 画像アップロードセクション用のスタイル */
+  .form-section.dragover {
+    background-color: rgba(90, 126, 197, 0.1) !important;
+    border: 2px dashed var(--primary-color, #5a7ec5) !important;
+    border-radius: 8px;
   }
 
-  /* 必須マークの強調 */
-  .form-label .text-danger {
-    color: #dc2626 !important;
-    font-weight: 700 !important;
+  .image-upload-area {
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
   }
 
-  /* 入力グループのスタイル */
-  .input-group .form-control {
-    border-right: none !important;
+  .image-upload-area:hover {
+    border-color: var(--primary-color, #5a7ec5);
+    background-color: rgba(90, 126, 197, 0.05);
   }
 
-  .input-group .btn {
-    border: 2px solid #d1d5db !important;
-    border-left: none !important;
-    background-color: #f9fafb !important;
-    color: #374151 !important;
+  .image-upload-area.dragover {
+    border-color: var(--primary-color, #5a7ec5);
+    background-color: rgba(90, 126, 197, 0.1);
   }
 
-  .input-group .btn:hover {
-    background-color: #f3f4f6 !important;
-    border-color: #9ca3af !important;
+  #image-preview-container .card {
+    transition: transform 0.2s ease;
   }
 
-  /* セレクト要素の矢印アイコンを強調 */
-  .form-select {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23374151' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
-    background-repeat: no-repeat !important;
-    background-position: right 0.75rem center !important;
-    background-size: 16px 12px !important;
-  }
-
-  /* プレースホルダーのスタイル */
-  .form-control::placeholder {
-    color: #9ca3af !important;
-    opacity: 1 !important;
-  }
-
-  /* 無効状態のスタイル */
-  .form-control:disabled,
-  .form-select:disabled {
-    background-color: #f3f4f6 !important;
-    border-color: #d1d5db !important;
-    color: #6b7280 !important;
-    opacity: 1 !important;
-  }
-
-  /* エラー状態のスタイル */
-  .form-control.is-invalid,
-  .form-select.is-invalid {
-    border-color: #dc2626 !important;
-    background-color: #fef2f2 !important;
-    box-shadow: 
-      inset 0 1px 3px rgba(0, 0, 0, 0.1),
-      0 0 0 3px rgba(220, 38, 38, 0.1) !important;
-  }
-
-  /* 成功状態のスタイル */
-  .form-control.is-valid,
-  .form-select.is-valid {
-    border-color: #059669 !important;
-    background-color: #f0fdf4 !important;
-    box-shadow: 
-      inset 0 1px 3px rgba(0, 0, 0, 0.1),
-      0 0 0 3px rgba(5, 150, 105, 0.1) !important;
-  }
-
-  /* チェックボックスとラジオボタンのスタイル */
-  .form-check-input {
-    border: 2px solid #d1d5db !important;
-    width: 1.25rem !important;
-    height: 1.25rem !important;
-  }
-
-  .form-check-input:checked {
-    background-color: #5a7ec5 !important;
-    border-color: #5a7ec5 !important;
-  }
-
-  .form-check-input:focus {
-    box-shadow: 0 0 0 3px rgba(90, 126, 197, 0.25) !important;
-  }
-
-  /* フォームヘルプテキストのスタイル */
-  .form-text {
-    color: #6b7280 !important;
-    font-size: 0.875rem !important;
-    margin-top: 0.25rem !important;
-  }
-
-  /* Safari特有の問題への対応 */
-  @supports (-webkit-appearance: none) {
-    .form-control,
-    .form-select {
-      -webkit-appearance: none !important;
-      appearance: none !important;
-    }
-    
-    input[type="date"].form-control,
-    input[type="time"].form-control,
-    input[type="datetime-local"].form-control {
-      -webkit-appearance: none !important;
-      background-color: #ffffff !important;
-    }
+  #image-preview-container .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
   }
 
   /* フォームセクションの視覚的区切り */
@@ -443,35 +232,34 @@
     font-weight: 600;
   }
 
-  /* 株価情報カードの境界線強化 */
-  .info-block {
-    border: 1px solid #e5e7eb !important;
-    background-color: #f9fafb !important;
-  }
-
-  /* レスポンシブ対応 - タブレット以上でのみ適用 */
-  @media (min-width: 768px) {
-    .form-control,
-    .form-select {
-      min-height: 44px; /* タッチターゲットサイズを確保 */
-    }
-  }
-
-  /* 高コントラストモード対応 */
-  @media (prefers-contrast: high) {
-    .form-control,
-    .form-select {
-      border-width: 3px !important;
-      border-color: #000000 !important;
+  /* モバイル対応 */
+  @media (max-width: 768px) {
+    .enhanced-textarea-container.focused {
+      transform: none;
+      margin: 0 -10px;
+      width: calc(100% + 20px);
+      border-radius: 0;
     }
     
-    .form-control:focus,
-    .form-select:focus {
-      border-color: #0066cc !important;
-      box-shadow: 0 0 0 3px #ffff00 !important;
+    .enhanced-textarea-container.focused textarea {
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
+    }
+
+    .image-upload-area {
+      padding: 0.75rem;
+    }
+    
+    #image-preview-container .card {
+      max-width: 100% !important;
+    }
+
+    .form-section {
+      padding: 1rem;
     }
   }
-  </style>
+</style>
 {% endblock %}
 
 {% block content %}
@@ -482,10 +270,11 @@
       <i class="bi bi-journal-text"></i> {% if form.instance.pk %}日記の編集{% else %}新規日記作成{% endif %}
     </h1>
   </div>
+  
   <!-- フォームカード -->
   <div class="diary-form">
     <div class="form-body">
-      <form method="post">
+      <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
 
         <!-- 株式情報セクション -->
@@ -714,6 +503,64 @@
           </div>
         </div>
 
+        <!-- 画像セクション -->
+        <div class="form-section">
+          <h4 class="form-section-title">
+            <i class="bi bi-image"></i> 画像添付
+          </h4>
+
+          <div class="mb-3">
+            <label for="id_image" class="form-label">画像ファイル（任意）</label>
+            {{ form.image }}
+            <small class="form-text text-muted">
+              チャート、スクリーンショット、ニュース記事等の画像を1つ添付できます（最大10MB、JPEG/PNG/GIF/WebP形式）
+            </small>
+            {% if form.image.errors %}
+            <div class="text-danger">{{ form.image.errors }}</div>
+            {% endif %}
+            
+            <!-- 画像プレビュー -->
+            <div id="image-preview-container" class="mt-3" style="display: none;">
+              <div class="card" style="max-width: 300px;">
+                <img id="image-preview" class="card-img-top" style="max-height: 200px; object-fit: cover;" alt="プレビュー">
+                <div class="card-body p-2">
+                  <small class="text-muted">プレビュー</small>
+                  <button type="button" id="remove-image" class="btn btn-sm btn-outline-danger float-end">
+                    <i class="bi bi-x"></i> 削除
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 既存画像がある場合の表示（編集時） -->
+            {% if form.instance.image_url %}
+            <div class="mt-3">
+              <div class="card" style="max-width: 300px;">
+                <img src="{{ form.instance.image_url }}" class="card-img-top" style="max-height: 200px; object-fit: cover;" alt="現在の画像">
+                <div class="card-body p-2">
+                  <small class="text-muted">現在の画像</small>
+                  <div class="form-check mt-1">
+                    <input type="checkbox" id="clear-image" name="clear_image" class="form-check-input">
+                    <label for="clear-image" class="form-check-label small">
+                      この画像を削除する
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- ドラッグ&ドロップエリア -->
+            <div class="image-upload-area mt-3" onclick="document.getElementById('id_image').click();">
+              <i class="bi bi-cloud-upload text-muted" style="font-size: 2rem;"></i>
+              <p class="text-muted mb-0">
+                ここをクリックするか、画像ファイルをドラッグ&ドロップ
+              </p>
+              <small class="text-muted">最大10MB、JPEG/PNG/GIF/WebP形式</small>
+            </div>
+          </div>
+        </div>
+
         <!-- 詳細情報セクション -->
         <div class="form-section">
         <h4 class="form-section-title">
@@ -764,6 +611,7 @@
           <div class="fullscreen-char-counter">0 文字</div>
         </div>
         </div>
+        
         <div class="form-footer">
           <a href="{% if form.instance.pk %}{% url 'stockdiary:detail' form.instance.pk %}{% else %}{% url 'stockdiary:home' %}{% endif %}" class="btn btn-diary btn-diary-outline">
             <i class="bi bi-arrow-left me-1"></i> キャンセル
@@ -826,6 +674,123 @@
     // 日記ID (編集時のみ)
     const diaryId = {% if form.instance.pk %}{{ form.instance.pk }}{% else %}null{% endif %};
 
+    // 画像プレビュー機能
+    const imageInput = document.getElementById('id_image');
+    const imagePreviewContainer = document.getElementById('image-preview-container');
+    const imagePreview = document.getElementById('image-preview');
+    const removeImageBtn = document.getElementById('remove-image');
+    const uploadArea = document.querySelector('.image-upload-area');
+
+    // ファイル処理関数
+    function handleFileSelect(file) {
+        if (!file) {
+            imagePreviewContainer.style.display = 'none';
+            if (uploadArea) uploadArea.style.display = 'block';
+            return;
+        }
+
+        // ファイルサイズチェック（10MB）
+        if (file.size > 10 * 1024 * 1024) {
+            alert('ファイルサイズが10MBを超えています。');
+            imageInput.value = '';
+            imagePreviewContainer.style.display = 'none';
+            if (uploadArea) uploadArea.style.display = 'block';
+            return;
+        }
+
+        // 画像ファイルタイプチェック
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        if (!validTypes.includes(file.type)) {
+            alert('JPEG、PNG、GIF、WebP形式の画像ファイルのみアップロード可能です。');
+            imageInput.value = '';
+            imagePreviewContainer.style.display = 'none';
+            if (uploadArea) uploadArea.style.display = 'block';
+            return;
+        }
+
+        // プレビュー表示
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            imagePreview.src = e.target.result;
+            imagePreviewContainer.style.display = 'block';
+            if (uploadArea) uploadArea.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // ファイル選択時の処理
+    if (imageInput) {
+        imageInput.addEventListener('change', function(e) {
+            handleFileSelect(e.target.files[0]);
+        });
+    }
+
+    // 画像削除ボタン
+    if (removeImageBtn) {
+        removeImageBtn.addEventListener('click', function() {
+            imageInput.value = '';
+            imagePreviewContainer.style.display = 'none';
+            if (uploadArea) uploadArea.style.display = 'block';
+        });
+    }
+
+    // 既存の画像削除チェックボックス
+    const clearImageCheckbox = document.getElementById('clear-image');
+    if (clearImageCheckbox) {
+        clearImageCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                imageInput.value = '';
+                imagePreviewContainer.style.display = 'none';
+                if (uploadArea) uploadArea.style.display = 'block';
+            }
+        });
+    }
+
+    // ドラッグ&ドロップ機能
+    if (uploadArea) {
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        uploadArea.addEventListener('drop', handleDrop, false);
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight(e) {
+            uploadArea.classList.add('dragover');
+        }
+
+        function unhighlight(e) {
+            uploadArea.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+
+            if (files.length > 0) {
+                // ファイル入力に設定
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(files[0]);
+                imageInput.files = dataTransfer.files;
+                
+                // ファイル処理
+                handleFileSelect(files[0]);
+            }
+        }
+    }
+
     // 文字数制限機能付きのカウンター更新関数
     function updateCharCountWithLimit(textarea, counter, maxLength) {
       if (!textarea || !counter) return;
@@ -853,62 +818,37 @@
       }
     }
 
-    // 入力フィールドの文字数制限チェック関数
-    function checkInputLimit(input, maxLength, fieldName) {
-      const currentLength = input.value.length;
-      
-      if (currentLength > maxLength) {
-        input.classList.add('text-limit-exceeded');
-        
-        // 制限を超えた場合の警告表示
-        let warningDiv = input.parentElement.querySelector('.text-limit-warning');
-        if (!warningDiv) {
-          warningDiv = document.createElement('div');
-          warningDiv.className = 'text-limit-warning text-danger small mt-1';
-          input.parentElement.appendChild(warningDiv);
-        }
-        
-        const excess = currentLength - maxLength;
-        warningDiv.textContent = `${fieldName}は${maxLength}文字以内で入力してください。(${excess}文字超過)`;
-        warningDiv.style.display = 'block';
-      } else {
-        input.classList.remove('text-limit-exceeded');
-        
-        // 警告表示を削除
-        const warningDiv = input.parentElement.querySelector('.text-limit-warning');
-        if (warningDiv) {
-          warningDiv.style.display = 'none';
-        }
-      }
-    }
-    
     // テンプレート展開ボタンのクリックイベント
-    expandAnalysisBtn.addEventListener('click', function() {
-      selectedTemplateId = templateSelect.value;
-      
-      if (selectedTemplateId) {
-        // テンプレートが選択されていれば分析項目を表示
-        analysisItemsContainer.classList.remove('d-none');
-        fetchAnalysisItems(selectedTemplateId);
-      } else {
-        // テンプレートが選択されていなければアラート表示
-        alert('分析テンプレートを選択してください');
-      }
-    });
-    
-    // テンプレート選択変更イベント
-    templateSelect.addEventListener('change', function() {
-      selectedTemplateId = this.value;
-      
-      // コンテナが表示されている場合は項目を更新
-      if (!analysisItemsContainer.classList.contains('d-none')) {
+    if (expandAnalysisBtn) {
+      expandAnalysisBtn.addEventListener('click', function() {
+        selectedTemplateId = templateSelect.value;
+        
         if (selectedTemplateId) {
+          // テンプレートが選択されていれば分析項目を表示
+          analysisItemsContainer.classList.remove('d-none');
           fetchAnalysisItems(selectedTemplateId);
         } else {
-          analysisItemsContainer.classList.add('d-none');
+          // テンプレートが選択されていなければアラート表示
+          alert('分析テンプレートを選択してください');
         }
-      }
-    });
+      });
+    }
+    
+    // テンプレート選択変更イベント
+    if (templateSelect) {
+      templateSelect.addEventListener('change', function() {
+        selectedTemplateId = this.value;
+        
+        // コンテナが表示されている場合は項目を更新
+        if (!analysisItemsContainer.classList.contains('d-none')) {
+          if (selectedTemplateId) {
+            fetchAnalysisItems(selectedTemplateId);
+          } else {
+            analysisItemsContainer.classList.add('d-none');
+          }
+        }
+      });
+    }
     
     // 分析テンプレートの項目を取得する関数
     function fetchAnalysisItems(templateId) {
@@ -940,7 +880,6 @@
           renderAnalysisItems(data.items, data.values || {});
         })
         .catch(error => {
-          //console.error('Error:', error);
           analysisItemsContent.innerHTML = `
             <div class="alert alert-danger">
               <i class="bi bi-exclamation-triangle me-2"></i>
@@ -950,7 +889,7 @@
         });
     }
     
-    // 分析項目を表示する関数（チェック＋値入力の修正版）
+    // 分析項目を表示する関数
     function renderAnalysisItems(items, values) {
       if (!items || items.length === 0) {
         analysisItemsContent.innerHTML = `
@@ -1093,25 +1032,31 @@
     }
 
     // 初期表示時にテンプレートが選択済みなら項目を表示
-    if (templateSelect.value) {
-      expandAnalysisBtn.click();
+    if (templateSelect && templateSelect.value) {
+      if (expandAnalysisBtn) {
+        expandAnalysisBtn.click();
+      }
     }
     
     // 銘柄情報検索ボタンのクリックイベント
-    fetchStockInfoBtn.addEventListener('click', function() {
-      const stockCode = stockSymbolInput.value.trim();
-      if (stockCode) {
-        fetchStockInfo(stockCode);
-      } else {
-        // showAlert('銘柄コードを入力してください', 'warning');
-      }
-    });
+    if (fetchStockInfoBtn) {
+      fetchStockInfoBtn.addEventListener('click', function() {
+        const stockCode = stockSymbolInput.value.trim();
+        if (stockCode) {
+          fetchStockInfo(stockCode);
+        }
+      });
+    }
 
     // 株式情報を取得する関数
     function fetchStockInfo(stockCode) {
       // スピナーを表示
-      symbolSpinnerContainer.classList.remove('d-none');
-      fetchStockInfoBtn.disabled = true;
+      if (symbolSpinnerContainer) {
+        symbolSpinnerContainer.classList.remove('d-none');
+      }
+      if (fetchStockInfoBtn) {
+        fetchStockInfoBtn.disabled = true;
+      }
       
       // APIリクエストを送信
       fetch(`/stockdiary/api/stock/info/${stockCode}/`)
@@ -1127,61 +1072,53 @@
             stockNameInput.value = data.company_name;
           }
           
-          // 業種情報を設定（hidden inputに値を設定）
+          // 業種情報を設定
           const sectorInput = document.getElementById('id_sector');
           if (sectorInput && data.industry) {
             sectorInput.value = data.industry;
-            console.log('セクター情報を設定:', data.industry); // デバッグ用
           }
           
           // 株価情報カードを更新して表示
-          stockInfoTitle.textContent = data.company_name;
-          stockInfoCode.textContent = stockCode;
-          stockInfoPrice.textContent = data.price ? `${data.price.toLocaleString()}円` : '取得中...';
+          if (stockInfoTitle) stockInfoTitle.textContent = data.company_name;
+          if (stockInfoCode) stockInfoCode.textContent = stockCode;
+          if (stockInfoPrice) stockInfoPrice.textContent = data.price ? `${data.price.toLocaleString()}円` : '取得中...';
           
-          if (data.change_percent) {
+          if (data.change_percent && stockInfoChange) {
             const isPositive = data.change_percent > 0;
             const changeText = `${isPositive ? '+' : ''}${data.change_percent.toFixed(2)}%`;
             stockInfoChange.textContent = changeText;
             stockInfoChange.className = `info-value ${isPositive ? 'profit' : 'loss'}`;
-          } else {
+          } else if (stockInfoChange) {
             stockInfoChange.textContent = '--';
             stockInfoChange.className = 'info-value';
           }
           
           // 市場と業種の情報を更新
-          stockInfoMarket.textContent = data.market || '--';
-          stockInfoIndustry.textContent = data.industry || '--';
+          if (stockInfoMarket) stockInfoMarket.textContent = data.market || '--';
+          if (stockInfoIndustry) stockInfoIndustry.textContent = data.industry || '--';
           
           // 情報カードを表示
-          stockInfoCard.classList.remove('d-none');
-          
-          // 成功時のフィードバック
-          stockSymbolInput.classList.add('is-valid');
-          setTimeout(() => {
-            stockSymbolInput.classList.remove('is-valid');
-          }, 2000);
+          if (stockInfoCard) {
+            stockInfoCard.classList.remove('d-none');
+          }
           
           // 現在株価が取得できていれば購入価格にセット
-          if (data.price && !purchasePriceInput.value) {
+          if (data.price && purchasePriceInput && !purchasePriceInput.value) {
             purchasePriceInput.value = data.price;
           }
         })
         .catch(error => {
-          //console.error('Error:', error);
-          // エラー時のフィードバック
-          stockSymbolInput.classList.add('is-invalid');
-          setTimeout(() => {
-            stockSymbolInput.classList.remove('is-invalid');
-          }, 2000);
-          
-          // エラーメッセージを表示
+          console.error('Error:', error);
           showAlert(error.message, 'danger');
         })
         .finally(() => {
           // スピナーを非表示
-          symbolSpinnerContainer.classList.add('d-none');
-          fetchStockInfoBtn.disabled = false;
+          if (symbolSpinnerContainer) {
+            symbolSpinnerContainer.classList.add('d-none');
+          }
+          if (fetchStockInfoBtn) {
+            fetchStockInfoBtn.disabled = false;
+          }
         });
     }
     
@@ -1216,7 +1153,9 @@
       
       // フォームの先頭に挿入
       const form = document.querySelector('form');
-      form.insertAdjacentElement('afterbegin', alertDiv);
+      if (form) {
+        form.insertAdjacentElement('afterbegin', alertDiv);
+      }
       
       // 5秒後に自動的に閉じる
       setTimeout(() => {
@@ -1227,25 +1166,24 @@
       }, 5000);
     }
 
-    // 購入価格の現在株価取得ボタンのクリックイベント
-    fetchCurrentPriceBtn.addEventListener('click', function() {
-      const stockCode = stockSymbolInput.value.trim();
-      if (stockCode) {
-        fetchCurrentPrice(stockCode, purchasePriceInput, fetchCurrentPriceBtn);
-      } else {
-        // showAlert('銘柄コードを入力してください', 'warning');
-      }
-    });
+    // 現在株価取得ボタンのイベント
+    if (fetchCurrentPriceBtn) {
+      fetchCurrentPriceBtn.addEventListener('click', function() {
+        const stockCode = stockSymbolInput.value.trim();
+        if (stockCode) {
+          fetchCurrentPrice(stockCode, purchasePriceInput, fetchCurrentPriceBtn);
+        }
+      });
+    }
 
-    // 売却価格の現在株価取得ボタンのクリックイベント
-    fetchCurrentPriceSellBtn.addEventListener('click', function() {
-      const stockCode = stockSymbolInput.value.trim();
-      if (stockCode) {
-        fetchCurrentPrice(stockCode, sellPriceInput, fetchCurrentPriceSellBtn);
-      } else {
-        // showAlert('銘柄コードを入力してください', 'warning');
-      }
-    });
+    if (fetchCurrentPriceSellBtn) {
+      fetchCurrentPriceSellBtn.addEventListener('click', function() {
+        const stockCode = stockSymbolInput.value.trim();
+        if (stockCode) {
+          fetchCurrentPrice(stockCode, sellPriceInput, fetchCurrentPriceSellBtn);
+        }
+      });
+    }
     
     // 現在株価を取得する関数
     function fetchCurrentPrice(stockCode, inputField, buttonElement) {
@@ -1267,29 +1205,15 @@
           inputField.value = data.price;
           
           // 株価情報カードの価格も更新
-          if (!stockInfoCard.classList.contains('d-none')) {
+          if (!stockInfoCard.classList.contains('d-none') && stockInfoPrice) {
             stockInfoPrice.textContent = `${data.price.toLocaleString()}円`;
           }
-          
-          // 成功の視覚的フィードバック
-          inputField.classList.add('is-valid');
-          setTimeout(() => {
-            inputField.classList.remove('is-valid');
-          }, 2000);
           
           // 成功メッセージを表示
           showAlert('現在株価を取得しました', 'success');
         })
         .catch(error => {
-          //console.error('Error:', error);
-          
-          // エラーの視覚的フィードバック
-          inputField.classList.add('is-invalid');
-          setTimeout(() => {
-            inputField.classList.remove('is-invalid');
-          }, 2000);
-          
-          // エラーメッセージを表示
+          console.error('Error:', error);
           showAlert(error.message, 'danger');
         })
         .finally(() => {
@@ -1301,31 +1225,28 @@
 
     // 売却フィールドの状態を更新する関数
     function updateSellFields() {
-      const hasPrice = purchasePriceInput.value.trim() !== '';
-      const hasQuantity = purchaseQuantityInput.value.trim() !== '';
+      const hasPrice = purchasePriceInput && purchasePriceInput.value.trim() !== '';
+      const hasQuantity = purchaseQuantityInput && purchaseQuantityInput.value.trim() !== '';
       
       // 両方入力されている場合のみ売却フィールドを有効化
       const canSell = hasPrice && hasQuantity;
       
-      sellDateInput.disabled = !canSell;
-      sellPriceInput.disabled = !canSell;
-      
-      if (fetchPriceButton) {
-        fetchPriceButton.disabled = !canSell;
-      }
+      if (sellDateInput) sellDateInput.disabled = !canSell;
+      if (sellPriceInput) sellPriceInput.disabled = !canSell;
+      if (fetchPriceButton) fetchPriceButton.disabled = !canSell;
       
       // 視覚的なフィードバック
       if (canSell) {
-        sellDateInput.classList.remove('bg-light');
-        sellPriceInput.classList.remove('bg-light');
+        if (sellDateInput) sellDateInput.classList.remove('bg-light');
+        if (sellPriceInput) sellPriceInput.classList.remove('bg-light');
         
         // 売却セクションの警告メッセージを非表示
         if (sellWarningMessage) {
           sellWarningMessage.style.display = 'none';
         }
       } else {
-        sellDateInput.classList.add('bg-light');
-        sellPriceInput.classList.add('bg-light');
+        if (sellDateInput) sellDateInput.classList.add('bg-light');
+        if (sellPriceInput) sellPriceInput.classList.add('bg-light');
         
         // 売却セクションに警告メッセージを表示
         if (sellWarningMessage) {
@@ -1338,362 +1259,159 @@
     updateSellFields();
     
     // 購入価格と株数の変更を監視
-    purchasePriceInput.addEventListener('input', updateSellFields);
-    purchaseQuantityInput.addEventListener('input', updateSellFields);
-    
-    // 銘柄名の文字数制限チェック
-    if (stockNameInput) {
-      stockNameInput.addEventListener('input', function() {
-        checkInputLimit(this, 100, '銘柄名');
-      });
+    if (purchasePriceInput) {
+      purchasePriceInput.addEventListener('input', updateSellFields);
+    }
+    if (purchaseQuantityInput) {
+      purchaseQuantityInput.addEventListener('input', updateSellFields);
     }
     
     // ページ読み込み時に銘柄コードが入力済みなら情報を取得
-    if (stockSymbolInput.value.trim() && /^\d{4}$/.test(stockSymbolInput.value.trim())) {
+    if (stockSymbolInput && stockSymbolInput.value.trim() && /^\d{4}$/.test(stockSymbolInput.value.trim())) {
       fetchStockInfo(stockSymbolInput.value.trim());
     }
-  });
 
-// 日記フォームのバリデーション強化スクリプト
-document.addEventListener('DOMContentLoaded', function() {
-  // フォーム要素を取得
-  const diaryForm = document.querySelector('form');
-  
-  if (diaryForm) {
-    // 送信イベントリスナーを追加（文字数制限チェックを追加）
-    diaryForm.addEventListener('submit', function(event) {
-      let hasError = false;
-      
-      // 銘柄名の文字数チェック
-      const stockNameInput = document.getElementById('{{ form.stock_name.id_for_label }}');
-      if (stockNameInput && stockNameInput.value.length > 100) {
-        event.preventDefault();
-        hasError = true;
-        stockNameInput.classList.add('is-invalid');
-        alert('銘柄名は100文字以内で入力してください。');
-        stockNameInput.focus();
-        return;
-      }
-      
-      // 購入理由の文字数チェック
-      const reasonTextarea = document.getElementById('{{ form.reason.id_for_label }}');
-      if (reasonTextarea && reasonTextarea.value.length > 1000) {
-        event.preventDefault();
-        hasError = true;
-        reasonTextarea.classList.add('is-invalid');
-        alert('購入理由は1000文字以内で入力してください。');
-        reasonTextarea.focus();
-        return;
-      }
-      
-      // メモの文字数チェック
-      const memoTextarea = document.getElementById('{{ form.memo.id_for_label }}');
-      if (memoTextarea && memoTextarea.value.length > 1000) {
-        event.preventDefault();
-        hasError = true;
-        memoTextarea.classList.add('is-invalid');
-        alert('メモは1000文字以内で入力してください。');
-        memoTextarea.focus();
-        return;
-      }
-      
-      // 必須フィールドのチェック（既存の機能を維持）
-      const requiredFields = diaryForm.querySelectorAll('[required]');
-      let firstInvalidField = null;
-      
-      // 各必須フィールドをチェック
-      for (const field of requiredFields) {
-        if (!field.value.trim()) {
-          // 空の場合、無効としてマークし最初のフィールドを記憶
-          field.classList.add('is-invalid');
-          if (!firstInvalidField) {
-            firstInvalidField = field;
-          }
-        } else {
-          // そうでなければ、無効マークを削除
-          field.classList.remove('is-invalid');
-        }
-      }
-      
-      // 必須フィールドが空の場合、フォーム送信を防止して最初のフィールドにスクロール
-      if (firstInvalidField) {
-        event.preventDefault();
-        
-        // フィールドを見やすくするために少しオフセットをつけてスクロール
-        const yOffset = -100; // 要素の上に100pxオフセット
-        const y = firstInvalidField.getBoundingClientRect().top + window.pageYOffset + yOffset;
-        
-        window.scrollTo({
-          top: y,
-          behavior: 'smooth'
-        });
-        
-        // フィールドにフォーカス
-        setTimeout(() => {
-          firstInvalidField.focus();
-        }, 500);
-        
-        // 視覚的なフィードバックを追加
-        firstInvalidField.parentElement.classList.add('shake-animation');
-        setTimeout(() => {
-          firstInvalidField.parentElement.classList.remove('shake-animation');
-        }, 500);
-      }
-
-      // 売却関連のバリデーション（既存の機能を維持）
-      const sellDate = document.getElementById('{{ form.sell_date.id_for_label }}').value.trim();
-      const sellPrice = document.getElementById('{{ form.sell_price.id_for_label }}').value.trim();
-      
-      // 片方だけ入力されている場合
-      if ((sellDate && !sellPrice) || (!sellDate && sellPrice)) {
-        event.preventDefault();
-        alert('売却日と売却価格は両方入力するか、両方入力しないでください');
-        return;
-      }
-    });
+    // テキストエリア用の処理
+    const reasonTextarea = document.getElementById('{{ form.reason.id_for_label }}');
+    const memoTextarea = document.getElementById('{{ form.memo.id_for_label }}');
+    const charCounter = document.querySelector('.char-counter');
+    const memoCharCounter = document.querySelector('.memo-char-counter');
     
-    // ユーザーが入力を開始したら無効状態をクリアするイベントリスナー
-    diaryForm.addEventListener('keyup', function(event) {
-      if (event.target.hasAttribute('required') && event.target.classList.contains('is-invalid')) {
-        if (event.target.value.trim()) {
-          event.target.classList.remove('is-invalid');
-        }
-      }
-    });
+    // フルスクリーン要素
+    const expandReasonBtn = document.getElementById('expandReasonBtn');
+    const fullscreenEditor = document.getElementById('fullscreenEditor');
+    const fullscreenTextarea = document.getElementById('fullscreenTextarea');
+    const closeFullscreenBtn = document.getElementById('closeFullscreenBtn');
+    const saveFullscreenBtn = document.getElementById('saveFullscreenBtn');
+    const fullscreenCharCounter = document.querySelector('.fullscreen-char-counter');
     
-    // 日付入力、セレクトなどの変更イベントリスナー
-    diaryForm.addEventListener('change', function(event) {
-      if (event.target.hasAttribute('required') && event.target.classList.contains('is-invalid')) {
-        if (event.target.value.trim()) {
-          event.target.classList.remove('is-invalid');
-        }
-      }
-    });
-  }
-});
-
-// CSSアニメーションを追加（既存の機能を維持）
-const style = document.createElement('style');
-style.textContent = `
-.shake-animation {
-  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-}
-
-@keyframes shake {
-  10%, 90% {
-    transform: translate3d(-1px, 0, 0);
-  }
-  20%, 80% {
-    transform: translate3d(2px, 0, 0);
-  }
-  30%, 50%, 70% {
-    transform: translate3d(-3px, 0, 0);
-  }
-  40%, 60% {
-    transform: translate3d(3px, 0, 0);
-  }
-}
-
-.is-invalid {
-  border-color: #dc3545 !important;
-  background-color: rgba(220, 53, 69, 0.05) !important;
-}
-
-/* 文字数制限関連のスタイル */
-.text-limit-exceeded {
-  border-color: #dc3545 !important;
-  background-color: rgba(220, 53, 69, 0.1) !important;
-  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
-}
-
-.text-limit-warning {
-  font-size: 0.875rem;
-  font-weight: 500;
-  margin-top: 0.25rem;
-  display: flex;
-  align-items: center;
-}
-
-.text-limit-warning::before {
-  content: "⚠️";
-  margin-right: 0.5rem;
-}
-`;
-document.head.appendChild(style);  
-
-  // 通常のテキストエリア
-  const reasonTextarea = document.getElementById('{{ form.reason.id_for_label }}');
-  const memoTextarea = document.getElementById('{{ form.memo.id_for_label }}');
-  const charCounter = document.querySelector('.char-counter');
-  const memoCharCounter = document.querySelector('.memo-char-counter');
-  
-  // フルスクリーン要素
-  const expandReasonBtn = document.getElementById('expandReasonBtn');
-  const fullscreenEditor = document.getElementById('fullscreenEditor');
-  const fullscreenTextarea = document.getElementById('fullscreenTextarea');
-  const closeFullscreenBtn = document.getElementById('closeFullscreenBtn');
-  const saveFullscreenBtn = document.getElementById('saveFullscreenBtn');
-  const fullscreenCharCounter = document.querySelector('.fullscreen-char-counter');
-  
-  // 文字数制限機能付きのカウンター更新関数
-  function updateCharCountWithLimit(textarea, counter, maxLength) {
-    if (!textarea || !counter) return;
-    
-    const currentLength = textarea.value.length;
-    const remaining = maxLength - currentLength;
-    
-    // 基本のクラス名を保持
-    const baseClasses = counter.className.replace(/text-\w+/g, '').trim();
-    
-    // カウンター表示の更新
-    if (remaining >= 0) {
-      counter.textContent = `${currentLength} / ${maxLength} 文字`;
-      counter.className = baseClasses;
-      textarea.classList.remove('text-limit-exceeded');
-    } else {
-      counter.textContent = `${currentLength} / ${maxLength} 文字 (${Math.abs(remaining)}文字超過)`;
-      counter.className = baseClasses + ' text-danger';
-      textarea.classList.add('text-limit-exceeded');
-    }
-    
-    // 制限近くで警告色に変更
-    if (remaining <= 50 && remaining > 0) {
-      counter.className = baseClasses + ' text-warning';
-    }
-  }
-  
-  // 文字数カウンター初期設定（制限付き）
-  if (reasonTextarea && charCounter) {
-    updateCharCountWithLimit(reasonTextarea, charCounter, 1000);
-  }
-  
-  if (memoTextarea && memoCharCounter) {
-    updateCharCountWithLimit(memoTextarea, memoCharCounter, 1000);
-  }
-  
-  // テキストエリアの高さを自動調整する関数
-  const adjustTextareaHeight = (textarea) => {
-    if (!textarea) return;
-    
-    // リセットして実際の高さを取得
-    textarea.style.height = 'auto';
-    
-    // スクロール高さを取得（内容に合わせた高さ）
-    const scrollHeight = textarea.scrollHeight;
-    
-    // 最小高さ150px、最大は画面の60%まで
-    const maxHeight = window.innerHeight * 0.6;
-    const newHeight = Math.min(Math.max(150, scrollHeight), maxHeight);
-    
-    textarea.style.height = `${newHeight}px`;
-  };
-  
-  // 理由テキストエリアのイベント処理
-  if (reasonTextarea) {
-    // 初期調整
-    setTimeout(() => adjustTextareaHeight(reasonTextarea), 100);
-    
-    // 入力時（制限付きカウンター）
-    reasonTextarea.addEventListener('input', function() {
-      adjustTextareaHeight(this);
-      updateCharCountWithLimit(this, charCounter, 1000);
-    });
-    
-    // フォーカス時
-    reasonTextarea.addEventListener('focus', function() {
-      this.parentElement.classList.add('focused');
-      adjustTextareaHeight(this);
-      
-      // フォーカス時にスクロール（モバイルキーボード表示時）
-      setTimeout(() => {
-        const offset = this.getBoundingClientRect().top + window.pageYOffset - 120;
-        window.scrollTo({top: offset, behavior: 'smooth'});
-      }, 300);
-    });
-    
-    // フォーカス解除時
-    reasonTextarea.addEventListener('blur', function() {
-      this.parentElement.classList.remove('focused');
-    });
-  }
-  
-  // メモテキストエリアのイベント処理
-  if (memoTextarea) {
-    // 初期調整
-    setTimeout(() => adjustTextareaHeight(memoTextarea), 100);
-    
-    // 入力時（制限付きカウンター）
-    memoTextarea.addEventListener('input', function() {
-      adjustTextareaHeight(this);
-      updateCharCountWithLimit(this, memoCharCounter, 1000);
-    });
-    
-    // フォーカス時
-    memoTextarea.addEventListener('focus', function() {
-      this.parentElement.classList.add('focused');
-      adjustTextareaHeight(this);
-    });
-    
-    // フォーカス解除時
-    memoTextarea.addEventListener('blur', function() {
-      this.parentElement.classList.remove('focused');
-    });
-  }
-  
-  // フルスクリーンモード
-  if (expandReasonBtn && fullscreenEditor && reasonTextarea) {
-    // フルスクリーンボタンクリック時
-    expandReasonBtn.addEventListener('click', function() {
-      // 本文をフルスクリーンエディタにコピー
-      fullscreenTextarea.value = reasonTextarea.value;
-      updateCharCountWithLimit(fullscreenTextarea, fullscreenCharCounter, 1000);
-      
-      // フルスクリーン表示
-      fullscreenEditor.classList.add('active');
-      document.body.classList.add('no-scroll');
-      
-      // フォーカスを当てる
-      setTimeout(() => {
-        fullscreenTextarea.focus();
-      }, 100);
-    });
-    
-    // フルスクリーン閉じるボタン
-    closeFullscreenBtn.addEventListener('click', function() {
-      fullscreenEditor.classList.remove('active');
-      document.body.classList.remove('no-scroll');
-    });
-    
-    // フルスクリーン保存ボタン
-    saveFullscreenBtn.addEventListener('click', function() {
-      // 文字数制限チェック
-      if (fullscreenTextarea.value.length > 1000) {
-        alert('購入理由は1000文字以内で入力してください。');
-        return;
-      }
-      
-      // 通常テキストエリアに値を戻す
-      reasonTextarea.value = fullscreenTextarea.value;
-      
-      // 文字数と高さを更新
+    // 文字数カウンター初期設定（制限付き）
+    if (reasonTextarea && charCounter) {
       updateCharCountWithLimit(reasonTextarea, charCounter, 1000);
-      adjustTextareaHeight(reasonTextarea);
-      
-      // フルスクリーン閉じる
-      fullscreenEditor.classList.remove('active');
-      document.body.classList.remove('no-scroll');
-    });
+    }
     
-    // フルスクリーンテキストエリアの入力時（制限付きカウンター）
-    fullscreenTextarea.addEventListener('input', function() {
-      updateCharCountWithLimit(this, fullscreenCharCounter, 1000);
+    if (memoTextarea && memoCharCounter) {
+      updateCharCountWithLimit(memoTextarea, memoCharCounter, 1000);
+    }
+    
+    // テキストエリアの高さを自動調整する関数
+    const adjustTextareaHeight = (textarea) => {
+      if (!textarea) return;
+      
+      // リセットして実際の高さを取得
+      textarea.style.height = 'auto';
+      
+      // スクロール高さを取得（内容に合わせた高さ）
+      const scrollHeight = textarea.scrollHeight;
+      
+      // 最小高さ150px、最大は画面の60%まで
+      const maxHeight = window.innerHeight * 0.6;
+      const newHeight = Math.min(Math.max(150, scrollHeight), maxHeight);
+      
+      textarea.style.height = `${newHeight}px`;
+    };
+    
+    // 理由テキストエリアのイベント処理
+    if (reasonTextarea) {
+      // 初期調整
+      setTimeout(() => adjustTextareaHeight(reasonTextarea), 100);
+      
+      // 入力時（制限付きカウンター）
+      reasonTextarea.addEventListener('input', function() {
+        adjustTextareaHeight(this);
+        updateCharCountWithLimit(this, charCounter, 1000);
+      });
+      
+      // フォーカス時
+      reasonTextarea.addEventListener('focus', function() {
+        this.parentElement.classList.add('focused');
+        adjustTextareaHeight(this);
+      });
+      
+      // フォーカス解除時
+      reasonTextarea.addEventListener('blur', function() {
+        this.parentElement.classList.remove('focused');
+      });
+    }
+    
+    // メモテキストエリアのイベント処理
+    if (memoTextarea) {
+      // 初期調整
+      setTimeout(() => adjustTextareaHeight(memoTextarea), 100);
+      
+      // 入力時（制限付きカウンター）
+      memoTextarea.addEventListener('input', function() {
+        adjustTextareaHeight(this);
+        updateCharCountWithLimit(this, memoCharCounter, 1000);
+      });
+      
+      // フォーカス時
+      memoTextarea.addEventListener('focus', function() {
+        this.parentElement.classList.add('focused');
+        adjustTextareaHeight(this);
+      });
+      
+      // フォーカス解除時
+      memoTextarea.addEventListener('blur', function() {
+        this.parentElement.classList.remove('focused');
+      });
+    }
+    
+    // フルスクリーンモード
+    if (expandReasonBtn && fullscreenEditor && reasonTextarea) {
+      // フルスクリーンボタンクリック時
+      expandReasonBtn.addEventListener('click', function() {
+        // 本文をフルスクリーンエディタにコピー
+        fullscreenTextarea.value = reasonTextarea.value;
+        updateCharCountWithLimit(fullscreenTextarea, fullscreenCharCounter, 1000);
+        
+        // フルスクリーン表示
+        fullscreenEditor.classList.add('active');
+        document.body.classList.add('no-scroll');
+        
+        // フォーカスを当てる
+        setTimeout(() => {
+          fullscreenTextarea.focus();
+        }, 100);
+      });
+      
+      // フルスクリーン閉じるボタン
+      closeFullscreenBtn.addEventListener('click', function() {
+        fullscreenEditor.classList.remove('active');
+        document.body.classList.remove('no-scroll');
+      });
+      
+      // フルスクリーン保存ボタン
+      saveFullscreenBtn.addEventListener('click', function() {
+        // 文字数制限チェック
+        if (fullscreenTextarea.value.length > 1000) {
+          alert('購入理由は1000文字以内で入力してください。');
+          return;
+        }
+        
+        // 通常テキストエリアに値を戻す
+        reasonTextarea.value = fullscreenTextarea.value;
+        
+        // 文字数と高さを更新
+        updateCharCountWithLimit(reasonTextarea, charCounter, 1000);
+        adjustTextareaHeight(reasonTextarea);
+        
+        // フルスクリーン閉じる
+        fullscreenEditor.classList.remove('active');
+        document.body.classList.remove('no-scroll');
+      });
+      
+      // フルスクリーンテキストエリアの入力時（制限付きカウンター）
+      fullscreenTextarea.addEventListener('input', function() {
+        updateCharCountWithLimit(this, fullscreenCharCounter, 1000);
+      });
+    }
+    
+    // ウィンドウリサイズ時に高さを再調整
+    window.addEventListener('resize', function() {
+      adjustTextareaHeight(reasonTextarea);
+      adjustTextareaHeight(memoTextarea);
     });
-  }
-  
-  // ウィンドウリサイズ時に高さを再調整
-  window.addEventListener('resize', function() {
-    adjustTextareaHeight(reasonTextarea);
-    adjustTextareaHeight(memoTextarea);
   });
 </script>
 {% endblock %}

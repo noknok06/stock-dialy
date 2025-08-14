@@ -1572,7 +1572,7 @@
         <div class="tab-pane fade" id="notes-content" role="tabpanel" aria-labelledby="notes-tab">
           <!-- 簡素化された継続記録フォーム -->
           <div class="simplified-note-form">
-            <form id="quickNoteForm" method="post" action="{% url 'stockdiary:add_note' diary.id %}">
+            <form id="quickNoteForm" method="post" action="{% url 'stockdiary:add_note' diary.id %}" enctype="multipart/form-data">
               {% csrf_token %}
               
               <div class="form-section">

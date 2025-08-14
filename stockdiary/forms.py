@@ -1,4 +1,3 @@
-# stockdiary/forms.py
 from django import forms
 from django.core.exceptions import ValidationError
 from .models import StockDiary
@@ -7,7 +6,19 @@ from checklist.models import Checklist
 from analysis_template.models import AnalysisTemplate
 from .models import DiaryNote
 
+
 class StockDiaryForm(forms.ModelForm):
+    # 画像アップロード用の一時的なフィールド
+    image = forms.FileField(
+        required=False,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/jpeg,image/jpg,image/png,image/gif,image/webp',
+            'title': '画像ファイル（JPEG, PNG, GIF, WebP）のみ'
+        }),
+        help_text="日記に関連する画像（チャート、スクリーンショット等）"
+    )
+    
     analysis_template = forms.ModelChoiceField(
         queryset=AnalysisTemplate.objects.none(),
         required=False,

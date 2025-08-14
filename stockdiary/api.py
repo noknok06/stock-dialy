@@ -271,6 +271,25 @@ def api_create_diary(request):
                     'message': '購入数量は有効な整数を入力してください'
                 }, status=400)
         
+        # 画像ファイルの処理
+        if 'image' in request.FILES:
+            image_file = request.FILES['image']
+            
+            # ファイルサイズのチェック（10MB以下）
+            if image_file.size > 10 * 1024 * 1024:
+                return JsonResponse({
+                    'success': False,
+                    'message': '画像ファイルのサイズは10MB以下にしてください'
+                }, status=400)
+            
+            # ファイル形式のチェック
+            valid_formats = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+            if hasattr(image_file, 'content_type') and image_file.content_type not in valid_formats:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'JPEG、PNG、GIF、WebP形式の画像ファイルのみアップロード可能です'
+                }, status=400)
+        
         # 日記を保存（モデルのvalidationが実行される）
         try:
             diary.save()
@@ -279,6 +298,11 @@ def api_create_diary(request):
                 'success': False,
                 'message': f'入力データにエラーがあります: {str(e)}'
             }, status=400)
+        
+        # 画像のアップロード（日記保存後）
+        image_uploaded = False
+        if 'image' in request.FILES:
+            image_uploaded = diary.upload_image(request.FILES['image'])
         
         # タグの処理
         tags = request.POST.getlist('tags')
@@ -303,6 +327,7 @@ def api_create_diary(request):
             'message': '日記を作成しました',
             'diary_id': diary.id,
             'diary_html': diary_html,
+            'image_url': diary.get_image_url(),  # 画像URLを追加
             'redirect_url': reverse('stockdiary:detail', kwargs={'pk': diary.id})
         })
         

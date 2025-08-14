@@ -5,7 +5,6 @@ from rest_framework import status
 import logging
 
 from ..models import FinancialAnalysisSession
-from ..services.comprehensive_analyzer import ComprehensiveAnalysisService
 
 logger = logging.getLogger(__name__)
 
