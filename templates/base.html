@@ -905,6 +905,23 @@ function showImageModal(imageUrl, title) {
   modal.show();
 }
 
+// 画像読み込みエラー時の処理
+document.addEventListener('DOMContentLoaded', function() {
+  // すべての画像に対してエラーハンドリングを追加
+  document.querySelectorAll('img[onclick*="showImageModal"]').forEach(img => {
+    img.addEventListener('error', function() {
+      this.style.display = 'none';
+      console.error('画像の読み込みに失敗しました:', this.src);
+    });
+    
+    img.addEventListener('load', function() {
+      // 読み込み成功時の処理（必要に応じて）
+      this.style.opacity = '1';
+    });
+  });
+});
+
+
 // ドラッグ&ドロップ機能（オプション）
 document.addEventListener('DOMContentLoaded', function() {
   const fileInputs = document.querySelectorAll('input[type="file"][accept*="image"]');

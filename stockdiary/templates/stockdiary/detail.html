@@ -1136,6 +1136,53 @@
     color: var(--primary-color);
     text-decoration: underline;
   }
+
+  /* 継続記録用の画像アップロードエリア */
+  .image-upload-area-note {
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    background-color: #f8f9fa;
+  }
+
+  .image-upload-area-note:hover {
+    border-color: var(--primary-color, #5a7ec5);
+    background-color: rgba(90, 126, 197, 0.05);
+  }
+
+  .image-upload-area-note.dragover {
+    border-color: var(--primary-color, #5a7ec5);
+    background-color: rgba(90, 126, 197, 0.1);
+  }
+
+  /* 継続記録の画像表示 */
+  .note-attached-image {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .note-attached-image:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+  }
+
+  /* モバイル対応 */
+  @media (max-width: 768px) {
+    .image-upload-area-note {
+      padding: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .image-upload-area-note i {
+      font-size: 1.5rem !important;
+    }
+
+    #note-image-preview-container .card {
+      max-width: 100% !important;
+    }
+  }
 </style>
 {% endblock %}
 
@@ -1284,8 +1331,31 @@
 
       <!-- 改善されたタブコンテンツ -->
       <div class="tab-content tab-content-improved" id="diaryDetailTabContent">
-        <!-- 基本情報タブ -->
+          <!-- 基本情報タブ -->
         <div class="tab-pane fade show active" id="basic-content" role="tabpanel" aria-labelledby="basic-tab">
+          <!-- 日記画像表示 -->
+          {% if diary.image_url %}
+          <div class="diary-image-section mb-4">
+            <div class="card">
+              <div class="card-body p-2">
+                <div class="text-center">
+                  <img src="{{ diary.image_url }}" 
+                       class="img-fluid rounded diary-main-image" 
+                       alt="{{ diary.stock_name }}の画像"
+                       style="max-height: 300px; object-fit: contain; cursor: pointer; width: 100%;"
+                       onclick="showImageModal('{{ diary.image_url }}', '{{ diary.stock_name }} - {{ diary.purchase_date|date:"Y年m月d日" }}')">
+                  <div class="mt-2">
+                    <small class="text-muted">
+                      <i class="bi bi-image me-1"></i>
+                      クリックで拡大表示
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
           <div class="info-grid">
             <!-- 購入理由/メモ -->
             <div class="info-card">
@@ -1645,6 +1715,43 @@
                           placeholder="状況の変化や新たな情報を記録しましょう" required></textarea>
               </div>
               
+              <!-- 画像アップロードセクション -->
+              <div class="form-section">
+                <label for="note_image" class="section-title">
+                  <i class="bi bi-image"></i>
+                  画像添付（オプション）
+                </label>
+                
+                <!-- ファイル選択ボタン -->
+                <div class="image-upload-area-note mb-3" onclick="document.getElementById('note_image').click();">
+                  <i class="bi bi-cloud-upload text-muted" style="font-size: 2rem;"></i>
+                  <p class="text-muted mb-0">
+                    ここをクリックして画像を選択
+                  </p>
+                  <small class="text-muted">最大10MB、JPEG/PNG/GIF/WebP形式</small>
+                </div>
+                
+                <input type="file" class="form-control d-none" id="note_image" name="image" 
+                       accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
+                
+                <small class="form-text text-muted">
+                  チャート、ニュース記事等の画像を添付できます（最大10MB）
+                </small>
+                
+                <!-- 画像プレビュー -->
+                <div id="note-image-preview-container" class="mt-3" style="display: none;">
+                  <div class="card" style="max-width: 300px;">
+                    <img id="note-image-preview" class="card-img-top" style="max-height: 200px; object-fit: cover;" alt="プレビュー">
+                    <div class="card-body p-2">
+                      <small class="text-muted">選択された画像のプレビュー</small>
+                      <button type="button" id="note-remove-image" class="btn btn-sm btn-outline-danger float-end">
+                        <i class="bi bi-x"></i> 削除
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
               <div class="form-section">
                 <label for="note_current_price" class="section-title">
                   <i class="bi bi-currency-yen"></i>
@@ -1731,6 +1838,23 @@
               </div>
               
               <div class="note-card-body">
+                <!-- 継続記録の画像表示 -->
+                {% if note.image_url %}
+                <div class="note-image mb-3">
+                  <img src="{{ note.image_url }}" 
+                       class="img-fluid rounded note-attached-image" 
+                       alt="継続記録画像"
+                       style="max-height: 200px; object-fit: cover; width: 100%; cursor: pointer;"
+                       onclick="showImageModal('{{ note.image_url }}', '{{ note.date|date:"Y年m月d日" }}の記録')">
+                  <div class="mt-1">
+                    <small class="text-muted">
+                      <i class="bi bi-image me-1"></i>
+                      クリックで拡大表示
+                    </small>
+                  </div>
+                </div>
+                {% endif %}
+                
                 <div class="note-content-text">{{ note.content|linebreaks }}</div>
               </div>
             </div>
@@ -1745,7 +1869,6 @@
             {% endfor %}
           </div>
         </div>
-
         <!-- タイムラインタブ -->
         <div class="tab-pane fade" id="timeline-content" role="tabpanel" aria-labelledby="timeline-tab">
           {% if related_diaries %}
@@ -2159,6 +2282,120 @@ document.addEventListener('DOMContentLoaded', function() {
           this.disabled = false;
           this.innerHTML = '<i class="bi bi-arrow-repeat"></i><span class="d-none d-sm-inline ms-1">取得</span>';
         });
+    });
+  }
+});
+</script>
+
+<!-- 画像アップロード用のJavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // 継続記録の画像プレビュー機能
+  const noteImageInput = document.getElementById('note_image');
+  const noteImagePreviewContainer = document.getElementById('note-image-preview-container');
+  const noteImagePreview = document.getElementById('note-image-preview');
+  const noteRemoveImageBtn = document.getElementById('note-remove-image');
+
+  if (noteImageInput) {
+    noteImageInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        // ファイルサイズチェック（10MB）
+        if (file.size > 10 * 1024 * 1024) {
+          alert('ファイルサイズが10MBを超えています。');
+          this.value = '';
+          noteImagePreviewContainer.style.display = 'none';
+          return;
+        }
+
+        // ファイルタイプチェック
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        if (!validTypes.includes(file.type)) {
+          alert('JPEG、PNG、GIF、WebP形式の画像ファイルのみアップロード可能です。');
+          this.value = '';
+          noteImagePreviewContainer.style.display = 'none';
+          return;
+        }
+
+        // プレビュー表示
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          noteImagePreview.src = e.target.result;
+          noteImagePreviewContainer.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        noteImagePreviewContainer.style.display = 'none';
+      }
+    });
+  }
+
+  // 継続記録の画像削除ボタン
+  if (noteRemoveImageBtn) {
+    noteRemoveImageBtn.addEventListener('click', function() {
+      noteImageInput.value = '';
+      noteImagePreviewContainer.style.display = 'none';
+    });
+  }
+
+  // 継続記録用のドラッグ&ドロップ機能
+  const noteUploadArea = document.querySelector('.image-upload-area-note');
+  if (noteUploadArea && noteImageInput) {
+    // ドラッグ&ドロップイベント
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      noteUploadArea.addEventListener(eventName, preventDefaults, false);
+    });
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      noteUploadArea.addEventListener(eventName, highlightNote, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      noteUploadArea.addEventListener(eventName, unhighlightNote, false);
+    });
+
+    noteUploadArea.addEventListener('drop', handleNoteDrop, false);
+
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    function highlightNote(e) {
+      noteUploadArea.classList.add('dragover');
+    }
+
+    function unhighlightNote(e) {
+      noteUploadArea.classList.remove('dragover');
+    }
+
+    function handleNoteDrop(e) {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+
+      if (files.length > 0) {
+        // ファイル入力に設定
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(files[0]);
+        noteImageInput.files = dataTransfer.files;
+        
+        // change イベントをトリガー
+        const event = new Event('change', { bubbles: true });
+        noteImageInput.dispatchEvent(event);
+      }
+    }
+  }
+
+  // フォーム送信後の処理（成功時に画像プレビューをクリア）
+  const quickNoteForm = document.getElementById('quickNoteForm');
+  if (quickNoteForm) {
+    quickNoteForm.addEventListener('submit', function(e) {
+      // フォーム送信時の処理
+      setTimeout(() => {
+        // 送信成功後に画像プレビューをクリア（リダイレクトされる前に実行）
+        if (noteImageInput) noteImageInput.value = '';
+        if (noteImagePreviewContainer) noteImagePreviewContainer.style.display = 'none';
+      }, 100);
     });
   }
 });

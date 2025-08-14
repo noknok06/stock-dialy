@@ -15,6 +15,10 @@ import os
 import dj_database_url
 from dotenv import load_dotenv
 
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
 # .envファイルの読み込み
 load_dotenv()
 
@@ -320,6 +324,24 @@ LOGGING = {
 }
 
 # =============================================================================
+# サードパーティアプリ設定
+# =============================================================================
+
+# TinyMCE設定
+TINYMCE_DEFAULT_CONFIG = {
+    'theme': 'silver',
+    'width': '100%',
+    'height': 300,
+    'menubar': False,
+    'plugins': 'link image lists table code',
+    'toolbar': 'bold italic | bullist numlist | link image table | code',
+    'mobile': {
+        'plugins': 'link image lists table',
+        'toolbar': 'bold italic | bullist numlist | link image'
+    },
+}
+
+# =============================================================================
 # カスタムアプリ設定
 # =============================================================================
 
@@ -420,8 +442,6 @@ CSP_FRAME_SRC = [
 # 現在使用していない設定（コメントアウト）
 # =============================================================================
 
-# 決算分析機能の有効化
-EARNINGS_ANALYSIS_ENABLED = True
 # Stripe設定
 # STRIPE_PUBLISHABLE_KEY = 'pk_test_your_key_here'
 # STRIPE_PUBLIC_KEY = 'pk_test_あなたのStripeパブリックキー'
@@ -509,6 +529,9 @@ EDINET_API_SETTINGS = {
     'USER_AGENT': 'EarningsAnalysisBot/1.0 (https://kabu-log.net)',
 }
 
+# 決算分析機能設定
+EARNINGS_ANALYSIS_ENABLED = True
+
 # 決算分析設定（本番環境版）
 EARNINGS_ANALYSIS_SETTINGS = {
     # 基本設定
@@ -562,8 +585,6 @@ SENTIMENT_ANALYSIS_SETTINGS = {
     'LOG_ANALYSIS_METRICS': True,
 }
 
-# 感情辞書パスをグローバル設定として追加
-SENTIMENT_DICT_PATH = SENTIMENT_ANALYSIS_SETTINGS['DICT_PATH']
 # キャッシュフロー分析設定
 CASHFLOW_ANALYSIS_SETTINGS = {
     'CF_THRESHOLD_MILLION': 1000,  # 1億円を閾値
@@ -576,20 +597,6 @@ CASHFLOW_ANALYSIS_SETTINGS = {
     'ENABLE_TREND_ANALYSIS': True,  # トレンド分析有効
 }
 
-# =============================================================================
-# キャッシュ設定（分析結果の高速表示用）
-# =============================================================================
-
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'earnings-analysis-cache',
-        'TIMEOUT': 3600,  # 1時間キャッシュ
-        'OPTIONS': {
-            'MAX_ENTRIES': 1000,
-        }
-    }
-}
 # 分析結果キャッシュ設定
 ANALYSIS_CACHE_SETTINGS = {
     'ENABLE_CACHE': True,
@@ -646,88 +653,39 @@ CSP_CONNECT_SRC = CSP_CONNECT_SRC + [
     'disclosure.edinet-fsa.go.jp',
 ]
 
-# =============================================================================
-# ロギング設定
-# =============================================================================
-
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {message}',
-            'style': '{',
-        },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'console': {
-            'level': 'INFO',
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
-        },
-        'earnings_file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'earnings-analysis.log'),
-            'formatter': 'verbose',
-        },
-    },
-    'root': {
-        'level': 'INFO',
-        'handlers': ['console'],
-    },
-    'loggers': {
-        'earnings_analysis': {
-            'handlers': ['console', 'earnings_file'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-    },
+# 既存のLOGGING設定のhandlersとloggersに追加
+LOGGING['handlers']['earnings_file'] = {
+    'level': 'INFO',
+    'class': 'logging.handlers.RotatingFileHandler',
+    'filename': os.path.join(BASE_DIR, 'logs', 'earnings_analysis.log'),
+    'maxBytes': 10485760,  # 10MB
+    'backupCount': 5,
+    'formatter': 'verbose' if 'verbose' in LOGGING.get('formatters', {}) else None,
 }
 
-# ログハンドラに earnings_file が無い場合は追加
-if 'earnings_file' not in LOGGING['handlers']:
-    LOGGING['handlers']['earnings_file'] = {
-        'level': 'DEBUG',
-        'class': 'logging.FileHandler',
-        'filename': os.path.join(BASE_DIR, 'earnings-analysis.log'),
-        'formatter': 'verbose',
-    }
-    
-# =============================================================================
-# テスト・開発用設定
-# =============================================================================
-
-# レート制限の設定（開発環境では緩め）
-RATE_LIMIT = {
-    'analysis_requests': {
-        'limit': 10,  # 1時間に10回まで分析リクエスト
-        'period': 3600,
-    },
-    'login_attempts': {
-        'limit': 100,  # 開発環境では緩く設定
-        'period': 300,
-    },
+LOGGING['handlers']['sentiment_file'] = {
+    'level': 'INFO',
+    'class': 'logging.handlers.RotatingFileHandler', 
+    'filename': os.path.join(BASE_DIR, 'logs', 'sentiment_analysis.log'),
+    'maxBytes': 10485760,  # 10MB
+    'backupCount': 5,
+    'formatter': 'verbose' if 'verbose' in LOGGING.get('formatters', {}) else None,
 }
 
-# テストアカウント設定
-TEST_ACCOUNT_SETTINGS = {
-    'USERNAMES': ['test', 'test1', 'test2', 'test3', 'demo1', 'demo2', 'demo3'],
-    'SESSION_TIMEOUT': 7200,
-    'CSRF_EXEMPT': True,
+LOGGING['loggers']['earnings_analysis'] = {
+    'handlers': ['earnings_file', 'file'],  # 既存のfileハンドラーも使用
+    'level': 'INFO',
+    'propagate': True,
 }
 
-# CSRFエラー時のカスタムビュー設定
-CSRF_FAILURE_VIEW = 'stockdiary.views.csrf_failure_view'
+LOGGING['loggers']['earnings_analysis.services.sentiment_analysis'] = {
+    'handlers': ['sentiment_file', 'file'],
+    'level': 'INFO',
+    'propagate': False,
+}
 
-# =============================================================================
-# 削除された設定（不要になったもの）
-# =============================================================================
-
+# Celery設定（本番環境では将来的に使用）
+# 現在はthreading.Threadを使用するため、CELERY_TASK_ALWAYS_EAGERをTrueに設定
 CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 
@@ -776,7 +734,7 @@ LOGGING['handlers']['security_file'] = {
 }
 
 LOGGING['loggers']['security'] = {
-    'handlers': ['security_file', 'file'],
+    'handlers': ['file'],
     'level': 'INFO',
     'propagate': True,
 }
@@ -1132,3 +1090,17 @@ LANGEXTRACT_CONFIG = {
 LANGEXTRACT_ROLLOUT_PERCENTAGE = 100  # 0-100: LangExtractを使用するリクエストの割合
 LANGEXTRACT_COMPANY_WHITELIST = []  # 特定企業のみでテストする場合
 LANGEXTRACT_DOC_TYPE_WHITELIST = ['120', '160']  # 特定書類種別のみでテストする場合
+
+CLOUDINARY_CLOUD_NAME = os.environ.get('CLOUDINARY_CLOUD_NAME')
+CLOUDINARY_API_KEY = os.environ.get('CLOUDINARY_API_KEY')
+CLOUDINARY_API_SECRET = os.environ.get('CLOUDINARY_API_SECRET')
+
+# Cloudinary初期化
+cloudinary.config(
+    cloud_name=CLOUDINARY_CLOUD_NAME,
+    api_key=CLOUDINARY_API_KEY,
+    api_secret=CLOUDINARY_API_SECRET,
+    secure=True
+)
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'

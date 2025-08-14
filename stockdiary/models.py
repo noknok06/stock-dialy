@@ -87,19 +87,30 @@ class StockDiary(models.Model):
         super().save(*args, **kwargs)
 
     def upload_image(self, image_file):
-        """画像をCloudinaryにアップロード"""
+        """画像をCloudinaryにアップロード（圧縮設定付き）"""
         try:
             # 既存の画像があれば削除
             if self.image_public_id:
                 cloudinary.uploader.destroy(self.image_public_id)
             
-            # 新しい画像をアップロード
+            # 圧縮設定を追加して新しい画像をアップロード
             result = cloudinary.uploader.upload(
                 image_file,
                 folder="stockdiary/diary_images",
                 public_id_prefix=f"diary_{self.id}_",
                 overwrite=True,
-                resource_type="image"
+                resource_type="image",
+                # 圧縮設定
+                transformation=[
+                    {
+                        'width': 800,      # 最大幅800px
+                        'height': 600,     # 最大高さ600px
+                        'crop': 'limit',   # アスペクト比を保持しながら制限内にリサイズ
+                        'quality': 85,     # JPEG品質85%
+                        'format': 'jpg',   # JPEGフォーマットに統一
+                        'fetch_format': 'auto'  # ブラウザがWebPをサポートしていれば自動でWebP
+                    }
+                ]
             )
             
             self.image_url = result.get('secure_url')
@@ -163,6 +174,30 @@ class StockDiary(models.Model):
     def get_image_url(self):
         """画像URLを取得（存在しない場合はNone）"""
         return self.image_url
+
+    def get_thumbnail_url(self, width=300, height=200):
+        """サムネイル用の画像URLを取得"""
+        if not self.image_url:
+            return None
+        
+        try:
+            # CloudinaryのURLから変換URLを生成
+            from cloudinary.utils import cloudinary_url
+            
+            thumbnail_url, _ = cloudinary_url(
+                self.image_public_id,
+                width=width,
+                height=height,
+                crop='fill',
+                quality=80,
+                format='jpg',
+                secure=True
+            )
+            
+            return thumbnail_url
+        except Exception as e:
+            print(f"Thumbnail generation failed: {str(e)}")
+            return self.image_url
 
     @property
     def image(self):
@@ -247,19 +282,30 @@ class DiaryNote(models.Model):
         super().save(*args, **kwargs)
 
     def upload_image(self, image_file):
-        """画像をCloudinaryにアップロード"""
+        """画像をCloudinaryにアップロード（圧縮設定付き）"""
         try:
             # 既存の画像があれば削除
             if self.image_public_id:
                 cloudinary.uploader.destroy(self.image_public_id)
             
-            # 新しい画像をアップロード
+            # 圧縮設定を追加して新しい画像をアップロード
             result = cloudinary.uploader.upload(
                 image_file,
                 folder="stockdiary/note_images",
-                public_id_prefix=f"note_{self.id}_",
+                public_id_prefix=f"note_{self.diary.id}_{self.id}_",
                 overwrite=True,
-                resource_type="image"
+                resource_type="image",
+                # 圧縮設定
+                transformation=[
+                    {
+                        'width': 600,      # 継続記録は少し小さめ（最大幅600px）
+                        'height': 400,     # 最大高さ400px
+                        'crop': 'limit',   # アスペクト比を保持しながら制限内にリサイズ
+                        'quality': 80,     # JPEG品質80%
+                        'format': 'jpg',   # JPEGフォーマットに統一
+                        'fetch_format': 'auto'  # ブラウザがWebPをサポートしていれば自動でWebP
+                    }
+                ]
             )
             
             self.image_url = result.get('secure_url')
@@ -298,6 +344,30 @@ class DiaryNote(models.Model):
     def get_image_url(self):
         """画像URLを取得（存在しない場合はNone）"""
         return self.image_url
+
+    def get_thumbnail_url(self, width=200, height=150):
+        """サムネイル用の画像URLを取得"""
+        if not self.image_url:
+            return None
+        
+        try:
+            # CloudinaryのURLから変換URLを生成
+            from cloudinary.utils import cloudinary_url
+            
+            thumbnail_url, _ = cloudinary_url(
+                self.image_public_id,
+                width=width,
+                height=150,
+                crop='fill',
+                quality=75,
+                format='jpg',
+                secure=True
+            )
+            
+            return thumbnail_url
+        except Exception as e:
+            print(f"Thumbnail generation failed: {str(e)}")
+            return self.image_url
 
     @property
     def image(self):
