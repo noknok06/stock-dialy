@@ -15,6 +15,8 @@ from datetime import timedelta
 from .xbrl_extractor import EDINETXBRLService
 from .gemini_insights import GeminiInsightsGenerator
 
+from .langextract_sentiment import LangExtractSentimentAnalyzer
+
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -770,7 +772,7 @@ class UserInsightGenerator:
         return recommendations
 
 class TransparentSentimentAnalyzer:
-    """分かりやすい感情分析エンジン（完全統合版）"""
+    """分かりやすい感情分析エンジン（完全統合版・修正版）"""
     
     def __init__(self, config: Optional[AnalysisConfig] = None):
         self.config = config or AnalysisConfig()
@@ -884,6 +886,224 @@ class TransparentSentimentAnalyzer:
         except Exception as e:
             logger.error(f"強化感情分析エラー: {e}")
             raise Exception(f"感情分析処理中にエラーが発生しました: {str(e)}")
+
+    def analyze_text_sections(self, text_sections: Dict[str, str], session_id: str = None, document_info: Dict[str, str] = None) -> Dict[str, Any]:
+        """複数セクションの分析（完全統合版・修正版）"""
+        try:
+            logger.info(f"セクション分析開始: {len(text_sections)}セクション")
+            
+            section_results = {}
+            all_positive_sentences = []
+            all_negative_sentences = []
+            all_positive_keywords = []
+            all_negative_keywords = []
+            combined_steps = []
+            
+            # 統計計算用の変数
+            total_context_patterns = 0
+            total_sentences_analyzed = 0
+            total_occurrences = 0
+            
+            # 統合用のマッチデータ（新形式：word, score, type, count）
+            all_matches_combined = []
+            
+            # 重複チェック用のセット
+            seen_positive_sentences = set()
+            seen_negative_sentences = set()
+            
+            # セクション別分析
+            for section_name, text in text_sections.items():
+                if len(text.strip()) < 50:
+                    logger.debug(f"セクション '{section_name}' をスキップ: テキストが短すぎます")
+                    continue
+                
+                logger.info(f"セクション分析中: {section_name}")
+                result = self.analyze_text(text, session_id, document_info)
+                section_results[section_name] = result
+                combined_steps.extend(result['analysis_steps'])
+                
+                # 各セクションの統計を累積
+                section_stats = result.get('statistics', {})
+                total_context_patterns += section_stats.get('context_patterns_found', 0)
+                total_sentences_analyzed += section_stats.get('sentences_analyzed', 0)
+                total_occurrences += section_stats.get('total_occurrences', 0)
+                
+                # analysis_stepsからマッチデータを取得
+                for step in result.get('analysis_steps', []):
+                    matches = step.get('matches', [])
+                    if matches:
+                        for match in matches:
+                            if isinstance(match, (tuple, list)) and len(match) == 4:
+                                all_matches_combined.append(match)
+                
+                # セクション結果を統合リストに追加
+                sample_sentences = result.get('sample_sentences', {})
+                keyword_analysis = result.get('keyword_analysis', {})
+                
+                # ポジティブ文章の統合
+                positive_sentences = sample_sentences.get('positive', [])
+                for sentence in positive_sentences:
+                    normalized = self._normalize_sentence_for_dedup(sentence.get('text', ''))
+                    if normalized not in seen_positive_sentences:
+                        sentence['section'] = section_name
+                        all_positive_sentences.append(sentence)
+                        seen_positive_sentences.add(normalized)
+                
+                # ネガティブ文章の統合
+                negative_sentences = sample_sentences.get('negative', [])
+                for sentence in negative_sentences:
+                    normalized = self._normalize_sentence_for_dedup(sentence.get('text', ''))
+                    if normalized not in seen_negative_sentences:
+                        sentence['section'] = section_name
+                        all_negative_sentences.append(sentence)
+                        seen_negative_sentences.add(normalized)
+                
+                # キーワードの統合
+                positive_keywords = keyword_analysis.get('positive', [])
+                negative_keywords = keyword_analysis.get('negative', [])
+                
+                for keyword in positive_keywords:
+                    keyword['section'] = section_name
+                    all_positive_keywords.append(keyword)
+                
+                for keyword in negative_keywords:
+                    keyword['section'] = section_name
+                    all_negative_keywords.append(keyword)
+            
+            if not all_matches_combined:
+                logger.warning("統合マッチデータが空です")
+                return self._empty_result(session_id)
+            
+            # 統合分析
+            combined_score_calc = self._calculate_detailed_score(all_matches_combined)
+            overall_score = combined_score_calc['final_score']
+            sentiment_label = self._determine_sentiment_label(overall_score)
+            
+            # 統合分析根拠
+            integrated_reasoning = self._generate_enhanced_reasoning(
+                combined_steps, combined_score_calc, overall_score, sentiment_label
+            )
+            
+            # 統合キーワード頻度分析
+            integrated_keyword_frequency = self._analyze_enhanced_keyword_frequency(all_matches_combined)
+            
+            # 統合されたサンプル文章
+            all_positive_sentences.sort(key=lambda x: x['score'], reverse=True)
+            all_negative_sentences.sort(key=lambda x: x['score'])
+            
+            # 統合されたキーワード分析
+            integrated_positive_keywords = self._integrate_enhanced_keywords(all_positive_keywords)
+            integrated_negative_keywords = self._integrate_enhanced_keywords(all_negative_keywords)
+            
+            # 統計情報の構築
+            basic_result = {
+                'overall_score': round(overall_score, 3),
+                'sentiment_label': sentiment_label,
+                'analysis_reasoning': integrated_reasoning,
+                'score_calculation': combined_score_calc,
+                'section_analysis': section_results,
+                'keyword_frequency_data': integrated_keyword_frequency,
+                'sample_sentences': {
+                    'positive': all_positive_sentences[:10],
+                    'negative': all_negative_sentences[:10],
+                },
+                'keyword_analysis': {
+                    'positive': integrated_positive_keywords[:15],
+                    'negative': integrated_negative_keywords[:15],
+                },
+                'statistics': {
+                    'sections_analyzed': len(section_results),
+                    'total_words_analyzed': len(all_matches_combined),
+                    'total_occurrences': total_occurrences,
+                    'context_patterns_found': total_context_patterns,
+                    'sentences_analyzed': total_sentences_analyzed,
+                    'basic_words_found': sum(r['statistics'].get('basic_words_found', 0) for r in section_results.values()),
+                    'unique_words_found': len(set(word for word, _, _, _ in all_matches_combined)),
+                    'positive_sentences_found': len(all_positive_sentences),
+                    'negative_sentences_found': len(all_negative_sentences),
+                    'total_positive_keywords': len(all_positive_keywords),
+                    'total_negative_keywords': len(all_negative_keywords),
+                    'positive_words_count': len([s for _, s, _, _ in all_matches_combined if s > 0]),
+                    'negative_words_count': len([s for _, s, _, _ in all_matches_combined if s < 0]),
+                    'positive_sentences_count': len(all_positive_sentences),
+                    'negative_sentences_count': len(all_negative_sentences),
+                    'threshold_positive': self.config.positive_threshold,
+                    'threshold_negative': self.config.negative_threshold,
+                    'total_keyword_occurrences': sum(item['count'] for item in integrated_keyword_frequency['positive'] + integrated_keyword_frequency['negative']),
+                    'most_frequent_positive': max(integrated_keyword_frequency['positive'], key=lambda x: x['count']) if integrated_keyword_frequency['positive'] else None,
+                    'most_frequent_negative': max(integrated_keyword_frequency['negative'], key=lambda x: x['count']) if integrated_keyword_frequency['negative'] else None,
+                },
+                'analysis_metadata': {
+                    'analyzed_at': timezone.now().isoformat(),
+                    'dictionary_size': len(self.dictionary.sentiment_dict),
+                    'session_id': session_id,
+                    'sections_analyzed': list(text_sections.keys()),
+                    'analysis_version': '3.0_complete_sections',
+                    'integration_method': 'complete_section_aggregation',
+                    'features_enabled': ['重複カウント', '否定文対応', '複合語処理', 'セクション統合強化']
+                }
+            }
+            
+            # ユーザー向け詳細見解を生成
+            if document_info:
+                user_insights = self.insight_generator.generate_detailed_insights(basic_result, document_info)
+                basic_result['user_insights'] = user_insights
+            
+            logger.info(f"統合セクション分析完了: {len(section_results)}セクション, "
+                    f"総出現回数{total_occurrences}回, "
+                    f"文脈パターン{total_context_patterns}個")
+            
+            return basic_result
+            
+        except Exception as e:
+            logger.error(f"セクション分析エラー: {e}")
+            raise Exception(f"感情分析処理中にエラーが発生しました: {str(e)}")
+
+    # 以下は既存のヘルパーメソッド（インデント修正）
+    def _find_context_patterns(self, text: str) -> List[Tuple[str, float, str, int]]:
+        """文脈パターンの検出（新形式：word, score, type, count）"""
+        matches = []
+        
+        try:
+            # 改善パターンの検出
+            for pattern in self.dictionary.improvement_patterns:
+                pattern_matches = list(re.finditer(pattern, text, re.IGNORECASE))
+                if pattern_matches:
+                    matched_text = pattern_matches[0].group()
+                    count = len(pattern_matches)
+                    score = 0.7
+                    matches.append((matched_text, score, '改善表現', count))
+            
+            # 悪化パターンの検出
+            for pattern in self.dictionary.deterioration_patterns:
+                pattern_matches = list(re.finditer(pattern, text, re.IGNORECASE))
+                if pattern_matches:
+                    matched_text = pattern_matches[0].group()
+                    count = len(pattern_matches)
+                    score = -0.6
+                    matches.append((matched_text, score, '悪化表現', count))
+            
+            # 否定パターンの検出
+            for pattern in self.dictionary.negation_patterns:
+                pattern_matches = list(re.finditer(pattern, text, re.IGNORECASE))
+                if pattern_matches:
+                    matched_text = pattern_matches[0].group()
+                    count = len(pattern_matches)
+                    
+                    # 否定パターンのスコア調整
+                    if any(pos_word in matched_text.lower() for pos_word in ['成長', '増収', '増益', '改善', '回復', '向上']):
+                        score = -0.4  # ポジティブ語の否定はネガティブ
+                    else:
+                        score = 0.4   # ネガティブ語の否定はポジティブ
+                    
+                    matches.append((matched_text, score, '否定表現', count))
+            
+            return matches
+            
+        except Exception as e:
+            logger.debug(f"文脈パターン検出エラー: {e}")
+            return []
+
     
     def _find_context_patterns(self, text: str) -> List[Tuple[str, float, str, int]]:
         """文脈パターンの検出（新形式：word, score, type, count）"""
@@ -1871,3 +2091,5 @@ class SentimentAnalysisService:
         except Exception as e:
             logger.error(f"クリーンアップエラー: {e}")
             return 0
+
+
