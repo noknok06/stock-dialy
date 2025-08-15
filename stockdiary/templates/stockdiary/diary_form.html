@@ -720,10 +720,10 @@
       uploadAreaSelector: '.image-upload-area',
       removeBtnId: 'remove-image',
       options: {
-        maxWidth: 600,                    // WebP対応でサイズ維持
-        maxHeight: 450,                   // WebP対応でサイズ維持
-        quality: 0.75,                    // WebP対応で品質向上（0.7→0.75）
-        compressionThreshold: 0,          // 全ファイル圧縮
+        maxWidth: 900,                    // WebP対応でサイズ維持
+        maxHeight: 675,                   // WebP対応でサイズ維持
+        quality: 0.90,                    // WebP対応で品質向上（0.7→0.75）
+        compressionThreshold: 2 * 1024 * 1024, // 2MB以上で圧縮
         maxFileSize: 5 * 1024 * 1024,     // 最大5MB
         onCompressionStart: (file) => {
           // 使用される圧縮形式を取得
@@ -1493,59 +1493,48 @@
 </script>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    // 日記作成用の画像圧縮設定
-    if (document.getElementById('id_image')) {
-      const handler = setupImageCompression({
-        inputId: 'id_image',
-        previewId: 'image-preview',
-        containerId: 'image-preview-container',
-        uploadAreaSelector: '.image-upload-area',
-        removeBtnId: 'remove-image',
-        options: {
-          maxWidth: 800,
-          maxHeight: 600,
-          quality: 0.85,
-          compressionThreshold: 1 * 1024 * 1024, // 3MB以上で圧縮
-          maxFileSize: 8 * 1024 * 1024, // 最大8MB
-          onCompressionStart: (file) => {
-            showCompressionMessage('画像を圧縮中...');
-          },
-          onCompressionEnd: (original, compressed) => {
-            const originalSize = handler.formatFileSize(original.size);
-            const compressedSize = handler.formatFileSize(compressed.size);
-            showCompressionMessage(`圧縮完了: ${originalSize} → ${compressedSize}`, 3000);
-          }
-        }
-      });
-    }
+// diary_form.html - 処理完了確実版（日記作成用）
+document.addEventListener('DOMContentLoaded', function() {
+  if (typeof window.ImageCompressionHandler === 'undefined') {
+    console.error('❌ ImageCompressionHandler が読み込まれていません');
+    setupBasicImagePreview();
+    return;
+  }
 
-    // 圧縮メッセージ表示関数
-    function showCompressionMessage(message, duration = 0) {
-      let messageElement = document.getElementById('compression-message');
+  const compressionHandler = new window.ImageCompressionHandler();
+  console.log('✅ ImageCompressionHandler インスタンスを作成しました');
+
+  // 🔥 メッセージ表示関数
+  function showCompressionMessage(message, duration = 0) {
+    console.log('📢 メッセージ表示:', message);
+    
+    let messageElement = document.getElementById('compression-message');
+    
+    if (!messageElement) {
+      messageElement = document.createElement('div');
+      messageElement.id = 'compression-message';
+      messageElement.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+        padding: 14px 22px;
+        border-radius: 10px;
+        box-shadow: 0 6px 20px rgba(0,123,255,0.4);
+        z-index: 9999;
+        font-size: 15px;
+        font-weight: 500;
+        display: none;
+        max-width: 350px;
+        word-wrap: break-word;
+        border-left: 4px solid rgba(255, 255, 255, 0.3);
+        transition: all 0.3s ease;
+      `;
       
-      if (!messageElement) {
-        messageElement = document.createElement('div');
-        messageElement.id = 'compression-message';
-        messageElement.style.cssText = `
-          position: fixed;
-          top: 20px;
-          right: 20px;
-          background: linear-gradient(135deg, #007bff, #0056b3);
-          color: white;
-          padding: 12px 20px;
-          border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-          z-index: 9999;
-          font-size: 14px;
-          display: none;
-          animation: slideIn 0.3s ease-out;
-          max-width: 300px;
-          word-wrap: break-word;
-        `;
-        
-        // アニメーション追加
+      if (!document.getElementById('compression-styles')) {
         const style = document.createElement('style');
+        style.id = 'compression-styles';
         style.textContent = `
           @keyframes slideIn {
             from { transform: translateX(100%); opacity: 0; }
@@ -1555,25 +1544,273 @@
             from { transform: translateX(0); opacity: 1; }
             to { transform: translateX(100%); opacity: 0; }
           }
+          #compression-message.show {
+            display: block !important;
+            animation: slideIn 0.3s ease-out;
+          }
+          #compression-message.hide {
+            animation: slideOut 0.3s ease-in;
+          }
         `;
         document.head.appendChild(style);
-        
-        document.body.appendChild(messageElement);
       }
       
-      messageElement.textContent = message;
-      messageElement.style.display = 'block';
-      
-      if (duration > 0) {
+      document.body.appendChild(messageElement);
+    }
+    
+    // メッセージを設定して表示
+    messageElement.textContent = message;
+    messageElement.classList.remove('hide');
+    messageElement.classList.add('show');
+    messageElement.style.display = 'block';
+    
+    // 指定時間後に非表示
+    if (duration > 0) {
+      setTimeout(() => {
+        messageElement.classList.remove('show');
+        messageElement.classList.add('hide');
         setTimeout(() => {
-          messageElement.style.animation = 'slideOut 0.3s ease-in';
-          setTimeout(() => {
-            messageElement.style.display = 'none';
-            messageElement.style.animation = '';
-          }, 300);
-        }, duration);
+          messageElement.style.display = 'none';
+          messageElement.classList.remove('hide');
+        }, 300);
+      }, duration);
+    }
+  }
+
+  // 日記作成用の画像要素を取得
+  const imageInput = document.getElementById('id_image');
+  const imagePreview = document.getElementById('image-preview');
+  const imageContainer = document.getElementById('image-preview-container');
+  const uploadArea = document.querySelector('.image-upload-area');
+  const removeBtn = document.getElementById('remove-image');
+
+  if (!imageInput || !imagePreview || !imageContainer) {
+    console.warn('⚠️ 日記作成用画像要素が不足しています');
+    setupBasicImagePreview();
+    return;
+  }
+
+  // 🔥 カスタム画像処理関数（完了を確実にする）
+  async function processDiaryImage(file) {
+    console.log('🔥 カスタム画像処理開始:', file.name);
+    
+    try {
+      // ファイルタイプチェック
+      if (!compressionHandler.validateFileType(file)) {
+        throw new Error('サポートされていないファイル形式です');
       }
-    }  
+      
+      // ファイルサイズチェック
+      const maxFileSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxFileSize) {
+        throw new Error(`ファイルサイズが${compressionHandler.formatFileSize(maxFileSize)}を超えています`);
+      }
+      
+      console.log(`元ファイル: ${file.name} (${compressionHandler.formatFileSize(file.size)})`);
+      
+      let processedFile = file;
+      
+      // 🔥 圧縮判定（2MB以上で圧縮）
+      const compressionThreshold = 2 * 1024 * 1024;
+      const shouldCompress = file.size > compressionThreshold;
+      
+      if (shouldCompress) {
+        console.log('🔄 高品質圧縮処理を実行します');
+        showCompressionMessage('画像を高品質圧縮中...');
+        
+        // 高品質圧縮実行
+        processedFile = await compressionHandler.compressImage(file, 1200, 900, 0.92);
+        
+        const originalSize = compressionHandler.formatFileSize(file.size);
+        const compressedSize = compressionHandler.formatFileSize(processedFile.size);
+        const reductionRate = ((file.size - processedFile.size) / file.size * 100).toFixed(1);
+        
+        console.log(`高品質圧縮完了: ${originalSize} → ${compressedSize} (${reductionRate}% 削減)`);
+        
+        // 最適な形式でFileオブジェクトを作成
+        const bestFormat = compressionHandler.getBestImageFormat();
+        const fileExtension = compressionHandler.getFileExtension(bestFormat);
+        const fileName = compressionHandler.changeFileExtension(file.name, fileExtension);
+        
+        const compressedFile = new File([processedFile], fileName, {
+          type: bestFormat,
+          lastModified: Date.now()
+        });
+        
+        // ファイル入力を更新
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(compressedFile);
+        imageInput.files = dataTransfer.files;
+        
+        // 成功メッセージ
+        const formatName = bestFormat.replace('image/', '').toUpperCase();
+        if (parseFloat(reductionRate) > 15) {
+          showCompressionMessage(
+            `${formatName}最高品質圧縮完了: ${originalSize} → ${compressedSize} (${reductionRate}% 削減)`, 
+            5000
+          );
+        } else if (parseFloat(reductionRate) > 5) {
+          showCompressionMessage(
+            `${formatName}高品質最適化完了: ${originalSize} → ${compressedSize} (${reductionRate}% 削減)`, 
+            4000
+          );
+        } else {
+          showCompressionMessage(`${formatName}品質保持完了: ${compressedSize}`, 3000);
+        }
+        
+        processedFile = compressedFile;
+      } else {
+        console.log('🔄 ファイルサイズが小さいため圧縮をスキップ');
+        showCompressionMessage('画像を最適化中...', 1000);
+      }
+      
+      // 🔥 プレビュー表示
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        imagePreview.src = e.target.result;
+        imageContainer.style.display = 'block';
+        if (uploadArea) uploadArea.style.display = 'none';
+        
+        console.log('✅ プレビュー表示完了');
+        
+        // 🔥 最終完了メッセージ
+        if (!shouldCompress) {
+          showCompressionMessage('画像の準備が完了しました', 2000);
+        }
+      };
+      reader.readAsDataURL(processedFile);
+      
+    } catch (error) {
+      console.error('❌ 画像処理エラー:', error);
+      showCompressionMessage(`エラー: ${error.message}`, 4000);
+      
+      // エラー時のクリーンアップ
+      imageInput.value = '';
+      imageContainer.style.display = 'none';
+      if (uploadArea) uploadArea.style.display = 'block';
+    }
+  }
+
+  // 🔥 ファイル選択時のイベントハンドラ（シンプル版）
+  imageInput.addEventListener('change', async function(event) {
+    console.log('🔥 ファイル選択イベント発生');
+    const file = event.target.files[0];
+    
+    if (!file) {
+      console.log('ファイルが選択されていません');
+      imageContainer.style.display = 'none';
+      if (uploadArea) uploadArea.style.display = 'block';
+      return;
+    }
+    
+    console.log(`選択されたファイル: ${file.name} (${compressionHandler.formatFileSize(file.size)})`);
+    
+    // 🔥 カスタム処理を実行
+    await processDiaryImage(file);
   });
+
+  // 削除ボタンの処理
+  if (removeBtn) {
+    removeBtn.addEventListener('click', function() {
+      console.log('🗑️ 画像削除');
+      compressionHandler.clearInput(imageInput, imageContainer, uploadArea);
+    });
+  }
+
+  // ドラッグ&ドロップの設定
+  if (uploadArea) {
+    // 基本的なD&D設定
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      uploadArea.addEventListener(eventName, function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }, false);
+    });
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+      uploadArea.addEventListener(eventName, function() {
+        uploadArea.classList.add('dragover');
+      }, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+      uploadArea.addEventListener(eventName, function() {
+        uploadArea.classList.remove('dragover');
+      }, false);
+    });
+    
+    uploadArea.addEventListener('drop', async function(e) {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      
+      if (files.length > 0) {
+        console.log('🔥 ドラッグ&ドロップでファイル追加');
+        
+        // ファイル入力を更新
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(files[0]);
+        imageInput.files = dataTransfer.files;
+        
+        // カスタム処理を実行
+        await processDiaryImage(files[0]);
+      }
+    }, false);
+  }
+
+  console.log('✅ 日記作成用画像機能を初期化完了');
+
+  // 🔥 フォールバック: 基本的な画像プレビュー機能
+  function setupBasicImagePreview() {
+    console.log('🔄 基本的な画像プレビュー機能を設定中...');
+    
+    if (!imageInput) return;
+    
+    imageInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) {
+        if (imageContainer) imageContainer.style.display = 'none';
+        if (uploadArea) uploadArea.style.display = 'block';
+        return;
+      }
+
+      // ファイル種別チェック
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        alert('JPEG、PNG、GIF、WebP形式の画像ファイルのみアップロード可能です。');
+        imageInput.value = '';
+        return;
+      }
+
+      // ファイルサイズチェック（10MB）
+      if (file.size > 10 * 1024 * 1024) {
+        alert('ファイルサイズが10MBを超えています。');
+        imageInput.value = '';
+        return;
+      }
+
+      // 基本的なプレビュー表示
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        if (imagePreview) imagePreview.src = e.target.result;
+        if (imageContainer) imageContainer.style.display = 'block';
+        if (uploadArea) uploadArea.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    // 削除ボタン
+    if (removeBtn) {
+      removeBtn.addEventListener('click', function() {
+        imageInput.value = '';
+        if (imageContainer) imageContainer.style.display = 'none';
+        if (uploadArea) uploadArea.style.display = 'block';
+      });
+    }
+    
+    console.log('✅ 基本的な画像プレビュー機能を設定しました');
+  }
+
+  // 他のフォーム機能（株価取得、テンプレート展開等）は継続...
+});
 </script>
 {% endblock %}

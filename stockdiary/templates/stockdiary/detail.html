@@ -2281,7 +2281,16 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script>
+// 修正版: 継続記録用画像圧縮機能
 document.addEventListener('DOMContentLoaded', function() {
+  // 🔥 まず、圧縮機能が利用可能かチェック
+  if (typeof window.ImageCompressionHandler === 'undefined') {
+    console.error('❌ ImageCompressionHandler が読み込まれていません');
+    console.log('💡 static/js/image-compression.js が正しく読み込まれているか確認してください');
+    return;
+  }
+
+  // 🔥 WebP対応状況を確認
   function checkWebPSupport() {
     const canvas = document.createElement('canvas');
     canvas.width = 1;
@@ -2295,51 +2304,77 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   const supportsWebP = checkWebPSupport();
-  console.log('継続記録 WebP対応:', supportsWebP ? 'はい' : 'いいえ');
+  console.log('継続記録 WebP対応:', supportsWebP ? '✅はい' : '❌いいえ');
   
-  // 継続記録用の画像圧縮設定
-  if (document.getElementById('note_image')) {
-    const handler = setupImageCompression({
-      inputId: 'note_image',
-      previewId: 'note-image-preview',
-      containerId: 'note-image-preview-container',
-      uploadAreaSelector: '.image-upload-area-note',
-      removeBtnId: 'note-remove-image',
-      options: {
-        maxWidth: 500,                    // 継続記録はコンパクトに
-        maxHeight: 375,                   // 継続記録はコンパクトに
-        quality: 0.7,                     // WebP対応で品質維持
-        compressionThreshold: 0,          // 全ファイル圧縮
-        maxFileSize: 3 * 1024 * 1024,     // 最大3MB（継続記録は小さめ）
-        onCompressionStart: (file) => {
-          const format = handler.getBestImageFormat();
-          const formatName = format.replace('image/', '').toUpperCase();
-          console.log(`継続記録画像圧縮開始: ${file.name} → ${formatName}形式`);
-          
-          // 継続記録用の圧縮メッセージ表示
-          showNoteCompressionMessage(`${formatName}形式で圧縮中...`);
-        },
-        onCompressionEnd: (original, compressed) => {
-          const originalSize = handler.formatFileSize(original.size);
-          const compressedSize = handler.formatFileSize(compressed.size);
-          const reductionRate = ((original.size - compressed.size) / original.size * 100).toFixed(1);
-          const format = handler.getBestImageFormat().replace('image/', '').toUpperCase();
-          
-          console.log(`継続記録画像圧縮完了: ${originalSize} → ${compressedSize} (${reductionRate}% 削減, ${format})`);
-          
-          // 継続記録用の完了メッセージ表示
-          showNoteCompressionMessage(
-            `${format}圧縮完了: ${originalSize} → ${compressedSize} (${reductionRate}% 削減)`, 
-            3000
-          );
-        },
-        onError: (message, error) => {
-          console.error('継続記録画像エラー:', error);
-          showNoteCompressionMessage(`エラー: ${message}`, 4000);
+  // 🔥 継続記録用の画像圧縮設定（必須要素の存在確認を強化）
+  const noteImageInput = document.getElementById('note_image');
+  const noteImagePreview = document.getElementById('note-image-preview');
+  const noteImageContainer = document.getElementById('note-image-preview-container');
+  const noteUploadArea = document.querySelector('.image-upload-area-note');
+  const noteRemoveBtn = document.getElementById('note-remove-image');
+  
+  console.log('🔍 継続記録用要素チェック:');
+  console.log('  note_image:', noteImageInput ? '✅存在' : '❌不在');
+  console.log('  note-image-preview:', noteImagePreview ? '✅存在' : '❌不在');
+  console.log('  note-image-preview-container:', noteImageContainer ? '✅存在' : '❌不在');
+  console.log('  .image-upload-area-note:', noteUploadArea ? '✅存在' : '❌不在');
+  console.log('  note-remove-image:', noteRemoveBtn ? '✅存在' : '❌不在');
+  
+  // 🔥 必須要素が揃っている場合のみ圧縮機能を設定
+  if (noteImageInput && noteImagePreview && noteImageContainer) {
+    console.log('✅ 継続記録用画像圧縮機能を初期化中...');
+    
+    try {
+      const handler = window.setupImageCompression({
+        inputId: 'note_image',
+        previewId: 'note-image-preview',
+        containerId: 'note-image-preview-container',
+        uploadAreaSelector: '.image-upload-area-note',
+        removeBtnId: 'note-remove-image',
+        options: {
+          maxWidth: 900,                    // 継続記録はコンパクトに
+          maxHeight: 675,                   // 継続記録はコンパクトに
+          quality: 0.9,                     // WebP対応で品質維持
+          compressionThreshold: 2 * 1024 * 1024, // 2MB以上で圧縮
+          maxFileSize: 3 * 1024 * 1024,     // 最大3MB（継続記録は小さめ）
+          onCompressionStart: (file) => {
+            const format = handler.getBestImageFormat();
+            const formatName = format.replace('image/', '').toUpperCase();
+            console.log(`継続記録画像圧縮開始: ${file.name} → ${formatName}形式`);
+            
+            // 継続記録用の圧縮メッセージ表示
+            showNoteCompressionMessage(`${formatName}形式で圧縮中...`);
+          },
+          onCompressionEnd: (original, compressed) => {
+            const originalSize = handler.formatFileSize(original.size);
+            const compressedSize = handler.formatFileSize(compressed.size);
+            const reductionRate = ((original.size - compressed.size) / original.size * 100).toFixed(1);
+            const format = handler.getBestImageFormat().replace('image/', '').toUpperCase();
+            
+            console.log(`継続記録画像圧縮完了: ${originalSize} → ${compressedSize} (${reductionRate}% 削減, ${format})`);
+            
+            // 継続記録用の完了メッセージ表示
+            showNoteCompressionMessage(
+              `${format}圧縮完了: ${originalSize} → ${compressedSize} (${reductionRate}% 削減)`, 
+              3000
+            );
+          },
+          onError: (message, error) => {
+            console.error('継続記録画像エラー:', error);
+            showNoteCompressionMessage(`エラー: ${message}`, 4000);
+          }
         }
-      }
-    });
+      });
+      
+      console.log('✅ 継続記録用画像圧縮機能が正常に初期化されました');
+      
+    } catch (error) {
+      console.error('❌ 継続記録用画像圧縮機能の初期化に失敗:', error);
+    }
+  } else {
+    console.warn('⚠️ 継続記録用画像要素が不足しているため、圧縮機能をスキップします');
   }
+  
   // 継続記録用の圧縮メッセージ表示関数
   function showNoteCompressionMessage(message, duration = 0) {
     let messageElement = document.getElementById('note-compression-message');

@@ -1,5 +1,5 @@
 /**
- * 共通画像圧縮機能 - WebP対応版
+ * 品質改善版共通画像圧縮機能 - 高品質WebP/AVIF対応版
  * ファイルパス: static/js/image-compression.js
  */
 
@@ -9,14 +9,14 @@ class ImageCompressionHandler {
   }
 
   /**
-   * 画像圧縮関数（WebP対応版）
+   * 高品質画像圧縮関数（品質改善版）
    * @param {File} file - 元画像ファイル
    * @param {number} maxWidth - 最大幅
    * @param {number} maxHeight - 最大高さ
    * @param {number} quality - 品質 (0.0-1.0)
    * @returns {Promise<Blob>} 圧縮された画像Blob
    */
-  compressImage(file, maxWidth = 800, maxHeight = 600, quality = 0.8) {
+  compressImage(file, maxWidth = 1200, maxHeight = 900, quality = 0.92) {
     return new Promise((resolve, reject) => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -24,29 +24,49 @@ class ImageCompressionHandler {
       
       img.onload = () => {
         try {
-          // アスペクト比を保持して最大サイズ内にリサイズ
+          // ✨ 高品質設定: アスペクト比を保持して最大サイズ内にリサイズ
           const { width, height } = this.calculateSize(img.width, img.height, maxWidth, maxHeight);
           
           canvas.width = width;
           canvas.height = height;
           
+          // ✨ 高品質レンダリング設定
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          
+          // ✨ より滑らかな画像補間のための設定
+          if (ctx.webkitImageSmoothingEnabled !== undefined) {
+            ctx.webkitImageSmoothingEnabled = true;
+          }
+          if (ctx.mozImageSmoothingEnabled !== undefined) {
+            ctx.mozImageSmoothingEnabled = true;
+          }
+          
           // 画像を描画
           ctx.drawImage(img, 0, 0, width, height);
           
-          // WebP対応チェックと形式選択
+          // WebP/AVIF対応チェックと形式選択
           const bestFormat = this.getBestImageFormat();
           
-          console.log(`圧縮形式: ${bestFormat}`);
+          console.log(`高品質圧縮形式: ${bestFormat}, 品質: ${Math.round(quality * 100)}%`);
+          
+          // ✨ 品質に応じた圧縮パラメータ調整
+          let adjustedQuality = quality;
+          
+          // WebP/AVIFの場合は若干品質を上げても問題ない
+          if (bestFormat === 'image/webp' || bestFormat === 'image/avif') {
+            adjustedQuality = Math.min(quality + 0.05, 0.98); // 最大98%まで
+          }
           
           // 圧縮された画像をBlobとして取得
           canvas.toBlob((blob) => {
             if (blob) {
-              console.log(`圧縮完了: ${this.formatFileSize(file.size)} → ${this.formatFileSize(blob.size)} (${bestFormat})`);
+              console.log(`高品質圧縮完了: ${this.formatFileSize(file.size)} → ${this.formatFileSize(blob.size)} (${bestFormat}, ${Math.round(adjustedQuality * 100)}%品質)`);
               resolve(blob);
             } else {
               reject(new Error('画像の圧縮に失敗しました'));
             }
-          }, bestFormat, quality);
+          }, bestFormat, adjustedQuality);
         } catch (error) {
           reject(error);
         }
@@ -58,26 +78,26 @@ class ImageCompressionHandler {
   }
 
   /**
-   * ブラウザの対応状況に応じて最適な画像形式を取得
+   * ブラウザの対応状況に応じて最適な画像形式を取得（品質重視版）
    * @returns {string} 最適な画像形式
    */
   getBestImageFormat() {
-    // AVIF 対応チェック（最新技術、最も小さい）
+    // AVIF 対応チェック（最新技術、最も小さく高品質）
     if (this.supportsImageFormat('image/avif')) {
       return 'image/avif';
     }
     
-    // WebP 対応チェック（JPEG より 25-35% 小さい）
+    // WebP 対応チェック（JPEG より 25-35% 小さく高品質）
     if (this.supportsImageFormat('image/webp')) {
       return 'image/webp';
     }
     
-    // フォールバック: JPEG
+    // フォールバック: JPEG（高品質設定）
     return 'image/jpeg';
   }
 
   /**
-   * ブラウザが指定した画像形式をサポートしているかチェック
+   * より精密なブラウザ対応チェック
    * @param {string} format - 画像形式 ('image/webp', 'image/avif', etc.)
    * @returns {boolean} サポート状況
    */
@@ -87,42 +107,20 @@ class ImageCompressionHandler {
     canvas.height = 1;
     
     try {
-      const dataURL = canvas.toDataURL(format, 0.1);
-      return dataURL.startsWith(`data:${format}`);
+      // ✨ より厳密なチェック: 異なる品質設定でテスト
+      const dataURL1 = canvas.toDataURL(format, 0.5);
+      const dataURL2 = canvas.toDataURL(format, 0.8);
+      
+      return dataURL1.startsWith(`data:${format}`) && 
+             dataURL2.startsWith(`data:${format}`) &&
+             dataURL1 !== dataURL2; // 品質設定が実際に効いているかチェック
     } catch (e) {
       return false;
     }
   }
 
   /**
-   * 画像形式から適切なファイル拡張子を取得
-   * @param {string} mimeType - MIME タイプ
-   * @returns {string} ファイル拡張子
-   */
-  getFileExtension(mimeType) {
-    const extensionMap = {
-      'image/webp': 'webp',
-      'image/avif': 'avif',
-      'image/jpeg': 'jpg',
-      'image/png': 'png',
-      'image/gif': 'gif'
-    };
-    return extensionMap[mimeType] || 'jpg';
-  }
-
-  /**
-   * ファイル名の拡張子を変更
-   * @param {string} fileName - 元のファイル名
-   * @param {string} newExtension - 新しい拡張子
-   * @returns {string} 新しいファイル名
-   */
-  changeFileExtension(fileName, newExtension) {
-    const baseName = fileName.replace(/\.[^/.]+$/, '');
-    return `${baseName}.${newExtension}`;
-  }
-
-  /**
-   * サイズ計算関数
+   * より賢いサイズ計算関数（品質保持重視）
    * @param {number} width - 元幅
    * @param {number} height - 元高さ
    * @param {number} maxWidth - 最大幅
@@ -130,41 +128,28 @@ class ImageCompressionHandler {
    * @returns {Object} 計算されたサイズ
    */
   calculateSize(width, height, maxWidth, maxHeight) {
+    // ✨ 小さい画像は拡大しない（品質劣化防止）
     if (width <= maxWidth && height <= maxHeight) {
       return { width, height };
     }
     
-    const ratio = Math.min(maxWidth / width, maxHeight / height);
+    // ✨ より精密なアスペクト比計算
+    const widthRatio = maxWidth / width;
+    const heightRatio = maxHeight / height;
+    const ratio = Math.min(widthRatio, heightRatio);
+    
+    // ✨ ピクセル境界での丸め（より鮮明な結果）
+    const newWidth = Math.round(width * ratio);
+    const newHeight = Math.round(height * ratio);
+    
     return {
-      width: Math.round(width * ratio),
-      height: Math.round(height * ratio)
+      width: newWidth,
+      height: newHeight
     };
   }
 
   /**
-   * ファイルサイズを人間が読める形式に変換
-   * @param {number} bytes - バイト数
-   * @returns {string} フォーマットされたファイルサイズ
-   */
-  formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-  }
-
-  /**
-   * ファイルタイプ検証
-   * @param {File} file - 検証するファイル
-   * @returns {boolean} 有効なファイルタイプかどうか
-   */
-  validateFileType(file) {
-    return this.validTypes.includes(file.type);
-  }
-
-  /**
-   * 汎用画像処理関数（WebP対応版）
+   * 汎用画像処理関数（品質改善版）
    * @param {HTMLInputElement} inputElement - ファイル入力要素
    * @param {HTMLImageElement} previewElement - プレビュー画像要素
    * @param {HTMLElement} containerElement - プレビューコンテナ要素
@@ -174,11 +159,11 @@ class ImageCompressionHandler {
     const file = inputElement.files[0];
     
     const config = {
-      maxWidth: options.maxWidth || 600,
-      maxHeight: options.maxHeight || 450,
-      quality: options.quality || 0.75,        // WebP対応で品質向上
-      maxFileSize: options.maxFileSize || 5 * 1024 * 1024,
-      compressionThreshold: options.compressionThreshold || 0, // 全ファイル圧縮
+      maxWidth: options.maxWidth || 1200,      // ✨ デフォルト高解像度
+      maxHeight: options.maxHeight || 900,     // ✨ デフォルト高解像度
+      quality: options.quality || 0.90,        // ✨ デフォルト高品質
+      maxFileSize: options.maxFileSize || 10 * 1024 * 1024, // ✨ 10MB制限
+      compressionThreshold: options.compressionThreshold || 2 * 1024 * 1024, // ✨ 2MB以上で圧縮
       uploadArea: options.uploadArea || null,
       onCompressionStart: options.onCompressionStart || null,
       onCompressionEnd: options.onCompressionEnd || null,
@@ -204,29 +189,29 @@ class ImageCompressionHandler {
     }
     
     try {
-      console.log('元のファイルサイズ:', this.formatFileSize(file.size));
+      console.log(`元ファイル: ${file.name} (${this.formatFileSize(file.size)})`);
       console.log('元のファイル形式:', file.type);
       
       let processedFile = file;
       
-      // 全ファイル圧縮（compressionThreshold: 0 で強制実行）
-      const shouldCompress = config.compressionThreshold === 0 || file.size > config.compressionThreshold;
+      // ✨ しきい値ベースの賢い圧縮判定
+      const shouldCompress = file.size > config.compressionThreshold;
       
       if (shouldCompress) {
         if (config.onCompressionStart) {
           config.onCompressionStart(file);
         }
         
-        // 最適形式で圧縮実行
+        // ✨ 高品質圧縮実行
         processedFile = await this.compressImage(file, config.maxWidth, config.maxHeight, config.quality);
         
         console.log('圧縮後のファイルサイズ:', this.formatFileSize(processedFile.size));
         
-        // 圧縮率を計算
+        // ✨ 圧縮率を計算
         const compressionRate = ((file.size - processedFile.size) / file.size * 100).toFixed(1);
-        console.log(`圧縮率: ${compressionRate}%`);
+        console.log(`圧縮率: ${compressionRate}% (品質: ${Math.round(config.quality * 100)}%)`);
         
-        // 最適な形式でFileオブジェクトを作成
+        // ✨ 最適な形式でFileオブジェクトを作成
         const bestFormat = this.getBestImageFormat();
         const fileExtension = this.getFileExtension(bestFormat);
         const fileName = this.changeFileExtension(file.name, fileExtension);
@@ -244,6 +229,8 @@ class ImageCompressionHandler {
         if (config.onCompressionEnd) {
           config.onCompressionEnd(file, processedFile);
         }
+      } else {
+        console.log(`ファイルサイズが${this.formatFileSize(config.compressionThreshold)}以下のため、圧縮をスキップしました`);
       }
       
       // 最終サイズチェック
@@ -277,6 +264,55 @@ class ImageCompressionHandler {
       }
       this.clearInput(inputElement, containerElement, config.uploadArea);
     }
+  }
+
+  /**
+   * 画像形式から適切なファイル拡張子を取得
+   * @param {string} mimeType - MIME タイプ
+   * @returns {string} ファイル拡張子
+   */
+  getFileExtension(mimeType) {
+    const extensionMap = {
+      'image/webp': 'webp',
+      'image/avif': 'avif',
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/gif': 'gif'
+    };
+    return extensionMap[mimeType] || 'jpg';
+  }
+
+  /**
+   * ファイル名の拡張子を変更
+   * @param {string} fileName - 元のファイル名
+   * @param {string} newExtension - 新しい拡張子
+   * @returns {string} 新しいファイル名
+   */
+  changeFileExtension(fileName, newExtension) {
+    const baseName = fileName.replace(/\.[^/.]+$/, '');
+    return `${baseName}.${newExtension}`;
+  }
+
+  /**
+   * ファイルサイズを人間が読める形式に変換
+   * @param {number} bytes - バイト数
+   * @returns {string} フォーマットされたファイルサイズ
+   */
+  formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  /**
+   * ファイルタイプ検証
+   * @param {File} file - 検証するファイル
+   * @returns {boolean} 有効なファイルタイプかどうか
+   */
+  validateFileType(file) {
+    return this.validTypes.includes(file.type);
   }
 
   /**
@@ -339,7 +375,7 @@ class ImageCompressionHandler {
 // グローバルに利用可能にする
 window.ImageCompressionHandler = ImageCompressionHandler;
 
-// 使用例のヘルパー関数
+// ✨ 品質改善版ヘルパー関数（レガシー互換性のため残す）
 window.setupImageCompression = function(config) {
   const handler = new ImageCompressionHandler();
   
@@ -376,28 +412,24 @@ window.setupImageCompression = function(config) {
   return handler;
 };
 
-// ブラウザ対応状況のログ出力
+// ✨ 品質改善版ブラウザ対応状況のログ出力
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('=== 画像形式対応状況 ===');
+  console.log('=== 高品質画像圧縮機能対応状況 ===');
   
-  const canvas = document.createElement('canvas');
-  canvas.width = 1;
-  canvas.height = 1;
+  const handler = new ImageCompressionHandler();
   
   const formats = [
-    { name: 'AVIF', mime: 'image/avif', savings: '50%' },
-    { name: 'WebP', mime: 'image/webp', savings: '25-35%' },
-    { name: 'JPEG', mime: 'image/jpeg', savings: 'ベースライン' }
+    { name: 'AVIF', mime: 'image/avif', savings: '最大60%', quality: '最高品質' },
+    { name: 'WebP', mime: 'image/webp', savings: '25-35%', quality: '高品質' },
+    { name: 'JPEG', mime: 'image/jpeg', savings: 'ベースライン', quality: '標準品質' }
   ];
   
   formats.forEach(format => {
-    try {
-      const supported = canvas.toDataURL(format.mime, 0.1).startsWith(`data:${format.mime}`);
-      console.log(`${format.name}: ${supported ? '✅対応' : '❌非対応'} (JPEG比 ${format.savings} 削減)`);
-    } catch (e) {
-      console.log(`${format.name}: ❌非対応 (エラー)`);
-    }
+    const supported = handler.supportsImageFormat(format.mime);
+    console.log(`${format.name}: ${supported ? '✅対応' : '❌非対応'} (JPEG比 ${format.savings} 削減, ${format.quality})`);
   });
   
-  console.log('========================');
+  const selectedFormat = handler.getBestImageFormat();
+  console.log(`選択される形式: ${selectedFormat}`);
+  console.log('================================');
 });
