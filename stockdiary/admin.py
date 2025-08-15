@@ -9,7 +9,7 @@ class DiaryNoteInline(admin.TabularInline):
 
 @admin.register(StockDiary)
 class StockDiaryAdmin(admin.ModelAdmin):
-    list_display = ('id', 'stock_name', 'stock_symbol', 'user', 'purchase_date', 'purchase_price', 'purchase_quantity', 'get_total_value', 'sell_date')
+    list_display = ('id', 'stock_name', 'stock_symbol', 'user', 'purchase_date', 'purchase_price', 'purchase_quantity', 'get_total_value', 'sell_date', 'image')
     list_filter = ('user', 'purchase_date', 'sell_date', 'tags')
     search_fields = ('stock_name', 'stock_symbol', 'user__username', 'memo')
     filter_horizontal = ('tags', 'checklist')
@@ -25,7 +25,7 @@ class StockDiaryAdmin(admin.ModelAdmin):
             'fields': ('purchase_date', 'purchase_price', 'purchase_quantity', 'sell_date', 'sell_price')
         }),
         ('詳細情報', {
-            'fields': ('reason', 'memo', 'tags', 'sector')
+            'fields': ('reason', 'memo', 'tags', 'sector', 'image')
         }),
         ('システム情報', {
             'fields': ('created_at', 'updated_at'),
@@ -42,7 +42,7 @@ class StockDiaryAdmin(admin.ModelAdmin):
 
 @admin.register(DiaryNote)
 class DiaryNoteAdmin(admin.ModelAdmin):
-    list_display = ('id', 'diary', 'date', 'note_type', 'importance', 'current_price', 'get_price_change_percent')
+    list_display = ('id', 'diary', 'date', 'note_type', 'importance', 'current_price', 'get_price_change_percent', 'image')
     list_filter = ('note_type', 'importance', 'date')
     search_fields = ('diary__stock_name', 'diary__stock_symbol', 'content')
     date_hierarchy = 'date'
@@ -52,7 +52,7 @@ class DiaryNoteAdmin(admin.ModelAdmin):
             'fields': ('diary', 'date')
         }),
         ('ノート情報', {
-            'fields': ('note_type', 'importance', 'current_price', 'content')
+            'fields': ('note_type', 'importance', 'current_price', 'content', 'image')
         }),
         ('システム情報', {
             'fields': ('created_at', 'updated_at'),
