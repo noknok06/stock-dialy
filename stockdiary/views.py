@@ -28,9 +28,14 @@ from collections import Counter, defaultdict
 from django.core.paginator import Paginator
 from django.shortcuts import render
 from django.urls import reverse
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from datetime import datetime, timedelta
 import calendar
+
+import mimetypes
+from PIL import Image
+import os
+import io
 
 import traceback
 
@@ -499,9 +504,9 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
         # 画像ファイルの処理
         image_file = form.cleaned_data.get('image')
         if image_file:
-            success = self.object.upload_image(image_file)
+            success = self.object.process_and_save_image(image_file)
             if not success:
-                messages.warning(self.request, '日記は作成されましたが、画像のアップロードに失敗しました。')
+                messages.warning(self.request, '日記は作成されましたが、画像の処理に失敗しました。')
         
         # 分析テンプレートが選択されていれば、分析値を処理
         analysis_template_id = self.request.POST.get('analysis_template')
@@ -509,6 +514,7 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
             process_analysis_values(self.request, self.object, analysis_template_id)
         
         return response
+
 
 class StockDiaryUpdateView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, UpdateView):
     model = StockDiary
@@ -573,9 +579,9 @@ class StockDiaryUpdateView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Upda
         # 新しい画像ファイルの処理
         image_file = form.cleaned_data.get('image')
         if image_file:
-            success = self.object.upload_image(image_file)
+            success = self.object.process_and_save_image(image_file)
             if not success:
-                messages.warning(self.request, '日記は更新されましたが、画像のアップロードに失敗しました。')
+                messages.warning(self.request, '日記は更新されましたが、画像の処理に失敗しました。')
         
         # 分析テンプレートが選択されていれば、分析値を処理
         analysis_template_id = self.request.POST.get('analysis_template')
@@ -779,10 +785,10 @@ class AddDiaryNoteView(LoginRequiredMixin, CreateView):
                 messages.error(self.request, 'JPEG、PNG、GIF、WebP形式の画像ファイルのみアップロード可能です')
                 return self.form_invalid(form)
             
-            # Cloudinaryにアップロード
-            success = self.object.upload_image(image_file)
+            # 画像処理・保存
+            success = self.object.process_and_save_image(image_file)
             if not success:
-                messages.warning(self.request, '継続記録は追加されましたが、画像のアップロードに失敗しました。')
+                messages.warning(self.request, '継続記録は追加されましたが、画像の処理に失敗しました。')
         
         messages.success(self.request, "継続記録を追加しました")
         return response
@@ -793,7 +799,7 @@ class AddDiaryNoteView(LoginRequiredMixin, CreateView):
     def form_invalid(self, form):
         diary_id = self.kwargs.get('pk')
         return redirect('stockdiary:detail', pk=diary_id)
-    
+        
 
 class CancelSellView(LoginRequiredMixin, View):
     """売却情報を取り消すビュー"""
@@ -1850,3 +1856,137 @@ def csrf_failure_view(request, reason=""):
         'reason': reason,
         'test_accounts': settings.TEST_ACCOUNT_SETTINGS.get('USERNAMES', [])
     }, status=403)
+
+
+class ServeImageView(LoginRequiredMixin, View):
+    """ユーザー認証付きの画像配信ビュー"""
+    
+    def get(self, request, diary_id, image_type, note_id=None):
+        try:
+            # 日記の所有者確認
+            diary = get_object_or_404(StockDiary, id=diary_id, user=request.user)
+            
+            # 画像タイプに応じてファイルパスを取得
+            if image_type == 'diary':
+                if not diary.image:
+                    raise Http404("画像が見つかりません")
+                image_field = diary.image
+                
+            elif image_type == 'note':
+                if not note_id:
+                    raise Http404("ノートIDが指定されていません")
+                note = get_object_or_404(DiaryNote, id=note_id, diary=diary)
+                if not note.image:
+                    raise Http404("画像が見つかりません")
+                image_field = note.image
+                
+            else:
+                raise Http404("無効な画像タイプです")
+            
+            # サムネイル生成が要求されている場合
+            is_thumbnail = request.GET.get('thumbnail') == '1'
+            if is_thumbnail:
+                return self._serve_thumbnail(image_field, request)
+            
+            # 通常の画像配信
+            return self._serve_image(image_field)
+            
+        except Exception as e:
+            print(f"Image serving error: {str(e)}")
+            raise Http404("画像の配信中にエラーが発生しました")
+    
+    def _serve_image(self, image_field):
+        """通常の画像を配信"""
+        try:
+            # ファイルを開く
+            image_file = image_field.open('rb')
+            
+            # MIMEタイプを判定
+            file_path = image_field.name
+            content_type, _ = mimetypes.guess_type(file_path)
+            if not content_type:
+                content_type = 'image/jpeg'  # デフォルト
+            
+            # レスポンスを作成
+            response = HttpResponse(image_file.read(), content_type=content_type)
+            
+            # キャッシュヘッダーを設定
+            response['Cache-Control'] = 'private, max-age=3600'  # 1時間キャッシュ
+            
+            # ファイル名を設定
+            filename = os.path.basename(file_path)
+            response['Content-Disposition'] = f'inline; filename="{filename}"'
+            
+            image_file.close()
+            return response
+            
+        except Exception as e:
+            print(f"Error serving image: {str(e)}")
+            raise Http404("画像ファイルが見つかりません")
+    
+    def _serve_thumbnail(self, image_field, request):
+        """サムネイル画像を生成して配信"""
+        try:
+            # サムネイルサイズを取得
+            width = int(request.GET.get('w', 300))
+            height = int(request.GET.get('h', 200))
+            
+            # サイズ制限
+            width = min(max(width, 50), 800)  # 50px〜800px
+            height = min(max(height, 50), 600)  # 50px〜600px
+            
+            # 画像を開く
+            image_file = image_field.open('rb')
+            img = Image.open(image_file)
+            
+            # RGBA画像の場合はRGBに変換
+            if img.mode in ('RGBA', 'LA', 'P'):
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                if img.mode == 'P':
+                    img = img.convert('RGBA')
+                background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+                img = background
+            
+            # サムネイル生成（アスペクト比を保持してクロップ）
+            img_ratio = img.width / img.height
+            thumb_ratio = width / height
+            
+            if img_ratio > thumb_ratio:
+                # 画像が横長の場合、高さに合わせてリサイズ後、左右をクロップ
+                new_height = height
+                new_width = int(height * img_ratio)
+                img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                left = (new_width - width) // 2
+                img = img.crop((left, 0, left + width, height))
+            else:
+                # 画像が縦長の場合、幅に合わせてリサイズ後、上下をクロップ
+                new_width = width
+                new_height = int(width / img_ratio)
+                img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                top = (new_height - height) // 2
+                img = img.crop((0, top, width, top + height))
+            
+            # バイトストリームに保存
+            output = io.BytesIO()
+            
+            # WebP形式で保存を試行、失敗した場合はJPEG
+            try:
+                img.save(output, format='WebP', quality=80, optimize=True)
+                content_type = 'image/webp'
+            except Exception:
+                img.save(output, format='JPEG', quality=80, optimize=True)
+                content_type = 'image/jpeg'
+            
+            output.seek(0)
+            
+            # レスポンスを作成
+            response = HttpResponse(output.getvalue(), content_type=content_type)
+            response['Cache-Control'] = 'private, max-age=7200'  # 2時間キャッシュ
+            
+            image_file.close()
+            return response
+            
+        except Exception as e:
+            print(f"Error creating thumbnail: {str(e)}")
+            # サムネイル生成に失敗した場合は元画像を配信
+            return self._serve_image(image_field)

@@ -4,8 +4,33 @@ from django.contrib.auth import get_user_model
 from tags.models import Tag
 from django.conf import settings
 from django.core.exceptions import ValidationError
-import cloudinary
-import cloudinary.uploader
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from django.urls import reverse
+import os
+import uuid
+from PIL import Image
+import io
+
+
+def get_diary_image_path(instance, filename):
+    """日記画像のアップロードパスを生成"""
+    # ファイル拡張子を取得
+    ext = filename.split('.')[-1].lower()
+    # UUIDでファイル名を生成
+    filename = f"{uuid.uuid4().hex}.{ext}"
+    # ユーザーIDごとにディレクトリを分ける
+    return f"diary_images/{instance.user.id}/{filename}"
+
+
+def get_note_image_path(instance, filename):
+    """継続記録画像のアップロードパスを生成"""
+    # ファイル拡張子を取得
+    ext = filename.split('.')[-1].lower()
+    # UUIDでファイル名を生成
+    filename = f"{uuid.uuid4().hex}.{ext}"
+    # ユーザーIDごとにディレクトリを分ける
+    return f"note_images/{instance.diary.user.id}/{filename}"
 
 
 class StockDiary(models.Model):
@@ -26,18 +51,12 @@ class StockDiary(models.Model):
     is_memo = models.BooleanField(default=False, verbose_name='メモ記録', db_index=True) 
     sector = models.CharField(max_length=50, blank=True, verbose_name='業種')
 
-    # 画像関連フィールド（CloudinaryのURLを保存）
-    image_url = models.URLField(
-        max_length=500,
+    # 画像関連フィールド（内部ストレージ）
+    image = models.ImageField(
+        upload_to=get_diary_image_path,
         null=True, 
         blank=True,
-        help_text="日記に関連する画像のURL"
-    )
-    image_public_id = models.CharField(
-        max_length=200,
-        null=True,
-        blank=True,
-        help_text="Cloudinary上の画像のpublic_id"
+        help_text="日記に関連する画像"
     )
 
     class Meta:
@@ -86,51 +105,70 @@ class StockDiary(models.Model):
         
         super().save(*args, **kwargs)
 
-    def upload_image(self, image_file):
-        """画像をCloudinaryにアップロード（圧縮設定付き）"""
+    def process_and_save_image(self, image_file):
+        """画像を圧縮・処理して保存"""
         try:
             # 既存の画像があれば削除
-            if self.image_public_id:
-                cloudinary.uploader.destroy(self.image_public_id)
+            if self.image:
+                self.delete_image()
             
-            # 圧縮設定を追加して新しい画像をアップロード
-            result = cloudinary.uploader.upload(
-                image_file,
-                folder="stockdiary/diary_images",
-                public_id_prefix=f"diary_{self.id}_",
-                overwrite=True,
-                resource_type="image",
-                # 圧縮設定
-                transformation=[
-                    {
-                        'width': 800,      # 最大幅800px
-                        'height': 600,     # 最大高さ600px
-                        'crop': 'limit',   # アスペクト比を保持しながら制限内にリサイズ
-                        'quality': 85,     # JPEG品質85%
-                        'format': 'jpg',   # JPEGフォーマットに統一
-                        'fetch_format': 'auto'  # ブラウザがWebPをサポートしていれば自動でWebP
-                    }
-                ]
-            )
+            # 画像を開く
+            img = Image.open(image_file)
             
-            self.image_url = result.get('secure_url')
-            self.image_public_id = result.get('public_id')
-            self.save(update_fields=['image_url', 'image_public_id'])
+            # RGBA画像の場合はRGBに変換
+            if img.mode in ('RGBA', 'LA', 'P'):
+                # 白背景でRGBに変換
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                if img.mode == 'P':
+                    img = img.convert('RGBA')
+                background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+                img = background
+            
+            # リサイズ処理（アスペクト比を保持）
+            max_width, max_height = 800, 600
+            img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+            
+            # 圧縮して保存
+            output = io.BytesIO()
+            
+            # 元のフォーマットを確認
+            original_format = img.format or 'JPEG'
+            
+            # WebPをサポートしている場合は優先的に使用
+            try:
+                img.save(output, format='WebP', quality=85, optimize=True)
+                format_used = 'webp'
+            except Exception:
+                # WebPが使用できない場合はJPEGにフォールバック
+                img.save(output, format='JPEG', quality=85, optimize=True)
+                format_used = 'jpg'
+            
+            # ファイル名を生成
+            file_extension = format_used
+            filename = f"{uuid.uuid4().hex}.{file_extension}"
+            
+            # ContentFileとして保存
+            content_file = ContentFile(output.getvalue())
+            
+            # ImageFieldに保存
+            self.image.save(filename, content_file, save=False)
+            self.save(update_fields=['image'])
             
             return True
             
         except Exception as e:
-            print(f"Image upload failed: {str(e)}")
+            print(f"Image processing failed: {str(e)}")
             return False
 
     def delete_image(self):
-        """画像をCloudinaryから削除"""
+        """画像を削除"""
         try:
-            if self.image_public_id:
-                cloudinary.uploader.destroy(self.image_public_id)
-                self.image_url = None
-                self.image_public_id = None
-                self.save(update_fields=['image_url', 'image_public_id'])
+            if self.image:
+                # ファイルを削除
+                self.image.delete(save=False)
+                # フィールドをクリア
+                self.image = None
+                self.save(update_fields=['image'])
                 return True
         except Exception as e:
             print(f"Image deletion failed: {str(e)}")
@@ -172,51 +210,27 @@ class StockDiary(models.Model):
         return self.purchase_price is not None and self.purchase_quantity is not None and not self.is_memo
 
     def get_image_url(self):
-        """画像URLを取得（存在しない場合はNone）"""
-        return self.image_url
+        """画像URLを取得（ユーザー認証付き）"""
+        if self.image:
+            return reverse('stockdiary:serve_image', kwargs={
+                'diary_id': self.id,
+                'image_type': 'diary'
+            })
+        return None
 
     def get_thumbnail_url(self, width=300, height=200):
         """サムネイル用の画像URLを取得"""
-        if not self.image_url:
-            return None
-        
-        try:
-            # CloudinaryのURLから変換URLを生成
-            from cloudinary.utils import cloudinary_url
-            
-            thumbnail_url, _ = cloudinary_url(
-                self.image_public_id,
-                width=width,
-                height=height,
-                crop='fill',
-                quality=80,
-                format='jpg',
-                secure=True
-            )
-            
-            return thumbnail_url
-        except Exception as e:
-            print(f"Thumbnail generation failed: {str(e)}")
-            return self.image_url
+        if self.image:
+            return reverse('stockdiary:serve_image', kwargs={
+                'diary_id': self.id,
+                'image_type': 'diary'
+            }) + f'?thumbnail=1&w={width}&h={height}'
+        return None
 
     @property
-    def image(self):
-        """CloudinaryFieldの互換性のため"""
-        class ImageProxy:
-            def __init__(self, url):
-                self.url = url
-            
-            @property
-            def url(self):
-                return self._url
-            
-            @url.setter
-            def url(self, value):
-                self._url = value
-        
-        if self.image_url:
-            return ImageProxy(self.image_url)
-        return None
+    def image_url(self):
+        """互換性のためのプロパティ"""
+        return self.get_image_url()
 
 
 class DiaryNote(models.Model):
@@ -227,18 +241,12 @@ class DiaryNote(models.Model):
     current_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, 
                                        verbose_name='記録時点の価格')
     
-    # 画像関連フィールド（CloudinaryのURLを保存）
-    image_url = models.URLField(
-        max_length=500,
+    # 画像関連フィールド（内部ストレージ）
+    image = models.ImageField(
+        upload_to=get_note_image_path,
         null=True, 
         blank=True,
-        help_text="継続記録に関連する画像のURL"
-    )
-    image_public_id = models.CharField(
-        max_length=200,
-        null=True,
-        blank=True,
-        help_text="Cloudinary上の画像のpublic_id"
+        help_text="継続記録に関連する画像"
     )
     
     # メモタイプ
@@ -281,54 +289,66 @@ class DiaryNote(models.Model):
         self.full_clean()
         super().save(*args, **kwargs)
 
-    def upload_image(self, image_file):
-        """画像をCloudinaryにアップロード（圧縮設定付き）"""
+    def process_and_save_image(self, image_file):
+        """画像を圧縮・処理して保存"""
         try:
             # 既存の画像があれば削除
-            if self.image_public_id:
-                cloudinary.uploader.destroy(self.image_public_id)
+            if self.image:
+                self.delete_image()
             
-            # 圧縮設定を追加して新しい画像をアップロード
-            result = cloudinary.uploader.upload(
-                image_file,
-                folder="stockdiary/note_images",
-                public_id_prefix=f"note_{self.diary.id}_{self.id}_",
-                overwrite=True,
-                resource_type="image",
-                # 圧縮設定
-                transformation=[
-                    {
-                        'width': 600,      # 継続記録は少し小さめ（最大幅600px）
-                        'height': 400,     # 最大高さ400px
-                        'crop': 'limit',   # アスペクト比を保持しながら制限内にリサイズ
-                        'quality': 80,     # JPEG品質80%
-                        'format': 'jpg',   # JPEGフォーマットに統一
-                        'fetch_format': 'auto'  # ブラウザがWebPをサポートしていれば自動でWebP
-                    }
-                ]
-            )
+            # 画像を開く
+            img = Image.open(image_file)
             
-            self.image_url = result.get('secure_url')
-            self.image_public_id = result.get('public_id')
-            self.save(update_fields=['image_url', 'image_public_id'])
+            # RGBA画像の場合はRGBに変換
+            if img.mode in ('RGBA', 'LA', 'P'):
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                if img.mode == 'P':
+                    img = img.convert('RGBA')
+                background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+                img = background
+            
+            # 継続記録用はサイズを小さめに設定
+            max_width, max_height = 600, 400
+            img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+            
+            # 圧縮して保存
+            output = io.BytesIO()
+            
+            # WebPをサポートしている場合は優先的に使用
+            try:
+                img.save(output, format='WebP', quality=80, optimize=True)
+                format_used = 'webp'
+            except Exception:
+                img.save(output, format='JPEG', quality=80, optimize=True)
+                format_used = 'jpg'
+            
+            # ファイル名を生成
+            file_extension = format_used
+            filename = f"{uuid.uuid4().hex}.{file_extension}"
+            
+            # ContentFileとして保存
+            content_file = ContentFile(output.getvalue())
+            
+            # ImageFieldに保存
+            self.image.save(filename, content_file, save=False)
+            self.save(update_fields=['image'])
             
             return True
             
         except Exception as e:
-            print(f"Image upload failed: {str(e)}")
+            print(f"Note image processing failed: {str(e)}")
             return False
 
     def delete_image(self):
-        """画像をCloudinaryから削除"""
+        """画像を削除"""
         try:
-            if self.image_public_id:
-                cloudinary.uploader.destroy(self.image_public_id)
-                self.image_url = None
-                self.image_public_id = None
-                self.save(update_fields=['image_url', 'image_public_id'])
+            if self.image:
+                self.image.delete(save=False)
+                self.image = None
+                self.save(update_fields=['image'])
                 return True
         except Exception as e:
-            print(f"Image deletion failed: {str(e)}")
+            print(f"Note image deletion failed: {str(e)}")
         return False
     
     def __str__(self):
@@ -342,48 +362,26 @@ class DiaryNote(models.Model):
         return None
 
     def get_image_url(self):
-        """画像URLを取得（存在しない場合はNone）"""
-        return self.image_url
+        """画像URLを取得（ユーザー認証付き）"""
+        if self.image:
+            return reverse('stockdiary:serve_image', kwargs={
+                'diary_id': self.diary.id,
+                'image_type': 'note',
+                'note_id': self.id
+            })
+        return None
 
     def get_thumbnail_url(self, width=200, height=150):
         """サムネイル用の画像URLを取得"""
-        if not self.image_url:
-            return None
-        
-        try:
-            # CloudinaryのURLから変換URLを生成
-            from cloudinary.utils import cloudinary_url
-            
-            thumbnail_url, _ = cloudinary_url(
-                self.image_public_id,
-                width=width,
-                height=150,
-                crop='fill',
-                quality=75,
-                format='jpg',
-                secure=True
-            )
-            
-            return thumbnail_url
-        except Exception as e:
-            print(f"Thumbnail generation failed: {str(e)}")
-            return self.image_url
+        if self.image:
+            return reverse('stockdiary:serve_image', kwargs={
+                'diary_id': self.diary.id,
+                'image_type': 'note',
+                'note_id': self.id
+            }) + f'?thumbnail=1&w={width}&h={height}'
+        return None
 
     @property
-    def image(self):
-        """CloudinaryFieldの互換性のため"""
-        class ImageProxy:
-            def __init__(self, url):
-                self.url = url
-            
-            @property
-            def url(self):
-                return self._url
-            
-            @url.setter
-            def url(self, value):
-                self._url = value
-        
-        if self.image_url:
-            return ImageProxy(self.image_url)
-        return None
+    def image_url(self):
+        """互換性のためのプロパティ"""
+        return self.get_image_url()
