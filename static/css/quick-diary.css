@@ -1,162 +1,892 @@
-/* static/css/quick-diary.css */
+/* static/css/quick-diary.css - Enhanced Version */
 
-/* モーダルのスタイル調整 */
-#quickDiaryModal .modal-header {
-    background-color: var(--primary-color);
-    color: white;
+/* ========== モーダル基本スタイル ========== */
+.quick-diary-content {
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 0 10px 30px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.quick-diary-header {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: white;
+  border-bottom: none;
+  padding: 1.5rem 2rem;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(79, 70, 229, 0.3);
+}
+
+.quick-diary-header .modal-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+.quick-diary-header .btn-close {
+  filter: brightness(0) invert(1);
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.quick-diary-header .btn-close:hover {
+  opacity: 1;
+}
+
+/* ========== プログレスバー ========== */
+.quick-diary-progress {
+  height: 6px;
+  background: #f1f5f9;
+  position: relative;
+  overflow: hidden;
+}
+
+.quick-diary-progress .progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #4f46e5, #7c3aed);
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.3);
+}
+
+.quick-diary-progress .progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* ========== モーダルボディ ========== */
+.quick-diary-body {
+  padding: 2rem;
+  min-height: 500px;
+  position: relative;
+  background: #ffffff;
+}
+
+/* ========== ステップインジケーター（PC） ========== */
+.step-indicator {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2.5rem;
+  padding: 0 1rem;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  opacity: 0.5;
+  transition: all 0.3s ease;
+}
+
+.step.active {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.step.completed {
+  opacity: 0.9;
+}
+
+.step-circle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  border: 3px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  color: #64748b;
+  transition: all 0.4s ease;
+  box-shadow: 0 4px 15px rgba(148, 163, 184, 0.2);
+}
+
+.step.active .step-circle {
+  background: linear-gradient(135deg, #3b82f6, #06d6a0);
+  border-color: #22d3ee;
+  color: white;
+  transform: scale(1.15);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4), 0 4px 15px rgba(6, 214, 160, 0.3);
+  animation: pulse-glow 2s infinite;
+}
+
+.step.completed .step-circle {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-color: #34d399;
+  color: white;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4), 0 4px 15px rgba(6, 214, 160, 0.3); }
+  50% { box-shadow: 0 12px 35px rgba(59, 130, 246, 0.6), 0 6px 20px rgba(6, 214, 160, 0.5); }
+}
+
+.step-content {
+  text-align: left;
+}
+
+.step-title {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #1f2937;
+  margin-bottom: 0.25rem;
+}
+
+.step-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.step-connector {
+  flex: 1;
+  height: 4px;
+  background: linear-gradient(90deg, #e2e8f0, #f1f5f9);
+  margin: 0 1rem;
+  position: relative;
+  overflow: hidden;
+  border-radius: 2px;
+}
+
+.step.active + .step-connector::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #22d3ee, #06d6a0);
+  animation: progressFill 0.8s ease-out forwards;
+  border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(34, 211, 238, 0.4);
+}
+
+@keyframes progressFill {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+/* ========== モバイルステップインジケーター ========== */
+.mobile-step-indicator {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(16, 185, 129, 0.08));
+  border-radius: 16px;
+  border: 2px solid rgba(34, 211, 238, 0.2);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.1);
+}
+
+.step-counter {
+  font-size: 1.25rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #3b82f6, #06d6a0);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.75rem;
+}
+
+.step-title-mobile {
+  font-size: 1.1rem;
+  color: #1e293b;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* ========== フォームステップ ========== */
+.form-step {
+  display: none;
+  opacity: 0;
+  transform: translateX(20px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.form-step.active {
+  display: block;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.form-step-content {
+  margin-bottom: 2rem;
+}
+
+/* ========== 入力グループの強化 ========== */
+.input-group-enhanced {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.form-label.required::after {
+  content: '*';
+  color: #ef4444;
+  margin-left: 0.25rem;
+}
+
+.label-optional {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 400;
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  background: #f3f4f6;
+  border-radius: 12px;
+}
+
+.form-control-enhanced {
+  padding: 0.875rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  background: #ffffff;
+}
+
+.form-control-enhanced:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
+  outline: none;
+}
+
+.form-control-enhanced:invalid {
+  border-color: #ef4444;
+}
+
+.form-control-enhanced:valid:not(:placeholder-shown) {
+  border-color: #10b981;
+}
+
+.input-with-button {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.input-with-button .form-control-enhanced {
+  flex: 1;
+}
+
+.btn-action {
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--primary-color);
+  background: var(--primary-color);
+  color: white;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+}
+
+.btn-action:hover {
+  background: #4338ca;
+  border-color: #4338ca;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.help-text {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+/* ========== 記録タイプ選択 ========== */
+.record-type-section {
+  margin-bottom: 2rem;
+}
+
+.record-type-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.record-option {
+  position: relative;
+}
+
+.record-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.record-option-label {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  height: 100%;
+  box-shadow: 0 4px 15px rgba(148, 163, 184, 0.1);
+}
+
+.record-option-label:hover {
+  border-color: #22d3ee;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.05), rgba(6, 214, 160, 0.05));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(34, 211, 238, 0.15);
+}
+
+.record-option input:checked + .record-option-label {
+  border-color: #06d6a0;
+  background: linear-gradient(135deg, rgba(6, 214, 160, 0.1), rgba(34, 211, 238, 0.05));
+  box-shadow: 0 8px 30px rgba(6, 214, 160, 0.25), 0 4px 15px rgba(34, 211, 238, 0.15);
+  transform: translateY(-2px);
+}
+
+.option-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  color: #64748b;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(148, 163, 184, 0.15);
+}
+
+.record-option input:checked + .record-option-label .option-icon {
+  background: linear-gradient(135deg, #3b82f6, #06d6a0);
+  color: white;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
+  transform: scale(1.05);
+}
+
+.option-content {
+  flex: 1;
+}
+
+.option-title {
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.option-desc {
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+/* ========== 株式情報カード ========== */
+.stock-info-card {
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 2rem;
+  margin: 2rem 0;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.info-header {
+  font-weight: 700;
+  color: #4f46e5;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  font-size: 1.1rem;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1.25rem;
+}
+
+.info-item {
+  text-align: center;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.info-label {
+  font-size: 0.875rem;
+  color: #4f46e5;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.info-value {
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 1.1rem;
+}
+
+/* ========== 投資プレビュー ========== */
+.investment-preview {
+  background: #ffffff;
+  border: 2px solid #10b981;
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+  text-align: center;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.1);
+}
+
+.preview-header {
+  font-size: 1rem;
+  color: #10b981;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.preview-amount {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #10b981;
+}
+
+/* ========== 投資サマリー ========== */
+.investment-summary {
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 2rem;
+  margin-top: 2rem;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.summary-header {
+  font-weight: 700;
+  color: #4f46e5;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  font-size: 1.1rem;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1.25rem;
+}
+
+.summary-item {
+  text-align: center;
+  padding: 1.25rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.summary-label {
+  font-size: 0.875rem;
+  color: #4f46e5;
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.summary-value {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 1.1rem;
+}
+
+/* ========== メモエリア ========== */
+.memo-notice {
+  background: #ffffff;
+  border: 2px solid #f59e0b;
+  border-radius: 16px;
+  padding: 2rem;
+  color: #92400e;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.1);
+}
+
+/* ========== テキストカウンター ========== */
+.text-counter {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-align: right;
+  display: block;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+/* ========== ステップアクション ========== */
+.form-step-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.25rem;
+  padding-top: 2rem;
+  border-top: 2px solid #f1f5f9;
+}
+
+.btn-cancel, .btn-prev {
+  padding: 1rem 2rem;
+  border: 2px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  border-radius: 16px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.btn-cancel:hover, .btn-prev:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.btn-next, .btn-submit {
+  padding: 1rem 2.5rem;
+  border: 2px solid transparent;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white;
+  border-radius: 16px;
+  font-weight: 700;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.3);
+}
+
+.btn-next:hover, .btn-submit:hover {
+  background: linear-gradient(135deg, #4338ca, #6d28d9);
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px rgba(79, 70, 229, 0.4);
+}
+
+.btn-submit {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+}
+
+.btn-submit:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  box-shadow: 0 12px 35px rgba(16, 185, 129, 0.4);
+}
+
+/* ========== ローディング ========== */
+.form-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  border-radius: 20px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.loading-content {
+  text-align: center;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.loading-text {
+  margin-top: 1.5rem;
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 1.1rem;
+}
+
+.spinner-border {
+  color: #4f46e5 !important;
+}
+
+/* ========== アラート ========== */
+.quick-diary-alerts {
+  margin-bottom: 1.5rem;
+}
+
+.quick-diary-alerts .alert {
+  border: none;
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.quick-diary-alerts .alert-success {
+  background: #ffffff;
+  color: #10b981;
+  border: 2px solid #10b981;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.1);
+}
+
+.quick-diary-alerts .alert-danger {
+  background: #ffffff;
+  color: #ef4444;
+  border: 2px solid #ef4444;
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.1);
+}
+
+.quick-diary-alerts .alert-warning {
+  background: #ffffff;
+  color: #f59e0b;
+  border: 2px solid #f59e0b;
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.1);
+}
+
+.quick-diary-alerts .alert-info {
+  background: #ffffff;
+  color: #4f46e5;
+  border: 2px solid #4f46e5;
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.1);
+}
+
+/* ========== レスポンシブ対応 ========== */
+@media (max-width: 768px) {
+  .quick-diary-body {
+    padding: 1.5rem;
+    background: #ffffff;
   }
   
-  #quickDiaryModal .modal-title i {
-    margin-right: 8px;
+  .quick-diary-header {
+    padding: 1.25rem 1.5rem;
   }
   
-  #quickDiaryModal .modal-body {
-    max-height: 70vh;
-    overflow-y: auto;
+  .quick-diary-header .modal-title {
+    font-size: 1.25rem;
   }
   
-  /* フォームグループのスタイル */
-  #quickDiaryModal .form-label {
-    font-weight: 500;
-    color: var(--text-color);
-    font-size: 0.9rem;
+  .record-type-options {
+    grid-template-columns: 1fr;
   }
   
-  #quickDiaryModal .form-text {
-    font-size: 0.8rem;
+  .record-option-label {
+    padding: 1.25rem;
   }
   
-  /* 銘柄情報フィードバック */
-  .stock-info-feedback {
-    min-height: 20px;
-    transition: all 0.3s ease;
+  .option-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 1.2rem;
   }
   
-  /* 株価情報カード */
-  .stock-info-card {
-    background-color: rgba(var(--bs-primary-rgb), 0.05);
-    border-radius: 8px;
-    padding: 10px;
-    margin-top: 10px;
-    border: 1px solid rgba(var(--bs-primary-rgb), 0.1);
-    transition: all 0.3s ease;
+  .form-step-actions {
+    flex-direction: column-reverse;
+    gap: 1rem;
   }
   
-  .stock-info-card.show {
-    opacity: 1;
-    transform: translateY(0);
+  .form-step-actions button {
+    width: 100%;
+    justify-content: center;
   }
   
-  .stock-info-card.hide {
+  .info-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .input-with-button {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .btn-action {
+    align-self: stretch;
+  }
+  
+  .step-circle {
+    width: 48px;
+    height: 48px;
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .quick-diary-body {
+    padding: 1rem;
+  }
+  
+  .mobile-step-indicator {
+    padding: 1rem;
+  }
+  
+  .step-counter {
+    font-size: 1.1rem;
+  }
+  
+  .step-title-mobile {
+    font-size: 1rem;
+  }
+}
+
+/* ========== アニメーション ========== */
+@keyframes slideInRight {
+  from {
     opacity: 0;
-    transform: translateY(-10px);
-    height: 0;
-    padding: 0;
-    margin: 0;
-    overflow: hidden;
+    transform: translateX(30px);
   }
-  
-  /* 項目行のスタイル */
-  .stock-info-row {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 5px;
-    font-size: 0.85rem;
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
-  
-  .stock-info-label {
-    color: var(--text-light);
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
   }
-  
-  .stock-info-value {
-    font-weight: 500;
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
-  
-  /* トースト通知のスタイル */
-  .toast-notification {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    min-width: 250px;
-    z-index: 1050;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
-    animation: slideIn 0.3s ease-out;
+}
+
+.form-step.slide-in-right {
+  animation: slideInRight 0.4s ease-out;
+}
+
+.form-step.slide-in-left {
+  animation: slideInLeft 0.4s ease-out;
+}
+
+/* ========== フォーカス状態の改善 ========== */
+.form-control-enhanced:focus,
+.btn:focus,
+.record-option-label:focus-within {
+  outline: 3px solid rgba(79, 70, 229, 0.3);
+  outline-offset: 2px;
+}
+
+.btn-action:focus {
+  outline: 3px solid rgba(79, 70, 229, 0.3);
+  outline-offset: 2px;
+}
+
+.btn-next:focus,
+.btn-submit:focus {
+  outline: 3px solid rgba(16, 185, 129, 0.3);
+  outline-offset: 2px;
+}
+
+/* ========== 追加のエフェクト ========== */
+.quick-diary-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #4f46e5, #7c3aed, #10b981);
+  z-index: 1;
+}
+
+.quick-diary-header::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(90deg, #4f46e5, #7c3aed);
+  border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+}
+
+/* ========== ホバーエフェクトの強化 ========== */
+.stock-info-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+}
+
+.investment-preview:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.2);
+}
+
+.investment-summary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+}
+
+/* ========== パルスアニメーション ========== */
+@keyframes gentle-pulse {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1);
   }
-  
-  @keyframes slideIn {
-    from {
-      transform: translateY(100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
+  50% { 
+    opacity: 0.9; 
+    transform: scale(1.02);
   }
-  
-  /* Select2のカスタマイズ（Select2を使用する場合） */
-  .select2-container--default .select2-selection--multiple {
-    border-color: #ced4da;
-    border-radius: 0.375rem;
-  }
-  
-  .select2-container--default.select2-container--focus .select2-selection--multiple {
-    border-color: #a5b4fc;
-    box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.25);
-  }
-  
-  /* モバイル対応 */
-  @media (max-width: 768px) {
-    #quickDiaryModal .modal-body {
-      max-height: 60vh;
-    }
-    
-    #quickDiaryModal .form-label {
-      font-size: 0.85rem;
-    }
-  }
-  
-  /* ローディングインジケーター */
-  .form-status-feedback {
-    transition: all 0.3s ease;
-  }
-  
-  .form-status-feedback.d-none {
-    display: none !important;
-  }
-  
-  /* フォーム検証スタイル */
-  .is-invalid:focus {
-    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
-  }
-  
-  /* 送信ボタンのスタイル */
-  #quickDiarySubmit {
-    min-width: 100px;
-  }
-  
-  #quickDiarySubmit:disabled {
-    opacity: 0.7;
-  }
-  
-  /* 新しく追加された日記カードのハイライト効果 */
-  @keyframes highlight-pulse {
-    0% {
-      box-shadow: 0 0 0 0 rgba(var(--bs-success-rgb), 0.7);
-      border-color: rgba(var(--bs-success-rgb), 0.7);
-    }
-    70% {
-      box-shadow: 0 0 0 10px rgba(var(--bs-success-rgb), 0);
-      border-color: rgba(var(--bs-success-rgb), 0.3);
-    }
-    100% {
-      box-shadow: 0 0 0 0 rgba(var(--bs-success-rgb), 0);
-      border-color: rgba(var(--bs-primary-rgb), 0.1);
-    }
-  }
-  
-  .new-diary-highlight {
-    animation: highlight-pulse 2s ease-in-out 2;
-    border: 2px solid rgba(var(--bs-success-rgb), 0.7);
-    transform: translateY(0) !important;
-  }
+}
+
+.btn-submit:not(:disabled):not(:hover) {
+  animation: gentle-pulse 3s infinite;
+}
+
+/* ========== グロー効果 ========== */
+.form-control-enhanced:valid:not(:placeholder-shown) {
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1), 0 0 20px rgba(16, 185, 129, 0.05);
+}
+
+.form-control-enhanced:invalid:not(:placeholder-shown) {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1), 0 0 20px rgba(239, 68, 68, 0.05);
+}

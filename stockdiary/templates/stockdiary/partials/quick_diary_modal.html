@@ -1,196 +1,382 @@
 {% load static %}
 
 <!-- Enhanced Quick Diary Modal Template -->
-<div class="modal fade" id="quickDiaryModal" tabindex="-1" aria-labelledby="quickDiaryModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title text-info" id="quickDiaryModalLabel">
-          <i class="bi bi-lightning-fill me-2"></i>クイック日記作成
+<div class="modal fade" id="quickDiaryModal" tabindex="-1" aria-labelledby="quickDiaryModalLabel" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-md-down">
+    <div class="modal-content quick-diary-content">
+      <!-- モーダルヘッダー -->
+      <div class="modal-header quick-diary-header">
+        <h5 class="modal-title" id="quickDiaryModalLabel">
+          <i class="bi bi-lightning-fill me-2"></i>
+          <span class="step-title">クイック日記作成</span>
         </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="閉じる"></button>
       </div>
-      <div class="modal-body">
-        <form id="quickDiaryForm" action="{% url 'stockdiary:api_create' %}" method="post" class="needs-validation" novalidate>
-          {% csrf_token %}
-          <!-- モバイル対応タブナビゲーション -->
-          <ul class="nav nav-tabs nav-fill mb-3" id="quickDiaryTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-              <button class="nav-link active" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic-info" 
-                      type="button" role="tab" aria-controls="basic-info" aria-selected="true">
-                <i class="bi bi-info-circle d-none d-sm-inline me-1"></i>基本情報
-              </button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="details-tab" data-bs-toggle="tab" data-bs-target="#details-info" 
-                      type="button" role="tab" aria-controls="details-info" aria-selected="false">
-                <i class="bi bi-card-text d-none d-sm-inline me-1"></i>詳細情報
-              </button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="tags-tab" data-bs-toggle="tab" data-bs-target="#tags-info" 
-                      type="button" role="tab" aria-controls="tags-info" aria-selected="false">
-                <i class="bi bi-tags d-none d-sm-inline me-1"></i>タグ付け
-              </button>
-            </li>
-          </ul>
 
-          <!-- スワイプ可能なタブコンテント -->
-          <div class="tab-content" id="quickDiaryTabContent">
-            <div class="swipe-hint text-center small text-muted mb-2 d-md-none">
-              <i class="bi bi-arrow-left-right me-1"></i> 左右にスワイプでタブを切り替え
+      <!-- プログレスバー -->
+      <div class="quick-diary-progress">
+        <div class="progress-bar" id="quick-progress-bar"></div>
+      </div>
+
+      <!-- モーダルボディ -->
+      <div class="modal-body quick-diary-body">
+        <!-- ステップインジケーター（PC用） -->
+        <div class="step-indicator d-none d-md-flex">
+          <div class="step active" data-step="1">
+            <div class="step-circle">
+              <i class="bi bi-building"></i>
             </div>
-            
-            <!-- 基本情報タブ -->
-            <div class="tab-pane fade show active" id="basic-info" role="tabpanel" aria-labelledby="basic-tab">
-              <div class="row g-3">
-                <!-- 銘柄コード -->
-                <div class="col-md-6">
-                  <label for="quick_stock_symbol" class="form-label">銘柄コード</label>
-                  <div class="input-group">
-                    <input type="text" class="form-control" id="quick_stock_symbol" name="stock_symbol" 
-                          placeholder="例: 7203" autocomplete="off">
-                    <button class="btn btn-outline-primary" type="button" id="quick_fetch_stock_info">
-                      <i class="bi bi-search"></i>
-                    </button>
-                    <div id="symbol-indicator" class="htmx-indicator position-absolute" style="right: 50px; top: 8px;">
-                      <div class="spinner-border spinner-border-sm text-primary" role="status">
-                        <span class="visually-hidden">検証中...</span>
+            <div class="step-content">
+              <div class="step-title">銘柄選択</div>
+              <div class="step-subtitle">コード・名前</div>
+            </div>
+          </div>
+          <div class="step-connector"></div>
+          <div class="step" data-step="2">
+            <div class="step-circle">
+              <i class="bi bi-currency-yen"></i>
+            </div>
+            <div class="step-content">
+              <div class="step-title">価格入力</div>
+              <div class="step-subtitle">価格・数量</div>
+            </div>
+          </div>
+          <div class="step-connector"></div>
+          <div class="step" data-step="3">
+            <div class="step-circle">
+              <i class="bi bi-check-lg"></i>
+            </div>
+            <div class="step-content">
+              <div class="step-title">詳細情報</div>
+              <div class="step-subtitle">理由・タグ</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ステップインジケーター（モバイル用） -->
+        <div class="mobile-step-indicator d-md-none">
+          <div class="step-counter">
+            <span class="current-step">1</span> / <span class="total-steps">3</span>
+          </div>
+          <div class="step-title-mobile">銘柄を選択してください</div>
+        </div>
+
+        <!-- エラー・成功メッセージ表示エリア -->
+        <div id="quick-diary-alerts" class="quick-diary-alerts"></div>
+
+        <!-- フォーム -->
+        <form id="quickDiaryForm" action="{% url 'stockdiary:api_create' %}" method="post" class="quick-diary-form">
+          {% csrf_token %}
+          
+          <!-- ステップ1: 銘柄情報 -->
+          <div class="form-step active" data-step="1">
+            <div class="form-step-content">
+              <!-- 銘柄コード入力 -->
+              <div class="input-group-enhanced">
+                <label for="quick_stock_symbol" class="form-label">
+                  <i class="bi bi-hash me-1"></i>銘柄コード
+                  <span class="label-optional">任意</span>
+                </label>
+                <div class="input-with-button">
+                  <input type="text" 
+                         id="quick_stock_symbol" 
+                         name="stock_symbol" 
+                         class="form-control form-control-enhanced"
+                         placeholder="例: 7203, AAPL"
+                         autocomplete="off">
+                  <button type="button" 
+                          id="quick_fetch_stock_info" 
+                          class="btn btn-action"
+                          title="銘柄情報を自動取得">
+                    <i class="bi bi-search"></i>
+                  </button>
+                </div>
+                <div class="help-text">
+                  <i class="bi bi-info-circle me-1"></i>
+                  入力すると銘柄名・業種・現在価格を自動取得します
+                </div>
+              </div>
+
+              <!-- 銘柄名入力 -->
+              <div class="input-group-enhanced">
+                <label for="quick_stock_name" class="form-label required">
+                  <i class="bi bi-building me-1"></i>銘柄名
+                </label>
+                <input type="text" 
+                       id="quick_stock_name" 
+                       name="stock_name" 
+                       class="form-control form-control-enhanced"
+                       placeholder="例: トヨタ自動車、Apple Inc."
+                       required>
+                <div class="invalid-feedback">銘柄名を入力してください</div>
+              </div>
+
+              <!-- 記録タイプ選択 -->
+              <div class="record-type-section">
+                <label class="form-label">
+                  <i class="bi bi-card-checklist me-1"></i>記録タイプ
+                </label>
+                <div class="record-type-options">
+                  <div class="record-option">
+                    <input type="radio" id="type_trade" name="record_type" value="trade" checked>
+                    <label for="type_trade" class="record-option-label">
+                      <div class="option-icon">
+                        <i class="bi bi-graph-up-arrow"></i>
                       </div>
-                    </div>
+                      <div class="option-content">
+                        <div class="option-title">売買記録</div>
+                        <div class="option-desc">価格・数量を詳細に記録</div>
+                      </div>
+                    </label>
                   </div>
-                  <div id="symbol-feedback" class="form-text"></div>
-                </div>
-                
-                <!-- 銘柄名 -->
-                <div class="col-md-6">
-                  <label for="quick_stock_name" class="form-label">銘柄名 <span class="text-danger">*</span></label>
-                  <label for="quick_stock_name" class="form-label">銘柄名 <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control" id="quick_stock_name" name="stock_name" 
-                        placeholder="例: トヨタ自動車" required>
-                  <div class="invalid-feedback">銘柄名を入力してください</div>
-                </div>
-                
-                <!-- 日付 -->
-                <div class="col-md-4">
-                  <label for="quick_purchase_date" class="form-label">購入/メモ日 <span class="text-danger">*</span></label>
-                  <input type="date" class="form-control" id="quick_purchase_date" name="purchase_date" required>
-                </div>
-                
-                <!-- 購入価格 -->
-                <div class="col-md-4">
-                  <label for="quick_purchase_price" class="form-label">購入価格</label>
-                  <div class="input-group">
-                    <input type="number" class="form-control" id="quick_purchase_price" name="purchase_price" 
-                          placeholder="円" step="0.01">
-                    <button class="btn btn-outline-primary" type="button" id="quick_fetch_price" aria-label="現在価格取得">
-                      <i class="bi bi-arrow-repeat"></i>
-                    </button>
-                  </div>
-                  <small class="form-text text-muted">空欄の場合はメモとして扱われます</small>
-                </div>
-                
-                <!-- 購入数量 -->
-                <div class="col-md-4">
-                  <label for="quick_purchase_quantity" class="form-label">購入数量</label>
-                  <input type="number" class="form-control" id="quick_purchase_quantity" name="purchase_quantity" 
-                        placeholder="株" step="1">
-                  <small class="form-text text-muted">空欄の場合はメモとして扱われます</small>
-                </div>
-              </div>
-              
-              <!-- 株価情報カード -->
-              <div class="stock-info-card hide mt-3">
-                <div class="row">
-                  <div class="col-6 col-md-3">
-                    <div class="stock-info-row">
-                      <div class="stock-info-label">市場：</div>
-                      <div class="stock-info-value" id="stock_market"></div>
-                    </div>
-                  </div>
-                  <div class="col-6 col-md-3">
-                    <div class="stock-info-row">
-                      <div class="stock-info-label">業種：</div>
-                      <div class="stock-info-value" id="stock_sector"></div>
-                    </div>
-                  </div>
-                  <div class="col-6 col-md-3">
-                    <div class="stock-info-row">
-                      <div class="stock-info-label">現在価格：</div>
-                      <div class="stock-info-value" id="stock_price"></div>
-                    </div>
-                  </div>
-                  <div class="col-6 col-md-3">
-                    <div class="stock-info-row">
-                      <div class="stock-info-label">前日比：</div>
-                      <div class="stock-info-value" id="stock_change"></div>
-                    </div>
+                  <div class="record-option">
+                    <input type="radio" id="type_memo" name="record_type" value="memo">
+                    <label for="type_memo" class="record-option-label">
+                      <div class="option-icon">
+                        <i class="bi bi-journal-text"></i>
+                      </div>
+                      <div class="option-content">
+                        <div class="option-title">メモのみ</div>
+                        <div class="option-desc">気になる銘柄や考察を記録</div>
+                      </div>
+                    </label>
                   </div>
                 </div>
               </div>
-              
-              <!-- ナビゲーションボタン -->
-              <div class="d-flex justify-content-end mt-3">
-                <button type="button" class="btn btn-primary" id="to-details-tab">
-                  次へ <i class="bi bi-chevron-right"></i>
-                </button>
+
+              <!-- 株式情報カード -->
+              <div class="stock-info-card" id="stock-info-display" style="display: none;">
+                <div class="info-header">
+                  <i class="bi bi-info-circle me-1"></i>
+                  取得した銘柄情報
+                </div>
+                <div class="info-grid">
+                  <div class="info-item">
+                    <span class="info-label">業種</span>
+                    <span class="info-value" id="display-sector">-</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">現在価格</span>
+                    <span class="info-value" id="display-price">-</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">前日比</span>
+                    <span class="info-value" id="display-change">-</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">市場</span>
+                    <span class="info-value" id="display-market">-</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- フィードバックエリア -->
+              <div class="stock-info-feedback" id="step1-feedback"></div>
+            </div>
+
+            <!-- ステップアクション -->
+            <div class="form-step-actions">
+              <button type="button" class="btn btn-light btn-cancel" data-bs-dismiss="modal">
+                キャンセル
+              </button>
+              <button type="button" class="btn btn-primary btn-next" data-next="2">
+                次へ進む
+                <i class="bi bi-arrow-right ms-1"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- ステップ2: 価格・数量情報 -->
+          <div class="form-step" data-step="2">
+            <div class="form-step-content">
+              <!-- 日付入力 -->
+              <div class="input-group-enhanced">
+                <label for="quick_purchase_date" class="form-label required">
+                  <i class="bi bi-calendar-event me-1"></i>購入/メモ日
+                </label>
+                <input type="date" 
+                       id="quick_purchase_date" 
+                       name="purchase_date" 
+                       class="form-control form-control-enhanced"
+                       required>
+              </div>
+
+              <!-- 価格・数量エリア（売買記録選択時のみ表示） -->
+              <div id="price-quantity-area">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <div class="input-group-enhanced">
+                      <label for="quick_purchase_price" class="form-label">
+                        <i class="bi bi-currency-yen me-1"></i>購入価格
+                      </label>
+                      <div class="input-with-button">
+                        <input type="number" 
+                               id="quick_purchase_price" 
+                               name="purchase_price" 
+                               class="form-control form-control-enhanced"
+                               placeholder="0"
+                               step="0.01"
+                               min="0">
+                        <button type="button" 
+                                id="quick_fetch_price" 
+                                class="btn btn-action"
+                                title="現在価格を取得">
+                          <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                      </div>
+                      <div class="help-text">現在価格を自動取得できます</div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="input-group-enhanced">
+                      <label for="quick_purchase_quantity" class="form-label">
+                        <i class="bi bi-stack me-1"></i>購入数量
+                      </label>
+                      <input type="number" 
+                             id="quick_purchase_quantity" 
+                             name="purchase_quantity" 
+                             class="form-control form-control-enhanced"
+                             placeholder="株数"
+                             step="1"
+                             min="1">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 投資金額プレビュー -->
+                <div class="investment-preview" id="investment-preview" style="display: none;">
+                  <div class="preview-header">
+                    <i class="bi bi-calculator me-1"></i>
+                    投資金額プレビュー
+                  </div>
+                  <div class="preview-content">
+                    <span class="preview-amount" id="preview-amount">0円</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- メモエリア（メモのみ選択時に表示される説明） -->
+              <div id="memo-only-area" style="display: none;">
+                <div class="memo-notice">
+                  <i class="bi bi-info-circle me-2"></i>
+                  メモモードでは価格・数量の入力は不要です。気になる銘柄の情報や考察を記録しましょう。
+                </div>
               </div>
             </div>
-            
-            <!-- 詳細情報タブ -->
-            <div class="tab-pane fade" id="details-info" role="tabpanel" aria-labelledby="details-tab">
-              <!-- 業種 -->
-              <div class="mb-3">
-                <label for="quick_sector" class="form-label">業種</label>
-                <input type="text" class="form-control" id="quick_sector" name="sector" 
-                      placeholder="例: 自動車・輸送機器">
-                <small class="form-text text-muted">銘柄検索時に自動入力されます</small>
-              </div>
-              
-              <!-- 購入理由 -->
-              <div class="mb-3">
-                <label for="quick_reason" class="form-label">購入理由/メモ</label>
-                <textarea class="form-control" id="quick_reason" name="reason" rows="5" 
-                        placeholder="購入理由や着目点などを記録しましょう"></textarea>
-              </div>
-              
-              <!-- ナビゲーションボタン -->
-              <div class="d-flex justify-content-between mt-3">
-                <button type="button" class="btn btn-outline-secondary" id="back-to-basic-tab">
-                  <i class="bi bi-chevron-left"></i> 戻る
-                </button>
-                <button type="button" class="btn btn-primary" id="to-tags-tab">
-                  次へ <i class="bi bi-chevron-right"></i>
-                </button>
-              </div>
+
+            <div class="form-step-actions">
+              <button type="button" class="btn btn-light btn-prev" data-prev="1">
+                <i class="bi bi-arrow-left me-1"></i>
+                戻る
+              </button>
+              <button type="button" class="btn btn-primary btn-next" data-next="3">
+                次へ進む
+                <i class="bi bi-arrow-right ms-1"></i>
+              </button>
             </div>
-            
-            <!-- タグ情報タブ -->
-            <div class="tab-pane fade" id="tags-info" role="tabpanel" aria-labelledby="tags-tab">
-              <!-- タグセレクト -->
-              <div class="mb-3">
-                <label for="quick_tags" class="form-label">タグ</label>
-                <select class="form-select" id="quick_tags" name="tags" multiple="multiple">
-                  <!-- タグオプションはJavaScriptで動的に追加されます -->
+          </div>
+
+          <!-- ステップ3: 詳細情報 -->
+          <div class="form-step" data-step="3">
+            <div class="form-step-content">
+              <!-- 業種入力 -->
+              <div class="input-group-enhanced">
+                <label for="quick_sector" class="form-label">
+                  <i class="bi bi-diagram-3 me-1"></i>業種
+                  <span class="label-optional">任意</span>
+                </label>
+                <input type="text" 
+                       id="quick_sector" 
+                       name="sector" 
+                       class="form-control form-control-enhanced"
+                       placeholder="例: 自動車・輸送機器">
+                <div class="help-text">銘柄コード入力時に自動設定されます</div>
+              </div>
+
+              <!-- 購入理由・メモ -->
+              <div class="input-group-enhanced">
+                <label for="quick_reason" class="form-label">
+                  <i class="bi bi-chat-square-text me-1"></i>購入理由・メモ
+                  <span class="label-optional">任意</span>
+                </label>
+                <textarea id="quick_reason" 
+                          name="reason" 
+                          class="form-control form-control-enhanced"
+                          rows="4"
+                          placeholder="購入を決めた理由や気になるポイント、今後の注目点などを記録しましょう..."></textarea>
+                <div class="help-text">
+                  <span class="text-counter">
+                    <span id="reason-counter">0</span>/1000文字
+                  </span>
+                </div>
+              </div>
+
+              <!-- タグ選択 -->
+              <div class="input-group-enhanced">
+                <label for="quick_tags" class="form-label">
+                  <i class="bi bi-tags me-1"></i>タグ
+                  <span class="label-optional">任意</span>
+                </label>
+                <select id="quick_tags" 
+                        name="tags" 
+                        class="form-select form-control-enhanced"
+                        multiple>
+                  <!-- オプションはJSで動的に追加 -->
                 </select>
-                <small class="form-text text-muted">複数選択可能です。新しいタグを追加するには、まず<a href="{% url 'tags:list' %}" target="_blank">タグ管理</a>ページで作成してください。</small>
+                <div class="help-text">
+                  複数選択可能。
+                  <a href="{% url 'tags:list' %}" target="_blank" class="text-decoration-none">
+                    新しいタグを作成 <i class="bi bi-box-arrow-up-right"></i>
+                  </a>
+                </div>
               </div>
-              
-              <!-- フィードバック表示エリア -->
-              <div class="form-status-feedback d-none alert alert-info">
-                <span class="feedback-message"></span>
+
+              <!-- 投資サマリー（売買記録の場合のみ） -->
+              <div id="investment-summary" class="investment-summary" style="display: none;">
+                <div class="summary-header">
+                  <i class="bi bi-clipboard-data me-1"></i>
+                  投資内容の確認
+                </div>
+                <div class="summary-grid">
+                  <div class="summary-item">
+                    <span class="summary-label">銘柄</span>
+                    <span class="summary-value" id="summary-stock">-</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">投資金額</span>
+                    <span class="summary-value" id="summary-amount">-</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">購入株数</span>
+                    <span class="summary-value" id="summary-quantity">-</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">購入単価</span>
+                    <span class="summary-value" id="summary-price">-</span>
+                  </div>
+                </div>
               </div>
-              
-              <!-- ナビゲーションと送信ボタン -->
-              <div class="d-flex justify-content-between mt-3">
-                <button type="button" class="btn btn-outline-secondary" id="back-to-details-tab">
-                  <i class="bi bi-chevron-left"></i> 戻る
-                </button>
-                
-                <button type="submit" class="btn btn-success px-4" id="quickDiarySubmit">
-                  <i class="bi bi-journal-plus"></i> 作成する
-                </button>
+            </div>
+
+            <div class="form-step-actions">
+              <button type="button" class="btn btn-light btn-prev" data-prev="2">
+                <i class="bi bi-arrow-left me-1"></i>
+                戻る
+              </button>
+              <button type="submit" class="btn btn-success btn-submit" id="quickDiarySubmit">
+                <i class="bi bi-journal-plus me-1"></i>
+                日記を作成
+              </button>
+            </div>
+          </div>
+
+          <!-- 読み込み中表示 -->
+          <div class="form-loading-overlay" id="form-loading" style="display: none;">
+            <div class="loading-content">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">作成中...</span>
               </div>
+              <div class="loading-text">日記を作成しています...</div>
             </div>
           </div>
         </form>
@@ -198,4 +384,3 @@
     </div>
   </div>
 </div>
-<script src="{% static 'js/quick-diary-tabs.js' %}"></script>
