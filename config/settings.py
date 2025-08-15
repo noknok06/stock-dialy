@@ -1091,19 +1091,6 @@ LANGEXTRACT_ROLLOUT_PERCENTAGE = 100  # 0-100: LangExtractを使用するリク�
 LANGEXTRACT_COMPANY_WHITELIST = []  # 特定企業のみでテストする場合
 LANGEXTRACT_DOC_TYPE_WHITELIST = ['120', '160']  # 特定書類種別のみでテストする場合
 
-CLOUDINARY_CLOUD_NAME = os.environ.get('CLOUDINARY_CLOUD_NAME')
-CLOUDINARY_API_KEY = os.environ.get('CLOUDINARY_API_KEY')
-CLOUDINARY_API_SECRET = os.environ.get('CLOUDINARY_API_SECRET')
-
-# Cloudinary初期化
-cloudinary.config(
-    cloud_name=CLOUDINARY_CLOUD_NAME,
-    api_key=CLOUDINARY_API_KEY,
-    api_secret=CLOUDINARY_API_SECRET,
-    secure=True
-)
-
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 SESSION_SAVE_EVERY_REQUEST = True
 
