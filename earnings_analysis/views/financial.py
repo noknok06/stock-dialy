@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 import logging
 
+from ..services.comprehensive_analyzer import ComprehensiveAnalysisService
 from ..models import FinancialAnalysisSession
 
 logger = logging.getLogger(__name__)
