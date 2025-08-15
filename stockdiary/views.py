@@ -56,7 +56,7 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
     paginate_by = 4
     
     def get_queryset(self):
-        queryset = StockDiary.objects.filter(user=self.request.user).order_by('-created_at', '-purchase_date')
+        queryset = StockDiary.objects.filter(user=self.request.user).order_by('-updated_at', '-purchase_date')
         queryset = queryset.select_related('user').prefetch_related('tags', 'notes')
         
         # 検索フィルター
@@ -1566,7 +1566,7 @@ def diary_list(request):
         return redirect(f'/stockdiary/?{request.GET.urlencode()}')
     
     try:
-        queryset = StockDiary.objects.filter(user=request.user).order_by('-created_at', '-purchase_date')
+        queryset = StockDiary.objects.filter(user=request.user).order_by('-updated_at', '-purchase_date')
         queryset = queryset.select_related('user').prefetch_related('tags', 'notes')
         
         # 検索フィルター

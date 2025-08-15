@@ -287,7 +287,14 @@ class DiaryNote(models.Model):
     def save(self, *args, **kwargs):
         # バリデーションを実行
         self.full_clean()
+        
+        # ノートを保存
         super().save(*args, **kwargs)
+        
+        # 親日記のupdated_atを現在時刻に更新
+        from django.utils import timezone
+        self.diary.updated_at = timezone.now()
+        self.diary.save(update_fields=['updated_at'])
 
     def process_and_save_image(self, image_file):
         """画像を圧縮・処理して保存"""
