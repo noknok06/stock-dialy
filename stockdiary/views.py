@@ -56,7 +56,7 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
     paginate_by = 4
     
     def get_queryset(self):
-        queryset = StockDiary.objects.filter(user=self.request.user).order_by('-purchase_date')
+        queryset = StockDiary.objects.filter(user=self.request.user).order_by('-created_at', '-purchase_date')
         queryset = queryset.select_related('user').prefetch_related('tags', 'notes')
         
         # 検索フィルター
@@ -965,9 +965,9 @@ class DiaryAnalyticsView(LoginRequiredMixin, TemplateView):
         
         # 並び替え
         if sort == 'date_desc':
-            diaries = diaries.order_by('-purchase_date')
+            diaries = diaries.order_by('-created_at', '-purchase_date')
         elif sort == 'date_asc':
-            diaries = diaries.order_by('purchase_date')
+            diaries = diaries.order_by('created_at', 'purchase_date')
         elif sort == 'reason_desc':
             # 理由フィールドの長さで並べ替え
             diaries = diaries.annotate(reason_length=Length('reason')).order_by('-reason_length')
@@ -1566,7 +1566,7 @@ def diary_list(request):
         return redirect(f'/stockdiary/?{request.GET.urlencode()}')
     
     try:
-        queryset = StockDiary.objects.filter(user=request.user).order_by('-purchase_date')
+        queryset = StockDiary.objects.filter(user=request.user).order_by('-created_at', '-purchase_date')
         queryset = queryset.select_related('user').prefetch_related('tags', 'notes')
         
         # 検索フィルター

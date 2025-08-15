@@ -1,278 +1,411 @@
 /**
  * diary-detail-tabs.js - 日記詳細ページのタブスワイプ機能
- * 継続記録とタイムラインタブ間のスワイプ操作を実装
+ * 全タブ間（基本情報、継続記録、タイムライン）のスワイプ操作を実装
  */
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('=== 日記詳細タブスワイプ機能 初期化開始 ===');
+    
     // タブ要素を取得
     const tabContent = document.getElementById('diaryDetailTabContent');
-    const notesTab = document.getElementById('notes-tab');
-    const timelineTab = document.getElementById('timeline-tab');
+    const tabsContainer = document.getElementById('diaryDetailTabs');
     
-    // タブ要素が存在しない場合は何もしない
-    if (!tabContent || !notesTab || !timelineTab) return;
+    // 必須要素が存在しない場合は何もしない
+    if (!tabContent || !tabsContainer) {
+        console.log('必須要素が見つかりません');
+        return;
+    }
     
-    // Bootstrap Tab インスタンスを取得
-    const notesTabInstance = new bootstrap.Tab(notesTab);
-    const timelineTabInstance = new bootstrap.Tab(timelineTab);
+    // 全タブを順序通りに取得
+    const getAllTabs = () => {
+        const tabs = [];
+        const tabButtons = tabsContainer.querySelectorAll('.improved-tab-link');
+        
+        tabButtons.forEach(button => {
+            const targetId = button.getAttribute('data-bs-target');
+            const targetPane = document.querySelector(targetId);
+            
+            if (targetPane) {
+                tabs.push({
+                    button: button,
+                    pane: targetPane,
+                    id: targetId,
+                    name: button.querySelector('.tab-label')?.textContent || 'Unknown'
+                });
+            }
+        });
+        
+        console.log('検出されたタブ:', tabs.map((tab, index) => `${index}: ${tab.name} (${tab.id})`));
+        return tabs;
+    };
+    
+    const allTabs = getAllTabs();
+    
+    if (allTabs.length === 0) {
+        console.log('有効なタブが見つかりません');
+        return;
+    }
+    
+    // 現在のアクティブタブのインデックスを取得
+    const getCurrentTabIndex = () => {
+        for (let i = 0; i < allTabs.length; i++) {
+            if (allTabs[i].button.classList.contains('active')) {
+                console.log('現在のアクティブタブ:', i, allTabs[i].name);
+                return i;
+            }
+        }
+        console.log('アクティブタブが見つかりません、0を返す');
+        return 0;
+    };
+    
+    // 指定されたインデックスのタブをアクティブ化
+    const activateTab = (index) => {
+        if (index >= 0 && index < allTabs.length) {
+            console.log(`タブ${index}をアクティブ化:`, allTabs[index].name);
+            
+            const tabInstance = new bootstrap.Tab(allTabs[index].button);
+            tabInstance.show();
+            
+            return true;
+        }
+        console.log(`無効なタブインデックス: ${index} (範囲: 0-${allTabs.length - 1})`);
+        return false;
+    };
     
     // スワイプ関連の変数
     let touchStartX = 0;
+    let touchStartY = 0;
     let touchEndX = 0;
     let touchMoveX = 0;
     let startTime = 0;
     let moveDistance = 0;
-    let currentTabIndex = 0;
     let isDragging = false;
     let isAnimating = false;
+    let isScrolling = false;
     
     // 定数
     const TRANSITION_DURATION = 300; // ミリ秒
     const DRAG_THRESHOLD = 80; // スワイプと判定する最小距離（px）
     const VELOCITY_THRESHOLD = 0.5; // スワイプと判定する最小速度（px/ms）
     
-    // 現在のタブインデックスを設定
-    function initTabIndex() {
-      if (notesTab.classList.contains('active')) {
-        currentTabIndex = 0;
-      } else if (timelineTab.classList.contains('active')) {
-        currentTabIndex = 1;
-      } else {
-        currentTabIndex = 0;
-      }
-    }
-    
     // スワイプ状態のリセット
     function resetSwipeState() {
-      touchStartX = 0;
-      touchEndX = 0;
-      touchMoveX = 0;
-      moveDistance = 0;
-      isDragging = false;
-      isAnimating = false;
-      tabContent.classList.remove('swiping');
+        touchStartX = 0;
+        touchStartY = 0;
+        touchEndX = 0;
+        touchMoveX = 0;
+        moveDistance = 0;
+        isDragging = false;
+        isAnimating = false;
+        isScrolling = false;
+        tabContent.classList.remove('swiping');
+        
+        // タブハイライトをリセット
+        allTabs.forEach(tab => {
+            tab.button.classList.remove('tab-highlight');
+        });
     }
     
     // スワイプ方向のインジケーターを更新
     function updateDirectionIndicators() {
-      // スワイプの方向によって、視覚的なフィードバックを提供する
-      if (moveDistance > 0) {
-        // 右スワイプ - 前のタブが存在する場合はハイライト
-        if (currentTabIndex > 0) {
-          timelineTab.classList.remove('tab-highlight');
-          notesTab.classList.add('tab-highlight');
+        const currentIndex = getCurrentTabIndex();
+        
+        // すべてのハイライトをリセット
+        allTabs.forEach(tab => {
+            tab.button.classList.remove('tab-highlight');
+        });
+        
+        if (moveDistance > 0) {
+            // 右スワイプ - 前のタブが存在する場合はハイライト
+            if (currentIndex > 0) {
+                allTabs[currentIndex - 1].button.classList.add('tab-highlight');
+            }
+        } else if (moveDistance < 0) {
+            // 左スワイプ - 次のタブが存在する場合はハイライト
+            if (currentIndex < allTabs.length - 1) {
+                allTabs[currentIndex + 1].button.classList.add('tab-highlight');
+            }
         }
-      } else if (moveDistance < 0) {
-        // 左スワイプ - 次のタブが存在する場合はハイライト
-        if (currentTabIndex < 1) {
-          notesTab.classList.remove('tab-highlight');
-          timelineTab.classList.add('tab-highlight');
-        }
-      } else {
-        // ハイライトをリセット
-        notesTab.classList.remove('tab-highlight');
-        timelineTab.classList.remove('tab-highlight');
-      }
     }
     
     // タッチ開始イベント
     function handleTouchStart(e) {
-      if (isAnimating) return;
-      
-      touchStartX = e.touches[0].clientX;
-      startTime = Date.now();
-      isDragging = true;
-      moveDistance = 0;
-      
-      // トランジションを無効化してスワイプ中であることを示す
-      tabContent.classList.add('swiping');
-      
-      // タップ振動フィードバック（対応ブラウザのみ）
-      if (navigator.vibrate) {
-        navigator.vibrate(5);
-      }
+        if (isAnimating) return;
+        
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        startTime = Date.now();
+        isDragging = false;
+        isScrolling = false;
+        moveDistance = 0;
+        
+        console.log('タッチ開始:', { x: touchStartX, y: touchStartY });
+        
+        // タップ振動フィードバック（対応ブラウザのみ）
+        if (navigator.vibrate) {
+            navigator.vibrate(5);
+        }
     }
     
     // タッチ移動イベント
     function handleTouchMove(e) {
-      if (!isDragging || isAnimating) return;
-      
-      touchMoveX = e.touches[0].clientX;
-      moveDistance = touchMoveX - touchStartX;
-      
-      // スワイプ方向の視覚的フィードバックを更新
-      updateDirectionIndicators();
+        if (isAnimating || !touchStartX || !touchStartY) return;
+        
+        touchMoveX = e.touches[0].clientX;
+        const touchMoveY = e.touches[0].clientY;
+        
+        const diffX = Math.abs(touchMoveX - touchStartX);
+        const diffY = Math.abs(touchMoveY - touchStartY);
+        
+        // 縦スクロールが主な動きの場合はフリックを無効化
+        if (diffY > diffX && diffY > 10) {
+            isScrolling = true;
+            console.log('縦スクロール検出 - フリック無効化');
+            return;
+        }
+        
+        // 横移動が主な動きの場合はドラッグを開始
+        if (diffX > 10 && !isScrolling) {
+            isDragging = true;
+            moveDistance = touchMoveX - touchStartX;
+            
+            // スワイプ中であることを示す
+            tabContent.classList.add('swiping');
+            
+            // スワイプ方向の視覚的フィードバックを更新
+            updateDirectionIndicators();
+        }
     }
     
     // タッチ終了イベント
     function handleTouchEnd(e) {
-      if (!isDragging || isAnimating) return;
-      
-      isDragging = false;
-      touchEndX = e.changedTouches[0].clientX;
-      
-      // スワイプの終了時間と速度を計算
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-      const velocity = Math.abs(moveDistance) / duration; // 速度（px/ms）
-      
-      // トランジションを有効化
-      tabContent.classList.remove('swiping');
-      
-      // スワイプ距離
-      const swipeDistance = touchEndX - touchStartX;
-      
-      // 素早いスワイプまたは十分な距離があればタブ切り替え
-      if (Math.abs(swipeDistance) > DRAG_THRESHOLD || velocity > VELOCITY_THRESHOLD) {
-        // 左スワイプ（次のタブへ）
-        if (swipeDistance < 0 && currentTabIndex === 0) {
-          switchToTab(1);
-        } 
-        // 右スワイプ（前のタブへ）
-        else if (swipeDistance > 0 && currentTabIndex === 1) {
-          switchToTab(0);
-        } else {
-          resetSwipeState();
+        if (isAnimating || isScrolling || !touchStartX || !touchStartY) {
+            console.log('タッチ終了 - 条件不満足:', { 
+                isAnimating, 
+                isScrolling, 
+                hasStart: !!(touchStartX && touchStartY),
+                isDragging
+            });
+            resetSwipeState();
+            return;
         }
-      } else {
-        resetSwipeState();
-      }
-      
-      // 完了時のフィードバック振動
-      if (navigator.vibrate) {
-        navigator.vibrate(10);
-      }
+        
+        touchEndX = e.changedTouches[0].clientX;
+        
+        // スワイプの終了時間と速度を計算
+        const endTime = Date.now();
+        const duration = endTime - startTime;
+        const swipeDistance = touchEndX - touchStartX;
+        const velocity = Math.abs(swipeDistance) / duration; // 速度（px/ms）
+        
+        console.log('タッチ終了:', {
+            startX: touchStartX,
+            endX: touchEndX,
+            distance: swipeDistance,
+            velocity: velocity,
+            duration: duration,
+            isDragging: isDragging
+        });
+        
+        // トランジションを有効化
+        tabContent.classList.remove('swiping');
+        
+        // 素早いスワイプまたは十分な距離があればタブ切り替え
+        if ((Math.abs(swipeDistance) > DRAG_THRESHOLD || velocity > VELOCITY_THRESHOLD) && isDragging) {
+            const currentIndex = getCurrentTabIndex();
+            
+            console.log('フリック検出:', {
+                currentIndex: currentIndex,
+                totalTabs: allTabs.length,
+                direction: swipeDistance > 0 ? 'right' : 'left',
+                distance: Math.abs(swipeDistance)
+            });
+            
+            if (swipeDistance > 0) {
+                // 右スワイプ（前のタブへ）
+                const prevIndex = currentIndex - 1;
+                console.log(`右フリック: タブ${currentIndex} → タブ${prevIndex}`);
+                
+                if (prevIndex >= 0) {
+                    switchToTab(prevIndex);
+                } else {
+                    console.log('これ以上左に移動できません');
+                    resetSwipeState();
+                }
+            } else {
+                // 左スワイプ（次のタブへ）
+                const nextIndex = currentIndex + 1;
+                console.log(`左フリック: タブ${currentIndex} → タブ${nextIndex}`);
+                
+                if (nextIndex < allTabs.length) {
+                    switchToTab(nextIndex);
+                } else {
+                    console.log('これ以上右に移動できません');
+                    resetSwipeState();
+                }
+            }
+        } else {
+            console.log('フリック距離が不十分またはドラッグなし:', {
+                distance: Math.abs(swipeDistance),
+                velocity: velocity,
+                isDragging: isDragging
+            });
+            resetSwipeState();
+        }
+        
+        // 完了時のフィードバック振動
+        if (navigator.vibrate) {
+            navigator.vibrate(10);
+        }
     }
     
     // タッチキャンセルイベント
     function handleTouchCancel() {
-      if (isDragging) {
-        isDragging = false;
-        tabContent.classList.remove('swiping');
+        console.log('タッチキャンセル');
         resetSwipeState();
-      }
     }
     
     // 指定したインデックスのタブに切り替え
     function switchToTab(index) {
-      if (index < 0 || index > 1) return;
-      
-      // アニメーション中フラグをセット
-      isAnimating = true;
-      
-      // タブの切り替え
-      setTimeout(() => {
-        if (index === 0) {
-          notesTabInstance.show();
-        } else {
-          timelineTabInstance.show();
+        if (index < 0 || index >= allTabs.length) {
+            console.log('無効なタブインデックス:', index);
+            return;
         }
         
-        // 現在のタブインデックスを更新
-        currentTabIndex = index;
+        // アニメーション中フラグをセット
+        isAnimating = true;
+        console.log(`タブ切り替え開始: ${index} (${allTabs[index].name})`);
         
-        // アニメーション完了後に状態をリセット
+        // タブボタンのハイライト
+        allTabs[index].button.classList.add('tab-highlight');
+        
+        // タブ切り替えアニメーション
         setTimeout(() => {
-          isAnimating = false;
-          resetSwipeState();
-        }, TRANSITION_DURATION);
-      }, 50);
+            activateTab(index);
+            
+            // ハイライトを解除
+            setTimeout(() => {
+                allTabs.forEach(tab => {
+                    tab.button.classList.remove('tab-highlight');
+                });
+            }, 150);
+            
+            // アニメーション完了後に状態をリセット
+            setTimeout(() => {
+                isAnimating = false;
+                resetSwipeState();
+                console.log('タブ切り替え完了');
+            }, TRANSITION_DURATION);
+        }, 50);
+        
+        // ハプティックフィードバック
+        if (navigator.vibrate) {
+            navigator.vibrate(50);
+        }
     }
     
     // イベントリスナーの設定
     function setupEventListeners() {
-      // タブコンテンツにタッチイベントリスナーを追加
-      tabContent.addEventListener('touchstart', handleTouchStart, { passive: true });
-      tabContent.addEventListener('touchmove', handleTouchMove, { passive: true });
-      tabContent.addEventListener('touchend', handleTouchEnd, { passive: true });
-      tabContent.addEventListener('touchcancel', handleTouchCancel, { passive: true });
-      
-      // タブ切り替えイベントリスナー
-      notesTab.addEventListener('shown.bs.tab', function() {
-        currentTabIndex = 0;
-        setTimeout(resetSwipeState, 50);
-      });
-      
-      timelineTab.addEventListener('shown.bs.tab', function() {
-        currentTabIndex = 1;
-        setTimeout(resetSwipeState, 50);
-      });
+        // タブコンテンツにタッチイベントリスナーを追加
+        tabContent.addEventListener('touchstart', handleTouchStart, { passive: true });
+        tabContent.addEventListener('touchmove', handleTouchMove, { passive: true });
+        tabContent.addEventListener('touchend', handleTouchEnd, { passive: true });
+        tabContent.addEventListener('touchcancel', handleTouchCancel, { passive: true });
+        
+        // 各タブの切り替えイベントリスナー
+        allTabs.forEach((tab, index) => {
+            tab.button.addEventListener('shown.bs.tab', function() {
+                console.log(`タブ切り替えイベント: ${index} (${tab.name})`);
+                setTimeout(resetSwipeState, 50);
+            });
+        });
     }
     
     // スタイルの初期化
     function initStyles() {
-      // スワイプ用のスタイルを追加
-      const styleEl = document.createElement('style');
-      styleEl.textContent = `
-        #diaryDetailTabContent {
-          position: relative;
-          touch-action: pan-y;
-          overflow: hidden;
-        }
+        // 既存のスタイルがあるかチェック
+        if (document.getElementById('diary-detail-tabs-style')) return;
         
-        #diaryDetailTabContent.swiping {
-          transition: none;
-        }
-        
-        .tab-pane {
-          transition: opacity ${TRANSITION_DURATION}ms ease;
-        }
-        
-        .tab-highlight {
-          animation: tab-glow 0.3s ease-out;
-        }
-        
-        @keyframes tab-glow {
-          0% { background-color: transparent; }
-          50% { background-color: rgba(var(--primary-color-rgb, 90, 126, 197), 0.1); }
-          100% { background-color: transparent; }
-        }
-        
-        .swipe-hint {
-          opacity: 1;
-          transition: opacity 0.5s ease;
-          font-size: 0.8rem;
-          color: #6c757d;
-          margin-bottom: 0.5rem;
-        }
-      `;
-      document.head.appendChild(styleEl);
-    }
-    
-    // スワイプヒントの表示/非表示を管理
-    function handleSwipeHint() {
-      const swipeHint = document.querySelector('.swipe-hint');
-      if (!swipeHint) return;
-      
-      // モバイルデバイスかどうかをチェック
-      const isMobile = window.innerWidth < 768 || navigator.maxTouchPoints > 1;
-      
-      if (isMobile) {
-        // モバイルデバイスではスワイプヒントを表示
-        swipeHint.style.display = 'block';
-        swipeHint.style.opacity = '1';
-        
-        // 5秒後に非表示
-        setTimeout(() => {
-          swipeHint.style.opacity = '0';
-          setTimeout(() => {
-            swipeHint.style.display = 'none';
-          }, 500);
-        }, 5000);
-      } else {
-        // デスクトップでは非表示
-        swipeHint.style.display = 'none';
-      }
+        const styleEl = document.createElement('style');
+        styleEl.id = 'diary-detail-tabs-style';
+        styleEl.textContent = `
+            #diaryDetailTabContent {
+                position: relative;
+                touch-action: pan-y;
+                overflow: hidden;
+            }
+            
+            #diaryDetailTabContent.swiping {
+                transition: none;
+            }
+            
+            .tab-pane {
+                transition: opacity ${TRANSITION_DURATION}ms ease;
+            }
+            
+            .tab-highlight {
+                animation: tab-glow 0.3s ease-out;
+            }
+            
+            @keyframes tab-glow {
+                0% { background-color: transparent; }
+                50% { background-color: rgba(var(--primary-color-rgb, 90, 126, 197), 0.1); }
+                100% { background-color: transparent; }
+            }
+            
+            .swipe-hint {
+                opacity: 1;
+                transition: opacity 0.5s ease;
+                font-size: 0.8rem;
+                color: #6c757d;
+                margin-bottom: 0.5rem;
+            }
+        `;
+        document.head.appendChild(styleEl);
     }
     
     // 初期化関数
     function init() {
-      initStyles();
-      initTabIndex();
-      setupEventListeners();
-      handleSwipeHint();
-      resetSwipeState();
+        initStyles();
+        setupEventListeners();
+        resetSwipeState();
+        
+        console.log('=== 日記詳細タブスワイプ機能 初期化完了 ===');
+        console.log('利用可能なタブ数:', allTabs.length);
+        console.log('現在のアクティブタブ:', getCurrentTabIndex());
     }
     
     // 初期化を実行
     init();
-  });
+});
+
+// スワイプヒント関連の機能（既存の関数を保持）
+function hideSwipeHint() {
+    const hint = document.getElementById('swipeHint');
+    if (hint) {
+        hint.classList.add('fade-out');
+        setTimeout(() => {
+            hint.style.display = 'none';
+        }, 500);
+        
+        // ローカルストレージに保存（今後表示しない）
+        localStorage.setItem('swipeHintDismissed', 'true');
+    }
+}
+
+// スワイプヒントの表示制御
+document.addEventListener('DOMContentLoaded', function() {
+    const swipeHint = document.getElementById('swipeHint');
+    const isMobile = window.innerWidth < 768;
+    const isDismissed = localStorage.getItem('swipeHintDismissed');
+    
+    if (swipeHint && isMobile && !isDismissed) {
+        setTimeout(() => {
+            swipeHint.classList.add('show');
+        }, 1000);
+        
+        // 8秒後に自動で非表示
+        setTimeout(() => {
+            hideSwipeHint();
+        }, 8000);
+    }
+});
