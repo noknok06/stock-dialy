@@ -1183,6 +1183,133 @@
       max-width: 100% !important;
     }
   }
+
+  /* フォーム切り替えボタンのスタイル改善 */
+  #toggleNoteForm {
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+  }
+
+  #toggleNoteForm:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
+  }
+
+  #toggleNoteForm[aria-expanded="true"] {
+    background-color: #6c757d;
+    border-color: #6c757d;
+  }
+
+  #toggleNoteForm[aria-expanded="true"] .toggle-text::before {
+    content: "フォームを閉じる";
+  }
+
+  #toggleNoteForm[aria-expanded="false"] .toggle-text::before {
+    content: "記録を追加";
+  }
+
+  .toggle-text {
+    font-size: 0;
+  }
+
+  .toggle-text::before {
+    font-size: 0.875rem;
+  }
+
+  /* フォーム表示時のアニメーション */
+  #noteFormCollapse {
+    transition: all 0.3s ease;
+  }
+
+  #noteFormCollapse.collapsing {
+    opacity: 0.7;
+  }
+
+  #noteFormCollapse.show {
+    opacity: 1;
+  }
+
+  /* 継続記録一覧のスタイル調整 */
+  .notes-list {
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    padding-top: 1rem;
+    margin-top: 1rem;
+  }
+
+  /* 空の状態の表示改善 */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    background: linear-gradient(135deg, rgba(248, 249, 250, 0.5), rgba(255, 255, 255, 0.8));
+    border-radius: 12px;
+    border: 2px dashed rgba(0, 0, 0, 0.1);
+    margin-top: 1rem;
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    color: var(--text-light);
+    margin-bottom: 1rem;
+  }
+
+  .empty-state h4 {
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+  }
+
+  .empty-state p {
+    color: var(--text-light);
+    margin-bottom: 0;
+  }
+
+  /* モバイル対応 */
+  @media (max-width: 768px) {
+    .d-flex.justify-content-between.align-items-center {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 1rem;
+    }
+    
+    #toggleNoteForm {
+      width: 100%;
+      justify-content: center;
+    }
+    
+    .simplified-note-form {
+      padding: 1rem;
+    }
+    
+    .d-flex.gap-2 {
+      flex-direction: column;
+      gap: 0.5rem !important;
+    }
+    
+    .d-flex.gap-2 .btn {
+      width: 100%;
+    }
+  }
+
+  /* フォーカス状態の改善 */
+  #toggleNoteForm:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  /* アニメーション改善 */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  #noteFormCollapse.show .simplified-note-form {
+    animation: fadeInUp 0.3s ease-out;
+  }  
 </style>
 {% endblock %}
 
@@ -1640,133 +1767,168 @@
 
         <!-- 継続記録タブ -->
         <div class="tab-pane fade" id="notes-content" role="tabpanel" aria-labelledby="notes-tab">
-          <!-- 簡素化された継続記録フォーム -->
-          <div class="simplified-note-form">
-            <form id="quickNoteForm" method="post" action="{% url 'stockdiary:add_note' diary.id %}" enctype="multipart/form-data">
-              {% csrf_token %}
-              
-              <div class="form-section">
-                <label for="note_date" class="section-title">
-                  <i class="bi bi-calendar-date"></i>
-                  日付
-                </label>
-                <input type="date" class="form-control" id="note_date" name="date" 
-                       value="{% now 'Y-m-d' %}" required>
-              </div>
-              
-              <div class="form-section">
-                <div class="section-title">
-                  <i class="bi bi-tag"></i>
-                  記録タイプ
-                </div>
-                <div class="option-pills">
-                  <div class="option-pill active" data-value="analysis" data-target="note_type">
-                    <i class="bi bi-graph-up"></i>
-                    分析更新
-                  </div>
-                  <div class="option-pill" data-value="news" data-target="note_type">
-                    <i class="bi bi-newspaper"></i>
-                    ニュース
-                  </div>
-                  <div class="option-pill" data-value="earnings" data-target="note_type">
-                    <i class="bi bi-bar-chart"></i>
-                    決算
-                  </div>
-                  <div class="option-pill" data-value="insight" data-target="note_type">
-                    <i class="bi bi-lightbulb"></i>
-                    気づき
-                  </div>
-                  <div class="option-pill" data-value="risk" data-target="note_type">
-                    <i class="bi bi-exclamation-triangle"></i>
-                    リスク
-                  </div>
-                </div>
-                <input type="hidden" id="note_type" name="note_type" value="analysis">
-              </div>
-              
-              <div class="form-section">
-                <div class="section-title">
-                  <i class="bi bi-exclamation-circle"></i>
-                  重要度
-                </div>
-                <div class="option-pills">
-                  <div class="option-pill importance-pill low" data-value="low" data-target="note_importance">
-                    <i class="bi bi-arrow-down-circle"></i>
-                    低
-                  </div>
-                  <div class="option-pill importance-pill medium active" data-value="medium" data-target="note_importance">
-                    <i class="bi bi-dash-circle"></i>
-                    中
-                  </div>
-                  <div class="option-pill importance-pill high" data-value="high" data-target="note_importance">
-                    <i class="bi bi-arrow-up-circle"></i>
-                    高
-                  </div>
-                </div>
-                <input type="hidden" id="note_importance" name="importance" value="medium">
-              </div>
-              
-              <div class="form-section">
-                <label for="note_content" class="section-title">
-                  <i class="bi bi-journal-text"></i>
-                  記録内容
-                </label>
-                <textarea class="form-control" id="note_content" name="content" rows="4" 
-                          placeholder="状況の変化や新たな情報を記録しましょう" required></textarea>
-              </div>
-                            
-              <!-- 継続記録フォーム用 -->
-              <div class="form-section">
-                <label for="note_image" class="section-title">
-                  <i class="bi bi-image"></i>
-                  画像添付（オプション）
-                </label>
+          
+          <!-- フォーム表示/非表示の切り替えボタン -->
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0">
+              <i class="bi bi-journal-richtext me-2"></i>
+              継続記録
+              {% if notes.count > 0 %}
+                <span class="badge bg-primary bg-opacity-10 text-primary ms-2">{{ notes.count }}件</span>
+              {% endif %}
+            </h4>
+            
+            <button 
+              type="button" 
+              class="btn btn-primary btn-sm" 
+              id="toggleNoteForm"
+              data-bs-toggle="collapse" 
+              data-bs-target="#noteFormCollapse" 
+              aria-expanded="false" 
+              aria-controls="noteFormCollapse">
+              <i class="bi bi-plus-circle me-1"></i>
+              <span class="toggle-text">記録を追加</span>
+            </button>
+          </div>
+
+          <!-- 折りたたみ可能な継続記録フォーム -->
+          <div class="collapse" id="noteFormCollapse">
+            <div class="simplified-note-form mb-4">
+              <form id="quickNoteForm" method="post" action="{% url 'stockdiary:add_note' diary.id %}" enctype="multipart/form-data">
+                {% csrf_token %}
                 
-                <div class="image-upload-area-note mb-3" onclick="document.getElementById('note_image').click();">
-                  <i class="bi bi-cloud-upload text-muted" style="font-size: 2rem;"></i>
-                  <p class="text-muted mb-0">ここをクリックして画像を選択</p>
-                  <small class="text-muted">自動圧縮対応</small>
+                <div class="form-section">
+                  <label for="note_date" class="section-title">
+                    <i class="bi bi-calendar-date"></i>
+                    日付
+                  </label>
+                  <input type="date" class="form-control" id="note_date" name="date" 
+                        value="{% now 'Y-m-d' %}" required>
                 </div>
                 
-                <input type="file" class="form-control d-none" id="note_image" name="image" 
-                      accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
+                <div class="form-section">
+                  <div class="section-title">
+                    <i class="bi bi-tag"></i>
+                    記録タイプ
+                  </div>
+                  <div class="option-pills">
+                    <div class="option-pill active" data-value="analysis" data-target="note_type">
+                      <i class="bi bi-graph-up"></i>
+                      分析更新
+                    </div>
+                    <div class="option-pill" data-value="news" data-target="note_type">
+                      <i class="bi bi-newspaper"></i>
+                      ニュース
+                    </div>
+                    <div class="option-pill" data-value="earnings" data-target="note_type">
+                      <i class="bi bi-bar-chart"></i>
+                      決算
+                    </div>
+                    <div class="option-pill" data-value="insight" data-target="note_type">
+                      <i class="bi bi-lightbulb"></i>
+                      気づき
+                    </div>
+                    <div class="option-pill" data-value="risk" data-target="note_type">
+                      <i class="bi bi-exclamation-triangle"></i>
+                      リスク
+                    </div>
+                  </div>
+                  <input type="hidden" id="note_type" name="note_type" value="analysis">
+                </div>
                 
-                <div id="note-image-preview-container" class="mt-3" style="display: none;">
-                  <div class="card" style="max-width: 300px;">
-                    <img id="note-image-preview" class="card-img-top" style="max-height: 200px; object-fit: cover;" alt="プレビュー">
-                    <div class="card-body p-2">
-                      <small class="text-muted">選択された画像</small>
-                      <button type="button" id="note-remove-image" class="btn btn-sm btn-outline-danger float-end">
-                        <i class="bi bi-x"></i> 削除
-                      </button>
+                <div class="form-section">
+                  <div class="section-title">
+                    <i class="bi bi-exclamation-circle"></i>
+                    重要度
+                  </div>
+                  <div class="option-pills">
+                    <div class="option-pill importance-pill low" data-value="low" data-target="note_importance">
+                      <i class="bi bi-arrow-down-circle"></i>
+                      低
+                    </div>
+                    <div class="option-pill importance-pill medium active" data-value="medium" data-target="note_importance">
+                      <i class="bi bi-dash-circle"></i>
+                      中
+                    </div>
+                    <div class="option-pill importance-pill high" data-value="high" data-target="note_importance">
+                      <i class="bi bi-arrow-up-circle"></i>
+                      高
+                    </div>
+                  </div>
+                  <input type="hidden" id="note_importance" name="importance" value="medium">
+                </div>
+                
+                <div class="form-section">
+                  <label for="note_content" class="section-title">
+                    <i class="bi bi-journal-text"></i>
+                    記録内容
+                  </label>
+                  <textarea class="form-control" id="note_content" name="content" rows="4" 
+                            placeholder="状況の変化や新たな情報を記録しましょう" required></textarea>
+                </div>
+                              
+                <!-- 継続記録フォーム用 -->
+                <div class="form-section">
+                  <label for="note_image" class="section-title">
+                    <i class="bi bi-image"></i>
+                    画像添付（オプション）
+                  </label>
+                  
+                  <div class="image-upload-area-note mb-3" onclick="document.getElementById('note_image').click();">
+                    <i class="bi bi-cloud-upload text-muted" style="font-size: 2rem;"></i>
+                    <p class="text-muted mb-0">ここをクリックして画像を選択</p>
+                    <small class="text-muted">自動圧縮対応</small>
+                  </div>
+                  
+                  <input type="file" class="form-control d-none" id="note_image" name="image" 
+                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
+                  
+                  <div id="note-image-preview-container" class="mt-3" style="display: none;">
+                    <div class="card" style="max-width: 300px;">
+                      <img id="note-image-preview" class="card-img-top" style="max-height: 200px; object-fit: cover;" alt="プレビュー">
+                      <div class="card-body p-2">
+                        <small class="text-muted">選択された画像</small>
+                        <button type="button" id="note-remove-image" class="btn btn-sm btn-outline-danger float-end">
+                          <i class="bi bi-x"></i> 削除
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              
-              <div class="form-section">
-                <label for="note_current_price" class="section-title">
-                  <i class="bi bi-currency-yen"></i>
-                  現在価格（オプション）
-                </label>
-                <div class="input-group">
-                  <input type="number" class="form-control" id="note_current_price" name="current_price" 
-                         placeholder="円" step="0.01">
-                  <button type="button" class="btn btn-outline-primary" id="fetch-note-price">
-                    <i class="bi bi-arrow-repeat"></i>
-                    <span class="d-none d-sm-inline ms-1">取得</span>
+                
+                <div class="form-section">
+                  <label for="note_current_price" class="section-title">
+                    <i class="bi bi-currency-yen"></i>
+                    現在価格（オプション）
+                  </label>
+                  <div class="input-group">
+                    <input type="number" class="form-control" id="note_current_price" name="current_price" 
+                          placeholder="円" step="0.01">
+                    <button type="button" class="btn btn-outline-primary" id="fetch-note-price">
+                      <i class="bi bi-arrow-repeat"></i>
+                      <span class="d-none d-sm-inline ms-1">取得</span>
+                    </button>
+                  </div>
+                </div>
+                
+                <div class="d-flex gap-2">
+                  <button type="submit" class="btn btn-primary flex-fill">
+                    <i class="bi bi-journal-plus me-1"></i>
+                    記録を追加
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn btn-outline-secondary" 
+                    data-bs-toggle="collapse" 
+                    data-bs-target="#noteFormCollapse"
+                    aria-expanded="false">
+                    <i class="bi bi-x"></i>
+                    キャンセル
                   </button>
                 </div>
-              </div>
-              
-              <div class="d-grid">
-                <button type="submit" class="btn btn-primary">
-                  <i class="bi bi-journal-plus me-1"></i>
-                  記録を追加
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
 
           <!-- 継続記録一覧 -->
@@ -1835,10 +1997,10 @@
                 {% if note.image_url %}
                 <div class="note-image mb-3">
                   <img src="{{ note.image_url }}" 
-                       class="img-fluid rounded note-attached-image" 
-                       alt="継続記録画像"
-                       style="max-height: 200px; object-fit: cover; width: 100%; cursor: pointer;"
-                       onclick="showImageModal('{{ note.image_url }}', '{{ note.date|date:"Y年m月d日" }}の記録')">
+                      class="img-fluid rounded note-attached-image" 
+                      alt="継続記録画像"
+                      style="max-height: 200px; object-fit: cover; width: 100%; cursor: pointer;"
+                      onclick="showImageModal('{{ note.image_url }}', '{{ note.date|date:"Y年m月d日" }}の記録')">
                   <div class="mt-1">
                     <small class="text-muted">
                       <i class="bi bi-image me-1"></i>
@@ -1857,11 +2019,12 @@
                 <i class="bi bi-journal-text"></i>
               </div>
               <h4>継続記録はまだありません</h4>
-              <p>上のフォームから最初の記録を追加しましょう</p>
+              <p>上のボタンから最初の記録を追加しましょう</p>
             </div>
             {% endfor %}
           </div>
         </div>
+
         <!-- タイムラインタブ -->
         <div class="tab-pane fade" id="timeline-content" role="tabpanel" aria-labelledby="timeline-tab">
           {% if related_diaries %}
@@ -2432,6 +2595,53 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // フォーム切り替えボタンのアイコン変更
+  const toggleButton = document.getElementById('toggleNoteForm');
+  const formCollapse = document.getElementById('noteFormCollapse');
+  
+  if (toggleButton && formCollapse) {
+    formCollapse.addEventListener('shown.bs.collapse', function() {
+      const icon = toggleButton.querySelector('i');
+      if (icon) {
+        icon.className = 'bi bi-dash-circle me-1';
+      }
+      toggleButton.classList.add('btn-secondary');
+      toggleButton.classList.remove('btn-primary');
+    });
+    
+    formCollapse.addEventListener('hidden.bs.collapse', function() {
+      const icon = toggleButton.querySelector('i');
+      if (icon) {
+        icon.className = 'bi bi-plus-circle me-1';
+      }
+      toggleButton.classList.add('btn-primary');
+      toggleButton.classList.remove('btn-secondary');
+      
+      // フォームをリセット
+      const form = document.getElementById('quickNoteForm');
+      if (form) {
+        form.reset();
+        // オプションピルのアクティブ状態をリセット
+        document.querySelectorAll('.option-pill').forEach(pill => pill.classList.remove('active'));
+        document.querySelector('.option-pill[data-value="analysis"]')?.classList.add('active');
+        document.querySelector('.option-pill[data-value="medium"]')?.classList.add('active');
+        // 隠しフィールドもリセット
+        document.getElementById('note_type').value = 'analysis';
+        document.getElementById('note_importance').value = 'medium';
+      }
+    });
+  }
+  
+  // URLハッシュで直接フォームを開く（#add-note）
+  if (window.location.hash === '#add-note') {
+    const formCollapse = new bootstrap.Collapse(document.getElementById('noteFormCollapse'), {
+      show: true
+    });
+  }
+});
+</script>
 {% endblock %}
 
 {% block scripts %}
