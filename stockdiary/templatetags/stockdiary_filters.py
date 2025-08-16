@@ -109,3 +109,10 @@ def divideby(value, arg):
         return float(value) / arg_float
     except (ValueError, TypeError):
         return 0
+
+@register.filter(name='add_class')
+def add_class(field, css_class):
+    """フォームフィールドにCSSクラスを追加するフィルター"""
+    if hasattr(field, 'as_widget'):
+        return field.as_widget(attrs={'class': css_class})
+    return field

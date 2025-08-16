@@ -5,28 +5,217 @@
 {% block head %}
 {{ block.super }}
 <style>
+  :root {
+    /* Modern Design System Variables */
+    --primary-500: #0891b2;
+    --primary-600: #0e7490;
+    --primary-700: #155e75;
+    --primary-50: #ecfeff;
+    --primary-100: #cffafe;
+    
+    --secondary-500: #3b82f6;
+    --secondary-600: #2563eb;
+    
+    --accent-500: #8b5cf6;
+    --accent-600: #7c3aed;
+    
+    --neutral-50: #f9fafb;
+    --neutral-100: #f3f4f6;
+    --neutral-200: #e5e7eb;
+    --neutral-300: #d1d5db;
+    --neutral-400: #9ca3af;
+    --neutral-500: #6b7280;
+    --neutral-600: #4b5563;
+    --neutral-700: #374151;
+    --neutral-800: #1f2937;
+    --neutral-900: #111827;
+    
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    --info: #3b82f6;
+    
+    --background: #ffffff;
+    --surface: #f9fafb;
+    --surface-elevated: #ffffff;
+    
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --text-tertiary: #6b7280;
+    --text-inverse: #ffffff;
+    
+    --border-primary: #e5e7eb;
+    --border-secondary: #d1d5db;
+    
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.5rem;
+    
+    --duration-200: 200ms;
+    --duration-300: 300ms;
+    --duration-500: 500ms;
+    
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  /* Hero Section */
+  .privacy-hero {
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--secondary-500) 100%);
+    color: var(--text-inverse);
+    padding: 4rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .privacy-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+  }
+
+  .privacy-hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    max-width: 48rem;
+    margin: 0 auto;
+  }
+
+  .privacy-hero h1 {
+    color: var(--text-inverse);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+  }
+
+  .privacy-hero p {
+    font-size: 1.125rem;
+    opacity: 0.9;
+    line-height: 1.6;
+  }
+
+  /* Container */
   .terms-container {
     max-width: 800px;
     margin: 0 auto;
-    padding: 2rem 0;
+    padding: 3rem 1rem;
   }
   
+  /* Table of Contents */
+  .toc {
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-xl);
+    padding: 2rem;
+    margin-bottom: 3rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .toc h3 {
+    color: var(--primary-600);
+    font-weight: 700;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+  }
+
+  .toc ol {
+    list-style: none;
+    counter-reset: toc-counter;
+    padding-left: 0;
+  }
+
+  .toc li {
+    counter-increment: toc-counter;
+    margin-bottom: 0.5rem;
+  }
+
+  .toc a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    border-radius: var(--radius-md);
+    transition: all var(--duration-200) var(--ease-in-out);
+  }
+
+  .toc a::before {
+    content: counter(toc-counter) ".";
+    margin-right: 0.75rem;
+    font-weight: 600;
+    color: var(--primary-500);
+    min-width: 1.5rem;
+  }
+
+  .toc a:hover {
+    background: var(--surface);
+    color: var(--primary-600);
+    transform: translateX(4px);
+  }
+
+  /* Sections */
   .terms-section {
-    margin-bottom: 2.5rem;
+    margin-bottom: 3rem;
+    background: var(--surface-elevated);
+    border-radius: var(--radius-xl);
+    padding: 2rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-primary);
+    transition: all var(--duration-300) var(--ease-out);
+    scroll-margin-top: 2rem;
+  }
+
+  .terms-section:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
   }
   
   .terms-section h2 {
-    color: #3730a3;
+    color: var(--primary-600);
     font-weight: 700;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #f3f4f6;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--primary-100);
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
   
   .terms-section h3 {
-    color: #4b5563;
+    color: var(--text-primary);
     font-weight: 600;
     margin: 1.5rem 0 0.75rem;
+    font-size: 1.25rem;
+  }
+
+  .terms-section p {
+    line-height: 1.7;
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
+  }
+
+  .terms-section ul, .terms-section ol {
+    margin-bottom: 1.5rem;
+    padding-left: 1.5rem;
+  }
+
+  .terms-section li {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
   }
   
   .terms-list {
@@ -38,40 +227,180 @@
     line-height: 1.6;
   }
   
+  /* Highlight Boxes */
   .highlight-box {
-    background-color: #f0f4ff;
-    border-left: 4px solid #4f46e5;
-    padding: 1.25rem;
-    border-radius: 0.5rem;
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border-left: 4px solid var(--primary-500);
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
     margin: 1.5rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .highlight-box::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(8, 145, 178, 0.1);
+  }
+
+  .highlight-box p {
+    margin-bottom: 0;
+    color: var(--text-primary);
+    font-weight: 500;
   }
   
   .warning-box {
-    background-color: #fff5f5;
-    border-left: 4px solid #ef4444;
-    padding: 1.25rem;
-    border-radius: 0.5rem;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
+    border-left: 4px solid var(--error);
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
     margin: 1.5rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .warning-box::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.1);
+  }
+
+  .warning-box p {
+    margin-bottom: 0;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  /* Icon mappings for sections */
+  .terms-section[data-section="introduction"] h2::before {
+    content: '🛡️';
+    margin-right: 0.5rem;
+  }
+
+  .terms-section[data-section="collection"] h2::before {
+    content: '📊';
+    margin-right: 0.5rem;
+  }
+
+  .terms-section[data-section="usage"] h2::before {
+    content: '🎯';
+    margin-right: 0.5rem;
+  }
+
+  .terms-section[data-section="sharing"] h2::before {
+    content: '🤝';
+    margin-right: 0.5rem;
+  }
+
+  .terms-section[data-section="ads"] h2::before {
+    content: '📢';
+    margin-right: 0.5rem;
+  }
+
+  .terms-section[data-section="security"] h2::before {
+    content: '🔒';
+    margin-right: 0.5rem;
+  }
+
+  .terms-section[data-section="rights"] h2::before {
+    content: '⚖️';
+    margin-right: 0.5rem;
+  }
+
+  .terms-section[data-section="cookies"] h2::before {
+    content: '🍪';
+    margin-right: 0.5rem;
+  }
+
+  .terms-section[data-section="changes"] h2::before {
+    content: '🔄';
+    margin-right: 0.5rem;
   }
   
+  /* Disclaimer */
   .disclaimer-note {
-    font-style: italic;
-    color: #6b7280;
+    background: var(--surface);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
     margin-top: 2rem;
-    padding-top: 1rem;
-    border-top: 1px solid #e5e7eb;
+    font-style: italic;
+    color: var(--text-tertiary);
+  }
+
+  /* Animations */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(2rem);
+    transition: all 0.6s var(--ease-out);
+  }
+
+  .fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .privacy-hero {
+      padding: 3rem 0;
+    }
+
+    .terms-container {
+      padding: 2rem 1rem;
+    }
+
+    .terms-section {
+      padding: 1.5rem;
+    }
+
+    .toc {
+      padding: 1.5rem;
+    }
   }
 </style>
 {% endblock %}
 
 {% block content %}
+<!-- Hero Section -->
+<section class="privacy-hero">
+  <div class="container">
+    <div class="privacy-hero-content">
+      <h1>プライバシーポリシー</h1>
+      <p>最終更新日: 2025年3月29日</p>
+    </div>
+  </div>
+</section>
+
 <div class="container terms-container">
-  <div class="mb-5 text-center">
-    <h1 class="mb-3">プライバシーポリシー</h1>
-    <p class="text-muted">最終更新日: 2025年3月29日</p>
+  <!-- Table of Contents -->
+  <div class="toc fade-in">
+    <h3>目次</h3>
+    <ol>
+      <li><a href="#introduction">はじめに</a></li>
+      <li><a href="#collection">収集する情報</a></li>
+      <li><a href="#usage">情報の利用目的</a></li>
+      <li><a href="#sharing">情報の共有</a></li>
+      <li><a href="#ads">広告について</a></li>
+      <li><a href="#security">データの保存と保護</a></li>
+      <li><a href="#rights">ユーザーの権利</a></li>
+      <li><a href="#cookies">Cookieの使用</a></li>
+      <li><a href="#changes">プライバシーポリシーの変更</a></li>
+    </ol>
   </div>
   
-  <div class="terms-section">
+  <div class="terms-section fade-in" id="introduction" data-section="introduction">
     <h2>はじめに</h2>
     <p>カブログ（以下「当サービス」）は、ユーザーのプライバシーを尊重し、個人情報の保護に努めています。本プライバシーポリシーでは、当サービスがどのような情報を収集し、どのように利用・保護するかについて説明します。</p>
     
@@ -80,7 +409,7 @@
     </div>
   </div>
   
-  <div class="terms-section">
+  <div class="terms-section fade-in" id="collection" data-section="collection">
     <h2>収集する情報</h2>
     <h3>アカウント情報</h3>
     <p>当サービスを利用するために、以下の情報を収集します：</p>
@@ -108,7 +437,7 @@
     </ul>
   </div>
   
-  <div class="terms-section">
+  <div class="terms-section fade-in" id="usage" data-section="usage">
     <h2>情報の利用目的</h2>
     <p>収集した情報は、以下の目的で利用します：</p>
     <ul class="terms-list">
@@ -121,7 +450,7 @@
     </ul>
   </div>
   
-  <div class="terms-section">
+  <div class="terms-section fade-in" id="sharing" data-section="sharing">
     <h2>情報の共有</h2>
     <p>当サービスは、ユーザーの個人情報を以下の場合を除き、第三者と共有することはありません：</p>
     <ul class="terms-list">
@@ -145,7 +474,7 @@
     </div>
   </div>
   
-  <div class="terms-section">
+  <div class="terms-section fade-in" id="ads" data-section="ads">
     <h2>広告について</h2>
     <p>当サービスでは、サービス維持のためにGoogle AdSenseなどの広告を掲載しています。これらの広告サービスはCookieを使用し、ユーザーの興味に基づいた広告を表示することがあります。</p>
     
@@ -158,7 +487,7 @@
     </ul>
   </div>
   
-  <div class="terms-section">
+  <div class="terms-section fade-in" id="security" data-section="security">
     <h2>データの保存と保護</h2>
     <p>当サービスは、ユーザーの個人情報を安全に保管するために適切なセキュリティ対策を講じています。具体的には以下の対策を実施しています：</p>
     <ul class="terms-list">
@@ -172,7 +501,7 @@
     <p>ユーザーのデータは、サービス提供に必要な期間、または法的義務を遵守するために必要な期間保存されます。アカウントを削除した場合、個人情報は速やかに削除されますが、一部の情報は法的要件のために一定期間保持される場合があります。</p>
   </div>
   
-  <div class="terms-section">
+  <div class="terms-section fade-in" id="rights" data-section="rights">
     <h2>ユーザーの権利</h2>
     <p>ユーザーは以下の権利を有しています：</p>
     <ul class="terms-list">
@@ -186,7 +515,7 @@
     <p>これらの権利を行使するには、下記のお問い合わせ先までご連絡ください。</p>
   </div>
   
-  <div class="terms-section">
+  <div class="terms-section fade-in" id="cookies" data-section="cookies">
     <h2>Cookieの使用</h2>
     <p>当サービスでは、ユーザー体験の向上や機能提供のためにCookieを使用しています。Cookieは以下の目的で使用されます：</p>
     <ul class="terms-list">
@@ -203,14 +532,53 @@
     </div>
   </div>
   
-  <div class="terms-section">
+  <div class="terms-section fade-in" id="changes" data-section="changes">
     <h2>プライバシーポリシーの変更</h2>
     <p>当サービスは、必要に応じて本プライバシーポリシーを変更することがあります。変更があった場合は、当ページで通知するとともに、重要な変更については電子メールでユーザーに通知します。</p>
   </div>
   
-  <div class="disclaimer-note">
+  <div class="disclaimer-note fade-in">
     <p>本プライバシーポリシーは、法律の変更やサービスの変更に応じて、予告なく変更されることがあります。定期的に確認することをお勧めします。</p>
     <p>プライバシーポリシーに関するご質問やご意見がある場合は、<a href="{% url 'contact:contact' %}">お問い合わせ</a>よりご連絡ください。</p>
   </div>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Intersection Observer for animations
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('.fade-in').forEach(el => {
+      observer.observe(el);
+    });
+
+    // Smooth scrolling for TOC links
+    document.querySelectorAll('.toc a').forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const targetId = this.getAttribute('href').substring(1);
+        const targetElement = document.getElementById(targetId);
+        
+        if (targetElement) {
+          targetElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+  });
+</script>
 {% endblock %}

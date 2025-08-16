@@ -5,201 +5,450 @@
 {% block head %}
 {{ block.super }}
 <style>
+  :root {
+    /* Modern Design System Variables */
+    --primary-500: #0891b2;
+    --primary-600: #0e7490;
+    --primary-700: #155e75;
+    --primary-50: #ecfeff;
+    --primary-100: #cffafe;
+    
+    --secondary-500: #3b82f6;
+    --secondary-600: #2563eb;
+    
+    --accent-500: #8b5cf6;
+    --accent-600: #7c3aed;
+    
+    --neutral-50: #f9fafb;
+    --neutral-100: #f3f4f6;
+    --neutral-200: #e5e7eb;
+    --neutral-300: #d1d5db;
+    --neutral-400: #9ca3af;
+    --neutral-500: #6b7280;
+    --neutral-600: #4b5563;
+    --neutral-700: #374151;
+    --neutral-800: #1f2937;
+    --neutral-900: #111827;
+    
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    --info: #3b82f6;
+    
+    --background: #ffffff;
+    --surface: #f9fafb;
+    --surface-elevated: #ffffff;
+    
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --text-tertiary: #6b7280;
+    --text-inverse: #ffffff;
+    
+    --border-primary: #e5e7eb;
+    --border-secondary: #d1d5db;
+    
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.5rem;
+    
+    --duration-200: 200ms;
+    --duration-300: 300ms;
+    --duration-500: 500ms;
+    
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  /* Hero Section */
+  .contact-hero {
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--secondary-500) 100%);
+    color: var(--text-inverse);
+    padding: 4rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .contact-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+  }
+
+  .contact-hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    max-width: 48rem;
+    margin: 0 auto;
+  }
+
+  .contact-hero h1 {
+    color: var(--text-inverse);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+  }
+
+  .contact-hero p {
+    font-size: 1.125rem;
+    opacity: 0.9;
+    line-height: 1.6;
+  }
+
+  /* Container */
   .contact-container {
     padding: 3rem 0;
   }
   
+  /* Contact Card */
   .contact-card {
-    border: none;
-    border-radius: 1rem;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    max-width: 700px;
+    max-width: 900px;
     margin: 0 auto;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-xl);
+    overflow: hidden;
   }
-  
-  .contact-header {
-    background: linear-gradient(135deg, var(--primary-color) 0%, #3730a3 100%);
-    padding: 2rem;
-    color: white;
-    text-align: center;
+
+  .contact-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+
+  /* Contact Info Side */
+  .contact-info-side {
+    background: linear-gradient(135deg, var(--surface) 0%, var(--neutral-100) 100%);
+    padding: 3rem 2rem;
     position: relative;
+    overflow: hidden;
   }
-  
-  .contact-header::before {
-    content: "";
+
+  .contact-info-side::before {
+    content: '';
     position: absolute;
     top: -20px;
     right: -20px;
     width: 120px;
     height: 120px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    z-index: 1;
+    background: rgba(8, 145, 178, 0.1);
   }
-  
-  .contact-header::after {
-    content: "";
+
+  .contact-info-side::after {
+    content: '';
     position: absolute;
     bottom: -40px;
     left: -40px;
     width: 180px;
     height: 180px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.05);
-    z-index: 1;
+    background: rgba(59, 130, 246, 0.05);
   }
-  
-  .contact-header h2 {
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-    position: relative;
-    z-index: 2;
-  }
-  
-  .contact-header p {
-    opacity: 0.9;
-    max-width: 500px;
-    margin: 0 auto;
-    position: relative;
-    z-index: 2;
-  }
-  
-  .contact-body {
-    padding: 2.5rem;
-    background-color: white;
-  }
-  
-  .contact-section {
-    margin-bottom: 2rem;
-  }
-  
+
   .contact-info {
-    margin-bottom: 2rem;
+    position: relative;
+    z-index: 2;
   }
-  
+
+  .contact-info h3 {
+    color: var(--primary-600);
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+  }
+
   .contact-item {
     display: flex;
     align-items: flex-start;
-    margin-bottom: 1.25rem;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: var(--surface-elevated);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: all var(--duration-300) var(--ease-out);
   }
-  
+
+  .contact-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
   .contact-icon {
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
-    background-color: rgba(79, 70, 229, 0.1);
-    color: var(--primary-color);
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--secondary-500) 100%);
+    color: var(--text-inverse);
     display: flex;
     align-items: center;
     justify-content: center;
     margin-right: 1rem;
     flex-shrink: 0;
+    font-size: 1.25rem;
   }
-  
+
   .contact-item-content h5 {
     font-weight: 600;
-    margin-bottom: 0.25rem;
-    color: #111827;
-  }
-  
-  .contact-item-content p {
-    color: #6b7280;
-    margin-bottom: 0;
-  }
-  
-  .contact-divider {
-    height: 1px;
-    background-color: #e5e7eb;
-    margin: 2rem 0;
-  }
-  
-  .contact-form-section h3 {
-    font-weight: 600;
-    color: #111827;
-    margin-bottom: 1.5rem;
-  }
-  
-  .form-label {
-    font-weight: 500;
-    color: #374151;
     margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    font-size: 1.125rem;
   }
-  
-  .form-text {
-    font-size: 0.85rem;
-    color: #6b7280;
+
+  .contact-item-content p {
+    color: var(--text-secondary);
+    margin-bottom: 0;
+    line-height: 1.6;
   }
-  
-  .send-btn {
-    padding: 0.75rem 2rem;
-    font-size: 1rem;
-    font-weight: 600;
-    border-radius: 0.5rem;
-    background: linear-gradient(135deg, var(--primary-color) 0%, #3730a3 100%);
-    border: none;
-    transition: all 0.3s ease;
-    color: white;
+
+  .contact-item-content a {
+    color: var(--primary-500);
+    text-decoration: none;
+    font-weight: 500;
   }
-  
-  .send-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(79, 70, 229, 0.3);
+
+  .contact-item-content a:hover {
+    color: var(--primary-600);
+    text-decoration: underline;
   }
-  
-  .contact-faq {
-    background-color: #f9fafb;
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    margin-top: 2rem;
+
+  /* Form Side */
+  .contact-form-side {
+    padding: 3rem 2rem;
   }
-  
-  .contact-faq h4 {
-    font-weight: 600;
-    color: #111827;
-    margin-bottom: 1rem;
+
+  .contact-form-section h3 {
+    color: var(--text-primary);
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+  }
+
+  /* Security Notice */
+  .security-notice {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(8, 145, 178, 0.1) 100%);
+    border-left: 4px solid var(--info);
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius-lg);
+    margin-bottom: 2rem;
+  }
+
+  .security-notice strong {
+    color: var(--text-primary);
     display: flex;
     align-items: center;
-  }
-  
-  .contact-faq h4 i {
-    margin-right: 0.5rem;
-    color: var(--primary-color);
-  }
-  
-  .faq-item {
-    margin-bottom: 1rem;
-  }
-  
-  .faq-question {
-    font-weight: 600;
-    color: #374151;
+    gap: 0.5rem;
     margin-bottom: 0.5rem;
   }
-  
-  .faq-answer {
-    color: #6b7280;
+
+  .security-notice p {
+    color: var(--text-secondary);
     margin-bottom: 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
   }
-  
-  @media (max-width: 767.98px) {
-    .contact-body {
-      padding: 1.5rem;
+
+  /* Form Styles */
+  .form-label {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .form-control, .form-select {
+    border: 2px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+    transition: all var(--duration-200) var(--ease-in-out);
+    background: var(--surface-elevated);
+    color: var(--text-primary);
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 0.25rem rgba(8, 145, 178, 0.25);
+    outline: none;
+  }
+
+  .form-text {
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  /* Privacy Agreement */
+  .privacy-agreement {
+    background: var(--surface);
+    border: 2px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    margin: 1.5rem 0;
+    transition: all var(--duration-200) var(--ease-in-out);
+  }
+
+  .privacy-agreement:hover {
+    border-color: var(--primary-500);
+  }
+
+  .form-check-input {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-right: 0.75rem;
+    border: 2px solid var(--border-primary);
+    border-radius: var(--radius-sm);
+  }
+
+  .form-check-input:checked {
+    background-color: var(--primary-500);
+    border-color: var(--primary-500);
+  }
+
+  .form-check-label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    line-height: 1.5;
+  }
+
+  .form-check-label a {
+    color: var(--primary-500);
+    font-weight: 500;
+  }
+
+  /* Submit Button */
+  .send-btn {
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--secondary-500) 100%);
+    color: var(--text-inverse);
+    border: none;
+    border-radius: var(--radius-xl);
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all var(--duration-300) var(--ease-out);
+    box-shadow: var(--shadow-md);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .send-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-xl);
+    color: var(--text-inverse);
+  }
+
+  .send-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Loading State */
+  .loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    margin-top: 1rem;
+  }
+
+  .spinner-border {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-width: 0.2em;
+  }
+
+  /* Alert Styles */
+  .alert {
+    border: none;
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .alert-success {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+    border-left: 4px solid var(--success);
+    color: var(--success);
+  }
+
+  .alert-danger {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
+    border-left: 4px solid var(--error);
+    color: var(--error);
+  }
+
+  .alert-info {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+    border-left: 4px solid var(--info);
+    color: var(--info);
+  }
+
+  /* Animations */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(2rem);
+    transition: all 0.6s var(--ease-out);
+  }
+
+  .fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .contact-hero {
+      padding: 3rem 0;
     }
-    
-    .contact-header {
-      padding: 1.5rem;
+
+    .contact-container {
+      padding: 2rem 1rem;
     }
-    
-    .contact-header h2 {
-      font-size: 1.5rem;
+
+    .contact-content {
+      grid-template-columns: 1fr;
     }
-    
+
+    .contact-info-side {
+      padding: 2rem 1.5rem;
+    }
+
+    .contact-form-side {
+      padding: 2rem 1.5rem;
+    }
+
     .contact-item {
       flex-direction: column;
+      text-align: center;
     }
-    
+
     .contact-icon {
+      margin-right: 0;
       margin-bottom: 0.75rem;
     }
   }
@@ -207,148 +456,170 @@
 {% endblock %}
 
 {% block content %}
-<div class="contact-container">
-  <div class="contact-card">
-    <div class="contact-header">
-      <h2>お問い合わせ</h2>
+<!-- Hero Section -->
+<section class="contact-hero">
+  <div class="container">
+    <div class="contact-hero-content">
+      <h1>お問い合わせ</h1>
       <p>カブログをご利用いただきありがとうございます。ご質問やご提案などお気軽にお問い合わせください。</p>
     </div>
-    
-    <div class="contact-body">
-      <div class="contact-section">
-        <div class="contact-info">
-          <div class="contact-item">
-            <div class="contact-icon">
-              <i class="bi bi-envelope-fill"></i>
-            </div>
-            <div class="contact-item-content">
-              <h5>メールでのお問い合わせ</h5>
-              <p>直接メールでのお問い合わせも受け付けております。<br><a href="mailto:kabulog.information@gmail.com">kabulog.information@gmail.com</a></p>
-            </div>
-          </div>
-          
-          <div class="contact-item">
-            <div class="contact-icon">
-              <i class="bi bi-twitter-x"></i>
-            </div>
-            <div class="contact-item-content">
-              <h5>公式Twitter</h5>
-              <p>最新情報やお知らせを配信しています。<br><a href="https://x.com/kabulog_net?s=21" target="_blank">@kabulog_net</a></p>
-            </div>
-          </div>
-          
-          <div class="contact-item">
-            <div class="contact-icon">
-              <i class="bi bi-clock-fill"></i>
-            </div>
-            <div class="contact-item-content">
-              <h5>対応時間</h5>
-              <p>夜間帯対応となります。<br>通常、3営業日以内にご返信いたします。</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-{# contact.html フォーム部分の修正 #}
-
-<div class="contact-form-section">
-  <h3>お問い合わせフォーム</h3>
-  
-  <!-- メール認証についての説明を追加 -->
-  <div class="alert alert-info mb-4">
-    <i class="bi bi-info-circle me-2"></i>
-    <strong>セキュリティ対策について</strong><br>
-    なりすましや迷惑メールを防止するため、送信後にメールアドレスの確認が必要です。
-    入力されたメールアドレスに確認リンクをお送りしますので、クリックして認証を完了してください。
   </div>
-  
-  <form method="post" action="{% url 'contact:contact' %}" id="contactForm">
-    {% csrf_token %}
-    
-    <!-- ハニーポット：ボット検出用の隠しフィールド -->
-    <div style="position: absolute; left: -9999px; top: -9999px; visibility: hidden;">
-      <label for="website">ウェブサイト（このフィールドは入力しないでください）</label>
-      <input type="text" name="website" id="website" tabindex="-1" autocomplete="off">
-    </div>
-    
-    {% if messages %}
-      {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-4">
-          {{ message }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-      {% endfor %}
-    {% endif %}
-    
-    <div class="mb-3">
-      <label for="name" class="form-label">お名前</label>
-      <input type="text" class="form-control" id="name" name="name" required>
-    </div>
-    
-    <div class="mb-3">
-      <label for="email" class="form-label">メールアドレス</label>
-      <input type="email" class="form-control" id="email" name="email" required>
-      <div class="form-text">
-        <i class="bi bi-shield-check me-1"></i>
-        確認メールをお送りしますので、正確なメールアドレスをご入力ください。
-      </div>
-    </div>
-    
-    <div class="mb-3">
-      <label for="subject" class="form-label">件名</label>
-      <select class="form-select" id="subject" name="subject" required>
-        <option value="" selected disabled>選択してください</option>
-        <option value="サービスについての質問">サービスについての質問</option>
-        <option value="機能の提案・改善要望">機能の提案・改善要望</option>
-        <option value="不具合の報告">不具合の報告</option>
-        <option value="料金プランについて">料金プランについて</option>
-        <option value="その他">その他</option>
-      </select>
-    </div>
-    
-    <div class="mb-3">
-      <label for="message" class="form-label">お問い合わせ内容</label>
-      <textarea class="form-control" id="message" name="message" rows="5" required minlength="10"></textarea>
-      <div class="form-text">10文字以上でご記入ください。できるだけ詳しくご記入いただくとスムーズにご回答できます。</div>
-    </div>
-    
-    <div class="mb-3">
-      <div class="form-check d-flex align-items-center p-2 bg-light rounded">
-        <input type="checkbox" class="form-check-input" id="privacy_agreement" name="privacy_agreement" required style="min-width: 20px; min-height: 20px; margin-right: 10px;">
-        <label class="form-check-label" for="privacy_agreement" style="cursor: pointer; padding: 5px;">
-          <a href="{% url 'ads:privacy_policy' %}" target="_blank">プライバシーポリシー</a>に同意します。
-        </label>
-      </div>
-    </div>
-    
-    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-      <button type="submit" class="btn send-btn" id="submitButton">
-        <i class="bi bi-envelope-check me-2"></i>確認メールを送信
-      </button>
-      
-      <div class="d-none" id="loadingIndicator">
-        <div class="spinner-border text-primary me-2" role="status">
-          <span class="visually-hidden">送信中...</span>
-        </div>
-        <span>送信中です。しばらくお待ちください...</span>
-      </div>
-    </div>
-  </form>
-</div>
-{% endblock %}
+</section>
 
-{# 送信中表示のためのスクリプト #}
-{% block scripts %}
+<div class="contact-container">
+  <div class="container">
+    <div class="contact-card fade-in">
+      <div class="contact-content">
+        <!-- Contact Info Side -->
+        <div class="contact-info-side">
+          <div class="contact-info">
+            <h3>お問い合わせ方法</h3>
+            
+            <div class="contact-item">
+              <div class="contact-icon">
+                <i class="bi bi-envelope-fill"></i>
+              </div>
+              <div class="contact-item-content">
+                <h5>メールでのお問い合わせ</h5>
+                <p>直接メールでのお問い合わせも受け付けております。<br><a href="mailto:kabulog.information@gmail.com">kabulog.information@gmail.com</a></p>
+              </div>
+            </div>
+            
+            <div class="contact-item">
+              <div class="contact-icon">
+                <i class="bi bi-twitter-x"></i>
+              </div>
+              <div class="contact-item-content">
+                <h5>公式Twitter</h5>
+                <p>最新情報やお知らせを配信しています。<br><a href="https://x.com/kabulog_net?s=21" target="_blank">@kabulog_net</a></p>
+              </div>
+            </div>
+            
+            <div class="contact-item">
+              <div class="contact-icon">
+                <i class="bi bi-clock-fill"></i>
+              </div>
+              <div class="contact-item-content">
+                <h5>対応時間</h5>
+                <p>夜間帯対応となります。<br>通常、3営業日以内にご返信いたします。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Side -->
+        <div class="contact-form-side">
+          <div class="contact-form-section">
+            <h3>お問い合わせフォーム</h3>
+            
+            <!-- Security Notice -->
+            <div class="security-notice">
+              <strong>
+                <i class="bi bi-shield-check"></i>
+                セキュリティ対策について
+              </strong>
+              <p>なりすましや迷惑メールを防止するため、送信後にメールアドレスの確認が必要です。入力されたメールアドレスに確認リンクをお送りしますので、クリックして認証を完了してください。</p>
+            </div>
+            
+            <form method="post" action="#" id="contactForm">
+              <!-- ハニーポット：ボット検出用の隠しフィールド -->
+              <div style="position: absolute; left: -9999px; top: -9999px; visibility: hidden;">
+                <label for="website">ウェブサイト（このフィールドは入力しないでください）</label>
+                <input type="text" name="website" id="website" tabindex="-1" autocomplete="off">
+              </div>
+              
+              <!-- Messages placeholder -->
+              <div id="messages-container"></div>
+              
+              <div class="mb-3">
+                <label for="name" class="form-label">お名前</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+              </div>
+              
+              <div class="mb-3">
+                <label for="email" class="form-label">メールアドレス</label>
+                <input type="email" class="form-control" id="email" name="email" required>
+                <div class="form-text">
+                  <i class="bi bi-shield-check"></i>
+                  確認メールをお送りしますので、正確なメールアドレスをご入力ください。
+                </div>
+              </div>
+              
+              <div class="mb-3">
+                <label for="subject" class="form-label">件名</label>
+                <select class="form-select" id="subject" name="subject" required>
+                  <option value="" selected disabled>選択してください</option>
+                  <option value="サービスについての質問">サービスについての質問</option>
+                  <option value="機能の提案・改善要望">機能の提案・改善要望</option>
+                  <option value="不具合の報告">不具合の報告</option>
+                  <option value="料金プランについて">料金プランについて</option>
+                  <option value="その他">その他</option>
+                </select>
+              </div>
+              
+              <div class="mb-3">
+                <label for="message" class="form-label">お問い合わせ内容</label>
+                <textarea class="form-control" id="message" name="message" rows="5" required minlength="10"></textarea>
+                <div class="form-text">10文字以上でご記入ください。できるだけ詳しくご記入いただくとスムーズにご回答できます。</div>
+              </div>
+              
+              <div class="privacy-agreement">
+                <div class="form-check d-flex align-items-start">
+                  <input type="checkbox" class="form-check-input" id="privacy_agreement" name="privacy_agreement" required>
+                  <label class="form-check-label" for="privacy_agreement">
+                    <a href="#" onclick="alert('プライバシーポリシーページへのリンク')" target="_blank">プライバシーポリシー</a>に同意します。
+                  </label>
+                </div>
+              </div>
+              
+              <button type="submit" class="send-btn" id="submitButton">
+                <i class="bi bi-envelope-check"></i>
+                確認メールを送信
+              </button>
+              
+              <div class="loading-indicator d-none" id="loadingIndicator">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">送信中...</span>
+                </div>
+                <span>送信中です。しばらくお待ちください...</span>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    // Intersection Observer for animations
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('.fade-in').forEach(el => {
+      observer.observe(el);
+    });
+
+    // Form handling
     const form = document.getElementById('contactForm');
     const submitButton = document.getElementById('submitButton');
     const loadingIndicator = document.getElementById('loadingIndicator');
     
-    // 特にモバイルでのタップ領域を広げるためのスクリプト
+    // Privacy agreement enhanced interaction
     const privacyLabel = document.querySelector('label[for="privacy_agreement"]');
     privacyLabel.addEventListener('click', function(e) {
-      // ラベル内のリンククリック時はチェックボックスの状態を変更しない
       if (e.target.tagName === 'A') {
         e.stopPropagation();
       } else {
@@ -357,14 +628,45 @@
       }
     });
     
+    // Form submission handling
     form.addEventListener('submit', function(e) {
-      // フォームのバリデーション
+      e.preventDefault(); // Prevent actual submission for demo
+      
       if (form.checkValidity()) {
-        // 送信ボタンを非表示にし、ローディングインジケータを表示
+        // Show loading state
         submitButton.classList.add('d-none');
         loadingIndicator.classList.remove('d-none');
+        
+        // Simulate form submission
+        setTimeout(() => {
+          // Hide loading state
+          submitButton.classList.remove('d-none');
+          loadingIndicator.classList.add('d-none');
+          
+          // Show success message
+          showMessage('success', 'お問い合わせを受け付けました。確認メールをお送りしましたので、メールをご確認ください。');
+          
+          // Reset form
+          form.reset();
+        }, 2000);
       }
     });
+    
+    // Function to show messages
+    function showMessage(type, text) {
+      const messagesContainer = document.getElementById('messages-container');
+      const alertClass = type === 'success' ? 'alert-success' : 
+                        type === 'error' ? 'alert-danger' : 'alert-info';
+      
+      const alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show">
+          ${text}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      `;
+      
+      messagesContainer.innerHTML = alertHtml;
+    }
   });
 </script>
 {% endblock %}

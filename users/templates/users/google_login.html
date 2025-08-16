@@ -4,51 +4,152 @@
 {% block title %}Googleでログイン | カブログ{% endblock %}
 
 {% block head %}
+{{ block.super }}
 <style>
-  /* 強化されたリッチなGoogleログイン画面 */
-  .google-auth-container {
+  :root {
+    /* Modern Design System Variables */
+    --primary-500: #0891b2;
+    --primary-600: #0e7490;
+    --primary-700: #155e75;
+    --primary-50: #ecfeff;
+    --primary-100: #cffafe;
+    
+    --secondary-500: #3b82f6;
+    --secondary-600: #2563eb;
+    
+    --accent-500: #8b5cf6;
+    --accent-600: #7c3aed;
+    
+    --neutral-50: #f9fafb;
+    --neutral-100: #f3f4f6;
+    --neutral-200: #e5e7eb;
+    --neutral-300: #d1d5db;
+    --neutral-400: #9ca3af;
+    --neutral-500: #6b7280;
+    --neutral-600: #4b5563;
+    --neutral-700: #374151;
+    --neutral-800: #1f2937;
+    --neutral-900: #111827;
+    
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    --info: #3b82f6;
+    
+    --background: #ffffff;
+    --surface: #f9fafb;
+    --surface-elevated: #ffffff;
+    
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --text-tertiary: #6b7280;
+    --text-inverse: #ffffff;
+    
+    --border-primary: #e5e7eb;
+    --border-secondary: #d1d5db;
+    
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.5rem;
+    
+    --duration-200: 200ms;
+    --duration-300: 300ms;
+    --duration-500: 500ms;
+    
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  /* Hero Section */
+  .google-auth-hero {
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--secondary-500) 100%);
+    color: var(--text-inverse);
     padding: 4rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .google-auth-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+  }
+
+  .google-auth-hero-content {
+    position: relative;
+    z-index: 2;
     text-align: center;
+    max-width: 48rem;
+    margin: 0 auto;
+  }
+
+  .google-auth-hero h1 {
+    color: var(--text-inverse);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+  }
+
+  .google-auth-hero p {
+    font-size: 1.125rem;
+    opacity: 0.9;
+    line-height: 1.6;
+  }
+
+  /* Container */
+  .google-auth-container {
+    padding: 3rem 0;
   }
   
   .google-auth-card {
-    max-width: 480px;
+    max-width: 520px;
     margin: 0 auto;
-    border-radius: 1.5rem;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12), 0 10px 20px rgba(0, 0, 0, 0.08);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-xl);
     overflow: hidden;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    background: white;
+    transition: all var(--duration-300) var(--ease-out);
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-primary);
   }
   
   .google-auth-card:hover {
-    transform: translateY(-12px);
+    transform: translateY(-8px);
     box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15), 0 15px 25px rgba(0, 0, 0, 0.1);
   }
   
   .google-auth-header {
-    background: linear-gradient(135deg, #4285F4 0%, #0F9D58 100%);
+    background: linear-gradient(135deg, var(--surface) 0%, var(--neutral-100) 100%);
     padding: 2.5rem 2rem;
-    color: white;
+    text-align: center;
     position: relative;
     overflow: hidden;
   }
   
   .google-auth-header h3 {
-    color: white;
+    color: var(--primary-600);
     margin-bottom: 0.75rem;
     font-weight: 700;
-    font-size: 2rem;
-    letter-spacing: 0.5px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    font-size: 1.75rem;
+    letter-spacing: -0.01em;
     position: relative;
     z-index: 2;
   }
   
   .google-auth-header p {
     margin-bottom: 0;
-    opacity: 0.9;
-    font-size: 1.1rem;
+    color: var(--text-secondary);
+    font-size: 1rem;
     position: relative;
     z-index: 2;
   }
@@ -56,7 +157,7 @@
   /* 装飾的な背景要素 */
   .google-header-shape {
     position: absolute;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(8, 145, 178, 0.1);
     border-radius: 50%;
     z-index: 1;
   }
@@ -80,6 +181,7 @@
     height: 50px;
     top: 40%;
     left: 30%;
+    background: rgba(59, 130, 246, 0.1);
   }
   
   .shape-4 {
@@ -87,15 +189,16 @@
     height: 30px;
     top: 30%;
     right: 35%;
+    background: rgba(59, 130, 246, 0.1);
   }
   
   .google-auth-body {
     padding: 3rem 2.5rem;
-    background: white;
+    background: var(--surface-elevated);
     position: relative;
   }
   
-  /* Google ロゴのアニメーション */
+  /* Google Logo Animation */
   @keyframes pulse {
     0% {
       transform: scale(1);
@@ -117,11 +220,11 @@
     height: 90px;
     margin: 0 auto 2rem;
     border-radius: 50%;
-    background: white;
+    background: var(--surface-elevated);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 10px 25px rgba(66, 133, 244, 0.2);
+    box-shadow: var(--shadow-lg);
     animation: pulse 3s infinite;
   }
   
@@ -132,31 +235,41 @@
   
   .auth-description {
     margin-bottom: 2.5rem;
-    color: #64748b;
+    color: var(--text-secondary);
+    text-align: center;
+    font-size: 1rem;
+    line-height: 1.6;
   }
   
   .google-auth-body h4 {
     font-weight: 600;
     margin-bottom: 1rem;
-    color: #334155;
+    color: var(--text-primary);
+    text-align: center;
+    font-size: 1.25rem;
   }
   
   .google-btn {
-    background: #4285F4;
-    color: white;
-    border-radius: 0.75rem;
-    padding: 0.9rem 2.5rem;
+    background: linear-gradient(135deg, #4285F4 0%, #1a73e8 100%);
+    color: var(--text-inverse);
+    border-radius: var(--radius-xl);
+    padding: 1rem 2.5rem;
     font-size: 1.1rem;
     font-weight: 600;
     border: none;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: all var(--duration-300) var(--ease-out);
     display: inline-flex;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
+    gap: 0.75rem;
     text-decoration: none;
     position: relative;
     overflow: hidden;
     z-index: 1;
+    width: 100%;
+    max-width: 360px;
+    margin: 0 auto;
+    box-shadow: var(--shadow-md);
   }
   
   .google-btn::before {
@@ -167,14 +280,14 @@
     width: 0;
     height: 100%;
     background: #1a73e8;
-    transition: all 0.4s;
+    transition: all var(--duration-300) var(--ease-out);
     z-index: -1;
   }
   
   .google-btn:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 30px rgba(66, 133, 244, 0.3);
-    color: white;
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-xl);
+    color: var(--text-inverse);
   }
   
   .google-btn:hover::before {
@@ -184,7 +297,7 @@
   .google-btn svg {
     width: 24px;
     height: 24px;
-    transition: transform 0.3s;
+    transition: transform var(--duration-300) var(--ease-out);
   }
   
   .google-btn:hover svg {
@@ -193,27 +306,28 @@
   
   .cancel-link {
     display: inline-block;
-    margin-top: 1.5rem;
-    color: #64748b;
+    margin-top: 2rem;
+    color: var(--text-secondary);
     text-decoration: none;
     font-weight: 500;
-    transition: all 0.3s;
+    transition: all var(--duration-200) var(--ease-in-out);
     position: relative;
+    font-size: 0.95rem;
   }
   
   .cancel-link::after {
     content: '';
     position: absolute;
-    bottom: -3px;
+    bottom: -2px;
     left: 0;
     width: 0;
     height: 2px;
-    background-color: #64748b;
-    transition: all 0.3s;
+    background-color: var(--primary-500);
+    transition: all var(--duration-200) var(--ease-in-out);
   }
   
   .cancel-link:hover {
-    color: #334155;
+    color: var(--primary-500);
   }
   
   .cancel-link:hover::after {
@@ -223,24 +337,26 @@
   /* 利点リスト */
   .benefits-list {
     text-align: left;
-    max-width: 350px;
-    margin: 0 auto 2rem;
+    max-width: 400px;
+    margin: 0 auto 2.5rem;
   }
   
   .benefit-item {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 0.75rem;
     margin-bottom: 1rem;
-    padding: 0.75rem 1rem;
-    border-radius: 0.75rem;
-    background: #f8fafc;
-    transition: all 0.3s;
+    padding: 1rem;
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    border: 1px solid var(--border-primary);
+    transition: all var(--duration-200) var(--ease-out);
   }
   
   .benefit-item:hover {
-    transform: translateX(5px);
-    background: #f1f5f9;
+    transform: translateX(4px);
+    background: var(--neutral-100);
+    border-color: var(--border-secondary);
   }
   
   .benefit-icon {
@@ -250,31 +366,54 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    color: white;
+    color: var(--text-inverse);
     flex-shrink: 0;
   }
   
   .benefit-icon.blue {
-    background: #4285F4;
+    background: linear-gradient(135deg, #4285F4 0%, #1a73e8 100%);
   }
   
   .benefit-icon.green {
-    background: #0F9D58;
+    background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
   }
   
   .benefit-icon.yellow {
-    background: #FBBC05;
+    background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
   }
   
   .benefit-text {
     font-size: 0.95rem;
-    color: #334155;
+    color: var(--text-primary);
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  /* Action Buttons */
+  .auth-actions {
+    text-align: center;
   }
   
-  /* リアクティブなデザイン */
-  @media (max-width: 576px) {
+  /* Animations */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(2rem);
+    transition: all 0.6s var(--ease-out);
+  }
+
+  .fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  /* レスポンシブ対応 */
+  @media (max-width: 768px) {
+    .google-auth-hero {
+      padding: 3rem 0;
+    }
+
     .google-auth-container {
-      padding: 2rem 0;
+      padding: 2rem 1rem;
     }
     
     .google-auth-header {
@@ -282,7 +421,7 @@
     }
     
     .google-auth-header h3 {
-      font-size: 1.75rem;
+      font-size: 1.5rem;
     }
     
     .google-auth-body {
@@ -301,128 +440,138 @@
     }
     
     .google-btn {
-      padding: 0.8rem 2rem;
+      padding: 0.875rem 2rem;
       font-size: 1rem;
     }
+
+    .benefits-list {
+      max-width: 100%;
+    }
   }
-  
-  /* ダークモード対応 */
-  @media (prefers-color-scheme: dark) {
-    .google-auth-card {
-      background: #1e293b;
-    }
-    
-    .google-auth-body {
-      background: #1e293b;
-    }
-    
-    .google-auth-body h4 {
-      color: #e2e8f0;
-    }
-    
-    .auth-description {
-      color: #cbd5e1;
-    }
-    
+
+  @media (max-width: 480px) {
     .benefit-item {
-      background: #334155;
+      flex-direction: column;
+      text-align: center;
+      padding: 1.5rem 1rem;
     }
-    
-    .benefit-item:hover {
-      background: #475569;
-    }
-    
-    .benefit-text {
-      color: #e2e8f0;
-    }
-    
-    .cancel-link {
-      color: #94a3b8;
-    }
-    
-    .cancel-link:hover {
-      color: #cbd5e1;
-    }
-    
-    .cancel-link::after {
-      background-color: #94a3b8;
+
+    .benefit-icon {
+      margin-bottom: 0.5rem;
     }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="google-auth-container">
-  <div class="google-auth-card">
-    <div class="google-auth-header">
-      <h3>Google認証</h3>
-      <p>安全で簡単なログイン方法</p>
-      
-      <!-- 装飾的な背景要素 -->
-      <div class="google-header-shape shape-1"></div>
-      <div class="google-header-shape shape-2"></div>
-      <div class="google-header-shape shape-3"></div>
-      <div class="google-header-shape shape-4"></div>
+<!-- Hero Section -->
+<section class="google-auth-hero">
+  <div class="container">
+    <div class="google-auth-hero-content">
+      <h1>Google認証</h1>
+      <p>安全で簡単なログイン方法でカブログを始めましょう</p>
     </div>
-    
-    <div class="google-auth-body">
-      <div class="google-logo-container">
-        <svg class="google-logo" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-          <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path>
-          <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path>
-          <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path>
-          <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
-        </svg>
+  </div>
+</section>
+
+<div class="google-auth-container">
+  <div class="container">
+    <div class="google-auth-card fade-in">
+      <div class="google-auth-header">
+        <h3>Google認証</h3>
+        <p>安全で簡単なログイン方法</p>
+        
+        <!-- 装飾的な背景要素 -->
+        <div class="google-header-shape shape-1"></div>
+        <div class="google-header-shape shape-2"></div>
+        <div class="google-header-shape shape-3"></div>
+        <div class="google-header-shape shape-4"></div>
       </div>
       
-      <h4>カブログにGoogleでログイン</h4>
-      <p class="auth-description">Googleアカウントを使用して簡単に安全にログインできます</p>
-      
-      <!-- 利点リスト -->
-      <div class="benefits-list">
-        <div class="benefit-item">
-          <div class="benefit-icon blue">
-            <i class="bi bi-shield-check"></i>
+      <div class="google-auth-body">
+        <div class="google-logo-container">
+          <svg class="google-logo" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path>
+            <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path>
+            <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path>
+            <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
+          </svg>
+        </div>
+        
+        <h4>カブログにGoogleでログイン</h4>
+        <p class="auth-description">Googleアカウントを使用して簡単に安全にログインできます</p>
+        
+        <!-- 利点リスト -->
+        <div class="benefits-list">
+          <div class="benefit-item">
+            <div class="benefit-icon blue">
+              <i class="bi bi-shield-check"></i>
+            </div>
+            <div class="benefit-text">
+              安全なアカウント認証で情報を保護
+            </div>
           </div>
-          <div class="benefit-text">
-            安全なアカウント認証で情報を保護
+          
+          <div class="benefit-item">
+            <div class="benefit-icon green">
+              <i class="bi bi-lightning-charge"></i>
+            </div>
+            <div class="benefit-text">
+              面倒なパスワード入力なしで素早くログイン
+            </div>
+          </div>
+          
+          <div class="benefit-item">
+            <div class="benefit-icon yellow">
+              <i class="bi bi-person-check"></i>
+            </div>
+            <div class="benefit-text">
+              Googleアカウントと同期して使いやすく
+            </div>
           </div>
         </div>
         
-        <div class="benefit-item">
-          <div class="benefit-icon green">
-            <i class="bi bi-lightning-charge"></i>
-          </div>
-          <div class="benefit-text">
-            面倒なパスワード入力なしで素早くログイン
+        <div class="auth-actions">
+          <a href="/accounts/google/login/" class="google-btn">
+            <svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+              <g transform="matrix(1, 0, 0, 1, 0, 0)">
+                <path d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.19,19.27 12.19,19.27C8.36,19.27 5,16.25 5,12C5,7.9 8.2,4.73 12.2,4.73C15.29,4.73 17.1,6.7 17.1,6.7L19,4.72C19,4.72 16.56,2 12.1,2C6.42,2 2.03,6.8 2.03,12C2.03,17.05 6.16,22 12.25,22C17.6,22 21.5,18.33 21.5,12.91C21.5,11.76 21.35,11.1 21.35,11.1V11.1Z" fill="#FFFFFF"></path>
+              </g>
+            </svg>
+            Googleで続ける
+          </a>
+          
+          <div style="text-align: center; margin-top: 2rem;">
+            <a href="{% url 'users:login' %}" class="cancel-link">
+              <i class="bi bi-arrow-left me-1"></i>通常のログインに戻る
+            </a>
           </div>
         </div>
-        
-        <div class="benefit-item">
-          <div class="benefit-icon yellow">
-            <i class="bi bi-person-check"></i>
-          </div>
-          <div class="benefit-text">
-            Googleアカウントと同期して使いやすく
-          </div>
-        </div>
-      </div>
-      
-      <a href="/accounts/google/login/" class="google-btn">
-        <svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
-          <g transform="matrix(1, 0, 0, 1, 0, 0)">
-            <path d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.19,19.27 12.19,19.27C8.36,19.27 5,16.25 5,12C5,7.9 8.2,4.73 12.2,4.73C15.29,4.73 17.1,6.7 17.1,6.7L19,4.72C19,4.72 16.56,2 12.1,2C6.42,2 2.03,6.8 2.03,12C2.03,17.05 6.16,22 12.25,22C17.6,22 21.5,18.33 21.5,12.91C21.5,11.76 21.35,11.1 21.35,11.1V11.1Z" fill="#FFFFFF"></path>
-          </g>
-        </svg>
-        Googleで続ける
-      </a>
-      
-      <div>
-        <a href="{% url 'users:login' %}" class="cancel-link">
-          <i class="bi bi-arrow-left me-1"></i>通常のログインに戻る
-        </a>
       </div>
     </div>
   </div>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Intersection Observer for animations
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('.fade-in').forEach(el => {
+      observer.observe(el);
+    });
+  });
+</script>
 {% endblock %}

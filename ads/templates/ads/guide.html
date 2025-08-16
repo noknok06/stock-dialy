@@ -7,109 +7,283 @@
 {% block head %}
 {{ block.super }}
 <style>
+  :root {
+    /* Modern Design System Variables */
+    --primary-500: #0891b2;
+    --primary-600: #0e7490;
+    --primary-700: #155e75;
+    --primary-50: #ecfeff;
+    --primary-100: #cffafe;
+    
+    --secondary-500: #3b82f6;
+    --secondary-600: #2563eb;
+    
+    --accent-500: #8b5cf6;
+    --accent-600: #7c3aed;
+    
+    --neutral-50: #f9fafb;
+    --neutral-100: #f3f4f6;
+    --neutral-200: #e5e7eb;
+    --neutral-300: #d1d5db;
+    --neutral-400: #9ca3af;
+    --neutral-500: #6b7280;
+    --neutral-600: #4b5563;
+    --neutral-700: #374151;
+    --neutral-800: #1f2937;
+    --neutral-900: #111827;
+    
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    --info: #3b82f6;
+    
+    --background: #ffffff;
+    --surface: #f9fafb;
+    --surface-elevated: #ffffff;
+    
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --text-tertiary: #6b7280;
+    --text-inverse: #ffffff;
+    
+    --border-primary: #e5e7eb;
+    --border-secondary: #d1d5db;
+    
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.5rem;
+    
+    --duration-200: 200ms;
+    --duration-300: 300ms;
+    --duration-500: 500ms;
+    
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  /* Hero Section */
+  .guide-hero {
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--secondary-500) 100%);
+    color: var(--text-inverse);
+    padding: 4rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .guide-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+  }
+
+  .guide-hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    max-width: 48rem;
+    margin: 0 auto;
+  }
+
+  .guide-hero h1 {
+    color: var(--text-inverse);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+  }
+
+  .guide-hero p {
+    font-size: 1.125rem;
+    opacity: 0.9;
+    line-height: 1.6;
+  }
+
+  /* Container */
   .guide-container {
     max-width: 800px;
     margin: 0 auto;
-    padding: 2rem 0;
+    padding: 3rem 1rem;
   }
   
-  .guide-header {
-    text-align: center;
-    margin-bottom: 3rem;
-  }
-  
-  .guide-header h1 {
-    color: #1f2937;
-    font-weight: 700;
-    margin-bottom: 1rem;
-  }
-  
+  /* Sections */
   .guide-section {
     margin-bottom: 4rem;
+    background: var(--surface-elevated);
+    border-radius: var(--radius-2xl);
+    padding: 2.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-primary);
+    transition: all var(--duration-300) var(--ease-out);
+  }
+
+  .guide-section:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
   }
   
   .guide-section h2 {
-    color: #3730a3;
+    color: var(--primary-600);
     font-weight: 700;
     margin-bottom: 1.5rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #f3f4f6;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--primary-100);
+    font-size: 1.75rem;
   }
   
   .guide-section h3 {
-    color: #4b5563;
+    color: var(--text-primary);
     font-weight: 600;
-    margin: 1.5rem 0 1rem;
+    margin: 2rem 0 1rem;
+    font-size: 1.25rem;
+  }
+
+  .guide-section h4 {
+    color: var(--text-primary);
+    font-weight: 600;
+    margin: 1.5rem 0 0.75rem;
+    font-size: 1.125rem;
+  }
+
+  .guide-section p {
+    line-height: 1.7;
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
+  }
+
+  .guide-section ul, .guide-section ol {
+    margin-bottom: 1.5rem;
+    padding-left: 1.5rem;
+  }
+
+  .guide-section li {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
   }
   
-  .guide-img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    margin: 1.5rem 0;
-  }
-  
+  /* Tips and Examples */
   .guide-tips {
-    background-color: #f0f4ff;
-    border-left: 4px solid #4f46e5;
-    padding: 1.25rem;
-    border-radius: 0.5rem;
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border-left: 4px solid var(--primary-500);
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
     margin: 1.5rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .guide-tips::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(8, 145, 178, 0.1);
   }
   
   .guide-tips h4 {
-    color: #4f46e5;
+    color: var(--primary-600);
     font-weight: 600;
     margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .guide-tips h4::before {
+    content: '💡';
+    font-size: 1.25rem;
+  }
+
+  .guide-tips p {
+    margin-bottom: 0;
+    color: var(--text-primary);
   }
   
+  /* Step List */
   .step-list {
     counter-reset: steps;
     list-style: none;
     padding-left: 0;
+    margin: 2rem 0;
   }
   
   .step-list li {
     position: relative;
-    margin-bottom: 1.5rem;
-    padding-left: 3rem;
+    margin-bottom: 2rem;
+    padding-left: 4rem;
     counter-increment: steps;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 1.5rem 1.5rem 4rem;
+    border: 1px solid var(--border-primary);
+    transition: all var(--duration-300) var(--ease-out);
+  }
+
+  .step-list li:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
   }
   
   .step-list li::before {
     content: counter(steps);
     position: absolute;
-    left: 0;
-    top: 0;
-    width: 2rem;
-    height: 2rem;
-    background-color: #4f46e5;
-    color: white;
+    left: 1rem;
+    top: 1.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--secondary-500) 100%);
+    color: var(--text-inverse);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 1.125rem;
+  }
+
+  .step-list li h4 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    color: var(--text-primary);
+  }
+
+  .step-list li p {
+    margin-bottom: 0;
+    color: var(--text-secondary);
   }
   
+  /* Examples */
   .guide-example {
-    background-color: #f9fafb;
-    padding: 1.25rem;
-    border-radius: 0.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border-primary);
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
     margin: 1.5rem 0;
   }
   
   .guide-example h4 {
     margin-bottom: 1rem;
-    color: #1f2937;
+    color: var(--text-primary);
     font-weight: 600;
   }
   
   .example-item {
-    margin-bottom: 1rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-primary);
   }
   
   .example-item:last-child {
@@ -120,109 +294,246 @@
   
   .example-label {
     font-weight: 600;
-    margin-bottom: 0.25rem;
-    color: #4b5563;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .example-label.good::before {
+    content: '✅';
+  }
+
+  .example-label.bad::before {
+    content: '❌';
+  }
+
+  .example-item p {
+    margin-bottom: 0.5rem;
+  }
+
+  .example-item small {
+    font-style: italic;
+    color: var(--text-tertiary);
+    display: block;
+    margin-top: 0.5rem;
+  }
+
+  /* Feature Cards */
+  .feature-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  .feature-card {
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    transition: all var(--duration-300) var(--ease-out);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-500) 0%, var(--secondary-500) 100%);
+  }
+
+  .feature-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+  }
+
+  .feature-card h5 {
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .feature-card p {
+    color: var(--text-secondary);
+    margin-bottom: 0;
+    line-height: 1.6;
   }
   
+  /* CTA Section */
   .conclusion {
-    background-color: #f3f4f6;
-    padding: 2rem;
-    border-radius: 0.5rem;
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--secondary-500) 100%);
+    color: var(--text-inverse);
+    padding: 3rem 2rem;
+    border-radius: var(--radius-2xl);
     text-align: center;
     margin-top: 3rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .conclusion::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+      radial-gradient(circle at 30% 70%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+  }
+
+  .conclusion-content {
+    position: relative;
+    z-index: 2;
   }
   
   .conclusion h3 {
+    color: var(--text-inverse);
     margin-bottom: 1rem;
+    font-weight: 700;
+    font-size: 1.75rem;
+  }
+
+  .conclusion p {
+    margin-bottom: 1.5rem;
+    opacity: 0.9;
+    font-size: 1.125rem;
   }
   
   .guide-btn {
-    display: inline-block;
-    padding: 0.75rem 1.5rem;
-    background-color: #4f46e5;
-    color: white;
-    border-radius: 0.5rem;
-    font-weight: 500;
-    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 2rem;
+    background: var(--text-inverse);
+    color: var(--primary-600);
+    border-radius: var(--radius-xl);
+    font-weight: 600;
+    transition: all var(--duration-300) var(--ease-out);
     text-decoration: none;
+    box-shadow: var(--shadow-lg);
+    font-size: 1rem;
   }
   
   .guide-btn:hover {
-    background-color: #3730a3;
     transform: translateY(-2px);
-    color: white;
+    box-shadow: var(--shadow-xl);
+    color: var(--primary-600);
+  }
+
+  /* Animations */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(2rem);
+    transition: all 0.6s var(--ease-out);
+  }
+
+  .fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .guide-hero {
+      padding: 3rem 0;
+    }
+
+    .guide-container {
+      padding: 2rem 1rem;
+    }
+
+    .guide-section {
+      padding: 1.5rem;
+    }
+
+    .step-list li {
+      padding: 1rem 1rem 1rem 3rem;
+    }
+
+    .step-list li::before {
+      width: 2rem;
+      height: 2rem;
+      font-size: 1rem;
+      left: 0.75rem;
+      top: 1rem;
+    }
+
+    .feature-cards {
+      grid-template-columns: 1fr;
+    }
+
+    .conclusion {
+      padding: 2rem 1rem;
+    }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container guide-container">
-  <div class="guide-header">
-    <h1>効果的な投資記録の付け方</h1>
-    <p class="text-muted">カブログを活用して投資判断を振り返り、成長する投資家になるためのガイド</p>
+<!-- Hero Section -->
+<section class="guide-hero">
+  <div class="container">
+    <div class="guide-hero-content">
+      <h1>効果的な投資記録の付け方</h1>
+      <p>カブログを活用して投資判断を振り返り、成長する投資家になるためのガイド</p>
+    </div>
   </div>
-  
-  <div class="guide-section">
+</section>
+
+<div class="container guide-container">
+  <div class="guide-section fade-in">
     <h2>なぜ投資記録が重要なのか</h2>
     <p>投資の世界では、「何を買ったか」だけでなく「なぜ買ったか」を記録することが非常に重要です。その理由は次のとおりです：</p>
     
-    <div class="row mt-4">
-      <div class="col-md-6 mb-4">
-        <div class="card h-100 border-0 shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title">
-              <i class="bi bi-graph-up text-primary me-2"></i>
-              パターンの発見
-            </h5>
-            <p class="card-text">成功した投資と失敗した投資のパターンを見つけることで、自分の強みと弱みを把握できます。</p>
-          </div>
-        </div>
+    <div class="feature-cards">
+      <div class="feature-card">
+        <h5>
+          <i class="bi bi-graph-up" style="color: var(--primary-500);"></i>
+          パターンの発見
+        </h5>
+        <p>成功した投資と失敗した投資のパターンを見つけることで、自分の強みと弱みを把握できます。</p>
       </div>
       
-      <div class="col-md-6 mb-4">
-        <div class="card h-100 border-0 shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title">
-              <i class="bi bi-lightbulb text-primary me-2"></i>
-              感情バイアスの軽減
-            </h5>
-            <p class="card-text">記録を残すことで、後から振り返った際に感情ではなく事実に基づいた分析ができます。</p>
-          </div>
-        </div>
+      <div class="feature-card">
+        <h5>
+          <i class="bi bi-lightbulb" style="color: var(--warning);"></i>
+          感情バイアスの軽減
+        </h5>
+        <p>記録を残すことで、後から振り返った際に感情ではなく事実に基づいた分析ができます。</p>
       </div>
       
-      <div class="col-md-6 mb-4">
-        <div class="card h-100 border-0 shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title">
-              <i class="bi bi-arrow-repeat text-primary me-2"></i>
-              一貫性の維持
-            </h5>
-            <p class="card-text">投資基準を明確にして記録することで、投資判断の一貫性を保てます。</p>
-          </div>
-        </div>
+      <div class="feature-card">
+        <h5>
+          <i class="bi bi-arrow-repeat" style="color: var(--success);"></i>
+          一貫性の維持
+        </h5>
+        <p>投資基準を明確にして記録することで、投資判断の一貫性を保てます。</p>
       </div>
       
-      <div class="col-md-6 mb-4">
-        <div class="card h-100 border-0 shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title">
-              <i class="bi bi-clock-history text-primary me-2"></i>
-              時間経過による変化の追跡
-            </h5>
-            <p class="card-text">投資家としての成長過程や考え方の変化を追跡できます。</p>
-          </div>
-        </div>
+      <div class="feature-card">
+        <h5>
+          <i class="bi bi-clock-history" style="color: var(--info);"></i>
+          時間経過による変化の追跡
+        </h5>
+        <p>投資家としての成長過程や考え方の変化を追跡できます。</p>
       </div>
     </div>
     
-    <div class="guide-tips mt-4">
+    <div class="guide-tips">
       <h4>重要ポイント</h4>
       <p>投資記録は、単なる取引履歴ではありません。それは、あなたの投資判断プロセスを整理し、改善するための貴重な資料です。</p>
     </div>
   </div>
   
-  <div class="guide-section">
+  <div class="guide-section fade-in">
     <h2>効果的な投資記録の要素</h2>
     
     <h3>1. 基本情報の記録</h3>
@@ -247,15 +558,15 @@
     <div class="guide-example">
       <h4>投資理由の記録例</h4>
       <div class="example-item">
-        <div class="example-label">悪い例：</div>
+        <div class="example-label bad">悪い例：</div>
         <p>"株価が上がりそうだから購入した。"</p>
-        <small class="text-muted">（具体性がなく、後で振り返っても意味がない）</small>
+        <small>（具体性がなく、後で振り返っても意味がない）</small>
       </div>
       
       <div class="example-item">
-        <div class="example-label">良い例：</div>
+        <div class="example-label good">良い例：</div>
         <p>"この企業は新製品の発表により今後2年間で売上が30%増加すると予想される。PER20倍で業界平均より割安。財務体質も健全で無借金経営。主なリスクは競合他社の類似製品だが、特許による参入障壁がある。3年保有を予定し、株価30%上昇を期待。"</p>
-        <small class="text-muted">（具体的な根拠、数値、時間軸、リスク認識が含まれている）</small>
+        <small>（具体的な根拠、数値、時間軸、リスク認識が含まれている）</small>
       </div>
     </div>
     
@@ -281,7 +592,7 @@
     </div>
   </div>
   
-  <div class="guide-section">
+  <div class="guide-section fade-in">
     <h2>継続的な記録と振り返り</h2>
     
     <h3>1. 継続記録の活用</h3>
@@ -316,7 +627,7 @@
     </ul>
   </div>
   
-  <div class="guide-section">
+  <div class="guide-section fade-in">
     <h2>効果的な記録のステップバイステップガイド</h2>
     
     <ol class="step-list">
@@ -362,12 +673,37 @@
     </ol>
   </div>
   
-  <div class="conclusion">
-    <h3>あなたの投資の旅を記録しましょう</h3>
-    <p>投資記録は、単なる取引履歴ではなく、投資家としての成長を促す貴重なツールです。一貫性を持って記録を続けることで、時間の経過とともに投資判断が洗練されていくでしょう。</p>
-    <a href="{% url 'stockdiary:create' %}" class="guide-btn mt-3">
-      <i class="bi bi-pencil-square me-2"></i>投資記録を始める
-    </a>
+  <div class="conclusion fade-in">
+    <div class="conclusion-content">
+      <h3>あなたの投資の旅を記録しましょう</h3>
+      <p>投資記録は、単なる取引履歴ではなく、投資家としての成長を促す貴重なツールです。一貫性を持って記録を続けることで、時間の経過とともに投資判断が洗練されていくでしょう。</p>
+      <a href="/users/login/" class="guide-btn">
+        <i class="bi bi-pencil-square"></i>投資記録を始める
+      </a>
+    </div>
   </div>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Intersection Observer for animations
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('.fade-in').forEach(el => {
+      observer.observe(el);
+    });
+  });
+</script>
 {% endblock %}

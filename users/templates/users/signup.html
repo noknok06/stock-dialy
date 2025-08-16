@@ -2,68 +2,618 @@
 
 {% block title %}アカウント登録 | カブログ{% endblock %}
 
+{% block head %}
+{{ block.super }}
+<style>
+  :root {
+    /* Modern Design System Variables */
+    --primary-500: #0891b2;
+    --primary-600: #0e7490;
+    --primary-700: #155e75;
+    --primary-50: #ecfeff;
+    --primary-100: #cffafe;
+    
+    --secondary-500: #3b82f6;
+    --secondary-600: #2563eb;
+    
+    --accent-500: #8b5cf6;
+    --accent-600: #7c3aed;
+    
+    --neutral-50: #f9fafb;
+    --neutral-100: #f3f4f6;
+    --neutral-200: #e5e7eb;
+    --neutral-300: #d1d5db;
+    --neutral-400: #9ca3af;
+    --neutral-500: #6b7280;
+    --neutral-600: #4b5563;
+    --neutral-700: #374151;
+    --neutral-800: #1f2937;
+    --neutral-900: #111827;
+    
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    --info: #3b82f6;
+    
+    --background: #ffffff;
+    --surface: #f9fafb;
+    --surface-elevated: #ffffff;
+    
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --text-tertiary: #6b7280;
+    --text-inverse: #ffffff;
+    
+    --border-primary: #e5e7eb;
+    --border-secondary: #d1d5db;
+    
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.5rem;
+    
+    --duration-200: 200ms;
+    --duration-300: 300ms;
+    --duration-500: 500ms;
+    
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  /* Hero Section */
+  .signup-hero {
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--secondary-500) 100%);
+    color: var(--text-inverse);
+    padding: 4rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .signup-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+  }
+
+  .signup-hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    max-width: 48rem;
+    margin: 0 auto;
+  }
+
+  .signup-hero h1 {
+    color: var(--text-inverse);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+  }
+
+  .signup-hero p {
+    font-size: 1.125rem;
+    opacity: 0.9;
+    line-height: 1.6;
+  }
+
+  /* Container */
+  .signup-container {
+    padding: 3rem 0;
+  }
+  
+  /* Signup Card */
+  .signup-card {
+    max-width: 600px;
+    margin: 0 auto;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-xl);
+    overflow: hidden;
+    transition: all var(--duration-300) var(--ease-out);
+  }
+
+  .signup-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  }
+
+  .signup-card-header {
+    background: linear-gradient(135deg, var(--surface) 0%, var(--neutral-100) 100%);
+    padding: 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .signup-card-header::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(8, 145, 178, 0.1);
+  }
+
+  .signup-card-header h3 {
+    color: var(--primary-600);
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    font-size: 1.75rem;
+    position: relative;
+    z-index: 2;
+  }
+
+  .signup-card-header p {
+    color: var(--text-secondary);
+    margin-bottom: 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  .signup-card-body {
+    padding: 2.5rem;
+  }
+
+  /* Form Styles */
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-label {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+  }
+
+  .form-control {
+    border: 2px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+    transition: all var(--duration-200) var(--ease-in-out);
+    background: var(--surface-elevated);
+    color: var(--text-primary);
+    height: auto;
+  }
+
+  .form-control:focus {
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 0.25rem rgba(8, 145, 178, 0.25);
+    outline: none;
+    background: var(--background);
+  }
+
+  /* Password Help Text */
+  .password-help {
+    background: var(--surface);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .password-help h6 {
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .password-requirements {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 0;
+  }
+
+  .password-requirements li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+  }
+
+  .password-requirements i {
+    color: var(--success);
+    font-size: 0.75rem;
+  }
+
+  /* Submit Button */
+  .signup-btn {
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--secondary-500) 100%);
+    color: var(--text-inverse);
+    border: none;
+    border-radius: var(--radius-xl);
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all var(--duration-300) var(--ease-out);
+    box-shadow: var(--shadow-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .signup-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-xl);
+    color: var(--text-inverse);
+  }
+
+  .signup-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Google Signup */
+  .signup-divider {
+    display: flex;
+    align-items: center;
+    margin: 2rem 0;
+  }
+
+  .signup-divider::before,
+  .signup-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--border-primary), transparent);
+  }
+
+  .signup-divider span {
+    padding: 0 1.5rem;
+    color: var(--text-tertiary);
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .google-signup-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    border: 2px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all var(--duration-200) var(--ease-in-out);
+    background: var(--surface-elevated);
+    color: var(--text-primary);
+    width: 100%;
+    text-decoration: none;
+  }
+
+  .google-signup-btn:hover {
+    border-color: var(--border-secondary);
+    background: var(--surface);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    color: var(--text-primary);
+  }
+
+  /* Footer */
+  .signup-footer {
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-primary);
+  }
+
+  .signup-footer p {
+    color: var(--text-secondary);
+    margin-bottom: 0;
+  }
+
+  .signup-footer a {
+    color: var(--primary-500);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all var(--duration-200) var(--ease-in-out);
+  }
+
+  .signup-footer a:hover {
+    color: var(--primary-600);
+    text-decoration: underline;
+  }
+
+  /* Error Styles */
+  .alert {
+    border: none;
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .alert-danger {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
+    border-left: 4px solid var(--error);
+    color: var(--error);
+  }
+
+  .text-danger {
+    color: var(--error);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  /* Features List */
+  .signup-features {
+    background: var(--surface);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .signup-features h5 {
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+  }
+
+  .features-list {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 0;
+  }
+
+  .features-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+  .features-list li:last-child {
+    margin-bottom: 0;
+  }
+
+  .features-list i {
+    color: var(--success);
+    font-size: 1rem;
+    width: 1rem;
+    text-align: center;
+  }
+
+  /* Animations */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(2rem);
+    transition: all 0.6s var(--ease-out);
+  }
+
+  .fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .signup-hero {
+      padding: 3rem 0;
+    }
+
+    .signup-container {
+      padding: 2rem 1rem;
+    }
+
+    .signup-card-header {
+      padding: 1.5rem;
+    }
+
+    .signup-card-body {
+      padding: 1.5rem;
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h3 class="mb-0">アカウント登録</h3>
-            </div>
-            <div class="card-body">
-                <form method="post" novalidate>
-                    {% csrf_token %}
-                    
-                    {% if form.non_field_errors %}
-                        <div class="alert alert-danger">
-                            {% for error in form.non_field_errors %}
-                                {{ error }}
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.username.id_for_label }}" class="form-label">ユーザー名</label>
-                        {{ form.username }}
-                        {% if form.username.errors %}
-                            <div class="text-danger">{{ form.username.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.email.id_for_label }}" class="form-label">メールアドレス</label>
-                        {{ form.email }}
-                        {% if form.email.errors %}
-                            <div class="text-danger">{{ form.email.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.password1.id_for_label }}" class="form-label">パスワード</label>
-                        {{ form.password1 }}
-                        {% if form.password1.errors %}
-                            <div class="text-danger">{{ form.password1.errors }}</div>
-                        {% endif %}
-                        <div class="form-text text-muted small">{{ form.password1.help_text }}</div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.password2.id_for_label }}" class="form-label">パスワード (確認)</label>
-                        {{ form.password2 }}
-                        {% if form.password2.errors %}
-                            <div class="text-danger">{{ form.password2.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">登録</button>
-                    </div>
-                </form>
-                
-                <div class="mt-3 text-center">
-                    <p>すでにアカウントをお持ちの方は <a href="{% url 'users:login' %}">ログイン</a> へ</p>
-                </div>
-            </div>
-        </div>
+<!-- Hero Section -->
+<section class="signup-hero">
+  <div class="container">
+    <div class="signup-hero-content">
+      <h1>アカウント登録</h1>
+      <p>カブログで投資記録を始めて、より良い投資家になりましょう</p>
     </div>
+  </div>
+</section>
+
+<div class="signup-container">
+  <div class="container">
+    <div class="signup-card fade-in">
+      <div class="signup-card-header">
+        <h3>無料アカウント作成</h3>
+        <p>すべての機能を無料でご利用いただけます</p>
+      </div>
+      
+      <div class="signup-card-body">
+        <!-- Features -->
+        <div class="signup-features">
+          <h5>カブログでできること</h5>
+          <ul class="features-list">
+            <li>
+              <i class="bi bi-check-circle-fill"></i>
+              投資記録の管理と分析
+            </li>
+            <li>
+              <i class="bi bi-check-circle-fill"></i>
+              ポートフォリオの可視化
+            </li>
+            <li>
+              <i class="bi bi-check-circle-fill"></i>
+              カスタム分析テンプレート
+            </li>
+            <li>
+              <i class="bi bi-check-circle-fill"></i>
+              決算レポートの整理
+            </li>
+          </ul>
+        </div>
+
+        <!-- Google Signup Option -->
+        <a href="/users/google-login/" class="google-signup-btn">
+          <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+            <g transform="matrix(1, 0, 0, 1, 0, 0)">
+              <path d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.19,19.27 12.19,19.27C8.36,19.27 5,16.25 5,12C5,7.9 8.2,4.73 12.2,4.73C15.29,4.73 17.1,6.7 17.1,6.7L19,4.72C19,4.72 16.56,2 12.1,2C6.42,2 2.03,6.8 2.03,12C2.03,17.05 6.16,22 12.25,22C17.6,22 21.5,18.33 21.5,12.91C21.5,11.76 21.35,11.1 21.35,11.1V11.1Z" fill="#4285F4"></path>
+            </g>
+          </svg>
+          Googleアカウントで登録
+        </a>
+
+        <div class="signup-divider">
+          <span>または</span>
+        </div>
+
+        <!-- Signup Form -->
+        <form method="post" novalidate>
+          {% csrf_token %}
+          
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              <div>
+                {% for error in form.non_field_errors %}
+                  {{ error }}
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+          
+          <div class="form-group">
+            <label for="{{ form.username.id_for_label }}" class="form-label">
+              <i class="bi bi-person"></i>
+              ユーザー名
+            </label>
+            {{ form.username }}
+            {% if form.username.errors %}
+              <div class="text-danger">
+                <i class="bi bi-exclamation-circle"></i>
+                {{ form.username.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+          
+          <div class="form-group">
+            <label for="{{ form.email.id_for_label }}" class="form-label">
+              <i class="bi bi-envelope"></i>
+              メールアドレス
+            </label>
+            {{ form.email }}
+            {% if form.email.errors %}
+              <div class="text-danger">
+                <i class="bi bi-exclamation-circle"></i>
+                {{ form.email.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+          
+          <div class="form-group">
+            <label for="{{ form.password1.id_for_label }}" class="form-label">
+              <i class="bi bi-shield-lock"></i>
+              パスワード
+            </label>
+            {{ form.password1 }}
+            {% if form.password1.errors %}
+              <div class="text-danger">
+                <i class="bi bi-exclamation-circle"></i>
+                {{ form.password1.errors.0 }}
+              </div>
+            {% endif %}
+            {% if form.password1.help_text %}
+              <div class="password-help">
+                <h6>パスワードの要件</h6>
+                <ul class="password-requirements">
+                  <li><i class="bi bi-check-circle-fill"></i> 8文字以上</li>
+                  <li><i class="bi bi-check-circle-fill"></i> よく使われるパスワードは避ける</li>
+                  <li><i class="bi bi-check-circle-fill"></i> 数字のみは避ける</li>
+                  <li><i class="bi bi-check-circle-fill"></i> 個人情報と類似しない</li>
+                </ul>
+              </div>
+            {% endif %}
+          </div>
+          
+          <div class="form-group">
+            <label for="{{ form.password2.id_for_label }}" class="form-label">
+              <i class="bi bi-shield-check"></i>
+              パスワード (確認)
+            </label>
+            {{ form.password2 }}
+            {% if form.password2.errors %}
+              <div class="text-danger">
+                <i class="bi bi-exclamation-circle"></i>
+                {{ form.password2.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+          
+          <button type="submit" class="signup-btn">
+            <i class="bi bi-person-plus"></i>
+            アカウントを作成
+          </button>
+        </form>
+        
+        <div class="signup-footer">
+          <p>すでにアカウントをお持ちの方は <a href="{% url 'users:login' %}">ログイン</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Intersection Observer for animations
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('.fade-in').forEach(el => {
+      observer.observe(el);
+    });
+  });
+</script>
 {% endblock %}

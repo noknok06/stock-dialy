@@ -5,28 +5,217 @@
 {% block head %}
 {{ block.super }}
 <style>
+  :root {
+    /* Modern Design System Variables */
+    --primary-500: #0891b2;
+    --primary-600: #0e7490;
+    --primary-700: #155e75;
+    --primary-50: #ecfeff;
+    --primary-100: #cffafe;
+    
+    --secondary-500: #3b82f6;
+    --secondary-600: #2563eb;
+    
+    --accent-500: #8b5cf6;
+    --accent-600: #7c3aed;
+    
+    --neutral-50: #f9fafb;
+    --neutral-100: #f3f4f6;
+    --neutral-200: #e5e7eb;
+    --neutral-300: #d1d5db;
+    --neutral-400: #9ca3af;
+    --neutral-500: #6b7280;
+    --neutral-600: #4b5563;
+    --neutral-700: #374151;
+    --neutral-800: #1f2937;
+    --neutral-900: #111827;
+    
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    --info: #3b82f6;
+    
+    --background: #ffffff;
+    --surface: #f9fafb;
+    --surface-elevated: #ffffff;
+    
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --text-tertiary: #6b7280;
+    --text-inverse: #ffffff;
+    
+    --border-primary: #e5e7eb;
+    --border-secondary: #d1d5db;
+    
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.5rem;
+    
+    --duration-200: 200ms;
+    --duration-300: 300ms;
+    --duration-500: 500ms;
+    
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  /* Hero Section */
+  .terms-hero {
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--secondary-500) 100%);
+    color: var(--text-inverse);
+    padding: 4rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .terms-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+  }
+
+  .terms-hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    max-width: 48rem;
+    margin: 0 auto;
+  }
+
+  .terms-hero h1 {
+    color: var(--text-inverse);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+  }
+
+  .terms-hero p {
+    font-size: 1.125rem;
+    opacity: 0.9;
+    line-height: 1.6;
+  }
+
+  /* Container */
   .terms-container {
     max-width: 800px;
     margin: 0 auto;
-    padding: 2rem 0;
+    padding: 3rem 1rem;
   }
   
+  /* Table of Contents */
+  .toc {
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-xl);
+    padding: 2rem;
+    margin-bottom: 3rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .toc h3 {
+    color: var(--primary-600);
+    font-weight: 700;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+  }
+
+  .toc ol {
+    list-style: none;
+    counter-reset: toc-counter;
+    padding-left: 0;
+  }
+
+  .toc li {
+    counter-increment: toc-counter;
+    margin-bottom: 0.5rem;
+  }
+
+  .toc a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    border-radius: var(--radius-md);
+    transition: all var(--duration-200) var(--ease-in-out);
+  }
+
+  .toc a::before {
+    content: counter(toc-counter) ".";
+    margin-right: 0.75rem;
+    font-weight: 600;
+    color: var(--primary-500);
+    min-width: 1.5rem;
+  }
+
+  .toc a:hover {
+    background: var(--surface);
+    color: var(--primary-600);
+    transform: translateX(4px);
+  }
+
+  /* Sections */
   .terms-section {
-    margin-bottom: 2.5rem;
+    margin-bottom: 3rem;
+    background: var(--surface-elevated);
+    border-radius: var(--radius-xl);
+    padding: 2rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-primary);
+    transition: all var(--duration-300) var(--ease-out);
+    scroll-margin-top: 2rem;
+  }
+
+  .terms-section:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
   }
   
   .terms-section h2 {
-    color: #3730a3;
+    color: var(--primary-600);
     font-weight: 700;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #f3f4f6;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--primary-100);
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
   
   .terms-section h3 {
-    color: #4b5563;
+    color: var(--text-primary);
     font-weight: 600;
     margin: 1.5rem 0 0.75rem;
+    font-size: 1.25rem;
+  }
+
+  .terms-section p {
+    line-height: 1.7;
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
+  }
+
+  .terms-section ul, .terms-section ol {
+    margin-bottom: 1.5rem;
+    padding-left: 1.5rem;
+  }
+
+  .terms-section li {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
   }
   
   .terms-list {
@@ -38,40 +227,162 @@
     line-height: 1.6;
   }
   
+  /* Highlight Boxes */
   .highlight-box {
-    background-color: #f0f4ff;
-    border-left: 4px solid #4f46e5;
-    padding: 1.25rem;
-    border-radius: 0.5rem;
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border-left: 4px solid var(--primary-500);
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
     margin: 1.5rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .highlight-box::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(8, 145, 178, 0.1);
+  }
+
+  .highlight-box p {
+    margin-bottom: 0;
+    color: var(--text-primary);
+    font-weight: 500;
   }
   
   .warning-box {
-    background-color: #fff5f5;
-    border-left: 4px solid #ef4444;
-    padding: 1.25rem;
-    border-radius: 0.5rem;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
+    border-left: 4px solid var(--error);
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
     margin: 1.5rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .warning-box::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.1);
+  }
+
+  .warning-box p {
+    margin-bottom: 0;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  /* Icon mappings for sections */
+  .terms-section[data-section="overview"] h2::before {
+    content: '📋';
+    margin-right: 0.5rem;
+  }
+
+  .terms-section[data-section="disclaimer"] h2::before {
+    content: '⚠️';
+    margin-right: 0.5rem;
+  }
+
+  .terms-section[data-section="service"] h2::before {
+    content: '🎯';
+    margin-right: 0.5rem;
+  }
+
+  .terms-section[data-section="copyright"] h2::before {
+    content: '©️';
+    margin-right: 0.5rem;
+  }
+
+  .terms-section[data-section="changes"] h2::before {
+    content: '🔄';
+    margin-right: 0.5rem;
+  }
+
+  .terms-section[data-section="privacy"] h2::before {
+    content: '🛡️';
+    margin-right: 0.5rem;
   }
   
+  /* Disclaimer */
   .disclaimer-note {
-    font-style: italic;
-    color: #6b7280;
+    background: var(--surface);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
     margin-top: 2rem;
-    padding-top: 1rem;
-    border-top: 1px solid #e5e7eb;
+    font-style: italic;
+    color: var(--text-tertiary);
+  }
+
+  /* Animations */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(2rem);
+    transition: all 0.6s var(--ease-out);
+  }
+
+  .fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .terms-hero {
+      padding: 3rem 0;
+    }
+
+    .terms-container {
+      padding: 2rem 1rem;
+    }
+
+    .terms-section {
+      padding: 1.5rem;
+    }
+
+    .toc {
+      padding: 1.5rem;
+    }
   }
 </style>
 {% endblock %}
 
 {% block content %}
+<!-- Hero Section -->
+<section class="terms-hero">
+  <div class="container">
+    <div class="terms-hero-content">
+      <h1>利用規約・免責事項</h1>
+      <p>最終更新日: 2025年3月29日</p>
+    </div>
+  </div>
+</section>
+
 <div class="container terms-container">
-  <div class="mb-5 text-center">
-    <h1 class="mb-3">利用規約・免責事項</h1>
-    <p class="text-muted">最終更新日: 2025年3月29日</p>
+  <!-- Table of Contents -->
+  <div class="toc fade-in">
+    <h3>目次</h3>
+    <ol>
+      <li><a href="#overview">サービスの概要</a></li>
+      <li><a href="#disclaimer">免責事項</a></li>
+      <li><a href="#service">サービスの提供</a></li>
+      <li><a href="#copyright">著作権・知的財産権</a></li>
+      <li><a href="#changes">サービスの変更・終了</a></li>
+      <li><a href="#privacy">プライバシーポリシー</a></li>
+    </ol>
   </div>
   
-  <div class="terms-section">
+  <div class="terms-section fade-in" id="overview" data-section="overview">
     <h2>サービスの概要</h2>
     <p>カブログ（以下「本サービス」）は、ユーザーが自身の投資記録を管理・分析するためのツールです。本サービスは投資判断の記録と振り返りに特化しており、金融商品の取引を促進するものではありません。</p>
     
@@ -80,7 +391,7 @@
     </div>
   </div>
   
-  <div class="terms-section">
+  <div class="terms-section fade-in" id="disclaimer" data-section="disclaimer">
     <h2>免責事項</h2>
     <h3>投資リスクについて</h3>
     <p>株式投資を含む金融商品への投資には、元本割れを含む様々なリスクが伴います。投資判断は、ユーザー自身の責任において行ってください。</p>
@@ -96,7 +407,7 @@
     <p>本サービスの利用によって生じたいかなる損害（投資判断による損失を含む）についても、運営者は責任を負いません。</p>
   </div>
   
-  <div class="terms-section">
+  <div class="terms-section fade-in" id="service" data-section="service">
     <h2>サービスの提供</h2>
     <h3>本サービスの目的</h3>
     <p>本サービスは、以下の目的のために提供されています：</p>
@@ -115,26 +426,102 @@
       <li>本サービスのインフラに過剰な負荷をかける行為</li>
       <li>法令に違反する行為、または違反を助長する行為</li>
     </ul>
+
+    <h3>サービス利用の条件</h3>
+    <p>本サービスを利用するには、以下の条件を満たしている必要があります：</p>
+    <ul class="terms-list">
+      <li>18歳以上であること（未成年者は法定代理人の同意が必要）</li>
+      <li>本利用規約に同意すること</li>
+      <li>虚偽の情報を提供しないこと</li>
+      <li>適用される法律に従うこと</li>
+    </ul>
   </div>
   
-  <div class="terms-section">
+  <div class="terms-section fade-in" id="copyright" data-section="copyright">
     <h2>著作権・知的財産権</h2>
     <p>本サービスに関わるすべてのコンテンツ、デザイン、ロゴなどの知的財産権は、運営者または正当な権利者に帰属します。ユーザーは、自身が入力したデータの所有権を保持しますが、本サービスの機能やコンテンツを無断で複製・配布することはできません。</p>
+
+    <h3>ユーザーコンテンツ</h3>
+    <p>ユーザーが本サービスに投稿したコンテンツ（投資記録、分析など）については：</p>
+    <ul class="terms-list">
+      <li>ユーザーが著作権を保持します</li>
+      <li>運営者がサービス提供のために使用することを許諾いただきます</li>
+      <li>第三者の権利を侵害しないよう注意してください</li>
+    </ul>
   </div>
   
-  <div class="terms-section">
+  <div class="terms-section fade-in" id="changes" data-section="changes">
     <h2>サービスの変更・終了</h2>
     <p>運営者は、予告なく本サービスの内容を変更、または終了する場合があります。サービス終了時には、事前に通知するよう努めますが、予告なく終了する場合もあることをご了承ください。</p>
+
+    <h3>アカウント停止・削除</h3>
+    <p>以下の場合、ユーザーアカウントを停止または削除することがあります：</p>
+    <ul class="terms-list">
+      <li>本利用規約に違反した場合</li>
+      <li>長期間サービスを利用しない場合</li>
+      <li>サービス運営に支障をきたす行為を行った場合</li>
+    </ul>
+
+    <h3>利用規約の変更</h3>
+    <p>本利用規約は、必要に応じて変更することがあります。重要な変更については、事前にユーザーに通知いたします。</p>
   </div>
   
-  <div class="terms-section">
+  <div class="terms-section fade-in" id="privacy" data-section="privacy">
     <h2>プライバシーポリシー</h2>
     <p>ユーザーの情報の取り扱いについては、<a href="{% url 'ads:privacy_policy' %}">プライバシーポリシー</a>をご確認ください。</p>
+
+    <h3>データの取り扱い</h3>
+    <p>ユーザーの投資記録データについて：</p>
+    <ul class="terms-list">
+      <li>暗号化して安全に保存します</li>
+      <li>サービス提供以外の目的では使用しません</li>
+      <li>第三者と共有することはありません</li>
+      <li>ユーザーの削除要求に応じて削除します</li>
+    </ul>
   </div>
   
-  <div class="disclaimer-note">
+  <div class="disclaimer-note fade-in">
     <p>本規約は、法律の変更やサービスの変更に応じて、予告なく変更されることがあります。定期的に確認することをお勧めします。</p>
     <p>ご不明な点がございましたら、<a href="{% url 'contact:contact' %}">お問い合わせ</a>よりご連絡ください。</p>
   </div>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Intersection Observer for animations
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('.fade-in').forEach(el => {
+      observer.observe(el);
+    });
+
+    // Smooth scrolling for TOC links
+    document.querySelectorAll('.toc a').forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const targetId = this.getAttribute('href').substring(1);
+        const targetElement = document.getElementById(targetId);
+        
+        if (targetElement) {
+          targetElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+  });
+</script>
 {% endblock %}
