@@ -85,10 +85,11 @@
     {% if diary.image %}
     <div class="diary-image mb-3">
       <img src="{{ diary.image.url }}" 
-           class="img-fluid rounded diary-attached-image" 
-           alt="日記画像"
-           style="max-height: 200px; object-fit: cover; width: 100%; cursor: pointer;"
-           onclick="showImageModal('{{ diary.image.url }}', '{{ diary.stock_name }}')">
+          class="img-fluid rounded diary-attached-image" 
+          alt="日記画像"
+          style="max-height: 200px; object-fit: cover; width: 100%; cursor: pointer;"
+          onclick="event.stopPropagation(); showImageModal('{{ diary.image.url }}', '{{ diary.stock_name|escapejs }}')">
+
     </div>
     {% endif %}    
     <!-- タグ表示 - 改善されたレイアウト -->
