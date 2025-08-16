@@ -1309,6 +1309,13 @@
   #noteFormCollapse.show .simplified-note-form {
     animation: fadeInUp 0.3s ease-out;
   }  
+
+  @media (max-width: 576px) {
+    .notes-count-badge {
+      font-size: 0.6rem;
+      padding: 0.15rem 0.35rem;
+    }
+  }
 </style>
 {% endblock %}
 
@@ -1429,16 +1436,20 @@
             <div class="tab-label">基本情報</div>
           </button>
         </li>
+
+        <!-- 継続記録タブ -->
         <li class="improved-tab-item" role="presentation">
           <button class="improved-tab-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes-content" 
             type="button" role="tab" aria-controls="notes-content" aria-selected="false">
             <div class="tab-icon">
               <i class="bi bi-journal-richtext"></i>
             </div>
-            <div class="tab-label">継続記録</div>
-            {% if notes.count > 0 %}
-            <div class="tab-count">{{ notes.count }}件</div>
-            {% endif %}
+            <div class="tab-label">
+              継続記録
+              {% if notes.count > 0 %}
+              <span class="badge bg-primary bg-opacity-25 text-primary notes-count-badge">{{ notes.count }}</span>
+              {% endif %}
+            </div>
           </button>
         </li>
         <li class="improved-tab-item" role="presentation">
@@ -1769,14 +1780,6 @@
           
           <!-- フォーム表示/非表示の切り替えボタン -->
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="mb-0">
-              <i class="bi bi-journal-richtext me-2"></i>
-              継続記録
-              {% if notes.count > 0 %}
-                <span class="badge bg-primary bg-opacity-10 text-primary ms-2">{{ notes.count }}件</span>
-              {% endif %}
-            </h4>
-            
             <button 
               type="button" 
               class="btn btn-primary btn-sm" 
