@@ -19,6 +19,11 @@ import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 
+import socket
+socket.setdefaulttimeout(120)  # 2分
+IMPORT_MEMORY_LIMIT_MB = int(os.getenv('IMPORT_MEMORY_LIMIT_MB', '256'))
+IMPORT_BATCH_SIZE = int(os.getenv('IMPORT_BATCH_SIZE', '50'))
+
 # .envファイルの読み込み
 load_dotenv()
 
