@@ -5,6 +5,7 @@ import re
 import tempfile
 import os
 import gc
+import warnings
 import psutil
 from datetime import datetime, date
 from django.core.management.base import BaseCommand, CommandError
@@ -12,6 +13,15 @@ from django.db import transaction, connection
 from django.conf import settings
 from margin_trading.models import MarketIssue, MarginTradingData, DataImportLog
 
+# PDF警告を抑制
+warnings.filterwarnings('ignore', category=UserWarning, module='pdfplumber')
+
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
+    
 class Command(BaseCommand):
     help = 'JPXから信用取引データを取得してデータベースに保存'
 
@@ -37,18 +47,6 @@ class Command(BaseCommand):
             type=int,
             default=100,
             help='バッチサイズ（デフォルト: 100）',
-        )
-        parser.add_argument(
-            '--batch-size',
-            type=int,
-            default=100,
-            help='バッチサイズ（デフォルト: 100）',
-        )
-        parser.add_argument(
-            '--memory-limit',
-            type=int,
-            default=512,
-            help='メモリ使用量制限（MB、デフォルト: 512）',
         )
 
     def handle(self, *args, **options):
@@ -336,112 +334,6 @@ class Command(BaseCommand):
             return -numeric_value if is_negative else numeric_value
         except (ValueError, TypeError):
             return 0
-
-    def _save_batch(self, batch_data, target_date):
-        """バッチデータの保存"""
-        if not batch_data:
-            return
-        
-        self.stdout.write(f'{len(batch_data)} 件のデータを保存中...')
-        
-        with transaction.atomic():
-            for data_dict in batch_data:
-                try:
-                    # 銘柄の取得または作成
-                    issue, created = MarketIssue.objects.get_or_create(
-                        code=data_dict['issue_code'],
-                        defaults={
-                            'jp_code': data_dict['jp_code'],
-                            'name': data_dict['issue_name'],
-                            'category': 'B'
-                        }
-                    )
-                    
-                    # 信用取引データの作成・更新
-                    MarginTradingData.objects.update_or_create(
-                        issue=issue,
-                        date=target_date,
-                        defaults=data_dict['margin_data']
-                    )
-                    
-                except Exception as e:
-                    self.stdout.write(
-                        self.style.WARNING(f'データ保存エラー: {data_dict["issue_code"]} - {str(e)}')
-                    )
-                    continue
-
-    def _parse_data_row(self, row, target_date):
-        """データ行の解析（辞書形式で返す）"""
-        # データ行の解析
-        first_cell = str(row[0])
-        
-        # 銘柄情報の抽出
-        match = re.match(r'B\s+(.+?)\s+普通株式\s+(\d+)', first_cell)
-        if not match:
-            raise ValueError(f'銘柄情報の解析に失敗: {first_cell}')
-        
-        issue_name = match.group(1).strip()
-        issue_code = match.group(2)
-        jp_code = str(row[3]) if row[3] else ''
-        
-        # 数値データの解析
-        numeric_values = []
-        for i in range(4, len(row)):
-            value = self._parse_numeric_value(row[i])
-            numeric_values.append(value)
-        
-        # 足りない値を0で埋める
-        while len(numeric_values) < 12:
-            numeric_values.append(0)
-        
-        return {
-            'issue_code': issue_code,
-            'jp_code': jp_code,
-            'issue_name': issue_name,
-            'margin_data': {
-                'outstanding_sales': numeric_values[0],
-                'outstanding_sales_change': numeric_values[1],
-                'outstanding_purchases': numeric_values[2],
-                'outstanding_purchases_change': numeric_values[3],
-                'negotiable_credit': numeric_values[4],
-                'negotiable_credit_change': numeric_values[5],
-                'standardized_credit': numeric_values[6],
-                'standardized_credit_change': numeric_values[7],
-                'additional_data_1': numeric_values[8] if len(numeric_values) > 8 else None,
-                'additional_data_2': numeric_values[9] if len(numeric_values) > 9 else None,
-                'additional_data_3': numeric_values[10] if len(numeric_values) > 10 else None,
-                'additional_data_4': numeric_values[11] if len(numeric_values) > 11 else None,
-            }
-        }
-
-    def _check_memory_limit(self):
-        """メモリ使用量が制限を超えているかチェック"""
-        if not PSUTIL_AVAILABLE:
-            return False
-        try:
-            process = psutil.Process()
-            memory_usage = process.memory_info().rss
-            return memory_usage > self.memory_limit
-        except:
-            return False
-
-    def _log_memory_usage(self, label):
-        """メモリ使用量をログ出力"""
-        if not PSUTIL_AVAILABLE:
-            self.stdout.write(f'{label}: メモリ監視機能が利用できません (psutil未インストール)')
-            return
-        try:
-            process = psutil.Process()
-            memory_mb = process.memory_info().rss / 1024 / 1024
-            self.stdout.write(f'{label}: メモリ使用量 {memory_mb:.1f}MB')
-        except:
-            pass
-
-    def _force_garbage_collection(self):
-        """強制的にガベージコレクションを実行"""
-        gc.collect()
-        # データベース接続もクリア
-        connection.close()
 
     def _check_memory_limit(self):
         """メモリ使用量が制限を超えているかチェック"""
