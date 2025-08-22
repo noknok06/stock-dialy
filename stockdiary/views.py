@@ -32,8 +32,6 @@ from django.http import HttpResponse, Http404
 from datetime import datetime, timedelta
 import calendar
 
-from margin_trading.models import MarketIssue, MarginTradingData  # 追加のインポート
-
 import mimetypes
 from PIL import Image
 import os
@@ -254,7 +252,13 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         return StockDiary.objects.filter(user=self.request.user).select_related('user').prefetch_related(
             'notes', 'tags', 'checklist', 'analysis_values__analysis_item'
         )    
+    def get(self, request, *args, **kwargs):
+        response = super().get(request, *args, **kwargs)
+        # 現在表示中の日記IDをセッションに保存
+        request.session['current_diary_id'] = self.object.id
+        return response
     
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
@@ -268,12 +272,9 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         analysis_templates_info = self._get_analysis_templates_info()
         context['analysis_templates_info'] = analysis_templates_info
         
-        # 信用取引データを取得 - 新規追加
-        margin_data = self._get_margin_trading_data()
-        context['margin_data'] = margin_data
-        
         # 関連日記（同じ銘柄コードを持つ日記）を取得
         diary = self.object
+        # 現在の日記を含むすべての関連日記を取得（日付順）
         all_related_diaries = StockDiary.objects.filter(
             user=self.request.user,
             stock_symbol=diary.stock_symbol
@@ -294,8 +295,9 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         context['total_related_count'] = total_count
         
         # 現在の日記以外の関連日記をコンテキストに追加
+        # ※順序はすでに purchase_date の昇順
         context['related_diaries'] = all_related_diaries.exclude(id=diary.id)
-        context['related_diaries_count'] = total_count - 1
+        context['related_diaries_count'] = total_count - 1  # 現在の日記を除く
         
         # 関連日記の全リスト（現在の日記も含む）をタイムライン表示用に追加
         context['timeline_diaries'] = all_related_diaries
@@ -312,14 +314,14 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
                 'url': reverse_lazy('stockdiary:sell_specific', kwargs={'pk': diary.id}),
                 'icon': 'bi-cash-coin',
                 'label': '売却',
-                'condition': not diary.sell_date
+                'condition': not diary.sell_date  # 未売却の場合のみ表示
             },
             {
                 'type': 'cancel-sell',
                 'url': reverse_lazy('stockdiary:cancel_sell', kwargs={'pk': diary.id}),
                 'icon': 'bi-arrow-counterclockwise',
                 'label': '売却取消',
-                'condition': diary.sell_date is not None
+                'condition': diary.sell_date is not None  # 売却済みの場合のみ表示
             },
             {
                 'type': 'edit',
@@ -336,83 +338,6 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         ]
 
         return context
-    
-    def _get_margin_trading_data(self):
-        """銘柄の信用取引データを取得"""
-        diary = self.object
-        
-        # 証券コードがない場合は空のデータを返す
-        if not diary.stock_symbol:
-            return {
-                'has_data': False,
-                'message': '証券コードが設定されていないため、信用取引データを取得できません'
-            }
-        
-        try:
-            # 証券コードに基づいて銘柄を検索
-            issue = MarketIssue.objects.filter(code=diary.stock_symbol+"0").first()
-            
-            if not issue:
-                return {
-                    'has_data': False,
-                    'message': f'証券コード「{diary.stock_symbol}」の信用取引データが見つかりません'
-                }
-            
-            # 最新の信用取引データを取得
-            latest_data = MarginTradingData.objects.filter(
-                issue=issue
-            ).order_by('-date').first()
-            
-            if not latest_data:
-                return {
-                    'has_data': False,
-                    'message': '信用取引データがまだ取得されていません'
-                }
-            
-            # 過去30日分のデータを取得（推移表示用）
-            thirty_days_ago = latest_data.date - timedelta(days=30)
-            historical_data = MarginTradingData.objects.filter(
-                issue=issue,
-                date__gte=thirty_days_ago
-            ).order_by('date')
-            
-            # 信用倍率を計算
-            margin_ratio = None
-            if latest_data.outstanding_purchases > 0:
-                margin_ratio = latest_data.outstanding_purchases / latest_data.outstanding_sales
-            
-            # 推移データの準備
-            trend_data = []
-            for data in historical_data:
-                ratio = None
-                if data.outstanding_purchases > 0:
-                    ratio = data.outstanding_sales / data.outstanding_purchases
-                
-                trend_data.append({
-                    'date': data.date,
-                    'sales': data.outstanding_sales,
-                    'purchases': data.outstanding_purchases,
-                    'ratio': ratio,
-                    'sales_change': data.outstanding_sales_change,
-                    'purchases_change': data.outstanding_purchases_change
-                })
-            
-            return {
-                'has_data': True,
-                'issue': issue,
-                'latest': latest_data,
-                'margin_ratio': margin_ratio,
-                'trend_data': trend_data,
-                'data_count': len(trend_data),
-                'latest_date': latest_data.date
-            }
-            
-        except Exception as e:
-            print(f"Error fetching margin data: {str(e)}")
-            return {
-                'has_data': False,
-                'message': f'信用取引データの取得中にエラーが発生しました: {str(e)}'
-            }
     
     def _get_analysis_templates_info(self):
         """この日記で使用されている分析テンプレート情報を取得"""
@@ -1119,8 +1044,6 @@ class DiaryTabContentView(LoginRequiredMixin, View):
                         context['profit_rate_formatted'] = f"{profit_rate:.2f}%"
             
             # タブタイプに応じたHTMLを生成
-            if tab_type == 'margin':
-                html = self._render_margin_tab(diary)
             if tab_type == 'notes':
                 html = self._render_notes_tab(diary)
             elif tab_type == 'analysis':
@@ -1143,198 +1066,6 @@ class DiaryTabContentView(LoginRequiredMixin, View):
                 'details': error_details
             }, status=500)
 
-    def _render_margin_tab(self, diary):
-        """信用取引タブのHTMLを直接生成"""
-        html = '<div class="px-1 py-2">'
-        
-        # 証券コードがない場合
-        if not diary.stock_symbol:
-            html += '''
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle me-2"></i>
-                証券コードが設定されていないため、信用取引データを表示できません。
-            </div>
-            '''
-            html += '</div>'
-            return html
-        
-        try:
-            # 証券コードに基づいて銘柄を検索
-            issue = MarketIssue.objects.filter(code=diary.stock_symbol).first()
-            
-            if not issue:
-                html += f'''
-                <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    証券コード「{diary.stock_symbol}」の信用取引データが見つかりません。
-                </div>
-                '''
-                html += '</div>'
-                return html
-            
-            # 最新の信用取引データを取得
-            latest_data = MarginTradingData.objects.filter(
-                issue=issue
-            ).order_by('-date').first()
-            
-            if not latest_data:
-                html += '''
-                <div class="alert alert-warning">
-                    <i class="bi bi-clock me-2"></i>
-                    信用取引データがまだ取得されていません。
-                </div>
-                '''
-                html += '</div>'
-                return html
-            
-            # 信用倍率を計算
-            margin_ratio = 0
-            if latest_data.outstanding_purchases > 0:
-                margin_ratio = latest_data.outstanding_sales / latest_data.outstanding_purchases
-            
-            # データ更新日
-            update_date = latest_data.date.strftime('%Y年%m月%d日')
-            
-            # メインの信用情報表示
-            html += f'''
-            <div class="margin-info-header mb-3">
-                <h6 class="text-primary">
-                    <i class="bi bi-graph-up me-1"></i>
-                    信用取引情報
-                </h6>
-                <small class="text-muted">データ更新日: {update_date}</small>
-            </div>
-            
-            <div class="margin-summary-cards mb-3">
-                <div class="row g-2">
-                    <div class="col-6">
-                        <div class="card h-100">
-                            <div class="card-body p-2">
-                                <div class="d-flex align-items-center">
-                                    <div class="icon-circle bg-danger bg-opacity-10 me-2">
-                                        <i class="bi bi-arrow-down text-danger"></i>
-                                    </div>
-                                    <div>
-                                        <div class="small text-muted">売残高</div>
-                                        <div class="fw-bold">{latest_data.outstanding_sales:,}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="card h-100">
-                            <div class="card-body p-2">
-                                <div class="d-flex align-items-center">
-                                    <div class="icon-circle bg-success bg-opacity-10 me-2">
-                                        <i class="bi bi-arrow-up text-success"></i>
-                                    </div>
-                                    <div>
-                                        <div class="small text-muted">買残高</div>
-                                        <div class="fw-bold">{latest_data.outstanding_purchases:,}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            '''
-            
-            # 信用倍率表示
-            ratio_color = "primary"
-            ratio_icon = "bi-dash-circle"
-            if margin_ratio > 1:
-                ratio_color = "danger"
-                ratio_icon = "bi-exclamation-triangle"
-            elif margin_ratio > 0.5:
-                ratio_color = "warning"
-                ratio_icon = "bi-info-circle"
-            else:
-                ratio_color = "success"
-                ratio_icon = "bi-check-circle"
-            
-            html += f'''
-            <div class="margin-ratio-card mb-3">
-                <div class="card">
-                    <div class="card-body p-3">
-                        <div class="text-center">
-                            <div class="margin-ratio-icon mb-2">
-                                <i class="bi {ratio_icon} text-{ratio_color}" style="font-size: 2rem;"></i>
-                            </div>
-                            <div class="margin-ratio-value text-{ratio_color} fw-bold" style="font-size: 1.5rem;">
-                                {margin_ratio:.2f}倍
-                            </div>
-                            <div class="small text-muted">信用倍率</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            '''
-            
-            # 前週比変化表示
-            html += '''
-            <div class="margin-changes mb-3">
-                <h6 class="small text-muted mb-2">前週比変化</h6>
-                <div class="row g-2">
-            '''
-            
-            # 売残高変化
-            sales_change_color = "success" if latest_data.outstanding_sales_change < 0 else "danger" if latest_data.outstanding_sales_change > 0 else "muted"
-            sales_change_icon = "bi-arrow-down" if latest_data.outstanding_sales_change < 0 else "bi-arrow-up" if latest_data.outstanding_sales_change > 0 else "bi-dash"
-            sales_change_sign = "+" if latest_data.outstanding_sales_change > 0 else ""
-            
-            html += f'''
-                    <div class="col-6">
-                        <div class="change-item p-2 border rounded">
-                            <div class="small text-muted">売残高変化</div>
-                            <div class="text-{sales_change_color}">
-                                <i class="bi {sales_change_icon} me-1"></i>
-                                {sales_change_sign}{latest_data.outstanding_sales_change:,}
-                            </div>
-                        </div>
-                    </div>
-            '''
-            
-            # 買残高変化
-            purchases_change_color = "danger" if latest_data.outstanding_purchases_change < 0 else "success" if latest_data.outstanding_purchases_change > 0 else "muted"
-            purchases_change_icon = "bi-arrow-down" if latest_data.outstanding_purchases_change < 0 else "bi-arrow-up" if latest_data.outstanding_purchases_change > 0 else "bi-dash"
-            purchases_change_sign = "+" if latest_data.outstanding_purchases_change > 0 else ""
-            
-            html += f'''
-                    <div class="col-6">
-                        <div class="change-item p-2 border rounded">
-                            <div class="small text-muted">買残高変化</div>
-                            <div class="text-{purchases_change_color}">
-                                <i class="bi {purchases_change_icon} me-1"></i>
-                                {purchases_change_sign}{latest_data.outstanding_purchases_change:,}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            '''
-            
-            # 詳細情報を見るリンク
-            html += f'''
-            <div class="margin-detail-link text-center">
-                <a href="/stockdiary/{diary.id}/" class="text-primary text-decoration-none small">
-                    詳細な信用情報を見る <i class="bi bi-arrow-right"></i>
-                </a>
-            </div>
-            '''
-            
-        except Exception as e:
-            html += f'''
-            <div class="alert alert-danger">
-                <i class="bi bi-exclamation-triangle me-2"></i>
-                信用取引データの取得中にエラーが発生しました: {str(e)}
-            </div>
-            '''
-        
-        html += '</div>'
-        return html
-    
     def _render_notes_tab(self, diary):
         """継続記録タブのHTMLを直接生成"""
         notes = diary.notes.all().order_by('-date')[:3]
@@ -1927,20 +1658,18 @@ def tab_content(request, diary_id, tab_type):
                 status=404
             )
 
-        # 削除ボタンは常に表示
+        # リファラーから判定（デバッグ用にログ出力）
+        referer = request.META.get('HTTP_REFERER', '')
+        full_path = request.get_full_path()
+        
+        # 削除ボタンは常に表示（home画面でもdetail画面でも）
         context = {
             'diary': diary,
-            'is_detail_view': True,
+            'is_detail_view': True,  # 常にTrueで削除ボタンを表示
         }
         
         try:
-            if tab_type == 'margin':
-                # 信用取引データを取得
-                margin_data = get_margin_trading_data_for_diary(diary)
-                context['margin_data'] = margin_data
-                template_name = 'stockdiary/partials/tab_margin.html'
-                
-            elif tab_type == 'notes':
+            if tab_type == 'notes':
                 notes = diary.notes.all().order_by('-date')[:3]
                 context['notes'] = notes
                 template_name = 'stockdiary/partials/tab_notes.html'
@@ -1962,7 +1691,7 @@ def tab_content(request, diary_id, tab_type):
                         template = values[0].analysis_item.template
                         template_groups.append({
                             'template': template,
-                            'values': values[:3]
+                            'values': values[:3]  # 最初の3項目
                         })
                 
                 context['template_groups'] = template_groups
@@ -2005,81 +1734,7 @@ def tab_content(request, diary_id, tab_type):
             '<div class="alert alert-danger">予期せぬエラーが発生しました。</div>', 
             status=500
         )
-
-def get_margin_trading_data_for_diary(diary):
-    """日記に対応する信用取引データを取得するユーティリティ関数"""
-    if not diary.stock_symbol:
-        return {
-            'has_data': False,
-            'message': '証券コードが設定されていないため、信用取引データを取得できません'
-        }
-    
-    try:
-        # 証券コードに基づいて銘柄を検索
-        issue = MarketIssue.objects.filter(code=diary.stock_symbol).first()
-        
-        if not issue:
-            return {
-                'has_data': False,
-                'message': f'証券コード「{diary.stock_symbol}」の信用取引データが見つかりません'
-            }
-        
-        # 最新の信用取引データを取得
-        latest_data = MarginTradingData.objects.filter(
-            issue=issue
-        ).order_by('-date').first()
-        
-        if not latest_data:
-            return {
-                'has_data': False,
-                'message': '信用取引データがまだ取得されていません'
-            }
-        
-        # 過去30日分のデータを取得（推移表示用）
-        thirty_days_ago = latest_data.date - timedelta(days=30)
-        historical_data = MarginTradingData.objects.filter(
-            issue=issue,
-            date__gte=thirty_days_ago
-        ).order_by('date')
-        
-        # 信用倍率を計算
-        margin_ratio = None
-        if latest_data.outstanding_purchases > 0:
-            margin_ratio = latest_data.outstanding_sales / latest_data.outstanding_purchases
-        
-        # 推移データの準備
-        trend_data = []
-        for data in historical_data:
-            ratio = None
-            if data.outstanding_purchases > 0:
-                ratio = data.outstanding_sales / data.outstanding_purchases
-            
-            trend_data.append({
-                'date': data.date,
-                'sales': data.outstanding_sales,
-                'purchases': data.outstanding_purchases,
-                'ratio': ratio,
-                'sales_change': data.outstanding_sales_change,
-                'purchases_change': data.outstanding_purchases_change
-            })
-        
-        return {
-            'has_data': True,
-            'issue': issue,
-            'latest': latest_data,
-            'margin_ratio': margin_ratio,
-            'trend_data': trend_data,
-            'data_count': len(trend_data),
-            'latest_date': latest_data.date
-        }
-        
-    except Exception as e:
-        print(f"Error fetching margin data: {str(e)}")
-        return {
-            'has_data': False,
-            'message': f'信用取引データの取得中にエラーが発生しました: {str(e)}'
-        }
-                                     
+                     
 def calendar_view(request):
     """
     カレンダー全体ビュー - HTMLおよびJavaScriptの挿入問題を回避するために単純なビューを使用
