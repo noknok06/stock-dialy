@@ -24,6 +24,17 @@ from .analytics import DiaryAnalytics  # 追加: DiaryAnalytics クラスをイ�
 from decimal import Decimal, InvalidOperation
 from django.core.paginator import EmptyPage, PageNotAnInteger
 
+try:
+    from margin_trading.models import MarginTradingData, MarketIssue
+    MARGIN_TRADING_AVAILABLE = True
+except ImportError:
+    MARGIN_TRADING_AVAILABLE = False
+    # ログに警告を出力
+    import logging
+    logging.getLogger(__name__).warning(
+        "margin_trading アプリが見つかりません。信用倍率機能は無効になります。"
+    )
+    
 from collections import Counter, defaultdict
 from django.core.paginator import Paginator
 from django.shortcuts import render
@@ -258,7 +269,6 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         request.session['current_diary_id'] = self.object.id
         return response
     
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
@@ -271,6 +281,11 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         # 分析テンプレート情報を取得
         analysis_templates_info = self._get_analysis_templates_info()
         context['analysis_templates_info'] = analysis_templates_info
+        
+        # === 信用倍率データの取得 ===
+        margin_data, latest_margin_data = self._get_margin_trading_data()
+        context['margin_data'] = margin_data
+        context['latest_margin_data'] = latest_margin_data
         
         # 関連日記（同じ銘柄コードを持つ日記）を取得
         diary = self.object
@@ -338,6 +353,40 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         ]
 
         return context
+    
+    def _get_margin_trading_data(self):
+        """信用倍率データを取得するメソッド"""
+        margin_data = None
+        latest_margin_data = None
+        
+        diary = self.object
+        
+        if diary.stock_symbol:
+            try:
+                # 証券コードから銘柄を検索
+                market_issue = MarketIssue.objects.filter(
+                    code=str(diary.stock_symbol) + '0'
+                ).first()
+                
+                if market_issue:
+                    # 直近10週間のデータを取得
+                    margin_queryset = MarginTradingData.objects.filter(
+                        issue_id=str(market_issue.id)
+                    ).order_by('-date')[:10]
+                    
+                    # 最新データ
+                    latest_margin_data = margin_queryset.first() if margin_queryset else None
+                    
+                    # リストに変換（テンプレートで使いやすくするため）
+                    margin_data = list(margin_queryset)
+                
+            except Exception as e:
+                # エラーが発生した場合はログに記録
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"信用倍率データ取得エラー (diary_id: {diary.id}, symbol: {diary.stock_symbol}): {e}")
+        
+        return margin_data, latest_margin_data
     
     def _get_analysis_templates_info(self):
         """この日記で使用されている分析テンプレート情報を取得"""
@@ -1000,7 +1049,6 @@ class DeleteDiaryNoteView(LoginRequiredMixin, DeleteView):
 from django.views import View
 from django.http import JsonResponse
 from django.contrib.auth.mixins import LoginRequiredMixin
-
 class DiaryTabContentView(LoginRequiredMixin, View):
     def get(self, request, diary_id, tab_type):
         try:
@@ -1050,6 +1098,8 @@ class DiaryTabContentView(LoginRequiredMixin, View):
                 html = self._render_analysis_tab(diary)
             elif tab_type == 'details':
                 html = self._render_details_tab(context)
+            elif tab_type == 'margin':  # 信用倍率タブを追加
+                html = self._render_margin_tab(diary)
             else:
                 return JsonResponse({'error': '無効なタブタイプです'}, status=400)
             
@@ -1065,6 +1115,175 @@ class DiaryTabContentView(LoginRequiredMixin, View):
                 'error': str(e),
                 'details': error_details
             }, status=500)
+
+    def _render_margin_tab(self, diary):
+        """信用倍率タブのHTMLを直接生成（修正版）"""
+        html = '<div class="px-1 py-2">'
+        
+        # margin_trading アプリが利用できない場合
+        if not MARGIN_TRADING_AVAILABLE:
+            html += '''
+            <div class="text-center py-4">
+            <div class="text-muted">
+                <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+                <h6 class="mt-3">信用倍率機能は利用できません</h6>
+                <p class="mb-0 small">margin_trading アプリが設定されていません</p>
+            </div>
+            </div>
+            '''
+            html += '</div>'
+            return html
+        
+        # 証券コードが設定されていない場合
+        if not diary.stock_symbol:
+            html += '''
+            <div class="text-center py-4">
+            <div class="text-muted">
+                <i class="bi bi-info-circle" style="font-size: 2rem;"></i>
+                <h6 class="mt-3">証券コードが設定されていません</h6>
+                <p class="mb-0 small">信用倍率データを取得するには証券コードが必要です</p>
+            </div>
+            </div>
+            '''
+            html += '</div>'
+            return html
+        
+        try:
+            # 証券コードから銘柄を検索
+            market_issue = MarketIssue.objects.filter(
+                code=diary.stock_symbol
+            ).first()
+            
+            if market_issue:
+                # 直近のデータを取得
+                margin_data = MarginTradingData.objects.filter(
+                    issue=market_issue
+                ).order_by('-date')[:5]  # ホームタブでは5週分
+                
+                if margin_data.exists():
+                    latest_data = margin_data.first()
+                    
+                    # 🔥 修正：正しい信用倍率計算（買残÷売残）
+                    if latest_data.outstanding_sales > 0:
+                        ratio = latest_data.outstanding_purchases / latest_data.outstanding_sales
+                        # 🔥 修正：色分けロジックも修正
+                        if ratio > 2:
+                            ratio_class = "text-success"  # 高倍率＝買い優勢＝緑
+                        elif ratio > 1:
+                            ratio_class = "text-primary"  # 中倍率＝青
+                        else:
+                            ratio_class = "text-danger"   # 低倍率＝売り優勢＝赤
+                    else:
+                        ratio = 0
+                        ratio_class = "text-muted"
+                    
+                    # サマリーカード
+                    html += f'''
+                    <div class="margin-summary-compact mb-3">
+                    <div class="row g-2">
+                        <div class="col-6">
+                        <div class="card border-0 bg-light text-center p-2">
+                            <div class="small text-muted">信用倍率</div>
+                            <div class="fw-bold {ratio_class}">{ratio:.2f}倍</div>
+                            <div class="small text-muted">買残÷売残</div>
+                        </div>
+                        </div>
+                        <div class="col-6">
+                        <div class="card border-0 bg-light text-center p-2">
+                            <div class="small text-muted">更新日</div>
+                            <div class="fw-bold text-primary">{latest_data.date.strftime('%m/%d')}</div>
+                        </div>
+                        </div>
+                    </div>
+                    </div>
+                    '''
+                    
+                    # 残高情報
+                    html += '<div class="margin-data-compact">'
+                    for i, data in enumerate(margin_data[:3]):  # 最大3件表示
+                        date_str = data.date.strftime('%m/%d')
+                        
+                        # 🔥 修正：正しい信用倍率計算（買残÷売残）
+                        if data.outstanding_sales > 0:
+                            data_ratio = data.outstanding_purchases / data.outstanding_sales
+                            # 🔥 修正：色分けロジックも修正
+                            if data_ratio > 2:
+                                ratio_class = "text-success"
+                            elif data_ratio > 1:
+                                ratio_class = "text-primary"
+                            else:
+                                ratio_class = "text-danger"
+                        else:
+                            data_ratio = 0
+                            ratio_class = "text-muted"
+                        
+                        html += f'''
+                        <div class="margin-item-compact d-flex justify-content-between align-items-center py-2 {'border-bottom' if i < 2 else ''}">
+                        <div>
+                            <div class="fw-medium">{date_str}</div>
+                            <div class="small text-muted">
+                            買: {data.outstanding_purchases:,} / 売: {data.outstanding_sales:,}
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold {ratio_class}">{data_ratio:.2f}倍</div>
+                        </div>
+                        </div>
+                        '''
+                    
+                    html += '</div>'
+                    
+                    # 詳細リンク
+                    html += f'''
+                    <div class="text-end mt-3">
+                    <a href="/stockdiary/{diary.id}/" class="text-primary text-decoration-none small">
+                        詳細を見る <i class="bi bi-arrow-right"></i>
+                    </a>
+                    </div>
+                    '''
+                else:
+                    html += '''
+                    <div class="text-center py-4">
+                    <div class="text-muted">
+                        <i class="bi bi-database-x" style="font-size: 2rem;"></i>
+                        <h6 class="mt-3">信用取引データがありません</h6>
+                        <p class="mb-0 small">この銘柄の信用取引データが見つかりません</p>
+                    </div>
+                    </div>
+                    '''
+            else:
+                html += f'''
+                <div class="text-center py-4">
+                <div class="text-muted">
+                    <i class="bi bi-search" style="font-size: 2rem;"></i>
+                    <h6 class="mt-3">銘柄が見つかりません</h6>
+                    <p class="mb-0 small">証券コード: {diary.stock_symbol}</p>
+                    <p class="mb-0 small">JPXデータベースに登録されていない可能性があります</p>
+                </div>
+                </div>
+                '''
+        
+        except Exception as e:
+            # エラーが発生した場合
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"信用倍率タブレンダリングエラー (diary_id: {diary.id}): {e}", exc_info=True)
+            
+            html += f'''
+            <div class="text-center py-4">
+            <div class="text-muted">
+                <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+                <h6 class="mt-3">データ取得エラー</h6>
+                <p class="mb-2 small">信用倍率データの取得中にエラーが発生しました</p>
+                <button class="btn btn-sm btn-outline-primary" onclick="window.location.reload()">
+                <i class="bi bi-arrow-clockwise me-1"></i>再試行
+                </button>
+            </div>
+            </div>
+            '''
+        
+        html += '</div>'
+        return html
 
     def _render_notes_tab(self, diary):
         """継続記録タブのHTMLを直接生成"""
@@ -1646,6 +1865,7 @@ def diary_list(request):
             status=500
         )
 
+# tab_content 関数にも信用倍率タブを追加
 def tab_content(request, diary_id, tab_type):
     """日記カードのタブコンテンツを表示するビュー"""
     try:
@@ -1709,6 +1929,33 @@ def tab_content(request, diary_id, tab_type):
                 
                 template_name = 'stockdiary/partials/tab_details.html'
             
+            elif tab_type == 'margin':  # 信用倍率タブを追加
+                # 信用倍率データを取得
+                margin_data = None
+                latest_margin_data = None
+                
+                if diary.stock_symbol:
+                    try:
+                        market_issue = MarketIssue.objects.filter(
+                            code=diary.stock_symbol
+                        ).first()
+                        
+                        if market_issue:
+                            margin_queryset = MarginTradingData.objects.filter(
+                                issue=market_issue
+                            ).order_by('-date')[:10]
+                            
+                            latest_margin_data = margin_queryset.first() if margin_queryset else None
+                            margin_data = list(margin_queryset)
+                    
+                    except Exception as e:
+                        import logging
+                        logging.getLogger(__name__).warning(f"信用倍率データ取得エラー: {e}")
+                
+                context['margin_data'] = margin_data
+                context['latest_margin_data'] = latest_margin_data
+                template_name = 'stockdiary/partials/tab_margin.html'
+            
             else:
                 return HttpResponse(
                     '<div class="alert alert-warning">無効なタブタイプです。</div>', 
@@ -1734,7 +1981,7 @@ def tab_content(request, diary_id, tab_type):
             '<div class="alert alert-danger">予期せぬエラーが発生しました。</div>', 
             status=500
         )
-                     
+                             
 def calendar_view(request):
     """
     カレンダー全体ビュー - HTMLおよびJavaScriptの挿入問題を回避するために単純なビューを使用

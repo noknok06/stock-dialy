@@ -116,3 +116,72 @@ def add_class(field, css_class):
     if hasattr(field, 'as_widget'):
         return field.as_widget(attrs={'class': css_class})
     return field
+
+@register.filter(name='margin_ratio')
+def margin_ratio(outstanding_purchases, outstanding_sales):
+    """
+    正しい信用倍率を計算するフィルター
+    
+    使用例: {{ margin_data.outstanding_purchases|margin_ratio:margin_data.outstanding_sales }}
+    計算式: 買残高 ÷ 売残高
+    """
+    try:
+        outstanding_purchases = float(outstanding_purchases or 0)
+        outstanding_sales = float(outstanding_sales or 0)
+        
+        if outstanding_sales > 0:
+            return outstanding_purchases / outstanding_sales
+        return 0
+    except (ValueError, TypeError, ZeroDivisionError):
+        return 0
+
+@register.filter(name='margin_level')
+def margin_level(ratio):
+    """
+    正しい信用倍率のレベルを判定するフィルター
+    
+    使用例: {{ ratio|margin_level }}
+    返り値: 'low', 'medium', 'high', 'unknown'
+    """
+    try:
+        ratio = float(ratio)
+        if ratio < 1.0:
+            return 'low'      # 低倍率（売り優勢）
+        elif ratio < 2.0:
+            return 'medium'   # 中倍率（均衡）
+        else:
+            return 'high'     # 高倍率（買い優勢）
+    except (ValueError, TypeError):
+        return 'unknown'
+
+@register.filter(name='margin_level_class')
+def margin_level_class(ratio):
+    """
+    正しい信用倍率レベルに対応するCSSクラスを返すフィルター
+    
+    使用例: <span class="{{ ratio|margin_level_class }}">{{ ratio|floatformat:2 }}倍</span>
+    """
+    level = margin_level(ratio)
+    css_classes = {
+        'low': 'text-danger',     # 低倍率（売り優勢）= 赤
+        'medium': 'text-primary', # 中倍率（均衡）= 青
+        'high': 'text-success',   # 高倍率（買い優勢）= 緑
+        'unknown': 'text-muted'
+    }
+    return css_classes.get(level, 'text-muted')
+
+@register.filter(name='margin_level_text')
+def margin_level_text(ratio):
+    """
+    正しい信用倍率レベルの日本語テキストを返すフィルター
+    
+    使用例: {{ ratio|margin_level_text }}
+    """
+    level = margin_level(ratio)
+    level_texts = {
+        'low': '売り優勢',      # 買残 < 売残
+        'medium': '均衡',       # 買残 ≈ 売残
+        'high': '買い優勢',     # 買残 > 売残
+        'unknown': '-'
+    }
+    return level_texts.get(level, '-')

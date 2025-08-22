@@ -1,0 +1,338 @@
+{% load humanize %}
+{% load stockdiary_filters %}
+
+<div class="px-1 py-2">
+  {% if margin_data %}
+  <!-- 最新の信用倍率サマリー -->
+  <div class="margin-summary-card mb-4">
+    <div class="card border-0 bg-gradient" style="background: linear-gradient(135deg, rgba(90, 126, 197, 0.05), rgba(90, 126, 197, 0.02));">
+      <div class="card-body p-3">
+        <div class="row g-3">
+          <div class="col-6 col-md-3">
+            <div class="text-center">
+              <div class="margin-metric-icon mb-2">
+                <i class="bi bi-calculator text-primary" style="font-size: 1.5rem;"></i>
+              </div>
+              <div class="margin-metric-label text-muted small">信用倍率</div>
+              <div class="margin-metric-value">
+                {% if latest_margin_data.outstanding_purchases > 0 %}
+                  {% with ratio=latest_margin_data.outstanding_purchases|div:latest_margin_data.outstanding_sales %}
+                    <span class="fw-bold {% if ratio > 1 %}text-danger{% elif ratio > 0.5 %}text-warning{% else %}text-success{% endif %}" style="font-size: 1.25rem;">
+                      {{ ratio|floatformat:2 }}倍
+                    </span>
+                  {% endwith %}
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-6 col-md-3">
+            <div class="text-center">
+              <div class="margin-metric-icon mb-2">
+                <i class="bi bi-graph-down text-danger" style="font-size: 1.5rem;"></i>
+              </div>
+              <div class="margin-metric-label text-muted small">売残高</div>
+              <div class="margin-metric-value">
+                <span class="fw-bold text-danger" style="font-size: 1.1rem;">
+                  {{ latest_margin_data.outstanding_sales|intcomma }}
+                </span>
+                <div class="small text-muted">株</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-6 col-md-3">
+            <div class="text-center">
+              <div class="margin-metric-icon mb-2">
+                <i class="bi bi-graph-up text-success" style="font-size: 1.5rem;"></i>
+              </div>
+              <div class="margin-metric-label text-muted small">買残高</div>
+              <div class="margin-metric-value">
+                <span class="fw-bold text-success" style="font-size: 1.1rem;">
+                  {{ latest_margin_data.outstanding_purchases|intcomma }}
+                </span>
+                <div class="small text-muted">株</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-6 col-md-3">
+            <div class="text-center">
+              <div class="margin-metric-icon mb-2">
+                <i class="bi bi-calendar-date text-info" style="font-size: 1.5rem;"></i>
+              </div>
+              <div class="margin-metric-label text-muted small">更新日</div>
+              <div class="margin-metric-value">
+                <span class="fw-bold text-info" style="font-size: 0.9rem;">
+                  {{ latest_margin_data.date|date:"m/d" }}
+                </span>
+                <div class="small text-muted">{{ latest_margin_data.date|date:"Y年" }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 信用倍率の解釈ガイド -->
+  <div class="margin-guide mb-4">
+    <div class="card border-0 bg-light">
+      <div class="card-body p-3">
+        <h6 class="card-title mb-3">
+          <i class="bi bi-info-circle text-primary me-2"></i>
+          信用倍率の見方（買残÷売残）
+        </h6>
+        <div class="row g-2">
+          <div class="col-md-4">
+            <div class="d-flex align-items-center">
+              <div class="me-2">
+                <span class="badge bg-danger bg-opacity-15 text-danger">低倍率</span>
+              </div>
+              <small class="text-muted">1.0倍未満：売り優勢</small>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="d-flex align-items-center">
+              <div class="me-2">
+                <span class="badge bg-primary bg-opacity-15 text-primary">中倍率</span>
+              </div>
+              <small class="text-muted">1.0〜2.0倍：注意</small>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="d-flex align-items-center">
+              <div class="me-2">
+                <span class="badge bg-success bg-opacity-15 text-success">高倍率</span>
+              </div>
+              <small class="text-muted">2.0倍超：買い優勢</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 信用取引履歴 -->
+  <div class="margin-history">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="mb-0">
+        <i class="bi bi-clock-history text-primary me-2"></i>
+        信用取引履歴
+      </h6>
+      <span class="badge bg-primary bg-opacity-10 text-primary">
+        直近{{ margin_data|length }}週
+      </span>
+    </div>
+
+    <div class="margin-data-list">
+      {% for data in margin_data %}
+      <div class="margin-data-item mb-3">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body p-3">
+            <div class="row align-items-center">
+              <!-- 日付 -->
+              <div class="col-6 col-md-2">
+                <div class="margin-date">
+                  <div class="fw-semibold text-primary">{{ data.date|date:"m/d" }}</div>
+                  <div class="small text-muted">{{ data.date|date:"Y年" }}</div>
+                </div>
+              </div>
+              
+              <!-- 信用倍率 -->
+              <div class="col-6 col-md-2">
+                <div class="text-center">
+                  {% if data.outstanding_purchases > 0 %}
+                    {% with ratio=data.outstanding_purchases|div:data.outstanding_sales %}
+                      <div class="margin-ratio-display">
+                        <span class="fw-bold {% if ratio > 2 %}text-danger{% elif ratio > 1 %}text-warning{% else %}text-success{% endif %}" style="font-size: 1.1rem;">
+                          {{ ratio|floatformat:2 }}
+                        </span>
+                        <div class="small text-muted">倍</div>
+                      </div>
+                    {% endwith %}
+                  {% else %}
+                    <span class="text-muted">-</span>
+                  {% endif %}
+                </div>
+              </div>
+              
+              <!-- 売残高 -->
+              <div class="col-6 col-md-3">
+                <div class="margin-balance">
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-graph-down text-danger me-2"></i>
+                    <div>
+                      <div class="fw-semibold">{{ data.outstanding_sales|intcomma }}</div>
+                      <div class="small text-muted">
+                        売残高
+                        {% if data.outstanding_sales_change != 0 %}
+                          <span class="ms-1 {% if data.outstanding_sales_change > 0 %}text-danger{% else %}text-success{% endif %}">
+                            ({% if data.outstanding_sales_change > 0 %}+{% endif %}{{ data.outstanding_sales_change|intcomma }})
+                          </span>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 買残高 -->
+              <div class="col-6 col-md-3">
+                <div class="margin-balance">
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-graph-up text-success me-2"></i>
+                    <div>
+                      <div class="fw-semibold">{{ data.outstanding_purchases|intcomma }}</div>
+                      <div class="small text-muted">
+                        買残高
+                        {% if data.outstanding_purchases_change != 0 %}
+                          <span class="ms-1 {% if data.outstanding_purchases_change > 0 %}text-success{% else %}text-danger{% endif %}">
+                            ({% if data.outstanding_purchases_change > 0 %}+{% endif %}{{ data.outstanding_purchases_change|intcomma }})
+                          </span>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- トレンド矢印 -->
+              <div class="col-12 col-md-2">
+                <div class="text-center">
+                  {% if forloop.counter0 < margin_data|length|add:-1 %}
+                    {% with current_ratio=data.outstanding_sales|div:data.outstanding_purchases previous_data=margin_data|slice:forloop.counter0|slice:":1"|first %}
+                      {% if previous_data and previous_data.outstanding_purchases > 0 %}
+                        {% with previous_ratio=previous_data.outstanding_sales|div:previous_data.outstanding_purchases %}
+                          {% if current_ratio > previous_ratio %}
+                            <i class="bi bi-arrow-up text-danger" title="倍率上昇"></i>
+                          {% elif current_ratio < previous_ratio %}
+                            <i class="bi bi-arrow-down text-success" title="倍率低下"></i>
+                          {% else %}
+                            <i class="bi bi-arrow-right text-muted" title="変化なし"></i>
+                          {% endif %}
+                        {% endwith %}
+                      {% endif %}
+                    {% endwith %}
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    
+    <!-- データがない場合の表示 -->
+    {% if not margin_data %}
+    <div class="text-center py-4">
+      <div class="text-muted">
+        <i class="bi bi-database-x" style="font-size: 2rem;"></i>
+        <div class="mt-2">信用取引データはありません</div>
+        <div class="small">証券コード：{{ diary.stock_symbol }}</div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  
+  <!-- 詳細情報への案内 -->
+  {% if margin_data %}
+  <div class="margin-footer mt-4">
+    <div class="card border-0 bg-light">
+      <div class="card-body p-3 text-center">
+        <small class="text-muted">
+          <i class="bi bi-info-circle me-1"></i>
+          データは週次で更新されます。最新の詳細データは
+          <a href="https://www.jpx.co.jp/markets/statistics-equities/margin/" target="_blank" class="text-primary">
+            JPX公式サイト <i class="bi bi-box-arrow-up-right"></i>
+          </a>
+          でご確認ください。
+        </small>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  
+  {% else %}
+  <!-- データが取得できない場合 -->
+  <div class="empty-state text-center py-5">
+    <div class="text-muted">
+      <i class="bi bi-exclamation-triangle" style="font-size: 3rem;"></i>
+      <h5 class="mt-3">信用取引データを取得できません</h5>
+      <p class="mb-3">この銘柄の信用取引データが見つかりません。</p>
+      <div class="small">
+        <strong>考えられる理由：</strong><br>
+        • 信用取引の対象外銘柄<br>
+        • 証券コードが正しく設定されていない<br>
+        • データの取得・更新が完了していない
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+.margin-summary-card .card {
+  border: 1px solid rgba(90, 126, 197, 0.1);
+}
+
+.margin-metric-value {
+  line-height: 1.2;
+}
+
+.margin-data-item {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.margin-data-item:hover {
+  transform: translateY(-2px);
+}
+
+.margin-data-item .card {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  transition: border-color 0.2s ease;
+}
+
+.margin-data-item:hover .card {
+  border-color: rgba(90, 126, 197, 0.2);
+}
+
+.margin-ratio-display {
+  position: relative;
+}
+
+.margin-balance {
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .margin-data-item .row > div {
+    margin-bottom: 0.5rem;
+  }
+  
+  .margin-data-item .row > div:last-child {
+    margin-bottom: 0;
+  }
+  
+  .margin-summary-card .row > div {
+    margin-bottom: 1rem;
+  }
+  
+  .margin-summary-card .row > div:last-child {
+    margin-bottom: 0;
+  }
+}
+
+@media (max-width: 576px) {
+  .margin-metric-value {
+    font-size: 0.9rem;
+  }
+  
+  .margin-data-item .fw-semibold {
+    font-size: 0.9rem;
+  }
+}
+</style>
