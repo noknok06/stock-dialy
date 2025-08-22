@@ -38,6 +38,18 @@ class Command(BaseCommand):
             default=100,
             help='バッチサイズ（デフォルト: 100）',
         )
+        parser.add_argument(
+            '--batch-size',
+            type=int,
+            default=100,
+            help='バッチサイズ（デフォルト: 100）',
+        )
+        parser.add_argument(
+            '--memory-limit',
+            type=int,
+            default=512,
+            help='メモリ使用量制限（MB、デフォルト: 512）',
+        )
 
     def handle(self, *args, **options):
         target_date = options.get('date')
@@ -402,6 +414,16 @@ class Command(BaseCommand):
             }
         }
 
+    def _check_memory_limit(self):
+        """メモリ使用量が制限を超えているかチェック"""
+        if not PSUTIL_AVAILABLE:
+            return False
+        try:
+            process = psutil.Process()
+            memory_usage = process.memory_info().rss
+            return memory_usage > self.memory_limit
+        except:
+            return False
 
     def _log_memory_usage(self, label):
         """メモリ使用量をログ出力"""
