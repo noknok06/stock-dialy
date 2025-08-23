@@ -225,7 +225,7 @@ class Command(BaseCommand):
     def _execute_worker_batch(self, pdf_path, target_date, start_page, end_page, batch_size):
         """ワーカープロセスを実行"""
         cmd = [
-            sys.executable, 'manage.py', 'import_jpx_split_batch',
+            sys.executable, 'manage.py', 'import_jpx_margin_data',
             '--worker',
             '--pdf-path', pdf_path,
             '--start-page', str(start_page),
