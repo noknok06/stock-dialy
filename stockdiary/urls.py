@@ -45,4 +45,11 @@ urlpatterns = [
     # 画像配信（セキュア）
     path('image/<int:diary_id>/<str:image_type>/', views.ServeImageView.as_view(), name='serve_image'),
     path('image/<int:diary_id>/<str:image_type>/<int:note_id>/', views.ServeImageView.as_view(), name='serve_image'),
+    
+    path('api/margin-chart/<int:diary_id>/', views.api_margin_chart_data, name='api_margin_chart'),
+
+    path('api/margin-compare/<int:diary_id>/', views.api_margin_compare_data, name='api_margin_compare'),
+
+    path('api/margin-sector/<int:diary_id>/', views.api_margin_sector_data, name='api_margin_sector'),
+
 ]

@@ -16,6 +16,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_GET
 from .models import StockDiary, DiaryNote
 from .forms import StockDiaryForm, DiaryNoteForm
+from company_master.models import CompanyMaster
 from tags.models import Tag
 from analysis_template.models import AnalysisTemplate, AnalysisItem, DiaryAnalysisValue
 from utils.mixins import ObjectNotFoundRedirectMixin
@@ -24,6 +25,7 @@ from .analytics import DiaryAnalytics  # 追加: DiaryAnalytics クラスをイ�
 from decimal import Decimal, InvalidOperation
 from django.core.paginator import EmptyPage, PageNotAnInteger
 
+import statistics
 try:
     from margin_trading.models import MarginTradingData, MarketIssue
     MARGIN_TRADING_AVAILABLE = True
@@ -1117,12 +1119,11 @@ class DiaryTabContentView(LoginRequiredMixin, View):
             }, status=500)
 
     def _render_margin_tab(self, diary):
-        """信用倍率タブのHTMLを直接生成（修正版）"""
-        html = '<div class="px-1 py-2">'
+        """信用倍率タブのHTMLをテンプレートレンダリングで生成（更新版）"""
         
         # margin_trading アプリが利用できない場合
         if not MARGIN_TRADING_AVAILABLE:
-            html += '''
+            return '''
             <div class="text-center py-4">
             <div class="text-muted">
                 <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
@@ -1131,12 +1132,10 @@ class DiaryTabContentView(LoginRequiredMixin, View):
             </div>
             </div>
             '''
-            html += '</div>'
-            return html
         
         # 証券コードが設定されていない場合
         if not diary.stock_symbol:
-            html += '''
+            return '''
             <div class="text-center py-4">
             <div class="text-muted">
                 <i class="bi bi-info-circle" style="font-size: 2rem;"></i>
@@ -1145,114 +1144,13 @@ class DiaryTabContentView(LoginRequiredMixin, View):
             </div>
             </div>
             '''
-            html += '</div>'
-            return html
         
         try:
-            # 証券コードから銘柄を検索
-            market_issue = MarketIssue.objects.filter(
-                code=diary.stock_symbol
-            ).first()
+            # 銘柄とデータを取得
+            market_issue, margin_data = self._get_margin_data(diary.stock_symbol)
             
-            if market_issue:
-                # 直近のデータを取得
-                margin_data = MarginTradingData.objects.filter(
-                    issue=market_issue
-                ).order_by('-date')[:5]  # ホームタブでは5週分
-                
-                if margin_data.exists():
-                    latest_data = margin_data.first()
-                    
-                    # 🔥 修正：正しい信用倍率計算（買残÷売残）
-                    if latest_data.outstanding_sales > 0:
-                        ratio = latest_data.outstanding_purchases / latest_data.outstanding_sales
-                        # 🔥 修正：色分けロジックも修正
-                        if ratio > 2:
-                            ratio_class = "text-success"  # 高倍率＝買い優勢＝緑
-                        elif ratio > 1:
-                            ratio_class = "text-primary"  # 中倍率＝青
-                        else:
-                            ratio_class = "text-danger"   # 低倍率＝売り優勢＝赤
-                    else:
-                        ratio = 0
-                        ratio_class = "text-muted"
-                    
-                    # サマリーカード
-                    html += f'''
-                    <div class="margin-summary-compact mb-3">
-                    <div class="row g-2">
-                        <div class="col-6">
-                        <div class="card border-0 bg-light text-center p-2">
-                            <div class="small text-muted">信用倍率</div>
-                            <div class="fw-bold {ratio_class}">{ratio:.2f}倍</div>
-                            <div class="small text-muted">買残÷売残</div>
-                        </div>
-                        </div>
-                        <div class="col-6">
-                        <div class="card border-0 bg-light text-center p-2">
-                            <div class="small text-muted">更新日</div>
-                            <div class="fw-bold text-primary">{latest_data.date.strftime('%m/%d')}</div>
-                        </div>
-                        </div>
-                    </div>
-                    </div>
-                    '''
-                    
-                    # 残高情報
-                    html += '<div class="margin-data-compact">'
-                    for i, data in enumerate(margin_data[:3]):  # 最大3件表示
-                        date_str = data.date.strftime('%m/%d')
-                        
-                        # 🔥 修正：正しい信用倍率計算（買残÷売残）
-                        if data.outstanding_sales > 0:
-                            data_ratio = data.outstanding_purchases / data.outstanding_sales
-                            # 🔥 修正：色分けロジックも修正
-                            if data_ratio > 2:
-                                ratio_class = "text-success"
-                            elif data_ratio > 1:
-                                ratio_class = "text-primary"
-                            else:
-                                ratio_class = "text-danger"
-                        else:
-                            data_ratio = 0
-                            ratio_class = "text-muted"
-                        
-                        html += f'''
-                        <div class="margin-item-compact d-flex justify-content-between align-items-center py-2 {'border-bottom' if i < 2 else ''}">
-                        <div>
-                            <div class="fw-medium">{date_str}</div>
-                            <div class="small text-muted">
-                            買: {data.outstanding_purchases:,} / 売: {data.outstanding_sales:,}
-                            </div>
-                        </div>
-                        <div class="text-end">
-                            <div class="fw-bold {ratio_class}">{data_ratio:.2f}倍</div>
-                        </div>
-                        </div>
-                        '''
-                    
-                    html += '</div>'
-                    
-                    # 詳細リンク
-                    html += f'''
-                    <div class="text-end mt-3">
-                    <a href="/stockdiary/{diary.id}/" class="text-primary text-decoration-none small">
-                        詳細を見る <i class="bi bi-arrow-right"></i>
-                    </a>
-                    </div>
-                    '''
-                else:
-                    html += '''
-                    <div class="text-center py-4">
-                    <div class="text-muted">
-                        <i class="bi bi-database-x" style="font-size: 2rem;"></i>
-                        <h6 class="mt-3">信用取引データがありません</h6>
-                        <p class="mb-0 small">この銘柄の信用取引データが見つかりません</p>
-                    </div>
-                    </div>
-                    '''
-            else:
-                html += f'''
+            if not market_issue:
+                return f'''
                 <div class="text-center py-4">
                 <div class="text-muted">
                     <i class="bi bi-search" style="font-size: 2rem;"></i>
@@ -1262,14 +1160,58 @@ class DiaryTabContentView(LoginRequiredMixin, View):
                 </div>
                 </div>
                 '''
-        
+            
+            if not margin_data.exists():
+                return f'''
+                <div class="text-center py-4">
+                <div class="text-muted">
+                    <i class="bi bi-database-x" style="font-size: 2rem;"></i>
+                    <h6 class="mt-3">信用取引データがありません</h6>
+                    <p class="mb-0 small">証券コード: {diary.stock_symbol}</p>
+                    <p class="mb-0 small">この銘柄の信用取引データが見つかりません</p>
+                </div>
+                </div>
+                '''
+            
+            # テンプレートコンテキストを準備
+            context = {
+                'diary': diary,
+                'margin_data': margin_data,
+                'latest_margin_data': margin_data.first(),
+                'request': self.request,  # テンプレートでリクエストが必要な場合
+            }
+            
+            # テンプレートをレンダリング
+            from django.template.loader import render_to_string
+            
+            try:
+                return render_to_string('stockdiary/partials/tab_margin.html', context)
+            except Exception as template_error:
+                # テンプレートエラーの場合はフォールバック
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Margin tab template error: {template_error}", exc_info=True)
+                
+                return f'''
+                <div class="text-center py-4">
+                <div class="text-muted">
+                    <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+                    <h6 class="mt-3">テンプレートエラー</h6>
+                    <p class="mb-2 small">信用倍率タブの表示中にエラーが発生しました</p>
+                    <button class="btn btn-sm btn-outline-primary" onclick="window.location.reload()">
+                    <i class="bi bi-arrow-clockwise me-1"></i>再試行
+                    </button>
+                </div>
+                </div>
+                '''
+            
         except Exception as e:
-            # エラーが発生した場合
+            # その他のエラー
             import logging
             logger = logging.getLogger(__name__)
-            logger.error(f"信用倍率タブレンダリングエラー (diary_id: {diary.id}): {e}", exc_info=True)
+            logger.error(f"Margin tab rendering error (diary_id: {diary.id}): {e}", exc_info=True)
             
-            html += f'''
+            return f'''
             <div class="text-center py-4">
             <div class="text-muted">
                 <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
@@ -1281,10 +1223,336 @@ class DiaryTabContentView(LoginRequiredMixin, View):
             </div>
             </div>
             '''
+
+    def _get_margin_data(self, stock_symbol):
+        """銘柄データと信用倍率データを取得（ヘルパーメソッド）"""
+        try:
+            market_issue = MarketIssue.objects.filter(
+                code=stock_symbol
+            ).first()
+            
+            margin_data = None
+            if market_issue:
+                margin_data = MarginTradingData.objects.filter(
+                    issue=market_issue
+                ).order_by('-date')[:20]  # 20週分のデータ
+            
+            return market_issue, margin_data
         
-        html += '</div>'
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error getting margin data for symbol {stock_symbol}: {e}")
+            return None, None
+        
+    def _render_chart_tab(self, diary, market_issue, margin_data):
+        """チャートタブのコンテンツ"""
+        latest_data = margin_data.first() if margin_data else None
+        
+        # 現在の信用倍率計算
+        current_ratio = 0
+        ratio_class = "text-muted"
+        ratio_level = "不明"
+        
+        if latest_data and latest_data.outstanding_sales > 0:
+            current_ratio = latest_data.outstanding_purchases / latest_data.outstanding_sales
+            if current_ratio > 2:
+                ratio_class = "text-success"
+                ratio_level = "買い優勢"
+            elif current_ratio > 1:
+                ratio_class = "text-primary" 
+                ratio_level = "均衡"
+            else:
+                ratio_class = "text-danger"
+                ratio_level = "売り優勢"
+        
+        return f'''
+        <div class="tab-pane fade show active" id="chart-content" role="tabpanel">
+        <!-- 現在値サマリー -->
+        <div class="chart-summary mb-3">
+            <div class="row g-2">
+            <div class="col-6 col-md-3">
+                <div class="card border-0 bg-light text-center p-2">
+                <div class="small text-muted">現在倍率</div>
+                <div class="fw-bold {ratio_class} fs-5">{current_ratio:.2f}倍</div>
+                <div class="small text-muted">{ratio_level}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card border-0 bg-light text-center p-2">
+                <div class="small text-muted">更新日</div>
+                <div class="fw-bold text-primary">{latest_data.date.strftime('%m/%d') if latest_data else '-'}</div>
+                <div class="small text-muted">{latest_data.date.strftime('%Y年') if latest_data else ''}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card border-0 bg-light text-center p-2">
+                <div class="small text-muted">売残高</div>
+                <div class="fw-bold text-danger">{latest_data.outstanding_sales:,} if latest_data else 0:</div>
+                <div class="small text-muted">株</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card border-0 bg-light text-center p-2">
+                <div class="small text-muted">買残高</div>
+                <div class="fw-bold text-success">{latest_data.outstanding_purchases:,} if latest_data else 0:</div>
+                <div class="small text-muted">株</div>
+                </div>
+            </div>
+            </div>
+        </div>
+        
+        <!-- チャート表示エリア -->
+        <div class="chart-container mb-3">
+            <div class="card border-0 bg-light">
+            <div class="card-body p-2 p-sm-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0">信用倍率推移</h6>
+                <div class="btn-group btn-group-sm" role="group">
+                    <input type="radio" class="btn-check" name="chartPeriod" id="period3m" value="3" checked>
+                    <label class="btn btn-outline-primary" for="period3m">3M</label>
+                    <input type="radio" class="btn-check" name="chartPeriod" id="period6m" value="6">
+                    <label class="btn btn-outline-primary" for="period6m">6M</label>
+                    <input type="radio" class="btn-check" name="chartPeriod" id="periodAll" value="all">
+                    <label class="btn btn-outline-primary" for="periodAll">All</label>
+                </div>
+                </div>
+                <div class="position-relative">
+                <canvas id="marginChart" style="height: 250px;"></canvas>
+                <div id="chartLoading" class="position-absolute top-50 start-50 translate-middle d-none">
+                    <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+                </div>
+            </div>
+            </div>
+        </div>
+        
+        <!-- アラート表示 -->
+        <div id="marginAlerts"></div>
+        
+        <!-- 統計情報 -->
+        <div class="chart-stats">
+            <div class="row g-2">
+            <div class="col-6">
+                <div class="card border-0 bg-primary bg-opacity-10">
+                <div class="card-body p-2 text-center">
+                    <div class="small text-muted">過去平均</div>
+                    <div class="fw-semibold" id="avgRatio">-</div>
+                </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="card border-0 bg-info bg-opacity-10">
+                <div class="card-body p-2 text-center">
+                    <div class="small text-muted">変動率</div>
+                    <div class="fw-semibold" id="volatility">-</div>
+                </div>
+                </div>
+            </div>
+            </div>
+        </div>
+        </div>
+        '''
+
+    def _render_compare_tab(self, diary, market_issue):
+        """比較タブのコンテンツ"""
+        return '''
+        <div class="tab-pane fade" id="compare-content" role="tabpanel">
+        <!-- 銘柄選択 -->
+        <div class="compare-selector mb-3">
+            <div class="card border-0 bg-light">
+            <div class="card-body p-2 p-sm-3">
+                <h6 class="mb-2">比較銘柄選択</h6>
+                <div class="row g-2">
+                <div class="col-12 col-sm-8">
+                    <input type="text" class="form-control form-control-sm" 
+                        id="compareSymbolInput" placeholder="証券コードを入力（例：7203）">
+                </div>
+                <div class="col-12 col-sm-4">
+                    <button type="button" class="btn btn-primary btn-sm w-100" 
+                            id="addCompareBtn">
+                    <i class="bi bi-plus-lg"></i> 追加
+                    </button>
+                </div>
+                </div>
+                <div class="mt-2">
+                <small class="text-muted">同業種推奨:</small>
+                <div id="suggestedSymbols" class="mt-1"></div>
+                </div>
+            </div>
+            </div>
+        </div>
+        
+        <!-- 選択済み銘柄 -->
+        <div class="selected-symbols mb-3" id="selectedSymbols">
+            <!-- 動的に生成 -->
+        </div>
+        
+        <!-- 比較チャート -->
+        <div class="compare-chart" id="compareChartContainer" style="display: none;">
+            <div class="card border-0 bg-light">
+            <div class="card-body p-2 p-sm-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0">銘柄比較</h6>
+                <button type="button" class="btn btn-outline-secondary btn-sm" 
+                        id="resetCompareBtn">
+                    <i class="bi bi-arrow-counterclockwise"></i> リセット
+                </button>
+                </div>
+                <canvas id="compareChart" style="height: 200px;"></canvas>
+            </div>
+            </div>
+        </div>
+        
+        <!-- 業種統計 -->
+        <div class="sector-stats mt-3" id="sectorStats">
+            <!-- APIから動的に生成 -->
+        </div>
+        </div>
+        '''
+
+    def _render_data_tab(self, margin_data):
+        """データタブのコンテンツ"""
+        html = '''
+        <div class="tab-pane fade" id="data-content" role="tabpanel">
+        <div class="data-table-container">
+            <div class="table-responsive">
+            <table class="table table-sm">
+                <thead class="table-light">
+                <tr>
+                    <th class="text-center">日付</th>
+                    <th class="text-center">信用倍率</th>
+                    <th class="text-center">売残高</th>
+                    <th class="text-center">売残増減</th>
+                    <th class="text-center">買残高</th>
+                    <th class="text-center">買残増減</th>
+                </tr>
+                </thead>
+                <tbody>
+        '''
+        
+        for data in margin_data[:10]:  # 10週分のデータ
+            # 信用倍率計算
+            ratio = data.outstanding_purchases / data.outstanding_sales if data.outstanding_sales > 0 else 0
+            ratio_class = ("text-success" if ratio > 2 else 
+                        "text-primary" if ratio > 1 else "text-danger")
+            
+            # 増減の色分け
+            sales_change_class = ("text-danger" if data.outstanding_sales_change > 0 else
+                                "text-success" if data.outstanding_sales_change < 0 else "text-muted")
+            purchases_change_class = ("text-success" if data.outstanding_purchases_change > 0 else
+                                    "text-danger" if data.outstanding_purchases_change < 0 else "text-muted")
+            
+            # 増減の符号
+            sales_change_sign = "+" if data.outstanding_sales_change > 0 else ""
+            purchases_change_sign = "+" if data.outstanding_purchases_change > 0 else ""
+            
+            html += f'''
+            <tr>
+            <td class="text-center">{data.date.strftime('%m/%d')}</td>
+            <td class="text-center">
+                <span class="fw-semibold {ratio_class}">{ratio:.2f}</span>
+            </td>
+            <td class="text-center">{data.outstanding_sales:,}</td>
+            <td class="text-center">
+                <span class="{sales_change_class} small">
+                {sales_change_sign}{data.outstanding_sales_change:,}
+                </span>
+            </td>
+            <td class="text-center">{data.outstanding_purchases:,}</td>
+            <td class="text-center">
+                <span class="{purchases_change_class} small">
+                {purchases_change_sign}{data.outstanding_purchases_change:,}
+                </span>
+            </td>
+            </tr>
+            '''
+        
+        html += '''
+                </tbody>
+            </table>
+            </div>
+            
+            <!-- データ詳細リンク -->
+            <div class="text-center mt-3">
+            <a href="https://www.jpx.co.jp/markets/statistics-equities/margin/" 
+                target="_blank" class="text-primary text-decoration-none small">
+                <i class="bi bi-box-arrow-up-right me-1"></i>
+                JPX公式データを見る
+            </a>
+            </div>
+        </div>
+        </div>
+        '''
+        
         return html
 
+    def _render_margin_javascript(self, diary_id, issue_id):
+        """JavaScript初期化コード"""
+        return f'''
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {{
+            if (typeof window.MarginTabController === 'undefined') {{
+                window.MarginTabController = new MarginTabManager({diary_id}, {issue_id});
+            }}
+        }});
+        </script>
+        '''
+
+    def _render_margin_unavailable(self):
+        """margin_tradingアプリ未使用時の表示"""
+        return '''
+        <div class="text-center py-4">
+        <div class="text-muted">
+            <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+            <h6 class="mt-3">信用倍率機能は利用できません</h6>
+            <p class="mb-0 small">margin_trading アプリが設定されていません</p>
+        </div>
+        </div>
+        '''
+
+    def _render_no_symbol(self):
+        """証券コード未設定時の表示"""
+        return '''
+        <div class="text-center py-4">
+        <div class="text-muted">
+            <i class="bi bi-info-circle" style="font-size: 2rem;"></i>
+            <h6 class="mt-3">証券コードが設定されていません</h6>
+            <p class="mb-0 small">信用倍率データを取得するには証券コードが必要です</p>
+        </div>
+        </div>
+        '''
+
+    def _render_no_data(self, symbol):
+        """データ未存在時の表示"""
+        return f'''
+        <div class="text-center py-4">
+        <div class="text-muted">
+            <i class="bi bi-database-x" style="font-size: 2rem;"></i>
+            <h6 class="mt-3">信用取引データがありません</h6>
+            <p class="mb-0 small">証券コード: {symbol}</p>
+            <p class="mb-0 small">JPXデータベースに登録されていない可能性があります</p>
+        </div>
+        </div>
+        '''
+
+    def _render_margin_error(self, error_msg):
+        """エラー表示"""
+        return f'''
+        <div class="text-center py-4">
+        <div class="text-muted">
+            <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+            <h6 class="mt-3">データ取得エラー</h6>
+            <p class="mb-2 small">信用倍率データの取得中にエラーが発生しました</p>
+            <button class="btn btn-sm btn-outline-primary" onclick="window.location.reload()">
+            <i class="bi bi-arrow-clockwise me-1"></i>再試行
+            </button>
+        </div>
+        </div>
+        '''
+        
     def _render_notes_tab(self, diary):
         """継続記録タブのHTMLを直接生成"""
         notes = diary.notes.all().order_by('-date')[:3]
@@ -1349,7 +1617,48 @@ class DiaryTabContentView(LoginRequiredMixin, View):
         
         html += '</div></div>'
         return html
-    
+
+    def _get_margin_data(self, stock_symbol):
+        """銘柄データと信用倍率データを取得"""
+        market_issue = MarketIssue.objects.filter(
+            code=stock_symbol
+        ).first()
+        
+        margin_data = None
+        if market_issue:
+            margin_data = MarginTradingData.objects.filter(
+                issue=market_issue
+            ).order_by('-date')[:20]  # 20週分のデータ
+        
+        return market_issue, margin_data
+
+    def _render_margin_tab_navigation(self):
+        """タブナビゲーション"""
+        return '''
+        <div class="margin-tabs-nav mb-3">
+        <div class="nav nav-pills nav-fill" id="marginTabsNav" role="tablist">
+            <button class="nav-link active" id="chart-tab" data-bs-toggle="pill" 
+                    data-bs-target="#chart-content" type="button" role="tab">
+            <i class="bi bi-graph-up d-sm-none"></i>
+            <span class="d-none d-sm-inline">チャート</span>
+            <span class="d-sm-none">チャート</span>
+            </button>
+            <button class="nav-link" id="compare-tab" data-bs-toggle="pill" 
+                    data-bs-target="#compare-content" type="button" role="tab">
+            <i class="bi bi-bar-chart d-sm-none"></i>
+            <span class="d-none d-sm-inline">比較</span>
+            <span class="d-sm-none">比較</span>
+            </button>
+            <button class="nav-link" id="data-tab" data-bs-toggle="pill" 
+                    data-bs-target="#data-content" type="button" role="tab">
+            <i class="bi bi-table d-sm-none"></i>
+            <span class="d-none d-sm-inline">データ</span>
+            <span class="d-sm-none">データ</span>
+            </button>
+        </div>
+        </div>
+        '''
+            
     def _render_analysis_tab(self, diary):
         """分析タブのHTMLを直接生成"""
         from analysis_template.models import DiaryAnalysisValue
@@ -1937,7 +2246,7 @@ def tab_content(request, diary_id, tab_type):
                 if diary.stock_symbol:
                     try:
                         market_issue = MarketIssue.objects.filter(
-                            code=diary.stock_symbol
+                            str(diary.stock_symbol) + '0'
                         ).first()
                         
                         if market_issue:
@@ -2237,3 +2546,299 @@ class ServeImageView(LoginRequiredMixin, View):
             print(f"Error creating thumbnail: {str(e)}")
             # サムネイル生成に失敗した場合は元画像を配信
             return self._serve_image(image_field)
+        
+
+@login_required
+def api_margin_chart_data(request, diary_id):
+    """信用倍率チャートデータAPI"""
+    try:
+        diary = get_object_or_404(StockDiary, id=diary_id, user=request.user)
+        
+        if not diary.stock_symbol:
+            return JsonResponse({'error': '証券コードが設定されていません'}, status=400)
+        
+        # パラメータ取得
+        period = request.GET.get('period', '3')  # 3, 6, all
+        
+        # 銘柄取得
+        market_issue = MarketIssue.objects.filter(code=str(diary.stock_symbol)+'0').first()
+        if not market_issue:
+            return JsonResponse({'error': '銘柄が見つかりません'}, status=404)
+        
+        # データ取得
+        queryset = MarginTradingData.objects.filter(issue=market_issue).order_by('-date')
+        
+        # 期間フィルター
+        if period == '3':
+            queryset = queryset[:12]  # 3ヶ月分
+        elif period == '6':
+            queryset = queryset[:24]  # 6ヶ月分
+        # 'all'の場合はそのまま
+        
+        data = list(queryset.values(
+            'date', 'outstanding_sales', 'outstanding_purchases',
+            'outstanding_sales_change', 'outstanding_purchases_change'
+        ))
+        
+        # データを時系列順に並び替え
+        data.reverse()
+        
+        # チャート用データ変換
+        chart_data = {
+            'labels': [d['date'].strftime('%m/%d') for d in data],
+            'datasets': [
+                {
+                    'label': '信用倍率',
+                    'data': [
+                        round(d['outstanding_purchases'] / d['outstanding_sales'] if d['outstanding_sales'] > 0 else 0, 2)
+                        for d in data
+                    ],
+                    'borderColor': 'rgb(75, 192, 192)',
+                    'backgroundColor': 'rgba(75, 192, 192, 0.2)',
+                    'tension': 0.4,
+                    'yAxisID': 'y'
+                },
+                {
+                    'label': '売残高',
+                    'data': [d['outstanding_sales'] for d in data],
+                    'borderColor': 'rgb(255, 99, 132)',
+                    'backgroundColor': 'rgba(255, 99, 132, 0.1)',
+                    'tension': 0.4,
+                    'yAxisID': 'y1',
+                    'hidden': True
+                },
+                {
+                    'label': '買残高',
+                    'data': [d['outstanding_purchases'] for d in data],
+                    'borderColor': 'rgb(54, 162, 235)',
+                    'backgroundColor': 'rgba(54, 162, 235, 0.1)',
+                    'tension': 0.4,
+                    'yAxisID': 'y1',
+                    'hidden': True
+                }
+            ]
+        }
+        
+        # 統計データ計算
+        ratios = [d['outstanding_purchases'] / d['outstanding_sales'] 
+                 if d['outstanding_sales'] > 0 else 0 for d in data]
+        
+        stats = {
+            'average': round(statistics.mean(ratios) if ratios else 0, 2),
+            'volatility': round(statistics.stdev(ratios) if len(ratios) > 1 else 0, 2),
+            'min': round(min(ratios) if ratios else 0, 2),
+            'max': round(max(ratios) if ratios else 0, 2),
+            'current': round(ratios[-1] if ratios else 0, 2)
+        }
+        
+        # アラート判定
+        alerts = []
+        if ratios:
+            current_ratio = ratios[-1]
+            avg_ratio = stats['average']
+            
+            # 異常値検知（3σルール）
+            if len(ratios) > 3:
+                std_dev = stats['volatility']
+                if abs(current_ratio - avg_ratio) > 3 * std_dev:
+                    alerts.append({
+                        'type': 'warning',
+                        'message': f'現在の信用倍率({current_ratio:.2f})が過去平均から大きく乖離しています'
+                    })
+            
+            # 水準別アラート
+            if current_ratio > 5:
+                alerts.append({
+                    'type': 'info',
+                    'message': '信用倍率が5倍を超えています。過度な買い偏重にご注意ください'
+                })
+            elif current_ratio < 0.2:
+                alerts.append({
+                    'type': 'warning',
+                    'message': '信用倍率が0.2倍を下回っています。売り圧力が非常に強い状況です'
+                })
+        
+        return JsonResponse({
+            'chart_data': chart_data,
+            'stats': stats,
+            'alerts': alerts,
+            'data_count': len(data)
+        })
+        
+    except Exception as e:
+        import traceback
+        print(f"Chart data API error: {traceback.format_exc()}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required 
+def api_margin_compare_data(request, diary_id):
+    """銘柄比較データAPI"""
+    try:
+        diary = get_object_or_404(StockDiary, id=diary_id, user=request.user)
+        symbols = request.GET.get('symbols', '').split(',')
+        symbols = [s.strip() for s in symbols if s.strip()]
+        
+        if not symbols:
+            return JsonResponse({'error': '比較銘柄が指定されていません'}, status=400)
+        
+        # 最大4銘柄まで
+        symbols = symbols[:4]
+        
+        compare_data = []
+        chart_datasets = []
+        colors = [
+            'rgb(255, 99, 132)',   # 赤
+            'rgb(54, 162, 235)',   # 青
+            'rgb(75, 192, 192)',   # 緑
+            'rgb(255, 205, 86)'    # 黄
+        ]
+        
+        labels = None
+        
+        for i, symbol in enumerate(symbols):
+            market_issue = MarketIssue.objects.filter(code=symbol).first()
+            if not market_issue:
+                continue
+                
+            # 直近12週のデータ
+            margin_data = MarginTradingData.objects.filter(
+                issue=market_issue
+            ).order_by('-date')[:12]
+            
+            if not margin_data.exists():
+                continue
+            
+            # データ変換
+            data_list = list(margin_data.values('date', 'outstanding_sales', 'outstanding_purchases'))
+            data_list.reverse()  # 時系列順
+            
+            if labels is None:
+                labels = [d['date'].strftime('%m/%d') for d in data_list]
+            
+            ratios = [
+                round(d['outstanding_purchases'] / d['outstanding_sales'] if d['outstanding_sales'] > 0 else 0, 2)
+                for d in data_list
+            ]
+            
+            # チャートデータセット
+            chart_datasets.append({
+                'label': f'{market_issue.name} ({symbol})',
+                'data': ratios,
+                'borderColor': colors[i % len(colors)],
+                'backgroundColor': colors[i % len(colors)].replace('rgb', 'rgba').replace(')', ', 0.1)'),
+                'tension': 0.4
+            })
+            
+            # 統計データ
+            latest = data_list[-1] if data_list else None
+            compare_data.append({
+                'symbol': symbol,
+                'name': market_issue.name,
+                'current_ratio': ratios[-1] if ratios else 0,
+                'average_ratio': round(statistics.mean(ratios) if ratios else 0, 2),
+                'latest_date': latest['date'].strftime('%Y-%m-%d') if latest else None,
+                'outstanding_sales': latest['outstanding_sales'] if latest else 0,
+                'outstanding_purchases': latest['outstanding_purchases'] if latest else 0
+            })
+        
+        chart_data = {
+            'labels': labels or [],
+            'datasets': chart_datasets
+        }
+        
+        return JsonResponse({
+            'chart_data': chart_data,
+            'compare_data': compare_data
+        })
+        
+    except Exception as e:
+        import traceback
+        print(f"Compare data API error: {traceback.format_exc()}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def api_margin_sector_data(request, diary_id):
+    """業種分析データAPI"""
+    try:
+        diary = get_object_or_404(StockDiary, id=diary_id, user=request.user)
+        
+        if not diary.stock_symbol:
+            return JsonResponse({'error': '証券コードが設定されていません'}, status=400)
+        
+        # 現在の銘柄の業種を取得
+        company = CompanyMaster.objects.filter(code=diary.stock_symbol).first()
+        if not company or not company.industry_name_33:
+            return JsonResponse({
+                'error': '業種情報が見つかりません',
+                'suggestions': []
+            })
+        
+        sector_name = company.industry_name_33
+        
+        # 同業種の他の銘柄を取得
+        sector_companies = CompanyMaster.objects.filter(
+            industry_name_33=sector_name
+        ).exclude(code=diary.stock_symbol)[:10]  # 最大10銘柄
+        
+        # 同業種銘柄の信用倍率データを取得
+        suggestions = []
+        sector_ratios = []
+        
+        for comp in sector_companies:
+            market_issue = MarketIssue.objects.filter(code=comp.code).first()
+            if not market_issue:
+                continue
+                
+            latest_data = MarginTradingData.objects.filter(
+                issue=market_issue
+            ).order_by('-date').first()
+            
+            if latest_data and latest_data.outstanding_sales > 0:
+                ratio = latest_data.outstanding_purchases / latest_data.outstanding_sales
+                sector_ratios.append(ratio)
+                
+                suggestions.append({
+                    'symbol': comp.code,
+                    'name': comp.name,
+                    'ratio': round(ratio, 2),
+                    'scale': comp.scale_name or '不明',
+                    'last_update': latest_data.date.strftime('%Y-%m-%d')
+                })
+        
+        # 業種統計
+        sector_stats = {}
+        if sector_ratios:
+            sector_stats = {
+                'sector_name': sector_name,
+                'average_ratio': round(statistics.mean(sector_ratios), 2),
+                'median_ratio': round(statistics.median(sector_ratios), 2),
+                'company_count': len(sector_ratios),
+                'min_ratio': round(min(sector_ratios), 2),
+                'max_ratio': round(max(sector_ratios), 2)
+            }
+            
+            # 現在の銘柄のランキング
+            current_issue = MarketIssue.objects.filter(code=diary.stock_symbol).first()
+            if current_issue:
+                current_data = MarginTradingData.objects.filter(
+                    issue=current_issue
+                ).order_by('-date').first()
+                
+                if current_data and current_data.outstanding_sales > 0:
+                    current_ratio = current_data.outstanding_purchases / current_data.outstanding_sales
+                    higher_count = sum(1 for r in sector_ratios if r > current_ratio)
+                    sector_stats['current_ranking'] = higher_count + 1
+                    sector_stats['current_ratio'] = round(current_ratio, 2)
+        
+        # 推奨銘柄（信用倍率順でソート）
+        suggestions.sort(key=lambda x: x['ratio'], reverse=True)
+        
+        return JsonResponse({
+            'sector_stats': sector_stats,
+            'suggestions': suggestions[:5]  # 上位5銘柄
+        })
+        
+    except Exception as e:
+        import traceback
+        print(f"Sector data API error: {traceback.format_exc()}")
+        return JsonResponse({'error': str(e)}, status=500)        

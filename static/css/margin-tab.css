@@ -1,0 +1,417 @@
+/* stockdiary/static/stockdiary/css/margin-tab.css */
+
+/* ===== 基本スタイル ===== */
+.margin-tab-container {
+    min-height: 300px;
+}
+
+.margin-tabs-nav .nav-pills {
+    background-color: rgba(var(--bs-light-rgb), 0.3);
+    border-radius: 0.5rem;
+    padding: 0.25rem;
+}
+
+.margin-tabs-nav .nav-link {
+    border-radius: 0.375rem;
+    font-weight: 500;
+    transition: all 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.margin-tabs-nav .nav-link:not(.active) {
+    color: var(--bs-secondary);
+}
+
+.margin-tabs-nav .nav-link.active {
+    background-color: var(--bs-primary);
+    color: white;
+    box-shadow: 0 2px 4px rgba(var(--bs-primary-rgb), 0.25);
+}
+
+.margin-tabs-nav .nav-link:hover:not(.active) {
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+    color: var(--bs-primary);
+}
+
+/* ===== チャートタブ ===== */
+.chart-summary .card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid rgba(var(--bs-border-color-rgb), 0.5);
+}
+
+.chart-summary .card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.chart-container .card-body {
+    background: linear-gradient(135deg, 
+        rgba(var(--bs-light-rgb), 0.8), 
+        rgba(var(--bs-light-rgb), 0.4));
+}
+
+.btn-group-sm .btn {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.chart-stats .card {
+    transition: background-color 0.2s ease;
+}
+
+/* ===== 比較タブ ===== */
+.compare-selector input {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.compare-selector input:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+#selectedSymbols .badge {
+    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+#selectedSymbols .btn-close {
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+#selectedSymbols .btn-close:hover {
+    opacity: 1;
+}
+
+#suggestedSymbols .btn {
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+#suggestedSymbols .btn:hover {
+    transform: translateY(-1px);
+}
+
+.sector-stats .card-body {
+    background: linear-gradient(135deg,
+        rgba(var(--bs-info-rgb), 0.1),
+        rgba(var(--bs-info-rgb), 0.05));
+}
+
+/* ===== データタブ ===== */
+.data-table-container {
+    background-color: white;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    background-color: rgba(var(--bs-light-rgb), 0.8);
+    font-weight: 600;
+    font-size: 0.85rem;
+    border-bottom: 2px solid var(--bs-border-color);
+    padding: 0.75rem 0.5rem;
+    white-space: nowrap;
+}
+
+.table td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.85rem;
+    vertical-align: middle;
+}
+
+.table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.05);
+}
+
+/* ===== アラート ===== */
+.alert {
+    border-radius: 0.5rem;
+    border: none;
+    font-size: 0.85rem;
+}
+
+.alert-info {
+    background-color: rgba(var(--bs-info-rgb), 0.1);
+    color: var(--bs-info);
+}
+
+.alert-warning {
+    background-color: rgba(var(--bs-warning-rgb), 0.1);
+    color: var(--bs-warning-text-emphasis);
+}
+
+/* ===== ローディング ===== */
+#chartLoading {
+    z-index: 10;
+}
+
+/* ===== レスポンシブデザイン ===== */
+
+/* タブレット (768px以下) */
+@media (max-width: 768px) {
+    .margin-tabs-nav .nav-link {
+        flex-direction: column;
+        padding: 0.4rem 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    .margin-tabs-nav .nav-link i {
+        font-size: 1.1rem;
+        margin-bottom: 0.15rem;
+    }
+    
+    .chart-summary .col-6 {
+        margin-bottom: 0.5rem;
+    }
+    
+    .chart-container .card-body {
+        padding: 1rem;
+    }
+    
+    .btn-group-sm .btn {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+    
+    .chart-stats .row {
+        gap: 0.5rem;
+    }
+    
+    .compare-selector .row {
+        gap: 0.5rem;
+    }
+    
+    .compare-selector .col-12:first-child {
+        margin-bottom: 0.5rem;
+    }
+    
+    .table-responsive {
+        border-radius: 0.5rem;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.75rem;
+    }
+    
+    .table th {
+        line-height: 1.2;
+    }
+    
+    #selectedSymbols .badge {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.6rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    #suggestedSymbols .btn {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+    }
+}
+
+/* スマートフォン (576px以下) */
+@media (max-width: 576px) {
+    .margin-tab-container {
+        padding: 0.5rem 0;
+    }
+    
+    .margin-tabs-nav {
+        margin-bottom: 1rem;
+    }
+    
+    .margin-tabs-nav .nav-pills {
+        padding: 0.2rem;
+    }
+    
+    .margin-tabs-nav .nav-link {
+        padding: 0.35rem 0.4rem;
+        font-size: 0.75rem;
+    }
+    
+    .chart-summary .card {
+        padding: 0.5rem;
+    }
+    
+    .chart-summary .card-body {
+        padding: 0.75rem;
+    }
+    
+    .chart-summary .fw-bold {
+        font-size: 1rem;
+    }
+    
+    .chart-container canvas {
+        height: 200px !important;
+    }
+    
+    .compare-selector h6 {
+        font-size: 0.9rem;
+    }
+    
+    .compare-selector .form-control {
+        font-size: 0.85rem;
+    }
+    
+    .compare-selector .btn {
+        font-size: 0.8rem;
+    }
+    
+    #compareChartContainer canvas {
+        height: 180px !important;
+    }
+    
+    .sector-stats .row .col-6 {
+        margin-bottom: 0.5rem;
+    }
+    
+    .sector-stats .text-center {
+        padding: 0.5rem 0.25rem;
+    }
+    
+    .table th {
+        font-size: 0.7rem;
+        padding: 0.4rem 0.2rem;
+    }
+    
+    .table td {
+        font-size: 0.7rem;
+        padding: 0.4rem 0.2rem;
+    }
+    
+    .table .fw-semibold {
+        font-size: 0.75rem;
+    }
+    
+    /* 横スクロール対応 */
+    .table-responsive {
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* 極小画面 (480px以下) */
+@media (max-width: 480px) {
+    .chart-summary .col-6 {
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .chart-summary .row {
+        gap: 0;
+    }
+    
+    .btn-group-sm {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+    
+    .btn-group-sm .btn {
+        border-radius: 0.25rem !important;
+    }
+    
+    .chart-stats .col-6 {
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .sector-stats .col-6 {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+    
+    .sector-stats .col-md-3 {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+}
+
+/* ===== ダークモード対応 ===== */
+@media (prefers-color-scheme: dark) {
+    .chart-container .card-body,
+    .compare-selector .card-body,
+    .sector-stats .card-body {
+        background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.05),
+            rgba(255, 255, 255, 0.02));
+    }
+    
+    .data-table-container {
+        background-color: var(--bs-dark);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+    
+    .table th {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .table tbody tr:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+}
+
+/* ===== アニメーション ===== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tab-pane.show {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.chart-summary .card,
+.compare-selector .card,
+.sector-stats .card {
+    animation: fadeIn 0.4s ease-out;
+}
+
+/* ===== 印刷対応 ===== */
+@media print {
+    .margin-tabs-nav,
+    .btn-group,
+    button,
+    .btn-close {
+        display: none !important;
+    }
+    
+    .tab-pane {
+        display: block !important;
+        opacity: 1 !important;
+    }
+    
+    .chart-container,
+    .data-table-container {
+        break-inside: avoid;
+    }
+    
+    .table {
+        font-size: 0.7rem;
+    }
+}
