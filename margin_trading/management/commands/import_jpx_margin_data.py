@@ -15,6 +15,11 @@ from margin_trading.models import MarketIssue, MarginTradingData, DataImportLog
 
 # PDF警告を抑制
 warnings.filterwarnings('ignore', category=UserWarning, module='pdfplumber')
+warnings.filterwarnings('ignore', category=RuntimeWarning, module='pdfplumber')
+
+# PDFのカラー処理警告を抑制
+import logging
+logging.getLogger('pdfplumber').setLevel(logging.ERROR)
 
 try:
     import psutil
@@ -258,20 +263,25 @@ class Command(BaseCommand):
         return records_count
 
     def _save_batch(self, batch_data, target_date):
-        """バッチデータの保存（最適化版）"""
+        """バッチデータの保存（DB接続修正版）"""
         if not batch_data:
             return
         
         self.stdout.write(f'💾 {len(batch_data)} 件のデータを保存中...')
         
+        # 接続状態をチェックして必要に応じて再接続
+        try:
+            connection.ensure_connection()
+        except Exception:
+            # 接続が切れている場合は何もしない（Djangoが自動で再接続）
+            pass
+        
         # バッチサイズが大きい場合はさらに分割
         chunk_size = min(len(batch_data), 10)
         
-        with transaction.atomic():
-            for i in range(0, len(batch_data), chunk_size):
-                chunk = batch_data[i:i + chunk_size]
-                
-                for data_dict in chunk:
+        try:
+            with transaction.atomic():
+                for data_dict in batch_data:
                     try:
                         # 銘柄の取得または作成
                         issue, created = MarketIssue.objects.get_or_create(
@@ -293,10 +303,11 @@ class Command(BaseCommand):
                     except Exception as e:
                         self.stdout.write(f'⚠️  データ保存エラー: {data_dict["issue_code"]} - {str(e)}')
                         continue
-                
-                # チャンクごとにコミット（メモリ解放）
-                if i + chunk_size < len(batch_data):
-                    connection.close()
+                        
+        except Exception as e:
+            self.stdout.write(f'🚨 バッチ保存で重大エラー: {str(e)}')
+            # エラー時は個別に保存を試行
+            self._save_batch_individually(batch_data, target_date)
 
     def _parse_data_row(self, row, target_date):
         """データ行の解析（辞書形式で返す）"""
@@ -401,15 +412,51 @@ class Command(BaseCommand):
             self.stdout.write(f'{label}: メモリ監視エラー {e}')
 
     def _aggressive_cleanup(self):
-        """積極的なクリーンアップ"""
+        """積極的なクリーンアップ（DB接続問題修正版）"""
         # ガベージコレクション実行
         gc.collect()
         
-        # データベース接続クリア
-        connection.close()
+        # データベース接続のクリア（接続が存在する場合のみ）
+        try:
+            if connection.connection is not None:
+                connection.close()
+        except Exception:
+            # 接続関連でエラーが発生しても無視
+            pass
         
         # 少し待機（システムがメモリを解放する時間を与える）
         time.sleep(0.5)
+
+    def _save_batch_individually(self, batch_data, target_date):
+        """個別保存（フォールバック）"""
+        self.stdout.write('🔄 個別保存モードで再試行...')
+        success_count = 0
+        
+        for data_dict in batch_data:
+            try:
+                # 新しいトランザクションで個別に保存
+                with transaction.atomic():
+                    issue, created = MarketIssue.objects.get_or_create(
+                        code=data_dict['issue_code'],
+                        defaults={
+                            'jp_code': data_dict['jp_code'],
+                            'name': data_dict['issue_name'],
+                            'category': 'B'
+                        }
+                    )
+                    
+                    MarginTradingData.objects.update_or_create(
+                        issue=issue,
+                        date=target_date,
+                        defaults=data_dict['margin_data']
+                    )
+                    success_count += 1
+                    
+            except Exception as e:
+                self.stdout.write(f'❌ 個別保存も失敗: {data_dict["issue_code"]} - {str(e)}')
+                continue
+        
+        self.stdout.write(f'✅ 個別保存で {success_count}/{len(batch_data)} 件成功')
 
     def _log_error(self, target_date, error_msg, pdf_url):
         """エラーログの記録"""
