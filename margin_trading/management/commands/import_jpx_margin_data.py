@@ -1,4 +1,4 @@
-# management/commands/import_jpx_margin_data_improved.py
+# management/commands/import_jpx_split_batch.py
 import requests
 import pdfplumber
 import re
@@ -7,17 +7,16 @@ import os
 import gc
 import warnings
 import time
+import subprocess
+import sys
 from datetime import datetime, date
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction, connection
 from django.conf import settings
 from margin_trading.models import MarketIssue, MarginTradingData, DataImportLog
 
-# PDF警告を抑制
-warnings.filterwarnings('ignore', category=UserWarning, module='pdfplumber')
-warnings.filterwarnings('ignore', category=RuntimeWarning, module='pdfplumber')
-
-# PDFのカラー処理警告を抑制
+# 警告抑制
+warnings.filterwarnings('ignore')
 import logging
 logging.getLogger('pdfplumber').setLevel(logging.ERROR)
 
@@ -28,55 +27,23 @@ except ImportError:
     PSUTIL_AVAILABLE = False
 
 class Command(BaseCommand):
-    help = 'JPXから信用取引データを取得してデータベースに保存（メモリ効率化版）'
+    help = '分割バッチ処理でJPXデータを取得（メモリ安全版）'
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            '--date',
-            type=str,
-            help='取得対象日付 (YYYYMMDD形式, 省略時は当日)',
-        )
-        parser.add_argument(
-            '--force',
-            action='store_true',
-            help='既存データがあっても強制的に取得・更新',
-        )
-        parser.add_argument(
-            '--memory-limit',
-            type=int,
-            default=128,  # デフォルトを128MBに削減
-            help='メモリ使用量制限（MB、デフォルト: 128）',
-        )
-        parser.add_argument(
-            '--batch-size',
-            type=int,
-            default=25,  # デフォルトを25に削減
-            help='バッチサイズ（デフォルト: 25）',
-        )
-        parser.add_argument(
-            '--page-interval',
-            type=int,
-            default=5,
-            help='何ページごとにメモリクリーンアップするか（デフォルト: 5）',
-        )
-        parser.add_argument(
-            '--aggressive-gc',
-            action='store_true',
-            help='積極的なガベージコレクションを有効にする',
-        )
+        parser.add_argument('--date', type=str, help='取得対象日付 (YYYYMMDD形式)')
+        parser.add_argument('--force', action='store_true', help='強制実行')
+        parser.add_argument('--pages-per-batch', type=int, default=10, help='バッチあたりのページ数（デフォルト: 10）')
+        parser.add_argument('--batch-size', type=int, default=20, help='データ保存バッチサイズ（デフォルト: 20）')
+        parser.add_argument('--cleanup-interval', type=int, default=30, help='バッチ間の待機秒数（デフォルト: 30）')
+        parser.add_argument('--coordinator', action='store_true', help='コーディネーター（分割実行管理）モード')
+        parser.add_argument('--worker', action='store_true', help='ワーカー（個別処理）モード')
+        parser.add_argument('--start-page', type=int, help='開始ページ（ワーカーモード用）')
+        parser.add_argument('--end-page', type=int, help='終了ページ（ワーカーモード用）')
+        parser.add_argument('--pdf-path', type=str, help='PDFファイルパス（ワーカーモード用）')
 
     def handle(self, *args, **options):
         target_date = options.get('date')
         force = options.get('force', False)
-        batch_size = options.get('batch_size', 25)
-        memory_limit = options.get('memory_limit', 128) * 1024 * 1024  # MB to bytes
-        page_interval = options.get('page_interval', 5)
-        aggressive_gc = options.get('aggressive_gc', False)
-        
-        self.batch_size = batch_size
-        self.memory_limit = memory_limit
-        self.page_interval = page_interval
-        self.aggressive_gc = aggressive_gc
         
         if target_date:
             try:
@@ -86,55 +53,236 @@ class Command(BaseCommand):
         else:
             target_date = date.today()
         
-        self.stdout.write(f"🚀 処理開始: {target_date}")
-        self.stdout.write(f"📊 設定 - メモリ制限: {memory_limit/1024/1024:.0f}MB, バッチサイズ: {batch_size}")
+        # ワーカーモードの場合
+        if options.get('worker'):
+            return self._worker_mode(options, target_date)
         
-        # 初期メモリ使用量を記録
-        self._log_memory_usage("開始時")
+        # コーディネーターモード（デフォルト）
+        return self._coordinator_mode(options, target_date, force)
+
+    def _coordinator_mode(self, options, target_date, force):
+        """コーディネーター：分割実行を管理"""
+        pages_per_batch = options.get('pages_per_batch', 10)
+        cleanup_interval = options.get('cleanup_interval', 30)
+        batch_size = options.get('batch_size', 20)
         
-        # 既存データのチェック
-        if not force and MarginTradingData.objects.filter(date=target_date).exists():
+        self.stdout.write("=" * 60)
+        self.stdout.write(f"🚀 分割バッチ処理開始: {target_date}")
+        self.stdout.write(f"📊 設定: {pages_per_batch}ページ/バッチ, {cleanup_interval}秒間隔")
+        self.stdout.write("=" * 60)
+        
+        # 既存データチェック
+        existing_count = MarginTradingData.objects.filter(date=target_date).count()
+        if not force and existing_count > 0:
             self.stdout.write(
-                self.style.WARNING(f'{target_date} のデータは既に存在します。--force オプションで強制更新可能です。')
-            )
+                self.style.WARNING(f'既存データ {existing_count}件あり。--force で上書き可能'))
             return
         
-        # PDF URL生成
+        # PDF取得
         pdf_url = self._generate_pdf_url(target_date)
+        pdf_path = self._download_pdf(pdf_url)
         
         try:
-            # データ取得・処理
-            records_count = self._import_data(pdf_url, target_date, force)
+            # 総ページ数取得
+            total_pages = self._get_total_pages(pdf_path)
+            self.stdout.write(f"📄 総ページ数: {total_pages}")
             
-            # ログ記録（成功）
+            # 既存データ削除（force時）
+            if force and existing_count > 0:
+                MarginTradingData.objects.filter(date=target_date).delete()
+                self.stdout.write(f"🗑️ 既存データ {existing_count}件削除")
+            
+            # バッチ実行計画
+            batches = []
+            for start_page in range(0, total_pages, pages_per_batch):
+                end_page = min(start_page + pages_per_batch, total_pages)
+                batches.append((start_page, end_page))
+            
+            self.stdout.write(f"📦 実行予定: {len(batches)}バッチ")
+            for i, (start, end) in enumerate(batches):
+                self.stdout.write(f"  バッチ{i+1}: ページ{start+1}-{end}")
+            
+            # バッチ実行
+            total_records = 0
+            success_batches = 0
+            
+            for batch_num, (start_page, end_page) in enumerate(batches, 1):
+                self.stdout.write(f"\n🔄 バッチ{batch_num}/{len(batches)} 実行中...")
+                self.stdout.write(f"📄 対象: ページ{start_page+1}-{end_page}")
+                
+                try:
+                    # ワーカープロセス実行
+                    records = self._execute_worker_batch(
+                        pdf_path, target_date, start_page, end_page, batch_size
+                    )
+                    
+                    total_records += records
+                    success_batches += 1
+                    
+                    self.stdout.write(f"✅ バッチ{batch_num}完了: {records}件取得")
+                    self.stdout.write(f"📈 累計: {total_records}件")
+                    
+                    # バッチ間待機（システム回復）
+                    if batch_num < len(batches):
+                        self.stdout.write(f"⏳ {cleanup_interval}秒待機中...")
+                        time.sleep(cleanup_interval)
+                        
+                        # システムリソース確認
+                        if PSUTIL_AVAILABLE:
+                            self._log_system_status()
+                
+                except Exception as e:
+                    self.stdout.write(f"❌ バッチ{batch_num}でエラー: {str(e)}")
+                    continue
+            
+            # 結果報告
+            self.stdout.write("\n" + "=" * 60)
+            self.stdout.write(f"🎉 分割バッチ処理完了!")
+            self.stdout.write(f"✅ 成功バッチ: {success_batches}/{len(batches)}")
+            self.stdout.write(f"📊 総取得件数: {total_records}件")
+            
+            # ログ記録
             DataImportLog.objects.create(
                 date=target_date,
                 status='SUCCESS',
-                message=f'正常に {records_count} 件のデータを取得しました',
-                records_count=records_count,
+                message=f'分割バッチで{total_records}件取得（{success_batches}/{len(batches)}バッチ成功）',
+                records_count=total_records,
                 pdf_url=pdf_url
             )
             
-            self.stdout.write(
-                self.style.SUCCESS(f'✅ データ取得完了: {target_date} ({records_count}件)')
-            )
-            self._log_memory_usage("完了時")
+        finally:
+            # PDF削除
+            os.unlink(pdf_path)
+
+    def _worker_mode(self, options, target_date):
+        """ワーカー：指定ページ範囲のみ処理"""
+        pdf_path = options.get('pdf_path')
+        start_page = options.get('start_page')
+        end_page = options.get('end_page')
+        batch_size = options.get('batch_size', 20)
+        
+        if not all([pdf_path, start_page is not None, end_page is not None]):
+            raise CommandError('ワーカーモードには --pdf-path, --start-page, --end-page が必要')
+        
+        self.stdout.write(f"🔧 ワーカー開始: ページ{start_page+1}-{end_page}")
+        
+        # メモリ使用量ログ
+        self._log_memory("ワーカー開始")
+        
+        records_count = 0
+        batch_data = []
+        
+        try:
+            with pdfplumber.open(pdf_path) as pdf:
+                for page_num in range(start_page, min(end_page, len(pdf.pages))):
+                    self.stdout.write(f"📄 ページ{page_num+1}処理中...")
+                    
+                    page = pdf.pages[page_num]
+                    
+                    try:
+                        tables = page.extract_tables()
+                        if tables:
+                            for table in tables:
+                                for row in table:
+                                    if self._is_data_row(row):
+                                        try:
+                                            data_dict = self._parse_data_row(row)
+                                            batch_data.append(data_dict)
+                                            
+                                            # バッチ保存
+                                            if len(batch_data) >= batch_size:
+                                                self._save_batch(batch_data, target_date)
+                                                records_count += len(batch_data)
+                                                batch_data = []
+                                                gc.collect()
+                                                
+                                        except Exception as e:
+                                            continue
+                    except Exception as e:
+                        self.stdout.write(f"⚠️ ページ{page_num+1}でエラー: {str(e)}")
+                        continue
+                    
+                    # ページごとにメモリクリーンアップ
+                    del page
+                    gc.collect()
             
-        except requests.RequestException as e:
-            error_msg = f'PDF取得エラー: {str(e)}'
-            self._log_error(target_date, error_msg, pdf_url)
-            self.stdout.write(self.style.ERROR(f"❌ {error_msg}"))
+            # 残りデータ保存
+            if batch_data:
+                self._save_batch(batch_data, target_date)
+                records_count += len(batch_data)
             
-        except MemoryError as e:
-            error_msg = f'メモリ不足エラー: {str(e)}'
-            self._log_error(target_date, error_msg, pdf_url)
-            self.stdout.write(self.style.ERROR(f"❌ {error_msg}"))
-            self.stdout.write(self.style.ERROR('💡 対策: --memory-limit を増やすか --batch-size を小さくしてください'))
+            self._log_memory("ワーカー完了")
+            self.stdout.write(f"✅ ワーカー完了: {records_count}件")
+            
+            # 結果を標準出力に出力（親プロセスが読み取り）
+            print(f"WORKER_RESULT:{records_count}")
             
         except Exception as e:
-            error_msg = f'データ処理エラー: {str(e)}'
-            self._log_error(target_date, error_msg, pdf_url)
-            raise CommandError(error_msg)
+            self.stdout.write(f"❌ ワーカーエラー: {str(e)}")
+            print("WORKER_RESULT:0")
+            raise
+
+    def _execute_worker_batch(self, pdf_path, target_date, start_page, end_page, batch_size):
+        """ワーカープロセスを実行"""
+        cmd = [
+            sys.executable, 'manage.py', 'import_jpx_split_batch',
+            '--worker',
+            '--pdf-path', pdf_path,
+            '--start-page', str(start_page),
+            '--end-page', str(end_page),
+            '--batch-size', str(batch_size),
+            '--date', target_date.strftime('%Y%m%d')
+        ]
+        
+        self.stdout.write(f"🚀 ワーカー実行: {' '.join(cmd[-8:])}")
+        
+        # プロセス実行
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True
+        )
+        
+        # 出力をリアルタイム表示
+        records_count = 0
+        while True:
+            output = process.stdout.readline()
+            if output == '' and process.poll() is not None:
+                break
+            if output:
+                line = output.strip()
+                if line.startswith('WORKER_RESULT:'):
+                    records_count = int(line.split(':')[1])
+                else:
+                    self.stdout.write(f"  {line}")
+        
+        return_code = process.poll()
+        if return_code != 0:
+            raise Exception(f"ワーカープロセスが失敗しました（終了コード: {return_code}）")
+        
+        return records_count
+
+    def _download_pdf(self, pdf_url):
+        """PDF ダウンロード"""
+        self.stdout.write('📥 PDFダウンロード開始...')
+        
+        response = requests.get(pdf_url, timeout=60, stream=True)
+        response.raise_for_status()
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+            total_size = 0
+            for chunk in response.iter_content(chunk_size=8192):
+                tmp_file.write(chunk)
+                total_size += len(chunk)
+            
+            self.stdout.write(f'✅ ダウンロード完了: {total_size/1024/1024:.1f}MB')
+            return tmp_file.name
+
+    def _get_total_pages(self, pdf_path):
+        """総ページ数取得"""
+        with pdfplumber.open(pdf_path) as pdf:
+            return len(pdf.pages)
 
     def _generate_pdf_url(self, target_date):
         """PDF URLを生成"""
@@ -143,177 +291,20 @@ class Command(BaseCommand):
         filename = f'syumatsu{date_str}00.pdf'
         return f'{base_url}{filename}'
 
-    def _import_data(self, pdf_url, target_date, force):
-        """PDFデータの取得・処理（超効率版）"""
-        # PDF取得（ストリーミング）
-        self.stdout.write('📥 PDFダウンロード開始...')
-        response = requests.get(pdf_url, timeout=60, stream=True)
-        response.raise_for_status()
+    def _is_data_row(self, row):
+        """データ行かどうかを判定"""
+        if not row or len(row) < 4:
+            return False
         
-        # 一時ファイルに保存（チャンク単位）
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
-            downloaded = 0
-            for chunk in response.iter_content(chunk_size=8192):
-                tmp_file.write(chunk)
-                downloaded += len(chunk)
-                if downloaded % (1024*1024) == 0:  # 1MBごとに進捗表示
-                    self.stdout.write(f'📥 ダウンロード中: {downloaded/1024/1024:.1f}MB')
-            tmp_file_path = tmp_file.name
-        
-        self.stdout.write(f'📥 ダウンロード完了: {downloaded/1024/1024:.1f}MB')
-        self._log_memory_usage("PDF保存後")
-        
-        try:
-            records_count = self._parse_pdf_ultra_efficient(tmp_file_path, target_date, force)
-            return records_count
-        finally:
-            # 一時ファイル削除
-            os.unlink(tmp_file_path)
+        first_cell = str(row[0]) if row[0] else ''
+        return (first_cell.startswith('B ') and 
+                '普通株式' in first_cell and 
+                len(row) >= 10)
 
-    def _parse_pdf_ultra_efficient(self, pdf_path, target_date, force):
-        """PDF解析とデータ保存（超効率版）"""
-        records_count = 0
-        batch_data = []
-        
-        # 既存データの削除（force時）
-        if force:
-            with transaction.atomic():
-                deleted_count = MarginTradingData.objects.filter(date=target_date).delete()[0]
-                self.stdout.write(f'🗑️  既存データ {deleted_count} 件を削除しました')
-        
-        self.stdout.write('📄 PDF解析開始...')
-        
-        # PDFを開く
-        pdf_file = None
-        try:
-            pdf_file = pdfplumber.open(pdf_path)
-            total_pages = len(pdf_file.pages)
-            self.stdout.write(f'📄 総ページ数: {total_pages}')
-            
-            for page_num in range(total_pages):
-                self.stdout.write(f'📄 ページ {page_num + 1}/{total_pages} 処理中...')
-                
-                # メモリ使用量チェック（ページ処理前）
-                if self._check_memory_limit():
-                    self.stdout.write('🧠 メモリ制限近づく - バッチ保存実行')
-                    if batch_data:
-                        self._save_batch(batch_data, target_date)
-                        records_count += len(batch_data)
-                        batch_data = []
-                    self._aggressive_cleanup()
-                
-                # ページを個別に読み込み（メモリ効率化）
-                page = None
-                try:
-                    page = pdf_file.pages[page_num]
-                    
-                    # テーブル抽出
-                    tables = page.extract_tables()
-                    
-                    for table in tables:
-                        for row in table:
-                            if self._is_data_row(row):
-                                try:
-                                    data_dict = self._parse_data_row(row, target_date)
-                                    batch_data.append(data_dict)
-                                    
-                                    # バッチサイズに達したら保存
-                                    if len(batch_data) >= self.batch_size:
-                                        self._save_batch(batch_data, target_date)
-                                        records_count += len(batch_data)
-                                        batch_data = []
-                                        
-                                        if self.aggressive_gc:
-                                            self._aggressive_cleanup()
-                                        
-                                except Exception as e:
-                                    self.stdout.write(f'⚠️  行処理エラー: {str(e)}')
-                                    continue
-                    
-                    # ページ処理完了後のクリーンアップ
-                    if (page_num + 1) % self.page_interval == 0:
-                        self.stdout.write(f'🧹 {page_num + 1}ページ処理完了 - クリーンアップ実行')
-                        self._aggressive_cleanup()
-                        self._log_memory_usage(f"ページ {page_num + 1} 処理後")
-                    
-                except Exception as e:
-                    self.stdout.write(f'⚠️  ページ {page_num + 1} 処理エラー: {str(e)}')
-                    continue
-                finally:
-                    # ページオブジェクトを明示的に削除
-                    if page:
-                        del page
-                
-                # 小休止（メモリ安定化）
-                time.sleep(0.1)
-        
-        finally:
-            if pdf_file:
-                pdf_file.close()
-        
-        # 残りのデータを保存
-        if batch_data:
-            self._save_batch(batch_data, target_date)
-            records_count += len(batch_data)
-        
-        # 最終クリーンアップ
-        self._aggressive_cleanup()
-        self._log_memory_usage("解析完了後")
-        
-        return records_count
-
-    def _save_batch(self, batch_data, target_date):
-        """バッチデータの保存（DB接続修正版）"""
-        if not batch_data:
-            return
-        
-        self.stdout.write(f'💾 {len(batch_data)} 件のデータを保存中...')
-        
-        # 接続状態をチェックして必要に応じて再接続
-        try:
-            connection.ensure_connection()
-        except Exception:
-            # 接続が切れている場合は何もしない（Djangoが自動で再接続）
-            pass
-        
-        # バッチサイズが大きい場合はさらに分割
-        chunk_size = min(len(batch_data), 10)
-        
-        try:
-            with transaction.atomic():
-                for data_dict in batch_data:
-                    try:
-                        # 銘柄の取得または作成
-                        issue, created = MarketIssue.objects.get_or_create(
-                            code=data_dict['issue_code'],
-                            defaults={
-                                'jp_code': data_dict['jp_code'],
-                                'name': data_dict['issue_name'],
-                                'category': 'B'
-                            }
-                        )
-                        
-                        # 信用取引データの作成・更新
-                        MarginTradingData.objects.update_or_create(
-                            issue=issue,
-                            date=target_date,
-                            defaults=data_dict['margin_data']
-                        )
-                        
-                    except Exception as e:
-                        self.stdout.write(f'⚠️  データ保存エラー: {data_dict["issue_code"]} - {str(e)}')
-                        continue
-                        
-        except Exception as e:
-            self.stdout.write(f'🚨 バッチ保存で重大エラー: {str(e)}')
-            # エラー時は個別に保存を試行
-            self._save_batch_individually(batch_data, target_date)
-
-    def _parse_data_row(self, row, target_date):
-        """データ行の解析（辞書形式で返す）"""
+    def _parse_data_row(self, row):
+        """データ行の解析"""
         first_cell = str(row[0])
         
-        # 銘柄情報の抽出
         match = re.match(r'B\s+(.+?)\s+普通株式\s+(\d+)', first_cell)
         if not match:
             raise ValueError(f'銘柄情報の解析に失敗: {first_cell}')
@@ -322,13 +313,11 @@ class Command(BaseCommand):
         issue_code = match.group(2)
         jp_code = str(row[3]) if row[3] else ''
         
-        # 数値データの解析
         numeric_values = []
         for i in range(4, len(row)):
             value = self._parse_numeric_value(row[i])
             numeric_values.append(value)
         
-        # 足りない値を0で埋める
         while len(numeric_values) < 12:
             numeric_values.append(0)
         
@@ -352,29 +341,16 @@ class Command(BaseCommand):
             }
         }
 
-    def _is_data_row(self, row):
-        """データ行かどうかを判定"""
-        if not row or len(row) < 4:
-            return False
-        
-        first_cell = str(row[0]) if row[0] else ''
-        return (first_cell.startswith('B ') and 
-                '普通株式' in first_cell and 
-                len(row) >= 10)
-
     def _parse_numeric_value(self, value):
-        """数値の解析（カンマ区切り、▲マイナス記号対応）"""
+        """数値の解析"""
         if not value or value == '-':
             return 0
         
         value_str = str(value).strip()
-        
-        # ▲マイナス記号の処理
         is_negative = value_str.startswith('▲')
         if is_negative:
             value_str = value_str[1:]
         
-        # カンマを除去して数値変換
         try:
             value_str = value_str.replace(',', '')
             numeric_value = int(float(value_str))
@@ -382,60 +358,14 @@ class Command(BaseCommand):
         except (ValueError, TypeError):
             return 0
 
-    def _check_memory_limit(self):
-        """メモリ使用量が制限を超えているかチェック"""
-        if not PSUTIL_AVAILABLE:
-            return False
-        
-        try:
-            process = psutil.Process()
-            memory_usage = process.memory_info().rss
-            return memory_usage > self.memory_limit * 0.8  # 80%で警告
-        except:
-            return False
-
-    def _log_memory_usage(self, label):
-        """メモリ使用量をログ出力"""
-        if not PSUTIL_AVAILABLE:
-            self.stdout.write(f'{label}: メモリ監視不可 (psutil未インストール)')
+    def _save_batch(self, batch_data, target_date):
+        """バッチデータの保存"""
+        if not batch_data:
             return
         
-        try:
-            process = psutil.Process()
-            memory_mb = process.memory_info().rss / 1024 / 1024
-            limit_mb = self.memory_limit / 1024 / 1024
-            usage_percent = (memory_mb / limit_mb) * 100
-            
-            status = "🟢" if usage_percent < 60 else "🟡" if usage_percent < 80 else "🔴"
-            self.stdout.write(f'{status} {label}: {memory_mb:.1f}MB ({usage_percent:.1f}%)')
-        except Exception as e:
-            self.stdout.write(f'{label}: メモリ監視エラー {e}')
-
-    def _aggressive_cleanup(self):
-        """積極的なクリーンアップ（DB接続問題修正版）"""
-        # ガベージコレクション実行
-        gc.collect()
-        
-        # データベース接続のクリア（接続が存在する場合のみ）
-        try:
-            if connection.connection is not None:
-                connection.close()
-        except Exception:
-            # 接続関連でエラーが発生しても無視
-            pass
-        
-        # 少し待機（システムがメモリを解放する時間を与える）
-        time.sleep(0.5)
-
-    def _save_batch_individually(self, batch_data, target_date):
-        """個別保存（フォールバック）"""
-        self.stdout.write('🔄 個別保存モードで再試行...')
-        success_count = 0
-        
-        for data_dict in batch_data:
-            try:
-                # 新しいトランザクションで個別に保存
-                with transaction.atomic():
+        with transaction.atomic():
+            for data_dict in batch_data:
+                try:
                     issue, created = MarketIssue.objects.get_or_create(
                         code=data_dict['issue_code'],
                         defaults={
@@ -450,22 +380,29 @@ class Command(BaseCommand):
                         date=target_date,
                         defaults=data_dict['margin_data']
                     )
-                    success_count += 1
                     
-            except Exception as e:
-                self.stdout.write(f'❌ 個別保存も失敗: {data_dict["issue_code"]} - {str(e)}')
-                continue
-        
-        self.stdout.write(f'✅ 個別保存で {success_count}/{len(batch_data)} 件成功')
+                except Exception as e:
+                    continue
 
-    def _log_error(self, target_date, error_msg, pdf_url):
-        """エラーログの記録"""
+    def _log_memory(self, label):
+        """メモリ使用量をログ出力"""
+        if not PSUTIL_AVAILABLE:
+            return
+        
         try:
-            DataImportLog.objects.create(
-                date=target_date,
-                status='FAILED',
-                message=error_msg,
-                pdf_url=pdf_url
-            )
+            process = psutil.Process()
+            memory_mb = process.memory_info().rss / 1024 / 1024
+            self.stdout.write(f'📊 {label}: {memory_mb:.1f}MB')
         except:
-            pass  # ログ記録でエラーが起きても処理は続行
+            pass
+
+    def _log_system_status(self):
+        """システム状況ログ"""
+        if not PSUTIL_AVAILABLE:
+            return
+        
+        try:
+            memory = psutil.virtual_memory()
+            self.stdout.write(f'💾 システムメモリ: {memory.available/1024/1024:.0f}MB利用可能 ({memory.percent:.1f}%使用中)')
+        except:
+            pass
