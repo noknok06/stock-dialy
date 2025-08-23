@@ -54,6 +54,29 @@
         rgba(var(--bs-light-rgb), 0.4));
 }
 
+/* チャート高さ固定（重要な修正） */
+.chart-container canvas {
+    height: 250px !important;
+    max-height: 250px !important;
+    width: 100% !important;
+}
+
+#compareChartContainer canvas {
+    height: 220px !important;
+    max-height: 220px !important;
+    width: 100% !important;
+}
+
+.chart-container .position-relative {
+    height: 250px;
+    min-height: 250px;
+}
+
+#compareChartContainer .position-relative {
+    height: 220px;
+    min-height: 220px;
+}
+
 .btn-group-sm .btn {
     font-size: 0.75rem;
     padding: 0.25rem 0.5rem;
@@ -92,16 +115,27 @@
 #suggestedSymbols .btn {
     font-size: 0.75rem;
     transition: all 0.2s ease;
+    margin-bottom: 0.25rem;
 }
 
 #suggestedSymbols .btn:hover {
     transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .sector-stats .card-body {
     background: linear-gradient(135deg,
         rgba(var(--bs-info-rgb), 0.1),
         rgba(var(--bs-info-rgb), 0.05));
+}
+
+/* 比較統計表示 */
+#compareStats .card {
+    transition: transform 0.2s ease;
+}
+
+#compareStats .card:hover {
+    transform: translateY(-1px);
 }
 
 /* ===== データタブ ===== */
@@ -157,8 +191,13 @@
 }
 
 /* ===== ローディング ===== */
-#chartLoading {
+#chartLoading, #compareChartLoading {
     z-index: 10;
+}
+
+/* ===== Toast通知 ===== */
+.toast {
+    z-index: 9999 !important;
 }
 
 /* ===== レスポンシブデザイン ===== */
@@ -182,6 +221,27 @@
     
     .chart-container .card-body {
         padding: 1rem;
+    }
+    
+    /* モバイルでのチャート高さ調整 */
+    .chart-container canvas {
+        height: 200px !important;
+        max-height: 200px !important;
+    }
+    
+    #compareChartContainer canvas {
+        height: 180px !important;
+        max-height: 180px !important;
+    }
+    
+    .chart-container .position-relative {
+        height: 200px;
+        min-height: 200px;
+    }
+    
+    #compareChartContainer .position-relative {
+        height: 180px;
+        min-height: 180px;
     }
     
     .btn-group-sm .btn {
@@ -258,8 +318,25 @@
         font-size: 1rem;
     }
     
+    /* 極小画面でのチャート高さ */
     .chart-container canvas {
-        height: 200px !important;
+        height: 180px !important;
+        max-height: 180px !important;
+    }
+    
+    #compareChartContainer canvas {
+        height: 160px !important;
+        max-height: 160px !important;
+    }
+    
+    .chart-container .position-relative {
+        height: 180px;
+        min-height: 180px;
+    }
+    
+    #compareChartContainer .position-relative {
+        height: 160px;
+        min-height: 160px;
     }
     
     .compare-selector h6 {
@@ -272,10 +349,6 @@
     
     .compare-selector .btn {
         font-size: 0.8rem;
-    }
-    
-    #compareChartContainer canvas {
-        height: 180px !important;
     }
     
     .sector-stats .row .col-6 {
@@ -342,6 +415,27 @@
     .sector-stats .col-md-3 {
         flex: 0 0 50%;
         max-width: 50%;
+    }
+    
+    /* 極小画面でのチャート高さをさらに縮小 */
+    .chart-container canvas {
+        height: 160px !important;
+        max-height: 160px !important;
+    }
+    
+    #compareChartContainer canvas {
+        height: 140px !important;
+        max-height: 140px !important;
+    }
+    
+    .chart-container .position-relative {
+        height: 160px;
+        min-height: 160px;
+    }
+    
+    #compareChartContainer .position-relative {
+        height: 140px;
+        min-height: 140px;
     }
 }
 
@@ -413,5 +507,12 @@
     
     .table {
         font-size: 0.7rem;
+    }
+    
+    /* 印刷時はチャート高さを固定 */
+    .chart-container canvas,
+    #compareChartContainer canvas {
+        height: 200px !important;
+        max-height: 200px !important;
     }
 }

@@ -2672,7 +2672,7 @@ def api_margin_chart_data(request, diary_id):
 
 @login_required 
 def api_margin_compare_data(request, diary_id):
-    """銘柄比較データAPI"""
+    """銘柄比較データAPI（修正版）"""
     try:
         diary = get_object_or_404(StockDiary, id=diary_id, user=request.user)
         symbols = request.GET.get('symbols', '').split(',')
@@ -2694,13 +2694,21 @@ def api_margin_compare_data(request, diary_id):
         ]
         
         labels = None
+        max_data_length = 0
         
         for i, symbol in enumerate(symbols):
-            market_issue = MarketIssue.objects.filter(code=symbol).first()
+            # 証券コード処理を統一（'0'を付ける）
+            search_code = str(symbol).rstrip('0') + '0'
+            market_issue = MarketIssue.objects.filter(code=search_code).first()
+            
+            if not market_issue:
+                # '0'なしでも検索してみる
+                market_issue = MarketIssue.objects.filter(code=str(symbol)).first()
+            
             if not market_issue:
                 continue
                 
-            # 直近12週のデータ
+            # 直近12週のデータを取得
             margin_data = MarginTradingData.objects.filter(
                 issue=market_issue
             ).order_by('-date')[:12]
@@ -2709,16 +2717,29 @@ def api_margin_compare_data(request, diary_id):
                 continue
             
             # データ変換
-            data_list = list(margin_data.values('date', 'outstanding_sales', 'outstanding_purchases'))
-            data_list.reverse()  # 時系列順
+            data_list = list(margin_data.values(
+                'date', 'outstanding_sales', 'outstanding_purchases',
+                'outstanding_sales_change', 'outstanding_purchases_change'
+            ))
+            data_list.reverse()  # 時系列順に変更
             
+            # ラベルを最初の銘柄から設定
             if labels is None:
                 labels = [d['date'].strftime('%m/%d') for d in data_list]
+                max_data_length = len(data_list)
             
-            ratios = [
-                round(d['outstanding_purchases'] / d['outstanding_sales'] if d['outstanding_sales'] > 0 else 0, 2)
-                for d in data_list
-            ]
+            # 信用倍率を計算
+            ratios = []
+            for d in data_list:
+                if d['outstanding_sales'] > 0:
+                    ratio = round(d['outstanding_purchases'] / d['outstanding_sales'], 2)
+                else:
+                    ratio = 0
+                ratios.append(ratio)
+            
+            # データの長さを統一（短い場合はnullで埋める）
+            while len(ratios) < max_data_length:
+                ratios.insert(0, None)
             
             # チャートデータセット
             chart_datasets.append({
@@ -2726,20 +2747,34 @@ def api_margin_compare_data(request, diary_id):
                 'data': ratios,
                 'borderColor': colors[i % len(colors)],
                 'backgroundColor': colors[i % len(colors)].replace('rgb', 'rgba').replace(')', ', 0.1)'),
-                'tension': 0.4
+                'fill': False,
+                'tension': 0.3,
+                'pointRadius': 3,
+                'pointHoverRadius': 5,
+                'borderWidth': 2
             })
             
             # 統計データ
-            latest = data_list[-1] if data_list else None
+            valid_ratios = [r for r in ratios if r is not None]
+            latest_data = data_list[-1] if data_list else None
+            
             compare_data.append({
                 'symbol': symbol,
                 'name': market_issue.name,
-                'current_ratio': ratios[-1] if ratios else 0,
-                'average_ratio': round(statistics.mean(ratios) if ratios else 0, 2),
-                'latest_date': latest['date'].strftime('%Y-%m-%d') if latest else None,
-                'outstanding_sales': latest['outstanding_sales'] if latest else 0,
-                'outstanding_purchases': latest['outstanding_purchases'] if latest else 0
+                'current_ratio': valid_ratios[-1] if valid_ratios else 0,
+                'average_ratio': round(statistics.mean(valid_ratios) if valid_ratios else 0, 2),
+                'volatility': round(statistics.stdev(valid_ratios) if len(valid_ratios) > 1 else 0, 2),
+                'min_ratio': round(min(valid_ratios) if valid_ratios else 0, 2),
+                'max_ratio': round(max(valid_ratios) if valid_ratios else 0, 2),
+                'latest_date': latest_data['date'].strftime('%Y-%m-%d') if latest_data else None,
+                'outstanding_sales': latest_data['outstanding_sales'] if latest_data else 0,
+                'outstanding_purchases': latest_data['outstanding_purchases'] if latest_data else 0,
+                'sales_change': latest_data['outstanding_sales_change'] if latest_data else 0,
+                'purchases_change': latest_data['outstanding_purchases_change'] if latest_data else 0
             })
+        
+        if not chart_datasets:
+            return JsonResponse({'error': '比較可能なデータが見つかりませんでした'}, status=404)
         
         chart_data = {
             'labels': labels or [],
@@ -2748,13 +2783,91 @@ def api_margin_compare_data(request, diary_id):
         
         return JsonResponse({
             'chart_data': chart_data,
-            'compare_data': compare_data
+            'compare_data': compare_data,
+            'data_count': len(compare_data)
         })
         
     except Exception as e:
         import traceback
         print(f"Compare data API error: {traceback.format_exc()}")
         return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def api_margin_sector_suggestions(request, diary_id):
+    """業種別銘柄候補API（新規追加）"""
+    try:
+        diary = get_object_or_404(StockDiary, id=diary_id, user=request.user)
+        
+        if not diary.stock_symbol:
+            return JsonResponse({'suggestions': []})
+        
+        # 現在の銘柄の業種情報を取得
+        company = CompanyMaster.objects.filter(code=diary.stock_symbol).first()
+        if not company:
+            return JsonResponse({'suggestions': []})
+        
+        # 業種の優先順位: 33業種 > 17業種
+        sector = company.industry_name_33 or company.industry_name_17
+        if not sector:
+            return JsonResponse({'suggestions': []})
+        
+        # 同業種の他銘柄を取得
+        if company.industry_name_33:
+            sector_companies = CompanyMaster.objects.filter(
+                industry_name_33=sector
+            ).exclude(code=diary.stock_symbol)
+        else:
+            sector_companies = CompanyMaster.objects.filter(
+                industry_name_17=sector
+            ).exclude(code=diary.stock_symbol)
+        
+        suggestions = []
+        
+        for comp in sector_companies:
+            # MarketIssueに存在するかチェック（証券コード統一処理）
+            search_code = str(comp.code).rstrip('0') + '0'
+            market_issue = MarketIssue.objects.filter(code=search_code).first()
+            
+            if not market_issue:
+                # '0'なしでも検索
+                market_issue = MarketIssue.objects.filter(code=str(comp.code)).first()
+            
+            if not market_issue:
+                continue
+            
+            # 最新の信用倍率データを取得
+            latest_data = MarginTradingData.objects.filter(
+                issue=market_issue
+            ).order_by('-date').first()
+            
+            if latest_data and latest_data.outstanding_sales > 0:
+                ratio = latest_data.outstanding_purchases / latest_data.outstanding_sales
+                
+                suggestions.append({
+                    'symbol': comp.code,
+                    'name': comp.name,
+                    'ratio': round(ratio, 2),
+                    'market': comp.market or '東証',
+                    'scale': comp.scale_name or '不明',
+                    'last_update': latest_data.date.strftime('%m/%d'),
+                    'outstanding_sales': latest_data.outstanding_sales,
+                    'outstanding_purchases': latest_data.outstanding_purchases
+                })
+        
+        # 信用倍率でソート（高い順）
+        suggestions.sort(key=lambda x: x['ratio'], reverse=True)
+        
+        return JsonResponse({
+            'sector': sector,
+            'suggestions': suggestions[:8],  # 上位8銘柄
+            'total_companies': len(suggestions)
+        })
+        
+    except Exception as e:
+        import traceback
+        print(f"Sector suggestions API error: {traceback.format_exc()}")
+        return JsonResponse({'suggestions': []})
+
 
 @login_required
 def api_margin_sector_data(request, diary_id):
@@ -2842,3 +2955,134 @@ def api_margin_sector_data(request, diary_id):
         import traceback
         print(f"Sector data API error: {traceback.format_exc()}")
         return JsonResponse({'error': str(e)}, status=500)        
+    
+# stockdiary/views.py に以下のメソッドを追加
+
+def _render_margin_tab(self, diary):
+    """信用倍率タブのHTMLをテンプレートレンダリングで生成（更新版）"""
+    
+    # margin_trading アプリが利用できない場合
+    if not MARGIN_TRADING_AVAILABLE:
+        return '''
+        <div class="text-center py-4">
+        <div class="text-muted">
+            <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+            <h6 class="mt-3">信用倍率機能は利用できません</h6>
+            <p class="mb-0 small">margin_trading アプリが設定されていません</p>
+        </div>
+        </div>
+        '''
+    
+    # 証券コードが設定されていない場合
+    if not diary.stock_symbol:
+        return '''
+        <div class="text-center py-4">
+        <div class="text-muted">
+            <i class="bi bi-info-circle" style="font-size: 2rem;"></i>
+            <h6 class="mt-3">証券コードが設定されていません</h6>
+            <p class="mb-0 small">信用倍率データを取得するには証券コードが必要です</p>
+        </div>
+        </div>
+        '''
+    
+    try:
+        # 銘柄とデータを取得（修正版）
+        market_issue, margin_data = self._get_margin_data_fixed(diary.stock_symbol)
+        
+        if not market_issue:
+            return f'''
+            <div class="text-center py-4">
+            <div class="text-muted">
+                <i class="bi bi-search" style="font-size: 2rem;"></i>
+                <h6 class="mt-3">銘柄が見つかりません</h6>
+                <p class="mb-0 small">証券コード: {diary.stock_symbol}</p>
+                <p class="mb-0 small">JPXデータベースに登録されていない可能性があります</p>
+            </div>
+            </div>
+            '''
+        
+        if not margin_data or not margin_data.exists():
+            return f'''
+            <div class="text-center py-4">
+            <div class="text-muted">
+                <i class="bi bi-database-x" style="font-size: 2rem;"></i>
+                <h6 class="mt-3">信用取引データがありません</h6>
+                <p class="mb-0 small">証券コード: {diary.stock_symbol}</p>
+                <p class="mb-0 small">この銘柄の信用取引データが見つかりません</p>
+            </div>
+            </div>
+            '''
+        
+        # テンプレートコンテキストを準備
+        context = {
+            'diary': diary,
+            'margin_data': margin_data,
+            'latest_margin_data': margin_data.first(),
+            'request': self.request,
+        }
+        
+        # テンプレートをレンダリング
+        from django.template.loader import render_to_string
+        
+        try:
+            return render_to_string('stockdiary/partials/tab_margin.html', context)
+        except Exception as template_error:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Margin tab template error: {template_error}", exc_info=True)
+            
+            return f'''
+            <div class="text-center py-4">
+            <div class="text-muted">
+                <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+                <h6 class="mt-3">テンプレートエラー</h6>
+                <p class="mb-2 small">信用倍率タブの表示中にエラーが発生しました</p>
+                <button class="btn btn-sm btn-outline-primary" onclick="window.location.reload()">
+                <i class="bi bi-arrow-clockwise me-1"></i>再試行
+                </button>
+            </div>
+            </div>
+            '''
+        
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Margin tab rendering error (diary_id: {diary.id}): {e}", exc_info=True)
+        
+        return f'''
+        <div class="text-center py-4">
+        <div class="text-muted">
+            <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+            <h6 class="mt-3">データ取得エラー</h6>
+            <p class="mb-2 small">信用倍率データの取得中にエラーが発生しました</p>
+            <button class="btn btn-sm btn-outline-primary" onclick="window.location.reload()">
+            <i class="bi bi-arrow-clockwise me-1"></i>再試行
+            </button>
+        </div>
+        </div>
+        '''
+ 
+def _get_margin_data_fixed(self, stock_symbol):
+    """銘柄データと信用倍率データを取得（修正版）"""
+    try:
+        # 証券コード処理を統一
+        search_code = str(stock_symbol).rstrip('0') + '0'
+        market_issue = MarketIssue.objects.filter(code=search_code).first()
+        
+        if not market_issue:
+            # '0'なしでも検索
+            market_issue = MarketIssue.objects.filter(code=str(stock_symbol)).first()
+        
+        margin_data = None
+        if market_issue:
+            margin_data = MarginTradingData.objects.filter(
+                issue=market_issue
+            ).order_by('-date')[:20]  # 20週分のデータ
+        
+        return market_issue, margin_data
+    
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error getting margin data for symbol {stock_symbol}: {e}")
+        return None, None

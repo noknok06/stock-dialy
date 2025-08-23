@@ -46,10 +46,12 @@ urlpatterns = [
     path('image/<int:diary_id>/<str:image_type>/', views.ServeImageView.as_view(), name='serve_image'),
     path('image/<int:diary_id>/<str:image_type>/<int:note_id>/', views.ServeImageView.as_view(), name='serve_image'),
     
+    # 信用倍率関連API
     path('api/margin-chart/<int:diary_id>/', views.api_margin_chart_data, name='api_margin_chart'),
-
     path('api/margin-compare/<int:diary_id>/', views.api_margin_compare_data, name='api_margin_compare'),
-
     path('api/margin-sector/<int:diary_id>/', views.api_margin_sector_data, name='api_margin_sector'),
+    
+    # 新規追加: 業種別銘柄候補API
+    path('api/margin-sector-suggestions/<int:diary_id>/', views.api_margin_sector_suggestions, name='api_margin_sector_suggestions'),
 
 ]
