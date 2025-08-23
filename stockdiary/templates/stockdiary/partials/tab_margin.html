@@ -1,28 +1,25 @@
 {% load humanize %}
 {% load stockdiary_filters %}
 
-<div class="margin-tab-container px-1 py-2">
+<div class="margin-tab-container">
   {% if margin_data %}
-    <!-- タブナビゲーション -->
+    <!-- タブナビゲーション（スマホ最適化） -->
     <div class="margin-tabs-nav mb-3">
       <div class="nav nav-pills nav-fill" id="marginTabsNav" role="tablist">
         <button class="nav-link active" id="chart-tab" data-bs-toggle="pill" 
                 data-bs-target="#chart-content" type="button" role="tab" aria-controls="chart-content" aria-selected="true">
-          <i class="bi bi-graph-up d-sm-none"></i>
-          <span class="d-none d-sm-inline">チャート</span>
-          <span class="d-sm-none">チャート</span>
+          <i class="bi bi-graph-up"></i>
+          <span class="nav-text">チャート</span>
         </button>
         <button class="nav-link" id="compare-tab" data-bs-toggle="pill" 
                 data-bs-target="#compare-content" type="button" role="tab" aria-controls="compare-content" aria-selected="false">
-          <i class="bi bi-bar-chart d-sm-none"></i>
-          <span class="d-none d-sm-inline">比較</span>
-          <span class="d-sm-none">比較</span>
+          <i class="bi bi-bar-chart"></i>
+          <span class="nav-text">比較</span>
         </button>
         <button class="nav-link" id="data-tab" data-bs-toggle="pill" 
                 data-bs-target="#data-content" type="button" role="tab" aria-controls="data-content" aria-selected="false">
-          <i class="bi bi-table d-sm-none"></i>
-          <span class="d-none d-sm-inline">データ</span>
-          <span class="d-sm-none">データ</span>
+          <i class="bi bi-table"></i>
+          <span class="nav-text">データ</span>
         </button>
       </div>
     </div>
@@ -33,42 +30,64 @@
       <!-- チャートタブ -->
       <div class="tab-pane fade show active" id="chart-content" role="tabpanel" aria-labelledby="chart-tab">
         
-        <!-- 現在値サマリー -->
-        <div class="chart-summary mb-3">
-          <div class="row g-2">
-            <div class="col-6 col-md-3">
-              <div class="card border-0 bg-light text-center p-2">
-                <div class="small text-muted">現在倍率</div>
+        <!-- 現在値サマリー（スマホ最適化） -->
+        <div class="summary-cards mb-3">
+          <!-- メイン指標（上段：重要度の高い情報） -->
+          <div class="row g-3 mb-3">
+            <div class="col-8">
+              <div class="summary-card ratio-card main-metric">
+                <div class="card-label">信用倍率（買残÷売残）</div>
                 {% if latest_margin_data.outstanding_sales > 0 %}
                   {% with ratio=latest_margin_data.outstanding_purchases|div:latest_margin_data.outstanding_sales %}
-                    <div class="fw-bold {{ ratio|margin_level_class }} fs-5">{{ ratio|floatformat:2 }}倍</div>
-                    <div class="small text-muted">{{ ratio|margin_level_text }}</div>
+                    <div class="card-value-large {{ ratio|margin_level_class }}">{{ ratio|floatformat:2 }}</div>
+                    <div class="card-suffix-large">倍</div>
+                    <div class="card-status-badge {{ ratio|margin_level_class }}">{{ ratio|margin_level_text }}</div>
                   {% endwith %}
                 {% else %}
-                  <div class="fw-bold text-muted fs-5">-</div>
-                  <div class="small text-muted">不明</div>
+                  <div class="card-value-large text-muted">-</div>
+                  <div class="card-suffix-large">倍</div>
+                  <div class="card-status-badge text-muted">データなし</div>
                 {% endif %}
               </div>
             </div>
-            <div class="col-6 col-md-3">
-              <div class="card border-0 bg-light text-center p-2">
-                <div class="small text-muted">更新日</div>
-                <div class="fw-bold text-primary">{{ latest_margin_data.date|date:"m/d" }}</div>
-                <div class="small text-muted">{{ latest_margin_data.date|date:"Y年" }}</div>
+            <div class="col-4">
+              <div class="summary-card date-card">
+                <div class="card-label">更新</div>
+                <div class="card-value">{{ latest_margin_data.date|date:"m/d" }}</div>
+                <div class="card-suffix">{{ latest_margin_data.date|date:"y" }}</div>
+                <div class="card-status">JPX</div>
               </div>
             </div>
-            <div class="col-6 col-md-3">
-              <div class="card border-0 bg-light text-center p-2">
-                <div class="small text-muted">売残高</div>
-                <div class="fw-bold text-danger">{{ latest_margin_data.outstanding_sales|intcomma }}</div>
-                <div class="small text-muted">株</div>
+          </div>
+          
+          <!-- サブ指標（下段：詳細データ） -->
+          <div class="row g-2">
+            <div class="col-6">
+              <div class="summary-card sell-card compact">
+                <div class="card-header-inline">
+                  <i class="bi bi-arrow-down-circle text-danger"></i>
+                  <span class="card-label">売残</span>
+                </div>
+                <div class="card-value text-danger">{{ latest_margin_data.outstanding_sales|format_stock_amount }}</div>
+                {% if latest_margin_data.outstanding_sales_change %}
+                <div class="card-change {{ latest_margin_data.outstanding_sales_change|change_direction_class }}">
+                  {{ latest_margin_data.outstanding_sales_change|format_change }}
+                </div>
+                {% endif %}
               </div>
             </div>
-            <div class="col-6 col-md-3">
-              <div class="card border-0 bg-light text-center p-2">
-                <div class="small text-muted">買残高</div>
-                <div class="fw-bold text-success">{{ latest_margin_data.outstanding_purchases|intcomma }}</div>
-                <div class="small text-muted">株</div>
+            <div class="col-6">
+              <div class="summary-card buy-card compact">
+                <div class="card-header-inline">
+                  <i class="bi bi-arrow-up-circle text-success"></i>
+                  <span class="card-label">買残</span>
+                </div>
+                <div class="card-value text-success">{{ latest_margin_data.outstanding_purchases|format_stock_amount }}</div>
+                {% if latest_margin_data.outstanding_purchases_change %}
+                <div class="card-change {{ latest_margin_data.outstanding_purchases_change|change_direction_class }}">
+                  {{ latest_margin_data.outstanding_purchases_change|format_change }}
+                </div>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -76,25 +95,25 @@
         
         <!-- チャート表示エリア -->
         <div class="chart-container mb-3">
-          <div class="card border-0 bg-light">
-            <div class="card-body p-2 p-sm-3">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="mb-0">信用倍率推移</h6>
-                <div class="btn-group btn-group-sm" role="group" aria-label="Chart period">
+          <div class="chart-card">
+            <div class="chart-header">
+              <h6 class="chart-title">信用倍率推移</h6>
+              <div class="period-selector">
+                <div class="btn-group btn-group-sm" role="group">
                   <input type="radio" class="btn-check" name="chartPeriod" id="period3m" value="3" checked>
                   <label class="btn btn-outline-primary" for="period3m">3M</label>
                   <input type="radio" class="btn-check" name="chartPeriod" id="period6m" value="6">
                   <label class="btn btn-outline-primary" for="period6m">6M</label>
                   <input type="radio" class="btn-check" name="chartPeriod" id="periodAll" value="all">
-                  <label class="btn btn-outline-primary" for="periodAll">All</label>
+                  <label class="btn btn-outline-primary" for="periodAll">全期間</label>
                 </div>
               </div>
-              <div class="position-relative">
-                <canvas id="marginChart" aria-label="信用倍率推移チャート"></canvas>
-                <div id="chartLoading" class="position-absolute top-50 start-50 translate-middle d-none">
-                  <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                  </div>
+            </div>
+            <div class="chart-body">
+              <canvas id="marginChart" aria-label="信用倍率推移チャート"></canvas>
+              <div id="chartLoading" class="chart-loading d-none">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Loading...</span>
                 </div>
               </div>
             </div>
@@ -104,25 +123,15 @@
         <!-- アラート表示 -->
         <div id="marginAlerts" role="alert" aria-live="polite"></div>
         
-        <!-- 統計情報 -->
-        <div class="chart-stats">
-          <div class="row g-2">
-            <div class="col-6">
-              <div class="card border-0 bg-primary bg-opacity-10">
-                <div class="card-body p-2 text-center">
-                  <div class="small text-muted">過去平均</div>
-                  <div class="fw-semibold" id="avgRatio">-</div>
-                </div>
-              </div>
-            </div>
-            <div class="col-6">
-              <div class="card border-0 bg-info bg-opacity-10">
-                <div class="card-body p-2 text-center">
-                  <div class="small text-muted">変動率</div>
-                  <div class="fw-semibold" id="volatility">-</div>
-                </div>
-              </div>
-            </div>
+        <!-- 統計情報（簡潔に） -->
+        <div class="stats-row">
+          <div class="stat-item">
+            <span class="stat-label">平均</span>
+            <span class="stat-value" id="avgRatio">-</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">変動</span>
+            <span class="stat-value" id="volatility">-</span>
           </div>
         </div>
       </div>
@@ -130,163 +139,103 @@
       <!-- 比較タブ -->
       <div class="tab-pane fade" id="compare-content" role="tabpanel" aria-labelledby="compare-tab">
         
-        <!-- 銘柄選択 -->
-        <div class="compare-selector mb-3">
-          <div class="card border-0 bg-light">
-            <div class="card-body p-2 p-sm-3">
-              <h6 class="mb-2">
-                <i class="bi bi-plus-circle me-1"></i>
-                比較銘柄選択
-              </h6>
-              <div class="row g-2">
-                <div class="col-12 col-sm-8">
-                  <input type="text" class="form-control form-control-sm" 
-                         id="compareSymbolInput" 
-                         placeholder="証券コードを入力（例：7203）" 
-                         aria-label="証券コード入力"
-                         maxlength="6">
-                </div>
-                <div class="col-12 col-sm-4">
-                  <button type="button" class="btn btn-primary btn-sm w-100" 
-                          id="addCompareBtn" aria-label="比較銘柄を追加">
-                    <i class="bi bi-plus-lg" aria-hidden="true"></i> 追加
-                  </button>
-                </div>
-              </div>
-              
-              <!-- 業種別推奨銘柄 -->
-              <div class="mt-3">
-                <div class="d-flex align-items-center mb-2">
-                  <small class="text-muted me-2">
-                    <i class="bi bi-building"></i> 同業種推奨（17業種優先）:
-                  </small>
-                  <div class="spinner-border spinner-border-sm text-primary d-none" id="suggestionsLoading" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                  </div>
-                </div>
-                <div id="suggestedSymbols" class="mt-1" role="group" aria-label="推奨銘柄">
-                  <!-- 動的に生成 -->
-                </div>
-                <small class="text-muted d-block mt-1">
-                  <i class="bi bi-info-circle me-1"></i>
-                  ★マーク = 適正範囲（1.0-3.0倍）の銘柄
-                </small>
-              </div>
-            </div>
+        <!-- 銘柄選択（スマホ最適化） -->
+        <div class="compare-input mb-3">
+          <div class="input-group">
+            <input type="text" class="form-control" 
+                   id="compareSymbolInput" 
+                   placeholder="証券コード" 
+                   maxlength="6">
+            <button type="button" class="btn btn-primary" 
+                    id="addCompareBtn">
+              <i class="bi bi-plus-lg"></i>
+            </button>
           </div>
         </div>
         
         <!-- 選択済み銘柄 -->
         <div class="selected-symbols mb-3" id="selectedSymbols">
           <p class="text-muted small mb-0">
-            <i class="bi bi-info-circle me-1"></i>
-            比較タブ初回表示時に現在の銘柄が自動追加されます
+            現在の銘柄が自動追加されます
           </p>
+        </div>
+        
+        <!-- 推奨銘柄（コンパクト表示） -->
+        <div class="suggestions mb-3">
+          <div class="suggestions-header">
+            <small class="text-muted">同業種推奨</small>
+            <div class="spinner-border spinner-border-sm text-primary d-none" id="suggestionsLoading"></div>
+          </div>
+          <div id="suggestedSymbols" class="suggestions-body">
+            <!-- 動的に生成 -->
+          </div>
         </div>
         
         <!-- 比較チャート -->
         <div class="compare-chart mb-3" id="compareChartContainer" style="display: none;">
-          <div class="card border-0 bg-light">
-            <div class="card-body p-2 p-sm-3">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="mb-0">
-                  <i class="bi bi-graph-up me-1"></i>
-                  銘柄比較
-                </h6>
-                <button type="button" class="btn btn-outline-secondary btn-sm" 
-                        id="resetCompareBtn" aria-label="比較をリセット">
-                  <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> リセット
-                </button>
-              </div>
-              <div class="position-relative">
-                <canvas id="compareChart" aria-label="銘柄比較チャート"></canvas>
-                <div id="compareChartLoading" class="position-absolute top-50 start-50 translate-middle d-none">
-                  <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                  </div>
-                </div>
+          <div class="chart-card">
+            <div class="chart-header">
+              <h6 class="chart-title">銘柄比較</h6>
+              <button type="button" class="btn btn-outline-secondary btn-sm" 
+                      id="resetCompareBtn">
+                <i class="bi bi-arrow-counterclockwise"></i>
+              </button>
+            </div>
+            <div class="chart-body">
+              <canvas id="compareChart" aria-label="銘柄比較チャート"></canvas>
+              <div id="compareChartLoading" class="chart-loading d-none">
+                <div class="spinner-border text-primary"></div>
               </div>
             </div>
           </div>
         </div>
         
         <!-- 比較統計 -->
-        <div class="compare-statistics mb-3" id="compareStatsContainer" style="display: none;">
-          <div class="card border-0 bg-light">
-            <div class="card-body p-2 p-sm-3">
-              <h6 class="mb-2">
-                <i class="bi bi-graph-up-arrow me-1"></i>
-                比較統計
-              </h6>
-              <div id="compareStats">
-                <!-- 動的に生成 -->
-              </div>
-            </div>
-          </div>
+        <div id="compareStats" class="compare-stats">
+          <!-- 動的に生成 -->
         </div>
       </div>
 
       <!-- データタブ -->
       <div class="tab-pane fade" id="data-content" role="tabpanel" aria-labelledby="data-tab">
-        <div class="data-table-container">
+        <div class="data-container">
           <div class="table-responsive">
-            <table class="table table-sm">
-              <caption class="visually-hidden">信用取引データテーブル</caption>
-              <thead class="table-light">
+            <table class="data-table">
+              <thead>
                 <tr>
-                  <th scope="col" class="text-center">日付</th>
-                  <th scope="col" class="text-center">信用倍率</th>
-                  <th scope="col" class="text-center">売残高</th>
-                  <th scope="col" class="text-center">売残増減</th>
-                  <th scope="col" class="text-center">買残高</th>
-                  <th scope="col" class="text-center">買残増減</th>
+                  <th>日付</th>
+                  <th>倍率</th>
+                  <th>売残</th>
+                  <th>買残</th>
                 </tr>
               </thead>
               <tbody>
-                {% for data in margin_data|slice:":15" %}
+                {% for data in margin_data|slice:":12" %}
                 <tr>
-                  <td class="text-center">{{ data.date|date:"m/d" }}</td>
-                  <td class="text-center">
+                  <td>{{ data.date|date:"m/d" }}</td>
+                  <td>
                     {% if data.outstanding_sales > 0 %}
                       {% with ratio=data.outstanding_purchases|div:data.outstanding_sales %}
-                        <span class="fw-semibold {{ ratio|margin_level_class }}">{{ ratio|floatformat:2 }}</span>
+                        <span class="ratio-value {{ ratio|margin_level_class }}">{{ ratio|floatformat:2 }}</span>
                       {% endwith %}
                     {% else %}
-                      <span class="text-muted">-</span>
+                      <span class="ratio-value text-muted">-</span>
                     {% endif %}
                   </td>
-                  <td class="text-center">{{ data.outstanding_sales|intcomma }}</td>
-                  <td class="text-center">
-                    {% if data.outstanding_sales_change > 0 %}
-                      <span class="text-danger small">+{{ data.outstanding_sales_change|intcomma }}</span>
-                    {% elif data.outstanding_sales_change < 0 %}
-                      <span class="text-success small">{{ data.outstanding_sales_change|intcomma }}</span>
-                    {% else %}
-                      <span class="text-muted small">0</span>
-                    {% endif %}
-                  </td>
-                  <td class="text-center">{{ data.outstanding_purchases|intcomma }}</td>
-                  <td class="text-center">
-                    {% if data.outstanding_purchases_change > 0 %}
-                      <span class="text-success small">+{{ data.outstanding_purchases_change|intcomma }}</span>
-                    {% elif data.outstanding_purchases_change < 0 %}
-                      <span class="text-danger small">{{ data.outstanding_purchases_change|intcomma }}</span>
-                    {% else %}
-                      <span class="text-muted small">0</span>
-                    {% endif %}
-                  </td>
+                  <td class="text-danger">{{ data.outstanding_sales|floatformat:0 }}</td>
+                  <td class="text-success">{{ data.outstanding_purchases|floatformat:0 }}</td>
                 </tr>
                 {% endfor %}
               </tbody>
             </table>
           </div>
           
-          <!-- データ詳細リンク -->
-          <div class="text-center mt-3">
+          <!-- データソース -->
+          <div class="data-source">
             <a href="https://www.jpx.co.jp/markets/statistics-equities/margin/" 
-               target="_blank" class="text-primary text-decoration-none small">
-              <i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>
-              JPX公式データを見る
+               target="_blank" class="source-link">
+              <i class="bi bi-box-arrow-up-right"></i>
+              JPX公式データ
             </a>
           </div>
         </div>
@@ -294,240 +243,503 @@
 
     </div> <!-- /.tab-content -->
 
-    <!-- 信用倍率の解釈ガイド -->
-    <div class="margin-guide mt-4">
-      <div class="card border-0 bg-light">
-        <div class="card-body p-3">
-          <h6 class="card-title mb-3">
-            <i class="bi bi-info-circle text-primary me-2" aria-hidden="true"></i>
-            信用倍率の見方（買残÷売残）
-          </h6>
-          <div class="row g-2">
-            <div class="col-md-4">
-              <div class="d-flex align-items-center">
-                <div class="me-2">
-                  <span class="badge bg-danger bg-opacity-15 text-danger">低倍率</span>
-                </div>
-                <small class="text-muted">1.0倍未満：売り優勢</small>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="d-flex align-items-center">
-                <div class="me-2">
-                  <span class="badge bg-primary bg-opacity-15 text-primary">中倍率</span>
-                </div>
-                <small class="text-muted">1.0〜2.0倍：均衡</small>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="d-flex align-items-center">
-                <div class="me-2">
-                  <span class="badge bg-success bg-opacity-15 text-success">高倍率</span>
-                </div>
-                <small class="text-muted">2.0倍超：買い優勢</small>
-              </div>
-            </div>
+    <!-- 信用倍率ガイド（コンパクト表示） -->
+    <div class="guide-section">
+      <div class="guide-card">
+        <div class="guide-header">
+          <i class="bi bi-info-circle text-primary"></i>
+          <span class="guide-title">信用倍率の見方</span>
+        </div>
+        <div class="guide-indicators">
+          <div class="guide-item">
+            <span class="guide-dot bg-danger"></span>
+            <span class="guide-text">1.0未満：売り優勢</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-dot bg-primary"></span>
+            <span class="guide-text">1.0〜2.0：均衡</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-dot bg-success"></span>
+            <span class="guide-text">2.0超：買い優勢</span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- JavaScript初期化 -->
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // margin_trading データが利用可能かチェック
-      {% if latest_margin_data %}
-        // MarginTabManagerを初期化（グローバルスコープで利用可能にする）
-        if (typeof MarginTabManager !== 'undefined') {
-          // 現在の銘柄コードを渡す
-          const currentSymbol = '{{ diary.stock_symbol|escapejs }}';
-          window.MarginTabController = new MarginTabManager(
-            {{ diary.id }}, 
-            {{ latest_margin_data.issue.id }},
-            currentSymbol || null
-          );
-          console.log('✅ MarginTabController initialized successfully with symbol:', currentSymbol);
-        } else {
-          console.warn('⚠️ MarginTabManager クラスが読み込まれていません');
-        }
-      {% else %}
-        console.log('ℹ️ 信用取引データが利用できません');
-      {% endif %}
-      
-      // Bootstrap tooltipの初期化（必要に応じて）
-      var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-      var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-      });
-    });
-    </script>
-
   {% else %}
-    <!-- データが取得できない場合 -->
-    <div class="empty-state text-center py-5">
-      <div class="text-muted">
-        <i class="bi bi-exclamation-triangle" style="font-size: 3rem;" aria-hidden="true"></i>
-        <h5 class="mt-3">信用取引データを取得できません</h5>
-        <p class="mb-3">この銘柄の信用取引データが見つかりません。</p>
-        <div class="small">
-          <strong>考えられる理由：</strong><br>
-          • 信用取引の対象外銘柄<br>
-          • 証券コードが正しく設定されていない<br>
-          • データの取得・更新が完了していない
-        </div>
-        
-        {% if diary.stock_symbol %}
-        <div class="mt-3">
-          <small class="text-muted">証券コード: {{ diary.stock_symbol }}</small>
-        </div>
-        {% endif %}
-        
-        <div class="mt-3">
-          <a href="https://www.jpx.co.jp/markets/statistics-equities/margin/" 
-             target="_blank" class="btn btn-outline-primary btn-sm">
-            <i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>
-            JPX公式サイトで確認
-          </a>
-        </div>
-      </div>
+    <!-- データなしの場合 -->
+    <div class="empty-state">
+      <i class="bi bi-exclamation-triangle empty-icon"></i>
+      <h5 class="empty-title">信用取引データなし</h5>
+      <p class="empty-description">この銘柄の信用取引データが見つかりません</p>
+      {% if diary.stock_symbol %}
+      <p class="empty-code">証券コード: {{ diary.stock_symbol }}</p>
+      {% endif %}
+      <a href="https://www.jpx.co.jp/markets/statistics-equities/margin/" 
+         target="_blank" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-box-arrow-up-right"></i>
+        JPX公式で確認
+      </a>
     </div>
   {% endif %}
 </div>
 
-<!-- スタイル（テンプレート内でスコープ限定） -->
 <style>
+/* ===== 基本設定 ===== */
 .margin-tab-container {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
+/* ===== タブナビゲーション ===== */
 .margin-tabs-nav .nav-pills {
-  background-color: rgba(var(--bs-light-rgb), 0.3);
-  border-radius: 0.5rem;
-  padding: 0.25rem;
+  background-color: rgba(248, 249, 250, 0.8);
+  border-radius: 12px;
+  padding: 4px;
+  margin: 0 -8px;
 }
 
 .margin-tabs-nav .nav-link {
-  border-radius: 0.375rem;
+  border-radius: 8px;
   font-weight: 500;
-  transition: all 0.2s ease-in-out;
+  transition: all 0.2s ease;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
-  padding: 0.5rem 0.75rem;
-  min-height: 44px; /* タッチターゲット最小サイズ */
+  gap: 4px;
+  padding: 12px 8px;
+  min-height: 60px;
+  color: #6c757d;
 }
 
-.margin-tabs-nav .nav-link:not(.active) {
-  color: var(--bs-secondary);
+.margin-tabs-nav .nav-link i {
+  font-size: 18px;
+}
+
+.margin-tabs-nav .nav-text {
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .margin-tabs-nav .nav-link.active {
-  background-color: var(--bs-primary);
+  background-color: #0d6efd;
   color: white;
-  box-shadow: 0 2px 4px rgba(var(--bs-primary-rgb), 0.25);
+  box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
 }
 
-.chart-summary .card,
-.compare-selector .card,
-.sector-stats .card,
-.margin-guide .card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  border: 1px solid rgba(var(--bs-border-color-rgb), 0.5);
+.margin-tabs-nav .nav-link:hover:not(.active) {
+  background-color: rgba(13, 110, 253, 0.1);
+  color: #0d6efd;
 }
 
-.chart-summary .card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+/* ===== サマリーカード ===== */
+.summary-cards {
+  margin: 0 -4px;
 }
 
-/* チャート高さ制御 */
-.chart-container canvas,
-#compareChartContainer canvas {
-  height: 250px !important;
-  max-height: 250px !important;
+.summary-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px 12px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  position: relative;
+  overflow: hidden;
 }
 
-.chart-container .position-relative,
-#compareChartContainer .position-relative {
-  height: 250px;
-  min-height: 250px;
+.ratio-card {
+  background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
 }
 
-/* 推奨銘柄ボタンのスタイル改善 */
-#suggestedSymbols .btn-outline-success {
-  border-color: #198754;
-  color: #198754;
+.date-card {
+  background: linear-gradient(135deg, #fff8f0 0%, #fff 100%);
 }
 
-#suggestedSymbols .btn-outline-success:hover {
-  background-color: #198754;
-  border-color: #198754;
-  color: white;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(25, 135, 84, 0.2);
+.sell-card {
+  background: linear-gradient(135deg, #fff5f5 0%, #fff 100%);
 }
 
-#suggestedSymbols .btn {
-  font-size: 0.75rem;
-  transition: all 0.2s ease;
-  margin-bottom: 0.25rem;
+.buy-card {
+  background: linear-gradient(135deg, #f0fff4 0%, #fff 100%);
+}
+
+.card-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #6c757d;
+  margin-bottom: 4px;
+}
+
+.card-value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.card-suffix {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6c757d;
+  margin-bottom: 4px;
+}
+
+.card-status {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #6c757d;
+}
+
+/* ===== チャートエリア ===== */
+.chart-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #f1f3f5;
+  background: #fafbfc;
+}
+
+.chart-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  color: #343a40;
+}
+
+.period-selector .btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+}
+
+.chart-body {
+  padding: 16px;
+  position: relative;
+  height: 220px;
+}
+
+.chart-body canvas {
+  height: 188px !important;
+  max-height: 188px !important;
+  width: 100% !important;
+}
+
+.chart-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+
+/* ===== 統計情報 ===== */
+.stats-row {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6c757d;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0d6efd;
+}
+
+/* ===== 比較タブ ===== */
+.compare-input .form-control {
+  height: 48px;
+  font-size: 16px;
+  border-radius: 8px 0 0 8px;
+  border-right: none;
+}
+
+.compare-input .btn {
+  height: 48px;
+  padding: 0 16px;
+  border-radius: 0 8px 8px 0;
+}
+
+.selected-symbols {
+  min-height: 24px;
+}
+
+.suggestions {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.suggestions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.suggestions-body .btn {
+  font-size: 12px;
+  padding: 6px 12px;
+  margin: 2px;
+  border-radius: 6px;
+}
+
+.compare-stats .row .col-6 {
+  margin-bottom: 8px;
+}
+
+.compare-stats .card {
+  border: none;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.compare-stats .card-body {
+  padding: 12px;
+  text-align: center;
+}
+
+/* ===== データテーブル ===== */
+.data-container {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.data-table {
+  width: 100%;
+  margin: 0;
+  font-size: 14px;
+}
+
+.data-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 12px 8px;
+  text-align: center;
+  border: none;
+  color: #495057;
+}
+
+.data-table td {
+  padding: 12px 8px;
+  text-align: center;
+  border: none;
+  border-bottom: 1px solid #f1f3f5;
+  font-size: 13px;
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.ratio-value {
+  font-weight: 600;
+}
+
+.data-source {
+  padding: 16px;
+  text-align: center;
+  background: #fafbfc;
+  border-top: 1px solid #f1f3f5;
+}
+
+.source-link {
+  font-size: 12px;
+  color: #0d6efd;
+  text-decoration: none;
   font-weight: 500;
 }
 
-/* 業種情報ヘッダー */
-#suggestedSymbols .text-primary {
-  font-size: 0.8rem;
+/* ===== ガイドセクション ===== */
+.guide-section {
+  margin-top: 16px;
+}
+
+.guide-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.guide-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.guide-title {
+  font-size: 13px;
   font-weight: 600;
-}
-@media (max-width: 768px) {
-  .margin-tabs-nav .nav-link {
-    flex-direction: column;
-    padding: 0.4rem 0.5rem;
-    font-size: 0.8rem;
-  }
-  
-  .margin-tabs-nav .nav-link i {
-    font-size: 1.1rem;
-    margin-bottom: 0.15rem;
-  }
-  
-  .chart-container canvas,
-  #compareChartContainer canvas {
-    height: 200px !important;
-    max-height: 200px !important;
-  }
-  
-  .chart-container .position-relative,
-  #compareChartContainer .position-relative {
-    height: 200px;
-    min-height: 200px;
-  }
+  color: #343a40;
 }
 
+.guide-indicators {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.guide-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.guide-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.guide-text {
+  font-size: 11px;
+  font-weight: 500;
+  color: #6c757d;
+}
+
+/* ===== 空状態 ===== */
+.empty-state {
+  text-align: center;
+  padding: 48px 16px;
+}
+
+.empty-icon {
+  font-size: 48px;
+  color: #dee2e6;
+  margin-bottom: 16px;
+}
+
+.empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 8px;
+}
+
+.empty-description {
+  font-size: 14px;
+  color: #6c757d;
+  margin-bottom: 12px;
+}
+
+.empty-code {
+  font-size: 13px;
+  color: #6c757d;
+  margin-bottom: 16px;
+  font-family: monospace;
+}
+
+/* ===== アラート ===== */
+.alert {
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+/* ===== レスポンシブ調整 ===== */
 @media (max-width: 576px) {
-  .chart-container canvas,
-  #compareChartContainer canvas {
-    height: 180px !important;
-    max-height: 180px !important;
+  .margin-tabs-nav .nav-pills {
+    margin: 0 -12px;
   }
   
-  .chart-container .position-relative,
-  #compareChartContainer .position-relative {
-    height: 180px;
-    min-height: 180px;
+  .period-selector .btn {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+  
+  .chart-body {
+    padding: 12px;
+    height: 200px;
+  }
+  
+  .chart-body canvas {
+    height: 168px !important;
+    max-height: 168px !important;
+  }
+  
+  .guide-indicators {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .guide-item {
+    justify-content: flex-start;
+  }
+  
+  .stats-row {
+    gap: 24px;
+    padding: 12px;
   }
 }
 
-/* アニメーション */
-.tab-pane.show {
-  animation: fadeIn 0.3s ease-out;
+@media (max-width: 480px) {
+  .summary-card {
+    padding: 12px 8px;
+  }
+  
+  .card-value {
+    font-size: 20px;
+  }
+  
+  .chart-body {
+    height: 180px;
+    padding: 8px;
+  }
+  
+  .chart-body canvas {
+    height: 148px !important;
+    max-height: 148px !important;
+  }
 }
 
-@keyframes fadeIn {
+/* ===== アニメーション ===== */
+.tab-pane.show {
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -535,22 +747,47 @@
   }
 }
 
-/* アクセシビリティ */
-.margin-tab-container .btn:focus,
-.margin-tab-container .nav-link:focus,
-.margin-tab-container .form-control:focus {
-  box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
-  outline: none;
+.summary-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* 動きを抑制する設定への対応 */
+.summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* ===== アクセシビリティ ===== */
 @media (prefers-reduced-motion: reduce) {
-  .margin-tab-container *,
-  .margin-tab-container *::before,
-  .margin-tab-container *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }
+
+.margin-tab-container .btn:focus,
+.margin-tab-container .nav-link:focus,
+.margin-tab-container .form-control:focus {
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+  outline: none;
+}
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  {% if latest_margin_data %}
+    if (typeof MarginTabManager !== 'undefined') {
+      const currentSymbol = '{{ diary.stock_symbol|escapejs }}';
+      window.MarginTabController = new MarginTabManager(
+        {{ diary.id }}, 
+        {{ latest_margin_data.issue.id }},
+        currentSymbol || null
+      );
+      console.log('✅ Optimized MarginTabController initialized');
+    } else {
+      console.warn('⚠️ MarginTabManager not loaded');
+    }
+  {% endif %}
+});
+</script>
