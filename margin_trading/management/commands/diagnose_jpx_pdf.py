@@ -189,7 +189,6 @@ class Command(BaseCommand):
                     text = page.extract_text()
                     if text:
                         self.stdout.write(f"  📝 テキスト文字数: {len(text)}")
-                        self.stdout.write(f"  📝 行数: {len(text.split('\n'))}")
                     
                     # オブジェクト数
                     objects = page.objects

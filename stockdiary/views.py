@@ -3156,7 +3156,14 @@ class StockListView(LoginRequiredMixin, TemplateView):
                 purchase_price__isnull=False,
                 purchase_quantity__isnull=False
             ).exists()
-            
+            stock_info['has_completed_sales'] = StockDiary.objects.filter(
+                user=user,
+                stock_symbol=stock['stock_symbol'],
+                sell_date__isnull=False,
+                purchase_price__isnull=False,
+                purchase_quantity__isnull=False
+            ).exists()
+
             # 業種情報を企業マスタから取得
             if not stock_info['sector'] or stock_info['sector'] == '未分類':
                 try:
