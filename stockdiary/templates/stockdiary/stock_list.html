@@ -107,6 +107,126 @@
     color: #2d3748;
 }
 
+/* モバイル向けコンパクトテーブル */
+.mobile-compact-table {
+    font-size: 0.8rem;
+}
+
+.mobile-compact-table th,
+.mobile-compact-table td {
+    padding: 0.4rem 0.25rem;
+    vertical-align: middle;
+}
+
+.mobile-compact-table .stock-symbol {
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.mobile-compact-table .stock-name {
+    font-size: 0.75rem;
+    font-weight: 500;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mobile-compact-table .sector-badge {
+    font-size: 0.55rem;
+    padding: 0.1rem 0.25rem;
+    max-width: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mobile-compact-table .ratio-display {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.mobile-compact-table .change-display {
+    font-size: 0.7rem;
+}
+
+.mobile-compact-table .btn-group-sm .btn {
+    padding: 0.2rem 0.35rem;
+    font-size: 0.7rem;
+}
+
+/* 表示切り替えボタン */
+.view-toggle {
+    background-color: rgba(79, 131, 204, 0.1);
+    border: 1px solid rgba(79, 131, 204, 0.3);
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.view-toggle .btn {
+    border: none;
+    background: transparent;
+    color: #4F83CC;
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+}
+
+.view-toggle .btn.active {
+    background-color: #4F83CC;
+    color: white;
+}
+
+/* コンパクトカード表示 */
+.compact-card {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.compact-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.compact-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+    min-height: 2.5rem;
+}
+
+.compact-card-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    margin-bottom: 0.5rem;
+    flex-grow: 1;
+}
+
+.compact-metric {
+    text-align: center;
+}
+
+.compact-metric-label {
+    color: #6b7280;
+    font-size: 0.65rem;
+    margin-bottom: 0.1rem;
+    line-height: 1;
+}
+
+.compact-metric-value {
+    font-weight: 600;
+    font-size: 0.8rem;
+    line-height: 1.1;
+}
+
 @media (max-width: 768px) {
     .container {
         padding-left: 0.75rem;
@@ -118,14 +238,6 @@
         border-radius: 0.75rem;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         margin: 0 -0.5rem;
-    }
-    
-    .stock-card {
-        margin-bottom: 0.875rem;
-        border-radius: 0.625rem;
-        width: 100%;
-        box-sizing: border-box;
-        /* max-height削除 */
     }
     
     .filter-controls {
@@ -148,56 +260,19 @@
         margin-bottom: 0.75rem;
     }
     
-    .metric-grid {
-        gap: 0.4rem;
-        padding: 0.5rem;
-    }
-    
-    .metric-item {
-        padding: 0.35rem 0.2rem;
-        min-height: 40px;
-    }
-    
-    .metric-label {
-        font-size: 0.6rem;
-        margin-bottom: 0.15rem;
-    }
-    
-    .metric-value {
-        font-size: 0.8rem;
-        font-weight: 600;
-    }
-    
-    .card-header-section {
-        padding: 0.65rem 0.875rem 0.65rem 1rem;
-    }
-    
-    .stock-name {
-        font-size: 0.9rem;
-        margin-bottom: 0.4rem;
-    }
-    
-    .stock-symbol {
-        font-size: 0.6rem;
-        padding: 0.125rem 0.375rem;
-    }
-    
-    .status-section {
-        padding: 0.5rem 0.7rem;
-    }
-    
-    .btn-group-sm .btn {
-        padding: 0.375rem 0.75rem;
-        font-size: 0.8rem;
-        min-width: 36px;
-    }
-    
     .page-header {
         margin-bottom: 1.25rem;
     }
     
     .page-title {
         font-size: 1.5rem;
+    }
+    
+    /* モバイル表示切り替え */
+    .mobile-view-controls {
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: center;
     }
 }
 
@@ -223,51 +298,6 @@
     
     .stats-card .small {
         font-size: 0.75rem;
-    }
-    
-    .metric-grid {
-        gap: 0.375rem;
-        padding: 0.75rem;
-    }
-    
-    .metric-item {
-        padding: 0.4rem 0.25rem;
-        min-height: 45px;
-    }
-    
-    .metric-label {
-        font-size: 0.55rem;
-    }
-    
-    .metric-value {
-        font-size: 0.8rem;
-    }
-    
-    .card-header-section {
-        padding: 0.625rem 0.75rem 0.625rem 0.875rem;
-    }
-    
-    .stock-name {
-        font-size: 0.9rem;
-    }
-    
-    .sector-badge {
-        font-size: 0.65rem;
-        padding: 0.15rem 0.35rem;
-    }
-    
-    .status-section {
-        padding: 0.5rem 0.75rem 0.5rem 0.875rem;
-        flex-direction: row;
-        align-items: center;
-        gap: 0.5rem;
-        justify-content: space-between;
-    }
-    
-    .btn-group-sm .btn {
-        padding: 0.3rem 0.6rem;
-        font-size: 0.75rem;
-        min-width: 32px;
     }
     
     .page-header {
@@ -300,16 +330,6 @@
         max-width: 120px;
     }
 }
-.btn-group-sm .btn,
-.btn-sm {
-    padding: 0.2rem 0.4rem;
-    font-size: 0.75rem;
-    min-width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}    
 </style>
 {% endblock %}
 
@@ -410,6 +430,18 @@
     </div>
 
     {% if stock_list %}
+    <!-- モバイル表示切り替え（モバイル時のみ表示） -->
+    <div class="d-lg-none mobile-view-controls">
+        <div class="btn-group view-toggle" role="group">
+            <button type="button" class="btn active" id="tableViewBtn">
+                <i class="bi bi-list"></i> 一覧
+            </button>
+            <button type="button" class="btn" id="cardViewBtn">
+                <i class="bi bi-grid-3x2"></i> カード
+            </button>
+        </div>
+    </div>
+
     <!-- デスクトップ表示：テーブル -->
     <div class="d-none d-lg-block">
         <div class="table-responsive">
@@ -515,103 +547,150 @@
         </div>
     </div>
 
-    <!-- モバイル表示：リッチなカード -->
-    <div class="d-lg-none">
-        <div class="row g-3">
-            {% for stock in stock_list %}
-            <div class="col-12">
-                <div class="card stock-card">
-                    <!-- ヘッダーセクション -->
-                    <div class="card-header-section">
-                        <div class="d-flex justify-content-between align-items-start mb-0">
-                            <div class="flex-grow-1 pe-2">
-                                <h6 class="stock-name mb-0">{{ stock.name }}</h6>
-                                <div class="d-flex align-items-center gap-2 mt-2 flex-wrap">
-                                    <span class="stock-symbol">{{ stock.symbol }}</span>
-                                    <span class="sector-badge">{{ stock.sector }}</span>
-                                </div>
-                            </div>
-                            <div class="d-flex flex-column align-items-end gap-1">
-                                {% if stock.has_active_holdings %}
-                                    <span class="badge active-badge">保有中</span>
-                                {% else %}
-                                    <span class="badge inactive-badge">売却済</span>
-                                {% endif %}
-                                <div class="btn-group btn-group-sm">
-                                    <button type="button" 
-                                            class="btn btn-outline-primary btn-sm" 
-                                            onclick="showDiaryModal('{{ stock.symbol }}', '{{ stock.name|escapejs }}')"
-                                            title="この銘柄の日記を選択">
-                                        <i class="bi bi-journal-text"></i>
-                                    </button>
-                                    <a href="{% url 'stockdiary:create' %}?symbol={{ stock.symbol }}&name={{ stock.name|urlencode }}" 
-                                       class="btn btn-outline-success btn-sm" 
-                                       title="新しい日記を作成">
-                                        <i class="bi bi-plus-lg"></i>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- メトリクスセクション -->
-                    <div class="card-body p-0">
-                        <div class="metric-grid">
-                            <div class="metric-item">
-                                <div class="metric-label">現在倍率</div>
-                                {% if stock.margin_data_available %}
-                                    <div class="metric-value">{{ stock.current_ratio }}</div>
-                                {% else %}
-                                    <div class="metric-value text-muted">-</div>
-                                {% endif %}
-                            </div>
-                            <div class="metric-item">
-                                <div class="metric-label">前回倍率</div>
-                                {% if stock.margin_data_available and stock.previous_ratio %}
-                                    <div class="metric-value">{{ stock.previous_ratio }}</div>
-                                {% else %}
-                                    <div class="metric-value text-muted">-</div>
-                                {% endif %}
-                            </div>
-                            <div class="metric-item">
-                                <div class="metric-label">変動</div>
-                                {% if stock.margin_data_available and stock.ratio_change %}
-                                    {% if stock.ratio_change > 0 %}
-                                        <div class="metric-value ratio-up">
-                                            <i class="bi bi-arrow-up"></i>
-                                            +{{ stock.ratio_change }}
-                                        </div>
-                                    {% elif stock.ratio_change < 0 %}
-                                        <div class="metric-value ratio-down">
-                                            <i class="bi bi-arrow-down"></i>
-                                            {{ stock.ratio_change }}
-                                        </div>
-                                    {% else %}
-                                        <div class="metric-value ratio-neutral">
-                                            <i class="bi bi-dash"></i>
-                                            {{ stock.ratio_change }}
-                                        </div>
-                                    {% endif %}
-                                {% else %}
-                                    <div class="metric-value text-muted">-</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- ステータスセクション -->
-                    <div class="status-section">
-                        <div class="d-flex align-items-center gap-2 w-100 justify-content-between">
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="badge bg-primary flex-shrink-0">{{ stock.diary_count }}件</span>
-                                {% if stock.latest_date %}
-                                    <small class="text-muted">更新: {{ stock.latest_date|date:"m/d" }}</small>
-                                {% endif %}
-                            </div>
+    <!-- モバイル表示：コンパクトテーブル -->
+    <div class="d-lg-none" id="mobileTableView">
+        <div class="table-responsive">
+            <table class="table table-hover mobile-compact-table">
+                <thead class="table-light">
+                    <tr>
+                        <th>銘柄</th>
+                        <th>業種</th>
+                        <th class="text-center">倍率</th>
+                        <th class="text-center">変動</th>
+                        <th class="text-center">状態</th>
+                        <th class="text-center">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stock in stock_list %}
+                    <tr>
+                        <td>
+                            <div class="stock-symbol text-primary">{{ stock.symbol }}</div>
+                            <div class="stock-name">{{ stock.name }}</div>
+                        </td>
+                        <td>
+                            <span class="sector-badge">{{ stock.sector }}</span>
+                        </td>
+                        <td class="text-center">
                             {% if stock.margin_data_available %}
-                                <small class="text-muted flex-shrink-0">信用倍率データ有</small>
+                                <div class="ratio-display">{{ stock.current_ratio }}</div>
+                                {% if stock.previous_ratio %}
+                                    <small class="text-muted">({{ stock.previous_ratio }})</small>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if stock.margin_data_available and stock.ratio_change %}
+                                {% if stock.ratio_change > 0 %}
+                                    <div class="change-display ratio-up">
+                                        <i class="bi bi-arrow-up"></i>+{{ stock.ratio_change }}
+                                    </div>
+                                {% elif stock.ratio_change < 0 %}
+                                    <div class="change-display ratio-down">
+                                        <i class="bi bi-arrow-down"></i>{{ stock.ratio_change }}
+                                    </div>
+                                {% else %}
+                                    <div class="change-display ratio-neutral">
+                                        <i class="bi bi-dash"></i>{{ stock.ratio_change }}
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if stock.has_active_holdings %}
+                                <span class="badge active-badge">保有</span>
+                            {% else %}
+                                <span class="badge inactive-badge">売却</span>
+                            {% endif %}
+                            <div><small class="text-muted">{{ stock.diary_count }}件</small></div>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" 
+                                        class="btn btn-outline-primary" 
+                                        onclick="showDiaryModal('{{ stock.symbol }}', '{{ stock.name|escapejs }}')"
+                                        title="日記">
+                                    <i class="bi bi-journal-text"></i>
+                                </button>
+                                <a href="{% url 'stockdiary:create' %}?symbol={{ stock.symbol }}&name={{ stock.name|urlencode }}" 
+                                   class="btn btn-outline-success" 
+                                   title="新規作成">
+                                    <i class="bi bi-plus-lg"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- モバイル表示：コンパクトカード -->
+    <div class="d-lg-none d-none" id="mobileCardView">
+        <div class="row g-2">
+            {% for stock in stock_list %}
+            <div class="col-6">
+                <div class="compact-card">
+                    <div class="compact-card-header">
+                        <div class="flex-grow-1 pe-1">
+                            <div class="stock-symbol text-primary" style="font-size: 0.7rem; font-weight: 600;">{{ stock.symbol }}</div>
+                            <div class="stock-name" style="font-size: 0.75rem; font-weight: 500; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ stock.name }}</div>
+                        </div>
+                        <div class="flex-shrink-0">
+                            {% if stock.has_active_holdings %}
+                                <span class="badge active-badge" style="font-size: 0.6rem; padding: 0.2rem 0.4rem;">保有</span>
+                            {% else %}
+                                <span class="badge inactive-badge" style="font-size: 0.6rem; padding: 0.2rem 0.4rem;">売却</span>
                             {% endif %}
                         </div>
+                    </div>
+                    
+                    <div class="compact-card-metrics">
+                        <div class="compact-metric">
+                            <div class="compact-metric-label">現在倍率</div>
+                            {% if stock.margin_data_available %}
+                                <div class="compact-metric-value">{{ stock.current_ratio }}</div>
+                            {% else %}
+                                <div class="compact-metric-value text-muted">-</div>
+                            {% endif %}
+                        </div>
+                        <div class="compact-metric">
+                            <div class="compact-metric-label">変動</div>
+                            {% if stock.margin_data_available and stock.ratio_change %}
+                                {% if stock.ratio_change > 0 %}
+                                    <div class="compact-metric-value ratio-up">+{{ stock.ratio_change }}</div>
+                                {% elif stock.ratio_change < 0 %}
+                                    <div class="compact-metric-value ratio-down">{{ stock.ratio_change }}</div>
+                                {% else %}
+                                    <div class="compact-metric-value ratio-neutral">{{ stock.ratio_change }}</div>
+                                {% endif %}
+                            {% else %}
+                                <div class="compact-metric-value text-muted">-</div>
+                            {% endif %}
+                        </div>
+                        <div class="compact-metric">
+                            <div class="compact-metric-label">日記件数</div>
+                            <div class="compact-metric-value">{{ stock.diary_count }}件</div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-1 mt-2">
+                        <button type="button" 
+                                class="btn btn-outline-primary btn-sm flex-fill" 
+                                onclick="showDiaryModal('{{ stock.symbol }}', '{{ stock.name|escapejs }}')"
+                                style="font-size: 0.7rem; padding: 0.25rem;">
+                            <i class="bi bi-journal-text"></i>
+                        </button>
+                        <a href="{% url 'stockdiary:create' %}?symbol={{ stock.symbol }}&name={{ stock.name|urlencode }}" 
+                           class="btn btn-outline-success btn-sm flex-fill" 
+                           style="font-size: 0.7rem; padding: 0.25rem;">
+                            <i class="bi bi-plus-lg"></i>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -693,6 +772,55 @@ document.addEventListener('DOMContentLoaded', function() {
     // モーダルの初期化
     diarySelectModal = new bootstrap.Modal(document.getElementById('diarySelectModal'));
     
+    // モバイル表示切り替え機能
+    const tableViewBtn = document.getElementById('tableViewBtn');
+    const cardViewBtn = document.getElementById('cardViewBtn');
+    const mobileTableView = document.getElementById('mobileTableView');
+    const mobileCardView = document.getElementById('mobileCardView');
+    
+    if (tableViewBtn && cardViewBtn) {
+        // デフォルトはテーブル表示
+        let currentView = 'table';
+        
+        tableViewBtn.addEventListener('click', function() {
+            if (currentView !== 'table') {
+                // テーブル表示に切り替え
+                mobileTableView.classList.remove('d-none');
+                mobileCardView.classList.add('d-none');
+                
+                tableViewBtn.classList.add('active');
+                cardViewBtn.classList.remove('active');
+                
+                currentView = 'table';
+                
+                // 表示設定を保存
+                localStorage.setItem('stockListViewMode', 'table');
+            }
+        });
+        
+        cardViewBtn.addEventListener('click', function() {
+            if (currentView !== 'card') {
+                // カード表示に切り替え
+                mobileTableView.classList.add('d-none');
+                mobileCardView.classList.remove('d-none');
+                
+                cardViewBtn.classList.add('active');
+                tableViewBtn.classList.remove('active');
+                
+                currentView = 'card';
+                
+                // 表示設定を保存
+                localStorage.setItem('stockListViewMode', 'card');
+            }
+        });
+        
+        // 保存された表示設定を読み込み
+        const savedViewMode = localStorage.getItem('stockListViewMode');
+        if (savedViewMode === 'card') {
+            cardViewBtn.click();
+        }
+    }
+    
     // フォーム送信時のローディング表示
     const filterForm = document.querySelector('form[method="get"]');
     const submitButton = filterForm.querySelector('button[type="submit"]');
@@ -710,9 +838,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // URLパラメータの管理
-    const urlParams = new URLSearchParams(window.location.search);
-    
     // ソートや業種フィルターの変更時に自動送信
     const sortSelect = document.querySelector('select[name="sort"]');
     const sectorSelect = document.querySelector('select[name="sector"]');
@@ -723,36 +848,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 filterForm.submit();
             });
         }
-    });
-    
-    // テーブルのレスポンシブ処理
-    function handleTableResponsive() {
-        const table = document.querySelector('.table-responsive table');
-        if (table && window.innerWidth < 992) {
-            // モバイルで長いテキストを切り詰める
-            const cells = table.querySelectorAll('td');
-            cells.forEach(cell => {
-                if (cell.textContent.length > 20) {
-                    cell.title = cell.textContent;
-                    cell.textContent = cell.textContent.substring(0, 20) + '...';
-                }
-            });
-        }
-    }
-    
-    window.addEventListener('resize', handleTableResponsive);
-    handleTableResponsive();
-    
-    // カードのホバーエフェクト（タッチデバイス対応）
-    const cards = document.querySelectorAll('.stock-card');
-    cards.forEach(card => {
-        card.addEventListener('touchstart', function() {
-            this.style.transform = 'scale(0.98)';
-        });
-        
-        card.addEventListener('touchend', function() {
-            this.style.transform = '';
-        });
     });
 });
 
@@ -915,71 +1010,61 @@ function renderErrorState(errorMessage) {
 function goToDiary(diaryId) {
     window.location.href = `/stockdiary/${diaryId}/`;
 }
-
-// CSS追加スタイル
-const additionalStyles = `
-    <style>
-    .diary-select-card {
-        border: 1px solid #e5e7eb;
-        border-radius: 0.5rem;
-        transition: all 0.2s ease;
-        cursor: pointer;
-    }
-    
-    .diary-select-card:hover {
-        border-color: #4F83CC;
-        box-shadow: 0 2px 8px rgba(79, 131, 204, 0.15);
-        transform: translateY(-1px);
-    }
-    
-    .diary-item-modal {
-        transition: all 0.2s ease;
-    }
-    
-    .text-truncate-2 {
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        line-height: 1.4;
-    }
-    
-    .diary-reason {
-        background-color: rgba(79, 131, 204, 0.05);
-        padding: 0.5rem;
-        border-radius: 0.375rem;
-        border-left: 3px solid #4F83CC;
-    }
-    
-    @media (max-width: 768px) {
-        .modal-lg {
-            max-width: calc(100vw - 2rem);
-            margin: 1rem;
-        }
-        
-        .modal-body {
-            padding: 1rem;
-        }
-        
-        .modal-footer {
-            padding: 0.75rem 1rem;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        
-        .modal-footer .btn {
-            width: 100%;
-        }
-    }
-    </style>
-`;
-
-// スタイルを動的に追加
-if (!document.getElementById('modal-additional-styles')) {
-    const styleElement = document.createElement('div');
-    styleElement.id = 'modal-additional-styles';
-    styleElement.innerHTML = additionalStyles;
-    document.head.appendChild(styleElement);
-}
 </script>
+
+<!-- CSS追加スタイル -->
+<style>
+.diary-select-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.diary-select-card:hover {
+    border-color: #4F83CC;
+    box-shadow: 0 2px 8px rgba(79, 131, 204, 0.15);
+    transform: translateY(-1px);
+}
+
+.diary-item-modal {
+    transition: all 0.2s ease;
+}
+
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.4;
+}
+
+.diary-reason {
+    background-color: rgba(79, 131, 204, 0.05);
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    border-left: 3px solid #4F83CC;
+}
+
+@media (max-width: 768px) {
+    .modal-lg {
+        max-width: calc(100vw - 2rem);
+        margin: 1rem;
+    }
+    
+    .modal-body {
+        padding: 1rem;
+    }
+    
+    .modal-footer {
+        padding: 0.75rem 1rem;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .modal-footer .btn {
+        width: 100%;
+    }
+}
+</style>
 {% endblock %}

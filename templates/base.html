@@ -520,6 +520,11 @@
                           </a>
                       </li>
                       <li class="nav-item">
+                          <a class="nav-link" href="{% url 'stockdiary:stock_list' %}">
+                              <i class="bi bi-building"></i> 銘柄一覧
+                          </a>
+                      </li>
+                      <li class="nav-item">
                           <a class="nav-link" href="{% url 'stockdiary:analytics' %}">
                               <i class="bi bi-graph-up"></i> 投資分析
                           </a>
@@ -700,6 +705,13 @@
                 <div class="menu-item-label">日記一覧</div>
             </a>
             
+            <a href="{% url 'stockdiary:stock_list' %}" class="menu-item primary">
+                <div class="menu-item-icon">
+                    <i class="bi bi-building"></i>
+                </div>
+                <div class="menu-item-label">銘柄一覧</div>
+            </a>
+            
             <a href="{% url 'stockdiary:analytics' %}" class="menu-item primary">
                 <div class="menu-item-icon">
                     <i class="bi bi-graph-up"></i>
@@ -720,6 +732,7 @@
                 </div>
                 <div class="menu-item-label">売却登録</div>
             </a>
+            
             <a href="{% url 'financial_reports:report_list' %}" class="menu-item danger">
               <div class="menu-item-icon">
                   <i class="bi bi-flag"></i>
