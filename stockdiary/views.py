@@ -2808,19 +2808,22 @@ def api_margin_sector_suggestions(request, diary_id):
         
         # 業種の優先順位: 33業種 > 17業種
         sector = company.industry_name_33 or company.industry_name_17
+        scale = company.scale_code
+        
         if not sector:
             return JsonResponse({'suggestions': []})
         
         # 同業種の他銘柄を取得
         if company.industry_name_33:
             sector_companies = CompanyMaster.objects.filter(
-                industry_name_33=sector
+                industry_name_33=sector,
+                scale_code=scale
             ).exclude(code=diary.stock_symbol)
         else:
             sector_companies = CompanyMaster.objects.filter(
-                industry_name_17=sector
+                industry_name_17=sector,
+                scale_code=scale
             ).exclude(code=diary.stock_symbol)
-        
         suggestions = []
         
         for comp in sector_companies:
