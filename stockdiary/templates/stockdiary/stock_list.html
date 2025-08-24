@@ -78,6 +78,16 @@
     padding: 0.15rem 0.4rem;
 }
 
+.memo-badge {
+    background: linear-gradient(135deg, #9ca3af, #6b7280);
+    color: white;
+    font-weight: 600;
+    border: none;
+    box-shadow: 0 2px 4px rgba(156, 163, 175, 0.2);
+    font-size: 0.65rem;
+    padding: 0.15rem 0.4rem;
+}
+
 .stats-card {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
     color: white;
@@ -521,8 +531,10 @@
                         <td class="text-center">
                             {% if stock.has_active_holdings %}
                                 <span class="badge active-badge">保有中</span>
-                            {% else %}
+                            {% elif stock.has_completed_sales %}
                                 <span class="badge inactive-badge">売却済</span>
+                            {% else %}
+                                <span class="badge bg-secondary">メモのみ</span>
                             {% endif %}
                         </td>
                         <td class="text-center">
@@ -603,8 +615,10 @@
                         <td class="text-center">
                             {% if stock.has_active_holdings %}
                                 <span class="badge active-badge">保有</span>
-                            {% else %}
+                            {% elif stock.has_completed_sales %}
                                 <span class="badge inactive-badge">売却</span>
+                            {% else %}
+                                <span class="badge bg-secondary">メモ</span>
                             {% endif %}
                             <div><small class="text-muted">{{ stock.diary_count }}件</small></div>
                         </td>
@@ -644,8 +658,10 @@
                         <div class="flex-shrink-0">
                             {% if stock.has_active_holdings %}
                                 <span class="badge active-badge" style="font-size: 0.6rem; padding: 0.2rem 0.4rem;">保有</span>
-                            {% else %}
+                            {% elif stock.has_completed_sales %}
                                 <span class="badge inactive-badge" style="font-size: 0.6rem; padding: 0.2rem 0.4rem;">売却</span>
+                            {% else %}
+                                <span class="badge bg-secondary" style="font-size: 0.6rem; padding: 0.2rem 0.4rem; color: white;">メモ</span>
                             {% endif %}
                         </div>
                     </div>
@@ -913,12 +929,23 @@ function renderDiaryList(diaries, stockName) {
     `;
     
     diaries.forEach(diary => {
-        const isActive = !diary.sell_date;
-        const statusBadge = isActive ? 
-            '<span class="badge bg-success">保有中</span>' : 
-            '<span class="badge bg-secondary">売却済</span>';
+        // 状態の判定
+        let statusBadge;
+        const hasPurchaseData = diary.purchase_price && diary.purchase_quantity;
+        const hasSellDate = diary.sell_date;
         
-        const purchaseInfo = diary.purchase_price && diary.purchase_quantity ? 
+        if (hasPurchaseData && !hasSellDate) {
+            // 購入データありかつ売却日なし = 保有中
+            statusBadge = '<span class="badge bg-success">保有中</span>';
+        } else if (hasPurchaseData && hasSellDate) {
+            // 購入データありかつ売却日あり = 売却済み
+            statusBadge = '<span class="badge bg-secondary">売却済</span>';
+        } else {
+            // 購入データなし = メモのみ
+            statusBadge = '<span class="badge bg-light text-dark">メモのみ</span>';
+        }
+        
+        const purchaseInfo = hasPurchaseData ? 
             `${Number(diary.purchase_price).toLocaleString()}円 × ${diary.purchase_quantity.toLocaleString()}株` : 
             'メモのみ';
         
