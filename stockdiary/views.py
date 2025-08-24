@@ -566,6 +566,20 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
         
         return response
 
+    def get_initial(self):
+        initial = super().get_initial()
+        
+        # URLパラメータから銘柄情報を取得
+        symbol = self.request.GET.get('symbol')
+        name = self.request.GET.get('name')
+        
+        if symbol:
+            initial['stock_symbol'] = symbol
+        if name:
+            initial['stock_name'] = name
+        
+        return initial
+
 
 class StockDiaryUpdateView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, UpdateView):
     model = StockDiary
@@ -3089,3 +3103,235 @@ def _get_margin_data_fixed(self, stock_symbol):
         logger = logging.getLogger(__name__)
         logger.error(f"Error getting margin data for symbol {stock_symbol}: {e}")
         return None, None
+   
+class StockListView(LoginRequiredMixin, TemplateView):
+    """登録株式一覧を表示するビュー"""
+    template_name = 'stockdiary/stock_list.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        
+        # フィルターパラメータの取得
+        search_query = self.request.GET.get('q', '').strip()
+        sort_by = self.request.GET.get('sort', 'symbol')  # デフォルトは証券コード順
+        sector_filter = self.request.GET.get('sector', '')
+        
+        # ユーザーの日記から一意の株式銘柄を取得
+        diary_stocks = StockDiary.objects.filter(user=user).values(
+            'stock_symbol', 'stock_name', 'sector'
+        ).distinct().order_by('stock_symbol')
+        
+        # 株式情報を収集
+        stock_list = []
+        
+        for stock in diary_stocks:
+            if not stock['stock_symbol']:
+                continue
+                
+            stock_info = {
+                'symbol': stock['stock_symbol'],
+                'name': stock['stock_name'],
+                'sector': stock['sector'] or '未分類',
+                'current_ratio': 0,
+                'previous_ratio': 0,
+                'ratio_change': 0,
+                'latest_date': None,
+                'diary_count': 0,
+                'has_active_holdings': False,
+                'margin_data_available': False
+            }
+            
+            # 日記件数を取得
+            stock_info['diary_count'] = StockDiary.objects.filter(
+                user=user, 
+                stock_symbol=stock['stock_symbol']
+            ).count()
+            
+            # アクティブな保有があるかチェック
+            stock_info['has_active_holdings'] = StockDiary.objects.filter(
+                user=user,
+                stock_symbol=stock['stock_symbol'],
+                sell_date__isnull=True,
+                purchase_price__isnull=False,
+                purchase_quantity__isnull=False
+            ).exists()
+            
+            # 業種情報を企業マスタから取得
+            if not stock_info['sector'] or stock_info['sector'] == '未分類':
+                try:
+                    company = CompanyMaster.objects.filter(code=stock['stock_symbol']).first()
+                    if company:
+                        stock_info['sector'] = company.industry_name_33 or company.industry_name_17 or '未分類'
+                except:
+                    pass
+            
+            # 信用倍率データを取得（margin_tradingアプリが利用可能な場合のみ）
+            if MARGIN_TRADING_AVAILABLE:
+                try:
+                    # 証券コードから銘柄を検索（'0'を付ける処理）
+                    search_code = str(stock['stock_symbol']).rstrip('0') + '0'
+                    market_issue = MarketIssue.objects.filter(code=search_code).first()
+                    
+                    if not market_issue:
+                        # '0'なしでも検索
+                        market_issue = MarketIssue.objects.filter(code=str(stock['stock_symbol'])).first()
+                    
+                    if market_issue:
+                        # 直近2回分のデータを取得
+                        margin_data = MarginTradingData.objects.filter(
+                            issue=market_issue
+                        ).order_by('-date')[:2]
+                        
+                        if margin_data.exists():
+                            stock_info['margin_data_available'] = True
+                            latest_data = margin_data[0]
+                            stock_info['latest_date'] = latest_data.date
+                            
+                            # 現在の信用倍率
+                            if latest_data.outstanding_sales > 0:
+                                stock_info['current_ratio'] = round(
+                                    latest_data.outstanding_purchases / latest_data.outstanding_sales, 2
+                                )
+                            
+                            # 前回の信用倍率（2件以上データがある場合）
+                            if len(margin_data) > 1:
+                                previous_data = margin_data[1]
+                                if previous_data.outstanding_sales > 0:
+                                    stock_info['previous_ratio'] = round(
+                                        previous_data.outstanding_purchases / previous_data.outstanding_sales, 2
+                                    )
+                                    
+                                    # 変動値を計算
+                                    stock_info['ratio_change'] = round(
+                                        stock_info['current_ratio'] - stock_info['previous_ratio'], 2
+                                    )
+                
+                except Exception as e:
+                    # エラーが発生しても処理を続行
+                    import logging
+                    logging.getLogger(__name__).warning(f"信用倍率データ取得エラー ({stock['stock_symbol']}): {e}")
+            
+            stock_list.append(stock_info)
+        
+        # 検索フィルター
+        if search_query:
+            stock_list = [
+                stock for stock in stock_list
+                if search_query.lower() in stock['name'].lower() or 
+                   search_query.lower() in stock['symbol'].lower() or
+                   search_query.lower() in stock['sector'].lower()
+            ]
+        
+        # 業種フィルター
+        if sector_filter:
+            stock_list = [stock for stock in stock_list if stock['sector'] == sector_filter]
+        
+        # ソート処理
+        if sort_by == 'name':
+            stock_list.sort(key=lambda x: x['name'])
+        elif sort_by == 'sector':
+            stock_list.sort(key=lambda x: x['sector'])
+        elif sort_by == 'current_ratio_desc':
+            stock_list.sort(key=lambda x: x['current_ratio'], reverse=True)
+        elif sort_by == 'current_ratio_asc':
+            stock_list.sort(key=lambda x: x['current_ratio'])
+        elif sort_by == 'ratio_change_desc':
+            stock_list.sort(key=lambda x: x['ratio_change'], reverse=True)
+        elif sort_by == 'ratio_change_asc':
+            stock_list.sort(key=lambda x: x['ratio_change'])
+        elif sort_by == 'diary_count_desc':
+            stock_list.sort(key=lambda x: x['diary_count'], reverse=True)
+        else:  # デフォルト: 証券コード順
+            stock_list.sort(key=lambda x: x['symbol'])
+        
+        # 業種一覧（フィルター用）
+        sectors = sorted(list(set([stock['sector'] for stock in stock_list])))
+        
+        # 統計情報
+        stats = {
+            'total_stocks': len(stock_list),
+            'active_holdings': len([s for s in stock_list if s['has_active_holdings']]),
+            'margin_data_available': len([s for s in stock_list if s['margin_data_available']]),
+            'sectors_count': len(sectors)
+        }
+        
+        # スピードダイアル用のアクション
+        context['page_actions'] = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('stockdiary:home'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            },
+            {
+                'type': 'add',
+                'url': reverse_lazy('stockdiary:create'),
+                'icon': 'bi-plus-lg',
+                'label': '新規作成'
+            },
+            {
+                'type': 'analytics',
+                'url': reverse_lazy('stockdiary:analytics'),
+                'icon': 'bi-graph-up',
+                'label': '投資分析'
+            }
+        ]
+        
+        context.update({
+            'stock_list': stock_list,
+            'sectors': sectors,
+            'stats': stats,
+            'search_query': search_query,
+            'sort_by': sort_by,
+            'sector_filter': sector_filter,
+            'margin_trading_available': MARGIN_TRADING_AVAILABLE,
+        })
+        
+        return context
+    
+
+@login_required
+def api_stock_diaries(request, symbol):
+    """特定の銘柄の日記一覧をJSON形式で返すAPI"""
+    try:
+        # ユーザーの日記から指定された銘柄のものを取得
+        diaries = StockDiary.objects.filter(
+            user=request.user,
+            stock_symbol=symbol
+        ).order_by('-purchase_date', '-created_at')
+        
+        # JSONレスポンス用のデータを作成
+        diary_data = []
+        for diary in diaries:
+            # タグ一覧を取得
+            tags = [tag.name for tag in diary.tags.all()]
+            
+            diary_data.append({
+                'id': diary.id,
+                'purchase_date': diary.purchase_date.strftime('%Y年%m月%d日'),
+                'purchase_price': float(diary.purchase_price) if diary.purchase_price else None,
+                'purchase_quantity': diary.purchase_quantity,
+                'sell_date': diary.sell_date.strftime('%Y年%m月%d日') if diary.sell_date else None,
+                'sell_price': float(diary.sell_price) if diary.sell_price else None,
+                'reason': diary.reason,
+                'memo': diary.memo,
+                'is_memo': diary.is_memo,
+                'tags': tags,
+                'created_at': diary.created_at.strftime('%Y年%m月%d日'),
+            })
+        
+        return JsonResponse({
+            'diaries': diary_data,
+            'count': len(diary_data),
+            'stock_symbol': symbol,
+            'success': True
+        })
+        
+    except Exception as e:
+        import traceback
+        print(f"Stock diaries API error: {traceback.format_exc()}")
+        return JsonResponse({
+            'error': str(e),
+            'success': False
+        }, status=500)

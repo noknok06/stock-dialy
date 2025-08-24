@@ -1,0 +1,985 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load stockdiary_filters %}
+
+{% block title %}登録株式一覧 - カブログ{% endblock %}
+
+{% block head %}
+<!-- Chart.js for ratio trend mini charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root {
+  --primary-color: #4a90e2;   /* 明るめの青 */
+  --primary-dark:  #357ABD;   /* 少し濃い青 */
+}
+
+.stock-card {
+    transition: all 0.2s ease;
+    border: 1px solid #e5e7eb;
+}
+
+.stock-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.ratio-trend {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ratio-change {
+    font-weight: 600;
+}
+
+.ratio-up {
+    color: #10b981;
+    font-weight: 700;
+}
+
+.ratio-down {
+    color: #ef4444;
+    font-weight: 700;
+}
+
+.ratio-neutral {
+    color: #6b7280;
+    font-weight: 600;
+}
+
+.sector-badge {
+    background: linear-gradient(135deg, rgba(79, 131, 204, 0.1), rgba(44, 90, 160, 0.1));
+    color: #2C5AA0;
+    padding: 0.15rem 0.35rem;
+    border-radius: 0.25rem;
+    font-size: 0.6rem;
+    font-weight: 600;
+    border: 1px solid rgba(79, 131, 204, 0.2);
+}
+
+.active-badge {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    font-weight: 600;
+    border: none;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+    font-size: 0.65rem;
+    padding: 0.15rem 0.4rem;
+}
+
+.inactive-badge {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    color: white;
+    font-weight: 600;
+    border: none;
+    box-shadow: 0 2px 4px rgba(107, 114, 128, 0.2);
+    font-size: 0.65rem;
+    padding: 0.15rem 0.4rem;
+}
+
+.stats-card {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.filter-controls {
+    background: linear-gradient(135deg, #f8f9fc 0%, #e9ecef 100%);
+    border: 1px solid rgba(79, 131, 204, 0.1);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* テーブル用のスタイル */
+.table-hover tbody tr:hover {
+    background-color: rgba(79, 131, 204, 0.04);
+}
+
+.table thead th {
+    background: linear-gradient(135deg, #f8f9fc 0%, #e9ecef 100%);
+    border-bottom: 2px solid rgba(79, 131, 204, 0.1);
+    font-weight: 600;
+    color: #2d3748;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        margin: 0 -0.5rem;
+    }
+    
+    .stock-card {
+        margin-bottom: 0.875rem;
+        border-radius: 0.625rem;
+        width: 100%;
+        box-sizing: border-box;
+        /* max-height削除 */
+    }
+    
+    .filter-controls {
+        padding: 0.875rem;
+        margin: 0 -0.25rem 1.25rem -0.25rem;
+        border-radius: 0.625rem;
+    }
+    
+    .stats-card {
+        margin: 0 -0.25rem 1.25rem -0.25rem;
+        padding: 1.25rem 1rem;
+        border-radius: 0.625rem;
+    }
+    
+    .stats-card .row {
+        --bs-gutter-x: 0.5rem;
+    }
+    
+    .stats-card .col-6 {
+        margin-bottom: 0.75rem;
+    }
+    
+    .metric-grid {
+        gap: 0.4rem;
+        padding: 0.5rem;
+    }
+    
+    .metric-item {
+        padding: 0.35rem 0.2rem;
+        min-height: 40px;
+    }
+    
+    .metric-label {
+        font-size: 0.6rem;
+        margin-bottom: 0.15rem;
+    }
+    
+    .metric-value {
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    .card-header-section {
+        padding: 0.65rem 0.875rem 0.65rem 1rem;
+    }
+    
+    .stock-name {
+        font-size: 0.9rem;
+        margin-bottom: 0.4rem;
+    }
+    
+    .stock-symbol {
+        font-size: 0.6rem;
+        padding: 0.125rem 0.375rem;
+    }
+    
+    .status-section {
+        padding: 0.5rem 0.7rem;
+    }
+    
+    .btn-group-sm .btn {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.8rem;
+        min-width: 36px;
+    }
+    
+    .page-header {
+        margin-bottom: 1.25rem;
+    }
+    
+    .page-title {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .container {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    
+    .filter-controls {
+        margin: 0 -0.125rem 1rem -0.125rem;
+        padding: 0.75rem;
+    }
+    
+    .stats-card {
+        margin: 0 -0.125rem 1rem -0.125rem;
+        padding: 1rem 0.75rem;
+    }
+    
+    .stats-card .h3 {
+        font-size: 1.5rem;
+    }
+    
+    .stats-card .small {
+        font-size: 0.75rem;
+    }
+    
+    .metric-grid {
+        gap: 0.375rem;
+        padding: 0.75rem;
+    }
+    
+    .metric-item {
+        padding: 0.4rem 0.25rem;
+        min-height: 45px;
+    }
+    
+    .metric-label {
+        font-size: 0.55rem;
+    }
+    
+    .metric-value {
+        font-size: 0.8rem;
+    }
+    
+    .card-header-section {
+        padding: 0.625rem 0.75rem 0.625rem 0.875rem;
+    }
+    
+    .stock-name {
+        font-size: 0.9rem;
+    }
+    
+    .sector-badge {
+        font-size: 0.65rem;
+        padding: 0.15rem 0.35rem;
+    }
+    
+    .status-section {
+        padding: 0.5rem 0.75rem 0.5rem 0.875rem;
+        flex-direction: row;
+        align-items: center;
+        gap: 0.5rem;
+        justify-content: space-between;
+    }
+    
+    .btn-group-sm .btn {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.75rem;
+        min-width: 32px;
+    }
+    
+    .page-header {
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    
+    .page-title {
+        font-size: 1.375rem;
+    }
+    
+    .filter-controls .d-flex {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: stretch !important;
+    }
+    
+    .filter-controls .flex-grow-1 {
+        min-width: auto;
+    }
+    
+    .filter-controls .d-flex.gap-2 {
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .filter-controls .btn {
+        flex: 1;
+        max-width: 120px;
+    }
+}
+.btn-group-sm .btn,
+.btn-sm {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+    min-width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}    
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- ページヘッダー -->
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="page-title">
+                <i class="bi bi-building"></i>
+                登録株式一覧
+            </h1>
+            <p class="text-muted mb-0">投資日記に登録された株式銘柄の一覧</p>
+        </div>
+    </div>
+
+    <!-- 統計カード -->
+    <div class="stats-card">
+        <div class="row g-3">
+            <div class="col-6 col-md-3">
+                <div class="text-center">
+                    <div class="h3 mb-1">{{ stats.total_stocks }}</div>
+                    <div class="small">登録銘柄数</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="text-center">
+                    <div class="h3 mb-1">{{ stats.active_holdings }}</div>
+                    <div class="small">保有中</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="text-center">
+                    <div class="h3 mb-1">{{ stats.sectors_count }}</div>
+                    <div class="small">業種数</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="text-center">
+                    <div class="h3 mb-1">{{ stats.margin_data_available }}</div>
+                    <div class="small">信用倍率データ有</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- フィルターとソート -->
+    <div class="filter-controls">
+        <form method="get" class="d-flex flex-wrap gap-3 align-items-end">
+            <!-- 検索 -->
+            <div class="flex-grow-1" style="min-width: 200px;">
+                <label class="form-label small">検索</label>
+                <input type="text" name="q" class="form-control" 
+                       placeholder="銘柄名・証券コード・業種で検索" 
+                       value="{{ search_query }}">
+            </div>
+            
+            <!-- 業種フィルター -->
+            <div>
+                <label class="form-label small">業種</label>
+                <select name="sector" class="form-select">
+                    <option value="">すべて</option>
+                    {% for sector in sectors %}
+                    <option value="{{ sector }}" {% if sector == sector_filter %}selected{% endif %}>
+                        {{ sector }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- ソート -->
+            <div>
+                <label class="form-label small">並び順</label>
+                <select name="sort" class="form-select">
+                    <option value="symbol" {% if sort_by == 'symbol' %}selected{% endif %}>証券コード順</option>
+                    <option value="name" {% if sort_by == 'name' %}selected{% endif %}>銘柄名順</option>
+                    <option value="sector" {% if sort_by == 'sector' %}selected{% endif %}>業種順</option>
+                    <option value="current_ratio_desc" {% if sort_by == 'current_ratio_desc' %}selected{% endif %}>信用倍率↓</option>
+                    <option value="current_ratio_asc" {% if sort_by == 'current_ratio_asc' %}selected{% endif %}>信用倍率↑</option>
+                    <option value="ratio_change_desc" {% if sort_by == 'ratio_change_desc' %}selected{% endif %}>変動↓</option>
+                    <option value="ratio_change_asc" {% if sort_by == 'ratio_change_asc' %}selected{% endif %}>変動↑</option>
+                    <option value="diary_count_desc" {% if sort_by == 'diary_count_desc' %}selected{% endif %}>日記件数↓</option>
+                </select>
+            </div>
+            
+            <!-- 検索ボタン -->
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-shrink-0">
+                    <i class="bi bi-search"></i>
+                    <span class="d-none d-sm-inline ms-1">絞り込み</span>
+                </button>
+                <a href="{% url 'stockdiary:stock_list' %}" class="btn btn-outline-secondary flex-shrink-0">
+                    <i class="bi bi-arrow-clockwise"></i>
+                    <span class="d-none d-sm-inline ms-1">リセット</span>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    {% if stock_list %}
+    <!-- デスクトップ表示：テーブル -->
+    <div class="d-none d-lg-block">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>証券コード</th>
+                        <th>銘柄名</th>
+                        <th>業種</th>
+                        <th class="text-center">現在倍率</th>
+                        <th class="text-center">前回倍率</th>
+                        <th class="text-center">変動</th>
+                        <th class="text-center">更新日</th>
+                        <th class="text-center">日記件数</th>
+                        <th class="text-center">状態</th>
+                        <th class="text-center">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stock in stock_list %}
+                    <tr>
+                        <td>
+                            <code class="text-primary">{{ stock.symbol }}</code>
+                        </td>
+                        <td>
+                            <strong>{{ stock.name }}</strong>
+                        </td>
+                        <td>
+                            <span class="sector-badge">{{ stock.sector }}</span>
+                        </td>
+                        <td class="text-center">
+                            {% if stock.margin_data_available %}
+                                <span class="fw-bold">{{ stock.current_ratio }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if stock.margin_data_available and stock.previous_ratio %}
+                                <span>{{ stock.previous_ratio }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if stock.margin_data_available and stock.ratio_change %}
+                                {% if stock.ratio_change > 0 %}
+                                    <span class="ratio-change ratio-up">
+                                        <i class="bi bi-arrow-up"></i>
+                                        +{{ stock.ratio_change }}
+                                    </span>
+                                {% elif stock.ratio_change < 0 %}
+                                    <span class="ratio-change ratio-down">
+                                        <i class="bi bi-arrow-down"></i>
+                                        {{ stock.ratio_change }}
+                                    </span>
+                                {% else %}
+                                    <span class="ratio-change ratio-neutral">
+                                        <i class="bi bi-dash"></i>
+                                        {{ stock.ratio_change }}
+                                    </span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if stock.latest_date %}
+                                <small class="text-muted">{{ stock.latest_date|date:"m/d" }}</small>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-primary">{{ stock.diary_count }}件</span>
+                        </td>
+                        <td class="text-center">
+                            {% if stock.has_active_holdings %}
+                                <span class="badge active-badge">保有中</span>
+                            {% else %}
+                                <span class="badge inactive-badge">売却済</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" 
+                                        class="btn btn-outline-primary" 
+                                        onclick="showDiaryModal('{{ stock.symbol }}', '{{ stock.name|escapejs }}')"
+                                        title="この銘柄の日記を選択">
+                                    <i class="bi bi-journal-text"></i>
+                                </button>
+                                <a href="{% url 'stockdiary:create' %}?symbol={{ stock.symbol }}&name={{ stock.name|urlencode }}" 
+                                   class="btn btn-outline-success" 
+                                   title="新しい日記を作成">
+                                    <i class="bi bi-plus-lg"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- モバイル表示：リッチなカード -->
+    <div class="d-lg-none">
+        <div class="row g-3">
+            {% for stock in stock_list %}
+            <div class="col-12">
+                <div class="card stock-card">
+                    <!-- ヘッダーセクション -->
+                    <div class="card-header-section">
+                        <div class="d-flex justify-content-between align-items-start mb-0">
+                            <div class="flex-grow-1 pe-2">
+                                <h6 class="stock-name mb-0">{{ stock.name }}</h6>
+                                <div class="d-flex align-items-center gap-2 mt-2 flex-wrap">
+                                    <span class="stock-symbol">{{ stock.symbol }}</span>
+                                    <span class="sector-badge">{{ stock.sector }}</span>
+                                </div>
+                            </div>
+                            <div class="d-flex flex-column align-items-end gap-1">
+                                {% if stock.has_active_holdings %}
+                                    <span class="badge active-badge">保有中</span>
+                                {% else %}
+                                    <span class="badge inactive-badge">売却済</span>
+                                {% endif %}
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" 
+                                            class="btn btn-outline-primary btn-sm" 
+                                            onclick="showDiaryModal('{{ stock.symbol }}', '{{ stock.name|escapejs }}')"
+                                            title="この銘柄の日記を選択">
+                                        <i class="bi bi-journal-text"></i>
+                                    </button>
+                                    <a href="{% url 'stockdiary:create' %}?symbol={{ stock.symbol }}&name={{ stock.name|urlencode }}" 
+                                       class="btn btn-outline-success btn-sm" 
+                                       title="新しい日記を作成">
+                                        <i class="bi bi-plus-lg"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- メトリクスセクション -->
+                    <div class="card-body p-0">
+                        <div class="metric-grid">
+                            <div class="metric-item">
+                                <div class="metric-label">現在倍率</div>
+                                {% if stock.margin_data_available %}
+                                    <div class="metric-value">{{ stock.current_ratio }}</div>
+                                {% else %}
+                                    <div class="metric-value text-muted">-</div>
+                                {% endif %}
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">前回倍率</div>
+                                {% if stock.margin_data_available and stock.previous_ratio %}
+                                    <div class="metric-value">{{ stock.previous_ratio }}</div>
+                                {% else %}
+                                    <div class="metric-value text-muted">-</div>
+                                {% endif %}
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">変動</div>
+                                {% if stock.margin_data_available and stock.ratio_change %}
+                                    {% if stock.ratio_change > 0 %}
+                                        <div class="metric-value ratio-up">
+                                            <i class="bi bi-arrow-up"></i>
+                                            +{{ stock.ratio_change }}
+                                        </div>
+                                    {% elif stock.ratio_change < 0 %}
+                                        <div class="metric-value ratio-down">
+                                            <i class="bi bi-arrow-down"></i>
+                                            {{ stock.ratio_change }}
+                                        </div>
+                                    {% else %}
+                                        <div class="metric-value ratio-neutral">
+                                            <i class="bi bi-dash"></i>
+                                            {{ stock.ratio_change }}
+                                        </div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="metric-value text-muted">-</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- ステータスセクション -->
+                    <div class="status-section">
+                        <div class="d-flex align-items-center gap-2 w-100 justify-content-between">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-primary flex-shrink-0">{{ stock.diary_count }}件</span>
+                                {% if stock.latest_date %}
+                                    <small class="text-muted">更新: {{ stock.latest_date|date:"m/d" }}</small>
+                                {% endif %}
+                            </div>
+                            {% if stock.margin_data_available %}
+                                <small class="text-muted flex-shrink-0">信用倍率データ有</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% else %}
+    <!-- 空の状態 -->
+    <div class="text-center py-5">
+        <div class="mb-4">
+            <div class="d-inline-flex align-items-center justify-content-center" 
+                 style="width: 100px; height: 100px; background: linear-gradient(135deg, rgba(79, 131, 204, 0.1), rgba(44, 90, 160, 0.05)); border-radius: 50%;">
+                <i class="bi bi-building" style="font-size: 3rem; color: #4F83CC;"></i>
+            </div>
+        </div>
+        <h4 class="mb-3" style="color: #2d3748; font-weight: 700;">登録されている株式がありません</h4>
+        <p class="text-muted mb-4" style="font-size: 1rem;">投資日記を作成すると、銘柄がこちらに表示されます</p>
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <a href="{% url 'stockdiary:create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-2"></i>
+                最初の日記を作成
+            </a>
+            <a href="{% url 'stockdiary:home' %}" class="btn btn-outline-primary">
+                <i class="bi bi-house me-2"></i>
+                ホームに戻る
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 日記選択モーダル -->
+<div class="modal fade" id="diarySelectModal" tabindex="-1" aria-labelledby="diarySelectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="diarySelectModalLabel">
+                    <i class="bi bi-journal-text"></i>
+                    日記を選択
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="diaryLoadingSpinner" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">読み込み中...</span>
+                    </div>
+                    <div class="mt-2 text-muted">日記を読み込んでいます...</div>
+                </div>
+                <div id="diaryListContent" class="d-none">
+                    <!-- AJAX で日記一覧が読み込まれる -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg"></i>
+                    閉じる
+                </button>
+                <a href="#" class="btn btn-primary" id="viewAllDiariesBtn">
+                    <i class="bi bi-list-ul"></i>
+                    すべての日記を見る
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- スピードダイアル -->
+{% include 'speed_dial.html' with actions=page_actions %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let diarySelectModal;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // モーダルの初期化
+    diarySelectModal = new bootstrap.Modal(document.getElementById('diarySelectModal'));
+    
+    // フォーム送信時のローディング表示
+    const filterForm = document.querySelector('form[method="get"]');
+    const submitButton = filterForm.querySelector('button[type="submit"]');
+    
+    filterForm.addEventListener('submit', function() {
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>検索中...';
+        submitButton.disabled = true;
+    });
+    
+    // Enter キーでの検索
+    const searchInput = document.querySelector('input[name="q"]');
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            filterForm.submit();
+        }
+    });
+    
+    // URLパラメータの管理
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // ソートや業種フィルターの変更時に自動送信
+    const sortSelect = document.querySelector('select[name="sort"]');
+    const sectorSelect = document.querySelector('select[name="sector"]');
+    
+    [sortSelect, sectorSelect].forEach(select => {
+        if (select) {
+            select.addEventListener('change', function() {
+                filterForm.submit();
+            });
+        }
+    });
+    
+    // テーブルのレスポンシブ処理
+    function handleTableResponsive() {
+        const table = document.querySelector('.table-responsive table');
+        if (table && window.innerWidth < 992) {
+            // モバイルで長いテキストを切り詰める
+            const cells = table.querySelectorAll('td');
+            cells.forEach(cell => {
+                if (cell.textContent.length > 20) {
+                    cell.title = cell.textContent;
+                    cell.textContent = cell.textContent.substring(0, 20) + '...';
+                }
+            });
+        }
+    }
+    
+    window.addEventListener('resize', handleTableResponsive);
+    handleTableResponsive();
+    
+    // カードのホバーエフェクト（タッチデバイス対応）
+    const cards = document.querySelectorAll('.stock-card');
+    cards.forEach(card => {
+        card.addEventListener('touchstart', function() {
+            this.style.transform = 'scale(0.98)';
+        });
+        
+        card.addEventListener('touchend', function() {
+            this.style.transform = '';
+        });
+    });
+});
+
+// 日記選択モーダルを表示する関数
+async function showDiaryModal(symbol, stockName) {
+    const modal = document.getElementById('diarySelectModal');
+    const modalTitle = document.getElementById('diarySelectModalLabel');
+    const loadingSpinner = document.getElementById('diaryLoadingSpinner');
+    const contentDiv = document.getElementById('diaryListContent');
+    const viewAllBtn = document.getElementById('viewAllDiariesBtn');
+    
+    // タイトルを設定
+    modalTitle.innerHTML = `<i class="bi bi-journal-text"></i> ${stockName} (${symbol}) の日記を選択`;
+    
+    // すべての日記を見るボタンのリンクを設定
+    viewAllBtn.href = `{% url 'stockdiary:home' %}?query=${symbol}`;
+    
+    // ローディング表示
+    loadingSpinner.classList.remove('d-none');
+    contentDiv.classList.add('d-none');
+    
+    // モーダルを表示
+    diarySelectModal.show();
+    
+    try {
+        // AJAX で日記一覧を取得
+        const response = await fetch(`/stockdiary/api/stock-diaries/${symbol}/`);
+        
+        if (!response.ok) {
+            throw new Error('日記の取得に失敗しました');
+        }
+        
+        const data = await response.json();
+        
+        // ローディングを隠す
+        loadingSpinner.classList.add('d-none');
+        
+        if (data.diaries && data.diaries.length > 0) {
+            renderDiaryList(data.diaries, stockName);
+            contentDiv.classList.remove('d-none');
+        } else {
+            renderEmptyState(stockName, symbol);
+            contentDiv.classList.remove('d-none');
+        }
+        
+    } catch (error) {
+        console.error('日記取得エラー:', error);
+        loadingSpinner.classList.add('d-none');
+        renderErrorState(error.message);
+        contentDiv.classList.remove('d-none');
+    }
+}
+
+// 日記一覧をレンダリング
+function renderDiaryList(diaries, stockName) {
+    const contentDiv = document.getElementById('diaryListContent');
+    
+    let html = `
+        <div class="mb-3">
+            <p class="text-muted mb-0">${diaries.length}件の日記が見つかりました</p>
+        </div>
+        <div class="diary-list-modal">
+    `;
+    
+    diaries.forEach(diary => {
+        const isActive = !diary.sell_date;
+        const statusBadge = isActive ? 
+            '<span class="badge bg-success">保有中</span>' : 
+            '<span class="badge bg-secondary">売却済</span>';
+        
+        const purchaseInfo = diary.purchase_price && diary.purchase_quantity ? 
+            `${Number(diary.purchase_price).toLocaleString()}円 × ${diary.purchase_quantity.toLocaleString()}株` : 
+            'メモのみ';
+        
+        const sellInfo = diary.sell_date && diary.sell_price ? 
+            `<div class="small text-muted">売却: ${diary.sell_date} (${Number(diary.sell_price).toLocaleString()}円)</div>` : 
+            '';
+        
+        html += `
+            <div class="diary-item-modal mb-3" onclick="goToDiary(${diary.id})">
+                <div class="card diary-select-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="mb-1">${diary.purchase_date}</h6>
+                                <div class="small text-primary">${purchaseInfo}</div>
+                                ${sellInfo}
+                            </div>
+                            <div class="text-end">
+                                ${statusBadge}
+                            </div>
+                        </div>
+                        ${diary.reason ? `
+                            <div class="diary-reason mt-2">
+                                <div class="small text-muted">購入理由</div>
+                                <div class="text-truncate-2">${diary.reason.substring(0, 100)}${diary.reason.length > 100 ? '...' : ''}</div>
+                            </div>
+                        ` : ''}
+                        <div class="mt-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="small text-muted">
+                                    ${diary.tags && diary.tags.length > 0 ? diary.tags.map(tag => `<span class="badge bg-light text-dark">${tag}</span>`).join(' ') : ''}
+                                </div>
+                                <div class="small text-muted">
+                                    <i class="bi bi-arrow-right"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    
+    contentDiv.innerHTML = html;
+}
+
+// 空の状態をレンダリング
+function renderEmptyState(stockName, symbol) {
+    const contentDiv = document.getElementById('diaryListContent');
+    
+    contentDiv.innerHTML = `
+        <div class="text-center py-4">
+            <div class="mb-3">
+                <i class="bi bi-journal-x" style="font-size: 3rem; color: #6b7280;"></i>
+            </div>
+            <h5 class="text-muted">${stockName} の日記がありません</h5>
+            <p class="text-muted">まだこの銘柄の投資日記が作成されていません</p>
+            <a href="{% url 'stockdiary:create' %}?symbol=${symbol}&name=${encodeURIComponent(stockName)}" 
+               class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i>
+                最初の日記を作成
+            </a>
+        </div>
+    `;
+}
+
+// エラー状態をレンダリング
+function renderErrorState(errorMessage) {
+    const contentDiv = document.getElementById('diaryListContent');
+    
+    contentDiv.innerHTML = `
+        <div class="text-center py-4">
+            <div class="mb-3">
+                <i class="bi bi-exclamation-triangle" style="font-size: 3rem; color: #dc3545;"></i>
+            </div>
+            <h5 class="text-danger">エラーが発生しました</h5>
+            <p class="text-muted">${errorMessage}</p>
+            <button class="btn btn-outline-primary" onclick="location.reload()">
+                <i class="bi bi-arrow-clockwise"></i>
+                再読み込み
+            </button>
+        </div>
+    `;
+}
+
+// 日記詳細ページに遷移
+function goToDiary(diaryId) {
+    window.location.href = `/stockdiary/${diaryId}/`;
+}
+
+// CSS追加スタイル
+const additionalStyles = `
+    <style>
+    .diary-select-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    
+    .diary-select-card:hover {
+        border-color: #4F83CC;
+        box-shadow: 0 2px 8px rgba(79, 131, 204, 0.15);
+        transform: translateY(-1px);
+    }
+    
+    .diary-item-modal {
+        transition: all 0.2s ease;
+    }
+    
+    .text-truncate-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        line-height: 1.4;
+    }
+    
+    .diary-reason {
+        background-color: rgba(79, 131, 204, 0.05);
+        padding: 0.5rem;
+        border-radius: 0.375rem;
+        border-left: 3px solid #4F83CC;
+    }
+    
+    @media (max-width: 768px) {
+        .modal-lg {
+            max-width: calc(100vw - 2rem);
+            margin: 1rem;
+        }
+        
+        .modal-body {
+            padding: 1rem;
+        }
+        
+        .modal-footer {
+            padding: 0.75rem 1rem;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .modal-footer .btn {
+            width: 100%;
+        }
+    }
+    </style>
+`;
+
+// スタイルを動的に追加
+if (!document.getElementById('modal-additional-styles')) {
+    const styleElement = document.createElement('div');
+    styleElement.id = 'modal-additional-styles';
+    styleElement.innerHTML = additionalStyles;
+    document.head.appendChild(styleElement);
+}
+</script>
+{% endblock %}

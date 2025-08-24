@@ -54,4 +54,6 @@ urlpatterns = [
     # 新規追加: 業種別銘柄候補API
     path('api/margin-sector-suggestions/<int:diary_id>/', views.api_margin_sector_suggestions, name='api_margin_sector_suggestions'),
 
+    path('stocks/', views.StockListView.as_view(), name='stock_list'),
+    path('api/stock-diaries/<str:symbol>/', views.api_stock_diaries, name='api_stock_diaries'),
 ]
