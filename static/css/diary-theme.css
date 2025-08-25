@@ -1,7 +1,7 @@
 /* 株式日記 (カブログ) 共通テーマCSS
  * -----------------------------------------
  * 日記らしい親しみやすいデザインのための共通スタイル定義
- * 2025年版 - 完全リニューアル
+ * 2025年版 - 完全リニューアル（詳細ページ専用は除外）
  */
 
 /* ========== 日記カードのコアスタイル ========== */
@@ -15,9 +15,9 @@
   overflow: hidden;
   border: 1px solid rgba(0, 0, 0, 0.05);
   cursor: pointer;
-  width: 100%; /* 追加 */
-  max-width: 100%; /* 追加 */
-  box-sizing: border-box; /* 追加 */
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .diary-card:hover {
@@ -58,16 +58,16 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
-  min-height: auto; /* 追加 */
-  flex-wrap: wrap; /* 追加 - 小画面での折り返し対応 */
-  gap: 0.75rem; /* 追加 */
+  min-height: auto;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 /* ヘッダー左側（銘柄と日付） */
 .diary-header-content {
   flex: 1;
-  min-width: 0; /* 追加 - テキストの縮小を許可 */
-  max-width: 100%; /* 追加 */
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* 銘柄名のスタイル */
@@ -77,8 +77,9 @@
   margin-bottom: 0.25rem;
   font-weight: 600;
   line-height: 1.4;
-  word-break: break-word; /* 追加 */
-  overflow-wrap: break-word; /* 追加 */
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 /* 日付と状態バッジのコンテナ */
@@ -88,7 +89,7 @@
   gap: 0.5rem;
   color: var(--text-light);
   font-size: 0.875rem;
-  flex-wrap: wrap; /* 追加 */
+  flex-wrap: wrap;
 }
 
 /* 状態バッジ */
@@ -122,8 +123,8 @@
   flex-direction: column;
   align-items: flex-end;
   min-width: 90px;
-  max-width: 120px; /* 追加 - 最大幅制限 */
-  flex-shrink: 0; /* 追加 */
+  max-width: 120px;
+  flex-shrink: 0;
 }
 
 .price-value {
@@ -157,12 +158,12 @@
 
 /* カードボディ部分 */
 .diary-card-body {
-  padding: 0.75rem 1.25rem 1.25rem; /* パディングを微調整 */
+  padding: 0.75rem 1.25rem 1.25rem;
   position: relative;
   overflow: hidden;
   background-color: var(--card-bg-color);
-  width: 100%; /* 追加 */
-  box-sizing: border-box; /* 追加 */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* タグ表示のスタイル */
@@ -171,8 +172,8 @@
   flex-wrap: wrap;
   gap: 0.4rem;
   margin: 0.75rem 0.75rem 0.5rem;
-  width: 100%; /* 追加 */
-  max-width: 100%; /* 追加 */
+  width: 100%;
+  max-width: 100%;
 }
 
 .diary-tag {
@@ -186,9 +187,9 @@
   gap: 0.25rem;
   transition: all 0.2s ease;
   border: 1px solid rgba(90, 126, 197, 0.1);
-  flex-shrink: 0; /* 追加 */
-  white-space: nowrap; /* 追加 */
-  word-break: keep-all; /* 追加 */
+  flex-shrink: 0;
+  white-space: nowrap;
+  word-break: keep-all;
 }
 
 .diary-tag:hover {
@@ -204,8 +205,8 @@
 /* タブナビゲーションのスタイル */
 .diary-card-tabs {
   position: relative;
-  width: 100%; /* 追加 */
-  overflow: hidden; /* 追加 */
+  width: 100%;
+  overflow: hidden;
 }
 
 .card-tabs {
@@ -214,10 +215,10 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   margin-bottom: 0.5rem;
   padding: 0 0.25rem;
-  overflow-x: auto; /* 追加 - 横スクロール対応 */
-  overflow-y: hidden; /* 追加 */
-  scrollbar-width: none; /* 追加 - Firefox */
-  -ms-overflow-style: none; /* 追加 - IE */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 /* Webkit系ブラウザでスクロールバーを非表示 */
@@ -236,6 +237,9 @@
   flex: 1;
   text-align: center;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 80px;
 }
 
 .card-tabs .nav-link::after {
@@ -247,9 +251,6 @@
   height: 2px;
   background-color: transparent;
   transition: background-color 0.3s ease;
-  white-space: nowrap; /* 追加 */
-  flex-shrink: 0; /* 追加 */
-  min-width: 80px; /* 追加 */
 }
 
 .card-tabs .nav-link.active {
@@ -299,8 +300,8 @@
 .tab-content {
   position: relative;
   padding: 0.25rem 0.5rem;
-  width: 100%; /* 追加 */
-  box-sizing: border-box; /* 追加 */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .tab-pane {
@@ -328,9 +329,9 @@
   margin: 0.5rem 0;
   word-break: break-word;
   overflow-wrap: break-word;
-  width: 100%; /* 追加 */
-  max-width: 100%; /* 追加 */
-  box-sizing: border-box; /* 追加 */
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* ========== 継続記録タブのスタイル ========== */
@@ -526,15 +527,15 @@
   padding: 1rem;
   margin-bottom: 1.25rem;
   border: 1px solid rgba(90, 126, 197, 0.06);
-  width: 100%; /* 追加 */
-  box-sizing: border-box; /* 追加 */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .info-row {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 0.75rem;
-  width: 100%; /* 追加 */
+  width: 100%;
 }
 
 .info-item {
@@ -547,9 +548,9 @@
   gap: 0.75rem;
   transition: all 0.2s ease;
   border: 1px solid rgba(0, 0, 0, 0.03);
-  min-width: 0; /* 追加 */
-  width: 100%; /* 追加 */
-  box-sizing: border-box; /* 追加 */
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .info-item:hover {
@@ -1013,6 +1014,7 @@
     padding: 0.5rem;
   }
 }
+
 /* タップフィードバック */
 @media (hover: none) {
   .diary-card:active {
@@ -1074,10 +1076,10 @@
 
 /* CSS変数の色に対応する RGB 値 */
 :root {
-  --primary-color-rgb: 90, 126, 197;    /* var(--primary-color) の RGB 値 */
-  --secondary-color-rgb: 248, 194, 145; /* var(--secondary-color) の RGB 値 */
-  --success-color-rgb: 93, 176, 117;    /* var(--success-color) の RGB 値 */
-  --danger-color-rgb: 225, 90, 90;      /* var(--danger-color) の RGB 値 */
-  --warning-color-rgb: 247, 183, 49;    /* var(--warning-color) の RGB 値 */
-  --info-color-rgb: 93, 161, 229;       /* var(--info-color) の RGB 値 */
+  --primary-color-rgb: 90, 126, 197;
+  --secondary-color-rgb: 248, 194, 145;
+  --success-color-rgb: 93, 176, 117;
+  --danger-color-rgb: 225, 90, 90;
+  --warning-color-rgb: 247, 183, 49;
+  --info-color-rgb: 93, 161, 229;
 }
