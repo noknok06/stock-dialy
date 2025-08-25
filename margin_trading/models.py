@@ -67,6 +67,7 @@ class DataImportLog(models.Model):
         ('SUCCESS', '成功'),
         ('FAILED', '失敗'),
         ('SKIPPED', 'スキップ'),
+        ('PROCESSING', '処理中'),
     ]
     
     date = models.DateField(verbose_name="対象日付")

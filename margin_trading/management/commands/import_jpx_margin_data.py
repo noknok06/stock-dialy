@@ -305,7 +305,7 @@ class Command(BaseCommand):
         """データ行の解析"""
         first_cell = str(row[0])
         
-        match = re.match(r'B\s+(.+?)\s+普通株式\s+(\d+)', first_cell)
+        match = re.match(r'B\s+(.+?)\s+普通株式\s+([A-Z0-9]+)', first_cell)
         if not match:
             raise ValueError(f'銘柄情報の解析に失敗: {first_cell}')
         

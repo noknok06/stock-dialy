@@ -1,0 +1,190 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block title %}JPXデータ取得実行{% endblock %}
+
+{% block extrahead %}
+<style>
+.batch-form {
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 5px;
+    margin: 20px 0;
+}
+.batch-form h3 {
+    margin-top: 0;
+    color: #333;
+}
+.form-row {
+    margin: 15px 0;
+}
+.form-row label {
+    display: inline-block;
+    width: 120px;
+    font-weight: bold;
+}
+.form-row input, .form-row select {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+.btn-execute {
+    background: #417690;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 14px;
+}
+.btn-execute:hover {
+    background: #205067;
+}
+.recent-logs {
+    margin-top: 30px;
+}
+.log-entry {
+    background: white;
+    border: 1px solid #ddd;
+    margin: 10px 0;
+    padding: 15px;
+    border-radius: 3px;
+}
+.log-status {
+    font-weight: bold;
+    padding: 3px 8px;
+    border-radius: 3px;
+    color: white;
+}
+.status-SUCCESS { background: #28a745; }
+.status-FAILED { background: #dc3545; }
+.status-SKIPPED { background: #ffc107; color: black; }
+.status-PROCESSING { background: #007bff; }
+.help-text {
+    color: #666;
+    font-size: 12px;
+    margin-top: 5px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content">
+    <h1>JPXデータ取得実行</h1>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="batch-form">
+        <h3>🚀 バッチ実行</h3>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-row">
+                <label for="date">対象日付:</label>
+                <input type="text" id="date" name="date" value="{{ today }}" placeholder="YYYYMMDD形式">
+                <div class="help-text">空欄で当日を取得。例: 20240725</div>
+            </div>
+            
+            <div class="form-row">
+                <label for="command_type">実行方式:</label>
+                <select id="command_type" name="command_type">
+                    <option value="standard">標準実行</option>
+                    <option value="monitor">監視付き実行</option>
+                </select>
+                <div class="help-text">監視付き実行はメモリ使用量を監視します</div>
+            </div>
+            
+            <div class="form-row">
+                <label for="force">
+                    <input type="checkbox" id="force" name="force">
+                    強制実行
+                </label>
+                <div class="help-text">既存データがある場合でも上書きします</div>
+            </div>
+            
+            <div class="form-row">
+                <button type="submit" class="btn-execute">📥 データ取得開始</button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="recent-logs">
+        <h3>📋 最近の実行ログ</h3>
+        
+        {% if recent_logs %}
+            {% for log in recent_logs %}
+                <div class="log-entry">
+                    <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 10px;">
+                        <strong>{{ log.date }}</strong>
+                        <span class="log-status status-{{ log.status }}">{{ log.get_status_display }}</span>
+                        <small style="margin-left: auto;">{{ log.executed_at|date:"Y/m/d H:i:s" }}</small>
+                    </div>
+                    
+                    <div style="margin: 10px 0;">
+                        <strong>取得件数:</strong> {{ log.records_count|default:"0" }}件
+                    </div>
+                    
+                    <div style="margin: 10px 0;">
+                        <strong>メッセージ:</strong>
+                        <div style="background: #f5f5f5; padding: 10px; margin-top: 5px; border-radius: 3px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto;">
+                            {{ log.message|linebreaksbr }}
+                        </div>
+                    </div>
+                    
+                    {% if log.pdf_url %}
+                        <div style="margin: 10px 0;">
+                            <strong>PDF URL:</strong> <a href="{{ log.pdf_url }}" target="_blank">{{ log.pdf_url }}</a>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>実行ログがありません。</p>
+        {% endif %}
+    </div>
+    
+    <div style="margin-top: 30px;">
+        <h3>📊 使用方法</h3>
+        <ul>
+            <li><strong>標準実行:</strong> 通常のデータ取得処理を実行します</li>
+            <li><strong>監視付き実行:</strong> メモリ使用量を監視しながら実行し、詳細ログを出力します</li>
+            <li><strong>強制実行:</strong> 既存データがある日付でも上書きして取得します</li>
+            <li><strong>対象日付:</strong> 空欄の場合は当日、指定する場合はYYYYMMDD形式（例: 20240725）</li>
+        </ul>
+        
+        <p><strong>⚠️ 注意:</strong> バッチ処理はバックグラウンドで実行されます。処理完了まで数分かかる場合があります。</p>
+    </div>
+    
+    <div style="margin-top: 20px; text-align: center;">
+        <a href="/admin/margin_trading/dataimportlog/" class="btn btn-default">📄 実行ログ一覧へ</a>
+        <a href="/admin/margin_trading/margintradingdata/" class="btn btn-default">📊 データ一覧へ</a>
+    </div>
+</div>
+
+<script>
+// 5秒ごとにバッチ状況をチェック
+function checkBatchStatus() {
+    fetch('/admin/margin_trading/margintradingdata/batch-status/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.has_log && data.last_status === 'PROCESSING') {
+                // 処理中の場合は画面を自動リフレッシュ
+                setTimeout(() => {
+                    location.reload();
+                }, 30000); // 30秒後にリフレッシュ
+            }
+        })
+        .catch(error => console.log('Status check error:', error));
+}
+
+// ページ読み込み時にステータスチェック開始
+document.addEventListener('DOMContentLoaded', checkBatchStatus);
+</script>
+{% endblock %}

@@ -2,6 +2,18 @@
 from django.contrib import admin
 from django.db.models import Count, Q
 from django.utils.html import format_html
+from django.urls import path, reverse
+from django.shortcuts import redirect, render
+from django.contrib import messages
+from django.http import HttpResponseRedirect, JsonResponse
+from django.core.management import call_command
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+import subprocess
+import sys
+import json
+from datetime import datetime, date
+import threading
 from .models import MarketIssue, MarginTradingData, DataImportLog
 
 @admin.register(MarketIssue)
@@ -28,6 +40,17 @@ class MarginTradingDataAdmin(admin.ModelAdmin):
     date_hierarchy = 'date'
     ordering = ['-date', 'issue__code']
     
+    # カスタムアクション
+    actions = ['execute_batch_import']
+    
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('batch-import/', self.batch_import_view, name='batch_import'),
+            path('batch-status/', self.batch_status_view, name='batch_status'),
+        ]
+        return custom_urls + urls
+    
     def issue_code(self, obj):
         return obj.issue.code
     issue_code.short_description = '証券コード'
@@ -49,11 +72,139 @@ class MarginTradingDataAdmin(admin.ModelAdmin):
             return '-'
         ratio = obj.outstanding_sales / obj.outstanding_purchases
         color = 'red' if ratio > 1 else 'blue'
+        # format_htmlではf-stringのフォーマット指定が使えないので、先にフォーマット
+        ratio_formatted = f"{ratio:.2f}"
         return format_html(
-            '<span style="color: {};">{:.2f}</span>',
-            color, ratio
+            '<span style="color: {};">{}</span>',
+            color, ratio_formatted
         )
     margin_ratio.short_description = '信用倍率'
+    
+    def execute_batch_import(self, request, queryset):
+        """アクションからバッチ実行"""
+        return HttpResponseRedirect('/admin/margin_trading/margintradingdata/batch-import/')
+    execute_batch_import.short_description = "JPXデータ取得実行"
+    
+    def batch_import_view(self, request):
+        """バッチ実行画面"""
+        # 管理者権限チェック
+        if not request.user.is_staff:
+            from django.contrib.auth.views import redirect_to_login
+            return redirect_to_login(request.get_full_path())
+        
+        if request.method == 'POST':
+            date_str = request.POST.get('date')
+            force = request.POST.get('force') == 'on'
+            command_type = request.POST.get('command_type', 'standard')
+            
+            try:
+                # バックグラウンドでバッチ実行
+                thread = threading.Thread(
+                    target=self._run_batch_command,
+                    args=(date_str, force, command_type, request.user.id)
+                )
+                thread.daemon = True
+                thread.start()
+                
+                messages.success(request, 'バッチ処理を開始しました。ログを確認してください。')
+                return redirect('/admin/margin_trading/dataimportlog/')
+                
+            except Exception as e:
+                messages.error(request, f'バッチ実行エラー: {str(e)}')
+        
+        # 最新のログを取得
+        recent_logs = DataImportLog.objects.order_by('-executed_at')[:10]
+        
+        context = {
+            'title': 'JPXデータ取得実行',
+            'recent_logs': recent_logs,
+            'today': date.today().strftime('%Y%m%d'),
+        }
+        
+        return render(request, 'admin/batch_import.html', context)
+    
+    def batch_status_view(self, request):
+        """バッチ実行状況API"""
+        # 管理者権限チェック
+        if not request.user.is_staff:
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        recent_log = DataImportLog.objects.order_by('-executed_at').first()
+        
+        status_data = {
+            'has_log': recent_log is not None,
+            'last_execution': recent_log.executed_at.isoformat() if recent_log else None,
+            'last_status': recent_log.status if recent_log else None,
+            'last_message': recent_log.message if recent_log else None,
+            'records_count': recent_log.records_count if recent_log else 0,
+        }
+        
+        return JsonResponse(status_data)
+    
+    def _run_batch_command(self, date_str, force, command_type, user_id):
+        """バックグラウンドでバッチコマンド実行"""
+        try:
+            target_date = datetime.strptime(date_str, '%Y%m%d').date() if date_str else date.today()
+            
+            # ログエントリを先に作成
+            log_entry = DataImportLog.objects.create(
+                date=target_date,
+                status='PROCESSING',  # 処理中ステータスを追加する必要がある
+                message=f'バッチ処理開始（実行者: User#{user_id}）',
+                records_count=0
+            )
+            
+            # コマンド構築
+            cmd = [sys.executable, 'manage.py']
+            
+            if command_type == 'monitor':
+                cmd.append('monitor_import')
+                if date_str:
+                    cmd.extend(['--date', date_str])
+                if force:
+                    cmd.append('--force')
+            else:  # standard
+                cmd.append('import_jpx_margin_data')
+                if date_str:
+                    cmd.extend(['--date', date_str])
+                if force:
+                    cmd.append('--force')
+            
+            # バッチ実行
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=3600  # 1時間タイムアウト
+            )
+            
+            # 結果をログに記録
+            if result.returncode == 0:
+                # 成功時は取得件数を計算
+                count = MarginTradingData.objects.filter(date=target_date).count()
+                log_entry.status = 'SUCCESS'
+                log_entry.message = f'正常完了\n\n--- STDOUT ---\n{result.stdout}\n\n--- STDERR ---\n{result.stderr}'
+                log_entry.records_count = count
+            else:
+                log_entry.status = 'FAILED'
+                log_entry.message = f'エラー（終了コード: {result.returncode}）\n\n--- STDOUT ---\n{result.stdout}\n\n--- STDERR ---\n{result.stderr}'
+                log_entry.records_count = 0
+            
+            log_entry.save()
+            
+        except subprocess.TimeoutExpired:
+            log_entry.status = 'FAILED'
+            log_entry.message = 'タイムアウトエラー（1時間）'
+            log_entry.save()
+            
+        except Exception as e:
+            try:
+                log_entry.status = 'FAILED'
+                log_entry.message = f'システムエラー: {str(e)}'
+                log_entry.save()
+            except:
+                # ログ保存も失敗した場合はパス
+                pass
 
 @admin.register(DataImportLog)
 class DataImportLogAdmin(admin.ModelAdmin):
@@ -65,11 +216,15 @@ class DataImportLogAdmin(admin.ModelAdmin):
     ordering = ['-executed_at']
     readonly_fields = ['executed_at']
     
+    # アクション追加
+    actions = ['execute_new_batch']
+    
     def status_colored(self, obj):
         colors = {
             'SUCCESS': 'green',
             'FAILED': 'red', 
-            'SKIPPED': 'orange'
+            'SKIPPED': 'orange',
+            'PROCESSING': 'blue',
         }
         color = colors.get(obj.status, 'black')
         return format_html(
@@ -81,83 +236,13 @@ class DataImportLogAdmin(admin.ModelAdmin):
     def message_short(self, obj):
         return obj.message[:50] + '...' if len(obj.message) > 50 else obj.message
     message_short.short_description = 'メッセージ'
+    
+    def execute_new_batch(self, request, queryset):
+        """新しいバッチ実行"""
+        return HttpResponseRedirect('/admin/margin_trading/margintradingdata/batch-import/')
+    execute_new_batch.short_description = "新しいJPXデータ取得を実行"
 
-# ===== settings.py に追加する設定 =====
-
-# INSTALLED_APPS に追加
-INSTALLED_APPS = [
-    # ... existing apps ...
-    'myapp',  # アプリ名を適切に設定
-]
-
-# データベース設定例（PostgreSQL推奨）
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'jpx_margin_db',
-        'USER': 'your_db_user',
-        'PASSWORD': 'your_db_password',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
-
-# ログ設定
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': '/var/log/django/jpx_import.log',
-        },
-    },
-    'loggers': {
-        'myapp.management.commands.import_jpx_margin_data': {
-            'handlers': ['file'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-    },
-}
-
-# ===== requirements.txt =====
-"""
-Django>=4.2.0
-psycopg2-binary>=2.9.0
-requests>=2.31.0
-pdfplumber>=0.9.0
-python-crontab>=2.7.0
-"""
-
-# ===== cronジョブ設定例 =====
-"""
-# /etc/cron.d/jpx-margin-import
-# 毎日午後6時に実行（JPXのデータ公開時間を考慮）
-0 18 * * * www-data cd /path/to/your/project && /path/to/venv/bin/python manage.py import_jpx_margin_data >> /var/log/django/cron.log 2>&1
-
-# 毎週土曜日午前9時に先週分の再取得（データ修正対応）
-0 9 * * 6 www-data cd /path/to/your/project && /path/to/venv/bin/python manage.py import_jpx_margin_data --force >> /var/log/django/cron.log 2>&1
-"""
-
-# ===== Djangoプロジェクト初期化コマンド =====
-"""
-# プロジェクト作成
-django-admin startproject jpx_margin_system
-cd jpx_margin_system
-python manage.py startapp margin_data
-
-# マイグレーション実行
-python manage.py makemigrations
-python manage.py migrate
-
-# スーパーユーザー作成
-python manage.py createsuperuser
-
-# 手動でのデータ取得テスト
-python manage.py import_jpx_margin_data --date 20250718
-
-# 強制再取得
-python manage.py import_jpx_margin_data --date 20250718 --force
-"""
+# カスタムAdminサイト設定
+admin.site.site_header = "JPX信用取引データ管理"
+admin.site.site_title = "JPX管理画面"
+admin.site.index_title = "データ管理"

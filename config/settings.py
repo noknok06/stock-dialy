@@ -15,15 +15,6 @@ import os
 import dj_database_url
 from dotenv import load_dotenv
 
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
-
-import socket
-socket.setdefaulttimeout(120)  # 2分
-IMPORT_MEMORY_LIMIT_MB = int(os.getenv('IMPORT_MEMORY_LIMIT_MB', '256'))
-IMPORT_BATCH_SIZE = int(os.getenv('IMPORT_BATCH_SIZE', '50'))
-
 # .envファイルの読み込み
 load_dotenv()
 
@@ -1097,19 +1088,4 @@ LANGEXTRACT_ROLLOUT_PERCENTAGE = 100  # 0-100: LangExtractを使用するリク�
 LANGEXTRACT_COMPANY_WHITELIST = []  # 特定企業のみでテストする場合
 LANGEXTRACT_DOC_TYPE_WHITELIST = ['120', '160']  # 特定書類種別のみでテストする場合
 
-
-SESSION_SAVE_EVERY_REQUEST = True
-
-# 圧縮機能用の設定
-IMAGE_COMPRESSION_SETTINGS = {
-    'DIARY': {
-        'MAX_WIDTH': 800,
-        'MAX_HEIGHT': 600,
-        'QUALITY': 0.85,
-    },
-    'NOTE': {
-        'MAX_WIDTH': 600,
-        'MAX_HEIGHT': 400,
-        'QUALITY': 0.7,
-    }
-}
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 50000
