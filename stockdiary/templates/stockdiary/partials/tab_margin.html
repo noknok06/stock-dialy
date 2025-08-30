@@ -1,269 +1,227 @@
-{% load humanize %}
-{% load stockdiary_filters %}
+<!-- stockdiary/templates/stockdiary/partials/tab_margin.html -->
+<!-- 利用規約準拠版に修正 -->
 
-<div class="margin-tab-container mobile-optimized">
-  {% if margin_data %}
-    <!-- タブナビゲーション（スマホ最適化） -->
-    <div class="margin-tabs-nav mb-2">
-      <div class="nav nav-pills nav-fill mobile-optimized" id="marginTabsNav" role="tablist">
-        <button class="nav-link active" id="chart-tab" data-bs-toggle="pill" 
-                data-bs-target="#chart-content" type="button" role="tab" aria-controls="chart-content" aria-selected="true">
+<div class="margin-analysis-container mobile-optimized" 
+     data-diary-id="{{ diary.id }}" 
+     data-current-symbol="{{ diary.stock_symbol|default:'' }}">
+  
+  {% if diary.stock_symbol %}
+  
+    <!-- 分析サマリー -->
+    <div class="analysis-summary mb-3">
+      <div class="row g-2">
+        
+        <!-- トレンド分析カード -->
+        <div class="col-12 col-md-6">
+          <div class="analysis-card trend-card">
+            <div class="card-header">
+              <i class="bi bi-trending-up me-2"></i>
+              <span class="card-title">トレンド分析</span>
+            </div>
+            <div class="card-body" id="trendAnalysis">
+              <div class="loading-state">
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                  <span class="visually-hidden">分析中...</span>
+                </div>
+                <span class="ms-2">分析中...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 水準分析カード -->
+        <div class="col-12 col-md-6">
+          <div class="analysis-card level-card">
+            <div class="card-header">
+              <i class="bi bi-speedometer2 me-2"></i>
+              <span class="card-title">現在水準</span>
+            </div>
+            <div class="card-body" id="levelAnalysis">
+              <div class="loading-state">
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                  <span class="visually-hidden">分析中...</span>
+                </div>
+                <span class="ms-2">分析中...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+    
+    <!-- タブナビゲーション -->
+    <div class="analysis-tabs-nav mb-3">
+      <div class="nav nav-pills nav-fill" id="analysisTabsNav" role="tablist">
+        <button class="nav-link active" id="insight-tab" data-bs-toggle="pill" 
+                data-bs-target="#insight-content" type="button" role="tab" 
+                aria-controls="insight-content" aria-selected="true">
+          <i class="bi bi-lightbulb"></i>
+          <span class="nav-text">投資洞察</span>
+        </button>
+        <button class="nav-link" id="sector-tab" data-bs-toggle="pill" 
+                data-bs-target="#sector-content" type="button" role="tab" 
+                aria-controls="sector-content" aria-selected="false">
+          <i class="bi bi-building"></i>
+          <span class="nav-text">業種比較</span>
+        </button>
+        <button class="nav-link" id="trend-tab" data-bs-toggle="pill" 
+                data-bs-target="#trend-content" type="button" role="tab" 
+                aria-controls="trend-content" aria-selected="false">
           <i class="bi bi-graph-up"></i>
-          <span class="nav-text">チャート</span>
-        </button>
-        <button class="nav-link" id="compare-tab" data-bs-toggle="pill" 
-                data-bs-target="#compare-content" type="button" role="tab" aria-controls="compare-content" aria-selected="false">
-          <i class="bi bi-bar-chart"></i>
-          <span class="nav-text">比較</span>
-        </button>
-        <button class="nav-link" id="data-tab" data-bs-toggle="pill" 
-                data-bs-target="#data-content" type="button" role="tab" aria-controls="data-content" aria-selected="false">
-          <i class="bi bi-table"></i>
-          <span class="nav-text">データ</span>
+          <span class="nav-text">推移分析</span>
         </button>
       </div>
     </div>
-
+    
     <!-- タブコンテンツ -->
-    <div class="margin-tab-content tab-content mobile-optimized">
+    <div class="analysis-tab-content tab-content">
       
-      <!-- チャートタブ -->
-      <div class="tab-pane fade show active" id="chart-content" role="tabpanel" aria-labelledby="chart-tab">
+      <!-- 投資洞察タブ -->
+      <div class="tab-pane fade show active" id="insight-content" role="tabpanel" 
+           aria-labelledby="insight-tab">
         
-        <!-- 現在値サマリー（スマホ最適化） -->
-        <div class="summary-cards mobile-optimized mb-2">
-          <!-- メイン指標（上段：重要度の高い情報） -->
-          <div class="row g-2 mb-2">
-            <div class="col-8">
-              <div class="summary-card ratio-card main-metric mobile-optimized">
-                <div class="card-label">信用倍率（買残÷売残）</div>
-                {% if latest_margin_data.outstanding_sales > 0 %}
-                  {% with ratio=latest_margin_data.outstanding_purchases|div:latest_margin_data.outstanding_sales %}
-                    <div class="card-value-large {{ ratio|margin_level_class }}">{{ ratio|floatformat:2 }}</div>
-                    <div class="card-suffix-large">倍</div>
-                    <div class="card-status-badge {{ ratio|margin_level_class }}">{{ ratio|margin_level_text }}</div>
-                  {% endwith %}
-                {% else %}
-                  <div class="card-value-large text-muted">-</div>
-                  <div class="card-suffix-large">倍</div>
-                  <div class="card-status-badge text-muted">データなし</div>
-                {% endif %}
-              </div>
-            </div>
-            <div class="col-4">
-              <div class="summary-card date-card mobile-optimized">
-                <div class="card-label">更新</div>
-                <div class="card-value">{{ latest_margin_data.date|date:"m/d" }}</div>
-                <div class="card-suffix">{{ latest_margin_data.date|date:"y" }}</div>
-                <div class="card-status">JPX</div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- サブ指標（下段：詳細データ） -->
-          <div class="row g-1">
-            <div class="col-6">
-              <div class="summary-card sell-card compact mobile-optimized">
-                <div class="card-header-inline">
-                  <i class="bi bi-arrow-down-circle text-danger"></i>
-                  <span class="card-label">売残</span>
-                </div>
-                <div class="card-value text-danger">{{ latest_margin_data.outstanding_sales|format_stock_amount }}</div>
-                {% if latest_margin_data.outstanding_sales_change %}
-                <div class="card-change {{ latest_margin_data.outstanding_sales_change|change_direction_class }}">
-                  {{ latest_margin_data.outstanding_sales_change|format_change }}
-                </div>
-                {% endif %}
-              </div>
-            </div>
-            <div class="col-6">
-              <div class="summary-card buy-card compact mobile-optimized">
-                <div class="card-header-inline">
-                  <i class="bi bi-arrow-up-circle text-success"></i>
-                  <span class="card-label">買残</span>
-                </div>
-                <div class="card-value text-success">{{ latest_margin_data.outstanding_purchases|format_stock_amount }}</div>
-                {% if latest_margin_data.outstanding_purchases_change %}
-                <div class="card-change {{ latest_margin_data.outstanding_purchases_change|change_direction_class }}">
-                  {{ latest_margin_data.outstanding_purchases_change|format_change }}
-                </div>
-                {% endif %}
-              </div>
-            </div>
-          </div>
+        <!-- アラート表示エリア -->
+        <div id="marginAlerts" class="alerts-container mb-3" role="alert" aria-live="polite">
+          <!-- アラートは動的に生成される -->
         </div>
         
-        <!-- チャート表示エリア -->
-        <div class="chart-container mobile-optimized mb-2">
-          <div class="chart-card mobile-optimized">
-            <div class="chart-header mobile-optimized">
-              <h6 class="chart-title">信用倍率推移</h6>
-              <div class="period-selector mobile-optimized">
-                <div class="btn-group btn-group-sm" role="group">
-                  <input type="radio" class="btn-check" name="chartPeriod" id="period3m" value="3" checked>
-                  <label class="btn btn-outline-primary" for="period3m">3M</label>
-                  <input type="radio" class="btn-check" name="chartPeriod" id="period6m" value="6">
-                  <label class="btn btn-outline-primary" for="period6m">6M</label>
-                  <input type="radio" class="btn-check" name="chartPeriod" id="periodAll" value="all">
-                  <label class="btn btn-outline-primary" for="periodAll">全期間</label>
-                </div>
-              </div>
-            </div>
-            <div class="chart-body mobile-optimized">
-              <canvas id="marginChart" aria-label="信用倍率推移チャート"></canvas>
-              <div id="chartLoading" class="chart-loading d-none">
-                <div class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Loading...</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- アラート表示 -->
-        <div id="marginAlerts" role="alert" aria-live="polite"></div>
-        
-        <!-- 統計情報（簡潔に） -->
-        <div class="stats-row mobile-optimized">
-          <div class="stat-item">
-            <span class="stat-label">平均</span>
-            <span class="stat-value" id="avgRatio">-</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">変動</span>
-            <span class="stat-value" id="volatility">-</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 比較タブ -->
-      <div class="tab-pane fade" id="compare-content" role="tabpanel" aria-labelledby="compare-tab">
-        
-        <!-- 銘柄選択（スマホ最適化） -->
-        <div class="compare-input mobile-optimized mb-2">
-          <div class="input-group">
-            <input type="text" class="form-control" 
-                   id="compareSymbolInput" 
-                   placeholder="証券コード" 
-                   maxlength="6">
-            <button type="button" class="btn btn-primary" 
-                    id="addCompareBtn">
-              <i class="bi bi-plus-lg"></i>
-            </button>
-          </div>
-        </div>
-        
-        <!-- 選択済み銘柄 -->
-        <div class="selected-symbols mobile-optimized mb-2" id="selectedSymbols">
-          <p class="text-muted small mb-0">
-            現在の銘柄が自動追加されます
-          </p>
-        </div>
-        
-        <!-- 推奨銘柄（コンパクト表示） -->
-        <div class="suggestions mobile-optimized mb-2">
-          <div class="suggestions-header">
-            <small class="text-muted">同業種推奨</small>
-            <div class="spinner-border spinner-border-sm text-primary d-none" id="suggestionsLoading"></div>
-          </div>
-          <div id="suggestedSymbols" class="suggestions-body">
-            <!-- 動的に生成 -->
-          </div>
-        </div>
-        
-        <!-- 比較チャート -->
-        <div class="compare-chart mobile-optimized mb-2" id="compareChartContainer" style="display: none;">
-          <div class="chart-card mobile-optimized">
-            <div class="chart-header mobile-optimized">
-              <h6 class="chart-title">銘柄比較</h6>
-              <button type="button" class="btn btn-outline-secondary btn-sm" 
-                      id="resetCompareBtn">
-                <i class="bi bi-arrow-counterclockwise"></i>
+        <!-- 投資判断サポート -->
+        <div class="investment-insights mb-3">
+          <div class="insight-card">
+            <div class="insight-header">
+              <h6 class="mb-0">
+                <i class="bi bi-compass me-2"></i>
+                投資判断サポート
+              </h6>
+              <button class="btn btn-outline-secondary btn-sm" 
+                      id="refreshAnalysisBtn" 
+                      title="分析を更新">
+                <i class="bi bi-arrow-clockwise"></i>
+                <span class="d-none d-sm-inline ms-1">更新</span>
               </button>
             </div>
-            <div class="chart-body mobile-optimized">
-              <canvas id="compareChart" aria-label="銘柄比較チャート"></canvas>
-              <div id="compareChartLoading" class="chart-loading d-none">
-                <div class="spinner-border text-primary"></div>
+            <div class="insight-body" id="investmentInsights">
+              <div class="loading-state">
+                <div class="spinner-border spinner-border-sm text-primary"></div>
+                <span class="ms-2">投資洞察を分析中...</span>
               </div>
             </div>
           </div>
         </div>
         
-        <!-- 比較統計 -->
-        <div id="compareStats" class="compare-stats mobile-optimized">
-          <!-- 動的に生成 -->
+        <!-- 変動分析 -->
+        <div class="volatility-analysis">
+          <div class="analysis-card">
+            <div class="card-header">
+              <i class="bi bi-activity me-2"></i>
+              <span class="card-title">変動分析</span>
+            </div>
+            <div class="card-body" id="volatilityAnalysis">
+              <div class="loading-state">
+                <div class="spinner-border spinner-border-sm text-primary"></div>
+                <span class="ms-2">変動パターンを分析中...</span>
+              </div>
+            </div>
+          </div>
         </div>
+        
       </div>
-
-      <!-- データタブ -->
-      <div class="tab-pane fade" id="data-content" role="tabpanel" aria-labelledby="data-tab">
-        <div class="data-container mobile-optimized">
-          <div class="table-responsive">
-            <table class="data-table mobile-optimized">
-              <thead>
-                <tr>
-                  <th>日付</th>
-                  <th>倍率</th>
-                  <th>売残</th>
-                  <th>買残</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for data in margin_data|slice:":12" %}
-                <tr>
-                  <td>{{ data.date|date:"m/d" }}</td>
-                  <td>
-                    {% if data.outstanding_sales > 0 %}
-                      {% with ratio=data.outstanding_purchases|div:data.outstanding_sales %}
-                        <span class="ratio-value {{ ratio|margin_level_class }}">{{ ratio|floatformat:2 }}</span>
-                      {% endwith %}
-                    {% else %}
-                      <span class="ratio-value text-muted">-</span>
-                    {% endif %}
-                  </td>
-                  <td class="text-danger">{{ data.outstanding_sales|floatformat:0 }}</td>
-                  <td class="text-success">{{ data.outstanding_purchases|floatformat:0 }}</td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+      
+      <!-- 業種比較タブ -->
+      <div class="tab-pane fade" id="sector-content" role="tabpanel" 
+           aria-labelledby="sector-tab">
+        
+        <div class="sector-comparison-container">
+          <div class="comparison-header mb-3 text-center">
+            <h6 class="mb-1">同業種での位置づけ</h6>
+            <small class="text-muted">{{ diary.stock_name }} を同業他社と比較分析</small>
           </div>
           
-          <!-- データソース -->
-          <div class="data-source mobile-optimized">
+          <div id="sectorComparison">
+            <div class="loading-state text-center py-4">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">業種分析中...</span>
+              </div>
+              <p class="mt-2 mb-0 small text-muted">業種データを分析しています...</p>
+            </div>
+          </div>
+          
+        </div>
+        
+      </div>
+      
+      <!-- 推移分析タブ -->
+      <div class="tab-pane fade" id="trend-content" role="tabpanel" 
+           aria-labelledby="trend-tab">
+        
+        <!-- トレンドパターン表示 -->
+        <div class="trend-chart-container mb-3">
+          <div class="chart-card">
+            <div class="chart-header">
+              <h6 class="chart-title">
+                <i class="bi bi-graph-up me-2"></i>
+                トレンドパターン
+              </h6>
+              <small class="text-muted">過去12週の変化傾向</small>
+            </div>
+            <div class="chart-body">
+              <div class="trend-pattern-display">
+                <p class="text-center text-muted mt-3">
+                  <i class="bi bi-graph-up" style="font-size: 2rem;"></i><br>
+                  トレンド分析結果をここに表示します
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+      
+    </div>
+    
+  {% else %}
+    <!-- 証券コード未設定の場合 -->
+    <div class="empty-state mobile-optimized text-center py-4">
+      <i class="bi bi-info-circle empty-icon"></i>
+      <h6 class="empty-title">証券コードが設定されていません</h6>
+      <p class="empty-description">信用倍率分析には証券コードが必要です</p>
+      <a href="{% url 'stockdiary:update' diary.id %}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-pencil me-1"></i>
+        日記を編集して証券コードを設定
+      </a>
+    </div>
+  {% endif %}
+  
+  <!-- データソース表記 -->
+  <div class="data-source-notice mt-4">
+    <div class="notice-card">
+      <div class="notice-body">
+        <div class="text-center">
+          <small class="text-muted">
+            <i class="bi bi-info-circle me-1"></i>
+            JPX公開データを独自分析したものです。投資判断は自己責任でお願いします。
+          </small>
+          <div class="mt-2">
             <a href="https://www.jpx.co.jp/markets/statistics-equities/margin/" 
-               target="_blank" class="source-link">
-              <i class="bi bi-box-arrow-up-right"></i>
-              JPX公式データ
+               target="_blank" 
+               rel="noopener noreferrer" 
+               class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-box-arrow-up-right me-1"></i>
+              元データを確認（JPX公式）
             </a>
           </div>
         </div>
       </div>
-
-    </div> <!-- /.tab-content -->
-
-  {% else %}
-    <!-- データなしの場合 -->
-    <div class="empty-state mobile-optimized">
-      <i class="bi bi-exclamation-triangle empty-icon"></i>
-      <h5 class="empty-title">信用取引データなし</h5>
-      <p class="empty-description">この銘柄の信用取引データが見つかりません</p>
-      {% if diary.stock_symbol %}
-      <p class="empty-code">証券コード: {{ diary.stock_symbol }}</p>
-      {% endif %}
-      <a href="https://www.jpx.co.jp/markets/statistics-equities/margin/" 
-         target="_blank" class="btn btn-outline-primary btn-sm">
-        <i class="bi bi-box-arrow-up-right"></i>
-        JPX公式で確認
-      </a>
     </div>
-  {% endif %}
+  </div>
+  
 </div>
 
+<!-- CSSスタイル -->
 <style>
-/* ===== スマホ最適化基本設定 ===== */
-.margin-tab-container {
+/* ===== 基本スタイル ===== */
+.margin-analysis-container {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   width: 100%;
   max-width: 100%;
@@ -272,27 +230,64 @@
   margin: 0;
 }
 
-.margin-tab-container.mobile-optimized {
-  padding: 0;
+/* ===== 分析カード共通スタイル ===== */
+.analysis-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* ===== タブナビゲーション（スマホ最適化） ===== */
-.margin-tabs-nav .nav-pills {
-  background-color: rgba(248, 249, 250, 0.8);
+.analysis-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.analysis-card .card-header {
+  background: #f8f9fa;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.analysis-card .card-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  color: #495057;
+}
+
+.analysis-card .card-body {
+  padding: 16px;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== トレンド・水準カード ===== */
+.trend-card {
+  border-left: 4px solid #28a745;
+}
+
+.level-card {
+  border-left: 4px solid #007bff;
+}
+
+/* ===== タブナビゲーション ===== */
+.analysis-tabs-nav .nav-pills {
+  background: rgba(248, 249, 250, 0.8);
   border-radius: 12px;
   padding: 4px;
-  margin: 0;
 }
 
-.margin-tabs-nav .nav-pills.mobile-optimized {
-  margin: 0 -4px;
-  padding: 3px;
+.analysis-tabs-nav .nav-link {
   border-radius: 8px;
-}
-
-.margin-tabs-nav .nav-link {
-  border-radius: 8px;
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
@@ -304,429 +299,96 @@
   color: #6c757d;
 }
 
-.margin-tabs-nav .nav-link i {
+.analysis-tabs-nav .nav-link i {
   font-size: 18px;
 }
 
-.margin-tabs-nav .nav-text {
+.analysis-tabs-nav .nav-text {
   font-size: 12px;
   font-weight: 600;
 }
 
-.margin-tabs-nav .nav-link.active {
+.analysis-tabs-nav .nav-link.active {
   background-color: #0d6efd;
   color: white;
   box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
 }
 
-.margin-tabs-nav .nav-link:hover:not(.active) {
+.analysis-tabs-nav .nav-link:hover:not(.active) {
   background-color: rgba(13, 110, 253, 0.1);
   color: #0d6efd;
 }
 
-/* ===== サマリーカード（スマホ最適化） ===== */
-.summary-cards {
-  margin: 0;
-}
-
-.summary-cards.mobile-optimized {
-  margin: 0 -2px;
-}
-
-.summary-card {
-  background: white;
-  border-radius: 12px;
-  padding: 16px 12px;
-  text-align: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  position: relative;
-  overflow: hidden;
-}
-
-.summary-card.mobile-optimized {
-  padding: 12px 8px;
-  border-radius: 8px;
-}
-
-.ratio-card {
+/* ===== インサイトカード ===== */
+.insight-card {
   background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
-}
-
-.date-card {
-  background: linear-gradient(135deg, #fff8f0 0%, #fff 100%);
-}
-
-.sell-card {
-  background: linear-gradient(135deg, #fff5f5 0%, #fff 100%);
-}
-
-.buy-card {
-  background: linear-gradient(135deg, #f0fff4 0%, #fff 100%);
-}
-
-.card-label {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: #6c757d;
-  margin-bottom: 4px;
-}
-
-.card-value {
-  font-size: 24px;
-  font-weight: 700;
-  line-height: 1;
-  margin-bottom: 2px;
-}
-
-.card-value-large {
-  font-size: 28px;
-  font-weight: 800;
-  line-height: 1;
-  margin-bottom: 2px;
-}
-
-.card-suffix {
-  font-size: 12px;
-  font-weight: 500;
-  color: #6c757d;
-  margin-bottom: 4px;
-}
-
-.card-suffix-large {
-  font-size: 14px;
-  font-weight: 600;
-  color: #6c757d;
-  margin-bottom: 6px;
-}
-
-.card-status {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: #6c757d;
-}
-
-.card-status-badge {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-.card-header-inline {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-bottom: 6px;
-  justify-content: center;
-}
-
-.card-change {
-  font-size: 10px;
-  font-weight: 600;
-  margin-top: 2px;
-}
-
-.positive-change {
-  color: #10b981;
-}
-
-.negative-change {
-  color: #ef4444;
-}
-
-.neutral-change {
-  color: #6b7280;
-}
-
-/* ===== チャートエリア（スマホ最適化） ===== */
-.chart-container {
-  margin: 0;
-}
-
-.chart-container.mobile-optimized {
-  margin: 0 -1px;
-}
-
-.chart-card {
-  background: white;
   border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e3f2fd;
   overflow: hidden;
 }
 
-.chart-card.mobile-optimized {
-  border-radius: 8px;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
-}
-
-.chart-header {
+.insight-header {
+  background: rgba(13, 110, 253, 0.05);
+  padding: 16px;
+  border-bottom: 1px solid rgba(13, 110, 253, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.insight-body {
   padding: 16px;
-  border-bottom: 1px solid #f1f3f5;
-  background: #fafbfc;
 }
 
-.chart-header.mobile-optimized {
-  padding: 12px;
+.insight-item {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.chart-title {
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0;
-  color: #343a40;
-}
-
-.period-selector .btn {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 6px;
-}
-
-.period-selector.mobile-optimized .btn {
-  font-size: 10px;
-  padding: 4px 8px;
-}
-
-.chart-body {
-  padding: 16px;
-  position: relative;
-  height: 220px;
-}
-
-.chart-body.mobile-optimized {
-  padding: 12px 8px;
-  height: 200px;
-}
-
-.chart-body canvas {
-  height: 188px !important;
-  max-height: 188px !important;
-  width: 100% !important;
-}
-
-.chart-body.mobile-optimized canvas {
-  height: 168px !important;
-  max-height: 168px !important;
-}
-
-.chart-loading {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 10;
-}
-
-/* ===== 統計情報（スマホ最適化） ===== */
-.stats-row {
-  display: flex;
-  justify-content: center;
-  gap: 32px;
-  padding: 16px;
-  background: #f8f9fa;
-  border-radius: 8px;
-}
-
-.stats-row.mobile-optimized {
-  gap: 24px;
-  padding: 12px;
-}
-
-.stat-item {
-  text-align: center;
-}
-
-.stat-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #6c757d;
-  text-transform: uppercase;
-  display: block;
-  margin-bottom: 4px;
-}
-
-.stat-value {
-  font-size: 16px;
-  font-weight: 700;
-  color: #0d6efd;
-}
-
-/* ===== 比較タブ（スマホ最適化） ===== */
-.compare-input .form-control {
-  height: 48px;
-  font-size: 16px;
-  border-radius: 8px 0 0 8px;
-  border-right: none;
-}
-
-.compare-input.mobile-optimized .form-control {
-  height: 44px;
-  font-size: 14px;
-}
-
-.compare-input .btn {
-  height: 48px;
-  padding: 0 16px;
-  border-radius: 0 8px 8px 0;
-}
-
-.compare-input.mobile-optimized .btn {
-  height: 44px;
-  padding: 0 12px;
-}
-
-.selected-symbols {
-  min-height: 24px;
-}
-
-.selected-symbols.mobile-optimized {
-  min-height: 20px;
-}
-
-.suggestions {
-  background: #f8f9fa;
-  border-radius: 8px;
-  padding: 12px;
-}
-
-.suggestions.mobile-optimized {
-  padding: 8px;
-}
-
-.suggestions-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.suggestions-body .btn {
-  font-size: 12px;
-  padding: 6px 12px;
-  margin: 2px;
-  border-radius: 6px;
-}
-
-.compare-stats.mobile-optimized .row .col-6 {
-  margin-bottom: 6px;
-}
-
-.compare-stats.mobile-optimized .card {
-  border: none;
-  background: #f8f9fa;
-  border-radius: 6px;
-}
-
-.compare-stats.mobile-optimized .card-body {
-  padding: 8px;
-  text-align: center;
-}
-
-/* ===== データテーブル（スマホ最適化） ===== */
-.data-container {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.data-container.mobile-optimized {
-  border-radius: 8px;
-  margin: 0 -1px;
-}
-
-.data-table {
-  width: 100%;
-  margin: 0;
-  font-size: 14px;
-}
-
-.data-table.mobile-optimized {
-  font-size: 12px;
-}
-
-.data-table th {
-  background: #f8f9fa;
-  font-weight: 600;
-  font-size: 12px;
-  padding: 12px 8px;
-  text-align: center;
-  border: none;
-  color: #495057;
-}
-
-.data-table.mobile-optimized th {
-  font-size: 11px;
-  padding: 10px 6px;
-}
-
-.data-table td {
-  padding: 12px 8px;
-  text-align: center;
-  border: none;
-  border-bottom: 1px solid #f1f3f5;
-  font-size: 13px;
-}
-
-.data-table.mobile-optimized td {
-  font-size: 11px;
-  padding: 10px 6px;
-}
-
-.data-table tr:last-child td {
+.insight-item:last-child {
   border-bottom: none;
 }
 
-.ratio-value {
-  font-weight: 600;
-}
-
-.data-source {
-  padding: 16px;
+/* ===== ローディング状態 ===== */
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #6c757d;
+  font-size: 13px;
   text-align: center;
-  background: #fafbfc;
-  border-top: 1px solid #f1f3f5;
 }
 
-.data-source.mobile-optimized {
-  padding: 12px;
+/* ===== アラート ===== */
+.alerts-container .alert {
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  margin-bottom: 12px;
+  animation: fadeInUp 0.3s ease;
 }
 
-.source-link {
-  font-size: 12px;
-  color: #0d6efd;
-  text-decoration: none;
-  font-weight: 500;
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* ===== 空状態（スマホ最適化） ===== */
+/* ===== 空状態 ===== */
 .empty-state {
-  text-align: center;
   padding: 48px 16px;
-}
-
-.empty-state.mobile-optimized {
-  padding: 32px 12px;
 }
 
 .empty-icon {
   font-size: 48px;
   color: #dee2e6;
   margin-bottom: 16px;
-}
-
-.empty-state.mobile-optimized .empty-icon {
-  font-size: 36px;
-  margin-bottom: 12px;
 }
 
 .empty-title {
@@ -736,125 +398,61 @@
   margin-bottom: 8px;
 }
 
-.empty-state.mobile-optimized .empty-title {
-  font-size: 16px;
-  margin-bottom: 6px;
-}
-
 .empty-description {
   font-size: 14px;
   color: #6c757d;
-  margin-bottom: 12px;
-}
-
-.empty-state.mobile-optimized .empty-description {
-  font-size: 13px;
-  margin-bottom: 10px;
-}
-
-.empty-code {
-  font-size: 13px;
-  color: #6c757d;
-  margin-bottom: 16px;
-  font-family: monospace;
-}
-
-.empty-state.mobile-optimized .empty-code {
-  font-size: 12px;
-  margin-bottom: 12px;
-}
-
-/* ===== アラート ===== */
-.alert {
-  border-radius: 8px;
-  border: none;
-  font-size: 14px;
   margin-bottom: 16px;
 }
 
-/* ===== タブコンテンツの最適化 ===== */
-.margin-tab-content {
-  padding: 0;
+/* ===== データソース注記 ===== */
+.data-source-notice {
+  margin-top: 32px;
 }
 
-.margin-tab-content.mobile-optimized {
-  padding: 0;
+.notice-card {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e9ecef;
 }
 
-/* ===== レスポンシブ調整（極小画面） ===== */
-@media (max-width: 480px) {
-  .margin-tabs-nav .nav-pills.mobile-optimized {
-    margin: 0 -6px;
+/* ===== レスポンシブデザイン ===== */
+@media (max-width: 576px) {
+  .analysis-card .card-body {
+    padding: 12px;
+    min-height: 60px;
   }
   
-  .summary-card.mobile-optimized {
-    padding: 10px 6px;
+  .insight-header {
+    padding: 12px;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
   }
   
-  .card-value {
-    font-size: 20px;
+  .insight-body {
+    padding: 12px;
   }
   
-  .card-value-large {
-    font-size: 24px;
+  .analysis-tabs-nav .nav-link {
+    padding: 8px 6px;
+    min-height: 50px;
   }
   
-  .chart-body.mobile-optimized {
-    padding: 8px 4px;
-    height: 180px;
+  .analysis-tabs-nav .nav-text {
+    font-size: 11px;
   }
   
-  .chart-body.mobile-optimized canvas {
-    height: 148px !important;
-    max-height: 148px !important;
+  .empty-state {
+    padding: 32px 12px;
   }
   
-  .stats-row.mobile-optimized {
-    gap: 16px;
-    padding: 8px;
-  }
-  
-  .data-table.mobile-optimized {
-    font-size: 10px;
-  }
-  
-  .data-table.mobile-optimized th {
-    font-size: 10px;
-    padding: 8px 4px;
-  }
-  
-  .data-table.mobile-optimized td {
-    font-size: 10px;
-    padding: 8px 4px;
+  .empty-icon {
+    font-size: 36px;
   }
 }
 
-/* ===== アニメーション ===== */
-.tab-pane.show {
-  animation: slideIn 0.3s ease;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.summary-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.summary-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-}
-
-/* ===== アクセシビリティ ===== */
+/* ===== アクセシビリティ対応 ===== */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -864,28 +462,11 @@
   }
 }
 
-.margin-tab-container .btn:focus,
-.margin-tab-container .nav-link:focus,
-.margin-tab-container .form-control:focus {
+.margin-analysis-container .btn:focus,
+.margin-analysis-container .nav-link:focus {
   box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
   outline: none;
 }
 </style>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  {% if latest_margin_data %}
-    if (typeof MarginTabManager !== 'undefined') {
-      const currentSymbol = '{{ diary.stock_symbol|escapejs }}';
-      window.MarginTabController = new MarginTabManager(
-        {{ diary.id }}, 
-        {{ latest_margin_data.issue.id }},
-        currentSymbol || null
-      );
-      console.log('✅ Mobile Optimized MarginTabController initialized');
-    } else {
-      console.warn('⚠️ MarginTabManager not loaded');
-    }
-  {% endif %}
-});
-</script>
+<!-- JavaScript初期化は外部ファイルで行う -->
