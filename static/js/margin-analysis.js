@@ -1,4 +1,5 @@
-// static/js/margin-analysis.js（利用規約準拠版）
+// static/js/margin-analysis.js（両面解釈重視版）
+// 根拠明示・バランスの取れた分析表示
 
 class MarginAnalysisManager {
     constructor(diaryId, currentSymbol = null) {
@@ -28,6 +29,32 @@ class MarginAnalysisManager {
         const refreshBtn = document.getElementById('refreshAnalysisBtn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => this.refreshAnalysis());
+        }
+        
+        // 期間選択ボタン
+        const periodButtons = document.querySelectorAll('input[name="chartPeriod"]');
+        periodButtons.forEach(button => {
+            button.addEventListener('change', (e) => {
+                if (e.target.checked && this.analysisData) {
+                    this.updateRatioChart(this.analysisData);
+                }
+            });
+        });
+        
+        // タブ切り替えイベント（チャート表示調整用）
+        const chartTab = document.getElementById('chart-tab');
+        if (chartTab) {
+            chartTab.addEventListener('shown.bs.tab', () => {
+                // チャートタブが表示されたときにチャートをリサイズ
+                if (this.ratioChart) {
+                    setTimeout(() => {
+                        this.ratioChart.resize();
+                    }, 100);
+                } else if (this.analysisData) {
+                    // チャートがまだ作成されていない場合は作成
+                    this.updateRatioChart(this.analysisData);
+                }
+            });
         }
     }
     
@@ -91,233 +118,667 @@ class MarginAnalysisManager {
     displayAnalysisResults() {
         if (!this.analysisData) return;
         
-        this.updateTrendAnalysis(this.analysisData.trend_analysis);
-        this.updateLevelAnalysis(this.analysisData.level_analysis);
-        this.updateInvestmentInsights(this.analysisData.investment_insight);
-        this.updateVolatilityAnalysis(this.analysisData.volatility_analysis);
-        this.updateSectorComparison(this.analysisData.sector_comparison);
-        this.updateAlerts(this.analysisData.alerts);
+        this.updateCurrentRatio(this.analysisData);
+        this.updatePositiveFactors(this.analysisData);
+        this.updateNegativeFactors(this.analysisData);
+        this.updateJudgmentPoints(this.analysisData);
+        this.updateHistoricalContext(this.analysisData);
+        this.updateSectorContext(this.analysisData.sector_comparison);
+        this.updateMarketContext(this.analysisData);
+        
+        // チャートタブがアクティブな場合のみチャートを初期化
+        const chartTab = document.getElementById('chart-tab');
+        if (chartTab && chartTab.classList.contains('active')) {
+            // 少し遅延させてDOMの描画が完了してから初期化
+            setTimeout(() => {
+                this.updateRatioChart(this.analysisData);
+            }, 100);
+        }
     }
     
-    updateTrendAnalysis(trendData) {
-        const container = document.getElementById('trendAnalysis');
-        if (!container || !trendData) return;
+    updateCurrentRatio(analysisData) {
+        const container = document.getElementById('currentRatioDisplay');
+        if (!container || !analysisData) return;
         
-        const trendIcons = {
-            'strong_upward': '<i class="bi bi-arrow-up-circle text-success"></i>',
-            'upward': '<i class="bi bi-arrow-up text-success"></i>',
-            'stable': '<i class="bi bi-arrow-right text-primary"></i>',
-            'downward': '<i class="bi bi-arrow-down text-warning"></i>',
-            'strong_downward': '<i class="bi bi-arrow-down-circle text-danger"></i>'
-        };
+        // 信用倍率の計算と表示
+        let ratioValue = 0;
+        let ratioClass = 'ratio-medium';
+        let levelClass = 'level-medium';
+        let ratioText = '均衡';
+        let description = '需給バランスは標準的な水準';
+        
+        // level_analysis から水準を判定
+        if (analysisData.level_analysis && analysisData.current_ratio) {
+            ratioValue = analysisData.current_ratio;
+            const level = analysisData.level_analysis.level;
+            description = analysisData.level_analysis.description;
+            
+            switch (level) {
+                case 'very_high':
+                    ratioClass = 'ratio-very-high';
+                    levelClass = 'level-very-high';
+                    ratioText = '極めて高水準';
+                    break;
+                case 'high':
+                    ratioClass = 'ratio-high';
+                    levelClass = 'level-high';
+                    ratioText = '高水準';
+                    break;
+                case 'medium_high':
+                    ratioClass = 'ratio-medium-high';
+                    levelClass = 'level-medium-high';
+                    ratioText = 'やや高水準';
+                    break;
+                case 'very_low':
+                    ratioClass = 'ratio-very-low';
+                    levelClass = 'level-very-low';
+                    ratioText = '極めて低水準';
+                    break;
+                case 'low':
+                    ratioClass = 'ratio-low';
+                    levelClass = 'level-low';
+                    ratioText = '低水準';
+                    break;
+                default:
+                    ratioClass = 'ratio-medium';
+                    levelClass = 'level-medium';
+                    ratioText = '標準水準';
+            }
+        }
         
         container.innerHTML = `
-            <div class="trend-indicator d-flex align-items-center">
-                ${trendIcons[trendData.trend] || '<i class="bi bi-question-circle text-muted"></i>'}
-                <span class="trend-description ms-2">${trendData.description}</span>
+            <div class="ratio-display">
+                <div class="ratio-value ${ratioClass}">
+                    ${ratioValue.toFixed(2)}
+                    <span class="ratio-unit">倍</span>
+                </div>
+                <div class="ratio-status">
+                    <span class="ratio-level ${levelClass}">${ratioText}</span>
+                </div>
+                <div class="ratio-description">
+                    ${description}
+                </div>
             </div>
-            <div class="trend-details mt-2">
+            <div class="ratio-meta mt-3">
                 <small class="text-muted">
-                    ${trendData.period}: ${trendData.change_rate > 0 ? '+' : ''}${trendData.change_rate}%
+                    更新日: ${this.formatDate(analysisData.analysis_date)}
+                    ${analysisData.company_name ? ` | ${analysisData.company_name}` : ''}
                 </small>
             </div>
         `;
     }
     
-    updateLevelAnalysis(levelData) {
-        const container = document.getElementById('levelAnalysis');
-        if (!container || !levelData) return;
+    async updateRatioChart(analysisData) {
+        const canvas = document.getElementById('mainRatioChart');
+        if (!canvas) return;
         
-        const levelClasses = {
-            'very_high': 'text-danger',
-            'high': 'text-warning',
-            'medium': 'text-primary',
-            'low': 'text-info',
-            'very_low': 'text-secondary'
-        };
-        
-        container.innerHTML = `
-            <div class="level-indicator text-center">
-                <div class="level-text ${levelClasses[levelData.level]} fs-5 fw-bold">${levelData.level_text}</div>
-                <div class="level-suggestion mt-2">
-                    <small class="text-dark">${levelData.suggestion}</small>
+        try {
+            // 選択された期間を取得
+            const selectedPeriod = document.querySelector('input[name="chartPeriod"]:checked')?.value || '3';
+            
+            // チャートデータを取得
+            const response = await fetch(`/stockdiary/api/margin-chart-data/${this.diaryId}/?period=${selectedPeriod}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('チャートデータの取得に失敗しました');
+            }
+            
+            const chartData = await response.json();
+            
+            if (chartData.error) {
+                throw new Error(chartData.error);
+            }
+            
+            // Chart.jsでチャートを描画
+            this.renderRatioChart(canvas, chartData);
+            this.updateChartStats(chartData.stats);
+            
+        } catch (error) {
+            console.error('Chart update error:', error);
+            const chartContainer = canvas.parentElement;
+            chartContainer.innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <p class="mt-2 mb-0 small">チャートの表示に失敗しました</p>
                 </div>
-                <div class="level-context mt-2">
-                    <small class="text-muted">${levelData.vs_average}</small>
-                </div>
-            </div>
-        `;
+            `;
+        }
     }
     
-    updateInvestmentInsights(insightData) {
-        const container = document.getElementById('investmentInsights');
-        if (!container || !insightData) return;
+    renderRatioChart(canvas, chartData) {
+        const ctx = canvas.getContext('2d');
         
-        if (!insightData.insights || insightData.insights.length === 0) {
-            container.innerHTML = '<p class="text-muted mb-0">現時点で特別な注意点はありません</p>';
+        // 既存のチャートがあれば破棄
+        if (this.ratioChart) {
+            this.ratioChart.destroy();
+        }
+        
+        // Chart.jsが読み込まれているかチェック
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js is not loaded');
             return;
         }
         
-        let html = '';
-        insightData.insights.forEach((insight) => {
-            const iconClass = {
-                'caution': 'bi-exclamation-triangle text-warning',
-                'opportunity': 'bi-lightbulb text-success',
-                'trend_alert': 'bi-activity text-info'
-            }[insight.type] || 'bi-info-circle text-primary';
-            
-            html += `
-                <div class="insight-item mb-3">
-                    <div class="d-flex align-items-start">
-                        <i class="${iconClass} me-3 mt-1" style="font-size: 1.2em;"></i>
-                        <div class="flex-grow-1">
-                            <div class="insight-message fw-medium mb-1">${insight.message}</div>
-                            <small class="insight-suggestion text-muted">${insight.suggestion}</small>
-                        </div>
-                    </div>
-                </div>
-            `;
+        this.ratioChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartData.chart_data.labels,
+                datasets: [{
+                    label: '信用倍率',
+                    data: chartData.chart_data.datasets[0].data,
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3,
+                    pointBackgroundColor: '#0d6efd',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value.toFixed(2) + '倍';
+                            },
+                            font: {
+                                size: 11
+                            },
+                            color: '#6c757d'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 11
+                            },
+                            color: '#6c757d',
+                            maxRotation: 45
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#0d6efd',
+                        borderWidth: 1,
+                        displayColors: false,
+                        callbacks: {
+                            title: function(context) {
+                                return context[0].label;
+                            },
+                            label: function(context) {
+                                return '信用倍率: ' + context.parsed.y.toFixed(2) + '倍';
+                            }
+                        }
+                    }
+                },
+                elements: {
+                    point: {
+                        hoverRadius: 8
+                    }
+                }
+            }
         });
         
-        container.innerHTML = html;
+        // チャート作成後、少し待ってからリサイズ
+        setTimeout(() => {
+            if (this.ratioChart) {
+                this.ratioChart.resize();
+            }
+        }, 50);
     }
     
-    updateVolatilityAnalysis(volatilityData) {
-        const container = document.getElementById('volatilityAnalysis');
-        if (!container || !volatilityData) return;
+    updateChartStats(stats) {
+        if (!stats) return;
         
-        const volatilityIcons = {
-            'high': '<i class="bi bi-activity text-danger"></i>',
-            'medium': '<i class="bi bi-graph-up text-primary"></i>',
-            'low': '<i class="bi bi-minus-square text-success"></i>'
-        };
+        // 統計情報を更新
+        const currentRatio = document.getElementById('currentRatio');
+        const avgRatio = document.getElementById('avgRatio');
+        const maxRatio = document.getElementById('maxRatio');
+        const minRatio = document.getElementById('minRatio');
         
-        container.innerHTML = `
-            <div class="volatility-indicator d-flex align-items-center">
-                ${volatilityIcons[volatilityData.volatility]}
-                <span class="ms-2">${volatilityData.description}</span>
+        if (currentRatio) currentRatio.textContent = stats.current?.toFixed(2) + '倍' || '-';
+        if (avgRatio) avgRatio.textContent = stats.average?.toFixed(2) + '倍' || '-';
+        if (maxRatio) maxRatio.textContent = stats.max?.toFixed(2) + '倍' || '-';
+        if (minRatio) minRatio.textContent = stats.min?.toFixed(2) + '倍' || '-';
+    }
+    
+    updatePositiveFactors(analysisData) {
+        const container = document.getElementById('positiveFactors');
+        if (!container) return;
+        
+        const factorBody = container.querySelector('.factor-body');
+        if (!factorBody) return;
+        
+        // ポジティブ要因を抽出・生成
+        const positiveFactors = this.generatePositiveFactors(analysisData);
+        
+        if (positiveFactors.length === 0) {
+            factorBody.innerHTML = `
+                <div class="text-muted text-center py-2">
+                    <small>現在の状況では明確なポジティブ要因が見つかりません</small>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '<ul class="factor-list">';
+        positiveFactors.forEach(factor => {
+            html += `
+                <li class="factor-item">
+                    <i class="factor-icon bi-plus-circle text-success"></i>
+                    <div class="factor-text">
+                        <div class="factor-title">${factor.title}</div>
+                        <div class="factor-description">${factor.description}</div>
+                    </div>
+                </li>
+            `;
+        });
+        html += '</ul>';
+        
+        factorBody.innerHTML = html;
+    }
+    
+    updateNegativeFactors(analysisData) {
+        const container = document.getElementById('negativeFactors');
+        if (!container) return;
+        
+        const factorBody = container.querySelector('.factor-body');
+        if (!factorBody) return;
+        
+        // リスク要因を抽出・生成
+        const negativeFactors = this.generateNegativeFactors(analysisData);
+        
+        if (negativeFactors.length === 0) {
+            factorBody.innerHTML = `
+                <div class="text-muted text-center py-2">
+                    <small>現在の状況では重大なリスク要因は見つかりません</small>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '<ul class="factor-list">';
+        negativeFactors.forEach(factor => {
+            html += `
+                <li class="factor-item">
+                    <i class="factor-icon bi-exclamation-triangle text-warning"></i>
+                    <div class="factor-text">
+                        <div class="factor-title">${factor.title}</div>
+                        <div class="factor-description">${factor.description}</div>
+                    </div>
+                </li>
+            `;
+        });
+        html += '</ul>';
+        
+        factorBody.innerHTML = html;
+    }
+    
+    updateJudgmentPoints(analysisData) {
+        const container = document.getElementById('judgmentPoints');
+        if (!container) return;
+        
+        const pointsBody = container.querySelector('.points-body');
+        if (!pointsBody) return;
+        
+        // 判断ポイントを生成
+        const judgmentPoints = this.generateJudgmentPoints(analysisData);
+        
+        let html = '<ul class="points-list">';
+        judgmentPoints.forEach((point, index) => {
+            html += `
+                <li class="point-item">
+                    <div class="point-number">${index + 1}</div>
+                    <div class="point-text">${point}</div>
+                </li>
+            `;
+        });
+        html += '</ul>';
+        
+        pointsBody.innerHTML = html;
+    }
+    
+    updateHistoricalContext(analysisData) {
+        const container = document.getElementById('historicalContext');
+        if (!container) return;
+        
+        const contextBody = container.querySelector('.context-body');
+        if (!contextBody) return;
+        
+        // 過去との比較データを生成
+        let html = '';
+        
+        if (analysisData.trend_analysis) {
+            const trend = analysisData.trend_analysis;
+            let trendClass = 'text-muted';
+            let trendText = '変化なし';
+            
+            switch (trend.trend) {
+                case 'strong_upward':
+                case 'upward':
+                    trendClass = 'text-success';
+                    trendText = '上昇傾向';
+                    break;
+                case 'strong_downward':
+                case 'downward':
+                    trendClass = 'text-danger';
+                    trendText = '下降傾向';
+                    break;
+                default:
+                    trendClass = 'text-primary';
+                    trendText = '安定推移';
+            }
+            
+            html += `
+                <div class="comparison-result">
+                    <span class="comparison-label">過去4週間との比較</span>
+                    <span class="comparison-value ${trendClass}">${trendText}</span>
+                </div>
+                <div class="context-detail">
+                    <small class="text-muted">${trend.description}</small>
+                </div>
+            `;
+        }
+        
+        contextBody.innerHTML = html || `
+            <div class="text-muted text-center py-2">
+                <small>過去データとの比較情報が不足しています</small>
             </div>
         `;
     }
     
-    updateSectorComparison(sectorData) {
-        const container = document.getElementById('sectorComparison');
+    updateSectorContext(sectorData) {
+        const container = document.getElementById('sectorContext');
         if (!container) return;
+        
+        const contextBody = container.querySelector('.context-body');
+        if (!contextBody) return;
         
         if (!sectorData || sectorData.status !== 'success') {
-            container.innerHTML = `
-                <div class="text-center text-muted py-4">
-                    <i class="bi bi-building" style="font-size: 2rem;"></i>
-                    <p class="mt-2 mb-0">業種比較データがありません</p>
+            contextBody.innerHTML = `
+                <div class="text-muted text-center py-2">
+                    <small>同業種比較データが利用できません</small>
                 </div>
             `;
             return;
         }
         
-        const percentile = sectorData.percentile;
-        const progressWidth = Math.max(5, percentile);
-        const progressColor = percentile >= 70 ? 'bg-success' : 
-                             percentile >= 30 ? 'bg-primary' : 'bg-warning';
+        const percentile = sectorData.percentile || 50;
+        let rankingClass = 'text-muted';
+        let rankingText = '平均的';
         
-        container.innerHTML = `
-            <div class="sector-ranking mb-3">
-                <div class="ranking-header d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="mb-0 fw-bold">${sectorData.sector_name}</h6>
-                    <span class="badge bg-secondary">${sectorData.sector_companies_count}社</span>
-                </div>
-                <div class="ranking-progress">
-                    <div class="progress mb-2" style="height: 12px;">
-                        <div class="progress-bar ${progressColor}" 
-                             style="width: ${progressWidth}%" 
-                             role="progressbar">
-                        </div>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <small class="text-muted">低位</small>
-                        <small class="fw-bold text-primary">${sectorData.ranking_description}</small>
-                        <small class="text-muted">高位</small>
-                    </div>
-                </div>
+        if (percentile >= 80) {
+            rankingClass = 'text-success';
+            rankingText = '上位グループ';
+        } else if (percentile >= 60) {
+            rankingClass = 'text-info';
+            rankingText = '平均以上';
+        } else if (percentile <= 20) {
+            rankingClass = 'text-warning';
+            rankingText = '下位グループ';
+        }
+        
+        contextBody.innerHTML = `
+            <div class="comparison-result">
+                <span class="comparison-label">${sectorData.sector_name}内での位置</span>
+                <span class="comparison-value ${rankingClass}">${rankingText}</span>
+            </div>
+            <div class="comparison-result">
+                <span class="comparison-label">分析対象企業数</span>
+                <span class="comparison-value">${sectorData.sector_companies_count}社</span>
+            </div>
+            <div class="context-detail mt-2">
+                <small class="text-muted">${sectorData.assessment}</small>
             </div>
         `;
     }
     
-    updateAlerts(alerts) {
-        const container = document.getElementById('marginAlerts');
+    updateMarketContext(analysisData) {
+        const container = document.getElementById('marketContext');
         if (!container) return;
         
-        if (!alerts || alerts.length === 0) {
-            container.innerHTML = '';
-            return;
+        const contextBody = container.querySelector('.context-body');
+        if (!contextBody) return;
+        
+        // 市場全体の傾向を分析（簡易版）
+        let marketTrend = '標準的な水準';
+        let trendClass = 'text-primary';
+        
+        if (analysisData.volatility_analysis) {
+            const volatility = analysisData.volatility_analysis.volatility;
+            
+            switch (volatility) {
+                case 'high':
+                    marketTrend = '市場全体で変動が大きい時期';
+                    trendClass = 'text-warning';
+                    break;
+                case 'low':
+                    marketTrend = '市場全体で安定している時期';
+                    trendClass = 'text-success';
+                    break;
+                default:
+                    marketTrend = '市場全体で標準的な変動';
+                    trendClass = 'text-primary';
+            }
         }
         
-        let html = '';
-        alerts.forEach((alert) => {
-            const alertClass = {
-                'warning': 'alert-warning',
-                'info': 'alert-info',
-                'success': 'alert-success',
-                'danger': 'alert-danger'
-            }[alert.level] || 'alert-info';
-            
-            const iconClass = {
-                'warning': 'bi-exclamation-triangle',
-                'info': 'bi-info-circle',
-                'success': 'bi-check-circle',
-                'danger': 'bi-x-circle'
-            }[alert.level] || 'bi-info-circle';
-            
-            html += `
-                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-                    <i class="${iconClass} me-2"></i>
-                    <strong>${alert.message}</strong><br>
-                    <small>${alert.action}</small>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            `;
-        });
+        contextBody.innerHTML = `
+            <div class="comparison-result">
+                <span class="comparison-label">市場全体の傾向</span>
+                <span class="comparison-value ${trendClass}">${marketTrend}</span>
+            </div>
+            <div class="context-detail mt-2">
+                <small class="text-muted">
+                    信用取引全体の動向を踏まえると、個別銘柄の判断においても市場環境を考慮することが重要です。
+                </small>
+            </div>
+        `;
+    }
+    
+    generatePositiveFactors(analysisData) {
+        const factors = [];
         
-        container.innerHTML = html;
+        if (analysisData.level_analysis) {
+            const level = analysisData.level_analysis.level;
+            
+            if (level === 'high' || level === 'very_high') {
+                factors.push({
+                    title: '買い需要が優勢',
+                    description: '信用取引で買いポジションが売りを上回っており、投資家の上昇期待が強い状況'
+                });
+            }
+            
+            if (level === 'low' || level === 'very_low') {
+                factors.push({
+                    title: '売り枯れによる反発期待',
+                    description: '売りポジションが多い状況は、売り枯れ後の反発上昇の可能性を示唆'
+                });
+            }
+        }
+        
+        if (analysisData.trend_analysis) {
+            const trend = analysisData.trend_analysis.trend;
+            
+            if (trend === 'upward' || trend === 'strong_upward') {
+                factors.push({
+                    title: '需給改善トレンド',
+                    description: '過去数週間で買い需要が徐々に増加しており、需給環境が改善している'
+                });
+            }
+        }
+        
+        if (analysisData.volatility_analysis) {
+            const volatility = analysisData.volatility_analysis.volatility;
+            
+            if (volatility === 'low') {
+                factors.push({
+                    title: '安定した需給環境',
+                    description: '需給バランスが安定しており、急激な変動リスクが低い状況'
+                });
+            }
+        }
+        
+        return factors;
+    }
+    
+    generateNegativeFactors(analysisData) {
+        const factors = [];
+        
+        if (analysisData.level_analysis) {
+            const level = analysisData.level_analysis.level;
+            
+            if (level === 'very_high') {
+                factors.push({
+                    title: '過度な買い偏重リスク',
+                    description: '信用買いが非常に多い状況は、将来的な売り圧力や調整リスクを含む'
+                });
+            }
+            
+            if (level === 'high') {
+                factors.push({
+                    title: '利益確定売りの可能性',
+                    description: '買いポジションが多い状況では、株価上昇後の利益確定売りが出やすい'
+                });
+            }
+            
+            if (level === 'very_low' || level === 'low') {
+                factors.push({
+                    title: '売り圧力の継続懸念',
+                    description: '売りポジションが多い状況は、さらなる下落圧力として作用する可能性'
+                });
+            }
+        }
+        
+        if (analysisData.trend_analysis) {
+            const trend = analysisData.trend_analysis.trend;
+            
+            if (trend === 'downward' || trend === 'strong_downward') {
+                factors.push({
+                    title: '需給悪化トレンド',
+                    description: '過去数週間で売り圧力が増加しており、需給環境が悪化している'
+                });
+            }
+        }
+        
+        if (analysisData.volatility_analysis) {
+            const volatility = analysisData.volatility_analysis.volatility;
+            
+            if (volatility === 'high') {
+                factors.push({
+                    title: '不安定な需給環境',
+                    description: '需給バランスが不安定で、急激な価格変動が起こりやすい状況'
+                });
+            }
+        }
+        
+        return factors;
+    }
+    
+    generateJudgmentPoints(analysisData) {
+        const points = [];
+        
+        points.push('信用倍率は需給の一つの指標ですが、業績や技術的要因も総合的に検討しましょう');
+        
+        if (analysisData.level_analysis) {
+            const level = analysisData.level_analysis.level;
+            
+            if (level === 'very_high' || level === 'high') {
+                points.push('買い優勢の状況では、利益確定のタイミングや追加買いのリスクを慎重に評価してください');
+            }
+            
+            if (level === 'very_low' || level === 'low') {
+                points.push('売り優勢の状況では、底値圏での投資機会と下落継続リスクの両方を検討してください');
+            }
+        }
+        
+        if (analysisData.sector_comparison && analysisData.sector_comparison.status === 'success') {
+            points.push(`同業他社（${analysisData.sector_comparison.sector_name}）との比較も投資判断の重要な要素です`);
+        }
+        
+        points.push('過去の推移パターンと現在の市場環境を照らし合わせて判断することが重要です');
+        
+        points.push('信用倍率の変化だけでなく、その変化の理由や背景も考慮してください');
+        
+        return points;
     }
     
     showLoading() {
-        const containers = ['trendAnalysis', 'levelAnalysis'];
-        containers.forEach(id => {
-            const container = document.getElementById(id);
+        const containers = [
+            'currentRatioDisplay',
+            { id: 'positiveFactors', selector: '.factor-body' },
+            { id: 'negativeFactors', selector: '.factor-body' },
+            { id: 'judgmentPoints', selector: '.points-body' },
+            { id: 'historicalContext', selector: '.context-body' },
+            { id: 'sectorContext', selector: '.context-body' },
+            { id: 'marketContext', selector: '.context-body' }
+        ];
+        
+        containers.forEach(item => {
+            let container;
+            if (typeof item === 'string') {
+                container = document.getElementById(item);
+            } else {
+                const parent = document.getElementById(item.id);
+                container = parent ? parent.querySelector(item.selector) : null;
+            }
+            
             if (container) {
                 container.innerHTML = `
-                    <div class="text-center py-3">
-                        <div class="spinner-border text-primary" role="status">
+                    <div class="loading-state">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
                             <span class="visually-hidden">Loading...</span>
                         </div>
-                        <p class="mt-2 mb-0 small text-muted">分析中...</p>
+                        <span class="ms-2 small">分析中...</span>
                     </div>
                 `;
             }
         });
-    }
-    
-    hideLoading() {
-        // ローディング表示を隠す処理は displayAnalysisResults で上書きされる
+        
+        // チャート統計の初期化
+        this.resetChartStats();
     }
     
     showNoDataState(message) {
-        const containers = [
-            'trendAnalysis', 
-            'levelAnalysis', 
-            'investmentInsights', 
-            'volatilityAnalysis',
-            'sectorComparison'
-        ];
+        const containers = ['currentRatioDisplay'];
         
         containers.forEach(id => {
             const container = document.getElementById(id);
             if (container) {
                 container.innerHTML = `
-                    <div class="text-center text-muted py-4">
-                        <i class="bi bi-info-circle" style="font-size: 2rem;"></i>
-                        <p class="mt-2 mb-0">${message}</p>
-                        <button class="btn btn-outline-primary btn-sm mt-2" 
+                    <div class="text-center text-muted py-3">
+                        <i class="bi bi-info-circle" style="font-size: 1.5rem;"></i>
+                        <p class="mt-2 mb-2">${message}</p>
+                        <button class="btn btn-outline-primary btn-sm" 
                                 onclick="window.marginAnalysisController?.refreshAnalysis()">
                             <i class="bi bi-arrow-clockwise me-1"></i>再試行
                         </button>
@@ -331,22 +792,37 @@ class MarginAnalysisManager {
         this.showToast(message, 'danger', 8000);
         
         if (showRetry) {
-            const containers = ['trendAnalysis', 'levelAnalysis'];
-            containers.forEach(id => {
-                const container = document.getElementById(id);
-                if (container) {
-                    container.innerHTML = `
-                        <div class="text-center text-muted py-3">
-                            <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
-                            <p class="mt-2 mb-2">${message}</p>
-                            <button class="btn btn-outline-primary btn-sm" 
-                                    onclick="window.marginAnalysisController?.refreshAnalysis()">
-                                <i class="bi bi-arrow-clockwise me-1"></i>再試行
-                            </button>
-                        </div>
-                    `;
-                }
-            });
+            const container = document.getElementById('currentRatioDisplay');
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center text-muted py-3">
+                        <i class="bi bi-exclamation-triangle text-warning" style="font-size: 1.5rem;"></i>
+                        <p class="mt-2 mb-2">${message}</p>
+                        <button class="btn btn-outline-primary btn-sm" 
+                                onclick="window.marginAnalysisController?.refreshAnalysis()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>再試行
+                        </button>
+                    </div>
+                `;
+            }
+        }
+    }
+    
+    resetChartStats() {
+        const statElements = ['currentRatio', 'avgRatio', 'maxRatio', 'minRatio'];
+        statElements.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = '-';
+            }
+        });
+    }
+    
+    // クリーンアップ処理
+    destroy() {
+        if (this.ratioChart) {
+            this.ratioChart.destroy();
+            this.ratioChart = null;
         }
     }
     
@@ -393,6 +869,21 @@ class MarginAnalysisManager {
         this.loadAnalysisData();
         this.showToast('分析データを更新しています...', 'info', 2000);
     }
+    
+    formatDate(dateString) {
+        if (!dateString) return '不明';
+        
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ja-JP', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        } catch (error) {
+            return '不明';
+        }
+    }
 }
 
 // グローバル変数
@@ -413,9 +904,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (diaryId) {
             initializeMarginAnalysis(parseInt(diaryId), currentSymbol);
-            console.log('✅ Margin Analysis Controller initialized');
+            console.log('✅ Margin Analysis Controller (Balanced Interpretation) initialized');
         }
     }
 });
 
-console.log('✅ Margin Analysis Manager loaded successfully');
+console.log('✅ Margin Analysis Manager (Balanced Interpretation) loaded successfully');

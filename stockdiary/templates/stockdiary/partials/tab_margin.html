@@ -1,5 +1,5 @@
 <!-- stockdiary/templates/stockdiary/partials/tab_margin.html -->
-<!-- 利用規約準拠版に修正 -->
+<!-- 改善版：根拠明示・両面的解釈 -->
 
 <div class="margin-analysis-container mobile-optimized" 
      data-diary-id="{{ diary.id }}" 
@@ -7,143 +7,258 @@
   
   {% if diary.stock_symbol %}
   
-    <!-- 分析サマリー -->
-    <div class="analysis-summary mb-3">
-      <div class="row g-2">
-        
-        <!-- トレンド分析カード -->
-        <div class="col-12 col-md-6">
-          <div class="analysis-card trend-card">
-            <div class="card-header">
-              <i class="bi bi-trending-up me-2"></i>
-              <span class="card-title">トレンド分析</span>
+    <!-- 現在の信用倍率 -->
+    <div class="current-ratio mb-3">
+      <div class="ratio-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h6 class="mb-0">
+            <i class="bi bi-speedometer2 me-2"></i>
+            現在の信用倍率
+          </h6>
+          <button class="btn btn-outline-secondary btn-sm" 
+                  id="refreshAnalysisBtn" 
+                  title="データを更新">
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+        </div>
+        <div class="card-body" id="currentRatioDisplay">
+          <div class="loading-state">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">データ読み込み中...</span>
             </div>
-            <div class="card-body" id="trendAnalysis">
-              <div class="loading-state">
-                <div class="spinner-border spinner-border-sm text-primary" role="status">
-                  <span class="visually-hidden">分析中...</span>
-                </div>
-                <span class="ms-2">分析中...</span>
-              </div>
-            </div>
+            <p class="mt-2 mb-0 small text-muted">信用倍率を計算中...</p>
           </div>
         </div>
-        
-        <!-- 水準分析カード -->
-        <div class="col-12 col-md-6">
-          <div class="analysis-card level-card">
-            <div class="card-header">
-              <i class="bi bi-speedometer2 me-2"></i>
-              <span class="card-title">現在水準</span>
-            </div>
-            <div class="card-body" id="levelAnalysis">
-              <div class="loading-state">
-                <div class="spinner-border spinner-border-sm text-primary" role="status">
-                  <span class="visually-hidden">分析中...</span>
-                </div>
-                <span class="ms-2">分析中...</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        
       </div>
     </div>
     
     <!-- タブナビゲーション -->
-    <div class="analysis-tabs-nav mb-3">
-      <div class="nav nav-pills nav-fill" id="analysisTabsNav" role="tablist">
-        <button class="nav-link active" id="insight-tab" data-bs-toggle="pill" 
-                data-bs-target="#insight-content" type="button" role="tab" 
-                aria-controls="insight-content" aria-selected="true">
-          <i class="bi bi-lightbulb"></i>
-          <span class="nav-text">投資洞察</span>
-        </button>
-        <button class="nav-link" id="sector-tab" data-bs-toggle="pill" 
-                data-bs-target="#sector-content" type="button" role="tab" 
-                aria-controls="sector-content" aria-selected="false">
-          <i class="bi bi-building"></i>
-          <span class="nav-text">業種比較</span>
-        </button>
-        <button class="nav-link" id="trend-tab" data-bs-toggle="pill" 
-                data-bs-target="#trend-content" type="button" role="tab" 
-                aria-controls="trend-content" aria-selected="false">
+    <div class="margin-tabs-nav mb-3">
+      <div class="nav nav-pills nav-fill" id="marginTabsNav" role="tablist">
+        <button class="nav-link active" id="chart-tab" data-bs-toggle="pill" 
+                data-bs-target="#chart-content" type="button" role="tab" 
+                aria-controls="chart-content" aria-selected="true">
           <i class="bi bi-graph-up"></i>
-          <span class="nav-text">推移分析</span>
+          <span class="nav-text">推移</span>
+        </button>
+        <button class="nav-link" id="interpretation-tab" data-bs-toggle="pill" 
+                data-bs-target="#interpretation-content" type="button" role="tab" 
+                aria-controls="interpretation-content" aria-selected="false">
+          <i class="bi bi-eye"></i>
+          <span class="nav-text">解釈</span>
+        </button>
+        <button class="nav-link" id="context-tab" data-bs-toggle="pill" 
+                data-bs-target="#context-content" type="button" role="tab" 
+                aria-controls="context-content" aria-selected="false">
+          <i class="bi bi-building"></i>
+          <span class="nav-text">比較</span>
+        </button>
+        <button class="nav-link" id="guide-tab" data-bs-toggle="pill" 
+                data-bs-target="#guide-content" type="button" role="tab" 
+                aria-controls="guide-content" aria-selected="false">
+          <i class="bi bi-book"></i>
+          <span class="nav-text">読み方</span>
         </button>
       </div>
     </div>
     
     <!-- タブコンテンツ -->
-    <div class="analysis-tab-content tab-content">
+    <div class="margin-tab-content tab-content">
       
-      <!-- 投資洞察タブ -->
-      <div class="tab-pane fade show active" id="insight-content" role="tabpanel" 
-           aria-labelledby="insight-tab">
+      <!-- 推移チャートタブ -->
+      <div class="tab-pane fade show active" id="chart-content" role="tabpanel" 
+           aria-labelledby="chart-tab">
         
-        <!-- アラート表示エリア -->
-        <div id="marginAlerts" class="alerts-container mb-3" role="alert" aria-live="polite">
-          <!-- アラートは動的に生成される -->
-        </div>
-        
-        <!-- 投資判断サポート -->
-        <div class="investment-insights mb-3">
-          <div class="insight-card">
-            <div class="insight-header">
-              <h6 class="mb-0">
-                <i class="bi bi-compass me-2"></i>
-                投資判断サポート
-              </h6>
-              <button class="btn btn-outline-secondary btn-sm" 
-                      id="refreshAnalysisBtn" 
-                      title="分析を更新">
-                <i class="bi bi-arrow-clockwise"></i>
-                <span class="d-none d-sm-inline ms-1">更新</span>
-              </button>
+        <div class="chart-container">
+          <!-- 期間選択 -->
+          <div class="chart-controls mb-3">
+            <div class="btn-group btn-group-sm w-100" role="group" aria-label="表示期間">
+              <input type="radio" class="btn-check" name="chartPeriod" id="period3m" value="3" checked>
+              <label class="btn btn-outline-primary" for="period3m">3ヶ月</label>
+              <input type="radio" class="btn-check" name="chartPeriod" id="period6m" value="6">
+              <label class="btn btn-outline-primary" for="period6m">6ヶ月</label>
+              <input type="radio" class="btn-check" name="chartPeriod" id="period1y" value="12">
+              <label class="btn btn-outline-primary" for="period1y">1年</label>
+              <input type="radio" class="btn-check" name="chartPeriod" id="periodAll" value="all">
+              <label class="btn btn-outline-primary" for="periodAll">全期間</label>
             </div>
-            <div class="insight-body" id="investmentInsights">
-              <div class="loading-state">
-                <div class="spinner-border spinner-border-sm text-primary"></div>
-                <span class="ms-2">投資洞察を分析中...</span>
+          </div>
+          
+          <!-- メインチャート -->
+          <div class="main-chart-container">
+            <div class="chart-card">
+              <div class="chart-header mb-3">
+                <h6 class="chart-title mb-1">信用倍率の推移</h6>
+                <small class="text-muted">買残高 ÷ 売残高（週次データ）</small>
+              </div>
+              <div class="chart-body position-relative">
+                <div class="chart-wrapper">
+                  <canvas id="mainRatioChart" width="400" height="200"></canvas>
+                </div>
+                <div id="chartLoading" class="position-absolute top-50 start-50 translate-middle d-none">
+                  <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        
-        <!-- 変動分析 -->
-        <div class="volatility-analysis">
-          <div class="analysis-card">
-            <div class="card-header">
-              <i class="bi bi-activity me-2"></i>
-              <span class="card-title">変動分析</span>
-            </div>
-            <div class="card-body" id="volatilityAnalysis">
-              <div class="loading-state">
-                <div class="spinner-border spinner-border-sm text-primary"></div>
-                <span class="ms-2">変動パターンを分析中...</span>
+          
+          <!-- チャート統計（横並び4列） -->
+          <div class="chart-stats mt-3">
+            <div class="stats-grid-horizontal" id="chartStatsContainer">
+              <div class="stat-item-horizontal current">
+                <div class="stat-content">
+                  <div class="stat-label">現在</div>
+                  <div class="stat-value" id="currentRatio">-</div>
+                </div>
+              </div>
+              
+              <div class="stat-item-horizontal average">
+                <div class="stat-content">
+                  <div class="stat-label">平均</div>
+                  <div class="stat-value" id="avgRatio">-</div>
+                </div>
+              </div>
+              
+              <div class="stat-item-horizontal high">
+                <div class="stat-content">
+                  <div class="stat-label">最高</div>
+                  <div class="stat-value" id="maxRatio">-</div>
+                </div>
+              </div>
+              
+              <div class="stat-item-horizontal low">
+                <div class="stat-content">
+                  <div class="stat-label">最低</div>
+                  <div class="stat-value" id="minRatio">-</div>
+                </div>
               </div>
             </div>
           </div>
+          
+        </div>
+        
+      </div>
+      
+      <!-- 両面解釈タブ -->
+      <div class="tab-pane fade" id="interpretation-content" role="tabpanel" 
+           aria-labelledby="interpretation-tab">
+        
+        <div class="interpretation-container">
+          <!-- ポジティブ要因 -->
+          <div class="factor-analysis mb-3" id="positiveFactors">
+            <div class="factor-card positive-factors">
+              <div class="factor-header">
+                <h6 class="mb-0">
+                  <i class="bi bi-arrow-up-circle text-success me-2"></i>
+                  ポジティブ要因
+                </h6>
+                <small class="text-muted">上昇要因として考えられること</small>
+              </div>
+              <div class="factor-body">
+                <div class="loading-state text-center py-2">
+                  <span class="text-muted small">ポジティブ要因を分析中...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- ネガティブ要因 -->
+          <div class="factor-analysis mb-3" id="negativeFactors">
+            <div class="factor-card negative-factors">
+              <div class="factor-header">
+                <h6 class="mb-0">
+                  <i class="bi bi-arrow-down-circle text-danger me-2"></i>
+                  リスク要因
+                </h6>
+                <small class="text-muted">下落リスクとして考えられること</small>
+              </div>
+              <div class="factor-body">
+                <div class="loading-state text-center py-2">
+                  <span class="text-muted small">リスク要因を分析中...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 判断のポイント -->
+          <div class="judgment-points" id="judgmentPoints">
+            <div class="points-card">
+              <div class="points-header">
+                <h6 class="mb-0">
+                  <i class="bi bi-lightbulb text-warning me-2"></i>
+                  判断のポイント
+                </h6>
+              </div>
+              <div class="points-body">
+                <div class="loading-state text-center py-2">
+                  <span class="text-muted small">判断ポイントを整理中...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
         </div>
         
       </div>
       
       <!-- 業種比較タブ -->
-      <div class="tab-pane fade" id="sector-content" role="tabpanel" 
-           aria-labelledby="sector-tab">
+      <div class="tab-pane fade" id="context-content" role="tabpanel" 
+           aria-labelledby="context-tab">
         
-        <div class="sector-comparison-container">
-          <div class="comparison-header mb-3 text-center">
-            <h6 class="mb-1">同業種での位置づけ</h6>
-            <small class="text-muted">{{ diary.stock_name }} を同業他社と比較分析</small>
+        <div class="sector-context-container">
+          <!-- 同業種比較 -->
+          <div class="sector-comparison mb-3" id="sectorContext">
+            <div class="context-card">
+              <div class="context-header">
+                <h6 class="mb-0">
+                  <i class="bi bi-building me-2"></i>
+                  同業種での位置づけ
+                </h6>
+                <small class="text-muted">同業他社と比べた相対的位置</small>
+              </div>
+              <div class="context-body">
+                <div class="loading-state text-center py-2">
+                  <span class="text-muted small">同業種と比較中...</span>
+                </div>
+              </div>
+            </div>
           </div>
           
-          <div id="sectorComparison">
-            <div class="loading-state text-center py-4">
-              <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">業種分析中...</span>
+          <!-- 過去との比較 -->
+          <div class="historical-context mb-3" id="historicalContext">
+            <div class="context-card">
+              <div class="context-header">
+                <h6 class="mb-0">
+                  <i class="bi bi-clock-history me-2"></i>
+                  過去水準との比較
+                </h6>
+                <small class="text-muted">この銘柄の過去水準との比較</small>
               </div>
-              <p class="mt-2 mb-0 small text-muted">業種データを分析しています...</p>
+              <div class="context-body">
+                <div class="loading-state text-center py-2">
+                  <span class="text-muted small">過去データと比較中...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 市場全体との比較 -->
+          <div class="market-context" id="marketContext">
+            <div class="context-card">
+              <div class="context-header">
+                <h6 class="mb-0">
+                  <i class="bi bi-graph-up me-2"></i>
+                  市場全体の傾向
+                </h6>
+                <small class="text-muted">全体的な信用取引の傾向</small>
+              </div>
+              <div class="context-body">
+                <div class="loading-state text-center py-2">
+                  <span class="text-muted small">市場傾向を分析中...</span>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -151,29 +266,113 @@
         
       </div>
       
-      <!-- 推移分析タブ -->
-      <div class="tab-pane fade" id="trend-content" role="tabpanel" 
-           aria-labelledby="trend-tab">
+      <!-- 読み方ガイドタブ -->
+      <div class="tab-pane fade" id="guide-content" role="tabpanel" 
+           aria-labelledby="guide-tab">
         
-        <!-- トレンドパターン表示 -->
-        <div class="trend-chart-container mb-3">
-          <div class="chart-card">
-            <div class="chart-header">
-              <h6 class="chart-title">
-                <i class="bi bi-graph-up me-2"></i>
-                トレンドパターン
-              </h6>
-              <small class="text-muted">過去12週の変化傾向</small>
-            </div>
-            <div class="chart-body">
-              <div class="trend-pattern-display">
-                <p class="text-center text-muted mt-3">
-                  <i class="bi bi-graph-up" style="font-size: 2rem;"></i><br>
-                  トレンド分析結果をここに表示します
-                </p>
+        <div class="guide-container">
+          <!-- 信用倍率の基本 -->
+          <div class="guide-section mb-3">
+            <div class="guide-card">
+              <div class="guide-header">
+                <h6 class="mb-0">
+                  <i class="bi bi-question-circle me-2"></i>
+                  信用倍率とは
+                </h6>
+              </div>
+              <div class="guide-body">
+                <div class="formula-display mb-3">
+                  <div class="formula">
+                    信用倍率 = <span class="text-success">買残高</span> ÷ <span class="text-danger">売残高</span>
+                  </div>
+                </div>
+                
+                <div class="meaning-grid">
+                  <div class="meaning-item">
+                    <div class="meaning-label">1倍より大きい場合</div>
+                    <div class="meaning-description">買い需要 > 売り需要</div>
+                  </div>
+                  <div class="meaning-item">
+                    <div class="meaning-label">1倍より小さい場合</div>
+                    <div class="meaning-description">売り需要 > 買い需要</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+          
+          <!-- 解釈のコツ -->
+          <div class="guide-section mb-3">
+            <div class="guide-card">
+              <div class="guide-header">
+                <h6 class="mb-0">
+                  <i class="bi bi-lightbulb me-2"></i>
+                  解釈のコツ
+                </h6>
+              </div>
+              <div class="guide-body">
+                <div class="interpretation-tips">
+                  <div class="tip-item">
+                    <div class="tip-icon">
+                      <i class="bi bi-arrow-up text-success"></i>
+                    </div>
+                    <div class="tip-content">
+                      <div class="tip-title">高い信用倍率（2倍以上）</div>
+                      <div class="tip-positive">✓ 買い需要が強い、上昇期待</div>
+                      <div class="tip-negative">⚠ 将来の売り圧力、調整リスク</div>
+                    </div>
+                  </div>
+                  
+                  <div class="tip-item">
+                    <div class="tip-icon">
+                      <i class="bi bi-arrow-down text-danger"></i>
+                    </div>
+                    <div class="tip-content">
+                      <div class="tip-title">低い信用倍率（0.5倍以下）</div>
+                      <div class="tip-negative">⚠ 売り圧力が強い、下落懸念</div>
+                      <div class="tip-positive">✓ 売り枯れ後の反発期待</div>
+                    </div>
+                  </div>
+                  
+                  <div class="tip-item">
+                    <div class="tip-icon">
+                      <i class="bi bi-dash text-primary"></i>
+                    </div>
+                    <div class="tip-content">
+                      <div class="tip-title">中程度（0.5〜2倍）</div>
+                      <div class="tip-neutral">→ バランスが取れた状態</div>
+                      <div class="tip-neutral">→ 他の要因も重視する</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 注意事項 -->
+          <div class="guide-section">
+            <div class="warning-card">
+              <div class="warning-header">
+                <h6 class="mb-0">
+                  <i class="bi bi-exclamation-triangle me-2"></i>
+                  重要な注意点
+                </h6>
+              </div>
+              <div class="warning-body">
+                <ul class="warning-list">
+                  <li><strong>信用倍率だけでは判断しない</strong><br>
+                      業績、チャート、ニュースなど総合的に検討</li>
+                  <li><strong>銘柄の特性を考慮する</strong><br>
+                      成長株、バリュー株、業種によって傾向が異なる</li>
+                  <li><strong>時間軸を意識する</strong><br>
+                      短期的な需給と中長期的な価値は別物</li>
+                  <li><strong>過度な信頼は禁物</strong><br>
+                      あくまで参考指標の一つとして活用</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
         </div>
         
       </div>
@@ -182,7 +381,7 @@
     
   {% else %}
     <!-- 証券コード未設定の場合 -->
-    <div class="empty-state mobile-optimized text-center py-4">
+    <div class="empty-state text-center py-4">
       <i class="bi bi-info-circle empty-icon"></i>
       <h6 class="empty-title">証券コードが設定されていません</h6>
       <p class="empty-description">信用倍率分析には証券コードが必要です</p>
@@ -192,161 +391,422 @@
       </a>
     </div>
   {% endif %}
-  
-  <!-- データソース表記 -->
-  <div class="data-source-notice mt-4">
-    <div class="notice-card">
-      <div class="notice-body">
-        <div class="text-center">
-          <small class="text-muted">
-            <i class="bi bi-info-circle me-1"></i>
-            JPX公開データを独自分析したものです。投資判断は自己責任でお願いします。
-          </small>
-          <div class="mt-2">
-            <a href="https://www.jpx.co.jp/markets/statistics-equities/margin/" 
-               target="_blank" 
-               rel="noopener noreferrer" 
-               class="btn btn-outline-primary btn-sm">
-              <i class="bi bi-box-arrow-up-right me-1"></i>
-              元データを確認（JPX公式）
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
   
 </div>
 
-<!-- CSSスタイル -->
+<!-- CSSスタイル（改善版） -->
 <style>
-/* ===== 基本スタイル ===== */
+/* ===== 基本レイアウト ===== */
 .margin-analysis-container {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
-  padding: 0;
-  margin: 0;
 }
 
-/* ===== 分析カード共通スタイル ===== */
-.analysis-card {
-  background: white;
+/* ===== 信用倍率表示カード ===== */
+.ratio-card {
+  background: linear-gradient(135deg, #f0f8ff 0%, #fff 100%);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid rgba(13, 110, 253, 0.1);
 }
 
-.analysis-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+.ratio-card .card-header {
+  background: rgba(13, 110, 253, 0.05);
+  border-bottom: 1px solid rgba(13, 110, 253, 0.1);
+  border-radius: 12px 12px 0 0;
+  padding: 14px 18px;
 }
 
-.analysis-card .card-header {
-  background: #f8f9fa;
-  padding: 12px 16px;
-  border-bottom: 1px solid #e9ecef;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.ratio-card .card-body {
+  padding: 24px 20px;
+  min-height: 120px;
+  text-align: center;
 }
 
-.analysis-card .card-title {
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0;
-  color: #495057;
+/* ===== 信用倍率値の表示 ===== */
+.ratio-value {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 8px;
 }
 
-.analysis-card .card-body {
-  padding: 16px;
-  min-height: 80px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* ===== トレンド・水準カード ===== */
-.trend-card {
-  border-left: 4px solid #28a745;
-}
-
-.level-card {
-  border-left: 4px solid #007bff;
-}
-
-/* ===== タブナビゲーション ===== */
-.analysis-tabs-nav .nav-pills {
-  background: rgba(248, 249, 250, 0.8);
-  border-radius: 12px;
-  padding: 4px;
-}
-
-.analysis-tabs-nav .nav-link {
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 12px 8px;
-  min-height: 60px;
+.ratio-unit {
+  font-size: 1rem;
+  font-weight: 500;
   color: #6c757d;
 }
 
-.analysis-tabs-nav .nav-link i {
-  font-size: 18px;
+.ratio-status {
+  margin-top: 12px;
 }
 
-.analysis-tabs-nav .nav-text {
-  font-size: 12px;
+.ratio-level {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.analysis-tabs-nav .nav-link.active {
-  background-color: #0d6efd;
+.ratio-description {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: #495057;
+}
+
+/* ===== 水準別カラー ===== */
+.ratio-very-high { color: #dc3545; }
+.ratio-high { color: #fd7e14; }
+.ratio-medium-high { color: #20c997; }
+.ratio-medium { color: #007bff; }
+.ratio-low { color: #6f42c1; }
+.ratio-very-low { color: #6c757d; }
+
+.level-very-high { background: rgba(220, 53, 69, 0.15); color: #dc3545; }
+.level-high { background: rgba(253, 126, 20, 0.15); color: #fd7e14; }
+.level-medium-high { background: rgba(32, 201, 151, 0.15); color: #20c997; }
+.level-medium { background: rgba(0, 123, 255, 0.15); color: #007bff; }
+.level-low { background: rgba(111, 66, 193, 0.15); color: #6f42c1; }
+.level-very-low { background: rgba(108, 117, 125, 0.15); color: #6c757d; }
+
+/* ===== タブナビゲーション ===== */
+.margin-tabs-nav .nav-pills {
+  background: rgba(248, 249, 250, 0.9);
+  border-radius: 12px;
+  padding: 4px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.margin-tabs-nav .nav-link {
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  color: #6c757d;
+  min-height: 60px;
+  justify-content: center;
+}
+
+.margin-tabs-nav .nav-link i {
+  font-size: 16px;
+}
+
+.margin-tabs-nav .nav-text {
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.margin-tabs-nav .nav-link.active {
+  background: linear-gradient(135deg, #0d6efd, #0056b3);
   color: white;
-  box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+  transform: translateY(-1px);
 }
 
-.analysis-tabs-nav .nav-link:hover:not(.active) {
+.margin-tabs-nav .nav-link:hover:not(.active) {
   background-color: rgba(13, 110, 253, 0.1);
   color: #0d6efd;
+  transform: translateY(-1px);
 }
 
-/* ===== インサイトカード ===== */
-.insight-card {
-  background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+/* ===== 要因分析カード ===== */
+.factor-card {
+  background: white;
   border-radius: 12px;
-  border: 1px solid #e3f2fd;
+  border: 1px solid #e9ecef;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.positive-factors {
+  border-left: 4px solid #28a745;
+}
+
+.negative-factors {
+  border-left: 4px solid #dc3545;
+}
+
+.factor-header {
+  background: #f8f9fa;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.factor-body {
+  padding: 16px 18px;
+}
+
+.factor-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.factor-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  padding: 8px 0;
+}
+
+.factor-icon {
+  margin-right: 10px;
+  margin-top: 2px;
+  font-size: 14px;
+}
+
+.factor-text {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.factor-title {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.factor-description {
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+/* ===== 判断ポイントカード ===== */
+.points-card {
+  background: linear-gradient(135deg, #fff8f0 0%, #fff 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 193, 7, 0.2);
   overflow: hidden;
 }
 
-.insight-header {
-  background: rgba(13, 110, 253, 0.05);
-  padding: 16px;
-  border-bottom: 1px solid rgba(13, 110, 253, 0.1);
+.points-header {
+  background: rgba(255, 193, 7, 0.1);
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255, 193, 7, 0.2);
+}
+
+.points-body {
+  padding: 16px 18px;
+}
+
+.points-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.point-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  padding: 6px 0;
 }
 
-.insight-body {
+.point-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: #ffc107;
+  color: white;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: bold;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+.point-text {
+  flex: 1;
+  line-height: 1.4;
+  font-size: 0.9rem;
+}
+
+/* ===== コンテキストカード ===== */
+.context-card {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  overflow: hidden;
+}
+
+.context-header {
+  background: #f8f9fa;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.context-body {
   padding: 16px;
 }
 
-.insight-item {
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+.comparison-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  margin-bottom: 8px;
 }
 
-.insight-item:last-child {
-  border-bottom: none;
+.comparison-label {
+  font-size: 0.9rem;
+  color: #495057;
+}
+
+.comparison-value {
+  font-weight: 600;
+}
+
+/* ===== ガイドセクション ===== */
+.guide-card {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  overflow: hidden;
+}
+
+.guide-header {
+  background: #f8f9fa;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.guide-body {
+  padding: 18px;
+}
+
+.formula-display {
+  text-align: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa, #ffffff);
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.formula {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+.meaning-grid {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.meaning-item {
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.meaning-label {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #495057;
+}
+
+.meaning-description {
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+/* ===== 解釈のコツ ===== */
+.interpretation-tips {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tip-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.tip-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f8f9fa;
+  flex-shrink: 0;
+}
+
+.tip-content {
+  flex: 1;
+}
+
+.tip-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #495057;
+}
+
+.tip-positive {
+  color: #28a745;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.tip-negative {
+  color: #dc3545;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.tip-neutral {
+  color: #6c757d;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+/* ===== 警告カード ===== */
+.warning-card {
+  background: linear-gradient(135deg, #fff3cd, #ffffff);
+  border-radius: 8px;
+  border: 1px solid #ffc107;
+  overflow: hidden;
+}
+
+.warning-header {
+  background: rgba(255, 193, 7, 0.2);
+  padding: 14px 18px;
+  border-bottom: 1px solid #ffc107;
+}
+
+.warning-body {
+  padding: 18px;
+}
+
+.warning-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.warning-list li {
+  margin-bottom: 12px;
+  line-height: 1.5;
+  color: #856404;
 }
 
 /* ===== ローディング状態 ===== */
@@ -357,27 +817,7 @@
   gap: 8px;
   color: #6c757d;
   font-size: 13px;
-  text-align: center;
-}
-
-/* ===== アラート ===== */
-.alerts-container .alert {
-  border-radius: 8px;
-  border: none;
-  font-size: 14px;
-  margin-bottom: 12px;
-  animation: fadeInUp 0.3s ease;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  padding: 16px;
 }
 
 /* ===== 空状態 ===== */
@@ -406,53 +846,95 @@
 
 /* ===== データソース注記 ===== */
 .data-source-notice {
-  margin-top: 32px;
+  margin-top: 24px;
 }
 
 .notice-card {
-  background: #f8f9fa;
+  background: linear-gradient(135deg, #f8f9fa, #ffffff);
   border-radius: 12px;
-  padding: 20px;
+  padding: 16px;
   border: 1px solid #e9ecef;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 /* ===== レスポンシブデザイン ===== */
 @media (max-width: 576px) {
-  .analysis-card .card-body {
-    padding: 12px;
-    min-height: 60px;
-  }
-  
-  .insight-header {
-    padding: 12px;
-    flex-direction: column;
-    gap: 8px;
-    align-items: flex-start;
-  }
-  
-  .insight-body {
-    padding: 12px;
-  }
-  
-  .analysis-tabs-nav .nav-link {
+  .margin-tabs-nav .nav-link {
     padding: 8px 6px;
     min-height: 50px;
   }
   
-  .analysis-tabs-nav .nav-text {
-    font-size: 11px;
+  .margin-tabs-nav .nav-text {
+    font-size: 10px;
   }
   
-  .empty-state {
-    padding: 32px 12px;
+  .balance-display {
+    flex-direction: column;
+    gap: 8px;
   }
   
-  .empty-icon {
-    font-size: 36px;
+  .vs-separator {
+    margin: 8px 0;
+    transform: rotate(90deg);
+  }
+  
+  .tip-item {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .factor-body,
+  .points-body,
+  .context-body,
+  .guide-body,
+  .warning-body {
+    padding: 12px;
+  }
+  
+  /* チャート関連のモバイル調整 */
+  .chart-wrapper {
+    height: 200px; /* モバイルでは少し低く */
+  }
+  
+  .chart-controls .btn {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+  }
+  
+  /* 統計グリッドのモバイル調整（4列維持） */
+  .stats-grid-horizontal {
+    gap: 6px;
+  }
+  
+  .stat-item-horizontal {
+    padding: 8px 4px;
+  }
+  
+  .stat-item-horizontal::before {
+    font-size: 18px;
+  }
+  
+  .stat-label {
+    font-size: 0.65rem;
+    margin-bottom: 2px;
+  }
+  
+  .stat-value {
+    font-size: 0.8rem;
+  }
+  
+  /* 期間選択ボタンのモバイル調整 */
+  .chart-controls .btn-group {
+    font-size: 0.75rem;
+  }
+  
+  .chart-controls .btn {
+    min-width: auto;
+    white-space: nowrap;
   }
 }
 
-/* ===== アクセシビリティ対応 ===== */
+/* ===== アクセシビリティ ===== */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -467,6 +949,26 @@
   box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
   outline: none;
 }
+
+/* ===== カラーテーマ ===== */
+.text-balance-buy { color: #28a745 !important; }
+.text-balance-sell { color: #dc3545 !important; }
+.text-balance-neutral { color: #6c757d !important; }
+
+.bg-balance-buy { background-color: rgba(40, 167, 69, 0.1) !important; }
+.bg-balance-sell { background-color: rgba(220, 53, 69, 0.1) !important; }
+.bg-balance-neutral { background-color: rgba(108, 117, 125, 0.1) !important; }
 </style>
 
-<!-- JavaScript初期化は外部ファイルで行う -->
+<!-- Chart.js CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+
+<!-- JavaScript（初期化は外部ファイルで行う） -->
+<script>
+// 両面的解釈を重視した分析表示
+document.addEventListener('DOMContentLoaded', function() {
+  if (window.marginAnalysisController) {
+    console.log('✅ Margin Analysis Controller (Balanced Interpretation) initialized');
+  }
+});
+</script>
