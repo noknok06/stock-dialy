@@ -159,9 +159,6 @@
             </div>
             <div class="tab-label">
               信用倍率
-              {% if margin_data %}
-              <span class="badge bg-primary bg-opacity-25 text-primary notes-count-badge">{{ margin_data|length }}</span>
-              {% endif %}
             </div>
           </button>
         </li>
@@ -172,10 +169,12 @@
             <div class="tab-icon">
               <i class="bi bi-link-45deg"></i>
             </div>
-            <div class="tab-label">タイムライン</div>
-            {% if related_diaries %}
-            <div class="tab-count">{{ related_diaries|length }}件</div>
-            {% endif %}
+            <div class="tab-label">
+              タイムライン
+              {% if related_diaries %}
+                <span class="badge bg-primary bg-opacity-25 text-primary notes-count-badge">{{ related_diaries.count }}</span>
+              {% endif %}
+            </div>
           </button>
         </li>
       </ul>
@@ -404,29 +403,29 @@
                         
                         <div class="analysis-item-answer mobile-optimized">
                           {% if item_data.item.item_type == 'boolean' %}
-                            <span class="answer-value {% if item_data.value.boolean_value %}text-success{% else %}text-danger{% endif %}">
+                            <div class="answer-value {% if item_data.value.boolean_value %}text-success{% else %}text-danger{% endif %}">
                               <i class="bi {% if item_data.value.boolean_value %}bi-check-circle{% else %}bi-x-circle{% endif %} me-1"></i>
                               {{ item_data.display_value }}
-                            </span>
+                            </div>
                           {% elif item_data.item.item_type == 'boolean_with_value' %}
-                            <span class="answer-value {% if item_data.value.boolean_value %}text-success{% else %}text-danger{% endif %}">
+                            <div class="answer-value {% if item_data.value.boolean_value %}text-success{% else %}text-danger{% endif %}">
                               {{ item_data.display_value }}
-                            </span>
+                            </div>
                           {% elif item_data.item.item_type == 'number' %}
-                            <span class="answer-value text-primary">
+                            <div class="answer-value text-primary">
                               <i class="bi bi-123 me-1"></i>
                               {{ item_data.display_value }}
-                            </span>
+                            </div>
                           {% elif item_data.item.item_type == 'select' %}
-                            <span class="answer-value text-info">
+                            <div class="answer-value text-info">
                               <i class="bi bi-list-check me-1"></i>
                               {{ item_data.display_value }}
-                            </span>
+                            </div>
                           {% else %}
-                            <span class="answer-value text-dark">
+                            <div class="answer-value text-dark">
                               <i class="bi bi-text-left me-1"></i>
                               {% if item_data.value.text_value|length > 50 %}
-                                <span class="answer-preview">{{ item_data.value.text_value|truncatechars:50 }}</span>
+                                <div class="answer-preview">{{ item_data.value.text_value|truncatechars:50 }}</div>
                                 <button class="btn btn-link btn-sm p-0 ms-1" 
                                         type="button" 
                                         data-bs-toggle="collapse" 
@@ -438,9 +437,9 @@
                                   <div class="answer-full">{{ item_data.value.text_value|linebreaks }}</div>
                                 </div>
                               {% else %}
-                                {{ item_data.display_value }}
+                                <div class="answer-simple">{{ item_data.display_value }}</div>
                               {% endif %}
-                            </span>
+                            </div>
                           {% endif %}
                           
                           {% if not item_data.is_completed %}
@@ -866,7 +865,7 @@
               <span>{{ current_diary_index|add:1 }}</span> / <span>{{ total_related_count }}</span> 件目
             </div>
             {% endif %}
-          </div>
+          </div> <!-- ここに追加: timeline-section の終了タグ -->
           {% else %}
           <div class="empty-state">
             <div class="empty-icon">
