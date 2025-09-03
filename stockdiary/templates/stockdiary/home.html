@@ -1026,23 +1026,6 @@ img {
   </form>
 </div>
 
-<!-- 検索結果情報 -->
-<div class="search-results-info" id="searchResultsInfo" style="{% if not request.GET.query and not request.GET.tag and not request.GET.status %}display: none;{% endif %}">
-  <div>
-    <strong id="resultsCount">{{ diaries.paginator.count|default:0 }}件</strong>の日記が見つかりました
-    {% if request.GET.query %}
-      「<strong>{{ request.GET.query }}</strong>」の検索結果
-    {% endif %}
-  </div>
-  <div>
-    <small class="text-muted">
-      {% if request.GET.query %}
-        検索時間: {{ search_time|default:"--" }}秒
-      {% endif %}
-    </small>
-  </div>
-</div>
-
   <!-- 日記カード一覧 -->
   <h4 class="mb-3 diary-title px-2">
     <i class="bi bi-journal-richtext"></i> 株式日記リスト
