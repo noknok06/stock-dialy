@@ -149,6 +149,8 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .table-tag-badge {
@@ -160,6 +162,18 @@
     border-radius: 9999px;
     font-weight: 500;
     font-size: 0.875rem;
+    transition: all 0.2s ease;
+  }
+
+  .table-tag-badge:hover {
+    background-color: var(--primary-color);
+    color: white;
+    transform: translateY(-1px);
+  }
+
+  .table-tag-name a {
+    display: inline-block;
+    text-decoration: none;
   }
 
   /* エンプティステート */
@@ -271,8 +285,8 @@
           <table class="table">
             <thead>
               <tr>
-                <th style="width: 80%">タグ名</th>
-                <th style="width: 20%">操作</th>
+                <th style="width: 70%">タグ名</th>
+                <th style="width: 30%">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -280,18 +294,30 @@
                 <tr>
                   <td>
                     <div class="table-tag-name">
-                      <span class="table-tag-badge">
-                        <i class="bi bi-tag-fill me-1"></i>
-                        {{ tag.name }}
-                      </span>
+                      <a href="{% url 'tags:detail' tag.id %}" class="text-decoration-none">
+                        <span class="table-tag-badge">
+                          <i class="bi bi-tag-fill me-1"></i>
+                          {{ tag.name }}
+                        </span>
+                      </a>
+                      {% with diary_count=tag.stockdiary_set.count %}
+                        {% if diary_count > 0 %}
+                          <small class="text-muted ms-2">{{ diary_count }}件の記録で使用中</small>
+                        {% else %}
+                          <small class="text-muted ms-2">未使用</small>
+                        {% endif %}
+                      {% endwith %}
                     </div>
                   </td>
                   <td>
                     <div class="d-flex gap-2">
-                      <a href="{% url 'tags:update' tag.id %}" class="btn btn-sm btn-outline-warning">
+                      <a href="{% url 'tags:detail' tag.id %}" class="btn btn-sm btn-outline-primary" title="詳細を見る">
+                        <i class="bi bi-eye"></i>
+                      </a>
+                      <a href="{% url 'tags:update' tag.id %}" class="btn btn-sm btn-outline-warning" title="編集">
                         <i class="bi bi-pencil"></i>
                       </a>
-                      <a href="{% url 'tags:delete' tag.id %}" class="btn btn-sm btn-outline-danger">
+                      <a href="{% url 'tags:delete' tag.id %}" class="btn btn-sm btn-outline-danger" title="削除">
                         <i class="bi bi-trash"></i>
                       </a>
                     </div>

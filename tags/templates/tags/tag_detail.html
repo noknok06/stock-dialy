@@ -1,0 +1,578 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}タグ詳細: {{ tag.name }} | カブログ{% endblock %}
+
+{% block head %}
+<style>
+:root {
+  --primary-color: #4a90e2;   /* 明るめの青 */
+  --primary-dark:  #357ABD;   /* 少し濃い青 */
+}
+
+body {
+  background-color: #f9fafb;
+}
+
+.page-header {
+  margin-bottom: 1.5rem;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tag-badge-large {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, rgba(79, 131, 204, 0.1), rgba(44, 90, 160, 0.1));
+  color: #2C5AA0;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  border: 1px solid rgba(79, 131, 204, 0.2);
+}
+
+.tag-badge-large i {
+  margin-right: 0.5rem;
+}
+
+/* 統計カード（stock_list.htmlスタイル統一） */
+.stats-card {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* フィルターコントロール（stock_list.htmlスタイル統一） */
+.filter-controls {
+  background: linear-gradient(135deg, #f8f9fc 0%, #e9ecef 100%);
+  border: 1px solid rgba(79, 131, 204, 0.1);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* カードスタイル */
+.card {
+  border: none;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.card-header {
+  background-color: white;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 1.25rem;
+}
+
+.card-body {
+  padding: 1.25rem;
+}
+
+/* フィルタータブ */
+.filter-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.filter-tab {
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #6b7280;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.filter-tab.active,
+.filter-tab:hover {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+/* 検索フォーム */
+.search-form {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.form-control {
+  border-radius: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #d1d5db;
+  flex-grow: 1;
+}
+
+.form-control:focus {
+  border-color: #a5b4fc;
+  box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.25);
+}
+
+/* 銘柄テーブル（stock_list.htmlスタイル統一） */
+.table-hover tbody tr:hover {
+  background-color: rgba(79, 131, 204, 0.04);
+}
+
+.table thead th {
+  background: linear-gradient(135deg, #f8f9fc 0%, #e9ecef 100%);
+  border-bottom: 2px solid rgba(79, 131, 204, 0.1);
+  font-weight: 600;
+  color: #2d3748;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.table td {
+  padding: 0.875rem 0.75rem;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.stock-name {
+  font-weight: 600;
+  color: #111827;
+  font-size: 0.95rem;
+}
+
+.stock-symbol {
+  color: var(--primary-color);
+  font-size: 0.8rem;
+  font-family: monospace;
+  font-weight: 600;
+}
+
+.stock-sector {
+  background: linear-gradient(135deg, rgba(79, 131, 204, 0.1), rgba(44, 90, 160, 0.1));
+  color: #2C5AA0;
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border: 1px solid rgba(79, 131, 204, 0.2);
+}
+
+.stat-badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  min-width: 2rem;
+  text-align: center;
+}
+
+.stat-total { 
+  background: linear-gradient(135deg, #3b82f6, #2563eb); 
+  color: white; 
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+.stat-active { 
+  background: linear-gradient(135deg, #10b981, #059669); 
+  color: white; 
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.stat-sold { 
+  background: linear-gradient(135deg, #f59e0b, #d97706); 
+  color: white; 
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+}
+
+.stat-memo { 
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed); 
+  color: white; 
+  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2);
+}
+
+/* エンプティステート */
+.empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.empty-state-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, rgba(79, 131, 204, 0.1), rgba(44, 90, 160, 0.05));
+  color: var(--primary-color);
+  border-radius: 50%;
+  margin-bottom: 1.5rem;
+}
+
+.empty-state-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #111827;
+}
+
+.empty-state-description {
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  
+  .filter-controls {
+    padding: 0.875rem;
+    margin: 0 -0.25rem 1.25rem -0.25rem;
+    border-radius: 0.625rem;
+  }
+  
+  .stats-card {
+    margin: 0 -0.25rem 1.25rem -0.25rem;
+    padding: 1.25rem 1rem;
+    border-radius: 0.625rem;
+  }
+  
+  .stats-card .row {
+    --bs-gutter-x: 0.5rem;
+  }
+  
+  .stats-card .col-6 {
+    margin-bottom: 0.75rem;
+  }
+  
+  .page-header {
+    margin-bottom: 1.25rem;
+  }
+  
+  .page-title {
+    font-size: 1.25rem;
+  }
+  
+  .tag-badge-large {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+  }
+  
+  .filter-tabs {
+    justify-content: center;
+  }
+
+  .search-form {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .search-form .form-control {
+    width: 100%;
+  }
+
+  .table-responsive {
+    font-size: 0.875rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin: 0 -0.5rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .container {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  .filter-controls {
+    margin: 0 -0.125rem 1rem -0.125rem;
+    padding: 0.75rem;
+  }
+  
+  .stats-card {
+    margin: 0 -0.125rem 1rem -0.125rem;
+    padding: 1rem 0.75rem;
+  }
+  
+  .stats-card .h3 {
+    font-size: 1.5rem;
+  }
+  
+  .stats-card .small {
+    font-size: 0.75rem;
+  }
+  
+  .page-header {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  
+  .page-title {
+    font-size: 1.125rem;
+  }
+  
+  .tag-badge-large {
+    font-size: 0.85rem;
+    padding: 0.35rem 0.7rem;
+  }
+  
+  /* 極小画面でのフィルタータブ調整 */
+  .filter-tabs {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.25rem;
+  }
+  
+  .filter-tab {
+    padding: 0.3rem 0.4rem;
+    font-size: 0.7rem;
+  }
+  
+  .filter-tab i {
+    display: none; /* アイコンを非表示 */
+  }
+  
+  /* モバイルテーブル調整 */
+  .mobile-table th,
+  .mobile-table td {
+    padding: 0.4rem 0.25rem;
+  }
+  
+  .mobile-table .stock-name {
+    font-size: 0.8rem;
+  }
+  
+  .mobile-table .stock-symbol {
+    font-size: 0.65rem;
+  }
+  
+  .mobile-table .stock-meta {
+    font-size: 0.6rem;
+    line-height: 1.3;
+  }
+  
+  .mobile-table .btn-group-sm .btn {
+    padding: 0.2rem 0.3rem;
+    font-size: 0.65rem;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <!-- ページヘッダー -->
+  <div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+      <h1 class="page-title">
+        <span class="tag-badge-large">
+          <i class="bi bi-tag-fill"></i>
+          {{ tag.name }}
+        </span>
+      </h1>
+      <p class="text-muted mb-0">このタグが設定されている銘柄と投資記録</p>
+    </div>
+  </div>
+
+  <!-- 統計カード -->
+  <div class="stats-card">
+    <div class="row g-3">
+      <div class="col-6 col-md-3">
+        <div class="text-center">
+          <div class="h3 mb-1">{{ stats.total_diaries }}</div>
+          <div class="small">総投資記録</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="text-center">
+          <div class="h3 mb-1">{{ stats.unique_stocks }}</div>
+          <div class="small">対象銘柄数</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="text-center">
+          <div class="h3 mb-1">{{ stats.active_holdings }}</div>
+          <div class="small">保有中</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="text-center">
+          <div class="h3 mb-1">{{ stats.completed_sales }}</div>
+          <div class="small">売却済み</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- フィルターコントロール -->
+  <div class="filter-controls">
+    <div class="filter-tabs">
+      <a href="?status=all&q={{ search_query }}" 
+         class="filter-tab {% if status_filter == 'all' %}active{% endif %}">
+        <i class="bi bi-list me-1"></i> すべて
+      </a>
+      <a href="?status=active&q={{ search_query }}" 
+         class="filter-tab {% if status_filter == 'active' %}active{% endif %}">
+        <i class="bi bi-briefcase me-1"></i> 保有中
+      </a>
+      <a href="?status=sold&q={{ search_query }}" 
+         class="filter-tab {% if status_filter == 'sold' %}active{% endif %}">
+        <i class="bi bi-cash-coin me-1"></i> 売却済み
+      </a>
+      <a href="?status=memo&q={{ search_query }}" 
+         class="filter-tab {% if status_filter == 'memo' %}active{% endif %}">
+        <i class="bi bi-sticky me-1"></i> メモ
+      </a>
+    </div>
+
+    <form method="get" class="search-form">
+      <input type="hidden" name="status" value="{{ status_filter }}">
+      <input type="text" name="q" class="form-control" placeholder="銘柄名・証券コード・業種で検索" value="{{ search_query }}">
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-search"></i>
+        <span class="d-none d-sm-inline ms-1">検索</span>
+      </button>
+      {% if search_query %}
+        <a href="?status={{ status_filter }}" class="btn btn-outline-secondary">
+          <i class="bi bi-x-lg"></i>
+          <span class="d-none d-sm-inline ms-1">クリア</span>
+        </a>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- 銘柄一覧（テーブル形式） -->
+  {% if stock_list %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>銘柄情報</th>
+            <th>業種</th>
+            <th class="text-center">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for stock in stock_list %}
+            <tr>
+              <td>
+                <div class="stock-name">{{ stock.name|default:"銘柄名未設定" }}</div>
+                {% if stock.symbol %}
+                  <div class="stock-symbol">{{ stock.symbol }}</div>
+                {% endif %}
+                {% if stock.latest_date %}
+                  <small class="text-muted">最新: {{ stock.latest_date }}</small>
+                {% endif %}
+              </td>
+              <td>
+                <span class="stock-sector">{{ stock.sector|default:"未分類" }}</span>
+              </td>
+              <td class="text-center">
+                <div class="btn-group btn-group-sm">
+                  <a href="{% url 'stockdiary:stock_list' %}?q={{ stock.symbol }}" 
+                     class="btn btn-outline-primary" title="記録一覧">
+                    <i class="bi bi-list"></i>
+                  </a>
+                  {% if stock.symbol %}
+                    <a href="{% url 'stockdiary:create' %}?symbol={{ stock.symbol }}&name={{ stock.name|urlencode }}" 
+                       class="btn btn-outline-success" title="新規記録作成">
+                      <i class="bi bi-plus"></i>
+                    </a>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">
+        <i class="bi bi-search fs-1"></i>
+      </div>
+      <h3 class="empty-state-title">
+        {% if search_query %}
+          検索結果が見つかりません
+        {% elif status_filter != 'all' %}
+          条件に合う銘柄がありません
+        {% else %}
+          このタグが設定された銘柄がありません
+        {% endif %}
+      </h3>
+      <p class="empty-state-description">
+        {% if search_query %}
+          「{{ search_query }}」に該当する銘柄が見つかりませんでした。<br>
+          検索条件を変更して再度お試しください。
+        {% elif status_filter != 'all' %}
+          選択した条件に該当する銘柄がありません。<br>
+          フィルターを変更して確認してください。
+        {% else %}
+          まだこのタグを使った投資記録がありません。<br>
+          新しい投資記録を作成してタグを活用しましょう。
+        {% endif %}
+      </p>
+      {% if not search_query %}
+        <a href="{% url 'stockdiary:create' %}" class="btn btn-primary">
+          <i class="bi bi-plus-lg me-1"></i> 新しい投資記録を作成
+        </a>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+
+{% include 'speed_dial.html' with actions=page_actions %}
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // スピードダイアルを初期化
+    initializeSpeedDial();
+    
+    // フォーム送信時のローディング表示
+    const searchForm = document.querySelector('form[method="get"]');
+    const submitButton = searchForm.querySelector('button[type="submit"]');
+    
+    searchForm.addEventListener('submit', function() {
+      submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>検索中...';
+      submitButton.disabled = true;
+    });
+    
+    // Enter キーでの検索
+    const searchInput = document.querySelector('input[name="q"]');
+    searchInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        searchForm.submit();
+      }
+    });
+  });
+</script>
+{% endblock %}
