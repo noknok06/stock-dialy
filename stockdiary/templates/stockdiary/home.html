@@ -17,6 +17,378 @@
 <link rel="stylesheet" href="{% static 'css/search-suggestions.css' %}">
 
 <style>
+/* 既存の変数を使用 */
+:root {
+    --primary-color: #5a7ec5;
+    --secondary-color: #f8c291;
+    --success-color: #5db075;
+    --danger-color: #e15a5a;
+    --warning-color: #f7b731;
+    --info-color: #5da1e5;
+    --bg-color: #f6f8fa;
+    --card-bg-color: #ffffff;
+    --text-color: #3a4a5a;
+    --text-light: #6b7280;
+    --border-radius: 8px;
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    --button-height-md: 44px;
+}
+
+body {
+    background-color: var(--bg-color);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ========== 検索フォーム最適化 ========== */
+.mobile-search-container {
+    background-color: var(--card-bg-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+.search-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.search-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.search-toggle {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    font-size: 1.2rem;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.search-toggle:hover {
+    background-color: rgba(90, 126, 197, 0.1);
+}
+
+/* メイン検索バー */
+.main-search-wrapper {
+    position: relative;
+    margin-bottom: var(--spacing-md);
+}
+
+.main-search-input {
+    width: 100%;
+    min-height: var(--button-height-md);
+    padding: 0.75rem 3rem 0.75rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: var(--border-radius);
+    font-size: 16px; /* iOSでズームを防ぐ */
+    transition: all 0.2s ease;
+    background-color: white;
+}
+
+.main-search-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(90, 126, 197, 0.1);
+}
+
+.main-search-input::placeholder {
+    color: #9ca3af;
+    font-size: 0.95rem;
+}
+
+.search-icon {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    font-size: 1.2rem;
+    pointer-events: none;
+}
+
+/* アドバンス検索パネル（折りたたみ式） */
+.advanced-search-panel {
+    border-top: 1px solid #e5e7eb;
+    padding-top: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.advanced-search-panel.collapsed {
+    display: none;
+}
+
+.form-group {
+    margin-bottom: var(--spacing-lg);
+}
+
+.form-label {
+    font-weight: 500;
+    color: var(--text-color);
+    margin-bottom: var(--spacing-sm);
+    font-size: 0.9rem;
+}
+
+.form-control, .form-select {
+    min-height: var(--button-height-md);
+    border: 1px solid #d1d5db;
+    border-radius: var(--border-radius);
+    font-size: 16px;
+    padding: 0.75rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(90, 126, 197, 0.1);
+    outline: none;
+}
+
+/* 検索サジェスチョン */
+.search-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-top: none;
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.suggestion-item {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f3f4f6;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.suggestion-item:hover {
+    background-color: #f8f9fa;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-icon {
+    color: var(--primary-color);
+    font-size: 1rem;
+}
+
+.suggestion-text {
+    flex: 1;
+}
+
+.suggestion-type {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    background-color: #f3f4f6;
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+}
+
+/* アクションボタン */
+.search-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-lg);
+}
+
+.btn-search {
+    flex: 1;
+    min-height: var(--button-height-md);
+    background-color: var(--primary-color);
+    border: none;
+    color: white;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.btn-search:hover {
+    background-color: #4a6eaf;
+    transform: translateY(-1px);
+}
+
+.btn-reset {
+    min-height: var(--button-height-md);
+    background-color: transparent;
+    border: 2px solid #e5e7eb;
+    color: var(--text-color);
+    border-radius: var(--border-radius);
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.btn-reset:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background-color: rgba(90, 126, 197, 0.05);
+}
+
+/* アクティブフィルターの表示 */
+.active-filters {
+    margin-bottom: var(--spacing-md);
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.filter-chip-remove {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 0.9rem;
+    padding: 0;
+    cursor: pointer;
+}
+
+/* インジケーター */
+.search-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--primary-color);
+    font-size: 0.9rem;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* レスポンシブ調整 */
+@media (min-width: 768px) {
+    .mobile-search-container {
+        padding: 2rem;
+    }
+    
+    .search-actions {
+        justify-content: flex-end;
+    }
+    
+    .btn-search {
+        flex: none;
+        min-width: 120px;
+    }
+    
+    /* デスクトップでは2列レイアウト */
+    .advanced-fields {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--spacing-lg);
+    }
+    
+    .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+}
+
+/* アニメーション */
+.slide-down {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 検索履歴（オプション） */
+.search-history {
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid #f3f4f6;
+}
+
+.history-title {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    margin-bottom: var(--spacing-sm);
+}
+
+.history-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.history-item {
+    background-color: #f8f9fa;
+    border: 1px solid #e5e7eb;
+    padding: 0.4rem 0.8rem;
+    border-radius: 16px;
+    font-size: 0.85rem;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.history-item:hover {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* 検索結果カウント */
+.search-results-info {
+    background-color: #f8f9fa;
+    border: 1px solid #e5e7eb;
+    border-radius: var(--border-radius);
+    padding: 0.75rem 1rem;
+    margin-bottom: var(--spacing-lg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: var(--text-color);
+}
 /* 日記カードタブのスタイル */
 .diary-card-tabs {
   margin-top: 1rem;
@@ -518,84 +890,158 @@ img {
       <i class="bi bi-plus-lg me-1"></i> 新規作成
     </a>
   </div>
-  <div class="diary-search mb-4">
-    <form hx-get="{% url 'stockdiary:diary_list' %}" 
-          hx-target="#diary-container"
-          hx-indicator="#search-indicator"
-          hx-push-url="true"
-          class="mb-3">
-      <!-- グリッドレイアウトを微調整 -->
-      <div class="row g-3"> <!-- g-2からg-3に変更 -->
-        <!-- 検索フィールド -->
-        <div class="col-lg-4 col-md-6 col-sm-12"> <!-- col-md-4からcol-lg-4 col-md-6に変更 -->
-          <label for="query" class="form-label">検索</label>
-          <div class="position-relative">
-            <i class="bi bi-search" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #aaa; z-index: 5;"></i>
-            <input type="text" id="query" name="query" class="form-control validate-inline" 
-                  placeholder="銘柄名/シンボル/内容/メモ"
-                  value="{{ request.GET.query }}"
-                  hx-get="{% url 'stockdiary:search_suggestion' %}"
-                  hx-trigger="keyup changed delay:500ms"
-                  hx-target="#search-suggestion"
-                  style="padding-right: 2.5rem;">
-          </div>
-          <div id="search-suggestion" class="small"></div>
-          <small class="form-text text-muted">日記内容も含めて検索できます</small>
-        </div>
+<div class="mobile-search-container mb-4">
+  <!-- 検索ヘッダー -->
+  <div class="search-header">
+    <div class="search-title">
+      <i class="bi bi-search"></i>
+      検索・フィルター
+    </div>
+    <button type="button" class="search-toggle" id="advancedToggle">
+      <i class="bi bi-sliders"></i>
+    </button>
+  </div>
 
-        <!-- タグ絞り込みセレクト -->
-        <div class="col-lg-4 col-md-6 col-sm-12"> <!-- col-md-4からcol-lg-4 col-md-6に変更 -->
-          <label for="tag" class="form-label">タグで絞り込み</label>
-          <select id="tag" name="tag" class="form-select" 
-                hx-get="{% url 'stockdiary:diary_list' %}" 
-                hx-target="#diary-container" 
-                hx-indicator="#search-indicator"
-                hx-push-url="true">
+  <form hx-get="{% url 'stockdiary:diary_list' %}" 
+        hx-target="#diary-container"
+        hx-indicator="#search-indicator"
+        hx-push-url="true"
+        id="optimizedSearchForm">
+    
+    {% csrf_token %}
+    
+    <!-- メイン検索バー -->
+    <div class="main-search-wrapper">
+      <input type="text" 
+             class="main-search-input validate-inline" 
+             id="mainSearchInput"
+             name="query" 
+             placeholder="銘柄名、シンボル、内容で検索..."
+             value="{{ request.GET.query }}"
+             hx-get="{% url 'stockdiary:search_suggestion' %}"
+             hx-trigger="keyup changed delay:500ms"
+             hx-target="#searchSuggestions">
+      <i class="bi bi-search search-icon"></i>
+      
+      <!-- 検索サジェスチョン -->
+      <div class="search-suggestions" id="searchSuggestions">
+        <!-- HTMXによって動的に更新される -->
+      </div>
+    </div>
+
+    <!-- アクティブフィルターの表示 -->
+    <div class="active-filters" id="activeFilters" style="{% if not request.GET.tag and not request.GET.status and not request.GET.sector %}display: none;{% endif %}">
+      {% if request.GET.tag %}
+        {% for tag in tags %}
+          {% if tag.id|stringformat:"i" == request.GET.tag %}
+            <div class="filter-chip" data-filter="tag" data-value="{{ tag.id }}">
+              <span>{{ tag.name }}</span>
+              <button type="button" class="filter-chip-remove" onclick="removeFilter('tag')">
+                <i class="bi bi-x"></i>
+              </button>
+            </div>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+      
+      {% if request.GET.status %}
+        <div class="filter-chip" data-filter="status" data-value="{{ request.GET.status }}">
+          <span>
+            {% if request.GET.status == 'active' %}保有中
+            {% elif request.GET.status == 'sold' %}売却済み
+            {% elif request.GET.status == 'memo' %}メモのみ
+            {% endif %}
+          </span>
+          <button type="button" class="filter-chip-remove" onclick="removeFilter('status')">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- 詳細検索パネル（折りたたみ式） -->
+    <div class="advanced-search-panel collapsed" id="advancedPanel">
+      <div class="advanced-fields">
+        <div class="form-group">
+          <label class="form-label" for="tagFilter">
+            <i class="bi bi-tag me-1"></i>
+            タグで絞り込み
+          </label>
+          <select class="form-select" id="tagFilter" name="tag">
             <option value="">すべて表示</option>
             {% for tag in tags %}
-            <option value="{{ tag.id }}" {% if request.GET.tag == tag.id|stringformat:"i" %}selected{% endif %}>
-              {{ tag.name }}
-            </option>
+              <option value="{{ tag.id }}" {% if request.GET.tag == tag.id|stringformat:"i" %}selected{% endif %}>
+                {{ tag.name }}
+              </option>
             {% endfor %}
           </select>
         </div>
 
-        <!-- 保有状態フィルター -->
-        <div class="col-lg-4 col-md-12 col-sm-12"> <!-- col-md-4からcol-lg-4 col-md-12に変更 -->
-          <label for="status" class="form-label">保有状態</label>
-          <select id="status" name="status" class="form-select" 
-                hx-get="{% url 'stockdiary:diary_list' %}" 
-                hx-target="#diary-container" 
-                hx-indicator="#search-indicator"
-                hx-push-url="true">
+        <div class="form-group">
+          <label class="form-label" for="statusFilter">
+            <i class="bi bi-graph-up me-1"></i>
+            保有状態
+          </label>
+          <select class="form-select" id="statusFilter" name="status">
             <option value="" {% if not request.GET.status %}selected{% endif %}>すべて</option>
             <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>保有中</option>
             <option value="sold" {% if request.GET.status == 'sold' %}selected{% endif %}>売却済み</option>
             <option value="memo" {% if request.GET.status == 'memo' %}selected{% endif %}>メモのみ</option>
           </select>
         </div>
+
       </div>
 
-      <!-- ボタンエリアの改善 -->
-      <div class="d-flex flex-column flex-md-row justify-content-end align-items-stretch align-items-md-center gap-2 mt-3">
-        <div id="search-indicator" class="htmx-indicator">
-          <div class="spinner-border spinner-border-sm text-primary" role="status">
-            <span class="visually-hidden">検索中...</span>
-          </div>
+      <!-- 検索履歴（オプション - セッションまたはローカルストレージベース） -->
+      <div class="search-history" id="searchHistory" style="display: none;">
+        <div class="history-title">最近の検索</div>
+        <div class="history-items" id="historyItems">
+          <!-- JavaScriptで動的に生成 -->
         </div>
-        <button type="submit" class="btn btn-diary btn-diary-primary">
-          <i class="bi bi-search me-1"></i> 検索
-        </button>
-        <a href="{% url 'stockdiary:home' %}" class="btn btn-diary btn-diary-outline"
-          hx-get="{% url 'stockdiary:diary_list' %}" 
-          hx-target="#diary-container"
-          hx-push-url="true">
-          <i class="bi bi-arrow-counterclockwise me-1"></i> リセット
-        </a>
       </div>
-    </form>
-  </div>
+    </div>
 
+    <!-- アクションボタン -->
+    <div class="search-actions">
+      <button type="submit" class="btn-search">
+        <i class="bi bi-search"></i>
+        検索
+      </button>
+      <a href="{% url 'stockdiary:home' %}" class="btn-reset"
+         hx-get="{% url 'stockdiary:diary_list' %}" 
+         hx-target="#diary-container"
+         hx-push-url="true">
+        <i class="bi bi-arrow-counterclockwise"></i>
+        リセット
+      </a>
+    </div>
+
+    <!-- インジケーター -->
+    <div class="search-indicator" id="search-indicator" style="display: none;">
+      <div class="spinner-border spinner-border-sm" role="status">
+        <span class="visually-hidden">検索中...</span>
+      </div>
+      <span>検索中...</span>
+    </div>
+  </form>
+</div>
+
+<!-- 検索結果情報 -->
+<div class="search-results-info" id="searchResultsInfo" style="{% if not request.GET.query and not request.GET.tag and not request.GET.status %}display: none;{% endif %}">
+  <div>
+    <strong id="resultsCount">{{ diaries.paginator.count|default:0 }}件</strong>の日記が見つかりました
+    {% if request.GET.query %}
+      「<strong>{{ request.GET.query }}</strong>」の検索結果
+    {% endif %}
+  </div>
+  <div>
+    <small class="text-muted">
+      {% if request.GET.query %}
+        検索時間: {{ search_time|default:"--" }}秒
+      {% endif %}
+    </small>
+  </div>
+</div>
 
   <!-- 日記カード一覧 -->
   <h4 class="mb-3 diary-title px-2">
@@ -635,6 +1081,111 @@ img {
 <!-- モバイルジェスチャー用のJSを追加 -->
 <script src="{% static 'js/mobile-gestures.js' %}"></script>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // 詳細検索パネルの切り替え
+    document.getElementById('advancedToggle').addEventListener('click', function() {
+        const panel = document.getElementById('advancedPanel');
+        const isCollapsed = panel.classList.contains('collapsed');
+        
+        if (isCollapsed) {
+            panel.classList.remove('collapsed');
+            panel.classList.add('slide-down');
+            this.innerHTML = '<i class="bi bi-x"></i>';
+        } else {
+            panel.classList.add('collapsed');
+            this.innerHTML = '<i class="bi bi-sliders"></i>';
+        }
+    });
+
+    // メイン検索入力のフォーカス処理
+    const mainSearchInput = document.getElementById('mainSearchInput');
+    const searchSuggestions = document.getElementById('searchSuggestions');
+    
+    mainSearchInput.addEventListener('focus', function() {
+        if (this.value.length > 0) {
+            searchSuggestions.style.display = 'block';
+        }
+    });
+
+    mainSearchInput.addEventListener('input', function() {
+        if (this.value.length > 1) {
+            searchSuggestions.style.display = 'block';
+            // ここで実際のサジェスチョン取得APIを呼び出す
+        } else {
+            searchSuggestions.style.display = 'none';
+        }
+    });
+
+    // 外部クリックでサジェスチョンを閉じる
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.main-search-wrapper')) {
+            searchSuggestions.style.display = 'none';
+        }
+    });
+
+    // サジェスチョンアイテムのクリック
+    document.querySelectorAll('.suggestion-item').forEach(item => {
+        item.addEventListener('click', function() {
+            mainSearchInput.value = this.querySelector('.suggestion-text').textContent;
+            searchSuggestions.style.display = 'none';
+            // 検索を実行
+            document.getElementById('searchForm').dispatchEvent(new Event('submit'));
+        });
+    });
+
+    // フィルターチップの削除
+    document.querySelectorAll('.filter-chip-remove').forEach(button => {
+        button.addEventListener('click', function() {
+            this.parentElement.remove();
+            // アクティブフィルターがなくなったら非表示にする
+            const activeFilters = document.getElementById('activeFilters');
+            if (activeFilters.children.length === 0) {
+                activeFilters.style.display = 'none';
+            }
+        });
+    });
+
+    // 検索履歴アイテムのクリック
+    document.querySelectorAll('.history-item').forEach(item => {
+        item.addEventListener('click', function() {
+            mainSearchInput.value = this.textContent;
+            document.getElementById('searchForm').dispatchEvent(new Event('submit'));
+        });
+    });
+
+    // フォーム送信処理
+    document.getElementById('searchForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // 検索インジケーターを表示
+        const indicator = document.getElementById('searchIndicator');
+        const resultsInfo = document.getElementById('searchResultsInfo');
+        
+        indicator.style.display = 'flex';
+        
+        // デモ用の遅延（実際にはHTMXまたはAPIリクエスト）
+        setTimeout(() => {
+            indicator.style.display = 'none';
+            resultsInfo.style.display = 'flex';
+        }, 1500);
+    });
+
+    // レスポンシブ対応
+    function handleResize() {
+        const isMobile = window.innerWidth < 768;
+        const advancedFields = document.querySelector('.advanced-fields');
+        
+        if (isMobile) {
+            advancedFields.style.display = 'block';
+        } else {
+            advancedFields.style.display = 'grid';
+        }
+    }
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // 初期実行
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   // 基本的な初期化

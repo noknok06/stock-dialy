@@ -88,7 +88,29 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
                 Q(reason__icontains=query) |
                 Q(memo__icontains=query)
             )
-        
+
+        # 日付範囲フィルター
+        date_range = self.request.GET.get('date_range', '')
+        if date_range:
+            from datetime import timedelta
+            today = timezone.now().date()
+            
+            if date_range == '1w':
+                start_date = today - timedelta(days=7)
+            elif date_range == '1m':
+                start_date = today - timedelta(days=30)
+            elif date_range == '3m':
+                start_date = today - timedelta(days=90)
+            elif date_range == '6m':
+                start_date = today - timedelta(days=180)
+            elif date_range == '1y':
+                start_date = today - timedelta(days=365)
+            else:
+                start_date = None
+                
+            if start_date:
+                queryset = queryset.filter(purchase_date__gte=start_date)
+                        
         if tag_id:
             queryset = queryset.filter(tags__id=tag_id)
         
