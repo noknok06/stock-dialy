@@ -33,8 +33,6 @@ urlpatterns = [
     path('analytics/', views.DiaryAnalyticsView.as_view(), name='analytics'),
 
     # その他のエンドポイント
-    path('calendar-partial/', login_required(views.calendar_partial), name='calendar_partial'),
-    path('day-events/', login_required(views.day_events), name='day_events'),
     path('diary-list/', login_required(views.diary_list), name='diary_list'),
     path('tab-content/<int:diary_id>/<str:tab_type>/', login_required(views.tab_content), name='tab_content'),
 

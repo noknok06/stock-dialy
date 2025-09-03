@@ -89,17 +89,6 @@
   align-items: center;
 }
 
-/* インジケーターを常に表示 */
-#day-events-loading-desktop,
-#day-events-loading-mobile {
-  display: none !important;
-}
-
-.htmx-request #day-events-loading-desktop,
-.htmx-request #day-events-loading-mobile {
-  display: flex !important;
-}
-
 /* 無限スクロールのローディング表示 */
 #loading-indicator {
   padding: 1rem;
@@ -529,96 +518,6 @@ img {
       <i class="bi bi-plus-lg me-1"></i> 新規作成
     </a>
   </div>
-
-  <!-- カレンダーセクションの改善 - 修正版 -->
-  <div class="calendar-section mb-4">
-    <!-- スマホ用カレンダーアコーディオン -->
-    <div class="d-lg-none">
-      <div class="accordion" id="calendarAccordion">
-        <div class="accordion-item">
-          <h2 class="accordion-header" id="calendarHeading">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-              data-bs-target="#calendarCollapse" aria-expanded="false" aria-controls="calendarCollapse">
-              <i class="bi bi-calendar-week me-2"></i> 投資カレンダーを表示
-            </button>
-          </h2>
-          <div id="calendarCollapse" class="accordion-collapse collapse" aria-labelledby="calendarHeading">
-            <div class="accordion-body p-1">
-              <!-- モバイルカレンダーコンテナ -->
-              <div class="calendar-view" id="mobile-calendar-container"
-                  hx-get="{% url 'stockdiary:calendar_partial' %}?view=mobile"
-                  hx-trigger="revealed"
-                  hx-swap="innerHTML"
-                  hx-indicator="#mobile-calendar-loading">
-                <div id="mobile-calendar-loading" class="text-center py-4 htmx-indicator">
-                  <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                  </div>
-                  <p class="mt-2 mb-0">カレンダーを読み込んでいます...</p>
-                </div>
-              </div>
-              
-              <!-- ★ モバイル用イベント表示エリアを追加 ★ -->
-              <div class="card mt-3" id="mobile-events-card" style="display: none;">
-                <div class="card-header bg-white">
-                  <h6 class="mb-0" id="mobile-selected-date">選択日のイベント</h6>
-                </div>
-                <div class="card-body p-2" id="mobile-day-events">
-                  <p class="text-muted mb-0">日付を選択するとイベントが表示されます</p>
-                  <div id="day-events-loading-mobile" class="htmx-indicator text-center mt-3" style="display: none;">
-                    <div class="spinner-border spinner-border-sm text-primary" role="status">
-                      <span class="visually-hidden">読み込み中...</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- デスクトップカレンダーコンテナ -->
-    <div class="d-none d-lg-block">
-      <div class="row g-3">
-        <!-- カレンダー部分: 左側 (8/12) -->
-        <div class="col-lg-8">
-          <div class="calendar-view">
-            <div id="desktop-calendar-container" class="calendar-container"
-                hx-get="{% url 'stockdiary:calendar_partial' %}?view=desktop"
-                hx-trigger="load"
-                hx-swap="innerHTML"
-                hx-indicator="#desktop-calendar-loading">
-              <div id="desktop-calendar-loading" class="text-center py-4 htmx-indicator">
-                <div class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="mt-2 mb-0">カレンダーを読み込んでいます...</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- イベント部分: 右側 (4/12) -->
-        <div class="col-lg-4">
-          <div class="card h-100" id="desktop-events-card">
-            <div class="card-header bg-white">
-              <h6 class="mb-0" id="desktop-selected-date">選択日のイベント</h6>
-            </div>
-            <div class="card-body p-2" id="desktop-day-events">
-              <p class="text-muted mb-0">日付を選択するとイベントが表示されます</p>
-              <div id="day-events-loading-desktop" class="htmx-indicator text-center mt-3" style="display: none;">
-                <div class="spinner-border spinner-border-sm text-primary" role="status">
-                  <span class="visually-hidden">読み込み中...</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div class="diary-search mb-4">
     <form hx-get="{% url 'stockdiary:diary_list' %}" 
           hx-target="#diary-container"
@@ -743,18 +642,6 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeSpeedDial();
   }
   
-  // モバイルカレンダーのアコーディオン処理を強化
-  const calendarCollapse = document.getElementById('calendarCollapse');
-  if (calendarCollapse) {
-    calendarCollapse.addEventListener('shown.bs.collapse', function() {
-      const container = document.getElementById('mobile-calendar-container');
-      if (container && !container.getAttribute('data-loaded')) {
-        htmx.trigger(container, 'revealed');
-        container.setAttribute('data-loaded', 'true');
-      }
-    });
-  }
-  
   // オフライン状態の監視
   window.addEventListener('online', function() {
     document.body.classList.remove('is-offline');
@@ -832,61 +719,7 @@ document.addEventListener('DOMContentLoaded', function() {
       console.warn('日付の解析に失敗しました:', dateStr);
     }
   }
-  
-  function loadDayEvents(dateStr, view) {
-    const targetId = view === 'mobile' ? 'mobile-day-events' : 'desktop-day-events';
-    const loadingId = view === 'mobile' ? 'day-events-loading-mobile' : 'day-events-loading-desktop';
-    
-    const target = document.getElementById(targetId);
-    const loading = document.getElementById(loadingId);
-    
-    if (!target) {
-      console.warn('イベント表示ターゲットが見つかりません:', targetId);
-      return;
-    }
-    
-    // ローディング表示
-    if (loading) {
-      loading.style.display = 'block';
-    }
-    
-    // HTMXでイベントを取得
-    htmx.ajax('GET', `/stockdiary/day-events/?date=${dateStr}&view=${view}`, {
-      target: `#${targetId}`,
-      swap: 'innerHTML'
-    }).then(() => {
-      // ローディング非表示
-      if (loading) {
-        loading.style.display = 'none';
-      }
-      
-      // アニメーション効果
-      const items = target.querySelectorAll('.calendar-event-item');
-      items.forEach((item, index) => {
-        item.style.opacity = '0';
-        item.style.transform = 'translateY(10px)';
-        item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-        
-        setTimeout(() => {
-          item.style.opacity = '1';
-          item.style.transform = 'translateY(0)';
-        }, 50 * index);
-      });
-    }).catch((error) => {
-      console.error('イベントの読み込みに失敗しました:', error);
-      if (loading) {
-        loading.style.display = 'none';
-      }
-      
-      target.innerHTML = `
-        <div class="alert alert-warning m-2">
-          <i class="bi bi-exclamation-triangle me-2"></i>
-          イベントの読み込みに失敗しました。ネットワーク接続を確認してください。
-        </div>
-      `;
-    });
-  }
-  
+   
   // HTMX エラーハンドリング
   document.body.addEventListener('htmx:responseError', function(event) {
     console.error('HTMX エラー:', event.detail.xhr.status, event.detail.xhr.statusText);
