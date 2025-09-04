@@ -52,6 +52,7 @@ urlpatterns = [
     path('ads/', include('ads.urls')),
     path('security/', include('security.urls')),
     path('contact/', include('contact.urls')),
+    path('investment_review/', include('investment_review.urls')),  # 投資振り返りアプリのURL
     
     # APIエンドポイント（将来的な拡張用）
     # path('api/v1/earnings/', include('earnings_analysis.urls')),  # API専用

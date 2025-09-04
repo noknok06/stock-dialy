@@ -1,0 +1,511 @@
+# investment_review/services/gemini_analysis.py
+import google.generativeai as genai
+import logging
+from django.conf import settings
+from django.utils import timezone
+from typing import Dict, Any, List, Optional
+import json
+from datetime import datetime, timedelta
+from stockdiary.models import StockDiary, DiaryNote
+from analysis_template.models import DiaryAnalysisValue
+from tags.models import Tag
+from django.db.models import Count, Avg, Sum, Q
+
+logger = logging.getLogger(__name__)
+
+
+class GeminiInvestmentAnalyzer:
+    """Gemini APIを使った投資記録分析サービス"""
+    
+    def __init__(self):
+        # 環境変数からAPIキーを取得
+        api_key = getattr(settings, 'GEMINI_API_KEY', None)
+        self.api_available = api_key is not None
+        self.model = None
+        self.initialization_error = None
+        
+        if not api_key:
+            logger.warning("GEMINI_API_KEYが設定されていません")
+            self.initialization_error = "API_KEY_MISSING"
+            return
+        
+        try:
+            genai.configure(api_key=api_key)
+            self.model = genai.GenerativeModel("gemini-2.5-flash")
+            logger.info("Gemini API投資分析サービスが正常に初期化されました")
+        except Exception as e:
+            logger.error(f"Gemini API初期化エラー: {e}")
+            self.model = None
+            self.api_available = False
+            self.initialization_error = str(e)
+    
+    def analyze_investment_records(self, user, start_date, end_date) -> Dict[str, Any]:
+        """指定期間の投資記録を分析"""
+        try:
+            # データ収集
+            records_data = self._collect_period_data(user, start_date, end_date)
+            
+            if not self.model:
+                return self._generate_fallback_analysis(records_data)
+            
+            # Gemini APIを使った分析
+            analysis_result = self._generate_professional_insights(records_data)
+            
+            return {
+                'status': 'success',
+                'analysis_data': records_data,
+                'professional_insights': analysis_result.get('insights', ''),
+                'detailed_feedback': analysis_result.get('detailed_feedback', []),
+                'action_items': analysis_result.get('action_items', []),
+                'strengths': analysis_result.get('strengths', []),
+                'improvement_areas': analysis_result.get('improvement_areas', []),
+                'api_used': True
+            }
+            
+        except Exception as e:
+            logger.error(f"投資記録分析エラー: {e}")
+            records_data = self._collect_period_data(user, start_date, end_date)
+            fallback_result = self._generate_fallback_analysis(records_data)
+            fallback_result['error_message'] = str(e)
+            return fallback_result
+    
+    def _collect_period_data(self, user, start_date, end_date) -> Dict[str, Any]:
+        """期間内のデータを収集"""
+        # 基本的な日記データ
+        diaries = StockDiary.objects.filter(
+            user=user,
+            created_at__date__gte=start_date,
+            created_at__date__lte=end_date
+        ).select_related('user').prefetch_related('tags', 'notes', 'analysis_values')
+        
+        # 統計データの計算
+        total_entries = diaries.count()
+        active_holdings = diaries.filter(sell_date__isnull=True, purchase_price__isnull=False).count()
+        completed_trades = diaries.filter(sell_date__isnull=False).count()
+        memo_entries = diaries.filter(Q(is_memo=True) | Q(purchase_price__isnull=True)).count()
+        
+        # 損益計算
+        profit_loss_data = self._calculate_profit_loss(diaries)
+        
+        # タグ使用状況
+        tag_usage = self._analyze_tag_usage(diaries)
+        
+        # 分析テンプレート使用状況  
+        template_usage = self._analyze_template_usage(diaries)
+        
+        # 継続記録状況
+        note_analysis = self._analyze_notes(diaries)
+        
+        # 銘柄分析
+        stock_analysis = self._analyze_stocks(diaries)
+        
+        # 投資パターン分析
+        pattern_analysis = self._analyze_investment_patterns(diaries)
+        
+        return {
+            'period': {
+                'start_date': start_date.isoformat(),
+                'end_date': end_date.isoformat(),
+                'days': (end_date - start_date).days + 1
+            },
+            'basic_stats': {
+                'total_entries': total_entries,
+                'active_holdings': active_holdings, 
+                'completed_trades': completed_trades,
+                'memo_entries': memo_entries,
+                'analysis_rate': round((total_entries - memo_entries) / total_entries * 100, 1) if total_entries > 0 else 0
+            },
+            'profit_loss': profit_loss_data,
+            'tag_usage': tag_usage,
+            'template_usage': template_usage,
+            'note_analysis': note_analysis,
+            'stock_analysis': stock_analysis,
+            'pattern_analysis': pattern_analysis,
+            'raw_entries': self._prepare_entries_for_analysis(diaries)
+        }
+    
+    def _calculate_profit_loss(self, diaries) -> Dict[str, Any]:
+        """損益データを計算"""
+        total_profit = 0
+        profitable_trades = 0
+        losing_trades = 0
+        total_investment = 0
+        realized_trades = []
+        
+        for diary in diaries:
+            if diary.sell_date and diary.sell_price and diary.purchase_price and diary.purchase_quantity:
+                profit = (diary.sell_price - diary.purchase_price) * diary.purchase_quantity
+                total_profit += profit
+                investment = diary.purchase_price * diary.purchase_quantity
+                total_investment += investment
+                
+                if profit > 0:
+                    profitable_trades += 1
+                else:
+                    losing_trades += 1
+                
+                realized_trades.append({
+                    'symbol': diary.stock_symbol,
+                    'name': diary.stock_name,
+                    'profit': float(profit),
+                    'profit_rate': float(profit / investment * 100) if investment > 0 else 0,
+                    'holding_days': (diary.sell_date - diary.purchase_date).days
+                })
+        
+        return {
+            'total_profit_loss': float(total_profit),
+            'profitable_trades': profitable_trades,
+            'losing_trades': losing_trades,
+            'win_rate': round(profitable_trades / (profitable_trades + losing_trades) * 100, 1) if (profitable_trades + losing_trades) > 0 else 0,
+            'total_investment': float(total_investment),
+            'roi': round(total_profit / total_investment * 100, 2) if total_investment > 0 else 0,
+            'realized_trades': realized_trades,
+            'avg_profit_per_trade': round(total_profit / len(realized_trades), 2) if realized_trades else 0
+        }
+    
+    def _analyze_tag_usage(self, diaries) -> Dict[str, Any]:
+        """タグ使用状況を分析"""
+        tag_counts = {}
+        total_tagged_entries = 0
+        
+        for diary in diaries:
+            diary_tags = diary.tags.all()
+            if diary_tags.exists():
+                total_tagged_entries += 1
+                for tag in diary_tags:
+                    tag_counts[tag.name] = tag_counts.get(tag.name, 0) + 1
+        
+        most_used_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+        
+        return {
+            'total_tagged_entries': total_tagged_entries,
+            'tagging_rate': round(total_tagged_entries / diaries.count() * 100, 1) if diaries.count() > 0 else 0,
+            'unique_tags': len(tag_counts),
+            'most_used_tags': most_used_tags,
+            'tag_distribution': tag_counts
+        }
+    
+    def _analyze_template_usage(self, diaries) -> Dict[str, Any]:
+        """分析テンプレート使用状況を分析"""
+        template_usage = {}
+        analyzed_entries = 0
+        
+        for diary in diaries:
+            analysis_values = diary.analysis_values.all()
+            if analysis_values.exists():
+                analyzed_entries += 1
+                for value in analysis_values:
+                    template_name = value.analysis_item.template.name
+                    if template_name not in template_usage:
+                        template_usage[template_name] = {
+                            'count': 0,
+                            'completion_items': 0,
+                            'total_items': 0
+                        }
+                    template_usage[template_name]['count'] += 1
+                    template_usage[template_name]['total_items'] += 1
+                    
+                    # 完了判定
+                    if self._is_analysis_item_completed(value):
+                        template_usage[template_name]['completion_items'] += 1
+        
+        # 完了率を計算
+        for template_name, data in template_usage.items():
+            if data['total_items'] > 0:
+                data['completion_rate'] = round(data['completion_items'] / data['total_items'] * 100, 1)
+        
+        return {
+            'analyzed_entries': analyzed_entries,
+            'analysis_rate': round(analyzed_entries / diaries.count() * 100, 1) if diaries.count() > 0 else 0,
+            'template_usage': template_usage
+        }
+    
+    def _analyze_notes(self, diaries) -> Dict[str, Any]:
+        """継続記録の分析"""
+        total_notes = 0
+        notes_by_type = {}
+        entries_with_notes = 0
+        
+        for diary in diaries:
+            notes = diary.notes.all()
+            if notes.exists():
+                entries_with_notes += 1
+                total_notes += notes.count()
+                
+                for note in notes:
+                    note_type = note.get_note_type_display()
+                    notes_by_type[note_type] = notes_by_type.get(note_type, 0) + 1
+        
+        return {
+            'total_notes': total_notes,
+            'entries_with_notes': entries_with_notes,
+            'follow_up_rate': round(entries_with_notes / diaries.count() * 100, 1) if diaries.count() > 0 else 0,
+            'avg_notes_per_entry': round(total_notes / entries_with_notes, 1) if entries_with_notes > 0 else 0,
+            'notes_by_type': notes_by_type
+        }
+    
+    def _analyze_stocks(self, diaries) -> Dict[str, Any]:
+        """銘柄分析"""
+        stock_counts = {}
+        sectors = {}
+        
+        for diary in diaries:
+            symbol = diary.stock_symbol or 'unknown'
+            stock_counts[symbol] = stock_counts.get(symbol, 0) + 1
+            
+            if diary.sector:
+                sectors[diary.sector] = sectors.get(diary.sector, 0) + 1
+        
+        most_traded_stocks = sorted(stock_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+        
+        return {
+            'unique_stocks': len(stock_counts),
+            'most_traded_stocks': most_traded_stocks,
+            'sector_distribution': sectors,
+            'diversification_score': min(len(stock_counts) / diaries.count() * 100, 100) if diaries.count() > 0 else 0
+        }
+    
+    def _analyze_investment_patterns(self, diaries) -> Dict[str, Any]:
+        """投資パターンの分析"""
+        patterns = {
+            'entry_frequency': {},
+            'holding_periods': [],
+            'investment_sizes': [],
+            'decision_quality': {
+                'with_reason': 0,
+                'without_reason': 0,
+                'detailed_analysis': 0
+            }
+        }
+        
+        for diary in diaries:
+            # 投資頻度（曜日別）
+            weekday = diary.purchase_date.strftime('%A')
+            patterns['entry_frequency'][weekday] = patterns['entry_frequency'].get(weekday, 0) + 1
+            
+            # 保有期間
+            if diary.sell_date:
+                holding_days = (diary.sell_date - diary.purchase_date).days
+                patterns['holding_periods'].append(holding_days)
+            
+            # 投資金額
+            if diary.purchase_price and diary.purchase_quantity:
+                investment = float(diary.purchase_price * diary.purchase_quantity)
+                patterns['investment_sizes'].append(investment)
+            
+            # 意思決定の質
+            if diary.reason and len(diary.reason.strip()) > 50:
+                patterns['decision_quality']['detailed_analysis'] += 1
+            elif diary.reason:
+                patterns['decision_quality']['with_reason'] += 1  
+            else:
+                patterns['decision_quality']['without_reason'] += 1
+        
+        # 平均値の計算
+        avg_holding_period = sum(patterns['holding_periods']) / len(patterns['holding_periods']) if patterns['holding_periods'] else 0
+        avg_investment_size = sum(patterns['investment_sizes']) / len(patterns['investment_sizes']) if patterns['investment_sizes'] else 0
+        
+        return {
+            'entry_frequency': patterns['entry_frequency'],
+            'avg_holding_period': round(avg_holding_period, 1),
+            'avg_investment_size': round(avg_investment_size, 2),
+            'decision_quality': patterns['decision_quality'],
+            'analysis_depth_rate': round(patterns['decision_quality']['detailed_analysis'] / diaries.count() * 100, 1) if diaries.count() > 0 else 0
+        }
+    
+    def _prepare_entries_for_analysis(self, diaries) -> List[Dict]:
+        """Gemini分析用にエントリーデータを準備"""
+        entries = []
+        for diary in diaries[:10]:  # 最新10件のみ送信（トークン制限対策）
+            entry = {
+                'symbol': diary.stock_symbol,
+                'name': diary.stock_name,
+                'sector': diary.sector,
+                'date': diary.purchase_date.isoformat() if diary.purchase_date else None,
+                'reason': diary.reason[:200] if diary.reason else '',  # 200文字まで
+                'memo': diary.memo[:200] if diary.memo else '',
+                'is_memo': diary.is_memo,
+                'tags': [tag.name for tag in diary.tags.all()],
+                'has_analysis': diary.analysis_values.exists(),
+                'notes_count': diary.notes.count(),
+                'is_sold': diary.sell_date is not None
+            }
+            entries.append(entry)
+        
+        return entries
+    
+    def _generate_professional_insights(self, records_data) -> Dict[str, Any]:
+        """Gemini APIを使ってプロ目線の洞察を生成"""
+        try:
+            prompt = self._build_analysis_prompt(records_data)
+            
+            logger.info("Gemini API投資振り返り分析開始")
+            response = self.model.generate_content(prompt)
+            
+            if hasattr(response, "text") and response.text:
+                logger.info("Gemini APIから分析結果を受信")
+                return self._parse_gemini_analysis_response(response.text)
+            else:
+                logger.warning("Gemini APIから有効な応答を取得できませんでした")
+                return self._generate_basic_insights(records_data)
+                
+        except Exception as e:
+            logger.error(f"Gemini API分析エラー: {e}")
+            return self._generate_basic_insights(records_data)
+    
+    def _build_analysis_prompt(self, records_data) -> str:
+        """分析用プロンプトを構築"""
+        basic_stats = records_data['basic_stats']
+        profit_loss = records_data['profit_loss']
+        period_info = records_data['period']
+        
+        prompt = f"""
+あなたは経験豊富な投資アドバイザーとして、以下の投資記録データを分析し、プロフェッショナルな観点から振り返りとアドバイスを提供してください。
+
+【分析期間】
+{period_info['start_date']} から {period_info['end_date']} まで（{period_info['days']}日間）
+
+【基本統計】
+- 総記録数: {basic_stats['total_entries']}件
+- アクティブ保有: {basic_stats['active_holdings']}銘柄
+- 売却完了: {basic_stats['completed_trades']}件
+- メモのみ記録: {basic_stats['memo_entries']}件
+- 分析記録率: {basic_stats['analysis_rate']}%
+
+【損益情報】
+- 総損益: {profit_loss['total_profit_loss']:,.0f}円
+- 勝率: {profit_loss['win_rate']}%
+- ROI: {profit_loss['roi']}%
+- 1取引あたり平均損益: {profit_loss['avg_profit_per_trade']:,.0f}円
+
+【タグ使用状況】
+- タグ付け率: {records_data['tag_usage']['tagging_rate']}%
+- 最も使用されたタグ: {records_data['tag_usage']['most_used_tags'][:3]}
+
+【投資パターン】
+- 平均保有期間: {records_data['pattern_analysis']['avg_holding_period']}日
+- 平均投資額: {records_data['pattern_analysis']['avg_investment_size']:,.0f}円
+- 詳細分析率: {records_data['pattern_analysis']['analysis_depth_rate']}%
+
+以下の形式で分析結果を提供してください：
+
+## 総合評価
+この期間の投資活動に対する総合的な評価を3-4文で。
+
+## 強み・良いポイント（3-5項目）
+- [具体的な強み1]: [根拠と数値]
+- [具体的な強み2]: [根拠と数値]
+
+## 改善すべき点（3-5項目）  
+- [改善点1]: [具体的な問題と提案]
+- [改善点2]: [具体的な問題と提案]
+
+## 今後のアクションプラン（3-5項目）
+- [アクション1]: [具体的な実行方法]
+- [アクション2]: [具体的な実行方法]
+
+## プロからのアドバイス
+投資のプロとしての視点から、今後の投資活動に向けた具体的なアドバイスを2-3文で。
+
+数値は具体的に示し、改善提案は実行可能なものにしてください。
+"""
+        return prompt.strip()
+    
+    def _parse_gemini_analysis_response(self, response_text) -> Dict[str, Any]:
+        """Gemini応答を解析"""
+        sections = {
+            'insights': response_text,
+            'detailed_feedback': [],
+            'action_items': [],
+            'strengths': [],
+            'improvement_areas': []
+        }
+        
+        try:
+            # セクションを分割
+            lines = response_text.split('\n')
+            current_section = None
+            current_items = []
+            
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                
+                # セクションヘッダーを検出
+                if '強み' in line or '良い' in line:
+                    current_section = 'strengths'
+                    current_items = []
+                elif '改善' in line:
+                    current_section = 'improvement_areas'  
+                    current_items = []
+                elif 'アクション' in line or '今後' in line:
+                    current_section = 'action_items'
+                    current_items = []
+                elif line.startswith('- ') or line.startswith('• '):
+                    # リスト項目を抽出
+                    item = line[2:].strip()
+                    if current_section and item:
+                        current_items.append(item)
+                        sections[current_section] = current_items.copy()
+            
+            return sections
+            
+        except Exception as e:
+            logger.error(f"Gemini応答解析エラー: {e}")
+            return sections
+    
+    def _generate_basic_insights(self, records_data) -> Dict[str, Any]:
+        """基本的な洞察を生成（フォールバック）"""
+        basic_stats = records_data['basic_stats']
+        profit_loss = records_data['profit_loss']
+        
+        insights = f"""
+【期間サマリー】
+総記録数: {basic_stats['total_entries']}件
+分析記録率: {basic_stats['analysis_rate']}%
+勝率: {profit_loss['win_rate']}%
+総損益: {profit_loss['total_profit_loss']:,.0f}円
+
+【基本的な振り返り】
+この期間の投資活動について、記録の継続性や分析の深さを評価し、今後の改善点を検討することをお勧めします。
+"""
+        
+        return {
+            'insights': insights,
+            'detailed_feedback': ['記録の継続を心がけましょう', '投資理由の記載を充実させましょう'],
+            'action_items': ['定期的な振り返りの実施', '投資ルールの見直し'],
+            'strengths': ['記録の習慣化'],
+            'improvement_areas': ['分析の深化']
+        }
+    
+    def _generate_fallback_analysis(self, records_data) -> Dict[str, Any]:
+        """API利用不可時のフォールバック分析"""
+        basic_insights = self._generate_basic_insights(records_data)
+        
+        return {
+            'status': 'fallback',
+            'analysis_data': records_data,
+            'professional_insights': basic_insights['insights'],
+            'detailed_feedback': basic_insights['detailed_feedback'],
+            'action_items': basic_insights['action_items'],
+            'strengths': basic_insights['strengths'],
+            'improvement_areas': basic_insights['improvement_areas'],
+            'api_used': False,
+            'fallback_reason': self.initialization_error or 'API_UNAVAILABLE'
+        }
+    
+    def _is_analysis_item_completed(self, analysis_value):
+        """分析項目が完了しているかチェック"""
+        item = analysis_value.analysis_item
+        
+        if item.item_type == 'boolean':
+            return analysis_value.boolean_value is True
+        elif item.item_type == 'boolean_with_value':
+            return analysis_value.boolean_value is True
+        elif item.item_type == 'number':
+            return analysis_value.number_value is not None
+        elif item.item_type in ['text', 'select']:
+            return bool(analysis_value.text_value and analysis_value.text_value.strip())
+        
+        return False

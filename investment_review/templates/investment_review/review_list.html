@@ -1,0 +1,433 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}振り返りレポート一覧 - カブログ{% endblock %}
+
+{% block head %}
+<style>
+.review-list-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.review-card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.review-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.review-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.review-body {
+    padding: 1.5rem;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border-radius: 50px;
+}
+
+.status-completed {
+    background-color: #d1f2eb;
+    color: #00695c;
+}
+
+.status-processing {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-pending {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.status-failed {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.review-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.review-stat {
+    text-align: center;
+}
+
+.review-stat-number {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+}
+
+.review-stat-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.filter-section {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+    .review-list-header {
+        padding: 1.5rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .review-stats {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .review-header, .review-body {
+        padding: 1rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- ヘッダー -->
+    <div class="review-list-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="display-6 fw-bold mb-2">
+                    <i class="bi bi-journal-text"></i>
+                    振り返りレポート一覧
+                </h1>
+                <p class="mb-0">
+                    過去に作成した投資振り返りレポートを確認できます
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="{% url 'investment_review:create_monthly' %}" class="btn btn-light btn-lg">
+                    <i class="bi bi-plus-circle"></i>
+                    新しい振り返り
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 統計サマリー -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number text-primary">{{ stats.total_reviews }}</div>
+            <div class="stat-label">総レビュー数</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number text-success">{{ stats.completed_reviews }}</div>
+            <div class="stat-label">完了済み</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number text-warning">{{ stats.pending_reviews }}</div>
+            <div class="stat-label">処理中・待機中</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number text-info">
+                {% if stats.recent_review %}
+                    {{ stats.recent_review.created_at|date:"n月d日" }}
+                {% else %}
+                    ---
+                {% endif %}
+            </div>
+            <div class="stat-label">最新レビュー</div>
+        </div>
+    </div>
+
+    <!-- フィルター・検索セクション -->
+    <div class="filter-section">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="status" class="form-label">ステータス</label>
+                <select name="status" id="status" class="form-select">
+                    <option value="">すべて</option>
+                    <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>完了済み</option>
+                    <option value="processing" {% if request.GET.status == 'processing' %}selected{% endif %}>処理中</option>
+                    <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>待機中</option>
+                    <option value="failed" {% if request.GET.status == 'failed' %}selected{% endif %}>失敗</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="type" class="form-label">レビュータイプ</label>
+                <select name="type" id="type" class="form-select">
+                    <option value="">すべて</option>
+                    <option value="monthly" {% if request.GET.type == 'monthly' %}selected{% endif %}>月次レビュー</option>
+                    <option value="weekly" {% if request.GET.type == 'weekly' %}selected{% endif %}>週次レビュー</option>
+                    <option value="custom" {% if request.GET.type == 'custom' %}selected{% endif %}>カスタム期間</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search"></i> フィルター
+                </button>
+                <a href="{% url 'investment_review:list' %}" class="btn btn-outline-secondary ms-2">
+                    <i class="bi bi-arrow-clockwise"></i> リセット
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- レビューリスト -->
+    {% if reviews %}
+        <div class="reviews-container">
+            {% for review in reviews %}
+            <div class="review-card">
+                <div class="review-header">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h5 class="mb-1">{{ review.title }}</h5>
+                            <p class="text-muted mb-0">
+                                <i class="bi bi-calendar3"></i>
+                                {{ review.get_analysis_period_display }}
+                            </p>
+                        </div>
+                        <div class="text-end">
+                            <span class="status-badge status-{{ review.status }}">
+                                {% if review.status == 'completed' %}
+                                    <i class="bi bi-check-circle me-1"></i>完了
+                                {% elif review.status == 'processing' %}
+                                    <i class="bi bi-hourglass-split me-1"></i>処理中
+                                {% elif review.status == 'pending' %}
+                                    <i class="bi bi-clock me-1"></i>待機中
+                                {% elif review.status == 'failed' %}
+                                    <i class="bi bi-exclamation-triangle me-1"></i>失敗
+                                {% endif %}
+                            </span>
+                            <div class="mt-1 small text-muted">
+                                {{ review.created_at|date:"Y/m/d H:i" }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if review.status == 'completed' %}
+                <div class="review-body">
+                    <!-- 統計情報 -->
+                    <div class="review-stats">
+                        <div class="review-stat">
+                            <div class="review-stat-number text-primary">{{ review.total_entries }}</div>
+                            <div class="review-stat-label">記録数</div>
+                        </div>
+                        <div class="review-stat">
+                            <div class="review-stat-number text-success">{{ review.active_holdings }}</div>
+                            <div class="review-stat-label">保有中</div>
+                        </div>
+                        <div class="review-stat">
+                            <div class="review-stat-number text-info">{{ review.completed_trades }}</div>
+                            <div class="review-stat-label">売却済</div>
+                        </div>
+                        <div class="review-stat">
+                            <div class="review-stat-number text-secondary">{{ review.memo_entries }}</div>
+                            <div class="review-stat-label">メモ</div>
+                        </div>
+                    </div>
+
+                    <!-- アクションボタン -->
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{% url 'investment_review:detail' review.pk %}" 
+                           class="btn btn-primary btn-sm">
+                            <i class="bi bi-eye"></i> 詳細を見る
+                        </a>
+                        
+                        <form method="post" action="{% url 'investment_review:regenerate' review.pk %}" 
+                              style="display: inline;" 
+                              onsubmit="return confirm('このレビューを再分析しますか？')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-warning btn-sm">
+                                <i class="bi bi-arrow-clockwise"></i> 再分析
+                            </button>
+                        </form>
+                        
+                        <form method="post" action="{% url 'investment_review:delete' review.pk %}" 
+                              style="display: inline;"
+                              onsubmit="return confirm('このレビューを削除しますか？この操作は取り消せません。')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-trash"></i> 削除
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% elif review.status == 'processing' %}
+                <div class="review-body">
+                    <div class="text-center py-3">
+                        <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
+                        <div class="mt-2">AIが分析中です...</div>
+                        <small class="text-muted">完了まで1-2分程度お待ちください</small>
+                    </div>
+                </div>
+                {% elif review.status == 'failed' %}
+                <div class="review-body">
+                    <div class="alert alert-danger mb-3">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        分析に失敗しました
+                    </div>
+                    <div class="d-flex gap-2">
+                        <form method="post" action="{% url 'investment_review:regenerate' review.pk %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-warning btn-sm">
+                                <i class="bi bi-arrow-clockwise"></i> 再試行
+                            </button>
+                        </form>
+                        <form method="post" action="{% url 'investment_review:delete' review.pk %}" 
+                              style="display: inline;"
+                              onsubmit="return confirm('このレビューを削除しますか？')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-trash"></i> 削除
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% else %}
+                <div class="review-body">
+                    <div class="text-center py-2">
+                        <i class="bi bi-clock text-muted"></i>
+                        <div class="text-muted">分析待ち</div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- ページネーション -->
+        {% if is_paginated %}
+        <nav aria-label="ページネーション">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">最初</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">前へ</a>
+                    </li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link">
+                        {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">次へ</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">最後</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+    {% else %}
+        <!-- 空の状態 -->
+        <div class="empty-state">
+            <i class="bi bi-journal-x"></i>
+            <h4>振り返りレポートがありません</h4>
+            <p class="mb-3">
+                まだ振り返りレポートを作成していません。<br>
+                投資記録の分析を始めましょう。
+            </p>
+            <a href="{% url 'investment_review:create_monthly' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i>
+                初回レビューを作成
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- スピードダイアル -->
+{% include 'speed_dial.html' with actions=page_actions %}
+
+<!-- 自動リロード（処理中のレビューがある場合） -->
+{% if reviews %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const processingReviews = document.querySelectorAll('.status-processing');
+    
+    if (processingReviews.length > 0) {
+        // 30秒ごとにページをリロード
+        setTimeout(function() {
+            location.reload();
+        }, 30000);
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

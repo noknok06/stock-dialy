@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ review.title }} - カブログ{% endblock %}
+
+{% block head %}
+<style>
+.review-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 50px;
+    margin-left: 1rem;
+}
+
+.status-completed {
+    background-color: #d1f2eb;
+    color: #00695c;
+}
+
+.status-processing {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-failed {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.insights-section {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+}
+
+.insight-card {
+    border: none;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.insight-card:hover {
+    transform: translateY(-1px);
+}
+
+.insight-strength {
+    border-left: 4px solid #28a745;
+}
+
+.insight-weakness {
+    border-left: 4px solid #dc3545;
+}
+
+.insight-recommendation {
+    border-left: 4px solid #007bff;
+}
+
+.insight-opportunity {
+    border-left: 4px solid #17a2b8;
+}
+
+.insight-risk {
+    border-left: 4px solid #ffc107;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-item {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stat-number {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.professional-insights {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.analysis-loading {
+    text-align: center;
+    padding: 3rem;
+}
+
+.spinner-border-lg {
+    width: 3rem;
+    height: 3rem;
+}
+
+@media (max-width: 768px) {
+    .review-header {
+        padding: 1.5rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .professional-insights {
+        padding: 1.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- レビューヘッダー -->
+    <div class="review-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="display-6 fw-bold mb-2">{{ review.title }}</h1>
+                <p class="mb-0">
+                    <i class="bi bi-calendar3"></i>
+                    {{ review.get_analysis_period_display }}
+                    （{{ review.analysis_data.period.days }}日間）
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                {% if review.status == 'completed' %}
+                <span class="status-badge status-completed">
+                    <i class="bi bi-check-circle me-1"></i>
+                    分析完了
+                </span>
+                {% elif review.status == 'processing' %}
+                <span class="status-badge status-processing">
+                    <i class="bi bi-hourglass-split me-1"></i>
+                    分析中
+                </span>
+                {% elif review.status == 'failed' %}
+                <span class="status-badge status-failed">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    分析失敗
+                </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if review.status == 'processing' %}
+    <!-- 分析中の表示 -->
+    <div class="analysis-loading">
+        <div class="spinner-border spinner-border-lg text-primary" role="status" aria-hidden="true"></div>
+        <h4 class="mt-3">分析中...</h4>
+        <p class="text-muted">
+            AIが投資記録を分析しています。<br>
+            完了までしばらくお待ちください。
+        </p>
+        <div class="progress mt-3" style="max-width: 400px; margin: 0 auto;">
+            <div id="analysis-progress" class="progress-bar progress-bar-striped progress-bar-animated" 
+                 role="progressbar" style="width: 50%">
+            </div>
+        </div>
+    </div>
+    
+    <!-- 自動リロード用スクリプト -->
+    <script>
+    let checkInterval;
+    function checkAnalysisStatus() {
+        fetch(`{% url 'investment_review:analysis_status' review.pk %}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'completed') {
+                    location.reload();
+                } else if (data.status === 'failed') {
+                    clearInterval(checkInterval);
+                    alert('分析に失敗しました。ページを再読み込みしてください。');
+                }
+            })
+            .catch(error => console.error('Status check error:', error));
+    }
+    
+    // 5秒ごとにステータスをチェック
+    checkInterval = setInterval(checkAnalysisStatus, 5000);
+    
+    // ページを離れる際にintervalをクリア
+    window.addEventListener('beforeunload', function() {
+        clearInterval(checkInterval);
+    });
+    </script>
+    
+    {% elif review.status == 'completed' %}
+    <!-- 分析完了時の表示 -->
+    
+    <!-- 統計サマリー -->
+    {% if analysis_summary %}
+    <div class="stats-grid">
+        {% for highlight in analysis_summary.basic_highlights %}
+        <div class="stat-item">
+            <div class="stat-number text-primary">
+                {{ highlight|slice:":highlight.find:'件'"|default:highlight|slice:":highlight.find:'%'"|default:highlight|slice:":highlight.find:'銘柄'" }}
+            </div>
+            <div class="stat-label">
+                {% if '記録数' in highlight %}記録数{% elif '分析記録率' in highlight %}分析率{% elif '保有中' in highlight %}保有中{% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        
+        {% for highlight in analysis_summary.profit_highlights %}
+        <div class="stat-item">
+            <div class="stat-number {% if '総損益' in highlight %}text-{% if '-' in highlight %}danger{% else %}success{% endif %}{% elif '勝率' in highlight %}text-info{% elif 'ROI' in highlight %}text-warning{% endif %}">
+                {{ highlight|slice:":highlight.find:'円'"|default:highlight|slice:":highlight.find:'%'" }}
+            </div>
+            <div class="stat-label">
+                {% if '総損益' in highlight %}総損益{% elif '勝率' in highlight %}勝率{% elif 'ROI' in highlight %}ROI{% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- プロフェッショナルインサイト -->
+    {% if review.professional_insights %}
+    <div class="professional-insights">
+        <h3 class="mb-3">
+            <i class="bi bi-person-badge text-primary"></i>
+            プロからの振り返り
+        </h3>
+        <div class="insights-content">
+            {{ review.professional_insights|linebreaks }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 詳細インサイト -->
+    {% if insights_by_type %}
+    <div class="row">
+        {% for insight_type, insights in insights_by_type.items %}
+        <div class="col-lg-6">
+            <div class="insights-section">
+                <div class="p-3 border-bottom">
+                    <h4 class="mb-0">
+                        {% if insight_type == '強み・良い点' %}
+                        <i class="bi bi-star text-success"></i>
+                        {% elif insight_type == '改善点' %}
+                        <i class="bi bi-arrow-up-circle text-danger"></i>
+                        {% elif insight_type == '推奨アクション' %}
+                        <i class="bi bi-lightbulb text-primary"></i>
+                        {% elif insight_type == '機会・チャンス' %}
+                        <i class="bi bi-graph-up text-info"></i>
+                        {% elif insight_type == 'リスク・注意点' %}
+                        <i class="bi bi-exclamation-triangle text-warning"></i>
+                        {% endif %}
+                        {{ insight_type }}
+                    </h4>
+                </div>
+                
+                <div class="p-3">
+                    {% for insight in insights %}
+                    <div class="insight-card 
+                        {% if insight_type == '強み・良い点' %}insight-strength
+                        {% elif insight_type == '改善点' %}insight-weakness
+                        {% elif insight_type == '推奨アクション' %}insight-recommendation
+                        {% elif insight_type == '機会・チャンス' %}insight-opportunity
+                        {% elif insight_type == 'リスク・注意点' %}insight-risk
+                        {% endif %}">
+                        <div class="card-body">
+                            <h6 class="card-title">{{ insight.title }}</h6>
+                            <p class="card-text mb-0">{{ insight.content }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- 詳細データ（折りたたみ） -->
+    {% if review.analysis_data %}
+    <div class="accordion mt-4" id="detailsAccordion">
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" 
+                        data-bs-toggle="collapse" data-bs-target="#detailedData">
+                    <i class="bi bi-bar-chart me-2"></i>
+                    詳細分析データ
+                </button>
+            </h2>
+            <div id="detailedData" class="accordion-collapse collapse" 
+                 data-bs-parent="#detailsAccordion">
+                <div class="accordion-body">
+                    <div class="row">
+                        <!-- 投資パターン -->
+                        {% if review.analysis_data.pattern_analysis %}
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-graph-up"></i> 投資パターン</h6>
+                            <ul class="list-unstyled">
+                                <li>平均保有期間: {{ review.analysis_data.pattern_analysis.avg_holding_period }}日</li>
+                                <li>平均投資額: {{ review.analysis_data.pattern_analysis.avg_investment_size|floatformat:0 }}円</li>
+                                <li>詳細分析率: {{ review.analysis_data.pattern_analysis.analysis_depth_rate }}%</li>
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- タグ使用状況 -->
+                        {% if review.analysis_data.tag_usage %}
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-tags"></i> タグ使用状況</h6>
+                            <ul class="list-unstyled">
+                                <li>タグ付け率: {{ review.analysis_data.tag_usage.tagging_rate }}%</li>
+                                <li>使用タグ数: {{ review.analysis_data.tag_usage.unique_tags }}個</li>
+                                {% for tag_name, count in review.analysis_data.tag_usage.most_used_tags %}
+                                <li class="small">{{ tag_name }}: {{ count }}回</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% elif review.status == 'failed' %}
+    <!-- 分析失敗時の表示 -->
+    <div class="alert alert-danger" role="alert">
+        <h5 class="alert-heading">
+            <i class="bi bi-exclamation-triangle"></i>
+            分析に失敗しました
+        </h5>
+        <p class="mb-2">
+            レビューの分析中にエラーが発生しました。
+            しばらく時間をおいてから再試行してください。
+        </p>
+        <form method="post" action="{% url 'investment_review:regenerate' review.pk %}" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-warning btn-sm">
+                <i class="bi bi-arrow-clockwise"></i> 再分析
+            </button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+<!-- スピードダイアル -->
+{% include 'speed_dial.html' with actions=page_actions %}
+{% endblock %}

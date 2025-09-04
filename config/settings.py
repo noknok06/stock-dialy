@@ -145,7 +145,7 @@ LOCAL_APPS = [
     'contact',
     'financial_reports',
     'earnings_analysis',
-    'margin_trading',  # クレジット比率アプリ
+    'investment_review',
 ]
 
 # インストール済みアプリ
@@ -731,7 +731,7 @@ LOGGING['handlers']['security_file'] = {
 }
 
 LOGGING['loggers']['security'] = {
-    'handlers': ['file'],
+    'handlers': ['security_file', 'file'],
     'level': 'INFO',
     'propagate': True,
 }
@@ -1089,3 +1089,40 @@ LANGEXTRACT_COMPANY_WHITELIST = []  # 特定企業のみでテストする場合
 LANGEXTRACT_DOC_TYPE_WHITELIST = ['120', '160']  # 特定書類種別のみでテストする場合
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 50000
+
+# 投資振り返り機能設定（新規追加）
+INVESTMENT_REVIEW_SETTINGS = {
+    # 基本設定
+    'ENABLED': True,
+    'AUTO_ANALYSIS': True,  # 自動分析の有効化
+    
+    # Gemini API設定
+    'GEMINI_MODEL': 'gemini-2.5-flash',
+    'GEMINI_TIMEOUT': 60,  # タイムアウト（秒）
+    'GEMINI_MAX_RETRIES': 3,  # 最大リトライ回数
+    
+    # 分析パラメータ
+    'MAX_ENTRIES_PER_ANALYSIS': 50,  # 一度に分析する最大エントリー数
+    'MIN_ENTRIES_FOR_ANALYSIS': 1,   # 分析に必要な最小エントリー数
+    'ANALYSIS_CACHE_HOURS': 24,      # 分析結果のキャッシュ時間
+    
+    # バックグラウンド処理設定
+    'BACKGROUND_ANALYSIS': True,     # バックグラウンド分析の有効化
+    'MAX_PARALLEL_ANALYSIS': 2,      # 同時実行可能な分析数
+    
+    # レポート生成設定
+    'DEFAULT_PERIOD_DAYS': 30,       # デフォルト分析期間（日）
+    'INSIGHT_COUNT_LIMIT': 5,        # インサイトの最大数（タイプ別）
+    
+    # データ保持設定
+    'REVIEW_RETENTION_MONTHS': 12,   # レビューデータ保持期間（月）
+    'CLEANUP_FREQUENCY_HOURS': 24,   # クリーンアップ頻度（時間）
+    
+    # 通知設定
+    'NOTIFY_ON_COMPLETION': False,   # 分析完了時の通知（将来拡張用）
+    'NOTIFY_ON_ERROR': True,         # エラー時の通知
+    
+    # デバッグ設定
+    'DEBUG_ANALYSIS': False,         # 分析デバッグモード
+    'LOG_ANALYSIS_DETAILS': True,    # 詳細ログの出力
+}
