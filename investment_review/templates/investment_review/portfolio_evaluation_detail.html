@@ -1,0 +1,500 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - カブログ{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3">
+    <!-- ページヘッダー -->
+    <div class="title_header mb-4">
+        <h1 class="page-title d-flex align-items-center">
+            <i class="bi bi-clipboard-data-fill me-2"></i>
+            {{ page_title }}
+        </h1>
+        <p class="subtitle text-muted">{{ page_subtitle }}</p>
+    </div>
+
+    {% if evaluation.status != 'completed' %}
+    <!-- 評価実行中・待機中の表示 -->
+    <div class="card">
+        <div class="card-body text-center py-5" id="statusContainer">
+            <div class="mb-4">
+                {% if evaluation.status == 'processing' %}
+                <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                {% elif evaluation.status == 'failed' %}
+                <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 3rem;"></i>
+                {% else %}
+                <div class="spinner-border text-secondary" style="width: 3rem; height: 3rem;" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                {% endif %}
+            </div>
+            <h4 class="mb-3" id="statusMessage">
+                {% if evaluation.status == 'processing' %}
+                    ポートフォリオを分析中...
+                {% elif evaluation.status == 'failed' %}
+                    分析に失敗しました
+                {% else %}
+                    分析待ち
+                {% endif %}
+            </h4>
+            
+            {% if evaluation.status == 'processing' %}
+            <div class="progress mx-auto mb-3" style="max-width: 400px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+                     style="width: 50%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">
+                    50%
+                </div>
+            </div>
+            <p class="text-muted">
+                株価データの取得、ファンダメンタル指標の計算、AIによる評価分析を実行中です。<br>
+                完了まで2-3分程度お待ちください。
+            </p>
+            {% elif evaluation.status == 'failed' %}
+            <p class="text-danger">
+                評価分析中にエラーが発生しました。<br>
+                しばらく時間をおいて再度お試しください。
+            </p>
+            <div class="mt-4">
+                <a href="{% url 'investment_review:portfolio_evaluation' %}" class="btn btn-primary">
+                    <i class="bi bi-arrow-clockwise me-1"></i>
+                    再度評価する
+                </a>
+            </div>
+            {% else %}
+            <p class="text-muted">
+                評価が開始されるまでお待ちください。
+            </p>
+            {% endif %}
+            
+            <!-- 手動更新ボタン -->
+            {% if evaluation.status in 'pending,processing' %}
+            <div class="mt-4">
+                <button class="btn btn-outline-primary" onclick="checkStatus()">
+                    <i class="bi bi-arrow-clockwise me-1"></i>
+                    手動で更新
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if evaluation.status in 'pending,processing' %}
+    <script>
+        let statusCheckInterval;
+
+        function checkStatus() {
+            fetch(`{% url 'investment_review:portfolio_evaluation_api_status' pk=evaluation.pk %}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.completed) {
+                        // 完了時はページをリロード
+                        location.reload();
+                    } else {
+                        // ステータス表示を更新
+                        updateStatusDisplay(data);
+                    }
+                })
+                .catch(error => {
+                    console.error('Status check failed:', error);
+                });
+        }
+
+        function updateStatusDisplay(data) {
+            const statusMessage = document.getElementById('statusMessage');
+            const progressBar = document.querySelector('.progress-bar');
+            
+            statusMessage.textContent = data.message || '分析中...';
+            
+            if (progressBar) {
+                progressBar.style.width = `${data.progress || 0}%`;
+                progressBar.textContent = `${data.progress || 0}%`;
+                progressBar.setAttribute('aria-valuenow', data.progress || 0);
+            }
+        }
+
+        // 10秒ごとに自動更新
+        statusCheckInterval = setInterval(checkStatus, 10000);
+
+        // ページ離脱時にインターバルをクリア
+        window.addEventListener('beforeunload', function() {
+            if (statusCheckInterval) {
+                clearInterval(statusCheckInterval);
+            }
+        });
+    </script>
+    {% endif %}
+
+    {% else %}
+    <!-- 評価完了時の詳細表示 -->
+    <!-- ポートフォリオサマリー -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        評価完了
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6 col-md-3">
+                            <div class="text-center">
+                                <div class="h3 text-primary mb-0">{{ evaluation.total_holdings }}</div>
+                                <small class="text-muted">保有銘柄</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-center">
+                                <div class="h3 text-success mb-0">
+                                    {% if evaluation.total_portfolio_value %}
+                                        {{ evaluation.total_portfolio_value|floatformat:0 }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">評価額(円)</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-center">
+                                <div class="h3 {% if evaluation.total_return_pct and evaluation.total_return_pct >= 0 %}text-success{% else %}text-danger{% endif %} mb-0">
+                                    {% if evaluation.total_return_pct is not None %}
+                                        {{ evaluation.total_return_pct|floatformat:1 }}%
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">総合リターン</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-center">
+                                <div class="h3 text-info mb-0">
+                                    {{ evaluation.get_win_rate|floatformat:1 }}%
+                                </div>
+                                <small class="text-muted">勝率</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-info-circle me-1"></i>
+                        分析情報
+                    </h6>
+                    <div class="small">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>分析日時:</span>
+                            <span>{{ evaluation.evaluation_date|date:"Y-m-d H:i" }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>AI分析:</span>
+                            <span>
+                                {% if evaluation.api_used %}
+                                    <span class="badge bg-success">使用</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">基本分析</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>分散スコア:</span>
+                            <span>
+                                <span class="badge bg-info">{{ evaluation.get_diversification_score|title }}</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if evaluation.api_used and evaluation.professional_evaluation %}
+    <!-- プロ目線の総合評価 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-person-badge me-2"></i>
+                プロ投資家による総合評価
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="evaluation-content">
+                {{ evaluation.professional_evaluation|linebreaks }}
+            </div>
+        </div>
+    </div>
+
+    <!-- 詳細評価項目 -->
+    {% if insights_by_type %}
+    <div class="row mb-4">
+        <!-- 強み -->
+        {% if insights_by_type.強み・ポジティブ要素 %}
+        <div class="col-lg-6 mb-3">
+            <div class="card h-100">
+                <div class="card-header bg-success bg-opacity-10">
+                    <h6 class="card-title mb-0 text-success">
+                        <i class="bi bi-plus-circle-fill me-2"></i>
+                        強み・ポジティブ要素
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        {% for insight in insights_by_type.強み・ポジティブ要素 %}
+                        <li class="mb-2 d-flex align-items-start">
+                            <i class="bi bi-check-circle text-success me-2 mt-1 flex-shrink-0"></i>
+                            <span>{{ insight.content }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 弱み・リスク -->
+        {% if insights_by_type.弱み・リスク要素 %}
+        <div class="col-lg-6 mb-3">
+            <div class="card h-100">
+                <div class="card-header bg-danger bg-opacity-10">
+                    <h6 class="card-title mb-0 text-danger">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        弱み・リスク要素
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        {% for insight in insights_by_type.弱み・リスク要素 %}
+                        <li class="mb-2 d-flex align-items-start">
+                            <i class="bi bi-exclamation-triangle text-danger me-2 mt-1 flex-shrink-0"></i>
+                            <span>{{ insight.content }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 中立的評価と改善提案 -->
+    <div class="row mb-4">
+        <!-- 中立的評価 -->
+        {% if insights_by_type.中立的現状判断 %}
+        <div class="col-lg-6 mb-3">
+            <div class="card h-100">
+                <div class="card-header bg-info bg-opacity-10">
+                    <h6 class="card-title mb-0 text-info">
+                        <i class="bi bi-balance me-2"></i>
+                        中立的な現状判断
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        {% for insight in insights_by_type.中立的現状判断 %}
+                        <li class="mb-2 d-flex align-items-start">
+                            <i class="bi bi-dot text-info me-2 mt-1 flex-shrink-0"></i>
+                            <span>{{ insight.content }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 改善提案 -->
+        {% if insights_by_type.改善提案 %}
+        <div class="col-lg-6 mb-3">
+            <div class="card h-100">
+                <div class="card-header bg-warning bg-opacity-10">
+                    <h6 class="card-title mb-0 text-warning-emphasis">
+                        <i class="bi bi-gear-fill me-2"></i>
+                        具体的な改善提案
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        {% for insight in insights_by_type.改善提案 %}
+                        <li class="mb-2 d-flex align-items-start">
+                            <i class="bi bi-arrow-right-circle text-warning me-2 mt-1 flex-shrink-0"></i>
+                            <span>{{ insight.content }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <!-- ポートフォリオ詳細データ（完了時のみ表示） -->
+    {% if evaluation.status == 'completed' and evaluation.portfolio_data %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="card-title mb-0">
+                <a class="text-decoration-none" data-bs-toggle="collapse" href="#portfolioDetails" role="button" aria-expanded="false" aria-controls="portfolioDetails">
+                    <i class="bi bi-table me-2"></i>
+                    ポートフォリオ詳細データ
+                    <i class="bi bi-chevron-down ms-2"></i>
+                </a>
+            </h6>
+        </div>
+        <div class="collapse" id="portfolioDetails">
+            <div class="card-body">
+                {% with portfolio_data=evaluation.portfolio_data %}
+                
+                <!-- セクター分散 -->
+                {% if portfolio_data.sector_analysis.sector_distribution %}
+                <h6 class="mb-3">セクター分散</h6>
+                <div class="row mb-4">
+                    {% for sector, data in portfolio_data.sector_analysis.sector_distribution.items %}
+                    <div class="col-md-4 mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="small">{{ sector }}</span>
+                            <div>
+                                <span class="badge bg-primary">{{ data.percentage|floatformat:1 }}%</span>
+                                <small class="text-muted">({{ data.count }}銘柄)</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- 保有銘柄一覧 -->
+                {% if portfolio_data.holdings %}
+                <h6 class="mb-3">保有銘柄詳細</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>銘柄</th>
+                                <th>セクター</th>
+                                <th class="text-end">投資額</th>
+                                <th class="text-end">現在価値</th>
+                                <th class="text-end">損益率</th>
+                                <th class="text-end">保有期間</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for holding in portfolio_data.holdings|slice:":10" %}
+                            <tr>
+                                <td>
+                                    <strong>{{ holding.stock_name|truncatechars:20 }}</strong><br>
+                                    <small class="text-muted">{{ holding.stock_symbol }}</small>
+                                </td>
+                                <td><span class="badge bg-light text-dark">{{ holding.sector|truncatechars:10 }}</span></td>
+                                <td class="text-end">{{ holding.investment_amount|floatformat:0 }}</td>
+                                <td class="text-end">
+                                    {% if holding.current_value %}
+                                        {{ holding.current_value|floatformat:0 }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    {% if holding.unrealized_gain_loss_pct is not None %}
+                                        <span class="{% if holding.unrealized_gain_loss_pct >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {{ holding.unrealized_gain_loss_pct|floatformat:1 }}%
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">{{ holding.holding_period_days }}日</td>
+                            </tr>
+                            {% endfor %}
+                            {% if portfolio_data.holdings|length > 10 %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">
+                                    <small>... 他 {{ portfolio_data.holdings|length|add:"-10" }}銘柄</small>
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+                
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- アクションボタン -->
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex gap-2 justify-content-center flex-wrap">
+                {% if evaluation.status == 'completed' %}
+                <a href="{% url 'investment_review:portfolio_evaluation' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-clockwise me-1"></i>
+                    新しい評価
+                </a>
+                <a href="{% url 'stockdiary:stock_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-building me-1"></i>
+                    銘柄一覧
+                </a>
+                <a href="{% url 'stockdiary:analytics' %}" class="btn btn-outline-info">
+                    <i class="bi bi-graph-up me-1"></i>
+                    投資分析
+                </a>
+                <button class="btn btn-outline-success" onclick="window.print()">
+                    <i class="bi bi-printer me-1"></i>
+                    印刷
+                </button>
+                {% else %}
+                <a href="{% url 'investment_review:portfolio_evaluation' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left me-1"></i>
+                    評価画面に戻る
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+/* 評価内容の読みやすさを向上 */
+.evaluation-content {
+    font-size: 1.05rem;
+    line-height: 1.7;
+}
+
+.evaluation-content h2 {
+    color: var(--bs-primary);
+    font-size: 1.25rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid var(--bs-primary);
+    padding-bottom: 0.5rem;
+}
+
+.evaluation-content ul {
+    margin-left: 1rem;
+}
+
+.evaluation-content li {
+    margin-bottom: 0.75rem;
+}
+
+/* 印刷用スタイル */
+@media print {
+    .btn, .card-header a {
+        display: none !important;
+    }
+}
+</style>
+{% endblock %}

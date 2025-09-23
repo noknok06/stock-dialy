@@ -10,6 +10,7 @@ from stockdiary.models import StockDiary, DiaryNote
 from analysis_template.models import DiaryAnalysisValue
 from tags.models import Tag
 from django.db.models import Count, Avg, Sum, Q
+from .portfolio_analyzer import PortfolioAnalyzer
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ class GeminiInvestmentAnalyzer:
         self.api_available = api_key is not None
         self.model = None
         self.initialization_error = None
+        self.portfolio_analyzer = PortfolioAnalyzer()
         
         if not api_key:
             logger.warning("GEMINI_API_KEYが設定されていません")
@@ -509,3 +511,438 @@ class GeminiInvestmentAnalyzer:
             return bool(analysis_value.text_value and analysis_value.text_value.strip())
         
         return False
+
+    def analyze_current_portfolio(self, user) -> Dict[str, Any]:
+        """現在保有株式のポートフォリオを評価分析"""
+        try:
+            # ポートフォリオデータを取得
+            portfolio_data = self.portfolio_analyzer.analyze_current_portfolio(user)
+            
+            if portfolio_data.get('status') != 'success':
+                return portfolio_data
+            
+            # 市場環境情報を取得
+            market_context = self.portfolio_analyzer.get_market_context()
+            
+            if not self.model:
+                return self._generate_fallback_portfolio_evaluation(portfolio_data, market_context)
+            
+            # Gemini APIを使ってプロ目線の評価を生成
+            evaluation_result = self._generate_professional_portfolio_evaluation(portfolio_data, market_context)
+            
+            return {
+                'status': 'success',
+                'portfolio_data': portfolio_data,
+                'market_context': market_context,
+                'professional_evaluation': evaluation_result.get('evaluation', ''),
+                'strengths': evaluation_result.get('strengths', []),
+                'weaknesses': evaluation_result.get('weaknesses', []),
+                'neutral_assessment': evaluation_result.get('neutral_assessment', []),
+                'actionable_recommendations': evaluation_result.get('recommendations', []),
+                'risk_assessment': evaluation_result.get('risk_assessment', ''),
+                'market_positioning': evaluation_result.get('market_positioning', ''),
+                'api_used': True,
+                'analysis_timestamp': timezone.now().isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"ポートフォリオ評価分析エラー: {e}")
+            portfolio_data = self.portfolio_analyzer.analyze_current_portfolio(user)
+            fallback_result = self._generate_fallback_portfolio_evaluation(portfolio_data, {})
+            fallback_result['error_message'] = str(e)
+            return fallback_result
+    
+    def _generate_professional_portfolio_evaluation(self, portfolio_data: Dict, market_context: Dict) -> Dict[str, Any]:
+        """Gemini APIを使ってプロ目線のポートフォリオ評価を生成"""
+        try:
+            prompt = self._build_portfolio_evaluation_prompt(portfolio_data, market_context)
+            
+            logger.info("Gemini APIポートフォリオ評価分析開始")
+            response = self.model.generate_content(prompt)
+            
+            if hasattr(response, "text") and response.text:
+                logger.info("Gemini APIから評価結果を受信")
+                return self._parse_portfolio_evaluation_response(response.text)
+            else:
+                logger.warning("Gemini APIから有効な応答を取得できませんでした")
+                return self._generate_basic_portfolio_evaluation(portfolio_data)
+                
+        except Exception as e:
+            logger.error(f"Gemini APIポートフォリオ評価エラー: {e}")
+            return self._generate_basic_portfolio_evaluation(portfolio_data)
+    
+    def _build_portfolio_evaluation_prompt(self, portfolio_data: Dict, market_context: Dict) -> str:
+        """ポートフォリオ評価用の詳細プロンプトを構築"""
+        # ポートフォリオの基本情報
+        total_holdings = portfolio_data.get('total_holdings', 0)
+        total_value = portfolio_data.get('total_portfolio_value', 0)
+        holdings = portfolio_data.get('holdings', [])
+        
+        # 分析データ
+        portfolio_analysis = portfolio_data.get('portfolio_analysis', {})
+        sector_analysis = portfolio_data.get('sector_analysis', {})
+        risk_analysis = portfolio_data.get('risk_analysis', {})
+        performance_analysis = portfolio_data.get('performance_analysis', {})
+        
+        # 主要保有銘柄の詳細（上位5銘柄）
+        top_holdings = sorted(holdings, key=lambda x: x.get('current_value', 0), reverse=True)[:5]
+        top_holdings_summary = []
+        
+        for holding in top_holdings:
+            fundamentals = holding.get('fundamentals', {})
+            technical = holding.get('technical', {})
+            
+            summary = f"""
+銘柄: {holding.get('stock_name', '未設定')} ({holding.get('stock_symbol', 'N/A')})
+セクター: {holding.get('sector', 'その他')}
+投資額: {holding.get('investment_amount', 0):,.0f}円
+現在価値: {holding.get('current_value', 0):,.0f}円
+損益率: {holding.get('unrealized_gain_loss_pct', 0):.1f}%
+保有期間: {holding.get('holding_period_days', 0)}日
+PER: {fundamentals.get('pe_ratio', 'N/A')}
+PBR: {fundamentals.get('pb_ratio', 'N/A')}
+配当利回り: {fundamentals.get('dividend_yield', 'N/A')}
+RSI: {technical.get('rsi', 'N/A')}
+トレンド: {technical.get('trend_signal', 'N/A')}
+"""
+            top_holdings_summary.append(summary.strip())
+        
+        # 市場環境情報
+        market_summary = ""
+        if market_context.get('status') == 'success':
+            market_data = market_context.get('market_data', {})
+            if 'nikkei' in market_data:
+                nikkei_change = market_data['nikkei'].get('change_pct', 0)
+                market_summary += f"日経平均: {nikkei_change:+.2f}%\n"
+            if 'usdjpy' in market_data:
+                usdjpy_change = market_data['usdjpy'].get('change_pct', 0)
+                usdjpy_rate = market_data['usdjpy'].get('current', 0)
+                market_summary += f"USD/JPY: {usdjpy_rate:.2f} ({usdjpy_change:+.2f}%)\n"
+        
+        prompt = f"""
+あなたは20年以上の経験を持つプロの投資アドバイザーとして、以下のポートフォリオを厳格かつ建設的に評価してください。
+
+【ポートフォリオ概要】
+保有銘柄数: {total_holdings}銘柄
+総投資額: {performance_analysis.get('total_investment', 0):,.0f}円
+総評価額: {total_value:,.0f}円
+総合リターン: {performance_analysis.get('total_return_pct', 0):+.1f}%
+
+【ポートフォリオ構成分析】
+上位5銘柄集中度: {portfolio_analysis.get('top_5_concentration', 0):.1f}%
+平均保有期間: {portfolio_analysis.get('avg_holding_period_days', 0):.0f}日
+勝率: {portfolio_analysis.get('win_rate', 0):.1f}%
+分散投資スコア: {portfolio_analysis.get('diversification_score', 'N/A')}
+
+【セクター分散】
+セクター数: {sector_analysis.get('num_sectors', 0)}
+最大セクター集中度: {sector_analysis.get('max_sector_concentration', 0):.1f}%
+セクター分散スコア: {sector_analysis.get('sector_diversification_score', 'N/A')}
+
+【リスク分析】
+平均ボラティリティ: {risk_analysis.get('avg_volatility', 'N/A')}
+平均PER: {risk_analysis.get('avg_pe_ratio', 'N/A')}
+平均PBR: {risk_analysis.get('avg_pb_ratio', 'N/A')}
+高PER銘柄比率: {risk_analysis.get('high_pe_ratio', 0):.1f}%
+小型株比率: {risk_analysis.get('small_cap_ratio', 0):.1f}%
+リスクレベル: {risk_analysis.get('risk_level', 'N/A')}
+
+【主要保有銘柄詳細】
+{chr(10).join(top_holdings_summary)}
+
+【現在の市場環境】
+{market_summary if market_summary else '市場データ取得不可'}
+
+【分析要求】
+以下の観点から、投資家に刺さる率直で建設的な評価を提供してください：
+
+1. **強み（ポジティブ要素）** - 3-5点
+   - 優れている具体的なポイント
+   - 数値的根拠を含めた評価
+   - 継続すべき投資戦略
+
+2. **弱み・リスク要素** - 3-5点  
+   - 改善が必要な具体的な問題
+   - 潜在的なリスク要因
+   - 市場環境変化への脆弱性
+
+3. **中立的な現状判断** - 2-3点
+   - 現在のポジショニングの妥当性
+   - 市場環境との整合性
+   - 投資スタイルの一貫性
+
+4. **具体的な改善提案** - 3-5点
+   - 実行可能なアクションプラン
+   - リスク管理の改善策
+   - パフォーマンス向上のための戦略
+
+5. **総合リスク評価**
+   - 現在のリスクレベルの妥当性
+   - 金融環境変化への対応力
+   - ポートフォリオの持続可能性
+
+6. **市場ポジショニング**
+   - 現在の市場環境における適切性
+   - 今後の市場変動への対応力
+   - セクターローテーションへの対応
+
+**出力形式:**
+## 総合評価
+[3-4文での全体評価]
+
+## 強み・ポジティブ要素
+• [具体的な強み1]: [数値的根拠と評価]
+• [具体的な強み2]: [数値的根拠と評価]
+[3-5項目]
+
+## 弱み・リスク要素
+• [具体的な弱み1]: [問題の詳細と影響]
+• [具体的な弱み2]: [問題の詳細と影響]
+[3-5項目]
+
+## 中立的な現状判断
+• [判断1]: [根拠]
+• [判断2]: [根拠]
+[2-3項目]
+
+## 改善提案・アクションプラン
+• [提案1]: [具体的な実行方法]
+• [提案2]: [具体的な実行方法]
+[3-5項目]
+
+## リスク評価
+[リスクレベルの妥当性と改善点]
+
+## 市場ポジショニング
+[現在の市場環境での適切性評価]
+
+**注意事項:**
+- 数値は具体的に示し、曖昧な表現は避ける
+- 建設的で実行可能な提案を心がける
+- 投資家の成長を促す厳しくも的確な指摘を含める
+- 現在の金融市場環境（金利、為替、地政学リスク等）を考慮する
+"""
+        return prompt.strip()
+    
+    def _parse_portfolio_evaluation_response(self, response_text: str) -> Dict[str, Any]:
+        """ポートフォリオ評価応答を解析"""
+        sections = {
+            'evaluation': response_text,
+            'strengths': [],
+            'weaknesses': [],
+            'neutral_assessment': [],
+            'recommendations': [],
+            'risk_assessment': '',
+            'market_positioning': ''
+        }
+        
+        try:
+            # セクションを分割して解析
+            lines = response_text.split('\n')
+            current_section = None
+            current_items = []
+            
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                
+                # セクションヘッダーを検出
+                if '強み' in line or 'ポジティブ' in line:
+                    if current_section and current_items:
+                        sections[current_section] = current_items.copy()
+                    current_section = 'strengths'
+                    current_items = []
+                elif '弱み' in line or 'リスク要素' in line:
+                    if current_section and current_items:
+                        sections[current_section] = current_items.copy()
+                    current_section = 'weaknesses'
+                    current_items = []
+                elif '中立' in line or '現状判断' in line:
+                    if current_section and current_items:
+                        sections[current_section] = current_items.copy()
+                    current_section = 'neutral_assessment'
+                    current_items = []
+                elif '改善' in line or 'アクション' in line or '提案' in line:
+                    if current_section and current_items:
+                        sections[current_section] = current_items.copy()
+                    current_section = 'recommendations'
+                    current_items = []
+                elif 'リスク評価' in line:
+                    if current_section and current_items:
+                        sections[current_section] = current_items.copy()
+                    current_section = 'risk_assessment'
+                    current_items = []
+                elif '市場ポジショニング' in line:
+                    if current_section and current_items:
+                        sections[current_section] = current_items.copy()
+                    current_section = 'market_positioning'
+                    current_items = []
+                elif line.startswith('• ') or line.startswith('・') or line.startswith('- '):
+                    # リスト項目を抽出
+                    item = line[2:].strip() if line.startswith(('• ', '・ ')) else line[2:].strip()
+                    if current_section and item:
+                        if current_section in ['risk_assessment', 'market_positioning']:
+                            # これらのセクションは文章として扱う
+                            current_items.append(item)
+                        else:
+                            current_items.append(item)
+                elif current_section in ['risk_assessment', 'market_positioning'] and line:
+                    # リスク評価と市場ポジショニングは継続的なテキスト
+                    current_items.append(line)
+            
+            # 最後のセクションを保存
+            if current_section and current_items:
+                if current_section in ['risk_assessment', 'market_positioning']:
+                    sections[current_section] = '\n'.join(current_items)
+                else:
+                    sections[current_section] = current_items
+            
+            return sections
+            
+        except Exception as e:
+            logger.error(f"ポートフォリオ評価応答解析エラー: {e}")
+            return sections
+    
+    def _generate_basic_portfolio_evaluation(self, portfolio_data: Dict) -> Dict[str, Any]:
+        """基本的なポートフォリオ評価を生成（フォールバック）"""
+        total_holdings = portfolio_data.get('total_holdings', 0)
+        portfolio_analysis = portfolio_data.get('portfolio_analysis', {})
+        risk_analysis = portfolio_data.get('risk_analysis', {})
+        performance_analysis = portfolio_data.get('performance_analysis', {})
+        
+        evaluation = f"""
+【基本的なポートフォリオ評価】
+保有銘柄数: {total_holdings}銘柄
+総合リターン: {performance_analysis.get('total_return_pct', 0):+.1f}%
+勝率: {portfolio_analysis.get('win_rate', 0):.1f}%
+分散投資スコア: {portfolio_analysis.get('diversification_score', 'N/A')}
+
+【所見】
+現在のポートフォリオについて、基本的な分析結果をお示ししています。
+より詳細な評価については、APIサービスが利用可能な際に再実行してください。
+"""
+        
+        return {
+            'evaluation': evaluation,
+            'strengths': ['記録の継続的な管理'],
+            'weaknesses': ['詳細分析の実行が必要'],
+            'neutral_assessment': ['現在の保有状況は記録されています'],
+            'recommendations': ['定期的な見直しを推奨'],
+            'risk_assessment': 'リスク評価にはより詳細なデータが必要です',
+            'market_positioning': '市場環境との整合性の確認を推奨します'
+        }
+    
+    def _generate_fallback_portfolio_evaluation(self, portfolio_data: Dict, market_context: Dict) -> Dict[str, Any]:
+        """API利用不可時のフォールバックポートフォリオ評価"""
+        basic_evaluation = self._generate_basic_portfolio_evaluation(portfolio_data)
+        
+        return {
+            'status': 'fallback' if portfolio_data.get('status') == 'success' else portfolio_data.get('status', 'error'),
+            'portfolio_data': portfolio_data,
+            'market_context': market_context,
+            'professional_evaluation': basic_evaluation['evaluation'],
+            'strengths': basic_evaluation['strengths'],
+            'weaknesses': basic_evaluation['weaknesses'],
+            'neutral_assessment': basic_evaluation['neutral_assessment'],
+            'actionable_recommendations': basic_evaluation['recommendations'],
+            'risk_assessment': basic_evaluation['risk_assessment'],
+            'market_positioning': basic_evaluation['market_positioning'],
+            'api_used': False,
+            'fallback_reason': self.initialization_error or 'API_UNAVAILABLE',
+            'analysis_timestamp': timezone.now().isoformat()
+        }
+
+    # 既存のメソッドはそのまま維持...
+    def analyze_investment_records(self, user, start_date, end_date) -> Dict[str, Any]:
+        """指定期間の投資記録を分析（既存メソッド）"""
+        try:
+            # データ収集
+            records_data = self._collect_period_data(user, start_date, end_date)
+            
+            if not self.model:
+                return self._generate_fallback_analysis(records_data)
+            
+            # Gemini APIを使った分析
+            analysis_result = self._generate_professional_insights(records_data)
+            
+            return {
+                'status': 'success',
+                'analysis_data': records_data,
+                'professional_insights': analysis_result.get('insights', ''),
+                'detailed_feedback': analysis_result.get('detailed_feedback', []),
+                'action_items': analysis_result.get('action_items', []),
+                'strengths': analysis_result.get('strengths', []),
+                'improvement_areas': analysis_result.get('improvement_areas', []),
+                'api_used': True
+            }
+            
+        except Exception as e:
+            logger.error(f"投資記録分析エラー: {e}")
+            records_data = self._collect_period_data(user, start_date, end_date)
+            fallback_result = self._generate_fallback_analysis(records_data)
+            fallback_result['error_message'] = str(e)
+            return fallback_result
+
+    # [既存のメソッドはそのまま維持...]
+    # _collect_period_data, _calculate_profit_loss, _analyze_tag_usage, 
+    # _analyze_template_usage, _analyze_notes, _analyze_stocks,
+    # _analyze_investment_patterns, _prepare_entries_for_analysis,
+    # _generate_professional_insights, _build_analysis_prompt,
+    # _parse_gemini_analysis_response, _generate_basic_insights,
+    # _generate_fallback_analysis, _is_analysis_item_completed
+    
+    def _collect_period_data(self, user, start_date, end_date) -> Dict[str, Any]:
+        """期間内のデータを収集"""
+        # [既存の実装をそのまま使用]
+        diaries = StockDiary.objects.filter(
+            user=user,
+            created_at__date__gte=start_date,
+            created_at__date__lte=end_date
+        ).select_related('user').prefetch_related('tags', 'notes', 'analysis_values')
+        
+        # 統計データの計算
+        total_entries = diaries.count()
+        active_holdings = diaries.filter(sell_date__isnull=True, purchase_price__isnull=False).count()
+        completed_trades = diaries.filter(sell_date__isnull=False).count()
+        memo_entries = diaries.filter(Q(is_memo=True) | Q(purchase_price__isnull=True)).count()
+        
+        # 損益計算
+        profit_loss_data = self._calculate_profit_loss(diaries)
+        
+        # タグ使用状況
+        tag_usage = self._analyze_tag_usage(diaries)
+        
+        # 分析テンプレート使用状況  
+        template_usage = self._analyze_template_usage(diaries)
+        
+        # 継続記録状況
+        note_analysis = self._analyze_notes(diaries)
+        
+        # 銘柄分析
+        stock_analysis = self._analyze_stocks(diaries)
+        
+        # 投資パターン分析
+        pattern_analysis = self._analyze_investment_patterns(diaries)
+        
+        return {
+            'period': {
+                'start_date': start_date.isoformat(),
+                'end_date': end_date.isoformat(),
+                'days': (end_date - start_date).days + 1
+            },
+            'basic_stats': {
+                'total_entries': total_entries,
+                'active_holdings': active_holdings, 
+                'completed_trades': completed_trades,
+                'memo_entries': memo_entries,
+                'analysis_rate': round((total_entries - memo_entries) / total_entries * 100, 1) if total_entries > 0 else 0
+            },
+            'profit_loss': profit_loss_data,
+            'tag_usage': tag_usage,
+            'template_usage': template_usage,
+            'note_analysis': note_analysis,
+            'stock_analysis': stock_analysis,
+            'pattern_analysis': pattern_analysis,
+            'raw_entries': self._prepare_entries_for_analysis(diaries)
+        }    

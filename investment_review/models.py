@@ -5,7 +5,6 @@ from django.utils import timezone
 from datetime import timedelta
 import json
 
-
 class InvestmentReview(models.Model):
     """投資振り返りレポート"""
     
@@ -125,26 +124,100 @@ class InvestmentReview(models.Model):
             end_date=end_date
         )
 
+# 既存のコードはそのまま保持して、最後に以下を追加
 
-class ReviewInsight(models.Model):
-    """振り返りの個別インサイト"""
+class PortfolioEvaluation(models.Model):
+    """ポートフォリオ評価結果"""
     
-    INSIGHT_TYPE_CHOICES = [
-        ('strength', '強み・良い点'),
-        ('weakness', '改善点'),
-        ('opportunity', '機会・チャンス'),
-        ('risk', 'リスク・注意点'),
-        ('recommendation', '推奨アクション'),
+    EVALUATION_STATUS_CHOICES = [
+        ('pending', '分析待ち'),
+        ('processing', '分析中'),
+        ('completed', '完了'),
+        ('failed', 'エラー'),
     ]
     
-    review = models.ForeignKey(InvestmentReview, on_delete=models.CASCADE, related_name='insights')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    title = models.CharField(max_length=200, verbose_name='評価タイトル', default='ポートフォリオ評価')
+    
+    # 評価実行時のポートフォリオ状況
+    evaluation_date = models.DateTimeField(auto_now_add=True, verbose_name='評価実行日時')
+    total_holdings = models.IntegerField(default=0, verbose_name='保有銘柄数')
+    total_portfolio_value = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True, 
+                                               verbose_name='ポートフォリオ総額')
+    total_investment = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True,
+                                          verbose_name='総投資額')
+    total_return_pct = models.FloatField(null=True, blank=True, verbose_name='総合リターン率')
+    
+    # 分析ステータス
+    status = models.CharField(max_length=20, choices=EVALUATION_STATUS_CHOICES, default='pending')
+    
+    # 評価データ（JSON形式で保存）
+    portfolio_data = models.JSONField(default=dict, verbose_name='ポートフォリオデータ')
+    market_context = models.JSONField(default=dict, verbose_name='市場環境データ')
+    
+    # AI評価結果
+    professional_evaluation = models.TextField(blank=True, verbose_name='プロ評価コメント')
+    api_used = models.BooleanField(default=False, verbose_name='Gemini API使用')
+    
+    # メタデータ
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-evaluation_date']
+        indexes = [
+            models.Index(fields=['user', 'status']),
+            models.Index(fields=['user', 'evaluation_date']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.title} ({self.evaluation_date.strftime('%Y-%m-%d %H:%M')})"
+    
+    def get_evaluation_period_display(self):
+        """評価日時の表示用テキスト"""
+        return self.evaluation_date.strftime('%Y年%m月%d日 %H:%M')
+    
+    def is_evaluation_completed(self):
+        """評価が完了しているか"""
+        return self.status == 'completed'
+    
+    def get_win_rate(self):
+        """勝率を取得"""
+        portfolio_analysis = self.portfolio_data.get('portfolio_analysis', {})
+        return portfolio_analysis.get('win_rate', 0)
+    
+    def get_diversification_score(self):
+        """分散投資スコアを取得"""
+        portfolio_analysis = self.portfolio_data.get('portfolio_analysis', {})
+        return portfolio_analysis.get('diversification_score', 'unknown')
+    
+    def get_risk_level(self):
+        """リスクレベルを取得"""
+        risk_analysis = self.portfolio_data.get('risk_analysis', {})
+        return risk_analysis.get('risk_level', 'unknown')
+
+
+class PortfolioEvaluationInsight(models.Model):
+    """ポートフォリオ評価の個別インサイト"""
+    
+    INSIGHT_TYPE_CHOICES = [
+        ('strength', '強み・ポジティブ要素'),
+        ('weakness', '弱み・リスク要素'),
+        ('neutral', '中立的現状判断'),
+        ('recommendation', '改善提案'),
+        ('risk_assessment', 'リスク評価'),
+        ('market_positioning', '市場ポジショニング'),
+    ]
+    
+    evaluation = models.ForeignKey(PortfolioEvaluation, on_delete=models.CASCADE, related_name='insights')
     insight_type = models.CharField(max_length=20, choices=INSIGHT_TYPE_CHOICES)
     title = models.CharField(max_length=200, verbose_name='インサイトタイトル')
     content = models.TextField(verbose_name='内容')
     priority = models.IntegerField(default=1, verbose_name='優先度（1-5）')
     
-    # 関連データ（具体的な数値や根拠）
-    supporting_data = models.JSONField(default=dict, verbose_name='根拠データ')
+    # 関連する銘柄（オプション）
+    related_stocks = models.JSONField(default=list, verbose_name='関連銘柄')
     
     created_at = models.DateTimeField(auto_now_add=True)
     
@@ -152,4 +225,4 @@ class ReviewInsight(models.Model):
         ordering = ['insight_type', '-priority', 'created_at']
     
     def __str__(self):
-        return f"{self.review.title} - {self.get_insight_type_display()}: {self.title}"
+        return f"{self.evaluation.title} - {self.get_insight_type_display()}: {self.title}"

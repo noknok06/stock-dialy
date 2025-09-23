@@ -14,6 +14,8 @@ import logging
 
 from .models import InvestmentReview, ReviewInsight
 from .services.gemini_analysis import GeminiInvestmentAnalyzer
+from .models import InvestmentReview, ReviewInsight, PortfolioEvaluation, PortfolioEvaluationInsight
+from .services.portfolio_analyzer import PortfolioAnalyzer
 from stockdiary.models import StockDiary
 
 logger = logging.getLogger(__name__)
@@ -433,6 +435,535 @@ class InvestmentReviewDashboardView(LoginRequiredMixin, TemplateView):
                     'url': reverse_lazy('investment_review:list'),
                     'icon': 'bi-list',
                     'label': '全レビュー'
+                }
+            ]
+        })
+        
+        return context
+    
+
+class PortfolioEvaluationView(LoginRequiredMixin, TemplateView):
+    """現在保有株式のポートフォリオ評価"""
+    template_name = 'investment_review/portfolio_evaluation.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # 現在保有している株式の数を確認
+        current_holdings_count = StockDiary.objects.filter(
+            user=self.request.user,
+            sell_date__isnull=True,
+            purchase_price__isnull=False,
+            purchase_quantity__isnull=False,
+            is_memo=False
+        ).count()
+        
+        # 過去の評価履歴
+        recent_evaluations = PortfolioEvaluation.objects.filter(
+            user=self.request.user,
+            status='completed'
+        ).order_by('-evaluation_date')[:5]
+        
+        context.update({
+            'current_holdings_count': current_holdings_count,
+            'has_holdings': current_holdings_count > 0,
+            'recent_evaluations': recent_evaluations,
+            'page_title': 'ポートフォリオ評価',
+            'page_subtitle': '現在保有している株式の包括的な分析と評価',
+            'page_actions': [
+                {
+                    'type': 'back',
+                    'url': reverse_lazy('investment_review:list'),
+                    'icon': 'bi-arrow-left',
+                    'label': '振り返り一覧に戻る'
+                },
+                {
+                    'type': 'history',
+                    'url': reverse_lazy('investment_review:portfolio_history'),
+                    'icon': 'bi-clock-history',
+                    'label': '評価履歴'
+                },
+                {
+                    'type': 'analytics',
+                    'url': reverse_lazy('stockdiary:analytics'),
+                    'icon': 'bi-graph-up',
+                    'label': '投資分析'
+                },
+                {
+                    'type': 'stocks',
+                    'url': reverse_lazy('stockdiary:stock_list'),
+                    'icon': 'bi-building',
+                    'label': '銘柄一覧'
+                }
+            ]
+        })
+        
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        """ポートフォリオ評価の実行"""
+        try:
+            # 新しい評価レコードを作成
+            evaluation = PortfolioEvaluation.objects.create(
+                user=request.user,
+                status='pending'
+            )
+            
+            # バックグラウンドで評価を実行
+            self._start_portfolio_evaluation_background(evaluation)
+            
+            messages.success(request, "ポートフォリオの評価分析を開始しました。しばらくお待ちください。")
+            return JsonResponse({
+                'status': 'started',
+                'message': '評価分析を開始しました',
+                'evaluation_id': evaluation.id,
+                'redirect_url': str(reverse_lazy('investment_review:portfolio_evaluation_detail', 
+                                                kwargs={'pk': evaluation.id}))
+            })
+            
+        except Exception as e:
+            logger.error(f"ポートフォリオ評価開始エラー: {e}")
+            return JsonResponse({
+                'status': 'error',
+                'message': f'評価の開始中にエラーが発生しました: {str(e)}'
+            }, status=500)
+    
+    def _start_portfolio_evaluation_background(self, evaluation: PortfolioEvaluation):
+        """バックグラウンドでポートフォリオ評価を実行"""
+        def run_evaluation():
+            try:
+                # ステータスを更新
+                evaluation.status = 'processing'
+                evaluation.save(update_fields=['status'])
+                
+                # 分析実行
+                analyzer = GeminiInvestmentAnalyzer()
+                result = analyzer.analyze_current_portfolio(evaluation.user)
+                
+                # 結果をモデルに保存
+                self._save_evaluation_result(evaluation, result)
+                
+            except Exception as e:
+                logger.error(f"バックグラウンドポートフォリオ評価エラー: {e}")
+                evaluation.status = 'failed'
+                evaluation.save(update_fields=['status'])
+        
+        # バックグラウンドスレッドで実行
+        thread = threading.Thread(target=run_evaluation)
+        thread.daemon = True
+        thread.start()
+    
+    def _save_evaluation_result(self, evaluation: PortfolioEvaluation, result: dict):
+        """評価結果をデータベースに保存"""
+        try:
+            # 基本データの保存
+            portfolio_data = result.get('portfolio_data', {})
+            market_context = result.get('market_context', {})
+            
+            evaluation.portfolio_data = portfolio_data
+            evaluation.market_context = market_context
+            evaluation.professional_evaluation = result.get('professional_evaluation', '')
+            evaluation.api_used = result.get('api_used', False)
+            
+            # 統計データの保存
+            if portfolio_data.get('status') == 'success':
+                evaluation.total_holdings = portfolio_data.get('total_holdings', 0)
+                evaluation.total_portfolio_value = portfolio_data.get('total_portfolio_value')
+                
+                performance_analysis = portfolio_data.get('performance_analysis', {})
+                evaluation.total_investment = performance_analysis.get('total_investment')
+                evaluation.total_return_pct = performance_analysis.get('total_return_pct')
+            
+            evaluation.status = 'completed'
+            evaluation.completed_at = timezone.now()
+            evaluation.save()
+            
+            # インサイトの保存
+            self._save_evaluation_insights(evaluation, result)
+            
+        except Exception as e:
+            logger.error(f"評価結果保存エラー: {e}")
+            evaluation.status = 'failed'
+            evaluation.save(update_fields=['status'])
+    
+    def _save_evaluation_insights(self, evaluation: PortfolioEvaluation, result: dict):
+        """評価インサイトを保存"""
+        try:
+            # 既存のインサイトを削除
+            evaluation.insights.all().delete()
+            
+            # 強みを保存
+            for i, strength in enumerate(result.get('strengths', [])[:5]):
+                PortfolioEvaluationInsight.objects.create(
+                    evaluation=evaluation,
+                    insight_type='strength',
+                    title=f"強み {i+1}",
+                    content=strength,
+                    priority=5-i
+                )
+            
+            # 弱み・リスクを保存
+            for i, weakness in enumerate(result.get('weaknesses', [])[:5]):
+                PortfolioEvaluationInsight.objects.create(
+                    evaluation=evaluation,
+                    insight_type='weakness',
+                    title=f"弱み・リスク {i+1}",
+                    content=weakness,
+                    priority=5-i
+                )
+            
+            # 中立的評価を保存
+            for i, neutral in enumerate(result.get('neutral_assessment', [])[:3]):
+                PortfolioEvaluationInsight.objects.create(
+                    evaluation=evaluation,
+                    insight_type='neutral',
+                    title=f"現状判断 {i+1}",
+                    content=neutral,
+                    priority=3-i
+                )
+            
+            # 改善提案を保存
+            for i, recommendation in enumerate(result.get('actionable_recommendations', [])[:5]):
+                PortfolioEvaluationInsight.objects.create(
+                    evaluation=evaluation,
+                    insight_type='recommendation',
+                    title=f"改善提案 {i+1}",
+                    content=recommendation,
+                    priority=5-i
+                )
+            
+            # リスク評価を保存
+            if result.get('risk_assessment'):
+                PortfolioEvaluationInsight.objects.create(
+                    evaluation=evaluation,
+                    insight_type='risk_assessment',
+                    title="リスク評価",
+                    content=result.get('risk_assessment'),
+                    priority=5
+                )
+            
+            # 市場ポジショニングを保存
+            if result.get('market_positioning'):
+                PortfolioEvaluationInsight.objects.create(
+                    evaluation=evaluation,
+                    insight_type='market_positioning',
+                    title="市場ポジショニング",
+                    content=result.get('market_positioning'),
+                    priority=5
+                )
+                
+        except Exception as e:
+            logger.error(f"インサイト保存エラー: {e}")
+
+
+class PortfolioEvaluationDetailView(LoginRequiredMixin, DetailView):
+    """ポートフォリオ評価詳細"""
+    model = PortfolioEvaluation
+    template_name = 'investment_review/portfolio_evaluation_detail.html'
+    context_object_name = 'evaluation'
+    
+    def get_queryset(self):
+        return PortfolioEvaluation.objects.filter(user=self.request.user)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        evaluation = self.object
+        
+        # インサイトをタイプ別に整理
+        insights_by_type = {}
+        for insight in evaluation.insights.all():
+            insight_type = insight.get_insight_type_display()
+            if insight_type not in insights_by_type:
+                insights_by_type[insight_type] = []
+            insights_by_type[insight_type].append(insight)
+        
+        context.update({
+            'insights_by_type': insights_by_type,
+            'page_title': f'ポートフォリオ評価詳細',
+            'page_subtitle': f'{evaluation.get_evaluation_period_display()} の評価結果',
+            'page_actions': [
+                {
+                    'type': 'back',
+                    'url': reverse_lazy('investment_review:portfolio_evaluation'),
+                    'icon': 'bi-arrow-left',
+                    'label': '評価画面に戻る'
+                },
+                {
+                    'type': 'list',
+                    'url': reverse_lazy('investment_review:portfolio_history'),
+                    'icon': 'bi-list',
+                    'label': '評価履歴'
+                },
+                {
+                    'type': 'refresh',
+                    'url': '',
+                    'icon': 'bi-arrow-clockwise',
+                    'label': '再読み込み',
+                    'onclick': 'location.reload()'
+                },
+                {
+                    'type': 'delete',
+                    'url': reverse_lazy('investment_review:portfolio_evaluation_delete', 
+                                      kwargs={'pk': evaluation.pk}),
+                    'icon': 'bi-trash',
+                    'label': '削除'
+                }
+            ]
+        })
+        
+        return context
+
+
+class PortfolioEvaluationHistoryView(LoginRequiredMixin, ListView):
+    """ポートフォリオ評価履歴"""
+    model = PortfolioEvaluation
+    template_name = 'investment_review/portfolio_evaluation_history.html'
+    context_object_name = 'evaluations'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        return PortfolioEvaluation.objects.filter(
+            user=self.request.user
+        ).order_by('-evaluation_date')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # 統計情報
+        evaluations = self.get_queryset()
+        completed_evaluations = evaluations.filter(status='completed')
+        
+        context.update({
+            'page_title': 'ポートフォリオ評価履歴',
+            'page_subtitle': '過去のポートフォリオ評価結果',
+            'stats': {
+                'total_evaluations': evaluations.count(),
+                'completed_evaluations': completed_evaluations.count(),
+                'latest_evaluation': completed_evaluations.first()
+            },
+            'page_actions': [
+                {
+                    'type': 'back',
+                    'url': reverse_lazy('investment_review:portfolio_evaluation'),
+                    'icon': 'bi-arrow-left',
+                    'label': '評価画面に戻る'
+                },
+                {
+                    'type': 'add',
+                    'url': reverse_lazy('investment_review:portfolio_evaluation'),
+                    'icon': 'bi-plus-lg',
+                    'label': '新しい評価'
+                }
+            ]
+        })
+        
+        return context
+
+
+class PortfolioEvaluationDeleteView(LoginRequiredMixin, TemplateView):
+    """ポートフォリオ評価削除"""
+    
+    def post(self, request, pk):
+        evaluation = get_object_or_404(PortfolioEvaluation, pk=pk, user=request.user)
+        
+        evaluation_title = f"{evaluation.title} ({evaluation.get_evaluation_period_display()})"
+        evaluation.delete()
+        
+        messages.success(request, f"「{evaluation_title}」を削除しました。")
+        return redirect('investment_review:portfolio_history')
+
+
+class PortfolioEvaluationStatusAPIView(LoginRequiredMixin, DetailView):
+    """ポートフォリオ評価状況をAJAXで確認"""
+    model = PortfolioEvaluation
+    
+    def get_queryset(self):
+        return PortfolioEvaluation.objects.filter(user=self.request.user)
+    
+    def get(self, request, pk):
+        try:
+            evaluation = self.get_object()
+            
+            return JsonResponse({
+                'status': evaluation.status,
+                'progress': {
+                    'pending': 0,
+                    'processing': 50,
+                    'completed': 100,
+                    'failed': 0
+                }.get(evaluation.status, 0),
+                'message': {
+                    'pending': '分析待ち',
+                    'processing': '分析中...',
+                    'completed': '分析完了',
+                    'failed': '分析に失敗しました'
+                }.get(evaluation.status, '不明な状態'),
+                'completed': evaluation.status == 'completed',
+                'completed_at': evaluation.completed_at.isoformat() if evaluation.completed_at else None,
+                'result_summary': {
+                    'total_holdings': evaluation.total_holdings,
+                    'total_return_pct': float(evaluation.total_return_pct) if evaluation.total_return_pct else None,
+                    'api_used': evaluation.api_used
+                } if evaluation.status == 'completed' else None
+            })
+            
+        except PortfolioEvaluation.DoesNotExist:
+            return JsonResponse({'error': '評価が見つかりません'}, status=404)
+        except Exception as e:
+            logger.error(f"評価ステータス確認エラー: {e}")
+            return JsonResponse({'error': '状態確認に失敗しました'}, status=500)
+
+
+class PortfolioComparisonView(LoginRequiredMixin, TemplateView):
+    """ポートフォリオの時系列比較"""
+    template_name = 'investment_review/portfolio_comparison.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # 過去のポートフォリオ評価履歴があれば取得
+        # （将来的な拡張のための準備）
+        context.update({
+            'page_title': 'ポートフォリオ比較',
+            'page_subtitle': '時系列でのポートフォリオ変化の分析',
+            'feature_status': 'coming_soon',
+            'page_actions': [
+                {
+                    'type': 'back',
+                    'url': reverse_lazy('investment_review:portfolio_evaluation'),
+                    'icon': 'bi-arrow-left',
+                    'label': '評価画面に戻る'
+                }
+            ]
+        })
+        
+        return context
+    
+    
+class PortfolioEvaluationStatusView(LoginRequiredMixin, TemplateView):
+    """ポートフォリオ評価の進行状況と結果表示"""
+    template_name = 'investment_review/portfolio_evaluation_result.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        from django.core.cache import cache
+        cache_key = f"portfolio_evaluation_{self.request.user.id}"
+        
+        # 評価結果を取得
+        evaluation_result = cache.get(cache_key)
+        status_info = cache.get(f"{cache_key}_status")
+        
+        if evaluation_result:
+            context.update({
+                'evaluation_completed': True,
+                'evaluation_result': evaluation_result,
+                'status_info': status_info or {'status': 'completed', 'progress': 100},
+                'page_title': 'ポートフォリオ評価結果',
+                'page_subtitle': 'AI による投資家目線での包括的な評価'
+            })
+        else:
+            context.update({
+                'evaluation_completed': False,
+                'status_info': status_info or {'status': 'pending', 'progress': 0},
+                'page_title': 'ポートフォリオ評価中',
+                'page_subtitle': '分析実行中です...'
+            })
+        
+        # スピードダイアル用のアクション
+        context['page_actions'] = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('investment_review:portfolio_evaluation'),
+                'icon': 'bi-arrow-left',
+                'label': '評価画面に戻る'
+            },
+            {
+                'type': 'refresh',
+                'url': '',
+                'icon': 'bi-arrow-clockwise',
+                'label': '再読み込み',
+                'onclick': 'location.reload()'
+            },
+            {
+                'type': 'home',
+                'url': reverse_lazy('stockdiary:home'),
+                'icon': 'bi-house',
+                'label': 'ホーム'
+            }
+        ]
+        
+        return context
+
+
+class PortfolioEvaluationStatusAPIView(LoginRequiredMixin, TemplateView):
+    """ポートフォリオ評価状況をAJAXで確認"""
+    
+    def get(self, request):
+        try:
+            from django.core.cache import cache
+            cache_key = f"portfolio_evaluation_{request.user.id}"
+            
+            # ステータス情報を取得
+            status_info = cache.get(f"{cache_key}_status")
+            evaluation_result = cache.get(cache_key)
+            
+            if not status_info:
+                return JsonResponse({
+                    'status': 'not_started',
+                    'progress': 0,
+                    'message': '評価がまだ開始されていません',
+                    'completed': False
+                })
+            
+            response_data = {
+                'status': status_info.get('status', 'unknown'),
+                'progress': status_info.get('progress', 0),
+                'message': status_info.get('message', ''),
+                'completed': status_info.get('status') == 'completed',
+                'has_result': evaluation_result is not None
+            }
+            
+            if evaluation_result and status_info.get('status') == 'completed':
+                # 結果のサマリー情報を追加
+                portfolio_data = evaluation_result.get('portfolio_data', {})
+                response_data.update({
+                    'result_summary': {
+                        'total_holdings': portfolio_data.get('total_holdings', 0),
+                        'total_value': portfolio_data.get('total_portfolio_value', 0),
+                        'api_used': evaluation_result.get('api_used', False)
+                    }
+                })
+            
+            return JsonResponse(response_data)
+            
+        except Exception as e:
+            logger.error(f"評価ステータス確認エラー: {e}")
+            return JsonResponse({
+                'status': 'error',
+                'message': f'ステータス確認に失敗しました: {str(e)}'
+            }, status=500)
+
+
+class PortfolioComparisonView(LoginRequiredMixin, TemplateView):
+    """ポートフォリオの時系列比較"""
+    template_name = 'investment_review/portfolio_comparison.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # 過去のポートフォリオ評価履歴があれば取得
+        # （将来的な拡張のための準備）
+        context.update({
+            'page_title': 'ポートフォリオ比較',
+            'page_subtitle': '時系列でのポートフォリオ変化の分析',
+            'feature_status': 'coming_soon',
+            'page_actions': [
+                {
+                    'type': 'back',
+                    'url': reverse_lazy('investment_review:portfolio_evaluation'),
+                    'icon': 'bi-arrow-left',
+                    'label': '評価画面に戻る'
                 }
             ]
         })
