@@ -81,15 +81,38 @@ class InvestmentReviewDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         review = self.object
         
-        # インサイトをタイプ別に整理
+        # インサイトをタイプ別に整理（テンプレートフレンドリーなキー名に変換）
         insights_by_type = {}
+        insight_type_mapping = {
+            '強み・良い点': 'strengths',
+            '弱み・改善点': 'weaknesses', 
+            '中立的現状判断': 'neutral',
+            '推奨アクション': 'recommendations',
+            'リスク評価': 'risk_assessment',
+            '機会・チャンス': 'opportunities'
+        }
+        
         for insight in review.insights.all():
             insight_type = insight.get_insight_type_display()
-            if insight_type not in insights_by_type:
-                insights_by_type[insight_type] = []
-            insights_by_type[insight_type].append(insight)
+            # 英語キーに変換
+            english_key = insight_type_mapping.get(insight_type, insight_type.replace('・', '_').replace(' ', '_'))
+            
+            if english_key not in insights_by_type:
+                insights_by_type[english_key] = []
+            insights_by_type[english_key].append(insight)
+        
+        # 日本語表示名もコンテキストに追加
+        insight_display_names = {
+            'strengths': '強み・良い点',
+            'weaknesses': '弱み・改善点',
+            'neutral': '中立的現状判断', 
+            'recommendations': '推奨アクション',
+            'risk_assessment': 'リスク評価',
+            'opportunities': '機会・チャンス'
+        }
         
         context['insights_by_type'] = insights_by_type
+        context['insight_display_names'] = insight_display_names
         
         # 分析データの詳細表示用処理
         analysis_data = review.analysis_data
@@ -120,6 +143,7 @@ class InvestmentReviewDetailView(LoginRequiredMixin, DetailView):
         ]
         
         return context
+
     
     def _prepare_analysis_summary(self, analysis_data):
         """分析データのサマリーを準備"""
@@ -669,16 +693,39 @@ class PortfolioEvaluationDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         evaluation = self.object
         
-        # インサイトをタイプ別に整理
+        # インサイトをタイプ別に整理（テンプレートフレンドリーなキー名に変換）
         insights_by_type = {}
+        insight_type_mapping = {
+            '強み・ポジティブ要素': 'strengths',
+            '弱み・リスク要素': 'weaknesses', 
+            '中立的現状判断': 'neutral',
+            '改善提案': 'recommendations',
+            'リスク評価': 'risk_assessment',
+            '市場ポジショニング': 'market_positioning'
+        }
+        
         for insight in evaluation.insights.all():
             insight_type = insight.get_insight_type_display()
-            if insight_type not in insights_by_type:
-                insights_by_type[insight_type] = []
-            insights_by_type[insight_type].append(insight)
+            # 英語キーに変換、フォールバックとして元のキーも保持
+            english_key = insight_type_mapping.get(insight_type, insight_type.replace('・', '_').replace(' ', '_'))
+            
+            if english_key not in insights_by_type:
+                insights_by_type[english_key] = []
+            insights_by_type[english_key].append(insight)
+        
+        # 日本語表示名もコンテキストに追加
+        insight_display_names = {
+            'strengths': '強み・ポジティブ要素',
+            'weaknesses': '弱み・リスク要素',
+            'neutral': '中立的現状判断', 
+            'recommendations': '改善提案',
+            'risk_assessment': 'リスク評価',
+            'market_positioning': '市場ポジショニング'
+        }
         
         context.update({
             'insights_by_type': insights_by_type,
+            'insight_display_names': insight_display_names,
             'page_title': f'ポートフォリオ評価詳細',
             'page_subtitle': f'{evaluation.get_evaluation_period_display()} の評価結果',
             'page_actions': [
@@ -895,77 +942,3 @@ class PortfolioEvaluationStatusView(LoginRequiredMixin, TemplateView):
         
         return context
 
-
-class PortfolioEvaluationStatusAPIView(LoginRequiredMixin, TemplateView):
-    """ポートフォリオ評価状況をAJAXで確認"""
-    
-    def get(self, request):
-        try:
-            from django.core.cache import cache
-            cache_key = f"portfolio_evaluation_{request.user.id}"
-            
-            # ステータス情報を取得
-            status_info = cache.get(f"{cache_key}_status")
-            evaluation_result = cache.get(cache_key)
-            
-            if not status_info:
-                return JsonResponse({
-                    'status': 'not_started',
-                    'progress': 0,
-                    'message': '評価がまだ開始されていません',
-                    'completed': False
-                })
-            
-            response_data = {
-                'status': status_info.get('status', 'unknown'),
-                'progress': status_info.get('progress', 0),
-                'message': status_info.get('message', ''),
-                'completed': status_info.get('status') == 'completed',
-                'has_result': evaluation_result is not None
-            }
-            
-            if evaluation_result and status_info.get('status') == 'completed':
-                # 結果のサマリー情報を追加
-                portfolio_data = evaluation_result.get('portfolio_data', {})
-                response_data.update({
-                    'result_summary': {
-                        'total_holdings': portfolio_data.get('total_holdings', 0),
-                        'total_value': portfolio_data.get('total_portfolio_value', 0),
-                        'api_used': evaluation_result.get('api_used', False)
-                    }
-                })
-            
-            return JsonResponse(response_data)
-            
-        except Exception as e:
-            logger.error(f"評価ステータス確認エラー: {e}")
-            return JsonResponse({
-                'status': 'error',
-                'message': f'ステータス確認に失敗しました: {str(e)}'
-            }, status=500)
-
-
-class PortfolioComparisonView(LoginRequiredMixin, TemplateView):
-    """ポートフォリオの時系列比較"""
-    template_name = 'investment_review/portfolio_comparison.html'
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        
-        # 過去のポートフォリオ評価履歴があれば取得
-        # （将来的な拡張のための準備）
-        context.update({
-            'page_title': 'ポートフォリオ比較',
-            'page_subtitle': '時系列でのポートフォリオ変化の分析',
-            'feature_status': 'coming_soon',
-            'page_actions': [
-                {
-                    'type': 'back',
-                    'url': reverse_lazy('investment_review:portfolio_evaluation'),
-                    'icon': 'bi-arrow-left',
-                    'label': '評価画面に戻る'
-                }
-            ]
-        })
-        
-        return context

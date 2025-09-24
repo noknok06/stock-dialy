@@ -232,23 +232,22 @@
             </div>
         </div>
     </div>
-
     <!-- 詳細評価項目 -->
     {% if insights_by_type %}
     <div class="row mb-4">
         <!-- 強み -->
-        {% if insights_by_type.強み・ポジティブ要素 %}
+        {% if insights_by_type.strengths %}
         <div class="col-lg-6 mb-3">
             <div class="card h-100">
                 <div class="card-header bg-success bg-opacity-10">
                     <h6 class="card-title mb-0 text-success">
                         <i class="bi bi-plus-circle-fill me-2"></i>
-                        強み・ポジティブ要素
+                        {{ insight_display_names.strengths }}
                     </h6>
                 </div>
                 <div class="card-body">
                     <ul class="list-unstyled">
-                        {% for insight in insights_by_type.強み・ポジティブ要素 %}
+                        {% for insight in insights_by_type.strengths %}
                         <li class="mb-2 d-flex align-items-start">
                             <i class="bi bi-check-circle text-success me-2 mt-1 flex-shrink-0"></i>
                             <span>{{ insight.content }}</span>
@@ -261,18 +260,18 @@
         {% endif %}
 
         <!-- 弱み・リスク -->
-        {% if insights_by_type.弱み・リスク要素 %}
+        {% if insights_by_type.weaknesses %}
         <div class="col-lg-6 mb-3">
             <div class="card h-100">
                 <div class="card-header bg-danger bg-opacity-10">
                     <h6 class="card-title mb-0 text-danger">
                         <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                        弱み・リスク要素
+                        {{ insight_display_names.weaknesses }}
                     </h6>
                 </div>
                 <div class="card-body">
                     <ul class="list-unstyled">
-                        {% for insight in insights_by_type.弱み・リスク要素 %}
+                        {% for insight in insights_by_type.weaknesses %}
                         <li class="mb-2 d-flex align-items-start">
                             <i class="bi bi-exclamation-triangle text-danger me-2 mt-1 flex-shrink-0"></i>
                             <span>{{ insight.content }}</span>
@@ -288,18 +287,18 @@
     <!-- 中立的評価と改善提案 -->
     <div class="row mb-4">
         <!-- 中立的評価 -->
-        {% if insights_by_type.中立的現状判断 %}
+        {% if insights_by_type.neutral %}
         <div class="col-lg-6 mb-3">
             <div class="card h-100">
                 <div class="card-header bg-info bg-opacity-10">
                     <h6 class="card-title mb-0 text-info">
                         <i class="bi bi-balance me-2"></i>
-                        中立的な現状判断
+                        {{ insight_display_names.neutral }}
                     </h6>
                 </div>
                 <div class="card-body">
                     <ul class="list-unstyled">
-                        {% for insight in insights_by_type.中立的現状判断 %}
+                        {% for insight in insights_by_type.neutral %}
                         <li class="mb-2 d-flex align-items-start">
                             <i class="bi bi-dot text-info me-2 mt-1 flex-shrink-0"></i>
                             <span>{{ insight.content }}</span>
@@ -312,18 +311,18 @@
         {% endif %}
 
         <!-- 改善提案 -->
-        {% if insights_by_type.改善提案 %}
+        {% if insights_by_type.recommendations %}
         <div class="col-lg-6 mb-3">
             <div class="card h-100">
                 <div class="card-header bg-warning bg-opacity-10">
                     <h6 class="card-title mb-0 text-warning-emphasis">
                         <i class="bi bi-gear-fill me-2"></i>
-                        具体的な改善提案
+                        {{ insight_display_names.recommendations }}
                     </h6>
                 </div>
                 <div class="card-body">
                     <ul class="list-unstyled">
-                        {% for insight in insights_by_type.改善提案 %}
+                        {% for insight in insights_by_type.recommendations %}
                         <li class="mb-2 d-flex align-items-start">
                             <i class="bi bi-arrow-right-circle text-warning me-2 mt-1 flex-shrink-0"></i>
                             <span>{{ insight.content }}</span>

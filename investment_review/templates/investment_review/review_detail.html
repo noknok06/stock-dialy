@@ -258,35 +258,20 @@
     <!-- 詳細インサイト -->
     {% if insights_by_type %}
     <div class="row">
-        {% for insight_type, insights in insights_by_type.items %}
+        <!-- 強み・良い点 -->
+        {% if insights_by_type.strengths %}
         <div class="col-lg-6">
             <div class="insights-section">
                 <div class="p-3 border-bottom">
                     <h4 class="mb-0">
-                        {% if insight_type == '強み・良い点' %}
                         <i class="bi bi-star text-success"></i>
-                        {% elif insight_type == '改善点' %}
-                        <i class="bi bi-arrow-up-circle text-danger"></i>
-                        {% elif insight_type == '推奨アクション' %}
-                        <i class="bi bi-lightbulb text-primary"></i>
-                        {% elif insight_type == '機会・チャンス' %}
-                        <i class="bi bi-graph-up text-info"></i>
-                        {% elif insight_type == 'リスク・注意点' %}
-                        <i class="bi bi-exclamation-triangle text-warning"></i>
-                        {% endif %}
-                        {{ insight_type }}
+                        {{ insight_display_names.strengths }}
                     </h4>
                 </div>
                 
                 <div class="p-3">
-                    {% for insight in insights %}
-                    <div class="insight-card 
-                        {% if insight_type == '強み・良い点' %}insight-strength
-                        {% elif insight_type == '改善点' %}insight-weakness
-                        {% elif insight_type == '推奨アクション' %}insight-recommendation
-                        {% elif insight_type == '機会・チャンス' %}insight-opportunity
-                        {% elif insight_type == 'リスク・注意点' %}insight-risk
-                        {% endif %}">
+                    {% for insight in insights_by_type.strengths %}
+                    <div class="insight-card insight-strength">
                         <div class="card-body">
                             <h6 class="card-title">{{ insight.title }}</h6>
                             <p class="card-text mb-0">{{ insight.content }}</p>
@@ -296,7 +281,132 @@
                 </div>
             </div>
         </div>
-        {% endfor %}
+        {% endif %}
+        
+        <!-- 弱み・改善点 -->
+        {% if insights_by_type.weaknesses %}
+        <div class="col-lg-6">
+            <div class="insights-section">
+                <div class="p-3 border-bottom">
+                    <h4 class="mb-0">
+                        <i class="bi bi-arrow-up-circle text-danger"></i>
+                        {{ insight_display_names.weaknesses }}
+                    </h4>
+                </div>
+                
+                <div class="p-3">
+                    {% for insight in insights_by_type.weaknesses %}
+                    <div class="insight-card insight-weakness">
+                        <div class="card-body">
+                            <h6 class="card-title">{{ insight.title }}</h6>
+                            <p class="card-text mb-0">{{ insight.content }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- 推奨アクション -->
+        {% if insights_by_type.recommendations %}
+        <div class="col-lg-6">
+            <div class="insights-section">
+                <div class="p-3 border-bottom">
+                    <h4 class="mb-0">
+                        <i class="bi bi-lightbulb text-primary"></i>
+                        {{ insight_display_names.recommendations }}
+                    </h4>
+                </div>
+                
+                <div class="p-3">
+                    {% for insight in insights_by_type.recommendations %}
+                    <div class="insight-card insight-recommendation">
+                        <div class="card-body">
+                            <h6 class="card-title">{{ insight.title }}</h6>
+                            <p class="card-text mb-0">{{ insight.content }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- 機会・チャンス -->
+        {% if insights_by_type.opportunities %}
+        <div class="col-lg-6">
+            <div class="insights-section">
+                <div class="p-3 border-bottom">
+                    <h4 class="mb-0">
+                        <i class="bi bi-graph-up text-info"></i>
+                        {{ insight_display_names.opportunities }}
+                    </h4>
+                </div>
+                
+                <div class="p-3">
+                    {% for insight in insights_by_type.opportunities %}
+                    <div class="insight-card insight-opportunity">
+                        <div class="card-body">
+                            <h6 class="card-title">{{ insight.title }}</h6>
+                            <p class="card-text mb-0">{{ insight.content }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- リスク評価 -->
+        {% if insights_by_type.risk_assessment %}
+        <div class="col-lg-6">
+            <div class="insights-section">
+                <div class="p-3 border-bottom">
+                    <h4 class="mb-0">
+                        <i class="bi bi-exclamation-triangle text-warning"></i>
+                        {{ insight_display_names.risk_assessment }}
+                    </h4>
+                </div>
+                
+                <div class="p-3">
+                    {% for insight in insights_by_type.risk_assessment %}
+                    <div class="insight-card insight-risk">
+                        <div class="card-body">
+                            <h6 class="card-title">{{ insight.title }}</h6>
+                            <p class="card-text mb-0">{{ insight.content }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- 中立的現状判断 -->
+        {% if insights_by_type.neutral %}
+        <div class="col-lg-6">
+            <div class="insights-section">
+                <div class="p-3 border-bottom">
+                    <h4 class="mb-0">
+                        <i class="bi bi-balance text-secondary"></i>
+                        {{ insight_display_names.neutral }}
+                    </h4>
+                </div>
+                
+                <div class="p-3">
+                    {% for insight in insights_by_type.neutral %}
+                    <div class="insight-card">
+                        <div class="card-body">
+                            <h6 class="card-title">{{ insight.title }}</h6>
+                            <p class="card-text mb-0">{{ insight.content }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
     {% endif %}
 

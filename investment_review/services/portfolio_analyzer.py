@@ -48,23 +48,45 @@ class PortfolioAnalyzer:
                         total_value += current_value
                 time.sleep(self.api_delay)  # API制限対策
             
-            # ポートフォリオ全体の分析
-            portfolio_analysis = self._analyze_portfolio_composition(detailed_holdings, total_value)
+            # 有効なデータがある銘柄のみをフィルタリング
+            valid_holdings = [
+                h for h in detailed_holdings 
+                if h.get('current_value') is not None and 
+                h.get('stock_symbol') and 
+                h.get('stock_name') and 
+                h.get('stock_name').strip() != ''
+            ]
+            
+            # 無効なデータがある場合はログに記録
+            invalid_count = len(detailed_holdings) - len(valid_holdings)
+            if invalid_count > 0:
+                logger.warning(f"無効なデータの銘柄を {invalid_count} 件除外しました")
+            
+            # 有効な銘柄がない場合
+            if not valid_holdings:
+                return {
+                    'status': 'no_valid_holdings',
+                    'message': '有効なポートフォリオデータがありません。',
+                    'holdings': []
+                }
+            
+            # ポートフォリオ全体の分析（有効な銘柄のみ使用）
+            portfolio_analysis = self._analyze_portfolio_composition(valid_holdings, total_value)
             
             # セクター分析
-            sector_analysis = self._analyze_sector_distribution(detailed_holdings)
+            sector_analysis = self._analyze_sector_distribution(valid_holdings)
             
             # リスク分析
-            risk_analysis = self._analyze_portfolio_risk(detailed_holdings)
+            risk_analysis = self._analyze_portfolio_risk(valid_holdings)
             
             # パフォーマンス分析
-            performance_analysis = self._analyze_portfolio_performance(detailed_holdings)
+            performance_analysis = self._analyze_portfolio_performance(valid_holdings)
             
             return {
                 'status': 'success',
-                'total_holdings': len(detailed_holdings),
+                'total_holdings': len(valid_holdings),
                 'total_portfolio_value': total_value,
-                'holdings': detailed_holdings,
+                'holdings': valid_holdings,
                 'portfolio_analysis': portfolio_analysis,
                 'sector_analysis': sector_analysis,
                 'risk_analysis': risk_analysis,
@@ -79,6 +101,7 @@ class PortfolioAnalyzer:
                 'message': f'分析中にエラーが発生しました: {str(e)}',
                 'holdings': []
             }
+
     
     def _get_current_holdings(self, user) -> List[StockDiary]:
         """現在保有している株式を取得"""
@@ -93,8 +116,22 @@ class PortfolioAnalyzer:
     def _analyze_single_holding(self, diary: StockDiary) -> Dict[str, Any]:
         """個別銘柄の分析"""
         try:
+            # まず基本的な検証を実行
+            stock_symbol = (diary.stock_symbol or '').strip()
+            stock_name = (diary.stock_name or '').strip()
+            
+            # 無効なデータの場合はNoneを返す
+            if not stock_symbol or not stock_name or len(stock_name) < 2:
+                logger.warning(f"無効な銘柄データをスキップ: symbol={stock_symbol}, name={stock_name}")
+                return None
+            
+            # 購入価格と数量の検証
+            if not diary.purchase_price or not diary.purchase_quantity:
+                logger.warning(f"購入価格または数量が無効: {stock_name}")
+                return self._create_basic_holding_info(diary)
+            
             # 日本株式のティッカー形式に変換
-            ticker_symbol = self._format_ticker_symbol(diary.stock_symbol)
+            ticker_symbol = self._format_ticker_symbol(stock_symbol)
             
             if not ticker_symbol:
                 return self._create_basic_holding_info(diary)
@@ -107,7 +144,7 @@ class PortfolioAnalyzer:
             current_price = info.get('currentPrice') or info.get('regularMarketPrice')
             
             # 株価が取得できない場合は基本情報のみ返す
-            if not current_price:
+            if not current_price or current_price <= 0:
                 return self._create_basic_holding_info(diary)
             
             # 投資額と現在価値を計算
@@ -126,8 +163,8 @@ class PortfolioAnalyzer:
             
             return {
                 'diary_id': diary.id,
-                'stock_symbol': diary.stock_symbol,
-                'stock_name': diary.stock_name,
+                'stock_symbol': stock_symbol,
+                'stock_name': stock_name,
                 'sector': diary.sector or info.get('sector', 'その他'),
                 'purchase_date': diary.purchase_date.isoformat(),
                 'purchase_price': float(diary.purchase_price),
@@ -143,12 +180,14 @@ class PortfolioAnalyzer:
                 'market_cap': info.get('marketCap'),
                 'industry': info.get('industry'),
                 'country': info.get('country', 'Japan'),
-                'tags': [tag.name for tag in diary.tags.all()]
+                'tags': [tag.name for tag in diary.tags.all()],
+                'data_available': True
             }
             
         except Exception as e:
             logger.warning(f"銘柄分析エラー ({diary.stock_symbol}): {e}")
             return self._create_basic_holding_info(diary)
+
     
     def _format_ticker_symbol(self, symbol: str) -> Optional[str]:
         """株式コードをYahoo Finance用ティッカーに変換"""
@@ -172,19 +211,28 @@ class PortfolioAnalyzer:
         purchase_quantity = diary.purchase_quantity or 0
         investment_amount = float(purchase_price * purchase_quantity) if purchase_price and purchase_quantity else 0
         
+        # 株式シンボルや名前の検証
+        stock_symbol = (diary.stock_symbol or '').strip()
+        stock_name = (diary.stock_name or '').strip()
+        
+        # 無効なデータの場合はNoneを返す
+        if not stock_symbol or not stock_name or len(stock_name) < 2:
+            logger.warning(f"無効な銘柄データ: symbol={stock_symbol}, name={stock_name}")
+            return None
+        
         return {
             'diary_id': diary.id,
-            'stock_symbol': diary.stock_symbol,
-            'stock_name': diary.stock_name,
+            'stock_symbol': stock_symbol,
+            'stock_name': stock_name,
             'sector': diary.sector or 'その他',
             'purchase_date': diary.purchase_date.isoformat(),
             'purchase_price': float(purchase_price),
             'purchase_quantity': purchase_quantity,
             'current_price': None,
             'investment_amount': investment_amount,
-            'current_value': None,  # Noneを明示的に設定
-            'unrealized_gain_loss': None,
-            'unrealized_gain_loss_pct': None,
+            'current_value': 0.0,  # Noneではなく0.0に設定
+            'unrealized_gain_loss': 0.0,  # Noneではなく0.0に設定
+            'unrealized_gain_loss_pct': 0.0,  # Noneではなく0.0に設定
             'holding_period_days': (timezone.now().date() - diary.purchase_date).days,
             'fundamentals': {},
             'technical': {},

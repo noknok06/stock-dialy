@@ -571,6 +571,7 @@ class GeminiInvestmentAnalyzer:
             logger.error(f"Gemini APIポートフォリオ評価エラー: {e}")
             return self._generate_basic_portfolio_evaluation(portfolio_data)
     
+
     def _build_portfolio_evaluation_prompt(self, portfolio_data: Dict, market_context: Dict) -> str:
         """ポートフォリオ評価用の詳細プロンプトを構築"""
         # ポートフォリオの基本情報
@@ -584,27 +585,82 @@ class GeminiInvestmentAnalyzer:
         risk_analysis = portfolio_data.get('risk_analysis', {})
         performance_analysis = portfolio_data.get('performance_analysis', {})
         
-        # 主要保有銘柄の詳細（上位5銘柄）
-        top_holdings = sorted(holdings, key=lambda x: x.get('current_value', 0), reverse=True)[:5]
+        # 有効な銘柄のみをフィルタリング
+        valid_holdings = [
+            h for h in holdings 
+            if h.get('current_value') is not None and 
+            h.get('stock_symbol') and 
+            h.get('stock_name') and 
+            h.get('stock_name').strip() != '' and
+            h.get('investment_amount', 0) > 0
+        ]
+        
+        if not valid_holdings:
+            # 有効な銘柄がない場合はシンプルなプロンプトを返す
+            return """
+    ポートフォリオデータが不完全または無効です。
+    基本的な評価コメントを提供してください：
+
+    【評価対象】
+    有効なポートフォリオデータがありません。
+
+    【評価要求】
+    データの整理と記録方法の改善について、建設的なアドバイスを提供してください。
+    """
+        
+        # 主要保有銘柄の詳細（上位5銘柄、current_valueでソート）
+        try:
+            # Noneではない current_value でソート
+            top_holdings = sorted(
+                valid_holdings, 
+                key=lambda x: x.get('current_value', 0) or 0, 
+                reverse=True
+            )[:5]
+        except Exception as e:
+            logger.warning(f"銘柄ソートエラー: {e}")
+            # ソートに失敗した場合は先頭5件を使用
+            top_holdings = valid_holdings[:5]
+        
         top_holdings_summary = []
         
         for holding in top_holdings:
             fundamentals = holding.get('fundamentals', {})
             technical = holding.get('technical', {})
             
+            # 安全な値の取得
+            def safe_get(d, key, default='N/A'):
+                value = d.get(key)
+                if value is None:
+                    return default
+                try:
+                    if isinstance(value, (int, float)):
+                        return f"{value:.2f}" if isinstance(value, float) else str(value)
+                    return str(value)
+                except:
+                    return default
+            
+            # 安全な数値取得
+            def safe_float(value, default=0):
+                if value is None:
+                    return default
+                try:
+                    return float(value)
+                except:
+                    return default
+            
             summary = f"""
-銘柄: {holding.get('stock_name', '未設定')} ({holding.get('stock_symbol', 'N/A')})
-セクター: {holding.get('sector', 'その他')}
-投資額: {holding.get('investment_amount', 0):,.0f}円
-現在価値: {holding.get('current_value', 0):,.0f}円
-損益率: {holding.get('unrealized_gain_loss_pct', 0):.1f}%
-保有期間: {holding.get('holding_period_days', 0)}日
-PER: {fundamentals.get('pe_ratio', 'N/A')}
-PBR: {fundamentals.get('pb_ratio', 'N/A')}
-配当利回り: {fundamentals.get('dividend_yield', 'N/A')}
-RSI: {technical.get('rsi', 'N/A')}
-トレンド: {technical.get('trend_signal', 'N/A')}
-"""
+    銘柄: {holding.get('stock_name', '未設定')} ({holding.get('stock_symbol', 'N/A')})
+    セクター: {holding.get('sector', 'その他')}
+    投資額: {safe_float(holding.get('investment_amount', 0)):,.0f}円
+    現在価値: {safe_float(holding.get('current_value', 0)):,.0f}円
+    損益率: {safe_float(holding.get('unrealized_gain_loss_pct', 0)):.1f}%
+    保有期間: {holding.get('holding_period_days', 0)}日
+    PER: {safe_get(fundamentals, 'pe_ratio')}
+    PBR: {safe_get(fundamentals, 'pb_ratio')}
+    配当利回り: {safe_get(fundamentals, 'dividend_yield')}
+    RSI: {safe_get(technical, 'rsi')}
+    トレンド: {safe_get(technical, 'trend_signal')}
+    """
             top_holdings_summary.append(summary.strip())
         
         # 市場環境情報
@@ -620,108 +676,108 @@ RSI: {technical.get('rsi', 'N/A')}
                 market_summary += f"USD/JPY: {usdjpy_rate:.2f} ({usdjpy_change:+.2f}%)\n"
         
         prompt = f"""
-あなたは20年以上の経験を持つプロの投資アドバイザーとして、以下のポートフォリオを厳格かつ建設的に評価してください。
+    あなたは20年以上の経験を持つプロの投資アドバイザーとして、以下のポートフォリオを厳格かつ建設的に評価してください。
 
-【ポートフォリオ概要】
-保有銘柄数: {total_holdings}銘柄
-総投資額: {performance_analysis.get('total_investment', 0):,.0f}円
-総評価額: {total_value:,.0f}円
-総合リターン: {performance_analysis.get('total_return_pct', 0):+.1f}%
+    【ポートフォリオ概要】
+    保有銘柄数: {total_holdings}銘柄
+    総投資額: {safe_float(performance_analysis.get('total_investment', 0)):,.0f}円
+    総評価額: {safe_float(total_value):,.0f}円
+    総合リターン: {safe_float(performance_analysis.get('total_return_pct', 0)):+.1f}%
 
-【ポートフォリオ構成分析】
-上位5銘柄集中度: {portfolio_analysis.get('top_5_concentration', 0):.1f}%
-平均保有期間: {portfolio_analysis.get('avg_holding_period_days', 0):.0f}日
-勝率: {portfolio_analysis.get('win_rate', 0):.1f}%
-分散投資スコア: {portfolio_analysis.get('diversification_score', 'N/A')}
+    【ポートフォリオ構成分析】
+    上位5銘柄集中度: {safe_float(portfolio_analysis.get('top_5_concentration', 0)):.1f}%
+    平均保有期間: {safe_float(portfolio_analysis.get('avg_holding_period_days', 0)):.0f}日
+    勝率: {safe_float(portfolio_analysis.get('win_rate', 0)):.1f}%
+    分散投資スコア: {portfolio_analysis.get('diversification_score', 'N/A')}
 
-【セクター分散】
-セクター数: {sector_analysis.get('num_sectors', 0)}
-最大セクター集中度: {sector_analysis.get('max_sector_concentration', 0):.1f}%
-セクター分散スコア: {sector_analysis.get('sector_diversification_score', 'N/A')}
+    【セクター分散】
+    セクター数: {sector_analysis.get('num_sectors', 0)}
+    最大セクター集中度: {safe_float(sector_analysis.get('max_sector_concentration', 0)):.1f}%
+    セクター分散スコア: {sector_analysis.get('sector_diversification_score', 'N/A')}
 
-【リスク分析】
-平均ボラティリティ: {risk_analysis.get('avg_volatility', 'N/A')}
-平均PER: {risk_analysis.get('avg_pe_ratio', 'N/A')}
-平均PBR: {risk_analysis.get('avg_pb_ratio', 'N/A')}
-高PER銘柄比率: {risk_analysis.get('high_pe_ratio', 0):.1f}%
-小型株比率: {risk_analysis.get('small_cap_ratio', 0):.1f}%
-リスクレベル: {risk_analysis.get('risk_level', 'N/A')}
+    【リスク分析】
+    平均ボラティリティ: {safe_get(risk_analysis, 'avg_volatility')}
+    平均PER: {safe_get(risk_analysis, 'avg_pe_ratio')}
+    平均PBR: {safe_get(risk_analysis, 'avg_pb_ratio')}
+    高PER銘柄比率: {safe_float(risk_analysis.get('high_pe_ratio', 0)):.1f}%
+    小型株比率: {safe_float(risk_analysis.get('small_cap_ratio', 0)):.1f}%
+    リスクレベル: {risk_analysis.get('risk_level', 'N/A')}
 
-【主要保有銘柄詳細】
-{chr(10).join(top_holdings_summary)}
+    【主要保有銘柄詳細】
+    {chr(10).join(top_holdings_summary)}
 
-【現在の市場環境】
-{market_summary if market_summary else '市場データ取得不可'}
+    【現在の市場環境】
+    {market_summary if market_summary else '市場データ取得不可'}
 
-【分析要求】
-以下の観点から、投資家に刺さる率直で建設的な評価を提供してください：
+    【分析要求】
+    以下の観点から、投資家に刺さる率直で建設的な評価を提供してください：
 
-1. **強み（ポジティブ要素）** - 3-5点
-   - 優れている具体的なポイント
-   - 数値的根拠を含めた評価
-   - 継続すべき投資戦略
+    1. **強み（ポジティブ要素）** - 3-5点
+    - 優れている具体的なポイント
+    - 数値的根拠を含めた評価
+    - 継続すべき投資戦略
 
-2. **弱み・リスク要素** - 3-5点  
-   - 改善が必要な具体的な問題
-   - 潜在的なリスク要因
-   - 市場環境変化への脆弱性
+    2. **弱み・リスク要素** - 3-5点  
+    - 改善が必要な具体的な問題
+    - 潜在的なリスク要因
+    - 市場環境変化への脆弱性
 
-3. **中立的な現状判断** - 2-3点
-   - 現在のポジショニングの妥当性
-   - 市場環境との整合性
-   - 投資スタイルの一貫性
+    3. **中立的な現状判断** - 2-3点
+    - 現在のポジショニングの妥当性
+    - 市場環境との整合性
+    - 投資スタイルの一貫性
 
-4. **具体的な改善提案** - 3-5点
-   - 実行可能なアクションプラン
-   - リスク管理の改善策
-   - パフォーマンス向上のための戦略
+    4. **具体的な改善提案** - 3-5点
+    - 実行可能なアクションプラン
+    - リスク管理の改善策
+    - パフォーマンス向上のための戦略
 
-5. **総合リスク評価**
-   - 現在のリスクレベルの妥当性
-   - 金融環境変化への対応力
-   - ポートフォリオの持続可能性
+    5. **総合リスク評価**
+    - 現在のリスクレベルの妥当性
+    - 金融環境変化への対応力
+    - ポートフォリオの持続可能性
 
-6. **市場ポジショニング**
-   - 現在の市場環境における適切性
-   - 今後の市場変動への対応力
-   - セクターローテーションへの対応
+    6. **市場ポジショニング**
+    - 現在の市場環境における適切性
+    - 今後の市場変動への対応力
+    - セクターローテーションへの対応
 
-**出力形式:**
-## 総合評価
-[3-4文での全体評価]
+    **出力形式:**
+    ## 総合評価
+    [3-4文での全体評価]
 
-## 強み・ポジティブ要素
-• [具体的な強み1]: [数値的根拠と評価]
-• [具体的な強み2]: [数値的根拠と評価]
-[3-5項目]
+    ## 強み・ポジティブ要素
+    • [具体的な強み1]: [数値的根拠と評価]
+    • [具体的な強み2]: [数値的根拠と評価]
+    [3-5項目]
 
-## 弱み・リスク要素
-• [具体的な弱み1]: [問題の詳細と影響]
-• [具体的な弱み2]: [問題の詳細と影響]
-[3-5項目]
+    ## 弱み・リスク要素
+    • [具体的な弱み1]: [問題の詳細と影響]
+    • [具体的な弱み2]: [問題の詳細と影響]
+    [3-5項目]
 
-## 中立的な現状判断
-• [判断1]: [根拠]
-• [判断2]: [根拠]
-[2-3項目]
+    ## 中立的な現状判断
+    • [判断1]: [根拠]
+    • [判断2]: [根拠]
+    [2-3項目]
 
-## 改善提案・アクションプラン
-• [提案1]: [具体的な実行方法]
-• [提案2]: [具体的な実行方法]
-[3-5項目]
+    ## 改善提案・アクションプラン
+    • [提案1]: [具体的な実行方法]
+    • [提案2]: [具体的な実行方法]
+    [3-5項目]
 
-## リスク評価
-[リスクレベルの妥当性と改善点]
+    ## リスク評価
+    [リスクレベルの妥当性と改善点]
 
-## 市場ポジショニング
-[現在の市場環境での適切性評価]
+    ## 市場ポジショニング
+    [現在の市場環境での適切性評価]
 
-**注意事項:**
-- 数値は具体的に示し、曖昧な表現は避ける
-- 建設的で実行可能な提案を心がける
-- 投資家の成長を促す厳しくも的確な指摘を含める
-- 現在の金融市場環境（金利、為替、地政学リスク等）を考慮する
-"""
+    **注意事項:**
+    - 数値は具体的に示し、曖昧な表現は避ける
+    - 建設的で実行可能な提案を心がける
+    - 投資家の成長を促す厳しくも的確な指摘を含める
+    - 現在の金融市場環境（金利、為替、地政学リスク等）を考慮する
+    """
         return prompt.strip()
     
     def _parse_portfolio_evaluation_response(self, response_text: str) -> Dict[str, Any]:

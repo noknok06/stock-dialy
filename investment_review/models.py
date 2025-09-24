@@ -226,3 +226,37 @@ class PortfolioEvaluationInsight(models.Model):
     
     def __str__(self):
         return f"{self.evaluation.title} - {self.get_insight_type_display()}: {self.title}"
+    
+class ReviewInsight(models.Model):
+    """投資振り返りレポートの個別インサイト"""
+    
+    INSIGHT_TYPE_CHOICES = [
+        ('strength', '強み・良い点'),
+        ('weakness', '弱み・改善点'),
+        ('neutral', '中立的現状判断'),
+        ('recommendation', '推奨アクション'),
+        ('risk_assessment', 'リスク評価'),
+        ('opportunity', '機会・チャンス'),
+    ]
+    
+    review = models.ForeignKey(InvestmentReview, on_delete=models.CASCADE, related_name='insights')
+    insight_type = models.CharField(max_length=20, choices=INSIGHT_TYPE_CHOICES)
+    title = models.CharField(max_length=200, verbose_name='インサイトタイトル')
+    content = models.TextField(verbose_name='内容')
+    priority = models.IntegerField(default=1, verbose_name='優先度（1-5）')
+    
+    # 関連する銘柄（オプション）
+    related_stocks = models.JSONField(default=list, verbose_name='関連銘柄')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['insight_type', '-priority', 'created_at']
+        indexes = [
+            models.Index(fields=['review', 'insight_type']),
+            models.Index(fields=['review', '-priority']),
+        ]
+    
+    def __str__(self):
+        return f"{self.review.title} - {self.get_insight_type_display()}: {self.title}"
+    
