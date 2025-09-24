@@ -508,13 +508,22 @@
     <!-- iOS用アイコン -->
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}">
     
-    <!-- PWAインストールボタン -->
-    <div id="install-prompt" style="display: none;" class="position-fixed top-0 start-0 end-0 bg-primary text-white p-3 text-center">
-        <div class="d-flex justify-content-between align-items-center">
-            <span>カブログをホーム画面に追加しませんか？</span>
-            <div>
-                <button id="install-btn" class="btn btn-light btn-sm me-2">追加</button>
-                <button id="install-dismiss" class="btn btn-outline-light btn-sm">後で</button>
+    <!-- PWAインストールプロンプト -->
+    <div id="pwa-install-container" style="display: none;" class="position-fixed top-0 start-0 end-0 bg-primary text-white p-2 z-index-1060">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi bi-phone me-2"></i>
+                    <span>📱 カブログをホーム画面に追加しませんか？</span>
+                </div>
+                <div>
+                    <button id="pwa-install-btn" class="btn btn-light btn-sm me-2">
+                        <i class="bi bi-download me-1"></i>追加
+                    </button>
+                    <button id="pwa-install-dismiss" class="btn btn-outline-light btn-sm" onclick="document.getElementById('pwa-install-container').style.display='none'">
+                        後で
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1009,6 +1018,7 @@ document.addEventListener('DOMContentLoaded', function() {
   {% endif %}
   
   {% block scripts %}
+  <script src="{% static 'js/pwa-init.js' %}"></script>
   {% endblock %}
 </body>
 </html>
