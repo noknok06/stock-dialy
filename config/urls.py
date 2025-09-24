@@ -23,6 +23,7 @@ from django.urls import include, path
 from . import views
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.views.generic.base import RedirectView
+from django.views.generic import TemplateView
 
 urlpatterns = [
     # ランディングページ
@@ -56,6 +57,7 @@ urlpatterns = [
     
     # APIエンドポイント（将来的な拡張用）
     # path('api/v1/earnings/', include('earnings_analysis.urls')),  # API専用
+    path('offline/', TemplateView.as_view(template_name='offline.html'), name='offline'),
 ]
 
 # 静的ファイル関連

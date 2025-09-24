@@ -496,6 +496,28 @@
       }
     </style>
     
+    <!-- PWA対応 -->
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="カブログ">
+    <meta name="msapplication-TileColor" content="#5a7ec5">
+    <meta name="theme-color" content="#5a7ec5">
+    
+    <!-- iOS用アイコン -->
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}">
+    
+    <!-- PWAインストールボタン -->
+    <div id="install-prompt" style="display: none;" class="position-fixed top-0 start-0 end-0 bg-primary text-white p-3 text-center">
+        <div class="d-flex justify-content-between align-items-center">
+            <span>カブログをホーム画面に追加しませんか？</span>
+            <div>
+                <button id="install-btn" class="btn btn-light btn-sm me-2">追加</button>
+                <button id="install-dismiss" class="btn btn-outline-light btn-sm">後で</button>
+            </div>
+        </div>
+    </div>
     {% block head %}{% endblock %}
 </head>
 <body>
