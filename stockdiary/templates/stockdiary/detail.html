@@ -152,18 +152,6 @@
         </li>
 
         <li class="improved-tab-item" role="presentation">
-          <button class="improved-tab-link" id="margin-tab" data-bs-toggle="tab" data-bs-target="#margin-content"
-            type="button" role="tab" aria-controls="margin-content" aria-selected="false">
-            <div class="tab-icon">
-              <i class="bi bi-graph-up-arrow"></i>
-            </div>
-            <div class="tab-label">
-              信用倍率
-            </div>
-          </button>
-        </li>
-
-        <li class="improved-tab-item" role="presentation">
           <button class="improved-tab-link" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline-content"
             type="button" role="tab" aria-controls="timeline-content" aria-selected="false">
             <div class="tab-icon">
@@ -599,13 +587,6 @@
           </div>
         </div>
 
-        <!-- 信用倍率タブ -->
-        <div class="tab-pane fade" id="margin-content" role="tabpanel" aria-labelledby="margin-tab">
-          <div class="mobile-optimized-container">
-            {% include 'stockdiary/partials/tab_margin.html' %}
-          </div>
-        </div>
-
         <!-- タイムラインタブ -->
         <div class="tab-pane fade" id="timeline-content" role="tabpanel" aria-labelledby="timeline-tab">
           {% if related_diaries %}
@@ -775,28 +756,8 @@
 <script src="{% static 'js/diary-detail.js' %}"></script>
 <!-- タブスワイプ機能スクリプト -->
 <script src="{% static 'js/diary-detail-tabs.js' %}"></script>
-<!-- 信用倍率タブスクリプト -->
-<script src="{% static 'js/margin-analysis.js' %}"></script>
 <!-- 画像圧縮機能 -->
 <script src="{% static 'js/image-compression.js' %}"></script>
 
-<script>
-// 信用倍率タブ初期化（detail専用コンテキスト）
-document.addEventListener('DOMContentLoaded', function() {
-  // 信用倍率タブが存在し、必要なデータがある場合のみ初期化
-  const marginTab = document.getElementById('margin-tab');
-  const diaryId = {{ diary.id }};
-  const stockSymbol = '{{ diary.stock_symbol }}';
-  
-  if (marginTab && diaryId && stockSymbol) {
-    // 信用倍率タブがクリックされた時に初期化
-    marginTab.addEventListener('shown.bs.tab', function() {
-      if (!window.MarginTabController) {
-        console.log('信用倍率タブコントローラーを初期化中...');
-        window.MarginTabController = new MarginTabManager(diaryId, stockSymbol, stockSymbol);
-      }
-    });
-  }
-});
 </script>
 {% endblock %}
