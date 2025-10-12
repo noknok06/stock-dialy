@@ -53,5 +53,4 @@ urlpatterns = [
     path('stocks/', views.StockListView.as_view(), name='stock_list'),
     path('api/stock-diaries/<str:symbol>/', views.api_stock_diaries, name='api_stock_diaries'),
     
-    path('api/margin-analysis/<int:diary_id>/', views.MarginAnalysisAPIView.as_view(), name='api_margin_analysis'),
 ]
