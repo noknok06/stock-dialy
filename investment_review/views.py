@@ -56,12 +56,6 @@ class InvestmentReviewListView(LoginRequiredMixin, ListView):
                 'url': reverse_lazy('investment_review:create_monthly'),
                 'icon': 'bi-plus-lg',
                 'label': '月次振り返り作成'
-            },
-            {
-                'type': 'analytics',
-                'url': reverse_lazy('stockdiary:analytics'),
-                'icon': 'bi-graph-up',
-                'label': '投資分析'
             }
         ]
         
@@ -506,12 +500,6 @@ class PortfolioEvaluationView(LoginRequiredMixin, TemplateView):
                     'url': reverse_lazy('investment_review:portfolio_history'),
                     'icon': 'bi-clock-history',
                     'label': '評価履歴'
-                },
-                {
-                    'type': 'analytics',
-                    'url': reverse_lazy('stockdiary:analytics'),
-                    'icon': 'bi-graph-up',
-                    'label': '投資分析'
                 },
                 {
                     'type': 'stocks',

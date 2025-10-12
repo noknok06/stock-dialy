@@ -2933,12 +2933,6 @@ class StockListView(LoginRequiredMixin, TemplateView):
                 'url': reverse_lazy('stockdiary:create'),
                 'icon': 'bi-plus-lg',
                 'label': '新規作成'
-            },
-            {
-                'type': 'analytics',
-                'url': reverse_lazy('stockdiary:analytics'),
-                'icon': 'bi-graph-up',
-                'label': '投資分析'
             }
         ]
         
