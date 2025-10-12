@@ -19,6 +19,9 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.conf import settings
 from django.urls import reverse
 
+from .models import StockDiary, StockTransaction, StockSplit
+from .forms import StockTransactionForm, StockSplitForm
+
 from utils.mixins import ObjectNotFoundRedirectMixin
 from .utils import process_analysis_values, calculate_analysis_completion_rate
 from .models import StockDiary, DiaryNote
@@ -345,6 +348,21 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
     redirect_url = 'stockdiary:home'
     not_found_message = "日記エントリーが見つかりません。削除された可能性があります。"
     
+    def get_context_data_for_detail(self, **kwargs):
+        """DetailViewのget_context_dataメソッドに追加"""
+        context = super().get_context_data(**kwargs)
+        
+        # 既存のコンテキスト設定...
+        
+        # 取引履歴を取得
+        context['transaction_history'] = self.object.get_transaction_history_with_details()
+        context['position_summary'] = self.object.get_position_summary()
+        
+        # 株式分割情報
+        context['stock_splits'] = self.object.stock_splits.all()
+        
+        return context
+        
     def get_queryset(self):
         return StockDiary.objects.filter(user=self.request.user).select_related('user').prefetch_related(
             'notes', 'tags', 'checklist', 'analysis_values__analysis_item'
@@ -2192,3 +2210,289 @@ def api_stock_diaries(request, symbol):
             'error': str(e),
             'success': False
         }, status=500)
+
+class AddTransactionView(LoginRequiredMixin, CreateView):
+    """取引追加ビュー"""
+    model = StockTransaction
+    form_class = StockTransactionForm
+    template_name = 'stockdiary/transaction_form.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        self.diary = get_object_or_404(
+            StockDiary,
+            id=self.kwargs['diary_id'],
+            user=request.user
+        )
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['diary'] = self.diary
+        return kwargs
+    
+    def form_valid(self, form):
+        form.instance.diary = self.diary
+        messages.success(self.request, '取引を記録しました')
+        return super().form_valid(form)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['diary'] = self.diary
+        context['summary'] = self.diary.get_position_summary()
+        return context
+    
+    def get_success_url(self):
+        return reverse('stockdiary:detail', kwargs={'pk': self.diary.id})
+
+
+class EditTransactionView(LoginRequiredMixin, UpdateView):
+    """取引編集ビュー"""
+    model = StockTransaction
+    form_class = StockTransactionForm
+    template_name = 'stockdiary/transaction_form.html'
+    
+    def get_queryset(self):
+        return StockTransaction.objects.filter(
+            diary__user=self.request.user
+        )
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['diary'] = self.object.diary
+        return kwargs
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['diary'] = self.object.diary
+        context['summary'] = self.object.diary.get_position_summary()
+        context['is_edit'] = True
+        return context
+    
+    def form_valid(self, form):
+        messages.success(self.request, '取引を更新しました')
+        return super().form_valid(form)
+    
+    def get_success_url(self):
+        return reverse('stockdiary:detail', kwargs={'pk': self.object.diary.id})
+
+
+class DeleteTransactionView(LoginRequiredMixin, DeleteView):
+    """取引削除ビュー"""
+    model = StockTransaction
+    template_name = 'stockdiary/transaction_confirm_delete.html'
+    
+    def get_queryset(self):
+        return StockTransaction.objects.filter(
+            diary__user=self.request.user
+        )
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        transaction = self.object
+        
+        # 削除影響分析
+        context['impact'] = transaction.get_deletion_impact()
+        context['diary'] = transaction.diary
+        context['current_summary'] = transaction.diary.get_position_summary()
+        
+        return context
+    
+    def delete(self, request, *args, **kwargs):
+        transaction = self.get_object()
+        diary = transaction.diary
+        
+        result = super().delete(request, *args, **kwargs)
+        
+        messages.success(request, '取引を削除しました')
+        return result
+    
+    def get_success_url(self):
+        return reverse('stockdiary:detail', kwargs={'pk': self.object.diary.id})
+
+
+class AddStockSplitView(LoginRequiredMixin, CreateView):
+    """株式分割追加ビュー"""
+    model = StockSplit
+    form_class = StockSplitForm
+    template_name = 'stockdiary/split_form.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        self.diary = get_object_or_404(
+            StockDiary,
+            id=self.kwargs['diary_id'],
+            user=request.user
+        )
+        return super().dispatch(request, *args, **kwargs)
+    
+    def form_valid(self, form):
+        form.instance.diary = self.diary
+        response = super().form_valid(form)
+        messages.success(
+            self.request, 
+            '株式分割情報を追加しました。適用する場合は「適用」ボタンをクリックしてください'
+        )
+        return response
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['diary'] = self.diary
+        return context
+    
+    def get_success_url(self):
+        return reverse('stockdiary:detail', kwargs={'pk': self.diary.id})
+
+
+class ApplyStockSplitView(LoginRequiredMixin, View):
+    """株式分割適用ビュー"""
+    
+    def post(self, request, *args, **kwargs):
+        split = get_object_or_404(
+            StockSplit,
+            id=self.kwargs['pk'],
+            diary__user=request.user
+        )
+        
+        if split.is_applied:
+            messages.warning(request, 'この株式分割は既に適用済みです')
+        else:
+            try:
+                split.apply_split()
+                messages.success(
+                    request, 
+                    f'株式分割（{split.split_ratio}倍）を適用しました'
+                )
+            except Exception as e:
+                messages.error(
+                    request, 
+                    f'株式分割の適用中にエラーが発生しました: {str(e)}'
+                )
+        
+        return redirect('stockdiary:detail', pk=split.diary.id)
+
+
+class DeleteStockSplitView(LoginRequiredMixin, DeleteView):
+    """株式分割削除ビュー"""
+    model = StockSplit
+    template_name = 'stockdiary/split_confirm_delete.html'
+    
+    def get_queryset(self):
+        return StockSplit.objects.filter(
+            diary__user=self.request.user
+        )
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['diary'] = self.object.diary
+        return context
+    
+    def delete(self, request, *args, **kwargs):
+        split = self.get_object()
+        
+        if split.is_applied:
+            messages.error(
+                request, 
+                '適用済みの株式分割は削除できません。先に取引履歴を調整してください'
+            )
+            return redirect('stockdiary:detail', pk=split.diary.id)
+        
+        result = super().delete(request, *args, **kwargs)
+        messages.success(request, '株式分割情報を削除しました')
+        return result
+    
+    def get_success_url(self):
+        return reverse('stockdiary:detail', kwargs={'pk': self.object.diary.id})
+
+
+# StockDiaryCreateViewの更新版
+class StockDiaryCreateView(LoginRequiredMixin, CreateView):
+    """日記作成ビュー（トランザクション対応版）"""
+    model = StockDiary
+    form_class = StockDiaryForm
+    template_name = 'stockdiary/diary_form.html'
+    success_url = reverse_lazy('stockdiary:home')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form_actions'] = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('stockdiary:home'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る',
+                'aria_label': '戻る' 
+            },
+            {
+                'type': 'template',
+                'url': reverse_lazy('analysis_template:list'),
+                'icon': 'bi-clipboard-data',
+                'label': 'テンプレート',
+                'aria_label': 'テンプレート' 
+            },
+            {
+                'type': 'tag',
+                'url': reverse_lazy('tags:list'),
+                'icon': 'bi-tags',
+                'label': 'タグ管理',
+                'aria_label': 'タグ管理' 
+            }
+        ]
+        return context
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+    
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        response = super().form_valid(form)
+        
+        # 画像ファイルの処理
+        image_file = form.cleaned_data.get('image')
+        if image_file:
+            success = self.object.process_and_save_image(image_file)
+            if not success:
+                messages.warning(
+                    self.request, 
+                    '日記は作成されましたが、画像の処理に失敗しました。'
+                )
+        
+        # 初回取引の処理
+        if form.cleaned_data.get('add_initial_transaction'):
+            try:
+                StockTransaction.objects.create(
+                    diary=self.object,
+                    transaction_type='buy',
+                    date=form.cleaned_data['purchase_date'],
+                    price=form.cleaned_data['purchase_price'],
+                    quantity=form.cleaned_data['purchase_quantity'],
+                    note=form.cleaned_data.get('purchase_note', '') or '初回購入'
+                )
+                messages.success(self.request, '日記と初回取引を作成しました')
+            except Exception as e:
+                messages.warning(
+                    self.request, 
+                    f'日記は作成されましたが、初回取引の登録に失敗しました: {str(e)}'
+                )
+        else:
+            messages.success(self.request, '日記を作成しました')
+        
+        # 分析テンプレートの処理
+        from .utils import process_analysis_values
+        analysis_template_id = self.request.POST.get('analysis_template')
+        if analysis_template_id:
+            process_analysis_values(self.request, self.object, analysis_template_id)
+        
+        return response
+
+    def get_initial(self):
+        initial = super().get_initial()
+        symbol = self.request.GET.get('symbol')
+        name = self.request.GET.get('name')
+        
+        if symbol:
+            initial['stock_symbol'] = symbol
+        if name:
+            initial['stock_name'] = name
+        
+        return initial

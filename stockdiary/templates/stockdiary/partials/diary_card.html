@@ -1,227 +1,436 @@
+<!-- stockdiary/templates/stockdiary/partials/diary_card.html -->
 {% load stockdiary_filters %}
-{% load humanize %}
 
-<style>
-/* 即座に適用したい調整 */
-@media (max-width: 576px) {
-  .card-tabs .nav-link span.d-none.d-sm-inline {
-    display: none !important;
-  }
-  
-  .diary-card-header {
-    min-height: auto;
-  }
-  
-  .diary-title {
-    word-break: break-word;
-    hyphens: auto;
-  }
-}
-
-/* グリッドシステムの微調整 */
-.home-diary-grid {
-  container-type: inline-size; /* コンテナクエリ対応 */
-}
-
-@container (min-width: 768px) {
-  .home-diary-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
-  }
-}
-</style>
-
-<div class="diary-card {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo-card{% elif diary.sell_date %}sold-card{% endif %} swipeable"
-  data-diary-id="{{ diary.id }}"
-  data-diary-type="{% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo{% elif diary.sell_date %}sold{% else %}active{% endif %}">
-
-  <!-- カードヘッダー - レスポンシブ対応強化 -->
+<div class="diary-card" data-diary-id="{{ diary.id }}">
+  <!-- ヘッダー -->
   <div class="diary-card-header">
-    <div class="diary-header-content">
-      <!-- 銘柄名とシンボル -->
+    <div class="diary-title-section">
       <h3 class="diary-title">
-        <span class="d-inline-block">{{ diary.stock_name }}</span>
-        {% if diary.stock_symbol %}
-          <small class="text-muted d-inline-block">({{ diary.stock_symbol }})</small>
-        {% endif %}
+        <a href="{% url 'stockdiary:detail' diary.id %}">
+          {{ diary.stock_name }}
+        </a>
       </h3>
+      {% if diary.stock_symbol %}
+        <span class="stock-symbol-badge">{{ diary.stock_symbol }}</span>
+      {% endif %}
+    </div>
+    
+    <!-- ステータスバッジ -->
+    <div class="status-badges">
+      {% if diary.has_active_position %}
+        <span class="status-badge status-active">
+          <i class="bi bi-graph-up"></i> 保有中
+        </span>
+      {% elif diary.is_fully_sold %}
+        <span class="status-badge status-sold">
+          <i class="bi bi-check-circle"></i> 売却済み
+        </span>
+      {% else %}
+        <span class="status-badge status-memo">
+          <i class="bi bi-sticky"></i> 記録のみ
+        </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ボディ -->
+  <div class="diary-card-body">
+    <!-- ポジション情報 -->
+    {% if diary.has_active_position %}
+    <div class="position-info active">
+      <div class="position-row">
+        <div class="position-metric">
+          <div class="metric-label">保有数</div>
+          <div class="metric-value">{{ diary.current_quantity }}株</div>
+        </div>
+        <div class="position-metric">
+          <div class="metric-label">平均単価</div>
+          <div class="metric-value">{{ diary.average_purchase_price|floatformat:0 }}円</div>
+        </div>
+        <div class="position-metric">
+          <div class="metric-label">取得原価</div>
+          <div class="metric-value">{{ diary.total_cost|floatformat:0 }}円</div>
+        </div>
+      </div>
       
-      <!-- 日付と状態バッジ -->
-      <div class="diary-meta">
-        <span class="diary-date">{{ diary.purchase_date|date:"Y年m月d日" }}</span>
-        
-        {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
-          <span class="status-badge memo-badge">メモ</span>
-        {% elif diary.sell_date %}
-          <span class="status-badge sold-badge">売却済み</span>
-        {% else %}
-          <span class="status-badge purchase-badge">保有中</span>
-        {% endif %}
+      {% if diary.realized_profit != 0 %}
+      <div class="realized-profit-badge">
+        <small>実現損益: </small>
+        <strong class="{% if diary.realized_profit > 0 %}text-success{% else %}text-danger{% endif %}">
+          {% if diary.realized_profit > 0 %}+{% endif %}
+          {{ diary.realized_profit|floatformat:0 }}円
+        </strong>
+      </div>
+      {% endif %}
+    </div>
+    
+    {% elif diary.is_fully_sold %}
+    <div class="position-info sold">
+      <div class="sold-summary">
+        <div class="sold-icon">
+          <i class="bi bi-check-circle-fill"></i>
+        </div>
+        <div class="sold-details">
+          <div class="sold-label">売却完了</div>
+          <div class="sold-profit {% if diary.realized_profit > 0 %}profit-positive{% elif diary.realized_profit < 0 %}profit-negative{% endif %}">
+            {% if diary.realized_profit > 0 %}+{% endif %}
+            {{ diary.realized_profit|floatformat:0 }}円
+            <span class="sold-percent">
+              ({{ diary.realized_profit|div:diary.total_buy_amount|mul:100|floatformat:1 }}%)
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="transaction-summary">
+        <small class="text-muted">
+          購入: {{ diary.total_bought_quantity }}株 | 
+          売却: {{ diary.total_sold_quantity }}株 | 
+          取引: {{ diary.transaction_count }}回
+        </small>
       </div>
     </div>
     
-    <!-- 価格情報 - レスポンシブ対応 -->
-    <div class="diary-price-info">
-      {% if not diary.is_memo and diary.purchase_price is not None %}
-        <div class="price-value">{{ diary.purchase_price|floatformat:2|intcomma }}円</div>
-        {% if diary.purchase_quantity is not None %}
-          <div class="quantity-value">{{ diary.purchase_quantity }}株</div>
-        {% endif %}
-        
-        {% if diary.sell_date and diary.sell_price %}
-          {% with profit_rate=diary.sell_price|sub:diary.purchase_price|div:diary.purchase_price|mul:100 %}
-            <div class="profit-rate {% if profit_rate > 0 %}profit{% elif profit_rate < 0 %}loss{% endif %}">
-              {{ profit_rate|floatformat:2 }}%
-            </div>
-          {% endwith %}
-        {% endif %}
-      {% endif %}
-    </div>
-  </div>
-
-  <!-- コンテンツ部分 -->
-  <div class="diary-card-body">
-    <!-- 画像表示 -->
-    {% if diary.image_url %}
-    <div class="diary-image mb-3">
-      <img src="{{ diary.image_url }}" 
-          class="img-fluid rounded diary-attached-image" 
-          alt="日記画像"
-          style="max-height: 200px; object-fit: cover; width: 100%; cursor: pointer;"
-          onclick="event.stopPropagation(); showImageModal('{{ diary.image_url }}', '{{ diary.stock_name|escapejs }}')">
-
-    </div>
-    {% endif %}    
-    <!-- タグ表示 - 改善されたレイアウト -->
-    {% if diary.tags.all %}
-    <div class="diary-tags">
-      {% for tag in diary.tags.all|slice:":3" %}
-      <span class="diary-tag">
-        <i class="bi bi-tag" style="font-size: 0.7rem;"></i> 
-        <span>{{ tag.name }}</span>
-      </span>
-      {% endfor %}
-      {% if diary.tags.all.count > 3 %}
-      <span class="diary-tag more-tags">+{{ diary.tags.all.count|add:"-3" }}</span>
-      {% endif %}
+    {% else %}
+    <div class="position-info memo">
+      <p class="text-muted mb-0">
+        <i class="bi bi-journal-text me-1"></i>
+        記録のみ（取引履歴なし）
+      </p>
     </div>
     {% endif %}
 
-    <!-- カード切り替えタブ - 改善されたレスポンシブ対応 -->
-    <div class="diary-card-tabs">
-      <div class="nav nav-tabs card-tabs" role="tablist">
-        <!-- 理由/メモタブ -->
-        <button class="nav-link active tab-btn" id="reason-tab-{{ diary.id }}" 
-                data-bs-toggle="tab" 
-                data-bs-target="#reason-content-{{ diary.id }}"
-                type="button" role="tab">
-          <i class="bi bi-journal-text"></i> 
-          <span class="d-none d-sm-inline">
-            {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
-            メモ
-            {% else %}
-            理由
-            {% endif %}
-          </span>
-        </button>
-        
-        <!-- 継続記録タブ -->
-        {% if diary.notes.exists %}
-        <button class="nav-link tab-btn" id="notes-tab-{{ diary.id }}" 
-                data-bs-toggle="tab" 
-                data-bs-target="#notes-content-{{ diary.id }}"
-                hx-get="{% url 'stockdiary:tab_content' diary.id 'notes' %}"
-                hx-target="#notes-content-{{ diary.id }}"
-                hx-trigger="click once"
-                hx-swap="innerHTML"
-                hx-indicator="#tab-loading-indicator-{{ diary.id }}"
-                type="button" role="tab">
-          <i class="bi bi-journals"></i> 
-          <span class="d-none d-sm-inline">継続</span>
-        </button>
-        {% endif %}
-        
-        <!-- 分析タブ -->
-        {% if diary.analysis_values.exists %}
-        <button class="nav-link tab-btn" id="analysis-tab-{{ diary.id }}"
-                data-bs-toggle="tab" 
-                data-bs-target="#analysis-content-{{ diary.id }}"
-                hx-get="{% url 'stockdiary:tab_content' diary.id 'analysis' %}"
-                hx-target="#analysis-content-{{ diary.id }}"
-                hx-trigger="click once"
-                hx-swap="innerHTML"
-                hx-indicator="#tab-loading-indicator-{{ diary.id }}"
-                type="button" role="tab">
-          <i class="bi bi-clipboard-data"></i> 
-          <span class="d-none d-sm-inline">分析</span>
-        </button>
-        {% endif %}
-        
-        <!-- 詳細タブ -->
-        <button class="nav-link tab-btn" id="details-tab-{{ diary.id }}"
-                data-bs-toggle="tab" 
-                data-bs-target="#details-content-{{ diary.id }}"
-                hx-get="{% url 'stockdiary:tab_content' diary.id 'details' %}"
-                hx-target="#details-content-{{ diary.id }}"
-                hx-trigger="click once"
-                hx-swap="innerHTML"
-                hx-indicator="#tab-loading-indicator-{{ diary.id }}"
-                type="button" role="tab">
-          <i class="bi bi-cash-coin"></i> 
-          <span class="d-none d-sm-inline">売買</span>
-        </button>
+    <!-- 投資理由（抜粋） -->
+    {% if diary.reason %}
+    <div class="diary-reason">
+      <div class="reason-label">
+        <i class="bi bi-chat-left-text"></i> 投資理由
+      </div>
+      <div class="reason-text">
+        {{ diary.reason|truncatewords_html:20|safe }}
       </div>
     </div>
+    {% endif %}
 
-    <!-- 共通ローディングインジケータ -->
-    <div id="tab-loading-indicator-{{ diary.id }}" class="htmx-indicator" style="display: none; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 10;">
-      <div class="spinner-border text-primary spinner-border-sm" role="status">
-        <span class="visually-hidden">読み込み中...</span>
-      </div>
+    <!-- タグ -->
+    {% if diary.tags.exists %}
+    <div class="diary-tags">
+      {% for tag in diary.tags.all|slice:":3" %}
+        <span class="tag-badge">{{ tag.name }}</span>
+      {% endfor %}
+      {% if diary.tags.count > 3 %}
+        <span class="tag-badge tag-more">+{{ diary.tags.count|add:"-3" }}</span>
+      {% endif %}
     </div>
+    {% endif %}
+  </div>
 
-    <!-- タブコンテンツ -->
-    <div class="tab-content">
-      <!-- 購入理由タブ - 常に最初から表示 -->
-      <div class="tab-pane fade show active" id="reason-content-{{ diary.id }}" role="tabpanel">
-        <div class="px-1 py-2">
-          <div class="reason-content">
-            {% if request.GET.query and request.GET.query != '' %}
-              {{ diary.reason|safe|linebreaks|highlight:request.GET.query|truncatewords_html:50 }}
-            {% else %}
-              {{ diary.reason|safe|linebreaks|truncatewords_html:50 }}
-            {% endif %}
-          </div>
-          
-          <!-- 続きを読む -->
-          {% if diary.reason|wordcount > 50 %}
-          <div class="text-end mt-2">
-            <a href="{% url 'stockdiary:detail' diary.id %}" class="text-primary text-decoration-none small">
-              続きを読む <i class="bi bi-arrow-right"></i>
-            </a>
-          </div>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- 継続記録タブ -->
-      {% if diary.notes.exists %}
-      <div class="tab-pane fade" id="notes-content-{{ diary.id }}" role="tabpanel">
-        <!-- 空のまま - HTMXで内容を挿入 -->
-      </div>
+  <!-- フッター -->
+  <div class="diary-card-footer">
+    <div class="diary-meta">
+      <span class="meta-item">
+        <i class="bi bi-calendar-date"></i>
+        {% if diary.first_purchase_date %}
+          {{ diary.first_purchase_date|date:"Y/m/d" }}
+        {% else %}
+          {{ diary.created_at|date:"Y/m/d" }}
+        {% endif %}
+      </span>
+      
+      {% if diary.transaction_count > 0 %}
+      <span class="meta-item">
+        <i class="bi bi-arrow-repeat"></i>
+        {{ diary.transaction_count }}回
+      </span>
       {% endif %}
       
-      <!-- 分析テンプレートタブ -->
-      {% if diary.analysis_values.exists %}
-      <div class="tab-pane fade" id="analysis-content-{{ diary.id }}" role="tabpanel">
-        <!-- 空のまま - HTMXで内容を挿入 -->
-      </div>
+      {% if diary.notes.count > 0 %}
+      <span class="meta-item">
+        <i class="bi bi-journal-richtext"></i>
+        {{ diary.notes.count }}件
+      </span>
       {% endif %}
+    </div>
 
-      <!-- 詳細情報タブ -->
-      <div class="tab-pane fade" id="details-content-{{ diary.id }}" role="tabpanel">
-        <!-- 空のまま - HTMXで内容を挿入 -->
-      </div>
+    <div class="diary-actions">
+      <a href="{% url 'stockdiary:detail' diary.id %}" 
+         class="btn btn-sm btn-outline-primary" title="詳細">
+        <i class="bi bi-eye"></i>
+      </a>
+      
+      {% if diary.has_active_position %}
+      <a href="{% url 'stockdiary:add_transaction' diary.id %}" 
+         class="btn btn-sm btn-outline-success" title="取引追加">
+        <i class="bi bi-plus-lg"></i>
+      </a>
+      {% endif %}
+      
+      <a href="{% url 'stockdiary:update' diary.id %}" 
+         class="btn btn-sm btn-outline-warning" title="編集">
+        <i class="bi bi-pencil"></i>
+      </a>
     </div>
   </div>
 </div>
+
+<style>
+.diary-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+}
+
+.diary-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.diary-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.diary-title-section {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.diary-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.diary-title a {
+  color: #212529;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.diary-title a:hover {
+  color: #667eea;
+}
+
+.stock-symbol-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.status-badge {
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.status-active {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-sold {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.status-memo {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.position-info {
+  margin-bottom: 1rem;
+}
+
+.position-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.position-metric {
+  text-align: center;
+  padding: 0.75rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.metric-label {
+  font-size: 0.75rem;
+  color: #6c757d;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metric-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #212529;
+}
+
+.realized-profit-badge {
+  text-align: center;
+  padding: 0.5rem;
+  background-color: #f0f0f0;
+  border-radius: 6px;
+  margin-top: 0.5rem;
+}
+
+.sold-summary {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.sold-icon {
+  font-size: 2rem;
+  color: #1976d2;
+}
+
+.sold-label {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin-bottom: 0.25rem;
+}
+
+.sold-profit {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.profit-positive {
+  color: #28a745;
+}
+
+.profit-negative {
+  color: #dc3545;
+}
+
+.sold-percent {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.transaction-summary {
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.diary-reason {
+  padding: 0.75rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border-left: 3px solid #667eea;
+}
+
+.reason-label {
+  font-size: 0.75rem;
+  color: #6c757d;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.reason-text {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.diary-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.tag-badge {
+  background-color: #e9ecef;
+  color: #495057;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.tag-more {
+  background-color: #667eea;
+  color: white;
+}
+
+.diary-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+.diary-meta {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  font-size: 0.875rem;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.diary-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+  .diary-card {
+    padding: 1rem;
+  }
+
+  .position-row {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .diary-card-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .diary-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+</style>

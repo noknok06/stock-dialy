@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}株式分割を追加 | カブログ{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/diary-theme.css' %}">
+<style>
+  .split-info {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
+  }
+  
+  .split-examples {
+    background-color: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border-left: 4px solid #ffc107;
+    margin-bottom: 1.5rem;
+  }
+  
+  .example-item {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background-color: white;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+  }
+  
+  .example-item:last-child {
+    margin-bottom: 0;
+  }
+  
+  .example-label {
+    font-weight: 600;
+    color: #667eea;
+    margin-right: 0.5rem;
+  }
+  
+  .ratio-preview {
+    background-color: #e3f2fd;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+    display: none;
+  }
+  
+  .ratio-preview.show {
+    display: block;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="title_header">
+    <h1 class="page-title">
+      <i class="bi bi-scissors"></i> 株式分割を追加
+    </h1>
+  </div>
+
+  <!-- 銘柄情報 -->
+  <div class="split-info">
+    <h5 class="mb-0">
+      {{ diary.stock_name }}
+      {% if diary.stock_symbol %}
+        <span class="badge bg-light text-dark ms-2">{{ diary.stock_symbol }}</span>
+      {% endif %}
+    </h5>
+    <p class="mt-2 mb-0">
+      <i class="bi bi-info-circle me-1"></i>
+      株式分割情報を追加します。適用すると、分割日以前の取引が自動調整されます。
+    </p>
+  </div>
+
+  <!-- 分割比率の例 -->
+  <div class="split-examples">
+    <h6 class="mb-3">
+      <i class="bi bi-lightbulb"></i> 分割比率の入力例
+    </h6>
+    <div class="example-item">
+      <span class="example-label">1株→2株の分割:</span>
+      <span class="text-muted">比率 = </span>
+      <strong>2.0</strong>
+    </div>
+    <div class="example-item">
+      <span class="example-label">1株→3株の分割:</span>
+      <span class="text-muted">比率 = </span>
+      <strong>3.0</strong>
+    </div>
+    <div class="example-item">
+      <span class="example-label">1株→1.5株の分割:</span>
+      <span class="text-muted">比率 = </span>
+      <strong>1.5</strong>
+    </div>
+    <div class="example-item">
+      <span class="example-label">2株→1株の併合:</span>
+      <span class="text-muted">比率 = </span>
+      <strong>0.5</strong>
+    </div>
+  </div>
+
+  <!-- フォーム -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+      <form method="post">
+        {% csrf_token %}
+
+        <!-- 分割実行日 -->
+        <div class="mb-3">
+          <label for="{{ form.split_date.id_for_label }}" class="form-label">
+            分割実行日 <span class="text-danger">*</span>
+          </label>
+          {{ form.split_date }}
+          <small class="form-text text-muted">
+            この日付以前の取引が調整されます
+          </small>
+          {% if form.split_date.errors %}
+          <div class="text-danger">{{ form.split_date.errors }}</div>
+          {% endif %}
+        </div>
+
+        <!-- 分割比率 -->
+        <div class="mb-3">
+          <label for="{{ form.split_ratio.id_for_label }}" class="form-label">
+            分割比率 <span class="text-danger">*</span>
+          </label>
+          {{ form.split_ratio }}
+          <small class="form-text text-muted">
+            {{ form.split_ratio.help_text }}
+          </small>
+          {% if form.split_ratio.errors %}
+          <div class="text-danger">{{ form.split_ratio.errors }}</div>
+          {% endif %}
+
+          <!-- プレビュー -->
+          <div class="ratio-preview" id="ratioPreview">
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <div class="text-muted small">調整前</div>
+                <div class="h5 mb-0">
+                  <span id="beforeQuantity">100</span>株 × 
+                  <span id="beforePrice">1,000</span>円
+                </div>
+              </div>
+              <div class="mx-3">
+                <i class="bi bi-arrow-right" style="font-size: 2rem;"></i>
+              </div>
+              <div>
+                <div class="text-muted small">調整後</div>
+                <div class="h5 mb-0">
+                  <span id="afterQuantity">-</span>株 × 
+                  <span id="afterPrice">-</span>円
+                </div>
+              </div>
+            </div>
+            <div class="mt-2 text-muted small">
+              ※ 取引の総額は変わりません（調整例です）
+            </div>
+          </div>
+        </div>
+
+        <!-- メモ -->
+        <div class="mb-3">
+          <label for="{{ form.note.id_for_label }}" class="form-label">
+            メモ
+          </label>
+          {{ form.note }}
+          <small class="form-text text-muted">
+            分割の理由や参考情報を記録できます
+          </small>
+          {% if form.note.errors %}
+          <div class="text-danger">{{ form.note.errors }}</div>
+          {% endif %}
+        </div>
+
+        <!-- 警告メッセージ -->
+        <div class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <strong>重要:</strong> 株式分割を追加した後、「適用」ボタンをクリックすることで、
+          分割日以前の取引が自動的に調整されます。適用前であれば削除可能です。
+        </div>
+
+        <!-- フォームエラー -->
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <!-- ボタン -->
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-warning flex-fill">
+            <i class="bi bi-plus-lg"></i> 株式分割を追加
+          </button>
+          <a href="{% url 'stockdiary:detail' diary.id %}" class="btn btn-secondary">
+            <i class="bi bi-x-lg"></i> キャンセル
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const ratioInput = document.getElementById('{{ form.split_ratio.id_for_label }}');
+  const ratioPreview = document.getElementById('ratioPreview');
+  const beforeQuantity = document.getElementById('beforeQuantity');
+  const beforePrice = document.getElementById('beforePrice');
+  const afterQuantity = document.getElementById('afterQuantity');
+  const afterPrice = document.getElementById('afterPrice');
+  
+  // プレビュー更新
+  function updatePreview() {
+    const ratio = parseFloat(ratioInput.value);
+    
+    if (isNaN(ratio) || ratio <= 0) {
+      ratioPreview.classList.remove('show');
+      return;
+    }
+    
+    ratioPreview.classList.add('show');
+    
+    // サンプル値
+    const sampleQty = 100;
+    const samplePrice = 1000;
+    
+    // 調整後の値を計算
+    const newQty = Math.floor(sampleQty * ratio);
+    const newPrice = (samplePrice / ratio).toFixed(2);
+    
+    beforeQuantity.textContent = sampleQty;
+    beforePrice.textContent = samplePrice.toLocaleString();
+    afterQuantity.textContent = newQty.toLocaleString();
+    afterPrice.textContent = parseFloat(newPrice).toLocaleString();
+  }
+  
+  ratioInput.addEventListener('input', updatePreview);
+  
+  // 初期表示
+  if (ratioInput.value) {
+    updatePreview();
+  }
+});
+</script>
+{% endblock %}
