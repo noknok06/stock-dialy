@@ -144,6 +144,7 @@ LOCAL_APPS = [
     'maintenance',
     'contact',
     'earnings_analysis',
+    'margin_trading',  # クレジット比率アプリ
     'investment_review',
 ]
 
