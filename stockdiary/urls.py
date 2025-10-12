@@ -29,8 +29,6 @@ urlpatterns = [
     path('<int:pk>/note/', views.AddDiaryNoteView.as_view(), name='add_note'),
     path('<int:diary_pk>/note/<int:pk>/delete/', views.DeleteDiaryNoteView.as_view(), name='delete_note'),
 
-    # 分析関連
-    path('analytics/', views.DiaryAnalyticsView.as_view(), name='analytics'),
 
     # その他のエンドポイント
     path('diary-list/', login_required(views.diary_list), name='diary_list'),
