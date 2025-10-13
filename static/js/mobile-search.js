@@ -213,7 +213,6 @@ function updateActiveFilters() {
     { name: 'status', type: 'select', getLabel: (value) => {
       const labels = {
         'active': '保有中',
-        'sold': '売却済み',
         'memo': 'メモのみ'
       };
       return labels[value] || value;

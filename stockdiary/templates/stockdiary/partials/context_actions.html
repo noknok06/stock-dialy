@@ -8,12 +8,6 @@
       <i class="bi bi-pencil"></i> 編集する
     </a>
     
-    <!-- 売却済みでなく、取引記録の場合のみ表示 -->
-    {% if not is_memo and not is_sold %}
-    <a href="{% url 'stockdiary:sell_specific' diary.id %}" class="context-menu-item">
-      <i class="bi bi-cash-coin"></i> 売却登録
-    </a>
-    {% endif %}
     
     <!-- 売却済みの場合のみ表示 -->
     {% if is_sold %}

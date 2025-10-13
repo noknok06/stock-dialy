@@ -1,0 +1,756 @@
+{% load stockdiary_filters %}
+{% load humanize %}
+
+<div class="px-2 py-3">
+  <!-- 取引サマリー -->
+  <div class="transaction-summary mb-4">
+    <div class="row g-3">
+      <div class="col-md-3 col-6">
+        <div class="summary-card">
+          <div class="summary-label">現在保有数</div>
+          <div class="summary-value">
+            {{ diary.current_quantity|floatformat:0 }}<span class="unit">株</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="summary-card">
+          <div class="summary-label">平均取得単価</div>
+          <div class="summary-value">
+            {% if diary.average_purchase_price %}
+              {{ diary.average_purchase_price|floatformat:2|intcomma }}<span class="unit">円</span>
+            {% else %}
+              <span class="text-muted">--</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="summary-card">
+          <div class="summary-label">総取得原価</div>
+          <div class="summary-value">
+            {{ diary.total_cost|floatformat:0|intcomma }}<span class="unit">円</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="summary-card {% if diary.realized_profit > 0 %}profit{% elif diary.realized_profit < 0 %}loss{% endif %}">
+          <div class="summary-label">実現損益</div>
+          <div class="summary-value">
+            {% if diary.realized_profit > 0 %}+{% endif %}{{ diary.realized_profit|floatformat:0|intcomma }}<span class="unit">円</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- アクションボタン -->
+  <div class="d-flex gap-2 mb-3">
+    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#transactionModal"
+            onclick="openTransactionModal('buy')">
+      <i class="bi bi-cart-plus me-1"></i>購入を追加
+    </button>
+    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#transactionModal"
+            onclick="openTransactionModal('sell')" {% if diary.current_quantity == 0 %}disabled{% endif %}>
+      <i class="bi bi-cart-dash me-1"></i>売却を追加
+    </button>
+    <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#stockSplitModal">
+      <i class="bi bi-scissors me-1"></i>株式分割を追加
+    </button>
+  </div>
+
+  <!-- 取引履歴 -->
+  {% if transactions or stock_splits %}
+  <div class="transaction-list">
+    <h6 class="mb-3">
+      <i class="bi bi-clock-history me-1"></i>取引履歴（全{{ transactions|length }}件）
+    </h6>
+
+    {% for item in combined_history %}
+      {% if item.type == 'transaction' %}
+        {% with transaction=item.data %}
+        <div class="transaction-item mb-3">
+          <div class="transaction-header">
+            <div class="transaction-date">
+              <i class="bi bi-calendar-date"></i>
+              {{ transaction.transaction_date|date:"Y年m月d日" }}
+            </div>
+            <div class="transaction-badges">
+              <span class="badge {% if transaction.transaction_type == 'buy' %}bg-primary{% else %}bg-danger{% endif %}">
+                {{ transaction.get_transaction_type_display }}
+              </span>
+              <button class="btn btn-sm btn-outline-secondary" 
+                      onclick="editTransaction({{ transaction.id }})">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger" 
+                      onclick="deleteTransaction({{ transaction.id }}, '{{ transaction.transaction_date|date:"Y年m月d日" }}')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="transaction-body">
+            <div class="transaction-details">
+              <div class="detail-row">
+                <span class="detail-label">単価:</span>
+                <span class="detail-value">{{ transaction.price|floatformat:2|intcomma }}円</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">数量:</span>
+                <span class="detail-value">{{ transaction.quantity|floatformat:0 }}株</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">金額:</span>
+                <span class="detail-value strong">{{ transaction.amount|floatformat:0|intcomma }}円</span>
+              </div>
+            </div>
+
+            {% if transaction.quantity_after is not None %}
+            <div class="transaction-status">
+              <small class="text-muted">
+                取引後: {{ transaction.quantity_after|floatformat:0 }}株
+                {% if transaction.average_price_after %}
+                  (平均: {{ transaction.average_price_after|floatformat:2|intcomma }}円)
+                {% endif %}
+              </small>
+            </div>
+            {% endif %}
+
+            {% if transaction.memo %}
+            <div class="transaction-memo">
+              <i class="bi bi-chat-left-text text-muted me-1"></i>
+              <small>{{ transaction.memo }}</small>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endwith %}
+
+      {% elif item.type == 'split' %}
+        {% with split=item.data %}
+        <div class="split-item mb-3">
+          <div class="split-header">
+            <div class="split-date">
+              <i class="bi bi-scissors"></i>
+              {{ split.split_date|date:"Y年m月d日" }}
+            </div>
+            <div class="split-badges">
+              <span class="badge bg-info">株式分割</span>
+              {% if split.is_applied %}
+                <span class="badge bg-success">適用済み</span>
+              {% else %}
+                <button class="btn btn-sm btn-warning" 
+                        onclick="applySplit({{ split.id }})">
+                  <i class="bi bi-check-circle me-1"></i>適用
+                </button>
+                <button class="btn btn-sm btn-outline-danger" 
+                        onclick="deleteSplit({{ split.id }})">
+                  <i class="bi bi-trash"></i>
+                </button>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="split-body">
+            <div class="split-details">
+              <div class="detail-row">
+                <span class="detail-label">分割比率:</span>
+                <span class="detail-value">1株 → {{ split.split_ratio|floatformat:2 }}株</span>
+              </div>
+            </div>
+
+            {% if split.memo %}
+            <div class="split-memo">
+              <i class="bi bi-chat-left-text text-muted me-1"></i>
+              <small>{{ split.memo }}</small>
+            </div>
+            {% endif %}
+
+            {% if not split.is_applied %}
+            <div class="alert alert-warning mt-2 mb-0 small">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              この分割を適用すると、分割日以前の取引が自動調整されます
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endwith %}
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">
+      <i class="bi bi-cart-x"></i>
+    </div>
+    <h6>取引記録はまだありません</h6>
+    <p class="text-muted mb-0">「購入を追加」ボタンから最初の取引を記録しましょう</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- 取引追加・編集モーダル -->
+<div class="modal fade" id="transactionModal" tabindex="-1" aria-labelledby="transactionModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="transactionModalLabel">取引を追加</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form method="post" action="{% url 'stockdiary:add_transaction' diary.id %}" id="transactionForm">
+          {% csrf_token %}
+          <input type="hidden" name="transaction_id" id="transaction_id">
+          
+          <div class="modal-body">
+            <!-- フォーム内容 -->
+            <div class="mb-3">
+              <label for="transaction_type" class="form-label">取引種別<span class="text-danger">*</span></label>
+              <select class="form-select" name="transaction_type" id="transaction_type" required>
+                <option value="buy">購入</option>
+                <option value="sell">売却</option>
+              </select>
+            </div>
+  
+            <div class="mb-3">
+              <label for="transaction_date" class="form-label">取引日<span class="text-danger">*</span></label>
+              <input type="date" class="form-control" name="transaction_date" id="transaction_date" required>
+            </div>
+  
+            <div class="mb-3">
+              <label for="price" class="form-label">単価（円）<span class="text-danger">*</span></label>
+              <input type="number" class="form-control" name="price" id="price" 
+                     step="0.01" min="0.01" max="9999999.99" placeholder="例: 1000.00" required>
+              <small class="form-text text-muted">1株あたりの単価を入力</small>
+            </div>
+  
+            <div class="mb-3">
+              <label for="quantity" class="form-label">数量（株）<span class="text-danger">*</span></label>
+              <input type="number" class="form-control" name="quantity" id="quantity" 
+                     step="1" min="1" max="99999999" placeholder="例: 100" required>
+              <small class="form-text text-muted">取引する株数を入力</small>
+              <div id="quantity-warning" class="text-danger small mt-1" style="display: none;">
+                保有数（<span id="current-holdings">0</span>株）を超える売却はできません
+              </div>
+            </div>
+  
+            <div class="mb-3">
+              <label for="memo" class="form-label">メモ（任意）</label>
+              <textarea class="form-control" name="memo" id="memo" rows="3" 
+                        maxlength="500" placeholder="取引に関するメモ"></textarea>
+            </div>
+  
+            <!-- 計算結果表示 -->
+            <div id="transaction-preview" class="alert alert-info" style="display: none;">
+              <strong>取引金額:</strong> <span id="transaction-amount">0</span>円
+            </div>
+          </div>
+  
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" id="modal-close-btn">キャンセル</button>
+            <button type="submit" class="btn btn-primary" id="submit-transaction">
+              <i class="bi bi-save me-1"></i>保存
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+<!-- 株式分割モーダル -->
+<div class="modal fade" id="stockSplitModal" tabindex="-1" aria-labelledby="stockSplitModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="stockSplitModalLabel">株式分割を追加</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" action="{% url 'stockdiary:add_stock_split' diary.id %}" id="stockSplitForm">
+        {% csrf_token %}
+        
+        <div class="modal-body">
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            株式分割の情報を登録します。「適用」すると分割日以前の取引が自動調整されます。
+          </div>
+
+          <div class="mb-3">
+            <label for="split_date" class="form-label">分割実行日<span class="text-danger">*</span></label>
+            <input type="date" class="form-control" name="split_date" id="split_date" required>
+            <small class="form-text text-muted">株式分割が実行される日付</small>
+          </div>
+
+          <div class="mb-3">
+            <label for="split_ratio" class="form-label">分割比率<span class="text-danger">*</span></label>
+            <input type="number" class="form-control" name="split_ratio" id="split_ratio" 
+                   step="0.0001" min="0.0001" placeholder="例: 2.0" required>
+            <small class="form-text text-muted">1株が何株になるか（例: 1→2株なら「2.0」）</small>
+          </div>
+
+          <div class="mb-3">
+            <label for="split_memo" class="form-label">メモ（任意）</label>
+            <textarea class="form-control" name="memo" id="split_memo" rows="3" 
+                      maxlength="500" placeholder="分割に関するメモ"></textarea>
+          </div>
+
+          <!-- 例の表示 -->
+          <div class="alert alert-success">
+            <strong>分割の例:</strong><br>
+            • 1株→2株の分割: 2.0<br>
+            • 1株→3株の分割: 3.0<br>
+            • 5株→1株の併合: 0.2
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+          <button type="submit" class="btn btn-info">
+            <i class="bi bi-scissors me-1"></i>追加
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.transaction-summary {
+  background-color: #f8f9fa;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.summary-card {
+  background-color: white;
+  border-radius: 0.375rem;
+  padding: 1rem;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.summary-card.profit {
+  border-left: 4px solid #22c55e;
+}
+
+.summary-card.loss {
+  border-left: 4px solid #ef4444;
+}
+
+.summary-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.summary-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.summary-value .unit {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #6b7280;
+  margin-left: 0.25rem;
+}
+
+.transaction-item, .split-item {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.transaction-header, .split-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.transaction-date, .split-date {
+  font-weight: 500;
+  color: #374151;
+}
+
+.transaction-badges, .split-badges {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.transaction-body, .split-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.transaction-details, .split-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.5rem;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+}
+
+.detail-label {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.detail-value {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.detail-value.strong {
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+.transaction-status, .transaction-memo, .split-memo {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6b7280;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+  .summary-value {
+    font-size: 1rem;
+  }
+
+  .transaction-details, .split-details {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<script>
+    const CURRENT_HOLDINGS = {{ diary.current_quantity }};
+    let transactionModal = null;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      // モーダルインスタンスの初期化
+      const modalElement = document.getElementById('transactionModal');
+      if (modalElement) {
+        transactionModal = new bootstrap.Modal(modalElement, {
+          backdrop: 'static',
+          keyboard: false
+        });
+        
+        // モーダルが完全に閉じた後のクリーンアップ
+        modalElement.addEventListener('hidden.bs.modal', function () {
+          cleanupModal();
+        });
+        
+        // モーダルが表示された後の処理
+        modalElement.addEventListener('shown.bs.modal', function () {
+          // 最初の入力フィールドにフォーカス
+          document.getElementById('transaction_type')?.focus();
+        });
+      }
+      
+      // キャンセルボタンのイベント
+      const closeBtn = document.getElementById('modal-close-btn');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+          closeModal();
+        });
+      }
+      
+      // フォーム送信
+      const form = document.getElementById('transactionForm');
+      if (form) {
+        form.addEventListener('submit', function(e) {
+          const errors = validateTransactionForm();
+          if (errors.length > 0) {
+            e.preventDefault();
+            alert('入力エラー:\n' + errors.join('\n'));
+            return false;
+          }
+          
+          // 送信ボタンを無効化
+          const submitBtn = document.getElementById('submit-transaction');
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>保存中...';
+        });
+      }
+      
+      // プレビューの更新
+      ['price', 'quantity', 'transaction_type'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.addEventListener('input', updateTransactionPreview);
+          element.addEventListener('change', updateTransactionPreview);
+        }
+      });
+    });
+    
+    // モーダルを開く
+    function openTransactionModal(type) {
+      // 既存のbackdropをクリーンアップ
+      cleanupModal();
+      
+      // フォームをリセット
+      const form = document.getElementById('transactionForm');
+      if (form) {
+        form.reset();
+      }
+      
+      document.getElementById('transaction_id').value = '';
+      document.getElementById('transactionModalLabel').textContent = 
+        type === 'buy' ? '購入を追加' : '売却を追加';
+      
+      document.getElementById('transaction_type').value = type;
+      
+      // 今日の日付を設定
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('transaction_date').value = today;
+      
+      // プレビューをリセット
+      document.getElementById('transaction-preview').style.display = 'none';
+      document.getElementById('quantity-warning').style.display = 'none';
+      
+      // 送信ボタンを有効化
+      const submitBtn = document.getElementById('submit-transaction');
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="bi bi-save me-1"></i>保存';
+      
+      // フォームのアクションURLを設定
+      form.action = '{% url "stockdiary:add_transaction" diary.id %}';
+      
+      // モーダルを表示
+      if (transactionModal) {
+        transactionModal.show();
+      }
+    }
+    
+    // モーダルを閉じる
+    function closeModal() {
+      if (transactionModal) {
+        transactionModal.hide();
+      }
+      // 念のため少し待ってからクリーンアップ
+      setTimeout(cleanupModal, 300);
+    }
+    
+    // モーダルのクリーンアップ
+    function cleanupModal() {
+      // すべてのbackdropを削除
+      document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+        backdrop.remove();
+      });
+      
+      // bodyのクラスをクリーンアップ
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    }
+    
+    // バリデーション
+    function validateTransactionForm() {
+      const errors = [];
+      const price = parseFloat(document.getElementById('price').value);
+      const quantity = parseFloat(document.getElementById('quantity').value);
+      const transactionType = document.getElementById('transaction_type').value;
+      
+      if (isNaN(price) || price <= 0) {
+        errors.push('単価は正の数を入力してください');
+      } else if (price > 9999999.99) {
+        errors.push('単価は999万9999円以下で入力してください');
+      }
+      
+      if (isNaN(quantity) || quantity <= 0) {
+        errors.push('数量は正の数を入力してください');
+      } else if (quantity > 99999999) {
+        errors.push('数量は9999万株以下で入力してください');
+      }
+      
+      if (transactionType === 'sell' && quantity > CURRENT_HOLDINGS) {
+        errors.push(`保有数（${CURRENT_HOLDINGS}株）を超える売却はできません`);
+      }
+      
+      return errors;
+    }
+    
+    // プレビュー更新
+    function updateTransactionPreview() {
+      const price = parseFloat(document.getElementById('price').value) || 0;
+      const quantity = parseFloat(document.getElementById('quantity').value) || 0;
+      const type = document.getElementById('transaction_type').value;
+      
+      if (price > 0 && quantity > 0) {
+        const amount = price * quantity;
+        document.getElementById('transaction-amount').textContent = amount.toLocaleString();
+        document.getElementById('transaction-preview').style.display = 'block';
+      } else {
+        document.getElementById('transaction-preview').style.display = 'none';
+      }
+      
+      // 売却時の保有数チェック
+      if (type === 'sell' && quantity > CURRENT_HOLDINGS) {
+        document.getElementById('current-holdings').textContent = CURRENT_HOLDINGS;
+        document.getElementById('quantity-warning').style.display = 'block';
+      } else {
+        document.getElementById('quantity-warning').style.display = 'none';
+      }
+    }
+    
+    // 取引編集
+    function editTransaction(transactionId) {
+      cleanupModal();
+      
+      fetch(`/stockdiary/transaction/${transactionId}/`)
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('transaction_id').value = transactionId;
+          document.getElementById('transactionModalLabel').textContent = '取引を編集';
+          document.getElementById('transaction_type').value = data.transaction_type;
+          document.getElementById('transaction_date').value = data.transaction_date;
+          document.getElementById('price').value = data.price;
+          document.getElementById('quantity').value = data.quantity;
+          document.getElementById('memo').value = data.memo || '';
+          
+          const form = document.getElementById('transactionForm');
+          form.action = `/stockdiary/transaction/${transactionId}/update/`;
+          
+          updateTransactionPreview();
+          
+          if (transactionModal) {
+            transactionModal.show();
+          }
+        })
+        .catch(error => {
+          alert('取引データの取得に失敗しました: ' + error);
+        });
+    }
+    
+    // 取引削除
+    function deleteTransaction(transactionId, date) {
+      if (confirm(`${date}の取引を削除しますか？\n\n※ この操作は元に戻せません。削除後、平均取得単価が再計算されます。`)) {
+        fetch(`/stockdiary/transaction/${transactionId}/delete/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+          }
+        })
+        .then(response => {
+          if (response.ok) {
+            location.reload();
+          } else {
+            alert('削除に失敗しました');
+          }
+        })
+        .catch(error => {
+          alert('削除中にエラーが発生しました: ' + error);
+        });
+      }
+    }
+    
+    // 株式分割関連
+    function applySplit(splitId) {
+      if (confirm('株式分割を適用しますか？\n\n※ 分割日以前の全取引が自動調整されます。\n※ 適用後は編集・削除できなくなります。')) {
+        fetch(`/stockdiary/stock-split/${splitId}/apply/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+          }
+        })
+        .then(response => {
+          if (response.ok) {
+            location.reload();
+          } else {
+            alert('適用に失敗しました');
+          }
+        })
+        .catch(error => {
+          alert('適用中にエラーが発生しました: ' + error);
+        });
+      }
+    }
+    
+    function deleteSplit(splitId) {
+      if (confirm('この株式分割情報を削除しますか？')) {
+        fetch(`/stockdiary/stock-split/${splitId}/delete/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+          }
+        })
+        .then(response => {
+          if (response.ok) {
+            location.reload();
+          } else {
+            alert('削除に失敗しました');
+          }
+        })
+        .catch(error => {
+          alert('削除中にエラーが発生しました: ' + error);
+        });
+      }
+    }
+    
+    // ページ離脱時のクリーンアップ
+    window.addEventListener('beforeunload', function() {
+      cleanupModal();
+    });
+    
+    // Escキーでモーダルを閉じる（カスタムハンドリング）
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        const modalElement = document.getElementById('transactionModal');
+        if (modalElement && modalElement.classList.contains('show')) {
+          closeModal();
+        }
+      }
+    });
+    </script>
+    
+    <style>
+    /* モーダルのz-index調整 */
+    .modal {
+      z-index: 1050;
+    }
+    
+    .modal-backdrop {
+      z-index: 1040;
+    }
+    
+    /* モーダルが複数重ならないようにする */
+    body.modal-open {
+      overflow: hidden;
+    }
+    
+    /* backdrop が残らないようにする */
+    .modal-backdrop.fade.show {
+      opacity: 0.5;
+    }
+    
+    /* モーダルのアニメーション改善 */
+    .modal.fade .modal-dialog {
+      transition: transform 0.3s ease-out;
+    }
+    
+    .modal.show .modal-dialog {
+      transform: none;
+    }
+    </style>

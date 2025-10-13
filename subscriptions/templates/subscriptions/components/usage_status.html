@@ -42,22 +42,6 @@
         
         <div class="mb-3">
             <div class="d-flex justify-content-between">
-                <small>スナップショット使用状況</small>
-                <small>{{ usage.snapshots }} / {{ plan_limits.max_snapshots }}回</small>
-            </div>
-            <div class="progress" style="height: 6px;">
-                <div class="progress-bar {% if usage_percent.snapshots > 90 %}bg-danger{% elif usage_percent.snapshots > 70 %}bg-warning{% else %}bg-success{% endif %}" 
-                    role="progressbar" 
-                    style="width: {{ usage_percent.snapshots }}%" 
-                    aria-valuenow="{{ usage_percent.snapshots }}" 
-                    aria-valuemin="0" 
-                    aria-valuemax="100">
-                </div>
-            </div>
-        </div>
-        
-        <div class="mb-3">
-            <div class="d-flex justify-content-between">
                 <small>株式記録使用状況</small>
                 <small>{{ usage.records }} / {{ plan_limits.max_records }}件</small>
             </div>

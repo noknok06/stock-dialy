@@ -1,0 +1,159 @@
+/* static/css/modal-fixes.css */
+/* モーダル背景の問題を修正するCSS */
+
+/* モーダルとバックドロップのz-indexを明確に定義 */
+.modal-backdrop {
+    z-index: 1040 !important;
+  }
+  
+  .modal {
+    z-index: 1050 !important;
+  }
+  
+  /* モーダルが開いているときのbodyのオーバーフロー */
+  body.modal-open {
+    overflow: hidden !important;
+    padding-right: 0 !important; /* スクロールバー分のパディング調整 */
+  }
+  
+  /* バックドロップが複数存在する場合の対処 */
+  .modal-backdrop + .modal-backdrop {
+    display: none !important;
+  }
+  
+  /* バックドロップのアニメーション */
+  .modal-backdrop.fade {
+    transition: opacity 0.15s linear;
+  }
+  
+  .modal-backdrop.show {
+    opacity: 0.5;
+  }
+  
+  /* モーダルが完全に表示されるまでバックドロップをクリック不可に */
+  .modal.fade .modal-dialog {
+    transition: transform 0.3s ease-out;
+    transform: translate(0, -50px);
+  }
+  
+  .modal.show .modal-dialog {
+    transform: none;
+  }
+  
+  /* 孤立したバックドロップを非表示にする（デバッグ用） */
+  .modal-backdrop:not(.show) {
+    display: none !important;
+  }
+  
+  /* モーダルが閉じているのにバックドロップが残っている場合 */
+  body:not(.modal-open) .modal-backdrop {
+    display: none !important;
+  }
+  
+  /* モーダルのスタック管理 */
+  .modal:nth-of-type(even) {
+    z-index: 1052 !important;
+  }
+  
+  .modal:nth-of-type(even) ~ .modal-backdrop {
+    z-index: 1051 !important;
+  }
+  
+  /* モーダルが閉じた後のクリーンアップアニメーション */
+  .modal.fade:not(.show) {
+    transition: opacity 0.15s linear;
+    opacity: 0;
+    pointer-events: none;
+  }
+  
+  /* バックドロップのクリックイベントを確実にする */
+  .modal-backdrop {
+    pointer-events: auto !important;
+  }
+  
+  /* モーダルダイアログ内のクリックは通過させる */
+  .modal-dialog {
+    pointer-events: auto !important;
+  }
+  
+  /* デバッグ用: バックドロップに赤い枠線を表示（開発時のみ使用） */
+  /* 
+  .modal-backdrop {
+    border: 2px solid red !important;
+  }
+  */
+  
+  /* レスポンシブ対応 */
+  @media (max-width: 576px) {
+    .modal-dialog {
+      margin: 0.5rem;
+      max-width: calc(100% - 1rem);
+    }
+    
+    body.modal-open {
+      padding-right: 0 !important;
+    }
+  }
+  
+  /* スクロールバーのちらつき防止 */
+  html {
+    overflow-y: scroll;
+  }
+  
+  /* モーダルが複数開いている場合の対処（通常は1つのみ） */
+  body.modal-open .modal.show:not(:last-of-type) {
+    z-index: 1049 !important;
+  }
+  
+  /* 最後に開いたモーダルを最前面に */
+  body.modal-open .modal.show:last-of-type {
+    z-index: 1055 !important;
+  }
+  
+  /* 対応するバックドロップも調整 */
+  body.modal-open .modal-backdrop:last-of-type {
+    z-index: 1054 !important;
+  }
+  
+  /* アニメーションの改善 */
+  .modal.fade.show {
+    display: block !important;
+    opacity: 1;
+  }
+  
+  .modal-backdrop.fade.show {
+    display: block !important;
+    opacity: 0.5;
+  }
+  
+  /* 強制的なクリーンアップ用クラス */
+  .force-hide-backdrop .modal-backdrop {
+    display: none !important;
+    opacity: 0 !important;
+  }
+  
+  .force-modal-close .modal {
+    display: none !important;
+    opacity: 0 !important;
+  }
+  
+  /* パフォーマンス最適化 */
+  .modal-backdrop,
+  .modal {
+    will-change: opacity;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  
+  /* iOS Safari対応 */
+  @supports (-webkit-touch-callout: none) {
+    body.modal-open {
+      position: fixed;
+      width: 100%;
+    }
+  }
+  
+  /* スムーズスクロールの無効化（モーダル表示時） */
+  body.modal-open {
+    scroll-behavior: auto !important;
+  }

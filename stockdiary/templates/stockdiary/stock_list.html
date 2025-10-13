@@ -944,13 +944,6 @@ function renderDiaryList(diaries, stockName) {
             statusBadge = '<span class="badge bg-light text-dark">メモのみ</span>';
         }
         
-        const purchaseInfo = hasPurchaseData ? 
-            `${Number(diary.purchase_price).toLocaleString()}円 × ${diary.purchase_quantity.toLocaleString()}株` : 
-            'メモのみ';
-        
-        const sellInfo = diary.sell_date && diary.sell_price ? 
-            `<div class="small text-muted">売却: ${diary.sell_date} (${Number(diary.sell_price).toLocaleString()}円)</div>` : 
-            '';
         
         html += `
             <div class="diary-item-modal mb-3" onclick="goToDiary(${diary.id})">

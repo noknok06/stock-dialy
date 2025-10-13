@@ -724,13 +724,7 @@ class SubscriptionUsageView(LoginRequiredMixin, TemplateView):
             template_count = templates.count()
             template_limit = plan.max_templates
             template_percent = int(template_count / template_limit * 100) if template_limit > 0 else 0 if template_limit == -1 else 100
-            
-            # スナップショットデータ
-            snapshots = user.portfoliosnapshot_set.all()
-            snapshot_count = snapshots.count()
-            snapshot_limit = plan.max_snapshots
-            snapshot_percent = int(snapshot_count / snapshot_limit * 100) if snapshot_limit > 0 else 0 if snapshot_limit == -1 else 100
-            
+                        
             # 株式記録データ
             records = user.stockdiary_set.all()
             record_count = records.count()
@@ -755,14 +749,6 @@ class SubscriptionUsageView(LoginRequiredMixin, TemplateView):
                         'percent': template_percent,
                         'name': '分析テンプレート',
                         'status': 'danger' if template_percent > 90 else 'warning' if template_percent > 70 else 'success',
-                    },
-                    'snapshots': {
-                        'items': snapshots,
-                        'count': snapshot_count,
-                        'limit': snapshot_limit,
-                        'percent': snapshot_percent,
-                        'name': 'スナップショット',
-                        'status': 'danger' if snapshot_percent > 90 else 'warning' if snapshot_percent > 70 else 'success',
                     },
                     'records': {
                         'items': records,

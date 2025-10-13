@@ -11,7 +11,6 @@ class SubscriptionPlan(models.Model):
     slug = models.SlugField(unique=True)
     max_tags = models.IntegerField(default=5)
     max_templates = models.IntegerField(default=3)
-    max_snapshots = models.IntegerField(default=3)
     max_records = models.IntegerField(default=30)
     show_ads = models.BooleanField(default=True)
     export_enabled = models.BooleanField(default=False)

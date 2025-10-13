@@ -1,156 +1,203 @@
 # stockdiary/models.py
 from django.db import models
 from django.contrib.auth import get_user_model
-from tags.models import Tag
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.urls import reverse
+from django.db.models import Sum, F, Q, Count
+from django.utils import timezone
+from decimal import Decimal, ROUND_HALF_UP
 import os
 import uuid
 from PIL import Image
 import io
+from tags.models import Tag
 
 
 def get_diary_image_path(instance, filename):
     """日記画像のアップロードパスを生成"""
-    # ファイル拡張子を取得
     ext = filename.split('.')[-1].lower()
-    # UUIDでファイル名を生成
     filename = f"{uuid.uuid4().hex}.{ext}"
-    # ユーザーIDごとにディレクトリを分ける
     return f"diary_images/{instance.user.id}/{filename}"
 
 
 def get_note_image_path(instance, filename):
     """継続記録画像のアップロードパスを生成"""
-    # ファイル拡張子を取得
     ext = filename.split('.')[-1].lower()
-    # UUIDでファイル名を生成
     filename = f"{uuid.uuid4().hex}.{ext}"
-    # ユーザーIDごとにディレクトリを分ける
     return f"note_images/{instance.diary.user.id}/{filename}"
 
 
 class StockDiary(models.Model):
+    """株式投資日記（基本情報のみ）"""
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    stock_symbol = models.CharField(max_length=50, blank=True, db_index=True)
-    stock_name = models.CharField(max_length=100)
-    purchase_date = models.DateField(db_index=True)
-    purchase_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    purchase_quantity = models.IntegerField(null=True, blank=True)
-    reason = models.TextField(verbose_name='購入理由', blank=True, max_length=1000)
+    stock_symbol = models.CharField(max_length=50, blank=True, db_index=True, verbose_name='銘柄コード')
+    stock_name = models.CharField(max_length=100, verbose_name='銘柄名')
+    reason = models.TextField(verbose_name='投資理由', blank=True, max_length=1000)
     checklist = models.ManyToManyField('checklist.Checklist', blank=True)
     tags = models.ManyToManyField(Tag, blank=True)
-    sell_date = models.DateField(null=True, blank=True, db_index=True)
-    sell_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    memo = models.TextField(blank=True, max_length=1000)
+    memo = models.TextField(blank=True, max_length=1000, verbose_name='メモ')
+    sector = models.CharField(max_length=50, blank=True, verbose_name='業種')
+    image = models.ImageField(upload_to=get_diary_image_path, null=True, blank=True, help_text="日記に関連する画像")
+    
+    # 集計フィールド（自動計算）
+    current_quantity = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name='現在保有数')
+    average_purchase_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name='平均取得単価')
+    total_cost = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name='総取得原価')
+    realized_profit = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name='実現損益')
+    
+    # 取引統計
+    total_bought_quantity = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name='累計購入数')
+    total_sold_quantity = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name='累計売却数')
+    total_buy_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name='累計購入額')
+    total_sell_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name='累計売却額')
+    transaction_count = models.IntegerField(default=0, verbose_name='取引回数')
+    
+    # 日付情報
+    first_purchase_date = models.DateField(null=True, blank=True, db_index=True, verbose_name='最初の購入日')
+    last_transaction_date = models.DateField(null=True, blank=True, verbose_name='最後の取引日')
+    
+    # システム情報
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
-    is_memo = models.BooleanField(default=False, verbose_name='メモ記録', db_index=True) 
-    sector = models.CharField(max_length=50, blank=True, verbose_name='業種')
-
-    # 画像関連フィールド（内部ストレージ）
-    image = models.ImageField(
-        upload_to=get_diary_image_path,
-        null=True, 
-        blank=True,
-        help_text="日記に関連する画像"
-    )
 
     class Meta:
         indexes = [
-            models.Index(fields=['user', 'purchase_date']),
+            models.Index(fields=['user', 'first_purchase_date']),
             models.Index(fields=['user', 'stock_symbol']),
-            models.Index(fields=['user', 'sell_date']),
-            models.Index(fields=['user', 'is_memo']),
+            models.Index(fields=['user', 'current_quantity']),
         ]
+        verbose_name = '株式日記'
+        verbose_name_plural = '株式日記'
     
-    def clean(self):
-        """モデルレベルでのバリデーション"""
-        super().clean()
+    def __str__(self):
+        return f"{self.stock_name} ({self.stock_symbol})"
+
+    @property
+    def is_memo(self):
+        """メモ記録かどうか（取引がない場合）"""
+        return self.transaction_count == 0
+    
+    @property
+    def is_holding(self):
+        """保有中かどうか"""
+        return self.current_quantity > 0
+    
+    @property
+    def is_sold_out(self):
+        """売却済みかどうか（取引はあるが保有数ゼロ）"""
+        return self.transaction_count > 0 and self.current_quantity == 0
+    
+    def update_aggregates(self):
+        """集計フィールドを再計算"""
+        transactions = self.transactions.all().order_by('transaction_date', 'created_at')
         
-        # stock_nameの文字数チェック
-        if self.stock_name and len(self.stock_name) > 100:
-            raise ValidationError({
-                'stock_name': '銘柄名は100文字以内で入力してください。'
-            })
+        # 初期化
+        self.current_quantity = Decimal('0')
+        self.total_cost = Decimal('0')
+        self.realized_profit = Decimal('0')
+        self.total_bought_quantity = Decimal('0')
+        self.total_sold_quantity = Decimal('0')
+        self.total_buy_amount = Decimal('0')
+        self.total_sell_amount = Decimal('0')
+        self.transaction_count = 0
+        self.first_purchase_date = None
+        self.last_transaction_date = None
+        self.average_purchase_price = None
         
-        # reasonの文字数チェック
-        if self.reason and len(self.reason) > 1000:
-            raise ValidationError({
-                'reason': '購入理由は1000文字以内で入力してください。'
-            })
+        # 株式分割の適用
+        splits = self.stock_splits.filter(is_applied=True).order_by('split_date')
         
-        # memoの文字数チェック
-        if self.memo and len(self.memo) > 1000:
-            raise ValidationError({
-                'memo': 'メモは1000文字以内で入力してください。'
-            })
+        for transaction in transactions:
+            # 分割調整を適用
+            adjusted_quantity = transaction.quantity
+            adjusted_price = transaction.price
+            
+            for split in splits:
+                if transaction.transaction_date < split.split_date:
+                    adjusted_quantity = adjusted_quantity * split.split_ratio
+                    adjusted_price = adjusted_price / split.split_ratio
+            
+            if transaction.transaction_type == 'buy':
+                # 購入処理
+                buy_amount = adjusted_price * adjusted_quantity
+                self.total_cost += buy_amount
+                self.current_quantity += adjusted_quantity
+                self.total_bought_quantity += adjusted_quantity
+                self.total_buy_amount += buy_amount
+                
+                # 最初の購入日を記録
+                if self.first_purchase_date is None:
+                    self.first_purchase_date = transaction.transaction_date
+                
+            elif transaction.transaction_type == 'sell':
+                # 売却処理
+                if self.current_quantity > 0:
+                    # 平均取得単価を計算
+                    avg_price = self.total_cost / self.current_quantity
+                    
+                    # 売却原価と売却代金
+                    sell_cost = avg_price * adjusted_quantity
+                    sell_amount = adjusted_price * adjusted_quantity
+                    
+                    # 実現損益を計算
+                    profit = sell_amount - sell_cost
+                    self.realized_profit += profit
+                    
+                    # 総原価と保有数を減少
+                    self.total_cost -= sell_cost
+                    self.current_quantity -= adjusted_quantity
+                    self.total_sold_quantity += adjusted_quantity
+                    self.total_sell_amount += sell_amount
+            
+            self.transaction_count += 1
+            self.last_transaction_date = transaction.transaction_date
         
-    def save(self, *args, **kwargs):
-        # 売却情報が設定されている場合は購入情報もチェック
-        if self.sell_date is not None and not self.can_be_sold():
-            raise ValueError("購入価格と株数が設定されていない株式は売却できません")
+        # 平均取得単価を計算
+        if self.current_quantity > 0:
+            self.average_purchase_price = (self.total_cost / self.current_quantity).quantize(
+                Decimal('0.01'), rounding=ROUND_HALF_UP
+            )
         
-        # 価格や数量が入力されているかを確認してメモフラグを設定
-        if self.purchase_price is None or self.purchase_quantity is None:
-            self.is_memo = True
-        else:
-            self.is_memo = False
+        # 数値の丸め処理
+        self.current_quantity = self.current_quantity.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        self.total_cost = self.total_cost.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        self.realized_profit = self.realized_profit.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         
-        # バリデーションを実行
-        self.full_clean()
-        
-        super().save(*args, **kwargs)
+        self.save()
 
     def process_and_save_image(self, image_file):
         """画像を圧縮・処理して保存"""
         try:
-            # 既存の画像があれば削除
             if self.image:
                 self.delete_image()
             
-            # 画像を開く
             img = Image.open(image_file)
             
-            # RGBA画像の場合はRGBに変換
             if img.mode in ('RGBA', 'LA', 'P'):
-                # 白背景でRGBに変換
                 background = Image.new('RGB', img.size, (255, 255, 255))
                 if img.mode == 'P':
                     img = img.convert('RGBA')
                 background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
                 img = background
             
-            # リサイズ処理（アスペクト比を保持）
             max_width, max_height = 800, 600
             img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
             
-            # 圧縮して保存
             output = io.BytesIO()
             
-            # 元のフォーマットを確認
-            original_format = img.format or 'JPEG'
-            
-            # WebPをサポートしている場合は優先的に使用
             try:
                 img.save(output, format='WebP', quality=85, optimize=True)
                 format_used = 'webp'
             except Exception:
-                # WebPが使用できない場合はJPEGにフォールバック
                 img.save(output, format='JPEG', quality=85, optimize=True)
                 format_used = 'jpg'
             
-            # ファイル名を生成
-            file_extension = format_used
-            filename = f"{uuid.uuid4().hex}.{file_extension}"
-            
-            # ContentFileとして保存
+            filename = f"{uuid.uuid4().hex}.{format_used}"
             content_file = ContentFile(output.getvalue())
             
-            # ImageFieldに保存
             self.image.save(filename, content_file, save=False)
             self.save(update_fields=['image'])
             
@@ -164,53 +211,16 @@ class StockDiary(models.Model):
         """画像を削除"""
         try:
             if self.image:
-                # ファイルを削除
                 self.image.delete(save=False)
-                # フィールドをクリア
                 self.image = None
                 self.save(update_fields=['image'])
                 return True
         except Exception as e:
             print(f"Image deletion failed: {str(e)}")
         return False
-        
-    def __str__(self):
-        return f"{self.stock_name} ({self.stock_symbol})"
-
-    def add_checklist(self, checklist):
-        """チェックリストを日記に追加し、関連するアイテムの状態を初期化する"""
-        from checklist.models import DiaryChecklistItem
-        
-        # チェックリストを追加
-        self.checklist.add(checklist)
-        
-        # 関連するアイテムごとにDiaryChecklistItemを作成
-        for item in checklist.items.all():
-            DiaryChecklistItem.objects.get_or_create(
-                diary=self,
-                checklist_item=item,
-                defaults={'status': False}
-            )
-
-    def get_checklist_item_status(self, checklist_item):
-        """特定のチェックリストアイテムの状態を取得"""
-        from checklist.models import DiaryChecklistItem
-        
-        try:
-            item_status = DiaryChecklistItem.objects.get(
-                diary=self,
-                checklist_item=checklist_item
-            )
-            return item_status.status
-        except DiaryChecklistItem.DoesNotExist:
-            return False            
-
-    def can_be_sold(self):
-        """この株式が売却可能かどうかを確認"""
-        return self.purchase_price is not None and self.purchase_quantity is not None and not self.is_memo
 
     def get_image_url(self):
-        """画像URLを取得（ユーザー認証付き）"""
+        """画像URLを取得"""
         if self.image:
             return reverse('stockdiary:serve_image', kwargs={
                 'diary_id': self.id,
@@ -218,38 +228,156 @@ class StockDiary(models.Model):
             })
         return None
 
-    def get_thumbnail_url(self, width=300, height=200):
-        """サムネイル用の画像URLを取得"""
-        if self.image:
-            return reverse('stockdiary:serve_image', kwargs={
-                'diary_id': self.id,
-                'image_type': 'diary'
-            }) + f'?thumbnail=1&w={width}&h={height}'
-        return None
-
     @property
     def image_url(self):
-        """互換性のためのプロパティ"""
         return self.get_image_url()
 
 
+class Transaction(models.Model):
+    """取引記録"""
+    TRANSACTION_TYPES = [
+        ('buy', '購入'),
+        ('sell', '売却'),
+    ]
+    
+    diary = models.ForeignKey(StockDiary, on_delete=models.CASCADE, related_name='transactions')
+    transaction_type = models.CharField(max_length=10, choices=TRANSACTION_TYPES, verbose_name='取引種別')
+    transaction_date = models.DateField(verbose_name='取引日', db_index=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='単価')
+    quantity = models.DecimalField(max_digits=15, decimal_places=2, verbose_name='数量')
+    memo = models.TextField(blank=True, max_length=500, verbose_name='メモ')
+    
+    # 取引時点の状態（参照用）
+    quantity_after = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True, verbose_name='取引後保有数')
+    average_price_after = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name='取引後平均単価')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-transaction_date', '-created_at']
+        indexes = [
+            models.Index(fields=['diary', 'transaction_date']),
+        ]
+        verbose_name = '取引'
+        verbose_name_plural = '取引'
+
+    def __str__(self):
+        type_display = self.get_transaction_type_display()
+        return f"{self.diary.stock_name} - {type_display} {self.quantity}株 @ {self.price}円"
+
+    def clean(self):
+        """バリデーション"""
+        super().clean()
+        
+        # 価格と数量は正の数
+        if self.price <= 0:
+            raise ValidationError({'price': '価格は正の数を入力してください'})
+        
+        if self.quantity <= 0:
+            raise ValidationError({'quantity': '数量は正の数を入力してください'})
+        
+        # 売却時は保有数をチェック
+        if self.transaction_type == 'sell':
+            # 現在の保有数を計算（この取引を除く）
+            current_holdings = self.diary.current_quantity
+            if self.pk:  # 編集時は自分自身を除外
+                old_transaction = Transaction.objects.get(pk=self.pk)
+                if old_transaction.transaction_type == 'sell':
+                    current_holdings += old_transaction.quantity
+            
+            if self.quantity > current_holdings:
+                raise ValidationError({
+                    'quantity': f'保有数（{current_holdings}株）を超える売却はできません'
+                })
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+        # 保存後に日記の集計を更新
+        self.diary.update_aggregates()
+
+    def delete(self, *args, **kwargs):
+        diary = self.diary
+        super().delete(*args, **kwargs)
+        # 削除後に日記の集計を更新
+        diary.update_aggregates()
+
+    @property
+    def amount(self):
+        """取引金額"""
+        return self.price * self.quantity
+
+
+class StockSplit(models.Model):
+    """株式分割記録"""
+    diary = models.ForeignKey(StockDiary, on_delete=models.CASCADE, related_name='stock_splits')
+    split_date = models.DateField(verbose_name='分割実行日', db_index=True)
+    split_ratio = models.DecimalField(max_digits=10, decimal_places=4, verbose_name='分割比率')
+    memo = models.TextField(blank=True, max_length=500, verbose_name='メモ')
+    is_applied = models.BooleanField(default=False, verbose_name='適用済み')
+    applied_at = models.DateTimeField(null=True, blank=True, verbose_name='適用日時')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-split_date']
+        indexes = [
+            models.Index(fields=['diary', 'split_date']),
+        ]
+        verbose_name = '株式分割'
+        verbose_name_plural = '株式分割'
+
+    def __str__(self):
+        return f"{self.diary.stock_name} - {self.split_date} ({self.split_ratio}倍)"
+
+    def clean(self):
+        """バリデーション"""
+        super().clean()
+        
+        if self.split_ratio <= 0:
+            raise ValidationError({'split_ratio': '分割比率は正の数を入力してください'})
+        
+        # 適用済みの場合は削除・編集不可
+        if self.is_applied and self.pk:
+            old_split = StockSplit.objects.get(pk=self.pk)
+            if old_split.is_applied:
+                raise ValidationError('適用済みの分割情報は編集できません')
+
+    def apply_split(self):
+        """分割を適用"""
+        if self.is_applied:
+            raise ValidationError('すでに適用済みです')
+        
+        # 分割日以前の取引に対して調整
+        transactions = self.diary.transactions.filter(
+            transaction_date__lt=self.split_date
+        )
+        
+        for transaction in transactions:
+            transaction.quantity = transaction.quantity * self.split_ratio
+            transaction.price = transaction.price / self.split_ratio
+            transaction.save(update_fields=['quantity', 'price'])
+        
+        # 適用済みフラグを立てる
+        self.is_applied = True
+        self.applied_at = timezone.now()
+        self.save()
+        
+        # 日記の集計を更新
+        self.diary.update_aggregates()
+
+
 class DiaryNote(models.Model):
-    """日記エントリーへの継続的な追記"""
+    """日記への継続的な追記"""
     diary = models.ForeignKey(StockDiary, on_delete=models.CASCADE, related_name='notes')
     date = models.DateField()
     content = models.TextField(verbose_name='記録内容', blank=True, max_length=1000)
     current_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, 
                                        verbose_name='記録時点の価格')
     
-    # 画像関連フィールド（内部ストレージ）
-    image = models.ImageField(
-        upload_to=get_note_image_path,
-        null=True, 
-        blank=True,
-        help_text="継続記録に関連する画像"
-    )
+    image = models.ImageField(upload_to=get_note_image_path, null=True, blank=True, help_text="継続記録に関連する画像")
     
-    # メモタイプ
     TYPE_CHOICES = [
         ('analysis', '分析更新'),
         ('news', 'ニュース'),
@@ -260,7 +388,6 @@ class DiaryNote(models.Model):
     ]
     note_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='analysis')
     
-    # メモの重要度
     IMPORTANCE_CHOICES = [
         ('high', '高'),
         ('medium', '中'),
@@ -273,40 +400,33 @@ class DiaryNote(models.Model):
     
     class Meta:
         ordering = ['-date']
+        verbose_name = '継続記録'
+        verbose_name_plural = '継続記録'
+    
+    def __str__(self):
+        return f"{self.diary.stock_name} - {self.date}"
     
     def clean(self):
-        """モデルレベルでのバリデーション"""
         super().clean()
-        
-        # contentの文字数チェック
         if self.content and len(self.content) > 1000:
-            raise ValidationError({
-                'content': '記録内容は1000文字以内で入力してください。'
-            })
+            raise ValidationError({'content': '記録内容は1000文字以内で入力してください'})
     
     def save(self, *args, **kwargs):
-        # バリデーションを実行
         self.full_clean()
-        
-        # ノートを保存
         super().save(*args, **kwargs)
         
-        # 親日記のupdated_atを現在時刻に更新
-        from django.utils import timezone
+        # 親日記のupdated_atを更新
         self.diary.updated_at = timezone.now()
         self.diary.save(update_fields=['updated_at'])
 
     def process_and_save_image(self, image_file):
         """画像を圧縮・処理して保存"""
         try:
-            # 既存の画像があれば削除
             if self.image:
                 self.delete_image()
             
-            # 画像を開く
             img = Image.open(image_file)
             
-            # RGBA画像の場合はRGBに変換
             if img.mode in ('RGBA', 'LA', 'P'):
                 background = Image.new('RGB', img.size, (255, 255, 255))
                 if img.mode == 'P':
@@ -314,14 +434,11 @@ class DiaryNote(models.Model):
                 background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
                 img = background
             
-            # 継続記録用はサイズを小さめに設定
             max_width, max_height = 600, 400
             img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
             
-            # 圧縮して保存
             output = io.BytesIO()
             
-            # WebPをサポートしている場合は優先的に使用
             try:
                 img.save(output, format='WebP', quality=80, optimize=True)
                 format_used = 'webp'
@@ -329,14 +446,9 @@ class DiaryNote(models.Model):
                 img.save(output, format='JPEG', quality=80, optimize=True)
                 format_used = 'jpg'
             
-            # ファイル名を生成
-            file_extension = format_used
-            filename = f"{uuid.uuid4().hex}.{file_extension}"
-            
-            # ContentFileとして保存
+            filename = f"{uuid.uuid4().hex}.{format_used}"
             content_file = ContentFile(output.getvalue())
             
-            # ImageFieldに保存
             self.image.save(filename, content_file, save=False)
             self.save(update_fields=['image'])
             
@@ -357,19 +469,9 @@ class DiaryNote(models.Model):
         except Exception as e:
             print(f"Note image deletion failed: {str(e)}")
         return False
-    
-    def __str__(self):
-        return f"{self.diary.stock_name} - {self.date}"
-    
-    def get_price_change(self):
-        """購入価格からの変動率を計算"""
-        if self.current_price and self.diary.purchase_price:
-            change = ((self.current_price - self.diary.purchase_price) / self.diary.purchase_price) * 100
-            return change
-        return None
 
     def get_image_url(self):
-        """画像URLを取得（ユーザー認証付き）"""
+        """画像URLを取得"""
         if self.image:
             return reverse('stockdiary:serve_image', kwargs={
                 'diary_id': self.diary.id,
@@ -378,17 +480,13 @@ class DiaryNote(models.Model):
             })
         return None
 
-    def get_thumbnail_url(self, width=200, height=150):
-        """サムネイル用の画像URLを取得"""
-        if self.image:
-            return reverse('stockdiary:serve_image', kwargs={
-                'diary_id': self.diary.id,
-                'image_type': 'note',
-                'note_id': self.id
-            }) + f'?thumbnail=1&w={width}&h={height}'
-        return None
-
     @property
     def image_url(self):
-        """互換性のためのプロパティ"""
         return self.get_image_url()
+    
+    def get_price_change(self):
+        """購入価格からの変動率を計算"""
+        if self.current_price and self.diary.average_purchase_price:
+            change = ((self.current_price - self.diary.average_purchase_price) / self.diary.average_purchase_price) * 100
+            return change
+        return None

@@ -17,7 +17,6 @@ class Command(BaseCommand):
                 'name': 'フリープラン',
                 'max_tags': 5,
                 'max_templates': 3,
-                'max_snapshots': 3,
                 'max_records': -1,  # 無制限
                 'show_ads': True,
                 'export_enabled': False,
@@ -35,7 +34,6 @@ class Command(BaseCommand):
                 'name': 'ベーシックプラン',
                 'max_tags': 10,
                 'max_templates': 10,
-                'max_snapshots': 10,
                 'max_records': 100,
                 'show_ads': False,
                 'export_enabled': False,
@@ -53,7 +51,6 @@ class Command(BaseCommand):
                 'name': 'プロプラン',
                 'max_tags': -1,  # 無制限
                 'max_templates': -1,  # 無制限
-                'max_snapshots': -1,  # 無制限
                 'max_records': -1,  # 無制限
                 'show_ads': False,
                 'export_enabled': True,

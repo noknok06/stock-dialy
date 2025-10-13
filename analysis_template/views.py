@@ -318,18 +318,6 @@ class AnalysisReportView(LoginRequiredMixin, DetailView):
         if diary.purchase_price is None or diary.purchase_quantity is None:
             return profit_info
 
-        # 売却済みの場合
-        if diary.sell_date and diary.sell_price:
-            profit_amount = (diary.sell_price - diary.purchase_price) * diary.purchase_quantity
-            profit_percent = ((diary.sell_price - diary.purchase_price) / diary.purchase_price) * 100
-            profit_info.update({
-                'is_profitable': profit_amount > 0,
-                'profit_amount': round(float(profit_amount), 2),
-                'profit_percent': round(float(profit_percent), 2),
-                'current_price': float(diary.sell_price),
-                'has_profit_data': True
-            })
-        
         # 保有中の場合 - 最新の継続記録から現在価格を取得
         else:
             latest_note = diary.notes.filter(current_price__isnull=False).order_by('-date').first()

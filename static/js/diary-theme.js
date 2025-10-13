@@ -58,26 +58,6 @@ document.addEventListener('DOMContentLoaded', function () {
             eventType: isMemo ? 'memo' : 'purchase'
           });
           
-          // 売却イベント
-          if (isSold) {
-            const sellDateEl = diaryCard.querySelector('.info-item:contains("売却日")');
-            let sellDate = '';
-            
-            if (sellDateEl) {
-              const sellDateMatch = sellDateEl.textContent.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
-              if (sellDateMatch) {
-                sellDate = `${sellDateMatch[1]}-${sellDateMatch[2].padStart(2, '0')}-${sellDateMatch[3].padStart(2, '0')}`;
-                
-                events.push({
-                  title: stockName,
-                  start: sellDate,
-                  url: `/stockdiary/${diaryId}/`,
-                  className: 'sell-event',
-                  eventType: 'sell'
-                });
-              }
-            }
-          }
         }
       });
     }
@@ -181,9 +161,6 @@ document.addEventListener('DOMContentLoaded', function () {
         badgeClass = 'bg-success';
         badgeText = '購入';
       } else { // sell
-        eventType = '売却';
-        badgeClass = 'bg-danger';
-        badgeText = '売却';
       }
       
       eventsHtml += `

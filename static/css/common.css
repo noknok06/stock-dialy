@@ -407,15 +407,27 @@ a:hover {
   }
 }
 
+/* カード共通スタイル */
+.card {
+  border: none;
+  border-radius: 0.75rem;
+  box-shadow: var(--card-shadow);
+  transition: transform 0.2s, box-shadow 0.2s;
+  margin-bottom: var(--spacing-lg);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 .card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px -1px rgba(0, 0, 0, 0.1), 0 4px 8px -1px rgba(0, 0, 0, 0.06);
 }
 
 .card-header {
   background-color: transparent;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  padding: 1rem 1.25rem;
+  padding: 1.25rem 1.5rem;
 }
 
 .card-title {

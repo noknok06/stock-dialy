@@ -41,7 +41,6 @@ class SubscriptionMiddleware:
                         slug='free_unlimited',
                         max_tags=-1,  # 無制限
                         max_templates=-1,  # 無制限
-                        max_snapshots=-1,  # 無制限
                         max_records=-1,  # 無制限
                         show_ads=True,  # 広告表示あり
                         export_enabled=True,
@@ -64,7 +63,6 @@ class SubscriptionMiddleware:
                             slug='free_unlimited',
                             max_tags=-1,  # 無制限
                             max_templates=-1,  # 無制限
-                            max_snapshots=-1,  # 無制限
                             max_records=-1,  # 無制限
                             show_ads=True,  # 広告表示あり
                             export_enabled=True,

@@ -9,7 +9,6 @@ def subscription_status(request):
         'plan_limits': {
             'max_tags': -1,           # 無制限
             'max_templates': -1,      # 無制限
-            'max_snapshots': -1,      # 無制限
             'max_records': -1,        # 無制限
             'export_enabled': True,   # エクスポート機能有効
             'advanced_analytics': True # 高度な分析機能有効
@@ -17,13 +16,11 @@ def subscription_status(request):
         'usage': {
             'tags': 0,
             'templates': 0,
-            'snapshots': 0,
             'records': 0
         },
         'usage_percent': {
             'tags': 0,
             'templates': 0,
-            'snapshots': 0,
             'records': 0
         }
     }
@@ -45,13 +42,11 @@ def subscription_status(request):
             user = request.user
             tags_count = user.tag_set.count() if hasattr(user, 'tag_set') else 0
             templates_count = user.analysistemplate_set.count() if hasattr(user, 'analysistemplate_set') else 0
-            snapshots_count = user.portfoliosnapshot_set.count() if hasattr(user, 'portfoliosnapshot_set') else 0
             records_count = user.stockdiary_set.count() if hasattr(user, 'stockdiary_set') else 0
             
             context['usage'] = {
                 'tags': tags_count,
                 'templates': templates_count,
-                'snapshots': snapshots_count,
                 'records': records_count
             }
             
@@ -59,7 +54,6 @@ def subscription_status(request):
             context['usage_percent'] = {
                 'tags': 0,
                 'templates': 0,
-                'snapshots': 0,
                 'records': 0
             }
                 

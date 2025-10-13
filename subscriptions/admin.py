@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.contrib.admin import SimpleListFilter
 
 class SubscriptionPlanAdmin(admin.ModelAdmin):
-    list_display = ('name', 'slug', 'price_monthly', 'price_yearly', 'max_tags', 'max_templates', 'max_snapshots', 'show_ads', 'display_order')
+    list_display = ('name', 'slug', 'price_monthly', 'price_yearly', 'max_tags', 'max_templates', 'show_ads', 'display_order')
     list_editable = ('price_monthly', 'price_yearly', 'display_order')
     search_fields = ('name', 'slug')
     prepopulated_fields = {'slug': ('name',)}
@@ -20,7 +20,7 @@ class SubscriptionPlanAdmin(admin.ModelAdmin):
             'fields': ('price_monthly', 'price_yearly', 'stripe_price_id')
         }),
         ('機能制限', {
-            'fields': ('max_tags', 'max_templates', 'max_snapshots', 'max_records')
+            'fields': ('max_tags', 'max_templates', 'max_records')
         }),
         ('機能フラグ', {
             'fields': ('show_ads', 'export_enabled', 'advanced_analytics')

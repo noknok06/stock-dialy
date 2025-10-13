@@ -42,7 +42,6 @@ urlpatterns = [
     path('tags/', include('tags.urls')),
     path('analysis_template/', include('analysis_template.urls')),
     path('company_master/', include('company_master.urls')),
-    path('portfolio/', include('portfolio.urls')),
     path('financial_reports/', include('financial_reports.urls')),
     
     #コーポマインドリーダー（新機能）
@@ -53,7 +52,6 @@ urlpatterns = [
     path('ads/', include('ads.urls')),
     path('security/', include('security.urls')),
     path('contact/', include('contact.urls')),
-    path('investment_review/', include('investment_review.urls')),  # 投資振り返りアプリのURL
     
     # APIエンドポイント（将来的な拡張用）
     # path('api/v1/earnings/', include('earnings_analysis.urls')),  # API専用

@@ -194,7 +194,6 @@ def api_create_diary(request):
     try:
         # 必須フィールドのチェック
         stock_name = request.POST.get('stock_name', '').strip()
-        purchase_date = request.POST.get('purchase_date', '').strip()
         
         # 文字数制限のチェック
         if len(stock_name) > 100:
@@ -209,16 +208,10 @@ def api_create_diary(request):
                 'message': '銘柄名は必須です'
             }, status=400)
         
-        # 日付が未設定の場合は今日の日付を使用
-        if not purchase_date:
-            from django.utils import timezone
-            purchase_date = timezone.now().date().isoformat()
-        
         # 新しい日記インスタンスを作成
         diary = StockDiary(
             user=request.user,
             stock_name=stock_name,
-            purchase_date=purchase_date
         )
         
         # オプションフィールドの設定と文字数制限チェック

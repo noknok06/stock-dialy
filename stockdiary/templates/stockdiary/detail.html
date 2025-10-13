@@ -6,21 +6,15 @@
 {% block title %}{{ diary.stock_name }} | カブログ{% endblock %}
 
 {% block head %}
-<!-- 基本CSSの読み込み -->
 <link rel="stylesheet" href="{% static 'css/common.css' %}">
-<!-- 日記テーマCSSの読み込み -->
 <link rel="stylesheet" href="{% static 'css/diary-theme.css' %}">
-<!-- 詳細ページ専用CSS -->
 <link rel="stylesheet" href="{% static 'css/diary-detail.css' %}">
-
-<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
 {% endblock %}
 
 {% block content %}
-<!-- スマホ最適化：containerクラスを削除し、px-1のみ使用 -->
 <div class="px-1 py-1 diary-detail-container">
-  <!-- 操作バー - スマホ用padding調整 -->
+  <!-- 操作バー -->
   <div class="action-bar px-2">
     <a href="{% url 'stockdiary:home' %}" class="back-link">
       <i class="bi bi-arrow-left"></i>
@@ -28,27 +22,11 @@
       <span class="d-sm-none">戻る</span>
     </a>
     
-    <!-- デスクトップ用操作ボタン -->
     <div class="desktop-actions">
-      {% if not diary.sell_date and not diary.is_memo and diary.purchase_price is not None and diary.purchase_quantity is not None %}
-      <a href="{% url 'stockdiary:sell_specific' diary.id %}" class="btn btn-success btn-sm">
-        <i class="bi bi-cash-coin"></i>
-        <span class="d-none d-lg-inline ms-1">売却</span>
-      </a>
-      {% endif %}
-
-      {% if diary.sell_date %}
-      <a href="{% url 'stockdiary:cancel_sell' diary.id %}" class="btn btn-success btn-sm">
-        <i class="bi bi-arrow-counterclockwise"></i>
-        <span class="d-none d-lg-inline ms-1">売却取消</span>
-      </a>
-      {% endif %}
-
       <a href="{% url 'stockdiary:update' diary.id %}" class="btn btn-warning btn-sm">
         <i class="bi bi-pencil"></i>
         <span class="d-none d-lg-inline ms-1">編集</span>
       </a>
-
       <a href="{% url 'stockdiary:delete' diary.id %}" class="btn btn-danger btn-sm">
         <i class="bi bi-trash"></i>
         <span class="d-none d-lg-inline ms-1">削除</span>
@@ -56,9 +34,9 @@
     </div>
   </div>
 
-  <!-- メインカード - border削除、margin調整 -->
+  <!-- メインカード -->
   <div class="card border-0 shadow-sm mx-0">
-    <!-- ヘッダー - padding最適化 -->
+    <!-- ヘッダー -->
     <div class="diary-header-improved mobile-optimized" data-stock-symbol="{{ diary.stock_symbol }}">
       <div class="header-main-info">
         <div class="stock-identity">
@@ -72,21 +50,27 @@
           <div class="header-meta-info">
             <div class="purchase-date">
               <i class="bi bi-calendar-check"></i>
-              <span>{{ diary.purchase_date|date:"Y年m月d日" }}</span>
+              <span>
+                {% if diary.first_purchase_date %}
+                  {{ diary.first_purchase_date|date:"Y年m月d日" }}
+                {% else %}
+                  {{ diary.created_at|date:"Y年m月d日" }}（作成日）
+                {% endif %}
+              </span>
             </div>
             
             <div class="status-badges">
-              {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
+              {% if diary.is_memo %}
               <span class="status-badge-improved status-badge-memo">
                 <i class="bi bi-sticky"></i>
-                メモ
+                記録のみ
               </span>
-              {% elif diary.sell_date %}
+              {% elif diary.is_sold_out %}
               <span class="status-badge-improved status-badge-sold">
                 <i class="bi bi-check-circle"></i>
                 売却済み
               </span>
-              {% else %}
+              {% elif diary.is_holding %}
               <span class="status-badge-improved status-badge-active">
                 <i class="bi bi-graph-up"></i>
                 保有中
@@ -97,51 +81,55 @@
         </div>
         
         <!-- 価格サマリー -->
-        {% if not diary.is_memo and diary.purchase_price is not None %}
+        {% if not diary.is_memo and diary.average_purchase_price %}
         <div class="price-summary">
-          <div class="main-price">{{ diary.purchase_price|floatformat:2|intcomma }}円</div>
-          {% if diary.purchase_quantity %}
-          <div class="sub-info">{{ diary.purchase_quantity }}株</div>
+          <div class="main-price">{{ diary.average_purchase_price|floatformat:2|intcomma }}円</div>
+          <div class="sub-info">平均取得単価</div>
+          
+          {% if diary.current_quantity > 0 %}
+          <div class="sub-info mt-2">
+            保有: {{ diary.current_quantity|floatformat:0 }}株
+          </div>
           {% endif %}
           
-          {% if diary.sell_date and diary.sell_price %}
-          {% with profit_rate=diary.sell_price|sub:diary.purchase_price|div:diary.purchase_price|mul:100 %}
-          <div class="profit-indicator {% if profit_rate > 0 %}profit-positive{% elif profit_rate < 0 %}profit-negative{% endif %}">
-            {% if profit_rate > 0 %}+{% endif %}{{ profit_rate|floatformat:2 }}%
+          {% if diary.realized_profit != 0 %}
+          <div class="profit-indicator {% if diary.realized_profit > 0 %}profit-positive{% elif diary.realized_profit < 0 %}profit-negative{% endif %}">
+            {% if diary.realized_profit > 0 %}+{% endif %}{{ diary.realized_profit|floatformat:0|intcomma }}円
           </div>
-          {% endwith %}
           {% endif %}
         </div>
         {% endif %}
       </div>
     </div>
 
-    <!-- タブナビゲーション - 最適化 -->
+    <!-- タブナビゲーション -->
     <div class="tabs-section mobile-optimized">
-      <!-- スワイプヒント -->
-      <div class="swipe-hint-improved d-md-none" id="swipeHint">
-        <i class="bi bi-arrow-left-right me-1"></i>
-        左右にスワイプしてタブを切り替えできます
-        <button type="button" class="btn-close btn-close-sm ms-2" onclick="hideSwipeHint()"></button>
-      </div>
-
       <ul class="improved-tabs mobile-optimized" id="diaryDetailTabs" role="tablist">
         <li class="improved-tab-item" role="presentation">
           <button class="improved-tab-link active" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic-content"
             type="button" role="tab" aria-controls="basic-content" aria-selected="true">
-            <div class="tab-icon">
-              <i class="bi bi-info-circle"></i>
-            </div>
+            <div class="tab-icon"><i class="bi bi-info-circle"></i></div>
             <div class="tab-label">基本情報</div>
+          </button>
+        </li>
+
+        <li class="improved-tab-item" role="presentation">
+          <button class="improved-tab-link" id="transactions-tab" data-bs-toggle="tab" data-bs-target="#transactions-content" 
+            type="button" role="tab" aria-controls="transactions-content" aria-selected="false">
+            <div class="tab-icon"><i class="bi bi-receipt"></i></div>
+            <div class="tab-label">
+              取引履歴
+              {% if diary.transaction_count > 0 %}
+              <span class="badge bg-primary bg-opacity-25 text-primary notes-count-badge">{{ diary.transaction_count }}</span>
+              {% endif %}
+            </div>
           </button>
         </li>
 
         <li class="improved-tab-item" role="presentation">
           <button class="improved-tab-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes-content" 
             type="button" role="tab" aria-controls="notes-content" aria-selected="false">
-            <div class="tab-icon">
-              <i class="bi bi-journal-richtext"></i>
-            </div>
+            <div class="tab-icon"><i class="bi bi-journal-richtext"></i></div>
             <div class="tab-label">
               継続記録
               {% if notes.count > 0 %}
@@ -154,9 +142,7 @@
         <li class="improved-tab-item" role="presentation">
           <button class="improved-tab-link" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline-content"
             type="button" role="tab" aria-controls="timeline-content" aria-selected="false">
-            <div class="tab-icon">
-              <i class="bi bi-link-45deg"></i>
-            </div>
+            <div class="tab-icon"><i class="bi bi-link-45deg"></i></div>
             <div class="tab-label">
               タイムライン
               {% if related_diaries %}
@@ -167,11 +153,10 @@
         </li>
       </ul>
 
-      <!-- タブコンテンツ - padding最適化 -->
+      <!-- タブコンテンツ -->
       <div class="tab-content tab-content-improved mobile-optimized" id="diaryDetailTabContent">
         <!-- 基本情報タブ -->
         <div class="tab-pane fade show active" id="basic-content" role="tabpanel" aria-labelledby="basic-tab">
-          <!-- 日記画像表示 - margin最適化 -->
           {% if diary.image_url %}
           <div class="diary-image-section mb-3">
             <div class="card border-0">
@@ -181,7 +166,7 @@
                        class="img-fluid rounded diary-main-image" 
                        alt="{{ diary.stock_name }}の画像"
                        style="max-height: 300px; object-fit: contain; cursor: pointer; width: 100%;"
-                       onclick="showImageModal('{{ diary.image_url }}', '{{ diary.stock_name }} - {{ diary.purchase_date|date:"Y年m月d日" }}')">
+                       onclick="showImageModal('{{ diary.image_url }}', '{{ diary.stock_name }} - {{ diary.first_purchase_date|date:"Y年m月d日" }}')">
                   <div class="mt-2">
                     <small class="text-muted">
                       <i class="bi bi-image me-1"></i>
@@ -195,14 +180,14 @@
           {% endif %}
 
           <div class="info-grid mobile-optimized">
-            <!-- 購入理由/メモ -->
+            <!-- 投資理由/メモ -->
             <div class="info-card mobile-optimized">
               <div class="info-card-title">
                 <i class="bi bi-journal-text"></i>
-                {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
+                {% if diary.is_memo %}
                 メモ内容
                 {% else %}
-                購入理由
+                投資理由
                 {% endif %}
               </div>
               <div class="reason-content mobile-optimized">
@@ -210,11 +195,12 @@
               </div>
             </div>
 
-            <!-- 売買情報 -->
+            <!-- 取引サマリー -->
+            {% if not diary.is_memo %}
             <div class="info-card mobile-optimized">
               <div class="info-card-title">
-                <i class="bi bi-cash-coin"></i>
-                売買情報
+                <i class="bi bi-graph-up"></i>
+                取引サマリー
               </div>
               <div class="info-items mobile-optimized">
                 <div class="info-item-improved mobile-optimized">
@@ -222,95 +208,63 @@
                     <i class="bi bi-calendar-date"></i>
                   </div>
                   <div class="info-content-improved">
-                    <div class="info-label-improved">購入/メモ日</div>
-                    <div class="info-value-improved">{{ diary.purchase_date|date:"Y年m月d日" }}</div>
+                    <div class="info-label-improved">最初の購入日</div>
+                    <div class="info-value-improved">{{ diary.first_purchase_date|date:"Y年m月d日" }}</div>
                   </div>
                 </div>
 
-                {% if not diary.is_memo and diary.purchase_price is not None %}
                 <div class="info-item-improved mobile-optimized">
                   <div class="info-icon-improved">
                     <i class="bi bi-currency-yen"></i>
                   </div>
                   <div class="info-content-improved">
-                    <div class="info-label-improved">購入価格</div>
-                    <div class="info-value-improved">{{ diary.purchase_price|floatformat:2|intcomma }}円</div>
+                    <div class="info-label-improved">平均取得単価</div>
+                    <div class="info-value-improved">{{ diary.average_purchase_price|floatformat:2|intcomma }}円</div>
                   </div>
                 </div>
-                {% endif %}
 
-                {% if not diary.is_memo and diary.purchase_quantity is not None %}
                 <div class="info-item-improved mobile-optimized">
                   <div class="info-icon-improved">
                     <i class="bi bi-graph-up"></i>
                   </div>
                   <div class="info-content-improved">
-                    <div class="info-label-improved">購入数量</div>
-                    <div class="info-value-improved">{{ diary.purchase_quantity }}株</div>
+                    <div class="info-label-improved">現在保有数</div>
+                    <div class="info-value-improved">{{ diary.current_quantity|floatformat:0 }}株</div>
                   </div>
                 </div>
-                {% endif %}
 
-                {% if not diary.is_memo and diary.purchase_price is not None and diary.purchase_quantity is not None %}
                 <div class="info-item-improved mobile-optimized">
                   <div class="info-icon-improved">
                     <i class="bi bi-cash-stack"></i>
                   </div>
                   <div class="info-content-improved">
-                    <div class="info-label-improved">総購入額</div>
-                    <div class="info-value-improved">{{ diary.purchase_price|mul:diary.purchase_quantity|floatformat:2|intcomma }}円</div>
-                  </div>
-                </div>
-                {% endif %}
-
-                <!-- 売却情報 -->
-                {% if diary.sell_date %}
-                <div class="info-item-improved mobile-optimized">
-                  <div class="info-icon-improved">
-                    <i class="bi bi-calendar-check"></i>
-                  </div>
-                  <div class="info-content-improved">
-                    <div class="info-label-improved">売却日</div>
-                    <div class="info-value-improved">{{ diary.sell_date|date:"Y年m月d日" }}</div>
+                    <div class="info-label-improved">総取得原価</div>
+                    <div class="info-value-improved">{{ diary.total_cost|floatformat:0|intcomma }}円</div>
                   </div>
                 </div>
 
+                {% if diary.realized_profit != 0 %}
                 <div class="info-item-improved mobile-optimized">
                   <div class="info-icon-improved">
-                    <i class="bi bi-currency-yen"></i>
+                    <i class="bi bi-piggy-bank"></i>
                   </div>
                   <div class="info-content-improved">
-                    <div class="info-label-improved">売却価格</div>
-                    <div class="info-value-improved">{{ diary.sell_price|floatformat:2|intcomma }}円</div>
-                  </div>
-                </div>
-
-                <div class="info-item-improved mobile-optimized">
-                  <div class="info-icon-improved">
-                    <i class="bi bi-graph-up-arrow"></i>
-                  </div>
-                  <div class="info-content-improved">
-                    <div class="info-label-improved">損益</div>
-                    {% with profit=diary.sell_price|sub:diary.purchase_price|mul:diary.purchase_quantity %}
-                    {% if profit > 0 %}
-                    <div class="info-value-improved text-success">+{{ profit|floatformat:2|intcomma }}円</div>
-                    {% elif profit < 0 %}
-                    <div class="info-value-improved text-danger">{{ profit|floatformat:2|intcomma }}円</div>
-                    {% else %}
-                    <div class="info-value-improved text-muted">{{ profit|floatformat:2|intcomma }}円</div>
-                    {% endif %}
-                    {% endwith %}
+                    <div class="info-label-improved">実現損益</div>
+                    <div class="info-value-improved {% if diary.realized_profit > 0 %}text-success{% else %}text-danger{% endif %}">
+                      {% if diary.realized_profit > 0 %}+{% endif %}{{ diary.realized_profit|floatformat:0|intcomma }}円
+                    </div>
                   </div>
                 </div>
                 {% endif %}
               </div>
             </div>
+            {% endif %}
           </div>
 
-          <!-- 分析テンプレート情報 - padding最適化 -->
+          <!-- 分析テンプレート情報 -->
           {% include 'stockdiary/partials/analysis_template_info.html' %}
 
-          <!-- タグとメモ - 最適化 -->
+          <!-- タグとメモ -->
           <div class="info-grid mobile-optimized">
             <div class="info-card mobile-optimized">
               <div class="info-card-title">
@@ -338,253 +292,15 @@
           </div>
         </div>
 
+        <!-- 取引履歴タブ -->
+        <div class="tab-pane fade" id="transactions-content" role="tabpanel" aria-labelledby="transactions-tab">
+          {% include 'stockdiary/partials/tab_transactions.html' %}
+        </div>
+
         <!-- 継続記録タブ -->
         <div class="tab-pane fade" id="notes-content" role="tabpanel" aria-labelledby="notes-tab">
-          <!-- フォーム表示/非表示の切り替えボタン -->
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <button 
-              type="button" 
-              class="btn btn-primary btn-sm" 
-              id="toggleNoteForm"
-              data-bs-toggle="collapse" 
-              data-bs-target="#noteFormCollapse" 
-              aria-expanded="false" 
-              aria-controls="noteFormCollapse">
-              <i class="bi bi-plus-circle me-1"></i>
-              <span class="toggle-text">記録を追加</span>
-            </button>
-          </div>
-
-          <!-- 折りたたみ可能な継続記録フォーム -->
-          <div class="collapse" id="noteFormCollapse">
-            <div class="simplified-note-form mobile-optimized mb-3">
-              <form id="quickNoteForm" method="post" action="{% url 'stockdiary:add_note' diary.id %}" enctype="multipart/form-data">
-                {% csrf_token %}
-                
-                <div class="form-section mobile-optimized">
-                  <label for="note_date" class="section-title">
-                    <i class="bi bi-calendar-date"></i>
-                    日付
-                  </label>
-                  <input type="date" class="form-control" id="note_date" name="date" 
-                        value="{% now 'Y-m-d' %}" required>
-                </div>
-                
-                <div class="form-section mobile-optimized">
-                  <div class="section-title">
-                    <i class="bi bi-tag"></i>
-                    記録タイプ
-                  </div>
-                  <div class="option-pills mobile-optimized">
-                    <div class="option-pill active" data-value="analysis" data-target="note_type">
-                      <i class="bi bi-graph-up"></i>
-                      分析更新
-                    </div>
-                    <div class="option-pill" data-value="news" data-target="note_type">
-                      <i class="bi bi-newspaper"></i>
-                      ニュース
-                    </div>
-                    <div class="option-pill" data-value="earnings" data-target="note_type">
-                      <i class="bi bi-bar-chart"></i>
-                      決算
-                    </div>
-                    <div class="option-pill" data-value="insight" data-target="note_type">
-                      <i class="bi bi-lightbulb"></i>
-                      気づき
-                    </div>
-                    <div class="option-pill" data-value="risk" data-target="note_type">
-                      <i class="bi bi-exclamation-triangle"></i>
-                      リスク
-                    </div>
-                  </div>
-                  <input type="hidden" id="note_type" name="note_type" value="analysis">
-                </div>
-                
-                <div class="form-section mobile-optimized">
-                  <div class="section-title">
-                    <i class="bi bi-exclamation-circle"></i>
-                    重要度
-                  </div>
-                  <div class="option-pills mobile-optimized">
-                    <div class="option-pill importance-pill low" data-value="low" data-target="note_importance">
-                      <i class="bi bi-arrow-down-circle"></i>
-                      低
-                    </div>
-                    <div class="option-pill importance-pill medium active" data-value="medium" data-target="note_importance">
-                      <i class="bi bi-dash-circle"></i>
-                      中
-                    </div>
-                    <div class="option-pill importance-pill high" data-value="high" data-target="note_importance">
-                      <i class="bi bi-arrow-up-circle"></i>
-                      高
-                    </div>
-                  </div>
-                  <input type="hidden" id="note_importance" name="importance" value="medium">
-                </div>
-                
-                <div class="form-section mobile-optimized">
-                  <label for="note_content" class="section-title">
-                    <i class="bi bi-journal-text"></i>
-                    記録内容
-                  </label>
-                  <textarea class="form-control" id="note_content" name="content" rows="4" 
-                            placeholder="状況の変化や新たな情報を記録しましょう" required></textarea>
-                </div>
-                              
-                <!-- 画像添付セクション -->
-                <div class="form-section mobile-optimized">
-                  <label for="note_image" class="section-title">
-                    <i class="bi bi-image"></i>
-                    画像添付（オプション）
-                  </label>
-                  
-                  <div class="image-upload-area-note mobile-optimized mb-2" onclick="document.getElementById('note_image').click();">
-                    <i class="bi bi-cloud-upload text-muted" style="font-size: 2rem;"></i>
-                    <p class="text-muted mb-0">ここをクリックして画像を選択</p>
-                    <small class="text-muted">自動圧縮対応</small>
-                  </div>
-                  
-                  <input type="file" class="form-control d-none" id="note_image" name="image" 
-                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
-                  
-                  <div id="note-image-preview-container" class="mt-2" style="display: none;">
-                    <div class="card" style="max-width: 300px;">
-                      <img id="note-image-preview" class="card-img-top" style="max-height: 200px; object-fit: cover;" alt="プレビュー">
-                      <div class="card-body p-2">
-                        <small class="text-muted">選択された画像</small>
-                        <button type="button" id="note-remove-image" class="btn btn-sm btn-outline-danger float-end">
-                          <i class="bi bi-x"></i> 削除
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="form-section mobile-optimized">
-                  <label for="note_current_price" class="section-title">
-                    <i class="bi bi-currency-yen"></i>
-                    現在価格（オプション）
-                  </label>
-                  <div class="input-group">
-                    <input type="number" class="form-control" id="note_current_price" name="current_price" 
-                          placeholder="円" step="0.01">
-                    <button type="button" class="btn btn-outline-primary" id="fetch-note-price" data-stock-symbol="{{ diary.stock_symbol }}">
-                      <i class="bi bi-arrow-repeat"></i>
-                      <span class="d-none d-sm-inline ms-1">取得</span>
-                    </button>
-                  </div>
-                </div>
-                
-                <div class="d-flex gap-2">
-                  <button type="submit" class="btn btn-primary flex-fill">
-                    <i class="bi bi-journal-plus me-1"></i>
-                    記録を追加
-                  </button>
-                  <button 
-                    type="button" 
-                    class="btn btn-outline-secondary" 
-                    data-bs-toggle="collapse" 
-                    data-bs-target="#noteFormCollapse"
-                    aria-expanded="false">
-                    <i class="bi bi-x"></i>
-                    キャンセル
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-
-          <!-- 継続記録一覧 -->
-          <div class="notes-list mobile-optimized">
-            {% for note in notes %}
-            <div class="note-card mobile-optimized mb-3">
-              <div class="note-card-header mobile-optimized">
-                <div class="note-meta-left">
-                  <div class="note-date">
-                    <i class="bi bi-calendar-date"></i>
-                    {{ note.date|date:"Y年m月d日" }}
-                  </div>
-                  <div class="note-badges">
-                    <span class="badge 
-                      {% if note.note_type == 'analysis' %}bg-primary
-                      {% elif note.note_type == 'news' %}bg-info
-                      {% elif note.note_type == 'earnings' %}bg-success
-                      {% elif note.note_type == 'insight' %}bg-warning
-                      {% elif note.note_type == 'risk' %}bg-danger
-                      {% else %}bg-secondary{% endif %}">
-                      {% if note.note_type == 'analysis' %}分析更新
-                      {% elif note.note_type == 'news' %}ニュース
-                      {% elif note.note_type == 'earnings' %}決算情報
-                      {% elif note.note_type == 'insight' %}新たな気づき
-                      {% elif note.note_type == 'risk' %}リスク要因
-                      {% else %}その他{% endif %}
-                    </span>
-                    {% if note.importance == 'high' %}
-                    <span class="importance-indicator high">
-                      <i class="bi bi-exclamation-triangle"></i>
-                      重要
-                    </span>
-                    {% elif note.importance == 'medium' %}
-                    <span class="importance-indicator medium">
-                      <i class="bi bi-info-circle"></i>
-                      中
-                    </span>
-                    {% endif %}
-                    
-                    <button class="btn btn-sm" 
-                            onclick="confirmDeleteNote({{ note.id }}, '{{ note.date|date:"Y年m月d日" }}', '{% if note.note_type == 'analysis' %}分析更新{% elif note.note_type == 'news' %}ニュース{% elif note.note_type == 'earnings' %}決算情報{% elif note.note_type == 'insight' %}新たな気づき{% elif note.note_type == 'risk' %}リスク要因{% else %}その他{% endif %}', {{ diary.id }})"
-                            title="この記録を削除"
-                            style="background: none; border: none; color: #dc3545; padding: 0.25rem 0.5rem; margin-left: 0.5rem;">
-                      <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
-                    </button>
-                  </div>
-                </div>
-                {% if note.current_price %}
-                <div class="note-price-summary">
-                  <div class="price-value">{{ note.current_price|floatformat:2|intcomma }}円</div>
-                  <div class="price-label">記録時価格</div>
-                  {% with price_change=note.get_price_change %}
-                  {% if price_change %}
-                  <div class="price-change {% if price_change > 0 %}positive{% elif price_change < 0 %}negative{% endif %}">
-                    {% if price_change > 0 %}+{% endif %}{{ price_change|floatformat:2 }}%
-                  </div>
-                  {% endif %}
-                  {% endwith %}
-                </div>
-                {% endif %}
-              </div>
-              
-              <div class="note-card-body mobile-optimized">
-                <!-- 継続記録の画像表示 -->
-                {% if note.image_url %}
-                <div class="note-image mb-2">
-                  <img src="{{ note.image_url }}" 
-                      class="img-fluid rounded note-attached-image" 
-                      alt="継続記録画像"
-                      style="max-height: 200px; object-fit: cover; width: 100%; cursor: pointer;"
-                      onclick="showImageModal('{{ note.image_url }}', '{{ note.date|date:"Y年m月d日" }}の記録')">
-                  <div class="mt-1">
-                    <small class="text-muted">
-                      <i class="bi bi-image me-1"></i>
-                      クリックで拡大表示
-                    </small>
-                  </div>
-                </div>
-                {% endif %}
-                
-                <div class="note-content-text">{{ note.content|linebreaks }}</div>
-              </div>
-            </div>
-            {% empty %}
-            <div class="empty-state">
-              <div class="empty-icon">
-                <i class="bi bi-journal-text"></i>
-              </div>
-              <h4>継続記録はまだありません</h4>
-              <p>上のボタンから最初の記録を追加しましょう</p>
-            </div>
-            {% endfor %}
-          </div>
+          <!-- 継続記録フォームと一覧（既存コード） -->
+          {% include 'stockdiary/partials/tab_notes.html' %}
         </div>
 
         <!-- タイムラインタブ -->
@@ -724,40 +440,11 @@
   </div>
 </div>
 
-<!-- 削除確認モーダル -->
-<div id="deleteConfirmModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); z-index: 9999; display: none; align-items: center; justify-content: center;">
-  <div style="background-color: white; border-radius: 8px; padding: 0; max-width: 400px; width: 90%;">
-    <div style="background-color: #f8d7da; color: #721c24; padding: 1rem; border-bottom: 1px solid #f5c6cb;">
-      <h5 style="margin: 0; font-size: 1.25rem; font-weight: 500;">
-        <i class="bi bi-exclamation-triangle me-2"></i>継続記録の削除
-      </h5>
-    </div>
-    <div style="padding: 1.5rem; text-align: center;">
-      <p style="margin-bottom: 1rem;">以下の継続記録を削除しますか？</p>
-      <div id="deleteTargetInfo" style="border: 1px solid #dee2e6; border-radius: 8px; padding: 1rem; background-color: #f8f9fa; margin-bottom: 1rem;">
-        <div style="font-weight: bold;"></div>
-        <div style="color: #6c757d; font-size: 0.875rem;">この操作は元に戻せません。</div>
-      </div>
-    </div>
-    <div style="padding: 1rem; display: flex; gap: 0.5rem; justify-content: flex-end; border-top: 1px solid #dee2e6;">
-      <button type="button" id="cancelDelete" style="background-color: #6c757d; color: white; border: none; padding: 0.75rem 1rem; border-radius: 6px; font-weight: 500; cursor: pointer; min-width: 80px;">キャンセル</button>
-      <button type="button" id="confirmDelete" style="background-color: #dc3545; color: white; border: none; padding: 0.75rem 1rem; border-radius: 6px; font-weight: 500; cursor: pointer; min-width: 80px;">削除する</button>
-    </div>
-  </div>
-</div>
-
-<!-- スピードダイアルコンポーネント -->
 {% include 'speed_dial.html' with actions=diary_actions %}
 {% endblock %}
 
 {% block scripts %}
 {{ block.super }}
-<!-- 詳細ページ専用スクリプト -->
 <script src="{% static 'js/diary-detail.js' %}"></script>
-<!-- タブスワイプ機能スクリプト -->
 <script src="{% static 'js/diary-detail-tabs.js' %}"></script>
-<!-- 画像圧縮機能 -->
-<script src="{% static 'js/image-compression.js' %}"></script>
-
-</script>
 {% endblock %}

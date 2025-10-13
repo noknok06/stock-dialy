@@ -8,6 +8,7 @@ from django.utils.safestring import mark_safe
 from django.template.defaultfilters import truncatechars_html
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse, HttpResponse, Http404
 from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required
@@ -22,6 +23,8 @@ from django.urls import reverse
 from utils.mixins import ObjectNotFoundRedirectMixin
 from .utils import process_analysis_values, calculate_analysis_completion_rate
 from .models import StockDiary, DiaryNote
+from .models import Transaction, StockSplit
+from .forms import TransactionForm, StockSplitForm
 from .forms import StockDiaryForm, DiaryNoteForm
 from analysis_template.models import AnalysisTemplate, AnalysisItem, DiaryAnalysisValue
 from company_master.models import CompanyMaster
@@ -158,7 +161,7 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
     paginate_by = 4
     
     def get_queryset(self):
-        queryset = StockDiary.objects.filter(user=self.request.user).order_by('-updated_at', '-purchase_date')
+        queryset = StockDiary.objects.filter(user=self.request.user).order_by('-updated_at')
         queryset = queryset.select_related('user').prefetch_related('tags', 'notes')
         
         # 検索フィルター
@@ -189,27 +192,19 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
             
             if date_range in range_mapping:
                 start_date = today - timedelta(days=range_mapping[date_range])
-                queryset = queryset.filter(purchase_date__gte=start_date)
+                queryset = queryset.filter(first_purchase_date__gte=start_date)
                         
         if tag_id:
             queryset = queryset.filter(tags__id=tag_id)
         
-        # 保有状態によるフィルタリング
+        # ステータスフィルター
         if status == 'active':
-            queryset = queryset.filter(
-                sell_date__isnull=True,
-                purchase_price__isnull=False,
-                purchase_quantity__isnull=False
-            )
+            queryset = queryset.filter(current_quantity__gt=0)
         elif status == 'sold':
-            queryset = queryset.filter(sell_date__isnull=False)
+            queryset = queryset.filter(current_quantity=0, transaction_count__gt=0)
         elif status == 'memo':
-            queryset = queryset.filter(
-                Q(purchase_price__isnull=True) | 
-                Q(purchase_quantity__isnull=True) | 
-                Q(is_memo=True)
-            )
-            
+            queryset = queryset.filter(transaction_count=0)
+        
         return queryset
 
     def get_context_data(self, **kwargs):
@@ -222,36 +217,19 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
             'reason', 'memo', 'created_at', 'updated_at',
         )
         
-        # 保有中の株式を取得
-        active_holdings = StockDiary.objects.filter(
-            user=self.request.user, 
-            sell_date__isnull=True,
-            purchase_price__isnull=False,
-            purchase_quantity__isnull=False
-        )
+        # 統計情報を計算
+        all_diaries = StockDiary.objects.filter(user=self.request.user)
+        
+        # 保有中の銘柄数
+        active_holdings = all_diaries.filter(current_quantity__gt=0)
         context['active_holdings_count'] = active_holdings.count()
         
-        # 実現損益の計算
-        sold_stocks = StockDiary.objects.filter(
-            user=self.request.user, 
-            sell_date__isnull=False,
-            purchase_price__isnull=False,
-            purchase_quantity__isnull=False
-        )
-        realized_profit = sum(
-            (stock.sell_price - stock.purchase_price) * stock.purchase_quantity
-            for stock in sold_stocks
-            if stock.sell_price and stock.purchase_price and stock.purchase_quantity
-        )
+        # 実現損益の合計
+        realized_profit = all_diaries.aggregate(
+            total_profit=Sum('realized_profit')
+        )['total_profit'] or Decimal('0')
         context['realized_profit'] = realized_profit
-            
-        # メモと取引記録を分ける
-        memo_entries = [d for d in context['diaries'] if d.is_memo or d.purchase_price is None or d.purchase_quantity is None]
-        transaction_entries = [d for d in context['diaries'] if not d.is_memo and d.purchase_price is not None and d.purchase_quantity is not None]
         
-        context['memo_entries'] = memo_entries
-        context['transaction_entries'] = transaction_entries
-        context['active_holdings_count'] = len([d for d in transaction_entries if d.sell_date is None])
         context['current_query'] = self.request.GET.urlencode()
     
         # フォーム用のスピードダイアルアクション
@@ -262,14 +240,6 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
                 'icon': 'bi-plus-lg',
                 'label': '詳細作成',
                 'aria_label': '詳細作成' 
-            },
-            {
-                'type': 'quick-add',
-                'url': '#',
-                'icon': 'bi-lightning',
-                'label': 'クイック作成',
-                'aria_label': 'クイック作成',
-                'onclick': 'window.quickDiaryForm.show(); return false;'
             },
             {
                 'type': 'template',
@@ -284,13 +254,6 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
                 'icon': 'bi-tags',
                 'label': 'タグ管理',
                 'aria_label': 'タグ管理' 
-            },
-            {
-                'type': 'snap',
-                'url': reverse_lazy('portfolio:list'),
-                'icon': 'bi-camera',
-                'label': 'スナップショット',
-                'aria_label': 'スナップショット' 
             }
         ]
         return context
@@ -347,50 +310,65 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
     
     def get_queryset(self):
         return StockDiary.objects.filter(user=self.request.user).select_related('user').prefetch_related(
-            'notes', 'tags', 'checklist', 'analysis_values__analysis_item'
+            'notes', 'tags', 'checklist', 'analysis_values__analysis_item',
+            'transactions', 'stock_splits'
         )
-    
-    def get(self, request, *args, **kwargs):
-        response = super().get(request, *args, **kwargs)
-        request.session['current_diary_id'] = self.object.id
-        return response
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
+        # 取引履歴を取得
+        transactions = self.object.transactions.all().order_by('-transaction_date', '-created_at')
+        context['transactions'] = transactions
+        
+        # 株式分割履歴を取得
+        stock_splits = self.object.stock_splits.all().order_by('-split_date')
+        context['stock_splits'] = stock_splits
+        
+        # 取引と分割を時系列で統合
+        combined = []
+        for transaction in transactions:
+            combined.append({
+                'type': 'transaction',
+                'date': transaction.transaction_date,
+                'data': transaction
+            })
+        
+        for split in stock_splits:
+            combined.append({
+                'type': 'split',
+                'date': split.split_date,
+                'data': split
+            })
+        
+        # 日付でソート（降順）
+        combined.sort(key=lambda x: x['date'], reverse=True)
+        context['combined_history'] = combined
+        
+        # 継続記録
         context['note_form'] = DiaryNoteForm(initial={'date': timezone.now().date()})
         context['notes'] = self.object.notes.all().order_by('-date')
         
-        # 分析テンプレート情報を取得
+        # 分析テンプレート情報
         context['analysis_templates_info'] = self._get_analysis_templates_info()
         
-        # 信用倍率データの取得
-        margin_data, latest_margin_data = get_margin_data(self.object.stock_symbol, limit=10)
-        context['margin_data'] = margin_data
-        context['latest_margin_data'] = latest_margin_data
+        # 信用倍率データ
+        if MARGIN_TRADING_AVAILABLE:
+            from .views import get_margin_data
+            margin_data, latest_margin_data = get_margin_data(self.object.stock_symbol, limit=10)
+            context['margin_data'] = margin_data
+            context['latest_margin_data'] = latest_margin_data
         
-        # 関連日記を取得
-        diary = self.object
+        # 関連日記
         all_related_diaries = StockDiary.objects.filter(
             user=self.request.user,
-            stock_symbol=diary.stock_symbol
-        ).order_by('purchase_date')
+            stock_symbol=self.object.stock_symbol
+        ).order_by('first_purchase_date', 'created_at')
         
-        total_count = all_related_diaries.count()
-        
-        # 現在の日記のインデックスを特定
-        current_diary_index = None
-        for i, related_diary in enumerate(all_related_diaries):
-            if related_diary.id == diary.id:
-                current_diary_index = i
-                break
-        
-        context['current_diary_index'] = current_diary_index
-        context['total_related_count'] = total_count
-        context['related_diaries'] = all_related_diaries.exclude(id=diary.id)
-        context['related_diaries_count'] = total_count - 1
+        context['related_diaries'] = all_related_diaries.exclude(id=self.object.id)
         context['timeline_diaries'] = all_related_diaries
         
+        # スピードダイアルアクション
         context['diary_actions'] = [
             {
                 'type': 'back',
@@ -399,39 +377,27 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
                 'label': '戻る'
             },
             {
-                'type': 'sell',
-                'url': reverse_lazy('stockdiary:sell_specific', kwargs={'pk': diary.id}),
-                'icon': 'bi-cash-coin',
-                'label': '売却',
-                'condition': not diary.sell_date
-            },
-            {
-                'type': 'cancel-sell',
-                'url': reverse_lazy('stockdiary:cancel_sell', kwargs={'pk': diary.id}),
-                'icon': 'bi-arrow-counterclockwise',
-                'label': '売却取消',
-                'condition': diary.sell_date is not None
-            },
-            {
                 'type': 'edit',
-                'url': reverse_lazy('stockdiary:update', kwargs={'pk': diary.id}),
+                'url': reverse_lazy('stockdiary:update', kwargs={'pk': self.object.id}),
                 'icon': 'bi-pencil',
                 'label': '編集'
             },
             {
                 'type': 'delete',
-                'url': reverse_lazy('stockdiary:delete', kwargs={'pk': diary.id}),
+                'url': reverse_lazy('stockdiary:delete', kwargs={'pk': self.object.id}),
                 'icon': 'bi-trash',
                 'label': '削除'
             }
         ]
-
+        
         return context
     
     def _get_analysis_templates_info(self):
-        """この日記で使用されている分析テンプレート情報を取得"""
-        diary = self.object
+        """分析テンプレート情報を取得"""
+        from collections import defaultdict
+        from analysis_template.models import DiaryAnalysisValue
         
+        diary = self.object
         analysis_values = DiaryAnalysisValue.objects.filter(
             diary=diary
         ).select_related('analysis_item__template').order_by('analysis_item__order')
@@ -478,14 +444,13 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         
         result.sort(key=lambda x: x['template'].name)
         return result
-
+    
     def _get_analysis_display_value(self, analysis_value):
         """分析値の表示用テキストを取得"""
         item = analysis_value.analysis_item
         
         if item.item_type == 'boolean':
             return "はい" if analysis_value.boolean_value else "いいえ"
-        
         elif item.item_type == 'boolean_with_value':
             result = "✓" if analysis_value.boolean_value else "✗"
             if analysis_value.boolean_value:
@@ -496,38 +461,29 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
                 elif analysis_value.text_value:
                     result += f" {analysis_value.text_value}"
             return result
-        
         elif item.item_type == 'number':
-            if analysis_value.number_value is not None:
-                return f"{analysis_value.number_value}"
-            return "-"
-        
+            return f"{analysis_value.number_value}" if analysis_value.number_value is not None else "-"
         elif item.item_type == 'select':
             return analysis_value.text_value if analysis_value.text_value else "-"
-        
         elif item.item_type == 'text':
             return analysis_value.text_value if analysis_value.text_value else "-"
         
         return "-"
-
+    
     def _is_analysis_item_completed(self, analysis_value):
-        """分析項目が完了しているかどうかを判定"""
+        """分析項目が完了しているかを判定"""
         item = analysis_value.analysis_item
         
         if item.item_type == 'boolean':
             return analysis_value.boolean_value is True
-        
         elif item.item_type == 'boolean_with_value':
             return analysis_value.boolean_value is True
-        
         elif item.item_type == 'number':
             return analysis_value.number_value is not None
-        
         elif item.item_type in ['text', 'select']:
             return bool(analysis_value.text_value and analysis_value.text_value.strip())
         
         return False
-
 
 class StockDiaryCreateView(LoginRequiredMixin, CreateView):
     model = StockDiary
@@ -535,33 +491,6 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
     template_name = 'stockdiary/diary_form.html'
     success_url = reverse_lazy('stockdiary:home')
     
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['form_actions'] = [
-            {
-                'type': 'back',
-                'url': reverse_lazy('stockdiary:home'),
-                'icon': 'bi-arrow-left',
-                'label': '戻る',
-                'aria_label': '戻る' 
-            },
-            {
-                'type': 'template',
-                'url': reverse_lazy('analysis_template:list'),
-                'icon': 'bi-clipboard-data',
-                'label': 'テンプレート',
-                'aria_label': 'テンプレート' 
-            },
-            {
-                'type': 'tag',
-                'url': reverse_lazy('tags:list'),
-                'icon': 'bi-tags',
-                'label': 'タグ管理',
-                'aria_label': 'タグ管理' 
-            }
-        ]
-        return context
-
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
@@ -581,21 +510,37 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
         # 分析テンプレートの処理
         analysis_template_id = self.request.POST.get('analysis_template')
         if analysis_template_id:
+            from .utils import process_analysis_values
             process_analysis_values(self.request, self.object, analysis_template_id)
         
+        # 初回購入情報の処理
+        if form.cleaned_data.get('add_initial_purchase'):
+            try:
+                initial_transaction = Transaction(
+                    diary=self.object,
+                    transaction_type='buy',
+                    transaction_date=form.cleaned_data['initial_purchase_date'],
+                    price=form.cleaned_data['initial_purchase_price'],
+                    quantity=form.cleaned_data['initial_purchase_quantity'],
+                    memo='初回購入'
+                )
+                initial_transaction.save()
+                
+                # 取引後の状態を記録
+                initial_transaction.quantity_after = self.object.current_quantity
+                initial_transaction.average_price_after = self.object.average_purchase_price
+                initial_transaction.save(update_fields=['quantity_after', 'average_price_after'])
+                
+                messages.success(self.request, '日記を作成し、初回購入取引を記録しました')
+            except Exception as e:
+                messages.warning(
+                    self.request,
+                    f'日記は作成されましたが、初回購入取引の記録に失敗しました: {str(e)}'
+                )
+        else:
+            messages.success(self.request, '日記を作成しました')
+        
         return response
-
-    def get_initial(self):
-        initial = super().get_initial()
-        symbol = self.request.GET.get('symbol')
-        name = self.request.GET.get('name')
-        
-        if symbol:
-            initial['stock_symbol'] = symbol
-        if name:
-            initial['stock_name'] = name
-        
-        return initial
 
 
 class StockDiaryUpdateView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, UpdateView):
@@ -695,118 +640,6 @@ class StockDiaryDeleteView(LoginRequiredMixin, DeleteView):
         return StockDiary.objects.filter(user=self.request.user)
 
 
-class StockDiarySellView(LoginRequiredMixin, TemplateView):
-    """保有株式の売却入力ページ"""
-    template_name = 'stockdiary/diary_sell.html'
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        
-        active_diaries = StockDiary.objects.filter(
-            user=self.request.user,
-            sell_date__isnull=True
-        ).order_by('stock_symbol', 'purchase_date')
-        
-        valid_diaries = active_diaries.filter(
-            purchase_price__isnull=False,
-            purchase_quantity__isnull=False
-        )
-            
-        context['active_diaries'] = valid_diaries
-
-        # 銘柄コードでグループ化
-        grouped_diaries = {}
-        has_valid_entries = False
-        
-        for diary in valid_diaries:
-            symbol = diary.stock_symbol
-            if symbol not in grouped_diaries:
-                grouped_diaries[symbol] = {
-                    'symbol': symbol,
-                    'name': diary.stock_name,
-                    'entries': []
-                }
-            
-            grouped_diaries[symbol]['entries'].append({
-                'id': diary.id,
-                'purchase_date': diary.purchase_date,
-                'purchase_price': diary.purchase_price,
-                'purchase_quantity': diary.purchase_quantity,
-                'total_purchase': diary.purchase_price * diary.purchase_quantity
-            })
-            has_valid_entries = True
-        
-        context['grouped_diaries'] = grouped_diaries.values()
-        context['has_valid_entries'] = has_valid_entries
-        context['today'] = timezone.now().date()
-
-        analytics_actions = [
-            {
-                'type': 'back',
-                'url': reverse_lazy('stockdiary:home'),
-                'icon': 'bi-arrow-left',
-                'label': '戻る'
-            },
-            {
-                'type': 'add',
-                'url': reverse_lazy('stockdiary:create'),
-                'icon': 'bi-plus-lg',
-                'label': '新規作成'
-            }
-        ]
-        context['page_actions'] = analytics_actions
-                
-        diary_id = self.kwargs.get('pk')
-        if diary_id:
-            try:
-                selected_diary = StockDiary.objects.get(
-                    id=diary_id,
-                    user=self.request.user,
-                    sell_date__isnull=True
-                )
-                
-                if selected_diary.purchase_price is not None and selected_diary.purchase_quantity is not None:
-                    context['selected_diary'] = selected_diary
-                    context['auto_open_modal'] = True
-                    context['highlight_symbol'] = selected_diary.stock_symbol
-                    analytics_actions[0]['url'] = reverse_lazy('stockdiary:detail', kwargs={'pk': diary_id})
-                else:
-                    messages.error(self.request, '購入価格と株数が設定されていない日記は売却できません')
-            except StockDiary.DoesNotExist:
-                pass
-        
-        return context
-    
-    def post(self, request, *args, **kwargs):
-        diary_id = request.POST.get('diary_id')
-        sell_date = request.POST.get('sell_date')
-        sell_price = request.POST.get('sell_price')
-        
-        try:
-            diary = StockDiary.objects.get(
-                id=diary_id,
-                user=request.user
-            )
-            
-            if diary.purchase_price is None or diary.purchase_quantity is None:
-                messages.error(request, '購入価格と株数が設定されていない日記は売却できません')
-                return redirect('stockdiary:home')
-                
-            diary.sell_date = sell_date
-            diary.sell_price = Decimal(sell_price)
-            diary.save()
-            
-            messages.success(request, f'{diary.stock_name}の売却情報を登録しました')
-            return redirect('stockdiary:detail', pk=diary.id)
-            
-        except StockDiary.DoesNotExist:
-            messages.error(request, '指定された日記が見つかりません')
-        except Exception as e:
-            messages.error(request, f'エラーが発生しました: {str(e)}')
-        
-        return self.get(request, *args, **kwargs)
-
-
 class AddDiaryNoteView(LoginRequiredMixin, CreateView):
     """日記エントリーへの継続記録追加"""
     model = DiaryNote
@@ -889,34 +722,7 @@ class DiaryTabContentView(LoginRequiredMixin, View):
             context = {
                 'diary': diary,
                 'diary_id': diary.id,
-                'purchase_date': diary.purchase_date.strftime('%Y年%m月%d日')
             }
-            
-            # 数値のフォーマット処理
-            if diary.purchase_price is not None:
-                context['purchase_price'] = f"{float(diary.purchase_price):,.2f}円"
-                
-            if diary.purchase_quantity is not None:
-                context['purchase_quantity'] = diary.purchase_quantity
-                
-            if diary.purchase_price is not None and diary.purchase_quantity is not None:
-                total = float(diary.purchase_price) * diary.purchase_quantity
-                context['total_investment'] = f"{total:,.2f}円"
-                
-            if diary.sell_date:
-                context['sell_date'] = diary.sell_date.strftime('%Y年%m月%d日')
-                
-                if diary.sell_price is not None:
-                    context['sell_price'] = f"{float(diary.sell_price):,.2f}円"
-                    
-                    if diary.purchase_price is not None and diary.purchase_quantity is not None:
-                        profit = float(diary.sell_price - diary.purchase_price) * diary.purchase_quantity
-                        context['profit'] = profit
-                        context['profit_formatted'] = f"{profit:,.2f}円"
-                        
-                        profit_rate = ((float(diary.sell_price) / float(diary.purchase_price)) - 1) * 100
-                        context['profit_rate'] = profit_rate
-                        context['profit_rate_formatted'] = f"{profit_rate:.2f}%"
             
             if tab_type == 'notes':
                 html = self._render_notes_tab(diary)
@@ -1006,18 +812,7 @@ class DiaryTabContentView(LoginRequiredMixin, View):
                     <span class="badge {badge_class} small">{badge_text}</span>
                   </div>
                 '''
-                
-                if note.current_price:
-                    price_formatted = f"{float(note.current_price):,.2f}円"
-                    html += f'<div class="note-price small mb-1"><span class="text-muted">記録時価格:</span><span class="fw-medium">{price_formatted}</span>'
-                    
-                    if diary.purchase_price:
-                        price_change = ((float(note.current_price) / float(diary.purchase_price)) - 1) * 100
-                        price_change_class = "text-success" if price_change > 0 else "text-danger"
-                        price_change_sign = "+" if price_change > 0 else ""
-                        html += f'<span class="{price_change_class} ms-2">({price_change_sign}{price_change:.2f}%)</span>'
-                    
-                    html += '</div>'
+
                                 
                 formatted_content = note.content.replace('\n', '<br>')
                 html += f'''
@@ -1118,106 +913,6 @@ class DiaryTabContentView(LoginRequiredMixin, View):
         
         html += '</div>'
         return html
-    
-    def _render_details_tab(self, context):
-        """詳細タブのHTMLを直接生成"""
-        diary = context['diary']
-        html = '<div class="px-1 py-2">'
-        
-        if not diary.is_memo and diary.purchase_price is not None and diary.purchase_quantity is not None:
-            html += f'''
-            <div class="info-block">
-              <div class="info-row">
-                <div class="info-item">
-                  <div class="info-icon">
-                    <i class="bi bi-currency-yen"></i>
-                  </div>
-                  <div class="info-content">
-                    <span class="info-label">購入価格</span>
-                    <span class="info-value">{context['purchase_price']}</span>
-                  </div>
-                </div>
-                <div class="info-item">
-                  <div class="info-icon">
-                    <i class="bi bi-graph-up"></i>
-                  </div>
-                  <div class="info-content">
-                    <span class="info-label">購入数量</span>
-                    <span class="info-value">{context['purchase_quantity']}株</span>
-                  </div>
-                </div>
-                <div class="info-item">
-                  <div class="info-icon">
-                    <i class="bi bi-calendar-date"></i>
-                  </div>
-                  <div class="info-content">
-                    <span class="info-label">購入/メモ日</span>
-                    <span class="info-value">{context['purchase_date']}</span>
-                  </div>
-                </div>
-                <div class="info-item">
-                  <div class="info-icon">
-                    <i class="bi bi-cash-stack"></i>
-                  </div>
-                  <div class="info-content">
-                    <span class="info-label">総投資額</span>
-                    <span class="info-value">{context['total_investment']}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            '''
-        
-        if diary.sell_date and diary.purchase_price is not None and diary.purchase_quantity is not None:
-            profit_class = "profit" if context.get('profit', 0) > 0 else "loss" if context.get('profit', 0) < 0 else "text-muted"
-            profit_sign = "+" if context.get('profit', 0) > 0 else ""
-            
-            html += f'''
-            <div class="sell-info">
-              <div class="info-row">
-                <div class="info-item">
-                  <div class="info-icon">
-                    <i class="bi bi-currency-yen"></i>
-                  </div>
-                  <div class="info-content">
-                    <span class="info-label">売却価格</span>
-                    <span class="info-value">{context['sell_price']}</span>
-                  </div>
-                </div>
-                <div class="info-item">
-                  <div class="info-icon">
-                    <i class="bi bi-calendar-check"></i>
-                  </div>
-                  <div class="info-content">
-                    <span class="info-label">売却日</span>
-                    <span class="info-value">{context['sell_date']}</span>
-                  </div>
-                </div>
-                <div class="info-item">
-                  <div class="info-icon">
-                    <i class="bi bi-graph-up-arrow"></i>
-                  </div>
-                  <div class="info-content">
-                    <span class="info-label">損益</span>
-                    <span class="{profit_class}">{profit_sign}{context['profit_formatted']}</span>
-                  </div>
-                </div>
-                <div class="info-item">
-                  <div class="info-icon">
-                    <i class="bi bi-percent"></i>
-                  </div>
-                  <div class="info-content">
-                    <span class="info-label">損益率</span>
-                    <span class="{profit_class}">{profit_sign}{context['profit_rate_formatted']}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            '''
-        
-        html += '</div>'
-        return html
-
 
 class StockListView(LoginRequiredMixin, TemplateView):
     """登録株式一覧を表示するビュー"""
@@ -1260,22 +955,6 @@ class StockListView(LoginRequiredMixin, TemplateView):
                 stock_symbol=stock['stock_symbol']
             ).count()
             
-            stock_info['has_active_holdings'] = StockDiary.objects.filter(
-                user=user,
-                stock_symbol=stock['stock_symbol'],
-                sell_date__isnull=True,
-                purchase_price__isnull=False,
-                purchase_quantity__isnull=False
-            ).exists()
-            
-            stock_info['has_completed_sales'] = StockDiary.objects.filter(
-                user=user,
-                stock_symbol=stock['stock_symbol'],
-                sell_date__isnull=False,
-                purchase_price__isnull=False,
-                purchase_quantity__isnull=False
-            ).exists()
-
             if not stock_info['sector'] or stock_info['sector'] == '未分類':
                 try:
                     company = CompanyMaster.objects.filter(code=stock['stock_symbol']).first()
@@ -1505,7 +1184,7 @@ def diary_list(request):
         return redirect(f'/stockdiary/?{request.GET.urlencode()}')
     
     try:
-        queryset = StockDiary.objects.filter(user=request.user).order_by('-updated_at', '-purchase_date')
+        queryset = StockDiary.objects.filter(user=request.user).order_by('-updated_at')
         queryset = queryset.select_related('user').prefetch_related('tags', 'notes')
         
         query = request.GET.get('query', '')
@@ -1530,20 +1209,6 @@ def diary_list(request):
         if sector:
             queryset = queryset.filter(sector=sector)
         
-        if status == 'active':
-            queryset = queryset.filter(
-                sell_date__isnull=True,
-                purchase_price__isnull=False,
-                purchase_quantity__isnull=False
-            )
-        elif status == 'sold':
-            queryset = queryset.filter(sell_date__isnull=False)
-        elif status == 'memo':
-            queryset = queryset.filter(
-                Q(purchase_price__isnull=True) | 
-                Q(purchase_quantity__isnull=True) | 
-                Q(is_memo=True)
-            )
             
         paginator = Paginator(queryset, 10)
         page = request.GET.get('page', 1)
@@ -1621,19 +1286,7 @@ def tab_content(request, diary_id, tab_type):
                 
                 context['template_groups'] = template_groups
                 template_name = 'stockdiary/partials/tab_analysis.html'
-            
-            elif tab_type == 'details':
-                if diary.purchase_price and diary.purchase_quantity:
-                    context['total_investment'] = diary.purchase_price * diary.purchase_quantity
-                    
-                    if diary.sell_price and diary.sell_date:
-                        profit = (diary.sell_price - diary.purchase_price) * diary.purchase_quantity
-                        profit_rate = ((diary.sell_price / diary.purchase_price) - 1) * 100
-                        context['profit'] = profit
-                        context['profit_rate'] = profit_rate
-                
-                template_name = 'stockdiary/partials/tab_details.html'
-            
+                        
             elif tab_type == 'margin':
                 margin_data, latest_margin_data = get_margin_data(diary.stock_symbol, limit=10)
                 context['margin_data'] = margin_data
@@ -1738,16 +1391,7 @@ def context_actions(request, pk):
         diary = StockDiary.objects.get(id=pk, user=request.user)
     except StockDiary.DoesNotExist:
         return JsonResponse({'error': '日記が見つかりません'}, status=404)
-    
-    is_memo = diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None
-    is_sold = diary.sell_date is not None
-    
-    context = {
-        'diary': diary,
-        'is_memo': is_memo,
-        'is_sold': is_sold
-    }
-    
+        
     html = render_to_string('stockdiary/partials/context_actions.html', context)
     return HttpResponse(html)
 
@@ -2159,7 +1803,7 @@ def api_stock_diaries(request, symbol):
         diaries = StockDiary.objects.filter(
             user=request.user,
             stock_symbol=symbol
-        ).order_by('-purchase_date', '-created_at')
+        ).order_by('-created_at')
         
         diary_data = []
         for diary in diaries:
@@ -2167,11 +1811,7 @@ def api_stock_diaries(request, symbol):
             
             diary_data.append({
                 'id': diary.id,
-                'purchase_date': diary.purchase_date.strftime('%Y年%m月%d日'),
-                'purchase_price': float(diary.purchase_price) if diary.purchase_price else None,
-                'purchase_quantity': diary.purchase_quantity,
-                'sell_date': diary.sell_date.strftime('%Y年%m月%d日') if diary.sell_date else None,
-                'sell_price': float(diary.sell_price) if diary.sell_price else None,
+                'initial_purchase_date': diary.purchase_date.strftime('%Y年%m月%d日'),
                 'reason': diary.reason,
                 'memo': diary.memo,
                 'is_memo': diary.is_memo,
@@ -2192,3 +1832,221 @@ def api_stock_diaries(request, symbol):
             'error': str(e),
             'success': False
         }, status=500)
+
+@login_required
+@require_http_methods(["POST"])
+def add_transaction(request, diary_id):
+    """取引を追加"""
+    diary = get_object_or_404(StockDiary, id=diary_id, user=request.user)
+    
+    form = TransactionForm(request.POST, diary=diary)
+    
+    # バリデーション前に diary を設定（重要！）
+    if not form.instance.pk:
+        form.instance.diary = diary
+    
+    if form.is_valid():
+        transaction = form.save(commit=False)
+        transaction.diary = diary
+        
+        try:
+            transaction.save()  # saveメソッド内でupdate_aggregates()が呼ばれる
+            
+            # 取引後の状態を記録
+            transaction.quantity_after = diary.current_quantity
+            transaction.average_price_after = diary.average_purchase_price
+            transaction.save(update_fields=['quantity_after', 'average_price_after'])
+            
+            messages.success(
+                request, 
+                f'{transaction.get_transaction_type_display()}取引を記録しました'
+            )
+        except Exception as e:
+            messages.error(request, f'取引の記録中にエラーが発生しました: {str(e)}')
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                messages.error(request, f'{field}: {error}')
+    
+    return redirect('stockdiary:detail', pk=diary_id)
+
+
+@login_required
+@require_http_methods(["POST"])
+def update_transaction(request, transaction_id):
+    """取引を更新"""
+    transaction = get_object_or_404(
+        Transaction, 
+        id=transaction_id, 
+        diary__user=request.user
+    )
+    
+    # diaryを取得
+    diary = transaction.diary
+    
+    form = TransactionForm(request.POST, instance=transaction, diary=diary)
+    
+    # 既存のインスタンスには既に diary が設定されているはずだが、念のため
+    if form.instance.diary_id is None:
+        form.instance.diary = diary
+    
+    if form.is_valid():
+        try:
+            transaction = form.save()
+            
+            # 取引後の状態を更新
+            diary = transaction.diary
+            transaction.quantity_after = diary.current_quantity
+            transaction.average_price_after = diary.average_purchase_price
+            transaction.save(update_fields=['quantity_after', 'average_price_after'])
+            
+            messages.success(request, '取引を更新しました')
+        except Exception as e:
+            messages.error(request, f'取引の更新中にエラーが発生しました: {str(e)}')
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                messages.error(request, f'{field}: {error}')
+    
+    return redirect('stockdiary:detail', pk=transaction.diary.id)
+
+
+@login_required
+@require_http_methods(["POST"])
+def delete_transaction(request, transaction_id):
+    """取引を削除"""
+    transaction = get_object_or_404(
+        Transaction, 
+        id=transaction_id, 
+        diary__user=request.user
+    )
+    
+    diary_id = transaction.diary.id
+    transaction_date = transaction.transaction_date
+    transaction_type = transaction.get_transaction_type_display()
+    
+    try:
+        transaction.delete()  # deleteメソッド内でupdate_aggregates()が呼ばれる
+        messages.success(
+            request, 
+            f'{transaction_date.strftime("%Y年%m月%d日")}の{transaction_type}取引を削除しました'
+        )
+    except Exception as e:
+        messages.error(request, f'取引の削除中にエラーが発生しました: {str(e)}')
+    
+    return redirect('stockdiary:detail', pk=diary_id)
+
+
+@login_required
+@require_http_methods(["GET"])
+def get_transaction(request, transaction_id):
+    """取引データを取得（AJAX用）"""
+    transaction = get_object_or_404(
+        Transaction, 
+        id=transaction_id, 
+        diary__user=request.user
+    )
+    
+    return JsonResponse({
+        'id': transaction.id,
+        'transaction_type': transaction.transaction_type,
+        'transaction_date': transaction.transaction_date.strftime('%Y-%m-%d'),
+        'price': str(transaction.price),
+        'quantity': str(transaction.quantity),
+        'memo': transaction.memo or ''
+    })
+
+# ==========================================
+# 株式分割管理ビュー
+# ==========================================
+
+@login_required
+@require_http_methods(["POST"])
+def add_stock_split(request, diary_id):
+    """株式分割を追加"""
+    diary = get_object_or_404(StockDiary, id=diary_id, user=request.user)
+    
+    form = StockSplitForm(request.POST)
+    
+    if form.is_valid():
+        split = form.save(commit=False)
+        split.diary = diary
+        
+        try:
+            split.save()
+            messages.success(
+                request, 
+                f'株式分割情報を追加しました（{split.split_date} / {split.split_ratio}倍）'
+            )
+            messages.info(
+                request,
+                '取引履歴で「適用」ボタンをクリックすると、過去の取引が自動調整されます'
+            )
+        except Exception as e:
+            messages.error(request, f'株式分割の追加中にエラーが発生しました: {str(e)}')
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                messages.error(request, f'{field}: {error}')
+    
+    return redirect('stockdiary:detail', pk=diary_id)
+
+
+@login_required
+@require_http_methods(["POST"])
+def apply_stock_split(request, split_id):
+    """株式分割を適用"""
+    split = get_object_or_404(
+        StockSplit, 
+        id=split_id, 
+        diary__user=request.user
+    )
+    
+    if split.is_applied:
+        messages.warning(request, 'この株式分割はすでに適用済みです')
+        return redirect('stockdiary:detail', pk=split.diary.id)
+    
+    try:
+        split.apply_split()
+        messages.success(
+            request,
+            f'株式分割を適用しました（{split.split_date} / {split.split_ratio}倍）'
+        )
+        messages.info(
+            request,
+            f'{split.split_date}以前の取引データが自動調整されました'
+        )
+    except Exception as e:
+        messages.error(request, f'株式分割の適用中にエラーが発生しました: {str(e)}')
+    
+    return redirect('stockdiary:detail', pk=split.diary.id)
+
+
+@login_required
+@require_http_methods(["POST"])
+def delete_stock_split(request, split_id):
+    """株式分割を削除"""
+    split = get_object_or_404(
+        StockSplit, 
+        id=split_id, 
+        diary__user=request.user
+    )
+    
+    if split.is_applied:
+        messages.error(request, '適用済みの株式分割は削除できません')
+        return redirect('stockdiary:detail', pk=split.diary.id)
+    
+    diary_id = split.diary.id
+    split_date = split.split_date
+    split_ratio = split.split_ratio
+    
+    try:
+        split.delete()
+        messages.success(
+            request,
+            f'株式分割情報を削除しました（{split_date} / {split_ratio}倍）'
+        )
+    except Exception as e:
+        messages.error(request, f'株式分割の削除中にエラーが発生しました: {str(e)}')
+    
+    return redirect('stockdiary:detail', pk=diary_id)

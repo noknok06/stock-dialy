@@ -28,7 +28,7 @@
           <i class="bi bi-calendar-date"></i>
         </div>
         <div class="info-content">
-          <span class="info-label">購入/メモ日</span>
+          <span class="info-label">メモ日</span>
           <span class="info-value">{{ diary.purchase_date|date:"Y年m月d日" }}</span>
         </div>
       </div>
@@ -40,71 +40,6 @@
         <div class="info-content">
           <span class="info-label">総投資額</span>
           <span class="info-value">{{ total_investment|floatformat:2 }}円</span>
-        </div>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- 売却情報表示 -->
-  {% if diary.sell_date and diary.purchase_price is not None and diary.purchase_quantity is not None %}
-  <div class="sell-info">
-    <div class="info-row">
-      <div class="info-item">
-        <div class="info-icon">
-          <i class="bi bi-currency-yen"></i>
-        </div>
-        <div class="info-content">
-          <span class="info-label">売却価格</span>
-          <span class="info-value">{{ diary.sell_price|floatformat:2 }}円</span>
-        </div>
-      </div>
-
-      <div class="info-item">
-        <div class="info-icon">
-          <i class="bi bi-calendar-check"></i>
-        </div>
-        <div class="info-content">
-          <span class="info-label">売却日</span>
-          <span class="info-value">{{ diary.sell_date|date:"Y年m月d日" }}</span>
-        </div>
-      </div>
-
-      <div class="info-item">
-        <div class="info-icon">
-          <i class="bi bi-graph-up-arrow"></i>
-        </div>
-        <div class="info-content">
-          <span class="info-label">損益</span>
-          {% if profit is not None %}
-          {% if profit > 0 %}
-          <span class="profit">+{{ profit|floatformat:2 }}円</span>
-          {% elif profit < 0 %} <span class="loss">{{ profit|floatformat:2 }}円</span>
-            {% else %}
-            <span class="text-muted">{{ profit|floatformat:2 }}円</span>
-            {% endif %}
-            {% else %}
-            <span class="text-muted">-</span>
-            {% endif %}
-        </div>
-      </div>
-
-      <div class="info-item">
-        <div class="info-icon">
-          <i class="bi bi-percent"></i>
-        </div>
-        <div class="info-content">
-          <span class="info-label">損益率</span>
-          {% if profit_rate is not None %}
-          {% if profit_rate > 0 %}
-          <span class="profit">+{{ profit_rate|floatformat:2 }}%</span>
-          {% elif profit_rate < 0 %} <span class="loss">{{ profit_rate|floatformat:2 }}%</span>
-            {% else %}
-            <span class="text-muted">{{ profit_rate|floatformat:2 }}%</span>
-            {% endif %}
-            {% else %}
-            <span class="text-muted">-</span>
-            {% endif %}
         </div>
       </div>
     </div>

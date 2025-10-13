@@ -105,32 +105,6 @@ class SpeedDial {
     // アクションボタンクリック時の処理
     const actionButtons = this.actions.querySelectorAll('.speed-dial-btn');
     actionButtons.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        // ボタンの種類に応じた処理
-        // action-quick-add クラスのボタンはデフォルト動作を停止しない
-        // それ以外のボタンはダイアログを閉じる
-        if (!btn.classList.contains('action-quick-add')) {
-          // データ属性にonclickがあれば優先
-          const onclickAttr = btn.getAttribute('data-onclick');
-          if (onclickAttr) {
-            try {
-              eval(onclickAttr);
-            } catch (err) {
-              console.warn('カスタムクリックハンドラーエラー:', err);
-            }
-          }
-          
-          // href="#"の場合やURLがない場合はデフォルト動作を停止
-          const href = btn.getAttribute('href');
-          if (!href || href === '#') {
-            e.preventDefault();
-          }
-          
-          // クイック作成以外はスピードダイアルを閉じる
-          this.close();
-        }
-      });
-      
       // キーボードアクセシビリティの強化
       btn.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
