@@ -23,6 +23,9 @@
     margin-bottom: 1rem;
     font-size: 1.1rem;
     font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .form-control, .form-select {
@@ -36,17 +39,37 @@
     outline: none;
   }
 
+  /* 日記らしいテキストエリア */
+  .diary-textarea {
+    font-family: 'Hiragino Kaku Gothic Pro', 'メイリオ', sans-serif;
+    line-height: 1.8;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background-color: #fefefe;
+    background-image: linear-gradient(transparent 1.7rem, #e5e7eb 1.7rem, #e5e7eb 1.8rem, transparent 1.8rem);
+    background-size: 100% 1.8rem;
+    min-height: 200px;
+  }
+
+  .diary-memo-textarea {
+    font-family: 'Hiragino Kaku Gothic Pro', 'メイリオ', sans-serif;
+    line-height: 1.8;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background-color: #fffef5;
+    border: 2px solid #fbbf24;
+    min-height: 150px;
+  }
+
   .initial-purchase-section {
     background-color: #f9fafb;
     border: 2px dashed #d1d5db;
     border-radius: 0.5rem;
     padding: 1rem;
     margin-top: 1rem;
-    display: none;
   }
 
   .initial-purchase-section.active {
-    display: block;
     animation: slideDown 0.3s ease-out;
   }
 
@@ -73,6 +96,217 @@
     color: #3b82f6;
     margin-right: 0.5rem;
   }
+
+  .character-count {
+    font-size: 0.875rem;
+    color: #6b7280;
+    text-align: right;
+    margin-top: 0.25rem;
+  }
+
+  .character-count.warning {
+    color: #f59e0b;
+  }
+
+  .character-count.danger {
+    color: #ef4444;
+  }
+/* 分析項目の基本スタイル */
+.analysis-item {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.analysis-item:hover {
+  border-color: #5a7ec5;
+  box-shadow: 0 2px 4px rgba(90, 126, 197, 0.15);
+}
+
+/* ブール型の横並びレイアウト */
+.analysis-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.analysis-item-label-wrapper {
+  display: flex;
+  align-items: flex-start;
+  flex: 1;
+  min-width: 0;
+}
+
+.analysis-item-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #111827;
+  margin: 0;
+  cursor: pointer;
+}
+
+.analysis-item-desc {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+  line-height: 1.4;
+}
+
+/* コンパクトヘッダー（他の項目タイプ用） */
+.analysis-item-header-compact {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.analysis-item-label-compact {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #111827;
+  margin: 0;
+}
+
+/* スイッチのスタイル */
+.form-check-input[role="switch"] {
+  width: 2.75rem;
+  height: 1.5rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.form-check-input[role="switch"]:checked {
+  background-color: #10b981;
+  border-color: #10b981;
+}
+
+.switch-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  margin-left: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.form-check-input[role="switch"]:checked ~ .switch-label {
+  color: #059669;
+}
+
+/* 複合型（boolean_with_value）のスタイル */
+.compound-input-wrapper {
+  background-color: #f9fafb;
+  padding: 0.875rem;
+  border-radius: 0.375rem;
+  border: 1px solid #e5e7eb;
+}
+
+.compound-input-wrapper .form-check {
+  padding-left: 1.75rem;
+}
+
+.compound-input-wrapper .form-check-input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0;
+}
+
+.compound-input-wrapper .form-check-input:checked {
+  background-color: #10b981;
+  border-color: #10b981;
+}
+
+.compound-input-wrapper .form-check-label {
+  color: #374151;
+  cursor: pointer;
+  user-select: none;
+}
+
+.compound-input-wrapper .form-check-input:checked ~ .form-check-label {
+  color: #059669;
+}
+
+/* フォームラベルの小サイズ */
+.form-label-sm {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4b5563;
+  margin-bottom: 0.375rem;
+}
+
+/* フォームコントロールのスタイル */
+.analysis-item .form-control,
+.analysis-item .form-select {
+  border-color: #d1d5db;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.analysis-item .form-control:focus,
+.analysis-item .form-select:focus {
+  border-color: #5a7ec5;
+  box-shadow: 0 0 0 3px rgba(90, 126, 197, 0.25);
+}
+
+.analysis-item .form-control::placeholder {
+  color: #9ca3af;
+}
+
+/* アイコンのスタイル */
+.analysis-item i.bi {
+  flex-shrink: 0;
+}
+
+/* スマホ対応 */
+@media (max-width: 576px) {
+  .analysis-item {
+    padding: 0.875rem;
+  }
+  
+  .analysis-item-row {
+    gap: 0.75rem;
+  }
+  
+  .analysis-item-label,
+  .analysis-item-label-compact {
+    font-size: 0.9rem;
+  }
+  
+  .analysis-item-desc {
+    font-size: 0.75rem;
+  }
+  
+  .form-check-input[role="switch"] {
+    width: 2.5rem;
+    height: 1.375rem;
+  }
+  
+  .switch-label {
+    font-size: 0.8rem;
+  }
+  
+  .compound-input-wrapper {
+    padding: 0.75rem;
+  }
+}
+
+/* タッチデバイス対応 */
+@media (hover: none) and (pointer: coarse) {
+  .form-check-input,
+  .analysis-item .form-control,
+  .analysis-item .form-select {
+    min-height: 44px;
+  }
+  
+  .analysis-item-label,
+  .form-check-label {
+    padding: 0.5rem 0;
+  }
+}  
 </style>
 {% endblock %}
 
@@ -88,9 +322,9 @@
   {% if not form.instance.pk %}
   <div class="info-box">
     <i class="bi bi-info-circle info-box-icon"></i>
-    <strong>トランザクション管理について:</strong>
-    日記作成後、「取引履歴」タブから購入・売却を記録できます。
-    初回購入情報を同時に登録する場合は、下のチェックボックスをオンにしてください。
+    <strong>投資日記について:</strong>
+    投資判断の理由や気づいたことを自由に記録できます。
+    後から「取引履歴」タブで実際の売買を記録することもできます。
   </div>
   {% endif %}
 
@@ -103,10 +337,10 @@
         <!-- 株式情報セクション -->
         <div class="form-section">
           <h4 class="form-section-title">
-            <i class="bi bi-graph-up"></i> 株式情報
+            <i class="bi bi-graph-up"></i> 銘柄情報
           </h4>
 
-          <!-- 株価情報カード -->
+          <!-- 株価情報カード（銘柄検索後に表示） -->
           <div class="info-block d-none" id="stockInfoCard">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h5 class="mb-0" id="stockInfoTitle">会社情報</h5>
@@ -172,114 +406,14 @@
                 銘柄名/メモタイトル<span class="text-danger">*</span>
               </label>
               {{ form.stock_name }}
+              <small class="form-text text-muted">株式の場合は銘柄名、メモの場合はタイトルを入力</small>
               {% if form.stock_name.errors %}
               <div class="text-danger">{{ form.stock_name.errors }}</div>
               {% endif %}
             </div>
           </div>
-        </div>
-
-        <!-- 初回購入情報セクション（オプション） -->
-
-
-        {% if not form.instance.pk %}
-        <div class="form-section">
-          <div class="form-check mb-3">
-            {{ form.add_initial_purchase }}
-            <label class="form-check-label" for="{{ form.add_initial_purchase.id_for_label }}">
-              <strong>{{ form.add_initial_purchase.label }}</strong>
-              <small class="d-block text-muted">チェックすると、日記作成と同時に最初の購入取引を記録できます</small>
-            </label>
-          </div>
-        
-          <div class="initial-purchase-section" id="initialPurchaseSection">
-            <div class="alert alert-info mb-3">
-              <i class="bi bi-info-circle me-2"></i>
-              <strong>初回購入について:</strong>
-              <ul class="mb-0 mt-2 small">
-                <li>日記作成後、「取引履歴」タブから追加購入・売却を記録できます</li>
-                <li>すぐに取引を記録しない場合は、このセクションは空欄のままで構いません</li>
-                <li>後から「取引履歴」タブで追加できます</li>
-              </ul>
-            </div>
-        
-            <h6 class="mb-3">
-              <i class="bi bi-cart-plus"></i> 初回購入情報
-            </h6>
-        
-            <div class="row">
-              <div class="col-md-4 mb-3">
-                <label for="{{ form.initial_purchase_date.id_for_label }}" class="form-label">
-                  購入日<span class="text-danger">*</span>
-                </label>
-                {{ form.initial_purchase_date }}
-                {% if form.initial_purchase_date.errors %}
-                <div class="text-danger small">{{ form.initial_purchase_date.errors }}</div>
-                {% endif %}
-              </div>
-        
-              <div class="col-md-4 mb-3">
-                <label for="{{ form.initial_purchase_price.id_for_label }}" class="form-label">
-                  購入単価（円）<span class="text-danger">*</span>
-                </label>
-                <div class="input-group">
-                  <input type="number" 
-                         class="form-control" 
-                         id="{{ form.initial_purchase_price.id_for_label }}"
-                         name="initial_purchase_price"
-                         step="0.01" 
-                         min="0.01"
-                         max="9999999.99"
-                         placeholder="例: 1000.00">
-                  <button type="button" class="btn btn-outline-primary" id="fetch-current-price" title="現在株価を取得">
-                    <i class="bi bi-arrow-repeat"></i> 現在株価
-                  </button>
-                </div>
-                <small class="form-text text-muted">1株あたりの単価（最大999万9999円）</small>
-                {% if form.initial_purchase_price.errors %}
-                <div class="text-danger small">{{ form.initial_purchase_price.errors }}</div>
-                {% endif %}
-              </div>
-        
-              <div class="col-md-4 mb-3">
-                <label for="{{ form.initial_purchase_quantity.id_for_label }}" class="form-label">
-                  購入数量（株）<span class="text-danger">*</span>
-                </label>
-                <input type="number" 
-                       class="form-control"
-                       id="{{ form.initial_purchase_quantity.id_for_label }}"
-                       name="initial_purchase_quantity"
-                       step="1" 
-                       min="1"
-                       max="99999999"
-                       placeholder="例: 100">
-                <small class="form-text text-muted">取引株数（最大9999万株）</small>
-                {% if form.initial_purchase_quantity.errors %}
-                <div class="text-danger small">{{ form.initial_purchase_quantity.errors }}</div>
-                {% endif %}
-              </div>
-            </div>
-        
-            <!-- 合計金額の表示 -->
-            <div class="alert alert-success" id="initial-purchase-preview" style="display: none;">
-              <strong>初回購入金額:</strong> <span id="initial-purchase-amount">0</span>円
-            </div>
-          </div>
-        </div>
-        {% endif %}
-
-        <!-- 分類情報セクション -->
-        <div class="form-section">
-          <h4 class="form-section-title">
-            <i class="bi bi-tags"></i> 分類情報
-          </h4>
 
           <div class="row">
-            <div class="col-md-6 mb-3">
-              <label for="{{ form.tags.id_for_label }}" class="form-label">タグ</label>
-              {{ form.tags }}
-              <small class="form-text text-muted">複数選択可能です</small>
-            </div>
             <div class="col-md-6 mb-3">
               <label for="{{ form.sector.id_for_label }}" class="form-label">業種</label>
               <div class="input-group">
@@ -291,13 +425,168 @@
               </div>
               <small class="form-text text-muted">業種情報は銘柄検索時に自動設定されます</small>
             </div>
+            
+            <div class="col-md-6 mb-3">
+              <label for="{{ form.tags.id_for_label }}" class="form-label">タグ</label>
+              {{ form.tags }}
+              <small class="form-text text-muted">複数選択可能です</small>
+            </div>
           </div>
         </div>
+
+        <div class="mb-4">
+          <label for="{{ form.reason.id_for_label }}" class="form-label">
+            <strong>投資理由・分析内容</strong>
+          </label>
+          <textarea class="form-control diary-textarea" 
+                    name="reason" 
+                    id="{{ form.reason.id_for_label }}"
+                    rows="10"
+                    placeholder="なぜこの銘柄に注目したのか、どのような分析をしたのか、将来の見通しなどを自由に記録してください...
+
+例:
+・決算が好調で増益傾向にある
+・新製品の発売が控えており期待できる
+・PERが同業他社と比べて割安
+・配当利回りが高い
+・技術的に強いサポートラインがある"
+                    maxlength="3000">{{ form.reason.value|default:'' }}</textarea>
+          <div class="character-count" id="reasonCharCount">0 / 3000文字</div>
+          {% if form.reason.errors %}
+          <div class="text-danger small mt-1">{{ form.reason.errors }}</div>
+          {% endif %}
+        </div>
+
+        <div class="mb-3">
+          <label for="{{ form.memo.id_for_label }}" class="form-label">
+            <strong>メモ・気づいたこと</strong>
+            <span class="badge bg-warning text-dark ms-2">
+              <i class="bi bi-sticky"></i> メモ
+            </span>
+          </label>
+          <textarea class="form-control diary-memo-textarea" 
+                    name="memo" 
+                    id="{{ form.memo.id_for_label }}"
+                    rows="6"
+                    placeholder="その他の気づき、注意点、感想などを自由に記入してください...
+
+例:
+・経営陣の発言が気になった
+・競合他社の動向もチェック必要
+・次の決算発表は○月○日
+・この価格帯で買い増しを検討"
+                    maxlength="1000">{{ form.memo.value|default:'' }}</textarea>
+          <div class="character-count" id="memoCharCount">0 / 1000文字</div>
+          {% if form.memo.errors %}
+          <div class="text-danger small mt-1">{{ form.memo.errors }}</div>
+          {% endif %}
+        </div>
+
+        <!-- 初回購入情報セクション（新規作成時のみ） -->
+        {% if not form.instance.pk %}
+        <div class="form-section">
+          <div class="form-check mb-3">
+            <input type="checkbox" class="form-check-input" 
+                   id="id_add_initial_purchase" 
+                   name="add_initial_purchase"
+                   {% if form.add_initial_purchase.value %}checked{% endif %}>
+            <label class="form-check-label" for="id_add_initial_purchase">
+              <strong>{{ form.add_initial_purchase.label }}</strong>
+              <small class="d-block text-muted">
+                チェックすると、日記作成と同時に最初の購入取引を記録できます
+              </small>
+            </label>
+          </div>
+        
+          <div class="initial-purchase-section" id="initialPurchaseSection" 
+               {% if not form.add_initial_purchase.value %}style="display: none;"{% endif %}>
+            <div class="alert alert-info mb-3">
+              <i class="bi bi-info-circle me-2"></i>
+              <strong>初回購入について:</strong>
+              <ul class="mb-0 mt-2 small">
+                <li>日記作成後、「取引履歴」タブから追加購入・売却を記録できます</li>
+                <li>まだ購入していない場合は、チェックを外してください</li>
+                <li>後から「取引履歴」タブで追加できます</li>
+              </ul>
+            </div>
+        
+            <h6 class="mb-3">
+              <i class="bi bi-cart-plus"></i> 初回購入情報
+            </h6>
+        
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label for="id_initial_purchase_date" class="form-label">
+                  購入日<span class="text-danger">*</span>
+                </label>
+                <input type="date" 
+                       class="form-control" 
+                       id="id_initial_purchase_date"
+                       name="initial_purchase_date"
+                       value="{{ form.initial_purchase_date.value|default:'' }}">
+                {% if form.initial_purchase_date.errors %}
+                <div class="text-danger small">{{ form.initial_purchase_date.errors }}</div>
+                {% endif %}
+              </div>
+        
+              <div class="col-md-4 mb-3">
+                <label for="id_initial_purchase_price" class="form-label">
+                  購入単価（円）<span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                  <input type="number" 
+                         class="form-control" 
+                         id="id_initial_purchase_price"
+                         name="initial_purchase_price"
+                         step="0.01" 
+                         min="0.01"
+                         placeholder="例: 1000.00"
+                         value="{{ form.initial_purchase_price.value|default:'' }}">
+                  <button type="button" class="btn btn-outline-primary" 
+                          id="fetch-current-price" title="現在株価を取得">
+                    <i class="bi bi-arrow-repeat"></i> 現在株価
+                  </button>
+                </div>
+                <small class="form-text text-muted">1株あたりの単価</small>
+                {% if form.initial_purchase_price.errors %}
+                <div class="text-danger small">{{ form.initial_purchase_price.errors }}</div>
+                {% endif %}
+              </div>
+        
+              <div class="col-md-4 mb-3">
+                <label for="id_initial_purchase_quantity" class="form-label">
+                  購入数量（株）<span class="text-danger">*</span>
+                </label>
+                <input type="number" 
+                       class="form-control"
+                       id="id_initial_purchase_quantity"
+                       name="initial_purchase_quantity"
+                       step="1" 
+                       min="1"
+                       placeholder="例: 100"
+                       value="{{ form.initial_purchase_quantity.value|default:'' }}">
+                <small class="form-text text-muted">取引株数</small>
+                {% if form.initial_purchase_quantity.errors %}
+                <div class="text-danger small">{{ form.initial_purchase_quantity.errors }}</div>
+                {% endif %}
+              </div>
+            </div>
+        
+            <!-- 合計金額の表示 -->
+            <div class="alert alert-success" id="initial-purchase-preview" style="display: none;">
+              <div class="d-flex justify-content-between align-items-center">
+                <strong>初回購入金額:</strong>
+                <span id="initial-purchase-amount" class="fs-5">0</span>円
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
 
         <!-- 分析テンプレートセクション -->
         <div class="form-section">
           <h4 class="form-section-title">
-            <i class="bi bi-clipboard-data"></i> 分析データ
+            <i class="bi bi-clipboard-data"></i> 分析データ（任意）
           </h4>
 
           <div class="row mb-3">
@@ -330,11 +619,11 @@
         <!-- 画像セクション -->
         <div class="form-section">
           <h4 class="form-section-title">
-            <i class="bi bi-image"></i> 画像添付
+            <i class="bi bi-image"></i> 画像添付（任意）
           </h4>
 
           <div class="mb-3">
-            <label for="id_image" class="form-label">画像ファイル（任意）</label>
+            <label for="id_image" class="form-label">画像ファイル</label>
             {{ form.image }}
             <small class="form-text text-muted">
               チャート、スクリーンショット等（最大10MB、JPEG/PNG/GIF/WebP形式）
@@ -375,32 +664,13 @@
           </div>
         </div>
 
-        <!-- 詳細情報セクション -->
-        <div class="form-section">
-          <h4 class="form-section-title">
-            <i class="bi bi-journal-text"></i> 詳細情報
-          </h4>
-
-          <div class="mb-4">
-            <label for="{{ form.reason.id_for_label }}" class="form-label">投資理由 / 分析内容</label>
-            <small class="d-block text-muted mb-2">株式購入の理由や分析結果、将来の見通しなどを記録</small>
-            {{ form.reason }}
-          </div>
-
-          <div class="mb-3">
-            <label for="{{ form.memo.id_for_label }}" class="form-label">追加メモ（任意）</label>
-            {{ form.memo }}
-            <small class="form-text text-muted">その他の備考事項があれば記入してください</small>
-          </div>
-        </div>
-
         <!-- フッター -->
         <div class="form-footer">
           <a href="{% if form.instance.pk %}{% url 'stockdiary:detail' form.instance.pk %}{% else %}{% url 'stockdiary:home' %}{% endif %}"
              class="btn btn-diary btn-diary-outline">
             <i class="bi bi-arrow-left me-1"></i> キャンセル
           </a>
-          <button type="submit" class="btn btn-diary btn-diary-primary">
+          <button type="submit" class="btn btn-diary btn-diary-primary" id="submitBtn">
             <i class="bi bi-save me-1"></i> 保存
           </button>
         </div>
@@ -415,184 +685,858 @@
 {% block scripts %}
 {{ block.super }}
 <script>
+
 document.addEventListener('DOMContentLoaded', function() {
-  // 初回購入情報の表示/非表示
-  const addInitialPurchaseCheckbox = document.getElementById('{{ form.add_initial_purchase.id_for_label }}');
-  const initialPurchaseSection = document.getElementById('initialPurchaseSection');
+
+// ============================================
+// オートコンプリート機能
+// ============================================
+const stockSymbolInput = document.getElementById('id_stock_symbol');
+let autocompleteTimeout;
+let autocompleteResults = [];
+let selectedIndex = -1;
+
+if (stockSymbolInput) {
+  // オートコンプリート用の結果表示エリアを作成
+  const autocompleteContainer = document.createElement('div');
+  autocompleteContainer.id = 'autocomplete-results';
+  autocompleteContainer.className = 'autocomplete-results';
+  autocompleteContainer.style.cssText = `
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 300px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    display: none;
+  `;
   
-  if (addInitialPurchaseCheckbox && initialPurchaseSection) {
-    // 初期状態を設定
-    if (addInitialPurchaseCheckbox.checked) {
-      initialPurchaseSection.classList.add('active');
-    }
-    
-    addInitialPurchaseCheckbox.addEventListener('change', function() {
-      if (this.checked) {
-        initialPurchaseSection.classList.add('active');
-        // 必須項目のバリデーションを有効化
-        updateRequiredFields(true);
-      } else {
-        initialPurchaseSection.classList.remove('active');
-        // 必須項目のバリデーションを無効化
-        updateRequiredFields(false);
-      }
-    });
+  // 入力グループの親要素に追加
+  const inputGroup = stockSymbolInput.closest('.input-group');
+  if (inputGroup) {
+    inputGroup.style.position = 'relative';
+    inputGroup.appendChild(autocompleteContainer);
   }
   
-  // 必須項目の切り替え
-  function updateRequiredFields(required) {
-    const dateField = document.getElementById('{{ form.initial_purchase_date.id_for_label }}');
-    const priceField = document.getElementById('{{ form.initial_purchase_price.id_for_label }}');
-    const quantityField = document.getElementById('{{ form.initial_purchase_quantity.id_for_label }}');
+  // 入力時のオートコンプリート
+  stockSymbolInput.addEventListener('input', function(e) {
+    const query = e.target.value.trim();
     
-    [dateField, priceField, quantityField].forEach(field => {
-      if (field) {
-        if (required) {
-          field.setAttribute('required', 'required');
+    clearTimeout(autocompleteTimeout);
+    
+    if (query.length < 2) {
+      autocompleteContainer.style.display = 'none';
+      return;
+    }
+    
+    // 300ms後に検索実行
+    autocompleteTimeout = setTimeout(async () => {
+      try {
+        const response = await fetch(`/stockdiary/api/stock/search/?query=${encodeURIComponent(query)}&limit=10`);
+        const data = await response.json();
+        
+        if (data.success && data.companies.length > 0) {
+          autocompleteResults = data.companies;
+          displayAutocompleteResults(data.companies);
         } else {
-          field.removeAttribute('required');
-          field.value = '';
+          autocompleteContainer.style.display = 'none';
         }
+      } catch (error) {
+        console.error('Autocomplete error:', error);
+        autocompleteContainer.style.display = 'none';
       }
+    }, 300);
+  });
+  
+  // 結果を表示
+  function displayAutocompleteResults(companies) {
+    let html = '<div class="list-group list-group-flush">';
+    
+    companies.forEach((company, index) => {
+      html += `
+        <button type="button" 
+                class="list-group-item list-group-item-action autocomplete-item" 
+                data-index="${index}"
+                style="border: none; padding: 0.75rem 1rem; cursor: pointer; text-align: left;">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <strong style="color: #2563eb;">${escapeHtml(company.code)}</strong>
+              <span style="color: #374151; margin-left: 0.5rem;">${escapeHtml(company.name)}</span>
+            </div>
+            <div style="text-align: right;">
+              <small style="color: #6b7280; display: block;">${escapeHtml(company.market)}</small>
+              <small style="color: #9ca3af; display: block;">${escapeHtml(company.industry)}</small>
+            </div>
+          </div>
+        </button>
+      `;
     });
     
-    // プレビューを非表示
-    if (!required) {
-      document.getElementById('initial-purchase-preview').style.display = 'none';
-    }
-  }
-  
-  // 合計金額の計算
-  function updateInitialPurchasePreview() {
-    const priceField = document.getElementById('{{ form.initial_purchase_price.id_for_label }}');
-    const quantityField = document.getElementById('{{ form.initial_purchase_quantity.id_for_label }}');
+    html += '</div>';
+    autocompleteContainer.innerHTML = html;
+    autocompleteContainer.style.display = 'block';
     
-    if (!priceField || !quantityField) return;
-    
-    const price = parseFloat(priceField.value) || 0;
-    const quantity = parseFloat(quantityField.value) || 0;
-    
-    if (price > 0 && quantity > 0 && addInitialPurchaseCheckbox.checked) {
-      const amount = price * quantity;
-      document.getElementById('initial-purchase-amount').textContent = amount.toLocaleString();
-      document.getElementById('initial-purchase-preview').style.display = 'block';
-    } else {
-      document.getElementById('initial-purchase-preview').style.display = 'none';
-    }
-  }
-  
-  // イベントリスナー
-  const priceField = document.getElementById('{{ form.initial_purchase_price.id_for_label }}');
-  const quantityField = document.getElementById('{{ form.initial_purchase_quantity.id_for_label }}');
-  
-  if (priceField) {
-    priceField.addEventListener('input', updateInitialPurchasePreview);
-  }
-  
-  if (quantityField) {
-    quantityField.addEventListener('input', updateInitialPurchasePreview);
-  }
-  
-  // 現在株価取得
-  const fetchCurrentPriceBtn = document.getElementById('fetch-current-price');
-  if (fetchCurrentPriceBtn) {
-    fetchCurrentPriceBtn.addEventListener('click', function() {
-      const stockCode = document.getElementById('{{ form.stock_symbol.id_for_label }}').value.trim();
-      const priceInput = document.getElementById('{{ form.initial_purchase_price.id_for_label }}');
+    // クリックイベント設定
+    const items = autocompleteContainer.querySelectorAll('.autocomplete-item');
+    items.forEach(item => {
+      item.addEventListener('click', function() {
+        const index = parseInt(this.dataset.index);
+        selectCompany(autocompleteResults[index]);
+      });
       
-      if (!stockCode) {
-        alert('銘柄コードを入力してください');
+      item.addEventListener('mouseenter', function() {
+        this.style.backgroundColor = '#f3f4f6';
+      });
+      item.addEventListener('mouseleave', function() {
+        this.style.backgroundColor = 'white';
+      });
+    });
+  }
+  
+  // 企業選択
+  function selectCompany(company) {
+    stockSymbolInput.value = company.code;
+    
+    const stockNameInput = document.getElementById('id_stock_name');
+    const sectorInput = document.getElementById('id_sector');
+    
+    if (stockNameInput && !stockNameInput.value) {
+      stockNameInput.value = company.name;
+    }
+    
+    if (sectorInput && !sectorInput.value) {
+      sectorInput.value = company.industry;
+    }
+    
+    autocompleteContainer.style.display = 'none';
+    selectedIndex = -1;
+    
+    // 株価情報を自動取得
+    const fetchStockInfoBtn = document.getElementById('fetchStockInfo');
+    if (fetchStockInfoBtn) {
+      fetchStockInfoBtn.click();
+    }
+  }
+  
+  // キーボード操作
+  stockSymbolInput.addEventListener('keydown', function(e) {
+    const items = autocompleteContainer.querySelectorAll('.autocomplete-item');
+    
+    if (items.length === 0) return;
+    
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+      updateSelection(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      selectedIndex = Math.max(selectedIndex - 1, -1);
+      updateSelection(items);
+    } else if (e.key === 'Enter' && selectedIndex >= 0) {
+      e.preventDefault();
+      const index = parseInt(items[selectedIndex].dataset.index);
+      selectCompany(autocompleteResults[index]);
+    } else if (e.key === 'Escape') {
+      autocompleteContainer.style.display = 'none';
+      selectedIndex = -1;
+    }
+  });
+  
+  function updateSelection(items) {
+    items.forEach((item, index) => {
+      if (index === selectedIndex) {
+        item.style.backgroundColor = '#dbeafe';
+        item.scrollIntoView({ block: 'nearest' });
+      } else {
+        item.style.backgroundColor = 'white';
+      }
+    });
+  }
+  
+  // 外側クリックで閉じる
+  document.addEventListener('click', function(e) {
+    if (!stockSymbolInput.contains(e.target) && !autocompleteContainer.contains(e.target)) {
+      autocompleteContainer.style.display = 'none';
+      selectedIndex = -1;
+    }
+  });
+}
+
+const fetchStockInfoBtn = document.getElementById('fetchStockInfo');
+const stockNameInput = document.getElementById('id_stock_name');
+const sectorInput = document.getElementById('id_sector');
+const stockInfoCard = document.getElementById('stockInfoCard');
+const symbolSpinnerContainer = document.getElementById('symbolSpinnerContainer');
+
+if (fetchStockInfoBtn) {
+  fetchStockInfoBtn.addEventListener('click', async function() {
+    const stockCode = stockSymbolInput.value.trim();
+    
+    if (!stockCode) {
+      alert('銘柄コードを入力してください');
+      stockSymbolInput.focus();
+      return;
+    }
+    
+    fetchStockInfoBtn.disabled = true;
+    fetchStockInfoBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    symbolSpinnerContainer.classList.remove('d-none');
+    stockInfoCard.classList.add('d-none');
+    
+    try {
+      const response = await fetch(`/stockdiary/api/stock/info/${stockCode}/`);
+      
+      if (!response.ok) {
+        throw new Error('株式情報の取得に失敗しました');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        if (data.company_name) {
+          stockNameInput.value = data.company_name;
+        }
+        
+        if (data.industry && data.industry !== '不明') {
+          sectorInput.value = data.industry;
+        }
+        
+        displayStockInfo(data, stockCode);
+        showNotification('success', '銘柄情報を取得しました');
+      } else {
+        throw new Error(data.error || '銘柄情報の取得に失敗しました');
+      }
+      
+    } catch (error) {
+      console.error('Stock info fetch error:', error);
+      showNotification('error', error.message);
+      stockInfoCard.classList.add('d-none');
+    } finally {
+      fetchStockInfoBtn.disabled = false;
+      fetchStockInfoBtn.innerHTML = '<i class="bi bi-search"></i> 検索';
+      symbolSpinnerContainer.classList.add('d-none');
+    }
+  });
+}
+
+// 株式情報表示
+function displayStockInfo(data, stockCode) {
+  document.getElementById('stockInfoTitle').textContent = data.company_name || '銘柄情報';
+  document.getElementById('stockInfoCode').textContent = stockCode;
+  
+  if (data.price !== null && data.price !== undefined) {
+    document.getElementById('stockInfoPrice').textContent = 
+      `${parseFloat(data.price).toLocaleString('ja-JP', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })}円`;
+  } else {
+    document.getElementById('stockInfoPrice').textContent = '取得できませんでした';
+  }
+  
+  if (data.change_percent !== null && data.change_percent !== undefined) {
+    const changeElement = document.getElementById('stockInfoChange');
+    const changePercent = parseFloat(data.change_percent);
+    const changeClass = changePercent > 0 ? 'text-success' : 
+                       (changePercent < 0 ? 'text-danger' : 'text-muted');
+    const changeSign = changePercent > 0 ? '+' : '';
+    
+    changeElement.textContent = `${changeSign}${changePercent.toFixed(2)}%`;
+    changeElement.className = `info-value ${changeClass}`;
+  } else {
+    document.getElementById('stockInfoChange').textContent = '--';
+  }
+  
+  document.getElementById('stockInfoMarket').textContent = data.market || '不明';
+  document.getElementById('stockInfoIndustry').textContent = data.industry || '不明';
+  
+  stockInfoCard.classList.remove('d-none');
+}
+
+// 通知表示
+function showNotification(type, message) {
+  const existingNotification = document.querySelector('.custom-notification');
+  if (existingNotification) {
+    existingNotification.remove();
+  }
+  
+  const notification = document.createElement('div');
+  notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show custom-notification`;
+  notification.style.cssText = 'position: fixed; top: 80px; right: 20px; z-index: 9999; min-width: 300px;';
+  notification.innerHTML = `
+    <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+    ${message}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
+}
+
+// ============================================
+// 文字数カウンター
+// ============================================
+const reasonTextarea = document.getElementById('{{ form.reason.id_for_label }}');
+const memoTextarea = document.getElementById('{{ form.memo.id_for_label }}');
+const reasonCharCount = document.getElementById('reasonCharCount');
+const memoCharCount = document.getElementById('memoCharCount');
+
+function updateCharCount(textarea, countElement, maxLength) {
+  const count = textarea.value.length;
+  countElement.textContent = `${count} / ${maxLength}文字`;
+  
+  countElement.classList.remove('warning', 'danger');
+  if (count > maxLength * 0.9) {
+    countElement.classList.add('danger');
+  } else if (count > maxLength * 0.7) {
+    countElement.classList.add('warning');
+  }
+}
+
+if (reasonTextarea && reasonCharCount) {
+  updateCharCount(reasonTextarea, reasonCharCount, 3000);
+  reasonTextarea.addEventListener('input', function() {
+    updateCharCount(this, reasonCharCount, 3000);
+  });
+}
+
+if (memoTextarea && memoCharCount) {
+  updateCharCount(memoTextarea, memoCharCount, 1000);
+  memoTextarea.addEventListener('input', function() {
+    updateCharCount(this, memoCharCount, 1000);
+  });
+}
+
+// ============================================
+// 初回購入情報の表示/非表示
+// ============================================
+const addInitialPurchaseCheckbox = document.getElementById('id_add_initial_purchase');
+const initialPurchaseSection = document.getElementById('initialPurchaseSection');
+
+if (addInitialPurchaseCheckbox && initialPurchaseSection) {
+  addInitialPurchaseCheckbox.addEventListener('change', function() {
+    if (this.checked) {
+      initialPurchaseSection.style.display = 'block';
+      initialPurchaseSection.classList.add('active');
+      updateRequiredFields(true);
+    } else {
+      initialPurchaseSection.style.display = 'none';
+      initialPurchaseSection.classList.remove('active');
+      updateRequiredFields(false);
+    }
+  });
+}
+
+function updateRequiredFields(required) {
+  const dateField = document.getElementById('id_initial_purchase_date');
+  const priceField = document.getElementById('id_initial_purchase_price');
+  const quantityField = document.getElementById('id_initial_purchase_quantity');
+  
+  [dateField, priceField, quantityField].forEach(field => {
+    if (field) {
+      if (required) {
+        field.setAttribute('required', 'required');
+      } else {
+        field.removeAttribute('required');
+        field.value = '';
+      }
+    }
+  });
+  
+  if (!required) {
+    const preview = document.getElementById('initial-purchase-preview');
+    if (preview) {
+      preview.style.display = 'none';
+    }
+  }
+}
+
+// ============================================
+// 合計金額の計算
+// ============================================
+function updateInitialPurchasePreview() {
+  const priceField = document.getElementById('id_initial_purchase_price');
+  const quantityField = document.getElementById('id_initial_purchase_quantity');
+  const checkbox = document.getElementById('id_add_initial_purchase');
+  const preview = document.getElementById('initial-purchase-preview');
+  const amountElement = document.getElementById('initial-purchase-amount');
+  
+  if (!priceField || !quantityField || !checkbox || !preview || !amountElement) return;
+  
+  const price = parseFloat(priceField.value) || 0;
+  const quantity = parseFloat(quantityField.value) || 0;
+  
+  if (price > 0 && quantity > 0 && checkbox.checked) {
+    const amount = price * quantity;
+    amountElement.textContent = amount.toLocaleString('ja-JP', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+const priceField = document.getElementById('id_initial_purchase_price');
+const quantityField = document.getElementById('id_initial_purchase_quantity');
+
+if (priceField) {
+  priceField.addEventListener('input', updateInitialPurchasePreview);
+}
+
+if (quantityField) {
+  quantityField.addEventListener('input', updateInitialPurchasePreview);
+}
+
+// ============================================
+// 現在株価取得
+// ============================================
+const fetchCurrentPriceBtn = document.getElementById('fetch-current-price');
+if (fetchCurrentPriceBtn) {
+  fetchCurrentPriceBtn.addEventListener('click', async function() {
+    const stockCode = stockSymbolInput.value.trim();
+    const priceInput = document.getElementById('id_initial_purchase_price');
+    
+    if (!stockCode) {
+      alert('銘柄コードを入力してください');
+      stockSymbolInput.focus();
+      return;
+    }
+    
+    fetchCurrentPriceBtn.disabled = true;
+    fetchCurrentPriceBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    
+    try {
+      const response = await fetch(`/stockdiary/api/stock/price/${stockCode}/`);
+      
+      if (!response.ok) {
+        throw new Error('株価の取得に失敗しました');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.price) {
+        priceInput.value = parseFloat(data.price).toFixed(2);
+        updateInitialPurchasePreview();
+        showNotification('success', '現在株価を取得しました');
+      } else {
+        throw new Error('株価情報が見つかりませんでした');
+      }
+      
+    } catch (error) {
+      console.error('Price fetch error:', error);
+      showNotification('error', error.message);
+    } finally {
+      fetchCurrentPriceBtn.disabled = false;
+      fetchCurrentPriceBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> 現在株価';
+    }
+  });
+}
+
+// ============================================
+// 画像プレビュー
+// ============================================
+const imageInput = document.getElementById('id_image');
+const imagePreviewContainer = document.getElementById('image-preview-container');
+const imagePreview = document.getElementById('image-preview');
+const removeImageBtn = document.getElementById('remove-image');
+
+if (imageInput) {
+  imageInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        alert('画像ファイルのサイズは10MB以下にしてください');
+        imageInput.value = '';
         return;
       }
       
-      if (priceInput) {
-        fetchCurrentPriceBtn.disabled = true;
-        fetchCurrentPriceBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-        
-        fetch(`/stockdiary/api/stock/price/${stockCode}/`)
-          .then(response => {
-            if (!response.ok) throw new Error('株価の取得に失敗しました');
-            return response.json();
-          })
-          .then(data => {
-            priceInput.value = data.price;
-            updateInitialPurchasePreview();
-          })
-          .catch(error => {
-            console.error('Error:', error);
-            alert(error.message);
-          })
-          .finally(() => {
-            fetchCurrentPriceBtn.disabled = false;
-            fetchCurrentPriceBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> 現在株価';
-          });
+      const validFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!validFormats.includes(file.type)) {
+        alert('JPEG、PNG、GIF、WebP形式の画像ファイルのみアップロード可能です');
+        imageInput.value = '';
+        return;
       }
-    });
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        imagePreview.src = e.target.result;
+        imagePreviewContainer.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+}
+
+if (removeImageBtn) {
+  removeImageBtn.addEventListener('click', function() {
+    imageInput.value = '';
+    imagePreviewContainer.style.display = 'none';
+    imagePreview.src = '';
+  });
+}
+
+// ============================================
+// 分析テンプレート展開
+// ============================================
+const analysisTemplateSelect = document.getElementById('id_analysis_template');
+const expandAnalysisBtn = document.getElementById('expandAnalysisBtn');
+const analysisItemsContainer = document.getElementById('analysisItemsContainer');
+const analysisItemsContent = document.getElementById('analysisItemsContent');
+
+if (expandAnalysisBtn) {
+  expandAnalysisBtn.addEventListener('click', function() {
+    const templateId = analysisTemplateSelect.value;
+    
+    if (!templateId) {
+      alert('分析テンプレートを選択してください');
+      analysisTemplateSelect.focus();
+      return;
+    }
+    
+    analysisItemsContainer.classList.remove('d-none');
+    loadAnalysisItems(templateId);
+  });
+}
+
+if (analysisTemplateSelect) {
+  analysisTemplateSelect.addEventListener('change', function() {
+    if (this.value && !analysisItemsContainer.classList.contains('d-none')) {
+      loadAnalysisItems(this.value);
+    }
+  });
+}
+
+async function loadAnalysisItems(templateId) {
+  analysisItemsContent.innerHTML = `
+    <div class="text-center py-3">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">読み込み中...</span>
+      </div>
+      <div class="mt-2">分析項目を読み込んでいます...</div>
+    </div>
+  `;
+  
+  try {
+    // 🔧 修正: 日記IDを取得（編集時のみ存在）
+    const diaryId = '{{ form.instance.pk|default:"" }}';
+    
+    // 🔧 修正: 正しいAPIエンドポイントを使用
+    let url = `/analysis_template/api/items/?template_id=${templateId}`;
+    
+    // 編集時は既存の分析値も取得
+    if (diaryId) {
+      url += `&diary_id=${diaryId}`;
+    }
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error('分析項目の取得に失敗しました');
+    }
+    
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.error || '分析項目の取得に失敗しました');
+    }
+    
+    // 🔧 修正: 既存の値も渡す
+    renderAnalysisItems(data.items, data.values || {});
+    
+  } catch (error) {
+    console.error('Analysis items fetch error:', error);
+    analysisItemsContent.innerHTML = `
+      <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        分析項目の読み込みに失敗しました: ${error.message}
+        <button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="loadAnalysisItems(${templateId})">
+          <i class="bi bi-arrow-clockwise"></i> 再試行
+        </button>
+      </div>
+    `;
+  }
+}
+
+
+function renderAnalysisItems(items, values = {}) {
+  if (!items || items.length === 0) {
+    analysisItemsContent.innerHTML = `
+      <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i>
+        このテンプレートには分析項目がありません
+      </div>
+    `;
+    return;
   }
   
-  // フォーム送信時のバリデーション
-  const form = document.getElementById('diaryForm');
-  if (form) {
-    form.addEventListener('submit', function(e) {
-      if (addInitialPurchaseCheckbox.checked) {
-        const dateField = document.getElementById('{{ form.initial_purchase_date.id_for_label }}');
-        const priceField = document.getElementById('{{ form.initial_purchase_price.id_for_label }}');
-        const quantityField = document.getElementById('{{ form.initial_purchase_quantity.id_for_label }}');
+  console.log('Rendering analysis items with values:', values); // デバッグ用
+  
+  let html = '';
+  
+  items.forEach((item, index) => {
+    // 既存値を取得
+    const existingValue = values[item.id];
+    console.log(`Item ${item.id} (${item.name}):`, existingValue); // デバッグ用
+    
+    // 項目タイプに応じたアイコン
+    let icon = 'bi-circle';
+    if (item.item_type === 'boolean') icon = 'bi-toggle-on';
+    else if (item.item_type === 'boolean_with_value') icon = 'bi-check-circle';
+    else if (item.item_type === 'number') icon = 'bi-123';
+    else if (item.item_type === 'select') icon = 'bi-list-ul';
+    else if (item.item_type === 'text') icon = 'bi-text-left';
+    
+    html += `<div class="analysis-item ${item.item_type === 'boolean' ? 'analysis-item-boolean' : ''}">`;
+    
+    // 項目タイプごとの表示
+    if (item.item_type === 'boolean') {
+      // ブール型：横並びレイアウト
+      const checked = existingValue === true ? 'checked' : '';
+      console.log(`Boolean item ${item.id}: checked=${checked}`); // デバッグ用
+      
+      html += `
+        <div class="analysis-item-row">
+          <div class="analysis-item-label-wrapper">
+            <i class="bi ${icon} text-primary me-2"></i>
+            <div>
+              <label class="analysis-item-label" for="analysis_item_${item.id}">
+                ${escapeHtml(item.name)}
+              </label>
+              ${item.description ? `<div class="analysis-item-desc">${escapeHtml(item.description)}</div>` : ''}
+            </div>
+          </div>
+          <div class="form-check form-switch">
+            <input type="checkbox" 
+                   class="form-check-input" 
+                   name="analysis_item_${item.id}" 
+                   id="analysis_item_${item.id}"
+                   role="switch"
+                   ${checked}>
+            <label class="form-check-label switch-label" for="analysis_item_${item.id}">
+              ${checked ? 'はい' : 'いいえ'}
+            </label>
+          </div>
+        </div>
+      `;
+      
+    } else if (item.item_type === 'boolean_with_value') {
+      // 複合型：チェックボックス + 数値入力
+      const boolChecked = existingValue?.boolean_value === true ? 'checked' : '';
+      const numberValue = existingValue?.number_value ?? '';
+      const valueLabel = item.value_label || '値';
+      
+      console.log(`Boolean with value item ${item.id}:`, {
+        boolChecked,
+        numberValue,
+        existingValue
+      }); // デバッグ用
+      
+      html += `
+        <div class="analysis-item-header-compact">
+          <i class="bi ${icon} text-primary me-2"></i>
+          <label class="analysis-item-label-compact" for="analysis_item_${item.id}_boolean">
+            ${escapeHtml(item.name)}
+          </label>
+        </div>
+        ${item.description ? `<div class="analysis-item-desc mb-2">${escapeHtml(item.description)}</div>` : ''}
         
-        const errors = [];
-        
-        if (!dateField.value) {
-          errors.push('購入日を入力してください');
-        }
-        
-        const price = parseFloat(priceField.value);
-        if (!price || price <= 0) {
-          errors.push('購入単価は正の数を入力してください');
-        } else if (price > 9999999.99) {
-          errors.push('購入単価は999万9999円以下で入力してください');
-        }
-        
-        const quantity = parseFloat(quantityField.value);
-        if (!quantity || quantity <= 0) {
-          errors.push('購入数量は正の数を入力してください');
-        } else if (quantity > 99999999) {
-          errors.push('購入数量は9999万株以下で入力してください');
-        }
-        
-        if (errors.length > 0) {
-          e.preventDefault();
-          alert('入力エラー:\n' + errors.join('\n'));
-          return false;
+        <div class="compound-input-wrapper">
+          <div class="form-check mb-2">
+            <input type="checkbox" 
+                   class="form-check-input" 
+                   name="analysis_item_${item.id}_boolean" 
+                   id="analysis_item_${item.id}_boolean"
+                   ${boolChecked}>
+            <label class="form-check-label fw-semibold" for="analysis_item_${item.id}_boolean">
+              該当する
+            </label>
+          </div>
+          <div>
+            <label class="form-label form-label-sm">${escapeHtml(valueLabel)}</label>
+            <input type="number" 
+                   class="form-control" 
+                   name="analysis_item_${item.id}_value" 
+                   id="analysis_item_${item.id}_value"
+                   step="0.01"
+                   placeholder="数値を入力"
+                   value="${numberValue}">
+          </div>
+        </div>
+      `;
+      
+    } else if (item.item_type === 'number') {
+      // 数値型
+      const value = existingValue ?? '';
+      console.log(`Number item ${item.id}: value=${value}`); // デバッグ用
+      
+      html += `
+        <div class="analysis-item-header-compact">
+          <i class="bi ${icon} text-primary me-2"></i>
+          <label class="analysis-item-label-compact" for="analysis_item_${item.id}">
+            ${escapeHtml(item.name)}
+          </label>
+        </div>
+        ${item.description ? `<div class="analysis-item-desc mb-2">${escapeHtml(item.description)}</div>` : ''}
+        <input type="number" 
+               class="form-control" 
+               name="analysis_item_${item.id}" 
+               id="analysis_item_${item.id}"
+               step="0.01"
+               placeholder="数値を入力"
+               value="${value}">
+      `;
+      
+    } else if (item.item_type === 'select') {
+      // 選択肢型
+      html += `
+        <div class="analysis-item-header-compact">
+          <i class="bi ${icon} text-primary me-2"></i>
+          <label class="analysis-item-label-compact" for="analysis_item_${item.id}">
+            ${escapeHtml(item.name)}
+          </label>
+        </div>
+        ${item.description ? `<div class="analysis-item-desc mb-2">${escapeHtml(item.description)}</div>` : ''}
+        <select class="form-select" 
+                name="analysis_item_${item.id}" 
+                id="analysis_item_${item.id}">
+          <option value="">選択してください</option>
+      `;
+      
+      let choicesList = [];
+      if (item.choices) {
+        if (Array.isArray(item.choices)) {
+          choicesList = item.choices;
+        } else if (typeof item.choices === 'string') {
+          choicesList = item.choices.split(',').map(c => c.trim()).filter(c => c);
         }
       }
+      
+      choicesList.forEach(choice => {
+        const selected = existingValue === choice ? 'selected' : '';
+        html += `<option value="${escapeHtml(choice)}" ${selected}>${escapeHtml(choice)}</option>`;
+      });
+      
+      html += `</select>`;
+      
+    } else {
+      // テキスト型
+      const value = existingValue ?? '';
+      html += `
+        <div class="analysis-item-header-compact">
+          <i class="bi ${icon} text-primary me-2"></i>
+          <label class="analysis-item-label-compact" for="analysis_item_${item.id}">
+            ${escapeHtml(item.name)}
+          </label>
+        </div>
+        ${item.description ? `<div class="analysis-item-desc mb-2">${escapeHtml(item.description)}</div>` : ''}
+        <input type="text" 
+               class="form-control" 
+               name="analysis_item_${item.id}" 
+               id="analysis_item_${item.id}"
+               placeholder="テキストを入力"
+               value="${escapeHtml(value)}">
+      `;
+    }
+    
+    html += `</div>`;
+  });
+  
+  analysisItemsContent.innerHTML = html;
+  
+  // スイッチのラベル切り替え
+  document.querySelectorAll('.form-check-input[type="checkbox"][role="switch"]').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+      const label = this.nextElementSibling;
+      if (label && label.classList.contains('switch-label')) {
+        label.textContent = this.checked ? 'はい' : 'いいえ';
+      }
     });
+  });
+}
+
+function escapeHtml(text) {
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return String(text).replace(/[&<>"']/g, m => map[m]);
+}
+
+// ============================================
+// フォーム送信時のバリデーション
+// ============================================
+const form = document.getElementById('diaryForm');
+if (form) {
+  form.addEventListener('submit', function(e) {
+    const checkbox = document.getElementById('id_add_initial_purchase');
+    
+    if (checkbox && checkbox.checked) {
+      const errors = validateInitialPurchase();
+      
+      if (errors.length > 0) {
+        e.preventDefault();
+        alert('入力エラー:\n' + errors.join('\n'));
+        return false;
+      }
+    }
+    
+    const submitBtn = document.getElementById('submitBtn');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>保存中...';
+    }
+  });
+}
+
+function validateInitialPurchase() {
+  const errors = [];
+  const dateField = document.getElementById('id_initial_purchase_date');
+  const priceField = document.getElementById('id_initial_purchase_price');
+  const quantityField = document.getElementById('id_initial_purchase_quantity');
+  
+  if (!dateField.value) {
+    errors.push('購入日を入力してください');
   }
+  
+  const price = parseFloat(priceField.value);
+  if (!price || price <= 0) {
+    errors.push('購入単価は正の数を入力してください');
+  }
+  
+  const quantity = parseFloat(quantityField.value);
+  if (!quantity || quantity <= 0) {
+    errors.push('購入数量は正の数を入力してください');
+  }
+  
+  return errors;
+}
+
+// ============================================
+// 初期化処理
+// ============================================
+if (addInitialPurchaseCheckbox && addInitialPurchaseCheckbox.checked) {
+  updateInitialPurchasePreview();
+}
+
+// ツールチップの初期化
+const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+tooltipTriggerList.map(function (tooltipTriggerEl) {
+  return new bootstrap.Tooltip(tooltipTriggerEl);
+});
 });
 </script>
-<style>
-.initial-purchase-section {
-  background-color: #f9fafb;
-  border: 2px dashed #d1d5db;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  margin-top: 1rem;
-  display: none;
-}
-
-.initial-purchase-section.active {
-  display: block;
-  animation: slideDown 0.3s ease-out;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-</style>
 {% endblock %}

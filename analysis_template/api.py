@@ -48,7 +48,7 @@ def get_template_items(request):
                 'description': item.description,
                 'item_type': item.item_type,
                 'order': item.order,
-                'choices': item.choices,
+                'choices': item.get_choices_list(),  # 🔧 修正: リストに変換
                 'value_label': item.value_label
             }
             items_data.append(item_data)

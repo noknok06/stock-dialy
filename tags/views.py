@@ -57,7 +57,7 @@ class TagDetailView(LoginRequiredMixin, DetailView):
         tag = self.object
         
         # このタグが設定されている日記を取得
-        diaries = tag.stockdiary_set.select_related('user').prefetch_related('tags').order_by('-purchase_date')
+        diaries = tag.stockdiary_set.select_related('user').prefetch_related('tags').order_by('-created_at')
         
         # 銘柄ごとにグループ化
         stock_groups = {}
@@ -79,22 +79,7 @@ class TagDetailView(LoginRequiredMixin, DetailView):
             
             stock_groups[symbol]['diaries'].append(diary)
             stock_groups[symbol]['total_entries'] += 1
-            
-            # 統計情報の更新
-            if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None:
-                stock_groups[symbol]['memo_entries'] += 1
-            elif diary.sell_date is None:
-                stock_groups[symbol]['active_holdings'] += 1
-            else:
-                stock_groups[symbol]['completed_sales'] += 1
-            
-            # 日付の更新
-            if stock_groups[symbol]['latest_date'] is None or diary.purchase_date > stock_groups[symbol]['latest_date']:
-                stock_groups[symbol]['latest_date'] = diary.purchase_date
-            
-            if stock_groups[symbol]['earliest_date'] is None or diary.purchase_date < stock_groups[symbol]['earliest_date']:
-                stock_groups[symbol]['earliest_date'] = diary.purchase_date
-        
+                        
         # 銘柄リストをソート（最新日付順）
         stock_list = list(stock_groups.values())
         stock_list.sort(key=lambda x: x['latest_date'] or x['earliest_date'], reverse=True)

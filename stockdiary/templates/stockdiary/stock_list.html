@@ -780,6 +780,7 @@
 {% endblock %}
 
 {% block scripts %}
+
 <script>
 let diarySelectModal;
 
@@ -794,12 +795,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const mobileCardView = document.getElementById('mobileCardView');
     
     if (tableViewBtn && cardViewBtn) {
-        // デフォルトはテーブル表示
         let currentView = 'table';
         
         tableViewBtn.addEventListener('click', function() {
             if (currentView !== 'table') {
-                // テーブル表示に切り替え
                 mobileTableView.classList.remove('d-none');
                 mobileCardView.classList.add('d-none');
                 
@@ -807,15 +806,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 cardViewBtn.classList.remove('active');
                 
                 currentView = 'table';
-                
-                // 表示設定を保存
                 localStorage.setItem('stockListViewMode', 'table');
             }
         });
         
         cardViewBtn.addEventListener('click', function() {
             if (currentView !== 'card') {
-                // カード表示に切り替え
                 mobileTableView.classList.add('d-none');
                 mobileCardView.classList.remove('d-none');
                 
@@ -823,13 +819,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 tableViewBtn.classList.remove('active');
                 
                 currentView = 'card';
-                
-                // 表示設定を保存
                 localStorage.setItem('stockListViewMode', 'card');
             }
         });
         
-        // 保存された表示設定を読み込み
         const savedViewMode = localStorage.getItem('stockListViewMode');
         if (savedViewMode === 'card') {
             cardViewBtn.click();
@@ -845,7 +838,6 @@ document.addEventListener('DOMContentLoaded', function() {
         submitButton.disabled = true;
     });
     
-    // Enter キーでの検索
     const searchInput = document.querySelector('input[name="q"]');
     searchInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
@@ -853,7 +845,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // ソートや業種フィルターの変更時に自動送信
     const sortSelect = document.querySelector('select[name="sort"]');
     const sectorSelect = document.querySelector('select[name="sector"]');
     
@@ -874,21 +865,15 @@ async function showDiaryModal(symbol, stockName) {
     const contentDiv = document.getElementById('diaryListContent');
     const viewAllBtn = document.getElementById('viewAllDiariesBtn');
     
-    // タイトルを設定
     modalTitle.innerHTML = `<i class="bi bi-journal-text"></i> ${stockName} (${symbol}) の日記を選択`;
-    
-    // すべての日記を見るボタンのリンクを設定
     viewAllBtn.href = `{% url 'stockdiary:home' %}?query=${symbol}`;
     
-    // ローディング表示
     loadingSpinner.classList.remove('d-none');
     contentDiv.classList.add('d-none');
     
-    // モーダルを表示
     diarySelectModal.show();
     
     try {
-        // AJAX で日記一覧を取得
         const response = await fetch(`/stockdiary/api/stock-diaries/${symbol}/`);
         
         if (!response.ok) {
@@ -897,7 +882,6 @@ async function showDiaryModal(symbol, stockName) {
         
         const data = await response.json();
         
-        // ローディングを隠す
         loadingSpinner.classList.add('d-none');
         
         if (data.diaries && data.diaries.length > 0) {
@@ -916,7 +900,7 @@ async function showDiaryModal(symbol, stockName) {
     }
 }
 
-// 日記一覧をレンダリング
+// 日記一覧をレンダリング - 🔧 完全に修正されたバージョン
 function renderDiaryList(diaries, stockName) {
     const contentDiv = document.getElementById('diaryListContent');
     
@@ -930,20 +914,40 @@ function renderDiaryList(diaries, stockName) {
     diaries.forEach(diary => {
         // 状態の判定
         let statusBadge;
-        const hasPurchaseData = diary.purchase_price && diary.purchase_quantity;
-        const hasSellDate = diary.sell_date;
-        
-        if (hasPurchaseData && !hasSellDate) {
-            // 購入データありかつ売却日なし = 保有中
+        if (diary.is_memo) {
+            statusBadge = '<span class="badge bg-light text-dark">メモのみ</span>';
+        } else if (diary.is_holding) {
             statusBadge = '<span class="badge bg-success">保有中</span>';
-        } else if (hasPurchaseData && hasSellDate) {
-            // 購入データありかつ売却日あり = 売却済み
+        } else if (diary.is_sold_out) {
             statusBadge = '<span class="badge bg-secondary">売却済</span>';
         } else {
-            // 購入データなし = メモのみ
-            statusBadge = '<span class="badge bg-light text-dark">メモのみ</span>';
+            statusBadge = '<span class="badge bg-light text-dark">-</span>';
         }
         
+        // 購入情報の作成
+        let purchaseInfo = '';
+        if (diary.average_purchase_price && diary.current_quantity) {
+            const avgPrice = parseFloat(diary.average_purchase_price);
+            const currentQty = parseFloat(diary.current_quantity);
+            purchaseInfo = `平均単価: ${avgPrice.toLocaleString()}円 / 保有数: ${currentQty.toFixed(2)}株`;
+        } else if (diary.total_buy_amount) {
+            const totalBuy = parseFloat(diary.total_buy_amount);
+            purchaseInfo = `総購入額: ${totalBuy.toLocaleString()}円`;
+        } else {
+            purchaseInfo = '取引情報なし';
+        }
+        
+        // 売却情報の作成
+        let sellInfo = '';
+        if (diary.is_sold_out && diary.realized_profit !== null && diary.realized_profit !== undefined) {
+            const profit = parseFloat(diary.realized_profit);
+            const profitClass = profit > 0 ? 'text-success' : (profit < 0 ? 'text-danger' : 'text-muted');
+            const profitSign = profit > 0 ? '+' : '';
+            sellInfo = `<div class="small ${profitClass} mt-1">実現損益: ${profitSign}${profit.toLocaleString()}円</div>`;
+        }
+        
+        // 日付の表示
+        const displayDate = diary.first_purchase_date || diary.created_at || '日付未設定';
         
         html += `
             <div class="diary-item-modal mb-3" onclick="goToDiary(${diary.id})">
@@ -951,7 +955,7 @@ function renderDiaryList(diaries, stockName) {
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <div>
-                                <h6 class="mb-1">${diary.purchase_date}</h6>
+                                <h6 class="mb-1">${displayDate}</h6>
                                 <div class="small text-primary">${purchaseInfo}</div>
                                 ${sellInfo}
                             </div>
@@ -962,13 +966,13 @@ function renderDiaryList(diaries, stockName) {
                         ${diary.reason ? `
                             <div class="diary-reason mt-2">
                                 <div class="small text-muted">購入理由</div>
-                                <div class="text-truncate-2">${diary.reason.substring(0, 100)}${diary.reason.length > 100 ? '...' : ''}</div>
+                                <div class="text-truncate-2">${escapeHtml(diary.reason.substring(0, 100))}${diary.reason.length > 100 ? '...' : ''}</div>
                             </div>
                         ` : ''}
                         <div class="mt-2">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div class="small text-muted">
-                                    ${diary.tags && diary.tags.length > 0 ? diary.tags.map(tag => `<span class="badge bg-light text-dark">${tag}</span>`).join(' ') : ''}
+                                    ${diary.tags && diary.tags.length > 0 ? diary.tags.map(tag => `<span class="badge bg-light text-dark">${escapeHtml(tag)}</span>`).join(' ') : ''}
                                 </div>
                                 <div class="small text-muted">
                                     <i class="bi bi-arrow-right"></i>
@@ -986,6 +990,18 @@ function renderDiaryList(diaries, stockName) {
     contentDiv.innerHTML = html;
 }
 
+// HTMLエスケープ関数
+function escapeHtml(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, m => map[m]);
+}
+
 // 空の状態をレンダリング
 function renderEmptyState(stockName, symbol) {
     const contentDiv = document.getElementById('diaryListContent');
@@ -995,9 +1011,9 @@ function renderEmptyState(stockName, symbol) {
             <div class="mb-3">
                 <i class="bi bi-journal-x" style="font-size: 3rem; color: #6b7280;"></i>
             </div>
-            <h5 class="text-muted">${stockName} の日記がありません</h5>
+            <h5 class="text-muted">${escapeHtml(stockName)} の日記がありません</h5>
             <p class="text-muted">まだこの銘柄の投資日記が作成されていません</p>
-            <a href="{% url 'stockdiary:create' %}?symbol=${symbol}&name=${encodeURIComponent(stockName)}" 
+            <a href="{% url 'stockdiary:create' %}?symbol=${encodeURIComponent(symbol)}&name=${encodeURIComponent(stockName)}" 
                class="btn btn-primary">
                 <i class="bi bi-plus-lg"></i>
                 最初の日記を作成
@@ -1016,7 +1032,7 @@ function renderErrorState(errorMessage) {
                 <i class="bi bi-exclamation-triangle" style="font-size: 3rem; color: #dc3545;"></i>
             </div>
             <h5 class="text-danger">エラーが発生しました</h5>
-            <p class="text-muted">${errorMessage}</p>
+            <p class="text-muted">${escapeHtml(errorMessage)}</p>
             <button class="btn btn-outline-primary" onclick="location.reload()">
                 <i class="bi bi-arrow-clockwise"></i>
                 再読み込み

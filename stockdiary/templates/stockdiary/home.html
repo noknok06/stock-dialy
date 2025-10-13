@@ -973,7 +973,9 @@ img {
 
     <!-- 詳細検索パネル（折りたたみ式） -->
     <div class="advanced-search-panel collapsed" id="advancedPanel">
+      <!-- 詳細検索パネル内に追加 -->
       <div class="advanced-fields">
+        <!-- 既存のタグフィルター -->
         <div class="form-group">
           <label class="form-label" for="tagFilter">
             <i class="bi bi-tag me-1"></i>
@@ -989,19 +991,54 @@ img {
           </select>
         </div>
 
+        <!-- 業種フィルター（新規追加） -->
         <div class="form-group">
-          <label class="form-label" for="statusFilter">
-            <i class="bi bi-graph-up me-1"></i>
-            保有状態
+          <label class="form-label" for="sectorFilter">
+            <i class="bi bi-diagram-3 me-1"></i>
+            業種で絞り込み
           </label>
-          <select class="form-select" id="statusFilter" name="status">
-            <option value="" {% if not request.GET.status %}selected{% endif %}>すべて</option>
-            <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>保有中</option>
-            <option value="sold" {% if request.GET.status == 'sold' %}selected{% endif %}>売却済み</option>
-            <option value="memo" {% if request.GET.status == 'memo' %}selected{% endif %}>メモのみ</option>
+          <select class="form-select" id="sectorFilter" name="sector">
+            <option value="">すべて表示</option>
+            {% for sector in sectors %}
+              <option value="{{ sector }}" {% if request.GET.sector == sector %}selected{% endif %}>
+                {{ sector }}
+              </option>
+            {% endfor %}
           </select>
         </div>
 
+        <!-- ソート順（改善版） -->
+        <div class="form-group">
+          <label class="form-label" for="sortFilter">
+            <i class="bi bi-sort-down me-1"></i>
+            並び順
+          </label>
+          <select class="form-select" id="sortFilter" name="sort">
+            <option value="" {% if not request.GET.sort %}selected{% endif %}>更新日時（新しい順）</option>
+            <option value="date_desc" {% if request.GET.sort == 'date_desc' %}selected{% endif %}>取引日（新しい順）</option>
+            <option value="date_asc" {% if request.GET.sort == 'date_asc' %}selected{% endif %}>取引日（古い順）</option>
+            <option value="name" {% if request.GET.sort == 'name' %}selected{% endif %}>銘柄名（あいうえお順）</option>
+            <option value="symbol" {% if request.GET.sort == 'symbol' %}selected{% endif %}>証券コード順</option>
+            <option value="profit_desc" {% if request.GET.sort == 'profit_desc' %}selected{% endif %}>実現損益（高い順）</option>
+            <option value="profit_asc" {% if request.GET.sort == 'profit_asc' %}selected{% endif %}>実現損益（低い順）</option>
+          </select>
+        </div>
+
+        <!-- 日付範囲フィルター（新規追加） -->
+        <div class="form-group">
+          <label class="form-label" for="dateRangeFilter">
+            <i class="bi bi-calendar-range me-1"></i>
+            期間で絞り込み
+          </label>
+          <select class="form-select" id="dateRangeFilter" name="date_range">
+            <option value="" {% if not request.GET.date_range %}selected{% endif %}>すべての期間</option>
+            <option value="1w" {% if request.GET.date_range == '1w' %}selected{% endif %}>過去1週間</option>
+            <option value="1m" {% if request.GET.date_range == '1m' %}selected{% endif %}>過去1ヶ月</option>
+            <option value="3m" {% if request.GET.date_range == '3m' %}selected{% endif %}>過去3ヶ月</option>
+            <option value="6m" {% if request.GET.date_range == '6m' %}selected{% endif %}>過去6ヶ月</option>
+            <option value="1y" {% if request.GET.date_range == '1y' %}selected{% endif %}>過去1年</option>
+          </select>
+        </div>
       </div>
 
       <!-- 検索履歴（オプション - セッションまたはローカルストレージベース） -->

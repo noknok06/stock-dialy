@@ -191,80 +191,106 @@
 </div>
 
 <!-- 取引追加・編集モーダル -->
-<div class="modal fade" id="transactionModal" tabindex="-1" aria-labelledby="transactionModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="transactionModalLabel">取引を追加</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <form method="post" action="{% url 'stockdiary:add_transaction' diary.id %}" id="transactionForm">
-          {% csrf_token %}
-          <input type="hidden" name="transaction_id" id="transaction_id">
-          
-          <div class="modal-body">
-            <!-- フォーム内容 -->
-            <div class="mb-3">
-              <label for="transaction_type" class="form-label">取引種別<span class="text-danger">*</span></label>
-              <select class="form-select" name="transaction_type" id="transaction_type" required>
-                <option value="buy">購入</option>
-                <option value="sell">売却</option>
-              </select>
-            </div>
-  
-            <div class="mb-3">
-              <label for="transaction_date" class="form-label">取引日<span class="text-danger">*</span></label>
-              <input type="date" class="form-control" name="transaction_date" id="transaction_date" required>
-            </div>
-  
-            <div class="mb-3">
-              <label for="price" class="form-label">単価（円）<span class="text-danger">*</span></label>
-              <input type="number" class="form-control" name="price" id="price" 
-                     step="0.01" min="0.01" max="9999999.99" placeholder="例: 1000.00" required>
-              <small class="form-text text-muted">1株あたりの単価を入力</small>
-            </div>
-  
-            <div class="mb-3">
-              <label for="quantity" class="form-label">数量（株）<span class="text-danger">*</span></label>
-              <input type="number" class="form-control" name="quantity" id="quantity" 
-                     step="1" min="1" max="99999999" placeholder="例: 100" required>
-              <small class="form-text text-muted">取引する株数を入力</small>
-              <div id="quantity-warning" class="text-danger small mt-1" style="display: none;">
-                保有数（<span id="current-holdings">0</span>株）を超える売却はできません
-              </div>
-            </div>
-  
-            <div class="mb-3">
-              <label for="memo" class="form-label">メモ（任意）</label>
-              <textarea class="form-control" name="memo" id="memo" rows="3" 
-                        maxlength="500" placeholder="取引に関するメモ"></textarea>
-            </div>
-  
-            <!-- 計算結果表示 -->
-            <div id="transaction-preview" class="alert alert-info" style="display: none;">
-              <strong>取引金額:</strong> <span id="transaction-amount">0</span>円
-            </div>
-          </div>
-  
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" id="modal-close-btn">キャンセル</button>
-            <button type="submit" class="btn btn-primary" id="submit-transaction">
-              <i class="bi bi-save me-1"></i>保存
-            </button>
-          </div>
-        </form>
+<div class="modal fade" id="transactionModal" tabindex="-1" aria-labelledby="transactionModalLabel" 
+     aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="transactionModalLabel">取引を追加</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
       </div>
+      
+      <form method="post" action="{% url 'stockdiary:add_transaction' diary.id %}" id="transactionForm">
+        {% csrf_token %}
+        <input type="hidden" name="transaction_id" id="transaction_id">
+        
+        <div class="modal-body">
+          <!-- エラー表示エリア -->
+          <div id="form-errors" class="alert alert-danger d-none" role="alert"></div>
+          
+          <!-- 取引種別 -->
+          <div class="mb-3">
+            <label for="transaction_type" class="form-label">
+              取引種別<span class="text-danger">*</span>
+            </label>
+            <select class="form-select" name="transaction_type" id="transaction_type" required>
+              <option value="buy">購入</option>
+              <option value="sell">売却</option>
+            </select>
+          </div>
+
+          <!-- 取引日 -->
+          <div class="mb-3">
+            <label for="transaction_date" class="form-label">
+              取引日<span class="text-danger">*</span>
+            </label>
+            <input type="date" class="form-control" name="transaction_date" 
+                   id="transaction_date" required>
+          </div>
+
+          <!-- 単価 -->
+          <div class="mb-3">
+            <label for="price" class="form-label">
+              単価（円）<span class="text-danger">*</span>
+            </label>
+            <input type="number" class="form-control" name="price" id="price" 
+                   step="0.01" min="0.01" placeholder="例: 1000.00" required>
+            <small class="form-text text-muted">1株あたりの単価を入力</small>
+          </div>
+
+          <!-- 数量 -->
+          <div class="mb-3">
+            <label for="quantity" class="form-label">
+              数量（株）<span class="text-danger">*</span>
+            </label>
+            <input type="number" class="form-control" name="quantity" id="quantity" 
+                   step="1" min="1" placeholder="例: 100" required>
+            <small class="form-text text-muted">取引する株数を入力</small>
+            <div id="quantity-warning" class="text-danger small mt-1" style="display: none;">
+              保有数（<span id="current-holdings">{{ diary.current_quantity|floatformat:0 }}</span>株）を超える売却はできません
+            </div>
+          </div>
+
+          <!-- メモ -->
+          <div class="mb-3">
+            <label for="memo" class="form-label">メモ（任意）</label>
+            <textarea class="form-control" name="memo" id="memo" rows="3" 
+                      maxlength="500" placeholder="取引に関するメモ"></textarea>
+          </div>
+
+          <!-- 取引金額プレビュー -->
+          <div id="transaction-preview" class="alert alert-info" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center">
+              <strong>取引金額:</strong>
+              <span id="transaction-amount" class="fs-5">0</span>円
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="modal-close-btn" 
+                  data-bs-dismiss="modal">
+            キャンセル
+          </button>
+          <button type="submit" class="btn btn-primary" id="submit-transaction">
+            <i class="bi bi-save me-1"></i>保存
+          </button>
+        </div>
+      </form>
     </div>
   </div>
+</div>
 
 <!-- 株式分割モーダル -->
-<div class="modal fade" id="stockSplitModal" tabindex="-1" aria-labelledby="stockSplitModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
+<div class="modal fade" id="stockSplitModal" tabindex="-1" aria-labelledby="stockSplitModalLabel" 
+     aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="stockSplitModalLabel">株式分割を追加</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
       </div>
+      
       <form method="post" action="{% url 'stockdiary:add_stock_split' diary.id %}" id="stockSplitForm">
         {% csrf_token %}
         
@@ -275,13 +301,17 @@
           </div>
 
           <div class="mb-3">
-            <label for="split_date" class="form-label">分割実行日<span class="text-danger">*</span></label>
+            <label for="split_date" class="form-label">
+              分割実行日<span class="text-danger">*</span>
+            </label>
             <input type="date" class="form-control" name="split_date" id="split_date" required>
             <small class="form-text text-muted">株式分割が実行される日付</small>
           </div>
 
           <div class="mb-3">
-            <label for="split_ratio" class="form-label">分割比率<span class="text-danger">*</span></label>
+            <label for="split_ratio" class="form-label">
+              分割比率<span class="text-danger">*</span>
+            </label>
             <input type="number" class="form-control" name="split_ratio" id="split_ratio" 
                    step="0.0001" min="0.0001" placeholder="例: 2.0" required>
             <small class="form-text text-muted">1株が何株になるか（例: 1→2株なら「2.0」）</small>
@@ -303,8 +333,10 @@
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-          <button type="submit" class="btn btn-info">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            キャンセル
+          </button>
+          <button type="submit" class="btn btn-info" id="submit-stock-split">
             <i class="bi bi-scissors me-1"></i>追加
           </button>
         </div>
@@ -312,7 +344,6 @@
     </div>
   </div>
 </div>
-
 <style>
 .transaction-summary {
   background-color: #f8f9fa;
@@ -445,286 +476,442 @@
 </style>
 
 <script>
-    const CURRENT_HOLDINGS = {{ diary.current_quantity }};
-    let transactionModal = null;
-    
-    document.addEventListener('DOMContentLoaded', function() {
-      // モーダルインスタンスの初期化
-      const modalElement = document.getElementById('transactionModal');
-      if (modalElement) {
-        transactionModal = new bootstrap.Modal(modalElement, {
-          backdrop: 'static',
-          keyboard: false
-        });
-        
-        // モーダルが完全に閉じた後のクリーンアップ
-        modalElement.addEventListener('hidden.bs.modal', function () {
-          cleanupModal();
-        });
-        
-        // モーダルが表示された後の処理
-        modalElement.addEventListener('shown.bs.modal', function () {
-          // 最初の入力フィールドにフォーカス
-          document.getElementById('transaction_type')?.focus();
-        });
-      }
-      
-      // キャンセルボタンのイベント
-      const closeBtn = document.getElementById('modal-close-btn');
-      if (closeBtn) {
-        closeBtn.addEventListener('click', function() {
-          closeModal();
-        });
-      }
-      
-      // フォーム送信
-      const form = document.getElementById('transactionForm');
-      if (form) {
-        form.addEventListener('submit', function(e) {
-          const errors = validateTransactionForm();
-          if (errors.length > 0) {
-            e.preventDefault();
-            alert('入力エラー:\n' + errors.join('\n'));
-            return false;
-          }
-          
-          // 送信ボタンを無効化
-          const submitBtn = document.getElementById('submit-transaction');
-          submitBtn.disabled = true;
-          submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>保存中...';
-        });
-      }
-      
-      // プレビューの更新
-      ['price', 'quantity', 'transaction_type'].forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-          element.addEventListener('input', updateTransactionPreview);
-          element.addEventListener('change', updateTransactionPreview);
-        }
-      });
+// tab_transactions.html の <script> タグ内に追加するコード
+
+// グローバル変数
+const DIARY_ID = {{ diary.id }};
+const CURRENT_HOLDINGS = {{ diary.current_quantity }};
+let transactionModal = null;
+let stockSplitModal = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('DOMContentLoaded - モーダル初期化開始');
+  
+  // 既存のバックドロップをクリーンアップ
+  cleanupAllBackdrops();
+  
+  // 取引モーダルの初期化
+  const modalElement = document.getElementById('transactionModal');
+  if (modalElement) {
+    transactionModal = new bootstrap.Modal(modalElement, {
+      backdrop: 'static',
+      keyboard: false
     });
     
-    // モーダルを開く
-    function openTransactionModal(type) {
-      // 既存のbackdropをクリーンアップ
-      cleanupModal();
-      
-      // フォームをリセット
-      const form = document.getElementById('transactionForm');
-      if (form) {
-        form.reset();
-      }
-      
-      document.getElementById('transaction_id').value = '';
-      document.getElementById('transactionModalLabel').textContent = 
-        type === 'buy' ? '購入を追加' : '売却を追加';
-      
-      document.getElementById('transaction_type').value = type;
-      
-      // 今日の日付を設定
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById('transaction_date').value = today;
-      
-      // プレビューをリセット
-      document.getElementById('transaction-preview').style.display = 'none';
-      document.getElementById('quantity-warning').style.display = 'none';
-      
-      // 送信ボタンを有効化
-      const submitBtn = document.getElementById('submit-transaction');
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = '<i class="bi bi-save me-1"></i>保存';
-      
-      // フォームのアクションURLを設定
-      form.action = '{% url "stockdiary:add_transaction" diary.id %}';
-      
-      // モーダルを表示
-      if (transactionModal) {
-        transactionModal.show();
-      }
-    }
+    modalElement.addEventListener('hidden.bs.modal', handleModalHidden);
+    modalElement.addEventListener('shown.bs.modal', handleModalShown);
+    modalElement.addEventListener('show.bs.modal', function() {
+      console.log('Transaction modal showing');
+      cleanupAllBackdrops();
+    });
+  }
+  
+  // 株式分割モーダルの初期化（重要）
+  const splitModalElement = document.getElementById('stockSplitModal');
+  if (splitModalElement) {
+    console.log('株式分割モーダル要素が見つかりました');
     
-    // モーダルを閉じる
-    function closeModal() {
-      if (transactionModal) {
-        transactionModal.hide();
-      }
-      // 念のため少し待ってからクリーンアップ
-      setTimeout(cleanupModal, 300);
-    }
+    stockSplitModal = new bootstrap.Modal(splitModalElement, {
+      backdrop: 'static',
+      keyboard: false,
+      focus: true
+    });
     
-    // モーダルのクリーンアップ
-    function cleanupModal() {
-      // すべてのbackdropを削除
-      document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-        backdrop.remove();
-      });
+    // イベントリスナーの追加
+    splitModalElement.addEventListener('show.bs.modal', function(e) {
+      console.log('株式分割モーダル表示開始');
+      cleanupAllBackdrops();
       
-      // bodyのクラスをクリーンアップ
+      // z-indexを強制設定
+      setTimeout(() => {
+        splitModalElement.style.zIndex = '1060';
+        splitModalElement.style.display = 'block';
+        
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach((backdrop, index) => {
+          if (index === backdrops.length - 1) {
+            backdrop.style.zIndex = '1059';
+          }
+        });
+      }, 10);
+    });
+    
+    splitModalElement.addEventListener('shown.bs.modal', function() {
+      console.log('株式分割モーダル表示完了');
+      
+      // 確実に最前面に配置
+      splitModalElement.style.zIndex = '1060';
+      splitModalElement.classList.add('show');
+      
+      // バックドロップの調整
+      const backdrops = document.querySelectorAll('.modal-backdrop');
+      if (backdrops.length > 0) {
+        const lastBackdrop = backdrops[backdrops.length - 1];
+        lastBackdrop.style.zIndex = '1059';
+        lastBackdrop.classList.add('show');
+      }
+      
+      // 最初の入力フィールドにフォーカス
+      const firstInput = splitModalElement.querySelector('input[type="date"]');
+      if (firstInput) {
+        firstInput.focus();
+      }
+    });
+    
+    splitModalElement.addEventListener('hidden.bs.modal', function() {
+      console.log('株式分割モーダル非表示');
+      cleanupAllBackdrops();
       document.body.classList.remove('modal-open');
       document.body.style.overflow = '';
       document.body.style.paddingRight = '';
-    }
-    
-    // バリデーション
-    function validateTransactionForm() {
-      const errors = [];
-      const price = parseFloat(document.getElementById('price').value);
-      const quantity = parseFloat(document.getElementById('quantity').value);
-      const transactionType = document.getElementById('transaction_type').value;
-      
-      if (isNaN(price) || price <= 0) {
-        errors.push('単価は正の数を入力してください');
-      } else if (price > 9999999.99) {
-        errors.push('単価は999万9999円以下で入力してください');
-      }
-      
-      if (isNaN(quantity) || quantity <= 0) {
-        errors.push('数量は正の数を入力してください');
-      } else if (quantity > 99999999) {
-        errors.push('数量は9999万株以下で入力してください');
-      }
-      
-      if (transactionType === 'sell' && quantity > CURRENT_HOLDINGS) {
-        errors.push(`保有数（${CURRENT_HOLDINGS}株）を超える売却はできません`);
-      }
-      
-      return errors;
-    }
-    
-    // プレビュー更新
-    function updateTransactionPreview() {
-      const price = parseFloat(document.getElementById('price').value) || 0;
-      const quantity = parseFloat(document.getElementById('quantity').value) || 0;
-      const type = document.getElementById('transaction_type').value;
-      
-      if (price > 0 && quantity > 0) {
-        const amount = price * quantity;
-        document.getElementById('transaction-amount').textContent = amount.toLocaleString();
-        document.getElementById('transaction-preview').style.display = 'block';
-      } else {
-        document.getElementById('transaction-preview').style.display = 'none';
-      }
-      
-      // 売却時の保有数チェック
-      if (type === 'sell' && quantity > CURRENT_HOLDINGS) {
-        document.getElementById('current-holdings').textContent = CURRENT_HOLDINGS;
-        document.getElementById('quantity-warning').style.display = 'block';
-      } else {
-        document.getElementById('quantity-warning').style.display = 'none';
-      }
-    }
-    
-    // 取引編集
-    function editTransaction(transactionId) {
-      cleanupModal();
-      
-      fetch(`/stockdiary/transaction/${transactionId}/`)
-        .then(response => response.json())
-        .then(data => {
-          document.getElementById('transaction_id').value = transactionId;
-          document.getElementById('transactionModalLabel').textContent = '取引を編集';
-          document.getElementById('transaction_type').value = data.transaction_type;
-          document.getElementById('transaction_date').value = data.transaction_date;
-          document.getElementById('price').value = data.price;
-          document.getElementById('quantity').value = data.quantity;
-          document.getElementById('memo').value = data.memo || '';
-          
-          const form = document.getElementById('transactionForm');
-          form.action = `/stockdiary/transaction/${transactionId}/update/`;
-          
-          updateTransactionPreview();
-          
-          if (transactionModal) {
-            transactionModal.show();
-          }
-        })
-        .catch(error => {
-          alert('取引データの取得に失敗しました: ' + error);
-        });
-    }
-    
-    // 取引削除
-    function deleteTransaction(transactionId, date) {
-      if (confirm(`${date}の取引を削除しますか？\n\n※ この操作は元に戻せません。削除後、平均取得単価が再計算されます。`)) {
-        fetch(`/stockdiary/transaction/${transactionId}/delete/`, {
-          method: 'POST',
-          headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-          }
-        })
-        .then(response => {
-          if (response.ok) {
-            location.reload();
-          } else {
-            alert('削除に失敗しました');
-          }
-        })
-        .catch(error => {
-          alert('削除中にエラーが発生しました: ' + error);
-        });
-      }
-    }
-    
-    // 株式分割関連
-    function applySplit(splitId) {
-      if (confirm('株式分割を適用しますか？\n\n※ 分割日以前の全取引が自動調整されます。\n※ 適用後は編集・削除できなくなります。')) {
-        fetch(`/stockdiary/stock-split/${splitId}/apply/`, {
-          method: 'POST',
-          headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-          }
-        })
-        .then(response => {
-          if (response.ok) {
-            location.reload();
-          } else {
-            alert('適用に失敗しました');
-          }
-        })
-        .catch(error => {
-          alert('適用中にエラーが発生しました: ' + error);
-        });
-      }
-    }
-    
-    function deleteSplit(splitId) {
-      if (confirm('この株式分割情報を削除しますか？')) {
-        fetch(`/stockdiary/stock-split/${splitId}/delete/`, {
-          method: 'POST',
-          headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-          }
-        })
-        .then(response => {
-          if (response.ok) {
-            location.reload();
-          } else {
-            alert('削除に失敗しました');
-          }
-        })
-        .catch(error => {
-          alert('削除中にエラーが発生しました: ' + error);
-        });
-      }
-    }
-    
-    // ページ離脱時のクリーンアップ
-    window.addEventListener('beforeunload', function() {
-      cleanupModal();
     });
-    
-    // Escキーでモーダルを閉じる（カスタムハンドリング）
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') {
-        const modalElement = document.getElementById('transactionModal');
-        if (modalElement && modalElement.classList.contains('show')) {
-          closeModal();
-        }
+  } else {
+    console.error('株式分割モーダル要素が見つかりません');
+  }
+  
+  // フォームイベントリスナー
+  const form = document.getElementById('transactionForm');
+  if (form) {
+    form.addEventListener('submit', handleFormSubmit);
+  }
+  
+  // プレビュー更新イベント
+  ['price', 'quantity', 'transaction_type'].forEach(id => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.addEventListener('input', updateTransactionPreview);
+      element.addEventListener('change', updateTransactionPreview);
+    }
+  });
+  
+  // 株式分割フォームのイベント
+  const splitForm = document.getElementById('stockSplitForm');
+  if (splitForm) {
+    splitForm.addEventListener('submit', function(e) {
+      const submitBtn = splitForm.querySelector('button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>処理中...';
       }
     });
-    </script>
+  }
+});
+
+// すべてのバックドロップをクリーンアップ
+function cleanupAllBackdrops() {
+  const backdrops = document.querySelectorAll('.modal-backdrop');
+  console.log(`クリーンアップ: ${backdrops.length}個のバックドロップを削除`);
+  backdrops.forEach(backdrop => backdrop.remove());
+  
+  // body のクラスとスタイルをリセット
+  if (!document.querySelector('.modal.show')) {
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+  }
+}
+
+// モーダルを開く
+function openTransactionModal(type) {
+  console.log('取引モーダルを開く:', type);
+  cleanupAllBackdrops();
+  resetForm();
+  
+  document.getElementById('transactionModalLabel').textContent = 
+    type === 'buy' ? '購入を追加' : '売却を追加';
+  document.getElementById('transaction_type').value = type;
+  
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('transaction_date').value = today;
+  
+  const form = document.getElementById('transactionForm');
+  form.action = `/stockdiary/${DIARY_ID}/transaction/add/`;
+  
+  if (transactionModal) {
+    transactionModal.show();
+  }
+}
+
+// 株式分割モーダルを開く（ボタンクリック用）
+function openStockSplitModal() {
+  console.log('株式分割モーダルを開く');
+  cleanupAllBackdrops();
+  
+  const splitModalElement = document.getElementById('stockSplitModal');
+  if (splitModalElement && stockSplitModal) {
+    // フォームをリセット
+    const form = document.getElementById('stockSplitForm');
+    if (form) {
+      form.reset();
+    }
     
+    // 今日の日付を設定
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('split_date');
+    if (dateInput) {
+      dateInput.value = today;
+    }
+    
+    // モーダルを表示
+    stockSplitModal.show();
+    
+    // 強制的に最前面に配置
+    setTimeout(() => {
+      splitModalElement.style.zIndex = '1060';
+      splitModalElement.style.display = 'block';
+      document.body.classList.add('modal-open');
+      
+      const backdrop = document.querySelector('.modal-backdrop');
+      if (backdrop) {
+        backdrop.style.zIndex = '1059';
+      }
+    }, 50);
+  } else {
+    console.error('株式分割モーダルまたはインスタンスが見つかりません');
+  }
+}
+
+// モーダル表示後の処理
+function handleModalShown() {
+  document.getElementById('transaction_type')?.focus();
+}
+
+// モーダル非表示後の処理
+function handleModalHidden() {
+  resetForm();
+  cleanupAllBackdrops();
+}
+
+// フォームをリセット
+function resetForm() {
+  const form = document.getElementById('transactionForm');
+  if (form) {
+    form.reset();
+  }
+  
+  document.getElementById('transaction_id').value = '';
+  document.getElementById('transaction-preview').style.display = 'none';
+  document.getElementById('quantity-warning').style.display = 'none';
+  document.getElementById('form-errors').classList.add('d-none');
+  
+  const submitBtn = document.getElementById('submit-transaction');
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="bi bi-save me-1"></i>保存';
+  }
+}
+
+// フォーム送信処理
+function handleFormSubmit(e) {
+  e.preventDefault();
+  
+  document.getElementById('form-errors').classList.add('d-none');
+  
+  const errors = validateTransactionForm();
+  if (errors.length > 0) {
+    showFormErrors(errors);
+    return false;
+  }
+  
+  const submitBtn = document.getElementById('submit-transaction');
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>保存中...';
+  
+  e.target.submit();
+}
+
+// バリデーション
+function validateTransactionForm() {
+  const errors = [];
+  
+  const transactionType = document.getElementById('transaction_type').value;
+  const date = document.getElementById('transaction_date').value;
+  const price = parseFloat(document.getElementById('price').value);
+  const quantity = parseFloat(document.getElementById('quantity').value);
+  
+  if (!date) {
+    errors.push('取引日を入力してください');
+  }
+  
+  if (isNaN(price) || price <= 0) {
+    errors.push('単価は正の数を入力してください');
+  }
+  
+  if (isNaN(quantity) || quantity <= 0) {
+    errors.push('数量は正の数を入力してください');
+  }
+  
+  if (transactionType === 'sell' && quantity > CURRENT_HOLDINGS) {
+    errors.push(`保有数（${CURRENT_HOLDINGS}株）を超える売却はできません`);
+  }
+  
+  return errors;
+}
+
+// エラーメッセージを表示
+function showFormErrors(errors) {
+  const errorDiv = document.getElementById('form-errors');
+  errorDiv.innerHTML = '<ul class="mb-0">' + 
+    errors.map(err => `<li>${err}</li>`).join('') + 
+    '</ul>';
+  errorDiv.classList.remove('d-none');
+  errorDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// プレビュー更新
+function updateTransactionPreview() {
+  const price = parseFloat(document.getElementById('price').value) || 0;
+  const quantity = parseFloat(document.getElementById('quantity').value) || 0;
+  const type = document.getElementById('transaction_type').value;
+  
+  if (price > 0 && quantity > 0) {
+    const amount = price * quantity;
+    document.getElementById('transaction-amount').textContent = amount.toLocaleString('ja-JP', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+    document.getElementById('transaction-preview').style.display = 'block';
+  } else {
+    document.getElementById('transaction-preview').style.display = 'none';
+  }
+  
+  if (type === 'sell' && quantity > CURRENT_HOLDINGS) {
+    document.getElementById('quantity-warning').style.display = 'block';
+  } else {
+    document.getElementById('quantity-warning').style.display = 'none';
+  }
+}
+
+// 取引編集
+function editTransaction(transactionId) {
+  cleanupAllBackdrops();
+  
+  fetch(`/stockdiary/transaction/${transactionId}/`)
+    .then(response => {
+      if (!response.ok) throw new Error('取引データの取得に失敗しました');
+      return response.json();
+    })
+    .then(data => {
+      document.getElementById('transaction_id').value = transactionId;
+      document.getElementById('transactionModalLabel').textContent = '取引を編集';
+      document.getElementById('transaction_type').value = data.transaction_type;
+      document.getElementById('transaction_date').value = data.transaction_date;
+      document.getElementById('price').value = data.price;
+      document.getElementById('quantity').value = data.quantity;
+      document.getElementById('memo').value = data.memo || '';
+      
+      const form = document.getElementById('transactionForm');
+      form.action = `/stockdiary/transaction/${transactionId}/update/`;
+      
+      updateTransactionPreview();
+      
+      if (transactionModal) {
+        transactionModal.show();
+      }
+    })
+    .catch(error => {
+      alert(error.message);
+      console.error('Error:', error);
+    });
+}
+
+// 取引削除
+function deleteTransaction(transactionId, date) {
+  if (!confirm(`${date}の取引を削除しますか？\n\n※ この操作は元に戻せません。削除後、平均取得単価が再計算されます。`)) {
+    return;
+  }
+  
+  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  
+  fetch(`/stockdiary/transaction/${transactionId}/delete/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': csrfToken,
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+  .then(response => {
+    if (response.ok) {
+      location.reload();
+    } else {
+      throw new Error('削除に失敗しました');
+    }
+  })
+  .catch(error => {
+    alert('削除中にエラーが発生しました: ' + error.message);
+  });
+}
+
+// 株式分割関連
+function applySplit(splitId) {
+  if (!confirm('株式分割を適用しますか？\n\n※ 分割日以前の全取引が自動調整されます。\n※ 適用後は編集・削除できなくなります。')) {
+    return;
+  }
+  
+  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  
+  fetch(`/stockdiary/stock-split/${splitId}/apply/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': csrfToken,
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+  .then(response => {
+    if (response.ok) {
+      location.reload();
+    } else {
+      throw new Error('適用に失敗しました');
+    }
+  })
+  .catch(error => {
+    alert('適用中にエラーが発生しました: ' + error.message);
+  });
+}
+
+function deleteSplit(splitId) {
+  if (!confirm('この株式分割情報を削除しますか？')) {
+    return;
+  }
+  
+  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  
+  fetch(`/stockdiary/stock-split/${splitId}/delete/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': csrfToken,
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+  .then(response => {
+    if (response.ok) {
+      location.reload();
+    } else {
+      throw new Error('削除に失敗しました');
+    }
+  })
+  .catch(error => {
+    alert('削除中にエラーが発生しました: ' + error.message);
+  });
+}
+
+// ページ離脱時のクリーンアップ
+window.addEventListener('beforeunload', cleanupAllBackdrops);
+
+// Escキーでモーダルを閉じる
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    const openModals = document.querySelectorAll('.modal.show');
+    openModals.forEach(modal => {
+      const modalInstance = bootstrap.Modal.getInstance(modal);
+      if (modalInstance) {
+        modalInstance.hide();
+      }
+    });
+  }
+});
+</script>
+
     <style>
     /* モーダルのz-index調整 */
     .modal {

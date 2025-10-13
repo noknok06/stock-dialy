@@ -1,51 +1,143 @@
+{% load stockdiary_filters %}
+{% load humanize %}
+
 <div class="px-1 py-2">
-  <!-- メモでない場合のみ詳細情報を表示 -->
-  {% if not diary.is_memo and diary.purchase_price is not None and diary.purchase_quantity is not None %}
-  <div class="info-block">
-    <div class="info-row">
-      <div class="info-item">
-        <div class="info-icon">
-          <i class="bi bi-currency-yen"></i>
+  <!-- 取引がある場合の表示 -->
+  {% if diary.transaction_count > 0 %}
+    <div class="transaction-summary-compact">
+      <!-- サマリー情報 -->
+      <div class="summary-grid mb-3">
+        <div class="summary-item">
+          <div class="summary-label">
+            <i class="bi bi-graph-up me-1"></i>
+            保有数
+          </div>
+          <div class="summary-value">
+            {{ diary.current_quantity|floatformat:0 }}株
+          </div>
         </div>
-        <div class="info-content">
-          <span class="info-label">購入価格</span>
-          <span class="info-value">{{ diary.purchase_price|floatformat:2 }}円</span>
+
+        {% if diary.average_purchase_price %}
+        <div class="summary-item">
+          <div class="summary-label">
+            <i class="bi bi-currency-yen me-1"></i>
+            平均単価
+          </div>
+          <div class="summary-value">
+            {{ diary.average_purchase_price|floatformat:2|intcomma }}円
+          </div>
         </div>
+        {% endif %}
+
+        {% if diary.realized_profit != 0 %}
+        <div class="summary-item">
+          <div class="summary-label">
+            <i class="bi bi-piggy-bank me-1"></i>
+            実現損益
+          </div>
+          <div class="summary-value {% if diary.realized_profit > 0 %}text-success{% elif diary.realized_profit < 0 %}text-danger{% endif %}">
+            {% if diary.realized_profit > 0 %}+{% endif %}{{ diary.realized_profit|floatformat:0|intcomma }}円
+          </div>
+        </div>
+        {% endif %}
       </div>
 
-      <div class="info-item">
-        <div class="info-icon">
-          <i class="bi bi-graph-up"></i>
+      <!-- 最近の取引 -->
+      {% if transactions %}
+      <div class="recent-transactions">
+        <h6 class="small text-muted mb-2">
+          <i class="bi bi-clock-history me-1"></i>
+          最近の取引
+        </h6>
+        {% for transaction in transactions %}
+        <div class="transaction-item-compact mb-2">
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="flex-grow-1">
+              <span class="badge {% if transaction.transaction_type == 'buy' %}bg-primary{% else %}bg-danger{% endif %} me-2">
+                {{ transaction.get_transaction_type_display }}
+              </span>
+              <span class="text-muted small">{{ transaction.transaction_date|date:"m/d" }}</span>
+            </div>
+            <div class="text-end">
+              <div class="small">
+                {{ transaction.price|floatformat:2|intcomma }}円 × {{ transaction.quantity|floatformat:0 }}株
+              </div>
+              <div class="small text-muted">
+                計: {{ transaction.amount|floatformat:0|intcomma }}円
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="info-content">
-          <span class="info-label">購入数量</span>
-          <span class="info-value">{{ diary.purchase_quantity }}株</span>
+        {% endfor %}
+        
+        {% if transaction_count > 5 %}
+        <div class="text-end mt-2">
+          <a href="{% url 'stockdiary:detail' diary.id %}" class="text-primary text-decoration-none small">
+            すべて表示 ({{ transaction_count }}件) <i class="bi bi-arrow-right"></i>
+          </a>
         </div>
+        {% endif %}
       </div>
-
-      <div class="info-item">
-        <div class="info-icon">
-          <i class="bi bi-calendar-date"></i>
-        </div>
-        <div class="info-content">
-          <span class="info-label">メモ日</span>
-          <span class="info-value">{{ diary.purchase_date|date:"Y年m月d日" }}</span>
-        </div>
-      </div>
-
-      <div class="info-item">
-        <div class="info-icon">
-          <i class="bi bi-cash-stack"></i>
-        </div>
-        <div class="info-content">
-          <span class="info-label">総投資額</span>
-          <span class="info-value">{{ total_investment|floatformat:2 }}円</span>
-        </div>
-      </div>
+      {% endif %}
     </div>
-  </div>
+
+  <!-- メモ記録の場合 -->
+  {% elif diary.is_memo %}
+    <div class="alert alert-info mb-0">
+      <i class="bi bi-info-circle me-2"></i>
+      この日記はメモとして記録されています
+    </div>
+
+  <!-- 取引データがない場合 -->
+  {% else %}
+    <div class="text-center text-muted py-3">
+      <i class="bi bi-cart-x" style="font-size: 1.5rem;"></i>
+      <p class="small mb-0 mt-2">取引記録はありません</p>
+    </div>
   {% endif %}
 </div>
 
-{% load ads_tags %}
-{% show_template_ad 'diary_tab' %}
+<style>
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 0.5rem;
+}
+
+.summary-item {
+  background-color: #f8f9fa;
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+  text-align: center;
+}
+
+.summary-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.summary-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.transaction-item-compact {
+  background-color: #f8f9fa;
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.recent-transactions h6 {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+@media (max-width: 576px) {
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

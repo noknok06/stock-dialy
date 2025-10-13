@@ -271,31 +271,42 @@ class Transaction(models.Model):
         super().clean()
         
         # 価格と数量は正の数
-        if self.price <= 0:
+        if self.price is not None and self.price <= 0:
             raise ValidationError({'price': '価格は正の数を入力してください'})
         
-        if self.quantity <= 0:
+        if self.quantity is not None and self.quantity <= 0:
             raise ValidationError({'quantity': '数量は正の数を入力してください'})
         
-        # 売却時は保有数をチェック
-        if self.transaction_type == 'sell':
-            # 現在の保有数を計算（この取引を除く）
-            current_holdings = self.diary.current_quantity
-            if self.pk:  # 編集時は自分自身を除外
-                old_transaction = Transaction.objects.get(pk=self.pk)
-                if old_transaction.transaction_type == 'sell':
-                    current_holdings += old_transaction.quantity
-            
-            if self.quantity > current_holdings:
-                raise ValidationError({
-                    'quantity': f'保有数（{current_holdings}株）を超える売却はできません'
-                })
+        # 売却時は保有数をチェック（diary が設定されている場合のみ）
+        if self.transaction_type == 'sell' and self.diary_id:
+            try:
+                # diary が設定されているか確認
+                diary = self.diary
+                
+                # 現在の保有数を計算（この取引を除く）
+                current_holdings = diary.current_quantity
+                
+                # 編集時は自分自身を除外
+                if self.pk:
+                    old_transaction = Transaction.objects.get(pk=self.pk)
+                    if old_transaction.transaction_type == 'sell':
+                        current_holdings += old_transaction.quantity
+                
+                if self.quantity and self.quantity > current_holdings:
+                    raise ValidationError({
+                        'quantity': f'保有数（{current_holdings}株）を超える売却はできません'
+                    })
+            except StockDiary.DoesNotExist:
+                # diary がまだ設定されていない場合はスキップ
+                # （フォームでバリデーションされる）
+                pass
 
     def save(self, *args, **kwargs):
-        self.full_clean()
+        # フルクリーンはスキップ（views.py で呼び出す）
         super().save(*args, **kwargs)
         # 保存後に日記の集計を更新
-        self.diary.update_aggregates()
+        if self.diary_id:
+            self.diary.update_aggregates()
 
     def delete(self, *args, **kwargs):
         diary = self.diary
@@ -307,7 +318,7 @@ class Transaction(models.Model):
     def amount(self):
         """取引金額"""
         return self.price * self.quantity
-
+        
 
 class StockSplit(models.Model):
     """株式分割記録"""

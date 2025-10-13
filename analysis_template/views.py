@@ -36,7 +36,7 @@ class AnalysisTemplateListView(LoginRequiredMixin, ListView):
                 'type': 'add',
                 'url': reverse_lazy('analysis_template:create'),  # テンプレート作成ページ
                 'icon': 'bi-plus-lg',
-                'label': '新規テンプレート'
+                'label': '新規作成'
             },
         ]
         context['page_actions'] = analytics_actions
@@ -304,9 +304,9 @@ class AnalysisReportView(LoginRequiredMixin, DetailView):
 
 
     def calculate_profit(self, diary):
-        """日記エントリから利益情報を計算"""
+        """日記エントリから利益情報を計算（トランザクション対応版）"""
         profit_info = {
-            'is_sold': diary.sell_date is not None,
+            'is_sold': diary.is_sold_out,  # 売却済みかどうか
             'is_profitable': False,
             'profit_amount': 0,
             'profit_percent': 0,
@@ -314,17 +314,34 @@ class AnalysisReportView(LoginRequiredMixin, DetailView):
             'has_profit_data': False
         }
         
-        # 必要な情報が揃っているか確認
-        if diary.purchase_price is None or diary.purchase_quantity is None:
+        # 取引がない場合（メモのみ）
+        if diary.is_memo:
             return profit_info
-
-        # 保有中の場合 - 最新の継続記録から現在価格を取得
-        else:
+        
+        # 売却済みの場合 - 実現損益を使用
+        if diary.is_sold_out and diary.realized_profit is not None:
+            # 損益率の計算（総購入額に対する実現損益の割合）
+            profit_percent = 0
+            if diary.total_buy_amount and float(diary.total_buy_amount) > 0:
+                profit_percent = (float(diary.realized_profit) / float(diary.total_buy_amount)) * 100
+            
+            profit_info.update({
+                'is_profitable': diary.realized_profit > 0,
+                'profit_amount': round(float(diary.realized_profit), 2),
+                'profit_percent': round(profit_percent, 2),
+                'has_profit_data': True
+            })
+        
+        # 保有中の場合 - 最新の継続記録から現在価格を取得して含み損益を計算
+        elif diary.is_holding and diary.average_purchase_price:
             latest_note = diary.notes.filter(current_price__isnull=False).order_by('-date').first()
             if latest_note and latest_note.current_price:
                 current_price = latest_note.current_price
-                profit_amount = (current_price - diary.purchase_price) * diary.purchase_quantity
-                profit_percent = ((current_price - diary.purchase_price) / diary.purchase_price) * 100
+                # 含み損益 = (現在価格 - 平均取得単価) × 現在保有数
+                profit_amount = (current_price - diary.average_purchase_price) * diary.current_quantity
+                # 含み損益率 = (現在価格 - 平均取得単価) / 平均取得単価 × 100
+                profit_percent = ((current_price - diary.average_purchase_price) / diary.average_purchase_price) * 100
+                
                 profit_info.update({
                     'is_profitable': profit_amount > 0,
                     'profit_amount': round(float(profit_amount), 2),
@@ -334,7 +351,7 @@ class AnalysisReportView(LoginRequiredMixin, DetailView):
                 })
         
         return profit_info
-        
+
     def process_item_value(self, item, value, diary_data, completed_items):
         """項目タイプ別の値処理を行い、完了したかどうかを返す"""
         completed = False

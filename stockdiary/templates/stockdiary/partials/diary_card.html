@@ -60,9 +60,10 @@
 }
 </style>
 
-<div class="diary-card {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo-card{% elif diary.sell_date %}sold-card{% endif %} swipeable"
+<div class="diary-card {% if diary.is_memo is None %}memo-card{% endif %}"
+
   data-diary-id="{{ diary.id }}"
-  data-diary-type="{% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}memo{% elif diary.sell_date %}sold{% else %}active{% endif %}">
+  data-diary-type="{% if diary.is_memo %}memo{% endif %}">
 
   <!-- カードヘッダー - レスポンシブ対応強化 -->
   <div class="diary-card-header">
@@ -77,35 +78,22 @@
       
       <!-- 日付と状態バッジ -->
       <div class="diary-meta">
-        <span class="diary-date">{{ diary.purchase_date|date:"Y年m月d日" }}</span>
+        <span class="diary-date">{{ diary.created_at|date:"Y年m月d日" }}</span>
         
-        {% if diary.is_memo or diary.purchase_price is None or diary.purchase_quantity is None %}
-          <span class="status-badge memo-badge">メモ</span>
-        {% elif diary.sell_date %}
-          <span class="status-badge sold-badge">売却済み</span>
+        {% if diary.is_memo %}
+          <span class="status-badge memo-badge">memo</span>
         {% else %}
-          <span class="status-badge purchase-badge">保有中</span>
+          <span class="status-badge memo-badge">active</span>
         {% endif %}
       </div>
     </div>
     
     <!-- 価格情報 - レスポンシブ対応 -->
+    {% if not diary.is_memo %}
     <div class="diary-price-info">
-      {% if not diary.is_memo and diary.purchase_price is not None %}
-        <div class="price-value">{{ diary.purchase_price|floatformat:2|intcomma }}円</div>
-        {% if diary.purchase_quantity is not None %}
-          <div class="quantity-value">{{ diary.purchase_quantity }}株</div>
-        {% endif %}
-        
-        {% if diary.sell_date and diary.sell_price %}
-          {% with profit_rate=diary.sell_price|sub:diary.purchase_price|div:diary.purchase_price|mul:100 %}
-            <div class="profit-rate {% if profit_rate > 0 %}profit{% elif profit_rate < 0 %}loss{% endif %}">
-              {{ profit_rate|floatformat:2 }}%
-            </div>
-          {% endwith %}
-        {% endif %}
-      {% endif %}
+      <div class="price-value">{{ diary.total_cost|floatformat:2|intcomma }}円</div>        
     </div>
+    {% endif %}
   </div>
 
   <!-- コンテンツ部分 -->
@@ -197,7 +185,7 @@
                 hx-indicator="#tab-loading-indicator-{{ diary.id }}"
                 type="button" role="tab">
           <i class="bi bi-cash-coin"></i> 
-          <span class="d-none d-sm-inline">売買</span>
+          <span class="d-none d-sm-inline">取引</span>
         </button>
       </div>
     </div>

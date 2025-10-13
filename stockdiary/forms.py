@@ -194,6 +194,7 @@ class StockDiaryForm(forms.ModelForm):
         
         return cleaned_data
 
+
 class TransactionForm(forms.ModelForm):
     """取引追加・編集フォーム"""
     
@@ -214,7 +215,7 @@ class TransactionForm(forms.ModelForm):
                 'class': 'form-control',
                 'step': '0.01',
                 'min': '0.01',
-                'max': '9999999.99',
+                'max': '9999999.99',  # 最大999万円
                 'placeholder': '例: 1000.00',
                 'required': 'required'
             }),
@@ -222,7 +223,7 @@ class TransactionForm(forms.ModelForm):
                 'class': 'form-control',
                 'step': '1',
                 'min': '1',
-                'max': '99999999',
+                'max': '99999999',  # 最大9999万株
                 'placeholder': '例: 100',
                 'required': 'required'
             }),
@@ -289,35 +290,23 @@ class TransactionForm(forms.ModelForm):
         transaction_type = cleaned_data.get('transaction_type')
         quantity = cleaned_data.get('quantity')
         
-        # 売却時のみチェック
-        if transaction_type == 'sell' and quantity:
-            # diaryが設定されているか確認
-            if not self.diary:
-                raise ValidationError('日記情報が取得できません')
-            
+        if transaction_type == 'sell' and quantity and self.diary:
             # 現在の保有数を取得
             current_holdings = self.diary.current_quantity
             
             # 編集時は元の取引を除外して計算
             if self.instance.pk:
-                try:
-                    # self.instance.diary が存在するか確認
-                    if hasattr(self.instance, 'diary') and self.instance.diary:
-                        old_transaction = self.instance
-                        if old_transaction.transaction_type == 'sell':
-                            current_holdings += old_transaction.quantity
-                except Exception as e:
-                    # diary が存在しない場合は、self.diary を使用
-                    pass
+                old_transaction = Transaction.objects.get(pk=self.instance.pk)
+                if old_transaction.transaction_type == 'sell':
+                    current_holdings += old_transaction.quantity
             
-            # 保有数チェック
             if quantity > current_holdings:
                 raise ValidationError({
                     'quantity': f'保有数（{current_holdings}株）を超える売却はできません'
                 })
         
         return cleaned_data
-        
+
 
 class StockSplitForm(forms.ModelForm):
     """株式分割フォーム"""
