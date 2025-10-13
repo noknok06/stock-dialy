@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}取引履歴アップロード | カブログ{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/common.css' %}">
+<link rel="stylesheet" href="{% static 'css/diary-theme.css' %}">
+<style>
+  .upload-container {
+    max-width: 800px;
+    margin: 2rem auto;
+  }
+  
+  .upload-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 2rem;
+  }
+  
+  .upload-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  
+  .upload-header h2 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+  }
+  
+  .upload-instructions {
+    background-color: #f8f9fa;
+    border-left: 4px solid var(--info-color);
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 2rem;
+  }
+  
+  .upload-instructions h5 {
+    color: var(--info-color);
+    margin-bottom: 0.75rem;
+  }
+  
+  .upload-instructions ol {
+    margin-bottom: 0;
+    padding-left: 1.5rem;
+  }
+  
+  .upload-instructions li {
+    margin-bottom: 0.5rem;
+  }
+  
+  .form-section {
+    margin-bottom: 1.5rem;
+  }
+  
+  .custom-file-upload {
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: #f8f9fa;
+  }
+  
+  .custom-file-upload:hover {
+    border-color: var(--primary-color);
+    background-color: rgba(90, 126, 197, 0.05);
+  }
+  
+  .custom-file-upload.dragover {
+    border-color: var(--primary-color);
+    background-color: rgba(90, 126, 197, 0.1);
+  }
+  
+  .file-upload-icon {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+  }
+  
+  .selected-file {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background-color: #e7f3ff;
+    border-radius: 6px;
+    display: none;
+  }
+  
+  .selected-file.show {
+    display: block;
+  }
+  
+  .warning-box {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+  }
+  
+  .warning-box h5 {
+    color: #856404;
+    margin-bottom: 0.5rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="upload-container">
+  <div class="upload-card">
+    <div class="upload-header">
+      <h2><i class="bi bi-cloud-upload"></i> 取引履歴アップロード</h2>
+      <p class="text-muted">証券会社からダウンロードした取引履歴CSVをアップロードして、自動的に投資記録を作成します</p>
+    </div>
+    
+    <div class="upload-instructions">
+      <h5><i class="bi bi-info-circle"></i> アップロード手順</h5>
+      <ol>
+        <li>証券会社のサイトにログインし、取引履歴をCSV形式でダウンロード</li>
+        <li>証券会社を選択</li>
+        <li>ダウンロードしたCSVファイルをアップロード</li>
+        <li>プレビュー画面で内容を確認</li>
+        <li>「登録する」ボタンで一括登録</li>
+      </ol>
+    </div>
+    
+    <div class="warning-box">
+      <h5><i class="bi bi-exclamation-triangle"></i> 注意事項</h5>
+      <ul class="mb-0">
+        <li>既存の銘柄に取引が追加されます</li>
+        <li>同じ取引（日付・銘柄・数量・単価が同じ）は重複登録されません</li>
+        <li>CSVファイルは10MB以下にしてください</li>
+      </ul>
+    </div>
+    
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      
+      <div class="form-section">
+        <label for="{{ form.broker.id_for_label }}" class="form-label">
+          <i class="bi bi-building"></i> 証券会社
+        </label>
+        {{ form.broker }}
+        {% if form.broker.errors %}
+        <div class="text-danger small mt-1">
+          {{ form.broker.errors }}
+        </div>
+        {% endif %}
+      </div>
+      
+      <div class="form-section">
+        <label class="form-label">
+          <i class="bi bi-file-earmark-text"></i> CSVファイル
+        </label>
+        
+        <div class="custom-file-upload" id="fileUploadArea" onclick="document.getElementById('{{ form.csv_file.id_for_label }}').click()">
+          <div class="file-upload-icon">
+            <i class="bi bi-cloud-upload"></i>
+          </div>
+          <p class="mb-2">ここをクリックしてファイルを選択</p>
+          <p class="text-muted small mb-0">またはファイルをドラッグ&ドロップ</p>
+        </div>
+        
+        {{ form.csv_file }}
+        
+        <div class="selected-file" id="selectedFile">
+          <i class="bi bi-file-earmark-check text-success"></i>
+          <span id="fileName"></span>
+          <button type="button" class="btn btn-sm btn-outline-danger float-end" onclick="clearFile()">
+            <i class="bi bi-x"></i> 削除
+          </button>
+        </div>
+        
+        {% if form.csv_file.errors %}
+        <div class="text-danger small mt-1">
+          {{ form.csv_file.errors }}
+        </div>
+        {% endif %}
+        
+        {% if form.csv_file.help_text %}
+        <small class="form-text text-muted d-block mt-1">
+          {{ form.csv_file.help_text }}
+        </small>
+        {% endif %}
+      </div>
+      
+      <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary btn-lg">
+          <i class="bi bi-arrow-right-circle"></i> 次へ（プレビュー）
+        </button>
+        <a href="{% url 'stockdiary:home' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left"></i> キャンセル
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% include 'speed_dial.html' with actions=page_actions %}
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const fileInput = document.getElementById('{{ form.csv_file.id_for_label }}');
+  const fileUploadArea = document.getElementById('fileUploadArea');
+  const selectedFile = document.getElementById('selectedFile');
+  const fileName = document.getElementById('fileName');
+  
+  // ファイル選択時
+  fileInput.addEventListener('change', function(e) {
+    if (this.files.length > 0) {
+      fileName.textContent = this.files[0].name;
+      selectedFile.classList.add('show');
+    }
+  });
+  
+  // ドラッグ&ドロップ
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    fileUploadArea.addEventListener(eventName, preventDefaults, false);
+  });
+  
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  
+  ['dragenter', 'dragover'].forEach(eventName => {
+    fileUploadArea.addEventListener(eventName, function() {
+      this.classList.add('dragover');
+    }, false);
+  });
+  
+  ['dragleave', 'drop'].forEach(eventName => {
+    fileUploadArea.addEventListener(eventName, function() {
+      this.classList.remove('dragover');
+    }, false);
+  });
+  
+  fileUploadArea.addEventListener('drop', function(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    
+    if (files.length > 0) {
+      fileInput.files = files;
+      const event = new Event('change', { bubbles: true });
+      fileInput.dispatchEvent(event);
+    }
+  }, false);
+});
+
+function clearFile() {
+  const fileInput = document.getElementById('{{ form.csv_file.id_for_label }}');
+  const selectedFile = document.getElementById('selectedFile');
+  
+  fileInput.value = '';
+  selectedFile.classList.remove('show');
+}
+</script>
+{% endblock %}

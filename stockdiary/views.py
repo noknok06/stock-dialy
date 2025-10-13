@@ -24,18 +24,23 @@ from utils.mixins import ObjectNotFoundRedirectMixin
 from .utils import process_analysis_values, calculate_analysis_completion_rate
 from .models import StockDiary, DiaryNote
 from .models import Transaction, StockSplit
-from .forms import TransactionForm, StockSplitForm
+from .forms import TransactionForm, StockSplitForm, TradeUploadForm
 from .forms import StockDiaryForm, DiaryNoteForm
 from analysis_template.models import AnalysisTemplate, AnalysisItem, DiaryAnalysisValue
 from company_master.models import CompanyMaster
 from tags.models import Tag
+from django.views.generic import FormView
 
+
+from django.db import transaction as db_transaction
 from decimal import Decimal, InvalidOperation
 from datetime import datetime, timedelta
 from collections import Counter, defaultdict
 import calendar
+import chardet
 import mimetypes
 import os
+import csv
 import io
 import traceback
 import html
@@ -2408,3 +2413,388 @@ def delete_stock_split(request, split_id):
         messages.error(request, f'株式分割の削除中にエラーが発生しました: {str(e)}')
     
     return redirect('stockdiary:detail', pk=diary_id)
+
+class TradeUploadView(LoginRequiredMixin, FormView):
+    """取引履歴アップロードビュー"""
+    template_name = 'stockdiary/trade_upload.html'
+    form_class = TradeUploadForm
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_actions'] = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('stockdiary:home'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            }
+        ]
+        return context
+    
+    def form_valid(self, form):
+        broker = form.cleaned_data['broker']
+        csv_file = form.cleaned_data['csv_file']
+        
+        # セッションにブローカー情報を保存
+        self.request.session['upload_broker'] = broker
+        
+        # CSVファイルを読み込んで処理
+        try:
+            # バイト列を読み込み
+            csv_bytes = csv_file.read()
+            
+            # エンコーディングを検出
+            detected = chardet.detect(csv_bytes)
+            encoding = detected['encoding']
+            
+            # 検出されたエンコーディングで文字列に変換
+            try:
+                csv_content = csv_bytes.decode(encoding)
+            except (UnicodeDecodeError, AttributeError):
+                # 検出に失敗した場合は一般的なエンコーディングを試す
+                for enc in ['shift-jis', 'cp932', 'utf-8-sig', 'utf-8', 'euc-jp']:
+                    try:
+                        csv_content = csv_bytes.decode(enc)
+                        encoding = enc
+                        break
+                    except UnicodeDecodeError:
+                        continue
+                else:
+                    raise ValueError('CSVファイルのエンコーディングを判別できませんでした')
+            
+            # セッションにCSVコンテンツとエンコーディング情報を保存
+            self.request.session['csv_content'] = csv_content
+            self.request.session['csv_encoding'] = encoding
+            
+            messages.info(
+                self.request, 
+                f'CSVファイルを読み込みました（エンコーディング: {encoding}）'
+            )
+            
+            # プレビュー画面に遷移
+            return redirect('stockdiary:process_trade_upload')
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            messages.error(
+                self.request, 
+                f'CSVファイルの読み込みに失敗しました: {str(e)}'
+            )
+            return self.form_invalid(form)
+
+
+
+@login_required
+def process_trade_upload(request):
+    """取引履歴処理ビュー"""
+    if request.method != 'POST':
+        # GET時はプレビュー表示
+        broker = request.session.get('upload_broker')
+        csv_content = request.session.get('csv_content')
+        
+        if not broker or not csv_content:
+            messages.error(request, 'アップロードデータが見つかりません')
+            return redirect('stockdiary:trade_upload')
+        
+        # CSVをパースしてプレビュー
+        try:
+            preview_data = parse_rakuten_csv_preview(csv_content)
+            
+            context = {
+                'broker': broker,
+                'preview_data': preview_data,
+                'total_count': len(preview_data),
+            }
+            
+            return render(request, 'stockdiary/trade_upload_preview.html', context)
+            
+        except Exception as e:
+            messages.error(request, f'CSVの解析に失敗しました: {str(e)}')
+            return redirect('stockdiary:trade_upload')
+    
+    else:
+        # POST時は実際にデータ登録
+        broker = request.session.get('upload_broker')
+        csv_content = request.session.get('csv_content')
+        
+        if not broker or not csv_content:
+            messages.error(request, 'アップロードデータが見つかりません')
+            return redirect('stockdiary:trade_upload')
+        
+        try:
+            result = process_rakuten_csv(request.user, csv_content)
+            
+            # セッションデータをクリア
+            del request.session['upload_broker']
+            del request.session['csv_content']
+            
+            messages.success(
+                request,
+                f'取引履歴の登録が完了しました。'
+                f'成功: {result["success_count"]}件、'
+                f'スキップ: {result["skip_count"]}件、'
+                f'エラー: {result["error_count"]}件'
+            )
+            
+            # エラーがあれば詳細を表示
+            if result['errors']:
+                for error in result['errors'][:5]:  # 最初の5件まで
+                    messages.warning(request, error)
+            
+            return redirect('stockdiary:home')
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            messages.error(request, f'取引履歴の登録中にエラーが発生しました: {str(e)}')
+            return redirect('stockdiary:trade_upload')
+
+
+def parse_rakuten_csv_preview(csv_content):
+    """楽天CSVをパースしてプレビュー用データを返す"""
+    csv_file = io.StringIO(csv_content)
+    reader = csv.DictReader(csv_file)
+    
+    preview_data = []
+    
+    # デバッグ: 列名を出力
+    if reader.fieldnames:
+        print("=== CSV列名一覧 ===")
+        for i, col in enumerate(reader.fieldnames, 1):
+            print(f"{i}. {col}")
+        print("=" * 50)
+    
+    for row_num, row in enumerate(reader, 1):
+        try:
+            # デバッグ: 最初の行のすべての値を出力
+            if row_num == 1:
+                print("=== 1行目のデータ ===")
+                for key, value in row.items():
+                    print(f"{key}: {value}")
+                print("=" * 50)
+            
+            # 楽天証券のCSVフォーマットに合わせて列名を指定
+            trade_date = row.get('受渡日', '').strip()
+            stock_code = row.get('銘柄コード', '').strip()
+            stock_name = row.get('銘柄名', '').strip()
+            
+            # 取引区分と区分の両方を確認
+            trade_category = row.get('取引区分', '').strip()  # 現物、信用など
+            trade_type = row.get('区分', '').strip()  # 買、売
+            
+            # デバッグ出力（最初の3行のみ）
+            if row_num <= 3:
+                print(f"行{row_num}: 取引区分='{trade_category}', 区分='{trade_type}'")
+            
+            # 数量と単価を取得
+            quantity_str = row.get('数量［株］', '') or row.get('数量[株]', '') or row.get('数量', '')
+            price_str = row.get('単価［円］', '') or row.get('単価[円]', '') or row.get('単価', '')
+            
+            # カンマを除去して数値に変換
+            quantity_str = quantity_str.replace(',', '').strip()
+            price_str = price_str.replace(',', '').strip()
+            
+            # 数値チェック
+            if not quantity_str or not price_str:
+                continue
+                
+            try:
+                quantity = float(quantity_str)
+                price = float(price_str)
+                amount = quantity * price
+            except ValueError:
+                continue
+            
+            # 取引種別の表示を作成
+            display_trade_type = f"{trade_category} {trade_type}" if trade_category else trade_type
+            
+            preview_data.append({
+                'date': trade_date,
+                'stock_code': stock_code,
+                'stock_name': stock_name,
+                'trade_type': display_trade_type,
+                'trade_category': trade_category,  # 内部用
+                'buy_or_sell': trade_type,  # 内部用
+                'quantity': f'{quantity:,.0f}',
+                'price': f'{price:,.2f}',
+                'amount': f'{amount:,.0f}',
+            })
+            
+        except Exception as e:
+            print(f"Row {row_num} parsing error: {e}")
+            import traceback
+            traceback.print_exc()
+            continue
+    
+    return preview_data
+
+
+def process_rakuten_csv(user, csv_content):
+    """楽天CSVを処理してStockDiaryとTransactionを作成"""
+    csv_file = io.StringIO(csv_content)
+    reader = csv.DictReader(csv_file)
+    
+    success_count = 0
+    skip_count = 0
+    error_count = 0
+    errors = []
+    
+    # まず全データを読み込んで日付順にソート
+    all_rows = []
+    for row in reader:
+        trade_date_str = row.get('受渡日', '').strip()
+        if trade_date_str:
+            all_rows.append(row)
+    
+    # 受渡日でソート（古い順）
+    def parse_date(date_str):
+        for date_format in ['%Y/%m/%d', '%Y-%m-%d', '%Y年%m月%d日']:
+            try:
+                return datetime.strptime(date_str, date_format)
+            except ValueError:
+                continue
+        return datetime.max  # パースできない場合は最後に
+    
+    all_rows.sort(key=lambda r: parse_date(r.get('受渡日', '')))
+    
+    for row_num, row in enumerate(all_rows, start=1):
+        try:
+            # 受渡日を取得
+            trade_date_str = row.get('受渡日', '').strip()
+            if not trade_date_str:
+                skip_count += 1
+                continue
+            
+            # 日付をパース
+            try:
+                trade_date = None
+                for date_format in ['%Y/%m/%d', '%Y-%m-%d', '%Y年%m月%d日']:
+                    try:
+                        trade_date = datetime.strptime(trade_date_str, date_format).date()
+                        break
+                    except ValueError:
+                        continue
+                
+                if trade_date is None:
+                    raise ValueError(f'日付形式が不正です: {trade_date_str}')
+            except ValueError as e:
+                errors.append(f'行{row_num}: {str(e)}')
+                error_count += 1
+                continue
+            
+            # 銘柄情報
+            stock_code = row.get('銘柄コード', '').strip()
+            stock_name = row.get('銘柄名', '').strip()
+            
+            if not stock_code or not stock_name:
+                errors.append(f'行{row_num}: 銘柄コードまたは銘柄名が空です')
+                skip_count += 1
+                continue
+            
+            # 売買区分を取得
+            trade_type_raw = row.get('売買区分', '').strip()
+            
+            # 取引区分（現物/信用など）も取得
+            trade_category = row.get('取引区分', '').strip()
+            
+            # 売買区分を変換
+            # 「買付」「買」「積立」などは買いとして扱う
+            if '買' in trade_type_raw or '積立' in trade_type_raw:
+                transaction_type = 'buy'
+            elif '売' in trade_type_raw:
+                transaction_type = 'sell'
+            else:
+                errors.append(f'行{row_num}: 不明な売買区分: "{trade_type_raw}" ({stock_name})')
+                error_count += 1
+                continue
+            
+            # 数量と単価を取得
+            quantity_str = row.get('数量［株］', '')
+            price_str = row.get('単価［円］', '')
+            
+            # カンマを除去
+            quantity_str = quantity_str.replace(',', '').strip()
+            price_str = price_str.replace(',', '').strip()
+            
+            if not quantity_str or not price_str:
+                errors.append(f'行{row_num}: 数量または単価が空です ({stock_name})')
+                skip_count += 1
+                continue
+            
+            # 数値に変換
+            try:
+                quantity = Decimal(quantity_str)
+                price = Decimal(price_str)
+            except (ValueError, InvalidOperation) as e:
+                errors.append(f'行{row_num}: 数値の解析エラー: {stock_name} - 数量:{quantity_str}, 単価:{price_str}')
+                error_count += 1
+                continue
+            
+            if quantity <= 0 or price <= 0:
+                errors.append(f'行{row_num}: 数量または単価が0以下です ({stock_name})')
+                skip_count += 1
+                continue
+            
+            # StockDiaryを取得または作成
+            with db_transaction.atomic():
+                diary, created = StockDiary.objects.get_or_create(
+                    user=user,
+                    stock_symbol=stock_code,
+                    defaults={
+                        'stock_name': stock_name,
+                        'reason': f'楽天証券からインポート（{trade_date}）',
+                    }
+                )
+                
+                # 既存のTransactionをチェック（重複登録を防ぐ）
+                existing_transaction = Transaction.objects.filter(
+                    diary=diary,
+                    transaction_date=trade_date,
+                    transaction_type=transaction_type,
+                    price=price,
+                    quantity=quantity
+                ).first()
+                
+                if existing_transaction:
+                    skip_count += 1
+                    continue
+                
+                # Transactionを作成
+                transaction_obj = Transaction(
+                    diary=diary,
+                    transaction_type=transaction_type,
+                    transaction_date=trade_date,
+                    price=price,
+                    quantity=quantity,
+                    memo=f'楽天証券からインポート（{trade_category} {trade_type_raw}）'
+                )
+                
+                # バリデーションをスキップして保存
+                transaction_obj.save()
+                
+                success_count += 1
+                
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            stock_name_for_error = locals().get('stock_name', '不明')
+            errors.append(f'行{row_num} ({stock_name_for_error}): {str(e)}')
+            error_count += 1
+            continue
+    
+    # 最後に各Diaryの集計を更新
+    processed_diaries = StockDiary.objects.filter(
+        user=user,
+        transactions__memo__contains='楽天証券からインポート'
+    ).distinct()
+    
+    for diary in processed_diaries:
+        diary.update_aggregates()
+    
+    return {
+        'success_count': success_count,
+        'skip_count': skip_count,
+        'error_count': error_count,
+        'errors': errors
+    }

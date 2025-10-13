@@ -80,7 +80,7 @@
       <div class="diary-meta">
         <span class="diary-date">{{ diary.created_at|date:"Y年m月d日" }}</span>
         
-        {% if diary.is_memo %}
+        {% if not diary.current_quantity %}
           <span class="status-badge memo-badge">memo</span>
         {% else %}
           <span class="status-badge memo-badge">active</span>
@@ -89,10 +89,15 @@
     </div>
     
     <!-- 価格情報 - レスポンシブ対応 -->
-    {% if not diary.is_memo %}
-    <div class="diary-price-info">
-      <div class="price-value">{{ diary.total_cost|floatformat:2|intcomma }}円</div>        
+    {% if diary.realized_profit > 0 %}
+    <div class="diary-price-info bg-success-subtle">
+      <div class="price-value">{{ diary.realized_profit|floatformat:2|intcomma }}円</div>
     </div>
+    {% elif diary.realized_profit < 0 %}
+    <div class="diary-price-info bg-danger-subtle">
+      <div class="price-value">{{ diary.realized_profit|floatformat:2|intcomma }}円</div>        
+    </div>
+
     {% endif %}
   </div>
 

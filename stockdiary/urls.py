@@ -56,4 +56,8 @@ urlpatterns = [
     # 銘柄一覧
     path('stocks/', views.StockListView.as_view(), name='stock_list'),
     path('api/stock-diaries/<str:symbol>/', views.api_stock_diaries, name='api_stock_diaries'),
+
+# 既存のurlpatternsに以下を追加
+path('trade-upload/', views.TradeUploadView.as_view(), name='trade_upload'),
+path('trade-upload/process/', views.process_trade_upload, name='process_trade_upload'),    
 ]

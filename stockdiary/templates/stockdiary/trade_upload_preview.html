@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}取引履歴プレビュー | カブログ{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/common.css' %}">
+<link rel="stylesheet" href="{% static 'css/diary-theme.css' %}">
+<style>
+  .preview-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+  }
+  
+  .preview-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 2rem;
+  }
+  
+  .preview-header {
+    margin-bottom: 2rem;
+  }
+  
+  .preview-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  
+  .stat-card {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+  }
+  
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--primary-color);
+  }
+  
+  .stat-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+  }
+  
+  .preview-table-container {
+    overflow-x: auto;
+    margin-bottom: 2rem;
+  }
+  
+  .preview-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .preview-table th,
+  .preview-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #dee2e6;
+    text-align: left;
+  }
+  
+  .preview-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+  }
+  
+  .preview-table tbody tr:hover {
+    background-color: #f8f9fa;
+  }
+  
+  .trade-type-buy {
+    color: #198754;
+    font-weight: 500;
+  }
+  
+  .trade-type-sell {
+    color: #dc3545;
+    font-weight: 500;
+  }
+  
+  .action-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+  }
+  
+  @media (max-width: 768px) {
+    .preview-table {
+      font-size: 0.85rem;
+    }
+    
+    .preview-table th,
+    .preview-table td {
+      padding: 0.5rem;
+    }
+    
+    .action-buttons {
+      flex-direction: column;
+    }
+    
+    .action-buttons button,
+    .action-buttons a {
+      width: 100%;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="preview-container">
+  <div class="preview-card">
+    <div class="preview-header">
+      <h2><i class="bi bi-eye"></i> 取引履歴プレビュー</h2>
+      <p class="text-muted">以下の内容で登録します。問題がなければ「登録する」ボタンをクリックしてください。</p>
+    </div>
+    
+    <div class="preview-stats">
+      <div class="stat-card">
+        <div class="stat-value">{{ total_count }}</div>
+        <div class="stat-label">取引件数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ broker|upper }}</div>
+        <div class="stat-label">証券会社</div>
+      </div>
+    </div>
+    
+    <div class="preview-table-container">
+        <table class="preview-table">
+            <thead>
+            <tr>
+                <th>受渡日</th>
+                <th>銘柄コード</th>
+                <th>銘柄名</th>
+                <th>売買</th>
+                <th class="text-end">数量</th>
+                <th class="text-end">単価</th>
+                <th class="text-end">金額</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for trade in preview_data %}
+            <tr>
+                <td>{{ trade.date }}</td>
+                <td>{{ trade.stock_code }}</td>
+                <td>{{ trade.stock_name }}</td>
+                <td>
+                <span class="{% if '買' in trade.trade_type %}trade-type-buy{% else %}trade-type-sell{% endif %}">
+                    {{ trade.trade_type }}
+                </span>
+                </td>
+                <td class="text-end">{{ trade.quantity }}株</td>
+                <td class="text-end">{{ trade.price }}円</td>
+                <td class="text-end">{{ trade.amount }}円</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center text-muted">データがありません</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="alert alert-info">
+      <i class="bi bi-info-circle"></i>
+      <strong>登録処理について</strong>
+      <ul class="mb-0 mt-2">
+        <li>既存の銘柄がある場合は、その銘柄に取引が追加されます</li>
+        <li>新しい銘柄の場合は、自動的に日記が作成されます</li>
+        <li>重複する取引はスキップされます</li>
+      </ul>
+    </div>
+    
+    <form method="post" action="{% url 'stockdiary:process_trade_upload' %}">
+      {% csrf_token %}
+      <div class="action-buttons">
+        <button type="submit" class="btn btn-primary btn-lg">
+          <i class="bi bi-check-circle"></i> 登録する
+        </button>
+        <a href="{% url 'stockdiary:trade_upload' %}" class="btn btn-outline-secondary btn-lg">
+          <i class="bi bi-arrow-left"></i> 戻る
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

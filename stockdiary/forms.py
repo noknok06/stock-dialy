@@ -392,3 +392,40 @@ class DiaryNoteForm(forms.ModelForm):
         if content and len(content) > 1000:
             raise ValidationError('記録内容は1000文字以内で入力してください。')
         return content
+
+class TradeUploadForm(forms.Form):
+    """取引履歴アップロードフォーム"""
+    BROKER_CHOICES = [
+        ('rakuten', '楽天証券'),
+        # ('sbi', 'SBI証券'),  # 将来的に対応
+    ]
+    
+    broker = forms.ChoiceField(
+        label='証券会社',
+        choices=BROKER_CHOICES,
+        initial='rakuten',
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
+    csv_file = forms.FileField(
+        label='取引履歴CSVファイル',
+        help_text='楽天証券からダウンロードした取引履歴CSVファイルを選択してください',
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': '.csv'
+        })
+    )
+    
+    def clean_csv_file(self):
+        csv_file = self.cleaned_data.get('csv_file')
+        
+        if csv_file:
+            # ファイルサイズチェック（10MB以下）
+            if csv_file.size > 10 * 1024 * 1024:
+                raise forms.ValidationError('ファイルサイズは10MB以下にしてください')
+            
+            # ファイル拡張子チェック
+            if not csv_file.name.endswith('.csv'):
+                raise forms.ValidationError('CSVファイルを選択してください')
+        
+        return csv_file        
