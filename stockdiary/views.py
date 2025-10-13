@@ -2738,14 +2738,20 @@ def process_rakuten_csv(user, csv_content):
             
             # StockDiaryを取得または作成
             with db_transaction.atomic():
-                diary, created = StockDiary.objects.get_or_create(
+                # 既存のStockDiaryを取得（複数ある場合は最初のものを使用）
+                diary = StockDiary.objects.filter(
                     user=user,
-                    stock_symbol=stock_code,
-                    defaults={
-                        'stock_name': stock_name,
-                        'reason': f'楽天証券からインポート（{trade_date}）',
-                    }
-                )
+                    stock_symbol=stock_code
+                ).order_by('created_at').first()
+                
+                if not diary:
+                    # 存在しない場合は新規作成
+                    diary = StockDiary.objects.create(
+                        user=user,
+                        stock_symbol=stock_code,
+                        stock_name=stock_name,
+                        reason=f'楽天証券からインポート（{trade_date}）',
+                    )
                 
                 # 既存のTransactionをチェック（重複登録を防ぐ）
                 existing_transaction = Transaction.objects.filter(
