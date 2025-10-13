@@ -193,8 +193,8 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         if sector:
             queryset = queryset.filter(sector__iexact=sector)
         
-        # 保有状態フィルター（トランザクション対応版）
-        status = self.request.GET.get('status', '')
+        # 🆕 保有状態フィルター（デフォルトで保有中のみ表示）
+        status = self.request.GET.get('status', 'active')  # デフォルト値を'active'に変更
         if status == 'active':
             # 保有中: 保有数が0より大きい
             queryset = queryset.filter(current_quantity__gt=0)
@@ -204,8 +204,34 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         elif status == 'memo':
             # メモのみ: 取引がない
             queryset = queryset.filter(transaction_count=0)
+        elif status == 'all':
+            # すべて表示（フィルターなし）
+            pass
         
-        # 日付範囲フィルター（first_purchase_date基準）
+        # 🆕 トランザクション期間フィルター（created_at基準）
+        transaction_date_range = self.request.GET.get('transaction_date_range', '')
+        if transaction_date_range:
+            from datetime import timedelta
+            today = timezone.now()
+            
+            range_mapping = {
+                '1w': 7,
+                '1m': 30,
+                '3m': 90,
+                '6m': 180,
+                '1y': 365
+            }
+            
+            if transaction_date_range in range_mapping:
+                start_datetime = today - timedelta(days=range_mapping[transaction_date_range])
+                # トランザクションのcreated_atで絞り込み
+                diary_ids = Transaction.objects.filter(
+                    diary__user=self.request.user,
+                    created_at__gte=start_datetime
+                ).values_list('diary_id', flat=True).distinct()
+                queryset = queryset.filter(id__in=diary_ids)
+        
+        # 既存の日付範囲フィルター（first_purchase_date基準）
         date_range = self.request.GET.get('date_range', '')
         if date_range:
             from datetime import timedelta
@@ -221,66 +247,201 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
             
             if date_range in range_mapping:
                 start_date = today - timedelta(days=range_mapping[date_range])
-                # 取引がある日記は first_purchase_date、ない日記は created_at で判定
                 queryset = queryset.filter(
                     Q(first_purchase_date__gte=start_date) |
                     Q(first_purchase_date__isnull=True, created_at__gte=start_date)
                 )
-            elif date_range == 'custom':
-                # カスタム日付範囲
-                start_date = self.request.GET.get('start_date', '')
-                end_date = self.request.GET.get('end_date', '')
-                
-                if start_date:
-                    try:
-                        start = datetime.strptime(start_date, '%Y-%m-%d').date()
-                        queryset = queryset.filter(
-                            Q(first_purchase_date__gte=start) |
-                            Q(first_purchase_date__isnull=True, created_at__date__gte=start)
-                        )
-                    except ValueError:
-                        pass
-                
-                if end_date:
-                    try:
-                        end = datetime.strptime(end_date, '%Y-%m-%d').date()
-                        queryset = queryset.filter(
-                            Q(first_purchase_date__lte=end) |
-                            Q(first_purchase_date__isnull=True, created_at__date__lte=end)
-                        )
-                    except ValueError:
-                        pass
         
-        # ソート順
+        # 🆕 ソート順（取引回数・総取得原価を追加）
         sort = self.request.GET.get('sort', '')
         if sort == 'name':
             queryset = queryset.order_by('stock_name')
         elif sort == 'symbol':
             queryset = queryset.order_by('stock_symbol')
         elif sort == 'date_asc':
-            # 日付昇順（古い順）
             queryset = queryset.order_by(
                 F('first_purchase_date').asc(nulls_last=True),
                 'created_at'
             )
         elif sort == 'date_desc':
-            # 日付降順（新しい順）- デフォルト
             queryset = queryset.order_by(
                 F('first_purchase_date').desc(nulls_last=True),
                 '-created_at'
             )
         elif sort == 'profit_desc':
-            # 実現損益降順
             queryset = queryset.order_by('-realized_profit')
         elif sort == 'profit_asc':
-            # 実現損益昇順
             queryset = queryset.order_by('realized_profit')
+        # 🆕 取引回数順
+        elif sort == 'transaction_count_desc':
+            queryset = queryset.order_by('-transaction_count', '-updated_at')
+        elif sort == 'transaction_count_asc':
+            queryset = queryset.order_by('transaction_count', 'updated_at')
+        # 🆕 総取得原価順
+        elif sort == 'total_cost_desc':
+            queryset = queryset.order_by('-total_cost', '-updated_at')
+        elif sort == 'total_cost_asc':
+            queryset = queryset.order_by('total_cost', 'updated_at')
         else:
             # デフォルト: 更新日時降順
             queryset = queryset.order_by('-updated_at')
         
         return queryset.distinct()
 
+
+    # 🆕 diary_list 関数も同様に更新（views.py内の該当関数を以下で置き換え）
+    def diary_list(request):
+        """日記リストを表示するビュー（HTMX対応）"""
+        is_htmx = request.headers.get('HX-Request') == 'true' or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
+        if not is_htmx:
+            return redirect(f'/stockdiary/?{request.GET.urlencode()}')
+        
+        try:
+            queryset = StockDiary.objects.filter(user=request.user).order_by('-updated_at')
+            queryset = queryset.select_related('user').prefetch_related('tags', 'notes')
+            
+            # 検索クエリ
+            query = request.GET.get('query', '').strip()
+            if query:
+                queryset = queryset.filter(
+                    Q(stock_name__icontains=query) | 
+                    Q(stock_symbol__icontains=query) |
+                    Q(reason__icontains=query) |
+                    Q(memo__icontains=query) |
+                    Q(sector__icontains=query)
+                )
+            
+            # タグフィルター
+            tag_id = request.GET.get('tag', '')
+            if tag_id:
+                try:
+                    queryset = queryset.filter(tags__id=int(tag_id))
+                except (ValueError, TypeError):
+                    pass
+            
+            # 業種フィルター
+            sector = request.GET.get('sector', '').strip()
+            if sector:
+                queryset = queryset.filter(sector__iexact=sector)
+            
+            # 🆕 保有状態フィルター（デフォルトで保有中）
+            status = request.GET.get('status', 'active')
+            if status == 'active':
+                queryset = queryset.filter(current_quantity__gt=0)
+            elif status == 'sold':
+                queryset = queryset.filter(current_quantity=0, transaction_count__gt=0)
+            elif status == 'memo':
+                queryset = queryset.filter(transaction_count=0)
+            elif status == 'all':
+                pass
+            
+            # 🆕 トランザクション期間フィルター
+            transaction_date_range = request.GET.get('transaction_date_range', '')
+            if transaction_date_range:
+                from datetime import timedelta
+                today = timezone.now()
+                
+                range_mapping = {
+                    '1w': 7, '1m': 30, '3m': 90, '6m': 180, '1y': 365
+                }
+                
+                if transaction_date_range in range_mapping:
+                    start_datetime = today - timedelta(days=range_mapping[transaction_date_range])
+                    diary_ids = Transaction.objects.filter(
+                        diary__user=request.user,
+                        created_at__gte=start_datetime
+                    ).values_list('diary_id', flat=True).distinct()
+                    queryset = queryset.filter(id__in=diary_ids)
+            
+            # 日付範囲フィルター
+            date_range = request.GET.get('date_range', '')
+            if date_range:
+                from datetime import timedelta
+                today = timezone.now().date()
+                
+                range_mapping = {
+                    '1w': 7, '1m': 30, '3m': 90, '6m': 180, '1y': 365
+                }
+                
+                if date_range in range_mapping:
+                    start_date = today - timedelta(days=range_mapping[date_range])
+                    queryset = queryset.filter(
+                        Q(first_purchase_date__gte=start_date) |
+                        Q(first_purchase_date__isnull=True, created_at__gte=start_date)
+                    )
+            
+            # 🆕 ソート（取引回数・総取得原価を追加）
+            sort = request.GET.get('sort', '')
+            if sort == 'name':
+                queryset = queryset.order_by('stock_name')
+            elif sort == 'symbol':
+                queryset = queryset.order_by('stock_symbol')
+            elif sort == 'date_asc':
+                queryset = queryset.order_by(
+                    F('first_purchase_date').asc(nulls_last=True),
+                    'created_at'
+                )
+            elif sort == 'date_desc':
+                queryset = queryset.order_by(
+                    F('first_purchase_date').desc(nulls_last=True),
+                    '-created_at'
+                )
+            elif sort == 'profit_desc':
+                queryset = queryset.order_by('-realized_profit')
+            elif sort == 'profit_asc':
+                queryset = queryset.order_by('realized_profit')
+            elif sort == 'transaction_count_desc':
+                queryset = queryset.order_by('-transaction_count', '-updated_at')
+            elif sort == 'transaction_count_asc':
+                queryset = queryset.order_by('transaction_count', 'updated_at')
+            elif sort == 'total_cost_desc':
+                queryset = queryset.order_by('-total_cost', '-updated_at')
+            elif sort == 'total_cost_asc':
+                queryset = queryset.order_by('total_cost', 'updated_at')
+            else:
+                queryset = queryset.order_by('-updated_at')
+            
+            queryset = queryset.distinct()
+            
+            # ページネーション
+            current_params = request.GET.copy()
+            current_params.pop('page', None)
+            
+            paginator = Paginator(queryset, 10)
+            page = request.GET.get('page', 1)
+            
+            try:
+                diaries = paginator.page(page)
+            except (PageNotAnInteger, EmptyPage):
+                diaries = paginator.page(1)
+            
+            tags = Tag.objects.filter(user=request.user)
+            
+            sectors = StockDiary.objects.filter(
+                user=request.user,
+                sector__isnull=False
+            ).exclude(sector='').values_list('sector', flat=True).distinct().order_by('sector')
+            
+            context = {
+                'diaries': diaries,
+                'page_obj': diaries,
+                'tags': tags,
+                'sectors': list(sectors),
+                'request': request,
+                'current_params': current_params,
+            }
+            
+            return render(request, 'stockdiary/partials/diary_list.html', context)
+        
+        except Exception as e:
+            print(f"Diary list error: {str(e)}")
+            traceback.print_exc()
+            
+            return HttpResponse(
+                f'<div class="alert alert-danger">日記リストの読み込みに失敗しました: {str(e)}</div>',
+                status=500
+            )
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['tags'] = Tag.objects.filter(user=self.request.user)

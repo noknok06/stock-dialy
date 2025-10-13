@@ -59,7 +59,7 @@ class StockDiaryAdmin(admin.ModelAdmin):
     
     list_filter = (
         'user', 'sector', 'created_at', 'first_purchase_date',
-        ('current_quantity', admin.EmptyFieldListFilter),
+        'transaction_count',  # 取引回数でフィルタリング可能に
     )
     
     search_fields = (
@@ -158,7 +158,7 @@ class StockDiaryAdmin(admin.ModelAdmin):
         return '-'
     current_quantity_display.short_description = '保有数'
     current_quantity_display.admin_order_field = 'current_quantity'
-    
+
     def average_price_display(self, obj):
         """平均取得単価を表示"""
         if obj.average_purchase_price:
@@ -166,7 +166,7 @@ class StockDiaryAdmin(admin.ModelAdmin):
         return '-'
     average_price_display.short_description = '平均単価'
     average_price_display.admin_order_field = 'average_purchase_price'
-    
+        
     def realized_profit_display(self, obj):
         """実現損益を色付きで表示"""
         if obj.realized_profit == 0:
@@ -175,9 +175,17 @@ class StockDiaryAdmin(admin.ModelAdmin):
         color = '#28a745' if obj.realized_profit > 0 else '#dc3545'
         sign = '+' if obj.realized_profit > 0 else ''
         
+        # ❌ 間違い: sign に :,.0f を適用しようとしている
+        # return format_html(
+        #     '<span style="color: {}; font-weight: bold;">{}{:,.0f}円</span>',
+        #     color, sign, obj.realized_profit
+        # )
+        
+        # ✅ 修正: 数値を先にフォーマットしてから連結
         return format_html(
-            '<span style="color: {}; font-weight: bold;">{}{:,.0f}円</span>',
-            color, sign, obj.realized_profit
+            '<span style="color: {}; font-weight: bold;">{}</span>',
+            color, 
+            f'{sign}{obj.realized_profit:,.0f}円'
         )
     realized_profit_display.short_description = '実現損益'
     realized_profit_display.admin_order_field = 'realized_profit'
@@ -196,7 +204,22 @@ class StockDiaryAdmin(admin.ModelAdmin):
         """選択した日記の集計を再計算"""
         count = 0
         for diary in queryset:
+            # 取引を日付と作成日時でソート（デバッグ情報付き）
+            transactions = diary.transactions.all().order_by('transaction_date', 'created_at')
+            
+            # デバッグ: 取引の順序を確認
+            print(f"\n=== {diary.stock_name} の取引順序 ===")
+            for i, t in enumerate(transactions, 1):
+                print(f"{i}. {t.transaction_date} {t.get_transaction_type_display()} "
+                    f"{t.quantity}株 @ {t.price}円 (作成: {t.created_at})")
+            
             diary.update_aggregates()
+            
+            # 結果を確認
+            print(f"結果: 保有数={diary.current_quantity}, "
+                f"購入計={diary.total_bought_quantity}, "
+                f"売却計={diary.total_sold_quantity}")
+            
             count += 1
         
         self.message_user(
@@ -204,6 +227,7 @@ class StockDiaryAdmin(admin.ModelAdmin):
             f'{count}件の日記の集計を再計算しました。'
         )
     recalculate_aggregates.short_description = '選択した日記の集計を再計算'
+
     
     def export_csv(self, request, queryset):
         """CSVエクスポート（簡易版）"""

@@ -941,13 +941,32 @@ img {
       </div>
     </div>
 
+ 
     <!-- アクティブフィルターの表示 -->
-    <div class="active-filters" id="activeFilters" style="{% if not request.GET.tag and not request.GET.status and not request.GET.sector %}display: none;{% endif %}">
+    <div class="active-filters" id="activeFilters">
+      
+      <!-- 🔧 保有状態フィルター（常に表示、statusパラメータがない場合はactiveとして扱う） -->
+      {% with status_value=request.GET.status|default:"active" %}
+        <div class="filter-chip" data-filter="status" data-value="{{ status_value }}">
+          <span>
+            {% if status_value == 'active' %}保有中のみ
+            {% elif status_value == 'all' %}すべて表示
+            {% elif status_value == 'sold' %}売却済み
+            {% elif status_value == 'memo' %}メモのみ
+            {% endif %}
+          </span>
+          <button type="button" class="filter-chip-remove" onclick="removeFilter('status')">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      {% endwith %}
+      
+      <!-- タグフィルター -->
       {% if request.GET.tag %}
         {% for tag in tags %}
           {% if tag.id|stringformat:"i" == request.GET.tag %}
             <div class="filter-chip" data-filter="tag" data-value="{{ tag.id }}">
-              <span>{{ tag.name }}</span>
+              <span>タグ: {{ tag.name }}</span>
               <button type="button" class="filter-chip-remove" onclick="removeFilter('tag')">
                 <i class="bi bi-x"></i>
               </button>
@@ -956,15 +975,67 @@ img {
         {% endfor %}
       {% endif %}
       
-      {% if request.GET.status %}
-        <div class="filter-chip" data-filter="status" data-value="{{ request.GET.status }}">
-          <span>
-            {% if request.GET.status == 'active' %}保有中
-            {% elif request.GET.status == 'sold' %}売却済み
-            {% elif request.GET.status == 'memo' %}メモのみ
+      <!-- 業種フィルター -->
+      {% if request.GET.sector %}
+        <div class="filter-chip" data-filter="sector" data-value="{{ request.GET.sector }}">
+          <span>業種: {{ request.GET.sector }}</span>
+          <button type="button" class="filter-chip-remove" onclick="removeFilter('sector')">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      {% endif %}
+      
+      <!-- 🆕 取引登録日フィルター -->
+      {% if request.GET.transaction_date_range %}
+        <div class="filter-chip" data-filter="transaction_date_range" data-value="{{ request.GET.transaction_date_range }}">
+          <span>取引登録: 
+            {% if request.GET.transaction_date_range == '1w' %}過去1週間
+            {% elif request.GET.transaction_date_range == '1m' %}過去1ヶ月
+            {% elif request.GET.transaction_date_range == '3m' %}過去3ヶ月
+            {% elif request.GET.transaction_date_range == '6m' %}過去6ヶ月
+            {% elif request.GET.transaction_date_range == '1y' %}過去1年
             {% endif %}
           </span>
-          <button type="button" class="filter-chip-remove" onclick="removeFilter('status')">
+          <button type="button" class="filter-chip-remove" onclick="removeFilter('transaction_date_range')">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      {% endif %}
+      
+      <!-- 購入日フィルター -->
+      {% if request.GET.date_range %}
+        <div class="filter-chip" data-filter="date_range" data-value="{{ request.GET.date_range }}">
+          <span>購入日: 
+            {% if request.GET.date_range == '1w' %}過去1週間
+            {% elif request.GET.date_range == '1m' %}過去1ヶ月
+            {% elif request.GET.date_range == '3m' %}過去3ヶ月
+            {% elif request.GET.date_range == '6m' %}過去6ヶ月
+            {% elif request.GET.date_range == '1y' %}過去1年
+            {% endif %}
+          </span>
+          <button type="button" class="filter-chip-remove" onclick="removeFilter('date_range')">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      {% endif %}
+      
+      <!-- 🆕 ソート順フィルター -->
+      {% if request.GET.sort %}
+        <div class="filter-chip" data-filter="sort" data-value="{{ request.GET.sort }}">
+          <span>並び順: 
+            {% if request.GET.sort == 'date_desc' %}取引日（新）
+            {% elif request.GET.sort == 'date_asc' %}取引日（古）
+            {% elif request.GET.sort == 'name' %}銘柄名順
+            {% elif request.GET.sort == 'symbol' %}コード順
+            {% elif request.GET.sort == 'profit_desc' %}損益（高）
+            {% elif request.GET.sort == 'profit_asc' %}損益（低）
+            {% elif request.GET.sort == 'transaction_count_desc' %}取引回数（多）
+            {% elif request.GET.sort == 'transaction_count_asc' %}取引回数（少）
+            {% elif request.GET.sort == 'total_cost_desc' %}総原価（高）
+            {% elif request.GET.sort == 'total_cost_asc' %}総原価（低）
+            {% endif %}
+          </span>
+          <button type="button" class="filter-chip-remove" onclick="removeFilter('sort')">
             <i class="bi bi-x"></i>
           </button>
         </div>
@@ -973,9 +1044,25 @@ img {
 
     <!-- 詳細検索パネル（折りたたみ式） -->
     <div class="advanced-search-panel collapsed" id="advancedPanel">
-      <!-- 詳細検索パネル内に追加 -->
       <div class="advanced-fields">
-        <!-- 既存のタグフィルター -->
+        
+        <!-- 🆕 保有状態フィルター（デフォルト値を追加） -->
+        <div class="form-group">
+          <label class="form-label" for="statusFilter">
+            <i class="bi bi-circle-fill me-1"></i>
+            保有状態
+          </label>
+          <select class="form-select" id="statusFilter" name="status">
+            {% with status_value=request.GET.status|default:"active" %}
+              <option value="active" {% if status_value == 'active' %}selected{% endif %}>保有中のみ</option>
+              <option value="all" {% if status_value == 'all' %}selected{% endif %}>すべて表示</option>
+              <option value="sold" {% if status_value == 'sold' %}selected{% endif %}>売却済み</option>
+              <option value="memo" {% if status_value == 'memo' %}selected{% endif %}>メモのみ</option>
+            {% endwith %}
+          </select>
+        </div>
+
+        <!-- タグフィルター -->
         <div class="form-group">
           <label class="form-label" for="tagFilter">
             <i class="bi bi-tag me-1"></i>
@@ -991,7 +1078,7 @@ img {
           </select>
         </div>
 
-        <!-- 業種フィルター（新規追加） -->
+        <!-- 業種フィルター -->
         <div class="form-group">
           <label class="form-label" for="sectorFilter">
             <i class="bi bi-diagram-3 me-1"></i>
@@ -1007,7 +1094,7 @@ img {
           </select>
         </div>
 
-        <!-- ソート順（改善版） -->
+        <!-- 🆕 ソート順（取引回数・総取得原価を追加） -->
         <div class="form-group">
           <label class="form-label" for="sortFilter">
             <i class="bi bi-sort-down me-1"></i>
@@ -1021,14 +1108,36 @@ img {
             <option value="symbol" {% if request.GET.sort == 'symbol' %}selected{% endif %}>証券コード順</option>
             <option value="profit_desc" {% if request.GET.sort == 'profit_desc' %}selected{% endif %}>実現損益（高い順）</option>
             <option value="profit_asc" {% if request.GET.sort == 'profit_asc' %}selected{% endif %}>実現損益（低い順）</option>
+            <!-- 🆕 取引回数順 -->
+            <option value="transaction_count_desc" {% if request.GET.sort == 'transaction_count_desc' %}selected{% endif %}>取引回数（多い順）</option>
+            <option value="transaction_count_asc" {% if request.GET.sort == 'transaction_count_asc' %}selected{% endif %}>取引回数（少ない順）</option>
+            <!-- 🆕 総取得原価順 -->
+            <option value="total_cost_desc" {% if request.GET.sort == 'total_cost_desc' %}selected{% endif %}>総取得原価（高い順）</option>
+            <option value="total_cost_asc" {% if request.GET.sort == 'total_cost_asc' %}selected{% endif %}>総取得原価（低い順）</option>
           </select>
         </div>
 
-        <!-- 日付範囲フィルター（新規追加） -->
+        <!-- 🆕 トランザクション期間フィルター -->
+        <div class="form-group">
+          <label class="form-label" for="transactionDateRangeFilter">
+            <i class="bi bi-clock-history me-1"></i>
+            取引登録日で絞り込み
+          </label>
+          <select class="form-select" id="transactionDateRangeFilter" name="transaction_date_range">
+            <option value="" {% if not request.GET.transaction_date_range %}selected{% endif %}>すべての期間</option>
+            <option value="1w" {% if request.GET.transaction_date_range == '1w' %}selected{% endif %}>過去1週間</option>
+            <option value="1m" {% if request.GET.transaction_date_range == '1m' %}selected{% endif %}>過去1ヶ月</option>
+            <option value="3m" {% if request.GET.transaction_date_range == '3m' %}selected{% endif %}>過去3ヶ月</option>
+            <option value="6m" {% if request.GET.transaction_date_range == '6m' %}selected{% endif %}>過去6ヶ月</option>
+            <option value="1y" {% if request.GET.transaction_date_range == '1y' %}selected{% endif %}>過去1年</option>
+          </select>
+        </div>
+
+        <!-- 日付範囲フィルター（購入日基準） -->
         <div class="form-group">
           <label class="form-label" for="dateRangeFilter">
             <i class="bi bi-calendar-range me-1"></i>
-            期間で絞り込み
+            購入日で絞り込み
           </label>
           <select class="form-select" id="dateRangeFilter" name="date_range">
             <option value="" {% if not request.GET.date_range %}selected{% endif %}>すべての期間</option>
@@ -1056,8 +1165,9 @@ img {
         <i class="bi bi-search"></i>
         検索
       </button>
-      <a href="{% url 'stockdiary:home' %}" class="btn-reset"
-         hx-get="{% url 'stockdiary:diary_list' %}" 
+      <!-- 🔧 リセットボタン：デフォルト状態（保有中のみ）に戻す -->
+      <a href="{% url 'stockdiary:home' %}?status=active" class="btn-reset"
+         hx-get="{% url 'stockdiary:diary_list' %}?status=active" 
          hx-target="#diary-container"
          hx-push-url="true">
         <i class="bi bi-arrow-counterclockwise"></i>
@@ -1252,6 +1362,29 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
+
+  const urlParams = new URLSearchParams(window.location.search);
+    const statusParam = urlParams.get('status');
+    
+    // statusパラメータがない、またはactiveの場合は、保有中であることを示すバッジを表示
+    if (!statusParam || statusParam === 'active') {
+        const activeFilters = document.getElementById('activeFilters');
+        if (activeFilters && !document.querySelector('[data-filter="status"]')) {
+            const filterChip = document.createElement('div');
+            filterChip.className = 'filter-chip';
+            filterChip.setAttribute('data-filter', 'status');
+            filterChip.setAttribute('data-value', 'active');
+            filterChip.innerHTML = `
+                <span>保有中のみ表示</span>
+                <button type="button" class="filter-chip-remove" onclick="removeFilter('status')">
+                    <i class="bi bi-x"></i>
+                </button>
+            `;
+            activeFilters.insertBefore(filterChip, activeFilters.firstChild);
+            activeFilters.style.display = 'block';
+        }
+    }
+
   function handleCalendarClick(e) {
     const cell = e.currentTarget;
     const dateStr = cell.getAttribute('data-date');
@@ -1424,5 +1557,40 @@ htmx.on('htmx:beforeRequest', function(evt) {
     }
   }
 });
+</script>
+<script>
+function removeFilter(filterName) {
+    // 現在のURLパラメータを取得
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // 指定されたフィルターを削除
+    urlParams.delete(filterName);
+    
+    // 🔧 statusが削除された場合は、明示的に'all'（すべて表示）に設定
+    if (filterName === 'status') {
+        urlParams.set('status', 'all');
+    }
+    
+    // ページ番号をリセット
+    urlParams.delete('page');
+    
+    // 新しいURLで遷移（HTMXを使用）
+    const newUrl = `{% url 'stockdiary:diary_list' %}?${urlParams.toString()}`;
+    htmx.ajax('GET', newUrl, {target: '#diary-container', swap: 'innerHTML', pushUrl: true});
+}
+
+// 🔧 初期表示時の処理（statusがない場合はactiveをデフォルトとして設定）
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const statusParam = urlParams.get('status');
+    
+    // statusパラメータがない場合は、URLに明示的に追加（履歴を残さず）
+    if (!statusParam) {
+        urlParams.set('status', 'active');
+        const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
+        window.history.replaceState({}, '', newUrl);
+    }
+});
+
 </script>
 {% endblock %}

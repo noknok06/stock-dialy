@@ -79,17 +79,23 @@ class StockDiary(models.Model):
     def is_memo(self):
         """メモ記録かどうか（取引がない場合）"""
         return self.transaction_count == 0
-    
+
     @property
     def is_holding(self):
-        """保有中かどうか"""
+        """保有中かどうか（プラス保有）"""
         return self.current_quantity > 0
-    
+
     @property
     def is_sold_out(self):
         """売却済みかどうか（取引はあるが保有数ゼロ）"""
         return self.transaction_count > 0 and self.current_quantity == 0
-    
+
+    # ✅ 追加: 信用売り（ショート）かどうか
+    @property
+    def is_short(self):
+        """信用売り（ショートポジション）かどうか"""
+        return self.current_quantity < 0
+        
     def update_aggregates(self):
         """集計フィールドを再計算"""
         transactions = self.transactions.all().order_by('transaction_date', 'created_at')
@@ -110,7 +116,14 @@ class StockDiary(models.Model):
         # 株式分割の適用
         splits = self.stock_splits.filter(is_applied=True).order_by('split_date')
         
-        for transaction in transactions:
+        # デバッグ用のログ
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"\n{'='*60}")
+        logger.info(f"集計開始: {self.stock_name} ({self.stock_symbol})")
+        logger.info(f"取引数: {transactions.count()}")
+        
+        for idx, transaction in enumerate(transactions, 1):
             # 分割調整を適用
             adjusted_quantity = transaction.quantity
             adjusted_price = transaction.price
@@ -120,13 +133,56 @@ class StockDiary(models.Model):
                     adjusted_quantity = adjusted_quantity * split.split_ratio
                     adjusted_price = adjusted_price / split.split_ratio
             
+            # 処理前の状態をログ
+            before_qty = self.current_quantity
+            
             if transaction.transaction_type == 'buy':
                 # 購入処理
                 buy_amount = adjusted_price * adjusted_quantity
-                self.total_cost += buy_amount
-                self.current_quantity += adjusted_quantity
+                
+                # ✅ マイナス保有（信用売り）からの返済買いの場合
+                if self.current_quantity < 0:
+                    # 信用売りの返済買い
+                    returned_quantity = min(adjusted_quantity, abs(self.current_quantity))
+                    
+                    # 返済分の損益計算（売却時の単価で計算）
+                    if self.total_cost < 0:
+                        avg_sell_price = abs(self.total_cost) / abs(self.current_quantity)
+                        returned_cost = avg_sell_price * returned_quantity
+                        buy_cost = adjusted_price * returned_quantity
+                        profit = returned_cost - buy_cost
+                        self.realized_profit += profit
+                        
+                        logger.info(
+                            f"{idx}. {transaction.transaction_date} 返済買い "
+                            f"{returned_quantity}株 @ {adjusted_price}円 "
+                            f"(平均売却単価: {avg_sell_price:.2f}円) "
+                            f"損益: {profit:+,.2f}円"
+                        )
+                    
+                    # 保有数を戻す
+                    self.current_quantity += returned_quantity
+                    self.total_cost += avg_sell_price * returned_quantity if self.total_cost < 0 else 0
+                    
+                    # 残りの購入分（通常の購入）
+                    remaining_quantity = adjusted_quantity - returned_quantity
+                    if remaining_quantity > 0:
+                        remaining_amount = adjusted_price * remaining_quantity
+                        self.total_cost += remaining_amount
+                        self.current_quantity += remaining_quantity
+                else:
+                    # 通常の購入
+                    self.total_cost += buy_amount
+                    self.current_quantity += adjusted_quantity
+                
                 self.total_bought_quantity += adjusted_quantity
                 self.total_buy_amount += buy_amount
+                
+                logger.info(
+                    f"{idx}. {transaction.transaction_date} 購入 "
+                    f"{adjusted_quantity}株 @ {adjusted_price}円 "
+                    f"→ 保有: {before_qty} → {self.current_quantity}"
+                )
                 
                 # 最初の購入日を記録
                 if self.first_purchase_date is None:
@@ -134,30 +190,74 @@ class StockDiary(models.Model):
                 
             elif transaction.transaction_type == 'sell':
                 # 売却処理
+                sell_amount = adjusted_price * adjusted_quantity
+                
+                # ✅ プラス保有（現物・信用買い）の売却
                 if self.current_quantity > 0:
                     # 平均取得単価を計算
                     avg_price = self.total_cost / self.current_quantity
                     
+                    # 売却する数量（保有数を超えないように）
+                    sold_quantity = min(adjusted_quantity, self.current_quantity)
+                    
                     # 売却原価と売却代金
-                    sell_cost = avg_price * adjusted_quantity
-                    sell_amount = adjusted_price * adjusted_quantity
+                    sell_cost = avg_price * sold_quantity
+                    actual_sell_amount = adjusted_price * sold_quantity
                     
                     # 実現損益を計算
-                    profit = sell_amount - sell_cost
+                    profit = actual_sell_amount - sell_cost
                     self.realized_profit += profit
                     
                     # 総原価と保有数を減少
                     self.total_cost -= sell_cost
+                    self.current_quantity -= sold_quantity
+                    
+                    logger.info(
+                        f"{idx}. {transaction.transaction_date} 売却 "
+                        f"{sold_quantity}株 @ {adjusted_price}円 "
+                        f"(平均単価: {avg_price:.2f}円) "
+                        f"→ 保有: {before_qty} → {self.current_quantity} "
+                        f"損益: {profit:+,.2f}円"
+                    )
+                    
+                    # 残りの売却分（信用売り）
+                    remaining_quantity = adjusted_quantity - sold_quantity
+                    if remaining_quantity > 0:
+                        # 信用売り（ショート）
+                        self.current_quantity -= remaining_quantity
+                        self.total_cost -= adjusted_price * remaining_quantity
+                        
+                        logger.info(
+                            f"    ↳ 信用売り {remaining_quantity}株 "
+                            f"→ 保有: {self.current_quantity}"
+                        )
+                
+                # ✅ ゼロまたはマイナス保有からの売却（信用売り）
+                else:
+                    # 信用売り（空売り）
                     self.current_quantity -= adjusted_quantity
-                    self.total_sold_quantity += adjusted_quantity
-                    self.total_sell_amount += sell_amount
+                    self.total_cost -= sell_amount
+                    
+                    logger.info(
+                        f"{idx}. {transaction.transaction_date} 信用売り "
+                        f"{adjusted_quantity}株 @ {adjusted_price}円 "
+                        f"→ 保有: {before_qty} → {self.current_quantity}"
+                    )
+                
+                self.total_sold_quantity += adjusted_quantity
+                self.total_sell_amount += sell_amount
             
             self.transaction_count += 1
             self.last_transaction_date = transaction.transaction_date
         
         # 平均取得単価を計算
-        if self.current_quantity > 0:
+        if self.current_quantity > 0 and self.total_cost > 0:
             self.average_purchase_price = (self.total_cost / self.current_quantity).quantize(
+                Decimal('0.01'), rounding=ROUND_HALF_UP
+            )
+        elif self.current_quantity < 0 and self.total_cost < 0:
+            # マイナス保有（信用売り）の場合の平均売却単価
+            self.average_purchase_price = (abs(self.total_cost) / abs(self.current_quantity)).quantize(
                 Decimal('0.01'), rounding=ROUND_HALF_UP
             )
         
@@ -166,8 +266,13 @@ class StockDiary(models.Model):
         self.total_cost = self.total_cost.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         self.realized_profit = self.realized_profit.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         
-        self.save()
-
+        logger.info(f"集計完了: 保有数={self.current_quantity}, "
+                    f"購入計={self.total_bought_quantity}, "
+                    f"売却計={self.total_sold_quantity}, "
+                    f"実現損益={self.realized_profit}")
+        logger.info(f"{'='*60}\n")
+        
+        self.save()    
     def process_and_save_image(self, image_file):
         """画像を圧縮・処理して保存"""
         try:
@@ -276,30 +381,6 @@ class Transaction(models.Model):
         
         if self.quantity is not None and self.quantity <= 0:
             raise ValidationError({'quantity': '数量は正の数を入力してください'})
-        
-        # 売却時は保有数をチェック（diary が設定されている場合のみ）
-        if self.transaction_type == 'sell' and self.diary_id:
-            try:
-                # diary が設定されているか確認
-                diary = self.diary
-                
-                # 現在の保有数を計算（この取引を除く）
-                current_holdings = diary.current_quantity
-                
-                # 編集時は自分自身を除外
-                if self.pk:
-                    old_transaction = Transaction.objects.get(pk=self.pk)
-                    if old_transaction.transaction_type == 'sell':
-                        current_holdings += old_transaction.quantity
-                
-                if self.quantity and self.quantity > current_holdings:
-                    raise ValidationError({
-                        'quantity': f'保有数（{current_holdings}株）を超える売却はできません'
-                    })
-            except StockDiary.DoesNotExist:
-                # diary がまだ設定されていない場合はスキップ
-                # （フォームでバリデーションされる）
-                pass
 
     def save(self, *args, **kwargs):
         # フルクリーンはスキップ（views.py で呼び出す）
