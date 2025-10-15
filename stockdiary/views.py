@@ -2599,6 +2599,9 @@ class TradeUploadView(LoginRequiredMixin, FormView):
         # セッションにブローカー情報を保存
         self.request.session['upload_broker'] = broker
         
+        # 🔧 ファイル名を保存
+        self.request.session['upload_filename'] = csv_file.name
+        
         # CSVファイルを読み込んで処理
         try:
             # バイト列を読み込み
@@ -2645,7 +2648,6 @@ class TradeUploadView(LoginRequiredMixin, FormView):
             return self.form_invalid(form)
 
 
-
 @login_required
 def process_trade_upload(request):
     """取引履歴処理ビュー"""
@@ -2653,6 +2655,7 @@ def process_trade_upload(request):
         # GET時はプレビュー表示
         broker = request.session.get('upload_broker')
         csv_content = request.session.get('csv_content')
+        filename = request.session.get('upload_filename', '不明')  # 🔧 ファイル名取得
         
         if not broker or not csv_content:
             messages.error(request, 'アップロードデータが見つかりません')
@@ -2664,6 +2667,7 @@ def process_trade_upload(request):
             
             context = {
                 'broker': broker,
+                'filename': filename,  # 🔧 テンプレートに渡す
                 'preview_data': preview_data,
                 'total_count': len(preview_data),
             }
@@ -2678,17 +2682,20 @@ def process_trade_upload(request):
         # POST時は実際にデータ登録
         broker = request.session.get('upload_broker')
         csv_content = request.session.get('csv_content')
+        filename = request.session.get('upload_filename', '不明')  # 🔧 ファイル名取得
         
         if not broker or not csv_content:
             messages.error(request, 'アップロードデータが見つかりません')
             return redirect('stockdiary:trade_upload')
         
         try:
-            result = process_rakuten_csv(request.user, csv_content)
+            result = process_rakuten_csv(request.user, csv_content, filename)  # 🔧 ファイル名を渡す
             
             # セッションデータをクリア
             del request.session['upload_broker']
             del request.session['csv_content']
+            if 'upload_filename' in request.session:  # 🔧
+                del request.session['upload_filename']
             
             messages.success(
                 request,
@@ -2791,7 +2798,7 @@ def parse_rakuten_csv_preview(csv_content):
     return preview_data
 
 
-def process_rakuten_csv(user, csv_content):
+def process_rakuten_csv(user, csv_content, filename):
     """楽天CSVを処理してStockDiaryとTransactionを作成"""
     csv_file = io.StringIO(csv_content)
     reader = csv.DictReader(csv_file)
@@ -2802,11 +2809,15 @@ def process_rakuten_csv(user, csv_content):
     errors = []
     
     # まず全データを読み込んで日付順にソート
+    # 🔧 元の行番号も保持する
     all_rows = []
-    for row in reader:
+    for original_row_num, row in enumerate(reader, start=2):  # CSVの2行目から（1行目はヘッダー）
         trade_date_str = row.get('受渡日', '').strip()
         if trade_date_str:
-            all_rows.append(row)
+            all_rows.append({
+                'data': row,
+                'original_row': original_row_num  # 🔧 元の行番号を保持
+            })
     
     # 受渡日でソート（古い順）
     def parse_date(date_str):
@@ -2815,11 +2826,14 @@ def process_rakuten_csv(user, csv_content):
                 return datetime.strptime(date_str, date_format)
             except ValueError:
                 continue
-        return datetime.max  # パースできない場合は最後に
+        return datetime.max
     
-    all_rows.sort(key=lambda r: parse_date(r.get('受渡日', '')))
+    all_rows.sort(key=lambda r: parse_date(r['data'].get('受渡日', '')))
     
-    for row_num, row in enumerate(all_rows, start=1):
+    for idx, row_data in enumerate(all_rows, start=1):
+        row = row_data['data']
+        original_row_num = row_data['original_row']  # 🔧 元の行番号
+        
         try:
             # 受渡日を取得
             trade_date_str = row.get('受渡日', '').strip()
@@ -2840,7 +2854,7 @@ def process_rakuten_csv(user, csv_content):
                 if trade_date is None:
                     raise ValueError(f'日付形式が不正です: {trade_date_str}')
             except ValueError as e:
-                errors.append(f'行{row_num}: {str(e)}')
+                errors.append(f'行{original_row_num}: {str(e)}')
                 error_count += 1
                 continue
             
@@ -2849,7 +2863,7 @@ def process_rakuten_csv(user, csv_content):
             stock_name = row.get('銘柄名', '').strip()
             
             if not stock_code or not stock_name:
-                errors.append(f'行{row_num}: 銘柄コードまたは銘柄名が空です')
+                errors.append(f'行{original_row_num}: 銘柄コードまたは銘柄名が空です')
                 skip_count += 1
                 continue
             
@@ -2860,13 +2874,12 @@ def process_rakuten_csv(user, csv_content):
             trade_category = row.get('取引区分', '').strip()
             
             # 売買区分を変換
-            # 「買付」「買」「積立」などは買いとして扱う
             if '買' in trade_type_raw or '積立' in trade_type_raw:
                 transaction_type = 'buy'
             elif '売' in trade_type_raw:
                 transaction_type = 'sell'
             else:
-                errors.append(f'行{row_num}: 不明な売買区分: "{trade_type_raw}" ({stock_name})')
+                errors.append(f'行{original_row_num}: 不明な売買区分: "{trade_type_raw}" ({stock_name})')
                 error_count += 1
                 continue
             
@@ -2879,7 +2892,7 @@ def process_rakuten_csv(user, csv_content):
             price_str = price_str.replace(',', '').strip()
             
             if not quantity_str or not price_str:
-                errors.append(f'行{row_num}: 数量または単価が空です ({stock_name})')
+                errors.append(f'行{original_row_num}: 数量または単価が空です ({stock_name})')
                 skip_count += 1
                 continue
             
@@ -2888,12 +2901,12 @@ def process_rakuten_csv(user, csv_content):
                 quantity = Decimal(quantity_str)
                 price = Decimal(price_str)
             except (ValueError, InvalidOperation) as e:
-                errors.append(f'行{row_num}: 数値の解析エラー: {stock_name} - 数量:{quantity_str}, 単価:{price_str}')
+                errors.append(f'行{original_row_num}: 数値の解析エラー: {stock_name} - 数量:{quantity_str}, 単価:{price_str}')
                 error_count += 1
                 continue
             
             if quantity <= 0 or price <= 0:
-                errors.append(f'行{row_num}: 数量または単価が0以下です ({stock_name})')
+                errors.append(f'行{original_row_num}: 数量または単価が0以下です ({stock_name})')
                 skip_count += 1
                 continue
             
@@ -2914,13 +2927,14 @@ def process_rakuten_csv(user, csv_content):
                         reason=f'楽天証券からインポート（{trade_date}）',
                     )
                 
-                # 既存のTransactionをチェック（重複登録を防ぐ）
+                # 🔧 メモにファイル名と行番号を含める
+                memo_content = f'楽天証券からインポート({trade_category} {trade_type_raw}) [ファイル: {filename} 行: {original_row_num}]'
+                
+                # 🔧 既存のTransactionをチェック(重複登録を防ぐ)
+                # ファイル名と行番号の組み合わせで完全一致チェック
                 existing_transaction = Transaction.objects.filter(
                     diary=diary,
-                    transaction_date=trade_date,
-                    transaction_type=transaction_type,
-                    price=price,
-                    quantity=quantity
+                    memo__contains=f'[ファイル: {filename} 行: {original_row_num}]'
                 ).first()
                 
                 if existing_transaction:
@@ -2934,7 +2948,7 @@ def process_rakuten_csv(user, csv_content):
                     transaction_date=trade_date,
                     price=price,
                     quantity=quantity,
-                    memo=f'楽天証券からインポート（{trade_category} {trade_type_raw}）'
+                    memo=memo_content
                 )
                 
                 # バリデーションをスキップして保存
@@ -2946,7 +2960,7 @@ def process_rakuten_csv(user, csv_content):
             import traceback
             traceback.print_exc()
             stock_name_for_error = locals().get('stock_name', '不明')
-            errors.append(f'行{row_num} ({stock_name_for_error}): {str(e)}')
+            errors.append(f'行{original_row_num} ({stock_name_for_error}): {str(e)}')
             error_count += 1
             continue
     
