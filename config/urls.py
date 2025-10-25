@@ -16,6 +16,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 import os
+from django.http import HttpResponse
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
@@ -25,6 +26,19 @@ from stockdiary import api_views
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.views.generic.base import RedirectView
 from django.views.generic import TemplateView
+
+def serve_service_worker(request):
+    """Service Workerをルートスコープで配信"""
+    sw_path = os.path.join(settings.BASE_DIR, 'static', 'sw.js')
+    
+    with open(sw_path, 'r', encoding='utf-8') as f:
+        js_content = f.read()
+    
+    response = HttpResponse(js_content, content_type='application/javascript')
+    response['Service-Worker-Allowed'] = '/'  # ルートスコープを許可
+    response['Cache-Control'] = 'no-cache'
+    return response
+
 
 urlpatterns = [
     # ランディングページ
@@ -74,6 +88,7 @@ urlpatterns = [
     path('api/notifications/<int:log_id>/read/', api_views.mark_notification_read, name='api_mark_notification_read'),
     path('api/notifications/<int:log_id>/click/', api_views.mark_notification_read, name='api_mark_notification_clicked'),
     path('api/notifications/mark-all-read/', api_views.mark_all_read, name='api_mark_all_read'),
+    
 ]
 
 # 静的ファイル関連
