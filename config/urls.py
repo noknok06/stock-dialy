@@ -31,16 +31,24 @@ def serve_service_worker(request):
     """Service Workerをルートスコープで配信"""
     sw_path = os.path.join(settings.BASE_DIR, 'static', 'sw.js')
     
-    with open(sw_path, 'r', encoding='utf-8') as f:
-        js_content = f.read()
-    
-    response = HttpResponse(js_content, content_type='application/javascript')
-    response['Service-Worker-Allowed'] = '/'  # ルートスコープを許可
-    response['Cache-Control'] = 'no-cache'
-    return response
+    try:
+        with open(sw_path, 'r', encoding='utf-8') as f:
+            js_content = f.read()
+        
+        response = HttpResponse(js_content, content_type='application/javascript')
+        response['Service-Worker-Allowed'] = '/'
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
+        return response
+    except FileNotFoundError:
+        return HttpResponse('Service Worker not found', status=404)
 
 
 urlpatterns = [
+    
+    path('sw.js', serve_service_worker, name='service-worker'),
+    
     # ランディングページ
     path('', views.landing_page, name='landing_page'),
     
