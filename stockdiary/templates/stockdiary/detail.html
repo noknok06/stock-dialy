@@ -361,7 +361,26 @@
               {% endif %}
             </div>
           </div>
-
+<!-- プッシュ通知有効化ボタン -->
+        <div id="push-notification-section" class="mt-3 border-top pt-3">
+            <h6 class="mb-3">
+                <i class="bi bi-bell-fill me-2"></i>プッシュ通知
+            </h6>
+            
+            <div id="push-status" class="mb-2">
+                <small class="text-muted">読み込み中...</small>
+            </div>
+            
+            <button id="enable-push-btn" class="btn btn-primary btn-sm w-100" style="display: none;">
+                <i class="bi bi-bell me-2"></i>プッシュ通知を有効にする
+            </button>
+            
+            <button id="disable-push-btn" class="btn btn-outline-danger btn-sm w-100" style="display: none;">
+                <i class="bi bi-bell-slash me-2"></i>プッシュ通知を無効にする
+            </button>
+            
+            <div id="push-error" class="alert alert-warning mt-2" style="display: none;"></div>
+        </div>
           <!-- 通知設定セクション -->
           <div class="info-card mobile-optimized mt-3">
             <div class="info-card-title d-flex justify-content-between align-items-center">
@@ -772,6 +791,7 @@
 <script src="{% static 'js/diary-detail.js' %}"></script>
 <script src="{% static 'js/diary-detail-tabs.js' %}"></script>
 <script src="{% static 'js/notifications.js' %}"></script>
+<script src="{% static 'js/push-notification-ui.js' %}"></script>
   <script>
 // 通知一覧を読み込む
 document.addEventListener('DOMContentLoaded', function() {
