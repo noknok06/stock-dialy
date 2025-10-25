@@ -2,6 +2,7 @@
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods, require_GET
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -23,10 +24,15 @@ def get_vapid_public_key(request):
     })
 
 
+@csrf_exempt  # 🆕 CSRF保護を無効化
 @require_http_methods(["POST"])
-@login_required
 def subscribe_push(request):
     """プッシュ通知サブスクリプションを登録"""
+    
+    # 認証チェック
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': '認証が必要です'}, status=401)
+    
     try:
         data = json.loads(request.body)
         subscription_info = data.get('subscription')
@@ -34,6 +40,9 @@ def subscribe_push(request):
         if not subscription_info:
             return JsonResponse({'error': '無効なサブスクリプション'}, status=400)
         
+        from stockdiary.models import PushSubscription
+        
+        # サブスクリプションを作成または更新
         subscription, created = PushSubscription.objects.update_or_create(
             endpoint=subscription_info['endpoint'],
             defaults={
@@ -49,20 +58,39 @@ def subscribe_push(request):
         return JsonResponse({
             'success': True,
             'message': 'プッシュ通知を有効にしました',
-            'created': created
+            'created': created,
+            'subscription_id': str(subscription.id)
         })
         
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        import traceback
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Push subscription error: {e}")
+        logger.error(traceback.format_exc())
+        
+        return JsonResponse({
+            'error': str(e),
+            'detail': 'サブスクリプションの登録に失敗しました'
+        }, status=500)
+        
 
-
+@csrf_exempt  # 🆕
 @require_http_methods(["POST"])
-@login_required
 def unsubscribe_push(request):
     """プッシュ通知サブスクリプションを解除"""
+    
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': '認証が必要です'}, status=401)
+    
     try:
         data = json.loads(request.body)
         endpoint = data.get('endpoint')
+        
+        if not endpoint:
+            return JsonResponse({'error': 'エンドポイントが必要です'}, status=400)
+        
+        from stockdiary.models import PushSubscription
         
         PushSubscription.objects.filter(
             user=request.user,
@@ -76,7 +104,7 @@ def unsubscribe_push(request):
         
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-
+    
 
 @require_http_methods(["POST"])
 @login_required
