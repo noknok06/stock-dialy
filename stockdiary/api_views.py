@@ -371,3 +371,34 @@ def send_push_notification(user, title, message, url='/', tag='notification'):
         sub.save()
     
     return success_count
+
+@require_GET
+@login_required
+def list_all_notifications(request):
+    """ユーザーのすべての通知設定を取得"""
+    try:
+        notifications = DiaryNotification.objects.filter(
+            diary__user=request.user,
+            is_active=True
+        ).select_related('diary').order_by('-created_at')
+        
+        data = [{
+            'id': str(n.id),
+            'diary_id': n.diary.id,
+            'diary_name': n.diary.stock_name,
+            'type': n.notification_type,
+            'type_display': n.get_notification_type_display(),
+            'target_price': str(n.target_price) if n.target_price else None,
+            'alert_above': n.alert_above,
+            'remind_at': n.remind_at.isoformat() if n.remind_at else None,
+            'frequency': n.frequency,
+            'notify_time': n.notify_time.isoformat() if n.notify_time else None,
+            'message': n.message,
+            'last_sent': n.last_sent.isoformat() if n.last_sent else None,
+            'created_at': n.created_at.isoformat(),
+        } for n in notifications]
+        
+        return JsonResponse({'notifications': data})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

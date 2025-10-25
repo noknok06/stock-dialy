@@ -632,6 +632,12 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
                 'label': '戻る'
             },
             {
+                'type': 'modal',  # 🆕 モーダル専用タイプ
+                'modal_target': '#notificationModal',  # 🆕 モーダルのID
+                'icon': 'bi-bell',
+                'label': '通知設定'
+            },
+            {
                 'type': 'edit',
                 'url': reverse_lazy('stockdiary:update', kwargs={'pk': self.object.id}),
                 'icon': 'bi-pencil',
@@ -2979,3 +2985,8 @@ def process_rakuten_csv(user, csv_content, filename):
         'error_count': error_count,
         'errors': errors
     }
+
+
+class NotificationListView(LoginRequiredMixin, TemplateView):
+    """通知管理ページ"""
+    template_name = 'stockdiary/notification_list.html'

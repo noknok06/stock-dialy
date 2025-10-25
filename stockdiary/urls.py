@@ -52,6 +52,9 @@ urlpatterns = [
          api_views.delete_diary_notification, 
          name='api_delete_diary_notification'),
 
+    path('notifications/', views.NotificationListView.as_view(), name='notification_list'),
+    path('api/notifications/all/', api_views.list_all_notifications, name='api_list_all_notifications'),
+    
     # ==========================================
     # 株式情報API
     # ==========================================

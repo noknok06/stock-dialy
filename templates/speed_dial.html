@@ -1,9 +1,9 @@
 {% comment %}
 共通のスピードダイアルコンポーネント
-使用方法：
-{% include 'components/speed_dial.html' with actions=page_actions %}
+使用方法:
+{% include 'speed_dial.html' with actions=page_actions %}
 
-page_actionsは以下のような構造のリストを含む変数名：
+page_actionsは以下のような構造のリストを含む変数名:
 [
   {
     'type': 'edit',
@@ -11,6 +11,13 @@ page_actionsは以下のような構造のリストを含む変数名：
     'icon': 'bi-pencil',
     'label': '編集',
     'condition': True  # 条件付きで表示/非表示制御可能
+  },
+  {
+    'type': 'modal',
+    'modal_target': '#notificationModal',
+    'icon': 'bi-bell',
+    'label': '通知設定',
+    'condition': True
   },
   ...
 ]
@@ -22,9 +29,24 @@ page_actionsは以下のような構造のリストを含む変数名：
       {% if action.condition != False %}
       <div class="speed-dial-action">
         <span class="action-label">{{ action.label }}</span>
-        <a href="{{ action.url }}" class="speed-dial-btn action-{{ action.type }}">
-          <i class="bi {{ action.icon }}"></i>
-        </a>
+        
+        {% if action.type == 'modal' %}
+          {# モーダルを開くボタン #}
+          <button type="button" 
+                  class="speed-dial-btn action-{{ action.type }}"
+                  data-bs-toggle="modal"
+                  data-bs-target="{{ action.modal_target }}"
+                  aria-label="{{ action.label }}">
+            <i class="bi {{ action.icon }}"></i>
+          </button>
+        {% else %}
+          {# 通常のリンクボタン #}
+          <a href="{{ action.url }}" 
+             class="speed-dial-btn action-{{ action.type }}"
+             aria-label="{{ action.label }}">
+            <i class="bi {{ action.icon }}"></i>
+          </a>
+        {% endif %}
       </div>
       {% endif %}
     {% endfor %}

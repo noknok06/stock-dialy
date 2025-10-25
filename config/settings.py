@@ -1141,7 +1141,8 @@ Q_CLUSTER = {
     'name': 'kabulog',
     'workers': 2,
     'recycle': 500,
-    'timeout': 300,
+    'timeout': 300,        # タスクのタイムアウト: 5分
+    'retry': 600,          # 🔧 リトライ待機時間: 10分（timeoutより大きく）
     'compress': True,
     'save_limit': 100,
     'queue_limit': 50,
@@ -1152,5 +1153,5 @@ Q_CLUSTER = {
         'port': 6379,
         'db': 0,
     },
-    'orm': 'default',  # データベースを使用（Redisなしでも動作）
+    'orm': 'default',
 }

@@ -361,6 +361,33 @@
               {% endif %}
             </div>
           </div>
+
+          <!-- 通知設定セクション -->
+          <div class="info-card mobile-optimized mt-3">
+            <div class="info-card-title d-flex justify-content-between align-items-center">
+              <div>
+                <i class="bi bi-bell"></i>
+                通知設定
+              </div>
+              <button type="button" 
+                      class="btn btn-sm btn-primary"
+                      data-bs-toggle="modal"
+                      data-bs-target="#notificationModal">
+                <i class="bi bi-plus-circle me-1"></i>
+                新規作成
+              </button>
+            </div>
+            
+            <!-- 通知一覧コンテナ -->
+            <div id="notification-list-container" class="mt-2">
+              <!-- ここに通知一覧が表示される -->
+              <div class="text-center py-3">
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                  <span class="visually-hidden">読み込み中...</span>
+                </div>
+              </div>
+            </div>
+          </div>          
         </div>
 
         <!-- 取引履歴タブ -->
@@ -745,5 +772,182 @@
 <script src="{% static 'js/diary-detail.js' %}"></script>
 <script src="{% static 'js/diary-detail-tabs.js' %}"></script>
 <script src="{% static 'js/notifications.js' %}"></script>
-  
+  <script>
+// 通知一覧を読み込む
+document.addEventListener('DOMContentLoaded', function() {
+    loadNotifications();
+});
+
+async function loadNotifications() {
+    const container = document.getElementById('notification-list-container');
+    
+    try {
+        const response = await fetch('/stockdiary/api/diary/{{ diary.id }}/notifications/');
+        const data = await response.json();
+        
+        if (data.notifications && data.notifications.length > 0) {
+            container.innerHTML = renderNotifications(data.notifications);
+        } else {
+            container.innerHTML = `
+                <div class="text-muted text-center py-3">
+                    <i class="bi bi-bell-slash" style="font-size: 2rem;"></i>
+                    <p class="mb-0 mt-2">通知設定はありません</p>
+                    <small>「新規作成」ボタンから通知を設定できます</small>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('通知一覧の読み込みエラー:', error);
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                通知一覧の読み込みに失敗しました
+            </div>
+        `;
+    }
+}
+
+function renderNotifications(notifications) {
+    return notifications.map(notification => {
+        const typeInfo = getNotificationTypeInfo(notification.type);
+        
+        let detailsHtml = '';
+        
+        if (notification.type === 'reminder') {
+            const remindAt = new Date(notification.remind_at);
+            detailsHtml = `
+                <div class="notification-details">
+                    <i class="bi bi-calendar-event me-1"></i>
+                    ${remindAt.toLocaleString('ja-JP', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })}
+                </div>
+            `;
+        } else if (notification.type === 'price_alert') {
+            detailsHtml = `
+                <div class="notification-details">
+                    <i class="bi bi-currency-yen me-1"></i>
+                    ${notification.target_price}円
+                    ${notification.alert_above ? '以上' : '以下'}で通知
+                </div>
+            `;
+        } else if (notification.type === 'periodic') {
+            const freqText = {
+                'daily': '毎日',
+                'weekly': '毎週',
+                'monthly': '毎月'
+            }[notification.frequency] || notification.frequency;
+            
+            detailsHtml = `
+                <div class="notification-details">
+                    <i class="bi bi-arrow-repeat me-1"></i>
+                    ${freqText}
+                    ${notification.notify_time ? ` ${notification.notify_time}` : ''}
+                </div>
+            `;
+        }
+        
+        return `
+            <div class="notification-item border rounded p-2 mb-2" data-notification-id="${notification.id}">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center mb-1">
+                            <span class="badge ${typeInfo.badgeClass} me-2">
+                                <i class="${typeInfo.icon} me-1"></i>
+                                ${typeInfo.label}
+                            </span>
+                            ${notification.last_sent ? 
+                                `<small class="text-muted">
+                                    <i class="bi bi-check-circle me-1"></i>
+                                    最終送信: ${new Date(notification.last_sent).toLocaleDateString('ja-JP')}
+                                </small>` : 
+                                '<small class="text-muted">未送信</small>'
+                            }
+                        </div>
+                        ${detailsHtml}
+                        ${notification.message ? 
+                            `<div class="notification-message small text-muted mt-1">
+                                ${notification.message}
+                            </div>` : 
+                            ''
+                        }
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" 
+                            onclick="deleteNotification('${notification.id}')"
+                            title="削除">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function getNotificationTypeInfo(type) {
+    const types = {
+        'reminder': {
+            label: 'リマインダー',
+            icon: 'bi-alarm',
+            badgeClass: 'bg-info'
+        },
+        'price_alert': {
+            label: '価格アラート',
+            icon: 'bi-graph-up-arrow',
+            badgeClass: 'bg-warning'
+        },
+        'periodic': {
+            label: '定期通知',
+            icon: 'bi-arrow-repeat',
+            badgeClass: 'bg-success'
+        }
+    };
+    return types[type] || types['reminder'];
+}
+
+async function deleteNotification(notificationId) {
+    if (!confirm('この通知設定を削除しますか？')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/stockdiary/api/notifications/${notificationId}/delete/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast('通知設定を削除しました', 'success');
+            loadNotifications(); // 一覧を再読み込み
+        } else {
+            showToast('削除に失敗しました: ' + (data.error || '不明なエラー'), 'danger');
+        }
+    } catch (error) {
+        console.error('削除エラー:', error);
+        showToast('削除中にエラーが発生しました', 'danger');
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
 {% endblock %}

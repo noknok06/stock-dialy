@@ -1,105 +1,66 @@
 # stockdiary/management/commands/send_notifications.py
 from django.core.management.base import BaseCommand
-from django.utils import timezone
-from stockdiary.models import DiaryNotification, NotificationLog
-from stockdiary.api_views import send_push_notification
-from datetime import timedelta
+from stockdiary.services.notification_service import NotificationService
+import traceback
 
 
 class Command(BaseCommand):
-    help = '定期的に実行して通知を送信'
-
+    help = '通知を処理して送信'
+    
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--type',
+            type=str,
+            choices=['all', 'reminder', 'price_alert', 'periodic'],
+            default='all',
+            help='処理する通知タイプ'
+        )
+        parser.add_argument(
+            '--verbose',
+            action='store_true',
+            help='詳細なログを出力'
+        )
+    
     def handle(self, *args, **options):
-        now = timezone.now()
+        notification_type = options['type']
+        verbose = options.get('verbose', False)
         
-        # リマインダー通知をチェック
-        reminder_notifications = DiaryNotification.objects.filter(
-            notification_type='reminder',
-            is_active=True,
-            remind_at__lte=now,
-            remind_at__gte=now - timedelta(minutes=5)
+        self.stdout.write(
+            self.style.SUCCESS(f'通知処理を開始: {notification_type}')
         )
         
-        for notification in reminder_notifications:
-            self.send_reminder(notification)
-        
-        # 定期通知をチェック
-        periodic_notifications = DiaryNotification.objects.filter(
-            notification_type='periodic',
-            is_active=True
-        )
-        
-        for notification in periodic_notifications:
-            self.send_periodic(notification, now)
-        
-        self.stdout.write(self.style.SUCCESS('通知送信完了'))
-
-    def send_reminder(self, notification):
-        diary = notification.diary
-        user = diary.user
-        
-        title = f'{diary.stock_name}のリマインダー'
-        message = notification.message or '設定した日時になりました'
-        url = f'/stockdiary/{diary.id}/'
-        
-        # プッシュ通知送信
-        send_push_notification(user, title, message, url)
-        
-        # ログに記録
-        NotificationLog.objects.create(
-            notification=notification,
-            user=user,
-            title=title,
-            message=message,
-            url=url
-        )
-        
-        # 送信済みにマーク
-        notification.last_sent = timezone.now()
-        notification.is_active = False  # リマインダーは1回のみ
-        notification.save()
-        
-        self.stdout.write(f'リマインダー送信: {title}')
-
-    def send_periodic(self, notification, now):
-        # 前回送信から期間が経過しているかチェック
-        if notification.last_sent:
-            if notification.frequency == 'daily':
-                next_send = notification.last_sent + timedelta(days=1)
-            elif notification.frequency == 'weekly':
-                next_send = notification.last_sent + timedelta(weeks=1)
-            elif notification.frequency == 'monthly':
-                next_send = notification.last_sent + timedelta(days=30)
-            else:
-                return
+        try:
+            service = NotificationService()
             
-            if now < next_send:
-                return
-        
-        # 指定時刻かチェック
-        if notification.notify_time:
-            if abs((now.time().hour * 60 + now.time().minute) - 
-                   (notification.notify_time.hour * 60 + notification.notify_time.minute)) > 5:
-                return
-        
-        diary = notification.diary
-        user = diary.user
-        
-        title = f'{diary.stock_name}の定期通知'
-        message = notification.message or '定期確認の時間です'
-        url = f'/stockdiary/{diary.id}/'
-        
-        send_push_notification(user, title, message, url)
-        
-        NotificationLog.objects.create(
-            notification=notification,
-            user=user,
-            title=title,
-            message=message,
-            url=url
-        )
-        
-        notification.last_sent = now
-        notification.save()
-        
-        self.stdout.write(f'定期通知送信: {title}')
+            if notification_type == 'all':
+                result = service.process_all_notifications()
+            elif notification_type == 'reminder':
+                result = service.process_reminder_notifications()
+            elif notification_type == 'price_alert':
+                result = service.process_price_alert_notifications()
+            elif notification_type == 'periodic':
+                result = service.process_periodic_notifications()
+            
+            # 結果を表示
+            if verbose:
+                self.stdout.write(self.style.WARNING(f'詳細結果: {result}'))
+            
+            sent = result.get("total_sent", result.get("sent", 0))
+            errors = result.get("total_errors", result.get("errors", 0))
+            
+            if errors > 0:
+                self.stdout.write(
+                    self.style.ERROR(f'⚠️ エラーが発生しました: {errors}件')
+                )
+            
+            self.stdout.write(
+                self.style.SUCCESS(f'完了: 送信={sent}, エラー={errors}')
+            )
+            
+        except Exception as e:
+            self.stdout.write(
+                self.style.ERROR(f'❌ 致命的なエラー: {str(e)}')
+            )
+            if verbose:
+                self.stdout.write(self.style.ERROR(traceback.format_exc()))
+            raise
