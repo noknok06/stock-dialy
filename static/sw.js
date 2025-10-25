@@ -1,6 +1,6 @@
 // static/sw.js
-const CACHE_NAME = 'kabulog-v1.0.1';  // バージョンアップ
-const STATIC_CACHE_NAME = 'kabulog-static-v1.0.1';
+const CACHE_NAME = 'kabulog-v1.0.2';  // バージョンアップ
+const STATIC_CACHE_NAME = 'kabulog-static-v1.0.2';
 
 // キャッシュするリソース
 const STATIC_ASSETS = [
@@ -27,6 +27,9 @@ self.addEventListener('install', event => {
       .then(cache => {
         console.log('Service Worker: Caching static assets');
         return cache.addAll(STATIC_ASSETS);
+      })
+      .catch(err => {
+        console.error('Service Worker: Cache failed:', err);
       })
       .then(() => self.skipWaiting())
   );
@@ -57,6 +60,12 @@ self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
   
+  // 🔧 POSTリクエストはキャッシュしない（そのまま通す）
+  if (request.method !== 'GET') {
+    event.respondWith(fetch(request));
+    return;
+  }
+  
   // HTMLリクエストの場合
   if (request.headers.get('Accept').includes('text/html')) {
     event.respondWith(
@@ -74,19 +83,23 @@ self.addEventListener('fetch', event => {
     return;
   }
   
-  // API リクエストの場合
+  // API リクエストの場合（GETのみ）
   if (request.url.includes('/api/') || request.url.includes('/stockdiary/')) {
     event.respondWith(networkFirstStrategy(request));
     return;
   }
+  
+  // デフォルト：ネットワーク優先
+  event.respondWith(fetch(request));
 });
 
-// ネットワーク優先戦略
+// ネットワーク優先戦略（GETリクエストのみキャッシュ）
 async function networkFirstStrategy(request) {
   try {
     const networkResponse = await fetch(request);
     
-    if (networkResponse.ok) {
+    // 🔧 成功したGETリクエストのみキャッシュ
+    if (networkResponse.ok && request.method === 'GET') {
       const cache = await caches.open(CACHE_NAME);
       cache.put(request, networkResponse.clone());
     }
@@ -112,7 +125,7 @@ async function cacheFirstStrategy(request) {
   try {
     const networkResponse = await fetch(request);
     
-    if (networkResponse.ok) {
+    if (networkResponse.ok && request.method === 'GET') {
       const cache = await caches.open(STATIC_CACHE_NAME);
       cache.put(request, networkResponse.clone());
     }
@@ -123,6 +136,7 @@ async function cacheFirstStrategy(request) {
   }
 }
 
+// プッシュ通知受信
 self.addEventListener('push', event => {
   console.log('Push notification received');
   
@@ -139,8 +153,8 @@ self.addEventListener('push', event => {
       notification_id: data.notification_id
     },
     actions: [
-      { action: 'open', title: '開く', icon: '/static/images/action-open.png' },
-      { action: 'close', title: '閉じる', icon: '/static/images/action-close.png' }
+      { action: 'open', title: '開く' },
+      { action: 'close', title: '閉じる' }
     ],
     requireInteraction: false,
     renotify: true,
@@ -154,7 +168,7 @@ self.addEventListener('push', event => {
   );
 });
 
-// 🆕 通知クリック時
+// 通知クリック時
 self.addEventListener('notificationclick', event => {
   console.log('Notification clicked');
   event.notification.close();
@@ -166,19 +180,16 @@ self.addEventListener('notificationclick', event => {
     event.waitUntil(
       clients.matchAll({ type: 'window', includeUncontrolled: true })
         .then(clientList => {
-          // 既に開いているタブがあればそれをフォーカス
           for (const client of clientList) {
             if (client.url.includes(urlToOpen) && 'focus' in client) {
               return client.focus();
             }
           }
-          // なければ新しいタブを開く
           if (clients.openWindow) {
             return clients.openWindow(urlToOpen);
           }
         })
         .then(() => {
-          // 通知をクリック済みとしてマーク
           if (notificationId) {
             return fetch(`/api/notifications/${notificationId}/click/`, {
               method: 'POST',
@@ -190,7 +201,7 @@ self.addEventListener('notificationclick', event => {
   }
 });
 
-// 🆕 バックグラウンド同期（オプション）
+// バックグラウンド同期
 self.addEventListener('sync', event => {
   if (event.tag === 'sync-notifications') {
     event.waitUntil(syncNotifications());
