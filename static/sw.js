@@ -1,6 +1,6 @@
 // static/sw.js
-const CACHE_NAME = 'kabulog-v1.0.0';
-const STATIC_CACHE_NAME = 'kabulog-static-v1.0.0';
+const CACHE_NAME = 'kabulog-v1.0.1';  // バージョンアップ
+const STATIC_CACHE_NAME = 'kabulog-static-v1.0.1';
 
 // キャッシュするリソース
 const STATIC_ASSETS = [
@@ -120,5 +120,97 @@ async function cacheFirstStrategy(request) {
     return networkResponse;
   } catch (error) {
     throw error;
+  }
+}
+
+self.addEventListener('push', event => {
+  console.log('Push notification received');
+  
+  const data = event.data ? event.data.json() : {};
+  
+  const options = {
+    body: data.message || '新しい通知があります',
+    icon: data.icon || '/static/images/icon-192.png',
+    badge: data.badge || '/static/images/badge-72.png',
+    vibrate: [200, 100, 200],
+    tag: data.tag || 'notification',
+    data: {
+      url: data.url || '/',
+      notification_id: data.notification_id
+    },
+    actions: [
+      { action: 'open', title: '開く', icon: '/static/images/action-open.png' },
+      { action: 'close', title: '閉じる', icon: '/static/images/action-close.png' }
+    ],
+    requireInteraction: false,
+    renotify: true,
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(
+      data.title || 'カブログ',
+      options
+    )
+  );
+});
+
+// 🆕 通知クリック時
+self.addEventListener('notificationclick', event => {
+  console.log('Notification clicked');
+  event.notification.close();
+  
+  const urlToOpen = event.notification.data.url || '/';
+  const notificationId = event.notification.data.notification_id;
+
+  if (event.action === 'open' || !event.action) {
+    event.waitUntil(
+      clients.matchAll({ type: 'window', includeUncontrolled: true })
+        .then(clientList => {
+          // 既に開いているタブがあればそれをフォーカス
+          for (const client of clientList) {
+            if (client.url.includes(urlToOpen) && 'focus' in client) {
+              return client.focus();
+            }
+          }
+          // なければ新しいタブを開く
+          if (clients.openWindow) {
+            return clients.openWindow(urlToOpen);
+          }
+        })
+        .then(() => {
+          // 通知をクリック済みとしてマーク
+          if (notificationId) {
+            return fetch(`/api/notifications/${notificationId}/click/`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            }).catch(err => console.error('Failed to mark as clicked:', err));
+          }
+        })
+    );
+  }
+});
+
+// 🆕 バックグラウンド同期（オプション）
+self.addEventListener('sync', event => {
+  if (event.tag === 'sync-notifications') {
+    event.waitUntil(syncNotifications());
+  }
+});
+
+async function syncNotifications() {
+  try {
+    const response = await fetch('/api/notifications/logs/?unread=true');
+    const data = await response.json();
+    
+    if (data.unread_count > 0) {
+      self.registration.showNotification('カブログ', {
+        body: `${data.unread_count}件の未読通知があります`,
+        icon: '/static/images/icon-192.png',
+        badge: '/static/images/badge-72.png',
+        data: { url: '/notifications/' }
+      });
+    }
+  } catch (error) {
+    console.error('Sync failed:', error);
   }
 }

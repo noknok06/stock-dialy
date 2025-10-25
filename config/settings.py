@@ -127,6 +127,7 @@ THIRD_PARTY_APPS = [
     'rest_framework',  # ← 追加（API用）
     'django_filters',  # ← 追加（フィルタリング用）
     'corsheaders',     # ← 追加（CORS用、必要に応じて）
+    'django_q',
 ]
 
 # ローカルアプリ
@@ -1126,4 +1127,30 @@ INVESTMENT_REVIEW_SETTINGS = {
     # デバッグ設定
     'DEBUG_ANALYSIS': False,         # 分析デバッグモード
     'LOG_ANALYSIS_DETAILS': True,    # 詳細ログの出力
+}
+
+
+WEBPUSH_SETTINGS = {
+    'VAPID_PUBLIC_KEY': os.getenv('VAPID_PUBLIC_KEY', ''),
+    'VAPID_PRIVATE_KEY': os.getenv('VAPID_PRIVATE_KEY', ''),
+    'VAPID_ADMIN_EMAIL': os.getenv('VAPID_ADMIN_EMAIL', 'kabulog.information@gmail.com'),
+}
+
+# Django-Q設定
+Q_CLUSTER = {
+    'name': 'kabulog',
+    'workers': 2,
+    'recycle': 500,
+    'timeout': 300,
+    'compress': True,
+    'save_limit': 100,
+    'queue_limit': 50,
+    'cpu_affinity': 1,
+    'label': 'Django Q',
+    'redis': {
+        'host': '127.0.0.1',
+        'port': 6379,
+        'db': 0,
+    },
+    'orm': 'default',  # データベースを使用（Redisなしでも動作）
 }

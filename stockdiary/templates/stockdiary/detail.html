@@ -16,14 +16,23 @@
 {% block content %}
 <div class="px-1 py-1 diary-detail-container">
   <!-- 操作バー -->
+
   <div class="action-bar px-2">
     <a href="{% url 'stockdiary:home' %}" class="back-link">
       <i class="bi bi-arrow-left"></i>
       <span class="d-none d-sm-inline">日記一覧に戻る</span>
-      <span class="d-sm-none">戻る</span>
     </a>
     
     <div class="desktop-actions">
+      <!-- 🆕 通知設定ボタン -->
+      <button type="button" 
+              class="btn btn-info btn-sm"
+              data-bs-toggle="modal"
+              data-bs-target="#notificationModal">
+        <i class="bi bi-bell"></i>
+        <span class="d-none d-lg-inline ms-1">通知設定</span>
+      </button>
+      
       <a href="{% url 'stockdiary:update' diary.id %}" class="btn btn-warning btn-sm">
         <i class="bi bi-pencil"></i>
         <span class="d-none d-lg-inline ms-1">編集</span>
@@ -32,6 +41,64 @@
         <i class="bi bi-trash"></i>
         <span class="d-none d-lg-inline ms-1">削除</span>
       </a>
+    </div>
+  </div>
+
+  <!-- 🆕 通知設定モーダル -->
+  <div class="modal fade" id="notificationModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">通知設定</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">通知タイプ</label>
+            <select class="form-select" id="notificationType">
+              <option value="reminder">リマインダー</option>
+              <option value="price_alert">価格アラート</option>
+              <option value="periodic">定期通知</option>
+            </select>
+          </div>
+          
+          <div id="reminderFields" class="mb-3">
+            <label class="form-label">通知日時</label>
+            <input type="datetime-local" class="form-control" id="remindAt">
+          </div>
+          
+          <div id="priceAlertFields" class="mb-3" style="display: none;">
+            <label class="form-label">目標価格</label>
+            <input type="number" class="form-control" id="targetPrice" step="0.01">
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" id="alertAbove" checked>
+              <label class="form-check-label" for="alertAbove">
+                目標価格を上回ったら通知
+              </label>
+            </div>
+          </div>
+          
+          <div id="periodicFields" class="mb-3" style="display: none;">
+            <label class="form-label">頻度</label>
+            <select class="form-select" id="frequency">
+              <option value="daily">毎日</option>
+              <option value="weekly">毎週</option>
+              <option value="monthly">毎月</option>
+            </select>
+            <label class="form-label mt-2">通知時刻</label>
+            <input type="time" class="form-control" id="notifyTime">
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">メッセージ（オプション）</label>
+            <textarea class="form-control" id="notificationMessage" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+          <button type="button" class="btn btn-primary" onclick="saveNotification()">保存</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -674,4 +741,70 @@
 {{ block.super }}
 <script src="{% static 'js/diary-detail.js' %}"></script>
 <script src="{% static 'js/diary-detail-tabs.js' %}"></script>
+
+<script>
+  // 通知タイプに応じてフィールドを切り替え
+  document.getElementById('notificationType').addEventListener('change', function() {
+    const type = this.value;
+    document.getElementById('reminderFields').style.display = type === 'reminder' ? 'block' : 'none';
+    document.getElementById('priceAlertFields').style.display = type === 'price_alert' ? 'block' : 'none';
+    document.getElementById('periodicFields').style.display = type === 'periodic' ? 'block' : 'none';
+  });
+  
+  async function saveNotification() {
+    const type = document.getElementById('notificationType').value;
+    const message = document.getElementById('notificationMessage').value;
+    
+    const data = {
+      notification_type: type,
+      message: message
+    };
+    
+    if (type === 'reminder') {
+      data.remind_at = document.getElementById('remindAt').value;
+    } else if (type === 'price_alert') {
+      data.target_price = document.getElementById('targetPrice').value;
+      data.alert_above = document.getElementById('alertAbove').checked;
+    } else if (type === 'periodic') {
+      data.frequency = document.getElementById('frequency').value;
+      data.notify_time = document.getElementById('notifyTime').value;
+    }
+    
+    try {
+      const response = await fetch(`/api/diary/{{ diary.id }}/notifications/create/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (response.ok) {
+        showToast('通知を設定しました', 'success');
+        bootstrap.Modal.getInstance(document.getElementById('notificationModal')).hide();
+      } else {
+        throw new Error('通知設定に失敗しました');
+      }
+    } catch (error) {
+      showToast(error.message, 'danger');
+    }
+  }
+  
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+  </script>
+  
 {% endblock %}

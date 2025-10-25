@@ -21,6 +21,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from . import views
+from stockdiary import api_views
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.views.generic.base import RedirectView
 from django.views.generic import TemplateView
@@ -56,6 +57,23 @@ urlpatterns = [
     # APIエンドポイント（将来的な拡張用）
     # path('api/v1/earnings/', include('earnings_analysis.urls')),  # API専用
     path('offline/', TemplateView.as_view(template_name='offline.html'), name='offline'),
+
+
+    # プッシュ通知API
+    path('api/push/vapid-key/', api_views.get_vapid_public_key, name='api_vapid_key'),
+    path('api/push/subscribe/', api_views.subscribe_push, name='api_subscribe_push'),
+    path('api/push/unsubscribe/', api_views.unsubscribe_push, name='api_unsubscribe_push'),
+    
+    # 日記通知API
+    path('api/diary/<int:diary_id>/notifications/', api_views.list_diary_notifications, name='api_list_diary_notifications'),
+    path('api/diary/<int:diary_id>/notifications/create/', api_views.create_diary_notification, name='api_create_diary_notification'),
+    path('api/notifications/<uuid:notification_id>/delete/', api_views.delete_diary_notification, name='api_delete_diary_notification'),
+    
+    # 通知履歴API
+    path('api/notifications/logs/', api_views.get_notification_logs, name='api_notification_logs'),
+    path('api/notifications/<int:log_id>/read/', api_views.mark_notification_read, name='api_mark_notification_read'),
+    path('api/notifications/<int:log_id>/click/', api_views.mark_notification_read, name='api_mark_notification_clicked'),
+    path('api/notifications/mark-all-read/', api_views.mark_all_read, name='api_mark_all_read'),
 ]
 
 # 静的ファイル関連

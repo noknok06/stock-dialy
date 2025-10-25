@@ -95,7 +95,7 @@ class StockDiary(models.Model):
     def is_short(self):
         """信用売り（ショートポジション）かどうか"""
         return self.current_quantity < 0
-        
+
     def update_aggregates(self):
         """集計フィールドを再計算"""
         transactions = self.transactions.all().order_by('transaction_date', 'created_at')
@@ -582,3 +582,110 @@ class DiaryNote(models.Model):
             change = ((self.current_price - self.diary.average_purchase_price) / self.diary.average_purchase_price) * 100
             return change
         return None
+
+class PushSubscription(models.Model):
+    """PWAのプッシュ通知サブスクリプション"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE,
+        related_name='push_subscriptions'
+    )
+    endpoint = models.URLField(max_length=500, unique=True)
+    p256dh = models.CharField(max_length=255)
+    auth = models.CharField(max_length=255)
+    device_name = models.CharField(max_length=100, blank=True)
+    user_agent = models.CharField(max_length=255, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'プッシュ通知サブスクリプション'
+        verbose_name_plural = 'プッシュ通知サブスクリプション'
+        indexes = [
+            models.Index(fields=['user', 'is_active']),
+        ]
+    
+    def __str__(self):
+        return f'{self.user.username} - {self.device_name or "Unknown Device"}'
+
+
+class DiaryNotification(models.Model):
+    """日記の通知設定"""
+    NOTIFICATION_TYPES = [
+        ('price_alert', '価格アラート'),
+        ('reminder', 'リマインダー'),
+        ('periodic', '定期通知'),
+    ]
+    
+    FREQUENCY_CHOICES = [
+        ('daily', '毎日'),
+        ('weekly', '毎週'),
+        ('monthly', '毎月'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    diary = models.ForeignKey(
+        'StockDiary',
+        on_delete=models.CASCADE,
+        related_name='notifications'
+    )
+    notification_type = models.CharField(
+        max_length=20,
+        choices=NOTIFICATION_TYPES,
+        default='reminder'
+    )
+    target_price = models.DecimalField(
+        max_digits=10, decimal_places=2,
+        null=True, blank=True, verbose_name='目標価格'
+    )
+    alert_above = models.BooleanField(default=True, verbose_name='上回ったら通知')
+    remind_at = models.DateTimeField(null=True, blank=True, verbose_name='通知日時')
+    frequency = models.CharField(
+        max_length=20, choices=FREQUENCY_CHOICES,
+        null=True, blank=True, verbose_name='通知頻度'
+    )
+    notify_time = models.TimeField(null=True, blank=True, verbose_name='通知時刻')
+    message = models.TextField(max_length=200, blank=True, verbose_name='メッセージ')
+    is_active = models.BooleanField(default=True, verbose_name='有効')
+    last_sent = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = '日記通知設定'
+        verbose_name_plural = '日記通知設定'
+        indexes = [
+            models.Index(fields=['diary', 'is_active']),
+            models.Index(fields=['notification_type', 'is_active']),
+        ]
+
+
+class NotificationLog(models.Model):
+    """通知送信履歴"""
+    notification = models.ForeignKey(
+        'DiaryNotification',
+        on_delete=models.CASCADE,
+        related_name='logs',
+        null=True, blank=True
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='notification_logs'
+    )
+    title = models.CharField(max_length=100)
+    message = models.TextField(max_length=500)
+    url = models.CharField(max_length=255, blank=True)
+    is_read = models.BooleanField(default=False)
+    is_clicked = models.BooleanField(default=False)
+    sent_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        verbose_name = '通知履歴'
+        verbose_name_plural = '通知履歴'
+        ordering = ['-sent_at']
+        indexes = [
+            models.Index(fields=['user', 'is_read', '-sent_at']),
+        ]        
