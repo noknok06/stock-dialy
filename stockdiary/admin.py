@@ -3,8 +3,8 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.db.models import Count
-from .models import StockDiary, Transaction, StockSplit, DiaryNote
-
+from .models import StockDiary, Transaction, StockSplit, DiaryNote, PushSubscription, DiaryNotification, NotificationLog
+from django.contrib import messages
 
 class TransactionInline(admin.TabularInline):
     """取引のインライン編集"""
@@ -554,3 +554,341 @@ class DiaryNoteAdmin(admin.ModelAdmin):
             )
         return 'なし'
     image_preview.short_description = '画像プレビュー'
+    
+@admin.register(PushSubscription)
+class PushSubscriptionAdmin(admin.ModelAdmin):
+    """プッシュ通知サブスクリプション管理"""
+    
+    list_display = (
+        'id', 'user_link', 'device_name', 'is_active_badge', 
+        'created_at', 'last_used', 'endpoint_preview'
+    )
+    
+    list_filter = ('is_active', 'created_at', 'last_used')
+    
+    search_fields = ('user__username', 'device_name', 'endpoint', 'user_agent')
+    
+    readonly_fields = ('created_at', 'last_used', 'endpoint_full')
+    
+    fieldsets = (
+        ('基本情報', {
+            'fields': ('user', 'device_name', 'user_agent', 'is_active')
+        }),
+        ('サブスクリプション情報', {
+            'fields': ('endpoint_full', 'p256dh', 'auth'),
+            'classes': ('collapse',)
+        }),
+        ('システム情報', {
+            'fields': ('created_at', 'last_used'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    date_hierarchy = 'created_at'
+    
+    actions = ['activate_subscriptions', 'deactivate_subscriptions', 'test_notification']
+    
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.select_related('user')
+    
+    def user_link(self, obj):
+        """ユーザーへのリンク"""
+        url = reverse('admin:users_customuser_change', args=[obj.user.id])
+        return format_html('<a href="{}">{}</a>', url, obj.user.username)
+    user_link.short_description = 'ユーザー'
+    
+    def is_active_badge(self, obj):
+        """アクティブ状態をバッジで表示"""
+        if obj.is_active:
+            return format_html(
+                '<span style="background-color: #28a745; color: white; '
+                'padding: 3px 8px; border-radius: 3px; font-size: 11px;">'
+                '有効</span>'
+            )
+        else:
+            return format_html(
+                '<span style="background-color: #6c757d; color: white; '
+                'padding: 3px 8px; border-radius: 3px; font-size: 11px;">'
+                '無効</span>'
+            )
+    is_active_badge.short_description = '状態'
+    
+    def endpoint_preview(self, obj):
+        """エンドポイントのプレビュー表示"""
+        if len(obj.endpoint) > 50:
+            return f'{obj.endpoint[:50]}...'
+        return obj.endpoint
+    endpoint_preview.short_description = 'エンドポイント'
+    
+    def endpoint_full(self, obj):
+        """完全なエンドポイント表示"""
+        return obj.endpoint
+    endpoint_full.short_description = '完全なエンドポイント'
+    
+    def activate_subscriptions(self, request, queryset):
+        """選択したサブスクリプションを有効化"""
+        count = queryset.update(is_active=True)
+        self.message_user(
+            request,
+            f'{count}件のサブスクリプションを有効化しました。',
+            messages.SUCCESS
+        )
+    activate_subscriptions.short_description = '選択したサブスクリプションを有効化'
+    
+    def deactivate_subscriptions(self, request, queryset):
+        """選択したサブスクリプションを無効化"""
+        count = queryset.update(is_active=False)
+        self.message_user(
+            request,
+            f'{count}件のサブスクリプションを無効化しました。',
+            messages.WARNING
+        )
+    deactivate_subscriptions.short_description = '選択したサブスクリプションを無効化'
+    
+    def test_notification(self, request, queryset):
+        """選択したサブスクリプションにテスト通知を送信"""
+        from .api_views import send_push_notification
+        
+        success_count = 0
+        for subscription in queryset.filter(is_active=True):
+            try:
+                result = send_push_notification(
+                    subscription.user,
+                    'テスト通知',
+                    'これは管理画面からのテスト通知です。',
+                    url='/stockdiary/',
+                    tag='admin_test'
+                )
+                if result > 0:
+                    success_count += 1
+            except Exception as e:
+                self.message_user(
+                    request,
+                    f'{subscription.user.username}への通知送信に失敗: {str(e)}',
+                    messages.ERROR
+                )
+        
+        if success_count > 0:
+            self.message_user(
+                request,
+                f'{success_count}件のテスト通知を送信しました。',
+                messages.SUCCESS
+            )
+    test_notification.short_description = '選択したサブスクリプションにテスト通知を送信'
+
+
+@admin.register(DiaryNotification)
+class DiaryNotificationAdmin(admin.ModelAdmin):
+    """日記通知設定管理"""
+    
+    list_display = (
+        'id', 'diary_link', 'notification_type_badge', 
+        'is_active_badge', 'target_price', 'remind_at', 
+        'frequency', 'last_sent', 'created_at'
+    )
+    
+    list_filter = ('notification_type', 'is_active', 'frequency', 'created_at')
+    
+    search_fields = (
+        'diary__stock_name', 'diary__stock_symbol', 
+        'diary__user__username', 'message'
+    )
+    
+    readonly_fields = ('id', 'last_sent', 'created_at', 'updated_at')
+    
+    fieldsets = (
+        ('基本情報', {
+            'fields': ('id', 'diary', 'notification_type', 'is_active', 'message')
+        }),
+        ('価格アラート設定', {
+            'fields': ('target_price', 'alert_above'),
+            'classes': ('collapse',)
+        }),
+        ('リマインダー設定', {
+            'fields': ('remind_at',),
+            'classes': ('collapse',)
+        }),
+        ('定期通知設定', {
+            'fields': ('frequency', 'notify_time'),
+            'classes': ('collapse',)
+        }),
+        ('システム情報', {
+            'fields': ('last_sent', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    date_hierarchy = 'created_at'
+    
+    actions = ['activate_notifications', 'deactivate_notifications']
+    
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.select_related('diary', 'diary__user')
+    
+    def diary_link(self, obj):
+        """日記へのリンク"""
+        url = reverse('admin:stockdiary_stockdiary_change', args=[obj.diary.id])
+        return format_html(
+            '<a href="{}">{} ({})</a>',
+            url, obj.diary.stock_name, obj.diary.user.username
+        )
+    diary_link.short_description = '日記'
+    
+    def notification_type_badge(self, obj):
+        """通知タイプをバッジで表示"""
+        colors = {
+            'price_alert': '#17a2b8',
+            'reminder': '#ffc107',
+            'periodic': '#28a745'
+        }
+        
+        return format_html(
+            '<span style="background-color: {}; color: white; '
+            'padding: 3px 8px; border-radius: 3px; font-size: 11px;">'
+            '{}</span>',
+            colors.get(obj.notification_type, '#6c757d'),
+            obj.get_notification_type_display()
+        )
+    notification_type_badge.short_description = '通知タイプ'
+    
+    def is_active_badge(self, obj):
+        """アクティブ状態をバッジで表示"""
+        if obj.is_active:
+            return format_html(
+                '<span style="background-color: #28a745; color: white; '
+                'padding: 3px 8px; border-radius: 3px; font-size: 11px;">'
+                '有効</span>'
+            )
+        else:
+            return format_html(
+                '<span style="background-color: #6c757d; color: white; '
+                'padding: 3px 8px; border-radius: 3px; font-size: 11px;">'
+                '無効</span>'
+            )
+    is_active_badge.short_description = '状態'
+    
+    def activate_notifications(self, request, queryset):
+        """選択した通知を有効化"""
+        count = queryset.update(is_active=True)
+        self.message_user(
+            request,
+            f'{count}件の通知を有効化しました。',
+            messages.SUCCESS
+        )
+    activate_notifications.short_description = '選択した通知を有効化'
+    
+    def deactivate_notifications(self, request, queryset):
+        """選択した通知を無効化"""
+        count = queryset.update(is_active=False)
+        self.message_user(
+            request,
+            f'{count}件の通知を無効化しました。',
+            messages.WARNING
+        )
+    deactivate_notifications.short_description = '選択した通知を無効化'
+
+
+@admin.register(NotificationLog)
+class NotificationLogAdmin(admin.ModelAdmin):
+    """通知履歴管理"""
+    
+    list_display = (
+        'id', 'user_link', 'notification_link', 'title', 
+        'is_read_badge', 'is_clicked', 'sent_at', 'read_at'
+    )
+    
+    list_filter = ('is_read', 'is_clicked', 'sent_at')
+    
+    search_fields = (
+        'user__username', 'title', 'message', 'url'
+    )
+    
+    readonly_fields = ('sent_at', 'read_at')
+    
+    fieldsets = (
+        ('基本情報', {
+            'fields': ('user', 'notification', 'title', 'message', 'url')
+        }),
+        ('ステータス', {
+            'fields': ('is_read', 'is_clicked', 'sent_at', 'read_at')
+        }),
+    )
+    
+    date_hierarchy = 'sent_at'
+    
+    actions = ['mark_as_read', 'mark_as_unread', 'delete_old_logs']
+    
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.select_related('user', 'notification')
+    
+    def user_link(self, obj):
+        """ユーザーへのリンク"""
+        url = reverse('admin:users_customuser_change', args=[obj.user.id])
+        return format_html('<a href="{}">{}</a>', url, obj.user.username)
+    user_link.short_description = 'ユーザー'
+    
+    def notification_link(self, obj):
+        """通知設定へのリンク"""
+        if obj.notification:
+            url = reverse('admin:stockdiary_diarynotification_change', args=[obj.notification.id])
+            return format_html(
+                '<a href="{}">通知設定</a>',
+                url
+            )
+        return '-'
+    notification_link.short_description = '通知設定'
+    
+    def is_read_badge(self, obj):
+        """既読状態をバッジで表示"""
+        if obj.is_read:
+            return format_html(
+                '<span style="background-color: #28a745; color: white; '
+                'padding: 3px 8px; border-radius: 3px; font-size: 11px;">'
+                '既読</span>'
+            )
+        else:
+            return format_html(
+                '<span style="background-color: #ffc107; color: white; '
+                'padding: 3px 8px; border-radius: 3px; font-size: 11px;">'
+                '未読</span>'
+            )
+    is_read_badge.short_description = '既読状態'
+    
+    def mark_as_read(self, request, queryset):
+        """選択したログを既読にする"""
+        from django.utils import timezone
+        count = queryset.update(is_read=True, read_at=timezone.now())
+        self.message_user(
+            request,
+            f'{count}件を既読にしました。',
+            messages.SUCCESS
+        )
+    mark_as_read.short_description = '選択したログを既読にする'
+    
+    def mark_as_unread(self, request, queryset):
+        """選択したログを未読にする"""
+        count = queryset.update(is_read=False, read_at=None)
+        self.message_user(
+            request,
+            f'{count}件を未読にしました。',
+            messages.SUCCESS
+        )
+    mark_as_unread.short_description = '選択したログを未読にする'
+    
+    def delete_old_logs(self, request, queryset):
+        """30日以上前のログを削除"""
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        threshold = timezone.now() - timedelta(days=30)
+        count = NotificationLog.objects.filter(sent_at__lt=threshold).delete()[0]
+        
+        self.message_user(
+            request,
+            f'{count}件の古いログを削除しました。',
+            messages.SUCCESS
+        )
+    delete_old_logs.short_description = '30日以上前のログを削除'

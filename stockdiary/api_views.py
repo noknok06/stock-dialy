@@ -11,6 +11,8 @@ from .models import (
 )
 import json
 from pywebpush import webpush, WebPushException
+from decimal import Decimal, InvalidOperation
+import logging
 
 
 @require_GET
@@ -84,27 +86,124 @@ def create_diary_notification(request, diary_id):
         diary = get_object_or_404(StockDiary, id=diary_id, user=request.user)
         data = json.loads(request.body)
         
-        notification = DiaryNotification.objects.create(
-            diary=diary,
-            notification_type=data.get('notification_type', 'reminder'),
-            target_price=data.get('target_price'),
-            alert_above=data.get('alert_above', True),
-            remind_at=data.get('remind_at'),
-            frequency=data.get('frequency'),
-            notify_time=data.get('notify_time'),
-            message=data.get('message', ''),
-            is_active=True
-        )
+        # デバッグログ
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Creating notification for diary {diary_id}")
+        logger.info(f"Received data: {data}")
+        
+        # 必須フィールドの検証
+        notification_type = data.get('notification_type', 'reminder')
+        if notification_type not in ['price_alert', 'reminder', 'periodic']:
+            return JsonResponse({
+                'error': '無効な通知タイプです',
+                'success': False
+            }, status=400)
+        
+        # 通知オブジェクトの作成
+        notification_data = {
+            'diary': diary,
+            'notification_type': notification_type,
+            'message': data.get('message', ''),
+            'is_active': True
+        }
+        
+        # 通知タイプ別の設定
+        if notification_type == 'price_alert':
+            target_price = data.get('target_price')
+            if not target_price:
+                return JsonResponse({
+                    'error': '目標価格を入力してください',
+                    'success': False
+                }, status=400)
+            
+            try:
+                notification_data['target_price'] = Decimal(str(target_price))
+                notification_data['alert_above'] = data.get('alert_above', True)
+            except (ValueError, InvalidOperation):
+                return JsonResponse({
+                    'error': '目標価格の形式が不正です',
+                    'success': False
+                }, status=400)
+        
+        elif notification_type == 'reminder':
+            remind_at_str = data.get('remind_at')
+            if not remind_at_str:
+                return JsonResponse({
+                    'error': '通知日時を入力してください',
+                    'success': False
+                }, status=400)
+            
+            try:
+                # ISO形式の日時文字列をパース
+                from datetime import datetime
+                remind_at = datetime.fromisoformat(remind_at_str.replace('Z', '+00:00'))
+                
+                # タイムゾーンを考慮
+                if timezone.is_naive(remind_at):
+                    remind_at = timezone.make_aware(remind_at)
+                
+                notification_data['remind_at'] = remind_at
+                logger.info(f"Parsed remind_at: {remind_at}")
+                
+            except (ValueError, AttributeError) as e:
+                logger.error(f"Date parsing error: {e}")
+                return JsonResponse({
+                    'error': f'日時の形式が不正です: {str(e)}',
+                    'success': False
+                }, status=400)
+        
+        elif notification_type == 'periodic':
+            frequency = data.get('frequency')
+            notify_time_str = data.get('notify_time')
+            
+            if not frequency or frequency not in ['daily', 'weekly', 'monthly']:
+                return JsonResponse({
+                    'error': '通知頻度を選択してください',
+                    'success': False
+                }, status=400)
+            
+            notification_data['frequency'] = frequency
+            
+            if notify_time_str:
+                try:
+                    # 時刻文字列をパース (HH:MM形式)
+                    from datetime import datetime
+                    notify_time = datetime.strptime(notify_time_str, '%H:%M').time()
+                    notification_data['notify_time'] = notify_time
+                    logger.info(f"Parsed notify_time: {notify_time}")
+                except ValueError as e:
+                    logger.error(f"Time parsing error: {e}")
+                    return JsonResponse({
+                        'error': f'時刻の形式が不正です: {str(e)}',
+                        'success': False
+                    }, status=400)
+        
+        # 通知を作成
+        notification = DiaryNotification.objects.create(**notification_data)
+        
+        logger.info(f"Notification created successfully: {notification.id}")
         
         return JsonResponse({
             'success': True,
             'notification_id': str(notification.id),
-            'message': '通知を設定しました'
+            'message': '通知を設定しました',
+            'notification_type': notification.get_notification_type_display()
         })
         
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON decode error: {e}")
+        return JsonResponse({
+            'error': 'リクエストデータの形式が不正です',
+            'success': False
+        }, status=400)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
-
+        import traceback
+        logger.error(f"Unexpected error: {traceback.format_exc()}")
+        return JsonResponse({
+            'error': f'通知設定中にエラーが発生しました: {str(e)}',
+            'success': False
+        }, status=500)
 
 @require_http_methods(["DELETE", "POST"])
 @login_required

@@ -53,6 +53,9 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
+          <!-- ✅ CSRFトークンを追加 -->
+          {% csrf_token %}
+          
           <div class="mb-3">
             <label class="form-label">通知タイプ</label>
             <select class="form-select" id="notificationType">
@@ -96,7 +99,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-          <button type="button" class="btn btn-primary" onclick="saveNotification()">保存</button>
+          <button type="button" class="btn btn-primary" onclick="saveNotification('{{ diary.id }}')">保存</button>
         </div>
       </div>
     </div>
@@ -741,70 +744,6 @@
 {{ block.super }}
 <script src="{% static 'js/diary-detail.js' %}"></script>
 <script src="{% static 'js/diary-detail-tabs.js' %}"></script>
-
-<script>
-  // 通知タイプに応じてフィールドを切り替え
-  document.getElementById('notificationType').addEventListener('change', function() {
-    const type = this.value;
-    document.getElementById('reminderFields').style.display = type === 'reminder' ? 'block' : 'none';
-    document.getElementById('priceAlertFields').style.display = type === 'price_alert' ? 'block' : 'none';
-    document.getElementById('periodicFields').style.display = type === 'periodic' ? 'block' : 'none';
-  });
-  
-  async function saveNotification() {
-    const type = document.getElementById('notificationType').value;
-    const message = document.getElementById('notificationMessage').value;
-    
-    const data = {
-      notification_type: type,
-      message: message
-    };
-    
-    if (type === 'reminder') {
-      data.remind_at = document.getElementById('remindAt').value;
-    } else if (type === 'price_alert') {
-      data.target_price = document.getElementById('targetPrice').value;
-      data.alert_above = document.getElementById('alertAbove').checked;
-    } else if (type === 'periodic') {
-      data.frequency = document.getElementById('frequency').value;
-      data.notify_time = document.getElementById('notifyTime').value;
-    }
-    
-    try {
-      const response = await fetch(`/api/diary/{{ diary.id }}/notifications/create/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': getCookie('csrftoken')
-        },
-        body: JSON.stringify(data)
-      });
-      
-      if (response.ok) {
-        showToast('通知を設定しました', 'success');
-        bootstrap.Modal.getInstance(document.getElementById('notificationModal')).hide();
-      } else {
-        throw new Error('通知設定に失敗しました');
-      }
-    } catch (error) {
-      showToast(error.message, 'danger');
-    }
-  }
-  
-  function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-      const cookies = document.cookie.split(';');
-      for (let i = 0; i < cookies.length; i++) {
-        const cookie = cookies[i].trim();
-        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-          break;
-        }
-      }
-    }
-    return cookieValue;
-  }
-  </script>
+<script src="{% static 'js/notifications.js' %}"></script>
   
 {% endblock %}
