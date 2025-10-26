@@ -1269,7 +1269,7 @@
                   <span class="badge bg-light text-primary" style="font-size: 0.7rem; font-weight: 500;">BETA</span>
                 </h6>
                 <p class="push-notification-subtitle">
-                  大切な情報をリアルタイムで受け取れます
+大切な情報をリアルタイムで受け取れます
                 </p>
               </div>
             </div>
@@ -1706,7 +1706,6 @@
 <script src="{% static 'js/notifications.js' %}"></script>
 <script src="{% static 'js/push-notification-ui.js' %}"></script>
 <script>
-// 通知一覧を読み込む
 document.addEventListener('DOMContentLoaded', function() {
     loadNotifications();
     
@@ -1885,7 +1884,8 @@ async function deleteDiaryNotification(notificationId) {
     }
     
     try {
-        const csrfToken = getCookie('csrftoken');
+        // 🔧 修正: common-utils.jsのgetCSRFToken()を使用
+        const csrfToken = window.getCSRFToken();
         
         if (!csrfToken) {
             console.error('❌ CSRFトークンが取得できません');
@@ -1937,20 +1937,5 @@ async function deleteDiaryNotification(notificationId) {
 window.deleteDiaryNotification = deleteDiaryNotification;
 window.loadNotifications = loadNotifications;
 
-// CSRFトークン取得ヘルパー
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
 </script>
 {% endblock %}
