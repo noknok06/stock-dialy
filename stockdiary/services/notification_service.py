@@ -268,11 +268,11 @@ class NotificationService:
 
     @classmethod
     def _send_notification(cls, user, title, message, url, notification):
-        """プッシュ通知を送信（サブスクリプションがなくてもログには記録）"""
+        """プッシュ通知を送信"""
         try:
             logger.info(f"  通知送信開始: ユーザー={user.username}, タイトル={title}")
             
-            # 🔧 先に NotificationLog を記録（必ず実行）
+            # 🔧 先に NotificationLog を記録
             notification_log = NotificationLog.objects.create(
                 notification=notification,
                 user=user,
@@ -297,10 +297,11 @@ class NotificationService:
                     f"    ⚠️ プッシュサブスクリプションなし "
                     f"（アプリ内通知ログのみ記録済み）"
                 )
-                # 🔧 ログは記録できたので成功扱い
-                return True
+                return True  # ✅ ログは記録できたので成功扱い
             
             # プッシュ通知送信
+            from stockdiary.api_views import send_push_notification  # ← インポートをここに移動
+            
             success_count = send_push_notification(
                 user=user,
                 title=title,
@@ -319,8 +320,7 @@ class NotificationService:
                     f"  ⚠️ プッシュ通知は送信できなかったが、"
                     f"アプリ内通知ログは記録済み"
                 )
-                # 🔧 ログは記録できているので成功扱い
-                return True
+                return True  # ✅ ログは記録できているので成功扱い
             
         except Exception as e:
             logger.error(f"  ❌ 通知送信エラー: {str(e)}", exc_info=True)
