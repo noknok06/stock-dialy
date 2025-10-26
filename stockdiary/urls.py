@@ -71,7 +71,6 @@ urlpatterns = [
 
     # モバイル操作性向上
     path('search-suggestion/', login_required(views.search_suggestion), name='search_suggestion'),
-    path('<int:pk>/context-actions/', login_required(views.context_actions), name='context_actions'),
     
     # 画像配信（セキュア）
     path('image/<int:diary_id>/<str:image_type>/', views.ServeImageView.as_view(), name='serve_image'),

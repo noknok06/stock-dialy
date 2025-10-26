@@ -1869,19 +1869,6 @@ def search_suggestion(request):
     return HttpResponse(html)
 
 
-@login_required
-@require_GET
-def context_actions(request, pk):
-    """特定の日記に対するコンテキストアクション"""
-    try:
-        diary = StockDiary.objects.get(id=pk, user=request.user)
-    except StockDiary.DoesNotExist:
-        return JsonResponse({'error': '日記が見つかりません'}, status=404)
-        
-    html = render_to_string('stockdiary/partials/context_actions.html', context)
-    return HttpResponse(html)
-
-
 def csrf_failure_view(request, reason=""):
     """CSRF失敗時のカスタムハンドラー"""
     if (hasattr(request, 'user') and 
