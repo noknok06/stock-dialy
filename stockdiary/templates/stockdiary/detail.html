@@ -9,55 +9,936 @@
 <link rel="stylesheet" href="{% static 'css/common.css' %}">
 <link rel="stylesheet" href="{% static 'css/diary-theme.css' %}">
 <link rel="stylesheet" href="{% static 'css/diary-detail.css' %}">
+<link rel="stylesheet" href="{% static 'css/mobile-friendly.css' %}">
 <link rel="stylesheet" href="{% static 'css/modal-fixes.css' %}">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+<style>
+  /* ========== ベースカラーとグラデーション定義 ========== */
+  :root {
+    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --gradient-success: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    --gradient-warning: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --gradient-info: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --gradient-dark: linear-gradient(135deg, #434343 0%, #000000 100%);
+    --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.08);
+    --shadow-medium: 0 8px 30px rgba(0, 0, 0, 0.12);
+    --shadow-strong: 0 12px 40px rgba(0, 0, 0, 0.15);
+  }
+
+  /* ========== コンテナの最適化 ========== */
+  .diary-detail-container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1rem;
+    animation: fadeIn 0.5s ease-out;
+  }
+  
+  @media (min-width: 992px) {
+    .diary-detail-container {
+      padding: 1.5rem 2rem;
+    }
+  }
+
+  /* ========== 操作バーの改善 ========== */
+  .action-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 249, 250, 0.98));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 1rem 1.5rem;
+    margin: -1rem -1rem 1.5rem -1rem;
+    box-shadow: var(--shadow-soft);
+    border-radius: 0 0 12px 12px;
+  }
+  
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--primary-color);
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+  }
+  
+  .back-link:hover {
+    background-color: rgba(90, 126, 197, 0.1);
+    transform: translateX(-3px);
+  }
+  
+  .desktop-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+  
+  .desktop-actions .btn {
+    min-height: 44px;
+    border-radius: 10px;
+    font-weight: 500;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.3s ease;
+  }
+  
+  .desktop-actions .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+  }
+  
+  @media (max-width: 767.98px) {
+    .action-bar {
+      padding: 0.75rem 1rem;
+      margin: -1rem -1rem 1rem -1rem;
+    }
+    
+    .desktop-actions {
+      flex-direction: row;
+      gap: 0.5rem;
+    }
+    
+    .desktop-actions .btn {
+      min-width: 44px;
+      padding: 0.5rem;
+    }
+  }
+
+  /* ========== メインカードのスタイリング ========== */
+  .card {
+    border: none;
+    border-radius: 16px;
+    box-shadow: var(--shadow-soft);
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  
+  .card:hover {
+    box-shadow: var(--shadow-medium);
+  }
+
+  /* ========== プッシュ通知セクションの美しいデザイン ========== */
+  #push-notification-section {
+    background: linear-gradient(135deg, 
+      rgba(102, 126, 234, 0.05) 0%, 
+      rgba(118, 75, 162, 0.05) 100%);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    border-radius: 16px;
+    padding: 2rem;
+    margin: 2rem 0;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.3s ease;
+  }
+  
+  #push-notification-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--gradient-primary);
+  }
+  
+  #push-notification-section:hover {
+    box-shadow: var(--shadow-medium);
+    transform: translateY(-2px);
+  }
+  
+  .push-notification-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .push-notification-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: var(--gradient-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.75rem;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+  
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    50% {
+      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
+    }
+  }
+  
+  .push-notification-title {
+    flex: 1;
+  }
+  
+  .push-notification-title h6 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .push-notification-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin: 0;
+  }
+  
+  #push-status {
+    padding: 1rem;
+    background: white;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+  }
+  
+  #push-status:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+  
+  .push-status-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+  
+  .push-status-enabled {
+    background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%);
+    color: #2d5016;
+  }
+  
+  .push-status-disabled {
+    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+    color: #8b4513;
+  }
+  
+  .push-status-text {
+    flex: 1;
+  }
+  
+  .push-status-label {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    margin-bottom: 0.25rem;
+  }
+  
+  .push-status-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-color);
+  }
+  
+  #enable-push-btn,
+  #disable-push-btn {
+    width: 100%;
+    min-height: 54px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+    letter-spacing: 0.3px;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  #enable-push-btn {
+    background: var(--gradient-primary);
+    border: none;
+    color: white;
+  }
+  
+  #enable-push-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+  }
+  
+  #enable-push-btn:hover::before {
+    left: 100%;
+  }
+  
+  #enable-push-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-strong);
+  }
+  
+  #disable-push-btn {
+    background: white;
+    border: 2px solid #ef4444;
+    color: #ef4444;
+  }
+  
+  #disable-push-btn:hover {
+    background: #ef4444;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  }
+  
+  #push-error {
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(135deg, #fff5f5 0%, #fee 100%);
+    color: #c53030;
+    padding: 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  #push-error i {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+  }
+  
+  @media (max-width: 767.98px) {
+    #push-notification-section {
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+    }
+    
+    .push-notification-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .push-notification-icon {
+      width: 48px;
+      height: 48px;
+      font-size: 1.5rem;
+    }
+    
+    .push-notification-title h6 {
+      font-size: 1.1rem;
+    }
+  }
+
+  /* ========== 通知一覧カードの美しいデザイン ========== */
+  .notification-settings-card {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-top: 2rem;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.3s ease;
+  }
+  
+  .notification-settings-card:hover {
+    box-shadow: var(--shadow-medium);
+  }
+  
+  .notification-settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .notification-settings-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .notification-settings-title i {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8b4513;
+    font-size: 1.25rem;
+  }
+  
+  .notification-settings-title h6 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0;
+  }
+  
+  #notification-list-container {
+    display: grid;
+    gap: 1rem;
+  }
+  
+  .notification-item {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .notification-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--gradient-primary);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .notification-item:hover {
+    transform: translateX(4px);
+    box-shadow: var(--shadow-soft);
+    border-color: rgba(102, 126, 234, 0.2);
+  }
+  
+  .notification-item:hover::before {
+    opacity: 1;
+  }
+  
+  .notification-item-content {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .notification-type-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .notification-type-icon.reminder {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+  }
+  
+  .notification-type-icon.price_alert {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+  }
+  
+  .notification-type-icon.periodic {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+  }
+  
+  .notification-info {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .notification-item-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+  }
+  
+  .notification-badge {
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  
+  .notification-badge.bg-info {
+    background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+    color: #0369a1;
+  }
+  
+  .notification-badge.bg-warning {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+  }
+  
+  .notification-badge.bg-success {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #065f46;
+  }
+  
+  .notification-details {
+    color: var(--text-color);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .notification-details i {
+    color: var(--primary-color);
+    opacity: 0.7;
+  }
+  
+  .notification-message {
+    padding: 0.75rem;
+    background: rgba(248, 249, 250, 0.5);
+    border-radius: 8px;
+    border-left: 3px solid var(--primary-color);
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-top: 0.5rem;
+  }
+  
+  .notification-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+  
+  .notification-actions .btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.2s ease;
+  }
+  
+  .notification-actions .btn-outline-danger {
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+  }
+  
+  .notification-actions .btn-outline-danger:hover {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: white;
+    transform: scale(1.05);
+  }
+  
+  @media (max-width: 767.98px) {
+    .notification-settings-card {
+      padding: 1.5rem;
+    }
+    
+    .notification-item {
+      padding: 1rem;
+    }
+    
+    .notification-item-content {
+      flex-direction: column;
+    }
+    
+    .notification-type-icon {
+      width: 40px;
+      height: 40px;
+      font-size: 1.1rem;
+    }
+    
+    .notification-actions {
+      width: 100%;
+      justify-content: flex-end;
+    }
+  }
+
+  /* ========== 画像セクションの改善 ========== */
+  .diary-image-section {
+    margin-bottom: 2rem;
+  }
+  
+  .diary-main-image {
+    width: 100%;
+    height: auto;
+    max-height: 450px;
+    object-fit: contain;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-soft);
+  }
+  
+  .diary-main-image:hover {
+    transform: scale(1.02);
+    box-shadow: var(--shadow-medium);
+  }
+  
+  @media (max-width: 767.98px) {
+    .diary-main-image {
+      max-height: 300px;
+      border-radius: 12px;
+    }
+  }
+
+  /* ========== 情報カードの改善 ========== */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .info-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.75rem;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .info-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-primary);
+  }
+  
+  .info-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-medium);
+  }
+  
+  .info-card-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .info-card-title i {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+  }
+  
+  @media (max-width: 767.98px) {
+    .info-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    
+    .info-card {
+      padding: 1.25rem;
+    }
+  }
+
+  /* ========== タブナビゲーションの改善 ========== */
+  .improved-tabs {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    scroll-behavior: smooth;
+    padding: 0.5rem;
+    background: rgba(248, 249, 250, 0.5);
+    border-radius: 12px;
+  }
+  
+  .improved-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .improved-tab-link {
+    flex: 1;
+    min-width: 120px;
+    padding: 1rem;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background: white;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  
+  .improved-tab-link:hover {
+    background: rgba(102, 126, 234, 0.05);
+    border-color: rgba(102, 126, 234, 0.2);
+  }
+  
+  .improved-tab-link.active {
+    background: var(--gradient-primary);
+    color: white;
+    box-shadow: var(--shadow-soft);
+  }
+  
+  .improved-tab-link.active .tab-icon,
+  .improved-tab-link.active .tab-label {
+    color: white;
+  }
+  
+  @media (max-width: 767.98px) {
+    .improved-tabs {
+      gap: 0.25rem;
+      padding: 0.25rem;
+    }
+    
+    .improved-tab-link {
+      min-width: 90px;
+      padding: 0.75rem 0.5rem;
+    }
+  }
+
+  /* ========== アニメーション定義 ========== */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  .fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+  
+  .slide-in-right {
+    animation: slideInRight 0.5s ease-out;
+  }
+
+  /* ========== 通知モーダルの改善 ========== */
+  #notificationModal .modal-content {
+    border-radius: 16px;
+    border: none;
+    box-shadow: var(--shadow-strong);
+  }
+  
+  #notificationModal .modal-header {
+    background: var(--gradient-primary);
+    color: white;
+    border-radius: 16px 16px 0 0;
+    padding: 1.5rem;
+  }
+  
+  #notificationModal .modal-header .btn-close {
+    filter: brightness(0) invert(1);
+  }
+  
+  #notificationModal .modal-body {
+    padding: 2rem;
+  }
+  
+  #notificationModal .form-label {
+    font-weight: 600;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  #notificationModal .form-control,
+  #notificationModal .form-select {
+    border-radius: 10px;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    padding: 0.75rem 1rem;
+    transition: all 0.2s ease;
+  }
+  
+  #notificationModal .form-control:focus,
+  #notificationModal .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+  }
+  
+  #notificationModal .modal-footer {
+    padding: 1.5rem 2rem;
+    background: rgba(248, 249, 250, 0.5);
+    border-radius: 0 0 16px 16px;
+  }
+  
+  @media (max-width: 767.98px) {
+    #notificationModal .modal-dialog {
+      margin: 0.5rem;
+    }
+    
+    #notificationModal .modal-body,
+    #notificationModal .modal-footer {
+      padding: 1.5rem;
+    }
+  }
+
+  /* ========== 空状態のデザイン改善 ========== */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 16px;
+    box-shadow: var(--shadow-soft);
+  }
+  
+  .empty-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .empty-icon i {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+  }
+  
+  .empty-state h4 {
+    color: var(--text-color);
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+  
+  .empty-state p {
+    color: var(--text-light);
+    margin: 0;
+  }
+
+  /* ========== ローディングスピナーの改善 ========== */
+  .loading-spinner {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 3rem;
+    gap: 1rem;
+  }
+  
+  .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    border-width: 0.3em;
+  }
+  
+  .loading-text {
+    color: var(--text-light);
+    font-size: 0.9rem;
+  }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="px-1 py-1 diary-detail-container">
+<div class="diary-detail-container">
   <!-- 操作バー -->
-
-  <div class="action-bar px-2">
+  <div class="action-bar">
     <a href="{% url 'stockdiary:home' %}" class="back-link">
       <i class="bi bi-arrow-left"></i>
       <span class="d-none d-sm-inline">日記一覧に戻る</span>
     </a>
     
     <div class="desktop-actions">
-      <!-- 🆕 通知設定ボタン -->
       <button type="button" 
               class="btn btn-info btn-sm"
               data-bs-toggle="modal"
-              data-bs-target="#notificationModal">
+              data-bs-target="#notificationModal"
+              title="通知設定">
         <i class="bi bi-bell"></i>
         <span class="d-none d-lg-inline ms-1">通知設定</span>
       </button>
       
-      <a href="{% url 'stockdiary:update' diary.id %}" class="btn btn-warning btn-sm">
+      <a href="{% url 'stockdiary:update' diary.id %}" 
+         class="btn btn-warning btn-sm"
+         title="編集">
         <i class="bi bi-pencil"></i>
         <span class="d-none d-lg-inline ms-1">編集</span>
       </a>
-      <a href="{% url 'stockdiary:delete' diary.id %}" class="btn btn-danger btn-sm">
+      
+      <a href="{% url 'stockdiary:delete' diary.id %}" 
+         class="btn btn-danger btn-sm"
+         title="削除">
         <i class="bi bi-trash"></i>
         <span class="d-none d-lg-inline ms-1">削除</span>
       </a>
     </div>
   </div>
 
-  <!-- 🆕 通知設定モーダル -->
-  <div class="modal fade" id="notificationModal" tabindex="-1">
-    <div class="modal-dialog">
+  <!-- 通知設定モーダル -->
+  <div class="modal fade" id="notificationModal" tabindex="-1" aria-labelledby="notificationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">通知設定</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <h5 class="modal-title" id="notificationModalLabel">
+            <i class="bi bi-bell me-2"></i>通知設定
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
         </div>
         <div class="modal-body">
-          <!-- ✅ CSRFトークンを追加 -->
           {% csrf_token %}
           
           <div class="mb-3">
-            <label class="form-label">通知タイプ</label>
+            <label for="notificationType" class="form-label">
+              <i class="bi bi-tag"></i>通知タイプ
+            </label>
             <select class="form-select" id="notificationType">
               <option value="reminder">リマインダー</option>
               <option value="price_alert">価格アラート</option>
@@ -66,13 +947,17 @@
           </div>
           
           <div id="reminderFields" class="mb-3">
-            <label class="form-label">通知日時</label>
+            <label for="remindAt" class="form-label">
+              <i class="bi bi-calendar-event"></i>通知日時
+            </label>
             <input type="datetime-local" class="form-control" id="remindAt">
           </div>
           
           <div id="priceAlertFields" class="mb-3" style="display: none;">
-            <label class="form-label">目標価格</label>
-            <input type="number" class="form-control" id="targetPrice" step="0.01">
+            <label for="targetPrice" class="form-label">
+              <i class="bi bi-currency-yen"></i>目標価格
+            </label>
+            <input type="number" class="form-control" id="targetPrice" step="0.01" placeholder="円">
             <div class="form-check mt-2">
               <input class="form-check-input" type="checkbox" id="alertAbove" checked>
               <label class="form-check-label" for="alertAbove">
@@ -82,31 +967,41 @@
           </div>
           
           <div id="periodicFields" class="mb-3" style="display: none;">
-            <label class="form-label">頻度</label>
+            <label for="frequency" class="form-label">
+              <i class="bi bi-arrow-repeat"></i>頻度
+            </label>
             <select class="form-select" id="frequency">
               <option value="daily">毎日</option>
               <option value="weekly">毎週</option>
               <option value="monthly">毎月</option>
             </select>
-            <label class="form-label mt-2">通知時刻</label>
+            <label for="notifyTime" class="form-label mt-3">
+              <i class="bi bi-clock"></i>通知時刻
+            </label>
             <input type="time" class="form-control" id="notifyTime">
           </div>
           
           <div class="mb-3">
-            <label class="form-label">メッセージ（オプション）</label>
-            <textarea class="form-control" id="notificationMessage" rows="2"></textarea>
+            <label for="notificationMessage" class="form-label">
+              <i class="bi bi-chat-text"></i>メッセージ（オプション）
+            </label>
+            <textarea class="form-control" id="notificationMessage" rows="2" placeholder="通知メッセージを入力"></textarea>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-          <button type="button" class="btn btn-primary" onclick="saveNotification('{{ diary.id }}')">保存</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle me-1"></i>キャンセル
+          </button>
+          <button type="button" class="btn btn-primary" onclick="saveNotification('{{ diary.id }}')">
+            <i class="bi bi-check-circle me-1"></i>保存
+          </button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- メインカード -->
-  <div class="card border-0 shadow-sm mx-0">
+  <div class="card border-0 shadow-sm">
     <!-- ヘッダー -->
     <div class="diary-header-improved mobile-optimized" data-stock-symbol="{{ diary.stock_symbol }}">
       <div class="header-main-info">
@@ -229,14 +1124,14 @@
         <!-- 基本情報タブ -->
         <div class="tab-pane fade show active" id="basic-content" role="tabpanel" aria-labelledby="basic-tab">
           {% if diary.image_url %}
-          <div class="diary-image-section mb-3">
+          <div class="diary-image-section fade-in">
             <div class="card border-0">
-              <div class="card-body p-1">
+              <div class="card-body p-2">
                 <div class="text-center">
                   <img src="{{ diary.image_url }}" 
                        class="img-fluid rounded diary-main-image" 
                        alt="{{ diary.stock_name }}の画像"
-                       style="max-height: 300px; object-fit: contain; cursor: pointer; width: 100%;"
+                       loading="lazy"
                        onclick="showImageModal('{{ diary.image_url }}', '{{ diary.stock_name }} - {{ diary.first_purchase_date|date:"Y年m月d日" }}')">
                   <div class="mt-2">
                     <small class="text-muted">
@@ -250,7 +1145,7 @@
           </div>
           {% endif %}
 
-          <div class="info-grid mobile-optimized">
+          <div class="info-grid mobile-optimized fade-in">
             <!-- 投資理由/メモ -->
             <div class="info-card mobile-optimized">
               <div class="info-card-title">
@@ -336,7 +1231,7 @@
           {% include 'stockdiary/partials/analysis_template_info.html' %}
 
           <!-- タグとメモ -->
-          <div class="info-grid mobile-optimized">
+          <div class="info-grid mobile-optimized fade-in">
             <div class="info-card mobile-optimized">
               <div class="info-card-title">
                 <i class="bi bi-tags"></i>
@@ -361,35 +1256,59 @@
               {% endif %}
             </div>
           </div>
-<!-- プッシュ通知有効化ボタン -->
-        <div id="push-notification-section" class="mt-3 border-top pt-3">
-            <h6 class="mb-3">
-                <i class="bi bi-bell-fill me-2"></i>プッシュ通知
-            </h6>
-            
-            <div id="push-status" class="mb-2">
-                <small class="text-muted">読み込み中...</small>
+
+          <!-- プッシュ通知セクション（美しいデザイン） -->
+          <div id="push-notification-section" class="slide-in-right">
+            <div class="push-notification-header">
+              <div class="push-notification-icon">
+                <i class="bi bi-bell-fill"></i>
+              </div>
+              <div class="push-notification-title">
+                <h6>
+                  プッシュ通知
+                  <span class="badge bg-light text-primary" style="font-size: 0.7rem; font-weight: 500;">BETA</span>
+                </h6>
+                <p class="push-notification-subtitle">
+                  大切な情報をリアルタイムで受け取れます
+                </p>
+              </div>
             </div>
             
-            <button id="enable-push-btn" class="btn btn-primary btn-sm w-100" style="display: none;">
-                <i class="bi bi-bell me-2"></i>プッシュ通知を有効にする
+            <div id="push-status">
+              <div class="push-status-icon">
+                <i class="bi bi-hourglass-split"></i>
+              </div>
+              <div class="push-status-text">
+                <div class="push-status-label">ステータス</div>
+                <div class="push-status-value">読み込み中...</div>
+              </div>
+            </div>
+            
+            <button id="enable-push-btn" class="btn btn-primary" style="display: none;">
+              <i class="bi bi-bell"></i>
+              プッシュ通知を有効にする
             </button>
             
-            <button id="disable-push-btn" class="btn btn-outline-danger btn-sm w-100" style="display: none;">
-                <i class="bi bi-bell-slash me-2"></i>プッシュ通知を無効にする
+            <button id="disable-push-btn" class="btn btn-outline-danger" style="display: none;">
+              <i class="bi bi-bell-slash"></i>
+              プッシュ通知を無効にする
             </button>
             
-            <div id="push-error" class="alert alert-warning mt-2" style="display: none;"></div>
-        </div>
-          <!-- 通知設定セクション -->
-          <div class="info-card mobile-optimized mt-3">
-            <div class="info-card-title d-flex justify-content-between align-items-center">
-              <div>
-                <i class="bi bi-bell"></i>
-                通知設定
+            <div id="push-error" class="alert alert-warning" style="display: none;">
+              <i class="bi bi-exclamation-triangle"></i>
+              <div></div>
+            </div>
+          </div>
+
+          <!-- 通知設定一覧（美しいデザイン） -->
+          <div class="notification-settings-card fade-in">
+            <div class="notification-settings-header">
+              <div class="notification-settings-title">
+                <i class="bi bi-gear"></i>
+                <h6>通知設定</h6>
               </div>
               <button type="button" 
-                      class="btn btn-sm btn-primary"
+                      class="btn btn-primary btn-sm"
                       data-bs-toggle="modal"
                       data-bs-target="#notificationModal">
                 <i class="bi bi-plus-circle me-1"></i>
@@ -397,16 +1316,15 @@
               </button>
             </div>
             
-            <!-- 通知一覧コンテナ -->
-            <div id="notification-list-container" class="mt-2">
-              <!-- ここに通知一覧が表示される -->
-              <div class="text-center py-3">
-                <div class="spinner-border spinner-border-sm text-primary" role="status">
+            <div id="notification-list-container">
+              <div class="loading-spinner">
+                <div class="spinner-border text-primary" role="status">
                   <span class="visually-hidden">読み込み中...</span>
                 </div>
+                <div class="loading-text">通知設定を読み込んでいます...</div>
               </div>
             </div>
-          </div>          
+          </div>
         </div>
 
         <!-- 取引履歴タブ -->
@@ -417,16 +1335,16 @@
         <!-- 継続記録タブ -->
         <div class="tab-pane fade" id="notes-content" role="tabpanel" aria-labelledby="notes-tab">
           <!-- フォーム表示/非表示の切り替えボタン -->
-          <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="d-flex justify-content-center mb-3">
             <button 
               type="button" 
-              class="btn btn-primary btn-sm" 
+              class="btn btn-primary" 
               id="toggleNoteForm"
               data-bs-toggle="collapse" 
               data-bs-target="#noteFormCollapse" 
               aria-expanded="false" 
               aria-controls="noteFormCollapse">
-              <i class="bi bi-plus-circle me-1"></i>
+              <i class="bi bi-plus-circle me-2"></i>
               <span class="toggle-text">記録を追加</span>
             </button>
           </div>
@@ -524,7 +1442,7 @@
                         accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
                   
                   <div id="note-image-preview-container" class="mt-2" style="display: none;">
-                    <div class="card" style="max-width: 300px;">
+                    <div class="card" style="max-width: 100%;">
                       <img id="note-image-preview" class="card-img-top" style="max-height: 200px; object-fit: cover;" alt="プレビュー">
                       <div class="card-body p-2">
                         <small class="text-muted">選択された画像</small>
@@ -551,7 +1469,7 @@
                   </div>
                 </div>
                 
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 flex-column flex-sm-row">
                   <button type="submit" class="btn btn-primary flex-fill">
                     <i class="bi bi-journal-plus me-1"></i>
                     記録を追加
@@ -573,7 +1491,7 @@
           <!-- 継続記録一覧 -->
           <div class="notes-list mobile-optimized">
             {% for note in notes %}
-            <div class="note-card mobile-optimized mb-3">
+            <div class="note-card mobile-optimized fade-in">
               <div class="note-card-header mobile-optimized">
                 <div class="note-meta-left">
                   <div class="note-date">
@@ -631,12 +1549,12 @@
               </div>
               
               <div class="note-card-body mobile-optimized">
-                <!-- 継続記録の画像表示 -->
                 {% if note.image_url %}
                 <div class="note-image mb-2">
                   <img src="{{ note.image_url }}" 
                       class="img-fluid rounded note-attached-image" 
                       alt="継続記録画像"
+                      loading="lazy"
                       style="max-height: 200px; object-fit: cover; width: 100%; cursor: pointer;"
                       onclick="showImageModal('{{ note.image_url }}', '{{ note.date|date:"Y年m月d日" }}の記録')">
                   <div class="mt-1">
@@ -652,16 +1570,17 @@
               </div>
             </div>
             {% empty %}
-            <div class="empty-state">
-              <div class="empty-icon">
-                <i class="bi bi-journal-text"></i>
+            <div class="empty-state text-center py-5">
+              <div class="empty-icon mb-3">
+                <i class="bi bi-journal-text" style="font-size: 3rem; color: var(--text-light);"></i>
               </div>
-              <h4>継続記録はまだありません</h4>
-              <p>上のボタンから最初の記録を追加しましょう</p>
+              <h4 class="text-muted">継続記録はまだありません</h4>
+              <p class="text-muted">上のボタンから最初の記録を追加しましょう</p>
             </div>
             {% endfor %}
           </div>
         </div>
+
         <!-- タイムラインタブ -->
         <div class="tab-pane fade" id="timeline-content" role="tabpanel" aria-labelledby="timeline-tab">
           {% if related_diaries %}
@@ -703,9 +1622,6 @@
                   {% if not timeline_diary.is_memo and timeline_diary.purchase_price is not None and timeline_diary.purchase_quantity is not None %}
                   <div class="timeline-price-info">
                     {{ timeline_diary.purchase_price|floatformat:2|intcomma }}円 × {{ timeline_diary.purchase_quantity }}株
-                    <span class="{% if realized_profit > 0 %}text-success{% elif realized_profit < 0 %}text-danger{% endif %}">
-                      ({% if realized_profit > 0 %}+{% endif %}{{ realized_profit|floatformat:2 }}%)
-                    </span>
                   </div>
                   {% endif %}
 
@@ -730,9 +1646,6 @@
                   {% if not timeline_diary.is_memo and timeline_diary.purchase_price is not None and timeline_diary.purchase_quantity is not None %}
                   <div class="timeline-price-info">
                     {{ timeline_diary.realized_profit|floatformat:2|intcomma }}円 × {{ timeline_diary.current_quantity }}株
-                    <span class="{% if realized_profit > 0 %}text-success{% elif realized_profit < 0 %}text-danger{% endif %}">
-                      ({% if profit > 0 %}+{% endif %}{{ profit|floatformat:2 }}%)
-                    </span>
                   </div>
                   {% endif %}
 
@@ -767,14 +1680,14 @@
               <span>{{ current_diary_index|add:1 }}</span> / <span>{{ total_related_count }}</span> 件目
             </div>
             {% endif %}
-          </div> <!-- ここに追加: timeline-section の終了タグ -->
+          </div>
           {% else %}
-          <div class="empty-state">
-            <div class="empty-icon">
-              <i class="bi bi-link-45deg"></i>
+          <div class="empty-state text-center py-5">
+            <div class="empty-icon mb-3">
+              <i class="bi bi-link-45deg" style="font-size: 3rem; color: var(--text-light);"></i>
             </div>
-            <h4>関連する投資記録はありません</h4>
-            <p>この銘柄の他の投資記録が作成されると、ここに表示されます。</p>
+            <h4 class="text-muted">関連する投資記録はありません</h4>
+            <p class="text-muted">この銘柄の他の投資記録が作成されると、ここに表示されます。</p>
           </div>
           {% endif %}
         </div>
@@ -796,6 +1709,37 @@
 // 通知一覧を読み込む
 document.addEventListener('DOMContentLoaded', function() {
     loadNotifications();
+    
+    // 通知タイプ切り替え
+    const notificationType = document.getElementById('notificationType');
+    if (notificationType) {
+        notificationType.addEventListener('change', function() {
+            document.getElementById('reminderFields').style.display = 
+                this.value === 'reminder' ? 'block' : 'none';
+            document.getElementById('priceAlertFields').style.display = 
+                this.value === 'price_alert' ? 'block' : 'none';
+            document.getElementById('periodicFields').style.display = 
+                this.value === 'periodic' ? 'block' : 'none';
+        });
+    }
+    
+    // プッシュ通知ステータス更新時のUI更新
+    document.addEventListener('pushStatusUpdated', function(e) {
+        const status = e.detail;
+        const statusDiv = document.getElementById('push-status');
+        const icon = statusDiv.querySelector('.push-status-icon');
+        const valueDiv = statusDiv.querySelector('.push-status-value');
+        
+        if (status.enabled) {
+            icon.innerHTML = '<i class="bi bi-check-circle-fill"></i>';
+            icon.className = 'push-status-icon push-status-enabled';
+            valueDiv.textContent = '有効';
+        } else {
+            icon.innerHTML = '<i class="bi bi-x-circle"></i>';
+            icon.className = 'push-status-icon push-status-disabled';
+            valueDiv.textContent = '無効';
+        }
+    });
 });
 
 async function loadNotifications() {
@@ -809,10 +1753,12 @@ async function loadNotifications() {
             container.innerHTML = renderNotifications(data.notifications);
         } else {
             container.innerHTML = `
-                <div class="text-muted text-center py-3">
-                    <i class="bi bi-bell-slash" style="font-size: 2rem;"></i>
-                    <p class="mb-0 mt-2">通知設定はありません</p>
-                    <small>「新規作成」ボタンから通知を設定できます</small>
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="bi bi-bell-slash"></i>
+                    </div>
+                    <h4>通知設定はありません</h4>
+                    <p>「新規作成」ボタンから通知を設定できます</p>
                 </div>
             `;
         }
@@ -820,6 +1766,7 @@ async function loadNotifications() {
         console.error('通知一覧の読み込みエラー:', error);
         container.innerHTML = `
             <div class="alert alert-danger">
+                <i class="bi bi-exclamation-circle me-2"></i>
                 通知一覧の読み込みに失敗しました
             </div>
         `;
@@ -836,22 +1783,21 @@ function renderNotifications(notifications) {
             const remindAt = new Date(notification.remind_at);
             detailsHtml = `
                 <div class="notification-details">
-                    <i class="bi bi-calendar-event me-1"></i>
-                    ${remindAt.toLocaleString('ja-JP', {
+                    <i class="bi bi-calendar-event"></i>
+                    <span>${remindAt.toLocaleString('ja-JP', {
                         year: 'numeric',
                         month: 'short',
                         day: 'numeric',
                         hour: '2-digit',
                         minute: '2-digit'
-                    })}
+                    })}</span>
                 </div>
             `;
         } else if (notification.type === 'price_alert') {
             detailsHtml = `
                 <div class="notification-details">
-                    <i class="bi bi-currency-yen me-1"></i>
-                    ${notification.target_price}円
-                    ${notification.alert_above ? '以上' : '以下'}で通知
+                    <i class="bi bi-currency-yen"></i>
+                    <span>${notification.target_price}円 ${notification.alert_above ? '以上' : '以下'}で通知</span>
                 </div>
             `;
         } else if (notification.type === 'periodic') {
@@ -863,20 +1809,22 @@ function renderNotifications(notifications) {
             
             detailsHtml = `
                 <div class="notification-details">
-                    <i class="bi bi-arrow-repeat me-1"></i>
-                    ${freqText}
-                    ${notification.notify_time ? ` ${notification.notify_time}` : ''}
+                    <i class="bi bi-arrow-repeat"></i>
+                    <span>${freqText}${notification.notify_time ? ` ${notification.notify_time}` : ''}</span>
                 </div>
             `;
         }
         
         return `
-            <div class="notification-item border rounded p-2 mb-2" data-notification-id="${notification.id}">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div class="flex-grow-1">
-                        <div class="d-flex align-items-center mb-1">
-                            <span class="badge ${typeInfo.badgeClass} me-2">
-                                <i class="${typeInfo.icon} me-1"></i>
+            <div class="notification-item" data-notification-id="${notification.id}">
+                <div class="notification-item-content">
+                    <div class="notification-type-icon ${notification.type}">
+                        <i class="${typeInfo.icon}"></i>
+                    </div>
+                    <div class="notification-info">
+                        <div class="notification-item-header">
+                            <span class="notification-badge ${typeInfo.badgeClass}">
+                                <i class="${typeInfo.icon}"></i>
                                 ${typeInfo.label}
                             </span>
                             ${notification.last_sent ? 
@@ -889,17 +1837,21 @@ function renderNotifications(notifications) {
                         </div>
                         ${detailsHtml}
                         ${notification.message ? 
-                            `<div class="notification-message small text-muted mt-1">
+                            `<div class="notification-message">
+                                <i class="bi bi-chat-quote me-1"></i>
                                 ${notification.message}
                             </div>` : 
                             ''
                         }
                     </div>
-                    <button class="btn btn-sm btn-outline-danger" 
-                            onclick="deleteDiaryNotification('${notification.id}')"
-                            title="削除">
-                        <i class="bi bi-trash"></i>
-                    </button>
+                    <div class="notification-actions">
+                        <button class="btn btn-sm btn-outline-danger" 
+                                onclick="deleteDiaryNotification('${notification.id}')"
+                                title="削除"
+                                aria-label="通知を削除">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
@@ -927,7 +1879,6 @@ function getNotificationTypeInfo(type) {
     return types[type] || types['reminder'];
 }
 
-// 🔧 通知削除関数（グローバルスコープで定義）
 async function deleteDiaryNotification(notificationId) {
     if (!confirm('この通知設定を削除しますか？')) {
         return;
@@ -942,8 +1893,6 @@ async function deleteDiaryNotification(notificationId) {
             return;
         }
         
-        console.log('削除リクエスト送信:', notificationId);
-        
         const response = await fetch(`/stockdiary/api/notifications/${notificationId}/delete/`, {
             method: 'POST',
             headers: {
@@ -954,9 +1903,6 @@ async function deleteDiaryNotification(notificationId) {
             credentials: 'same-origin'
         });
         
-        console.log('削除レスポンスステータス:', response.status);
-        
-        // HTMLレスポンスの場合の処理
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
             const responseText = await response.text();
@@ -966,7 +1912,7 @@ async function deleteDiaryNotification(notificationId) {
                 showToast('セッションが無効です。ページを再読み込みしてください。', 'danger');
             } else if (response.status === 404) {
                 showToast('通知が見つかりませんでした。すでに削除された可能性があります。', 'warning');
-                loadNotifications(); // 一覧を更新
+                loadNotifications();
             } else {
                 showToast('サーバーエラーが発生しました。', 'danger');
             }
@@ -977,7 +1923,7 @@ async function deleteDiaryNotification(notificationId) {
         
         if (response.ok && data.success) {
             showToast('通知設定を削除しました', 'success');
-            loadNotifications(); // 一覧を再読み込み
+            loadNotifications();
         } else {
             showToast('削除に失敗しました: ' + (data.error || '不明なエラー'), 'danger');
         }
@@ -987,8 +1933,24 @@ async function deleteDiaryNotification(notificationId) {
     }
 }
 
-// 🔧 グローバルスコープに公開
+// グローバルスコープに公開
 window.deleteDiaryNotification = deleteDiaryNotification;
 window.loadNotifications = loadNotifications;
+
+// CSRFトークン取得ヘルパー
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
 </script>
 {% endblock %}
