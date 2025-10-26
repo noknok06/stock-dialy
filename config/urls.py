@@ -35,14 +35,19 @@ def serve_service_worker(request):
         with open(sw_path, 'r', encoding='utf-8') as f:
             js_content = f.read()
         
-        response = HttpResponse(js_content, content_type='application/javascript')
+        response = HttpResponse(js_content, content_type='application/javascript; charset=utf-8')
         response['Service-Worker-Allowed'] = '/'
         response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
         response['Pragma'] = 'no-cache'
         response['Expires'] = '0'
+        
+        # 🆕 Safari対応: X-Content-Type-Optionsを追加
+        response['X-Content-Type-Options'] = 'nosniff'
+        
         return response
     except FileNotFoundError:
-        return HttpResponse('Service Worker not found', status=404)
+        return HttpResponse('Service Worker not found', status=404, content_type='text/plain')
+
 
 
 urlpatterns = [
