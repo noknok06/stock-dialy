@@ -14,18 +14,38 @@ class PushNotificationUI {
         try {
             console.log('🔄 PushNotificationUI初期化開始');
             
+            // iOS判定
+            const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+            const isStandalone = window.navigator.standalone === true || 
+                                 window.matchMedia('(display-mode: standalone)').matches;
+            
+            console.log(`デバイス情報: iOS=${isIOS}, スタンドアロン=${isStandalone}`);
+            
             // Service Workerとプッシュ通知のサポートを確認
             if (!('serviceWorker' in navigator)) {
                 this.showStatus('Service Workerに非対応', 'warning');
+                this.showError('このブラウザではプッシュ通知を利用できません');
                 return;
             }
             
             if (!('PushManager' in window)) {
                 this.showStatus('プッシュ通知に非対応', 'warning');
+                if (isIOS && !isStandalone) {
+                    this.showError('iOSでは、ホーム画面に追加後にプッシュ通知を有効にできます');
+                } else {
+                    this.showError('このブラウザではプッシュ通知を利用できません');
+                }
                 return;
             }
             
-            // 現在の状態を確認（簡易版）
+            // 🆕 iOSでスタンドアロンモードでない場合の警告
+            if (isIOS && !isStandalone) {
+                this.showStatus('プッシュ通知: 利用不可', 'warning');
+                this.showError('Safari の共有ボタン → 「ホーム画面に追加」からアプリをインストールしてください');
+                return;
+            }
+            
+            // 🆕 iOS対応: より積極的にボタンを表示
             await this.checkCurrentStatusSimple();
             
             // ボタンのイベントリスナーを設定
@@ -42,53 +62,85 @@ class PushNotificationUI {
         } catch (error) {
             console.error('❌ Init error:', error);
             this.showStatus('初期化エラー', 'danger');
-            // エラーでもボタンは表示
-            if (this.enableBtn) this.enableBtn.style.display = 'block';
+            this.showError(`エラー: ${error.message}`);
+            // 🆕 エラーでもボタンは表示
+            if (this.enableBtn) {
+                this.enableBtn.style.display = 'block';
+                this.enableBtn.disabled = false;
+            }
         }
     }
     
     async checkCurrentStatusSimple() {
-        // 通知許可状態をチェック（Service Worker不要）
-        const permission = Notification.permission;
-        
-        console.log('通知許可状態:', permission);
-        
-        if (permission === 'denied') {
-            this.showStatus('通知: ブロック中', 'danger');
-            this.showError('ブラウザの設定から通知を許可してください');
-            return;
-        }
-        
-        if (permission === 'default') {
-            this.showStatus('プッシュ通知: 無効', 'secondary');
-            if (this.enableBtn) this.enableBtn.style.display = 'block';
-            return;
-        }
-        
-        // granted の場合、Service Workerをチェック（タイムアウト短め）
         try {
-            const registration = await Promise.race([
-                navigator.serviceWorker.ready,
-                new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('timeout')), 2000)
-                )
-            ]);
+            // 通知許可状態をチェック（Service Worker不要）
+            const permission = Notification.permission;
             
-            const subscription = await registration.pushManager.getSubscription();
+            console.log('通知許可状態:', permission);
             
-            if (subscription) {
-                this.showStatus('プッシュ通知: 有効', 'success');
-                if (this.enableBtn) this.enableBtn.style.display = 'none';
-                if (this.disableBtn) this.disableBtn.style.display = 'block';
-            } else {
-                this.showStatus('プッシュ通知: 無効', 'secondary');
-                if (this.enableBtn) this.enableBtn.style.display = 'block';
+            if (permission === 'denied') {
+                this.showStatus('通知: ブロック中', 'danger');
+                this.showError('設定 → Safari → 通知 からこのサイトの通知を許可してください');
+                return;
             }
-        } catch (e) {
-            console.log('Service Worker待機スキップ:', e.message);
-            // タイムアウトでも有効化ボタンは表示
+            
+            if (permission === 'default') {
+                this.showStatus('プッシュ通知: 無効', 'secondary');
+                if (this.enableBtn) {
+                    this.enableBtn.style.display = 'block';
+                    this.enableBtn.disabled = false;
+                }
+                return;
+            }
+            
+            // 🆕 iOS対応: Service Worker待機のタイムアウトを500msに短縮
+            console.log('Service Worker確認中...');
+            
+            const swCheckPromise = navigator.serviceWorker.ready.then(async registration => {
+                console.log('✅ Service Worker取得成功');
+                const subscription = await registration.pushManager.getSubscription();
+                return subscription;
+            });
+            
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('timeout')), 500)  // 500msに短縮
+            );
+            
+            try {
+                const subscription = await Promise.race([swCheckPromise, timeoutPromise]);
+                
+                if (subscription) {
+                    this.showStatus('プッシュ通知: 有効', 'success');
+                    if (this.enableBtn) this.enableBtn.style.display = 'none';
+                    if (this.disableBtn) {
+                        this.disableBtn.style.display = 'block';
+                        this.disableBtn.disabled = false;
+                    }
+                } else {
+                    this.showStatus('プッシュ通知: 無効', 'secondary');
+                    if (this.enableBtn) {
+                        this.enableBtn.style.display = 'block';
+                        this.enableBtn.disabled = false;
+                    }
+                }
+            } catch (e) {
+                // 🆕 タイムアウトまたはエラーの場合も有効化ボタンを表示
+                console.log('⚠️ Service Worker待機をスキップ:', e.message);
+                this.showStatus('プッシュ通知: 無効', 'secondary');
+                if (this.enableBtn) {
+                    this.enableBtn.style.display = 'block';
+                    this.enableBtn.disabled = false;
+                }
+            }
+            
+        } catch (error) {
+            console.error('❌ ステータス確認エラー:', error);
+            // エラーでもボタンは表示
             this.showStatus('プッシュ通知: 無効', 'secondary');
-            if (this.enableBtn) this.enableBtn.style.display = 'block';
+            if (this.enableBtn) {
+                this.enableBtn.style.display = 'block';
+                this.enableBtn.disabled = false;
+            }
         }
     }
     
@@ -106,15 +158,15 @@ class PushNotificationUI {
             console.log('通知許可結果:', permission);
             
             if (permission !== 'granted') {
-                throw new Error('通知が許可されませんでした');
+                throw new Error('通知が許可されませんでした。設定から通知を許可してください。');
             }
             
-            // 2. Service Worker取得（タイムアウト10秒）
+            // 🆕 2. Service Worker取得（タイムアウト30秒、iOSは時間がかかる場合がある）
             console.log('2️⃣ Service Worker取得中...');
             const registration = await Promise.race([
                 navigator.serviceWorker.ready,
                 new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Service Worker取得タイムアウト（10秒）')), 10000)
+                    setTimeout(() => reject(new Error('Service Worker取得タイムアウト（30秒）')), 30000)
                 )
             ]);
             console.log('✅ Service Worker取得完了');
@@ -136,13 +188,14 @@ class PushNotificationUI {
             
             // 5. サーバーに保存
             console.log('5️⃣ サーバーに保存中...');
+            const deviceInfo = this.getDeviceInfo();
             const saveRes = await fetch('/api/push/subscribe/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'same-origin',
                 body: JSON.stringify({
                     subscription: subscription.toJSON(),
-                    device_name: /Mobile/.test(navigator.userAgent) ? 'Mobile' : 'Desktop',
+                    device_name: deviceInfo.name,
                     user_agent: navigator.userAgent
                 })
             });
@@ -162,14 +215,17 @@ class PushNotificationUI {
             this.disableBtn.disabled = false;
             this.disableBtn.innerHTML = '<i class="bi bi-bell-slash me-2"></i>プッシュ通知を無効にする';
             
-            // テスト通知
-            try {
-                new Notification('カブログ', {
-                    body: 'プッシュ通知が有効になりました！',
-                    icon: '/static/images/icon-192.png'
-                });
-            } catch (e) {
-                console.log('テスト通知スキップ:', e.message);
+            // 🆕 iOSではテスト通知をスキップ（権限エラーが出る可能性があるため）
+            const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+            if (!isIOS) {
+                try {
+                    new Notification('カブログ', {
+                        body: 'プッシュ通知が有効になりました！',
+                        icon: '/static/images/icon-192.png'
+                    });
+                } catch (e) {
+                    console.log('テスト通知スキップ:', e.message);
+                }
             }
             
         } catch (error) {
@@ -182,7 +238,6 @@ class PushNotificationUI {
     }
     
     async disablePushNotification() {
-        // エラーハンドリングを強化
         let completed = false;
         
         try {
@@ -222,7 +277,6 @@ class PushNotificationUI {
                     }
                 } catch (e) {
                     console.warn('⚠️ サーバー通知エラー:', e.message);
-                    // サーバー通知失敗でも続行
                 }
                 
                 console.log('4️⃣ ブラウザから削除中...');
@@ -245,7 +299,6 @@ class PushNotificationUI {
             console.error('━━━ エラー発生 ━━━');
             console.error(error);
             
-            // エラーでもUI更新を試みる
             if (error.message === 'timeout') {
                 console.log('タイムアウトですが、サーバー側で削除されている可能性があります');
                 completed = true;
@@ -257,7 +310,6 @@ class PushNotificationUI {
             }
             
         } finally {
-            // 必ずボタンを戻す
             if (this.disableBtn) {
                 this.disableBtn.disabled = false;
                 if (!completed) {
@@ -265,6 +317,31 @@ class PushNotificationUI {
                 }
             }
         }
+    }
+    
+    // 🆕 デバイス情報取得を改善
+    getDeviceInfo() {
+        const ua = navigator.userAgent;
+        let name = 'Unknown Device';
+        
+        if (/iPhone/.test(ua)) {
+            // iPhoneモデルを判定
+            if (window.screen.height === 844) name = 'iPhone 12/13/14';
+            else if (window.screen.height === 926) name = 'iPhone 12/13/14 Pro Max';
+            else name = 'iPhone';
+        } else if (/iPad/.test(ua)) {
+            name = 'iPad';
+        } else if (/iPod/.test(ua)) {
+            name = 'iPod';
+        } else if (/Android/.test(ua)) {
+            name = 'Android';
+        } else if (/Windows/.test(ua)) {
+            name = 'Windows PC';
+        } else if (/Mac/.test(ua)) {
+            name = 'Mac';
+        }
+        
+        return { name };
     }
     
     urlBase64ToUint8Array(base64String) {
