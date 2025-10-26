@@ -217,7 +217,8 @@ function getNotificationDetails(notification) {
     return '';
 }
 
-async function deleteNotification(notificationId) {
+// 🔧 通知削除関数（統一された関数名）
+async function deleteNotificationFromList(notificationId) {
     if (!confirm('この通知設定を削除しますか？')) {
         return;
     }
@@ -227,7 +228,11 @@ async function deleteNotification(notificationId) {
         
         if (!csrfToken) {
             console.error('❌ CSRFトークンが取得できません');
-            showToast('セキュリティトークンの取得に失敗しました。ページを再読み込みしてください。', 'danger');
+            if (typeof showToast === 'function') {
+                showToast('セキュリティトークンの取得に失敗しました。ページを再読み込みしてください。', 'danger');
+            } else {
+                alert('セキュリティトークンの取得に失敗しました。ページを再読み込みしてください。');
+            }
             return;
         }
         
@@ -252,12 +257,12 @@ async function deleteNotification(notificationId) {
             console.error('❌ JSONではないレスポンス:', responseText.substring(0, 200));
             
             if (response.status === 403) {
-                showToast('セッションが無効です。ページを再読み込みしてください。', 'danger');
+                showToastOrAlert('セッションが無効です。ページを再読み込みしてください。', 'danger');
             } else if (response.status === 404) {
-                showToast('通知が見つかりませんでした。すでに削除された可能性があります。', 'warning');
-                loadNotifications(); // 一覧を更新
+                showToastOrAlert('通知が見つかりませんでした。すでに削除された可能性があります。', 'warning');
+                loadAllNotifications(); // 一覧を更新
             } else {
-                showToast('サーバーエラーが発生しました。', 'danger');
+                showToastOrAlert('サーバーエラーが発生しました。', 'danger');
             }
             return;
         }
@@ -265,17 +270,27 @@ async function deleteNotification(notificationId) {
         const data = await response.json();
         
         if (response.ok && data.success) {
-            showToast('通知設定を削除しました', 'success');
-            loadNotifications(); // 一覧を再読み込み
+            showToastOrAlert('通知設定を削除しました', 'success');
+            loadAllNotifications(); // 一覧を再読み込み
         } else {
-            showToast('削除に失敗しました: ' + (data.error || '不明なエラー'), 'danger');
+            showToastOrAlert('削除に失敗しました: ' + (data.error || '不明なエラー'), 'danger');
         }
     } catch (error) {
         console.error('削除エラー:', error);
-        showToast('削除中にエラーが発生しました', 'danger');
+        showToastOrAlert('削除中にエラーが発生しました', 'danger');
     }
 }
 
+// 🔧 トースト表示のヘルパー関数
+function showToastOrAlert(message, type) {
+    if (typeof showToast === 'function') {
+        showToast(message, type);
+    } else {
+        alert(message);
+    }
+}
+
+// 🔧 日記詳細ページ用の削除関数（互換性のため）
 async function deleteDiaryNotification(diaryId, notificationId) {
     if (!confirm('この通知設定を削除しますか？')) {
         return;
@@ -293,11 +308,13 @@ async function deleteDiaryNotification(diaryId, notificationId) {
         const data = await response.json();
         
         if (response.ok && data.success) {
-            showToast('通知を削除しました', 'success');
+            showToastOrAlert('通知を削除しました', 'success');
             
             // 日記詳細ページの通知一覧を再読み込み
             if (typeof loadDiaryNotifications === 'function') {
                 loadDiaryNotifications(diaryId);
+            } else if (typeof loadNotifications === 'function') {
+                loadNotifications();
             } else {
                 const notificationElement = document.querySelector(`[data-notification-id="${notificationId}"]`);
                 if (notificationElement) {
@@ -305,21 +322,18 @@ async function deleteDiaryNotification(diaryId, notificationId) {
                 }
             }
         } else {
-            showToast(data.error || '削除に失敗しました', 'danger');
+            showToastOrAlert(data.error || '削除に失敗しました', 'danger');
         }
     } catch (error) {
         console.error('削除エラー:', error);
-        showToast('通信エラーが発生しました', 'danger');
+        showToastOrAlert('通信エラーが発生しました', 'danger');
     }
 }
 
-/**
- * 複数の通知を一括削除
- * @param {Array<string>} notificationIds - 通知IDの配列
- */
+// 🔧 複数削除機能
 async function deleteMultipleNotifications(notificationIds) {
     if (!notificationIds || notificationIds.length === 0) {
-        showToast('削除する通知が選択されていません', 'warning');
+        showToastOrAlert('削除する通知が選択されていません', 'warning');
         return;
     }
     
@@ -355,23 +369,18 @@ async function deleteMultipleNotifications(notificationIds) {
     
     // 結果を表示
     if (successCount > 0 && failCount === 0) {
-        showToast(`${successCount}件の通知を削除しました`, 'success');
+        showToastOrAlert(`${successCount}件の通知を削除しました`, 'success');
     } else if (successCount > 0 && failCount > 0) {
-        showToast(`${successCount}件削除、${failCount}件失敗しました`, 'warning');
+        showToastOrAlert(`${successCount}件削除、${failCount}件失敗しました`, 'warning');
     } else {
-        showToast('削除に失敗しました', 'danger');
+        showToastOrAlert('削除に失敗しました', 'danger');
     }
     
     // 一覧を再読み込み
-    if (typeof loadAllNotifications === 'function') {
-        loadAllNotifications();
-    }
+    loadAllNotifications();
 }
 
-
-/**
- * 通知削除ボタンをHTMLに追加する例
- */
+// 🔧 削除ボタンを追加するヘルパー関数
 function addDeleteButton(notificationId, containerElement) {
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'btn btn-sm btn-outline-danger';
@@ -380,9 +389,8 @@ function addDeleteButton(notificationId, containerElement) {
     
     containerElement.appendChild(deleteBtn);
 }
-/**
- * 通知カードに削除ボタンを追加
- */
+
+// 🔧 通知カードを作成する関数
 function createNotificationCard(notification) {
     const card = document.createElement('div');
     card.className = 'card mb-3';
@@ -410,11 +418,12 @@ function createNotificationCard(notification) {
     return card;
 }
 
-// グローバルスコープに公開
+// 🔧 グローバルスコープに公開
 window.deleteNotificationFromList = deleteNotificationFromList;
 window.deleteDiaryNotification = deleteDiaryNotification;
 window.deleteMultipleNotifications = deleteMultipleNotifications;
 window.addDeleteButton = addDeleteButton;
 window.createNotificationCard = createNotificationCard;
+window.loadAllNotifications = loadAllNotifications;
 </script>
 {% endblock %}

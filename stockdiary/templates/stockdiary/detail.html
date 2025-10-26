@@ -897,7 +897,7 @@ function renderNotifications(notifications) {
                         }
                     </div>
                     <button class="btn btn-sm btn-outline-danger" 
-                            onclick="deleteNotification('${notification.id}')"
+                            onclick="deleteDiaryNotification('${notification.id}')"
                             title="削除">
                         <i class="bi bi-trash"></i>
                     </button>
@@ -928,7 +928,8 @@ function getNotificationTypeInfo(type) {
     return types[type] || types['reminder'];
 }
 
-async function deleteNotification(notificationId) {
+// 🔧 通知削除関数（グローバルスコープで定義）
+async function deleteDiaryNotification(notificationId) {
     if (!confirm('この通知設定を削除しますか？')) {
         return;
     }
@@ -986,5 +987,9 @@ async function deleteNotification(notificationId) {
         showToast('削除中にエラーが発生しました', 'danger');
     }
 }
+
+// 🔧 グローバルスコープに公開
+window.deleteDiaryNotification = deleteDiaryNotification;
+window.loadNotifications = loadNotifications;
 </script>
 {% endblock %}
