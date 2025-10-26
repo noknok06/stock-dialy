@@ -11,1234 +11,773 @@
 <link rel="stylesheet" href="{% static 'css/diary-detail.css' %}">
 <link rel="stylesheet" href="{% static 'css/modal-fixes.css' %}">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
-<style>
-/* 詳細ページ専用の追加スタイル */
-.detail-hero {
-  background: linear-gradient(135deg, rgba(90, 126, 197, 0.05) 0%, rgba(90, 126, 197, 0.02) 100%);
-  border-radius: 16px;
-  margin-bottom: 1.5rem;
-  overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-}
-
-.stock-header-main {
-  padding: 2rem;
-  background: linear-gradient(to right, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
-  backdrop-filter: blur(10px);
-}
-
-.stock-title-area {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.stock-icon {
-  width: 56px;
-  height: 56px;
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 1.5rem;
-  font-weight: bold;
-  flex-shrink: 0;
-}
-
-.stock-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.stock-name-display {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--primary-color);
-  margin: 0 0 0.25rem 0;
-  line-height: 1.3;
-}
-
-.stock-symbol-display {
-  display: inline-block;
-  background-color: rgba(90, 126, 197, 0.1);
-  color: var(--primary-color);
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  margin-left: 0.5rem;
-}
-
-.stock-meta-row {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  margin-top: 0.75rem;
-  color: var(--text-light);
-  font-size: 0.95rem;
-}
-
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.price-highlight-box {
-  background: linear-gradient(135deg, rgba(90, 126, 197, 0.1), rgba(90, 126, 197, 0.05));
-  border-left: 4px solid var(--primary-color);
-  padding: 1.5rem;
-  border-radius: 0 12px 12px 0;
-  margin-top: 1rem;
-}
-
-.price-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1.5rem;
-}
-
-.price-item {
-  text-align: center;
-}
-
-.price-label {
-  font-size: 0.85rem;
-  color: var(--text-light);
-  margin-bottom: 0.25rem;
-}
-
-.price-value-large {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--primary-color);
-}
-
-.profit-badge-large {
-  display: inline-block;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-weight: 600;
-  font-size: 1rem;
-  margin-top: 0.5rem;
-}
-
-.profit-badge-large.profit {
-  background-color: rgba(93, 176, 117, 0.15);
-  color: var(--success-color);
-}
-
-.profit-badge-large.loss {
-  background-color: rgba(225, 90, 90, 0.15);
-  color: var(--danger-color);
-}
-
-/* タブナビゲーション改善 */
-.tab-nav-enhanced {
-  background: white;
-  border-radius: 12px;
-  padding: 0.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  margin-bottom: 1.5rem;
-  display: flex;
-  gap: 0.5rem;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.tab-nav-enhanced::-webkit-scrollbar {
-  display: none;
-}
-
-.tab-btn-enhanced {
-  flex: 1;
-  min-width: 120px;
-  padding: 1rem;
-  border: none;
-  background: transparent;
-  border-radius: 8px;
-  color: var(--text-light);
-  font-weight: 500;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  position: relative;
-}
-
-.tab-btn-enhanced:hover {
-  background-color: rgba(90, 126, 197, 0.05);
-  color: var(--primary-color);
-}
-
-.tab-btn-enhanced.active {
-  background: linear-gradient(135deg, var(--primary-color), rgba(90, 126, 197, 0.8));
-  color: white;
-  box-shadow: 0 4px 12px rgba(90, 126, 197, 0.3);
-}
-
-.tab-btn-enhanced .tab-icon-enhanced {
-  font-size: 1.5rem;
-}
-
-.tab-btn-enhanced .tab-label-enhanced {
-  font-size: 0.9rem;
-  white-space: nowrap;
-}
-
-.tab-count-badge {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  background-color: var(--danger-color);
-  color: white;
-  border-radius: 10px;
-  padding: 0.15rem 0.5rem;
-  font-size: 0.7rem;
-  font-weight: 600;
-}
-
-.tab-btn-enhanced.active .tab-count-badge {
-  background-color: rgba(255, 255, 255, 0.3);
-}
-
-/* コンテンツカード改善 */
-.content-card-enhanced {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  margin-bottom: 1.5rem;
-}
-
-.section-header-enhanced {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid rgba(0, 0, 0, 0.05);
-}
-
-.section-icon-enhanced {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, var(--primary-color), rgba(90, 126, 197, 0.8));
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 1.25rem;
-}
-
-.section-title-enhanced {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text-color);
-  margin: 0;
-}
-
-/* 情報グリッド改善 */
-.info-grid-enhanced {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-}
-
-.info-card-enhanced {
-  background: linear-gradient(135deg, rgba(248, 249, 250, 0.8), rgba(255, 255, 255, 0.9));
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  border-radius: 12px;
-  padding: 1.5rem;
-  transition: all 0.2s ease;
-}
-
-.info-card-enhanced:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-/* アクションバー改善 */
-.action-bar-enhanced {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  padding: 1rem;
-  margin: -1rem -1rem 1.5rem -1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.back-link-enhanced {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--primary-color);
-  text-decoration: none;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-}
-
-.back-link-enhanced:hover {
-  background-color: rgba(90, 126, 197, 0.1);
-  color: var(--primary-color);
-  transform: translateX(-3px);
-}
-
-.action-buttons-enhanced {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.action-btn-enhanced {
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  border: none;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-}
-
-.action-btn-enhanced:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* 通知セクション統合スタイル */
-.notification-section-unified {
-  background: linear-gradient(135deg, rgba(90, 126, 197, 0.03), rgba(255, 255, 255, 0.9));
-  border: 1px solid rgba(90, 126, 197, 0.1);
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-top: 1.5rem;
-}
-
-.notification-subsection {
-  background: white;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.notification-subsection:last-child {
-  margin-bottom: 0;
-}
-
-.subsection-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-color);
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.subsection-title i {
-  color: var(--primary-color);
-}
-
-.divider-line {
-  height: 1px;
-  background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.1), transparent);
-  margin: 1.5rem 0;
-}
-
-/* モバイル最適化 */
-@media (max-width: 768px) {
-  .stock-header-main {
-    padding: 1.5rem 1rem;
-  }
-  
-  .stock-title-area {
-    flex-direction: row;
-    align-items: flex-start;
-  }
-  
-  .stock-icon {
-    width: 48px;
-    height: 48px;
-    font-size: 1.25rem;
-  }
-  
-  .stock-name-display {
-    font-size: 1.35rem;
-  }
-  
-  .stock-meta-row {
-    gap: 1rem;
-  }
-  
-  .price-highlight-box {
-    padding: 1rem;
-  }
-  
-  .price-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-  }
-  
-  .price-value-large {
-    font-size: 1.25rem;
-  }
-  
-  .tab-nav-enhanced {
-    padding: 0.25rem;
-    gap: 0.25rem;
-  }
-  
-  .tab-btn-enhanced {
-    min-width: 90px;
-    padding: 0.75rem 0.5rem;
-    gap: 0.25rem;
-  }
-  
-  .tab-btn-enhanced .tab-icon-enhanced {
-    font-size: 1.25rem;
-  }
-  
-  .tab-btn-enhanced .tab-label-enhanced {
-    font-size: 0.8rem;
-  }
-  
-  .content-card-enhanced {
-    padding: 1.25rem;
-  }
-  
-  .section-header-enhanced {
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-  }
-  
-  .info-grid-enhanced {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .action-bar-enhanced {
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-  
-  .action-buttons-enhanced {
-    width: 100%;
-    justify-content: flex-end;
-  }
-  
-  .action-btn-enhanced {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.9rem;
-  }
-  
-  .action-btn-enhanced .d-none-mobile {
-    display: none !important;
-  }
-  
-  .notification-section-unified {
-    padding: 1rem;
-  }
-  
-  .notification-subsection {
-    padding: 1rem;
-  }
-}
-
-@media (max-width: 576px) {
-  .detail-hero {
-    margin-left: -0.5rem;
-    margin-right: -0.5rem;
-    border-radius: 0;
-  }
-  
-  .stock-header-main {
-    padding: 1rem;
-  }
-  
-  .stock-title-area {
-    gap: 0.75rem;
-  }
-  
-  .stock-icon {
-    width: 40px;
-    height: 40px;
-    font-size: 1rem;
-  }
-  
-  .stock-name-display {
-    font-size: 1.15rem;
-  }
-  
-  .stock-symbol-display {
-    font-size: 0.8rem;
-    padding: 0.2rem 0.5rem;
-  }
-  
-  .price-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .content-card-enhanced {
-    padding: 1rem;
-    margin-left: -0.5rem;
-    margin-right: -0.5rem;
-    border-radius: 0;
-  }
-}
-
-/* 画像プレビュー改善 */
-.image-preview-enhanced {
-  position: relative;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  margin-bottom: 1.5rem;
-  background: linear-gradient(135deg, rgba(248, 249, 250, 0.8), rgba(255, 255, 255, 0.9));
-  padding: 1rem;
-}
-
-.image-preview-enhanced img {
-  width: 100%;
-  height: auto;
-  max-height: 400px;
-  object-fit: contain;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-.image-preview-enhanced img:hover {
-  transform: scale(1.02);
-}
-
-.image-caption {
-  text-align: center;
-  margin-top: 0.75rem;
-  color: var(--text-light);
-  font-size: 0.9rem;
-}
-
-/* 空状態の改善 */
-.empty-state-enhanced {
-  text-align: center;
-  padding: 3rem 1rem;
-  background: linear-gradient(135deg, rgba(248, 249, 250, 0.5), rgba(255, 255, 255, 0.8));
-  border-radius: 12px;
-  border: 2px dashed rgba(0, 0, 0, 0.1);
-}
-
-.empty-state-enhanced .empty-icon-enhanced {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 1.5rem;
-  background: linear-gradient(135deg, rgba(90, 126, 197, 0.1), rgba(90, 126, 197, 0.05));
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.empty-state-enhanced .empty-icon-enhanced i {
-  font-size: 2.5rem;
-  color: var(--primary-color);
-}
-
-.empty-state-enhanced h4 {
-  color: var(--text-color);
-  margin-bottom: 0.5rem;
-}
-
-.empty-state-enhanced p {
-  color: var(--text-light);
-  margin-bottom: 1.5rem;
-}
-
-/* アニメーション */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fadeInUp 0.4s ease-out;
-}
-
-/* ローディング状態 */
-.loading-skeleton {
-  background: linear-gradient(90deg, 
-    rgba(248, 249, 250, 0.8) 25%, 
-    rgba(255, 255, 255, 0.9) 50%, 
-    rgba(248, 249, 250, 0.8) 75%
-  );
-  background-size: 200% 100%;
-  animation: loading 1.5s ease-in-out infinite;
-  border-radius: 8px;
-  height: 20px;
-}
-
-@keyframes loading {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-</style>
 {% endblock %}
 
 {% block content %}
-<div class="container px-1 py-1 diary-detail-container">
-  <!-- アクションバー -->
-  <div class="action-bar-enhanced">
-    <a href="{% url 'stockdiary:home' %}" class="back-link-enhanced">
+<div class="px-1 py-1 diary-detail-container">
+  <!-- 操作バー -->
+
+  <div class="action-bar px-2">
+    <a href="{% url 'stockdiary:home' %}" class="back-link">
       <i class="bi bi-arrow-left"></i>
-      <span>戻る</span>
+      <span class="d-none d-sm-inline">日記一覧に戻る</span>
     </a>
     
-    <div class="action-buttons-enhanced">
+    <div class="desktop-actions">
+      <!-- 🆕 通知設定ボタン -->
       <button type="button" 
-              class="action-btn-enhanced btn btn-info"
+              class="btn btn-info btn-sm"
               data-bs-toggle="modal"
               data-bs-target="#notificationModal">
         <i class="bi bi-bell"></i>
-        <span class="d-none d-sm-inline d-none-mobile">通知</span>
+        <span class="d-none d-lg-inline ms-1">通知設定</span>
       </button>
       
-      <a href="{% url 'stockdiary:update' diary.id %}" class="action-btn-enhanced btn btn-warning">
+      <a href="{% url 'stockdiary:update' diary.id %}" class="btn btn-warning btn-sm">
         <i class="bi bi-pencil"></i>
-        <span class="d-none d-sm-inline d-none-mobile">編集</span>
+        <span class="d-none d-lg-inline ms-1">編集</span>
       </a>
-      
-      <a href="{% url 'stockdiary:delete' diary.id %}" class="action-btn-enhanced btn btn-danger">
+      <a href="{% url 'stockdiary:delete' diary.id %}" class="btn btn-danger btn-sm">
         <i class="bi bi-trash"></i>
-        <span class="d-none d-sm-inline d-none-mobile">削除</span>
+        <span class="d-none d-lg-inline ms-1">削除</span>
       </a>
     </div>
   </div>
 
-  <!-- ヒーローセクション -->
-  <div class="detail-hero animate-fade-in">
-    <div class="stock-header-main">
-      <div class="stock-title-area">
-        <div class="stock-icon">
-          {% if diary.stock_symbol %}
-            {{ diary.stock_symbol|slice:":2"|upper }}
-          {% else %}
-            <i class="bi bi-graph-up"></i>
-          {% endif %}
+  <!-- 🆕 通知設定モーダル -->
+  <div class="modal fade" id="notificationModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">通知設定</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-        
-        <div class="stock-info">
-          <h1 class="stock-name-display">
-            {{ diary.stock_name }}
-            {% if diary.stock_symbol %}
-            <span class="stock-symbol-display">{{ diary.stock_symbol }}</span>
-            {% endif %}
-          </h1>
+        <div class="modal-body">
+          <!-- ✅ CSRFトークンを追加 -->
+          {% csrf_token %}
           
-          <div class="stock-meta-row">
-            <div class="meta-item">
+          <div class="mb-3">
+            <label class="form-label">通知タイプ</label>
+            <select class="form-select" id="notificationType">
+              <option value="reminder">リマインダー</option>
+              <option value="price_alert">価格アラート</option>
+              <option value="periodic">定期通知</option>
+            </select>
+          </div>
+          
+          <div id="reminderFields" class="mb-3">
+            <label class="form-label">通知日時</label>
+            <input type="datetime-local" class="form-control" id="remindAt">
+          </div>
+          
+          <div id="priceAlertFields" class="mb-3" style="display: none;">
+            <label class="form-label">目標価格</label>
+            <input type="number" class="form-control" id="targetPrice" step="0.01">
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" id="alertAbove" checked>
+              <label class="form-check-label" for="alertAbove">
+                目標価格を上回ったら通知
+              </label>
+            </div>
+          </div>
+          
+          <div id="periodicFields" class="mb-3" style="display: none;">
+            <label class="form-label">頻度</label>
+            <select class="form-select" id="frequency">
+              <option value="daily">毎日</option>
+              <option value="weekly">毎週</option>
+              <option value="monthly">毎月</option>
+            </select>
+            <label class="form-label mt-2">通知時刻</label>
+            <input type="time" class="form-control" id="notifyTime">
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">メッセージ（オプション）</label>
+            <textarea class="form-control" id="notificationMessage" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+          <button type="button" class="btn btn-primary" onclick="saveNotification('{{ diary.id }}')">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- メインカード -->
+  <div class="card border-0 shadow-sm mx-0">
+    <!-- ヘッダー -->
+    <div class="diary-header-improved mobile-optimized" data-stock-symbol="{{ diary.stock_symbol }}">
+      <div class="header-main-info">
+        <div class="stock-identity">
+          <div class="stock-name-row">
+            <h1 class="stock-title">{{ diary.stock_name }}</h1>
+            {% if diary.stock_symbol %}
+            <span class="stock-symbol-badge">{{ diary.stock_symbol }}</span>
+            {% endif %}
+          </div>
+          
+          <div class="header-meta-info">
+            <div class="purchase-date">
               <i class="bi bi-calendar-check"></i>
               <span>
                 {% if diary.first_purchase_date %}
-                  {{ diary.first_purchase_date|date:"Y/m/d" }}
+                  {{ diary.first_purchase_date|date:"Y年m月d日" }}
                 {% else %}
-                  {{ diary.created_at|date:"Y/m/d" }}
+                  {{ diary.created_at|date:"Y年m月d日" }}（作成日）
                 {% endif %}
               </span>
             </div>
             
-            {% if diary.is_memo %}
-            <span class="badge bg-info">
-              <i class="bi bi-sticky me-1"></i>メモ
-            </span>
-            {% elif diary.is_sold_out %}
-            <span class="badge bg-danger">
-              <i class="bi bi-check-circle me-1"></i>売却済
-            </span>
-            {% elif diary.is_holding %}
-            <span class="badge bg-success">
-              <i class="bi bi-graph-up me-1"></i>保有中
-            </span>
-            {% endif %}
+            <div class="status-badges">
+              {% if diary.is_memo %}
+              <span class="status-badge-improved status-badge-memo">
+                <i class="bi bi-sticky"></i>
+                記録のみ
+              </span>
+              {% elif diary.is_sold_out %}
+              <span class="status-badge-improved status-badge-sold">
+                <i class="bi bi-check-circle"></i>
+                売却済み
+              </span>
+              {% elif diary.is_holding %}
+              <span class="status-badge-improved status-badge-active">
+                <i class="bi bi-graph-up"></i>
+                保有中
+              </span>
+              {% endif %}
+            </div>
           </div>
         </div>
-      </div>
-      
-      {% if not diary.is_memo and diary.average_purchase_price %}
-      <div class="price-highlight-box">
-        <div class="price-grid">
-          <div class="price-item">
-            <div class="price-label">平均取得単価</div>
-            <div class="price-value-large">¥{{ diary.average_purchase_price|floatformat:2|intcomma }}</div>
-          </div>
+        
+        <!-- 価格サマリー -->
+        {% if not diary.is_memo and diary.average_purchase_price %}
+        <div class="price-summary">
+          <div class="main-price">{{ diary.average_purchase_price|floatformat:2|intcomma }}円</div>
+          <div class="sub-info">平均取得単価</div>
           
           {% if diary.current_quantity > 0 %}
-          <div class="price-item">
-            <div class="price-label">保有数</div>
-            <div class="price-value-large">{{ diary.current_quantity|floatformat:0 }}<small>株</small></div>
+          <div class="sub-info mt-2">
+            保有: {{ diary.current_quantity|floatformat:0 }}株
           </div>
           {% endif %}
           
           {% if diary.realized_profit != 0 %}
-          <div class="price-item">
-            <div class="price-label">実現損益</div>
-            <div class="profit-badge-large {% if diary.realized_profit > 0 %}profit{% else %}loss{% endif %}">
-              {% if diary.realized_profit > 0 %}+{% endif %}¥{{ diary.realized_profit|floatformat:0|intcomma }}
-            </div>
+          <div class="profit-indicator {% if diary.realized_profit > 0 %}profit-positive{% elif diary.realized_profit < 0 %}profit-negative{% endif %}">
+            {% if diary.realized_profit > 0 %}+{% endif %}{{ diary.realized_profit|floatformat:0|intcomma }}円
           </div>
           {% endif %}
         </div>
+        {% endif %}
       </div>
-      {% endif %}
     </div>
-  </div>
 
-  <!-- タブナビゲーション -->
-  <nav class="tab-nav-enhanced">
-    <button class="tab-btn-enhanced active" data-tab="basic">
-      <span class="tab-icon-enhanced"><i class="bi bi-info-circle-fill"></i></span>
-      <span class="tab-label-enhanced">基本情報</span>
-    </button>
-    
-    <button class="tab-btn-enhanced" data-tab="transactions">
-      <span class="tab-icon-enhanced"><i class="bi bi-receipt"></i></span>
-      <span class="tab-label-enhanced">取引履歴</span>
-      {% if diary.transaction_count > 0 %}
-      <span class="tab-count-badge">{{ diary.transaction_count }}</span>
-      {% endif %}
-    </button>
-    
-    <button class="tab-btn-enhanced" data-tab="notes">
-      <span class="tab-icon-enhanced"><i class="bi bi-journal-richtext"></i></span>
-      <span class="tab-label-enhanced">記録</span>
-      {% if notes.count > 0 %}
-      <span class="tab-count-badge">{{ notes.count }}</span>
-      {% endif %}
-    </button>
-    
-    <button class="tab-btn-enhanced" data-tab="timeline">
-      <span class="tab-icon-enhanced"><i class="bi bi-clock-history"></i></span>
-      <span class="tab-label-enhanced">履歴</span>
-      {% if related_diaries %}
-      <span class="tab-count-badge">{{ related_diaries.count }}</span>
-      {% endif %}
-    </button>
-  </nav>
-
-  <!-- タブコンテンツ -->
-  <div id="tabContent">
-    <!-- 基本情報タブ -->
-    <div class="tab-content-section active" data-tab-content="basic">
-      {% if diary.image_url %}
-      <div class="image-preview-enhanced">
-        <img src="{{ diary.image_url }}" 
-             alt="{{ diary.stock_name }}"
-             onclick="showImageModal('{{ diary.image_url }}', '{{ diary.stock_name }}')">
-        <div class="image-caption">
-          <i class="bi bi-zoom-in me-1"></i>クリックで拡大
-        </div>
-      </div>
-      {% endif %}
-
-      <div class="content-card-enhanced">
-        <div class="section-header-enhanced">
-          <div class="section-icon-enhanced">
-            <i class="bi bi-journal-text"></i>
-          </div>
-          <h2 class="section-title-enhanced">
-            {% if diary.is_memo %}メモ内容{% else %}投資理由{% endif %}
-          </h2>
-        </div>
-        <div class="reason-content">
-          {{ diary.reason|safe|linebreaks }}
-        </div>
-      </div>
-
-      {% if not diary.is_memo %}
-      <div class="content-card-enhanced">
-        <div class="section-header-enhanced">
-          <div class="section-icon-enhanced">
-            <i class="bi bi-graph-up"></i>
-          </div>
-          <h2 class="section-title-enhanced">取引サマリー</h2>
-        </div>
-        
-        <div class="info-grid-enhanced">
-          <div class="info-card-enhanced">
-            <div class="d-flex align-items-center gap-3">
-              <i class="bi bi-calendar-date text-primary" style="font-size: 1.5rem;"></i>
-              <div>
-                <div class="text-muted small">最初の購入日</div>
-                <div class="fw-bold">{{ diary.first_purchase_date|date:"Y年m月d日" }}</div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="info-card-enhanced">
-            <div class="d-flex align-items-center gap-3">
-              <i class="bi bi-currency-yen text-primary" style="font-size: 1.5rem;"></i>
-              <div>
-                <div class="text-muted small">平均取得単価</div>
-                <div class="fw-bold">¥{{ diary.average_purchase_price|floatformat:2|intcomma }}</div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="info-card-enhanced">
-            <div class="d-flex align-items-center gap-3">
-              <i class="bi bi-graph-up text-primary" style="font-size: 1.5rem;"></i>
-              <div>
-                <div class="text-muted small">現在保有数</div>
-                <div class="fw-bold">{{ diary.current_quantity|floatformat:0 }}株</div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="info-card-enhanced">
-            <div class="d-flex align-items-center gap-3">
-              <i class="bi bi-cash-stack text-primary" style="font-size: 1.5rem;"></i>
-              <div>
-                <div class="text-muted small">総取得原価</div>
-                <div class="fw-bold">¥{{ diary.total_cost|floatformat:0|intcomma }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      {% endif %}
-
-      {% include 'stockdiary/partials/analysis_template_info.html' %}
-
-      <div class="content-card-enhanced">
-        <div class="section-header-enhanced">
-          <div class="section-icon-enhanced">
-            <i class="bi bi-tags"></i>
-          </div>
-          <h2 class="section-title-enhanced">タグ & メモ</h2>
-        </div>
-        
-        <div class="mb-4">
-          <h6 class="text-muted mb-2">タグ</h6>
-          {% for tag in diary.tags.all %}
-          <span class="badge bg-primary bg-opacity-10 text-primary me-2 mb-2 px-3 py-2">
-            <i class="bi bi-tag me-1"></i>{{ tag.name }}
-          </span>
-          {% empty %}
-          <p class="text-muted mb-0">タグはありません</p>
-          {% endfor %}
-        </div>
-        
-        <div>
-          <h6 class="text-muted mb-2">メモ</h6>
-          {% if diary.memo %}
-          <div class="p-3 bg-light rounded">{{ diary.memo|linebreaks }}</div>
-          {% else %}
-          <p class="text-muted mb-0">メモはありません</p>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- 🆕 統合された通知管理セクション -->
-      <div class="content-card-enhanced">
-        <div class="section-header-enhanced">
-          <div class="section-icon-enhanced">
-            <i class="bi bi-bell-fill"></i>
-          </div>
-          <h2 class="section-title-enhanced">通知管理</h2>
-          <button type="button" 
-                  class="btn btn-primary btn-sm ms-auto"
-                  data-bs-toggle="modal"
-                  data-bs-target="#notificationModal">
-            <i class="bi bi-plus-circle me-1"></i>新規作成
+    <!-- タブナビゲーション -->
+    <div class="tabs-section mobile-optimized">
+      <ul class="improved-tabs mobile-optimized" id="diaryDetailTabs" role="tablist">
+        <li class="improved-tab-item" role="presentation">
+          <button class="improved-tab-link active" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic-content"
+            type="button" role="tab" aria-controls="basic-content" aria-selected="true">
+            <div class="tab-icon"><i class="bi bi-info-circle"></i></div>
+            <div class="tab-label">基本情報</div>
           </button>
-        </div>
-        
-        <div class="notification-section-unified">
-          <!-- プッシュ通知サブセクション -->
-          <div class="notification-subsection">
-            <div class="subsection-title">
-              <i class="bi bi-phone"></i>
-              プッシュ通知
+        </li>
+
+        <li class="improved-tab-item" role="presentation">
+          <button class="improved-tab-link" id="transactions-tab" data-bs-toggle="tab" data-bs-target="#transactions-content" 
+            type="button" role="tab" aria-controls="transactions-content" aria-selected="false">
+            <div class="tab-icon"><i class="bi bi-receipt"></i></div>
+            <div class="tab-label">
+              取引履歴
+              {% if diary.transaction_count > 0 %}
+              <span class="badge bg-primary bg-opacity-25 text-primary notes-count-badge">{{ diary.transaction_count }}</span>
+              {% endif %}
             </div>
-            
-            <div id="push-status" class="mb-3">
-              <small class="text-muted">
-                <i class="bi bi-hourglass-split me-1"></i>読み込み中...
-              </small>
+          </button>
+        </li>
+
+        <li class="improved-tab-item" role="presentation">
+          <button class="improved-tab-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes-content" 
+            type="button" role="tab" aria-controls="notes-content" aria-selected="false">
+            <div class="tab-icon"><i class="bi bi-journal-richtext"></i></div>
+            <div class="tab-label">
+              継続記録
+              {% if notes.count > 0 %}
+              <span class="badge bg-primary bg-opacity-25 text-primary notes-count-badge">{{ notes.count }}</span>
+              {% endif %}
             </div>
-            
-            <button id="enable-push-btn" class="btn btn-primary w-100" style="display: none;">
-              <i class="bi bi-bell me-2"></i>プッシュ通知を有効にする
-            </button>
-            
-            <button id="disable-push-btn" class="btn btn-outline-danger w-100" style="display: none;">
-              <i class="bi bi-bell-slash me-2"></i>プッシュ通知を無効にする
-            </button>
-            
-            <div id="push-error" class="alert alert-warning mt-3" style="display: none;"></div>
-            
-            <div class="mt-3 p-3 bg-light rounded">
-              <small class="text-muted">
-                <i class="bi bi-info-circle me-1"></i>
-                プッシュ通知を有効にすると、このデバイスに通知が届きます。ブラウザの通知許可が必要です。
-              </small>
+          </button>
+        </li>
+
+        <li class="improved-tab-item" role="presentation">
+          <button class="improved-tab-link" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline-content"
+            type="button" role="tab" aria-controls="timeline-content" aria-selected="false">
+            <div class="tab-icon"><i class="bi bi-link-45deg"></i></div>
+            <div class="tab-label">
+              タイムライン
+              {% if related_diaries %}
+                <span class="badge bg-primary bg-opacity-25 text-primary notes-count-badge">{{ related_diaries.count }}</span>
+              {% endif %}
+            </div>
+          </button>
+        </li>
+      </ul>
+
+      <!-- タブコンテンツ -->
+      <div class="tab-content tab-content-improved mobile-optimized" id="diaryDetailTabContent">
+        <!-- 基本情報タブ -->
+        <div class="tab-pane fade show active" id="basic-content" role="tabpanel" aria-labelledby="basic-tab">
+          {% if diary.image_url %}
+          <div class="diary-image-section mb-3">
+            <div class="card border-0">
+              <div class="card-body p-1">
+                <div class="text-center">
+                  <img src="{{ diary.image_url }}" 
+                       class="img-fluid rounded diary-main-image" 
+                       alt="{{ diary.stock_name }}の画像"
+                       style="max-height: 300px; object-fit: contain; cursor: pointer; width: 100%;"
+                       onclick="showImageModal('{{ diary.image_url }}', '{{ diary.stock_name }} - {{ diary.first_purchase_date|date:"Y年m月d日" }}')">
+                  <div class="mt-2">
+                    <small class="text-muted">
+                      <i class="bi bi-image me-1"></i>
+                      クリックで拡大表示
+                    </small>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          
-          <!-- 区切り線 -->
-          <div class="divider-line"></div>
-          
-          <!-- 通知設定一覧サブセクション -->
-          <div class="notification-subsection">
-            <div class="subsection-title">
-              <i class="bi bi-list-check"></i>
-              通知設定一覧
+          {% endif %}
+
+          <div class="info-grid mobile-optimized">
+            <!-- 投資理由/メモ -->
+            <div class="info-card mobile-optimized">
+              <div class="info-card-title">
+                <i class="bi bi-journal-text"></i>
+                {% if diary.is_memo %}
+                メモ内容
+                {% else %}
+                投資理由
+                {% endif %}
+              </div>
+              <div class="reason-content mobile-optimized">
+                {{ diary.reason|safe|linebreaks }}
+              </div>
+            </div>
+
+            <!-- 取引サマリー -->
+            {% if not diary.is_memo %}
+            <div class="info-card mobile-optimized">
+              <div class="info-card-title">
+                <i class="bi bi-graph-up"></i>
+                取引サマリー
+              </div>
+              <div class="info-items mobile-optimized">
+                <div class="info-item-improved mobile-optimized">
+                  <div class="info-icon-improved">
+                    <i class="bi bi-calendar-date"></i>
+                  </div>
+                  <div class="info-content-improved">
+                    <div class="info-label-improved">最初の購入日</div>
+                    <div class="info-value-improved">{{ diary.first_purchase_date|date:"Y年m月d日" }}</div>
+                  </div>
+                </div>
+
+                <div class="info-item-improved mobile-optimized">
+                  <div class="info-icon-improved">
+                    <i class="bi bi-currency-yen"></i>
+                  </div>
+                  <div class="info-content-improved">
+                    <div class="info-label-improved">平均取得単価</div>
+                    <div class="info-value-improved">{{ diary.average_purchase_price|floatformat:2|intcomma }}円</div>
+                  </div>
+                </div>
+
+                <div class="info-item-improved mobile-optimized">
+                  <div class="info-icon-improved">
+                    <i class="bi bi-graph-up"></i>
+                  </div>
+                  <div class="info-content-improved">
+                    <div class="info-label-improved">現在保有数</div>
+                    <div class="info-value-improved">{{ diary.current_quantity|floatformat:0 }}株</div>
+                  </div>
+                </div>
+
+                <div class="info-item-improved mobile-optimized">
+                  <div class="info-icon-improved">
+                    <i class="bi bi-cash-stack"></i>
+                  </div>
+                  <div class="info-content-improved">
+                    <div class="info-label-improved">総取得原価</div>
+                    <div class="info-value-improved">{{ diary.total_cost|floatformat:0|intcomma }}円</div>
+                  </div>
+                </div>
+
+                {% if diary.realized_profit != 0 %}
+                <div class="info-item-improved mobile-optimized">
+                  <div class="info-icon-improved">
+                    <i class="bi bi-piggy-bank"></i>
+                  </div>
+                  <div class="info-content-improved">
+                    <div class="info-label-improved">実現損益</div>
+                    <div class="info-value-improved {% if diary.realized_profit > 0 %}text-success{% else %}text-danger{% endif %}">
+                      {% if diary.realized_profit > 0 %}+{% endif %}{{ diary.realized_profit|floatformat:0|intcomma }}円
+                    </div>
+                  </div>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- 分析テンプレート情報 -->
+          {% include 'stockdiary/partials/analysis_template_info.html' %}
+
+          <!-- タグとメモ -->
+          <div class="info-grid mobile-optimized">
+            <div class="info-card mobile-optimized">
+              <div class="info-card-title">
+                <i class="bi bi-tags"></i>
+                タグ
+              </div>
+              {% for tag in diary.tags.all %}
+              <span class="badge bg-primary bg-opacity-10 text-primary me-1 mb-1">{{ tag.name }}</span>
+              {% empty %}
+              <p class="text-muted mb-0">タグはありません</p>
+              {% endfor %}
+            </div>
+
+            <div class="info-card mobile-optimized">
+              <div class="info-card-title">
+                <i class="bi bi-sticky"></i>
+                メモ
+              </div>
+              {% if diary.memo %}
+              <div class="memo-content">{{ diary.memo|linebreaks }}</div>
+              {% else %}
+              <p class="text-muted mb-0">メモはありません</p>
+              {% endif %}
+            </div>
+          </div>
+<!-- プッシュ通知有効化ボタン -->
+        <div id="push-notification-section" class="mt-3 border-top pt-3">
+            <h6 class="mb-3">
+                <i class="bi bi-bell-fill me-2"></i>プッシュ通知
+            </h6>
+            
+            <div id="push-status" class="mb-2">
+                <small class="text-muted">読み込み中...</small>
             </div>
             
-            <div id="notification-list-container">
-              <div class="text-center py-4">
-                <div class="spinner-border text-primary spinner-border-sm" role="status">
+            <button id="enable-push-btn" class="btn btn-primary btn-sm w-100" style="display: none;">
+                <i class="bi bi-bell me-2"></i>プッシュ通知を有効にする
+            </button>
+            
+            <button id="disable-push-btn" class="btn btn-outline-danger btn-sm w-100" style="display: none;">
+                <i class="bi bi-bell-slash me-2"></i>プッシュ通知を無効にする
+            </button>
+            
+            <div id="push-error" class="alert alert-warning mt-2" style="display: none;"></div>
+        </div>
+          <!-- 通知設定セクション -->
+          <div class="info-card mobile-optimized mt-3">
+            <div class="info-card-title d-flex justify-content-between align-items-center">
+              <div>
+                <i class="bi bi-bell"></i>
+                通知設定
+              </div>
+              <button type="button" 
+                      class="btn btn-sm btn-primary"
+                      data-bs-toggle="modal"
+                      data-bs-target="#notificationModal">
+                <i class="bi bi-plus-circle me-1"></i>
+                新規作成
+              </button>
+            </div>
+            
+            <!-- 通知一覧コンテナ -->
+            <div id="notification-list-container" class="mt-2">
+              <!-- ここに通知一覧が表示される -->
+              <div class="text-center py-3">
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
                   <span class="visually-hidden">読み込み中...</span>
                 </div>
-                <p class="text-muted small mt-2 mb-0">通知設定を読み込んでいます...</p>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 取引履歴タブ -->
-    <div class="tab-content-section" data-tab-content="transactions" style="display: none;">
-      <div class="content-card-enhanced">
-        {% include 'stockdiary/partials/tab_transactions.html' %}
-      </div>
-    </div>
-
-    <!-- 継続記録タブ -->
-    <div class="tab-content-section" data-tab-content="notes" style="display: none;">
-      <div class="content-card-enhanced">
-        <div class="section-header-enhanced">
-          <div class="section-icon-enhanced">
-            <i class="bi bi-journal-plus"></i>
-          </div>
-          <h2 class="section-title-enhanced">継続記録</h2>
-          <button type="button" 
-                  class="btn btn-primary btn-sm ms-auto"
-                  data-bs-toggle="collapse" 
-                  data-bs-target="#noteFormCollapse">
-            <i class="bi bi-plus-circle me-1"></i>
-            <span id="toggleText">記録追加</span>
-          </button>
+          </div>          
         </div>
 
-        <div class="collapse mb-4" id="noteFormCollapse">
-          <div class="p-4 bg-light rounded">
-            <form id="quickNoteForm" method="post" action="{% url 'stockdiary:add_note' diary.id %}" enctype="multipart/form-data">
-              {% csrf_token %}
-              
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label for="note_date" class="form-label">
-                    <i class="bi bi-calendar-date me-1"></i>日付
+        <!-- 取引履歴タブ -->
+        <div class="tab-pane fade" id="transactions-content" role="tabpanel" aria-labelledby="transactions-tab">
+          {% include 'stockdiary/partials/tab_transactions.html' %}
+        </div>
+
+        <!-- 継続記録タブ -->
+        <div class="tab-pane fade" id="notes-content" role="tabpanel" aria-labelledby="notes-tab">
+          <!-- フォーム表示/非表示の切り替えボタン -->
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <button 
+              type="button" 
+              class="btn btn-primary btn-sm" 
+              id="toggleNoteForm"
+              data-bs-toggle="collapse" 
+              data-bs-target="#noteFormCollapse" 
+              aria-expanded="false" 
+              aria-controls="noteFormCollapse">
+              <i class="bi bi-plus-circle me-1"></i>
+              <span class="toggle-text">記録を追加</span>
+            </button>
+          </div>
+
+          <!-- 折りたたみ可能な継続記録フォーム -->
+          <div class="collapse" id="noteFormCollapse">
+            <div class="simplified-note-form mobile-optimized mb-3">
+              <form id="quickNoteForm" method="post" action="{% url 'stockdiary:add_note' diary.id %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="form-section mobile-optimized">
+                  <label for="note_date" class="section-title">
+                    <i class="bi bi-calendar-date"></i>
+                    日付
                   </label>
                   <input type="date" class="form-control" id="note_date" name="date" 
                         value="{% now 'Y-m-d' %}" required>
                 </div>
                 
-                <div class="col-md-6">
-                  <label class="form-label">
-                    <i class="bi bi-tag me-1"></i>タイプ
-                  </label>
-                  <select class="form-select" id="note_type" name="note_type">
-                    <option value="analysis">分析更新</option>
-                    <option value="news">ニュース</option>
-                    <option value="earnings">決算</option>
-                    <option value="insight">気づき</option>
-                    <option value="risk">リスク</option>
-                  </select>
+                <div class="form-section mobile-optimized">
+                  <div class="section-title">
+                    <i class="bi bi-tag"></i>
+                    記録タイプ
+                  </div>
+                  <div class="option-pills mobile-optimized">
+                    <div class="option-pill active" data-value="analysis" data-target="note_type">
+                      <i class="bi bi-graph-up"></i>
+                      分析更新
+                    </div>
+                    <div class="option-pill" data-value="news" data-target="note_type">
+                      <i class="bi bi-newspaper"></i>
+                      ニュース
+                    </div>
+                    <div class="option-pill" data-value="earnings" data-target="note_type">
+                      <i class="bi bi-bar-chart"></i>
+                      決算
+                    </div>
+                    <div class="option-pill" data-value="insight" data-target="note_type">
+                      <i class="bi bi-lightbulb"></i>
+                      気づき
+                    </div>
+                    <div class="option-pill" data-value="risk" data-target="note_type">
+                      <i class="bi bi-exclamation-triangle"></i>
+                      リスク
+                    </div>
+                  </div>
+                  <input type="hidden" id="note_type" name="note_type" value="analysis">
                 </div>
                 
-                <div class="col-12">
-                  <label for="note_content" class="form-label">
-                    <i class="bi bi-journal-text me-1"></i>内容
-                  </label>
-                  <textarea class="form-control" id="note_content" name="content" 
-                            rows="4" required></textarea>
+                <div class="form-section mobile-optimized">
+                  <div class="section-title">
+                    <i class="bi bi-exclamation-circle"></i>
+                    重要度
+                  </div>
+                  <div class="option-pills mobile-optimized">
+                    <div class="option-pill importance-pill low" data-value="low" data-target="note_importance">
+                      <i class="bi bi-arrow-down-circle"></i>
+                      低
+                    </div>
+                    <div class="option-pill importance-pill medium active" data-value="medium" data-target="note_importance">
+                      <i class="bi bi-dash-circle"></i>
+                      中
+                    </div>
+                    <div class="option-pill importance-pill high" data-value="high" data-target="note_importance">
+                      <i class="bi bi-arrow-up-circle"></i>
+                      高
+                    </div>
+                  </div>
+                  <input type="hidden" id="note_importance" name="importance" value="medium">
                 </div>
                 
-                <div class="col-md-6">
-                  <label for="note_current_price" class="form-label">
-                    <i class="bi bi-currency-yen me-1"></i>現在価格
+                <div class="form-section mobile-optimized">
+                  <label for="note_content" class="section-title">
+                    <i class="bi bi-journal-text"></i>
+                    記録内容
+                  </label>
+                  <textarea class="form-control" id="note_content" name="content" rows="4" 
+                            placeholder="状況の変化や新たな情報を記録しましょう" required></textarea>
+                </div>
+                              
+                <!-- 画像添付セクション -->
+                <div class="form-section mobile-optimized">
+                  <label for="note_image" class="section-title">
+                    <i class="bi bi-image"></i>
+                    画像添付（オプション）
+                  </label>
+                  
+                  <div class="image-upload-area-note mobile-optimized mb-2" onclick="document.getElementById('note_image').click();">
+                    <i class="bi bi-cloud-upload text-muted" style="font-size: 2rem;"></i>
+                    <p class="text-muted mb-0">ここをクリックして画像を選択</p>
+                    <small class="text-muted">自動圧縮対応</small>
+                  </div>
+                  
+                  <input type="file" class="form-control d-none" id="note_image" name="image" 
+                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
+                  
+                  <div id="note-image-preview-container" class="mt-2" style="display: none;">
+                    <div class="card" style="max-width: 300px;">
+                      <img id="note-image-preview" class="card-img-top" style="max-height: 200px; object-fit: cover;" alt="プレビュー">
+                      <div class="card-body p-2">
+                        <small class="text-muted">選択された画像</small>
+                        <button type="button" id="note-remove-image" class="btn btn-sm btn-outline-danger float-end">
+                          <i class="bi bi-x"></i> 削除
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-section mobile-optimized">
+                  <label for="note_current_price" class="section-title">
+                    <i class="bi bi-currency-yen"></i>
+                    現在価格（オプション）
                   </label>
                   <div class="input-group">
-                    <input type="number" class="form-control" id="note_current_price" 
-                          name="current_price" step="0.01">
-                    <button type="button" class="btn btn-outline-primary" 
-                            id="fetch-note-price" data-stock-symbol="{{ diary.stock_symbol }}">
+                    <input type="number" class="form-control" id="note_current_price" name="current_price" 
+                          placeholder="円" step="0.01">
+                    <button type="button" class="btn btn-outline-primary" id="fetch-note-price" data-stock-symbol="{{ diary.stock_symbol }}">
                       <i class="bi bi-arrow-repeat"></i>
+                      <span class="d-none d-sm-inline ms-1">取得</span>
                     </button>
                   </div>
                 </div>
                 
-                <div class="col-md-6">
-                  <label for="note_image" class="form-label">
-                    <i class="bi bi-image me-1"></i>画像
-                  </label>
-                  <input type="file" class="form-control" id="note_image" name="image" 
-                        accept="image/*">
-                </div>
-                
-                <div class="col-12">
-                  <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-check-lg me-1"></i>記録を追加
+                <div class="d-flex gap-2">
+                  <button type="submit" class="btn btn-primary flex-fill">
+                    <i class="bi bi-journal-plus me-1"></i>
+                    記録を追加
                   </button>
-                  <button type="button" class="btn btn-outline-secondary ms-2" 
-                          data-bs-toggle="collapse" data-bs-target="#noteFormCollapse">
+                  <button 
+                    type="button" 
+                    class="btn btn-outline-secondary" 
+                    data-bs-toggle="collapse" 
+                    data-bs-target="#noteFormCollapse"
+                    aria-expanded="false">
+                    <i class="bi bi-x"></i>
                     キャンセル
                   </button>
                 </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- 継続記録一覧 -->
+          <div class="notes-list mobile-optimized">
+            {% for note in notes %}
+            <div class="note-card mobile-optimized mb-3">
+              <div class="note-card-header mobile-optimized">
+                <div class="note-meta-left">
+                  <div class="note-date">
+                    <i class="bi bi-calendar-date"></i>
+                    {{ note.date|date:"Y年m月d日" }}
+                  </div>
+                  <div class="note-badges">
+                    <span class="badge 
+                      {% if note.note_type == 'analysis' %}bg-primary
+                      {% elif note.note_type == 'news' %}bg-info
+                      {% elif note.note_type == 'earnings' %}bg-success
+                      {% elif note.note_type == 'insight' %}bg-warning
+                      {% elif note.note_type == 'risk' %}bg-danger
+                      {% else %}bg-secondary{% endif %}">
+                      {% if note.note_type == 'analysis' %}分析更新
+                      {% elif note.note_type == 'news' %}ニュース
+                      {% elif note.note_type == 'earnings' %}決算情報
+                      {% elif note.note_type == 'insight' %}新たな気づき
+                      {% elif note.note_type == 'risk' %}リスク要因
+                      {% else %}その他{% endif %}
+                    </span>
+                    {% if note.importance == 'high' %}
+                    <span class="importance-indicator high">
+                      <i class="bi bi-exclamation-triangle"></i>
+                      重要
+                    </span>
+                    {% elif note.importance == 'medium' %}
+                    <span class="importance-indicator medium">
+                      <i class="bi bi-info-circle"></i>
+                      中
+                    </span>
+                    {% endif %}
+                    
+                    <button class="btn btn-sm" 
+                            onclick="confirmDeleteNote({{ note.id }}, '{{ note.date|date:"Y年m月d日" }}', '{% if note.note_type == 'analysis' %}分析更新{% elif note.note_type == 'news' %}ニュース{% elif note.note_type == 'earnings' %}決算情報{% elif note.note_type == 'insight' %}新たな気づき{% elif note.note_type == 'risk' %}リスク要因{% else %}その他{% endif %}', {{ diary.id }})"
+                            title="この記録を削除"
+                            style="background: none; border: none; color: #dc3545; padding: 0.25rem 0.5rem; margin-left: 0.5rem;">
+                      <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
+                    </button>
+                  </div>
+                </div>
+                {% if note.current_price %}
+                <div class="note-price-summary">
+                  <div class="price-value">{{ note.current_price|floatformat:2|intcomma }}円</div>
+                  <div class="price-label">記録時価格</div>
+                  {% with price_change=note.get_price_change %}
+                  {% if price_change %}
+                  <div class="price-change {% if price_change > 0 %}positive{% elif price_change < 0 %}negative{% endif %}">
+                    {% if price_change > 0 %}+{% endif %}{{ price_change|floatformat:2 }}%
+                  </div>
+                  {% endif %}
+                  {% endwith %}
+                </div>
+                {% endif %}
               </div>
-            </form>
+              
+              <div class="note-card-body mobile-optimized">
+                <!-- 継続記録の画像表示 -->
+                {% if note.image_url %}
+                <div class="note-image mb-2">
+                  <img src="{{ note.image_url }}" 
+                      class="img-fluid rounded note-attached-image" 
+                      alt="継続記録画像"
+                      style="max-height: 200px; object-fit: cover; width: 100%; cursor: pointer;"
+                      onclick="showImageModal('{{ note.image_url }}', '{{ note.date|date:"Y年m月d日" }}の記録')">
+                  <div class="mt-1">
+                    <small class="text-muted">
+                      <i class="bi bi-image me-1"></i>
+                      クリックで拡大表示
+                    </small>
+                  </div>
+                </div>
+                {% endif %}
+                
+                <div class="note-content-text">{{ note.content|linebreaks }}</div>
+              </div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+              <div class="empty-icon">
+                <i class="bi bi-journal-text"></i>
+              </div>
+              <h4>継続記録はまだありません</h4>
+              <p>上のボタンから最初の記録を追加しましょう</p>
+            </div>
+            {% endfor %}
           </div>
         </div>
-
-        <div class="notes-list">
-          {% for note in notes %}
-          <div class="note-card mb-3">
-            <div class="d-flex justify-content-between align-items-start p-3 border-bottom">
-              <div>
-                <div class="d-flex align-items-center gap-2 mb-2">
-                  <span class="badge {% if note.note_type == 'analysis' %}bg-primary
-                        {% elif note.note_type == 'news' %}bg-info
-                        {% elif note.note_type == 'earnings' %}bg-success
-                        {% elif note.note_type == 'insight' %}bg-warning
-                        {% elif note.note_type == 'risk' %}bg-danger
-                        {% else %}bg-secondary{% endif %}">
-                    {% if note.note_type == 'analysis' %}分析更新
-                    {% elif note.note_type == 'news' %}ニュース
-                    {% elif note.note_type == 'earnings' %}決算
-                    {% elif note.note_type == 'insight' %}気づき
-                    {% elif note.note_type == 'risk' %}リスク
-                    {% else %}その他{% endif %}
-                  </span>
-                  
-                  {% if note.importance == 'high' %}
-                  <span class="badge bg-danger">
-                    <i class="bi bi-exclamation-triangle me-1"></i>重要
-                  </span>
+        <!-- タイムラインタブ -->
+        <div class="tab-pane fade" id="timeline-content" role="tabpanel" aria-labelledby="timeline-tab">
+          {% if related_diaries %}
+          <div class="timeline-section mobile-optimized">
+            <h3 class="section-title mb-3">
+              <i class="bi bi-clock-history"></i>
+              {{ diary.stock_symbol }} の投資履歴
+            </h3>
+            
+            <ol class="timeline-list mobile-optimized">
+              {% for timeline_diary in timeline_diaries %}
+              <li class="timeline-item mobile-optimized 
+                {% if timeline_diary.sell_date %}sold
+                {% elif timeline_diary.is_memo or timeline_diary.purchase_price is None or timeline_diary.purchase_quantity is None %}memo
+                {% else %}active{% endif %}
+                {% if timeline_diary.id == diary.id %}current{% endif %}">
+                
+                <div class="timeline-date mb-2">
+                  {{ timeline_diary.first_purchase_date|date:"Y年m月d日" }}
+                  {% if timeline_diary.id == diary.id %}
+                  <span class="badge bg-warning ms-2">現在表示中</span>
                   {% endif %}
                 </div>
-                
-                <div class="text-muted small">
-                  <i class="bi bi-calendar me-1"></i>
-                  {{ note.date|date:"Y年m月d日" }}
-                </div>
-              </div>
-              
-              {% if note.current_price %}
-              <div class="text-end">
-                <div class="fw-bold">¥{{ note.current_price|floatformat:2|intcomma }}</div>
-                <div class="text-muted small">記録時価格</div>
-              </div>
-              {% endif %}
-            </div>
-            
-            <div class="p-3">
-              {% if note.image_url %}
-              <div class="mb-3">
-                <img src="{{ note.image_url }}" 
-                     class="img-fluid rounded" 
-                     alt="記録画像"
-                     style="max-height: 300px; cursor: pointer;"
-                     onclick="showImageModal('{{ note.image_url }}', '{{ note.date|date:"Y年m月d日" }}の記録')">
-              </div>
-              {% endif %}
-              
-              <div>{{ note.content|linebreaks }}</div>
-            </div>
-            
-            <div class="px-3 pb-3">
-              <button class="btn btn-sm btn-outline-danger" 
-                      onclick="confirmDeleteNote({{ note.id }}, '{{ note.date|date:"Y年m月d日" }}', '', {{ diary.id }})">
-                <i class="bi bi-trash me-1"></i>削除
-              </button>
-            </div>
-          </div>
-          {% empty %}
-          <div class="empty-state-enhanced">
-            <div class="empty-icon-enhanced">
-              <i class="bi bi-journal-text"></i>
-            </div>
-            <h4>継続記録はまだありません</h4>
-            <p>記録を追加して、投資の経過を追跡しましょう</p>
-            <button class="btn btn-primary" 
-                    data-bs-toggle="collapse" 
-                    data-bs-target="#noteFormCollapse">
-              <i class="bi bi-plus-circle me-2"></i>最初の記録を追加
-            </button>
-          </div>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
 
-    <!-- タイムラインタブ -->
-    <div class="tab-content-section" data-tab-content="timeline" style="display: none;">
-      {% if related_diaries %}
-      <div class="content-card-enhanced">
-        <div class="section-header-enhanced">
-          <div class="section-icon-enhanced">
-            <i class="bi bi-clock-history"></i>
-          </div>
-          <h2 class="section-title-enhanced">{{ diary.stock_symbol }} の投資履歴</h2>
-        </div>
-        
-        <div class="timeline">
-          {% for timeline_diary in timeline_diaries %}
-          <div class="timeline-item mb-4">
-            <div class="d-flex align-items-start gap-3">
-              <div class="timeline-date-badge bg-primary text-white px-3 py-2 rounded">
-                {{ timeline_diary.first_purchase_date|date:"Y/m/d" }}
-              </div>
-              
-              <div class="flex-grow-1">
                 {% if timeline_diary.id == diary.id %}
-                <div class="card border-primary shadow-sm">
-                  <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                      <h5 class="card-title mb-0">{{ timeline_diary.stock_name }}</h5>
-                      <span class="badge bg-warning">現在表示中</span>
+                <!-- 現在表示中の日記 -->
+                <div class="timeline-card current mobile-optimized">
+                  <div class="timeline-card-header">
+                    <div class="timeline-stock-info">
+                      <h6>{{ timeline_diary.stock_name }}</h6>
                     </div>
-                    <div class="card-text">
-                      {{ timeline_diary.reason|linebreaks|safe|truncatewords_html:30 }}
+                    <div class="timeline-badges">
+                      {% if timeline_diary.is_memo %}
+                      <span class="badge bg-info">メモ</span>
+                      {% endif %}
                     </div>
+                  </div>
+
+                  {% if not timeline_diary.is_memo and timeline_diary.purchase_price is not None and timeline_diary.purchase_quantity is not None %}
+                  <div class="timeline-price-info">
+                    {{ timeline_diary.purchase_price|floatformat:2|intcomma }}円 × {{ timeline_diary.purchase_quantity }}株
+                    <span class="{% if realized_profit > 0 %}text-success{% elif realized_profit < 0 %}text-danger{% endif %}">
+                      ({% if realized_profit > 0 %}+{% endif %}{{ realized_profit|floatformat:2 }}%)
+                    </span>
+                  </div>
+                  {% endif %}
+
+                  <div class="timeline-content">
+                    {{ timeline_diary.reason|linebreaks|safe|truncatewords_html:30 }}
                   </div>
                 </div>
                 {% else %}
-                <a href="{% url 'stockdiary:detail' timeline_diary.id %}" 
-                   class="card text-decoration-none hover-shadow">
-                  <div class="card-body">
-                    <h5 class="card-title">{{ timeline_diary.stock_name }}</h5>
-                    <div class="card-text text-muted">
-                      {{ timeline_diary.reason|linebreaks|safe|truncatewords_html:20 }}
+                <!-- その他の関連日記 -->
+                <a href="{% url 'stockdiary:detail' timeline_diary.id %}" class="timeline-card mobile-optimized">
+                  <div class="timeline-card-header">
+                    <div class="timeline-stock-info">
+                      <h6>{{ timeline_diary.stock_name }}</h6>
+                    </div>
+                    <div class="timeline-badges">
+                      {% if timeline_diary.is_memo %}
+                      <span class="badge bg-info">メモ</span>
+                      {% endif %}
                     </div>
                   </div>
+
+                  {% if not timeline_diary.is_memo and timeline_diary.purchase_price is not None and timeline_diary.purchase_quantity is not None %}
+                  <div class="timeline-price-info">
+                    {{ timeline_diary.realized_profit|floatformat:2|intcomma }}円 × {{ timeline_diary.current_quantity }}株
+                    <span class="{% if realized_profit > 0 %}text-success{% elif realized_profit < 0 %}text-danger{% endif %}">
+                      ({% if profit > 0 %}+{% endif %}{{ profit|floatformat:2 }}%)
+                    </span>
+                  </div>
+                  {% endif %}
+
+                  <div class="timeline-content">
+                    {{ timeline_diary.reason|linebreaks|safe|truncatewords_html:20 }}
+                  </div>
+
+                  {% if timeline_diary.tags.exists %}
+                  <div class="timeline-tags mt-2">
+                    {% for tag in timeline_diary.tags.all|slice:":3" %}
+                    <span class="badge bg-light text-dark me-1">{{ tag.name }}</span>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
                 </a>
                 {% endif %}
-              </div>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-        
-        {% if related_diaries_count > 10 %}
-        <div class="text-center mt-4">
-          <a href="{% url 'stockdiary:home' %}?query={{ diary.stock_symbol }}" 
-             class="btn btn-outline-primary">
-            すべての記録を表示 (全{{ total_related_count }}件)
-          </a>
-        </div>
-        {% endif %}
-      </div>
-      {% else %}
-      <div class="empty-state-enhanced">
-        <div class="empty-icon-enhanced">
-          <i class="bi bi-link-45deg"></i>
-        </div>
-        <h4>関連する投資記録はありません</h4>
-        <p>この銘柄の他の投資記録が作成されると、ここに表示されます</p>
-      </div>
-      {% endif %}
-    </div>
-  </div>
-</div>
+              </li>
+              {% endfor %}
+            </ol>
 
-<!-- 通知設定モーダル -->
-<div class="modal fade" id="notificationModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">
-          <i class="bi bi-bell me-2"></i>通知設定
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        {% csrf_token %}
-        
-        <div class="mb-3">
-          <label class="form-label">通知タイプ</label>
-          <select class="form-select" id="notificationType">
-            <option value="reminder">リマインダー</option>
-            <option value="price_alert">価格アラート</option>
-            <option value="periodic">定期通知</option>
-          </select>
-        </div>
-        
-        <div id="reminderFields" class="mb-3">
-          <label class="form-label">通知日時</label>
-          <input type="datetime-local" class="form-control" id="remindAt">
-        </div>
-        
-        <div id="priceAlertFields" class="mb-3" style="display: none;">
-          <label class="form-label">目標価格</label>
-          <input type="number" class="form-control" id="targetPrice" step="0.01">
-          <div class="form-check mt-2">
-            <input class="form-check-input" type="checkbox" id="alertAbove" checked>
-            <label class="form-check-label" for="alertAbove">
-              目標価格を上回ったら通知
-            </label>
+            {% if related_diaries_count > 10 %}
+            <div class="text-center mt-3">
+              <a href="{% url 'stockdiary:home' %}?query={{ diary.stock_symbol }}"
+                class="btn btn-outline-primary">
+                すべての記録を表示 (全{{ total_related_count }}件)
+              </a>
+            </div>
+            {% endif %}
+
+            {% if current_diary_index is not None %}
+            <div class="text-center text-muted mt-3 small">
+              <span>{{ current_diary_index|add:1 }}</span> / <span>{{ total_related_count }}</span> 件目
+            </div>
+            {% endif %}
+          </div> <!-- ここに追加: timeline-section の終了タグ -->
+          {% else %}
+          <div class="empty-state">
+            <div class="empty-icon">
+              <i class="bi bi-link-45deg"></i>
+            </div>
+            <h4>関連する投資記録はありません</h4>
+            <p>この銘柄の他の投資記録が作成されると、ここに表示されます。</p>
           </div>
+          {% endif %}
         </div>
-        
-        <div id="periodicFields" class="mb-3" style="display: none;">
-          <label class="form-label">頻度</label>
-          <select class="form-select" id="frequency">
-            <option value="daily">毎日</option>
-            <option value="weekly">毎週</option>
-            <option value="monthly">毎月</option>
-          </select>
-          <label class="form-label mt-2">通知時刻</label>
-          <input type="time" class="form-control" id="notifyTime">
-        </div>
-        
-        <div class="mb-3">
-          <label class="form-label">メッセージ（オプション）</label>
-          <textarea class="form-control" id="notificationMessage" rows="2"></textarea>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          キャンセル
-        </button>
-        <button type="button" class="btn btn-primary" onclick="saveNotification('{{ diary.id }}')">
-          <i class="bi bi-check-lg me-1"></i>保存
-        </button>
       </div>
     </div>
   </div>
@@ -1250,182 +789,205 @@
 {% block scripts %}
 {{ block.super }}
 <script src="{% static 'js/diary-detail.js' %}"></script>
+<script src="{% static 'js/diary-detail-tabs.js' %}"></script>
 <script src="{% static 'js/notifications.js' %}"></script>
 <script src="{% static 'js/push-notification-ui.js' %}"></script>
-<script src="{% static 'js/cookie.js' %}"></script>
-
 <script>
-// タブ切り替え機能
+// 通知一覧を読み込む
 document.addEventListener('DOMContentLoaded', function() {
-  const tabButtons = document.querySelectorAll('.tab-btn-enhanced');
-  const tabContents = document.querySelectorAll('.tab-content-section');
-  
-  tabButtons.forEach(button => {
-    button.addEventListener('click', function() {
-      const tabName = this.dataset.tab;
-      
-      // すべてのタブとコンテンツから active を削除
-      tabButtons.forEach(btn => btn.classList.remove('active'));
-      tabContents.forEach(content => {
-        content.style.display = 'none';
-        content.classList.remove('active');
-      });
-      
-      // クリックされたタブとそのコンテンツに active を追加
-      this.classList.add('active');
-      const targetContent = document.querySelector(`[data-tab-content="${tabName}"]`);
-      if (targetContent) {
-        targetContent.style.display = 'block';
-        targetContent.classList.add('active', 'animate-fade-in');
-      }
-    });
-  });
-  
-  // 通知一覧を読み込む
-  loadNotifications();
+    loadNotifications();
 });
 
-// 通知一覧読み込み
 async function loadNotifications() {
-  const container = document.getElementById('notification-list-container');
-  
-  try {
-    const response = await fetch('/stockdiary/api/diary/{{ diary.id }}/notifications/');
-    const data = await response.json();
+    const container = document.getElementById('notification-list-container');
     
-    if (data.notifications && data.notifications.length > 0) {
-      container.innerHTML = renderNotifications(data.notifications);
-    } else {
-      container.innerHTML = `
-        <div class="text-center text-muted py-4">
-          <i class="bi bi-bell-slash" style="font-size: 2rem; opacity: 0.3;"></i>
-          <p class="mt-2 mb-0 small">通知設定はまだありません</p>
-          <p class="text-muted small mb-0">上の「新規作成」ボタンから通知を設定できます</p>
-        </div>
-      `;
+    try {
+        const response = await fetch('/stockdiary/api/diary/{{ diary.id }}/notifications/');
+        const data = await response.json();
+        
+        if (data.notifications && data.notifications.length > 0) {
+            container.innerHTML = renderNotifications(data.notifications);
+        } else {
+            container.innerHTML = `
+                <div class="text-muted text-center py-3">
+                    <i class="bi bi-bell-slash" style="font-size: 2rem;"></i>
+                    <p class="mb-0 mt-2">通知設定はありません</p>
+                    <small>「新規作成」ボタンから通知を設定できます</small>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('通知一覧の読み込みエラー:', error);
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                通知一覧の読み込みに失敗しました
+            </div>
+        `;
     }
-  } catch (error) {
-    console.error('通知読み込みエラー:', error);
-    container.innerHTML = `
-      <div class="alert alert-danger mb-0">
-        <i class="bi bi-exclamation-triangle me-2"></i>
-        通知一覧の読み込みに失敗しました
-      </div>
-    `;
-  }
 }
 
 function renderNotifications(notifications) {
-  return notifications.map(notification => {
-    const typeInfo = getNotificationTypeInfo(notification.type);
-    
-    let detailsHtml = '';
-    if (notification.type === 'reminder') {
-      const remindAt = new Date(notification.remind_at);
-      detailsHtml = `
-        <div class="small text-muted mt-2">
-          <i class="bi bi-calendar-event me-1"></i>
-          ${remindAt.toLocaleString('ja-JP')}
-        </div>
-      `;
-    } else if (notification.type === 'price_alert') {
-      detailsHtml = `
-        <div class="small text-muted mt-2">
-          <i class="bi bi-currency-yen me-1"></i>
-          ${notification.target_price}円 ${notification.alert_above ? '以上' : '以下'}で通知
-        </div>
-      `;
-    } else if (notification.type === 'periodic') {
-      const freqText = {
-        'daily': '毎日',
-        'weekly': '毎週',
-        'monthly': '毎月'
-      }[notification.frequency] || notification.frequency;
-      
-      detailsHtml = `
-        <div class="small text-muted mt-2">
-          <i class="bi bi-arrow-repeat me-1"></i>
-          ${freqText} ${notification.notify_time || ''}
-        </div>
-      `;
-    }
-    
-    return `
-      <div class="card mb-2 border-0 shadow-sm">
-        <div class="card-body p-3">
-          <div class="d-flex justify-content-between align-items-start">
-            <div class="flex-grow-1">
-              <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="badge ${typeInfo.badgeClass}">
-                  <i class="${typeInfo.icon} me-1"></i>${typeInfo.label}
-                </span>
-                ${notification.last_sent ? 
-                  `<small class="text-muted">
-                    <i class="bi bi-check-circle me-1"></i>
-                    最終送信: ${new Date(notification.last_sent).toLocaleDateString('ja-JP')}
-                  </small>` : 
-                  '<span class="badge bg-secondary bg-opacity-10 text-secondary">未送信</span>'
-                }
-              </div>
-              ${detailsHtml}
-              ${notification.message ? 
-                `<div class="small text-muted mt-2 p-2 bg-light rounded">
-                  <i class="bi bi-chat-left-text me-1"></i>${notification.message}
-                </div>` : 
-                ''
-              }
+    return notifications.map(notification => {
+        const typeInfo = getNotificationTypeInfo(notification.type);
+        
+        let detailsHtml = '';
+        
+        if (notification.type === 'reminder') {
+            const remindAt = new Date(notification.remind_at);
+            detailsHtml = `
+                <div class="notification-details">
+                    <i class="bi bi-calendar-event me-1"></i>
+                    ${remindAt.toLocaleString('ja-JP', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })}
+                </div>
+            `;
+        } else if (notification.type === 'price_alert') {
+            detailsHtml = `
+                <div class="notification-details">
+                    <i class="bi bi-currency-yen me-1"></i>
+                    ${notification.target_price}円
+                    ${notification.alert_above ? '以上' : '以下'}で通知
+                </div>
+            `;
+        } else if (notification.type === 'periodic') {
+            const freqText = {
+                'daily': '毎日',
+                'weekly': '毎週',
+                'monthly': '毎月'
+            }[notification.frequency] || notification.frequency;
+            
+            detailsHtml = `
+                <div class="notification-details">
+                    <i class="bi bi-arrow-repeat me-1"></i>
+                    ${freqText}
+                    ${notification.notify_time ? ` ${notification.notify_time}` : ''}
+                </div>
+            `;
+        }
+        
+        return `
+            <div class="notification-item border rounded p-2 mb-2" data-notification-id="${notification.id}">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center mb-1">
+                            <span class="badge ${typeInfo.badgeClass} me-2">
+                                <i class="${typeInfo.icon} me-1"></i>
+                                ${typeInfo.label}
+                            </span>
+                            ${notification.last_sent ? 
+                                `<small class="text-muted">
+                                    <i class="bi bi-check-circle me-1"></i>
+                                    最終送信: ${new Date(notification.last_sent).toLocaleDateString('ja-JP')}
+                                </small>` : 
+                                '<small class="text-muted">未送信</small>'
+                            }
+                        </div>
+                        ${detailsHtml}
+                        ${notification.message ? 
+                            `<div class="notification-message small text-muted mt-1">
+                                ${notification.message}
+                            </div>` : 
+                            ''
+                        }
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" 
+                            onclick="deleteDiaryNotification('${notification.id}')"
+                            title="削除">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
             </div>
-            <button class="btn btn-sm btn-outline-danger ms-2" 
-                    onclick="deleteDiaryNotification('${notification.id}')"
-                    title="削除">
-              <i class="bi bi-trash"></i>
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('');
+        `;
+    }).join('');
 }
 
 function getNotificationTypeInfo(type) {
-  const types = {
-    'reminder': { label: 'リマインダー', icon: 'bi-alarm', badgeClass: 'bg-info' },
-    'price_alert': { label: '価格アラート', icon: 'bi-graph-up-arrow', badgeClass: 'bg-warning' },
-    'periodic': { label: '定期通知', icon: 'bi-arrow-repeat', badgeClass: 'bg-success' }
-  };
-  return types[type] || types['reminder'];
+    const types = {
+        'reminder': {
+            label: 'リマインダー',
+            icon: 'bi-alarm',
+            badgeClass: 'bg-info'
+        },
+        'price_alert': {
+            label: '価格アラート',
+            icon: 'bi-graph-up-arrow',
+            badgeClass: 'bg-warning'
+        },
+        'periodic': {
+            label: '定期通知',
+            icon: 'bi-arrow-repeat',
+            badgeClass: 'bg-success'
+        }
+    };
+    return types[type] || types['reminder'];
 }
 
+// 🔧 通知削除関数（グローバルスコープで定義）
 async function deleteDiaryNotification(notificationId) {
-  if (!confirm('この通知設定を削除しますか？')) return;
-  
-  try {
-    const csrfToken = getCookie('csrftoken');
-    const response = await fetch(`/stockdiary/api/notifications/${notificationId}/delete/`, {
-      method: 'POST',
-      headers: {
-        'X-CSRFToken': csrfToken,
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
-      },
-      credentials: 'same-origin'
-    });
-    
-    const data = await response.json();
-    
-    if (response.ok && data.success) {
-      showToast('通知設定を削除しました', 'success');
-      loadNotifications();
-    } else {
-      showToast('削除に失敗しました', 'danger');
+    if (!confirm('この通知設定を削除しますか？')) {
+        return;
     }
-  } catch (error) {
-    console.error('削除エラー:', error);
-    showToast('削除中にエラーが発生しました', 'danger');
-  }
+    
+    try {
+        const csrfToken = getCookie('csrftoken');
+        
+        if (!csrfToken) {
+            console.error('❌ CSRFトークンが取得できません');
+            showToast('セキュリティトークンの取得に失敗しました。ページを再読み込みしてください。', 'danger');
+            return;
+        }
+        
+        console.log('削除リクエスト送信:', notificationId);
+        
+        const response = await fetch(`/stockdiary/api/notifications/${notificationId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        });
+        
+        console.log('削除レスポンスステータス:', response.status);
+        
+        // HTMLレスポンスの場合の処理
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const responseText = await response.text();
+            console.error('❌ JSONではないレスポンス:', responseText.substring(0, 200));
+            
+            if (response.status === 403) {
+                showToast('セッションが無効です。ページを再読み込みしてください。', 'danger');
+            } else if (response.status === 404) {
+                showToast('通知が見つかりませんでした。すでに削除された可能性があります。', 'warning');
+                loadNotifications(); // 一覧を更新
+            } else {
+                showToast('サーバーエラーが発生しました。', 'danger');
+            }
+            return;
+        }
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showToast('通知設定を削除しました', 'success');
+            loadNotifications(); // 一覧を再読み込み
+        } else {
+            showToast('削除に失敗しました: ' + (data.error || '不明なエラー'), 'danger');
+        }
+    } catch (error) {
+        console.error('削除エラー:', error);
+        showToast('削除中にエラーが発生しました', 'danger');
+    }
 }
 
-// グローバルスコープに公開
+// 🔧 グローバルスコープに公開
 window.deleteDiaryNotification = deleteDiaryNotification;
 window.loadNotifications = loadNotifications;
 </script>
