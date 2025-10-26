@@ -804,6 +804,24 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
         
         return response
 
+ 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # スピードダイアルアクション
+        context['diary_actions'] = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('stockdiary:home'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            }
+        ]
+        
+        
+        
+        return context
+    
 
 class StockDiaryUpdateView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, UpdateView):
     model = StockDiary
