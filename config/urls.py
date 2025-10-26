@@ -96,12 +96,6 @@ urlpatterns = [
     path('api/push/subscribe/', api_views.subscribe_push, name='api_subscribe_push'),
     path('api/push/unsubscribe/', api_views.unsubscribe_push, name='api_unsubscribe_push'),
     
-    # 通知履歴API（共通）
-    path('api/notifications/logs/', api_views.get_notification_logs, name='api_notification_logs'),
-    path('api/notifications/<int:log_id>/read/', api_views.mark_notification_read, name='api_mark_notification_read'),
-    path('api/notifications/<int:log_id>/click/', api_views.mark_notification_read, name='api_mark_notification_clicked'),
-    path('api/notifications/mark-all-read/', api_views.mark_all_read, name='api_mark_all_read'),
-    
 ]
 
 # 静的ファイル関連
