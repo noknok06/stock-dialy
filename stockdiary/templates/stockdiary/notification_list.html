@@ -218,24 +218,183 @@ function getNotificationDetails(notification) {
 }
 
 async function deleteNotificationFromList(notificationId) {
-    if (!confirm('この通知設定を削除しますか？')) return;
+    if (!confirm('この通知設定を削除しますか？')) {
+        return;
+    }
     
     try {
+        // POSTメソッドで削除リクエストを送信
         const response = await fetch(`/stockdiary/api/notifications/${notificationId}/delete/`, {
-            method: 'DELETE',
+            method: 'POST',  // ← DELETEではなくPOST
             headers: {
-                'X-CSRFToken': getCookie('csrftoken')
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
             }
         });
         
-        if (response.ok) {
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
             showToast('通知を削除しました', 'success');
-            loadAllNotifications();
+            
+            // 通知一覧を再読み込み
+            if (typeof loadAllNotifications === 'function') {
+                loadAllNotifications();
+            } else {
+                // 一覧が存在する場合は該当要素を削除
+                const notificationElement = document.querySelector(`[data-notification-id="${notificationId}"]`);
+                if (notificationElement) {
+                    notificationElement.remove();
+                }
+            }
+        } else {
+            showToast(data.error || '削除に失敗しました', 'danger');
         }
     } catch (error) {
-        showToast('削除に失敗しました', 'danger');
+        console.error('削除エラー:', error);
+        showToast('通信エラーが発生しました', 'danger');
     }
 }
 
+async function deleteDiaryNotification(diaryId, notificationId) {
+    if (!confirm('この通知設定を削除しますか？')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/stockdiary/api/notifications/${notificationId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showToast('通知を削除しました', 'success');
+            
+            // 日記詳細ページの通知一覧を再読み込み
+            if (typeof loadDiaryNotifications === 'function') {
+                loadDiaryNotifications(diaryId);
+            } else {
+                const notificationElement = document.querySelector(`[data-notification-id="${notificationId}"]`);
+                if (notificationElement) {
+                    notificationElement.remove();
+                }
+            }
+        } else {
+            showToast(data.error || '削除に失敗しました', 'danger');
+        }
+    } catch (error) {
+        console.error('削除エラー:', error);
+        showToast('通信エラーが発生しました', 'danger');
+    }
+}
+
+/**
+ * 複数の通知を一括削除
+ * @param {Array<string>} notificationIds - 通知IDの配列
+ */
+async function deleteMultipleNotifications(notificationIds) {
+    if (!notificationIds || notificationIds.length === 0) {
+        showToast('削除する通知が選択されていません', 'warning');
+        return;
+    }
+    
+    if (!confirm(`${notificationIds.length}件の通知設定を削除しますか？`)) {
+        return;
+    }
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const notificationId of notificationIds) {
+        try {
+            const response = await fetch(`/stockdiary/api/notifications/${notificationId}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                successCount++;
+            } else {
+                failCount++;
+            }
+        } catch (error) {
+            console.error('削除エラー:', error);
+            failCount++;
+        }
+    }
+    
+    // 結果を表示
+    if (successCount > 0 && failCount === 0) {
+        showToast(`${successCount}件の通知を削除しました`, 'success');
+    } else if (successCount > 0 && failCount > 0) {
+        showToast(`${successCount}件削除、${failCount}件失敗しました`, 'warning');
+    } else {
+        showToast('削除に失敗しました', 'danger');
+    }
+    
+    // 一覧を再読み込み
+    if (typeof loadAllNotifications === 'function') {
+        loadAllNotifications();
+    }
+}
+
+
+/**
+ * 通知削除ボタンをHTMLに追加する例
+ */
+function addDeleteButton(notificationId, containerElement) {
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'btn btn-sm btn-outline-danger';
+    deleteBtn.innerHTML = '<i class="bi bi-trash"></i> 削除';
+    deleteBtn.onclick = () => deleteNotificationFromList(notificationId);
+    
+    containerElement.appendChild(deleteBtn);
+}
+/**
+ * 通知カードに削除ボタンを追加
+ */
+function createNotificationCard(notification) {
+    const card = document.createElement('div');
+    card.className = 'card mb-3';
+    card.setAttribute('data-notification-id', notification.id);
+    
+    card.innerHTML = `
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h5 class="card-title">${notification.type_display}</h5>
+                    <p class="card-text">${notification.message || '通知メッセージなし'}</p>
+                    <small class="text-muted">
+                        ${notification.diary_name || ''}
+                        ${notification.target_price ? ` - 目標価格: ${notification.target_price}円` : ''}
+                        ${notification.frequency ? ` - ${notification.frequency}` : ''}
+                    </small>
+                </div>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteNotificationFromList('${notification.id}')">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    return card;
+}
+
+// グローバルスコープに公開
+window.deleteNotificationFromList = deleteNotificationFromList;
+window.deleteDiaryNotification = deleteDiaryNotification;
+window.deleteMultipleNotifications = deleteMultipleNotifications;
+window.addDeleteButton = addDeleteButton;
+window.createNotificationCard = createNotificationCard;
 </script>
 {% endblock %}
