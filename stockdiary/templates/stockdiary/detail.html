@@ -934,13 +934,44 @@ async function deleteNotification(notificationId) {
     }
     
     try {
+        const csrfToken = getCookie('csrftoken');
+        
+        if (!csrfToken) {
+            console.error('❌ CSRFトークンが取得できません');
+            showToast('セキュリティトークンの取得に失敗しました。ページを再読み込みしてください。', 'danger');
+            return;
+        }
+        
+        console.log('削除リクエスト送信:', notificationId);
+        
         const response = await fetch(`/stockdiary/api/notifications/${notificationId}/delete/`, {
-            method: 'POST',  // ← DELETEからPOSTに変更
+            method: 'POST',
             headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'Content-Type': 'application/json'
-            }
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
         });
+        
+        console.log('削除レスポンスステータス:', response.status);
+        
+        // HTMLレスポンスの場合の処理
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const responseText = await response.text();
+            console.error('❌ JSONではないレスポンス:', responseText.substring(0, 200));
+            
+            if (response.status === 403) {
+                showToast('セッションが無効です。ページを再読み込みしてください。', 'danger');
+            } else if (response.status === 404) {
+                showToast('通知が見つかりませんでした。すでに削除された可能性があります。', 'warning');
+                loadNotifications(); // 一覧を更新
+            } else {
+                showToast('サーバーエラーが発生しました。', 'danger');
+            }
+            return;
+        }
         
         const data = await response.json();
         
