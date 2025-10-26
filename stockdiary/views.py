@@ -19,6 +19,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.conf import settings
 from django.urls import reverse
+from django.core.exceptions import ValidationError
 
 from utils.mixins import ObjectNotFoundRedirectMixin
 from .utils import process_analysis_values, calculate_analysis_completion_rate
