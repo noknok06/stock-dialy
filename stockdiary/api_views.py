@@ -233,7 +233,7 @@ def create_diary_notification(request, diary_id):
             'success': False
         }, status=500)
 
-@require_http_methods(["DELETE", "POST"])
+@require_http_methods(["POST"])  # ← DELETEを削除、POSTのみ
 @login_required
 def delete_diary_notification(request, notification_id):
     """日記の通知設定を削除"""
@@ -251,6 +251,9 @@ def delete_diary_notification(request, notification_id):
         })
         
     except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"通知削除エラー: {e}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)
 
 

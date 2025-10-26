@@ -934,7 +934,7 @@ async function deleteNotification(notificationId) {
     
     try {
         const response = await fetch(`/stockdiary/api/notifications/${notificationId}/delete/`, {
-            method: 'DELETE',
+            method: 'POST',  // ← DELETEからPOSTに変更
             headers: {
                 'X-CSRFToken': getCookie('csrftoken'),
                 'Content-Type': 'application/json'
@@ -943,7 +943,7 @@ async function deleteNotification(notificationId) {
         
         const data = await response.json();
         
-        if (data.success) {
+        if (response.ok && data.success) {
             showToast('通知設定を削除しました', 'success');
             loadNotifications(); // 一覧を再読み込み
         } else {
