@@ -28,6 +28,9 @@ class PushNotificationUI {
                 userAgent: userAgent.substring(0, 100)
             });
             
+            // 🆕 最初にステータスを「確認中」に設定
+            this.showStatus('確認中...', 'secondary');
+            
             // Service Workerとプッシュ通知のサポートを確認
             if (!('serviceWorker' in navigator)) {
                 this.showStatus('Service Workerに非対応', 'warning');
@@ -52,29 +55,28 @@ class PushNotificationUI {
                 return;
             }
             
-            // 🆕 Safari/iOSの場合は、まずService Workerが登録されているか確認
-            if (isSafari || isIOS) {
-                console.log('Safari/iOS検出: Service Worker確認中...');
-                const swRegistration = await this.waitForServiceWorker(isIOS ? 5000 : 3000);
-                
-                if (!swRegistration) {
-                    console.warn('⚠️ Service Workerが見つかりません');
-                    this.showStatus('Service Worker未登録', 'warning');
-                    this.showError('ページを再読み込みしてください');
-                    
-                    // それでもボタンは表示（再試行可能にする）
-                    if (this.enableBtn) {
-                        this.enableBtn.style.display = 'block';
-                        this.enableBtn.disabled = false;
-                    }
-                    return;
-                }
-                
-                console.log('✅ Service Worker登録確認完了');
-            }
+            // 🆕 iOSの場合、より短いタイムアウトで強制的にUI更新
+            const statusTimeout = isIOS ? 2000 : 3000;
             
-            // 現在の状態を確認
-            await this.checkCurrentStatus(isSafari || isIOS);
+            const statusCheckPromise = this.checkCurrentStatus(isSafari || isIOS);
+            const timeoutPromise = new Promise((resolve) => {
+                setTimeout(() => {
+                    console.warn(`⚠️ ステータス確認タイムアウト（${statusTimeout}ms）- UI強制更新`);
+                    resolve('timeout');
+                }, statusTimeout);
+            });
+            
+            await Promise.race([statusCheckPromise, timeoutPromise]);
+            
+            // 🆕 タイムアウトした場合もボタンを表示
+            if (!this.enableBtn.style.display && !this.disableBtn.style.display) {
+                console.log('どちらのボタンも表示されていない - デフォルト表示');
+                this.showStatus('プッシュ通知: 無効', 'secondary');
+                if (this.enableBtn) {
+                    this.enableBtn.style.display = 'block';
+                    this.enableBtn.disabled = false;
+                }
+            }
             
             // ボタンのイベントリスナーを設定
             if (this.enableBtn) {
@@ -89,7 +91,7 @@ class PushNotificationUI {
             
         } catch (error) {
             console.error('❌ Init error:', error);
-            this.showStatus('初期化エラー', 'danger');
+            this.showStatus('エラー', 'danger');
             this.showError(`${error.message}`);
             
             // エラーでもボタンは表示
@@ -100,17 +102,14 @@ class PushNotificationUI {
         }
     }
     
-    // 🆕 Service Workerの登録を待つ専用関数
     async waitForServiceWorker(timeoutMs = 3000) {
         try {
-            // すでに登録されているか確認
             const existingRegistration = await navigator.serviceWorker.getRegistration('/');
             if (existingRegistration) {
                 console.log('既存のService Worker発見:', existingRegistration.scope);
                 return existingRegistration;
             }
             
-            // 登録されていない場合は待機
             console.log(`Service Worker登録待機中（最大${timeoutMs}ms）...`);
             
             const registration = await Promise.race([
@@ -156,10 +155,10 @@ class PushNotificationUI {
             // granted の場合、サブスクリプションを確認
             console.log('サブスクリプション確認中...');
             
+            // 🆕 iOSの場合はより短いタイムアウト（1秒）
+            const timeout = isSafariOrIOS ? 1000 : 1500;
+            
             try {
-                // 🆕 Safari/iOSの場合はより長いタイムアウト
-                const timeout = isSafariOrIOS ? 3000 : 1000;
-                
                 const registration = await Promise.race([
                     navigator.serviceWorker.ready,
                     new Promise((_, reject) => 
@@ -167,7 +166,12 @@ class PushNotificationUI {
                     )
                 ]);
                 
-                const subscription = await registration.pushManager.getSubscription();
+                const subscription = await Promise.race([
+                    registration.pushManager.getSubscription(),
+                    new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('subscription-timeout')), timeout)
+                    )
+                ]);
                 
                 if (subscription) {
                     console.log('✅ サブスクリプション存在');
@@ -186,7 +190,9 @@ class PushNotificationUI {
                     }
                 }
             } catch (e) {
-                console.log('⚠️ サブスクリプション確認スキップ:', e.message);
+                console.log('⚠️ サブスクリプション確認タイムアウト:', e.message);
+                
+                // 🆕 タイムアウトでもデフォルトの状態を表示
                 this.showStatus('プッシュ通知: 無効', 'secondary');
                 if (this.enableBtn) {
                     this.enableBtn.style.display = 'block';
@@ -196,6 +202,8 @@ class PushNotificationUI {
             
         } catch (error) {
             console.error('❌ ステータス確認エラー:', error);
+            
+            // 🆕 エラーでも必ずデフォルト状態を表示
             this.showStatus('プッシュ通知: 無効', 'secondary');
             if (this.enableBtn) {
                 this.enableBtn.style.display = 'block';
@@ -226,9 +234,9 @@ class PushNotificationUI {
                 throw new Error('通知が許可されませんでした');
             }
             
-            // 2. Service Worker取得（Safari/iOSは長めのタイムアウト）
+            // 2. Service Worker取得（iOS: 15秒、Safari: 30秒）
             console.log('2️⃣ Service Worker取得中...');
-            const timeout = (isSafari || isIOS) ? 30000 : 10000;
+            const timeout = isIOS ? 15000 : (isSafari ? 30000 : 10000);
             console.log(`タイムアウト設定: ${timeout}ms`);
             
             const registration = await Promise.race([
@@ -251,12 +259,16 @@ class PushNotificationUI {
             // 4. サブスクリプション作成
             console.log('4️⃣ サブスクリプション作成中...');
             
-            // 🆕 Safari/iOSでは既存のサブスクリプションを先に削除
+            // Safari/iOSでは既存のサブスクリプションを先に削除
             if (isSafari || isIOS) {
-                const existingSub = await registration.pushManager.getSubscription();
-                if (existingSub) {
-                    console.log('既存のサブスクリプションを削除...');
-                    await existingSub.unsubscribe();
+                try {
+                    const existingSub = await registration.pushManager.getSubscription();
+                    if (existingSub) {
+                        console.log('既存のサブスクリプションを削除...');
+                        await existingSub.unsubscribe();
+                    }
+                } catch (e) {
+                    console.warn('既存サブスクリプション削除エラー:', e);
                 }
             }
             
@@ -303,7 +315,7 @@ class PushNotificationUI {
                 this.disableBtn.innerHTML = '<i class="bi bi-bell-slash me-2"></i>プッシュ通知を無効にする';
             }
             
-            // 🆕 テスト通知（Safari/iOSではスキップ）
+            // Safari/iOSではテスト通知をスキップ
             if (!isSafari && !isIOS) {
                 try {
                     new Notification('カブログ', {
@@ -320,18 +332,14 @@ class PushNotificationUI {
         } catch (error) {
             console.error('━━━ エラー発生 ━━━');
             console.error('エラー詳細:', error);
-            console.error('スタック:', error.stack);
             
             let errorMessage = error.message;
             
-            // Safari/iOS特有のエラーメッセージ
             if (isSafari || isIOS) {
                 if (error.message.includes('timeout')) {
                     errorMessage = 'Service Workerの準備に時間がかかっています。ページを再読み込みして再度お試しください。';
                 } else if (error.message.includes('NotAllowedError')) {
                     errorMessage = '通知が許可されていません。Safari の環境設定から通知を許可してください。';
-                } else if (error.message.includes('NotSupportedError')) {
-                    errorMessage = 'このデバイス/ブラウザではプッシュ通知がサポートされていません。';
                 }
             }
             
@@ -354,7 +362,7 @@ class PushNotificationUI {
             const registration = await Promise.race([
                 navigator.serviceWorker.ready,
                 new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('timeout')), 5000)
+                    setTimeout(() => reject(new Error('timeout')), 3000)
                 )
             ]);
             
@@ -386,7 +394,6 @@ class PushNotificationUI {
             completed = true;
             console.log('━━━ プッシュ通知無効化完了 ━━━');
             
-            // UI更新
             this.showStatus('プッシュ通知: 無効', 'secondary');
             this.enableBtn.style.display = 'block';
             this.enableBtn.disabled = false;
@@ -475,7 +482,6 @@ class PushNotificationUI {
     }
 }
 
-// DOMContentLoaded時に初期化
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOMContentLoaded: PushNotificationUI確認中...');
     
