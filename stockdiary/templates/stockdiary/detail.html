@@ -1193,7 +1193,105 @@
     background: var(--danger-light);
     transform: scale(1.1);
   }
+  /* ========== スマホでの余白最小化 ========== */
+  @media (max-width: 767.98px) {
+    /* メインコンテナの余白を最小化 */
+    .diary-detail-container {
+      padding: 0.5rem !important;
+    }
+    
+    /* 操作バーの余白を最小化 */
+    .action-bar {
+      padding: 0.5rem 0.75rem !important;
+      margin: -0.5rem -0.5rem 1rem -0.5rem !important;
+    }
+    
+    /* カードの余白を最小化 */
+    .card {
+      margin-bottom: 1rem !important;
+    }
+    
+    /* ヘッダーの余白を最小化 */
+    .diary-header-improved {
+      padding: 0.75rem !important;
+    }
+    
+    /* タブコンテンツの余白を最小化 */
+    .tab-content-improved {
+      padding: 0.75rem 0.5rem !important;
+    }
+    
+    /* 情報カードの余白を最小化 */
+    .info-card {
+      padding: 0.75rem !important;
+    }
+    
+    .info-grid {
+      gap: 0.75rem !important;
+    }
+    
+    /* 継続記録フォームの余白を最小化 */
+    .simplified-note-form {
+      padding: 0.75rem !important;
+      margin-bottom: 1rem !important;
+    }
+    
+    /* 継続記録カードの余白を最小化 */
+    .note-card-header {
+      padding: 0.75rem !important;
+    }
+    
+    .note-card-body {
+      padding: 0.75rem !important;
+    }
+    
+    /* プッシュ通知セクションの余白を最小化 */
+    #push-notification-section {
+      padding: 1rem !important;
+      margin: 1rem 0 !important;
+    }
+    
+    /* 通知アイテムの余白を最小化 */
+    .notification-item {
+      padding: 0.75rem !important;
+    }
+    
+    .analysis-template-item {
+      padding: 0.75rem !important;
+    }
+    
+    .analysis-items-detail {
+      padding: 0.75rem !important;
+    }
+  }
 
+  /* 極小デバイス用（360px以下）のさらなる最適化 */
+  @media (max-width: 360px) {
+    .diary-detail-container {
+      padding: 0.25rem !important;
+    }
+    
+    .action-bar {
+      padding: 0.5rem !important;
+      margin: -0.25rem -0.25rem 0.75rem -0.25rem !important;
+    }
+    
+    .diary-header-improved,
+    .tab-content-improved,
+    .info-card,
+    .simplified-note-form,
+    .note-card-header,
+    .note-card-body,
+    #push-notification-section,
+    .notification-item,
+    .analysis-template-item {
+      padding: 0.5rem !important;
+    }
+    
+    .info-grid {
+      gap: 0.5rem !important;
+    }
+  }
 </style>
 {% endblock %}
 
