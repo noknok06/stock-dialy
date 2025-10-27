@@ -765,6 +765,438 @@
     justify-content: center;
   }
 }
+
+/* 取引アイテムの最小高さを統一 */
+.transaction-item-improved {
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+}
+
+.split-item-improved {
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ヘッダー部分の改善 */
+.transaction-header-improved,
+.split-header-improved {
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  flex-shrink: 0; /* ヘッダーを固定 */
+}
+
+.transaction-date-improved,
+.split-date-improved {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 32px; /* 高さを統一 */
+}
+
+.transaction-date-improved i,
+.split-date-improved i {
+  font-size: 1.125rem;
+  color: var(--primary-color);
+}
+
+/* アクション部分の余白改善 */
+.transaction-actions-improved,
+.split-actions-improved {
+  display: flex;
+  gap: 0.625rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* バッジの統一サイズ */
+.badge-improved {
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px; /* タッチ領域確保 */
+}
+
+/* アイコンボタンのタッチ領域確保 */
+.btn-icon-improved {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+/* ボディ部分を柔軟に */
+.transaction-body-improved,
+.split-body-improved {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  flex: 1;
+}
+
+/* 詳細情報グリッドの改善 */
+.transaction-details-improved,
+.split-details-improved {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.875rem;
+}
+
+.detail-item-improved {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  min-height: 70px;
+}
+
+.detail-item-improved.highlight {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(59, 130, 246, 0.05));
+  border: 1px solid rgba(59, 130, 246, 0.15);
+}
+
+.detail-label-improved {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.detail-value-improved {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.detail-value-improved.strong {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+/* メモ部分の改善 */
+.transaction-memo-improved,
+.split-memo-improved {
+  padding: 0.875rem 1rem;
+  background: var(--bg-secondary);
+  border-left: 3px solid var(--primary-color);
+  border-radius: var(--radius-sm);
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  line-height: 1.5;
+}
+
+.transaction-memo-improved i,
+.split-memo-improved i {
+  color: var(--primary-color);
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+/* ========== フォーム部分の改善 ========== */
+
+.form-actions-improved {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-light);
+}
+
+.form-actions-improved .btn-action-improved {
+  flex: 1;
+  min-height: 48px;
+  justify-content: center;
+}
+
+/* ========== サマリーカードの改善 ========== */
+
+.transaction-summary-section {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.02));
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.summary-card-improved {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 1.25rem;
+  text-align: center;
+  transition: all 0.2s ease;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.summary-label {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.625rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.summary-value {
+  font-size: 1.625rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+/* ========== タブレット対応 (768px〜1024px) ========== */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .transaction-details-improved,
+  .split-details-improved {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .detail-item-improved:last-child {
+    grid-column: span 2;
+  }
+}
+
+/* ========== モバイル対応 (576px〜768px) ========== */
+@media (max-width: 768px) {
+  .transaction-item-improved {
+    min-height: 180px;
+    padding: 1rem;
+  }
+  
+  .split-item-improved {
+    min-height: 160px;
+    padding: 1rem;
+  }
+  
+  .transaction-header-improved,
+  .split-header-improved {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding-bottom: 0.875rem;
+    margin-bottom: 0.875rem;
+  }
+  
+  .transaction-actions-improved,
+  .split-actions-improved {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .transaction-details-improved,
+  .split-details-improved {
+    grid-template-columns: 1fr;
+    gap: 0.625rem;
+  }
+  
+  .detail-item-improved {
+    min-height: 60px;
+    padding: 0.625rem;
+  }
+  
+  .detail-label-improved {
+    font-size: 0.7rem;
+  }
+  
+  .detail-value-improved {
+    font-size: 0.9375rem;
+  }
+  
+  .detail-value-improved.strong {
+    font-size: 1rem;
+  }
+  
+  .form-actions-improved {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .form-actions-improved .btn-action-improved {
+    width: 100%;
+  }
+  
+  .summary-card-improved {
+    min-height: 90px;
+    padding: 1rem;
+  }
+  
+  .summary-value {
+    font-size: 1.375rem;
+  }
+}
+
+/* ========== 超小型デバイス (480px以下) ========== */
+@media (max-width: 480px) {
+  .transaction-item-improved {
+    min-height: 200px;
+    padding: 0.875rem;
+  }
+  
+  .transaction-date-improved,
+  .split-date-improved {
+    font-size: 0.875rem;
+  }
+  
+  .badge-improved {
+    padding: 0.375rem 0.625rem;
+    font-size: 0.75rem;
+    min-height: 28px;
+  }
+  
+  .btn-icon-improved {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+  }
+  
+  .transaction-memo-improved,
+  .split-memo-improved {
+    padding: 0.75rem 0.875rem;
+    font-size: 0.875rem;
+  }
+  
+  .summary-card-improved {
+    min-height: 85px;
+    padding: 0.875rem;
+  }
+  
+  .summary-label {
+    font-size: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .summary-value {
+    font-size: 1.25rem;
+  }
+  
+  .summary-value .unit {
+    font-size: 0.75rem;
+  }
+}
+
+/* ========== アクセシビリティ改善 ========== */
+
+/* フォーカス状態の強化 */
+.btn-icon-improved:focus,
+.btn-action-improved:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* タッチデバイス用のアクティブ状態 */
+@media (hover: none) {
+  .transaction-item-improved:active,
+  .split-item-improved:active {
+    background: var(--bg-secondary);
+  }
+  
+  .btn-icon-improved:active {
+    transform: scale(0.95);
+  }
+  
+  .btn-action-improved:active {
+    transform: scale(0.98);
+  }
+}
+
+/* ハイコントラストモード対応 */
+@media (prefers-contrast: high) {
+  .transaction-item-improved,
+  .split-item-improved,
+  .summary-card-improved,
+  .form-card-improved {
+    border-width: 2px;
+  }
+  
+  .btn-icon-improved,
+  .btn-action-improved {
+    border-width: 2px;
+  }
+}
+
+/* ========== アニメーション ========== */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.transaction-item-improved,
+.split-item-improved {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* ========== リスト間隔の調整 ========== */
+
+.transaction-list-improved > .transaction-item-improved:not(:last-child),
+.transaction-list-improved > .split-item-improved:not(:last-child),
+.transaction-list-improved > .form-card-improved:not(:last-child) {
+  margin-bottom: 1rem;
+}
+
+/* 編集フォームが表示されているときの調整 */
+.form-card-improved[id^="edit-form-"] {
+  margin-top: 1rem;
+}
+
+/* ========== ボタングループの調整 ========== */
+
+.d-flex.gap-2 {
+  gap: 0.625rem !important;
+  flex-wrap: wrap;
+}
+
+.d-flex.gap-2 .btn-action-improved {
+  min-height: 48px;
+  padding: 0.75rem 1.5rem;
+}
+
+@media (max-width: 576px) {
+  .d-flex.gap-2 {
+    flex-direction: column;
+    gap: 0.5rem !important;
+  }
+  
+  .d-flex.gap-2 .btn-action-improved {
+    width: 100%;
+  }
+}
 </style>
 
 <script>
