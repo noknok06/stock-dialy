@@ -5,68 +5,51 @@
 
 {% block head %}
 <style>
-:root {
-  --primary-color: #4a90e2;   /* 明るめの青 */
-  --primary-dark:  #357ABD;   /* 少し濃い青 */
-}
-
 body {
   background-color: #f9fafb;
-}
-
-.page-header {
-  margin-bottom: 1.5rem;
-}
-
-.page-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
 }
 
 .tag-badge-large {
   display: inline-flex;
   align-items: center;
   padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, rgba(79, 131, 204, 0.1), rgba(44, 90, 160, 0.1));
-  color: #2C5AA0;
+  background: linear-gradient(135deg, rgba(90, 126, 197, 0.1), rgba(72, 105, 173, 0.1));
+  color: var(--primary-color);
   border-radius: 0.5rem;
   font-weight: 600;
   font-size: 1rem;
-  border: 1px solid rgba(79, 131, 204, 0.2);
+  border: 1px solid rgba(90, 126, 197, 0.2);
 }
 
 .tag-badge-large i {
   margin-right: 0.5rem;
 }
 
-/* 統計カード（stock_list.htmlスタイル統一） */
+/* 統計カード */
 .stats-card {
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
   color: white;
-  border-radius: 0.75rem;
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
   margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-md);
 }
 
-/* フィルターコントロール（stock_list.htmlスタイル統一） */
+/* フィルターコントロール */
 .filter-controls {
   background: linear-gradient(135deg, #f8f9fc 0%, #e9ecef 100%);
-  border: 1px solid rgba(79, 131, 204, 0.1);
-  border-radius: 0.75rem;
+  border: 1px solid rgba(90, 126, 197, 0.1);
+  border-radius: var(--radius-lg);
   padding: 1.25rem;
   margin-bottom: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
 }
 
 /* カードスタイル */
 .card {
   border: none;
-  border-radius: 0.75rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
   margin-bottom: 1.5rem;
 }
@@ -92,13 +75,16 @@ body {
 .filter-tab {
   padding: 0.5rem 1rem;
   border-radius: 9999px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-primary);
   background: white;
-  color: #6b7280;
+  color: var(--text-secondary);
   text-decoration: none;
   font-size: 0.875rem;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: all var(--duration-200) var(--ease-in-out);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .filter-tab.active,
@@ -115,35 +101,23 @@ body {
   align-items: center;
 }
 
-.form-control {
-  border-radius: 0.5rem;
-  padding: 0.625rem 0.75rem;
-  border: 1px solid #d1d5db;
-  flex-grow: 1;
-}
-
-.form-control:focus {
-  border-color: #a5b4fc;
-  box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.25);
-}
-
-/* 銘柄テーブル（stock_list.htmlスタイル統一） */
+/* 銘柄テーブル */
 .table-hover tbody tr:hover {
-  background-color: rgba(79, 131, 204, 0.04);
+  background-color: rgba(90, 126, 197, 0.04);
 }
 
 .table thead th {
   background: linear-gradient(135deg, #f8f9fc 0%, #e9ecef 100%);
-  border-bottom: 2px solid rgba(79, 131, 204, 0.1);
+  border-bottom: 2px solid rgba(90, 126, 197, 0.1);
   font-weight: 600;
-  color: #2d3748;
+  color: var(--text-primary);
   padding: 0.75rem;
   font-size: 0.875rem;
 }
 
 .table td {
   padding: 0.875rem 0.75rem;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--border-light);
   vertical-align: middle;
 }
 
@@ -153,31 +127,31 @@ body {
 
 .stock-name {
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 
 .stock-symbol {
   color: var(--primary-color);
   font-size: 0.8rem;
-  font-family: monospace;
+  font-family: var(--font-family-mono);
   font-weight: 600;
 }
 
 .stock-sector {
-  background: linear-gradient(135deg, rgba(79, 131, 204, 0.1), rgba(44, 90, 160, 0.1));
-  color: #2C5AA0;
+  background: linear-gradient(135deg, rgba(90, 126, 197, 0.1), rgba(72, 105, 173, 0.1));
+  color: var(--primary-color);
   padding: 0.15rem 0.35rem;
-  border-radius: 0.25rem;
+  border-radius: var(--radius-sm);
   font-size: 0.7rem;
   font-weight: 600;
-  border: 1px solid rgba(79, 131, 204, 0.2);
+  border: 1px solid rgba(90, 126, 197, 0.2);
 }
 
 .stat-badge {
   display: inline-block;
   padding: 0.2rem 0.5rem;
-  border-radius: 0.25rem;
+  border-radius: var(--radius-sm);
   font-size: 0.75rem;
   font-weight: 600;
   min-width: 2rem;
@@ -185,19 +159,19 @@ body {
 }
 
 .stat-total { 
-  background: linear-gradient(135deg, #3b82f6, #2563eb); 
+  background: linear-gradient(135deg, var(--info-color), #2563eb); 
   color: white; 
   box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
 }
 
 .stat-active { 
-  background: linear-gradient(135deg, #10b981, #059669); 
+  background: linear-gradient(135deg, var(--success-color), #059669); 
   color: white; 
   box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
 }
 
 .stat-sold { 
-  background: linear-gradient(135deg, #f59e0b, #d97706); 
+  background: linear-gradient(135deg, var(--warning-color), #d97706); 
   color: white; 
   box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
 }
@@ -213,8 +187,8 @@ body {
   text-align: center;
   padding: 3rem 2rem;
   background: white;
-  border-radius: 0.75rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 .empty-state-icon {
@@ -223,7 +197,7 @@ body {
   justify-content: center;
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, rgba(79, 131, 204, 0.1), rgba(44, 90, 160, 0.05));
+  background: linear-gradient(135deg, rgba(90, 126, 197, 0.1), rgba(72, 105, 173, 0.05));
   color: var(--primary-color);
   border-radius: 50%;
   margin-bottom: 1.5rem;
@@ -233,11 +207,11 @@ body {
   font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: 0.75rem;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .empty-state-description {
-  color: #6b7280;
+  color: var(--text-secondary);
   margin-bottom: 1.5rem;
   max-width: 500px;
   margin-left: auto;
@@ -254,13 +228,13 @@ body {
   .filter-controls {
     padding: 0.875rem;
     margin: 0 -0.25rem 1.25rem -0.25rem;
-    border-radius: 0.625rem;
+    border-radius: var(--radius-md);
   }
   
   .stats-card {
     margin: 0 -0.25rem 1.25rem -0.25rem;
     padding: 1.25rem 1rem;
-    border-radius: 0.625rem;
+    border-radius: var(--radius-md);
   }
   
   .stats-card .row {
@@ -269,14 +243,6 @@ body {
   
   .stats-card .col-6 {
     margin-bottom: 0.75rem;
-  }
-  
-  .page-header {
-    margin-bottom: 1.25rem;
-  }
-  
-  .page-title {
-    font-size: 1.25rem;
   }
   
   .tag-badge-large {
@@ -299,9 +265,18 @@ body {
 
   .table-responsive {
     font-size: 0.875rem;
-    border-radius: 0.75rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
     margin: 0 -0.5rem;
+  }
+  
+  /* モバイルでのボタン調整 */
+  .btn {
+    font-size: 0.875rem;
+  }
+  
+  .btn i {
+    font-size: 1rem;
   }
 }
 
@@ -328,16 +303,7 @@ body {
   .stats-card .small {
     font-size: 0.75rem;
   }
-  
-  .page-header {
-    text-align: center;
-    margin-bottom: 1rem;
-  }
-  
-  .page-title {
-    font-size: 1.125rem;
-  }
-  
+
   .tag-badge-large {
     font-size: 0.85rem;
     padding: 0.35rem 0.7rem;
@@ -355,31 +321,30 @@ body {
   }
   
   .filter-tab i {
-    display: none; /* アイコンを非表示 */
+    display: none;
   }
   
   /* モバイルテーブル調整 */
-  .mobile-table th,
-  .mobile-table td {
+  .table th,
+  .table td {
     padding: 0.4rem 0.25rem;
   }
   
-  .mobile-table .stock-name {
+  .stock-name {
     font-size: 0.8rem;
   }
   
-  .mobile-table .stock-symbol {
+  .stock-symbol {
     font-size: 0.65rem;
   }
   
-  .mobile-table .stock-meta {
-    font-size: 0.6rem;
-    line-height: 1.3;
+  .btn-group-sm .btn {
+    padding: 0.25rem 0.4rem;
+    font-size: 0.75rem;
   }
   
-  .mobile-table .btn-group-sm .btn {
-    padding: 0.2rem 0.3rem;
-    font-size: 0.65rem;
+  .btn-group-sm .btn i {
+    font-size: 0.875rem;
   }
 }
 </style>
@@ -435,33 +400,41 @@ body {
     <div class="filter-tabs">
       <a href="?status=all&q={{ search_query }}" 
          class="filter-tab {% if status_filter == 'all' %}active{% endif %}">
-        <i class="bi bi-list me-1"></i> すべて
+        <i class="bi bi-list"></i>
+        <span>すべて</span>
       </a>
       <a href="?status=active&q={{ search_query }}" 
          class="filter-tab {% if status_filter == 'active' %}active{% endif %}">
-        <i class="bi bi-briefcase me-1"></i> 保有中
+        <i class="bi bi-briefcase"></i>
+        <span>保有中</span>
       </a>
       <a href="?status=sold&q={{ search_query }}" 
          class="filter-tab {% if status_filter == 'sold' %}active{% endif %}">
-        <i class="bi bi-cash-coin me-1"></i> 売却済み
+        <i class="bi bi-cash-coin"></i>
+        <span>売却済み</span>
       </a>
       <a href="?status=memo&q={{ search_query }}" 
          class="filter-tab {% if status_filter == 'memo' %}active{% endif %}">
-        <i class="bi bi-sticky me-1"></i> メモ
+        <i class="bi bi-sticky"></i>
+        <span>メモ</span>
       </a>
     </div>
 
     <form method="get" class="search-form">
       <input type="hidden" name="status" value="{{ status_filter }}">
-      <input type="text" name="q" class="form-control" placeholder="銘柄名・証券コード・業種で検索" value="{{ search_query }}">
+      <input type="text" 
+             name="q" 
+             class="form-control" 
+             placeholder="銘柄名・証券コード・業種で検索" 
+             value="{{ search_query }}">
       <button type="submit" class="btn btn-primary">
         <i class="bi bi-search"></i>
-        <span class="d-none d-sm-inline ms-1">検索</span>
+        <span class="d-none d-sm-inline">検索</span>
       </button>
       {% if search_query %}
         <a href="?status={{ status_filter }}" class="btn btn-outline-secondary">
           <i class="bi bi-x-lg"></i>
-          <span class="d-none d-sm-inline ms-1">クリア</span>
+          <span class="d-none d-sm-inline">クリア</span>
         </a>
       {% endif %}
     </form>
@@ -496,12 +469,14 @@ body {
               <td class="text-center">
                 <div class="btn-group btn-group-sm">
                   <a href="{% url 'stockdiary:stock_list' %}?q={{ stock.symbol }}" 
-                     class="btn btn-outline-primary" title="記録一覧">
+                     class="btn btn-outline-primary" 
+                     title="記録一覧">
                     <i class="bi bi-list"></i>
                   </a>
                   {% if stock.symbol %}
                     <a href="{% url 'stockdiary:create' %}?symbol={{ stock.symbol }}&name={{ stock.name|urlencode }}" 
-                       class="btn btn-outline-success" title="新規記録作成">
+                       class="btn btn-outline-success" 
+                       title="新規記録作成">
                       <i class="bi bi-plus"></i>
                     </a>
                   {% endif %}
@@ -540,7 +515,8 @@ body {
       </p>
       {% if not search_query %}
         <a href="{% url 'stockdiary:create' %}" class="btn btn-primary">
-          <i class="bi bi-plus-lg me-1"></i> 新しい投資記録を作成
+          <i class="bi bi-plus-lg"></i>
+          <span>新しい投資記録を作成</span>
         </a>
       {% endif %}
     </div>
@@ -562,7 +538,13 @@ body {
     const submitButton = searchForm.querySelector('button[type="submit"]');
     
     searchForm.addEventListener('submit', function() {
-      submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>検索中...';
+      const buttonText = submitButton.querySelector('span');
+      const buttonIcon = submitButton.querySelector('i');
+      
+      buttonIcon.className = 'bi bi-hourglass-split';
+      if (buttonText) {
+        buttonText.textContent = '検索中...';
+      }
       submitButton.disabled = true;
     });
     

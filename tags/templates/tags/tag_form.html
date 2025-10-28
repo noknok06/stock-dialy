@@ -4,165 +4,371 @@
 {% block title %}{% if form.instance.pk %}タグの編集{% else %}新規タグ作成{% endif %} | カブログ{% endblock %}
 
 {% block head %}
-<!-- Bootstrap Icons -->
 <style>
-  :root {
-    --primary-color: #4f46e5;
-    --success-color: #10b981;
-    --danger-color: #ef4444;
-    --light-bg: #f9fafb;
-    --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
   body {
-    background-color: var(--light-bg);
+    background-color: var(--bg-color);
   }
 
-  /* フォームスタイル */
+  /* フォームカードスタイル */
   .form-card {
     border: none;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-lg);
     box-shadow: var(--card-shadow);
     overflow: hidden;
+    margin-bottom: 1.5rem;
   }
 
   .form-card-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
     color: white;
-    padding: 1.25rem;
+    padding: 1.25rem 1.5rem;
     border-bottom: none;
   }
 
   .form-card-header h3 {
     margin: 0;
     font-weight: 600;
+    font-size: 1.25rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
   }
 
-  .form-card-body {
-    padding: 1.5rem;
+  .form-card-header i {
+    font-size: 1.375rem;
   }
 
+  .form-card-body {
+    padding: 1.5rem;
+    background-color: white;
+  }
+
+  /* フォーム要素 */
   .form-label {
     font-weight: 500;
     margin-bottom: 0.5rem;
-    color: #374151;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
   }
 
-  .form-control {
-    border-radius: 0.375rem;
-    padding: 0.625rem 0.75rem;
-    border: 1px solid #d1d5db;
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  .form-label i {
+    color: var(--text-tertiary);
+    font-size: 0.875rem;
   }
 
-  .form-control:focus {
-    border-color: #a5b4fc;
-    box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.25);
-  }
-
-  .btn-secondary {
-    background-color: #6b7280;
-    border-color: #6b7280;
-  }
-
-  .btn-secondary:hover {
-    background-color: #4b5563;
-    border-color: #4b5563;
+  .form-text {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-top: 0.375rem;
+    display: block;
   }
 
   /* タグプレビュー */
+  .tag-preview-section {
+    background: linear-gradient(135deg, var(--primary-light), rgba(90, 126, 197, 0.05));
+    border: 1px solid rgba(90, 126, 197, 0.2);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .tag-preview-label {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
   .tag-preview {
     display: inline-flex;
     align-items: center;
     padding: 0.5rem 1rem;
-    background-color: #eef2ff;
+    background-color: white;
     color: var(--primary-color);
-    border-radius: 9999px;
+    border-radius: var(--radius-full);
     font-weight: 500;
-    margin-top: 1rem;
+    font-size: 0.9375rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(90, 126, 197, 0.2);
+    transition: all var(--duration-200) var(--ease-in-out);
   }
 
   .tag-preview i {
     margin-right: 0.5rem;
+    color: var(--primary-color);
   }
 
-  /* ヘルプテキスト */
+  .tag-preview-empty {
+    color: var(--text-tertiary);
+    font-style: italic;
+  }
+
+  /* ヘルプセクション */
   .help-section {
-    background-color: #f3f4f6;
-    border-radius: 0.5rem;
-    padding: 1rem;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(79, 70, 229, 0.05));
+    border-left: 3px solid var(--primary-color);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
     margin-top: 1.5rem;
   }
 
   .help-title {
     font-weight: 600;
-    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: #111827;
+    color: var(--text-primary);
+  }
+
+  .help-title i {
+    color: var(--primary-color);
+    font-size: 1.125rem;
   }
 
   .help-text {
-    color: #4b5563;
+    color: var(--text-secondary);
     font-size: 0.875rem;
+    line-height: 1.6;
     margin-bottom: 0;
+  }
+
+  .help-list {
+    margin: 0.75rem 0 0 0;
+    padding-left: 1.5rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+  }
+
+  .help-list li {
+    margin-bottom: 0.375rem;
+  }
+
+  .help-list li:last-child {
+    margin-bottom: 0;
+  }
+
+  /* エラー表示 */
+  .error-message {
+    color: var(--danger-color);
+    font-size: 0.875rem;
+    margin-top: 0.375rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .error-message i {
+    font-size: 1rem;
+  }
+
+  /* フォームアクション */
+  .form-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-light);
+  }
+
+  /* レスポンシブ調整 */
+  @media (max-width: 768px) {
+    .form-card-header {
+      padding: 1rem 1.25rem;
+    }
+
+    .form-card-header h3 {
+      font-size: 1.125rem;
+    }
+
+    .form-card-body {
+      padding: 1.25rem;
+    }
+
+    .tag-preview-section {
+      padding: 1rem;
+    }
+
+    .help-section {
+      padding: 1rem;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .container {
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+    }
+
+    .form-card-header {
+      padding: 0.875rem 1rem;
+    }
+
+    .form-card-header h3 {
+      font-size: 1rem;
+    }
+
+    .form-card-body {
+      padding: 1rem;
+    }
+
+    .tag-preview-section {
+      padding: 0.875rem;
+    }
+
+    .tag-preview {
+      font-size: 0.875rem;
+      padding: 0.4rem 0.875rem;
+    }
+
+    .help-section {
+      padding: 0.875rem;
+    }
+
+    .help-title {
+      font-size: 0.9375rem;
+    }
+
+    .help-text,
+    .help-list {
+      font-size: 0.8125rem;
+    }
+
+    /* モバイルでのボタン配置 */
+    .form-actions {
+      flex-direction: column-reverse;
+      gap: 0.5rem;
+    }
+
+    .form-actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  /* アニメーション */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .form-card {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  /* フォーカス時のプレビュー強調 */
+  .tag-preview.active {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
   }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container py-4">
+  <!-- ページヘッダー -->
+  <div class="page-header">
+    <h1 class="page-title">
+      <i class="bi bi-tag"></i>
+      <span>{% if form.instance.pk %}タグの編集{% else %}新規タグ作成{% endif %}</span>
+    </h1>
+    <p class="page-subtitle">
+      投資記録を分類・整理するためのタグを{% if form.instance.pk %}編集{% else %}作成{% endif %}します
+    </p>
+  </div>
+
   <div class="row justify-content-center">
     <div class="col-lg-8">
       <div class="card form-card">
         <div class="form-card-header">
           <h3>
-            <i class="bi bi-tag"></i>
-            {% if form.instance.pk %}タグの編集{% else %}新規タグ作成{% endif %}
+            <i class="bi bi-{% if form.instance.pk %}pencil-square{% else %}plus-circle{% endif %}"></i>
+            <span>タグ情報</span>
           </h3>
         </div>
         
         <div class="form-card-body">
-          <form method="post">
+          <form method="post" id="tagForm">
             {% csrf_token %}
             
-            <div class="mb-3">
-              <label for="{{ form.name.id_for_label }}" class="form-label">タグ名</label>
+            <!-- タグ名入力 -->
+            <div class="mb-4">
+              <label for="{{ form.name.id_for_label }}" class="form-label">
+                <i class="bi bi-tag-fill"></i>
+                <span>タグ名</span>
+                <span class="text-danger">*</span>
+              </label>
               {{ form.name }}
               {% if form.name.errors %}
-                <div class="text-danger mt-1">{{ form.name.errors }}</div>
+                <div class="error-message">
+                  <i class="bi bi-exclamation-circle"></i>
+                  <span>{{ form.name.errors.0 }}</span>
+                </div>
               {% endif %}
-              
-              <small class="form-text text-muted">投資戦略や銘柄の特性を表すタグ名を入力してください</small>
+              <small class="form-text">
+                投資戦略や銘柄の特性を表す分かりやすいタグ名を入力してください
+              </small>
             </div>
             
-            <div class="mb-3">
-              <label for="{{ form.description.id_for_label }}" class="form-label">説明 (任意)</label>
+            <!-- 説明入力 -->
+            <div class="mb-4">
+              <label for="{{ form.description.id_for_label }}" class="form-label">
+                <i class="bi bi-text-paragraph"></i>
+                <span>説明</span>
+                <span class="text-muted">(任意)</span>
+              </label>
               {{ form.description }}
               {% if form.description.errors %}
-                <div class="text-danger mt-1">{{ form.description.errors }}</div>
+                <div class="error-message">
+                  <i class="bi bi-exclamation-circle"></i>
+                  <span>{{ form.description.errors.0 }}</span>
+                </div>
               {% endif %}
-              <small class="form-text text-muted">このタグの用途や意味を簡単に説明してください</small>
+              <small class="form-text">
+                このタグの用途や意味を簡単に説明してください（後で参照する際に便利です）
+              </small>
             </div>
             
             <!-- タグプレビュー -->
-            <div class="mb-4">
-              <label class="form-label">プレビュー</label>
-              <div class="tag-preview">
+            <div class="tag-preview-section">
+              <div class="tag-preview-label">
+                <i class="bi bi-eye"></i>
+                <span>プレビュー</span>
+              </div>
+              <div class="tag-preview" id="tagPreview">
                 <i class="bi bi-tag-fill"></i>
-                <span id="tagPreviewText">{% if form.instance.name %}{{ form.instance.name }}{% else %}タグ名{% endif %}</span>
+                <span id="tagPreviewText">
+                  {% if form.instance.name %}
+                    {{ form.instance.name }}
+                  {% else %}
+                    <span class="tag-preview-empty">タグ名を入力してください</span>
+                  {% endif %}
+                </span>
               </div>
             </div>
             
-            <div class="d-flex justify-content-between mt-4">
-              <a href="{% url 'tags:list' %}" class="btn btn-secondary btn-icon">
-                <i class="bi bi-arrow-left me-1"></i> キャンセル
+            <!-- フォームアクション -->
+            <div class="form-actions">
+              <a href="{% url 'tags:list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+                <span>キャンセル</span>
               </a>
-              <button type="submit" class="btn btn-primary btn-icon">
-                <i class="bi bi-save me-1"></i> 保存
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-{% if form.instance.pk %}check-lg{% else %}plus-lg{% endif %}"></i>
+                <span>{% if form.instance.pk %}更新{% else %}作成{% endif %}</span>
               </button>
             </div>
           </form>
@@ -170,12 +376,19 @@
           <!-- ヘルプセクション -->
           <div class="help-section">
             <h5 class="help-title">
-              <i class="bi bi-info-circle text-primary"></i> 効果的なタグの作り方
+              <i class="bi bi-lightbulb"></i>
+              <span>効果的なタグの作り方</span>
             </h5>
             <p class="help-text">
-              タグは投資記録を整理するのに役立ちます。業種（テクノロジー、金融など）、投資戦略（成長株、配当株など）、
-              市場（国内、米国など）、または独自の分類（要監視、長期保有など）でタグを作成すると効果的です。
+              タグは投資記録を整理・分類するための重要なツールです。以下のような観点でタグを作成すると効果的です：
             </p>
+            <ul class="help-list">
+              <li><strong>業種・セクター:</strong> テクノロジー、金融、ヘルスケアなど</li>
+              <li><strong>投資戦略:</strong> 成長株、配当株、バリュー株など</li>
+              <li><strong>市場・地域:</strong> 国内、米国、新興国など</li>
+              <li><strong>投資期間:</strong> 短期、中期、長期など</li>
+              <li><strong>独自分類:</strong> 要監視、優先度高、ポートフォリオコアなど</li>
+            </ul>
           </div>
         </div>
       </div>
@@ -188,11 +401,93 @@
 
 {% block scripts %}
 {{ block.super }}
-<!-- スピードダイアルのJSを明示的に読み込む -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     // スピードダイアルを初期化
     initializeSpeedDial();
+    
+    // タグ名入力のリアルタイムプレビュー
+    const nameInput = document.getElementById('{{ form.name.id_for_label }}');
+    const previewText = document.getElementById('tagPreviewText');
+    const previewContainer = document.getElementById('tagPreview');
+    
+    if (nameInput && previewText) {
+      // 初期値が空の場合のプレースホルダー処理
+      const updatePreview = () => {
+        const value = nameInput.value.trim();
+        if (value) {
+          previewText.innerHTML = value;
+          previewText.classList.remove('tag-preview-empty');
+        } else {
+          previewText.innerHTML = '<span class="tag-preview-empty">タグ名を入力してください</span>';
+        }
+      };
+      
+      // 入力イベント
+      nameInput.addEventListener('input', updatePreview);
+      
+      // フォーカス時のアニメーション
+      nameInput.addEventListener('focus', () => {
+        previewContainer.classList.add('active');
+      });
+      
+      nameInput.addEventListener('blur', () => {
+        previewContainer.classList.remove('active');
+      });
+      
+      // 初期化
+      updatePreview();
+    }
+    
+    // フォーム送信時の処理
+    const form = document.getElementById('tagForm');
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const btnIcon = submitBtn.querySelector('i');
+        const btnText = submitBtn.querySelector('span');
+        
+        // ボタンの無効化とローディング表示
+        submitBtn.disabled = true;
+        btnIcon.className = 'bi bi-hourglass-split';
+        if (btnText) {
+          btnText.textContent = '保存中...';
+        }
+      });
+    }
+    
+    // 入力値の検証（リアルタイム）
+    if (nameInput) {
+      nameInput.addEventListener('blur', function() {
+        const value = this.value.trim();
+        if (!value) {
+          this.classList.add('is-invalid');
+        } else {
+          this.classList.remove('is-invalid');
+          this.classList.add('is-valid');
+        }
+      });
+      
+      nameInput.addEventListener('input', function() {
+        if (this.classList.contains('is-invalid') && this.value.trim()) {
+          this.classList.remove('is-invalid');
+          this.classList.add('is-valid');
+        }
+      });
+    }
+    
+    // Enterキーでの送信防止（説明欄での改行を許可）
+    const descriptionInput = document.getElementById('{{ form.description.id_for_label }}');
+    if (nameInput) {
+      nameInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (descriptionInput) {
+            descriptionInput.focus();
+          }
+        }
+      });
+    }
   });
 </script>
 {% endblock %}
