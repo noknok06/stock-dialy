@@ -46,10 +46,10 @@
 
   <!-- アクションボタン -->
   <div class="d-flex gap-2 mb-3">
-    <button type="button" class="btn-action-improved btn-primary-improved" onclick="toggleAddForm()">
+    <button type="button" class="btn btn-primary" onclick="toggleAddForm()">
       <i class="bi bi-cart-plus me-1"></i>取引を追加
     </button>
-    <button type="button" class="btn-action-improved btn-info-improved" onclick="toggleSplitForm()">
+    <button type="button" class="btn btn-info" onclick="toggleSplitForm()">
       <i class="bi bi-scissors me-1"></i>株式分割を追加
     </button>
   </div>
@@ -58,7 +58,7 @@
   <div id="addTransactionForm" class="form-card-improved mb-3" style="display: none;">
     <div class="form-header-improved bg-primary-improved">
       <span><i class="bi bi-plus-circle me-2"></i>取引を追加</span>
-      <button type="button" class="btn-close-improved" onclick="closeAddForm()">
+      <button type="button" class="btn-info" onclick="closeAddForm()">
         <i class="bi bi-x-lg"></i>
       </button>
     </div>
@@ -100,10 +100,10 @@
         </div>
         
         <div class="form-actions-improved">
-          <button type="submit" class="btn-action-improved btn-primary-improved">
+          <button type="submit" class="btn btn-primary">
             <i class="bi bi-save me-1"></i>保存
           </button>
-          <button type="button" class="btn-action-improved btn-secondary-improved" onclick="closeAddForm()">
+          <button type="button" class="btn btn-secondary" onclick="closeAddForm()">
             キャンセル
           </button>
         </div>
@@ -115,7 +115,7 @@
   <div id="addSplitForm" class="form-card-improved mb-3" style="display: none;">
     <div class="form-header-improved bg-info-improved">
       <span><i class="bi bi-scissors me-2"></i>株式分割を追加</span>
-      <button type="button" class="btn-close-improved" onclick="closeSplitForm()">
+      <button type="button" class="btn-info" onclick="closeSplitForm()">
         <i class="bi bi-x-lg"></i>
       </button>
     </div>
@@ -149,10 +149,10 @@
         </div>
         
         <div class="form-actions-improved">
-          <button type="submit" class="btn-action-improved btn-info-improved">
+          <button type="submit" class="btn btn-info">
             <i class="bi bi-scissors me-1"></i>追加
           </button>
-          <button type="button" class="btn-action-improved btn-secondary-improved" onclick="closeSplitForm()">
+          <button type="button" class="btn btn-secondary" onclick="closeSplitForm()">
             キャンセル
           </button>
         </div>
@@ -182,10 +182,10 @@
               <span class="badge-improved {% if transaction.transaction_type == 'buy' %}badge-primary{% else %}badge-danger{% endif %}">
                 {{ transaction.get_transaction_type_display }}
               </span>
-              <button class="btn-icon-improved" onclick="showEditForm({{ transaction.id }})">
+              <button class="btn-icon" onclick="showEditForm({{ transaction.id }})">
                 <i class="bi bi-pencil"></i>
               </button>
-              <button class="btn-icon-improved btn-danger-icon" onclick="deleteTransaction({{ transaction.id }}, '{{ transaction.transaction_date|date:"Y年m月d日" }}')">
+              <button class="btn-icon btn-danger-icon" onclick="deleteTransaction({{ transaction.id }}, '{{ transaction.transaction_date|date:"Y年m月d日" }}')">
                 <i class="bi bi-trash"></i>
               </button>
             </div>
@@ -220,7 +220,7 @@
         <div class="form-card-improved mb-3" id="edit-form-{{ transaction.id }}" style="display: none;">
           <div class="form-header-improved bg-warning-improved">
             <span><i class="bi bi-pencil me-2"></i>取引を編集</span>
-            <button type="button" class="btn-close-improved" onclick="hideEditForm({{ transaction.id }})">
+            <button type="button" class="btn-info" onclick="hideEditForm({{ transaction.id }})">
               <i class="bi bi-x-lg"></i>
             </button>
           </div>
@@ -262,10 +262,10 @@
               </div>
               
               <div class="form-actions-improved">
-                <button type="submit" class="btn-action-improved btn-primary-improved">
+                <button type="submit" class="btn btn-primary">
                   <i class="bi bi-save me-1"></i>更新
                 </button>
-                <button type="button" class="btn-action-improved btn-secondary-improved" onclick="hideEditForm({{ transaction.id }})">
+                <button type="button" class="btn btn-secondary" onclick="hideEditForm({{ transaction.id }})">
                   キャンセル
                 </button>
               </div>
@@ -288,10 +288,10 @@
               {% if split.is_applied %}
                 <span class="badge-improved badge-success">適用済み</span>
               {% else %}
-                <button class="btn-action-improved btn-warning-improved btn-sm" onclick="applySplit({{ split.id }})">
+                <button class="btn btn-warning btn--sm" onclick="applySplit({{ split.id }})">
                   <i class="bi bi-check-circle me-1"></i>適用
                 </button>
-                <button class="btn-icon-improved btn-danger-icon" onclick="deleteSplit({{ split.id }})">
+                <button class="btn-icon btn-danger-icon" onclick="deleteSplit({{ split.id }})">
                   <i class="bi bi-trash"></i>
                 </button>
               {% endif %}
@@ -388,66 +388,6 @@
   margin-left: 0.25rem;
 }
 
-/* Action Buttons */
-.btn-action-improved {
-  padding: 0.625rem 1.25rem;
-  border-radius: var(--radius-sm);
-  border: none;
-  font-weight: 500;
-  font-size: 0.9375rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.btn-action-improved:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
-}
-
-.btn-primary-improved {
-  background: var(--primary-color);
-  color: white;
-}
-
-.btn-primary-improved:hover {
-  background: var(--primary-hover);
-}
-
-.btn-info-improved {
-  background: #0ea5e9;
-  color: white;
-}
-
-.btn-info-improved:hover {
-  background: #0284c7;
-}
-
-.btn-secondary-improved {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-.btn-secondary-improved:hover {
-  background: var(--border-color);
-}
-
-.btn-warning-improved {
-  background: #f59e0b;
-  color: white;
-}
-
-.btn-warning-improved:hover {
-  background: #d97706;
-}
-
-.btn-sm {
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-}
-
 /* Form Cards */
 .form-card-improved {
   background: var(--bg-primary);
@@ -475,23 +415,6 @@
 
 .form-header-improved.bg-warning-improved {
   background: #f59e0b;
-}
-
-.btn-close-improved {
-  background: transparent;
-  border: none;
-  color: white;
-  cursor: pointer;
-  padding: 0.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-sm);
-  transition: all 0.2s ease;
-}
-
-.btn-close-improved:hover {
-  background: rgba(255, 255, 255, 0.2);
 }
 
 .form-body-improved {
@@ -634,7 +557,7 @@
   color: #166534;
 }
 
-.btn-icon-improved {
+.btn-icon {
   width: 32px;
   height: 32px;
   display: flex;
@@ -648,12 +571,12 @@
   color: var(--text-secondary);
 }
 
-.btn-icon-improved:hover {
+.btn-icon:hover {
   background: var(--bg-secondary);
   color: var(--text-primary);
 }
 
-.btn-icon-improved.btn-danger-icon:hover {
+.btn-icon.btn-danger-icon:hover {
   background: #fee2e2;
   color: #991b1b;
   border-color: #fecaca;
@@ -759,11 +682,6 @@
   .form-actions-improved {
     flex-direction: column;
   }
-
-  .btn-action-improved {
-    width: 100%;
-    justify-content: center;
-  }
 }
 
 /* 取引アイテムの最小高さを統一 */
@@ -823,24 +741,6 @@
   display: inline-flex;
   align-items: center;
   min-height: 32px; /* タッチ領域確保 */
-}
-
-/* アイコンボタンのタッチ領域確保 */
-.btn-icon-improved {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  min-height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border-color);
-  background: var(--bg-primary);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: var(--text-secondary);
-  flex-shrink: 0;
 }
 
 /* ボディ部分を柔軟に */
@@ -928,7 +828,7 @@
   border-top: 1px solid var(--border-light);
 }
 
-.form-actions-improved .btn-action-improved {
+.form-actions-improved .btn {
   flex: 1;
   min-height: 48px;
   justify-content: center;
@@ -1040,7 +940,7 @@
     gap: 0.5rem;
   }
   
-  .form-actions-improved .btn-action-improved {
+  .form-actions-improved .btn {
     width: 100%;
   }
   
@@ -1072,13 +972,6 @@
     min-height: 28px;
   }
   
-  .btn-icon-improved {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-    min-height: 32px;
-  }
-  
   .transaction-memo-improved,
   .split-memo-improved {
     padding: 0.75rem 0.875rem;
@@ -1106,26 +999,11 @@
 
 /* ========== アクセシビリティ改善 ========== */
 
-/* フォーカス状態の強化 */
-.btn-icon-improved:focus,
-.btn-action-improved:focus {
-  outline: 2px solid var(--primary-color);
-  outline-offset: 2px;
-}
-
 /* タッチデバイス用のアクティブ状態 */
 @media (hover: none) {
   .transaction-item-improved:active,
   .split-item-improved:active {
     background: var(--bg-secondary);
-  }
-  
-  .btn-icon-improved:active {
-    transform: scale(0.95);
-  }
-  
-  .btn-action-improved:active {
-    transform: scale(0.98);
   }
 }
 
@@ -1135,11 +1013,6 @@
   .split-item-improved,
   .summary-card-improved,
   .form-card-improved {
-    border-width: 2px;
-  }
-  
-  .btn-icon-improved,
-  .btn-action-improved {
     border-width: 2px;
   }
 }
@@ -1182,7 +1055,7 @@
   flex-wrap: wrap;
 }
 
-.d-flex.gap-2 .btn-action-improved {
+.d-flex.gap-2 .btn {
   min-height: 48px;
   padding: 0.75rem 1.5rem;
 }
@@ -1193,7 +1066,7 @@
     gap: 0.5rem !important;
   }
   
-  .d-flex.gap-2 .btn-action-improved {
+  .d-flex.gap-2 .btn {
     width: 100%;
   }
 }

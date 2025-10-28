@@ -445,12 +445,12 @@
     flex-shrink: 0;
   }
   
-  .notification-actions .btn-outline-danger {
+  .notification-actions {
     border-color: var(--danger-light);
     color: var(--danger-color);
   }
   
-  .notification-actions .btn-outline-danger:hover {
+  .notification-actions {
     background: var(--danger-color);
     border-color: var(--danger-color);
     color: white;
@@ -645,7 +645,7 @@
     border-bottom: none;
   }
   
-  #notificationModal .modal-header .btn-close {
+  #notificationModal .modal-header {
     filter: brightness(0) invert(1);
   }
   
@@ -761,27 +761,6 @@
   }
 
   /* ========== 継続記録セクションの改善 ========== */
-  
-  /* フォーム切り替えボタン */
-  #toggleNoteForm {
-    min-height: 48px;
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    padding: 0.75rem 1.5rem;
-    background: var(--primary-color);
-    border: none;
-    color: white;
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  #toggleNoteForm:hover {
-    background: var(--primary-dark);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
-  }
   
   /* 継続記録フォーム */
   .simplified-note-form {
@@ -1122,12 +1101,12 @@
   }
   
   /* 削除ボタンのスタイル改善 */
-  .note-badges .btn-sm {
+  .note-badges {
     transition: all 0.2s ease;
     border-radius: var(--radius-sm);
   }
   
-  .note-badges .btn-sm:hover {
+  .note-badges {
     background: var(--danger-light);
     transform: scale(1.1);
   }
@@ -1244,7 +1223,7 @@
     
     <div class="desktop-actions">
       <button type="button" 
-              class="btn btn-info btn-sm"
+              class="btn btn-info btn--sm"
               data-bs-toggle="modal"
               data-bs-target="#notificationModal"
               title="通知設定">
@@ -1253,14 +1232,14 @@
       </button>
       
       <a href="{% url 'stockdiary:update' diary.id %}" 
-         class="btn btn-warning btn-sm"
+         class="btn btn-warning btn--sm"
          title="編集">
         <i class="bi bi-pencil"></i>
         <span class="d-none d-lg-inline ms-1">編集</span>
       </a>
       
       <a href="{% url 'stockdiary:delete' diary.id %}" 
-         class="btn btn-danger btn-sm"
+         class="btn btn-danger btn--sm"
          title="削除">
         <i class="bi bi-trash"></i>
         <span class="d-none d-lg-inline ms-1">削除</span>
@@ -1276,7 +1255,7 @@
           <h5 class="modal-title" id="notificationModalLabel">
             <i class="bi bi-bell me-2"></i>通知設定
           </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="閉じる"></button>
         </div>
         <div class="modal-body">
           {% csrf_token %}
@@ -1651,7 +1630,7 @@
                   <h6>通知設定</h6>
                 </div>
                 <button type="button" 
-                        class="btn btn-primary btn-sm"
+                        class="btn btn-primary btn--sm"
                         data-bs-toggle="modal"
                         data-bs-target="#notificationModal">
                   <i class="bi bi-plus-circle me-1"></i>
@@ -1790,7 +1769,7 @@
                       <img id="note-image-preview" class="card-img-top" style="max-height: 200px; object-fit: cover;" alt="プレビュー">
                       <div class="card-body p-2">
                         <small class="text-muted">選択された画像</small>
-                        <button type="button" id="note-remove-image" class="btn btn-sm btn-outline-danger float-end">
+                        <button type="button" id="note-remove-image" class="btn btn--sm btn-outline-danger float-end">
                           <i class="bi bi-x"></i> 削除
                         </button>
                       </div>
@@ -1869,7 +1848,7 @@
                     </span>
                     {% endif %}
                     
-                    <button class="btn btn-sm" 
+                    <button class="btn btn--sm" 
                             onclick="confirmDeleteNote({{ note.id }}, '{{ note.date|date:"Y年m月d日" }}', '{% if note.note_type == 'analysis' %}分析更新{% elif note.note_type == 'news' %}ニュース{% elif note.note_type == 'earnings' %}決算情報{% elif note.note_type == 'insight' %}新たな気づき{% elif note.note_type == 'risk' %}リスク要因{% else %}その他{% endif %}', {{ diary.id }})"
                             title="この記録を削除"
                             style="background: none; border: none; color: #dc3545; padding: 0.25rem 0.5rem; margin-left: 0.5rem;">
@@ -2214,7 +2193,7 @@ function renderNotifications(notifications) {
                         </span>
                     </div>
                     <div class="notification-actions">
-                        <button class="btn btn-sm btn-outline-danger" 
+                        <button class="btn btn--sm btn-outline-danger" 
                                 onclick="deleteDiaryNotification('${notification.id}')"
                                 title="削除"
                                 aria-label="通知を削除">
