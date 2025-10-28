@@ -77,6 +77,26 @@
     background-color: #f8f9fa;
   }
   
+  /* ✅ 合算行のハイライト */
+  .preview-table tbody tr.merged-row {
+    background-color: #fff3cd;
+  }
+  
+  .preview-table tbody tr.merged-row:hover {
+    background-color: #ffe69c;
+  }
+  
+  .merged-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background-color: #ffc107;
+    color: #000;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+  }
+  
   .trade-type-buy {
     color: #198754;
     font-weight: 500;
@@ -91,6 +111,20 @@
     display: flex;
     gap: 1rem;
     justify-content: center;
+  }
+  
+  /* ✅ 注意事項ボックスを追加 */
+  .alert-merge-info {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+  }
+  
+  .alert-merge-info ul {
+    margin-bottom: 0;
+    padding-left: 1.5rem;
   }
   
   @media (max-width: 768px) {
@@ -134,6 +168,17 @@
       </div>
     </div>
     
+    <!-- ✅ 合算に関する注意事項を追加 -->
+    <div class="alert-merge-info">
+      <i class="bi bi-info-circle"></i>
+      <strong>数量合算について</strong>
+      <ul class="mt-2">
+        <li>同じ日付・銘柄・単価・取引種別の取引は<strong>数量が合算</strong>されます</li>
+        <li>合算される行は<span class="merged-badge">合算</span>マークで表示されます</li>
+        <li>既に登録済みの取引と重複する場合も、数量が合算されます</li>
+      </ul>
+    </div>
+    
     <div class="preview-table-container">
         <table class="preview-table">
             <thead>
@@ -149,7 +194,8 @@
             </thead>
             <tbody>
             {% for trade in preview_data %}
-            <tr>
+            <!-- ✅ 合算される行にはクラスを追加 -->
+            <tr {% if trade.is_merged %}class="merged-row"{% endif %}>
                 <td>{{ trade.date }}</td>
                 <td>{{ trade.stock_code }}</td>
                 <td>{{ trade.stock_name }}</td>
@@ -158,7 +204,13 @@
                     {{ trade.trade_type }}
                 </span>
                 </td>
-                <td class="text-end">{{ trade.quantity }}株</td>
+                <td class="text-end">
+                    {{ trade.quantity }}株
+                    <!-- ✅ 合算バッジを表示 -->
+                    {% if trade.is_merged %}
+                    <span class="merged-badge">合算</span>
+                    {% endif %}
+                </td>
                 <td class="text-end">{{ trade.price }}円</td>
                 <td class="text-end">{{ trade.amount }}円</td>
             </tr>
@@ -177,7 +229,8 @@
       <ul class="mb-0 mt-2">
         <li>既存の銘柄がある場合は、その銘柄に取引が追加されます</li>
         <li>新しい銘柄の場合は、自動的に日記が作成されます</li>
-        <li>重複する取引はスキップされます</li>
+        <li>既存の取引と同一キーの場合は上書きされます（重複防止）</li>
+        <li>1ファイル内で合算された行数も結果に表示されます</li>
       </ul>
     </div>
     

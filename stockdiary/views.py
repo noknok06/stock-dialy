@@ -2730,105 +2730,31 @@ def process_trade_upload(request):
             messages.error(request, f'取引履歴の登録中にエラーが発生しました: {str(e)}')
             return redirect('stockdiary:trade_upload')
 
-
-def parse_rakuten_csv_preview(csv_content):
-    """楽天CSVをパースしてプレビュー用データを返す"""
-    csv_file = io.StringIO(csv_content)
-    reader = csv.DictReader(csv_file)
-    
-    preview_data = []
-    
-    # デバッグ: 列名を出力
-    if reader.fieldnames:
-        print("=== CSV列名一覧 ===")
-        for i, col in enumerate(reader.fieldnames, 1):
-            print(f"{i}. {col}")
-        print("=" * 50)
-    
-    for row_num, row in enumerate(reader, 1):
-        try:
-            # デバッグ: 最初の行のすべての値を出力
-            if row_num == 1:
-                print("=== 1行目のデータ ===")
-                for key, value in row.items():
-                    print(f"{key}: {value}")
-                print("=" * 50)
-            
-            # 楽天証券のCSVフォーマットに合わせて列名を指定
-            trade_date = row.get('受渡日', '').strip()
-            stock_code = row.get('銘柄コード', '').strip()
-            stock_name = row.get('銘柄名', '').strip()
-            
-            # 取引区分と区分の両方を確認
-            trade_category = row.get('取引区分', '').strip()  # 現物、信用など
-            trade_type = row.get('区分', '').strip()  # 買、売
-            
-            # デバッグ出力（最初の3行のみ）
-            if row_num <= 3:
-                print(f"行{row_num}: 取引区分='{trade_category}', 区分='{trade_type}'")
-            
-            # 数量と単価を取得
-            quantity_str = row.get('数量［株］', '') or row.get('数量[株]', '') or row.get('数量', '')
-            price_str = row.get('単価［円］', '') or row.get('単価[円]', '') or row.get('単価', '')
-            
-            # カンマを除去して数値に変換
-            quantity_str = quantity_str.replace(',', '').strip()
-            price_str = price_str.replace(',', '').strip()
-            
-            # 数値チェック
-            if not quantity_str or not price_str:
-                continue
-                
-            try:
-                quantity = float(quantity_str)
-                price = float(price_str)
-                amount = quantity * price
-            except ValueError:
-                continue
-            
-            # 取引種別の表示を作成
-            display_trade_type = f"{trade_category} {trade_type}" if trade_category else trade_type
-            
-            preview_data.append({
-                'date': trade_date,
-                'stock_code': stock_code,
-                'stock_name': stock_name,
-                'trade_type': display_trade_type,
-                'trade_category': trade_category,  # 内部用
-                'buy_or_sell': trade_type,  # 内部用
-                'quantity': f'{quantity:,.0f}',
-                'price': f'{price:,.2f}',
-                'amount': f'{amount:,.0f}',
-            })
-            
-        except Exception as e:
-            print(f"Row {row_num} parsing error: {e}")
-            import traceback
-            traceback.print_exc()
-            continue
-    
-    return preview_data
-
-
 def process_rakuten_csv(user, csv_content, filename):
-    """楽天CSVを処理してStockDiaryとTransactionを作成"""
+    """
+    楽天CSVを処理してStockDiaryとTransactionを作成
+    
+    処理ルール:
+    - 1ファイル内の同一キー: 数量を合算
+    - 既存データと同一キーがある場合: 常に上書き（重複取り込み防止）
+    """
     csv_file = io.StringIO(csv_content)
     reader = csv.DictReader(csv_file)
     
     success_count = 0
     skip_count = 0
     error_count = 0
+    overwrite_count = 0  # ✅ 上書き件数
     errors = []
     
     # まず全データを読み込んで日付順にソート
-    # 🔧 元の行番号も保持する
     all_rows = []
-    for original_row_num, row in enumerate(reader, start=2):  # CSVの2行目から（1行目はヘッダー）
+    for original_row_num, row in enumerate(reader, start=2):
         trade_date_str = row.get('受渡日', '').strip()
         if trade_date_str:
             all_rows.append({
                 'data': row,
-                'original_row': original_row_num  # 🔧 元の行番号を保持
+                'original_row': original_row_num
             })
     
     # 受渡日でソート（古い順）
@@ -2844,7 +2770,7 @@ def process_rakuten_csv(user, csv_content, filename):
     
     for idx, row_data in enumerate(all_rows, start=1):
         row = row_data['data']
-        original_row_num = row_data['original_row']  # 🔧 元の行番号
+        original_row_num = row_data['original_row']
         
         try:
             # 受渡日を取得
@@ -2881,8 +2807,6 @@ def process_rakuten_csv(user, csv_content, filename):
             
             # 売買区分を取得
             trade_type_raw = row.get('売買区分', '').strip()
-            
-            # 取引区分（現物/信用など）も取得
             trade_category = row.get('取引区分', '').strip()
             
             # 売買区分を変換
@@ -2939,34 +2863,42 @@ def process_rakuten_csv(user, csv_content, filename):
                         reason=f'楽天証券からインポート（{trade_date}）',
                     )
                 
-                # 🔧 メモにファイル名と行番号を含める
+                # ✅ memo_contentをここで定義（条件分岐の前）
                 memo_content = f'楽天証券からインポート({trade_category} {trade_type_raw}) [ファイル: {filename} 行: {original_row_num}]'
                 
-                # 🔧 既存のTransactionをチェック(重複登録を防ぐ)
-                # ファイル名と行番号の組み合わせで完全一致チェック
+                # ✅ 同一キー（日付・銘柄・価格・取引種別）の取引を検索
+                # 価格は小数点以下2桁で比較するため、許容誤差を設定
+                price_tolerance = Decimal('0.01')
+                
                 existing_transaction = Transaction.objects.filter(
-                    diary=diary,
-                    memo__contains=f'[ファイル: {filename} 行: {original_row_num}]'
-                ).first()
-                
-                if existing_transaction:
-                    skip_count += 1
-                    continue
-                
-                # Transactionを作成
-                transaction_obj = Transaction(
                     diary=diary,
                     transaction_type=transaction_type,
                     transaction_date=trade_date,
-                    price=price,
-                    quantity=quantity,
-                    memo=memo_content
-                )
+                    price__gte=price - price_tolerance,
+                    price__lte=price + price_tolerance
+                ).first()
                 
-                # バリデーションをスキップして保存
-                transaction_obj.save()
-                
-                success_count += 1
+                if existing_transaction:
+                    # ✅ 既存の同一キーがある場合は常に上書き（重複取り込み防止）
+                    existing_transaction.quantity = quantity
+                    existing_transaction.price = price  # 価格も更新
+                    existing_transaction.memo = memo_content  # メモも更新
+                    existing_transaction.save()
+                    overwrite_count += 1
+                    
+                else:
+                    # ✅ 新規取引として作成
+                    transaction_obj = Transaction(
+                        diary=diary,
+                        transaction_type=transaction_type,
+                        transaction_date=trade_date,
+                        price=price,
+                        quantity=quantity,
+                        memo=memo_content
+                    )
+                    
+                    transaction_obj.save()
+                    success_count += 1
                 
         except Exception as e:
             import traceback
@@ -2989,9 +2921,103 @@ def process_rakuten_csv(user, csv_content, filename):
         'success_count': success_count,
         'skip_count': skip_count,
         'error_count': error_count,
+        'overwrite_count': overwrite_count,  # ✅ 上書き件数
         'errors': errors
     }
 
+
+# ✅ プレビュー表示：1ファイル内の同一キー取引をグループ化
+def parse_rakuten_csv_preview(csv_content):
+    """楽天CSVをパースしてプレビュー用データを返す（1ファイル内の同一キーは合算表示）"""
+    csv_file = io.StringIO(csv_content)
+    reader = csv.DictReader(csv_file)
+    
+    # 同一キーごとにデータを集約
+    grouped_data = defaultdict(lambda: {
+        'quantity': 0,
+        'amount': 0,
+        'count': 0,
+        'first_row': None
+    })
+    
+    for row_num, row in enumerate(reader, 1):
+        try:
+            trade_date = row.get('受渡日', '').strip()
+            stock_code = row.get('銘柄コード', '').strip()
+            stock_name = row.get('銘柄名', '').strip()
+            
+            trade_category = row.get('取引区分', '').strip()
+            trade_type = row.get('区分', '').strip()
+            
+            quantity_str = row.get('数量［株］', '') or row.get('数量[株]', '') or row.get('数量', '')
+            price_str = row.get('単価［円］', '') or row.get('単価[円]', '') or row.get('単価', '')
+            
+            quantity_str = quantity_str.replace(',', '').strip()
+            price_str = price_str.replace(',', '').strip()
+            
+            if not quantity_str or not price_str:
+                continue
+                
+            try:
+                quantity = float(quantity_str)
+                price = float(price_str)
+            except ValueError:
+                continue
+            
+            # ✅ キーを生成（日付・銘柄コード・価格・取引種別）
+            key = (trade_date, stock_code, f'{price:.2f}', trade_type)
+            
+            # ✅ 同一キーのデータを集約
+            if grouped_data[key]['first_row'] is None:
+                grouped_data[key]['first_row'] = {
+                    'date': trade_date,
+                    'stock_code': stock_code,
+                    'stock_name': stock_name,
+                    'trade_category': trade_category,
+                    'trade_type': trade_type,
+                    'price': price
+                }
+            
+            grouped_data[key]['quantity'] += quantity
+            grouped_data[key]['amount'] += quantity * price
+            grouped_data[key]['count'] += 1
+            
+        except Exception as e:
+            print(f"Row {row_num} parsing error: {e}")
+            continue
+    
+    # ✅ 集約されたデータをプレビュー用に整形
+    preview_data = []
+    for key, data in grouped_data.items():
+        row_data = data['first_row']
+        total_quantity = data['quantity']
+        total_amount = data['amount']
+        merge_count = data['count']
+        
+        display_trade_type = f"{row_data['trade_category']} {row_data['trade_type']}" if row_data['trade_category'] else row_data['trade_type']
+        
+        # ✅ 合算される場合は注釈を追加
+        quantity_display = f'{total_quantity:,.0f}'
+        if merge_count > 1:
+            quantity_display += f' ※{merge_count}件を合算'
+        
+        preview_data.append({
+            'date': row_data['date'],
+            'stock_code': row_data['stock_code'],
+            'stock_name': row_data['stock_name'],
+            'trade_type': display_trade_type,
+            'trade_category': row_data['trade_category'],
+            'buy_or_sell': row_data['trade_type'],
+            'quantity': quantity_display,
+            'price': f'{row_data["price"]:,.2f}',
+            'amount': f'{total_amount:,.0f}',
+            'is_merged': merge_count > 1  # ✅ 合算フラグ
+        })
+    
+    # 日付順にソート
+    preview_data.sort(key=lambda x: x['date'])
+    
+    return preview_data
 
 class NotificationListView(LoginRequiredMixin, TemplateView):
     """通知管理ページ"""
