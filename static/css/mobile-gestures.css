@@ -31,7 +31,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(var(--warning-color-rgb, 245, 158, 11), 0.1);
+    background-color: rgba(var(--warning-color, 245, 158, 11), 0.1);
     z-index: -1;
   }
   
@@ -56,7 +56,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(var(--danger-color-rgb, 239, 68, 68), 0.1);
+    background-color: rgba(var(--danger-color, 239, 68, 68), 0.1);
     z-index: -1;
   }
   
@@ -197,7 +197,7 @@
   }
   
   .action-btn-danger:hover, .action-btn-danger:active {
-    background-color: rgba(var(--danger-color-rgb, 239, 68, 68), 0.1);
+    background-color: rgba(var(--danger-color, 239, 68, 68), 0.1);
   }
   
   .action-btn-secondary {
@@ -216,7 +216,7 @@
   
   /* ドロワータイプ別のスタイル */
   .action-drawer-edit .action-drawer-header {
-    border-color: rgba(var(--warning-color-rgb, 245, 158, 11), 0.2);
+    border-color: rgba(var(--warning-color, 245, 158, 11), 0.2);
   }
   
   .action-drawer-edit .action-drawer-header h5 {
@@ -224,7 +224,7 @@
   }
   
   .action-drawer-delete .action-drawer-header {
-    border-color: rgba(var(--danger-color-rgb, 239, 68, 68), 0.2);
+    border-color: rgba(var(--danger-color, 239, 68, 68), 0.2);
   }
   
   .action-drawer-delete .action-drawer-header h5 {
@@ -367,7 +367,7 @@
   
   .btn-outline-primary.touch-active::after,
   .btn-outline-secondary.touch-active::after {
-    background-color: rgba(var(--primary-color-rgb, 74, 109, 167), 0.1);
+    background-color: rgba(var(--primary-color, 74, 109, 167), 0.1);
   }
   
   /* ========== トースト通知 ========== */
@@ -408,19 +408,19 @@
   
   /* トーストタイプ別のスタイル */
   .mobile-toast-success {
-    background-color: rgba(var(--success-color-rgb, 16, 185, 129), 0.9);
+    background-color: rgba(var(--success-color, 16, 185, 129), 0.9);
   }
   
   .mobile-toast-warning {
-    background-color: rgba(var(--warning-color-rgb, 245, 158, 11), 0.9);
+    background-color: rgba(var(--warning-color, 245, 158, 11), 0.9);
   }
   
   .mobile-toast-danger {
-    background-color: rgba(var(--danger-color-rgb, 239, 68, 68), 0.9);
+    background-color: rgba(var(--danger-color, 239, 68, 68), 0.9);
   }
   
   .mobile-toast-info {
-    background-color: rgba(var(--primary-color-rgb, 74, 109, 167), 0.9);
+    background-color: rgba(var(--primary-color, 74, 109, 167), 0.9);
   }
   
   /* ========== オフライン対応 ========== */
@@ -690,8 +690,8 @@
     position: absolute;
     width: 20px;
     height: 20px;
-    border-top: 2px solid rgba(var(--primary-color-rgb), 0.3);
-    border-right: 2px solid rgba(var(--primary-color-rgb), 0.3);
+    border-top: 2px solid rgba(var(--primary-color), 0.3);
+    border-right: 2px solid rgba(var(--primary-color), 0.3);
     top: 50%;
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -719,7 +719,7 @@
       background-color: transparent;
     }
     50% {
-      background-color: rgba(var(--primary-color-rgb), 0.1);
+      background-color: rgba(var(--primary-color), 0.1);
     }
     100% {
       background-color: transparent;
@@ -738,14 +738,4 @@
     #quickDiaryTabContent.swiping::after {
       opacity: 0.8;
     }
-  }
-  
-  /* CSS変数の色に対応する RGB 値を追加 */
-  :root {
-    --primary-color-rgb: 90, 126, 197;    /* var(--primary-color) の RGB 値 */
-    --secondary-color-rgb: 248, 194, 145; /* var(--secondary-color) の RGB 値 */
-    --success-color-rgb: 93, 176, 117;    /* var(--success-color) の RGB 値 */
-    --danger-color-rgb: 225, 90, 90;      /* var(--danger-color) の RGB 値 */
-    --warning-color-rgb: 247, 183, 49;    /* var(--warning-color) の RGB 値 */
-    --info-color-rgb: 93, 161, 229;       /* var(--info-color) の RGB 値 */
   }

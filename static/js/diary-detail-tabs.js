@@ -348,7 +348,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             @keyframes tab-glow {
                 0% { background-color: transparent; }
-                50% { background-color: rgba(var(--primary-color-rgb, 90, 126, 197), 0.1); }
+                50% { background-color: rgba(var(--primary-color, 90, 126, 197), 0.1); }
                 100% { background-color: transparent; }
             }
             
