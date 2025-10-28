@@ -196,47 +196,6 @@ body {
     margin-top: var(--spacing-lg);
 }
 
-.btn-search {
-    flex: 1;
-    min-height: var(--button-height-md);
-    background-color: var(--primary-color);
-    border: none;
-    color: white;
-    border-radius: var(--border-radius);
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    transition: all 0.2s ease;
-}
-
-.btn-search:hover {
-    background-color: #4a6eaf;
-    transform: translateY(-1px);
-}
-
-.btn-reset {
-    min-height: var(--button-height-md);
-    background-color: transparent;
-    border: 2px solid #e5e7eb;
-    color: var(--text-color);
-    border-radius: var(--border-radius);
-    padding: 0 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    transition: all 0.2s ease;
-    text-decoration: none;
-}
-
-.btn-reset:hover {
-    border-color: var(--primary-color);
-    color: var(--primary-color);
-    background-color: rgba(90, 126, 197, 0.05);
-}
-
 /* アクティブフィルターの表示 */
 .active-filters {
     margin-bottom: var(--spacing-md);
@@ -286,11 +245,6 @@ body {
     
     .search-actions {
         justify-content: flex-end;
-    }
-    
-    .btn-search {
-        flex: none;
-        min-width: 120px;
     }
     
     /* デスクトップでは2列レイアウト */
@@ -879,7 +833,7 @@ img {
   <!-- ヘッダー部分 -->
   <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
     <h1 class="diary-title mb-2 mb-md-0">株式日記</h1>
-    <a href="{% url 'stockdiary:create' %}" class="btn btn-diary btn-diary-primary">
+    <a href="{% url 'stockdiary:create' %}" class="btn btn-primary">
       <i class="bi bi-plus-lg me-1"></i> 新規作成
     </a>
   </div>
@@ -1142,12 +1096,12 @@ img {
 
     <!-- アクションボタン -->
     <div class="search-actions">
-      <button type="submit" class="btn-search">
+      <button type="submit" class="btn btn-primary">
         <i class="bi bi-search"></i>
         検索
       </button>
       <!-- 🔧 リセットボタン：デフォルト状態（保有中のみ）に戻す -->
-      <a href="{% url 'stockdiary:home' %}?status=active" class="btn-reset"
+      <a href="{% url 'stockdiary:home' %}?status=active" class="btn btn-outline-primary"
          hx-get="{% url 'stockdiary:diary_list' %}?status=active" 
          hx-target="#diary-container"
          hx-push-url="true">
