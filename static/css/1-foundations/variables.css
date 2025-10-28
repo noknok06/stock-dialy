@@ -1,0 +1,374 @@
+/* ========================================
+   統合変数定義 - variables.css
+   すべてのCSSファイルで使用する変数を一元管理
+   
+   命名規則:
+   - プリミティブカラー: --[color]-[shade] (例: --blue-500)
+   - セマンティックカラー: --[purpose]-[variant] (例: --primary-color)
+   - 機能別: --[category]-[type] (例: --bg-primary)
+   ======================================== */
+
+:root {
+  /* ========== プリミティブカラー（基本色） ========== */
+  /* Blue Scale - Primary系 */
+  --blue-50: #f0f5ff;
+  --blue-100: #e8eef7;
+  --blue-200: #c7d7f5;
+  --blue-300: #a0b9e8;
+  --blue-400: #7a9cd8;
+  --blue-500: #5a7ec5;    /* メインブルー */
+  --blue-600: #4869ad;
+  --blue-700: #3d5a8f;
+  --blue-800: #2f4570;
+  --blue-900: #1e2d4a;
+  
+  /* Green Scale - Success系 */
+  --green-50: #f0fdf4;
+  --green-100: #d1fae5;
+  --green-200: #a7f3d0;
+  --green-300: #6ee7b7;
+  --green-400: #34d399;
+  --green-500: #10b981;
+  --green-600: #059669;
+  --green-700: #047857;
+  --green-800: #065f46;
+  --green-900: #064e3b;
+  
+  /* Orange Scale - Warning系 */
+  --orange-50: #fff7ed;
+  --orange-100: #fef3c7;
+  --orange-200: #fde68a;
+  --orange-300: #fcd34d;
+  --orange-400: #fbbf24;
+  --orange-500: #f59e0b;
+  --orange-600: #d97706;
+  --orange-700: #b45309;
+  --orange-800: #92400e;
+  --orange-900: #78350f;
+  
+  /* Red Scale - Danger系 */
+  --red-50: #fef2f2;
+  --red-100: #fee2e2;
+  --red-200: #fecaca;
+  --red-300: #fca5a5;
+  --red-400: #f87171;
+  --red-500: #ef4444;
+  --red-600: #dc2626;
+  --red-700: #b91c1c;
+  --red-800: #991b1b;
+  --red-900: #7f1d1d;
+  
+  /* Sky Scale - Info系 */
+  --sky-50: #f0f9ff;
+  --sky-100: #dbeafe;
+  --sky-200: #bfdbfe;
+  --sky-300: #93c5fd;
+  --sky-400: #60a5fa;
+  --sky-500: #3b82f6;
+  --sky-600: #2563eb;
+  --sky-700: #1d4ed8;
+  --sky-800: #1e40af;
+  --sky-900: #1e3a8a;
+  
+  /* Gray Scale - Neutral */
+  --gray-50: #fafafa;
+  --gray-100: #f8faff;
+  --gray-200: #f1f5f9;
+  --gray-300: #e2e8f0;
+  --gray-400: #cbd5e1;
+  --gray-500: #94a3b8;
+  --gray-600: #64748b;
+  --gray-700: #475569;
+  --gray-800: #334155;
+  --gray-900: #1e293b;
+  
+  /* ========== セマンティックカラー（用途別） ========== */
+  /* Primary - メインブランドカラー */
+  --primary-color: var(--blue-500);
+  --primary-light: var(--blue-100);
+  --primary-dark: var(--blue-700);
+  --primary-rgb: 90, 126, 197;
+  
+  /* Secondary - アクセントカラー */
+  --secondary-color: #f8c291;
+  --secondary-light: #fef3c7;
+  --secondary-rgb: 248, 194, 145;
+  
+  /* Success - 成功・完了 */
+  --success-color: var(--green-500);
+  --success-light: var(--green-100);
+  --success-rgb: 16, 185, 129;
+  
+  /* Warning - 警告・注意 */
+  --warning-color: var(--orange-500);
+  --warning-light: var(--orange-100);
+  --warning-rgb: 245, 158, 11;
+  
+  /* Danger - エラー・削除 */
+  --danger-color: var(--red-500);
+  --danger-light: var(--red-100);
+  --danger-rgb: 239, 68, 68;
+  
+  /* Info - 情報・補足 */
+  --info-color: var(--sky-500);
+  --info-light: var(--sky-100);
+  --info-rgb: 59, 130, 246;
+  
+  /* Snapshot - 特殊用途 */
+  --snap-color: #c7b1c1;
+  
+  /* ========== 機能別カラー（推奨） ========== */
+  /* Background Colors - 背景色 */
+  --bg-primary: #ffffff;
+  --bg-secondary: var(--gray-100);
+  --bg-tertiary: var(--gray-200);
+  --bg-color: var(--gray-50);           /* レガシー互換 */
+  --card-bg-color: var(--bg-primary);   /* レガシー互換 */
+  
+  /* Surface Colors - サーフェス（カードなど） */
+  --surface: var(--bg-secondary);
+  --surface-elevated: var(--bg-primary);
+  --surface-hover: var(--gray-200);
+  
+  /* Text Colors - テキスト */
+  --text-primary: var(--gray-900);
+  --text-secondary: var(--gray-600);
+  --text-tertiary: var(--gray-500);
+  --text-inverse: #ffffff;
+  --text-color: #3a4a5a;                /* レガシー互換 */
+  --text-light: var(--text-secondary);  /* レガシー互換 */
+  
+  /* Border Colors - ボーダー */
+  --border-primary: var(--gray-300);
+  --border-secondary: var(--gray-400);
+  --border-light: var(--gray-200);
+  --border-color: var(--border-primary); /* レガシー互換 */
+  
+  /* ========== Spacing Scale（間隔） ========== */
+  --spacing-xs: 0.25rem;    /* 4px */
+  --spacing-sm: 0.5rem;     /* 8px */
+  --spacing-md: 1rem;       /* 16px */
+  --spacing-lg: 1.5rem;     /* 24px */
+  --spacing-xl: 2rem;       /* 32px */
+  --spacing-xxl: 3rem;      /* 48px */
+  
+  /* 詳細なスペーシング */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  
+  /* ========== Border Radius（角丸） ========== */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+  --border-radius: 8px;             /* レガシー互換 */
+  
+  /* ========== Shadows（影） ========== */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  
+  /* レガシー互換 */
+  --card-shadow: var(--shadow-sm);
+  --card-shadow-hover: var(--shadow-lg);
+  --button-shadow: 0 2px 5px rgba(90, 126, 197, 0.2);
+  
+  /* レガシー互換 */
+  --card-shadow: var(--shadow-sm);
+  --card-shadow-hover: var(--shadow-lg);
+  --button-shadow: 0 2px 5px rgba(90, 126, 197, 0.2);
+  
+  /* ========== Typography（タイポグラフィ） ========== */
+  /* Font Families */
+  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 
+                      'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  --font-family-ja: 'Hiragino Kaku Gothic Pro', 'メイリオ', sans-serif;
+  --font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', 
+                      Consolas, 'Courier New', monospace;
+  
+  /* Font Sizes */
+  --text-xs: 0.75rem;      /* 12px */
+  --text-sm: 0.875rem;     /* 14px */
+  --text-base: 1rem;       /* 16px */
+  --text-lg: 1.125rem;     /* 18px */
+  --text-xl: 1.25rem;      /* 20px */
+  --text-2xl: 1.5rem;      /* 24px */
+  --text-3xl: 1.875rem;    /* 30px */
+  --text-4xl: 2.25rem;     /* 36px */
+  --text-5xl: 3rem;        /* 48px */
+  
+  /* Font Weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  --font-extrabold: 800;
+  
+  /* Line Heights */
+  --leading-none: 1;
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+  --leading-loose: 2;
+  
+  /* ========== Touch Targets（タッチ対象） ========== */
+  --touch-target-min: 44px;
+  --button-height-sm: 36px;
+  --button-height-md: 44px;
+  --button-height-lg: 52px;
+  
+  /* ========== Animation（アニメーション） ========== */
+  /* Duration */
+  --duration-75: 75ms;
+  --duration-100: 100ms;
+  --duration-150: 150ms;
+  --duration-200: 200ms;
+  --duration-300: 300ms;
+  --duration-500: 500ms;
+  --duration-700: 700ms;
+  --duration-1000: 1000ms;
+  
+  /* Easing */
+  --ease-linear: linear;
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* ========== Z-index Scale（重ね順） ========== */
+  --z-base: 0;
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-offcanvas: 1045;
+  --z-modal: 1055;
+  --z-popover: 1070;
+  --z-tooltip: 1080;
+  
+  /* ========== 日記特有の要素（レガシー互換） ========== */
+  --notebook-line: #e5e9f0;
+  --notebook-line-height: 2rem;
+  --notebook-binding: var(--primary-color);
+  --masking-tape: rgba(248, 194, 145, 0.6);
+  
+  /* ========== Breakpoints（参考値） ========== */
+  /* CSS変数では直接使えないため、メディアクエリで使用 */
+  /* --breakpoint-xs: 0px; */
+  /* --breakpoint-sm: 576px; */
+  /* --breakpoint-md: 768px; */
+  /* --breakpoint-lg: 992px; */
+  /* --breakpoint-xl: 1200px; */
+  /* --breakpoint-xxl: 1400px; */
+}
+
+/* ========================================
+   Print Styles
+   ======================================== */
+@media print {
+  :root {
+    /* Remove shadows for print */
+    --shadow-xs: none;
+    --shadow-sm: none;
+    --shadow-md: none;
+    --shadow-lg: none;
+    --shadow-xl: none;
+    --shadow-2xl: none;
+    --card-shadow: none;
+    --card-shadow-hover: none;
+    --button-shadow: none;
+    
+    /* Adjust colors for print */
+    --bg-primary: #ffffff;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f9fafb;
+    --text-primary: #000000;
+    --text-secondary: #333333;
+  }
+}
+
+/* ========================================
+   High Contrast Mode
+   ======================================== */
+@media (prefers-contrast: high) {
+  :root {
+    /* Increase contrast for accessibility */
+    --text-primary: #000000;
+    --text-secondary: #1a1a1a;
+    --border-primary: #000000;
+    --border-secondary: #333333;
+    
+    /* Strengthen shadows */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* ========================================
+   Reduced Motion
+   ======================================== */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    /* Minimize animation duration */
+    --duration-75: 1ms;
+    --duration-100: 1ms;
+    --duration-150: 1ms;
+    --duration-200: 1ms;
+    --duration-300: 1ms;
+    --duration-500: 1ms;
+  }
+}
+
+/* ========================================
+   Usage Guidelines (コメント)
+   ======================================== */
+
+/*
+【推奨される使用方法】
+
+1. セマンティックカラーを優先:
+   ✅ color: var(--text-primary);
+   ❌ color: var(--gray-900);
+
+2. 機能別変数を使用:
+   ✅ background: var(--bg-primary);
+   ❌ background: #ffffff;
+
+3. スペーシングスケールに従う:
+   ✅ padding: var(--spacing-md);
+   ❌ padding: 17px;
+
+4. レガシー変数は新規コードで使用しない:
+   ✅ box-shadow: var(--shadow-md);
+   ❌ box-shadow: var(--card-shadow);
+
+【変数の選択フロー】
+
+色の選択:
+1. セマンティックカラー（--primary-color等）
+2. 機能別カラー（--bg-primary等）
+3. プリミティブカラー（--blue-500等）
+
+間隔の選択:
+1. スペーシングスケール（--spacing-md等）
+2. 詳細スペーシング（--space-4等）
+
+影の選択:
+1. 新しいシャドウ変数（--shadow-md等）
+2. レガシーは既存コード互換のみ
+*/
