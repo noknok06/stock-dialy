@@ -38,7 +38,7 @@
           </div>
           
           <!-- 削除ボタン - 常に表示 -->
-          <button class="btn-icon btn-danger-icon" 
+          <button class="btn-icon btn-info-icon" 
                   onclick="confirmDeleteNote({{ note.id }}, '{{ note.date|date:"Y年m月d日" }}', '{% if note.note_type == 'analysis' %}分析更新{% elif note.note_type == 'news' %}ニュース{% elif note.note_type == 'earnings' %}決算情報{% elif note.note_type == 'insight' %}新たな気づき{% elif note.note_type == 'risk' %}リスク要因{% else %}その他{% endif %}', {{ diary.id }})" 
                   title="この記録を削除">
             <i class="bi bi-trash"></i>
