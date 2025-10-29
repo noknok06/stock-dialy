@@ -1,131 +1,140 @@
 {% load humanize %}
 {% load stockdiary_filters %}
 
-<div class="px-1 py-2">
-  <div class="notes-timeline">
-    {% for note in notes %}
-    <div class="note-item mb-3" data-note-type="{{ note.note_type }}" data-importance="{{ note.importance }}" style="border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); overflow: hidden;">
-      <div class="note-header" style="padding: 0.75rem; display: flex; justify-content: space-between; align-items: center; background-color: rgba(246, 248, 250, 0.7); border-bottom: 1px solid #e5e9f0;">
-        <div class="note-meta">
-          <span class="note-date text-muted me-2">
-            <i class="bi bi-calendar-date"></i>
-            {{ note.date|date:"Y年m月d日" }}
-          </span>
-          <span class="badge {% if note.note_type == 'analysis' %}bg-primary
-                  {% elif note.note_type == 'news' %}bg-info
-                  {% elif note.note_type == 'earnings' %}bg-success
-                  {% elif note.note_type == 'insight' %}bg-warning
-                  {% elif note.note_type == 'risk' %}bg-danger
-                  {% else %}bg-secondary{% endif %} small">
-            {% if note.note_type == 'analysis' %}分析更新
-            {% elif note.note_type == 'news' %}ニュース
-            {% elif note.note_type == 'earnings' %}決算情報
-            {% elif note.note_type == 'insight' %}新たな気づき
-            {% elif note.note_type == 'risk' %}リスク要因
-            {% else %}その他{% endif %}
-          </span>
-        </div>
-
-        <div class="note-actions" style="display: flex; gap: 0.5rem; align-items: center;">
-          <div class="note-importance">
-            {% if note.importance == 'high' %}
-            <i class="bi bi-exclamation-triangle text-danger" title="高重要度"></i>
-            {% elif note.importance == 'medium' %}
-            <i class="bi bi-info-circle text-warning" title="中重要度"></i>
-            {% else %}
-            <i class="bi bi-info-circle text-muted" title="低重要度"></i>
-            {% endif %}
-          </div>
-          
-          <!-- 削除ボタン - 常に表示 -->
-          <button class="btn-icon btn-info-icon" 
-                  onclick="confirmDeleteNote({{ note.id }}, '{{ note.date|date:"Y年m月d日" }}', '{% if note.note_type == 'analysis' %}分析更新{% elif note.note_type == 'news' %}ニュース{% elif note.note_type == 'earnings' %}決算情報{% elif note.note_type == 'insight' %}新たな気づき{% elif note.note_type == 'risk' %}リスク要因{% else %}その他{% endif %}', {{ diary.id }})" 
-                  title="この記録を削除">
-            <i class="bi bi-trash"></i>
-          </button>
-        </div>
+<!-- Improved container padding from px-1 py-2 to px-3 py-3 for better spacing -->
+<div class="notes-timeline">
+  {% for note in notes %}
+  <!-- Enhanced note card with better spacing and modern design -->
+  <div class="note-item mb-4" data-note-type="{{ note.note_type }}" data-importance="{{ note.importance }}" style="border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); overflow: hidden; border: 1px solid rgba(0, 0, 0, 0.06);">
+    <!-- Improved header padding and layout -->
+    <div class="note-header" style="padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: center; background-color: rgba(248, 250, 252, 0.9); border-bottom: 1px solid var(--border-light);">
+      <div class="note-meta">
+        <span class="note-date text-muted me-2" style="font-size: 0.875rem;">
+          <i class="bi bi-calendar-date"></i>
+          {{ note.date|date:"Y年m月d日" }}
+        </span>
+        <span class="badge {% if note.note_type == 'analysis' %}bg-primary
+                {% elif note.note_type == 'news' %}bg-info
+                {% elif note.note_type == 'earnings' %}bg-success
+                {% elif note.note_type == 'insight' %}bg-warning
+                {% elif note.note_type == 'risk' %}bg-danger
+                {% else %}bg-secondary{% endif %}" style="font-size: 0.75rem; padding: 0.35rem 0.65rem;">
+          {% if note.note_type == 'analysis' %}分析更新
+          {% elif note.note_type == 'news' %}ニュース
+          {% elif note.note_type == 'earnings' %}決算情報
+          {% elif note.note_type == 'insight' %}新たな気づき
+          {% elif note.note_type == 'risk' %}リスク要因
+          {% else %}その他{% endif %}
+        </span>
       </div>
 
-      {% if note.current_price %}
-      <div class="note-content" style="padding: 1rem; background-color: white;">
-        {% if note.image_url %}
-        <div class="note-image mb-2">
-          <img src="{{ note.image_url }}" 
-               class="img-fluid rounded note-attached-image" 
-               alt="継続記録画像"
-               style="max-height: 150px; object-fit: cover; width: 100%; cursor: pointer;"
-               onclick="showImageModal('{{ note.image_url }}', '{{ note.date|date:"Y年m月d日" }}の記録')">
-        </div>
-        {% endif %}
-        <div class="note-price-info small mb-2 d-flex justify-content-between align-items-center">
-          <span class="text-muted">
-            <i class="bi bi-cash-coin me-1"></i>
-            記録時価格:
-            <strong>{{ note.current_price|floatformat:2|intcomma }}円</strong>
-          </span>
-
-          {% with price_change=note.get_price_change %}
-          {% if price_change %}
-          <span class="{% if price_change > 0 %}text-success{% elif price_change < 0 %}text-danger{% endif %}">
-            ({{ price_change|floatformat:2 }}%)
-          </span>
+      <div class="note-actions" style="display: flex; gap: 0.75rem; align-items: center;">
+        <div class="note-importance">
+          {% if note.importance == 'high' %}
+          <i class="bi bi-exclamation-triangle text-danger" title="高重要度" style="font-size: 1.1rem;"></i>
+          {% elif note.importance == 'medium' %}
+          <i class="bi bi-info-circle text-warning" title="中重要度" style="font-size: 1.1rem;"></i>
+          {% else %}
+          <i class="bi bi-info-circle text-muted" title="低重要度" style="font-size: 1.1rem;"></i>
           {% endif %}
-          {% endwith %}
         </div>
         
-        <div class="note-text bg-light rounded p-3">
-          {{ note.content|safe|linebreaks|truncatewords_html:50 }}
-        </div>
-
-        {% if note.content|wordcount > 50 %}
-        <div class="text-end mt-2">
-          <a href="{% url 'stockdiary:detail' diary.id %}" class="text-primary text-decoration-none small">
-            続きを読む <i class="bi bi-arrow-right"></i>
-          </a>
-        </div>
-        {% endif %}
+        <!-- Improved delete button with better touch target size -->
+        <button class="btn-icon btn-info-icon" 
+                onclick="confirmDeleteNote({{ note.id }}, '{{ note.date|date:"Y年m月d日" }}', '{% if note.note_type == 'analysis' %}分析更新{% elif note.note_type == 'news' %}ニュース{% elif note.note_type == 'earnings' %}決算情報{% elif note.note_type == 'insight' %}新たな気づき{% elif note.note_type == 'risk' %}リスク要因{% else %}その他{% endif %}', {{ diary.id }})" 
+                title="この記録を削除"
+                style="min-width: 36px; min-height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 8px; transition: all 0.2s ease;">
+          <i class="bi bi-trash"></i>
+        </button>
       </div>
-      {% else %}
-      <div class="note-content" style="padding: 1rem; background-color: white;">
-        {% if note.image_url %}
-        <div class="note-image mb-2">
-          <img src="{{ note.image_url }}" 
-               class="img-fluid rounded note-attached-image" 
-               alt="継続記録画像"
-               style="max-height: 150px; object-fit: cover; width: 100%; cursor: pointer;"
-               onclick="showImageModal('{{ note.image_url }}', '{{ note.date|date:"Y年m月d日" }}の記録')">
-        </div>
-        {% endif %}
-        <div class="note-text bg-light rounded p-3">
-          {{ note.content|safe|linebreaks|truncatewords_html:50 }}
-        </div>
+    </div>
 
-        {% if note.content|wordcount > 50 %}
-        <div class="text-end mt-2">
-          <a href="{% url 'stockdiary:detail' diary.id %}" class="text-primary text-decoration-none small">
-            続きを読む <i class="bi bi-arrow-right"></i>
-          </a>
-        </div>
+    {% if note.current_price %}
+    <!-- Enhanced content padding and spacing -->
+    <div class="note-content" style="padding: 1.25rem; background-color: white;">
+      {% if note.image_url %}
+      <div class="note-image mb-3">
+        <img src="{{ note.image_url }}" 
+              class="img-fluid rounded note-attached-image" 
+              alt="継続記録画像"
+              style="max-height: 200px; object-fit: cover; width: 100%; cursor: pointer; border-radius: 10px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);"
+              onclick="showImageModal('{{ note.image_url }}', '{{ note.date|date:"Y年m月d日" }}の記録')">
+      </div>
+      {% endif %}
+      <!-- Improved price info layout with better visual hierarchy -->
+      <div class="note-price-info mb-3 d-flex justify-content-between align-items-center" style="font-size: 0.9rem; padding: 0.875rem 1rem; background-color: rgba(248, 250, 252, 0.7); border-radius: 8px; border: 1px solid rgba(0, 0, 0, 0.05);">
+        <span class="text-muted">
+          <i class="bi bi-cash-coin me-2"></i>
+          記録時価格:
+          <strong style="color: var(--text-primary); font-size: 1rem;">{{ note.current_price|floatformat:2|intcomma }}円</strong>
+        </span>
+
+        {% with price_change=note.get_price_change %}
+        {% if price_change %}
+        <span class="{% if price_change > 0 %}text-success{% elif price_change < 0 %}text-danger{% endif %}" style="font-weight: 600; font-size: 0.95rem;">
+          ({{ price_change|floatformat:2 }}%)
+        </span>
         {% endif %}
+        {% endwith %}
+      </div>
+      
+      <!-- Enhanced text area with better readability -->
+      <div class="note-text bg-light rounded" style="padding: 1.125rem; line-height: 1.7; font-size: 0.95rem; background-color: rgba(248, 250, 252, 0.6) !important; border-radius: 10px;">
+        {{ note.content|safe|linebreaks|truncatewords_html:50 }}
+      </div>
+
+      {% if note.content|wordcount > 50 %}
+      <div class="text-end mt-3">
+        <a href="{% url 'stockdiary:detail' diary.id %}" class="text-primary text-decoration-none" style="font-size: 0.875rem; font-weight: 500; display: inline-flex; align-items: center; gap: 0.25rem;">
+          続きを読む <i class="bi bi-arrow-right"></i>
+        </a>
       </div>
       {% endif %}
     </div>
-    {% empty %}
-    <div class="text-center text-muted py-4">
-      <i class="bi bi-journal-text me-2"></i>
-      継続記録はまだありません
-    </div>
-    {% endfor %}
+    {% else %}
+    <!-- Enhanced content padding for notes without price -->
+    <div class="note-content" style="padding: 1.25rem; background-color: white;">
+      {% if note.image_url %}
+      <div class="note-image mb-3">
+        <img src="{{ note.image_url }}" 
+              class="img-fluid rounded note-attached-image" 
+              alt="継続記録画像"
+              style="max-height: 200px; object-fit: cover; width: 100%; cursor: pointer; border-radius: 10px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);"
+              onclick="showImageModal('{{ note.image_url }}', '{{ note.date|date:"Y年m月d日" }}の記録')">
+      </div>
+      {% endif %}
+      <!-- Enhanced text area with better readability -->
+      <div class="note-text bg-light rounded" style="padding: 1.125rem; line-height: 1.7; font-size: 0.95rem; background-color: rgba(248, 250, 252, 0.6) !important; border-radius: 10px;">
+        {{ note.content|safe|linebreaks|truncatewords_html:50 }}
+      </div>
 
-    {% if diary.notes.count > 3 %}
-    <div class="text-end mt-3">
-      <a href="{% url 'stockdiary:detail' diary.id %}" class="btn btn-sm btn-outline-primary">
-        <i class="bi bi-journal-richtext me-1"></i>
-        すべての記録を見る ({{ diary.notes.count }}件)
-      </a>
+      {% if note.content|wordcount > 50 %}
+      <div class="text-end mt-3">
+        <a href="{% url 'stockdiary:detail' diary.id %}" class="text-primary text-decoration-none" style="font-size: 0.875rem; font-weight: 500; display: inline-flex; align-items: center; gap: 0.25rem;">
+          続きを読む <i class="bi bi-arrow-right"></i>
+        </a>
+      </div>
+      {% endif %}
     </div>
     {% endif %}
   </div>
+  {% empty %}
+  <!-- Improved empty state with better spacing -->
+  <div class="text-center text-muted" style="padding: 3rem 1.5rem;">
+    <i class="bi bi-journal-text" style="font-size: 3rem; opacity: 0.3; display: block; margin-bottom: 1rem;"></i>
+    <p style="font-size: 0.95rem; margin: 0;">継続記録はまだありません</p>
+  </div>
+  {% endfor %}
+
+  {% if diary.notes.count > 3 %}
+  <!-- Enhanced "view all" button with better spacing -->
+  <div class="text-end mt-4">
+    <a href="{% url 'stockdiary:detail' diary.id %}" class="btn btn-sm btn-outline-primary" style="padding: 0.625rem 1.25rem; border-radius: 8px; font-weight: 500;">
+      <i class="bi bi-journal-richtext me-2"></i>
+      すべての記録を見る ({{ diary.notes.count }}件)
+    </a>
+  </div>
+  {% endif %}
 </div>
 
 <script>

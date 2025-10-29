@@ -227,7 +227,7 @@
 }
 
 .card-tabs .nav-link::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -1px;
   left: 0;
@@ -386,6 +386,22 @@
   background-color: rgba(248, 250, 252, 0.5);
   border-radius: 6px;
   border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+/* Added hover effect for delete button */
+.btn-icon.btn-info-icon:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--danger-color);
+}
+
+/* Enhanced note image hover effect */
+.note-attached-image {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.note-attached-image:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
 }
 
 /* ========== 分析タブのスタイル ========== */
@@ -816,15 +832,15 @@
   .diary-card-body {
     padding: var(--spacing-md);
   }
-  
+
   .info-block {
     padding: var(--spacing-sm);
   }
-  
+
   .info-item {
     flex: 1 1 calc(50% - var(--spacing-md));
   }
-  
+
   .notes-timeline,
   .analysis-templates-container {
     max-height: 350px;
@@ -835,27 +851,41 @@
   .diary-card-body {
     padding: var(--spacing-md);
   }
-  
+
   .info-block {
     padding: var(--spacing-sm);
   }
-  
+
   .info-item {
     flex: 1 1 calc(50% - var(--spacing-md));
   }
-  
+
   .notes-timeline,
   .analysis-templates-container {
     max-height: 350px;
   }
-  
+
   .card-tabs .nav-link {
     padding: 0.65rem 0.6rem;
     font-size: 0.85rem;
   }
-  
+
   .card-tabs .nav-link i {
     margin-right: 0.3rem;
+  }
+
+  /* Improved mobile spacing for notes */
+  .note-header {
+    padding: 0.875rem 1rem;
+  }
+
+  .note-content {
+    padding: 1rem;
+  }
+
+  .note-text {
+    padding: 0.875rem !important;
+    font-size: 0.9rem;
   }
 }
 
@@ -867,37 +897,79 @@
     padding: 1rem;
     gap: 0.75rem;
   }
-  
+
   .diary-header-content {
     max-width: 100%;
   }
-  
+
   .diary-title {
     font-size: 1rem;
   }
-  
+
   .diary-meta {
     font-size: 0.8rem;
   }
-  
+
   .card-tabs .nav-link {
     padding: 0.6rem 0.5rem;
     font-size: 0.8rem;
     min-width: 75px;
   }
-  
+
   .card-tabs .nav-link i {
     margin-right: 0.25rem;
     font-size: 0.9rem;
   }
-  
+
   .info-row {
     grid-template-columns: 1fr;
     gap: 0.5rem;
   }
-  
+
   .info-item {
     padding: 0.5rem;
+  }
+
+  /* Enhanced mobile touch targets and spacing */
+  .note-header {
+    padding: 0.75rem 0.875rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .note-meta {
+    flex: 1 1 100%;
+    margin-bottom: 0.25rem;
+  }
+
+  .note-actions {
+    gap: 0.5rem !important;
+  }
+
+  .btn-icon.btn-info-icon {
+    min-width: 40px !important;
+    min-height: 40px !important;
+  }
+
+  .note-content {
+    padding: 1rem 0.875rem;
+  }
+
+  .note-price-info {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+
+  .note-text {
+    padding: 1rem !important;
+    font-size: 0.9rem;
+    line-height: 1.65;
+  }
+
+  .note-image img {
+    max-height: 180px !important;
   }
 }
 
@@ -907,11 +979,11 @@
     transform: scale(0.98);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
-  
+
   .card-tabs .nav-link:active {
     opacity: 0.7;
   }
-  
+
   .diary-card-tabs::before,
   .diary-card-tabs::after {
     content: "";
@@ -926,17 +998,17 @@
     z-index: 5;
     pointer-events: none;
   }
-  
+
   .diary-card-tabs.swiping::before,
   .diary-card-tabs.swiping::after {
     opacity: 0.8;
   }
-  
+
   .diary-card-tabs::before {
     left: 15px;
     transform: translateY(-50%) rotate(-135deg);
   }
-  
+
   .diary-card-tabs::after {
     right: 15px;
     transform: translateY(-50%) rotate(45deg);
