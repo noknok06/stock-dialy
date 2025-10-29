@@ -38,10 +38,9 @@
           </div>
           
           <!-- 削除ボタン - 常に表示 -->
-          <button class="note-delete-btn" 
+          <button class="btn-icon btn-danger-icon" 
                   onclick="confirmDeleteNote({{ note.id }}, '{{ note.date|date:"Y年m月d日" }}', '{% if note.note_type == 'analysis' %}分析更新{% elif note.note_type == 'news' %}ニュース{% elif note.note_type == 'earnings' %}決算情報{% elif note.note_type == 'insight' %}新たな気づき{% elif note.note_type == 'risk' %}リスク要因{% else %}その他{% endif %}', {{ diary.id }})" 
-                  title="この記録を削除"
-                  style="background: none; border: none; color: #dc3545; font-size: 0.9rem; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; transition: all 0.2s ease; opacity: 0.7;">
+                  title="この記録を削除">
             <i class="bi bi-trash"></i>
           </button>
         </div>
@@ -128,18 +127,6 @@
     {% endif %}
   </div>
 </div>
-
-<style>
-  .note-delete-btn:hover {
-    opacity: 1 !important;
-    background-color: rgba(220, 53, 69, 0.1) !important;
-    transform: scale(1.05);
-  }
-
-  .note-delete-btn:active {
-    transform: scale(0.95);
-  }
-</style>
 
 <script>
 // グローバル削除関数（home画面とdetail画面共通）
