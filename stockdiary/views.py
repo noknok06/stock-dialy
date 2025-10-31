@@ -809,7 +809,7 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
         context = super().get_context_data(**kwargs)
 
         # スピードダイアルアクション
-        context['diary_actions'] = [
+        context['form_actions'] = [
             {
                 'type': 'back',
                 'url': reverse_lazy('stockdiary:home'),
