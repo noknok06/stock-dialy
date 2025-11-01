@@ -3,7 +3,6 @@ from django.contrib.auth import get_user_model
 from stockdiary.models import StockDiary, DiaryNote
 from analysis_template.models import AnalysisTemplate, AnalysisItem
 from tags.models import Tag
-from portfolio.models import PortfolioSnapshot
 
 User = get_user_model()
 
