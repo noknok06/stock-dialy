@@ -1363,7 +1363,7 @@
             <div class="tab-label">
               取引履歴
               {% if diary.transaction_count > 0 %}
-              <span class="badge bg-primary bg-opacity-25 text-primary notes-count-badge">{{ diary.transaction_count }}</span>
+              <span class="badge bg-primary bg-opacity-25 notes-count-badge">{{ diary.transaction_count }}</span>
               {% endif %}
             </div>
           </button>
@@ -1376,24 +1376,24 @@
             <div class="tab-label">
               継続記録
               {% if notes.count > 0 %}
-              <span class="badge bg-primary bg-opacity-25 text-primary notes-count-badge">{{ notes.count }}</span>
+              <span class="badge bg-primary bg-opacity-25 notes-count-badge">{{ notes.count }}</span>
               {% endif %}
             </div>
           </button>
         </li>
 
+        {% if related_diaries %}
         <li class="improved-tab-item" role="presentation">
           <button class="improved-tab-link" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline-content"
             type="button" role="tab" aria-controls="timeline-content" aria-selected="false">
             <div class="tab-icon"><i class="bi bi-link-45deg"></i></div>
             <div class="tab-label">
               タイムライン
-              {% if related_diaries %}
-                <span class="badge bg-primary bg-opacity-25 text-primary notes-count-badge">{{ related_diaries.count }}</span>
-              {% endif %}
+              <span class="badge bg-primary bg-opacity-25 notes-count-badge">{{ related_diaries.count }}</span>
             </div>
           </button>
         </li>
+        {% endif %}
       </ul>
 
       <!-- タブコンテンツ -->
@@ -1856,8 +1856,8 @@
         </div>
 
         <!-- タイムラインタブ -->
+        {% if related_diaries %}
         <div class="tab-pane fade" id="timeline-content" role="tabpanel" aria-labelledby="timeline-tab">
-          {% if related_diaries %}
           <div class="timeline-section mobile-optimized">
             <h3 class="section-title mb-3">
               <i class="bi bi-clock-history"></i>
@@ -1955,16 +1955,8 @@
             </div>
             {% endif %}
           </div>
-          {% else %}
-          <div class="empty-state text-center py-5">
-            <div class="empty-icon mb-3">
-              <i class="bi bi-link-45deg" style="font-size: 3rem; color: var(--text-light);"></i>
-            </div>
-            <h4 class="text-muted">関連する投資記録はありません</h4>
-            <p class="text-muted">この銘柄の他の投資記録が作成されると、ここに表示されます。</p>
-          </div>
-          {% endif %}
         </div>
+        {% endif %}
       </div>
     </div>
   </div>

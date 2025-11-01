@@ -108,205 +108,325 @@
     color: #f59e0b;
   }
 
-  .character-count.danger {
-    color: #ef4444;
-  }
-/* 分析項目の基本スタイル */
-.analysis-item {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  margin-bottom: 0.75rem;
-  transition: all 0.2s ease;
-}
 
-.analysis-item:hover {
-  border-color: #5a7ec5;
-  box-shadow: 0 2px 4px rgba(90, 126, 197, 0.15);
-}
-
-/* ブール型の横並びレイアウト */
-.analysis-item-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-
-.analysis-item-label-wrapper {
-  display: flex;
-  align-items: flex-start;
-  flex: 1;
-  min-width: 0;
-}
-
-.analysis-item-label {
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: #111827;
-  margin: 0;
-  cursor: pointer;
-}
-
-.analysis-item-desc {
-  font-size: 0.8rem;
-  color: #6b7280;
-  margin-top: 0.25rem;
-  line-height: 1.4;
-}
-
-/* コンパクトヘッダー（他の項目タイプ用） */
-.analysis-item-header-compact {
-  display: flex;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-
-.analysis-item-label-compact {
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: #111827;
-  margin: 0;
-}
-
-/* スイッチのスタイル */
-.form-check-input[role="switch"] {
-  width: 2.75rem;
-  height: 1.5rem;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.form-check-input[role="switch"]:checked {
-  background-color: #10b981;
-  border-color: #10b981;
-}
-
-.switch-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #6b7280;
-  margin-left: 0.5rem;
-  cursor: pointer;
-  user-select: none;
-  white-space: nowrap;
-}
-
-.form-check-input[role="switch"]:checked ~ .switch-label {
-  color: #059669;
-}
-
-/* 複合型（boolean_with_value）のスタイル */
-.compound-input-wrapper {
-  background-color: #f9fafb;
-  padding: 0.875rem;
-  border-radius: 0.375rem;
-  border: 1px solid #e5e7eb;
-}
-
-.compound-input-wrapper .form-check {
-  padding-left: 1.75rem;
-}
-
-.compound-input-wrapper .form-check-input {
-  width: 1.25rem;
-  height: 1.25rem;
-  margin-top: 0;
-}
-
-.compound-input-wrapper .form-check-input:checked {
-  background-color: #10b981;
-  border-color: #10b981;
-}
-
-.compound-input-wrapper .form-check-label {
-  color: #374151;
-  cursor: pointer;
-  user-select: none;
-}
-
-.compound-input-wrapper .form-check-input:checked ~ .form-check-label {
-  color: #059669;
-}
-
-/* フォームラベルの小サイズ */
-.form-label-sm {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #4b5563;
-  margin-bottom: 0.375rem;
-}
-
-/* フォームコントロールのスタイル */
-.analysis-item .form-control,
-.analysis-item .form-select {
-  border-color: #d1d5db;
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
-}
-
-.analysis-item .form-control:focus,
-.analysis-item .form-select:focus {
-  border-color: #5a7ec5;
-  box-shadow: 0 0 0 3px rgba(90, 126, 197, 0.25);
-}
-
-.analysis-item .form-control::placeholder {
-  color: #9ca3af;
-}
-
-/* アイコンのスタイル */
-.analysis-item i.bi {
-  flex-shrink: 0;
-}
-
-/* スマホ対応 */
-@media (max-width: 576px) {
+  /* ========== 分析項目のレイアウト統一 ========== */
   .analysis-item {
-    padding: 0.875rem;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    transition: all 0.2s ease;
   }
-  
-  .analysis-item-row {
-    gap: 0.75rem;
-  }
-  
-  .analysis-item-label,
-  .analysis-item-label-compact {
-    font-size: 0.9rem;
-  }
-  
-  .analysis-item-desc {
-    font-size: 0.75rem;
-  }
-  
-  .form-check-input[role="switch"] {
-    width: 2.5rem;
-    height: 1.375rem;
-  }
-  
-  .switch-label {
-    font-size: 0.8rem;
-  }
-  
-  .compound-input-wrapper {
-    padding: 0.75rem;
-  }
-}
 
-/* タッチデバイス対応 */
-@media (hover: none) and (pointer: coarse) {
-  .form-check-input,
+  .analysis-item:hover {
+    border-color: #5a7ec5;
+    box-shadow: 0 2px 4px rgba(90, 126, 197, 0.15);
+  }
+
+  /* 全項目タイプ共通のヘッダー */
+  .analysis-item-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .analysis-item-label-wrapper {
+    display: flex;
+    align-items: flex-start;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .analysis-item-label-wrapper i {
+    flex-shrink: 0;
+    margin-right: 0.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .analysis-item-label {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #111827;
+    margin: 0;
+    cursor: pointer;
+    line-height: 1.4;
+  }
+
+  .analysis-item-desc {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+    line-height: 1.4;
+  }
+
+  /* ブール型のチェックボックス */
+  .analysis-item-checkbox {
+    flex-shrink: 0;
+  }
+
+  .analysis-item-checkbox .form-check {
+    margin: 0;
+    padding: 0;
+  }
+
+  .analysis-item-checkbox .form-check-input {
+    width: 1.5rem;
+    height: 1.5rem;
+    margin: 0;
+    cursor: pointer;
+    border: 2px solid #d1d5db;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+  }
+
+  .analysis-item-checkbox .form-check-input:checked {
+    background-color: #10b981;
+    border-color: #10b981;
+  }
+
+  .analysis-item-checkbox .form-check-input:focus {
+    border-color: #5a7ec5;
+    box-shadow: 0 0 0 0.25rem rgba(90, 126, 197, 0.25);
+    outline: none;
+  }
+
+  /* 入力フィールドを持つ項目 */
+  .analysis-item-input-section {
+    margin-top: 0.75rem;
+  }
+
+  .analysis-item-input-section .form-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #4b5563;
+    margin-bottom: 0.375rem;
+  }
+
+  /* 複合型（boolean_with_value）のスタイル */
+  .compound-input-wrapper {
+    background-color: #f9fafb;
+    padding: 0.875rem;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e7eb;
+    margin-top: 0.75rem;
+  }
+
+  .compound-checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .compound-input-wrapper .form-check-input {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin: 0;
+    cursor: pointer;
+    border: 2px solid #d1d5db;
+    border-radius: 0.375rem;
+    flex-shrink: 0;
+  }
+
+  .compound-input-wrapper .form-check-input:checked {
+    background-color: #10b981;
+    border-color: #10b981;
+  }
+
+  .compound-input-wrapper .form-check-label {
+    color: #374151;
+    cursor: pointer;
+    user-select: none;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .compound-input-wrapper .form-check-input:checked ~ .form-check-label {
+    color: #059669;
+  }
+
+  /* フォームコントロールのスタイル */form-selectの横幅を調整します。スマホでは全幅、デスクトップでは適切な幅に制限します。
+修正内容
+diary_form.htmlの<style>セクションに以下を追加してください：
+html<style>
+  /* 既存のスタイルは維持 */
+  
+  /* ... 既存のスタイル ... */
+
+  /* ========== フォームコントロールの横幅調整 ========== */
   .analysis-item .form-control,
   .analysis-item .form-select {
-    min-height: 44px;
+    border: 2px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    width: 100%; /* デフォルトは全幅 */
   }
-  
-  .analysis-item-label,
-  .form-check-label {
-    padding: 0.5rem 0;
+
+  /* デスクトップでの横幅制限 */
+  @media (min-width: 768px) {
+    .analysis-item .form-control[type="number"] {
+      max-width: 200px; /* 数値入力は200px */
+    }
+    
+    .analysis-item .form-control[type="text"] {
+      max-width: 400px; /* テキスト入力は400px */
+    }
+    
+    .analysis-item .form-select {
+      max-width: 300px; /* セレクトボックスは300px */
+    }
+
+    /* 複合型の数値入力 */
+    .compound-input-wrapper .form-control {
+      max-width: 200px;
+    }
   }
-}  
+
+  /* タブレットでの横幅調整 */
+  @media (min-width: 577px) and (max-width: 767px) {
+    .analysis-item .form-control,
+    .analysis-item .form-select {
+      max-width: 100%; /* タブレットは全幅 */
+    }
+  }
+
+  .analysis-item .form-control:focus,
+  .analysis-item .form-select:focus {
+    border-color: #5a7ec5;
+    box-shadow: 0 0 0 3px rgba(90, 126, 197, 0.25);
+    outline: none;
+  }
+
+  .analysis-item .form-control::placeholder {
+    color: #9ca3af;
+  }
+
+  /* ========== スマホ対応 ========== */
+  @media (max-width: 576px) {
+    .analysis-item {
+      padding: 0.875rem;
+    }
+    
+    .analysis-item-header {
+      gap: 0.75rem;
+    }
+    
+    .analysis-item-label {
+      font-size: 0.9rem;
+    }
+    
+    .analysis-item-desc {
+      font-size: 0.75rem;
+    }
+    
+    .analysis-item-checkbox .form-check-input {
+      width: 1.375rem;
+      height: 1.375rem;
+    }
+
+    .compound-input-wrapper {
+      padding: 0.75rem;
+    }
+
+    /* スマホでは全幅 */
+    .analysis-item .form-control,
+    .analysis-item .form-select {
+      width: 100%;
+      max-width: 100%;
+    }
+  }
+
+  /* ========== タッチデバイス対応 ========== */
+  @media (hover: none) and (pointer: coarse) {
+    /* タッチ領域を最低44pxに */
+    .analysis-item-checkbox .form-check-input {
+      width: 1.75rem;
+      height: 1.75rem;
+    }
+    
+    .analysis-item-label {
+      padding: 0.5rem 0;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+    }
+
+    .analysis-item .form-control,
+    .analysis-item .form-select {
+      min-height: 44px;
+    }
+  }
+
+  /* ========== アクセシビリティ ========== */
+  .analysis-item-checkbox .form-check-input:focus-visible {
+    outline: 2px solid #5a7ec5;
+    outline-offset: 2px;
+  }
+
+  /* ========== 入力セクションの余白調整 ========== */
+  .analysis-item-input-section {
+    margin-top: 0.75rem;
+  }
+
+  .analysis-item-input-section .form-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #4b5563;
+    margin-bottom: 0.375rem;
+  }
+
+  /* ========== 複合型の特別スタイル ========== */
+  .compound-input-wrapper {
+    background-color: #f9fafb;
+    padding: 0.875rem;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e7eb;
+    margin-top: 0.75rem;
+  }
+
+  .compound-checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .compound-input-wrapper .form-check-input {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin: 0;
+    cursor: pointer;
+    border: 2px solid #d1d5db;
+    border-radius: 0.375rem;
+    flex-shrink: 0;
+  }
+
+  .compound-input-wrapper .form-check-input:checked {
+    background-color: #10b981;
+    border-color: #10b981;
+  }
+
+  .compound-input-wrapper .form-check-label {
+    color: #374151;
+    cursor: pointer;
+    user-select: none;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .compound-input-wrapper .form-check-input:checked ~ .form-check-label {
+    color: #059669;
+  }
+
+  .compound-input-wrapper .form-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #4b5563;
+    margin-bottom: 0.375rem;
+  }
 </style>
 {% endblock %}
 
@@ -1280,35 +1400,31 @@ function renderAnalysisItems(items, values = {}) {
     return;
   }
   
-  console.log('Rendering analysis items with values:', values); // デバッグ用
+  console.log('Rendering analysis items with values:', values);
   
   let html = '';
   
   items.forEach((item, index) => {
-    // 既存値を取得
     const existingValue = values[item.id];
-    console.log(`Item ${item.id} (${item.name}):`, existingValue); // デバッグ用
+    console.log(`Item ${item.id} (${item.name}):`, existingValue);
     
-    // 項目タイプに応じたアイコン
     let icon = 'bi-circle';
-    if (item.item_type === 'boolean') icon = 'bi-toggle-on';
-    else if (item.item_type === 'boolean_with_value') icon = 'bi-check-circle';
+    if (item.item_type === 'boolean') icon = 'bi-check-circle';
+    else if (item.item_type === 'boolean_with_value') icon = 'bi-check-square';
     else if (item.item_type === 'number') icon = 'bi-123';
     else if (item.item_type === 'select') icon = 'bi-list-ul';
     else if (item.item_type === 'text') icon = 'bi-text-left';
     
-    html += `<div class="analysis-item ${item.item_type === 'boolean' ? 'analysis-item-boolean' : ''}">`;
+    html += `<div class="analysis-item">`;
     
-    // 項目タイプごとの表示
     if (item.item_type === 'boolean') {
-      // ブール型：横並びレイアウト
+      // ✅ シンプルなチェックボックスレイアウト
       const checked = existingValue === true ? 'checked' : '';
-      console.log(`Boolean item ${item.id}: checked=${checked}`); // デバッグ用
       
       html += `
-        <div class="analysis-item-row">
+        <div class="analysis-item-header">
           <div class="analysis-item-label-wrapper">
-            <i class="bi ${icon} text-primary me-2"></i>
+            <i class="bi ${icon} text-primary"></i>
             <div>
               <label class="analysis-item-label" for="analysis_item_${item.id}">
                 ${escapeHtml(item.name)}
@@ -1316,54 +1432,50 @@ function renderAnalysisItems(items, values = {}) {
               ${item.description ? `<div class="analysis-item-desc">${escapeHtml(item.description)}</div>` : ''}
             </div>
           </div>
-          <div class="form-check form-switch">
-            <input type="checkbox" 
-                   class="form-check-input" 
-                   name="analysis_item_${item.id}" 
-                   id="analysis_item_${item.id}"
-                   role="switch"
-                   ${checked}>
-            <label class="form-check-label switch-label" for="analysis_item_${item.id}">
-              ${checked ? 'はい' : 'いいえ'}
-            </label>
+          <div class="analysis-item-checkbox">
+            <div class="form-check">
+              <input type="checkbox" 
+                     class="form-check-input" 
+                     name="analysis_item_${item.id}" 
+                     id="analysis_item_${item.id}"
+                     ${checked}>
+            </div>
           </div>
         </div>
       `;
       
     } else if (item.item_type === 'boolean_with_value') {
-      // 複合型：チェックボックス + 数値入力
+      // 複合型
       const boolChecked = existingValue?.boolean_value === true ? 'checked' : '';
       const numberValue = existingValue?.number_value ?? '';
       const valueLabel = item.value_label || '値';
       
-      console.log(`Boolean with value item ${item.id}:`, {
-        boolChecked,
-        numberValue,
-        existingValue
-      }); // デバッグ用
-      
       html += `
-        <div class="analysis-item-header-compact">
-          <i class="bi ${icon} text-primary me-2"></i>
-          <label class="analysis-item-label-compact" for="analysis_item_${item.id}_boolean">
-            ${escapeHtml(item.name)}
-          </label>
+        <div class="analysis-item-header">
+          <div class="analysis-item-label-wrapper">
+            <i class="bi ${icon} text-primary"></i>
+            <div>
+              <label class="analysis-item-label">
+                ${escapeHtml(item.name)}
+              </label>
+              ${item.description ? `<div class="analysis-item-desc">${escapeHtml(item.description)}</div>` : ''}
+            </div>
+          </div>
         </div>
-        ${item.description ? `<div class="analysis-item-desc mb-2">${escapeHtml(item.description)}</div>` : ''}
         
         <div class="compound-input-wrapper">
-          <div class="form-check mb-2">
+          <div class="compound-checkbox-row">
             <input type="checkbox" 
                    class="form-check-input" 
                    name="analysis_item_${item.id}_boolean" 
                    id="analysis_item_${item.id}_boolean"
                    ${boolChecked}>
-            <label class="form-check-label fw-semibold" for="analysis_item_${item.id}_boolean">
+            <label class="form-check-label" for="analysis_item_${item.id}_boolean">
               該当する
             </label>
           </div>
           <div>
-            <label class="form-label form-label-sm">${escapeHtml(valueLabel)}</label>
+            <label class="form-label">${escapeHtml(valueLabel)}</label>
             <input type="number" 
                    class="form-control" 
                    name="analysis_item_${item.id}_value" 
@@ -1378,39 +1490,49 @@ function renderAnalysisItems(items, values = {}) {
     } else if (item.item_type === 'number') {
       // 数値型
       const value = existingValue ?? '';
-      console.log(`Number item ${item.id}: value=${value}`); // デバッグ用
       
       html += `
-        <div class="analysis-item-header-compact">
-          <i class="bi ${icon} text-primary me-2"></i>
-          <label class="analysis-item-label-compact" for="analysis_item_${item.id}">
-            ${escapeHtml(item.name)}
-          </label>
+        <div class="analysis-item-header">
+          <div class="analysis-item-label-wrapper">
+            <i class="bi ${icon} text-primary"></i>
+            <div>
+              <label class="analysis-item-label" for="analysis_item_${item.id}">
+                ${escapeHtml(item.name)}
+              </label>
+              ${item.description ? `<div class="analysis-item-desc">${escapeHtml(item.description)}</div>` : ''}
+            </div>
+          </div>
         </div>
-        ${item.description ? `<div class="analysis-item-desc mb-2">${escapeHtml(item.description)}</div>` : ''}
-        <input type="number" 
-               class="form-control" 
-               name="analysis_item_${item.id}" 
-               id="analysis_item_${item.id}"
-               step="0.01"
-               placeholder="数値を入力"
-               value="${value}">
+        <div class="analysis-item-input-section">
+          <input type="number" 
+                 class="form-control" 
+                 name="analysis_item_${item.id}" 
+                 id="analysis_item_${item.id}"
+                 step="0.01"
+                 placeholder="数値を入力"
+                 value="${value}">
+        </div>
       `;
       
     } else if (item.item_type === 'select') {
       // 選択肢型
       html += `
-        <div class="analysis-item-header-compact">
-          <i class="bi ${icon} text-primary me-2"></i>
-          <label class="analysis-item-label-compact" for="analysis_item_${item.id}">
-            ${escapeHtml(item.name)}
-          </label>
+        <div class="analysis-item-header">
+          <div class="analysis-item-label-wrapper">
+            <i class="bi ${icon} text-primary"></i>
+            <div>
+              <label class="analysis-item-label" for="analysis_item_${item.id}">
+                ${escapeHtml(item.name)}
+              </label>
+              ${item.description ? `<div class="analysis-item-desc">${escapeHtml(item.description)}</div>` : ''}
+            </div>
+          </div>
         </div>
-        ${item.description ? `<div class="analysis-item-desc mb-2">${escapeHtml(item.description)}</div>` : ''}
-        <select class="form-select" 
-                name="analysis_item_${item.id}" 
-                id="analysis_item_${item.id}">
-          <option value="">選択してください</option>
+        <div class="analysis-item-input-section">
+          <select class="form-select" 
+                  name="analysis_item_${item.id}" 
+                  id="analysis_item_${item.id}">
+            <option value="">選択してください</option>
       `;
       
       let choicesList = [];
@@ -1427,25 +1549,31 @@ function renderAnalysisItems(items, values = {}) {
         html += `<option value="${escapeHtml(choice)}" ${selected}>${escapeHtml(choice)}</option>`;
       });
       
-      html += `</select>`;
+      html += `</select></div>`;
       
     } else {
       // テキスト型
       const value = existingValue ?? '';
       html += `
-        <div class="analysis-item-header-compact">
-          <i class="bi ${icon} text-primary me-2"></i>
-          <label class="analysis-item-label-compact" for="analysis_item_${item.id}">
-            ${escapeHtml(item.name)}
-          </label>
+        <div class="analysis-item-header">
+          <div class="analysis-item-label-wrapper">
+            <i class="bi ${icon} text-primary"></i>
+            <div>
+              <label class="analysis-item-label" for="analysis_item_${item.id}">
+                ${escapeHtml(item.name)}
+              </label>
+              ${item.description ? `<div class="analysis-item-desc">${escapeHtml(item.description)}</div>` : ''}
+            </div>
+          </div>
         </div>
-        ${item.description ? `<div class="analysis-item-desc mb-2">${escapeHtml(item.description)}</div>` : ''}
-        <input type="text" 
-               class="form-control" 
-               name="analysis_item_${item.id}" 
-               id="analysis_item_${item.id}"
-               placeholder="テキストを入力"
-               value="${escapeHtml(value)}">
+        <div class="analysis-item-input-section">
+          <input type="text" 
+                 class="form-control" 
+                 name="analysis_item_${item.id}" 
+                 id="analysis_item_${item.id}"
+                 placeholder="テキストを入力"
+                 value="${escapeHtml(value)}">
+        </div>
       `;
     }
     
@@ -1453,28 +1581,8 @@ function renderAnalysisItems(items, values = {}) {
   });
   
   analysisItemsContent.innerHTML = html;
-  
-  // スイッチのラベル切り替え
-  document.querySelectorAll('.form-check-input[type="checkbox"][role="switch"]').forEach(checkbox => {
-    checkbox.addEventListener('change', function() {
-      const label = this.nextElementSibling;
-      if (label && label.classList.contains('switch-label')) {
-        label.textContent = this.checked ? 'はい' : 'いいえ';
-      }
-    });
-  });
 }
 
-function escapeHtml(text) {
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;'
-  };
-  return String(text).replace(/[&<>"']/g, m => map[m]);
-}
 
 // ============================================
 // フォーム送信時のバリデーション
@@ -1538,5 +1646,18 @@ tooltipTriggerList.map(function (tooltipTriggerEl) {
   return new bootstrap.Tooltip(tooltipTriggerEl);
 });
 });
+
+// HTMLエスケープ関数
+function escapeHtml(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, m => map[m]);
+}
+
 </script>
 {% endblock %}
