@@ -29,7 +29,7 @@
         <div class="summary-card-improved">
           <div class="summary-label">総取得原価</div>
           <div class="summary-value">
-            {{ diary.total_cost|floatformat:0|intcomma }}<span class="unit">円</span>
+            {{ diary.total_cost|intcomma_float:0 }}<span class="unit">円</span>
           </div>
         </div>
       </div>
@@ -37,7 +37,7 @@
         <div class="summary-card-improved {% if diary.realized_profit > 0 %}profit{% elif diary.realized_profit < 0 %}loss{% endif %}">
           <div class="summary-label">実現損益</div>
           <div class="summary-value">
-            {% if diary.realized_profit > 0 %}+{% endif %}{{ diary.realized_profit|floatformat:0|intcomma }}<span class="unit">円</span>
+            {% if diary.realized_profit > 0 %}+{% endif %}{{ diary.realized_profit|intcomma_float:0 }}<span class="unit">円</span>
           </div>
         </div>
       </div>
@@ -203,7 +203,7 @@
               </div>
               <div class="detail-item-improved highlight">
                 <span class="detail-label-improved">金額</span>
-                <span class="detail-value-improved strong">{{ transaction.amount|floatformat:0|intcomma }}円</span>
+                <span class="detail-value-improved strong">{{ transaction.amount|intcomma_float:0 }}円</span>
               </div>
             </div>
 
@@ -246,7 +246,7 @@
                 <div class="col-md-6">
                   <label class="form-label-improved">単価（円）</label>
                   <input type="number" class="form-input-improved" name="price" 
-                         value="{{ transaction.price }}" step="0.01" min="0.01" required>
+                         value="{{ transaction.price|floatformat:2|intcomma }}" step="0.01" min="0.01" required>
                 </div>
                 
                 <div class="col-md-6">

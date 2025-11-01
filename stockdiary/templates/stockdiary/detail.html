@@ -1337,7 +1337,7 @@
           
           {% if diary.realized_profit != 0 %}
           <div class="profit-indicator {% if diary.realized_profit > 0 %}profit-positive{% elif diary.realized_profit < 0 %}profit-negative{% endif %}">
-            {% if diary.realized_profit > 0 %}+{% endif %}{{ diary.realized_profit|floatformat:0|intcomma }}円
+            {% if diary.realized_profit > 0 %}+{% endif %}{{ diary.realized_profit|intcomma_float:0 }}円
           </div>
           {% endif %}
         </div>
@@ -1482,7 +1482,7 @@
                   </div>
                   <div class="info-content-improved">
                     <div class="info-label-improved">総取得原価</div>
-                    <div class="info-value-improved">{{ diary.total_cost|floatformat:0|intcomma }}円</div>
+                    <div class="info-value-improved">{{ diary.total_cost|intcomma_float:0 }}円</div>
                   </div>
                 </div>
 
@@ -1494,7 +1494,7 @@
                   <div class="info-content-improved">
                     <div class="info-label-improved">実現損益</div>
                     <div class="info-value-improved {% if diary.realized_profit > 0 %}text-success{% else %}text-danger{% endif %}">
-                      {% if diary.realized_profit > 0 %}+{% endif %}{{ diary.realized_profit|floatformat:0|intcomma }}円
+                      {% if diary.realized_profit > 0 %}+{% endif %}{{ diary.realized_profit|intcomma_float:0 }}円
                     </div>
                   </div>
                 </div>

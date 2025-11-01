@@ -1,6 +1,6 @@
 // static/sw.js
-const CACHE_NAME = 'kabulog-v1.0.2';  // バージョンアップ
-const STATIC_CACHE_NAME = 'kabulog-static-v1.0.2';
+const CACHE_NAME = 'kabulog-v1.0.3';  // バージョンアップ
+const STATIC_CACHE_NAME = 'kabulog-static-v1.0.3';
 
 // キャッシュするリソース
 const STATIC_ASSETS = [

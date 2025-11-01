@@ -524,3 +524,20 @@ def touch_friendly_size(base_size):
         return max(44, base)  # 44px minimum for touch targets
     except (ValueError, TypeError):
         return 44
+    
+@register.filter(name='intcomma_float')
+def intcomma_float(value, decimal_places=0):
+    """
+    float値をカンマ区切りでフォーマットする。
+    decimal_places=0 の場合もカンマ付きで整数表示。
+    """
+    try:
+        value = float(value or 0)
+        if decimal_places == 0:
+            formatted = f"{int(round(value)):,}"
+        else:
+            formatted = f"{value:,.{decimal_places}f}"
+        return formatted
+    except (ValueError, TypeError):
+        return "0"
+    
