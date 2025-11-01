@@ -194,14 +194,17 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         if sector:
             queryset = queryset.filter(sector__iexact=sector)
         
-        # 🆕 保有状態フィルター（デフォルトで保有中のみ表示）
-        status = self.request.GET.get('status', 'active')  # デフォルト値を'active'に変更
+        # 🔧 保有状態フィルター（デフォルトで保有中のみ表示）
+        status = self.request.GET.get('status', 'active')  # デフォルト値を'active'に設定
         if status == 'active':
             # 保有中: 保有数が0より大きい
             queryset = queryset.filter(current_quantity__gt=0)
         elif status == 'sold':
-            # 売却済み: 取引はあるが保有数が0
-            queryset = queryset.filter(current_quantity=0, transaction_count__gt=0)
+            # 売却済み: 取引はあるが保有数が0または負数（空売り決済済み）
+            queryset = queryset.filter(
+                Q(current_quantity=0) | Q(current_quantity__lt=0),
+                transaction_count__gt=0
+            )
         elif status == 'memo':
             # メモのみ: 取引がない
             queryset = queryset.filter(transaction_count=0)
@@ -289,7 +292,6 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         
         return queryset.distinct()
 
-
     # 🆕 diary_list 関数も同様に更新（views.py内の該当関数を以下で置き換え）
     def diary_list(request):
         """日記リストを表示するビュー（HTMX対応）"""
@@ -331,7 +333,10 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
             if status == 'active':
                 queryset = queryset.filter(current_quantity__gt=0)
             elif status == 'sold':
-                queryset = queryset.filter(current_quantity=0, transaction_count__gt=0)
+                queryset = queryset.filter(
+                    Q(current_quantity=0) | Q(current_quantity__lt=0),
+                    transaction_count__gt=0
+                )
             elif status == 'memo':
                 queryset = queryset.filter(transaction_count=0)
             elif status == 'all':
@@ -1657,7 +1662,10 @@ def diary_list(request):
         if status == 'active':
             queryset = queryset.filter(current_quantity__gt=0)
         elif status == 'sold':
-            queryset = queryset.filter(current_quantity=0, transaction_count__gt=0)
+            queryset = queryset.filter(
+                Q(current_quantity=0) | Q(current_quantity__lt=0),
+                transaction_count__gt=0
+            )
         elif status == 'memo':
             queryset = queryset.filter(transaction_count=0)
         
