@@ -10,6 +10,5 @@ urlpatterns = [
     path('checklist/', include('checklist.urls')),
     path('tags/', include('tags.urls')),
     path('analysis/', include('analysis_template.urls')),
-    path('portfolio/', include('portfolio.urls')),
     # subscriptionsを除外
 ]
