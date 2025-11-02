@@ -31,6 +31,7 @@ urlpatterns = [
     path('analysis/', include('analysis_template.urls')),
     path('financial_reports/', include('financial_reports.urls')),
     path('company_master/', include('company_master.urls')),
+    path('copomo/', include('earnings_analysis.urls', namespace='copomo')),
 
     # ✅ landing_pageを個別登録
     path('', views.landing_page, name='landing_page'),
