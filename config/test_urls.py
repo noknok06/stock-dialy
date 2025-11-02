@@ -29,6 +29,8 @@ urlpatterns = [
     path('checklist/', include('checklist.urls')),
     path('tags/', include('tags.urls')),
     path('analysis/', include('analysis_template.urls')),
+    path('financial_reports/', include('financial_reports.urls')),
+    path('company_master/', include('company_master.urls')),
 
     # ✅ landing_pageを個別登録
     path('', views.landing_page, name='landing_page'),
