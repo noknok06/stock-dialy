@@ -129,7 +129,6 @@ LOCAL_APPS = [
     'stockdiary',
     'analysis_template',
     'company_master',
-    'subscriptions',
     'maintenance',
     'contact',
     'financial_reports',

@@ -1,6 +1,7 @@
 # config/test_urls.py
 from django.contrib import admin
 from django.urls import path, include
+from config import views  # ← 追加
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -10,5 +11,7 @@ urlpatterns = [
     path('checklist/', include('checklist.urls')),
     path('tags/', include('tags.urls')),
     path('analysis/', include('analysis_template.urls')),
-    path('', include('config.urls')),  # ← ★ 追加
+
+    # ↓ landing_pageだけ個別登録
+    path('', views.landing_page, name='landing_page'),
 ]
