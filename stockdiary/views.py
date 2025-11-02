@@ -3611,12 +3611,6 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
                 'url': reverse_lazy('stockdiary:home'),
                 'icon': 'bi-arrow-left',
                 'label': '戻る'
-            },
-            {
-                'type': 'add',
-                'url': reverse_lazy('stockdiary:create'),
-                'icon': 'bi-plus-lg',
-                'label': '新規登録'
             }
         ]
         
