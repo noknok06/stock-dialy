@@ -36,3 +36,14 @@ urlpatterns = [
     # ✅ ads名前空間をダミーで登録
     path('ads/', include((ads_patterns, 'ads'), namespace='ads')),
 ]
+
+
+def dummy_contact_view(request):
+    return HttpResponse("contact dummy")
+
+urlpatterns += [
+    path('contact/', include(([
+        path('', dummy_contact_view, name='contact'),
+        path('success/', dummy_contact_view, name='success'),
+    ], 'contact'), namespace='contact')),
+]
