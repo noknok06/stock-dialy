@@ -1,6 +1,7 @@
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView, View
 from django.urls import reverse_lazy
-from django.db.models import Q, Count, Avg, F, Sum, Min, Max, Case, When, Value, IntegerField
+from django.db.models import Q, Count, Avg, F, Sum, Min, Max, Case, When, Value, IntegerField, DecimalField
+from django.db.models.functions import Coalesce
 from django.db.models.functions import TruncMonth, ExtractWeekDay, Length
 from django.utils import timezone
 from django.utils.html import strip_tags
@@ -3364,3 +3365,259 @@ def process_sbi_csv(user, csv_content, filename):
         'overwrite_count': overwrite_count,
         'errors': errors
     }    
+    
+class TradingDashboardView(LoginRequiredMixin, TemplateView):
+    """取引分析ダッシュボード"""
+    template_name = 'stockdiary/trading_dashboard.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        
+        # ========== 期間フィルター ==========
+        period = self.request.GET.get('period', '6m')
+        today = timezone.now().date()
+        
+        period_mapping = {
+            '1m': 30,
+            '3m': 90,
+            '6m': 180,
+            '1y': 365,
+            'all': None
+        }
+        
+        days = period_mapping.get(period)
+        
+        # 期間内の取引を取得
+        if days:
+            start_date = today - timedelta(days=days)
+            period_transactions = Transaction.objects.filter(
+                diary__user=user,
+                transaction_date__gte=start_date
+            )
+        else:
+            period_transactions = Transaction.objects.filter(diary__user=user)
+        
+        # 期間内に取引があった日記を取得
+        diary_ids_in_period = period_transactions.values_list('diary_id', flat=True).distinct()
+        diaries_in_period = StockDiary.objects.filter(
+            id__in=diary_ids_in_period
+        ).select_related('user')
+        
+        # 全日記（保有数の計算用）
+        all_diaries = StockDiary.objects.filter(user=user)
+        
+        # ========== CompanyMasterから業種情報を取得 ==========
+        from company_master.models import CompanyMaster
+        
+        company_codes = list(
+            period_transactions.values_list('diary__stock_symbol', flat=True).distinct()
+        )
+        
+        # CompanyMasterから業種情報を取得
+        company_industries = {}
+        if company_codes:
+            companies = CompanyMaster.objects.filter(
+                code__in=company_codes
+            ).values('code', 'industry_name_33')
+            
+            for company in companies:
+                code = company['code'].split('.')[0]
+                industry = company['industry_name_33'] if company['industry_name_33'] else '未分類'
+                company_industries[code] = industry
+        
+        # ========== メトリクス集計 ==========
+        total_transactions = period_transactions.count()
+        holding_count = all_diaries.filter(current_quantity__gt=0).count()
+        
+        # 期間内の実現損益を計算（売却取引のみ）
+        total_realized_profit = Decimal('0')
+        for transaction in period_transactions.filter(transaction_type='sell'):
+            diary = transaction.diary
+            if diary.average_purchase_price and diary.average_purchase_price > 0:
+                profit = (transaction.price - diary.average_purchase_price) * transaction.quantity
+                total_realized_profit += profit
+        
+        # 平均利益率（期間内の売却取引）
+        profitable_transactions = []
+        for transaction in period_transactions.filter(transaction_type='sell'):
+            diary = transaction.diary
+            if diary.average_purchase_price and diary.average_purchase_price > 0:
+                profit_rate = ((transaction.price - diary.average_purchase_price) / diary.average_purchase_price) * 100
+                if profit_rate > 0:
+                    profitable_transactions.append(profit_rate)
+        
+        avg_profit_rate = sum(profitable_transactions) / len(profitable_transactions) if profitable_transactions else 0
+        
+        # ========== 取引回数ランキング（期間内） ==========
+        transaction_counts = period_transactions.values('diary_id').annotate(
+            count=Count('id'),
+            last_date=Max('transaction_date')
+        )
+        
+        transaction_count_dict = {
+            item['diary_id']: {
+                'count': item['count'],
+                'last_date': item['last_date']
+            }
+            for item in transaction_counts
+        }
+        
+        ranking_diaries = list(diaries_in_period)
+        for diary in ranking_diaries:
+            diary.transaction_count_period = transaction_count_dict.get(diary.id, {}).get('count', 0)
+            diary.last_trade = transaction_count_dict.get(diary.id, {}).get('last_date')
+            
+            if diary.last_trade:
+                delta = today - diary.last_trade
+                if delta.days == 0:
+                    diary.last_trade_display = '今日'
+                elif delta.days == 1:
+                    diary.last_trade_display = '1日前'
+                elif delta.days < 7:
+                    diary.last_trade_display = f'{delta.days}日前'
+                elif delta.days < 30:
+                    weeks = delta.days // 7
+                    diary.last_trade_display = f'{weeks}週間前'
+                else:
+                    months = delta.days // 30
+                    diary.last_trade_display = f'{months}ヶ月前'
+            else:
+                diary.last_trade_display = '不明'
+        
+        ranking_diaries.sort(key=lambda x: x.transaction_count_period, reverse=True)
+        transaction_ranking = ranking_diaries[:10]
+        
+        # ========== 業種別分析 + 企業明細 ==========
+        sector_stats = {}
+        sector_companies = {}  # 業種ごとの企業リスト
+        
+        for transaction in period_transactions.select_related('diary'):
+            diary = transaction.diary
+            stock_code = diary.stock_symbol.split('.')[0] if diary.stock_symbol else None
+            sector = company_industries.get(stock_code, '未分類')
+            
+            if sector not in sector_stats:
+                sector_stats[sector] = {
+                    'sector': sector,
+                    'transaction_count': 0,
+                    'total_profit': Decimal('0'),
+                    'diary_ids': set(),
+                    'total_sell_amount': Decimal('0'),
+                    'total_buy_amount': Decimal('0'),
+                }
+                sector_companies[sector] = {}
+            
+            sector_stats[sector]['transaction_count'] += 1
+            sector_stats[sector]['diary_ids'].add(diary.id)
+            
+            # 企業ごとの集計
+            if diary.id not in sector_companies[sector]:
+                sector_companies[sector][diary.id] = {
+                    'name': diary.stock_name,
+                    'code': diary.stock_symbol,
+                    'transaction_count': 0,
+                    'total_profit': Decimal('0'),
+                    'total_sell_amount': Decimal('0'),
+                    'current_quantity': float(diary.current_quantity),
+                }
+            
+            sector_companies[sector][diary.id]['transaction_count'] += 1
+            
+            # 損益計算（売却時のみ）
+            if transaction.transaction_type == 'sell' and diary.average_purchase_price:
+                profit = (transaction.price - diary.average_purchase_price) * transaction.quantity
+                sector_stats[sector]['total_profit'] += profit
+                sector_stats[sector]['total_sell_amount'] += transaction.price * transaction.quantity
+                sector_companies[sector][diary.id]['total_profit'] += profit
+                sector_companies[sector][diary.id]['total_sell_amount'] += transaction.price * transaction.quantity
+            elif transaction.transaction_type == 'buy':
+                sector_stats[sector]['total_buy_amount'] += transaction.price * transaction.quantity
+        
+        # 利益率を計算
+        sector_analysis = []
+        for sector, data in sector_stats.items():
+            diary_count = len(data['diary_ids'])
+            
+            if data['total_sell_amount'] > 0:
+                profit_rate = (data['total_profit'] / data['total_sell_amount']) * 100
+            else:
+                profit_rate = Decimal('0')
+            
+            sector_analysis.append({
+                'sector': sector,
+                'transaction_count': data['transaction_count'],
+                'total_profit': data['total_profit'],
+                'diary_count': diary_count,
+                'profit_rate': float(profit_rate),
+            })
+        
+        sector_analysis.sort(key=lambda x: x['transaction_count'], reverse=True)
+        sector_analysis = sector_analysis[:10]
+        
+        max_transaction_count = sector_analysis[0]['transaction_count'] if sector_analysis else 1
+        for sector in sector_analysis:
+            sector['width_percent'] = (sector['transaction_count'] / max_transaction_count) * 100
+        
+        # ========== 業種別企業明細データの整形 ==========
+        sector_details = {}
+        for sector, companies in sector_companies.items():
+            company_list = []
+            for diary_id, company_data in companies.items():
+                profit_rate = None
+                if company_data['total_sell_amount'] > 0:
+                    profit_rate = round((float(company_data['total_profit']) / float(company_data['total_sell_amount'])) * 100, 1)
+                
+                company_list.append({
+                    'name': company_data['name'],
+                    'code': company_data['code'],
+                    'transaction_count': company_data['transaction_count'],
+                    'profit': round(float(company_data['total_profit']), 0),
+                    'profit_rate': profit_rate,
+                    'current_quantity': company_data['current_quantity'],
+                })
+            
+            # 損益順にソート
+            company_list.sort(key=lambda x: x['profit'], reverse=True)
+            sector_details[sector] = company_list
+        
+        # ========== 利益/損失業種 ==========
+        profitable_sectors = [s for s in sector_analysis if s['profit_rate'] > 0]
+        profitable_sectors.sort(key=lambda x: x['profit_rate'], reverse=True)
+        profitable_sectors = profitable_sectors[:3]
+        
+        loss_sectors = [s for s in sector_analysis if s['profit_rate'] < 0]
+        loss_sectors.sort(key=lambda x: x['profit_rate'])
+        loss_sectors = loss_sectors[:3]
+        
+        # ========== コンテキスト ==========
+        context.update({
+            'total_transactions': total_transactions,
+            'holding_count': holding_count,
+            'total_realized_profit': total_realized_profit,
+            'avg_profit_rate': round(avg_profit_rate, 1),
+            'transaction_ranking': transaction_ranking,
+            'sector_analysis': sector_analysis,
+            'profitable_sectors': profitable_sectors,
+            'loss_sectors': loss_sectors,
+            'current_period': period,
+            'has_data': total_transactions > 0,
+            'sector_details': json.dumps(sector_details, ensure_ascii=False),  # 企業明細データ
+        })
+        
+        context['page_actions'] = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('stockdiary:home'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            },
+            {
+                'type': 'add',
+                'url': reverse_lazy('stockdiary:create'),
+                'icon': 'bi-plus-lg',
+                'label': '新規登録'
+            }
+        ]
+        
+        return context
