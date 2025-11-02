@@ -127,7 +127,6 @@ LOCAL_APPS = [
     'ads',
     'security',
     'stockdiary',
-    'portfolio',
     'analysis_template',
     'company_master',
     'subscriptions',

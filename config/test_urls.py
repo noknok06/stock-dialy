@@ -5,10 +5,10 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
-    path('users/', include('users.urls')),  # usersアプリのURLを追加
+    path('users/', include('users.urls')),
     path('', include('stockdiary.urls')),
     path('checklist/', include('checklist.urls')),
     path('tags/', include('tags.urls')),
     path('analysis/', include('analysis_template.urls')),
-    # subscriptionsを除外
+    path('', include('config.urls')),  # ← ★ 追加
 ]
