@@ -2,7 +2,7 @@
 
 // レポートデータをプレビュー表示する関数
 function setPreviewData(data) {
-    console.log('プレビューデータを設定:', data);
+    // console.log('プレビューデータを設定:', data);
     
     // 要素のテキスト設定用ヘルパー関数
     function setElementText(id, value) {
@@ -81,7 +81,7 @@ function setPreviewData(data) {
         previewContainer.innerHTML = previewHTML;
       }
       
-      console.log('プレビュー表示完了');
+      // console.log('プレビュー表示完了');
     } catch (error) {
       console.error('プレビュー表示中にエラーが発生しました:', error);
     }

@@ -20,12 +20,12 @@ const OFFLINE_FALLBACK = '/offline/';
 
 // インストール時の処理
 self.addEventListener('install', event => {
-  console.log('Service Worker: Installing...');
+  // console.log('Service Worker: Installing...');
   
   event.waitUntil(
     caches.open(STATIC_CACHE_NAME)
       .then(cache => {
-        console.log('Service Worker: Caching static assets');
+        // console.log('Service Worker: Caching static assets');
         return cache.addAll(STATIC_ASSETS);
       })
       .catch(err => {
@@ -37,7 +37,7 @@ self.addEventListener('install', event => {
 
 // アクティベート時の処理
 self.addEventListener('activate', event => {
-  console.log('Service Worker: Activating...');
+  // console.log('Service Worker: Activating...');
   
   event.waitUntil(
     caches.keys()
@@ -45,7 +45,7 @@ self.addEventListener('activate', event => {
         return Promise.all(
           cacheNames.map(cacheName => {
             if (cacheName !== CACHE_NAME && cacheName !== STATIC_CACHE_NAME) {
-              console.log('Service Worker: Deleting old cache:', cacheName);
+              // console.log('Service Worker: Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
           })
@@ -138,7 +138,7 @@ async function cacheFirstStrategy(request) {
 
 // プッシュ通知受信
 self.addEventListener('push', event => {
-  console.log('Push notification received');
+  // console.log('Push notification received');
   
   const data = event.data ? event.data.json() : {};
   
@@ -170,7 +170,7 @@ self.addEventListener('push', event => {
 
 // 通知クリック時
 self.addEventListener('notificationclick', event => {
-  console.log('Notification clicked');
+  // console.log('Notification clicked');
   event.notification.close();
   
   const urlToOpen = event.notification.data.url || '/';

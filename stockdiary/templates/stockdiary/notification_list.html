@@ -237,7 +237,7 @@ async function deleteNotificationFromList(notificationId) {
             return;
         }
         
-        console.log('削除リクエスト送信:', notificationId);
+        // console.log('削除リクエスト送信:', notificationId);
         
         const response = await fetch(`/stockdiary/api/notifications/${notificationId}/delete/`, {
             method: 'POST',
@@ -249,7 +249,7 @@ async function deleteNotificationFromList(notificationId) {
             credentials: 'same-origin'
         });
         
-        console.log('削除レスポンスステータス:', response.status);
+        // console.log('削除レスポンスステータス:', response.status);
         
         // HTMLレスポンスの場合の処理
         const contentType = response.headers.get('content-type');

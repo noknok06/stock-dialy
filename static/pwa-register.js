@@ -2,25 +2,25 @@
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      console.log('🔄 Service Worker登録処理開始...');
+      // console.log('🔄 Service Worker登録処理開始...');
       
       // ブラウザ判定
       const userAgent = navigator.userAgent;
       const isSafari = /^((?!chrome|android).)*safari/i.test(userAgent);
       const isIOS = /iPhone|iPad|iPod/.test(userAgent);
       
-      console.log(`ブラウザ: Safari=${isSafari}, iOS=${isIOS}`);
+      // console.log(`ブラウザ: Safari=${isSafari}, iOS=${isIOS}`);
       
       // 既存のService Workerを確認
       const existingRegs = await navigator.serviceWorker.getRegistrations();
-      console.log(`既存のService Worker: ${existingRegs.length}件`);
+      // console.log(`既存のService Worker: ${existingRegs.length}件`);
       
       for (const reg of existingRegs) {
-        console.log(`- スコープ: ${reg.scope}, 状態: ${reg.active ? 'active' : 'inactive'}`);
+        // console.log(`- スコープ: ${reg.scope}, 状態: ${reg.active ? 'active' : 'inactive'}`);
         
         // スコープが /static/ の古いService Workerを解除
         if (reg.scope.includes('/static/')) {
-          console.log('⚠️ 古いService Workerを解除:', reg.scope);
+          // console.log('⚠️ 古いService Workerを解除:', reg.scope);
           try {
             await reg.unregister();
           } catch (e) {
@@ -30,34 +30,34 @@ if ('serviceWorker' in navigator) {
       }
       
       // 新しいService Workerをルートスコープで登録
-      console.log('新しいService Workerを登録中...');
+      // console.log('新しいService Workerを登録中...');
       
       const registration = await navigator.serviceWorker.register('/sw.js', {
         scope: '/',
         updateViaCache: 'none'  // Safari対応: キャッシュを使わない
       });
       
-      console.log('✅ SW registered:', registration.scope);
-      console.log('SW installing:', registration.installing);
-      console.log('SW waiting:', registration.waiting);
-      console.log('SW active:', registration.active);
+      // console.log('✅ SW registered:', registration.scope);
+      // console.log('SW installing:', registration.installing);
+      // console.log('SW waiting:', registration.waiting);
+      // console.log('SW active:', registration.active);
       
       // Service Workerの状態を監視
       if (registration.installing) {
-        console.log('Service Worker: インストール中');
+        // console.log('Service Worker: インストール中');
         
         registration.installing.addEventListener('statechange', (e) => {
-          console.log('SW state changed:', e.target.state);
+          // console.log('SW state changed:', e.target.state);
         });
       } else if (registration.waiting) {
-        console.log('Service Worker: 待機中');
+        // console.log('Service Worker: 待機中');
       } else if (registration.active) {
-        console.log('Service Worker: アクティブ');
+        // // console.log('Service Worker: アクティブ');
       }
       
       // アクティブになるまで待機（Safari/iOSは長めのタイムアウト）
       const timeout = (isSafari || isIOS) ? 10000 : 5000;
-      console.log(`Service Worker準備待機中（最大${timeout/1000}秒）...`);
+      // console.log(`Service Worker準備待機中（最大${timeout/1000}秒）...`);
       
       await Promise.race([
         navigator.serviceWorker.ready,
@@ -66,11 +66,11 @@ if ('serviceWorker' in navigator) {
         )
       ]);
       
-      console.log('✅ Service Worker準備完了');
+      // console.log('✅ Service Worker準備完了');
       
       // 🆕 Safari/iOSの場合、明示的にcontrollerを確認
       if (isSafari || isIOS) {
-        console.log('Navigator controller:', navigator.serviceWorker.controller);
+        // console.log('Navigator controller:', navigator.serviceWorker.controller);
         
         if (!navigator.serviceWorker.controller) {
           console.warn('⚠️ Service Workerがコントロールしていません。ページをリロードします...');
@@ -88,7 +88,7 @@ if ('serviceWorker' in navigator) {
       if ('getInstalledRelatedApps' in navigator) {
         const installedApps = await navigator.getInstalledRelatedApps();
         if (installedApps.length > 0) {
-          console.log('✅ インストール済みアプリ:', installedApps);
+          // console.log('✅ インストール済みアプリ:', installedApps);
         }
       }
       
@@ -112,7 +112,7 @@ if ('serviceWorker' in navigator) {
   let deferredPrompt;
   
   window.addEventListener('beforeinstallprompt', (e) => {
-    console.log('💡 PWA installable!');
+    // console.log('💡 PWA installable!');
     e.preventDefault();
     deferredPrompt = e;
     showInstallButton();
@@ -134,12 +134,12 @@ if ('serviceWorker' in navigator) {
       if (deferredPrompt) {
         deferredPrompt.prompt();
         const result = await deferredPrompt.userChoice;
-        console.log('Install result:', result.outcome);
+        // console.log('Install result:', result.outcome);
         
         if (result.outcome === 'accepted') {
-          console.log('✅ ユーザーがPWAをインストールしました');
+          // console.log('✅ ユーザーがPWAをインストールしました');
         } else {
-          console.log('❌ ユーザーがインストールを拒否しました');
+          // console.log('❌ ユーザーがインストールを拒否しました');
         }
         
         deferredPrompt = null;
@@ -152,7 +152,7 @@ if ('serviceWorker' in navigator) {
   
   // PWAがインストールされた後
   window.addEventListener('appinstalled', (e) => {
-    console.log('✅ PWAがインストールされました');
+    // console.log('✅ PWAがインストールされました');
     deferredPrompt = null;
     
     const installBtn = document.getElementById('pwa-install-btn');
@@ -163,7 +163,7 @@ if ('serviceWorker' in navigator) {
   
   // 🆕 Service Workerのコントロール状態を監視
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    console.log('🔄 Service Worker controller changed');
+    // console.log('🔄 Service Worker controller changed');
   });
   
 } else {

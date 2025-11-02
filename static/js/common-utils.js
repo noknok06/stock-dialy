@@ -33,7 +33,7 @@ function getCSRFToken() {
         const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
         if (csrfInput) {
             token = csrfInput.value;
-            console.log('✅ CSRFトークンをhiddenフィールドから取得');
+            // console.log('✅ CSRFトークンをhiddenフィールドから取得');
         }
     }
     
@@ -42,14 +42,14 @@ function getCSRFToken() {
         const csrfMeta = document.querySelector('meta[name="csrf-token"]');
         if (csrfMeta) {
             token = csrfMeta.content;
-            console.log('✅ CSRFトークンをmetaタグから取得');
+            // console.log('✅ CSRFトークンをmetaタグから取得');
         }
     }
     
     if (!token) {
         console.warn('⚠️ CSRFトークンが見つかりません');
     } else {
-        console.log('✅ CSRFトークンが見つかりました');
+        // console.log('✅ CSRFトークンが見つかりました');
     }
     
     return token;

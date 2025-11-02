@@ -10,7 +10,7 @@ const DEBUG = false;
 // デバッグログ関数
 function debugLog(...args) {
   if (DEBUG) {
-    console.log('[Swipe Debug]', ...args);
+    // console.log('[Swipe Debug]', ...args);
   }
 }
 

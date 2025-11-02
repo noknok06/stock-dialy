@@ -3,7 +3,7 @@
  * 全タブ間（基本情報、継続記録、タイムライン）のスワイプ操作を実装
  */
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('=== 日記詳細タブスワイプ機能 初期化開始 ===');
+    // console.log('=== 日記詳細タブスワイプ機能 初期化開始 ===');
     
     // タブ要素を取得
     const tabContent = document.getElementById('diaryDetailTabContent');
@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 必須要素が存在しない場合は何もしない
     if (!tabContent || !tabsContainer) {
-        console.log('必須要素が見つかりません');
+        // console.log('必須要素が見つかりません');
         return;
     }
     
@@ -34,14 +34,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        console.log('検出されたタブ:', tabs.map((tab, index) => `${index}: ${tab.name} (${tab.id})`));
+        // console.log('検出されたタブ:', tabs.map((tab, index) => `${index}: ${tab.name} (${tab.id})`));
         return tabs;
     };
     
     const allTabs = getAllTabs();
     
     if (allTabs.length === 0) {
-        console.log('有効なタブが見つかりません');
+        // console.log('有効なタブが見つかりません');
         return;
     }
     
@@ -49,25 +49,25 @@ document.addEventListener('DOMContentLoaded', function() {
     const getCurrentTabIndex = () => {
         for (let i = 0; i < allTabs.length; i++) {
             if (allTabs[i].button.classList.contains('active')) {
-                console.log('現在のアクティブタブ:', i, allTabs[i].name);
+                // console.log('現在のアクティブタブ:', i, allTabs[i].name);
                 return i;
             }
         }
-        console.log('アクティブタブが見つかりません、0を返す');
+        // console.log('アクティブタブが見つかりません、0を返す');
         return 0;
     };
     
     // 指定されたインデックスのタブをアクティブ化
     const activateTab = (index) => {
         if (index >= 0 && index < allTabs.length) {
-            console.log(`タブ${index}をアクティブ化:`, allTabs[index].name);
+            // console.log(`タブ${index}をアクティブ化:`, allTabs[index].name);
             
             const tabInstance = new bootstrap.Tab(allTabs[index].button);
             tabInstance.show();
             
             return true;
         }
-        console.log(`無効なタブインデックス: ${index} (範囲: 0-${allTabs.length - 1})`);
+        // console.log(`無効なタブインデックス: ${index} (範囲: 0-${allTabs.length - 1})`);
         return false;
     };
     
@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
         isScrolling = false;
         moveDistance = 0;
         
-        console.log('タッチ開始:', { x: touchStartX, y: touchStartY });
+        // console.log('タッチ開始:', { x: touchStartX, y: touchStartY });
         
         // タップ振動フィードバック（対応ブラウザのみ）
         if (navigator.vibrate) {
@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 縦スクロールが主な動きの場合はフリックを無効化
         if (diffY > diffX && diffY > 10) {
             isScrolling = true;
-            console.log('縦スクロール検出 - フリック無効化');
+            // console.log('縦スクロール検出 - フリック無効化');
             return;
         }
         
@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // タッチ終了イベント
     function handleTouchEnd(e) {
         if (isAnimating || isScrolling || !touchStartX || !touchStartY) {
-            console.log('タッチ終了 - 条件不満足:', { 
+            // console.log('タッチ終了 - 条件不満足:', { 
                 isAnimating, 
                 isScrolling, 
                 hasStart: !!(touchStartX && touchStartY),
@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const swipeDistance = touchEndX - touchStartX;
         const velocity = Math.abs(swipeDistance) / duration; // 速度（px/ms）
         
-        console.log('タッチ終了:', {
+        // console.log('タッチ終了:', {
             startX: touchStartX,
             endX: touchEndX,
             distance: swipeDistance,
@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if ((Math.abs(swipeDistance) > DRAG_THRESHOLD || velocity > VELOCITY_THRESHOLD) && isDragging) {
             const currentIndex = getCurrentTabIndex();
             
-            console.log('フリック検出:', {
+            // console.log('フリック検出:', {
                 currentIndex: currentIndex,
                 totalTabs: allTabs.length,
                 direction: swipeDistance > 0 ? 'right' : 'left',
@@ -223,28 +223,28 @@ document.addEventListener('DOMContentLoaded', function() {
             if (swipeDistance > 0) {
                 // 右スワイプ（前のタブへ）
                 const prevIndex = currentIndex - 1;
-                console.log(`右フリック: タブ${currentIndex} → タブ${prevIndex}`);
+                // console.log(`右フリック: タブ${currentIndex} → タブ${prevIndex}`);
                 
                 if (prevIndex >= 0) {
                     switchToTab(prevIndex);
                 } else {
-                    console.log('これ以上左に移動できません');
+                    // console.log('これ以上左に移動できません');
                     resetSwipeState();
                 }
             } else {
                 // 左スワイプ（次のタブへ）
                 const nextIndex = currentIndex + 1;
-                console.log(`左フリック: タブ${currentIndex} → タブ${nextIndex}`);
+                // console.log(`左フリック: タブ${currentIndex} → タブ${nextIndex}`);
                 
                 if (nextIndex < allTabs.length) {
                     switchToTab(nextIndex);
                 } else {
-                    console.log('これ以上右に移動できません');
+                    // console.log('これ以上右に移動できません');
                     resetSwipeState();
                 }
             }
         } else {
-            console.log('フリック距離が不十分またはドラッグなし:', {
+            // console.log('フリック距離が不十分またはドラッグなし:', {
                 distance: Math.abs(swipeDistance),
                 velocity: velocity,
                 isDragging: isDragging
@@ -260,20 +260,20 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // タッチキャンセルイベント
     function handleTouchCancel() {
-        console.log('タッチキャンセル');
+        // console.log('タッチキャンセル');
         resetSwipeState();
     }
     
     // 指定したインデックスのタブに切り替え
     function switchToTab(index) {
         if (index < 0 || index >= allTabs.length) {
-            console.log('無効なタブインデックス:', index);
+            // console.log('無効なタブインデックス:', index);
             return;
         }
         
         // アニメーション中フラグをセット
         isAnimating = true;
-        console.log(`タブ切り替え開始: ${index} (${allTabs[index].name})`);
+        // console.log(`タブ切り替え開始: ${index} (${allTabs[index].name})`);
         
         // タブボタンのハイライト
         allTabs[index].button.classList.add('tab-highlight');
@@ -293,7 +293,7 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 isAnimating = false;
                 resetSwipeState();
-                console.log('タブ切り替え完了');
+                // console.log('タブ切り替え完了');
             }, TRANSITION_DURATION);
         }, 50);
         
@@ -314,7 +314,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 各タブの切り替えイベントリスナー
         allTabs.forEach((tab, index) => {
             tab.button.addEventListener('shown.bs.tab', function() {
-                console.log(`タブ切り替えイベント: ${index} (${tab.name})`);
+                // console.log(`タブ切り替えイベント: ${index} (${tab.name})`);
                 setTimeout(resetSwipeState, 50);
             });
         });
@@ -369,9 +369,9 @@ document.addEventListener('DOMContentLoaded', function() {
         setupEventListeners();
         resetSwipeState();
         
-        console.log('=== 日記詳細タブスワイプ機能 初期化完了 ===');
-        console.log('利用可能なタブ数:', allTabs.length);
-        console.log('現在のアクティブタブ:', getCurrentTabIndex());
+        // console.log('=== 日記詳細タブスワイプ機能 初期化完了 ===');
+        // console.log('利用可能なタブ数:', allTabs.length);
+        // console.log('現在のアクティブタブ:', getCurrentTabIndex());
     }
     
     // 初期化を実行

@@ -89,4 +89,6 @@ urlpatterns = [
     # 取引履歴アップロード
     path('trade-upload/', views.TradeUploadView.as_view(), name='trade_upload'),
     path('trade-upload/process/', views.process_trade_upload, name='process_trade_upload'),
+    
+    path('dashboard/', views.TradingDashboardView.as_view(), name='dashboard'),
 ]

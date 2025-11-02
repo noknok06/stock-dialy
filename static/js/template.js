@@ -2,7 +2,7 @@
 
 // 企業決算データを設定するための関数
 function setCompanyData(data) {
-  console.log('setCompanyData関数を実行:', data);
+  // console.log('setCompanyData関数を実行:', data);
   
   // 要素のテキスト設定用ヘルパー関数
   function setElementText(id, value) {
@@ -286,7 +286,7 @@ function setCompanyData(data) {
     // 変動インジケーターのスタイル設定
     styleChangeIndicators();
     
-    console.log('データ表示完了');
+    // console.log('データ表示完了');
   } catch (error) {
     console.error('データ表示中にエラーが発生しました:', error);
   }
@@ -585,7 +585,7 @@ function addShineEffect(element) {
 
 // ページ切り替え機能
 function goToPage(pageNumber) {
-  console.log(`ページ切り替え: ${pageNumber}`);
+  // console.log(`ページ切り替え: ${pageNumber}`);
   
   try {
     // すべてのページを非表示にする
@@ -678,7 +678,7 @@ function initAccordions() {
 
 // デバッグのためのページ読み込み完了イベントリスナー
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('template.js: DOMContentLoaded');
+  // console.log('template.js: DOMContentLoaded');
   
   // タブ切り替え機能を初期化
   initTabs();
@@ -694,7 +694,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 1. window.reportDataからデータを取得（最も優先）
     if (window.reportData && typeof window.reportData === 'object') {
       reportData = window.reportData;
-      console.log('window.reportDataからデータを取得しました');
+      // console.log('window.reportDataからデータを取得しました');
     } 
     // 2. #report-dataスクリプトからデータを取得
     else {
@@ -702,7 +702,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (dataScript) {
         try {
           reportData = JSON.parse(dataScript.textContent);
-          console.log('#report-dataからデータを取得しました');
+          // console.log('#report-dataからデータを取得しました');
         } catch (e) {
           console.error('JSONパースエラー:', e);
         }
@@ -711,7 +711,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 3. データが取得できない場合はDOM要素から取得
     if (!reportData || Object.keys(reportData).length === 0) {
-      console.log('DOM要素からデータを収集します');
+      // console.log('DOM要素からデータを収集します');
       reportData = {
         companyName: document.getElementById('company-name')?.textContent?.trim() || '',
         companyCode: document.getElementById('company-code')?.textContent?.trim().replace(/[()]/g, '') || '',
@@ -724,7 +724,7 @@ document.addEventListener('DOMContentLoaded', function() {
       };
     }
     
-    console.log('レポートデータ:', reportData);
+    // console.log('レポートデータ:', reportData);
     
     // メーターの表示を即時適用（インラインスクリプトと競合を避けるため）
     setupInitialMeters(reportData);

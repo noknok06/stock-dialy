@@ -1,0 +1,918 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}取引分析ダッシュボード{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --dashboard-primary: #3b82f6;
+        --dashboard-success: #10b981;
+        --dashboard-danger: #ef4444;
+        --dashboard-warning: #f59e0b;
+        --dashboard-secondary: #8b5cf6;
+        --dashboard-bg: #f8faff;
+        --dashboard-card: #ffffff;
+        --dashboard-border: #e5e7eb;
+        --dashboard-text: #1f2937;
+        --dashboard-text-muted: #6b7280;
+    }
+    
+    body {
+        background-color: var(--dashboard-bg);
+    }
+    
+    /* ヘッダー */
+    .dashboard-header {
+        background: linear-gradient(135deg, var(--dashboard-primary) 0%, var(--dashboard-secondary) 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .dashboard-title {
+        font-size: 1.875rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .dashboard-subtitle {
+        font-size: 0.875rem;
+        opacity: 0.9;
+    }
+    
+    /* 期間フィルター */
+    .period-filter {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+    }
+    
+    .period-btn {
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        border: 1px solid var(--dashboard-border);
+        background: white;
+        color: var(--dashboard-text);
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .period-btn:hover {
+        border-color: var(--dashboard-primary);
+        color: var(--dashboard-primary);
+    }
+    
+    .period-btn.active {
+        background: var(--dashboard-primary);
+        border-color: var(--dashboard-primary);
+        color: white;
+    }
+    
+    /* メトリクスカード */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .metric-card {
+        background: var(--dashboard-card);
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid var(--dashboard-border);
+        transition: transform 0.2s, box-shadow 0.2s;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--color-start), var(--color-end));
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+    
+    .metric-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+    
+    .metric-label {
+        font-size: 0.75rem;
+        color: var(--dashboard-text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .metric-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--dashboard-text);
+        line-height: 1.2;
+        margin-bottom: 0.5rem;
+    }
+    
+    .metric-subtext {
+        font-size: 0.875rem;
+        color: var(--dashboard-text-muted);
+    }
+    
+    /* チャートカード */
+    .chart-card {
+        background: var(--dashboard-card);
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid var(--dashboard-border);
+        margin-bottom: 1.5rem;
+    }
+    
+    .chart-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--dashboard-border);
+    }
+    
+    .chart-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.125rem;
+    }
+    
+    .chart-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--dashboard-text);
+        margin: 0;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+    
+    /* ランキングリスト */
+    .ranking-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .ranking-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border-radius: 8px;
+        background: var(--dashboard-bg);
+        transition: all 0.2s;
+        text-decoration: none;
+        color: inherit;
+    }
+    
+    .ranking-item:hover {
+        background: #f3f4f6;
+        transform: translateX(4px);
+    }
+    
+    .ranking-number {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--dashboard-primary);
+        font-weight: 700;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-right: 1rem;
+    }
+    
+    .ranking-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .ranking-name {
+        font-weight: 600;
+        color: var(--dashboard-text);
+        font-size: 0.9375rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .ranking-code {
+        font-size: 0.8125rem;
+        color: var(--dashboard-text-muted);
+        margin-top: 0.125rem;
+    }
+    
+    .ranking-stats {
+        text-align: right;
+        flex-shrink: 0;
+        margin-left: 1rem;
+    }
+    
+    .ranking-count {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--dashboard-text);
+    }
+    
+    .ranking-time {
+        font-size: 0.75rem;
+        color: var(--dashboard-text-muted);
+        margin-top: 0.125rem;
+    }
+    
+    /* 業種分析 */
+    .sector-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .sector-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .sector-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.875rem;
+    }
+    
+    .sector-name {
+        font-weight: 600;
+        color: var(--dashboard-text);
+    }
+    
+    .sector-count {
+        color: var(--dashboard-text-muted);
+    }
+    
+    .sector-bar-container {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .sector-bar {
+        flex: 1;
+        height: 28px;
+        background: #e5e7eb;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+    
+    .sector-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #3b82f6, #60a5fa);
+        border-radius: 6px;
+        transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .profit-badge {
+        min-width: 60px;
+        padding: 0.375rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        text-align: center;
+    }
+    
+    .profit-badge.positive {
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--dashboard-success);
+    }
+    
+    .profit-badge.negative {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--dashboard-danger);
+    }
+    
+    /* 損益セクション */
+    .profit-loss-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .pl-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .pl-item {
+        padding: 1rem;
+        border-radius: 8px;
+        background: var(--dashboard-bg);
+        border: 1px solid transparent;
+        transition: all 0.2s;
+    }
+    
+    .pl-item:hover {
+        background: #f9fafb;
+        border-color: var(--dashboard-border);
+    }
+    
+    .pl-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+    
+    .pl-name {
+        font-weight: 600;
+        color: var(--dashboard-text);
+        font-size: 0.9375rem;
+    }
+    
+    .pl-rate {
+        font-size: 0.875rem;
+        font-weight: 700;
+        padding: 0.25rem 0.75rem;
+        border-radius: 6px;
+    }
+    
+    .pl-rate.profit {
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--dashboard-success);
+    }
+    
+    .pl-rate.loss {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--dashboard-danger);
+    }
+    
+    .pl-count {
+        font-size: 0.8125rem;
+        color: var(--dashboard-text-muted);
+    }
+    
+    /* レスポンシブ */
+    @media (min-width: 768px) {
+        .profit-loss-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .dashboard-title {
+            font-size: 2.25rem;
+        }
+    }
+    
+    @media (max-width: 767px) {
+        .metrics-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+        }
+        
+        .metric-card {
+            padding: 1rem;
+        }
+        
+        .metric-value {
+            font-size: 1.5rem;
+        }
+        
+        .metric-icon {
+            width: 36px;
+            height: 36px;
+            font-size: 1.125rem;
+        }
+        
+        .chart-card {
+            padding: 1rem;
+        }
+        
+        .chart-container {
+            height: 250px;
+        }
+        
+        .ranking-item {
+            padding: 0.75rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div class="container">
+        <h1 class="dashboard-title">📊 取引分析ダッシュボード</h1>
+        <p class="dashboard-subtitle">株式取引履歴の詳細分析と業種別パフォーマンス追跡</p>
+    </div>
+</div>
+
+<div class="container py-3">
+    <!-- 期間フィルター -->
+    <div class="period-filter">
+        <a href="?period=1m" class="period-btn {% if current_period == '1m' %}active{% endif %}">1ヶ月</a>
+        <a href="?period=3m" class="period-btn {% if current_period == '3m' %}active{% endif %}">3ヶ月</a>
+        <a href="?period=6m" class="period-btn {% if current_period == '6m' or not current_period %}active{% endif %}">6ヶ月</a>
+        <a href="?period=1y" class="period-btn {% if current_period == '1y' %}active{% endif %}">1年</a>
+        <a href="?period=all" class="period-btn {% if current_period == 'all' %}active{% endif %}">全期間</a>
+    </div>
+    
+    <!-- メトリクス概要 -->
+    <div class="metrics-grid">
+        <div class="metric-card" style="--color-start: #3b82f6; --color-end: #60a5fa;">
+            <div class="metric-header">
+                <span class="metric-label">総取引回数</span>
+                <div class="metric-icon" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
+                    📊
+                </div>
+            </div>
+            <div class="metric-value">{{ total_transactions }}</div>
+            <div class="metric-subtext">すべての銘柄</div>
+        </div>
+        
+        <div class="metric-card" style="--color-start: #8b5cf6; --color-end: #a78bfa;">
+            <div class="metric-header">
+                <span class="metric-label">保有銘柄数</span>
+                <div class="metric-icon" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6;">
+                    ⚡
+                </div>
+            </div>
+            <div class="metric-value">{{ holding_count }}</div>
+            <div class="metric-subtext">現在保有中</div>
+        </div>
+        
+        <div class="metric-card" style="--color-start: #10b981; --color-end: #34d399;">
+            <div class="metric-header">
+                <span class="metric-label">実現損益</span>
+                <div class="metric-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                    📈
+                </div>
+            </div>
+            <div class="metric-value">
+                {% if total_realized_profit >= 0 %}
+                    <span style="color: #10b981;">+¥{{ total_realized_profit|floatformat:0|intcomma }}</span>
+                {% else %}
+                    <span style="color: #ef4444;">¥{{ total_realized_profit|floatformat:0|intcomma }}</span>
+                {% endif %}
+            </div>
+            <div class="metric-subtext">
+                {% if total_realized_profit >= 0 %}+{% endif %}
+                {{ total_realized_profit|floatformat:1 }}%
+            </div>
+        </div>
+        
+        <div class="metric-card" style="--color-start: #f59e0b; --color-end: #fbbf24;">
+            <div class="metric-header">
+                <span class="metric-label">平均利益率</span>
+                <div class="metric-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+                    🎯
+                </div>
+            </div>
+            <div class="metric-value">{{ avg_profit_rate }}%</div>
+            <div class="metric-subtext">利益確定時</div>
+        </div>
+    </div>
+    
+    <!-- チャートセクション -->
+    <div class="row g-3 mb-4">
+        <!-- 月別取引推移 -->
+        <div class="col-lg-8">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-icon" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
+                        📈
+                    </div>
+                    <h2 class="chart-title">月別取引推移</h2>
+                </div>
+                <div class="chart-container">
+                    <canvas id="monthlyTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 業種別構成 -->
+        <div class="col-lg-4">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-icon" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6;">
+                        🥧
+                    </div>
+                    <h2 class="chart-title">業種別構成</h2>
+                </div>
+                <div class="chart-container">
+                    <canvas id="sectorPieChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 累積損益推移 -->
+    <div class="chart-card mb-4">
+        <div class="chart-header">
+            <div class="chart-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                💰
+            </div>
+            <h2 class="chart-title">累積損益推移</h2>
+        </div>
+        <div class="chart-container">
+            <canvas id="cumulativeProfitChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- 2カラムレイアウト -->
+    <div class="row g-3 mb-4">
+        <!-- 取引回数ランキング -->
+        <div class="col-lg-6">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-icon" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
+                        ⚡
+                    </div>
+                    <h2 class="chart-title">取引回数ランキング</h2>
+                </div>
+                
+                {% if transaction_ranking %}
+                <div class="ranking-list">
+                    {% for diary in transaction_ranking %}
+                    <a href="{% url 'stockdiary:detail' diary.pk %}" class="ranking-item">
+                        <div class="ranking-number">{{ forloop.counter }}</div>
+                        <div class="ranking-info">
+                            <div class="ranking-name">{{ diary.stock_name }}</div>
+                            <div class="ranking-code">コード: {{ diary.stock_symbol }}</div>
+                        </div>
+                        <div class="ranking-stats">
+                            <div class="ranking-count">{{ diary.transaction_count }}</div>
+                            <div class="ranking-time">{{ diary.last_trade_display }}</div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">取引データがありません</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- 業種別分析 -->
+        <div class="col-lg-6">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-icon" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6;">
+                        📊
+                    </div>
+                    <h2 class="chart-title">業種別分析</h2>
+                </div>
+                
+                {% if sector_analysis %}
+                <div class="sector-list">
+                    {% for sector in sector_analysis %}
+                    <div class="sector-item">
+                        <div class="sector-header">
+                            <span class="sector-name">{{ sector.sector }}</span>
+                            <span class="sector-count">{{ sector.transaction_count }}件</span>
+                        </div>
+                        <div class="sector-bar-container">
+                            <div class="sector-bar">
+                                <div class="sector-bar-fill" style="width: {{ sector.width_percent }}%;"></div>
+                            </div>
+                            {% if sector.profit_rate > 0 %}
+                            <div class="profit-badge positive">+{{ sector.profit_rate|floatformat:1 }}%</div>
+                            {% elif sector.profit_rate < 0 %}
+                            <div class="profit-badge negative">{{ sector.profit_rate|floatformat:1 }}%</div>
+                            {% else %}
+                            <div class="profit-badge">0%</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">業種データがありません</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- 損益分析 -->
+    <div class="profit-loss-grid">
+        <!-- 利益が出やすい業種 -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <div class="chart-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                    ✓
+                </div>
+                <h3 class="chart-title">利益が出やすい業種</h3>
+            </div>
+            
+            {% if profitable_sectors %}
+            <div class="pl-list">
+                {% for sector in profitable_sectors %}
+                <div class="pl-item">
+                    <div class="pl-header">
+                        <h4 class="pl-name">#{{ forloop.counter }} {{ sector.sector }}</h4>
+                        <span class="pl-rate profit">+{{ sector.profit_rate|floatformat:1 }}%</span>
+                    </div>
+                    <p class="pl-count">取引数: {{ sector.transaction_count }}件 | 日記: {{ sector.diary_count }}件</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-3">データ不足</p>
+            {% endif %}
+        </div>
+        
+        <!-- 損失が出やすい業種 -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <div class="chart-icon" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+                    !
+                </div>
+                <h3 class="chart-title">損失が出やすい業種</h3>
+            </div>
+            
+            {% if loss_sectors %}
+            <div class="pl-list">
+                {% for sector in loss_sectors %}
+                <div class="pl-item">
+                    <div class="pl-header">
+                        <h4 class="pl-name">#{{ forloop.counter }} {{ sector.sector }}</h4>
+                        <span class="pl-rate loss">{{ sector.profit_rate|floatformat:1 }}%</span>
+                    </div>
+                    <p class="pl-count">取引数: {{ sector.transaction_count }}件 | 日記: {{ sector.diary_count }}件</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-3">データ不足</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% include 'speed_dial.html' with actions=page_actions %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Chart.jsが読み込まれているか確認
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.jsが読み込まれていません');
+        return;
+    }
+    
+    // 共通設定
+    Chart.defaults.font.family = "'Hiragino Kaku Gothic Pro', 'メイリオ', sans-serif";
+    Chart.defaults.color = '#6b7280';
+    
+    // データの検証
+    const monthlyLabels = {{ monthly_labels|safe }};
+    const monthlyBuyData = {{ monthly_buy_data|safe }};
+    const monthlySellData = {{ monthly_sell_data|safe }};
+    
+    // console.log('月別ラベル:', monthlyLabels);
+    // console.log('買いデータ:', monthlyBuyData);
+    // console.log('売りデータ:', monthlySellData);
+    
+    // 月別取引推移チャート
+    const monthlyCtx = document.getElementById('monthlyTrendChart');
+    if (monthlyCtx && monthlyLabels.length > 0) {
+        new Chart(monthlyCtx, {
+            type: 'bar',
+            data: {
+                labels: monthlyLabels,
+                datasets: [
+                    {
+                        label: '購入',
+                        data: monthlyBuyData,
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2,
+                        borderRadius: 6
+                    },
+                    {
+                        label: '売却',
+                        data: monthlySellData,
+                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        borderWidth: 2,
+                        borderRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: { size: 14 },
+                        bodyFont: { size: 13 }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    } else {
+        console.warn('月別チャート: データがありません');
+        if (monthlyCtx) {
+            monthlyCtx.parentElement.innerHTML = '<p class="text-center text-muted py-5">データがありません</p>';
+        }
+    }
+    
+    // 業種別円グラフ
+    const sectorLabels = {{ sector_chart_labels|safe }};
+    const sectorData = {{ sector_chart_data|safe }};
+    const sectorCtx = document.getElementById('sectorPieChart');
+    
+    if (sectorCtx && sectorLabels.length > 0) {
+        new Chart(sectorCtx, {
+            type: 'doughnut',
+            data: {
+                labels: sectorLabels,
+                datasets: [{
+                    data: sectorData,
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.8)',
+                        'rgba(139, 92, 246, 0.8)',
+                        'rgba(16, 185, 129, 0.8)',
+                        'rgba(245, 158, 11, 0.8)',
+                        'rgba(239, 68, 68, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(59, 130, 246, 1)',
+                        'rgba(139, 92, 246, 1)',
+                        'rgba(16, 185, 129, 1)',
+                        'rgba(245, 158, 11, 1)',
+                        'rgba(239, 68, 68, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: { size: 14 },
+                        bodyFont: { size: 13 }
+                    }
+                }
+            }
+        });
+    } else {
+        console.warn('業種別チャート: データがありません');
+        if (sectorCtx) {
+            sectorCtx.parentElement.innerHTML = '<p class="text-center text-muted py-5">データがありません</p>';
+        }
+    }
+    
+    // 累積損益推移
+    const profitDates = {{ profit_dates|safe }};
+    const cumulativeProfit = {{ cumulative_profit|safe }};
+    const profitCtx = document.getElementById('cumulativeProfitChart');
+    
+    if (profitCtx && profitDates.length > 0) {
+        new Chart(profitCtx, {
+            type: 'line',
+            data: {
+                labels: profitDates,
+                datasets: [{
+                    label: '累積損益',
+                    data: cumulativeProfit,
+                    borderColor: 'rgba(16, 185, 129, 1)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: 'rgba(16, 185, 129, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: { size: 14 },
+                        bodyFont: { size: 13 },
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += '¥' + context.parsed.y.toLocaleString();
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        ticks: {
+                            callback: function(value) {
+                                return '¥' + value.toLocaleString();
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
+            }
+        });
+    } else {
+        console.warn('累積損益チャート: データがありません');
+        if (profitCtx) {
+            profitCtx.parentElement.innerHTML = '<p class="text-center text-muted py-5">データがありません</p>';
+        }
+    }
+});
+</script>
+{% endblock %}

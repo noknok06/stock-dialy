@@ -2,7 +2,7 @@
 const CACHE_NAME = 'kabulog-v1';
 
 self.addEventListener('install', (event) => {
-  console.log('SW: Installing...');
+  // console.log('SW: Installing...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll([
@@ -16,7 +16,7 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('SW: Activating...');
+  // console.log('SW: Activating...');
   event.waitUntil(self.clients.claim());
 });
 

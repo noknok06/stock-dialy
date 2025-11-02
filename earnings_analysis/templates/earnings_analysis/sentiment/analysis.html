@@ -605,7 +605,7 @@ async function validateCSRFToken() {
 
 // ページリロードしてCSRFトークンを更新する関数
 function refreshCSRFToken() {
-    console.log('CSRFトークンを更新するためページをリロードします');
+    // console.log('CSRFトークンを更新するためページをリロードします');
     showToast('認証情報を更新しています...', 'info');
     setTimeout(() => {
         window.location.reload();
@@ -625,7 +625,7 @@ function startSentimentAnalysis(docId, force = false) {
         return;
     }
     
-    console.log('感情分析開始:', { docId, force, csrfToken: csrfToken.substring(0, 8) + '...' });
+    // console.log('感情分析開始:', { docId, force, csrfToken: csrfToken.substring(0, 8) + '...' });
     
     fetch('{% url "copomo:sentiment-start" %}', {
         method: 'POST',
@@ -640,7 +640,7 @@ function startSentimentAnalysis(docId, force = false) {
         })
     })
     .then(async response => {
-        console.log('API応答ステータス:', response.status);
+        // console.log('API応答ステータス:', response.status);
         
         if (response.status === 403) {
             // CSRF エラーの場合
@@ -661,7 +661,7 @@ function startSentimentAnalysis(docId, force = false) {
     .then(data => {
         if (!data) return; // CSRF エラー時は何もしない
         
-        console.log('API応答データ:', data);
+        // console.log('API応答データ:', data);
         
         if (data.status === 'started') {
             currentSessionId = data.session_id;
@@ -827,7 +827,7 @@ function getCSRFTokenImproved() {
     const metaCsrf = document.querySelector('meta[name=csrf-token]');
     if (metaCsrf && metaCsrf.getAttribute('content')) {
         token = metaCsrf.getAttribute('content');
-        console.log('CSRFトークンをメタタグから取得');
+        // console.log('CSRFトークンをメタタグから取得');
         return token;
     }
     
@@ -835,7 +835,7 @@ function getCSRFTokenImproved() {
     const hiddenCsrf = document.querySelector('#csrf-form input[name=csrfmiddlewaretoken]');
     if (hiddenCsrf && hiddenCsrf.value) {
         token = hiddenCsrf.value;
-        console.log('CSRFトークンを隠しフォームから取得');
+        // console.log('CSRFトークンを隠しフォームから取得');
         return token;
     }
     
@@ -843,7 +843,7 @@ function getCSRFTokenImproved() {
     const cookieCsrf = getCookie('csrftoken');
     if (cookieCsrf) {
         token = cookieCsrf;
-        console.log('CSRFトークンをクッキーから取得');
+        // console.log('CSRFトークンをクッキーから取得');
         return token;
     }
     
@@ -851,7 +851,7 @@ function getCSRFTokenImproved() {
     const anyHiddenCsrf = document.querySelector('input[name=csrfmiddlewaretoken]');
     if (anyHiddenCsrf && anyHiddenCsrf.value) {
         token = anyHiddenCsrf.value;
-        console.log('CSRFトークンを任意の隠しフィールドから取得');
+        // console.log('CSRFトークンを任意の隠しフィールドから取得');
         return token;
     }
     
@@ -910,10 +910,10 @@ window.addEventListener('beforeunload', function(e) {
 document.addEventListener('DOMContentLoaded', function() {
     // CSRFトークンのデバッグ情報
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        console.log('=== CSRF デバッグ情報 ===');
+        // console.log('=== CSRF デバッグ情報 ===');
         const token = getCSRFToken();
         if (token) {
-            console.log('CSRFトークン取得成功:', token.substring(0, 8) + '...');
+            // console.log('CSRFトークン取得成功:', token.substring(0, 8) + '...');
         } else {
             console.error('CSRFトークン取得失敗');
         }
@@ -923,8 +923,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (document.querySelector('meta[name=csrf-token]')) sources.push('メタタグ');
         if (document.querySelector('#csrf-form input[name=csrfmiddlewaretoken]')) sources.push('隠しフォーム');
         if (getCookie('csrftoken')) sources.push('クッキー');
-        console.log('利用可能なCSRFソース:', sources.join(', '));
-        console.log('========================');
+        // console.log('利用可能なCSRFソース:', sources.join(', '));
+        // console.log('========================');
     }
     
     // CSRFトークンの有効性をチェック

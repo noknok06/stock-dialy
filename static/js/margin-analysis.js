@@ -103,7 +103,7 @@ class MarginAnalysisManager {
             // リトライロジック
             if (this.retryCount < this.maxRetries) {
                 this.retryCount++;
-                console.log(`Retrying analysis data load (attempt ${this.retryCount}/${this.maxRetries})`);
+                // console.log(`Retrying analysis data load (attempt ${this.retryCount}/${this.maxRetries})`);
                 setTimeout(() => {
                     this.loadAnalysisData();
                 }, 2000 * this.retryCount);
@@ -904,9 +904,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (diaryId) {
             initializeMarginAnalysis(parseInt(diaryId), currentSymbol);
-            console.log('✅ Margin Analysis Controller (Balanced Interpretation) initialized');
+            // console.log('✅ Margin Analysis Controller (Balanced Interpretation) initialized');
         }
     }
 });
 
-console.log('✅ Margin Analysis Manager (Balanced Interpretation) loaded successfully');
+// console.log('✅ Margin Analysis Manager (Balanced Interpretation) loaded successfully');

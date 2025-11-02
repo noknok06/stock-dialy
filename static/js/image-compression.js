@@ -48,7 +48,7 @@ class ImageCompressionHandler {
           // WebP/AVIF対応チェックと形式選択
           const bestFormat = this.getBestImageFormat();
           
-          console.log(`高品質圧縮形式: ${bestFormat}, 品質: ${Math.round(quality * 100)}%`);
+          // console.log(`高品質圧縮形式: ${bestFormat}, 品質: ${Math.round(quality * 100)}%`);
           
           // ✨ 品質に応じた圧縮パラメータ調整
           let adjustedQuality = quality;
@@ -61,7 +61,7 @@ class ImageCompressionHandler {
           // 圧縮された画像をBlobとして取得
           canvas.toBlob((blob) => {
             if (blob) {
-              console.log(`高品質圧縮完了: ${this.formatFileSize(file.size)} → ${this.formatFileSize(blob.size)} (${bestFormat}, ${Math.round(adjustedQuality * 100)}%品質)`);
+              // console.log(`高品質圧縮完了: ${this.formatFileSize(file.size)} → ${this.formatFileSize(blob.size)} (${bestFormat}, ${Math.round(adjustedQuality * 100)}%品質)`);
               resolve(blob);
             } else {
               reject(new Error('画像の圧縮に失敗しました'));
@@ -189,8 +189,8 @@ class ImageCompressionHandler {
     }
     
     try {
-      console.log(`元ファイル: ${file.name} (${this.formatFileSize(file.size)})`);
-      console.log('元のファイル形式:', file.type);
+      // console.log(`元ファイル: ${file.name} (${this.formatFileSize(file.size)})`);
+      // console.log('元のファイル形式:', file.type);
       
       let processedFile = file;
       
@@ -205,11 +205,11 @@ class ImageCompressionHandler {
         // ✨ 高品質圧縮実行
         processedFile = await this.compressImage(file, config.maxWidth, config.maxHeight, config.quality);
         
-        console.log('圧縮後のファイルサイズ:', this.formatFileSize(processedFile.size));
+        // console.log('圧縮後のファイルサイズ:', this.formatFileSize(processedFile.size));
         
         // ✨ 圧縮率を計算
         const compressionRate = ((file.size - processedFile.size) / file.size * 100).toFixed(1);
-        console.log(`圧縮率: ${compressionRate}% (品質: ${Math.round(config.quality * 100)}%)`);
+        // console.log(`圧縮率: ${compressionRate}% (品質: ${Math.round(config.quality * 100)}%)`);
         
         // ✨ 最適な形式でFileオブジェクトを作成
         const bestFormat = this.getBestImageFormat();
@@ -230,7 +230,7 @@ class ImageCompressionHandler {
           config.onCompressionEnd(file, processedFile);
         }
       } else {
-        console.log(`ファイルサイズが${this.formatFileSize(config.compressionThreshold)}以下のため、圧縮をスキップしました`);
+        // console.log(`ファイルサイズが${this.formatFileSize(config.compressionThreshold)}以下のため、圧縮をスキップしました`);
       }
       
       // 最終サイズチェック
@@ -414,7 +414,7 @@ window.setupImageCompression = function(config) {
 
 // ✨ 品質改善版ブラウザ対応状況のログ出力
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('=== 高品質画像圧縮機能対応状況 ===');
+  // console.log('=== 高品質画像圧縮機能対応状況 ===');
   
   const handler = new ImageCompressionHandler();
   
@@ -426,10 +426,10 @@ document.addEventListener('DOMContentLoaded', function() {
   
   formats.forEach(format => {
     const supported = handler.supportsImageFormat(format.mime);
-    console.log(`${format.name}: ${supported ? '✅対応' : '❌非対応'} (JPEG比 ${format.savings} 削減, ${format.quality})`);
+    // console.log(`${format.name}: ${supported ? '✅対応' : '❌非対応'} (JPEG比 ${format.savings} 削減, ${format.quality})`);
   });
   
   const selectedFormat = handler.getBestImageFormat();
-  console.log(`選択される形式: ${selectedFormat}`);
-  console.log('================================');
+  // console.log(`選択される形式: ${selectedFormat}`);
+  // console.log('================================');
 });

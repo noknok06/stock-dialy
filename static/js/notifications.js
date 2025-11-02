@@ -30,7 +30,7 @@
       const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
       if (csrfInput) {
         token = csrfInput.value;
-        console.log('✅ CSRFトークンをhiddenフィールドから取得');
+        // console.log('✅ CSRFトークンをhiddenフィールドから取得');
       }
     }
     
@@ -39,7 +39,7 @@
       const csrfMeta = document.querySelector('meta[name="csrf-token"]');
       if (csrfMeta) {
         token = csrfMeta.content;
-        console.log('✅ CSRFトークンをmetaタグから取得');
+        // console.log('✅ CSRFトークンをmetaタグから取得');
       }
     }
     
@@ -50,10 +50,10 @@
     const type = document.getElementById('notificationType').value;
     const message = document.getElementById('notificationMessage').value;
     
-    console.log('=== Saving Notification ===');
-    console.log('Diary ID:', diaryId);
-    console.log('Type:', type);
-    console.log('Message:', message);
+    // console.log('=== Saving Notification ===');
+    // console.log('Diary ID:', diaryId);
+    // console.log('Type:', type);
+    // console.log('Message:', message);
     
     const data = {
       notification_type: type,
@@ -68,7 +68,7 @@
         return;
       }
       data.remind_at = remindAtValue;
-      console.log('Remind at:', remindAtValue);
+      // console.log('Remind at:', remindAtValue);
       
     } else if (type === 'price_alert') {
       const targetPrice = document.getElementById('targetPrice').value;
@@ -78,7 +78,7 @@
       }
       data.target_price = parseFloat(targetPrice);
       data.alert_above = document.getElementById('alertAbove').checked;
-      console.log('Target price:', targetPrice, 'Alert above:', data.alert_above);
+      // console.log('Target price:', targetPrice, 'Alert above:', data.alert_above);
       
     } else if (type === 'periodic') {
       const frequency = document.getElementById('frequency').value;
@@ -93,14 +93,14 @@
       if (notifyTime) {
         data.notify_time = notifyTime;
       }
-      console.log('Frequency:', frequency, 'Notify time:', notifyTime);
+      // console.log('Frequency:', frequency, 'Notify time:', notifyTime);
     }
     
-    console.log('Sending data:', JSON.stringify(data, null, 2));
+    // console.log('Sending data:', JSON.stringify(data, null, 2));
     
     try {
       const csrfToken = getCSRFToken();
-      console.log('CSRF Token:', csrfToken ? 'Found' : 'Not found');
+      // console.log('CSRF Token:', csrfToken ? 'Found' : 'Not found');
       
       if (!csrfToken) {
         console.error('❌ CSRFトークンが見つかりません');
@@ -118,7 +118,7 @@
       ];
       
       const url = possibleUrls[0]; // まず最初のURLを試す
-      console.log('Request URL:', url);
+      // console.log('Request URL:', url);
       
       const response = await fetch(url, {
         method: 'POST',
@@ -131,12 +131,12 @@
         body: JSON.stringify(data)
       });
       
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers.get('content-type'));
+      // console.log('Response status:', response.status);
+      // console.log('Response headers:', response.headers.get('content-type'));
       
       // 🔧 追加: レスポンステキストを確認
       const responseText = await response.text();
-      console.log('Response text (first 300 chars):', responseText.substring(0, 300));
+      // console.log('Response text (first 300 chars):', responseText.substring(0, 300));
       
       // 🔧 修正: ステータスコードとコンテンツタイプを確認
       const contentType = response.headers.get('content-type');
@@ -172,7 +172,7 @@
       }
       
       const result = JSON.parse(responseText);
-      console.log('Response data:', result);
+      // console.log('Response data:', result);
       
       if (response.ok && result.success) {
         showToast(result.message || '通知を設定しました', 'success');
@@ -190,7 +190,7 @@
         document.getElementById('notifyTime').value = '';
         
         // 通知一覧を更新（オプション）
-        console.log('Notification created with ID:', result.notification_id);
+        // console.log('Notification created with ID:', result.notification_id);
         
       } else {
         const errorMsg = result.error || '通知設定に失敗しました';
@@ -211,6 +211,6 @@
     if (!csrfToken) {
       console.warn('⚠️ CSRFトークンが見つかりません');
     } else {
-      console.log('✅ CSRFトークンが見つかりました');
+      // console.log('✅ CSRFトークンが見つかりました');
     }
   });

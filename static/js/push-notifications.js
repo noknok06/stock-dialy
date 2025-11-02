@@ -163,7 +163,7 @@ class PushNotificationManager {
       if (typeof showToast === 'function') {
         showToast(message, type);
       } else {
-        console.log(`[${type}] ${message}`);
+        // console.log(`[${type}] ${message}`);
       }
     }
   }

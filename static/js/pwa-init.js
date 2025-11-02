@@ -22,7 +22,7 @@ class PWAManager {
           scope: '/'
         });
         
-        console.log('✅ Service Worker registered:', registration.scope);
+        // console.log('✅ Service Worker registered:', registration.scope);
         
         // 更新チェック
         registration.addEventListener('updatefound', () => {
@@ -41,7 +41,7 @@ class PWAManager {
     
     // beforeinstallprompt イベントをキャッチ
     window.addEventListener('beforeinstallprompt', (e) => {
-      console.log('💡 PWA install prompt available');
+      // console.log('💡 PWA install prompt available');
       e.preventDefault();
       deferredPrompt = e;
       
@@ -51,7 +51,7 @@ class PWAManager {
     
     // インストール完了イベント
     window.addEventListener('appinstalled', (e) => {
-      console.log('✅ PWA installed successfully');
+      // console.log('✅ PWA installed successfully');
       this.hideInstallButton();
       this.showToast('カブログがインストールされました！', 'success');
     });
@@ -69,7 +69,7 @@ class PWAManager {
           const result = await deferredPrompt.userChoice;
           
           if (result.outcome === 'accepted') {
-            console.log('✅ User accepted the PWA install');
+            // console.log('✅ User accepted the PWA install');
           }
           
           deferredPrompt = null;
@@ -100,7 +100,7 @@ class PWAManager {
 
   showToast(message, type = 'info') {
     // Bootstrap Toastまたは独自のトースト表示
-    console.log(`📢 ${type.toUpperCase()}: ${message}`);
+    // console.log(`📢 ${type.toUpperCase()}: ${message}`);
   }
 
   handleServiceWorkerUpdate(registration) {

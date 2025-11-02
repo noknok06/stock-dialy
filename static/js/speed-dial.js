@@ -420,7 +420,7 @@ function initializeSpeedDial() {
   const speedDialContainer = document.querySelector('.speed-dial-container');
   if (speedDialContainer && speedDialContainer.parentElement !== document.body) {
     document.body.appendChild(speedDialContainer);
-    console.log('スピードダイヤルをbody直下に移動しました');
+    // console.log('スピードダイヤルをbody直下に移動しました');
   }
   
   // ページクリック時にポジションを確認・修正
@@ -428,7 +428,7 @@ function initializeSpeedDial() {
     const speedDial = document.querySelector('.speed-dial-container');
     if (speedDial && speedDial.parentElement !== document.body) {
       document.body.appendChild(speedDial);
-      console.log('スピードダイヤルの位置を修正しました');
+      // console.log('スピードダイヤルの位置を修正しました');
     }
   }, true); // キャプチャリングフェーズで実行
 

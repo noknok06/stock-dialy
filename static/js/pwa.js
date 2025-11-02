@@ -23,7 +23,7 @@ class PWAManager {
       if ('serviceWorker' in navigator) {
         try {
           const registration = await navigator.serviceWorker.register('/static/sw.js');
-          console.log('Service Worker registered:', registration);
+          // console.log('Service Worker registered:', registration);
           
           // 更新をチェック
           registration.addEventListener('updatefound', () => {
@@ -58,7 +58,7 @@ class PWAManager {
           const result = await this.deferredPrompt.userChoice;
           
           if (result.outcome === 'accepted') {
-            console.log('PWA installed');
+            // console.log('PWA installed');
           }
           
           this.deferredPrompt = null;
@@ -151,7 +151,7 @@ class PWAManager {
     async syncOfflineData() {
       // オフライン時に蓄積されたデータを同期
       // 実装は段階2で詳細化
-      console.log('Syncing offline data...');
+      // console.log('Syncing offline data...');
     }
   }
   

@@ -25,7 +25,7 @@ function forceCleanupModals() {
     document.body.style.overflow = '';
     document.body.style.paddingRight = '';
     
-    console.log('Modal cleanup completed');
+    // console.log('Modal cleanup completed');
   }
   
   /**
@@ -86,10 +86,10 @@ function forceCleanupModals() {
     const backdrops = document.querySelectorAll('.modal-backdrop');
     const openModals = document.querySelectorAll('.modal.show');
     
-    console.log('Modal state check:');
-    console.log(`- Backdrops found: ${backdrops.length}`);
-    console.log(`- Open modals: ${openModals.length}`);
-    console.log(`- Body has modal-open: ${document.body.classList.contains('modal-open')}`);
+    // console.log('Modal state check:');
+    // console.log(`- Backdrops found: ${backdrops.length}`);
+    // console.log(`- Open modals: ${openModals.length}`);
+    // console.log(`- Body has modal-open: ${document.body.classList.contains('modal-open')}`);
     
     if (backdrops.length > 0 && openModals.length === 0) {
       console.warn('⚠️ Orphaned backdrop detected! Cleaning up...');
@@ -105,12 +105,12 @@ function forceCleanupModals() {
     document.querySelectorAll('.modal').forEach(modal => {
       // モーダルが表示される前
       modal.addEventListener('show.bs.modal', function(e) {
-        console.log(`Modal ${this.id} is showing`);
+        // console.log(`Modal ${this.id} is showing`);
       });
       
       // モーダルが完全に表示された後
       modal.addEventListener('shown.bs.modal', function(e) {
-        console.log(`Modal ${this.id} is shown`);
+        // console.log(`Modal ${this.id} is shown`);
         // 最初のフォーカス可能な要素にフォーカス
         const firstInput = this.querySelector('input:not([type="hidden"]), select, textarea');
         if (firstInput) {
@@ -120,12 +120,12 @@ function forceCleanupModals() {
       
       // モーダルが隠れる前
       modal.addEventListener('hide.bs.modal', function(e) {
-        console.log(`Modal ${this.id} is hiding`);
+        // console.log(`Modal ${this.id} is hiding`);
       });
       
       // モーダルが完全に隠れた後
       modal.addEventListener('hidden.bs.modal', function(e) {
-        console.log(`Modal ${this.id} is hidden`);
+        // console.log(`Modal ${this.id} is hidden`);
         // クリーンアップを実行
         setTimeout(() => {
           const remainingBackdrops = document.querySelectorAll('.modal-backdrop');
@@ -155,7 +155,7 @@ function forceCleanupModals() {
       }
     });
     
-    console.log('Global modal handlers initialized');
+    // console.log('Global modal handlers initialized');
   }
   
   // DOMContentLoaded で初期化

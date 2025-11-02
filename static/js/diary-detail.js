@@ -324,7 +324,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // 画像圧縮機能が利用可能かチェック
   if (typeof window.ImageCompressionHandler === 'undefined') {
     console.error('❌ ImageCompressionHandler が読み込まれていません');
-    console.log('💡 static/js/image-compression.js が正しく読み込まれているか確認してください');
+    // console.log('💡 static/js/image-compression.js が正しく読み込まれているか確認してください');
     return;
   }
 
