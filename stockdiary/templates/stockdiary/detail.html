@@ -1326,9 +1326,9 @@
         <!-- 価格サマリー -->
         {% if not diary.is_memo and diary.average_purchase_price %}
         <div class="price-summary">
-          <div class="main-price">{{ diary.average_purchase_price|floatformat:2|intcomma }}円</div>
           <div class="sub-info">平均取得単価</div>
-          
+          <div class="main-price">{{ diary.average_purchase_price|floatformat:2|intcomma }}円
+          </div>
           {% if diary.current_quantity > 0 %}
           <div class="sub-info mt-2">
             保有: {{ diary.current_quantity|floatformat:0 }}株

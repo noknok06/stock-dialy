@@ -397,7 +397,7 @@ class TradeUploadForm(forms.Form):
     """取引履歴アップロードフォーム"""
     BROKER_CHOICES = [
         ('rakuten', '楽天証券'),
-        # ('sbi', 'SBI証券'),  # 将来的に対応
+        ('sbi', 'SBI証券'),  # 将来的に対応
     ]
     
     broker = forms.ChoiceField(

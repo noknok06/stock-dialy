@@ -105,6 +105,42 @@
     color: #856404;
     margin-bottom: 0.5rem;
   }
+
+  .broker-guide {
+    margin-bottom: 1.5rem;
+  }
+
+  .broker-guide .alert {
+    margin-bottom: 0;
+  }
+
+  .broker-guide ol {
+    margin-top: 0.75rem;
+    margin-bottom: 0;
+  }
+
+  .broker-guide ol li {
+    margin-bottom: 0.25rem;
+  }
+
+  .guide-section {
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #dee2e6;
+  }
+
+  .guide-section:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .guide-section h6 {
+    margin-bottom: 0.75rem;
+  }
+
+  .guide-section ul,
+  .guide-section ol {
+    margin-bottom: 0.5rem;
+  }
 </style>
 {% endblock %}
 
@@ -149,6 +185,25 @@
           {{ form.broker.errors }}
         </div>
         {% endif %}
+      </div>
+      <!-- ✅ 動的に表示される手順ガイド -->
+      <div id="brokerGuide" class="broker-guide mt-3" style="display: none;">
+        <div class="alert alert-info">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <h6 class="alert-heading">
+                <i class="bi bi-info-circle me-1"></i>
+                <span id="brokerName"></span>のCSVダウンロード手順
+              </h6>
+              <ol class="mb-0 ps-3" id="brokerSteps">
+                <!-- JavaScript で動的に挿入 -->
+              </ol>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-primary ms-3" data-bs-toggle="modal" data-bs-target="#detailGuideModal">
+              <i class="bi bi-question-circle"></i> 詳細
+            </button>
+          </div>
+        </div>
       </div>
       
       <div class="form-section">
@@ -199,13 +254,193 @@
   </div>
 </div>
 
+<!-- ✅ 詳細手順モーダル -->
+<div class="modal fade" id="detailGuideModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-book"></i> 
+          <span id="modalBrokerName"></span>の詳細手順
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="detailGuideContent">
+        <!-- JavaScript で動的に挿入 -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% include 'speed_dial.html' with actions=page_actions %}
 {% endblock %}
 
 {% block scripts %}
 {{ block.super }}
+
 <script>
+// 証券会社ごとの手順データ
+const brokerGuides = {
+  rakuten: {
+    name: '楽天証券',
+    steps: [
+      '楽天証券サイトにログイン',
+      '「マイメニュー」→「取引履歴」→「国内株式」を開く',
+      '期間を指定して「CSVダウンロード」をクリック',
+      'ダウンロードしたファイルをアップロード'
+    ],
+    detailHtml: `
+      <div class="guide-section">
+        <h6 class="text-primary"><i class="bi bi-1-circle"></i> 楽天証券サイトにログイン</h6>
+        <p>楽天証券の会員ページにアクセスし、ログインします。</p>
+        <div class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle me-1"></i>
+          <strong>注意:</strong> ログインには楽天会員IDとパスワードが必要です
+        </div>
+      </div>
+      
+      <div class="guide-section mt-4">
+        <h6 class="text-primary"><i class="bi bi-2-circle"></i> 取引履歴ページを開く</h6>
+        <p>メニューから「口座管理」→「取引履歴」の順にクリックします。</p>
+        <ul>
+          <li>PC版：上部メニューの「口座管理」をクリック</li>
+          <li>スマホ版：メニューアイコンから「口座管理」を選択</li>
+        </ul>
+      </div>
+      
+      <div class="guide-section mt-4">
+        <h6 class="text-primary"><i class="bi bi-3-circle"></i> CSVダウンロード</h6>
+        <p>取引履歴画面で以下の操作を行います：</p>
+        <ol>
+          <li>「期間指定」で取引データの範囲を選択</li>
+          <li>「商品」で「国内株式」を選択（推奨）</li>
+          <li>「CSVダウンロード」ボタンをクリック</li>
+        </ol>
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-1"></i>
+          ダウンロードされるファイル名は通常「tradehistory(JP)_yyyymmdd.csv」形式です
+        </div>
+      </div>
+      
+      <div class="guide-section mt-4">
+        <h6 class="text-primary"><i class="bi bi-4-circle"></i> ファイルをアップロード</h6>
+        <p>ダウンロードしたCSVファイルをこのページでアップロードします。</p>
+        <ul>
+          <li>ファイルサイズは10MB以下</li>
+          <li>エンコーディングは自動判定されます</li>
+          <li>重複する取引は自動的にスキップされます</li>
+        </ul>
+      </div>
+    `
+  },
+  sbi: {
+    name: 'SBI証券',
+    steps: [
+      'SBI証券サイトにログイン',
+      '「口座管理」→「取引履歴」→「約定履歴照会」',
+      '期間を指定して「CSVダウンロード」をクリック',
+      'ダウンロードしたファイルをアップロード'
+    ],
+    detailHtml: `
+      <div class="guide-section">
+        <h6 class="text-primary"><i class="bi bi-1-circle"></i> SBI証券サイトにログイン</h6>
+        <p>SBI証券のWebサイトにアクセスし、ログインします。</p>
+        <div class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle me-1"></i>
+          <strong>注意:</strong> ユーザーネームとパスワードが必要です
+        </div>
+      </div>
+      
+      <div class="guide-section mt-4">
+        <h6 class="text-primary"><i class="bi bi-2-circle"></i> 約定履歴照会ページを開く</h6>
+        <p>以下の順にクリックしてページを開きます：</p>
+        <ol>
+          <li>上部メニューの「口座管理」をクリック</li>
+          <li>「取引履歴」を選択</li>
+          <li>「約定履歴照会」をクリック</li>
+        </ol>
+      </div>
+      
+      <div class="guide-section mt-4">
+        <h6 class="text-primary"><i class="bi bi-3-circle"></i> CSVダウンロード</h6>
+        <p>約定履歴照会画面で以下の操作を行います：</p>
+        <ol>
+          <li>「商品」で「国内株式」を選択（または「すべて」）</li>
+          <li>「期間指定」で開始日と終了日を設定</li>
+          <li>「照会」ボタンをクリック</li>
+          <li>画面下部の「CSVダウンロード」ボタンをクリック</li>
+        </ol>
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-1"></i>
+          <strong>CSVファイルの特徴:</strong>
+          <ul class="mb-0 mt-2">
+            <li>UTF-8形式で出力されます</li>
+            <li>先頭7行は不要な情報（自動的にスキップされます）</li>
+            <li>8行目がヘッダー、9行目以降がデータ</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="guide-section mt-4">
+        <h6 class="text-primary"><i class="bi bi-4-circle"></i> ファイルをアップロード</h6>
+        <p>ダウンロードしたCSVファイルをこのページでアップロードします。</p>
+        <ul>
+          <li>ファイル名は通常「SaveFile_000001_YYYYMMDD.csv」形式</li>
+          <li>投資信託のデータは自動的にスキップされます</li>
+          <li>同一の取引は数量が合算されます</li>
+        </ul>
+      </div>
+    `
+  }
+};
+
 document.addEventListener('DOMContentLoaded', function() {
+  const brokerSelect = document.getElementById('{{ form.broker.id_for_label }}');
+  const guideDiv = document.getElementById('brokerGuide');
+  const brokerNameSpan = document.getElementById('brokerName');
+  const brokerStepsOl = document.getElementById('brokerSteps');
+  const modalBrokerName = document.getElementById('modalBrokerName');
+  const detailGuideContent = document.getElementById('detailGuideContent');
+  
+  // 手順を表示する関数
+  function showBrokerGuide(selectedBroker) {
+    if (selectedBroker && brokerGuides[selectedBroker]) {
+      const guide = brokerGuides[selectedBroker];
+      
+      // 簡易手順を表示
+      brokerNameSpan.textContent = guide.name;
+      brokerStepsOl.innerHTML = guide.steps.map(step => `<li>${step}</li>`).join('');
+      guideDiv.style.display = 'block';
+      
+      // モーダル用のコンテンツを設定
+      modalBrokerName.textContent = guide.name;
+      detailGuideContent.innerHTML = guide.detailHtml;
+      
+      // アニメーション効果
+      guideDiv.style.opacity = '0';
+      setTimeout(() => {
+        guideDiv.style.transition = 'opacity 0.3s';
+        guideDiv.style.opacity = '1';
+      }, 10);
+    } else {
+      guideDiv.style.display = 'none';
+    }
+  }
+  
+  // ✅ 初期表示時に選択されている値をチェック
+  if (brokerSelect.value) {
+    showBrokerGuide(brokerSelect.value);
+  }
+  
+  // 証券会社選択時のイベント
+  brokerSelect.addEventListener('change', function() {
+    showBrokerGuide(this.value);
+  });
+
+  // ファイルアップロードエリアの処理
   const fileInput = document.getElementById('{{ form.csv_file.id_for_label }}');
   const fileUploadArea = document.getElementById('fileUploadArea');
   const selectedFile = document.getElementById('selectedFile');
