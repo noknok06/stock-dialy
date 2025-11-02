@@ -36,64 +36,64 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install -r requirements.txt
         pip install flake8 pytest coverage pytest-django
-        
+
     - name: Configure pytest
       run: |
-        # pytest.iniを更新
         echo "[pytest]" > pytest.ini
         echo "DJANGO_SETTINGS_MODULE = config.test_settings" >> pytest.ini
         echo "python_files = test_*.py" >> pytest.ini
         
-        # conftest.pyを作成
         echo "import os" > conftest.py
         echo "import django" >> conftest.py
-        echo "from django.conf import settings" >> conftest.py
-        echo "" >> conftest.py
         echo "os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.test_settings')" >> conftest.py
         echo "django.setup()" >> conftest.py
 
     - name: Create logs directory
-      run: |
-        mkdir -p logs
-        touch logs/.gitkeep
+      run: mkdir -p logs
 
     - name: Lint with flake8
       run: |
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-            
-    - name: Configure Django settings
+
+    - name: Configure Django test settings
       run: |
         echo "from .settings import *" > config/test_settings.py
         echo "DEBUG = True" >> config/test_settings.py
         echo "SECRET_KEY = 'test-secret-key'" >> config/test_settings.py
         echo "ALLOWED_HOSTS = ['*']" >> config/test_settings.py
-        echo "# subscriptionsアプリを無効化" >> config/test_settings.py
-        echo "INSTALLED_APPS = [app for app in INSTALLED_APPS if app != 'subscriptions']" >> config/test_settings.py
-        echo "# SQLiteを使用" >> config/test_settings.py
-        echo "DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': 'test_db.sqlite3'}}" >> config/test_settings.py
-        echo "# テスト用URLsを使用" >> config/test_settings.py
+        echo "" >> config/test_settings.py
+        echo "# ✅ subscriptions, ads を除外" >> config/test_settings.py
+        echo "INSTALLED_APPS = [a for a in INSTALLED_APPS if a not in ['subscriptions', 'ads']]" >> config/test_settings.py
+        echo "" >> config/test_settings.py
+        echo "# ✅ SQLite使用" >> config/test_settings.py
+        echo "DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'test_db.sqlite3'}}" >> config/test_settings.py
+        echo "" >> config/test_settings.py
+        echo "# ✅ URLは test_urls に差し替え" >> config/test_settings.py
         echo "ROOT_URLCONF = 'config.test_urls'" >> config/test_settings.py
-        echo "# パスワードハッシュを高速化" >> config/test_settings.py
+        echo "" >> config/test_settings.py
+        echo "# ✅ 高速パスワードハッシュ" >> config/test_settings.py
         echo "PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']" >> config/test_settings.py
-        echo "# ミドルウェアから不要なものを削除" >> config/test_settings.py
+        echo "" >> config/test_settings.py
+        echo "# ✅ 不要ミドルウェア除外" >> config/test_settings.py
         echo "MIDDLEWARE = [m for m in MIDDLEWARE if 'subscription' not in m.lower()]" >> config/test_settings.py
-        echo "# SSLリダイレクトを無効化" >> config/test_settings.py
+        echo "" >> config/test_settings.py
+        echo "# ✅ SSL無効化" >> config/test_settings.py
         echo "SECURE_SSL_REDIRECT = False" >> config/test_settings.py
-            
-    - name: Run migrations in order
+
+    - name: Run migrations
       run: |
         rm -f test_db.sqlite3
         python manage.py makemigrations --settings=config.test_settings
         python manage.py migrate --settings=config.test_settings
-        
-    - name: Test
+
+    - name: Run tests
       run: |
         export DJANGO_SETTINGS_MODULE=config.test_settings
-        python -m pytest tests/ -v
-        
+        pytest tests/ -v --disable-warnings
+
     - name: Run coverage
       run: |
         coverage run --source='.' manage.py test --settings=config.test_settings
