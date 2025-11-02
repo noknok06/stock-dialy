@@ -1,13 +1,26 @@
-# config/test_urls.py
 from django.contrib import admin
 from django.urls import path, include
-from config import views  # ← 追加
 from django.http import HttpResponse
+from config import views  # landing_page 用
 
 
-def dummy_ads_view(request):
+# ---- ダミービュー定義 ----
+def dummy_ads_view(request, *args, **kwargs):
     return HttpResponse("ads dummy")
 
+
+# ---- ads 名前空間（ダミー） ----
+ads_patterns = [
+    path('privacy-policy/', dummy_ads_view, name='privacy_policy'),
+    path('preferences/', dummy_ads_view, name='ad_preferences'),
+    path('terms/', dummy_ads_view, name='terms'),
+    path('faq/', dummy_ads_view, name='faq'),
+    path('guide/', dummy_ads_view, name='guide'),
+    path('api/preview/<int:ad_unit_id>/', dummy_ads_view, name='ad_preview_api'),
+]
+
+
+# ---- メインURL定義 ----
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
@@ -17,17 +30,9 @@ urlpatterns = [
     path('tags/', include('tags.urls')),
     path('analysis/', include('analysis_template.urls')),
 
-    # ↓ landing_pageだけ個別登録
+    # ✅ landing_pageを個別登録
     path('', views.landing_page, name='landing_page'),
-    # 🩵 ads 名前空間だけダミーで登録
-    path('ads/ad-preferences/', dummy_ads_view, name='ad_preferences'),
-]
 
-
-# 名前空間を手動登録
-from django.urls import include
-urlpatterns += [
-    path('ads/', include(([
-        path('ad-preferences/', dummy_ads_view, name='ad_preferences'),
-    ], 'ads'), namespace='ads'))
+    # ✅ ads名前空間をダミーで登録
+    path('ads/', include((ads_patterns, 'ads'), namespace='ads')),
 ]
