@@ -5,364 +5,248 @@
 
 {% block head %}
 <style>
-body {
-  background-color: #f9fafb;
-}
-
-.tag-badge-large {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, rgba(90, 126, 197, 0.1), rgba(72, 105, 173, 0.1));
-  color: var(--primary-color);
-  border-radius: 0.5rem;
-  font-weight: 600;
-  font-size: 1rem;
-  border: 1px solid rgba(90, 126, 197, 0.2);
-}
-
-.tag-badge-large i {
-  margin-right: 0.5rem;
-}
-
-/* 統計カード */
-.stats-card {
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-  color: white;
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: var(--shadow-md);
-}
-
-/* フィルターコントロール */
-.filter-controls {
-  background: linear-gradient(135deg, #f8f9fc 0%, #e9ecef 100%);
-  border: 1px solid rgba(90, 126, 197, 0.1);
-  border-radius: var(--radius-lg);
-  padding: 1.25rem;
-  margin-bottom: 1.5rem;
-  box-shadow: var(--shadow-sm);
-}
-
-/* カードスタイル */
-.card {
-  border: none;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-  margin-bottom: 1.5rem;
-}
-
-.card-header {
-  background-color: white;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  padding: 1.25rem;
-}
-
-.card-body {
-  padding: 1.25rem;
-}
-
-/* フィルタータブ */
-.filter-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.filter-tab {
-  padding: 0.5rem 1rem;
-  border-radius: 9999px;
-  border: 1px solid var(--border-primary);
-  background: white;
-  color: var(--text-secondary);
-  text-decoration: none;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: all var(--duration-200) var(--ease-in-out);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.filter-tab.active,
-.filter-tab:hover {
-  background: var(--primary-color);
-  color: white;
-  border-color: var(--primary-color);
-}
-
-/* 検索フォーム */
-.search-form {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-}
-
-/* 銘柄テーブル */
-.table-hover tbody tr:hover {
-  background-color: rgba(90, 126, 197, 0.04);
-}
-
-.table thead th {
-  background: linear-gradient(135deg, #f8f9fc 0%, #e9ecef 100%);
-  border-bottom: 2px solid rgba(90, 126, 197, 0.1);
-  font-weight: 600;
-  color: var(--text-primary);
-  padding: 0.75rem;
-  font-size: 0.875rem;
-}
-
-.table td {
-  padding: 0.875rem 0.75rem;
-  border-bottom: 1px solid var(--border-light);
-  vertical-align: middle;
-}
-
-.table tr:last-child td {
-  border-bottom: none;
-}
-
-.stock-name {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.95rem;
-}
-
-.stock-symbol {
-  color: var(--primary-color);
-  font-size: 0.8rem;
-  font-family: var(--font-family-mono);
-  font-weight: 600;
-}
-
-.stock-sector {
-  background: linear-gradient(135deg, rgba(90, 126, 197, 0.1), rgba(72, 105, 173, 0.1));
-  color: var(--primary-color);
-  padding: 0.15rem 0.35rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.7rem;
-  font-weight: 600;
-  border: 1px solid rgba(90, 126, 197, 0.2);
-}
-
-.stat-badge {
-  display: inline-block;
-  padding: 0.2rem 0.5rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.75rem;
-  font-weight: 600;
-  min-width: 2rem;
-  text-align: center;
-}
-
-.stat-total { 
-  background: linear-gradient(135deg, var(--info-color), #2563eb); 
-  color: white; 
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
-}
-
-.stat-active { 
-  background: linear-gradient(135deg, var(--success-color), #059669); 
-  color: white; 
-  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
-}
-
-.stat-sold { 
-  background: linear-gradient(135deg, var(--warning-color), #d97706); 
-  color: white; 
-  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
-}
-
-.stat-memo { 
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed); 
-  color: white; 
-  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2);
-}
-
-/* エンプティステート */
-.empty-state {
-  text-align: center;
-  padding: 3rem 2rem;
-  background: white;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-}
-
-.empty-state-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 80px;
-  height: 80px;
-  background: linear-gradient(135deg, rgba(90, 126, 197, 0.1), rgba(72, 105, 173, 0.05));
-  color: var(--primary-color);
-  border-radius: 50%;
-  margin-bottom: 1.5rem;
-}
-
-.empty-state-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
-  color: var(--text-primary);
-}
-
-.empty-state-description {
-  color: var(--text-secondary);
-  margin-bottom: 1.5rem;
-  max-width: 500px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-/* レスポンシブ対応 */
-@media (max-width: 768px) {
-  .container {
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
-  }
-  
-  .filter-controls {
-    padding: 0.875rem;
-    margin: 0 -0.25rem 1.25rem -0.25rem;
-    border-radius: var(--radius-md);
-  }
-  
-  .stats-card {
-    margin: 0 -0.25rem 1.25rem -0.25rem;
-    padding: 1.25rem 1rem;
-    border-radius: var(--radius-md);
-  }
-  
-  .stats-card .row {
-    --bs-gutter-x: 0.5rem;
-  }
-  
-  .stats-card .col-6 {
-    margin-bottom: 0.75rem;
-  }
-  
+  /* ========== Tag detail specific styles ========== */
   .tag-badge-large {
-    font-size: 0.9rem;
-    padding: 0.4rem 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 24px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.2));
+    color: var(--primary-color);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 20px;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
   }
-  
+
+  .tag-badge-large i {
+    margin-right: 12px;
+    font-size: 24px;
+  }
+
+  /* Stats card */
+  .stats-card {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #2563eb 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
+  .stats-card .h3 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .stats-card .small {
+    font-size: 13px;
+    opacity: 0.9;
+  }
+
+  /* Filter tabs */
+  .filter-controls {
+    background-color: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+
   .filter-tabs {
-    justify-content: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .filter-tab {
+    padding: 8px 16px;
+    border-radius: 9999px;
+    border: 1px solid var(--border-color);
+    background-color: transparent;
+    color: var(--text-color);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .filter-tab:hover {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-secondary);
+    color: var(--text-color);
+  }
+
+  .filter-tab.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
   }
 
   .search-form {
-    flex-direction: column;
-    width: 100%;
+    display: flex;
+    gap: 12px;
+    align-items: center;
   }
 
-  .search-form .form-control {
-    width: 100%;
-  }
-
-  .table-responsive {
-    font-size: 0.875rem;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
-    margin: 0 -0.5rem;
-  }
-  
-  /* モバイルでのボタン調整 */
-  .btn {
-    font-size: 0.875rem;
-  }
-  
-  .btn i {
-    font-size: 1rem;
-  }
-}
-
-@media (max-width: 576px) {
-  .container {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-  }
-  
-  .filter-controls {
-    margin: 0 -0.125rem 1rem -0.125rem;
-    padding: 0.75rem;
-  }
-  
-  .stats-card {
-    margin: 0 -0.125rem 1rem -0.125rem;
-    padding: 1rem 0.75rem;
-  }
-  
-  .stats-card .h3 {
-    font-size: 1.5rem;
-  }
-  
-  .stats-card .small {
-    font-size: 0.75rem;
-  }
-
-  .tag-badge-large {
-    font-size: 0.85rem;
-    padding: 0.35rem 0.7rem;
-  }
-  
-  /* 極小画面でのフィルタータブ調整 */
-  .filter-tabs {
-    grid-template-columns: 1fr 1fr;
-    gap: 0.25rem;
-  }
-  
-  .filter-tab {
-    padding: 0.3rem 0.4rem;
-    font-size: 0.7rem;
-  }
-  
-  .filter-tab i {
-    display: none;
-  }
-  
-  /* モバイルテーブル調整 */
-  .table th,
-  .table td {
-    padding: 0.4rem 0.25rem;
-  }
-  
+  /* Stock info */
   .stock-name {
-    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 15px;
   }
-  
+
   .stock-symbol {
-    font-size: 0.65rem;
+    color: var(--primary-color);
+    font-size: 13px;
+    font-family: monospace;
+    font-weight: 600;
   }
-  
-  .btn-group-sm .btn {
-    padding: 0.25rem 0.4rem;
-    font-size: 0.75rem;
+
+  .stock-sector {
+    display: inline-block;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
+    color: var(--primary-color);
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid rgba(59, 130, 246, 0.3);
   }
-  
-  .btn-group-sm .btn i {
-    font-size: 0.875rem;
+
+  /* Dark mode adjustments */
+  .dark-mode .tag-badge-large,
+  [data-theme="dark"] .tag-badge-large {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.2));
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: var(--dm-primary);
   }
-}
+
+  .dark-mode .filter-controls,
+  [data-theme="dark"] .filter-controls {
+    background-color: var(--dm-card);
+    border-color: var(--dm-border);
+  }
+
+  .dark-mode .filter-tab,
+  [data-theme="dark"] .filter-tab {
+    border-color: var(--dm-border);
+    color: var(--dm-foreground);
+  }
+
+  .dark-mode .filter-tab:hover,
+  [data-theme="dark"] .filter-tab:hover {
+    background-color: rgba(71, 85, 105, 0.3);
+    border-color: var(--dm-muted);
+    color: var(--dm-foreground);
+  }
+
+  .dark-mode .filter-tab.active,
+  [data-theme="dark"] .filter-tab.active {
+    background-color: var(--dm-primary);
+    color: white;
+    border-color: var(--dm-primary);
+  }
+
+  .dark-mode .stock-name,
+  [data-theme="dark"] .stock-name {
+    color: var(--dm-foreground);
+  }
+
+  .dark-mode .stock-symbol,
+  [data-theme="dark"] .stock-symbol {
+    color: var(--dm-primary);
+  }
+
+  .dark-mode .stock-sector,
+  [data-theme="dark"] .stock-sector {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
+    color: var(--dm-primary);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .tag-badge-large {
+      font-size: 16px;
+      padding: 8px 16px;
+    }
+
+    .tag-badge-large i {
+      font-size: 18px;
+      margin-right: 8px;
+    }
+
+    .stats-card {
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .stats-card .h3 {
+      font-size: 24px;
+    }
+
+    .filter-controls {
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .filter-tabs {
+      justify-content: center;
+    }
+
+    .search-form {
+      flex-direction: column;
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .tag-badge-large {
+      font-size: 14px;
+      padding: 6px 12px;
+    }
+
+    .stats-card .h3 {
+      font-size: 20px;
+    }
+
+    .filter-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .filter-tab {
+      padding: 6px 12px;
+      font-size: 12px;
+      justify-content: center;
+    }
+
+    .filter-tab i {
+      display: none;
+    }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<body class="dark-mode">
+<div class="dashboard-container py-4">
   <!-- ページヘッダー -->
-  <div class="page-header d-flex justify-content-between align-items-center">
-    <div>
-      <h1 class="page-title">
-        <span class="tag-badge-large">
-          <i class="bi bi-tag-fill"></i>
-          {{ tag.name }}
-        </span>
-      </h1>
-      <p class="text-muted mb-0">このタグが設定されている銘柄と投資記録</p>
-    </div>
+  <div class="page-header">
+    <h1 class="page-title">
+      <span class="tag-badge-large">
+        <i class="bi bi-tag-fill"></i>
+        {{ tag.name }}
+      </span>
+    </h1>
+    <p class="text-muted mb-0">このタグが設定されている銘柄と投資記録</p>
   </div>
 
   <!-- 統計カード -->
@@ -440,10 +324,10 @@ body {
     </form>
   </div>
 
-  <!-- 銘柄一覧（テーブル形式） -->
+  <!-- 銘柄一覧 -->
   {% if stock_list %}
     <div class="table-responsive">
-      <table class="table table-hover align-middle">
+      <table class="table">
         <thead>
           <tr>
             <th>銘柄情報</th>
@@ -490,7 +374,7 @@ body {
   {% else %}
     <div class="empty-state">
       <div class="empty-state-icon">
-        <i class="bi bi-search fs-1"></i>
+        <i class="bi bi-search"></i>
       </div>
       <h3 class="empty-state-title">
         {% if search_query %}
@@ -524,16 +408,15 @@ body {
 </div>
 
 {% include 'speed_dial.html' with actions=page_actions %}
+</body>
 {% endblock %}
 
 {% block scripts %}
 {{ block.super }}
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    // スピードダイアルを初期化
     initializeSpeedDial();
     
-    // フォーム送信時のローディング表示
     const searchForm = document.querySelector('form[method="get"]');
     const submitButton = searchForm.querySelector('button[type="submit"]');
     
@@ -548,7 +431,6 @@ body {
       submitButton.disabled = true;
     });
     
-    // Enter キーでの検索
     const searchInput = document.querySelector('input[name="q"]');
     searchInput.addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {

@@ -1,116 +1,185 @@
+<!-- ========== tag_confirm_delete.html ========== -->
 {% extends 'base.html' %}
 
 {% block title %}タグの削除 | カブログ{% endblock %}
 
 {% block head %}
-<!-- Bootstrap Icons -->
 <style>
-  :root {
-    --primary-color: #4f46e5;
-    --success-color: #10b981;
-    --danger-color: #ef4444;
-    --warning-color: #f59e0b;
-    --light-bg: #f9fafb;
-    --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
-  body {
-    background-color: var(--light-bg);
-  }
-
-  /* カードスタイル */
-  .card {
-    border: none;
-    border-radius: 0.5rem;
-    box-shadow: var(--card-shadow);
-    overflow: hidden;
-  }
-
-  .card-header {
-    background-color: var(--danger-color);
+  .delete-card .card-header {
+    background: linear-gradient(135deg, var(--danger-color) 0%, #dc2626 100%);
     color: white;
-    padding: 1.25rem;
+    padding: 20px 24px;
     border-bottom: none;
+    border-radius: 12px 12px 0 0;
   }
 
-  .card-header h3 {
+  .delete-card .card-header h3 {
     margin: 0;
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 12px;
+    font-size: 20px;
   }
 
-  .card-body {
-    padding: 1.5rem;
-  }
-
-  /* 警告アイコン */
   .warning-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 64px;
-    height: 64px;
-    background-color: rgba(239, 68, 68, 0.1);
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1));
     color: var(--danger-color);
+    border-radius: 50%;
+    margin: 0 auto 24px;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    50% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+  }
+
+  .warning-icon i {
+    font-size: 40px;
+  }
+
+  .delete-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2));
+    color: var(--danger-color);
+    border: 1px solid rgba(239, 68, 68, 0.3);
     border-radius: 9999px;
-    margin: 0 auto 1.5rem;
+    font-weight: 600;
+    font-size: 16px;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+    margin-bottom: 24px;
   }
 
-  .tag-badge i {
-    margin-right: 0.5rem;
+  .delete-badge i {
+    margin-right: 8px;
+    font-size: 18px;
   }
 
-  /* 関連アイテム */
   .related-items {
-    background-color: #f3f4f6;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    margin: 1.5rem 0;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 24px 0;
   }
 
   .related-title {
     font-weight: 600;
-    margin-bottom: 0.5rem;
+    margin-bottom: 8px;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    color: #111827;
+    gap: 8px;
+    color: var(--text-primary);
+    font-size: 16px;
   }
 
-  .btn-secondary {
-    background-color: #6b7280;
-    border-color: #6b7280;
+  .related-title i {
+    color: var(--primary-color);
   }
 
-  .btn-secondary:hover {
-    background-color: #4b5563;
-    border-color: #4b5563;
+  /* Dark mode */
+  .dark-mode .warning-icon,
+  [data-theme="dark"] .warning-icon {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1));
+    color: var(--dm-destructive);
   }
 
+  .dark-mode .delete-badge,
+  [data-theme="dark"] .delete-badge {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2));
+    border-color: rgba(239, 68, 68, 0.3);
+    color: var(--dm-destructive);
+  }
+
+  .dark-mode .related-items,
+  [data-theme="dark"] .related-items {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+    border-color: rgba(59, 130, 246, 0.2);
+  }
+
+  .dark-mode .related-title,
+  [data-theme="dark"] .related-title {
+    color: var(--dm-foreground);
+  }
+
+  .dark-mode .related-title i,
+  [data-theme="dark"] .related-title i {
+    color: var(--dm-primary);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .delete-card .card-header {
+      padding: 16px 20px;
+    }
+
+    .delete-card .card-header h3 {
+      font-size: 18px;
+    }
+
+    .warning-icon {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 20px;
+    }
+
+    .warning-icon i {
+      font-size: 32px;
+    }
+
+    .delete-badge {
+      font-size: 14px;
+      padding: 8px 16px;
+      margin-bottom: 20px;
+    }
+
+    .related-items {
+      padding: 16px;
+      margin: 20px 0;
+    }
+
+    .d-flex.justify-content-center {
+      flex-direction: column-reverse;
+      width: 100%;
+    }
+
+    .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<body class="dark-mode">
+<div class="dashboard-container py-4">
   <div class="row justify-content-center">
     <div class="col-lg-8">
-      <div class="card">
+      <div class="card delete-card">
         <div class="card-header">
           <h3>
-            <i class="bi bi-exclamation-triangle"></i> タグの削除
+            <i class="bi bi-exclamation-triangle"></i>
+            <span>タグの削除</span>
           </h3>
         </div>
         
         <div class="card-body text-center">
           <div class="warning-icon">
-            <i class="bi bi-exclamation-triangle-fill fs-1"></i>
+            <i class="bi bi-exclamation-triangle-fill"></i>
           </div>
           
-          <h4 class="mb-3">このタグを削除してもよろしいですか？</h4>
+          <h4>このタグを削除してもよろしいですか？</h4>
           
-          <div class="badge">
+          <div class="delete-badge">
             <i class="bi bi-tag-fill"></i>
             <span>{{ tag.name }}</span>
           </div>
@@ -124,7 +193,8 @@
             {% if related_count > 0 %}
               <div class="related-items">
                 <h5 class="related-title">
-                  <i class="bi bi-link text-danger"></i> 関連する日記
+                  <i class="bi bi-link"></i>
+                  <span>関連する日記</span>
                 </h5>
                 <p class="mb-0">
                   このタグは現在 <strong>{{ related_count }}件</strong> の日記で使用されています。
@@ -133,14 +203,16 @@
             {% endif %}
           {% endwith %}
           
-          <form method="post" class="mt-4">
+          <form method="post">
             {% csrf_token %}
-            <div class="d-flex justify-content-center gap-3">
-              <a href="{% url 'tags:list' %}" class="btn btn-secondary btn-icon">
-                <i class="bi bi-x-lg me-1"></i> キャンセル
+            <div class="d-flex justify-content-center gap-3 mt-4">
+              <a href="{% url 'tags:list' %}" class="btn btn-secondary">
+                <i class="bi bi-x-lg"></i>
+                <span>キャンセル</span>
               </a>
-              <button type="submit" class="btn btn-danger btn-icon">
-                <i class="bi bi-trash me-1"></i> 削除する
+              <button type="submit" class="btn btn-danger">
+                <i class="bi bi-trash"></i>
+                <span>削除する</span>
               </button>
             </div>
           </form>
@@ -149,5 +221,5 @@
     </div>
   </div>
 </div>
+</body>
 {% endblock %}
-

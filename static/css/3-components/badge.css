@@ -141,3 +141,137 @@
     padding: 0.3rem 0.75rem;
   }
 }
+
+/* ========== モバイル最適化 ========== */
+@media (max-width: 768px) {
+  .badge {
+    font-size: 0.8125rem;
+    padding: 0.4em 0.6em;
+  }
+
+  .notification-badge {
+    font-size: 0.8125rem;
+    padding: 0.3rem 0.75rem;
+  }
+
+  .importance-indicator {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.75rem;
+  }
+}
+
+/* ========== Dark Mode Support ========== */
+.dark-mode .badge,
+[data-theme="dark"] .badge {
+  background-color: rgba(71, 85, 105, 0.3);
+  border: 1px solid var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .badge-primary,
+[data-theme="dark"] .badge-primary {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.2));
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: var(--dm-primary);
+}
+
+.dark-mode .badge-success,
+[data-theme="dark"] .badge-success {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.1));
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: var(--dm-success);
+}
+
+.dark-mode .badge-danger,
+[data-theme="dark"] .badge-danger {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1));
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--dm-destructive);
+}
+
+.dark-mode .badge-info,
+[data-theme="dark"] .badge-info {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: var(--dm-info);
+}
+
+.dark-mode .badge-warning,
+[data-theme="dark"] .badge-warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.1));
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: var(--dm-accent);
+}
+
+/* Background variants */
+.dark-mode .badge.bg-success,
+[data-theme="dark"] .badge.bg-success {
+  background: linear-gradient(135deg, var(--dm-success), #059669) !important;
+  border: none;
+  color: white !important;
+}
+
+.dark-mode .badge.bg-danger,
+[data-theme="dark"] .badge.bg-danger {
+  background: linear-gradient(135deg, var(--dm-destructive), #dc2626) !important;
+  border: none;
+  color: white !important;
+}
+
+.dark-mode .badge.bg-info,
+[data-theme="dark"] .badge.bg-info {
+  background: linear-gradient(135deg, var(--dm-info), #2563eb) !important;
+  border: none;
+  color: white !important;
+}
+
+.dark-mode .badge.bg-warning,
+[data-theme="dark"] .badge.bg-warning {
+  background: linear-gradient(135deg, var(--dm-accent), #d97706) !important;
+  border: none;
+  color: white !important;
+}
+
+/* Notification badges */
+.dark-mode .notification-badge.bg-info,
+[data-theme="dark"] .notification-badge.bg-info {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: var(--dm-info);
+}
+
+.dark-mode .notification-badge.bg-warning,
+[data-theme="dark"] .notification-badge.bg-warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.1));
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: var(--dm-accent);
+}
+
+.dark-mode .notification-badge.bg-success,
+[data-theme="dark"] .notification-badge.bg-success {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.1));
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: var(--dm-success);
+}
+
+/* Importance indicators */
+.dark-mode .importance-indicator.high,
+[data-theme="dark"] .importance-indicator.high {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1));
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--dm-destructive);
+}
+
+.dark-mode .importance-indicator.medium,
+[data-theme="dark"] .importance-indicator.medium {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.1));
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: var(--dm-accent);
+}
+
+.dark-mode .importance-indicator.low,
+[data-theme="dark"] .importance-indicator.low {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: var(--dm-info);
+}

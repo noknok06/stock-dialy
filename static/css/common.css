@@ -741,3 +741,639 @@ select {
     padding-left: 0.5rem;
     border-left: 2px solid #dee2e6;
 }
+
+/* ========== Dark Mode Support ========== */
+.dark-mode,
+[data-theme="dark"] {
+  /* Body */
+  background-color: var(--dm-background);
+  color: var(--dm-foreground);
+}
+
+.dark-mode body,
+[data-theme="dark"] body {
+  background-color: var(--dm-background);
+  color: var(--dm-foreground);
+}
+
+/* ========== Dark Mode Dashboard Container ========== */
+.dark-mode .dashboard-container,
+[data-theme="dark"] .dashboard-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 12px;
+}
+
+/* ========== Dark Mode Headers ========== */
+.dark-mode .dashboard-header,
+[data-theme="dark"] .dashboard-header {
+  background-color: var(--dm-card);
+  border: 1px solid var(--dm-border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .page-title,
+[data-theme="dark"] .page-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--dm-foreground);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dark-mode .page-title i,
+[data-theme="dark"] .page-title i {
+  color: var(--dm-primary);
+}
+
+.dark-mode .page-subtitle,
+[data-theme="dark"] .page-subtitle {
+  color: var(--dm-muted-foreground);
+  font-size: 14px;
+}
+
+/* ========== Dark Mode Cards ========== */
+.dark-mode .card,
+[data-theme="dark"] .card {
+  background-color: var(--dm-card);
+  border: 1px solid var(--dm-border);
+  border-radius: 12px;
+  transition: border-color 0.2s;
+}
+
+.dark-mode .card:hover,
+[data-theme="dark"] .card:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.dark-mode .card-header,
+[data-theme="dark"] .card-header {
+  background-color: transparent;
+  border-bottom: 1px solid var(--dm-border);
+  padding: 20px 24px;
+}
+
+.dark-mode .card-title,
+[data-theme="dark"] .card-title {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .card-body,
+[data-theme="dark"] .card-body {
+  padding: 24px;
+}
+
+/* ========== Dark Mode Forms ========== */
+.dark-mode .form-control,
+.dark-mode .form-select,
+.dark-mode textarea.form-control,
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select,
+[data-theme="dark"] textarea.form-control {
+  background-color: rgba(71, 85, 105, 0.3);
+  border: 1px solid var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .form-control:focus,
+.dark-mode .form-select:focus,
+.dark-mode textarea.form-control:focus,
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus,
+[data-theme="dark"] textarea.form-control:focus {
+  background-color: rgba(71, 85, 105, 0.4);
+  border-color: var(--dm-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .form-control::placeholder,
+.dark-mode .form-select::placeholder,
+.dark-mode textarea.form-control::placeholder,
+[data-theme="dark"] .form-control::placeholder,
+[data-theme="dark"] .form-select::placeholder,
+[data-theme="dark"] textarea.form-control::placeholder {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .form-label,
+[data-theme="dark"] .form-label {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .form-text,
+[data-theme="dark"] .form-text {
+  color: var(--dm-muted-foreground);
+}
+
+/* ========== Dark Mode Tables ========== */
+.dark-mode .table,
+[data-theme="dark"] .table {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .table thead th,
+[data-theme="dark"] .table thead th {
+  color: var(--dm-muted-foreground);
+  background-color: rgba(71, 85, 105, 0.3);
+  border-bottom: 1px solid var(--dm-border);
+}
+
+.dark-mode .table tbody td,
+[data-theme="dark"] .table tbody td {
+  border-bottom: 1px solid var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .table tbody tr:hover,
+[data-theme="dark"] .table tbody tr:hover {
+  background-color: rgba(71, 85, 105, 0.3);
+}
+
+.dark-mode .table-responsive,
+[data-theme="dark"] .table-responsive {
+  background-color: var(--dm-card);
+  border: 1px solid var(--dm-border);
+  border-radius: 12px;
+}
+
+/* Table内のリンク */
+.dark-mode .table a,
+[data-theme="dark"] .table a {
+  color: var(--dm-primary);
+}
+
+.dark-mode .table a:hover,
+[data-theme="dark"] .table a:hover {
+  color: var(--dm-primary-hover);
+}
+
+/* 小さい詳細テキスト */
+.dark-mode .table small,
+[data-theme="dark"] .table small {
+  color: var(--dm-muted-foreground);
+}
+
+/* テーブルの最後の行 */
+.dark-mode .table tbody tr:last-child td,
+[data-theme="dark"] .table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ========== Dark Mode Text Colors ========== */
+.dark-mode .text-muted,
+[data-theme="dark"] .text-muted {
+  color: var(--dm-muted-foreground) !important;
+}
+
+.dark-mode .text-primary,
+[data-theme="dark"] .text-primary {
+  color: var(--dm-primary) !important;
+}
+
+.dark-mode h4,
+.dark-mode h5,
+.dark-mode h6,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6 {
+  color: var(--dm-foreground);
+}
+
+.dark-mode small,
+[data-theme="dark"] small {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .small,
+[data-theme="dark"] .small {
+  color: var(--dm-muted-foreground);
+}
+
+/* ========== Dark Mode Links ========== */
+.dark-mode a,
+[data-theme="dark"] a {
+  color: var(--dm-primary);
+}
+
+.dark-mode a:hover,
+[data-theme="dark"] a:hover {
+  color: var(--dm-primary-hover);
+}
+
+.dark-mode a.text-decoration-none,
+[data-theme="dark"] a.text-decoration-none {
+  color: inherit;
+}
+
+.dark-mode a.text-decoration-none:hover,
+[data-theme="dark"] a.text-decoration-none:hover {
+  color: inherit;
+}
+
+/* ========== Dark Mode Empty State ========== */
+.dark-mode .empty-state,
+[data-theme="dark"] .empty-state {
+  background-color: var(--dm-card);
+  border: 1px solid var(--dm-border);
+}
+
+.dark-mode .empty-state-icon,
+[data-theme="dark"] .empty-state-icon {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
+  color: var(--dm-primary);
+}
+
+.dark-mode .empty-state-title,
+[data-theme="dark"] .empty-state-title {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .empty-state-description,
+[data-theme="dark"] .empty-state-description {
+  color: var(--dm-muted-foreground);
+}
+
+/* ========== Dark Mode Search ========== */
+.dark-mode .search-card,
+[data-theme="dark"] .search-card {
+  background-color: var(--dm-card);
+  border: 1px solid var(--dm-border);
+}
+
+.dark-mode .search-icon,
+[data-theme="dark"] .search-icon {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .search-input,
+[data-theme="dark"] .search-input {
+  padding-left: 44px;
+}
+
+/* ========== Dark Mode Utilities ========== */
+.dark-mode .gap-2,
+[data-theme="dark"] .gap-2 {
+  gap: 0.5rem;
+}
+
+.dark-mode .gap-3,
+[data-theme="dark"] .gap-3 {
+  gap: 1rem;
+}
+
+.dark-mode .flex-wrap,
+[data-theme="dark"] .flex-wrap {
+  flex-wrap: wrap;
+}
+
+.dark-mode .d-flex,
+[data-theme="dark"] .d-flex {
+  display: flex;
+}
+
+.dark-mode .d-block,
+[data-theme="dark"] .d-block {
+  display: block;
+}
+
+.dark-mode .mt-1,
+[data-theme="dark"] .mt-1 {
+  margin-top: 0.25rem;
+}
+
+.dark-mode .mb-3,
+[data-theme="dark"] .mb-3 {
+  margin-bottom: 1rem;
+}
+
+.dark-mode .mb-4,
+[data-theme="dark"] .mb-4 {
+  margin-bottom: 1.5rem;
+}
+
+/* ========== Dark Mode Responsive ========== */
+@media (max-width: 768px) {
+  .dark-mode .dashboard-container,
+  [data-theme="dark"] .dashboard-container {
+    padding: 0 8px;
+  }
+
+  .dark-mode .dashboard-header,
+  [data-theme="dark"] .dashboard-header {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .dark-mode .page-title,
+  [data-theme="dark"] .page-title {
+    font-size: 20px;
+  }
+
+  .dark-mode .card-body,
+  [data-theme="dark"] .card-body {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 576px) {
+  .dark-mode .page-title,
+  [data-theme="dark"] .page-title {
+    font-size: 18px;
+  }
+}
+
+input,
+textarea,
+select {
+  font-size: 16px !important;
+}
+
+/* ========== Dark Mode Bootstrap Overrides ========== */
+.dark-mode,
+[data-theme="dark"] {
+  /* テーブル行の背景 */
+  --bs-table-bg: transparent;
+  --bs-table-striped-bg: rgba(71, 85, 105, 0.2);
+  --bs-table-hover-bg: rgba(71, 85, 105, 0.3);
+  
+  /* ボーダー */
+  --bs-border-color: #334155;
+  
+  /* テキスト */
+  --bs-body-color: #f1f5f9;
+  --bs-emphasis-color: #f1f5f9;
+}
+
+/* ========== 完全なテーブル対応 ========== */
+.dark-mode table,
+[data-theme="dark"] table {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--dm-foreground);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .table > :not(caption) > * > *,
+[data-theme="dark"] .table > :not(caption) > * > * {
+  background-color: transparent;
+  color: var(--dm-foreground);
+}
+
+.dark-mode .table thead,
+[data-theme="dark"] .table thead {
+  background-color: rgba(71, 85, 105, 0.3);
+}
+
+.dark-mode .table th,
+[data-theme="dark"] .table th {
+  color: var(--dm-muted-foreground);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .table td,
+[data-theme="dark"] .table td {
+  color: var(--dm-foreground);
+  border-color: var(--dm-border);
+}
+
+/* テーブル内の全要素を確実にダークモードに */
+.dark-mode .table-responsive *,
+[data-theme="dark"] .table-responsive * {
+  color: inherit;
+}
+
+/* テーブル内のバッジ・タグ */
+.dark-mode .table .badge,
+.dark-mode .table [class*="badge"],
+[data-theme="dark"] .table .badge,
+[data-theme="dark"] .table [class*="badge"] {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.2));
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: var(--dm-primary);
+}
+
+/* ========== ボタングループ ========== */
+.dark-mode .btn-group,
+[data-theme="dark"] .btn-group {
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.dark-mode .btn-group .btn,
+[data-theme="dark"] .btn-group .btn {
+  margin: 0;
+}
+
+/* ========== フレックスコンテナ ========== */
+.dark-mode .d-flex,
+[data-theme="dark"] .d-flex {
+  display: flex !important;
+}
+
+.dark-mode .flex-wrap,
+[data-theme="dark"] .flex-wrap {
+  flex-wrap: wrap !important;
+}
+
+.dark-mode .justify-content-between,
+[data-theme="dark"] .justify-content-between {
+  justify-content: space-between !important;
+}
+
+.dark-mode .align-items-end,
+[data-theme="dark"] .align-items-end {
+  align-items: flex-end !important;
+}
+
+/* ========== テキスト装飾 ========== */
+.dark-mode .text-decoration-none,
+[data-theme="dark"] .text-decoration-none {
+  text-decoration: none !important;
+}
+
+.dark-mode .text-decoration-none:hover,
+[data-theme="dark"] .text-decoration-none:hover {
+  text-decoration: none !important;
+}
+
+/* ========== マージン・パディング ========== */
+.dark-mode .mt-1,
+[data-theme="dark"] .mt-1 {
+  margin-top: 0.25rem !important;
+}
+
+.dark-mode .mt-4,
+[data-theme="dark"] .mt-4 {
+  margin-top: 1.5rem !important;
+}
+
+.dark-mode .mb-0,
+[data-theme="dark"] .mb-0 {
+  margin-bottom: 0 !important;
+}
+
+.dark-mode .mb-3,
+[data-theme="dark"] .mb-3 {
+  margin-bottom: 1rem !important;
+}
+
+.dark-mode .mb-4,
+[data-theme="dark"] .mb-4 {
+  margin-bottom: 1.5rem !important;
+}
+
+/* ========== Flex grow ========== */
+.dark-mode .flex-grow-1,
+[data-theme="dark"] .flex-grow-1 {
+  flex-grow: 1 !important;
+}
+
+/* ========== テキスト配置 ========== */
+.dark-mode .text-center,
+[data-theme="dark"] .text-center {
+  text-align: center !important;
+}
+
+/* ========== Position ========== */
+.dark-mode .position-relative,
+[data-theme="dark"] .position-relative {
+  position: relative !important;
+}
+
+/* ========== 行グリッド ========== */
+.dark-mode .row,
+[data-theme="dark"] .row {
+  --bs-gutter-x: 1.5rem;
+  --bs-gutter-y: 0;
+}
+
+.dark-mode .g-3,
+[data-theme="dark"] .g-3 {
+  --bs-gutter-x: 1rem;
+  --bs-gutter-y: 1rem;
+}
+
+/* ========== カラム ========== */
+.dark-mode [class*="col-"],
+[data-theme="dark"] [class*="col-"] {
+  color: var(--dm-foreground);
+}
+
+/* ========== 特定要素の強制ダークモード ========== */
+.dark-mode .table small.text-muted,
+[data-theme="dark"] .table small.text-muted {
+  color: var(--dm-muted-foreground) !important;
+}
+
+.dark-mode .table-tag-name small,
+[data-theme="dark"] .table-tag-name small {
+  color: var(--dm-muted-foreground) !important;
+}
+
+/* ========== 検索アイコン位置 ========== */
+.dark-mode .search-icon,
+[data-theme="dark"] .search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--dm-muted-foreground);
+  z-index: 10;
+}
+
+.dark-mode .search-input,
+[data-theme="dark"] .search-input {
+  padding-left: 2.5rem !important;
+}
+
+/* ========== カード内のタイトル ========== */
+.dark-mode .card-title,
+[data-theme="dark"] .card-title {
+  color: var(--dm-foreground);
+  margin-bottom: 0;
+}
+
+/* ========== フォーム内ラベル ========== */
+.dark-mode .form-label,
+[data-theme="dark"] .form-label {
+  color: var(--dm-foreground);
+  font-weight: 500;
+}
+
+/* ========== プレースホルダー ========== */
+.dark-mode ::placeholder,
+[data-theme="dark"] ::placeholder {
+  color: var(--dm-muted-foreground);
+  opacity: 0.7;
+}
+
+/* ========== ホバー状態の確実な適用 ========== */
+.dark-mode .table tbody tr:hover *,
+[data-theme="dark"] .table tbody tr:hover * {
+  color: inherit;
+}
+
+/* ========== ボタンのホバー時のテキスト色 ========== */
+.dark-mode .btn-outline-primary:hover *,
+.dark-mode .btn-outline-warning:hover *,
+.dark-mode .btn-outline-danger:hover *,
+[data-theme="dark"] .btn-outline-primary:hover *,
+[data-theme="dark"] .btn-outline-warning:hover *,
+[data-theme="dark"] .btn-outline-danger:hover * {
+  color: inherit;
+}
+
+/* ========== アイコンの色 ========== */
+.dark-mode .bi,
+[data-theme="dark"] .bi {
+  color: inherit;
+}
+
+.dark-mode .table .bi,
+[data-theme="dark"] .table .bi {
+  color: inherit;
+}
+
+/* ========== 確実な背景色適用 ========== */
+.dark-mode .card,
+.dark-mode .table-responsive,
+[data-theme="dark"] .card,
+[data-theme="dark"] .table-responsive {
+  background-color: var(--dm-card) !important;
+}
+
+/* ========== フォームコントロールの確実な適用 ========== */
+.dark-mode input.form-control,
+.dark-mode select.form-select,
+.dark-mode textarea.form-control,
+[data-theme="dark"] input.form-control,
+[data-theme="dark"] select.form-select,
+[data-theme="dark"] textarea.form-control {
+  background-color: rgba(71, 85, 105, 0.3) !important;
+  border: 1px solid var(--dm-border) !important;
+  color: var(--dm-foreground) !important;
+}
+
+/* ========== セレクトボックスの矢印 ========== */
+.dark-mode select.form-select,
+[data-theme="dark"] select.form-select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23f1f5f9' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+}
+
+/* ========== 最終的な確実性の担保 ========== */
+.dark-mode,
+.dark-mode *,
+[data-theme="dark"],
+[data-theme="dark"] * {
+  border-color: var(--dm-border);
+}
+
+.dark-mode .table-responsive table,
+[data-theme="dark"] .table-responsive table {
+  color: var(--dm-foreground) !important;
+}
