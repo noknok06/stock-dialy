@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load stockdiary_filters %}
 {% load static %}
 {% load humanize %}
 
@@ -461,6 +462,8 @@
 
     .pl-item:hover {
         background-color: rgba(71, 85, 105, 0.5);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
 
     .pl-item.loss:hover {
@@ -605,11 +608,36 @@
         border-radius: 8px;
         border: 1px solid transparent;
         transition: all 0.2s;
+        cursor: pointer;
     }
 
     .company-item:hover {
         background-color: rgba(71, 85, 105, 0.5);
         border-color: var(--primary);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .company-link {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+
+    .company-link:hover {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .company-name {
+        font-weight: 600;
+        font-size: 16px;
+        color: var(--foreground);
+        transition: color 0.2s;
+    }
+
+    .company-item:hover .company-name {
+        color: var(--primary);
     }
 
     .company-header {
@@ -684,6 +712,347 @@
     .empty-state-subtext {
         font-size: 0.9rem;
     }
+
+    /* ========== スマホ最適化 ========== */
+    @media (max-width: 767.98px) {
+
+        /* ヘッダー */
+        .dashboard-header {
+            padding: 12px;
+            margin-bottom: 16px;
+        }
+
+        .dashboard-title {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        .dashboard-subtitle {
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        /* 期間フィルター */
+        .period-filter {
+            gap: 6px;
+            justify-content: center;
+        }
+
+        .period-btn {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        /* メトリクスグリッド - 2列表示 */
+        .metrics-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .metric-card {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .metric-label {
+            font-size: 11px;
+        }
+
+        .metric-value {
+            font-size: 20px;
+            margin-top: 4px;
+        }
+
+        .metric-subtext {
+            font-size: 10px;
+        }
+
+        .metric-icon {
+            padding: 8px;
+            font-size: 18px;
+            align-self: flex-end;
+        }
+
+        /* 2カラムレイアウト - 1列に */
+        .two-column {
+            grid-template-columns: 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        /* セクションタイトル */
+        .section-title {
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .section-icon {
+            padding: 6px;
+            font-size: 16px;
+        }
+
+        .section-heading {
+            font-size: 16px;
+        }
+
+        /* カード */
+        .card {
+            padding: 12px;
+        }
+
+        /* 取引回数ランキング */
+        .ranking-item {
+            padding: 10px;
+        }
+
+        .ranking-number {
+            width: 28px;
+            height: 28px;
+            font-size: 12px;
+        }
+
+        .ranking-name {
+            font-size: 13px;
+        }
+
+        .ranking-code {
+            font-size: 11px;
+        }
+
+        .ranking-count {
+            font-size: 16px;
+        }
+
+        .ranking-time {
+            font-size: 11px;
+        }
+
+        /* 業種別分析 */
+        .industry-list {
+            gap: 12px;
+        }
+
+        .industry-item {
+            gap: 3px;
+        }
+
+        .industry-header {
+            font-size: 12px;
+        }
+
+        .bar {
+            height: 20px;
+        }
+
+        .profit-badge {
+            font-size: 11px;
+            padding: 3px 6px;
+            width: 55px;
+        }
+
+        .industry-subinfo {
+            font-size: 10px !important;
+            margin-top: 0.25rem !important;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .industry-subinfo span {
+            flex: 0 0 auto;
+        }
+
+        /* 利益/損失セクション */
+        .profit-loss-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        .pl-section {
+            padding: 12px;
+        }
+
+        .pl-item {
+            padding: 12px;
+        }
+
+        .pl-name {
+            font-size: 14px;
+        }
+
+        .pl-rate {
+            font-size: 12px;
+            padding: 3px 6px;
+        }
+
+        .pl-count {
+            font-size: 11px;
+        }
+
+        /* モーダル */
+        .modal-container {
+            padding: 10px;
+            align-items: flex-start;
+        }
+
+        .modal-content {
+            margin-top: 10px;
+            max-height: 85vh;
+        }
+
+        .modal-header {
+            padding: 12px;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            gap: 8px;
+        }
+
+        .modal-close {
+            font-size: 20px;
+            padding: 4px;
+        }
+
+        .modal-body {
+            padding: 12px;
+        }
+
+        .company-item {
+            padding: 12px;
+        }
+
+        .company-header {
+            margin-bottom: 8px;
+        }
+
+        .company-name {
+            font-size: 14px;
+        }
+
+        .company-code {
+            font-size: 10px;
+        }
+
+        .company-stats {
+            gap: 12px;
+            font-size: 11px;
+        }
+
+        .stat-label {
+            font-size: 10px;
+        }
+
+        .stat-value {
+            font-size: 12px;
+        }
+    }
+
+    /* 超小型スマホ */
+    @media (max-width: 480px) {
+        .dashboard-container {
+            padding: 0 8px;
+        }
+
+        .dashboard-title {
+            font-size: 18px;
+        }
+
+        .dashboard-subtitle {
+            font-size: 10px;
+        }
+
+        .period-btn {
+            padding: 5px 10px;
+            font-size: 11px;
+        }
+
+        .metric-value {
+            font-size: 18px;
+        }
+
+        .metric-icon {
+            font-size: 16px;
+            padding: 6px;
+        }
+
+        .section-heading {
+            font-size: 14px;
+        }
+
+        .ranking-name {
+            font-size: 12px;
+        }
+
+        .ranking-count {
+            font-size: 15px;
+        }
+
+        .industry-header {
+            font-size: 11px;
+        }
+
+        .bar {
+            height: 18px;
+        }
+
+        .profit-badge {
+            font-size: 10px;
+            width: 50px;
+        }
+
+        .industry-subinfo {
+            font-size: 9px !important;
+        }
+
+        .pl-name {
+            font-size: 13px;
+        }
+
+        .company-name {
+            font-size: 13px;
+        }
+
+        .company-stats {
+            gap: 10px;
+        }
+    }
+
+    /* 横向きスマホ対応 */
+    @media (max-width: 767.98px) and (orientation: landscape) {
+        .metrics-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .two-column {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .modal-content {
+            max-height: 90vh;
+        }
+    }
+    .company-date {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 2px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .company-date::before {
+        content: "📅";
+        font-size: 10px;
+    }
+
+    /* スマホ対応 */
+    @media (max-width: 767.98px) {
+        .company-date {
+            font-size: 10px;
+        }
+    }    
 </style>
 {% endblock %}
 
@@ -735,12 +1104,13 @@
             <div class="metric-card">
                 <div class="metric-content">
                     <p class="metric-label">実現損益</p>
-                    <p class="metric-value">¥{{ total_realized_profit|floatformat:0|intcomma }}</p>
-                    <p class="metric-subtext">
-                        {% if total_realized_profit > 0 %}+{% endif %}{{ total_realized_profit|floatformat:1 }}円
-                    </p>
+                    <p class="metric-value">¥{{ total_realized_profit|intcomma_float:0 }}</p>
+                    <p class="metric-subtext">{% if total_realized_profit >= 0 %} {% else %}損失{% endif %}</p>
+                    <p>　</p>
                 </div>
-                <div class="metric-icon" style="background: {% if total_realized_profit >= 0 %}rgba(16, 185, 129, 0.2); color: var(--success){% else %}rgba(239, 68, 68, 0.2); color: var(--destructive){% endif %};">📈</div>
+                <div class="metric-icon"
+                    style="background: {% if total_realized_profit >= 0 %}rgba(16, 185, 129, 0.2); color: var(--success){% else %}rgba(239, 68, 68, 0.2); color: var(--destructive){% endif %};">
+                    📈</div>
             </div>
         </div>
 
@@ -750,6 +1120,7 @@
                     <p class="metric-label">平均利益率</p>
                     <p class="metric-value">{{ avg_profit_rate|floatformat:1 }}%</p>
                     <p class="metric-subtext">成功取引</p>
+                    <p>　</p>
                 </div>
                 <div class="metric-icon" style="background: rgba(245, 158, 11, 0.2); color: var(--accent);">🎯</div>
             </div>
@@ -799,7 +1170,7 @@
                 <div class="industry-item">
                     <div class="industry-header">
                         <span class="industry-name">{{ sector.sector }}</span>
-                        <span class="industry-count">{{ sector.transaction_count }}件</span>
+                        <span class="industry-count">{{ sector.transaction_count }}件 | {{ sector.diary_count }}社</span>
                     </div>
                     <div class="bar-container">
                         <div class="bar">
@@ -808,6 +1179,11 @@
                         <div class="profit-badge {% if sector.profit_rate >= 0 %}positive{% else %}negative{% endif %}">
                             {% if sector.profit_rate > 0 %}+{% endif %}{{ sector.profit_rate|floatformat:1 }}%
                         </div>
+                    </div>
+                    <div class="industry-subinfo"
+                        style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--muted); display: flex; justify-content: space-between;">
+                        <span>実現損益: {% if sector.total_profit >= 0 %}+{% endif %}¥{{sector.total_profit|intcomma_float:0 }}</span>
+                        <span>投資額: ¥{{ sector.total_buy_amount|intcomma_float:0 }}</span>
                     </div>
                 </div>
                 {% empty %}
@@ -832,7 +1208,8 @@
                         <h4 class="pl-name">#{{ forloop.counter }} {{ sector.sector }}</h4>
                         <span class="pl-rate profit">+{{ sector.profit_rate|floatformat:1 }}%</span>
                     </div>
-                    <p class="pl-count">取引数: {{ sector.transaction_count }}件 | 銘柄数: {{ sector.diary_count }}件</p>
+                    <p class="pl-count">取引数: {{ sector.transaction_count }}件 | 銘柄数: {{ sector.diary_count }}社</p>
+                    <p class="pl-count" style="color: var(--success); margin-top: 0.25rem;">実現損益: +¥{{ sector.total_profit|intcomma_float:0 }}</p>
                 </div>
                 {% empty %}
                 <p class="text-muted text-center py-3">データがありません</p>
@@ -853,7 +1230,8 @@
                         <h4 class="pl-name">#{{ forloop.counter }} {{ sector.sector }}</h4>
                         <span class="pl-rate loss">{{ sector.profit_rate|floatformat:1 }}%</span>
                     </div>
-                    <p class="pl-count">取引数: {{ sector.transaction_count }}件 | 銘柄数: {{ sector.diary_count }}件</p>
+                    <p class="pl-count">取引数: {{ sector.transaction_count }}件 | 銘柄数: {{ sector.diary_count }}社</p>
+                    <p class="pl-count" style="color: var(--destructive); margin-top: 0.25rem;">実現損益: ¥{{ sector.total_profit|intcomma_float:0 }}</p>
                 </div>
                 {% empty %}
                 <p class="text-muted text-center py-3">データがありません</p>
@@ -895,98 +1273,107 @@
 </div>
 
 <script>
-// Sector detail data
-const sectorDetailData = {{ sector_details|safe }};
+    // Sector detail data
+    const sectorDetailData = {{ sector_details| safe }};
 
-function showSectorDetail(sectorName, type) {
-    const modal = document.getElementById('sectorModal');
-    const modalTitle = document.getElementById('modalSectorName');
-    const modalIcon = document.getElementById('modalSectorIcon');
-    const companyList = document.getElementById('companyList');
-    
-    // Set modal title and icon
-    modalTitle.textContent = sectorName;
-    modalIcon.textContent = type === 'profit' ? '✓' : '!';
-    
-    // Get companies for this sector
-    const companies = sectorDetailData[sectorName] || [];
-    
-    // Clear previous content
-    companyList.innerHTML = '';
-    
-if (companies.length === 0) {
-    companyList.innerHTML = '<p style="text-align: center; color: var(--muted);">データがありません</p>';
-} else {
-    companies.forEach(company => {
-        const profitClass = company.profit >= 0 ? 'positive' : 'negative';
-        const profitSign = company.profit >= 0 ? '+' : '';
+    function showSectorDetail(sectorName, type) {
+        const modal = document.getElementById('sectorModal');
+        const modalTitle = document.getElementById('modalSectorName');
+        const modalIcon = document.getElementById('modalSectorIcon');
+        const companyList = document.getElementById('companyList');
 
-        const companyItem = document.createElement('div');
-        companyItem.className = 'company-item';
-        companyItem.innerHTML = `
-            <a href="/stockdiary/${company.id}/" class="company-link">
-                <div class="company-header">
-                    <div>
-                        <div class="company-name">${company.name}</div>
-                        <div class="company-code">コード: ${company.code}</div>
-                    </div>
-                </div>
-                <div class="company-stats">
-                    <div class="stat-item">
-                        <span class="stat-label">取引回数</span>
-                        <span class="stat-value">${company.transaction_count}回</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">現在保有数</span>
-                        <span class="stat-value">${company.current_quantity}株</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">実現損益</span>
-                        <span class="stat-value ${profitClass}">${profitSign}¥${Math.abs(company.profit).toLocaleString()}</span>
-                    </div>
-                    ${company.profit_rate !== null ? `
-                    <div class="stat-item">
-                        <span class="stat-label">損益率</span>
-                        <span class="stat-value ${profitClass}">${profitSign}${company.profit_rate}%</span>
-                    </div>
-                    ` : ''}
-                </div>
-            </a>
-        `;
-        companyList.appendChild(companyItem);
+        // Set modal title and icon
+        modalTitle.textContent = sectorName;
+        modalIcon.textContent = type === 'profit' ? '✓' : '!';
+
+        // Get companies for this sector
+        const companies = sectorDetailData[sectorName] || [];
+
+        // Clear previous content
+        companyList.innerHTML = '';
+
+        if (companies.length === 0) {
+            companyList.innerHTML = '<p style="text-align: center; color: var(--muted);">データがありません</p>';
+        } else {
+            companies.forEach(company => {
+                const profitClass = company.profit >= 0 ? 'positive' : 'negative';
+                const profitSign = company.profit >= 0 ? '+' : '';
+
+                const companyItem = document.createElement('div');
+                companyItem.className = 'company-item';
+                
+                // 損益率HTMLを生成
+                let profitRateHtml = '';
+                if (company.profit_rate !== null && company.profit_rate !== undefined) {
+                    profitRateHtml = `
+                        <div class="stat-item">
+                            <span class="stat-label">損益率</span>
+                            <span class="stat-value ${profitClass}">${profitSign}${company.profit_rate}%</span>
+                        </div>
+                    `;
+                }
+                
+                // ✅ 日記作成日を表示
+                const dateDisplay = company.created_at ? `<div class="company-date">${company.created_at}〜</div>` : '';
+                
+                companyItem.innerHTML = `
+                    <a href="/stockdiary/${company.id}/" class="company-link">
+                        <div class="company-header">
+                            <div>
+                                <div class="company-name">${company.name}</div>
+                                <div class="company-code">コード: ${company.code}</div>
+                                ${dateDisplay}
+                            </div>
+                        </div>
+                        <div class="company-stats">
+                            <div class="stat-item">
+                                <span class="stat-label">取引回数</span>
+                                <span class="stat-value">${company.transaction_count}回</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">現在保有数</span>
+                                <span class="stat-value">${company.current_quantity}株</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">実現損益</span>
+                                <span class="stat-value ${profitClass}">${profitSign}¥${Math.abs(company.profit).toLocaleString()}</span>
+                            </div>
+                            ${profitRateHtml}
+                        </div>
+                    </a>
+                `;
+                companyList.appendChild(companyItem);
+            });
+        }
+        // Show modal
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeSectorModal() {
+        const modal = document.getElementById('sectorModal');
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('sectorModal').addEventListener('click', function (e) {
+        if (e.target === this) {
+            closeSectorModal();
+        }
     });
-}
 
-    
-    // Show modal
-    modal.classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
+    // Close modal with ESC key
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeSectorModal();
+        }
+    });
 
-function closeSectorModal() {
-    const modal = document.getElementById('sectorModal');
-    modal.classList.remove('active');
-    document.body.style.overflow = '';
-}
-
-// Close modal when clicking outside
-document.getElementById('sectorModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeSectorModal();
-    }
-});
-
-// Close modal with ESC key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeSectorModal();
-    }
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Remove old click handlers
-    console.log('Dashboard loaded with sector details');
-});
+    document.addEventListener('DOMContentLoaded', function () {
+        // Remove old click handlers
+        console.log('Dashboard loaded with sector details');
+    });
 </script>
 {% include 'speed_dial.html' with actions=page_actions %}
 {% endblock %}

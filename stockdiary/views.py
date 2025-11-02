@@ -3422,7 +3422,11 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
 
             for company in companies:
                 code = company['code'].split('.')[0]
-                industry = company['industry_name_33'] if company['industry_name_33'] else '未分類'
+                # ✅ 業種名を正規化（前後の空白削除、None対応）
+                industry = company['industry_name_33']
+                if industry:
+                    industry = industry.strip()
+                industry = industry if industry else '未分類'
                 company_industries[code] = industry
 
         # ========== メトリクス集計 ==========
@@ -3474,7 +3478,9 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
 
         for diary in diaries_in_period:
             stock_code = diary.stock_symbol.split('.')[0] if diary.stock_symbol else None
+            # ✅ 業種名を正規化して取得
             sector = company_industries.get(stock_code, '未分類')
+            sector = sector.strip() if sector else '未分類'
 
             if sector not in sector_stats:
                 sector_stats[sector] = {
@@ -3482,6 +3488,7 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
                     'transaction_count': 0,
                     'total_profit': Decimal('0'),
                     'total_sell_amount': Decimal('0'),
+                    'total_buy_amount': Decimal('0'),
                     'diary_ids': set(),
                 }
                 sector_companies[sector] = {}
@@ -3490,9 +3497,11 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
             sector_stats[sector]['diary_ids'].add(diary.id)
             sector_stats[sector]['total_profit'] += diary.realized_profit or Decimal('0')
             sector_stats[sector]['total_sell_amount'] += diary.total_sell_amount or Decimal('0')
+            sector_stats[sector]['total_buy_amount'] += diary.total_buy_amount or Decimal('0')
 
             # 企業ごとの集計
             sector_companies[sector][diary.id] = {
+                'id': diary.id,
                 'name': diary.stock_name,
                 'code': diary.stock_symbol,
                 'transaction_count': diary.transaction_count or 0,
@@ -3507,6 +3516,7 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
             diary_count = len(data['diary_ids'])
             total_profit = data['total_profit']
             total_sell_amount = data['total_sell_amount']
+            total_buy_amount = data['total_buy_amount']
 
             # ✅ 売却金額がある場合のみ利益率を計算
             if total_sell_amount > 0:
@@ -3515,9 +3525,10 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
                 profit_rate = Decimal('0')
 
             sector_analysis.append({
-                'sector': sector,
+                'sector': sector.strip(),
                 'transaction_count': data['transaction_count'],
-                'total_profit': total_profit,
+                'total_profit': float(total_profit),
+                'total_buy_amount': float(total_buy_amount),
                 'diary_count': diary_count,
                 'profit_rate': float(round(profit_rate, 1)),
             })
@@ -3534,31 +3545,41 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
         sector_details = {}
         for sector, companies in sector_companies.items():
             company_list = []
-            for _, c in companies.items():
+            for diary_id, c in companies.items():
                 if c['total_sell_amount'] > 0:
                     profit_rate = round((c['total_profit'] / c['total_sell_amount']) * 100, 1)
                 else:
-                    profit_rate = 0.0  # ✅ undefined回避
+                    profit_rate = None
 
                 company_list.append({
-                    'id': diary.id,
+                    'id': c['id'],
                     'name': c['name'],
                     'code': c['code'],
                     'transaction_count': c['transaction_count'],
                     'profit': round(c['total_profit'], 0),
                     'profit_rate': profit_rate,
                     'current_quantity': c['current_quantity'],
+                    'created_at': c.get('created_at', ''),  # ✅ 日付を追加
                 })
 
             company_list.sort(key=lambda x: x['profit'], reverse=True)
-            sector_details[sector] = company_list
-
+            sector_details[sector.strip()] = company_list
+                        
         # ========== 利益/損失業種 ==========
-        profitable_sectors = [s for s in sector_analysis if s['profit_rate'] > 0]
+        # ✅ 業種名で重複削除
+        seen_sectors = set()
+        unique_sector_analysis = []
+        for s in sector_analysis:
+            sector_key = s['sector'].strip()
+            if sector_key not in seen_sectors:
+                seen_sectors.add(sector_key)
+                unique_sector_analysis.append(s)
+
+        profitable_sectors = [s for s in unique_sector_analysis if s['profit_rate'] > 0]
         profitable_sectors.sort(key=lambda x: x['profit_rate'], reverse=True)
         profitable_sectors = profitable_sectors[:3]
 
-        loss_sectors = [s for s in sector_analysis if s['profit_rate'] < 0]
+        loss_sectors = [s for s in unique_sector_analysis if s['profit_rate'] < 0]
         loss_sectors.sort(key=lambda x: x['profit_rate'])
         loss_sectors = loss_sectors[:3]
 
