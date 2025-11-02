@@ -766,23 +766,26 @@
             </div>
             <div class="ranking-list">
                 {% for diary in transaction_ranking %}
-                <div class="ranking-item">
-                    <div class="ranking-left">
-                        <div class="ranking-number">{{ forloop.counter }}</div>
-                        <div class="ranking-info">
-                            <div class="ranking-name">{{ diary.stock_name }}</div>
-                            <div class="ranking-code">コード: {{ diary.stock_symbol }}</div>
+                <a href="{% url 'stockdiary:detail' diary.id %}" class="ranking-link">
+                    <div class="ranking-item">
+                        <div class="ranking-left">
+                            <div class="ranking-number">{{ forloop.counter }}</div>
+                            <div class="ranking-info">
+                                <div class="ranking-name">{{ diary.stock_name }}</div>
+                                <div class="ranking-code">コード: {{ diary.stock_symbol }}</div>
+                            </div>
+                        </div>
+                        <div class="ranking-right">
+                            <div class="ranking-count">{{ diary.transaction_count_period }}</div>
+                            <div class="ranking-time">{{ diary.last_trade_display }}</div>
                         </div>
                     </div>
-                    <div class="ranking-right">
-                        <div class="ranking-count">{{ diary.transaction_count_period }}</div>
-                        <div class="ranking-time">{{ diary.last_trade_display }}</div>
-                    </div>
-                </div>
+                </a>
                 {% empty %}
                 <p class="text-muted text-center py-3">データがありません</p>
                 {% endfor %}
             </div>
+
         </div>
 
         <!-- Industry Analysis -->
@@ -911,16 +914,17 @@ function showSectorDetail(sectorName, type) {
     // Clear previous content
     companyList.innerHTML = '';
     
-    if (companies.length === 0) {
-        companyList.innerHTML = '<p style="text-align: center; color: var(--muted);">データがありません</p>';
-    } else {
-        companies.forEach(company => {
-            const profitClass = company.profit >= 0 ? 'positive' : 'negative';
-            const profitSign = company.profit >= 0 ? '+' : '';
-            
-            const companyItem = document.createElement('div');
-            companyItem.className = 'company-item';
-            companyItem.innerHTML = `
+if (companies.length === 0) {
+    companyList.innerHTML = '<p style="text-align: center; color: var(--muted);">データがありません</p>';
+} else {
+    companies.forEach(company => {
+        const profitClass = company.profit >= 0 ? 'positive' : 'negative';
+        const profitSign = company.profit >= 0 ? '+' : '';
+
+        const companyItem = document.createElement('div');
+        companyItem.className = 'company-item';
+        companyItem.innerHTML = `
+            <a href="/stockdiary/${company.id}/" class="company-link">
                 <div class="company-header">
                     <div>
                         <div class="company-name">${company.name}</div>
@@ -947,10 +951,12 @@ function showSectorDetail(sectorName, type) {
                     </div>
                     ` : ''}
                 </div>
-            `;
-            companyList.appendChild(companyItem);
-        });
-    }
+            </a>
+        `;
+        companyList.appendChild(companyItem);
+    });
+}
+
     
     // Show modal
     modal.classList.add('active');
