@@ -124,8 +124,6 @@ LOCAL_APPS = [
     'users',
     'checklist',
     'tags',
-    'ads',
-    "subscriptions",  # ← ★ これを追加
     'security',
     'stockdiary',
     'analysis_template',

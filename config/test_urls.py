@@ -11,7 +11,6 @@ urlpatterns = [
     path('checklist/', include('checklist.urls')),
     path('tags/', include('tags.urls')),
     path('analysis/', include('analysis_template.urls')),
-    path('ads/', include(('ads.urls', 'ads'), namespace='ads')),
 
     # ↓ landing_pageだけ個別登録
     path('', views.landing_page, name='landing_page'),

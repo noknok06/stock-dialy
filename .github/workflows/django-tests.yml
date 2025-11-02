@@ -65,9 +65,6 @@ jobs:
         echo "SECRET_KEY = 'test-secret-key'" >> config/test_settings.py
         echo "ALLOWED_HOSTS = ['*']" >> config/test_settings.py
         echo "" >> config/test_settings.py
-        echo "# ✅ subscriptions, ads を除外" >> config/test_settings.py
-        echo "INSTALLED_APPS = [a for a in INSTALLED_APPS if a not in ['subscriptions', 'ads']]" >> config/test_settings.py
-        echo "" >> config/test_settings.py
         echo "# ✅ SQLite使用" >> config/test_settings.py
         echo "DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'test_db.sqlite3'}}" >> config/test_settings.py
         echo "" >> config/test_settings.py
