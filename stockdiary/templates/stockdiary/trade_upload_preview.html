@@ -14,7 +14,6 @@
   }
   
   .preview-card {
-    background: white;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     padding: 2rem;
@@ -32,7 +31,6 @@
   }
   
   .stat-card {
-    background-color: #f8f9fa;
     padding: 1rem;
     border-radius: 8px;
     text-align: center;
@@ -67,19 +65,15 @@
   }
   
   .preview-table th {
-    background-color: #f8f9fa;
+
     font-weight: 600;
     position: sticky;
     top: 0;
   }
-  
-  .preview-table tbody tr:hover {
-    background-color: #f8f9fa;
-  }
-  
+
   /* ✅ 合算行のハイライト */
   .preview-table tbody tr.merged-row {
-    background-color: #fff3cd;
+    background-color: #7da7a2;
   }
   
   .preview-table tbody tr.merged-row:hover {
@@ -115,7 +109,6 @@
   
   /* ✅ 注意事項ボックスを追加 */
   .alert-merge-info {
-    background-color: #fff3cd;
     border-left: 4px solid #ffc107;
     padding: 1rem;
     border-radius: 4px;
@@ -145,6 +138,29 @@
     .action-buttons a {
       width: 100%;
     }
+  }
+  .pagination-container {
+    margin-top: 1.5rem;
+    text-align: center;
+  }
+
+  .pagination button {
+    margin: 0 3px;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid #ccc;
+    background: #fff;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+
+  .pagination button.active {
+    background: var(--primary-color, #007bff);
+    color: #fff;
+    border-color: var(--primary-color, #007bff);
+  }
+
+  .pagination button:hover {
+    background: #f0f0f0;
   }
 </style>
 {% endblock %}
@@ -247,4 +263,64 @@
     </form>
   </div>
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const rows = document.querySelectorAll(".preview-table tbody tr");
+  const rowsPerPage = 50; // 1ページあたり表示件数
+  const totalRows = rows.length;
+  const totalPages = Math.ceil(totalRows / rowsPerPage);
+  const paginationContainer = document.createElement("div");
+  paginationContainer.classList.add("pagination-container");
+
+  function showPage(page) {
+    // 全行非表示
+    rows.forEach(row => row.style.display = "none");
+
+    // 表示範囲を計算
+    const start = (page - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+
+    // 対象行を表示
+    rows.forEach((row, i) => {
+      if (i >= start && i < end) {
+        row.style.display = "";
+      }
+    });
+
+    // ページリンク更新
+    document.querySelectorAll(".pagination-container button").forEach(btn => {
+      btn.classList.remove("active");
+    });
+    const activeBtn = document.querySelector(`.pagination-container button[data-page="${page}"]`);
+    if (activeBtn) activeBtn.classList.add("active");
+  }
+
+  // ページボタン生成
+  const nav = document.createElement("nav");
+  const ul = document.createElement("ul");
+  ul.classList.add("pagination", "justify-content-center");
+
+  for (let i = 1; i <= totalPages; i++) {
+    const li = document.createElement("li");
+    li.classList.add("page-item");
+    const btn = document.createElement("button");
+    btn.classList.add("page-link");
+    btn.textContent = i;
+    btn.dataset.page = i;
+    btn.addEventListener("click", () => showPage(i));
+    li.appendChild(btn);
+    ul.appendChild(li);
+  }
+
+  nav.appendChild(ul);
+  paginationContainer.appendChild(nav);
+
+  // テーブルの下に追加
+  const tableContainer = document.querySelector(".preview-table-container");
+  tableContainer.after(paginationContainer);
+
+  // 初期表示
+  showPage(1);
+});
+</script>
 {% endblock %}

@@ -4,8 +4,6 @@
 {% block title %}取引履歴アップロード | カブログ{% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="{% static 'css/common.css' %}">
-<link rel="stylesheet" href="{% static 'css/diary-theme.css' %}">
 <style>
   .upload-container {
     max-width: 800px;
@@ -13,7 +11,6 @@
   }
   
   .upload-card {
-    background: white;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     padding: 2rem;
@@ -30,7 +27,6 @@
   }
   
   .upload-instructions {
-    background-color: #f8f9fa;
     border-left: 4px solid var(--info-color);
     padding: 1rem;
     border-radius: 4px;
@@ -62,7 +58,6 @@
     text-align: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    background-color: #f8f9fa;
   }
   
   .custom-file-upload:hover {
@@ -84,7 +79,6 @@
   .selected-file {
     margin-top: 1rem;
     padding: 0.75rem;
-    background-color: #e7f3ff;
     border-radius: 6px;
     display: none;
   }
@@ -94,7 +88,6 @@
   }
   
   .warning-box {
-    background-color: #fff3cd;
     border-left: 4px solid #ffc107;
     padding: 1rem;
     border-radius: 4px;
@@ -224,7 +217,7 @@
         <div class="selected-file" id="selectedFile">
           <i class="bi bi-file-earmark-check text-success"></i>
           <span id="fileName"></span>
-          <button type="button" class="btn btn-sm btn-outline-danger float-end" onclick="clearFile()">
+          <button type="button" class="btn btn-sm btn-danger float-end" onclick="clearFile()">
             <i class="bi bi-x"></i> 削除
           </button>
         </div>

@@ -9,31 +9,6 @@
 <link rel="stylesheet" href="{% static 'css/report.css' %}">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
 <style>
-  /* 新しいUIスタイル - モダン化バージョン */
-  :root {
-    --primary: #2563eb;
-    --primary-light: #dbeafe;
-    --primary-dark: #1e40af;
-    --success: #10b981;
-    --success-light: #d1fae5;
-    --success-dark: #065f46;
-    --danger: #ef4444;
-    --danger-light: #fee2e2;
-    --danger-dark: #b91c1c;
-    --warning: #f59e0b;
-    --warning-light: #fef3c7;
-    --warning-dark: #92400e;
-    --gray-50: #f9fafb;
-    --gray-100: #f3f4f6;
-    --gray-200: #e5e7eb;
-    --gray-300: #d1d5db;
-    --gray-400: #9ca3af;
-    --gray-500: #6b7280;
-    --gray-600: #4b5563;
-    --gray-700: #374151;
-    --gray-800: #1f2937;
-    --gray-900: #111827;
-  }
   
   body {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -46,7 +21,7 @@
     position: sticky;
     top: 0;
     z-index: 50;
-    background-color: white;
+    
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
     border-radius: 0.75rem;
     margin-bottom: 1.5rem;
@@ -89,7 +64,7 @@
   
   /* カード設計 */
   .ui-card {
-    background-color: white;
+    
     border-radius: 0.75rem;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
     margin-bottom: 1.5rem;
@@ -103,9 +78,8 @@
   
   .ui-card-header {
     padding: 1.25rem;
-    background-color: white;
+    
     font-weight: 600;
-    color: var(--gray-800);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -120,7 +94,7 @@
   /* タブナビゲーション */
   .tab-navigation {
     display: flex;
-    background-color: white;
+    
     position: relative;
   }
   
@@ -258,7 +232,7 @@
   }
   
   .metric-card {
-    background-color: white;
+    
     padding: 1.25rem;
     border-radius: 0.75rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
@@ -294,17 +268,7 @@
     padding: 0.25rem 0.5rem;
     border-radius: 0.375rem;
   }
-  
-  .change-indicator.positive {
-    color: var(--success);
-    background-color: var(--success-light);
-  }
-  
-  .change-indicator.negative {
-    color: var(--danger);
-    background-color: var(--danger-light);
-  }
-  
+    
   /* セグメントグリッド */
   .segments-grid {
     display: grid;
@@ -337,7 +301,7 @@
   }
   
   .segment-card.positive {
-    background-color: white;
+    
   }
   
   .segment-card.positive::before {
@@ -345,7 +309,7 @@
   }
   
   .segment-card.negative {
-    background-color: white;
+    
   }
   
   .segment-card.negative::before {
@@ -445,11 +409,6 @@
   .ui-table th {
     font-weight: 600;
     color: var(--gray-700);
-    background-color: var(--gray-50);
-  }
-  
-  .ui-table tr:hover td {
-    background-color: var(--gray-50);
   }
   
   .ui-table tr:last-child td {
@@ -499,7 +458,6 @@
   
   /* リッチな効果のための追加スタイル */
   .highlight-box {
-    background-color: var(--gray-50);
     border-radius: 0.75rem;
     padding: 1.25rem;
     margin: 1.5rem 0;
@@ -514,7 +472,7 @@
     left: 0;
     width: 0.25rem;
     height: 100%;
-    background-color: var(--primary);
+    background-color: var(--primary-color);
   }
   
   .investment-badge {
@@ -526,7 +484,7 @@
   }
   
   .investment-buy {
-    background-color: var(--success-light);
+    background-color: var(--primary-color);
     color: var(--success-dark);
   }
   
@@ -563,14 +521,9 @@
   }
   
   .data-table th {
-    background-color: var(--gray-50);
     font-weight: 600;
     color: var(--gray-700);
     text-align: left;
-  }
-  
-  .data-table tbody tr:hover {
-    background-color: var(--gray-50);
   }
   
   .data-table tbody tr:last-child td {
@@ -579,7 +532,7 @@
   
   /* 評価パネル */
   .evaluation-panel {
-    background-color: white;
+    
     border-radius: 0.75rem;
     padding: 1.25rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
@@ -1116,7 +1069,7 @@
               </div>
             </div>
             <div id="nextfiscal-collapse" class="ui-card-body collapse show">
-              <div class="p-4 rounded" style="background-color: var(--gray-50);">
+              <div class="p-4 rounded">
                 <div class="row">
                   <div class="col-md-6 mb-3">
                     <h3 class="text-sm text-muted mb-1">当期純利益</h3>
@@ -1162,59 +1115,7 @@
           </div>
         </div>
       </div>
-      <div class="card shadow-sm mt-4 rounded-3">
-        <div class="card-body p-3 p-md-4">
-          <!-- モバイルでは見出しとボタンを上部に配置 -->
-          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
-            <h5 class="mb-2 mb-md-0">
-              <i class="bi bi-journal-bookmark text-primary me-2"></i>
-              投資の記録と分析をもっと簡単に
-            </h5>
-            
-            <!-- モバイルでは幅いっぱいのボタン、PCでは通常サイズ -->
-            <div class="d-grid d-md-block">
-              <a href="{% url 'stockdiary:home' %}" class="btn btn-primary">
-                <i class="bi bi-journal-plus me-2"></i>投資日記を始める
-              </a>
-            </div>
-          </div>
-          
-          <!-- モバイルでは簡潔なテキスト -->
-          <p class="mb-3 small">
-            取引記録、投資判断、保有中の気づきを簡単に記録。自分だけの投資ルールを作成できます。
-          </p>
-          
-          <!-- 機能バッジはグリッドレイアウトで均等配置 -->
-          <div class="row row-cols-2 g-2 mb-2">
-            <div class="col">
-              <div class="feature-badge bg-primary-soft text-primary w-100 text-center py-2 rounded">
-                <i class="bi bi-graph-up me-1"></i>パフォーマンス分析
-              </div>
-            </div>
-            <div class="col">
-              <div class="feature-badge bg-success-soft text-success w-100 text-center py-2 rounded">
-                <i class="bi bi-tags me-1"></i>カスタムタグ
-              </div>
-            </div>
-            <div class="col">
-              <div class="feature-badge bg-warning-soft text-warning w-100 text-center py-2 rounded">
-                <i class="bi bi-clipboard-check me-1"></i>分析テンプレート
-              </div>
-            </div>
-            <div class="col">
-              <div class="feature-badge bg-info-soft text-info w-100 text-center py-2 rounded">
-                <i class="bi bi-calendar-week me-1"></i>継続記録
-              </div>
-            </div>
-          </div>
-          
-          <!-- 補足テキスト -->
-          <p class="small text-muted text-center mt-2 mb-0">
-            無料会員登録でご利用いただけます
-          </p>
-        </div>
-      </div>
-      
+
       <style>
         /* モバイル最適化のためのスタイル */
         .feature-badge {

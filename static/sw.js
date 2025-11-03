@@ -1,29 +1,29 @@
 // static/sw.js
-const CACHE_NAME = 'kabulog-v1.0.5';  // バージョンアップ
-const STATIC_CACHE_NAME = 'kabulog-static-v1.0.5';
+const CACHE_NAME = 'kabulog-v1.0.6';  
+const STATIC_CACHE_NAME = 'kabulog-static-v1.0.6';
 
 // キャッシュするリソース
 const STATIC_ASSETS = [
   '/',
   '/stockdiary/',
-  '/static/css/common.css?v=1.0.5',
-  '/static/css/diary-theme.css?v=1.0.5',
-  '/static/css/mobile-friendly.css?v=1.0.5',
-  '/static/css/speed-dial.css?v=1.0.5',
-  '/static/css/notifications.css?v=1.0.5',
-  '/static/css/1-foundations/variables.css?v=1.0.5',
-  '/static/css/3-components/buttons.css?v=1.0.5',
-  '/static/css/3-components/header.css?v=1.0.5',
-  '/static/css/3-components/badge.css?v=1.0.5',
-  '/static/css/3-components/card.css?v=1.0.5',
-  '/static/css/3-components/table.css?v=1.0.5',
-  '/static/css/3-components/modal.css?v=1.0.5',
-  '/static/js/speed-dial.js?v=1.0.5',
-  '/static/js/common-utils.js?v=1.0.5',
-  '/static/js/toast.js?v=1.0.5',
-  '/static/js/push-notifications.js?v=1.0.5',
-  '/static/js/notification-ui.js?v=1.0.5',
-  '/static/js/image-compression.js?v=1.0.5',
+  '/static/css/common.css?v=1.0.6',
+  '/static/css/diary-theme.css?v=1.0.6',
+  '/static/css/mobile-friendly.css?v=1.0.6',
+  '/static/css/speed-dial.css?v=1.0.6',
+  '/static/css/notifications.css?v=1.0.6',
+  '/static/css/1-foundations/variables.css?v=1.0.6',
+  '/static/css/3-components/buttons.css?v=1.0.6',
+  '/static/css/3-components/header.css?v=1.0.6',
+  '/static/css/3-components/badge.css?v=1.0.6',
+  '/static/css/3-components/card.css?v=1.0.6',
+  '/static/css/3-components/table.css?v=1.0.6',
+  '/static/css/3-components/modal.css?v=1.0.6',
+  '/static/js/speed-dial.js?v=1.0.6',
+  '/static/js/common-utils.js?v=1.0.6',
+  '/static/js/toast.js?v=1.0.6',
+  '/static/js/push-notifications.js?v=1.0.6',
+  '/static/js/notification-ui.js?v=1.0.6',
+  '/static/js/image-compression.js?v=1.0.6',
   '/static/images/icon-modern.svg',
   '/static/images/icon-192.png',
   '/static/images/icon-512.png',
@@ -103,8 +103,22 @@ self.addEventListener('fetch', event => {
   // 自サイトのCSS/JSファイルは「ネットワーク優先」（常に最新を取得）
   if (url.origin === self.location.origin && 
       (request.url.includes('/static/css/') || 
-       request.url.includes('/static/js/'))) {
-    event.respondWith(networkFirstWithTimeout(request, 3000));
+      request.url.includes('/static/js/'))) {
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          // 成功したら新しいキャッシュに保存
+          if (response.ok && request.method === 'GET') {
+            const cache = caches.open(CACHE_NAME);
+            cache.then(c => c.put(request, response.clone()));
+          }
+          return response;
+        })
+        .catch(() => {
+          // ネットワークエラー時のみキャッシュから返す
+          return caches.match(request);
+        })
+    );
     return;
   }
   
