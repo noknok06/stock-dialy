@@ -1,16 +1,33 @@
 // static/sw.js
-const CACHE_NAME = 'kabulog-v1.0.3';  // バージョンアップ
-const STATIC_CACHE_NAME = 'kabulog-static-v1.0.3';
+const CACHE_NAME = 'kabulog-v1.0.4';  // バージョンアップ
+const STATIC_CACHE_NAME = 'kabulog-static-v1.0.4';
 
 // キャッシュするリソース
 const STATIC_ASSETS = [
   '/',
   '/stockdiary/',
-  '/static/css/common.css',
-  '/static/css/diary-theme.css',
-  '/static/css/mobile-friendly.css',
-  '/static/js/speed-dial.js',
+  '/static/css/common.css?v=1.0.4',
+  '/static/css/diary-theme.css?v=1.0.4',
+  '/static/css/mobile-friendly.css?v=1.0.4',
+  '/static/css/speed-dial.css?v=1.0.4',
+  '/static/css/notifications.css?v=1.0.4',
+  '/static/css/1-foundations/variables.css?v=1.0.4',
+  '/static/css/3-components/buttons.css?v=1.0.4',
+  '/static/css/3-components/header.css?v=1.0.4',
+  '/static/css/3-components/badge.css?v=1.0.4',
+  '/static/css/3-components/card.css?v=1.0.4',
+  '/static/css/3-components/table.css?v=1.0.4',
+  '/static/css/3-components/modal.css?v=1.0.4',
+  '/static/js/speed-dial.js?v=1.0.4',
+  '/static/js/common-utils.js?v=1.0.4',
+  '/static/js/toast.js?v=1.0.4',
+  '/static/js/push-notifications.js?v=1.0.4',
+  '/static/js/notification-ui.js?v=1.0.4',
+  '/static/js/image-compression.js?v=1.0.4',
   '/static/images/icon-modern.svg',
+  '/static/images/icon-192.png',
+  '/static/images/icon-512.png',
+  '/static/images/badge-72.png',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
   'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css'
 ];
@@ -20,13 +37,17 @@ const OFFLINE_FALLBACK = '/offline/';
 
 // インストール時の処理
 self.addEventListener('install', event => {
-  // console.log('Service Worker: Installing...');
+  console.log('Service Worker: Installing version', CACHE_NAME);
   
   event.waitUntil(
     caches.open(STATIC_CACHE_NAME)
       .then(cache => {
-        // console.log('Service Worker: Caching static assets');
-        return cache.addAll(STATIC_ASSETS);
+        console.log('Service Worker: Caching static assets');
+        // CDNリソースと画像のみをプリキャッシュ
+        const cdnAndImages = STATIC_ASSETS.filter(url => 
+          url.startsWith('https://') || url.includes('/images/')
+        );
+        return cache.addAll(cdnAndImages);
       })
       .catch(err => {
         console.error('Service Worker: Cache failed:', err);
@@ -37,7 +58,7 @@ self.addEventListener('install', event => {
 
 // アクティベート時の処理
 self.addEventListener('activate', event => {
-  // console.log('Service Worker: Activating...');
+  console.log('Service Worker: Activating version', CACHE_NAME);
   
   event.waitUntil(
     caches.keys()
@@ -45,13 +66,16 @@ self.addEventListener('activate', event => {
         return Promise.all(
           cacheNames.map(cacheName => {
             if (cacheName !== CACHE_NAME && cacheName !== STATIC_CACHE_NAME) {
-              // console.log('Service Worker: Deleting old cache:', cacheName);
+              console.log('Service Worker: Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
           })
         );
       })
       .then(() => self.clients.claim())
+      .then(() => {
+        console.log('Service Worker: Activated and claimed clients');
+      })
   );
 });
 
@@ -60,45 +84,93 @@ self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
   
-  // 🔧 POSTリクエストはキャッシュしない（そのまま通す）
+  // POSTリクエストはキャッシュしない（そのまま通す）
   if (request.method !== 'GET') {
     event.respondWith(fetch(request));
     return;
   }
   
   // HTMLリクエストの場合
-  if (request.headers.get('Accept').includes('text/html')) {
+  if (request.headers.get('Accept') && request.headers.get('Accept').includes('text/html')) {
     event.respondWith(
       networkFirstStrategy(request)
-        .catch(() => caches.match(OFFLINE_FALLBACK))
+        .catch(() => caches.match(OFFLINE_FALLBACK) || 
+          new Response('オフラインです', { status: 503 }))
     );
     return;
   }
   
-  // 静的アセット（CSS, JS, 画像）の場合
-  if (request.url.includes('/static/') || 
-      request.url.includes('bootstrap') || 
-      request.url.includes('bootstrap-icons')) {
+  // 自サイトのCSS/JSファイルは「ネットワーク優先」（常に最新を取得）
+  if (url.origin === self.location.origin && 
+      (request.url.includes('/static/css/') || 
+       request.url.includes('/static/js/'))) {
+    event.respondWith(networkFirstWithTimeout(request, 3000));
+    return;
+  }
+  
+  // CDNの静的アセット（Bootstrap等）は「キャッシュ優先」
+  if (request.url.includes('bootstrap') || 
+      request.url.includes('bootstrap-icons') ||
+      request.url.includes('cdn.jsdelivr.net')) {
     event.respondWith(cacheFirstStrategy(request));
     return;
   }
   
-  // API リクエストの場合（GETのみ）
+  // 画像ファイルは「キャッシュ優先」
+  if (request.url.includes('/static/images/') || 
+      request.url.includes('/media/')) {
+    event.respondWith(cacheFirstStrategy(request));
+    return;
+  }
+  
+  // APIリクエストの場合（ネットワーク優先）
   if (request.url.includes('/api/') || request.url.includes('/stockdiary/')) {
     event.respondWith(networkFirstStrategy(request));
     return;
   }
   
   // デフォルト：ネットワーク優先
-  event.respondWith(fetch(request));
+  event.respondWith(
+    fetch(request).catch(() => caches.match(request))
+  );
 });
 
-// ネットワーク優先戦略（GETリクエストのみキャッシュ）
+// ネットワーク優先戦略（タイムアウト付き）
+async function networkFirstWithTimeout(request, timeout = 3000) {
+  try {
+    // タイムアウト設定
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Network timeout')), timeout)
+    );
+    
+    const networkResponse = await Promise.race([
+      fetch(request),
+      timeoutPromise
+    ]);
+    
+    // 成功したGETリクエストのみキャッシュ
+    if (networkResponse.ok && request.method === 'GET') {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, networkResponse.clone());
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    console.log('Network failed, trying cache:', request.url);
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    throw error;
+  }
+}
+
+// ネットワーク優先戦略（通常版）
 async function networkFirstStrategy(request) {
   try {
     const networkResponse = await fetch(request);
     
-    // 🔧 成功したGETリクエストのみキャッシュ
+    // 成功したGETリクエストのみキャッシュ
     if (networkResponse.ok && request.method === 'GET') {
       const cache = await caches.open(CACHE_NAME);
       cache.put(request, networkResponse.clone());
@@ -114,11 +186,22 @@ async function networkFirstStrategy(request) {
   }
 }
 
-// キャッシュ優先戦略
+// キャッシュ優先戦略（バックグラウンド更新付き）
 async function cacheFirstStrategy(request) {
   const cachedResponse = await caches.match(request);
   
   if (cachedResponse) {
+    // バックグラウンドでキャッシュを更新
+    fetch(request).then(response => {
+      if (response.ok) {
+        caches.open(STATIC_CACHE_NAME).then(cache => {
+          cache.put(request, response);
+        });
+      }
+    }).catch(() => {
+      // ネットワークエラーは無視
+    });
+    
     return cachedResponse;
   }
   
@@ -138,7 +221,7 @@ async function cacheFirstStrategy(request) {
 
 // プッシュ通知受信
 self.addEventListener('push', event => {
-  // console.log('Push notification received');
+  console.log('Push notification received');
   
   const data = event.data ? event.data.json() : {};
   
@@ -170,7 +253,7 @@ self.addEventListener('push', event => {
 
 // 通知クリック時
 self.addEventListener('notificationclick', event => {
-  // console.log('Notification clicked');
+  console.log('Notification clicked');
   event.notification.close();
   
   const urlToOpen = event.notification.data.url || '/';
@@ -225,3 +308,26 @@ async function syncNotifications() {
     console.error('Sync failed:', error);
   }
 }
+
+// メッセージ受信（クライアントからの指示）
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  
+  if (event.data && event.data.type === 'CLEAR_CACHE') {
+    event.waitUntil(
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => caches.delete(cacheName))
+        );
+      }).then(() => {
+        return self.registration.unregister();
+      }).then(() => {
+        return self.clients.matchAll();
+      }).then(clients => {
+        clients.forEach(client => client.navigate(client.url));
+      })
+    );
+  }
+});
