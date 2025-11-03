@@ -33,6 +33,9 @@
     <link rel="stylesheet" href="{% static 'css/3-components/buttons.css' %}">
     <link rel="stylesheet" href="{% static 'css/3-components/header.css' %}">
     <link rel="stylesheet" href="{% static 'css/3-components/badge.css' %}">
+    <link rel="stylesheet" href="{% static 'css/3-components/card.css' %}">
+    <link rel="stylesheet" href="{% static 'css/3-components/table.css' %}">
+    <link rel="stylesheet" href="{% static 'css/3-components/modal.css' %}">
     <link rel="stylesheet" href="{% static 'css/common.css' %}">
     <link rel="stylesheet" href="{% static 'css/diary-theme.css' %}">
     <link rel="stylesheet" href="{% static 'css/mobile-friendly.css' %}">
@@ -85,6 +88,32 @@
       }
       
       .nav-btn i {
+        font-size: 1.25rem;
+      }
+
+      /* ダークモード切り替えボタン */
+      .theme-toggle-btn {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background-color: rgba(79, 70, 229, 0.5);
+        color: white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+      }
+
+      .theme-toggle-btn:hover {
+        background-color: rgba(79, 70, 229, 0.85);
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      .theme-toggle-btn i {
         font-size: 1.25rem;
       }
       
@@ -394,7 +423,7 @@
       .footer-logo {
         font-size: 1.25rem;
         font-weight: 600;
-        color: var(--dark-text);
+        color: var(--text-primary);
         text-decoration: none;
         display: inline-flex;
         align-items: center;
@@ -500,6 +529,212 @@
           max-height: 120px !important;
         }
       }
+
+      /* ========== Dark Mode Support ========== */
+
+      /* ヘッダー */
+      .dark-mode .pc-only-header .navbar,
+      [data-theme="dark"] .pc-only-header .navbar {
+        background-color: var(--dm-card) !important;
+        border-bottom-color: var(--dm-border);
+      }
+
+      .dark-mode .navbar-brand,
+      [data-theme="dark"] .navbar-brand {
+        color: var(--dm-foreground) !important;
+      }
+
+      .dark-mode .nav-link,
+      [data-theme="dark"] .nav-link {
+        color: var(--dm-muted-foreground) !important;
+      }
+
+      .dark-mode .nav-link:hover,
+      [data-theme="dark"] .nav-link:hover {
+        color: var(--dm-primary) !important;
+      }
+
+      .dark-mode .dropdown-menu,
+      [data-theme="dark"] .dropdown-menu {
+        background-color: var(--dm-card);
+        border-color: var(--dm-border);
+      }
+
+      .dark-mode .dropdown-item,
+      [data-theme="dark"] .dropdown-item {
+        color: var(--dm-foreground);
+      }
+
+      .dark-mode .dropdown-item:hover,
+      [data-theme="dark"] .dropdown-item:hover {
+        background-color: rgba(71, 85, 105, 0.3);
+        color: var(--dm-primary);
+      }
+
+      .dark-mode .dropdown-divider,
+      [data-theme="dark"] .dropdown-divider {
+        border-top-color: var(--dm-border);
+      }
+
+      .dark-mode .avatar-circle,
+      [data-theme="dark"] .avatar-circle {
+        background-color: rgba(59, 130, 246, 0.2) !important;
+      }
+
+      .dark-mode .avatar-circle i,
+      [data-theme="dark"] .avatar-circle i {
+        color: var(--dm-primary) !important;
+      }
+
+      /* フッター */
+      .dark-mode .app-footer,
+      [data-theme="dark"] .app-footer {
+        background-color: var(--dm-card);
+        border-top-color: var(--dm-border);
+      }
+
+      .dark-mode .footer-logo,
+      [data-theme="dark"] .footer-logo {
+        color: var(--dm-foreground);
+      }
+
+      .dark-mode .footer-logo:hover,
+      [data-theme="dark"] .footer-logo:hover {
+        color: var(--dm-primary);
+      }
+
+      .dark-mode .footer-description,
+      .dark-mode .text-muted,
+      [data-theme="dark"] .footer-description,
+      [data-theme="dark"] .text-muted {
+        color: var(--dm-muted-foreground) !important;
+      }
+
+      .dark-mode .footer-divider,
+      [data-theme="dark"] .footer-divider {
+        background-color: var(--dm-border);
+      }
+
+      .dark-mode .footer-links a,
+      [data-theme="dark"] .footer-links a {
+        color: var(--dm-muted-foreground) !important;
+      }
+
+      .dark-mode .footer-links a:hover,
+      [data-theme="dark"] .footer-links a:hover {
+        color: var(--dm-primary) !important;
+      }
+
+      .dark-mode .social-link,
+      [data-theme="dark"] .social-link {
+        background-color: rgba(59, 130, 246, 0.2);
+        color: var(--dm-primary);
+      }
+
+      .dark-mode .social-link:hover,
+      [data-theme="dark"] .social-link:hover {
+        background-color: var(--dm-primary);
+        color: white;
+      }
+
+      /* コンテナ */
+      .dark-mode .container,
+      [data-theme="dark"] .container {
+        color: var(--dm-foreground);
+      }
+
+      /* アラート */
+      .dark-mode .alert,
+      [data-theme="dark"] .alert {
+        background-color: rgba(71, 85, 105, 0.3);
+        border-color: var(--dm-border);
+        color: var(--dm-foreground);
+      }
+
+      .dark-mode .alert-info,
+      [data-theme="dark"] .alert-info {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
+        border-color: rgba(59, 130, 246, 0.3);
+        color: var(--dm-info);
+      }
+
+      .dark-mode .alert-success,
+      [data-theme="dark"] .alert-success {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.1));
+        border-color: rgba(16, 185, 129, 0.3);
+        color: var(--dm-success);
+      }
+
+      .dark-mode .alert-warning,
+      [data-theme="dark"] .alert-warning {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.1));
+        border-color: rgba(245, 158, 11, 0.3);
+        color: var(--dm-accent);
+      }
+
+      .dark-mode .alert-danger,
+      [data-theme="dark"] .alert-danger {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1));
+        border-color: rgba(239, 68, 68, 0.3);
+        color: var(--dm-destructive);
+      }
+
+      /* ナビゲーションボタン（浮動） */
+      .dark-mode .nav-btn,
+      [data-theme="dark"] .nav-btn {
+        background-color: rgba(59, 130, 246, 0.6);
+      }
+
+      .dark-mode .nav-btn:hover,
+      [data-theme="dark"] .nav-btn:hover {
+        background-color: rgba(59, 130, 246, 0.9);
+      }
+
+      .dark-mode .theme-toggle-btn,
+      [data-theme="dark"] .theme-toggle-btn {
+        background-color: rgba(59, 130, 246, 0.6);
+      }
+
+      .dark-mode .theme-toggle-btn:hover,
+      [data-theme="dark"] .theme-toggle-btn:hover {
+        background-color: rgba(59, 130, 246, 0.9);
+      }
+
+      /* 画像関連 */
+      .dark-mode .image-upload-area,
+      [data-theme="dark"] .image-upload-area {
+        border-color: var(--dm-border);
+        background-color: rgba(71, 85, 105, 0.2);
+      }
+
+      .dark-mode .image-upload-area:hover,
+      [data-theme="dark"] .image-upload-area:hover {
+        border-color: var(--dm-primary);
+        background-color: rgba(59, 130, 246, 0.1);
+      }
+
+      /* 通知ベル */
+      .dark-mode .notification-bell-container .btn-link,
+      [data-theme="dark"] .notification-bell-container .btn-link {
+        color: var(--dm-foreground) !important;
+      }
+
+      .dark-mode .notification-bell-container .dropdown-menu,
+      [data-theme="dark"] .notification-bell-container .dropdown-menu {
+        background-color: var(--dm-card);
+        border-color: var(--dm-border);
+      }
+
+      .dark-mode .notification-bell-container h6,
+      [data-theme="dark"] .notification-bell-container h6 {
+        color: var(--dm-foreground);
+      }
+
+      /* PWAインストールプロンプト */
+      .dark-mode #pwa-install-container,
+      [data-theme="dark"] #pwa-install-container {
+        background-color: var(--dm-primary) !important;
+      }
     </style>
     
     <!-- PWA対応 -->
@@ -576,31 +811,42 @@
                   
                     <!-- ユーザーメニュー -->
                     {% if user.is_authenticated %}
-                    <div class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <div class="avatar-circle bg-primary bg-opacity-10 me-2">
-                                <i class="bi bi-person text-primary"></i>
-                            </div>
-                            <span>{{ user.username }}</span>
-                            {% if is_pro %}
-                            <span class="badge bg-primary ms-1">PRO</span>
-                            {% elif is_premium %}
-                            <span class="badge bg-success ms-1">BASIC</span>
-                            {% endif %}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            <li><a class="dropdown-item" href="{% url 'users:profile' %}"><i class="bi bi-person me-2"></i>プロフィール</a></li>
-                            <li><a class="dropdown-item" href="{% url 'ads:ad_preferences' %}"><i class="bi bi-gear me-2"></i>広告設定</a></li>
-                            <li><a class="dropdown-item" href="{% url 'ads:privacy_policy' %}"><i class="bi bi-shield-lock me-2"></i>プライバシーポリシー</a></li>
-                            <li><a class="dropdown-item" href="{% url 'ads:terms' %}"><i class="bi bi-file-text me-2"></i>利用規約・免責事項</a></li>
-                            <li><a class="dropdown-item" href="{% url 'ads:faq' %}"><i class="bi bi-question-circle me-2"></i>よくある質問</a></li>
-                            <li><a class="dropdown-item" href="{% url 'ads:guide' %}"><i class="bi bi-book me-2"></i>ご利用ガイド</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="{% url 'users:logout' %}"><i class="bi bi-box-arrow-right me-2"></i>ログアウト</a></li>
-                        </ul>
+                    <div class="d-flex align-items-center gap-2">
+                        <!-- ダークモード切り替えボタン -->
+                        <button class="theme-toggle-btn" id="theme-toggle" aria-label="ダークモード切り替え" title="ダークモード切り替え">
+                            <i class="bi bi-moon-stars"></i>
+                        </button>
+
+                        <div class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <div class="avatar-circle bg-primary bg-opacity-10 me-2">
+                                    <i class="bi bi-person text-primary"></i>
+                                </div>
+                                <span>{{ user.username }}</span>
+                                {% if is_pro %}
+                                <span class="badge bg-primary ms-1">PRO</span>
+                                {% elif is_premium %}
+                                <span class="badge bg-success ms-1">BASIC</span>
+                                {% endif %}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                <li><a class="dropdown-item" href="{% url 'users:profile' %}"><i class="bi bi-person me-2"></i>プロフィール</a></li>
+                                <li><a class="dropdown-item" href="{% url 'ads:ad_preferences' %}"><i class="bi bi-gear me-2"></i>広告設定</a></li>
+                                <li><a class="dropdown-item" href="{% url 'ads:privacy_policy' %}"><i class="bi bi-shield-lock me-2"></i>プライバシーポリシー</a></li>
+                                <li><a class="dropdown-item" href="{% url 'ads:terms' %}"><i class="bi bi-file-text me-2"></i>利用規約・免責事項</a></li>
+                                <li><a class="dropdown-item" href="{% url 'ads:faq' %}"><i class="bi bi-question-circle me-2"></i>よくある質問</a></li>
+                                <li><a class="dropdown-item" href="{% url 'ads:guide' %}"><i class="bi bi-book me-2"></i>ご利用ガイド</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'users:logout' %}"><i class="bi bi-box-arrow-right me-2"></i>ログアウト</a></li>
+                            </ul>
+                        </div>
                     </div>
                     {% else %}
-                    <div class="d-flex">
+                    <div class="d-flex align-items-center gap-2">
+                        <!-- ダークモード切り替えボタン -->
+                        <button class="theme-toggle-btn" id="theme-toggle-guest" aria-label="ダークモード切り替え" title="ダークモード切り替え">
+                            <i class="bi bi-moon-stars"></i>
+                        </button>
                         <a href="{% url 'users:login' %}" class="btn btn-outline-primary me-2">ログイン</a>
                         <a href="{% url 'users:signup' %}" class="btn btn-primary">新規登録</a>
                     </div>
@@ -874,6 +1120,86 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   
   {% block vendor_js %}{% endblock %}
+  
+  <!-- ダークモード切り替えスクリプト -->
+  <script>
+    // ダークモード切り替え機能
+    (function() {
+      const THEME_KEY = 'theme-preference';
+      
+      // 初期テーマの設定
+      function getInitialTheme() {
+        const savedTheme = localStorage.getItem(THEME_KEY);
+        if (savedTheme) {
+          return savedTheme;
+        }
+        // システム設定を確認
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          return 'dark';
+        }
+        return 'light';
+      }
+      
+      // テーマを適用
+      function applyTheme(theme) {
+        if (theme === 'dark') {
+          document.body.classList.add('dark-mode');
+          document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          document.body.classList.remove('dark-mode');
+          document.documentElement.removeAttribute('data-theme');
+        }
+        localStorage.setItem(THEME_KEY, theme);
+        updateToggleButton(theme);
+      }
+      
+      // トグルボタンのアイコンを更新
+      function updateToggleButton(theme) {
+        const buttons = document.querySelectorAll('#theme-toggle, #theme-toggle-guest');
+        buttons.forEach(button => {
+          if (button) {
+            const icon = button.querySelector('i');
+            if (theme === 'dark') {
+              icon.className = 'bi bi-sun-fill';
+            } else {
+              icon.className = 'bi bi-moon-stars';
+            }
+          }
+        });
+      }
+      
+      // テーマを切り替え
+      function toggleTheme() {
+        const currentTheme = localStorage.getItem(THEME_KEY) || 'light';
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        applyTheme(newTheme);
+      }
+      
+      // 初期化
+      const initialTheme = getInitialTheme();
+      applyTheme(initialTheme);
+      
+      // DOMContentLoaded後にイベントリスナーを設定
+      document.addEventListener('DOMContentLoaded', function() {
+        const toggleButtons = document.querySelectorAll('#theme-toggle, #theme-toggle-guest');
+        toggleButtons.forEach(button => {
+          if (button) {
+            button.addEventListener('click', toggleTheme);
+          }
+        });
+      });
+      
+      // システム設定の変更を監視
+      if (window.matchMedia) {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+          if (!localStorage.getItem(THEME_KEY)) {
+            applyTheme(e.matches ? 'dark' : 'light');
+          }
+        });
+      }
+    })();
+  </script>
+  
   <!-- メニュー制御用スクリプト -->
   {% if user.is_authenticated %}
   <script>

@@ -3,40 +3,138 @@
 
 {% block title %}{{ template.name }} | カブログ{% endblock %}
 
+{% block head %}
+{{ block.super }}
+<style>
+  /* ========== Dark Mode Support ========== */
+  .dark-mode .table-striped tbody tr:nth-of-type(odd),
+  [data-theme="dark"] .table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(71, 85, 105, 0.2);
+  }
+
+  .dark-mode .badge.bg-primary,
+  [data-theme="dark"] .badge.bg-primary {
+    background: linear-gradient(135deg, var(--dm-primary), #2563eb) !important;
+  }
+
+  .dark-mode .badge.bg-success,
+  [data-theme="dark"] .badge.bg-success {
+    background: linear-gradient(135deg, var(--dm-success), #059669) !important;
+  }
+
+  .dark-mode .badge.bg-warning,
+  [data-theme="dark"] .badge.bg-warning {
+    background: linear-gradient(135deg, var(--dm-accent), #d97706) !important;
+  }
+
+  .dark-mode .badge.bg-danger,
+  [data-theme="dark"] .badge.bg-danger {
+    background: linear-gradient(135deg, var(--dm-destructive), #dc2626) !important;
+  }
+
+  .dark-mode .badge.bg-info,
+  [data-theme="dark"] .badge.bg-info {
+    background: linear-gradient(135deg, var(--dm-info), #2563eb) !important;
+  }
+
+  .dark-mode .alert-info,
+  [data-theme="dark"] .alert-info {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: var(--dm-info);
+  }
+
+  .dark-mode .card-footer,
+  [data-theme="dark"] .card-footer {
+    background-color: rgba(71, 85, 105, 0.3);
+    border-top-color: var(--dm-border);
+    color: var(--dm-muted-foreground);
+  }
+
+  /* テーブル内のリストスタイル */
+  .dark-mode .table ul,
+  [data-theme="dark"] .table ul {
+    color: var(--dm-foreground);
+  }
+
+  /* カードヘッダー内の見出し */
+  .dark-mode .card-header h3,
+  [data-theme="dark"] .card-header h3 {
+    color: var(--dm-foreground);
+  }
+
+  /* カードボディ内の見出し */
+  .dark-mode .card-body h5,
+  [data-theme="dark"] .card-body h5 {
+    color: var(--dm-foreground);
+  }
+
+  /* カードボディ内のテキスト */
+  .dark-mode .card-body p,
+  [data-theme="dark"] .card-body p {
+    color: var(--dm-foreground);
+  }
+
+  /* ボタングループのギャップ調整 */
+  .d-flex.gap-2 {
+    gap: 0.5rem;
+  }
+
+  /* レスポンシブ対応 */
+  @media (max-width: 768px) {
+    .card-header .d-flex {
+      width: 100%;
+    }
+
+    .card-header .btn {
+      flex: 1;
+      min-width: auto;
+    }
+
+    .card-header h3 {
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="card">
-  <div class="card-header d-flex flex-wrap justify-content-between align-items-center">
-    <h3 class="mb-0">{{ template.name }}</h3>
-    
-    <!-- レスポンシブ対応のボタングループ（右寄せ） -->
-    <div class="d-flex flex-wrap gap-2 justify-content-end">
-      <button id="clone-btn" class="btn btn-info" title="このテンプレートを複製">
-        <i class="bi bi-files"></i> <span class="d-none d-md-inline">複製</span>
-      </button>
-      <a href="{% url 'analysis_template:update' template.id %}" class="btn btn-warning">
-        <i class="bi bi-pencil"></i> <span class="d-none d-md-inline">編集</span>
-      </a>
-      <a href="{% url 'analysis_template:report' template.id %}" class="btn btn-info">
-        <i class="bi bi-bar-chart"></i> <span class="d-none d-md-inline">レポート</span>
-      </a>
-      <a href="{% url 'analysis_template:delete' template.id %}" class="btn btn-danger">
-        <i class="bi bi-trash"></i> <span class="d-none d-md-inline">削除</span>
-      </a>
-      <a href="{% url 'analysis_template:list' %}" class="btn btn-secondary">
-        <i class="bi bi-arrow-left"></i> <span class="d-none d-md-inline">戻る</span>
-      </a>
+<body class="{% if request.COOKIES.theme == 'dark' %}dark-mode{% endif %}">
+  <div class="card">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center">
+      <h3 class="mb-0">{{ template.name }}</h3>
+
+      <!-- レスポンシブ対応のボタングループ（右寄せ） -->
+      <div class="d-flex flex-wrap gap-2 justify-content-end">
+        <button id="clone-btn" class="btn btn-info" title="このテンプレートを複製">
+          <i class="bi bi-files"></i> <span class="d-none d-md-inline">複製</span>
+        </button>
+        <a href="{% url 'analysis_template:update' template.id %}" class="btn btn-warning">
+          <i class="bi bi-pencil"></i> <span class="d-none d-md-inline">編集</span>
+        </a>
+        <a href="{% url 'analysis_template:report' template.id %}" class="btn btn-info">
+          <i class="bi bi-bar-chart"></i> <span class="d-none d-md-inline">レポート</span>
+        </a>
+        <a href="{% url 'analysis_template:delete' template.id %}" class="btn btn-danger">
+          <i class="bi bi-trash"></i> <span class="d-none d-md-inline">削除</span>
+        </a>
+        <a href="{% url 'analysis_template:list' %}" class="btn btn-secondary">
+          <i class="bi bi-arrow-left"></i> <span class="d-none d-md-inline">戻る</span>
+        </a>
+      </div>
     </div>
-  </div>
-  <div class="card-body">
-    {% if template.description %}
+    
+    <div class="card-body">
+      {% if template.description %}
       <div class="mb-4">
         <h5>説明</h5>
         <p>{{ template.description }}</p>
       </div>
-    {% endif %}
-    
-    <h5>分析項目</h5>
-    {% if template.items.all %}
+      {% endif %}
+
+      <h5>分析項目</h5>
+      {% if template.items.all %}
       <div class="table-responsive">
         <table class="table table-striped">
           <thead>
@@ -50,47 +148,49 @@
           </thead>
           <tbody>
             {% for item in template.items.all %}
-              <tr>
-                <td>{{ item.name }}</td>
-                <td>
-                  {% if item.item_type == 'number' %}
-                    <span class="badge bg-primary">数値</span>
-                  {% elif item.item_type == 'text' %}
-                    <span class="badge bg-success">テキスト</span>
-                  {% elif item.item_type == 'boolean' %}
-                    <span class="badge bg-warning">チェックボックス</span>
-                  {% elif item.item_type == 'boolean_with_value' %}
-                    <span class="badge bg-danger">チェック+値入力</span>
-                  {% else %}
-                    <span class="badge bg-info">選択肢</span>
-                  {% endif %}
-                </td>
-                <td>{{ item.description|default:"-" }}</td>
-                <td>
-                  {% if item.item_type == 'select' and item.choices %}
-                    <ul class="mb-0 ps-3">
-                      {% for choice in item.get_choices_list %}
-                        <li>{{ choice }}</li>
-                      {% endfor %}
-                    </ul>
-                  {% else %}
-                    -
-                  {% endif %}
-                </td>
-                <td>{{ item.order }}</td>
-              </tr>
+            <tr>
+              <td>{{ item.name }}</td>
+              <td>
+                {% if item.item_type == 'number' %}
+                <span class="badge bg-primary">数値</span>
+                {% elif item.item_type == 'text' %}
+                <span class="badge bg-success">テキスト</span>
+                {% elif item.item_type == 'boolean' %}
+                <span class="badge bg-warning">チェックボックス</span>
+                {% elif item.item_type == 'boolean_with_value' %}
+                <span class="badge bg-danger">チェック+値入力</span>
+                {% else %}
+                <span class="badge bg-info">選択肢</span>
+                {% endif %}
+              </td>
+              <td>{{ item.description|default:"-" }}</td>
+              <td>
+                {% if item.item_type == 'select' and item.choices %}
+                <ul class="mb-0 ps-3">
+                  {% for choice in item.get_choices_list %}
+                  <li>{{ choice }}</li>
+                  {% endfor %}
+                </ul>
+                {% else %}
+                -
+                {% endif %}
+              </td>
+              <td>{{ item.order }}</td>
+            </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
-    {% else %}
+      {% else %}
       <div class="alert alert-info">
         分析項目がありません。
       </div>
-    {% endif %}
-  </div>
-  <div class="card-footer text-muted">
-    作成日時: {{ template.created_at }} | 更新日時: {{ template.updated_at }}
+      {% endif %}
+    </div>
+    
+    <div class="card-footer text-muted">
+      作成日時: {{ template.created_at }} | 更新日時: {{ template.updated_at }}
+    </div>
   </div>
 </div>
 
@@ -101,12 +201,12 @@
 {{ block.super }}
 <!-- スピードダイアルのJSを明示的に読み込む -->
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', function () {
     // スピードダイアルを初期化
     initializeSpeedDial();
-    
+
     // 複製ボタンのクリックイベント
-    document.getElementById('clone-btn').addEventListener('click', function() {
+    document.getElementById('clone-btn').addEventListener('click', function () {
       if (confirm('このテンプレートを複製しますか？\n複製後は新しいテンプレートの編集画面に移動します。')) {
         window.location.href = "{% url 'analysis_template:clone' template.id %}";
       }

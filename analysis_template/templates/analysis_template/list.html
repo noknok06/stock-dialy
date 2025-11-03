@@ -189,7 +189,7 @@
   }
 
   /* カードビューのグリッド調整 */
-  .row-cols-lg-3 > * {
+  .row-cols-lg-3>* {
     display: flex;
   }
 
@@ -204,7 +204,7 @@
     flex-direction: column;
   }
 
-  .card.h-100 .card-body > :last-child {
+  .card.h-100 .card-body> :last-child {
     margin-top: auto;
   }
 
@@ -220,7 +220,7 @@
       gap: 0.75rem;
     }
 
-    .mb-4.d-flex > div {
+    .mb-4.d-flex>div {
       width: 100%;
     }
 
@@ -322,95 +322,210 @@
       background-color: rgba(90, 126, 197, 0.1);
     }
   }
+
+  /* ========== Dark Mode Support ========== */
+  .dark-mode body,
+  [data-theme="dark"] body {
+    background-color: var(--dm-background);
+  }
+
+  /* 検索カード */
+  .dark-mode .search-card,
+  [data-theme="dark"] .search-card {
+    background-color: var(--dm-card);
+    border: 1px solid var(--dm-border);
+  }
+
+  .dark-mode .search-card .card-title,
+  [data-theme="dark"] .search-card .card-title {
+    color: var(--dm-foreground);
+  }
+
+  .dark-mode .search-icon,
+  [data-theme="dark"] .search-icon {
+    color: var(--dm-muted-foreground);
+  }
+
+  /* エンプティステート */
+  .dark-mode .empty-state,
+  [data-theme="dark"] .empty-state {
+    background-color: var(--dm-card);
+    border: 1px solid var(--dm-border);
+  }
+
+  .dark-mode .empty-state-icon,
+  [data-theme="dark"] .empty-state-icon {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
+    color: var(--dm-primary);
+  }
+
+  .dark-mode .empty-state-title,
+  [data-theme="dark"] .empty-state-title {
+    color: var(--dm-foreground);
+  }
+
+  .dark-mode .empty-state-description,
+  [data-theme="dark"] .empty-state-description {
+    color: var(--dm-muted-foreground);
+  }
+
+  /* タブナビゲーション */
+  .dark-mode .nav-tabs,
+  [data-theme="dark"] .nav-tabs {
+    border-bottom-color: var(--dm-border);
+  }
+
+  .dark-mode .nav-tabs .nav-link,
+  [data-theme="dark"] .nav-tabs .nav-link {
+    color: var(--dm-muted-foreground);
+    border-bottom-color: transparent;
+  }
+
+  .dark-mode .nav-tabs .nav-link:hover,
+  [data-theme="dark"] .nav-tabs .nav-link:hover {
+    border-bottom-color: var(--dm-primary);
+    color: var(--dm-primary);
+  }
+
+  .dark-mode .nav-tabs .nav-link.active,
+  [data-theme="dark"] .nav-tabs .nav-link.active {
+    border-bottom-color: var(--dm-primary);
+    color: var(--dm-primary);
+    background-color: transparent;
+  }
+
+  /* カード */
+  .dark-mode .card-title a,
+  [data-theme="dark"] .card-title a {
+    color: var(--dm-foreground);
+  }
+
+  .dark-mode .card-title a:hover,
+  [data-theme="dark"] .card-title a:hover {
+    color: var(--dm-primary);
+  }
+
+  .dark-mode .template-item-count,
+  [data-theme="dark"] .template-item-count {
+    color: var(--dm-muted-foreground);
+  }
+
+  .dark-mode .template-description,
+  [data-theme="dark"] .template-description {
+    color: var(--dm-muted-foreground);
+  }
+
+  /* 使い方ガイド */
+  .dark-mode .card .bg-primary,
+  [data-theme="dark"] .card .bg-primary {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1)) !important;
+  }
+
+  .dark-mode .card .text-primary,
+  [data-theme="dark"] .card .text-primary {
+    color: var(--dm-primary) !important;
+  }
+
+  .dark-mode .card h6,
+  [data-theme="dark"] .card h6 {
+    color: var(--dm-foreground);
+  }
+
+  .dark-mode .card .text-muted,
+  [data-theme="dark"] .card .text-muted {
+    color: var(--dm-muted-foreground) !important;
+  }
+
+  /* テーブル内のリンク */
+  .dark-mode .table .fw-semibold,
+  [data-theme="dark"] .table .fw-semibold {
+    color: var(--dm-foreground);
+  }
+
+  .dark-mode .table .fw-semibold:hover,
+  [data-theme="dark"] .table .fw-semibold:hover {
+    color: var(--dm-primary);
+  }
+
+  .dark-mode .table .fst-italic,
+  [data-theme="dark"] .table .fst-italic {
+    color: var(--dm-muted-foreground);
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
-  <div class="page-header">
-    <h1 class="page-title">
-      <i class="bi bi-clipboard-data"></i>
-      <span>分析テンプレート管理</span>
-    </h1>
-  </div>
+<body class="dark-mode">
+  <div class="container py-4">
+    <div class="page-header">
+      <h1 class="page-title">
+        <i class="bi bi-clipboard-data"></i>
+        <span>分析テンプレート管理</span>
+      </h1>
+    </div>
 
-  <!-- 検索フォーム -->
-  <div class="card search-card">
-    <div class="card-body">
-      <h5 class="card-title mb-3">検索</h5>
-      <form method="get" class="row g-3">
-        <div class="col-md-8">
-          <div class="position-relative">
-            <i class="bi bi-search search-icon"></i>
-            <input type="text" 
-                   name="query" 
-                   class="form-control search-input" 
-                   placeholder="テンプレート名"
-                   value="{{ request.GET.query }}">
+    <!-- 検索フォーム -->
+    <div class="card search-card">
+      <div class="card-body">
+        <h5 class="card-title mb-3">検索</h5>
+        <form method="get" class="row g-3">
+          <div class="col-md-8">
+            <div class="position-relative">
+              <i class="bi bi-search search-icon"></i>
+              <input type="text" name="query" class="form-control search-input" placeholder="テンプレート名"
+                value="{{ request.GET.query }}">
+            </div>
           </div>
-        </div>
 
-        <div class="col-md-4 d-flex align-items-end gap-2">
-          <button type="submit" class="btn btn-primary flex-grow-1">
-            <i class="bi bi-search"></i>
-            <span>検索</span>
-          </button>
-          <a href="{% url 'analysis_template:list' %}" class="btn btn-outline-secondary flex-grow-1">
-            <i class="bi bi-arrow-counterclockwise"></i>
-            <span>リセット</span>
-          </a>
-        </div>
-      </form>
+          <div class="col-md-4 d-flex align-items-end gap-2">
+            <button type="submit" class="btn btn-primary flex-grow-1">
+              <i class="bi bi-search"></i>
+              <span>検索</span>
+            </button>
+            <a href="{% url 'analysis_template:list' %}" class="btn btn-outline-secondary flex-grow-1">
+              <i class="bi bi-arrow-counterclockwise"></i>
+              <span>リセット</span>
+            </a>
+          </div>
+        </form>
+      </div>
     </div>
-  </div>
 
-  <!-- コンテンツ上部の広告 -->
-  {% if show_ads %}
-      {% show_placement_ad "content_top" %}
-  {% endif %}
+    <!-- コンテンツ上部の広告 -->
+    {% if show_ads %}
+    {% show_placement_ad "content_top" %}
+    {% endif %}
 
-  <!-- テンプレート一覧とアクションボタン -->
-  <div class="mb-4 d-flex justify-content-between flex-wrap gap-3">
-    <div>
-      <a href="{% url 'analysis_template:create' %}" class="btn btn-success">
-        <i class="bi bi-plus-lg"></i>
-        <span>新規作成</span>
-      </a>
+    <!-- テンプレート一覧とアクションボタン -->
+    <div class="mb-4 d-flex justify-content-between flex-wrap gap-3">
+      <div>
+        <a href="{% url 'analysis_template:create' %}" class="btn btn-success">
+          <i class="bi bi-plus-lg"></i>
+          <span>新規作成</span>
+        </a>
+      </div>
+      <div>
+        <a href="{% url 'stockdiary:home' %}" class="btn btn-info">
+          <i class="bi bi-journal-text"></i>
+          <span>記録一覧に戻る</span>
+        </a>
+      </div>
     </div>
-    <div>
-      <a href="{% url 'stockdiary:home' %}" class="btn btn-info">
-        <i class="bi bi-journal-text"></i>
-        <span>記録一覧に戻る</span>
-      </a>
-    </div>
-  </div>
 
-  <!-- テンプレート一覧 -->
-  {% if templates %}
+    <!-- テンプレート一覧 -->
+    {% if templates %}
     <!-- タブ切り替えナビゲーション -->
     <ul class="nav nav-tabs mb-4" id="viewTabs" role="tablist">
       <li class="nav-item" role="presentation">
-        <button class="nav-link active" 
-                id="card-tab" 
-                data-bs-toggle="tab" 
-                data-bs-target="#card-view" 
-                type="button"
-                role="tab" 
-                aria-controls="card-view" 
-                aria-selected="true">
+        <button class="nav-link active" id="card-tab" data-bs-toggle="tab" data-bs-target="#card-view" type="button"
+          role="tab" aria-controls="card-view" aria-selected="true">
           <i class="bi bi-grid-3x3-gap"></i>
           <span>カード表示</span>
         </button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" 
-                id="table-tab" 
-                data-bs-toggle="tab" 
-                data-bs-target="#table-view" 
-                type="button" 
-                role="tab"
-                aria-controls="table-view" 
-                aria-selected="false">
+        <button class="nav-link" id="table-tab" data-bs-toggle="tab" data-bs-target="#table-view" type="button" role="tab"
+          aria-controls="table-view" aria-selected="false">
           <i class="bi bi-table"></i>
           <span>テーブル表示</span>
         </button>
@@ -423,43 +538,42 @@
       <div class="tab-pane fade show active" id="card-view" role="tabpanel" aria-labelledby="card-tab">
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
           {% for template in templates %}
-            <div class="col">
-              <div class="card h-100">
-                <div class="card-header">
-                  <h5 class="card-title">
-                    <a href="{% url 'analysis_template:detail' template.id %}">{{ template.name }}</a>
-                  </h5>
-                  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                    <span class="template-item-count">
-                      <i class="bi bi-list-check"></i>
-                      <span>項目数: {{ template.items.count }}</span>
-                    </span>
-                    <small class="text-muted">
-                      <i class="bi bi-calendar-event"></i>
-                      <span>{{ template.created_at|date:"Y/m/d" }}</span>
-                    </small>
-                  </div>
+          <div class="col">
+            <div class="card h-100">
+              <div class="card-header">
+                <h5 class="card-title">
+                  <a href="{% url 'analysis_template:detail' template.id %}">{{ template.name }}</a>
+                </h5>
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                  <span class="template-item-count">
+                    <i class="bi bi-list-check"></i>
+                    <span>項目数: {{ template.items.count }}</span>
+                  </span>
+                  <small class="text-muted">
+                    <i class="bi bi-calendar-event"></i>
+                    <span>{{ template.created_at|date:"Y/m/d" }}</span>
+                  </small>
                 </div>
-                <div class="card-body">
-                  {% if template.description %}
-                    <p class="template-description">{{ template.description }}</p>
-                  {% else %}
-                    <p class="template-description fst-italic text-muted">説明はありません</p>
-                  {% endif %}
+              </div>
+              <div class="card-body">
+                {% if template.description %}
+                <p class="template-description">{{ template.description }}</p>
+                {% else %}
+                <p class="template-description fst-italic text-muted">説明はありません</p>
+                {% endif %}
 
-                  <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                      <span class="badge bg-primary">分析テンプレート</span>
-                    </div>
-                    <a href="{% url 'analysis_template:report' template.id %}" 
-                       class="btn btn-sm btn-outline-primary">
-                      <i class="bi bi-bar-chart"></i>
-                      <span>レポート</span>
-                    </a>
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <span class="badge bg-primary">分析テンプレート</span>
                   </div>
+                  <a href="{% url 'analysis_template:report' template.id %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-bar-chart"></i>
+                    <span>レポート</span>
+                  </a>
                 </div>
               </div>
             </div>
+          </div>
           {% endfor %}
         </div>
       </div>
@@ -480,43 +594,40 @@
                 </thead>
                 <tbody>
                   {% for template in templates %}
-                    <tr>
-                      <td>
-                        <a href="{% url 'analysis_template:detail' template.id %}" 
-                           class="fw-semibold text-decoration-none">
-                          {{ template.name }}
+                  <tr>
+                    <td>
+                      <a href="{% url 'analysis_template:detail' template.id %}" class="fw-semibold text-decoration-none">
+                        {{ template.name }}
+                      </a>
+                      <br>
+                      <small class="text-muted">
+                        <i class="bi bi-calendar-event"></i>
+                        {{ template.created_at|date:"Y/m/d" }}
+                      </small>
+                    </td>
+                    <td>
+                      {% if template.description %}
+                      {{ template.description|truncatechars:80 }}
+                      {% else %}
+                      <span class="text-muted fst-italic">説明なし</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-center">
+                      <span class="badge bg-secondary">{{ template.items.count }}</span>
+                    </td>
+                    <td>
+                      <div class="d-flex gap-1 justify-content-center">
+                        <a href="{% url 'analysis_template:detail' template.id %}" class="btn btn-sm btn-outline-primary"
+                          title="詳細">
+                          <i class="bi bi-eye"></i>
                         </a>
-                        <br>
-                        <small class="text-muted">
-                          <i class="bi bi-calendar-event"></i>
-                          {{ template.created_at|date:"Y/m/d" }}
-                        </small>
-                      </td>
-                      <td>
-                        {% if template.description %}
-                          {{ template.description|truncatechars:80 }}
-                        {% else %}
-                          <span class="text-muted fst-italic">説明なし</span>
-                        {% endif %}
-                      </td>
-                      <td class="text-center">
-                        <span class="badge bg-secondary">{{ template.items.count }}</span>
-                      </td>
-                      <td>
-                        <div class="d-flex gap-1 justify-content-center">
-                          <a href="{% url 'analysis_template:detail' template.id %}" 
-                             class="btn btn-sm btn-outline-primary" 
-                             title="詳細">
-                            <i class="bi bi-eye"></i>
-                          </a>
-                          <a href="{% url 'analysis_template:report' template.id %}" 
-                             class="btn btn-sm btn-outline-info" 
-                             title="レポート">
-                            <i class="bi bi-bar-chart"></i>
-                          </a>
-                        </div>
-                      </td>
-                    </tr>
+                        <a href="{% url 'analysis_template:report' template.id %}" class="btn btn-sm btn-outline-info"
+                          title="レポート">
+                          <i class="bi bi-bar-chart"></i>
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
                   {% endfor %}
                 </tbody>
               </table>
@@ -525,7 +636,7 @@
         </div>
       </div>
     </div>
-  {% else %}
+    {% else %}
     <div class="empty-state">
       <div class="empty-state-icon">
         <i class="bi bi-clipboard-data fs-3"></i>
@@ -540,47 +651,48 @@
         <span>最初のテンプレートを作成</span>
       </a>
     </div>
-  {% endif %}
-  
-  <!-- 分析テンプレートの使い方ガイド -->
-  <div class="card mt-4">
-    <div class="card-header">
-      <h5 class="mb-0">
-        <i class="bi bi-info-circle text-primary me-2"></i> 分析テンプレートの使い方
-      </h5>
-    </div>
-    <div class="card-body">
-      <div class="row">
-        <div class="col-md-4 mb-3">
-          <div class="d-flex align-items-start">
-            <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
-              <i class="bi bi-clipboard-data text-primary fs-4"></i>
-            </div>
-            <div>
-              <h6 class="mb-2">投資分析を標準化</h6>
-              <p class="text-muted small mb-0">一貫した分析項目で銘柄を評価し、客観的な比較ができます。</p>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-4 mb-3">
-          <div class="d-flex align-items-start">
-            <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
-              <i class="bi bi-table text-primary fs-4"></i>
-            </div>
-            <div>
-              <h6 class="mb-2">銘柄の比較が簡単</h6>
-              <p class="text-muted small mb-0">複数銘柄の分析結果を一覧で比較し、投資判断の質を高めます。</p>
+    {% endif %}
+
+    <!-- 分析テンプレートの使い方ガイド -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="bi bi-info-circle text-primary me-2"></i> 分析テンプレートの使い方
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <div class="d-flex align-items-start">
+              <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                <i class="bi bi-clipboard-data text-primary fs-4"></i>
+              </div>
+              <div>
+                <h6 class="mb-2">投資分析を標準化</h6>
+                <p class="text-muted small mb-0">一貫した分析項目で銘柄を評価し、客観的な比較ができます。</p>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="col-md-4 mb-3">
-          <div class="d-flex align-items-start">
-            <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
-              <i class="bi bi-bar-chart text-primary fs-4"></i>
+          <div class="col-md-4 mb-3">
+            <div class="d-flex align-items-start">
+              <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                <i class="bi bi-table text-primary fs-4"></i>
+              </div>
+              <div>
+                <h6 class="mb-2">銘柄の比較が簡単</h6>
+                <p class="text-muted small mb-0">複数銘柄の分析結果を一覧で比較し、投資判断の質を高めます。</p>
+              </div>
             </div>
-            <div>
-              <h6 class="mb-2">投資戦略の進化</h6>
-              <p class="text-muted small mb-0">時間をかけて分析項目を改善し、投資パフォーマンスの向上につながります。</p>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="d-flex align-items-start">
+              <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                <i class="bi bi-bar-chart text-primary fs-4"></i>
+              </div>
+              <div>
+                <h6 class="mb-2">投資戦略の進化</h6>
+                <p class="text-muted small mb-0">時間をかけて分析項目を改善し、投資パフォーマンスの向上につながります。</p>
+              </div>
             </div>
           </div>
         </div>
@@ -595,18 +707,18 @@
 {% block scripts %}
 {{ block.super }}
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', function () {
     // スピードダイアルを初期化
     initializeSpeedDial();
-    
+
     // 検索フォーム送信時の処理
     const searchForm = document.querySelector('form[method="get"]');
     if (searchForm) {
-      searchForm.addEventListener('submit', function() {
+      searchForm.addEventListener('submit', function () {
         const submitBtn = this.querySelector('button[type="submit"]');
         const btnText = submitBtn.querySelector('span');
         const btnIcon = submitBtn.querySelector('i');
-        
+
         btnIcon.className = 'bi bi-hourglass-split';
         if (btnText) {
           btnText.textContent = '検索中...';
@@ -614,11 +726,11 @@
         submitBtn.disabled = true;
       });
     }
-    
+
     // タブ切り替え時のアニメーション
     const tabButtons = document.querySelectorAll('[data-bs-toggle="tab"]');
     tabButtons.forEach(button => {
-      button.addEventListener('shown.bs.tab', function(event) {
+      button.addEventListener('shown.bs.tab', function (event) {
         // タブ切り替え完了時の処理（必要に応じて追加）
         const targetPane = document.querySelector(event.target.getAttribute('data-bs-target'));
         if (targetPane) {
@@ -630,7 +742,7 @@
         }
       });
     });
-    
+
     // ローカルストレージにタブの選択状態を保存
     const savedTab = localStorage.getItem('analysisTemplateViewTab');
     if (savedTab) {
@@ -640,10 +752,10 @@
         tab.show();
       }
     }
-    
+
     // タブ切り替え時に選択状態を保存
     tabButtons.forEach(button => {
-      button.addEventListener('click', function() {
+      button.addEventListener('click', function () {
         const target = this.getAttribute('data-bs-target');
         localStorage.setItem('analysisTemplateViewTab', target);
       });
