@@ -544,70 +544,175 @@
       padding: 1.25rem;
     }
   }
-
-  /* ========== タブナビゲーション ========== */
-  .improved-tabs {
-    display: flex;
-    gap: 0.5rem;
-    overflow-x: auto;
-    scrollbar-width: thin;
-    scroll-behavior: smooth;
-    padding: 0.5rem;
-    background: var(--bg-secondary);
-    border-radius: var(--radius-md);
+/* === タブナビゲーションのスタイル === */
+  .tabs-section {
+    background-color: transparent;
+    border-radius: 0 0 12px 12px;
+    overflow: hidden;
     margin-bottom: 1.5rem;
   }
-  
+
+  .tabs-section.mobile-optimized {
+    margin-bottom: 1rem;
+  }
+
+  .improved-tabs {
+    display: flex;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    background-color: rgba(248, 249, 250, 0.8);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    overflow-x: auto;
+    white-space: nowrap;
+    gap: 6px;
+    padding: 0 8px 4px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    list-style: none;
+    margin: 0;
+    scroll-behavior: smooth;
+  }
+
   .improved-tabs::-webkit-scrollbar {
-    height: 4px;
+    display: none;
   }
-  
-  .improved-tabs::-webkit-scrollbar-track {
-    background: var(--bg-tertiary);
-    border-radius: 2px;
+
+  .improved-tab-item {
+    flex: 0 0 auto;
+    min-width: 80px;
+    text-align: center;
   }
-  
-  .improved-tabs::-webkit-scrollbar-thumb {
-    background: var(--border-color);
-    border-radius: 2px;
-  }
-  
+
   .improved-tab-link {
-    flex: 1;
-    min-width: 120px;
-    padding: 0.875rem 1rem;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    color: var(--text-secondary);
-    font-weight: 500;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+    color: var(--text-light);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: none;
+    background: none;
+    width: 100%;
+    position: relative;
+    min-height: 70px;
+    border-radius: 8px;
   }
-  
-  .improved-tab-link:hover {
-    background: var(--bg-primary);
-    color: var(--text-primary);
+
+  .improved-tab-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background-color: transparent;
+    transition: background-color 0.3s ease;
+    border-radius: 3px 3px 0 0;
   }
-  
+
   .improved-tab-link.active {
-    background: var(--primary-color);
-    color: white;
-    box-shadow: var(--shadow-sm);
+    color: var(--primary-color);
+    font-weight: 600;
   }
-  
-  @media (max-width: 768px) {
+
+  .improved-tab-link.active::after {
+    background-color: var(--primary-color);
+  }
+
+  .improved-tab-link:hover:not(.active) {
+    background-color: rgba(90, 126, 197, 0.05);
+    color: var(--primary-color);
+  }
+
+  .tab-icon {
+    position: relative;
+    display: inline-block;
+    font-size: 1.4rem;
+    margin-bottom: 0.4rem;
+  }
+
+  /* バッジをアイコン右下に配置 */
+  .tab-icon .notes-count-badge,
+  .tab-icon .badge {
+    position: absolute;
+    bottom: -3px;
+    right: -6px;
+    font-size: 0.65rem;
+    padding: 2px 5px;
+    border-radius: 50%;
+    line-height: 1;
+    min-width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .tab-label {
+    font-size: 0.85rem;
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  /* レスポンシブ調整 */
+  @media (max-width: 600px) {
     .improved-tabs {
-      gap: 0.25rem;
-      padding: 0.25rem;
+      justify-content: flex-start;
+      overflow-x: auto;
+      gap: 4px;
+    }
+    
+    .improved-tab-item {
+      min-width: 75px;
     }
     
     .improved-tab-link {
-      min-width: 100px;
-      padding: 0.75rem 0.5rem;
-      font-size: 0.875rem;
+      padding: 5px 8px;
+      min-height: 65px;
+    }
+    
+    .tab-icon {
+      font-size: 1.25rem;
+      margin-bottom: 0.3rem;
+    }
+    
+    .tab-label {
+      font-size: 0.75rem;
     }
   }
 
+  @media (min-width: 601px) and (max-width: 768px) {
+    .improved-tabs {
+      justify-content: space-between;
+      overflow-x: visible;
+      gap: 8px;
+    }
+    
+    .improved-tab-item {
+      flex: 1;
+      min-width: 90px;
+    }
+  }
+
+  @media (min-width: 769px) {
+    .improved-tabs {
+      justify-content: space-between;
+      overflow-x: visible;
+      gap: 10px;
+    }
+    
+    .improved-tab-item {
+      flex: 1;
+      min-width: 100px;
+    }
+    
+    .improved-tab-link {
+      min-height: 80px;
+      padding: 8px 12px;
+    }
+  }
   /* ========== アニメーション ========== */
   @keyframes fadeIn {
     from {
