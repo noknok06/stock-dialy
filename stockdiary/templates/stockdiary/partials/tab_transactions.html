@@ -31,11 +31,6 @@
   border-color: var(--dm-border);
 }
 
-.dark-mode .form-header-improved,
-[data-theme="dark"] .form-header-improved {
-  background-color: var(--dm-primary) !important;
-}
-
 .dark-mode .form-body-improved,
 [data-theme="dark"] .form-body-improved {
   background-color: var(--dm-card);
@@ -346,7 +341,7 @@
               <span class="badge {% if transaction.transaction_type == 'buy' %}badge-primary{% else %}badge-danger{% endif %}">
                 {{ transaction.get_transaction_type_display }}
               </span>
-              <button class="btn-icon" onclick="showEditForm({{ transaction.id }})">
+              <button class="btn-icon btn-success-icon" onclick="showEditForm({{ transaction.id }})">
                 <i class="bi bi-pencil"></i>
               </button>
               <button class="btn-icon btn-danger-icon" onclick="deleteTransaction({{ transaction.id }}, '{{ transaction.transaction_date|date:"Y年m月d日" }}')">
@@ -382,7 +377,7 @@
 
         <!-- 編集フォーム（初期は非表示） -->
         <div class="form-card-improved mb-3" id="edit-form-{{ transaction.id }}" style="display: none;">
-          <div class="form-header-improved bg-primary">
+          <div class="form-header-improved btn-success">
             <span><i class="bi bi-pencil me-2"></i>取引を編集</span>
             <button type="button" class="btn-icon btn-info-icon" onclick="hideEditForm({{ transaction.id }})">
               <i class="bi bi-x-lg"></i>
@@ -426,7 +421,7 @@
               </div>
               
               <div class="form-actions-improved">
-                <button type="submit" class="btn btn-primary">
+                <button type="submit" class="btn btn-success">
                   <i class="bi bi-save me-1"></i>更新
                 </button>
                 <button type="button" class="btn btn-secondary" onclick="hideEditForm({{ transaction.id }})">
