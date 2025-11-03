@@ -423,3 +423,54 @@
 1. 新しいシャドウ変数（--shadow-md等）
 2. レガシーは既存コード互換のみ
 */
+
+/* ========================================
+   Dark Mode Variables
+   ======================================== */
+.dark-mode,
+[data-theme="dark"] {
+  /* ========== Dark Mode Colors ========== */
+  --dm-background: #0f172a;
+  --dm-foreground: #f1f5f9;
+  --dm-card: #1e293b;
+  --dm-border: #334155;
+  --dm-muted: #475569;
+  --dm-muted-foreground: #94a3b8;
+  
+  /* ========== Dark Mode Primary Colors ========== */
+  --dm-primary: #3b82f6;
+  --dm-primary-hover: #2563eb;
+  --dm-primary-active: #1d4ed8;
+  
+  --dm-secondary: #8b5cf6;
+  --dm-success: #10b981;
+  --dm-destructive: #ef4444;
+  --dm-accent: #f59e0b;
+  --dm-info: #3b82f6;
+  
+  /* ========== Override Light Mode Variables in Dark Mode ========== */
+  --bg-primary: var(--dm-card);
+  --bg-secondary: rgba(71, 85, 105, 0.3);
+  --bg-tertiary: rgba(71, 85, 105, 0.2);
+  --bg-color: var(--dm-background);
+  --card-bg-color: var(--dm-card);
+  
+  --text-primary: var(--dm-foreground);
+  --text-secondary: var(--dm-muted-foreground);
+  --text-tertiary: var(--dm-muted);
+  --text-color: var(--dm-foreground);
+  --text-light: var(--dm-muted-foreground);
+  
+  --border-primary: var(--dm-border);
+  --border-secondary: var(--dm-muted);
+  --border-light: rgba(51, 65, 85, 0.5);
+  --border-color: var(--dm-border);
+  
+  /* ========== Dark Mode Shadows ========== */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+  --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
