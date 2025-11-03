@@ -1059,3 +1059,457 @@
 .tab-highlight {
   animation: tab-glow 0.3s ease-out;
 }
+
+/* ========== ダークモード対応 ========== */
+.dark-mode .diary-card,
+[data-theme="dark"] .diary-card {
+  background-color: var(--dm-card);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .diary-card:hover,
+[data-theme="dark"] .diary-card:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.dark-mode .diary-card-header,
+[data-theme="dark"] .diary-card-header {
+  background-color: rgba(71, 85, 105, 0.3);
+  border-bottom-color: var(--dm-border);
+}
+
+.dark-mode .diary-title,
+[data-theme="dark"] .diary-title {
+  color: var(--dm-primary);
+}
+
+.dark-mode .diary-meta,
+[data-theme="dark"] .diary-meta {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .status-badge,
+[data-theme="dark"] .status-badge {
+  background-color: rgba(71, 85, 105, 0.3);
+  border: 1px solid var(--dm-border);
+}
+
+.dark-mode .card-tabs,
+[data-theme="dark"] .card-tabs {
+  background-color: rgba(71, 85, 105, 0.2);
+  border-bottom-color: var(--dm-border);
+}
+
+.dark-mode .card-tabs .nav-link,
+[data-theme="dark"] .card-tabs .nav-link {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .card-tabs .nav-link.active,
+[data-theme="dark"] .card-tabs .nav-link.active {
+  color: var(--dm-primary);
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.dark-mode .reason-content,
+[data-theme="dark"] .reason-content {
+  background-color: rgba(71, 85, 105, 0.2);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .note-item,
+[data-theme="dark"] .note-item {
+  background-color: var(--dm-card);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .note-header,
+[data-theme="dark"] .note-header {
+  background-color: rgba(71, 85, 105, 0.3);
+  border-bottom-color: var(--dm-border);
+}
+
+.dark-mode .note-content,
+[data-theme="dark"] .note-content {
+  background-color: var(--dm-card);
+}
+
+.dark-mode .note-text,
+[data-theme="dark"] .note-text {
+  background-color: rgba(71, 85, 105, 0.2);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .note-price-info,
+[data-theme="dark"] .note-price-info {
+  background-color: rgba(71, 85, 105, 0.3);
+  border-color: var(--dm-border);
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .analysis-templates-container,
+[data-theme="dark"] .analysis-templates-container {
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+.dark-mode .analysis-template-card,
+[data-theme="dark"] .analysis-template-card {
+  background-color: var(--dm-card);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .analysis-template-header,
+[data-theme="dark"] .analysis-template-header {
+  background-color: rgba(71, 85, 105, 0.3);
+  border-bottom-color: var(--dm-border);
+}
+
+.dark-mode .analysis-template-header h6,
+[data-theme="dark"] .analysis-template-header h6 {
+  color: var(--dm-primary);
+}
+
+.dark-mode .analysis-item,
+[data-theme="dark"] .analysis-item {
+  border-bottom-color: var(--dm-border);
+}
+
+.dark-mode .analysis-item-name,
+[data-theme="dark"] .analysis-item-name {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .analysis-item-value,
+[data-theme="dark"] .analysis-item-value {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .info-block,
+[data-theme="dark"] .info-block {
+  background-color: rgba(59, 130, 246, 0.05);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .info-item,
+[data-theme="dark"] .info-item {
+  background-color: var(--dm-card);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .info-icon,
+[data-theme="dark"] .info-icon {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.3));
+  color: var(--dm-primary);
+}
+
+.dark-mode .info-label,
+[data-theme="dark"] .info-label {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .info-value,
+[data-theme="dark"] .info-value {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .diary-tag,
+[data-theme="dark"] .diary-tag {
+  background-color: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: var(--dm-primary);
+}
+
+.dark-mode .sell-info,
+[data-theme="dark"] .sell-info {
+  background: linear-gradient(to right, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.15));
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* ========== メディアクエリ - レスポンシブ対応 ========== */
+@media (max-width: 992px) {
+  .diary-card-body {
+    padding: var(--spacing-md);
+  }
+
+  .info-block {
+    padding: var(--spacing-sm);
+  }
+
+  .info-item {
+    flex: 1 1 calc(50% - var(--spacing-md));
+  }
+
+  .notes-timeline,
+  .analysis-templates-container {
+    max-height: 350px;
+  }
+}
+/* ========== 分析項目フォーム（Analysis Items） ========== */
+  
+  /* コンテナ */
+  .dark-mode .analysis-container,
+  [data-theme="dark"] .analysis-container {
+    background-color: var(--dm-card);
+  }
+
+  /* 分析項目 */
+  .dark-mode .analysis-item,
+  [data-theme="dark"] .analysis-item {
+    background-color: rgba(71, 85, 105, 0.3) !important;
+    border: 1px solid var(--dm-border);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    transition: all 0.2s ease;
+  }
+
+  .dark-mode .analysis-item:hover,
+  [data-theme="dark"] .analysis-item:hover {
+    background-color: rgba(71, 85, 105, 0.4) !important;
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  /* 項目ヘッダー */
+  .dark-mode .analysis-item-header,
+  [data-theme="dark"] .analysis-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+  }
+
+  /* ラベルラッパー */
+  .dark-mode .analysis-item-label-wrapper,
+  [data-theme="dark"] .analysis-item-label-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    flex: 1;
+  }
+
+  .dark-mode .analysis-item-label-wrapper i,
+  [data-theme="dark"] .analysis-item-label-wrapper i {
+    color: var(--dm-primary) !important;
+    margin-top: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  /* ラベル */
+  .dark-mode .analysis-item-label,
+  [data-theme="dark"] .analysis-item-label {
+    color: var(--dm-foreground);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    display: block;
+  }
+
+  /* 説明 */
+  .dark-mode .analysis-item-desc,
+  [data-theme="dark"] .analysis-item-desc {
+    color: var(--dm-muted-foreground);
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+
+  /* チェックボックスエリア */
+  .dark-mode .analysis-item-checkbox,
+  [data-theme="dark"] .analysis-item-checkbox {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  /* 入力セクション */
+  .dark-mode .analysis-item-input-section,
+  [data-theme="dark"] .analysis-item-input-section {
+    margin-top: 0.75rem;
+  }
+
+  /* 複合入力ラッパー */
+  .dark-mode .compound-input-wrapper,
+  [data-theme="dark"] .compound-input-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+  }
+
+  /* 複合チェックボックス行 */
+  .dark-mode .compound-checkbox-row,
+  [data-theme="dark"] .compound-checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* フォームコントロール */
+  .dark-mode .analysis-item .form-control,
+  .dark-mode .analysis-item .form-select,
+  [data-theme="dark"] .analysis-item .form-control,
+  [data-theme="dark"] .analysis-item .form-select {
+    background-color: rgba(71, 85, 105, 0.3);
+    border: 1px solid var(--dm-border);
+    color: var(--dm-foreground);
+  }
+
+  .dark-mode .analysis-item .form-control:focus,
+  .dark-mode .analysis-item .form-select:focus,
+  [data-theme="dark"] .analysis-item .form-control:focus,
+  [data-theme="dark"] .analysis-item .form-select:focus {
+    background-color: rgba(71, 85, 105, 0.4);
+    border-color: var(--dm-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    color: var(--dm-foreground);
+  }
+
+  .dark-mode .analysis-item .form-control::placeholder,
+  .dark-mode .analysis-item .form-select::placeholder,
+  [data-theme="dark"] .analysis-item .form-control::placeholder,
+  [data-theme="dark"] .analysis-item .form-select::placeholder {
+    color: var(--dm-muted-foreground);
+    opacity: 0.6;
+  }
+
+  /* セレクトボックスの矢印 */
+  .dark-mode .analysis-item .form-select,
+  [data-theme="dark"] .analysis-item .form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23f1f5f9' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+  }
+
+  /* チェックボックス */
+  .dark-mode .analysis-item .form-check-input,
+  [data-theme="dark"] .analysis-item .form-check-input {
+    background-color: rgba(71, 85, 105, 0.3);
+    border-color: var(--dm-border);
+  }
+
+  .dark-mode .analysis-item .form-check-input:checked,
+  [data-theme="dark"] .analysis-item .form-check-input:checked {
+    background-color: var(--dm-primary);
+    border-color: var(--dm-primary);
+  }
+
+  .dark-mode .analysis-item .form-check-input:focus,
+  [data-theme="dark"] .analysis-item .form-check-input:focus {
+    border-color: var(--dm-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  /* チェックボックスラベル */
+  .dark-mode .analysis-item .form-check-label,
+  [data-theme="dark"] .analysis-item .form-check-label {
+    color: var(--dm-foreground);
+  }
+
+  /* フォームラベル */
+  .dark-mode .analysis-item .form-label,
+  [data-theme="dark"] .analysis-item .form-label {
+    color: var(--dm-foreground);
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+
+  /* インフォブロック */
+  .dark-mode .info-block,
+  [data-theme="dark"] .info-block {
+    background-color: var(--dm-card);
+    border: 1px solid var(--dm-border);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  /* 複合入力の数値入力 */
+  .dark-mode .compound-input-wrapper > div:not(.compound-checkbox-row),
+  [data-theme="dark"] .compound-input-wrapper > div:not(.compound-checkbox-row) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .dark-mode .compound-input-wrapper .form-label,
+  [data-theme="dark"] .compound-input-wrapper .form-label {
+    margin-bottom: 0.375rem;
+    font-size: 0.875rem;
+  }
+
+  /* ホバー時のインタラクション強化 */
+  .dark-mode .analysis-item .form-control:hover,
+  .dark-mode .analysis-item .form-select:hover,
+  [data-theme="dark"] .analysis-item .form-control:hover,
+  [data-theme="dark"] .analysis-item .form-select:hover {
+    border-color: rgba(59, 130, 246, 0.5);
+  }
+
+  .dark-mode .analysis-item .form-check-input:hover,
+  [data-theme="dark"] .analysis-item .form-check-input:hover {
+    border-color: var(--dm-primary);
+  }
+
+  /* 無効状態 */
+  .dark-mode .analysis-item .form-control:disabled,
+  .dark-mode .analysis-item .form-select:disabled,
+  .dark-mode .analysis-item .form-check-input:disabled,
+  [data-theme="dark"] .analysis-item .form-control:disabled,
+  [data-theme="dark"] .analysis-item .form-select:disabled,
+  [data-theme="dark"] .analysis-item .form-check-input:disabled {
+    background-color: rgba(71, 85, 105, 0.2);
+    border-color: var(--dm-muted);
+    color: var(--dm-muted);
+    opacity: 0.6;
+  }
+
+  /* セレクトボックスのオプション */
+  .dark-mode .analysis-item select option,
+  [data-theme="dark"] .analysis-item select option {
+    background-color: var(--dm-card);
+    color: var(--dm-foreground);
+  }
+
+  /* レスポンシブ対応 */
+  @media (max-width: 768px) {
+    .dark-mode .analysis-item,
+    [data-theme="dark"] .analysis-item {
+      padding: 0.875rem;
+    }
+
+    .dark-mode .compound-input-wrapper,
+    [data-theme="dark"] .compound-input-wrapper {
+      gap: 0.5rem;
+    }
+
+    .dark-mode .analysis-item-label,
+    [data-theme="dark"] .analysis-item-label {
+      font-size: 0.9375rem;
+    }
+
+    .dark-mode .analysis-item-desc,
+    [data-theme="dark"] .analysis-item-desc {
+      font-size: 0.8125rem;
+    }
+  }
+
+  /* アクセシビリティ - フォーカス時の視認性向上 */
+  .dark-mode .analysis-item .form-control:focus-visible,
+  .dark-mode .analysis-item .form-select:focus-visible,
+  .dark-mode .analysis-item .form-check-input:focus-visible,
+  [data-theme="dark"] .analysis-item .form-control:focus-visible,
+  [data-theme="dark"] .analysis-item .form-select:focus-visible,
+  [data-theme="dark"] .analysis-item .form-check-input:focus-visible {
+    outline: 2px solid var(--dm-primary);
+    outline-offset: 2px;
+  }
+
+  /* アニメーション */
+  .dark-mode .analysis-item,
+  [data-theme="dark"] .analysis-item {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }

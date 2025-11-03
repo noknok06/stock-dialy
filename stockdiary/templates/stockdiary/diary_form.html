@@ -5,7 +5,6 @@
 
 {% block head %}
 {{ block.super }}
-<link rel="stylesheet" href="{% static 'css/diary-theme.css' %}">
 <style>
   .form-section {
     background-color: #ffffff;
@@ -49,6 +48,11 @@
     background-image: linear-gradient(transparent 1.7rem, #e5e7eb 1.7rem, #e5e7eb 1.8rem, transparent 1.8rem);
     background-size: 100% 1.8rem;
     min-height: 200px;
+  }
+
+  .dark-mode .diary-textarea,
+  [data-theme="dark"] .diary-textarea {
+    background-image: linear-gradient(transparent 1.7rem, #52626d 1.7rem, #0e2147 1.8rem, transparent 1.8rem);
   }
 
   .diary-memo-textarea {
@@ -204,57 +208,6 @@
     margin-bottom: 0.375rem;
   }
 
-  /* 複合型（boolean_with_value）のスタイル */
-  .compound-input-wrapper {
-    background-color: #f9fafb;
-    padding: 0.875rem;
-    border-radius: 0.375rem;
-    border: 1px solid #e5e7eb;
-    margin-top: 0.75rem;
-  }
-
-  .compound-checkbox-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .compound-input-wrapper .form-check-input {
-    width: 1.25rem;
-    height: 1.25rem;
-    margin: 0;
-    cursor: pointer;
-    border: 2px solid #d1d5db;
-    border-radius: 0.375rem;
-    flex-shrink: 0;
-  }
-
-  .compound-input-wrapper .form-check-input:checked {
-    background-color: #10b981;
-    border-color: #10b981;
-  }
-
-  .compound-input-wrapper .form-check-label {
-    color: #374151;
-    cursor: pointer;
-    user-select: none;
-    font-weight: 600;
-    margin: 0;
-  }
-
-  .compound-input-wrapper .form-check-input:checked ~ .form-check-label {
-    color: #059669;
-  }
-
-  /* フォームコントロールのスタイル */form-selectの横幅を調整します。スマホでは全幅、デスクトップでは適切な幅に制限します。
-修正内容
-diary_form.htmlの<style>セクションに以下を追加してください：
-html<style>
-  /* 既存のスタイルは維持 */
-  
-  /* ... 既存のスタイル ... */
-
   /* ========== フォームコントロールの横幅調整 ========== */
   .analysis-item .form-control,
   .analysis-item .form-select {
@@ -279,10 +232,6 @@ html<style>
       max-width: 300px; /* セレクトボックスは300px */
     }
 
-    /* 複合型の数値入力 */
-    .compound-input-wrapper .form-control {
-      max-width: 200px;
-    }
   }
 
   /* タブレットでの横幅調整 */
@@ -327,10 +276,6 @@ html<style>
       height: 1.375rem;
     }
 
-    .compound-input-wrapper {
-      padding: 0.75rem;
-    }
-
     /* スマホでは全幅 */
     .analysis-item .form-control,
     .analysis-item .form-select {
@@ -372,56 +317,6 @@ html<style>
   }
 
   .analysis-item-input-section .form-label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #4b5563;
-    margin-bottom: 0.375rem;
-  }
-
-  /* ========== 複合型の特別スタイル ========== */
-  .compound-input-wrapper {
-    background-color: #f9fafb;
-    padding: 0.875rem;
-    border-radius: 0.375rem;
-    border: 1px solid #e5e7eb;
-    margin-top: 0.75rem;
-  }
-
-  .compound-checkbox-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .compound-input-wrapper .form-check-input {
-    width: 1.25rem;
-    height: 1.25rem;
-    margin: 0;
-    cursor: pointer;
-    border: 2px solid #d1d5db;
-    border-radius: 0.375rem;
-    flex-shrink: 0;
-  }
-
-  .compound-input-wrapper .form-check-input:checked {
-    background-color: #10b981;
-    border-color: #10b981;
-  }
-
-  .compound-input-wrapper .form-check-label {
-    color: #374151;
-    cursor: pointer;
-    user-select: none;
-    font-weight: 600;
-    margin: 0;
-  }
-
-  .compound-input-wrapper .form-check-input:checked ~ .form-check-label {
-    color: #059669;
-  }
-
-  .compound-input-wrapper .form-label {
     font-size: 0.875rem;
     font-weight: 500;
     color: #4b5563;

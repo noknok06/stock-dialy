@@ -1,3 +1,430 @@
+<style>
+  /* === ダークモード: 分析テンプレート表示（モバイル最適化版） === */
+
+  /* コンテナ */
+  .dark-mode .analysis-templates-mobile,
+  [data-theme="dark"] .analysis-templates-mobile {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(37, 99, 235, 0.02));
+    border-color: rgba(59, 130, 246, 0.2);
+  }
+
+  /* ヘッダー */
+  .dark-mode .analysis-templates-header.mobile-optimized,
+  [data-theme="dark"] .analysis-templates-header.mobile-optimized {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.1));
+    border-bottom-color: rgba(59, 130, 246, 0.2);
+  }
+
+  .dark-mode .templates-title,
+  [data-theme="dark"] .templates-title {
+    color: var(--dm-primary);
+  }
+
+  .dark-mode .templates-count-badge,
+  [data-theme="dark"] .templates-count-badge {
+    background: rgba(59, 130, 246, 0.25);
+    color: var(--dm-primary);
+  }
+
+  /* コンテナ */
+  .dark-mode .analysis-templates-container.mobile-optimized,
+  [data-theme="dark"] .analysis-templates-container.mobile-optimized {
+    background: transparent;
+  }
+
+  /* テンプレートカード */
+  .dark-mode .analysis-template-card.mobile-optimized,
+  [data-theme="dark"] .analysis-template-card.mobile-optimized {
+    background: var(--dm-card);
+    border-color: rgba(59, 130, 246, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .dark-mode .analysis-template-card.mobile-optimized:hover,
+  [data-theme="dark"] .analysis-template-card.mobile-optimized:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    border-color: rgba(59, 130, 246, 0.4);
+  }
+
+  /* テンプレートヘッダー */
+  .dark-mode .template-header.mobile-optimized,
+  [data-theme="dark"] .template-header.mobile-optimized {
+    background: linear-gradient(135deg, rgba(71, 85, 105, 0.4), rgba(59, 130, 246, 0.1));
+    border-bottom-color: var(--dm-border);
+  }
+
+  .dark-mode .template-name.mobile-optimized,
+  [data-theme="dark"] .template-name.mobile-optimized {
+    color: var(--dm-primary);
+  }
+
+  .dark-mode .template-icon,
+  [data-theme="dark"] .template-icon {
+    color: var(--dm-primary);
+  }
+
+  .dark-mode .completion-fraction,
+  [data-theme="dark"] .completion-fraction {
+    background: rgba(59, 130, 246, 0.2);
+    color: var(--dm-primary);
+  }
+
+  .dark-mode .completion-percentage,
+  [data-theme="dark"] .completion-percentage {
+    color: var(--dm-muted-foreground);
+  }
+
+  /* プログレスバー */
+  .dark-mode .progress-track,
+  [data-theme="dark"] .progress-track {
+    background: rgba(59, 130, 246, 0.15);
+  }
+
+  .dark-mode .progress-fill,
+  [data-theme="dark"] .progress-fill {
+    background: linear-gradient(90deg, var(--dm-primary), rgba(59, 130, 246, 0.8));
+  }
+
+  /* テンプレート説明 */
+  .dark-mode .template-description.mobile-optimized,
+  [data-theme="dark"] .template-description.mobile-optimized {
+    background: var(--dm-card);
+  }
+
+  .dark-mode .description-text,
+  [data-theme="dark"] .description-text {
+    color: var(--dm-muted-foreground);
+  }
+
+  /* アクションエリア */
+  .dark-mode .template-actions-mobile,
+  [data-theme="dark"] .template-actions-mobile {
+    background: var(--dm-card);
+    border-top-color: var(--dm-border);
+  }
+
+  /* アクションボタン */
+  .dark-mode .action-btn.secondary.mobile-optimized,
+  [data-theme="dark"] .action-btn.secondary.mobile-optimized {
+    background: rgba(71, 85, 105, 0.3);
+    color: var(--dm-foreground);
+    border-color: var(--dm-border);
+  }
+
+  .dark-mode .action-btn.secondary.mobile-optimized:hover,
+  [data-theme="dark"] .action-btn.secondary.mobile-optimized:hover {
+    background: rgba(71, 85, 105, 0.5);
+    border-color: rgba(59, 130, 246, 0.5);
+    color: var(--dm-primary);
+  }
+
+  .dark-mode .action-btn.primary.mobile-optimized,
+  [data-theme="dark"] .action-btn.primary.mobile-optimized {
+    background: var(--dm-primary);
+    border-color: var(--dm-primary);
+    color: white;
+  }
+
+  .dark-mode .action-btn.primary.mobile-optimized:hover,
+  [data-theme="dark"] .action-btn.primary.mobile-optimized:hover {
+    background: var(--dm-primary-hover);
+    border-color: var(--dm-primary-hover);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+  }
+
+  /* 詳細セクション */
+  .dark-mode .template-details-collapse,
+  [data-theme="dark"] .template-details-collapse {
+    border-top-color: var(--dm-border);
+  }
+
+  .dark-mode .template-details-content.mobile-optimized,
+  [data-theme="dark"] .template-details-content.mobile-optimized {
+    background: rgba(71, 85, 105, 0.2);
+  }
+
+  .dark-mode .details-header.mobile-optimized,
+  [data-theme="dark"] .details-header.mobile-optimized {
+    border-bottom-color: rgba(59, 130, 246, 0.3);
+  }
+
+  .dark-mode .details-icon,
+  [data-theme="dark"] .details-icon {
+    color: var(--dm-primary);
+  }
+
+  .dark-mode .details-title,
+  [data-theme="dark"] .details-title {
+    color: var(--dm-primary);
+  }
+
+  /* 分析項目 */
+  .dark-mode .analysis-item-mobile,
+  [data-theme="dark"] .analysis-item-mobile {
+    background: var(--dm-card);
+    border-color: var(--dm-border);
+  }
+
+  .dark-mode .analysis-item-mobile:hover,
+  [data-theme="dark"] .analysis-item-mobile:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  .dark-mode .analysis-item-mobile[data-completed="false"],
+  [data-theme="dark"] .analysis-item-mobile[data-completed="false"] {
+    border-color: rgba(245, 158, 11, 0.4);
+    background: rgba(245, 158, 11, 0.08);
+  }
+
+  /* 項目ヘッダー */
+  .dark-mode .item-header.mobile-optimized,
+  [data-theme="dark"] .item-header.mobile-optimized {
+    background: linear-gradient(135deg, rgba(71, 85, 105, 0.4), rgba(59, 130, 246, 0.1));
+    border-bottom-color: var(--dm-border);
+  }
+
+  .dark-mode .item-order-badge,
+  [data-theme="dark"] .item-order-badge {
+    background: rgba(59, 130, 246, 0.25);
+    color: var(--dm-primary);
+  }
+
+  .dark-mode .item-name,
+  [data-theme="dark"] .item-name {
+    color: var(--dm-foreground);
+  }
+
+  .dark-mode .item-status.incomplete,
+  [data-theme="dark"] .item-status.incomplete {
+    background: rgba(245, 158, 11, 0.25);
+    color: var(--dm-accent);
+  }
+
+  .dark-mode .item-description-mobile .description-text,
+  [data-theme="dark"] .item-description-mobile .description-text {
+    color: var(--dm-muted-foreground);
+  }
+
+  /* 回答表示 */
+  .dark-mode .item-answer.mobile-optimized,
+  [data-theme="dark"] .item-answer.mobile-optimized {
+    background: var(--dm-card);
+  }
+
+  .dark-mode .answer-text,
+  [data-theme="dark"] .answer-text {
+    color: var(--dm-foreground);
+  }
+
+  /* 回答タイプ別スタイル */
+  .dark-mode .boolean-answer.positive .answer-icon,
+  [data-theme="dark"] .boolean-answer.positive .answer-icon {
+    color: var(--dm-success);
+  }
+
+  .dark-mode .boolean-answer.negative .answer-icon,
+  [data-theme="dark"] .boolean-answer.negative .answer-icon {
+    color: var(--dm-destructive);
+  }
+
+  .dark-mode .complex-answer.positive .answer-icon,
+  [data-theme="dark"] .complex-answer.positive .answer-icon {
+    color: var(--dm-success);
+  }
+
+  .dark-mode .complex-answer.negative .answer-icon,
+  [data-theme="dark"] .complex-answer.negative .answer-icon {
+    color: var(--dm-destructive);
+  }
+
+  .dark-mode .number-answer .answer-icon,
+  [data-theme="dark"] .number-answer .answer-icon {
+    color: var(--dm-primary);
+  }
+
+  .dark-mode .select-answer .answer-icon,
+  [data-theme="dark"] .select-answer .answer-icon {
+    color: var(--dm-info);
+  }
+
+  .dark-mode .text-answer .answer-icon,
+  [data-theme="dark"] .text-answer .answer-icon {
+    color: var(--dm-muted-foreground);
+  }
+
+  .dark-mode .text-preview,
+  [data-theme="dark"] .text-preview {
+    color: var(--dm-foreground);
+  }
+
+  /* 展開ボタン */
+  .dark-mode .btn-expand-text.mobile-optimized,
+  [data-theme="dark"] .btn-expand-text.mobile-optimized {
+    color: var(--dm-primary);
+  }
+
+  .dark-mode .btn-expand-text.mobile-optimized:hover,
+  [data-theme="dark"] .btn-expand-text.mobile-optimized:hover {
+    background: rgba(59, 130, 246, 0.15);
+  }
+
+  .dark-mode .answer-full-content,
+  [data-theme="dark"] .answer-full-content {
+    background: rgba(71, 85, 105, 0.3);
+    border-left-color: var(--dm-primary);
+    color: var(--dm-foreground);
+  }
+
+  /* セパレーター */
+  .dark-mode .template-separator.mobile-optimized,
+  [data-theme="dark"] .template-separator.mobile-optimized {
+    background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
+  }
+
+  /* アイコンの色 */
+  .dark-mode .action-icon,
+  [data-theme="dark"] .action-icon {
+    color: inherit;
+  }
+
+  /* 展開時のアイコン */
+  .dark-mode .action-btn.secondary[aria-expanded="true"],
+  [data-theme="dark"] .action-btn.secondary[aria-expanded="true"] {
+    background: rgba(71, 85, 105, 0.5);
+    border-color: rgba(59, 130, 246, 0.4);
+    color: var(--dm-primary);
+  }
+
+  /* テキストカラー */
+  .dark-mode .expand-text,
+  [data-theme="dark"] .expand-text {
+    color: inherit;
+  }
+
+  /* プログレスバーのシャインエフェクト（ダークモード） */
+  .dark-mode .progress-fill::after,
+  [data-theme="dark"] .progress-fill::after {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  }
+
+  /* ホバー時のトランジション */
+  .dark-mode .analysis-template-card.mobile-optimized,
+  .dark-mode .analysis-item-mobile,
+  .dark-mode .action-btn.mobile-optimized,
+  [data-theme="dark"] .analysis-template-card.mobile-optimized,
+  [data-theme="dark"] .analysis-item-mobile,
+  [data-theme="dark"] .action-btn.mobile-optimized {
+    transition: all 0.2s ease;
+  }
+
+  /* アクティブ状態（タッチデバイス） */
+  @media (hover: none) {
+
+    .dark-mode .action-btn.mobile-optimized:active,
+    [data-theme="dark"] .action-btn.mobile-optimized:active {
+      background: rgba(71, 85, 105, 0.6);
+    }
+
+    .dark-mode .action-btn.primary.mobile-optimized:active,
+    [data-theme="dark"] .action-btn.primary.mobile-optimized:active {
+      background: rgba(29, 78, 216, 0.9);
+    }
+
+    .dark-mode .analysis-template-card.mobile-optimized:active,
+    [data-theme="dark"] .analysis-template-card.mobile-optimized:active {
+      background: rgba(71, 85, 105, 0.5);
+    }
+  }
+
+  /* レスポンシブ調整（ダークモード） */
+  @media (max-width: 576px) {
+
+    .dark-mode .analysis-templates-header.mobile-optimized,
+    [data-theme="dark"] .analysis-templates-header.mobile-optimized {
+      padding: 0.75rem;
+    }
+
+    .dark-mode .analysis-templates-container.mobile-optimized,
+    [data-theme="dark"] .analysis-templates-container.mobile-optimized {
+      padding: 0.5rem;
+    }
+
+    .dark-mode .template-header.mobile-optimized,
+    [data-theme="dark"] .template-header.mobile-optimized {
+      padding: 0.75rem;
+    }
+
+    .dark-mode .template-details-content.mobile-optimized,
+    [data-theme="dark"] .template-details-content.mobile-optimized {
+      padding: 0.75rem;
+    }
+
+    .dark-mode .item-header.mobile-optimized,
+    [data-theme="dark"] .item-header.mobile-optimized {
+      padding: 0.75rem;
+    }
+
+    .dark-mode .item-answer.mobile-optimized,
+    [data-theme="dark"] .item-answer.mobile-optimized {
+      padding: 0.75rem;
+    }
+  }
+
+  /* フォーカス状態（アクセシビリティ） */
+  .dark-mode .action-btn.mobile-optimized:focus-visible,
+  [data-theme="dark"] .action-btn.mobile-optimized:focus-visible {
+    outline: 2px solid var(--dm-primary);
+    outline-offset: 2px;
+  }
+
+  .dark-mode .btn-expand-text.mobile-optimized:focus-visible,
+  [data-theme="dark"] .btn-expand-text.mobile-optimized:focus-visible {
+    outline: 2px solid var(--dm-primary);
+    outline-offset: 2px;
+  }
+
+  /* コントラストの高い状態表示 */
+  .dark-mode .analysis-item-mobile[data-completed="true"],
+  [data-theme="dark"] .analysis-item-mobile[data-completed="true"] {
+    border-color: rgba(16, 185, 129, 0.3);
+  }
+
+  .dark-mode .analysis-item-mobile[data-completed="true"] .item-order-badge,
+  [data-theme="dark"] .analysis-item-mobile[data-completed="true"] .item-order-badge {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--dm-success);
+  }
+
+  /* スクロールバー（詳細エリア） */
+  .dark-mode .template-details-content.mobile-optimized::-webkit-scrollbar-track,
+  [data-theme="dark"] .template-details-content.mobile-optimized::-webkit-scrollbar-track {
+    background: rgba(71, 85, 105, 0.2);
+  }
+
+  .dark-mode .template-details-content.mobile-optimized::-webkit-scrollbar-thumb,
+  [data-theme="dark"] .template-details-content.mobile-optimized::-webkit-scrollbar-thumb {
+    background: rgba(71, 85, 105, 0.5);
+  }
+
+  /* アニメーション（ダークモード） */
+  @keyframes darkFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .dark-mode .analysis-template-card.mobile-optimized,
+  [data-theme="dark"] .analysis-template-card.mobile-optimized {
+    animation: darkFadeIn 0.3s ease-out;
+  }
+</style>
 <!-- 最適化された分析テンプレート情報 - スマホ向け -->
 {% if analysis_templates_info %}
 <div class="analysis-templates-header mobile-optimized">
@@ -11,7 +438,7 @@
 <div class="analysis-templates-container mobile-optimized">
   {% for template_info in analysis_templates_info %}
   <div class="analysis-template-card mobile-optimized mb-3" id="template-card-{{ template_info.template.id }}">
-    
+
     <!-- テンプレートヘッダー -->
     <div class="template-header mobile-optimized">
       <div class="template-main-info">
@@ -25,7 +452,7 @@
             <span class="completion-percentage">{{ template_info.completion_rate }}%</span>
           </div>
         </div>
-        
+
         <!-- インラインプログレスバー -->
         <div class="template-progress-inline mobile-optimized">
           <div class="progress-track">
@@ -34,34 +461,31 @@
         </div>
       </div>
     </div>
-    
+
     <!-- テンプレート説明（存在する場合のみ） -->
     {% if template_info.template.description %}
     <div class="template-description mobile-optimized">
       <p class="description-text">{{ template_info.template.description|truncatechars:80 }}</p>
     </div>
     {% endif %}
-    
+
     <!-- モバイル最適化アクション -->
     <div class="template-actions-mobile">
       <div class="actions-row mobile-optimized">
-        <button class="action-btn secondary mobile-optimized" 
-                type="button" 
-                data-bs-toggle="collapse" 
-                data-bs-target="#template-details-{{ template_info.template.id }}" 
-                aria-expanded="false">
+        <button class="action-btn secondary mobile-optimized" type="button" data-bs-toggle="collapse"
+          data-bs-target="#template-details-{{ template_info.template.id }}" aria-expanded="false">
           <i class="bi bi-chevron-down action-icon"></i>
           <span class="action-text">詳細を見る</span>
         </button>
-        
-        <a href="{% url 'analysis_template:detail' template_info.template.id %}" 
-            class="action-btn primary mobile-optimized">
+
+        <a href="{% url 'analysis_template:detail' template_info.template.id %}"
+          class="action-btn primary mobile-optimized">
           <i class="bi bi-box-arrow-up-right action-icon"></i>
           <span class="action-text">テンプレート</span>
         </a>
       </div>
     </div>
-    
+
     <!-- 折りたたみ可能な詳細セクション -->
     <div class="collapse template-details-collapse" id="template-details-{{ template_info.template.id }}">
       <div class="template-details-content mobile-optimized">
@@ -69,11 +493,12 @@
           <i class="bi bi-list-check details-icon"></i>
           <h6 class="details-title">分析項目と回答</h6>
         </div>
-        
+
         <div class="analysis-items-mobile">
           {% for item_data in template_info.items_with_values %}
-          <div class="analysis-item-mobile mb-2" data-completed="{% if item_data.is_completed %}true{% else %}false{% endif %}">
-            
+          <div class="analysis-item-mobile mb-2"
+            data-completed="{% if item_data.is_completed %}true{% else %}false{% endif %}">
+
             <!-- 項目ヘッダー -->
             <div class="item-header mobile-optimized">
               <div class="item-order-badge">{{ item_data.item.order }}</div>
@@ -91,57 +516,60 @@
                 {% endif %}
               </div>
             </div>
-            
+
             <!-- 回答表示 -->
             <div class="item-answer mobile-optimized">
               {% if item_data.item.item_type == 'boolean' %}
-                <div class="answer-display boolean-answer {% if item_data.value.boolean_value %}positive{% else %}negative{% endif %}">
-                  <i class="bi {% if item_data.value.boolean_value %}bi-check-circle-fill{% else %}bi-x-circle-fill{% endif %} answer-icon"></i>
-                  <span class="answer-text">{{ item_data.display_value }}</span>
-                </div>
-                
+              <div
+                class="answer-display boolean-answer {% if item_data.value.boolean_value %}positive{% else %}negative{% endif %}">
+                <i
+                  class="bi {% if item_data.value.boolean_value %}bi-check-circle-fill{% else %}bi-x-circle-fill{% endif %} answer-icon"></i>
+                <span class="answer-text">{{ item_data.display_value }}</span>
+              </div>
+
               {% elif item_data.item.item_type == 'boolean_with_value' %}
-                <div class="answer-display complex-answer {% if item_data.value.boolean_value %}positive{% else %}negative{% endif %}">
-                  <div class="complex-answer-primary">
-                    <i class="bi {% if item_data.value.boolean_value %}bi-check-circle-fill{% else %}bi-x-circle-fill{% endif %} answer-icon"></i>
-                    <span class="answer-text">{{ item_data.display_value }}</span>
-                  </div>
+              <div
+                class="answer-display complex-answer {% if item_data.value.boolean_value %}positive{% else %}negative{% endif %}">
+                <div class="complex-answer-primary">
+                  <i
+                    class="bi {% if item_data.value.boolean_value %}bi-check-circle-fill{% else %}bi-x-circle-fill{% endif %} answer-icon"></i>
+                  <span class="answer-text">{{ item_data.display_value }}</span>
                 </div>
-                
+              </div>
+
               {% elif item_data.item.item_type == 'number' %}
-                <div class="answer-display number-answer">
-                  <i class="bi bi-123 answer-icon"></i>
-                  <span class="answer-text">{{ item_data.display_value }}</span>
-                </div>
-                
+              <div class="answer-display number-answer">
+                <i class="bi bi-123 answer-icon"></i>
+                <span class="answer-text">{{ item_data.display_value }}</span>
+              </div>
+
               {% elif item_data.item.item_type == 'select' %}
-                <div class="answer-display select-answer">
-                  <i class="bi bi-check2-square answer-icon"></i>
-                  <span class="answer-text">{{ item_data.display_value }}</span>
-                </div>
-                
+              <div class="answer-display select-answer">
+                <i class="bi bi-check2-square answer-icon"></i>
+                <span class="answer-text">{{ item_data.display_value }}</span>
+              </div>
+
               {% else %}
-                <div class="answer-display text-answer">
-                  <i class="bi bi-text-paragraph answer-icon"></i>
-                  <div class="text-answer-content">
-                    {% if item_data.value.text_value|length > 50 %}
-                      <div class="text-preview">{{ item_data.value.text_value|truncatechars:50 }}</div>
-                      <button class="btn-expand-text mobile-optimized" 
-                              type="button" 
-                              data-bs-toggle="collapse" 
-                              data-bs-target="#full-answer-{{ template_info.template.id }}-{{ item_data.item.id }}"
-                              aria-expanded="false">
-                        <i class="bi bi-chevron-down"></i>
-                        <span class="expand-text">続きを読む</span>
-                      </button>
-                      <div class="collapse answer-full-collapse" id="full-answer-{{ template_info.template.id }}-{{ item_data.item.id }}">
-                        <div class="answer-full-content">{{ item_data.value.text_value|linebreaks }}</div>
-                      </div>
-                    {% else %}
-                      <span class="answer-text">{{ item_data.display_value }}</span>
-                    {% endif %}
+              <div class="answer-display text-answer">
+                <i class="bi bi-text-paragraph answer-icon"></i>
+                <div class="text-answer-content">
+                  {% if item_data.value.text_value|length > 50 %}
+                  <div class="text-preview">{{ item_data.value.text_value|truncatechars:50 }}</div>
+                  <button class="btn-expand-text mobile-optimized" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#full-answer-{{ template_info.template.id }}-{{ item_data.item.id }}"
+                    aria-expanded="false">
+                    <i class="bi bi-chevron-down"></i>
+                    <span class="expand-text">続きを読む</span>
+                  </button>
+                  <div class="collapse answer-full-collapse"
+                    id="full-answer-{{ template_info.template.id }}-{{ item_data.item.id }}">
+                    <div class="answer-full-content">{{ item_data.value.text_value|linebreaks }}</div>
                   </div>
+                  {% else %}
+                  <span class="answer-text">{{ item_data.display_value }}</span>
+                  {% endif %}
                 </div>
+              </div>
               {% endif %}
             </div>
           </div>
@@ -150,639 +578,649 @@
       </div>
     </div>
   </div>
-  
+
   {% if not forloop.last %}
   <div class="template-separator mobile-optimized"></div>
   {% endif %}
-  
+
   {% endfor %}
-    </div>
+</div>
 {% endif %}
 
 <style>
-/* === スマホ最適化された分析テンプレート表示スタイル === */
+  /* === スマホ最適化された分析テンプレート表示スタイル === */
+
+  .analysis-templates-mobile {
+    background: linear-gradient(135deg, rgba(90, 126, 197, 0.02), rgba(90, 126, 197, 0.05));
+    border: 1px solid rgba(90, 126, 197, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+  }
 
-.analysis-templates-mobile {
-  background: linear-gradient(135deg, rgba(90, 126, 197, 0.02), rgba(90, 126, 197, 0.05));
-  border: 1px solid rgba(90, 126, 197, 0.1);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.analysis-templates-header.mobile-optimized {
-  background: linear-gradient(135deg, rgba(90, 126, 197, 0.08), rgba(90, 126, 197, 0.05));
-  padding: 1rem;
-  border-bottom: 1px solid rgba(90, 126, 197, 0.1);
-}
-
-.templates-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--primary-color);
-}
-
-.templates-title-text {
-  flex: 1;
-}
-
-.templates-count-badge {
-  background: rgba(90, 126, 197, 0.15);
-  color: var(--primary-color);
-  padding: 0.2rem 0.6rem;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.analysis-templates-container.mobile-optimized {
-  padding: 0.75rem;
-  background: transparent;
-}
-
-/* === テンプレートカード === */
-.analysis-template-card.mobile-optimized {
-  background: white;
-  border: 1px solid rgba(90, 126, 197, 0.1);
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  overflow: hidden;
-  transition: all 0.3s ease;
-}
-
-.analysis-template-card.mobile-optimized:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  border-color: rgba(90, 126, 197, 0.2);
-}
-
-/* === テンプレートヘッダー === */
-.template-header.mobile-optimized {
-  padding: 1rem;
-  background: linear-gradient(135deg, rgba(248, 250, 252, 0.8), rgba(255, 255, 255, 0.9));
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.template-main-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.template-name-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.5rem;
-}
-
-.template-name.mobile-optimized {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--primary-color);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex: 1;
-  line-height: 1.3;
-}
-
-.template-icon {
-  color: var(--primary-color);
-  font-size: 1.1rem;
-  flex-shrink: 0;
-}
-
-.template-completion-inline.mobile-optimized {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.15rem;
-  flex-shrink: 0;
-}
-
-.completion-fraction {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--primary-color);
-  background: rgba(90, 126, 197, 0.1);
-  padding: 0.2rem 0.5rem;
-  border-radius: 8px;
-}
-
-.completion-percentage {
-  font-size: 0.75rem;
-  color: var(--text-light);
-  font-weight: 500;
-}
-
-/* === インラインプログレスバー === */
-.template-progress-inline.mobile-optimized {
-  width: 100%;
-}
-
-.progress-track {
-  height: 6px;
-  background: rgba(90, 126, 197, 0.1);
-  border-radius: 3px;
-  overflow: hidden;
-  position: relative;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--primary-color), rgba(90, 126, 197, 0.8));
-  border-radius: 3px;
-  transition: width 0.5s ease;
-  position: relative;
-}
-
-.progress-fill::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  animation: progress-shine 2s infinite;
-}
-
-@keyframes progress-shine {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-/* === テンプレート説明 === */
-.template-description.mobile-optimized {
-  padding: 0 1rem 1rem;
-  background: white;
-}
-
-.description-text {
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--text-light);
-  line-height: 1.4;
-}
-
-/* === モバイル最適化アクション === */
-.template-actions-mobile {
-  padding: 1rem;
-  background: white;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.actions-row.mobile-optimized {
-  display: flex;
-  gap: 0.5rem;
-  width: 100%;
-}
-
-.action-btn.mobile-optimized {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  text-decoration: none;
-  transition: all 0.2s ease;
-  border: 1px solid;
-  min-height: 44px; /* タップしやすい最小サイズ */
-  cursor: pointer;
-}
-
-.action-btn.secondary.mobile-optimized {
-  background: white;
-  color: var(--text-color);
-  border-color: rgba(0, 0, 0, 0.15);
-}
-
-.action-btn.secondary.mobile-optimized:hover {
-  background: rgba(248, 249, 250, 1);
-  border-color: rgba(90, 126, 197, 0.3);
-  color: var(--primary-color);
-  transform: translateY(-1px);
-}
-
-.action-btn.primary.mobile-optimized {
-  background: var(--primary-color);
-  color: white;
-  border-color: var(--primary-color);
-}
-
-.action-btn.primary.mobile-optimized:hover {
-  background: #4a6eaf;
-  border-color: #4a6eaf;
-  color: white;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(90, 126, 197, 0.3);
-}
-
-.action-icon {
-  font-size: 0.9rem;
-  flex-shrink: 0;
-}
-
-.action-text {
-  font-weight: 500;
-}
-
-/* === 折りたたみ詳細セクション === */
-.template-details-collapse {
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.template-details-content.mobile-optimized {
-  padding: 1rem;
-  background: rgba(248, 250, 252, 0.5);
-}
-
-.details-header.mobile-optimized {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid rgba(90, 126, 197, 0.15);
-}
-
-.details-icon {
-  color: var(--primary-color);
-  font-size: 1.1rem;
-}
-
-.details-title {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--primary-color);
-}
-
-/* === 分析項目（モバイル最適化） === */
-.analysis-items-mobile {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.analysis-item-mobile {
-  background: white;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 8px;
-  overflow: hidden;
-  transition: all 0.2s ease;
-}
-
-.analysis-item-mobile:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border-color: rgba(90, 126, 197, 0.2);
-}
-
-.analysis-item-mobile[data-completed="false"] {
-  border-color: rgba(251, 191, 36, 0.3);
-  background: rgba(254, 252, 232, 0.5);
-}
-
-/* === 項目ヘッダー === */
-.item-header.mobile-optimized {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.875rem;
-  background: linear-gradient(135deg, rgba(248, 250, 252, 0.8), rgba(255, 255, 255, 0.9));
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.item-order-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: rgba(90, 126, 197, 0.15);
-  color: var(--primary-color);
-  border-radius: 50%;
-  font-size: 0.8rem;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.item-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.item-name-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.25rem;
-}
-
-.item-name {
-  font-weight: 600;
-  color: var(--text-color);
-  font-size: 0.9rem;
-  line-height: 1.3;
-  flex: 1;
-}
-
-.item-status.incomplete {
-  background: rgba(251, 191, 36, 0.2);
-  color: #d97706;
-  padding: 0.15rem 0.5rem;
-  border-radius: 12px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.item-description-mobile {
-  margin-top: 0.25rem;
-}
-
-.item-description-mobile .description-text {
-  color: var(--text-light);
-  font-size: 0.8rem;
-  line-height: 1.3;
-}
-
-/* === 回答表示 === */
-.item-answer.mobile-optimized {
-  padding: 0.875rem;
-  background: white;
-}
-
-.answer-display {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.6rem;
-}
-
-.answer-icon {
-  font-size: 1.1rem;
-  margin-top: 0.1rem;
-  flex-shrink: 0;
-}
-
-.answer-text {
-  font-weight: 500;
-  font-size: 0.9rem;
-  line-height: 1.4;
-  flex: 1;
-}
-
-/* === 回答タイプ別スタイル === */
-.boolean-answer.positive .answer-icon {
-  color: var(--success-color);
-}
-
-.boolean-answer.negative .answer-icon {
-  color: var(--danger-color);
-}
-
-.complex-answer .complex-answer-primary {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.complex-answer.positive .answer-icon {
-  color: var(--success-color);
-}
-
-.complex-answer.negative .answer-icon {
-  color: var(--danger-color);
-}
-
-.number-answer {
-  align-items: center; /* 数値回答は中央揃え */
-}
-
-.number-answer .answer-icon {
-  color: var(--primary-color);
-  margin-top: 0; /* 数値アイコンは margin-top をリセット */
-  align-self: center; /* アイコン自体も中央揃え */
-  line-height: 1; /* ラインハイトを1に設定 */
-}
-
-.select-answer .answer-icon {
-  color: var(--info-color);
-}
-
-.text-answer .answer-icon {
-  color: var(--text-light);
-  margin-top: 0.2rem;
-}
-
-.text-answer-content {
-  flex: 1;
-}
-
-.text-preview {
-  margin-bottom: 0.5rem;
-  line-height: 1.4;
-}
-
-.btn-expand-text.mobile-optimized {
-  background: none;
-  border: none;
-  color: var(--primary-color);
-  font-size: 0.8rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.4rem 0.6rem;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  margin-top: 0.5rem;
-}
-
-.btn-expand-text.mobile-optimized:hover {
-  background: rgba(90, 126, 197, 0.1);
-}
-
-.answer-full-collapse {
-  margin-top: 0.75rem;
-}
-
-.answer-full-content {
-  background: rgba(248, 250, 252, 0.8);
-  padding: 0.75rem;
-  border-radius: 6px;
-  border-left: 3px solid var(--primary-color);
-  line-height: 1.5;
-  font-size: 0.85rem;
-}
-
-/* === セパレーター === */
-.template-separator.mobile-optimized {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(90, 126, 197, 0.2), transparent);
-  margin: 1rem 0;
-}
-
-/* === レスポンシブ調整 === */
-@media (max-width: 576px) {
   .analysis-templates-header.mobile-optimized {
-    padding: 0.75rem;
+    background: linear-gradient(135deg, rgba(90, 126, 197, 0.08), rgba(90, 126, 197, 0.05));
+    padding: 1rem;
+    border-bottom: 1px solid rgba(90, 126, 197, 0.1);
   }
-  
+
   .templates-title {
-    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary-color);
   }
-  
+
+  .templates-title-text {
+    flex: 1;
+  }
+
+  .templates-count-badge {
+    background: rgba(90, 126, 197, 0.15);
+    color: var(--primary-color);
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
   .analysis-templates-container.mobile-optimized {
-    padding: 0.5rem;
+    padding: 0.75rem;
+    background: transparent;
   }
-  
+
+  /* === テンプレートカード === */
+  .analysis-template-card.mobile-optimized {
+    background: white;
+    border: 1px solid rgba(90, 126, 197, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .analysis-template-card.mobile-optimized:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    border-color: rgba(90, 126, 197, 0.2);
+  }
+
+  /* === テンプレートヘッダー === */
   .template-header.mobile-optimized {
-    padding: 0.75rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.8), rgba(255, 255, 255, 0.9));
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   }
-  
-  .template-name.mobile-optimized {
-    font-size: 0.9rem;
-  }
-  
-  .completion-fraction {
-    font-size: 0.8rem;
-    padding: 0.15rem 0.4rem;
-  }
-  
-  .actions-row.mobile-optimized {
+
+  .template-main-info {
+    display: flex;
     flex-direction: column;
-    gap: 0.4rem;
+    gap: 0.75rem;
   }
-  
-  .action-btn.mobile-optimized {
-    min-height: 42px;
-    font-size: 0.8rem;
-    padding: 0.6rem 0.8rem;
-  }
-  
-  .template-details-content.mobile-optimized {
-    padding: 0.75rem;
-  }
-  
-  .item-header.mobile-optimized {
-    padding: 0.75rem;
-    gap: 0.6rem;
-  }
-  
-  .item-order-badge {
-    width: 26px;
-    height: 26px;
-    font-size: 0.75rem;
-  }
-  
-  .item-name {
-    font-size: 0.85rem;
-  }
-  
-  .item-answer.mobile-optimized {
-    padding: 0.75rem;
-  }
-  
-  .answer-display {
+
+  .template-name-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
     gap: 0.5rem;
   }
-  
+
+  .template-name.mobile-optimized {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    line-height: 1.3;
+  }
+
+  .template-icon {
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  .template-completion-inline.mobile-optimized {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.15rem;
+    flex-shrink: 0;
+  }
+
+  .completion-fraction {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    background: rgba(90, 126, 197, 0.1);
+    padding: 0.2rem 0.5rem;
+    border-radius: 8px;
+  }
+
+  .completion-percentage {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    font-weight: 500;
+  }
+
+  /* === インラインプログレスバー === */
+  .template-progress-inline.mobile-optimized {
+    width: 100%;
+  }
+
+  .progress-track {
+    height: 6px;
+    background: rgba(90, 126, 197, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), rgba(90, 126, 197, 0.8));
+    border-radius: 3px;
+    transition: width 0.5s ease;
+    position: relative;
+  }
+
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: progress-shine 2s infinite;
+  }
+
+  @keyframes progress-shine {
+    0% {
+      transform: translateX(-100%);
+    }
+
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  /* === テンプレート説明 === */
+  .template-description.mobile-optimized {
+    padding: 0 1rem 1rem;
+    background: white;
+  }
+
+  .description-text {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-light);
+    line-height: 1.4;
+  }
+
+  /* === モバイル最適化アクション === */
+  .template-actions-mobile {
+    padding: 1rem;
+    background: white;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  .actions-row.mobile-optimized {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .action-btn.mobile-optimized {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: 1px solid;
+    min-height: 44px;
+    /* タップしやすい最小サイズ */
+    cursor: pointer;
+  }
+
+  .action-btn.secondary.mobile-optimized {
+    background: white;
+    color: var(--text-color);
+    border-color: rgba(0, 0, 0, 0.15);
+  }
+
+  .action-btn.secondary.mobile-optimized:hover {
+    background: rgba(248, 249, 250, 1);
+    border-color: rgba(90, 126, 197, 0.3);
+    color: var(--primary-color);
+    transform: translateY(-1px);
+  }
+
+  .action-btn.primary.mobile-optimized {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+  }
+
+  .action-btn.primary.mobile-optimized:hover {
+    background: #4a6eaf;
+    border-color: #4a6eaf;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(90, 126, 197, 0.3);
+  }
+
+  .action-icon {
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .action-text {
+    font-weight: 500;
+  }
+
+  /* === 折りたたみ詳細セクション === */
+  .template-details-collapse {
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  .template-details-content.mobile-optimized {
+    padding: 1rem;
+    background: rgba(248, 250, 252, 0.5);
+  }
+
+  .details-header.mobile-optimized {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(90, 126, 197, 0.15);
+  }
+
+  .details-icon {
+    color: var(--primary-color);
+    font-size: 1.1rem;
+  }
+
+  .details-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+  }
+
+  /* === 分析項目（モバイル最適化） === */
+  .analysis-items-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .analysis-item-mobile {
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+  }
+
+  .analysis-item-mobile:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-color: rgba(90, 126, 197, 0.2);
+  }
+
+  .analysis-item-mobile[data-completed="false"] {
+    border-color: rgba(251, 191, 36, 0.3);
+    background: rgba(254, 252, 232, 0.5);
+  }
+
+  /* === 項目ヘッダー === */
+  .item-header.mobile-optimized {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem;
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.8), rgba(255, 255, 255, 0.9));
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  .item-order-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: rgba(90, 126, 197, 0.15);
+    color: var(--primary-color);
+    border-radius: 50%;
+    font-size: 0.8rem;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .item-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .item-name-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .item-name {
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 0.9rem;
+    line-height: 1.3;
+    flex: 1;
+  }
+
+  .item-status.incomplete {
+    background: rgba(251, 191, 36, 0.2);
+    color: #d97706;
+    padding: 0.15rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .item-description-mobile {
+    margin-top: 0.25rem;
+  }
+
+  .item-description-mobile .description-text {
+    color: var(--text-light);
+    font-size: 0.8rem;
+    line-height: 1.3;
+  }
+
+  /* === 回答表示 === */
+  .item-answer.mobile-optimized {
+    padding: 0.875rem;
+    background: white;
+  }
+
+  .answer-display {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+
+  .answer-icon {
+    font-size: 1.1rem;
+    margin-top: 0.1rem;
+    flex-shrink: 0;
+  }
+
   .answer-text {
+    font-weight: 500;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    flex: 1;
+  }
+
+  /* === 回答タイプ別スタイル === */
+  .boolean-answer.positive .answer-icon {
+    color: var(--success-color);
+  }
+
+  .boolean-answer.negative .answer-icon {
+    color: var(--danger-color);
+  }
+
+  .complex-answer .complex-answer-primary {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .complex-answer.positive .answer-icon {
+    color: var(--success-color);
+  }
+
+  .complex-answer.negative .answer-icon {
+    color: var(--danger-color);
+  }
+
+  .number-answer {
+    align-items: center;
+    /* 数値回答は中央揃え */
+  }
+
+  .number-answer .answer-icon {
+    color: var(--primary-color);
+    margin-top: 0;
+    /* 数値アイコンは margin-top をリセット */
+    align-self: center;
+    /* アイコン自体も中央揃え */
+    line-height: 1;
+    /* ラインハイトを1に設定 */
+  }
+
+  .select-answer .answer-icon {
+    color: var(--info-color);
+  }
+
+  .text-answer .answer-icon {
+    color: var(--text-light);
+    margin-top: 0.2rem;
+  }
+
+  .text-answer-content {
+    flex: 1;
+  }
+
+  .text-preview {
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+  }
+
+  .btn-expand-text.mobile-optimized {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    font-size: 0.8rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    margin-top: 0.5rem;
+  }
+
+  .btn-expand-text.mobile-optimized:hover {
+    background: rgba(90, 126, 197, 0.1);
+  }
+
+  .answer-full-collapse {
+    margin-top: 0.75rem;
+  }
+
+  .answer-full-content {
+    background: rgba(248, 250, 252, 0.8);
+    padding: 0.75rem;
+    border-radius: 6px;
+    border-left: 3px solid var(--primary-color);
+    line-height: 1.5;
     font-size: 0.85rem;
   }
-}
 
-/* === アクセシビリティ === */
-@media (hover: none) {
-  .action-btn.mobile-optimized:active {
-    transform: scale(0.98);
+  /* === セパレーター === */
+  .template-separator.mobile-optimized {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(90, 126, 197, 0.2), transparent);
+    margin: 1rem 0;
   }
-  
-  .analysis-template-card.mobile-optimized:active {
-    transform: scale(0.99);
+
+  /* === レスポンシブ調整 === */
+  @media (max-width: 576px) {
+    .analysis-templates-header.mobile-optimized {
+      padding: 0.75rem;
+    }
+
+    .templates-title {
+      font-size: 1rem;
+    }
+
+    .analysis-templates-container.mobile-optimized {
+      padding: 0.5rem;
+    }
+
+    .template-header.mobile-optimized {
+      padding: 0.75rem;
+    }
+
+    .template-name.mobile-optimized {
+      font-size: 0.9rem;
+    }
+
+    .completion-fraction {
+      font-size: 0.8rem;
+      padding: 0.15rem 0.4rem;
+    }
+
+    .actions-row.mobile-optimized {
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .action-btn.mobile-optimized {
+      min-height: 42px;
+      font-size: 0.8rem;
+      padding: 0.6rem 0.8rem;
+    }
+
+    .template-details-content.mobile-optimized {
+      padding: 0.75rem;
+    }
+
+    .item-header.mobile-optimized {
+      padding: 0.75rem;
+      gap: 0.6rem;
+    }
+
+    .item-order-badge {
+      width: 26px;
+      height: 26px;
+      font-size: 0.75rem;
+    }
+
+    .item-name {
+      font-size: 0.85rem;
+    }
+
+    .item-answer.mobile-optimized {
+      padding: 0.75rem;
+    }
+
+    .answer-display {
+      gap: 0.5rem;
+    }
+
+    .answer-text {
+      font-size: 0.85rem;
+    }
   }
-}
 
-/* === 折りたたみアニメーション === */
-.template-details-collapse.collapsing,
-.answer-full-collapse.collapsing {
-  transition: height 0.3s ease;
-}
+  /* === アクセシビリティ === */
+  @media (hover: none) {
+    .action-btn.mobile-optimized:active {
+      transform: scale(0.98);
+    }
 
-/* === 展開ボタンのアイコンアニメーション === */
-.action-btn.secondary[aria-expanded="true"] .action-icon {
-  transform: rotate(180deg);
-  transition: transform 0.3s ease;
-}
+    .analysis-template-card.mobile-optimized:active {
+      transform: scale(0.99);
+    }
+  }
 
-.btn-expand-text[aria-expanded="true"] i {
-  transform: rotate(180deg);
-  transition: transform 0.3s ease;
-}
+  /* === 折りたたみアニメーション === */
+  .template-details-collapse.collapsing,
+  .answer-full-collapse.collapsing {
+    transition: height 0.3s ease;
+  }
+
+  /* === 展開ボタンのアイコンアニメーション === */
+  .action-btn.secondary[aria-expanded="true"] .action-icon {
+    transform: rotate(180deg);
+    transition: transform 0.3s ease;
+  }
+
+  .btn-expand-text[aria-expanded="true"] i {
+    transform: rotate(180deg);
+    transition: transform 0.3s ease;
+  }
 </style>
 
 <script>
-// スマホ最適化されたアニメーション効果
-document.addEventListener('DOMContentLoaded', function() {
-  // 詳細展開ボタンのテキスト切り替え
-  const detailToggleBtns = document.querySelectorAll('[data-bs-toggle="collapse"][data-bs-target*="template-details-"]');
-  
-  detailToggleBtns.forEach(btn => {
-    const textSpan = btn.querySelector('.action-text');
-    const originalText = textSpan.textContent;
-    
-    btn.addEventListener('click', function() {
-      setTimeout(() => {
-        const isExpanded = btn.getAttribute('aria-expanded') === 'true';
-        textSpan.textContent = isExpanded ? '詳細を閉じる' : originalText;
-      }, 50);
-    });
-  });
-  
-  // 続きを読むボタンのテキスト切り替え
-  const expandTextBtns = document.querySelectorAll('.btn-expand-text');
-  
-  expandTextBtns.forEach(btn => {
-    const textSpan = btn.querySelector('.expand-text');
-    
-    btn.addEventListener('click', function() {
-      setTimeout(() => {
-        const isExpanded = btn.getAttribute('aria-expanded') === 'true';
-        textSpan.textContent = isExpanded ? '閉じる' : '続きを読む';
-      }, 50);
-    });
-  });
-  
-  // スムーズなスクロール効果（テンプレートカードが展開された時）
-  const collapseElements = document.querySelectorAll('.template-details-collapse');
-  
-  collapseElements.forEach(collapse => {
-    collapse.addEventListener('shown.bs.collapse', function() {
-      // 展開後にカードの位置を調整してスクロール
-      const card = this.closest('.analysis-template-card');
-      if (card) {
+  // スマホ最適化されたアニメーション効果
+  document.addEventListener('DOMContentLoaded', function () {
+    // 詳細展開ボタンのテキスト切り替え
+    const detailToggleBtns = document.querySelectorAll('[data-bs-toggle="collapse"][data-bs-target*="template-details-"]');
+
+    detailToggleBtns.forEach(btn => {
+      const textSpan = btn.querySelector('.action-text');
+      const originalText = textSpan.textContent;
+
+      btn.addEventListener('click', function () {
         setTimeout(() => {
-          const headerHeight = 60; // ヘッダーの高さ
-          const cardRect = card.getBoundingClientRect();
-          const scrollTop = window.pageYOffset + cardRect.top - headerHeight;
-          
-          window.scrollTo({
-            top: scrollTop,
-            behavior: 'smooth'
-          });
-        }, 100);
-      }
+          const isExpanded = btn.getAttribute('aria-expanded') === 'true';
+          textSpan.textContent = isExpanded ? '詳細を閉じる' : originalText;
+        }, 50);
+      });
+    });
+
+    // 続きを読むボタンのテキスト切り替え
+    const expandTextBtns = document.querySelectorAll('.btn-expand-text');
+
+    expandTextBtns.forEach(btn => {
+      const textSpan = btn.querySelector('.expand-text');
+
+      btn.addEventListener('click', function () {
+        setTimeout(() => {
+          const isExpanded = btn.getAttribute('aria-expanded') === 'true';
+          textSpan.textContent = isExpanded ? '閉じる' : '続きを読む';
+        }, 50);
+      });
+    });
+
+    // スムーズなスクロール効果（テンプレートカードが展開された時）
+    const collapseElements = document.querySelectorAll('.template-details-collapse');
+
+    collapseElements.forEach(collapse => {
+      collapse.addEventListener('shown.bs.collapse', function () {
+        // 展開後にカードの位置を調整してスクロール
+        const card = this.closest('.analysis-template-card');
+        if (card) {
+          setTimeout(() => {
+            const headerHeight = 60; // ヘッダーの高さ
+            const cardRect = card.getBoundingClientRect();
+            const scrollTop = window.pageYOffset + cardRect.top - headerHeight;
+
+            window.scrollTo({
+              top: scrollTop,
+              behavior: 'smooth'
+            });
+          }, 100);
+        }
+      });
     });
   });
-});
 </script>

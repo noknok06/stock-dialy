@@ -1,6 +1,49 @@
 {% load stockdiary_filters %}
 {% load humanize %}
+<style>
+  /* ========== ダークモード対応 ========== */
 
+.dark-mode .transaction-summary-compact,
+[data-theme="dark"] .transaction-summary-compact {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .summary-grid,
+[data-theme="dark"] .summary-grid {
+  background-color: transparent;
+}
+
+.dark-mode .summary-item,
+[data-theme="dark"] .summary-item {
+  background-color: rgba(71, 85, 105, 0.3);
+}
+
+.dark-mode .summary-label,
+[data-theme="dark"] .summary-label {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .summary-value,
+[data-theme="dark"] .summary-value {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .recent-transactions h6,
+[data-theme="dark"] .recent-transactions h6 {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .transaction-item-compact,
+[data-theme="dark"] .transaction-item-compact {
+  background-color: rgba(71, 85, 105, 0.3);
+}
+
+@media (max-width: 576px) {
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
 <div class="px-1 py-2">
   <!-- 取引がある場合の表示 -->
   {% if diary.transaction_count > 0 %}

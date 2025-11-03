@@ -1,6 +1,170 @@
 {% load stockdiary_filters %}
 {% load humanize %}
+<style>
+  /* ========== ダークモード対応 ========== */
 
+.dark-mode .transaction-summary-section,
+[data-theme="dark"] .transaction-summary-section {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+  border-color: var(--dm-border);
+}
+
+.dark-mode .summary-card-improved,
+[data-theme="dark"] .summary-card-improved {
+  background-color: var(--dm-card);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .summary-label,
+[data-theme="dark"] .summary-label {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .summary-value,
+[data-theme="dark"] .summary-value {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .form-card-improved,
+[data-theme="dark"] .form-card-improved {
+  background-color: var(--dm-card);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .form-header-improved,
+[data-theme="dark"] .form-header-improved {
+  background-color: var(--dm-primary) !important;
+}
+
+.dark-mode .form-body-improved,
+[data-theme="dark"] .form-body-improved {
+  background-color: var(--dm-card);
+}
+
+.dark-mode .form-label-improved,
+[data-theme="dark"] .form-label-improved {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .form-input-improved,
+[data-theme="dark"] .form-input-improved {
+  background-color: rgba(71, 85, 105, 0.3);
+  border-color: var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .form-input-improved:focus,
+[data-theme="dark"] .form-input-improved:focus {
+  background-color: rgba(71, 85, 105, 0.4);
+  border-color: var(--dm-primary);
+}
+
+.dark-mode .form-text-improved,
+[data-theme="dark"] .form-text-improved {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .alert-info-improved,
+[data-theme="dark"] .alert-info-improved {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
+  color: var(--dm-info);
+}
+
+.dark-mode .alert-warning-improved,
+[data-theme="dark"] .alert-warning-improved {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.1));
+  color: var(--dm-accent);
+}
+
+.dark-mode .transaction-item-improved,
+.dark-mode .split-item-improved,
+[data-theme="dark"] .transaction-item-improved,
+[data-theme="dark"] .split-item-improved {
+  background-color: var(--dm-card);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .transaction-header-improved,
+.dark-mode .split-header-improved,
+[data-theme="dark"] .transaction-header-improved,
+[data-theme="dark"] .split-header-improved {
+  border-bottom-color: var(--dm-border);
+}
+
+.dark-mode .transaction-date-improved,
+.dark-mode .split-date-improved,
+[data-theme="dark"] .transaction-date-improved,
+[data-theme="dark"] .split-date-improved {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .detail-item-improved,
+[data-theme="dark"] .detail-item-improved {
+  background-color: rgba(71, 85, 105, 0.3);
+}
+
+.dark-mode .detail-item-improved.highlight,
+[data-theme="dark"] .detail-item-improved.highlight {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.1));
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.dark-mode .detail-label-improved,
+[data-theme="dark"] .detail-label-improved {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .detail-value-improved,
+[data-theme="dark"] .detail-value-improved {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .detail-value-improved.strong,
+[data-theme="dark"] .detail-value-improved.strong {
+  color: var(--dm-primary);
+}
+
+.dark-mode .transaction-memo-improved,
+.dark-mode .split-memo-improved,
+[data-theme="dark"] .transaction-memo-improved,
+[data-theme="dark"] .split-memo-improved {
+  background-color: rgba(71, 85, 105, 0.3);
+  border-left-color: var(--dm-primary);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .empty-state-improved,
+[data-theme="dark"] .empty-state-improved {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .empty-icon-improved,
+[data-theme="dark"] .empty-icon-improved {
+  color: var(--dm-muted);
+}
+
+.dark-mode .empty-title-improved,
+[data-theme="dark"] .empty-title-improved {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .list-header-improved,
+[data-theme="dark"] .list-header-improved {
+  color: var(--dm-foreground);
+}
+
+/* アニメーション効果 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>
 <div class="px-2 py-3">
   <!-- 取引サマリー -->
   <div class="transaction-summary-section mb-4">
