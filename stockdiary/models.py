@@ -437,26 +437,12 @@ class StockSplit(models.Model):
                 raise ValidationError('適用済みの分割情報は編集できません')
 
     def apply_split(self):
-        """分割を適用"""
-        if self.is_applied:
-            raise ValidationError('すでに適用済みです')
-        
-        # 分割日以前の取引に対して調整
-        transactions = self.diary.transactions.filter(
-            transaction_date__lt=self.split_date
-        )
-        
-        for transaction in transactions:
-            transaction.quantity = transaction.quantity * self.split_ratio
-            transaction.price = transaction.price / self.split_ratio
-            transaction.save(update_fields=['quantity', 'price'])
-        
-        # 適用済みフラグを立てる
+        # フラグだけ設定
         self.is_applied = True
         self.applied_at = timezone.now()
         self.save()
         
-        # 日記の集計を更新
+        # update_aggregatesで調整処理を一括実行
         self.diary.update_aggregates()
 
 
