@@ -7,7 +7,7 @@
   <!-- Enhanced note card with better spacing and modern design -->
   <div class="note-item mb-4" data-note-type="{{ note.note_type }}" data-importance="{{ note.importance }}" style="border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); overflow: hidden; border: 1px solid rgba(0, 0, 0, 0.06);">
     <!-- Improved header padding and layout -->
-    <div class="note-header" style="padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: center; background-color: rgba(248, 250, 252, 0.9); border-bottom: 1px solid var(--border-light);">
+    <div class="note-header" style="padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-light);">
       <div class="note-meta">
         <span class="note-date text-muted me-2" style="font-size: 0.875rem;">
           <i class="bi bi-calendar-date"></i>
@@ -51,7 +51,7 @@
 
     {% if note.current_price %}
     <!-- Enhanced content padding and spacing -->
-    <div class="note-content" style="padding: 1.25rem; background-color: white;">
+    <div class="note-content" style="padding: 1.25rem;">
       {% if note.image_url %}
       <div class="note-image mb-3">
         <img src="{{ note.image_url }}" 
@@ -62,7 +62,7 @@
       </div>
       {% endif %}
       <!-- Improved price info layout with better visual hierarchy -->
-      <div class="note-price-info mb-3 d-flex justify-content-between align-items-center" style="font-size: 0.9rem; padding: 0.875rem 1rem; background-color: rgba(248, 250, 252, 0.7); border-radius: 8px; border: 1px solid rgba(0, 0, 0, 0.05);">
+      <div class="note-price-info mb-3 d-flex justify-content-between align-items-center" style="font-size: 0.9rem; padding: 0.875rem 1rem; border-radius: 8px; border: 1px solid rgba(0, 0, 0, 0.05);">
         <span class="text-muted">
           <i class="bi bi-cash-coin me-2"></i>
           記録時価格:
@@ -79,7 +79,7 @@
       </div>
       
       <!-- Enhanced text area with better readability -->
-      <div class="note-text bg-light rounded" style="padding: 1.125rem; line-height: 1.7; font-size: 0.95rem; background-color: rgba(248, 250, 252, 0.6) !important; border-radius: 10px;">
+      <div class="note-text rounded" style="padding: 1.125rem; line-height: 1.7; font-size: 0.95rem; border-radius: 10px;">
         {{ note.content|safe|linebreaks|truncatewords_html:50 }}
       </div>
 
@@ -93,7 +93,7 @@
     </div>
     {% else %}
     <!-- Enhanced content padding for notes without price -->
-    <div class="note-content" style="padding: 1.25rem; background-color: white;">
+    <div class="note-content" style="padding: 1.25rem;">
       {% if note.image_url %}
       <div class="note-image mb-3">
         <img src="{{ note.image_url }}" 
@@ -104,7 +104,7 @@
       </div>
       {% endif %}
       <!-- Enhanced text area with better readability -->
-      <div class="note-text bg-light rounded" style="padding: 1.125rem; line-height: 1.7; font-size: 0.95rem; background-color: rgba(248, 250, 252, 0.6) !important; border-radius: 10px;">
+      <div class="note-text rounded" style="padding: 1.125rem; line-height: 1.7; font-size: 0.95rem; border-radius: 10px;">
         {{ note.content|safe|linebreaks|truncatewords_html:50 }}
       </div>
 
