@@ -21,13 +21,6 @@ class PushNotificationUI {
             const isStandalone = window.navigator.standalone === true || 
                                  window.matchMedia('(display-mode: standalone)').matches;
             
-            // console.log(`🔍 ブラウザ情報:`, {
-                isSafari,
-                isIOS,
-                isStandalone,
-                userAgent: userAgent.substring(0, 100)
-            });
-            
             // 🆕 最初にステータスを「確認中」に設定
             this.showStatus('確認中...', 'secondary');
             

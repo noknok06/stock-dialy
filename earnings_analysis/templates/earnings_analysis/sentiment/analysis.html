@@ -605,7 +605,6 @@ async function validateCSRFToken() {
 
 // ページリロードしてCSRFトークンを更新する関数
 function refreshCSRFToken() {
-    // console.log('CSRFトークンを更新するためページをリロードします');
     showToast('認証情報を更新しています...', 'info');
     setTimeout(() => {
         window.location.reload();
@@ -624,8 +623,6 @@ function startSentimentAnalysis(docId, force = false) {
         setTimeout(refreshCSRFToken, 2000);
         return;
     }
-    
-    // console.log('感情分析開始:', { docId, force, csrfToken: csrfToken.substring(0, 8) + '...' });
     
     fetch('{% url "copomo:sentiment-start" %}', {
         method: 'POST',

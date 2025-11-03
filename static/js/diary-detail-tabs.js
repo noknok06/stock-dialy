@@ -179,12 +179,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // タッチ終了イベント
     function handleTouchEnd(e) {
         if (isAnimating || isScrolling || !touchStartX || !touchStartY) {
-            // console.log('タッチ終了 - 条件不満足:', { 
-                isAnimating, 
-                isScrolling, 
-                hasStart: !!(touchStartX && touchStartY),
-                isDragging
-            });
             resetSwipeState();
             return;
         }
@@ -197,28 +191,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const swipeDistance = touchEndX - touchStartX;
         const velocity = Math.abs(swipeDistance) / duration; // 速度（px/ms）
         
-        // console.log('タッチ終了:', {
-            startX: touchStartX,
-            endX: touchEndX,
-            distance: swipeDistance,
-            velocity: velocity,
-            duration: duration,
-            isDragging: isDragging
-        });
-        
         // トランジションを有効化
         tabContent.classList.remove('swiping');
         
         // 素早いスワイプまたは十分な距離があればタブ切り替え
         if ((Math.abs(swipeDistance) > DRAG_THRESHOLD || velocity > VELOCITY_THRESHOLD) && isDragging) {
             const currentIndex = getCurrentTabIndex();
-            
-            // console.log('フリック検出:', {
-                currentIndex: currentIndex,
-                totalTabs: allTabs.length,
-                direction: swipeDistance > 0 ? 'right' : 'left',
-                distance: Math.abs(swipeDistance)
-            });
             
             if (swipeDistance > 0) {
                 // 右スワイプ（前のタブへ）
@@ -244,11 +222,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         } else {
-            // console.log('フリック距離が不十分またはドラッグなし:', {
-                distance: Math.abs(swipeDistance),
-                velocity: velocity,
-                isDragging: isDragging
-            });
+
             resetSwipeState();
         }
         
@@ -368,10 +342,6 @@ document.addEventListener('DOMContentLoaded', function() {
         initStyles();
         setupEventListeners();
         resetSwipeState();
-        
-        // console.log('=== 日記詳細タブスワイプ機能 初期化完了 ===');
-        // console.log('利用可能なタブ数:', allTabs.length);
-        // console.log('現在のアクティブタブ:', getCurrentTabIndex());
     }
     
     // 初期化を実行
