@@ -723,20 +723,21 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
             result = "✓" if analysis_value.boolean_value else "✗"
             if analysis_value.boolean_value:
                 if analysis_value.number_value is not None:
-                    result += f" {analysis_value.number_value}"
+                    result += f" {analysis_value.number_value:.2f}"  # 小数点2桁にフォーマット
                     if analysis_value.analysis_item.value_label:
                         result += f" {analysis_value.analysis_item.value_label}"
                 elif analysis_value.text_value:
                     result += f" {analysis_value.text_value}"
             return result
         elif item.item_type == 'number':
-            return f"{analysis_value.number_value}" if analysis_value.number_value is not None else "-"
+            return f"{analysis_value.number_value:.2f}" if analysis_value.number_value is not None else "-"  # 小数点2桁にフォーマット
         elif item.item_type == 'select':
             return analysis_value.text_value if analysis_value.text_value else "-"
         elif item.item_type == 'text':
             return analysis_value.text_value if analysis_value.text_value else "-"
         
         return "-"
+
     
     def _is_analysis_item_completed(self, analysis_value):
         """分析項目が完了しているかを判定"""

@@ -55,6 +55,46 @@
     background-image: linear-gradient(transparent 1.7rem, #52626d 1.7rem, #0e2147 1.8rem, transparent 1.8rem);
   }
 
+  .dark-mode .input-group-text,
+  [data-theme="dark"] .input-group-text {
+    background-color: #1e293b;
+    color: #f3f4f6;
+  }
+  .dark-mode .tooltip-inner,
+  [data-theme="dark"] .tooltip-inner {
+      background-color: #333; /* 背景色を暗く */
+      color: #f3f4f6; /* 文字色を明るく */
+  }
+  
+  /* ダークモードのファイル入力フィールド */
+  .dark-mode .form-control[type="file"],
+  [data-theme="dark"] .form-control[type="file"] {
+    background-color: #333; /* 背景色を暗く */
+    color: #f3f4f6; /* 文字色を明るく */
+    border-color: #555; /* 枠線の色を暗く */
+  }
+
+  /* ダークモードでファイル選択ボタンのテキストを変更 */
+  .dark-mode .form-control[type="file"]::file-selector-button,
+  [data-theme="dark"] .form-control[type="file"]::file-selector-button {
+    background-color: #444; /* ボタンの背景色 */
+    color: #f3f4f6; /* ボタンの文字色 */
+    border: 1px solid #666; /* ボタンの枠線色 */
+  }
+
+  /* ボタンにホバーしたときのスタイル */
+  .dark-mode .form-control[type="file"]::file-selector-button:hover,
+  [data-theme="dark"] .form-control[type="file"]::file-selector-button:hover {
+    background-color: #555; /* ボタンのホバー背景色 */
+    border-color: #777; /* ボタンのホバー枠線色 */
+  }
+
+  /* ダークモードでツールチップの矢印色も変更 */
+  .dark-mode .tooltip.bs-tooltip-top .tooltip-arrow::before,
+  [data-theme="dark"] .tooltip.bs-tooltip-top .tooltip-arrow::before {
+      border-top-color: #333; /* 矢印の色を背景色に合わせる */
+  }
+
   .diary-memo-textarea {
     font-family: 'Hiragino Kaku Gothic Pro', 'メイリオ', sans-serif;
     line-height: 1.8;
@@ -400,7 +440,7 @@
               </label>
               <div class="input-group">
                 {{ form.stock_symbol }}
-                <button type="button" class="btn btn-outline-primary" id="fetchStockInfo">
+                <button type="button" class="btn btn-primary" id="fetchStockInfo">
                   <i class="bi bi-search"></i> 検索
                 </button>
               </div>

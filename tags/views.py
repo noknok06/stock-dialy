@@ -79,10 +79,19 @@ class TagDetailView(LoginRequiredMixin, DetailView):
             
             stock_groups[symbol]['diaries'].append(diary)
             stock_groups[symbol]['total_entries'] += 1
-                        
+            
+            # latest_date と earliest_date の更新
+            if stock_groups[symbol]['latest_date'] is None or diary.created_at > stock_groups[symbol]['latest_date']:
+                stock_groups[symbol]['latest_date'] = diary.created_at
+            
+            if stock_groups[symbol]['earliest_date'] is None or diary.created_at < stock_groups[symbol]['earliest_date']:
+                stock_groups[symbol]['earliest_date'] = diary.created_at
+                
         # 銘柄リストをソート（最新日付順）
         stock_list = list(stock_groups.values())
-        stock_list.sort(key=lambda x: x['latest_date'] or x['earliest_date'], reverse=True)
+        
+        # latest_date と earliest_date が None の場合に適切な値を設定
+        stock_list.sort(key=lambda x: x['latest_date'] or datetime.min, reverse=True)
         
         # 統計情報
         stats = {
@@ -108,8 +117,8 @@ class TagDetailView(LoginRequiredMixin, DetailView):
             stock_list = [
                 stock for stock in stock_list
                 if (stock['name'] and search_query.lower() in stock['name'].lower()) or
-                   (stock['symbol'] and search_query.lower() in stock['symbol'].lower()) or
-                   (stock['sector'] and search_query.lower() in stock['sector'].lower())
+                (stock['symbol'] and search_query.lower() in stock['symbol'].lower()) or
+                (stock['sector'] and search_query.lower() in stock['sector'].lower())
             ]
         
         context.update({
@@ -125,7 +134,7 @@ class TagDetailView(LoginRequiredMixin, DetailView):
                 'type': 'back',
                 'url': reverse_lazy('tags:list'),
                 'icon': 'bi-arrow-left',
-                'label': 'タグ一覧に戻る'
+                'label': '戻る'
             },
             {
                 'type': 'edit',
@@ -137,7 +146,7 @@ class TagDetailView(LoginRequiredMixin, DetailView):
                 'type': 'add',
                 'url': reverse_lazy('stockdiary:create'),
                 'icon': 'bi-plus-lg',
-                'label': '新規日記作成'
+                'label': '新規作成'
             }
         ]
         

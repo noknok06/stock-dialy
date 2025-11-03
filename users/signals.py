@@ -25,7 +25,7 @@ def create_sample_template(sender, instance, created, **kwargs):
             name="配当利回り 3%以上",
             description="3%以上の利回りがあるか",
             item_type="boolean_with_value",
-            value_label="利回り(%)"
+            value_label="(%)"
         )
         
         # 2. 配当性向（数値）
@@ -35,7 +35,7 @@ def create_sample_template(sender, instance, created, **kwargs):
             name="配当性向",
             description="30-70%が適正範囲",
             item_type="number",
-            value_label="性向(%)"
+            value_label="(%)"
         )
         
         # 3. 財務安全性（単純チェック）

@@ -12,13 +12,13 @@
     --primary-700: #155e75;
     --primary-50: #ecfeff;
     --primary-100: #cffafe;
-    
+
     --secondary-500: #3b82f6;
     --secondary-600: #2563eb;
-    
+
     --accent-500: #8b5cf6;
     --accent-600: #7c3aed;
-    
+
     --neutral-50: #f9fafb;
     --neutral-100: #f3f4f6;
     --neutral-200: #e5e7eb;
@@ -29,39 +29,39 @@
     --neutral-700: #374151;
     --neutral-800: #1f2937;
     --neutral-900: #111827;
-    
+
     --success: #10b981;
     --warning: #f59e0b;
     --error: #ef4444;
     --info: #3b82f6;
-    
+
     --background: #ffffff;
     --surface: #f9fafb;
     --surface-elevated: #ffffff;
-    
+
     --text-primary: #111827;
     --text-secondary: #4b5563;
     --text-tertiary: #6b7280;
     --text-inverse: #ffffff;
-    
+
     --border-primary: #e5e7eb;
     --border-secondary: #d1d5db;
-    
+
     --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    
+
     --radius-sm: 0.375rem;
     --radius-md: 0.5rem;
     --radius-lg: 0.75rem;
     --radius-xl: 1rem;
     --radius-2xl: 1.5rem;
-    
+
     --duration-200: 200ms;
     --duration-300: 300ms;
     --duration-500: 500ms;
-    
+
     --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
     --ease-out: cubic-bezier(0, 0, 0.2, 1);
   }
@@ -79,7 +79,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    background-image: 
+    background-image:
       radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
       radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
   }
@@ -110,7 +110,7 @@
   .signup-container {
     padding: 3rem 0;
   }
-  
+
   /* Signup Card */
   .signup-card {
     max-width: 600px;
@@ -437,6 +437,171 @@
       padding: 1.5rem;
     }
   }
+
+  /* ダークモード基本スタイル */
+  .dark-mode .signup-container,
+  [data-theme="dark"] .signup-container {
+    background-color: var(--dm-background, #0f172a);
+  }
+
+  .dark-mode .signup-card,
+  [data-theme="dark"] .signup-card {
+    background: var(--dm-card, #1e293b);
+    border-color: var(--dm-border, #334155);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+  }
+
+  .dark-mode .signup-card-header,
+  [data-theme="dark"] .signup-card-header {
+    background: linear-gradient(135deg, rgba(71, 85, 105, 0.3) 0%, rgba(51, 65, 85, 0.3) 100%);
+  }
+
+  .dark-mode .signup-card-header h3,
+  [data-theme="dark"] .signup-card-header h3 {
+    color: var(--dm-primary, #3b82f6);
+  }
+
+  .dark-mode .signup-card-header p,
+  [data-theme="dark"] .signup-card-header p {
+    color: var(--dm-muted-foreground, #94a3b8);
+  }
+
+  .dark-mode .signup-card-body,
+  [data-theme="dark"] .signup-card-body {
+    background-color: var(--dm-card, #1e293b);
+  }
+
+  /* フィーチャーリスト */
+  .dark-mode .signup-features,
+  [data-theme="dark"] .signup-features {
+    background: rgba(71, 85, 105, 0.2);
+    border-color: var(--dm-border, #334155);
+  }
+
+  .dark-mode .signup-features h5,
+  [data-theme="dark"] .signup-features h5 {
+    color: var(--dm-foreground, #f1f5f9);
+  }
+
+  .dark-mode .features-list li,
+  [data-theme="dark"] .features-list li {
+    color: var(--dm-muted-foreground, #94a3b8);
+  }
+
+  .dark-mode .features-list i,
+  [data-theme="dark"] .features-list i {
+    color: var(--dm-success, #10b981);
+  }
+
+  /* フォーム要素 */
+  .dark-mode .form-label,
+  [data-theme="dark"] .form-label {
+    color: var(--dm-foreground, #f1f5f9);
+  }
+
+  .dark-mode .form-control,
+  [data-theme="dark"] .form-control {
+    background: rgba(71, 85, 105, 0.3);
+    border-color: var(--dm-border, #334155);
+    color: var(--dm-foreground, #f1f5f9);
+  }
+
+  .dark-mode .form-control:focus,
+  [data-theme="dark"] .form-control:focus {
+    background: rgba(71, 85, 105, 0.4);
+    border-color: var(--dm-primary, #3b82f6);
+    box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
+  }
+
+  .dark-mode .form-control::placeholder,
+  [data-theme="dark"] .form-control::placeholder {
+    color: var(--dm-muted-foreground, #94a3b8);
+  }
+
+  /* パスワードヘルプ */
+  .dark-mode .password-help,
+  [data-theme="dark"] .password-help {
+    background: rgba(71, 85, 105, 0.2);
+    border-color: var(--dm-border, #334155);
+  }
+
+  .dark-mode .password-help h6,
+  [data-theme="dark"] .password-help h6 {
+    color: var(--dm-foreground, #f1f5f9);
+  }
+
+  .dark-mode .password-requirements li,
+  [data-theme="dark"] .password-requirements li {
+    color: var(--dm-muted-foreground, #94a3b8);
+  }
+
+  .dark-mode .password-requirements i,
+  [data-theme="dark"] .password-requirements i {
+    color: var(--dm-success, #10b981);
+  }
+
+  /* Googleサインアップボタン */
+  .dark-mode .google-signup-btn,
+  [data-theme="dark"] .google-signup-btn {
+    background: rgba(71, 85, 105, 0.3);
+    border-color: var(--dm-border, #334155);
+    color: var(--dm-foreground, #f1f5f9);
+  }
+
+  .dark-mode .google-signup-btn:hover,
+  [data-theme="dark"] .google-signup-btn:hover {
+    background: rgba(71, 85, 105, 0.5);
+    border-color: var(--dm-muted, #475569);
+    color: var(--dm-foreground, #f1f5f9);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  }
+
+  /* ディバイダー */
+  .dark-mode .signup-divider::before,
+  .dark-mode .signup-divider::after,
+  [data-theme="dark"] .signup-divider::before,
+  [data-theme="dark"] .signup-divider::after {
+    background: linear-gradient(to right, transparent, var(--dm-border, #334155), transparent);
+  }
+
+  .dark-mode .signup-divider span,
+  [data-theme="dark"] .signup-divider span {
+    color: var(--dm-muted-foreground, #94a3b8);
+  }
+
+  /* フッター */
+  .dark-mode .signup-footer,
+  [data-theme="dark"] .signup-footer {
+    border-top-color: var(--dm-border, #334155);
+  }
+
+  .dark-mode .signup-footer p,
+  [data-theme="dark"] .signup-footer p {
+    color: var(--dm-muted-foreground, #94a3b8);
+  }
+
+  .dark-mode .signup-footer a,
+  [data-theme="dark"] .signup-footer a {
+    color: var(--dm-primary, #3b82f6);
+  }
+
+  .dark-mode .signup-footer a:hover,
+  [data-theme="dark"] .signup-footer a:hover {
+    color: var(--dm-primary-hover, #2563eb);
+  }
+
+  /* アラート */
+  .dark-mode .alert-danger,
+  [data-theme="dark"] .alert-danger {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%);
+    border-left-color: var(--dm-destructive, #ef4444);
+    color: var(--dm-destructive, #ef4444);
+  }
+
+  .dark-mode .text-danger,
+  [data-theme="dark"] .text-danger {
+    color: var(--dm-destructive, #ef4444);
+  }
 </style>
 {% endblock %}
 
@@ -458,7 +623,7 @@
         <h3>無料アカウント作成</h3>
         <p>すべての機能を無料でご利用いただけます</p>
       </div>
-      
+
       <div class="signup-card-body">
         <!-- Features -->
         <div class="signup-features">
@@ -487,7 +652,9 @@
         <a href="/users/google-login/" class="google-signup-btn">
           <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
             <g transform="matrix(1, 0, 0, 1, 0, 0)">
-              <path d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.19,19.27 12.19,19.27C8.36,19.27 5,16.25 5,12C5,7.9 8.2,4.73 12.2,4.73C15.29,4.73 17.1,6.7 17.1,6.7L19,4.72C19,4.72 16.56,2 12.1,2C6.42,2 2.03,6.8 2.03,12C2.03,17.05 6.16,22 12.25,22C17.6,22 21.5,18.33 21.5,12.91C21.5,11.76 21.35,11.1 21.35,11.1V11.1Z" fill="#4285F4"></path>
+              <path
+                d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.19,19.27 12.19,19.27C8.36,19.27 5,16.25 5,12C5,7.9 8.2,4.73 12.2,4.73C15.29,4.73 17.1,6.7 17.1,6.7L19,4.72C19,4.72 16.56,2 12.1,2C6.42,2 2.03,6.8 2.03,12C2.03,17.05 6.16,22 12.25,22C17.6,22 21.5,18.33 21.5,12.91C21.5,11.76 21.35,11.1 21.35,11.1V11.1Z"
+                fill="#4285F4"></path>
             </g>
           </svg>
           Googleアカウントで登録
@@ -500,18 +667,18 @@
         <!-- Signup Form -->
         <form method="post" novalidate>
           {% csrf_token %}
-          
+
           {% if form.non_field_errors %}
-            <div class="alert alert-danger">
-              <i class="bi bi-exclamation-triangle-fill"></i>
-              <div>
-                {% for error in form.non_field_errors %}
-                  {{ error }}
-                {% endfor %}
-              </div>
+          <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <div>
+              {% for error in form.non_field_errors %}
+              {{ error }}
+              {% endfor %}
             </div>
+          </div>
           {% endif %}
-          
+
           <div class="form-group">
             <label for="{{ form.username.id_for_label }}" class="form-label">
               <i class="bi bi-person"></i>
@@ -519,13 +686,13 @@
             </label>
             {{ form.username }}
             {% if form.username.errors %}
-              <div class="text-danger">
-                <i class="bi bi-exclamation-circle"></i>
-                {{ form.username.errors.0 }}
-              </div>
+            <div class="text-danger">
+              <i class="bi bi-exclamation-circle"></i>
+              {{ form.username.errors.0 }}
+            </div>
             {% endif %}
           </div>
-          
+
           <div class="form-group">
             <label for="{{ form.email.id_for_label }}" class="form-label">
               <i class="bi bi-envelope"></i>
@@ -533,13 +700,13 @@
             </label>
             {{ form.email }}
             {% if form.email.errors %}
-              <div class="text-danger">
-                <i class="bi bi-exclamation-circle"></i>
-                {{ form.email.errors.0 }}
-              </div>
+            <div class="text-danger">
+              <i class="bi bi-exclamation-circle"></i>
+              {{ form.email.errors.0 }}
+            </div>
             {% endif %}
           </div>
-          
+
           <div class="form-group">
             <label for="{{ form.password1.id_for_label }}" class="form-label">
               <i class="bi bi-shield-lock"></i>
@@ -547,24 +714,24 @@
             </label>
             {{ form.password1 }}
             {% if form.password1.errors %}
-              <div class="text-danger">
-                <i class="bi bi-exclamation-circle"></i>
-                {{ form.password1.errors.0 }}
-              </div>
+            <div class="text-danger">
+              <i class="bi bi-exclamation-circle"></i>
+              {{ form.password1.errors.0 }}
+            </div>
             {% endif %}
             {% if form.password1.help_text %}
-              <div class="password-help">
-                <h6>パスワードの要件</h6>
-                <ul class="password-requirements">
-                  <li><i class="bi bi-check-circle-fill"></i> 8文字以上</li>
-                  <li><i class="bi bi-check-circle-fill"></i> よく使われるパスワードは避ける</li>
-                  <li><i class="bi bi-check-circle-fill"></i> 数字のみは避ける</li>
-                  <li><i class="bi bi-check-circle-fill"></i> 個人情報と類似しない</li>
-                </ul>
-              </div>
+            <div class="password-help">
+              <h6>パスワードの要件</h6>
+              <ul class="password-requirements">
+                <li><i class="bi bi-check-circle-fill"></i> 8文字以上</li>
+                <li><i class="bi bi-check-circle-fill"></i> よく使われるパスワードは避ける</li>
+                <li><i class="bi bi-check-circle-fill"></i> 数字のみは避ける</li>
+                <li><i class="bi bi-check-circle-fill"></i> 個人情報と類似しない</li>
+              </ul>
+            </div>
             {% endif %}
           </div>
-          
+
           <div class="form-group">
             <label for="{{ form.password2.id_for_label }}" class="form-label">
               <i class="bi bi-shield-check"></i>
@@ -572,19 +739,19 @@
             </label>
             {{ form.password2 }}
             {% if form.password2.errors %}
-              <div class="text-danger">
-                <i class="bi bi-exclamation-circle"></i>
-                {{ form.password2.errors.0 }}
-              </div>
+            <div class="text-danger">
+              <i class="bi bi-exclamation-circle"></i>
+              {{ form.password2.errors.0 }}
+            </div>
             {% endif %}
           </div>
-          
+
           <button type="submit" class="signup-btn">
             <i class="bi bi-person-plus"></i>
             アカウントを作成
           </button>
         </form>
-        
+
         <div class="signup-footer">
           <p>すでにアカウントをお持ちの方は <a href="{% url 'users:login' %}">ログイン</a>
           </p>
@@ -595,7 +762,7 @@
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', function () {
     // Intersection Observer for animations
     const observerOptions = {
       threshold: 0.1,

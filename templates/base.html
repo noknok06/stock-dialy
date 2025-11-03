@@ -343,6 +343,49 @@
           padding-top: 1.25rem;
         }
       }
+
+      .theme-toggle-section {
+        width: 100%;
+        max-width: 280px;
+        margin: 1.5rem 0;
+      }
+
+      .theme-toggle-menu-btn {
+        width: 100%;
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 0.75rem;
+        padding: 1rem 1.25rem;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        transition: all 0.2s;
+        cursor: pointer;
+        font-size: 1rem;
+      }
+
+      .theme-toggle-menu-btn:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+
+      .theme-toggle-menu-btn span {
+        flex: 1;
+        text-align: left;
+      }
+
+      .theme-toggle-menu-btn .toggle-icon {
+        font-size: 1.5rem;
+        transition: all 0.3s;
+      }
+
+      .theme-toggle-menu-btn.active .toggle-icon {
+        color: #10b981;
+      }
+
+      .theme-toggle-menu-btn.active .toggle-icon::before {
+        content: "\f624"; /* bi-toggle-on */
+      }
       .ad-label {
         position: absolute;
         top: 2px;
@@ -1082,6 +1125,14 @@
             </div>
             <div class="user-name">{{ user.username }}</div>
             
+            <!-- ダークモード切り替え -->
+            <div class="theme-toggle-section">
+                <button class="theme-toggle-menu-btn" id="theme-toggle-menu" aria-label="ダークモード切り替え">
+                    <i class="bi bi-moon-stars"></i>
+                    <span>ダークモード</span>
+                    <i class="bi bi-toggle-off toggle-icon"></i>
+                </button>
+            </div>
             <div class="user-actions">
                 <a href="{% url 'users:profile' %}" class="user-action">
                     <i class="bi bi-person me-1"></i> プロフィール
@@ -1116,7 +1167,7 @@
     </div>
   </div>
 
-  <!-- Bootstrap JavaScript Bundle with Popper -->
+ <!-- Bootstrap JavaScript Bundle with Popper -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   
   {% block vendor_js %}{% endblock %}
@@ -1150,22 +1201,47 @@
           document.documentElement.removeAttribute('data-theme');
         }
         localStorage.setItem(THEME_KEY, theme);
-        updateToggleButton(theme);
+        updateToggleButtons(theme);
       }
       
-      // トグルボタンのアイコンを更新
-      function updateToggleButton(theme) {
-        const buttons = document.querySelectorAll('#theme-toggle, #theme-toggle-guest');
-        buttons.forEach(button => {
+      // すべてのトグルボタンのアイコンを更新
+      function updateToggleButtons(theme) {
+        // ヘッダーのトグルボタン（PC用）
+        const headerButtons = document.querySelectorAll('#theme-toggle, #theme-toggle-guest');
+        headerButtons.forEach(button => {
           if (button) {
             const icon = button.querySelector('i');
-            if (theme === 'dark') {
-              icon.className = 'bi bi-sun-fill';
-            } else {
-              icon.className = 'bi bi-moon-stars';
+            if (icon) {
+              if (theme === 'dark') {
+                icon.className = 'bi bi-sun-fill';
+              } else {
+                icon.className = 'bi bi-moon-stars';
+              }
             }
           }
         });
+        
+        // フルスクリーンメニューのトグルボタン（スマホ用）
+        const menuButton = document.getElementById('theme-toggle-menu');
+        if (menuButton) {
+          const icon = menuButton.querySelector('i:first-child');
+          const toggleIcon = menuButton.querySelector('.toggle-icon');
+          
+          if (theme === 'dark') {
+            // ダークモードの場合
+            if (icon) {
+              icon.className = 'bi bi-sun-fill';
+            }
+            menuButton.classList.add('active');
+            // トグルアイコンは自動的に変わる（CSSで制御）
+          } else {
+            // ライトモードの場合
+            if (icon) {
+              icon.className = 'bi bi-moon-stars';
+            }
+            menuButton.classList.remove('active');
+          }
+        }
       }
       
       // テーマを切り替え
@@ -1175,23 +1251,31 @@
         applyTheme(newTheme);
       }
       
-      // 初期化
+      // 初期化 - ページ読み込み時にテーマを適用
       const initialTheme = getInitialTheme();
       applyTheme(initialTheme);
       
       // DOMContentLoaded後にイベントリスナーを設定
       document.addEventListener('DOMContentLoaded', function() {
-        const toggleButtons = document.querySelectorAll('#theme-toggle, #theme-toggle-guest');
-        toggleButtons.forEach(button => {
+        // ヘッダーのトグルボタン
+        const headerToggleButtons = document.querySelectorAll('#theme-toggle, #theme-toggle-guest');
+        headerToggleButtons.forEach(button => {
           if (button) {
             button.addEventListener('click', toggleTheme);
           }
         });
+        
+        // フルスクリーンメニューのトグルボタン
+        const menuToggleButton = document.getElementById('theme-toggle-menu');
+        if (menuToggleButton) {
+          menuToggleButton.addEventListener('click', toggleTheme);
+        }
       });
       
       // システム設定の変更を監視
       if (window.matchMedia) {
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+          // ユーザーが手動で設定していない場合のみ、システム設定に従う
           if (!localStorage.getItem(THEME_KEY)) {
             applyTheme(e.matches ? 'dark' : 'light');
           }

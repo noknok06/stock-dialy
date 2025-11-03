@@ -6,94 +6,180 @@
 {% block head %}
 {{ block.super }}
 <style>
+  /* ========== Template Detail Specific Styles ========== */
+  .template-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .template-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .template-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .template-description {
+    background-color: var(--bg-secondary);
+    border-left: 3px solid var(--primary-color);
+    padding: 1rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: 1.5rem;
+  }
+
+  .section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .section-title i {
+    color: var(--primary-color);
+  }
+
+  .items-table th {
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+
+  .item-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .choices-list {
+    margin: 0;
+    padding-left: 1.25rem;
+    list-style-type: disc;
+  }
+
+  .choices-list li {
+    padding: 0.125rem 0;
+    font-size: 0.875rem;
+  }
+
+  .template-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    padding: 0.75rem 1rem;
+  }
+
+  .footer-date {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
   /* ========== Dark Mode Support ========== */
+  .dark-mode .template-title,
+  [data-theme="dark"] .template-title {
+    color: var(--dm-foreground);
+  }
+
+  .dark-mode .template-description,
+  [data-theme="dark"] .template-description {
+    background-color: rgba(71, 85, 105, 0.2);
+    border-left-color: var(--dm-primary);
+    color: var(--dm-foreground);
+  }
+
+  .dark-mode .section-title,
+  [data-theme="dark"] .section-title {
+    color: var(--dm-foreground);
+  }
+
+  .dark-mode .section-title i,
+  [data-theme="dark"] .section-title i {
+    color: var(--dm-primary);
+  }
+
+  .dark-mode .choices-list,
+  [data-theme="dark"] .choices-list {
+    color: var(--dm-foreground);
+  }
+
+  .dark-mode .template-footer,
+  [data-theme="dark"] .template-footer {
+    color: var(--dm-muted-foreground);
+  }
+
   .dark-mode .table-striped tbody tr:nth-of-type(odd),
   [data-theme="dark"] .table-striped tbody tr:nth-of-type(odd) {
     background-color: rgba(71, 85, 105, 0.2);
   }
 
-  .dark-mode .badge.bg-primary,
-  [data-theme="dark"] .badge.bg-primary {
-    background: linear-gradient(135deg, var(--dm-primary), #2563eb) !important;
-  }
-
-  .dark-mode .badge.bg-success,
-  [data-theme="dark"] .badge.bg-success {
-    background: linear-gradient(135deg, var(--dm-success), #059669) !important;
-  }
-
-  .dark-mode .badge.bg-warning,
-  [data-theme="dark"] .badge.bg-warning {
-    background: linear-gradient(135deg, var(--dm-accent), #d97706) !important;
-  }
-
-  .dark-mode .badge.bg-danger,
-  [data-theme="dark"] .badge.bg-danger {
-    background: linear-gradient(135deg, var(--dm-destructive), #dc2626) !important;
-  }
-
-  .dark-mode .badge.bg-info,
-  [data-theme="dark"] .badge.bg-info {
-    background: linear-gradient(135deg, var(--dm-info), #2563eb) !important;
-  }
-
-  .dark-mode .alert-info,
-  [data-theme="dark"] .alert-info {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
-    border: 1px solid rgba(59, 130, 246, 0.3);
-    color: var(--dm-info);
-  }
-
-  .dark-mode .card-footer,
-  [data-theme="dark"] .card-footer {
-    background-color: rgba(71, 85, 105, 0.3);
-    border-top-color: var(--dm-border);
-    color: var(--dm-muted-foreground);
-  }
-
-  /* テーブル内のリストスタイル */
-  .dark-mode .table ul,
-  [data-theme="dark"] .table ul {
-    color: var(--dm-foreground);
-  }
-
-  /* カードヘッダー内の見出し */
-  .dark-mode .card-header h3,
-  [data-theme="dark"] .card-header h3 {
-    color: var(--dm-foreground);
-  }
-
-  /* カードボディ内の見出し */
-  .dark-mode .card-body h5,
-  [data-theme="dark"] .card-body h5 {
-    color: var(--dm-foreground);
-  }
-
-  /* カードボディ内のテキスト */
-  .dark-mode .card-body p,
-  [data-theme="dark"] .card-body p {
-    color: var(--dm-foreground);
-  }
-
-  /* ボタングループのギャップ調整 */
-  .d-flex.gap-2 {
-    gap: 0.5rem;
-  }
-
-  /* レスポンシブ対応 */
+  /* ========== Responsive ========== */
   @media (max-width: 768px) {
-    .card-header .d-flex {
+    .template-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .template-title {
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .template-actions {
       width: 100%;
     }
 
-    .card-header .btn {
+    .template-actions .btn {
       flex: 1;
-      min-width: auto;
     }
 
-    .card-header h3 {
-      width: 100%;
-      margin-bottom: 1rem;
+    .template-actions .btn span {
+      display: none;
+    }
+
+    .footer-date {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .template-title {
+      font-size: 1.125rem;
+    }
+
+    .section-title {
+      font-size: 1rem;
+    }
+
+    .template-description {
+      padding: 0.75rem;
+      font-size: 0.875rem;
+    }
+
+    .items-table {
+      font-size: 0.875rem;
     }
   }
 </style>
