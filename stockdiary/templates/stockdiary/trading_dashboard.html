@@ -6,6 +6,9 @@
 {% block title %}取引分析ダッシュボード - カブログ{% endblock %}
 
 {% block head %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
 <style>
     * {
         margin: 0;
@@ -220,6 +223,12 @@
         flex-shrink: 0;
     }
 
+    .metric-sub {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 4px;
+    }
+
     /* Two Column Layout */
     .two-column {
         display: grid;
@@ -252,6 +261,43 @@
         font-size: 20px;
         font-weight: 700;
         color: var(--foreground);
+    }
+
+    /* ROI Chart */
+    .chart-container {
+        position: relative;
+        height: 400px;
+        margin-bottom: 1rem;
+    }
+
+    .chart-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        border-bottom: 2px solid var(--border);
+        padding-bottom: 8px;
+    }
+
+    .chart-tab {
+        padding: 8px 16px;
+        border-radius: 6px 6px 0 0;
+        background-color: transparent;
+        color: var(--muted);
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+
+    .chart-tab:hover {
+        background-color: rgba(71, 85, 105, 0.3);
+        color: var(--foreground);
+    }
+
+    .chart-tab.active {
+        background-color: var(--primary);
+        color: white;
     }
 
     /* Ranking List */
@@ -423,6 +469,42 @@
     .profit-badge.negative {
         background-color: rgba(239, 68, 68, 0.2);
         color: var(--destructive);
+    }
+
+    .sector-ratio {
+        font-size: 12px;
+        color: var(--muted);
+        margin-left: 8px;
+    }
+
+    .roi-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-left: 8px;
+    }
+
+    .roi-badge.positive {
+        background-color: rgba(16, 185, 129, 0.2);
+        color: var(--success);
+    }
+
+    .roi-badge.negative {
+        background-color: rgba(239, 68, 68, 0.2);
+        color: var(--destructive);
+    }
+
+    .industry-subinfo {
+        margin-top: 0.5rem;
+        font-size: 0.75rem;
+        color: var(--muted);
+        display: flex;
+        justify-content: space-between;
+        cursor: pointer;
     }
 
     /* Profit Loss Grid */
@@ -648,16 +730,24 @@
         margin-bottom: 8px;
     }
 
-    .company-name {
-        font-weight: 600;
-        font-size: 16px;
-        color: var(--foreground);
-    }
-
     .company-code {
         font-size: 12px;
         color: var(--muted);
         margin-top: 2px;
+    }
+
+    .company-date {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 2px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .company-date::before {
+        content: "📅";
+        font-size: 10px;
     }
 
     .company-stats {
@@ -692,6 +782,40 @@
         color: var(--destructive);
     }
 
+    .diary-list-item {
+        padding: 12px;
+        background-color: rgba(71, 85, 105, 0.2);
+        border-radius: 6px;
+        margin-bottom: 8px;
+        border-left: 3px solid transparent;
+        transition: all 0.2s;
+    }
+
+    .diary-list-item:hover {
+        background-color: rgba(71, 85, 105, 0.3);
+        border-left-color: var(--primary);
+        transform: translateX(4px);
+    }
+
+    .diary-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-left: 8px;
+    }
+
+    .diary-badge.holding {
+        background-color: rgba(16, 185, 129, 0.2);
+        color: var(--success);
+    }
+
+    .diary-badge.sold {
+        background-color: rgba(100, 116, 139, 0.2);
+        color: var(--muted);
+    }
+
     /* Empty State */
     .empty-state {
         text-align: center;
@@ -714,10 +838,8 @@
         font-size: 0.9rem;
     }
 
-    /* ========== スマホ最適化 ========== */
+    /* Mobile Optimization */
     @media (max-width: 767.98px) {
-
-        /* ヘッダー */
         .dashboard-header {
             padding: 12px;
             margin-bottom: 16px;
@@ -733,7 +855,6 @@
             margin-top: 4px;
         }
 
-        /* 期間フィルター */
         .period-filter {
             gap: 6px;
             justify-content: center;
@@ -744,7 +865,6 @@
             font-size: 12px;
         }
 
-        /* メトリクスグリッド - 2列表示 */
         .metrics-grid {
             grid-template-columns: repeat(2, 1fr);
             gap: 12px;
@@ -776,14 +896,12 @@
             align-self: flex-end;
         }
 
-        /* 2カラムレイアウト - 1列に */
         .two-column {
             grid-template-columns: 1fr;
             gap: 16px;
             margin-bottom: 16px;
         }
 
-        /* セクションタイトル */
         .section-title {
             gap: 8px;
             margin-bottom: 16px;
@@ -798,12 +916,23 @@
             font-size: 16px;
         }
 
-        /* カード */
         .card {
             padding: 12px;
         }
 
-        /* 取引回数ランキング */
+        .chart-container {
+            height: 300px;
+        }
+
+        .chart-tabs {
+            gap: 4px;
+        }
+
+        .chart-tab {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
         .ranking-item {
             padding: 10px;
         }
@@ -830,7 +959,6 @@
             font-size: 11px;
         }
 
-        /* 業種別分析 */
         .industry-list {
             gap: 12px;
         }
@@ -864,7 +992,6 @@
             flex: 0 0 auto;
         }
 
-        /* 利益/損失セクション */
         .profit-loss-grid {
             grid-template-columns: 1fr;
             gap: 16px;
@@ -891,7 +1018,6 @@
             font-size: 11px;
         }
 
-        /* モーダル */
         .modal-container {
             padding: 10px;
             align-items: flex-start;
@@ -936,6 +1062,10 @@
             font-size: 10px;
         }
 
+        .company-date {
+            font-size: 10px;
+        }
+
         .company-stats {
             gap: 12px;
             font-size: 11px;
@@ -950,7 +1080,6 @@
         }
     }
 
-    /* 超小型スマホ */
     @media (max-width: 480px) {
         .dashboard-container {
             padding: 0 8px;
@@ -1020,7 +1149,6 @@
         }
     }
 
-    /* 横向きスマホ対応 */
     @media (max-width: 767.98px) and (orientation: landscape) {
         .metrics-grid {
             grid-template-columns: repeat(4, 1fr);
@@ -1033,93 +1161,6 @@
         .modal-content {
             max-height: 90vh;
         }
-    }
-    .company-date {
-        font-size: 11px;
-        color: var(--muted);
-        margin-top: 2px;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
-
-    .company-date::before {
-        content: "📅";
-        font-size: 10px;
-    }
-
-    /* スマホ対応 */
-    @media (max-width: 767.98px) {
-        .company-date {
-            font-size: 10px;
-        }
-    }    
-
-    .metric-sub {
-        font-size: 11px;
-        color: var(--muted);
-        margin-top: 4px;
-    }
-    
-    .sector-ratio {
-        font-size: 12px;
-        color: var(--muted);
-        margin-left: 8px;
-    }
-    
-    .roi-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 600;
-        margin-left: 8px;
-    }
-    
-    .roi-badge.positive {
-        background-color: rgba(16, 185, 129, 0.2);
-        color: var(--success);
-    }
-    
-    .roi-badge.negative {
-        background-color: rgba(239, 68, 68, 0.2);
-        color: var(--destructive);
-    }
-    
-    .diary-list-item {
-        padding: 12px;
-        background-color: rgba(71, 85, 105, 0.2);
-        border-radius: 6px;
-        margin-bottom: 8px;
-        border-left: 3px solid transparent;
-        transition: all 0.2s;
-    }
-    
-    .diary-list-item:hover {
-        background-color: rgba(71, 85, 105, 0.3);
-        border-left-color: var(--primary);
-        transform: translateX(4px);
-    }
-    
-    .diary-badge {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 11px;
-        font-weight: 600;
-        margin-left: 8px;
-    }
-    
-    .diary-badge.holding {
-        background-color: rgba(16, 185, 129, 0.2);
-        color: var(--success);
-    }
-    
-    .diary-badge.sold {
-        background-color: rgba(100, 116, 139, 0.2);
-        color: var(--muted);
     }
 </style>
 {% endblock %}
@@ -1197,6 +1238,30 @@
 
     <!-- Two Column Section -->
     <div class="two-column">
+        <!-- ROI ランキングチャート -->
+        <div class="card">
+            <div class="section-title">
+                <div class="section-icon" style="background: rgba(245, 158, 11, 0.2); color: var(--accent);">📊</div>
+                <h2 class="section-heading">ROI ランキング</h2>
+            </div>
+            
+            <!-- タブ切り替え -->
+            <div class="chart-tabs">
+                <button class="chart-tab active" onclick="switchChartTab('sector')">業種別</button>
+                <button class="chart-tab" onclick="switchChartTab('stock')">銘柄別</button>
+            </div>
+            
+            <!-- チャートコンテナ -->
+            <div class="chart-container">
+                <canvas id="roiChart"></canvas>
+            </div>
+            
+            <!-- チャート説明 -->
+            <div style="text-align: center; margin-top: 0.5rem; font-size: 0.75rem; color: var(--muted);">
+                <i class="bi bi-info-circle"></i> バーをクリックすると詳細が表示されます
+            </div>
+        </div>
+
         <!-- Trade Frequency Ranking -->
         <div class="card">
             <div class="section-title">
@@ -1223,8 +1288,10 @@
                 {% endfor %}
             </div>
         </div>
+    </div>
 
-        <!-- Industry Analysis -->
+    <!-- Industry Analysis Section -->
+    <div class="two-column">
         <div class="card">
             <div class="section-title">
                 <div class="section-icon" style="background: rgba(139, 92, 246, 0.2); color: var(--secondary);">📈</div>
@@ -1326,7 +1393,7 @@
     {% endif %}
 </div>
 
-<!-- 🆕 共通モーダル -->
+<!-- 共通モーダル -->
 <div class="modal-overlay" id="diaryModal">
     <div class="modal-container">
         <div class="modal-content">
@@ -1349,7 +1416,193 @@
     const sectorDetailData = {{ sector_details|safe }};
     const stockRankingData = {{ stock_ranking|safe }};
 
-    // 🆕 共通モーダル関数
+    // ROIチャート用データ
+    const sectorRoiData = {{ sector_roi_data|safe }};
+    const stockRoiData = {{ stock_roi_data|safe }};
+
+    // Chart.js インスタンス
+    let roiChart = null;
+
+    // チャート初期化
+    document.addEventListener('DOMContentLoaded', function() {
+        initRoiChart('sector');
+    });
+
+    // チャートタブ切り替え
+    function switchChartTab(type) {
+        // タブのアクティブ状態を更新
+        document.querySelectorAll('.chart-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        event.target.classList.add('active');
+
+        // チャートを更新
+        initRoiChart(type);
+    }
+
+    // ROIチャート初期化
+    function initRoiChart(type) {
+        const ctx = document.getElementById('roiChart');
+        if (!ctx) return;
+
+        // 既存のチャートを破棄
+        if (roiChart) {
+            roiChart.destroy();
+        }
+
+        let data = type === 'sector' ? sectorRoiData : stockRoiData;
+        
+        if (!data || data.length === 0) {
+            ctx.getContext('2d').clearRect(0, 0, ctx.width, ctx.height);
+            return;
+        }
+
+        // 🔧 重複除去：業種名/銘柄名をキーにして重複を削除
+        const uniqueData = [];
+        const seenLabels = new Set();
+        
+        for (const item of data) {
+            const normalizedLabel = item.label.trim();
+            if (!seenLabels.has(normalizedLabel)) {
+                seenLabels.add(normalizedLabel);
+                uniqueData.push({
+                    ...item,
+                    label: normalizedLabel
+                });
+            }
+        }
+        
+        // ROIでソート（重複除去後）
+        uniqueData.sort((a, b) => b.roi - a.roi);
+
+        // 上位10件＋下位3件を表示
+        const topData = uniqueData.slice(0, 10);
+        const bottomData = uniqueData.slice(-3);
+        const displayData = [...topData, ...bottomData].reverse();
+
+        const labels = displayData.map(d => d.label);
+        const values = displayData.map(d => d.roi);
+        const colors = values.map(v => v >= 0 
+            ? 'rgba(16, 185, 129, 0.8)' 
+            : 'rgba(239, 68, 68, 0.8)'
+        );
+        const borderColors = values.map(v => v >= 0 
+            ? 'rgba(16, 185, 129, 1)' 
+            : 'rgba(239, 68, 68, 1)'
+        );
+
+        const uniqueMap = new Map();
+
+        labels.forEach((label, index) => {
+            if (!uniqueMap.has(label)) {
+                uniqueMap.set(label, {
+                    value: values[index],
+                    color: colors[index],
+                    borderColor: borderColors[index],
+                    dataItem: displayData[index]
+                });
+            }
+        });
+
+        // 重複削除後のデータ生成
+        const uniqueLabels = Array.from(uniqueMap.keys());
+        const uniqueValues = Array.from(uniqueMap.values()).map(v => v.value);
+        const uniqueColors = Array.from(uniqueMap.values()).map(v => v.color);
+        const uniqueBorderColors = Array.from(uniqueMap.values()).map(v => v.borderColor);
+        const uniqueDisplayData = Array.from(uniqueMap.values()).map(v => v.dataItem);
+
+        // 以降、Chart.js に unique〜 系の変数を使う
+        roiChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: uniqueLabels,
+                datasets: [{
+                    label: 'ROI (%)',
+                    data: uniqueValues,
+                    backgroundColor: uniqueColors,
+                    borderColor: uniqueBorderColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                onClick: function(event, elements) {
+                    if (elements.length > 0) {
+                        const index = elements[0].index;
+                        const clickedLabel = uniqueLabels[index];
+
+                        if (type === 'sector') {
+                            showSectorDetail(clickedLabel, 'profit');
+                        } else {
+                            const match = clickedLabel.match(/\(([^)]+)\)$/);
+                            if (match) {
+                                const stockCode = match[1];
+                                const stockName = clickedLabel.replace(/\s*\([^)]+\)$/, '');
+                                showStockDiariesModal(stockCode, stockName);
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.parsed.x;
+                                const sign = value >= 0 ? '+' : '';
+                                const dataItem = displayData[context.dataIndex];
+                                return [
+                                    `ROI: ${sign}${value.toFixed(1)}%`,
+                                    `取引回数: ${dataItem.transaction_count}回`,
+                                    `${type === 'sector' ? '銘柄数' : '日記数'}: ${dataItem.diary_count}件`
+                                ];
+                            },
+                            title: function(context) {
+                                return context[0].label;
+                            },
+                            footer: function() {
+                                return 'クリックで詳細表示';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#94a3b8',
+                            callback: function(value) {
+                                return value.toFixed(0) + '%';
+                            }
+                        }
+                    },
+                    y: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: '#f1f5f9',
+                            font: {
+                                size: 11
+                            }
+                        }
+                    }
+                },
+                // ホバーカーソルをポインターに
+                onHover: function(event, chartElement) {
+                    event.native.target.style.cursor = chartElement.length > 0 ? 'pointer' : 'default';
+                }
+            }
+        });
+    }
+
+    // 共通モーダル関数
     function showModal(title, icon, content) {
         const modal = document.getElementById('diaryModal');
         document.getElementById('modalTitle').textContent = title;
@@ -1366,7 +1619,7 @@
         document.body.style.overflow = '';
     }
 
-    // 🆕 銘柄別日記リスト表示
+    // 銘柄別日記リスト表示
     function showStockDiariesModal(stockCode, stockName) {
         const stockData = stockRankingData[stockCode];
         if (!stockData || !stockData.diaries) {
@@ -1433,7 +1686,7 @@
         showModal(`${stockName} の取引履歴`, '📊', html);
     }
 
-    // 🆕 業種別日記リスト表示（改善版）
+    // 業種別日記リスト表示
     function showSectorDetail(sectorName, type) {
         const companies = sectorDetailData[sectorName] || [];
         
@@ -1452,7 +1705,6 @@
                 ? '<span class="diary-badge holding">保有中</span>' 
                 : '<span class="diary-badge sold">売却済</span>';
 
-            // ROI表示
             let roiHtml = '';
             if (company.roi !== null && company.roi !== undefined) {
                 const roiClass = company.roi >= 0 ? 'positive' : 'negative';

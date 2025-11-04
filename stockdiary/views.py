@@ -3639,6 +3639,48 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
         loss_sectors.sort(key=lambda x: x['roi'])
         loss_sectors = loss_sectors[:3]
 
+
+        # ========== 🆕 ROIランキングデータ（業種別） ==========
+        sector_roi_list = []
+        for sector in unique_sector_analysis:
+            sector_roi_list.append({
+                'label': sector['sector'],
+                'roi': sector['roi'],
+                'transaction_count': sector['transaction_count'],
+                'diary_count': sector['diary_count']
+            })
+        
+        # ROIでソート
+        sector_roi_list.sort(key=lambda x: x['roi'], reverse=True)
+        
+        # ========== 🆕 ROIランキングデータ（銘柄別） ==========
+        stock_roi_list = []
+        for stock_code, stock_data in stock_ranking.items():
+            # 日記全体の損益を合算
+            total_profit = sum(d['realized_profit'] for d in stock_data['diaries'])
+            total_invested = 0
+            
+            # 各日記の投資額を合算
+            for diary_id in [d['id'] for d in stock_data['diaries']]:
+                diary = diaries_in_period.filter(id=diary_id).first()
+                if diary and diary.total_cost and diary.total_cost > 0:
+                    total_invested += float(diary.total_cost)
+            
+            # ROIを計算
+            if total_invested > 0:
+                roi = (total_profit / total_invested) * 100
+            else:
+                roi = 0
+            
+            stock_roi_list.append({
+                'label': f"{stock_data['stock_name']} ({stock_code})",
+                'roi': round(roi, 1),
+                'transaction_count': stock_data['transaction_count'],
+                'diary_count': len(stock_data['diaries'])
+            })
+        
+        # ROIでソート
+        stock_roi_list.sort(key=lambda x: x['roi'], reverse=True)
         # ========== コンテキスト ==========
         context.update({
             'total_transactions': total_transactions,
@@ -3655,6 +3697,8 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
             'has_data': total_transactions > 0,
             'sector_details': json.dumps(sector_details, ensure_ascii=False),
             'stock_ranking': json.dumps({s['stock_code']: s for s in transaction_ranking}, ensure_ascii=False),  # 🆕
+            'sector_roi_data': json.dumps(sector_roi_list, ensure_ascii=False),
+            'stock_roi_data': json.dumps(stock_roi_list, ensure_ascii=False),
         })
 
         context['page_actions'] = [
