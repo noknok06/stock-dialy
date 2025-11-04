@@ -536,6 +536,7 @@
         align-items: center;
         justify-content: center;
         padding: 20px;
+        margin-top: 30px;
     }
 
     .modal-content {
@@ -1053,6 +1054,73 @@
             font-size: 10px;
         }
     }    
+
+    .metric-sub {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 4px;
+    }
+    
+    .sector-ratio {
+        font-size: 12px;
+        color: var(--muted);
+        margin-left: 8px;
+    }
+    
+    .roi-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-left: 8px;
+    }
+    
+    .roi-badge.positive {
+        background-color: rgba(16, 185, 129, 0.2);
+        color: var(--success);
+    }
+    
+    .roi-badge.negative {
+        background-color: rgba(239, 68, 68, 0.2);
+        color: var(--destructive);
+    }
+    
+    .diary-list-item {
+        padding: 12px;
+        background-color: rgba(71, 85, 105, 0.2);
+        border-radius: 6px;
+        margin-bottom: 8px;
+        border-left: 3px solid transparent;
+        transition: all 0.2s;
+    }
+    
+    .diary-list-item:hover {
+        background-color: rgba(71, 85, 105, 0.3);
+        border-left-color: var(--primary);
+        transform: translateX(4px);
+    }
+    
+    .diary-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-left: 8px;
+    }
+    
+    .diary-badge.holding {
+        background-color: rgba(16, 185, 129, 0.2);
+        color: var(--success);
+    }
+    
+    .diary-badge.sold {
+        background-color: rgba(100, 116, 139, 0.2);
+        color: var(--muted);
+    }
 </style>
 {% endblock %}
 
@@ -1105,8 +1173,8 @@
                 <div class="metric-content">
                     <p class="metric-label">実現損益</p>
                     <p class="metric-value">¥{{ total_realized_profit|intcomma_float:0 }}</p>
-                    <p class="metric-subtext">{% if total_realized_profit >= 0 %} {% else %}損失{% endif %}</p>
-                    <p>　</p>
+                    <p class="metric-sub">投資額: ¥{{ total_invested|intcomma_float:0 }}</p>
+                    <p class="metric-sub">ROI: {{ total_roi|floatformat:1 }}%</p>
                 </div>
                 <div class="metric-icon"
                     style="background: {% if total_realized_profit >= 0 %}rgba(16, 185, 129, 0.2); color: var(--success){% else %}rgba(239, 68, 68, 0.2); color: var(--destructive){% endif %};">
@@ -1119,7 +1187,7 @@
                 <div class="metric-content">
                     <p class="metric-label">平均利益率</p>
                     <p class="metric-value">{{ avg_profit_rate|floatformat:1 }}%</p>
-                    <p class="metric-subtext">成功取引</p>
+                    <p class="metric-subtext">売却ベース</p>
                     <p>　</p>
                 </div>
                 <div class="metric-icon" style="background: rgba(245, 158, 11, 0.2); color: var(--accent);">🎯</div>
@@ -1136,27 +1204,24 @@
                 <h2 class="section-heading">取引回数ランキング</h2>
             </div>
             <div class="ranking-list">
-                {% for diary in transaction_ranking %}
-                <a href="{% url 'stockdiary:detail' diary.id %}" class="ranking-link">
-                    <div class="ranking-item">
-                        <div class="ranking-left">
-                            <div class="ranking-number">{{ forloop.counter }}</div>
-                            <div class="ranking-info">
-                                <div class="ranking-name">{{ diary.stock_name }}</div>
-                                <div class="ranking-code">コード: {{ diary.stock_symbol }}</div>
-                            </div>
-                        </div>
-                        <div class="ranking-right">
-                            <div class="ranking-count">{{ diary.transaction_count_period }}</div>
-                            <div class="ranking-time">{{ diary.last_trade_display }}</div>
+                {% for stock in transaction_ranking %}
+                <div class="ranking-item" onclick="showStockDiariesModal('{{ stock.stock_code }}', '{{ stock.stock_name }}')">
+                    <div class="ranking-left">
+                        <div class="ranking-number">{{ forloop.counter }}</div>
+                        <div class="ranking-info">
+                            <div class="ranking-name">{{ stock.stock_name }}</div>
+                            <div class="ranking-code">コード: {{ stock.stock_code }} | {{ stock.diaries|length }}件の日記</div>
                         </div>
                     </div>
-                </a>
+                    <div class="ranking-right">
+                        <div class="ranking-count">{{ stock.transaction_count }}</div>
+                        <div class="ranking-time">クリックで詳細表示</div>
+                    </div>
+                </div>
                 {% empty %}
                 <p class="text-muted text-center py-3">データがありません</p>
                 {% endfor %}
             </div>
-
         </div>
 
         <!-- Industry Analysis -->
@@ -1170,20 +1235,25 @@
                 <div class="industry-item">
                     <div class="industry-header">
                         <span class="industry-name">{{ sector.sector }}</span>
-                        <span class="industry-count">{{ sector.transaction_count }}件 | {{ sector.diary_count }}社</span>
+                        <span class="industry-count">
+                            {{ sector.transaction_count }}件 | {{ sector.diary_count }}社
+                            <span class="sector-ratio">({{ sector.transaction_ratio }}%)</span>
+                        </span>
                     </div>
                     <div class="bar-container">
                         <div class="bar">
                             <div class="bar-fill" style="width: {{ sector.width_percent }}%;"></div>
                         </div>
-                        <div class="profit-badge {% if sector.profit_rate >= 0 %}positive{% else %}negative{% endif %}">
-                            {% if sector.profit_rate > 0 %}+{% endif %}{{ sector.profit_rate|floatformat:1 }}%
+                        <div class="roi-badge {% if sector.roi >= 0 %}positive{% else %}negative{% endif %}">
+                            {% if sector.roi > 0 %}+{% endif %}{{ sector.roi|floatformat:1 }}%
                         </div>
                     </div>
                     <div class="industry-subinfo"
-                        style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--muted); display: flex; justify-content: space-between;">
-                        <span>実現損益: {% if sector.total_profit >= 0 %}+{% endif %}¥{{sector.total_profit|intcomma_float:0 }}</span>
-                        <span>投資額: ¥{{ sector.total_buy_amount|intcomma_float:0 }}</span>
+                        style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--muted); display: flex; justify-content: space-between; cursor: pointer;"
+                        onclick="showSectorDetail('{{ sector.sector }}', 'profit')">
+                        <span>実現損益: {% if sector.realized_profit >= 0 %}+{% endif %}¥{{ sector.realized_profit|intcomma_float:0 }}</span>
+                        <span>投資額: ¥{{ sector.total_invested|intcomma_float:0 }}</span>
+                        <span style="color: var(--primary);">詳細 →</span>
                     </div>
                 </div>
                 {% empty %}
@@ -1199,17 +1269,19 @@
         <div class="pl-section">
             <div class="section-title">
                 <div class="section-icon" style="background: rgba(16, 185, 129, 0.2); color: var(--success);">✓</div>
-                <h3 class="section-heading">利益が出やすい業種</h3>
+                <h3 class="section-heading">投資効率が高い業種</h3>
             </div>
             <div class="pl-list">
                 {% for sector in profitable_sectors %}
                 <div class="pl-item profit" onclick="showSectorDetail('{{ sector.sector }}', 'profit')">
                     <div class="pl-header">
                         <h4 class="pl-name">#{{ forloop.counter }} {{ sector.sector }}</h4>
-                        <span class="pl-rate profit">+{{ sector.profit_rate|floatformat:1 }}%</span>
+                        <span class="pl-rate profit">+{{ sector.roi|floatformat:1 }}%</span>
                     </div>
                     <p class="pl-count">取引数: {{ sector.transaction_count }}件 | 銘柄数: {{ sector.diary_count }}社</p>
-                    <p class="pl-count" style="color: var(--success); margin-top: 0.25rem;">実現損益: +¥{{ sector.total_profit|intcomma_float:0 }}</p>
+                    <p class="pl-count" style="color: var(--success); margin-top: 0.25rem;">
+                        実現損益: +¥{{ sector.realized_profit|intcomma_float:0 }} / 投資額: ¥{{ sector.total_invested|intcomma_float:0 }}
+                    </p>
                 </div>
                 {% empty %}
                 <p class="text-muted text-center py-3">データがありません</p>
@@ -1221,17 +1293,19 @@
         <div class="pl-section">
             <div class="section-title">
                 <div class="section-icon" style="background: rgba(239, 68, 68, 0.2); color: var(--destructive);">!</div>
-                <h3 class="section-heading">損失が出やすい業種</h3>
+                <h3 class="section-heading">投資効率が低い業種</h3>
             </div>
             <div class="pl-list">
                 {% for sector in loss_sectors %}
                 <div class="pl-item loss" onclick="showSectorDetail('{{ sector.sector }}', 'loss')">
                     <div class="pl-header">
                         <h4 class="pl-name">#{{ forloop.counter }} {{ sector.sector }}</h4>
-                        <span class="pl-rate loss">{{ sector.profit_rate|floatformat:1 }}%</span>
+                        <span class="pl-rate loss">{{ sector.roi|floatformat:1 }}%</span>
                     </div>
                     <p class="pl-count">取引数: {{ sector.transaction_count }}件 | 銘柄数: {{ sector.diary_count }}社</p>
-                    <p class="pl-count" style="color: var(--destructive); margin-top: 0.25rem;">実現損益: ¥{{ sector.total_profit|intcomma_float:0 }}</p>
+                    <p class="pl-count" style="color: var(--destructive); margin-top: 0.25rem;">
+                        実現損益: ¥{{ sector.realized_profit|intcomma_float:0 }} / 投資額: ¥{{ sector.total_invested|intcomma_float:0 }}
+                    </p>
                 </div>
                 {% empty %}
                 <p class="text-muted text-center py-3">データがありません</p>
@@ -1252,128 +1326,204 @@
     {% endif %}
 </div>
 
-<!-- Sector Detail Modal -->
-<div class="modal-overlay" id="sectorModal">
+<!-- 🆕 共通モーダル -->
+<div class="modal-overlay" id="diaryModal">
     <div class="modal-container">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title">
-                    <span id="modalSectorIcon">📊</span>
-                    <span id="modalSectorName"></span>
+                    <span id="modalIcon">📊</span>
+                    <span id="modalTitle"></span>
                 </h3>
-                <button class="modal-close" onclick="closeSectorModal()">&times;</button>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="company-list" id="companyList">
-                    <!-- Companies will be loaded here -->
-                </div>
+                <div id="modalContent"></div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // Sector detail data
-    const sectorDetailData = {{ sector_details| safe }};
+    // データを取得
+    const sectorDetailData = {{ sector_details|safe }};
+    const stockRankingData = {{ stock_ranking|safe }};
 
-    function showSectorDetail(sectorName, type) {
-        const modal = document.getElementById('sectorModal');
-        const modalTitle = document.getElementById('modalSectorName');
-        const modalIcon = document.getElementById('modalSectorIcon');
-        const companyList = document.getElementById('companyList');
-
-        // Set modal title and icon
-        modalTitle.textContent = sectorName;
-        modalIcon.textContent = type === 'profit' ? '✓' : '!';
-
-        // Get companies for this sector
-        const companies = sectorDetailData[sectorName] || [];
-
-        // Clear previous content
-        companyList.innerHTML = '';
-
-        if (companies.length === 0) {
-            companyList.innerHTML = '<p style="text-align: center; color: var(--muted);">データがありません</p>';
-        } else {
-            companies.forEach(company => {
-                const profitClass = company.profit >= 0 ? 'positive' : 'negative';
-                const profitSign = company.profit >= 0 ? '+' : '';
-
-                const companyItem = document.createElement('div');
-                companyItem.className = 'company-item';
-                
-                // 損益率HTMLを生成
-                let profitRateHtml = '';
-                if (company.profit_rate !== null && company.profit_rate !== undefined) {
-                    profitRateHtml = `
-                        <div class="stat-item">
-                            <span class="stat-label">損益率</span>
-                            <span class="stat-value ${profitClass}">${profitSign}${company.profit_rate}%</span>
-                        </div>
-                    `;
-                }
-                
-                // ✅ 日記作成日を表示
-                const dateDisplay = company.created_at ? `<div class="company-date">${company.created_at}〜</div>` : '';
-                
-                companyItem.innerHTML = `
-                    <a href="/stockdiary/${company.id}/" class="company-link">
-                        <div class="company-header">
-                            <div>
-                                <div class="company-name">${company.name}</div>
-                                <div class="company-code">コード: ${company.code}</div>
-                                ${dateDisplay}
-                            </div>
-                        </div>
-                        <div class="company-stats">
-                            <div class="stat-item">
-                                <span class="stat-label">取引回数</span>
-                                <span class="stat-value">${company.transaction_count}回</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">現在保有数</span>
-                                <span class="stat-value">${company.current_quantity}株</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">実現損益</span>
-                                <span class="stat-value ${profitClass}">${profitSign}¥${Math.abs(company.profit).toLocaleString()}</span>
-                            </div>
-                            ${profitRateHtml}
-                        </div>
-                    </a>
-                `;
-                companyList.appendChild(companyItem);
-            });
-        }
-        // Show modal
+    // 🆕 共通モーダル関数
+    function showModal(title, icon, content) {
+        const modal = document.getElementById('diaryModal');
+        document.getElementById('modalTitle').textContent = title;
+        document.getElementById('modalIcon').textContent = icon;
+        document.getElementById('modalContent').innerHTML = content;
+        
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
     }
 
-    function closeSectorModal() {
-        const modal = document.getElementById('sectorModal');
+    function closeModal() {
+        const modal = document.getElementById('diaryModal');
         modal.classList.remove('active');
         document.body.style.overflow = '';
     }
 
-    // Close modal when clicking outside
-    document.getElementById('sectorModal').addEventListener('click', function (e) {
+    // 🆕 銘柄別日記リスト表示
+    function showStockDiariesModal(stockCode, stockName) {
+        const stockData = stockRankingData[stockCode];
+        if (!stockData || !stockData.diaries) {
+            showModal(stockName, '📊', '<p class="text-muted">データがありません</p>');
+            return;
+        }
+
+        let html = `
+            <div style="margin-bottom: 1rem; padding: 1rem; background: rgba(59, 130, 246, 0.1); border-radius: 8px;">
+                <div style="font-size: 14px; color: var(--muted);">証券コード: ${stockCode}</div>
+                <div style="font-size: 14px; color: var(--muted); margin-top: 4px;">
+                    合計取引回数: ${stockData.transaction_count}回 | 日記数: ${stockData.diaries.length}件
+                </div>
+            </div>
+            <div class="company-list">
+        `;
+
+        stockData.diaries.forEach((diary, index) => {
+            const profitClass = diary.realized_profit >= 0 ? 'positive' : 'negative';
+            const profitSign = diary.realized_profit >= 0 ? '+' : '';
+            const statusBadge = diary.current_quantity > 0 
+                ? '<span class="diary-badge holding">保有中</span>' 
+                : '<span class="diary-badge sold">売却済</span>';
+
+            html += `
+                <div class="diary-list-item">
+                    <a href="/stockdiary/${diary.id}/" style="text-decoration: none; color: inherit; display: block;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 14px; color: var(--foreground);">
+                                    #${index + 1} 日記 ${statusBadge}
+                                </div>
+                                <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+                                    📅 ${diary.created_at}〜
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px;">
+                            <div>
+                                <span style="color: var(--muted);">取引回数:</span>
+                                <span style="font-weight: 600;">${diary.transaction_count}回</span>
+                            </div>
+                            <div>
+                                <span style="color: var(--muted);">保有数:</span>
+                                <span style="font-weight: 600;">${diary.current_quantity}株</span>
+                            </div>
+                            <div>
+                                <span style="color: var(--muted);">実現損益:</span>
+                                <span class="${profitClass}" style="font-weight: 600;">
+                                    ${profitSign}¥${Math.abs(diary.realized_profit).toLocaleString()}
+                                </span>
+                            </div>
+                            <div>
+                                <span style="color: var(--muted);">最終取引:</span>
+                                <span style="font-weight: 600;">${diary.last_trade_display}</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        showModal(`${stockName} の取引履歴`, '📊', html);
+    }
+
+    // 🆕 業種別日記リスト表示（改善版）
+    function showSectorDetail(sectorName, type) {
+        const companies = sectorDetailData[sectorName] || [];
+        
+        if (companies.length === 0) {
+            showModal(sectorName, type === 'profit' ? '✓' : '!', 
+                '<p class="text-muted">データがありません</p>');
+            return;
+        }
+
+        let html = '<div class="company-list">';
+
+        companies.forEach((company, index) => {
+            const profitClass = company.realized_profit >= 0 ? 'positive' : 'negative';
+            const profitSign = company.realized_profit >= 0 ? '+' : '';
+            const statusBadge = company.current_quantity > 0 
+                ? '<span class="diary-badge holding">保有中</span>' 
+                : '<span class="diary-badge sold">売却済</span>';
+
+            // ROI表示
+            let roiHtml = '';
+            if (company.roi !== null && company.roi !== undefined) {
+                const roiClass = company.roi >= 0 ? 'positive' : 'negative';
+                const roiSign = company.roi >= 0 ? '+' : '';
+                roiHtml = `
+                    <div>
+                        <span style="color: var(--muted);">投資効率:</span>
+                        <span class="${roiClass}" style="font-weight: 600;">${roiSign}${company.roi}%</span>
+                    </div>
+                `;
+            }
+
+            html += `
+                <div class="diary-list-item">
+                    <a href="/stockdiary/${company.id}/" style="text-decoration: none; color: inherit; display: block;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 16px; color: var(--foreground);">
+                                    ${company.name} ${statusBadge}
+                                </div>
+                                <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+                                    コード: ${company.code} | 📅 ${company.created_at}〜
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px;">
+                            <div>
+                                <span style="color: var(--muted);">取引回数:</span>
+                                <span style="font-weight: 600;">${company.transaction_count}回</span>
+                            </div>
+                            <div>
+                                <span style="color: var(--muted);">保有数:</span>
+                                <span style="font-weight: 600;">${company.current_quantity}株</span>
+                            </div>
+                            <div>
+                                <span style="color: var(--muted);">実現損益:</span>
+                                <span class="${profitClass}" style="font-weight: 600;">
+                                    ${profitSign}¥${Math.abs(company.realized_profit).toLocaleString()}
+                                </span>
+                            </div>
+                            <div>
+                                <span style="color: var(--muted);">投資額:</span>
+                                <span style="font-weight: 600;">¥${company.total_invested.toLocaleString()}</span>
+                            </div>
+                            ${roiHtml}
+                        </div>
+                    </a>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        
+        const icon = type === 'profit' ? '✓' : '!';
+        showModal(sectorName, icon, html);
+    }
+
+    // モーダル外クリックで閉じる
+    document.getElementById('diaryModal').addEventListener('click', function(e) {
         if (e.target === this) {
-            closeSectorModal();
+            closeModal();
         }
     });
 
-    // Close modal with ESC key
-    document.addEventListener('keydown', function (e) {
+    // ESCキーで閉じる
+    document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
-            closeSectorModal();
+            closeModal();
         }
-    });
-
-    document.addEventListener('DOMContentLoaded', function () {
-        // Remove old click handlers
-        console.log('Dashboard loaded with sector details');
     });
 </script>
+
 {% include 'speed_dial.html' with actions=page_actions %}
 {% endblock %}

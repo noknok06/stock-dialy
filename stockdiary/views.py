@@ -3366,9 +3366,9 @@ def process_sbi_csv(user, csv_content, filename):
         'overwrite_count': overwrite_count,
         'errors': errors
     }    
-    
+
 class TradingDashboardView(LoginRequiredMixin, TemplateView):
-    """取引分析ダッシュボード"""
+    """取引分析ダッシュボード（改善版）"""
     template_name = 'stockdiary/trading_dashboard.html'
 
     def get_context_data(self, **kwargs):
@@ -3423,7 +3423,6 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
 
             for company in companies:
                 code = company['code'].split('.')[0]
-                # ✅ 業種名を正規化（前後の空白削除、None対応）
                 industry = company['industry_name_33']
                 if industry:
                     industry = industry.strip()
@@ -3434,10 +3433,16 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
         total_transactions = sum(d.transaction_count for d in diaries_in_period)
         holding_count = all_diaries.filter(current_quantity__gt=0).count()
 
-        # ✅ StockDiary.realized_profit を利用
+        # 実現損益
         total_realized_profit = sum(d.realized_profit for d in diaries_in_period if d.realized_profit is not None)
 
-        # 平均利益率（realized_profitとtotal_sell_amountがあれば計算）
+        # 🆕 総投資額（総取得原価の合計）
+        total_invested = sum(d.total_cost for d in diaries_in_period if d.total_cost and d.total_cost > 0)
+
+        # 🆕 総投資額に対する利益率
+        total_roi = (total_realized_profit / total_invested * 100) if total_invested > 0 else 0
+
+        # 平均利益率（売却ベース）
         profitable_rates = []
         for diary in diaries_in_period:
             if diary.realized_profit and diary.total_sell_amount and diary.total_sell_amount > 0:
@@ -3446,40 +3451,64 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
 
         avg_profit_rate = sum(profitable_rates) / len(profitable_rates) if profitable_rates else 0
 
-        # ========== 取引回数ランキング ==========
-        ranking_diaries = list(diaries_in_period)
-        for diary in ranking_diaries:
-            diary.transaction_count_period = diary.transaction_count or 0
+        # ========== 取引回数ランキング（銘柄別） ==========
+        # 同一銘柄の複数日記をグループ化
+        stock_ranking = {}
+        for diary in diaries_in_period:
+            stock_code = diary.stock_symbol
+            if stock_code not in stock_ranking:
+                stock_ranking[stock_code] = {
+                    'stock_code': stock_code,
+                    'stock_name': diary.stock_name,
+                    'transaction_count': 0,
+                    'diaries': []
+                }
+            
+            stock_ranking[stock_code]['transaction_count'] += diary.transaction_count or 0
+            
+            # 日記ごとの詳細情報
             last_transaction = period_transactions.filter(diary=diary).order_by('-transaction_date').first()
-            diary.last_trade = last_transaction.transaction_date if last_transaction else None
-
-            if diary.last_trade:
-                delta = today - diary.last_trade
+            last_trade = last_transaction.transaction_date if last_transaction else None
+            
+            if last_trade:
+                delta = today - last_trade
                 if delta.days == 0:
-                    diary.last_trade_display = '今日'
+                    last_trade_display = '今日'
                 elif delta.days == 1:
-                    diary.last_trade_display = '1日前'
+                    last_trade_display = '1日前'
                 elif delta.days < 7:
-                    diary.last_trade_display = f'{delta.days}日前'
+                    last_trade_display = f'{delta.days}日前'
                 elif delta.days < 30:
                     weeks = delta.days // 7
-                    diary.last_trade_display = f'{weeks}週間前'
+                    last_trade_display = f'{weeks}週間前'
                 else:
                     months = delta.days // 30
-                    diary.last_trade_display = f'{months}ヶ月前'
+                    last_trade_display = f'{months}ヶ月前'
             else:
-                diary.last_trade_display = '不明'
+                last_trade_display = '不明'
+            
+            stock_ranking[stock_code]['diaries'].append({
+                'id': diary.id,
+                'transaction_count': diary.transaction_count or 0,
+                'realized_profit': float(diary.realized_profit or 0),
+                'current_quantity': float(diary.current_quantity or 0),
+                'last_trade_display': last_trade_display,
+                'created_at': diary.created_at.strftime('%Y年%m月%d日'),
+            })
 
-        ranking_diaries.sort(key=lambda x: x.transaction_count_period, reverse=True)
-        transaction_ranking = ranking_diaries[:10]
+        # ソートして上位10件
+        transaction_ranking = sorted(
+            stock_ranking.values(),
+            key=lambda x: x['transaction_count'],
+            reverse=True
+        )[:10]
 
-        # ========== 業種別分析 + 企業明細 ==========
+        # ========== 業種別分析 + 企業明細（日記別） ==========
         sector_stats = {}
         sector_companies = {}
 
         for diary in diaries_in_period:
             stock_code = diary.stock_symbol.split('.')[0] if diary.stock_symbol else None
-            # ✅ 業種名を正規化して取得
             sector = company_industries.get(stock_code, '未分類')
             sector = sector.strip() if sector else '未分類'
 
@@ -3487,51 +3516,64 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
                 sector_stats[sector] = {
                     'sector': sector,
                     'transaction_count': 0,
-                    'total_profit': Decimal('0'),
+                    'realized_profit': Decimal('0'),
                     'total_sell_amount': Decimal('0'),
                     'total_buy_amount': Decimal('0'),
+                    'total_invested': Decimal('0'),  # 🆕 総投資額（総取得原価）
                     'diary_ids': set(),
                 }
-                sector_companies[sector] = {}
+                sector_companies[sector] = []
 
             sector_stats[sector]['transaction_count'] += diary.transaction_count or 0
             sector_stats[sector]['diary_ids'].add(diary.id)
-            sector_stats[sector]['total_profit'] += diary.realized_profit or Decimal('0')
+            sector_stats[sector]['realized_profit'] += diary.realized_profit or Decimal('0')
             sector_stats[sector]['total_sell_amount'] += diary.total_sell_amount or Decimal('0')
             sector_stats[sector]['total_buy_amount'] += diary.total_buy_amount or Decimal('0')
+            
+            # 🆕 総投資額（総取得原価）を加算
+            if diary.total_cost and diary.total_cost > 0:
+                sector_stats[sector]['total_invested'] += diary.total_cost
 
-            # 企業ごとの集計
-            sector_companies[sector][diary.id] = {
+            # 🆕 日記別に企業情報を保存
+            sector_companies[sector].append({
                 'id': diary.id,
                 'name': diary.stock_name,
                 'code': diary.stock_symbol,
                 'transaction_count': diary.transaction_count or 0,
-                'total_profit': float(diary.realized_profit or 0),
+                'realized_profit': float(diary.realized_profit or 0),
                 'total_sell_amount': float(diary.total_sell_amount or 0),
+                'total_invested': float(diary.total_cost or 0),
                 'current_quantity': float(diary.current_quantity or 0),
-            }
+                'created_at': diary.created_at.strftime('%Y年%m月%d日'),
+            })
 
         # 利益率を計算
         sector_analysis = []
         for sector, data in sector_stats.items():
             diary_count = len(data['diary_ids'])
-            total_profit = data['total_profit']
+            realized_profit = data['realized_profit']
             total_sell_amount = data['total_sell_amount']
             total_buy_amount = data['total_buy_amount']
+            total_invested = data['total_invested']
 
-            # ✅ 売却金額がある場合のみ利益率を計算
+            # 🆕 投資効率（ROI: 総投資額に対する実現損益率）
+            roi = (realized_profit / total_invested * 100) if total_invested > 0 else Decimal('0')
+
+            # 売却ベースの損益率
             if total_sell_amount > 0:
-                profit_rate = (total_profit / total_sell_amount) * 100
+                profit_rate = (realized_profit / total_sell_amount) * 100
             else:
                 profit_rate = Decimal('0')
 
             sector_analysis.append({
                 'sector': sector.strip(),
                 'transaction_count': data['transaction_count'],
-                'total_profit': float(total_profit),
+                'realized_profit': float(realized_profit),
                 'total_buy_amount': float(total_buy_amount),
+                'total_invested': float(total_invested),  # 🆕
+                'roi': float(round(roi, 1)),  # 🆕 投資効率
+                'profit_rate': float(round(profit_rate, 1)),  # 売却ベース損益率
                 'diary_count': diary_count,
-                'profit_rate': float(round(profit_rate, 1)),
             })
 
         # ソート & 幅パーセント計算
@@ -3539,16 +3581,27 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
         sector_analysis = sector_analysis[:10]
 
         max_transaction_count = sector_analysis[0]['transaction_count'] if sector_analysis else 1
+        total_all_transactions = sum(s['transaction_count'] for s in sector_analysis)
+        
         for sector in sector_analysis:
             sector['width_percent'] = (sector['transaction_count'] / max_transaction_count) * 100
+            # 🆕 取引回数割合
+            sector['transaction_ratio'] = round((sector['transaction_count'] / total_all_transactions) * 100, 1) if total_all_transactions > 0 else 0
 
-        # ========== 業種別企業明細データ ==========
+        # ========== 業種別企業明細データ（日記別） ==========
         sector_details = {}
         for sector, companies in sector_companies.items():
             company_list = []
-            for diary_id, c in companies.items():
+            for c in companies:
+                # 🆕 投資効率（ROI）
+                if c['total_invested'] > 0:
+                    roi = round((c['realized_profit'] / c['total_invested']) * 100, 1)
+                else:
+                    roi = None
+                
+                # 売却ベース損益率
                 if c['total_sell_amount'] > 0:
-                    profit_rate = round((c['total_profit'] / c['total_sell_amount']) * 100, 1)
+                    profit_rate = round((c['realized_profit'] / c['total_sell_amount']) * 100, 1)
                 else:
                     profit_rate = None
 
@@ -3557,17 +3610,18 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
                     'name': c['name'],
                     'code': c['code'],
                     'transaction_count': c['transaction_count'],
-                    'profit': round(c['total_profit'], 0),
-                    'profit_rate': profit_rate,
+                    'realized_profit': round(c['realized_profit'], 0),
+                    'total_invested': round(c['total_invested'], 0),
+                    'roi': roi,  # 🆕 投資効率
+                    'profit_rate': profit_rate,  # 売却ベース損益率
                     'current_quantity': c['current_quantity'],
-                    'created_at': c.get('created_at', ''),  # ✅ 日付を追加
+                    'created_at': c['created_at'],
                 })
 
-            company_list.sort(key=lambda x: x['profit'], reverse=True)
+            company_list.sort(key=lambda x: x['realized_profit'], reverse=True)
             sector_details[sector.strip()] = company_list
-                        
-        # ========== 利益/損失業種 ==========
-        # ✅ 業種名で重複削除
+
+        # ========== 利益/損失業種（ROIベース） ==========
         seen_sectors = set()
         unique_sector_analysis = []
         for s in sector_analysis:
@@ -3576,12 +3630,13 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
                 seen_sectors.add(sector_key)
                 unique_sector_analysis.append(s)
 
-        profitable_sectors = [s for s in unique_sector_analysis if s['profit_rate'] > 0]
-        profitable_sectors.sort(key=lambda x: x['profit_rate'], reverse=True)
+        # 🆕 ROIベースでソート
+        profitable_sectors = [s for s in unique_sector_analysis if s['roi'] > 0]
+        profitable_sectors.sort(key=lambda x: x['roi'], reverse=True)
         profitable_sectors = profitable_sectors[:3]
 
-        loss_sectors = [s for s in unique_sector_analysis if s['profit_rate'] < 0]
-        loss_sectors.sort(key=lambda x: x['profit_rate'])
+        loss_sectors = [s for s in unique_sector_analysis if s['roi'] < 0]
+        loss_sectors.sort(key=lambda x: x['roi'])
         loss_sectors = loss_sectors[:3]
 
         # ========== コンテキスト ==========
@@ -3589,14 +3644,17 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
             'total_transactions': total_transactions,
             'holding_count': holding_count,
             'total_realized_profit': total_realized_profit,
+            'total_invested': total_invested,  # 🆕
+            'total_roi': round(total_roi, 1),  # 🆕
             'avg_profit_rate': round(avg_profit_rate, 1),
-            'transaction_ranking': transaction_ranking,
+            'transaction_ranking': transaction_ranking,  # 🆕 銘柄別（複数日記対応）
             'sector_analysis': sector_analysis,
             'profitable_sectors': profitable_sectors,
             'loss_sectors': loss_sectors,
             'current_period': period,
             'has_data': total_transactions > 0,
             'sector_details': json.dumps(sector_details, ensure_ascii=False),
+            'stock_ranking': json.dumps({s['stock_code']: s for s in transaction_ranking}, ensure_ascii=False),  # 🆕
         })
 
         context['page_actions'] = [
