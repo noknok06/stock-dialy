@@ -114,7 +114,222 @@ document.addEventListener('DOMContentLoaded', function() {
       // アクティブフィルターを更新
       setTimeout(updateActiveFilters, 100);
     });
+
+  // タグクリック時のイベントリスナーを設定
+  function setupTagClickHandlers() {
+    const tagElements = document.querySelectorAll('.diary-tag');
+    
+    tagElements.forEach(tag => {
+      // 既存のイベントリスナーを削除（重複防止）
+      tag.removeEventListener('click', handleTagClick);
+      
+      // 新しいイベントリスナーを追加
+      tag.addEventListener('click', handleTagClick);
+      
+      // クリック可能であることを示すスタイルを追加
+      tag.style.cursor = 'pointer';
+      tag.style.transition = 'all 0.2s ease';
+      
+      // ホバー効果を追加
+      tag.addEventListener('mouseenter', function() {
+        this.style.transform = 'scale(1.05)';
+        this.style.opacity = '0.8';
+      });
+      
+      tag.addEventListener('mouseleave', function() {
+        this.style.transform = 'scale(1)';
+        this.style.opacity = '1';
+      });
+    });
   }
+  
+  // タグクリック時の処理
+  function handleTagClick(event) {
+    event.preventDefault();
+    event.stopPropagation(); // イベントの伝播を防ぐ（カードクリックを防ぐ）
+    
+    const tagElement = event.currentTarget;
+    const tagId = tagElement.getAttribute('data-tag-id');
+    const tagName = tagElement.textContent.trim();
+    
+    if (!tagId) {
+      console.warn('タグIDが見つかりません');
+      return;
+    }
+    
+    // タグフィルターを適用
+    applyTagFilter(tagId, tagName);
+  }
+  
+  // タグフィルターを適用する関数
+  function applyTagFilter(tagId, tagName) {
+    // セレクトボックスの値を更新
+    const tagFilterSelect = document.getElementById('tagFilter');
+    if (tagFilterSelect) {
+      tagFilterSelect.value = tagId;
+    }
+    
+    // 詳細検索パネルが閉じている場合は開く
+    const advancedPanel = document.getElementById('advancedPanel');
+    const advancedToggle = document.getElementById('advancedToggle');
+    
+    if (advancedPanel && advancedPanel.classList.contains('collapsed')) {
+      advancedPanel.classList.remove('collapsed');
+      advancedPanel.classList.add('slide-down');
+      
+      if (advancedToggle) {
+        advancedToggle.innerHTML = '<i class="bi bi-x"></i>';
+        advancedToggle.setAttribute('aria-expanded', 'true');
+      }
+    }
+    
+    // 検索フォームを送信
+    const searchForm = document.getElementById('optimizedSearchForm');
+    if (searchForm) {
+      // HTMXで検索を実行
+      htmx.trigger(searchForm, 'submit');
+      
+      // ページ上部にスクロール（スムーズに）
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+      
+      // ユーザーへのフィードバック
+      showFilterNotification(tagName);
+    }
+  }
+  
+  // フィルター適用の通知を表示
+  function showFilterNotification(tagName) {
+    // 既存の通知を削除
+    const existingNotification = document.querySelector('.filter-notification');
+    if (existingNotification) {
+      existingNotification.remove();
+    }
+    
+    // 新しい通知を作成
+    const notification = document.createElement('div');
+    notification.className = 'filter-notification';
+    notification.innerHTML = `
+      <i class="bi bi-tag-fill me-2"></i>
+      タグ「${tagName}」でフィルタリング中
+    `;
+    
+    // 通知をページに追加
+    document.body.appendChild(notification);
+    
+    // アニメーションで表示
+    setTimeout(() => {
+      notification.classList.add('show');
+    }, 10);
+    
+    // 3秒後に非表示
+    setTimeout(() => {
+      notification.classList.remove('show');
+      setTimeout(() => {
+        notification.remove();
+      }, 300);
+    }, 3000);
+  }
+  
+  // HTMXのafterSwapイベント後にタグクリックハンドラーを再設定
+  document.body.addEventListener('htmx:afterSwap', function(event) {
+    if (event.detail.target.id === 'diary-container') {
+      setTimeout(setupTagClickHandlers, 100);
+    }
+  });
+  
+  // 初期セットアップ
+  setupTagClickHandlers();
+
+// バッジ更新関数を修正（グローバルスコープ）
+if (typeof updateFilterBadges !== 'undefined') {
+  const originalUpdateFilterBadges = updateFilterBadges;
+  
+  updateFilterBadges = function() {
+    originalUpdateFilterBadges();
+    
+    // バッジ更新後にタグクリックハンドラーを再設定
+    setTimeout(() => {
+      const tagElements = document.querySelectorAll('.diary-tag');
+      tagElements.forEach(tag => {
+        tag.style.cursor = 'pointer';
+      });
+    }, 50);
+  };
+}
+
+/* ========== タグクリック用CSS ========== */
+const style = document.createElement('style');
+style.textContent = `
+  .diary-tag {
+    cursor: pointer !important;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .diary-tag::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.2);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  
+  .diary-tag:hover::before {
+    opacity: 1;
+  }
+  
+  .diary-tag:active {
+    transform: scale(0.95);
+  }
+  
+  /* フィルター通知 */
+  .filter-notification {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    padding: 12px 20px;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateX(400px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .filter-notification.show {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  
+  @media (max-width: 768px) {
+    .filter-notification {
+      top: 70px;
+      right: 10px;
+      left: 10px;
+      font-size: 0.85rem;
+      padding: 10px 15px;
+    }
+  }
+  
+  /* ダークモード対応 */
+  .dark-mode .filter-notification,
+  [data-theme="dark"] .filter-notification {
+    background: linear-gradient(135deg, var(--dm-primary), var(--dm-primary-hover));
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+`;
+  document.head.appendChild(style);   
 
   // フィルター選択時の自動検索
   const filterSelects = document.querySelectorAll('#tagFilter, #statusFilter, #sectorFilter, #dateRange');

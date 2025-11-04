@@ -210,8 +210,27 @@
 }
 
 .tab-icon {
-  font-size: 1.5rem;
-  margin-bottom: 0.5rem;
+  position: relative;
+  display: inline-block;
+  font-size: 1.4rem;
+  margin-bottom: 0.4rem;
+}
+
+/* バッジをアイコン右下に配置 */
+.tab-icon .notes-count-badge,
+.tab-icon .badge {
+  position: absolute;
+  bottom: -3px;
+  right: -6px;
+  font-size: 0.65rem;
+  padding: 2px 5px;
+  border-radius: 50%;
+  line-height: 1;
+  min-width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .tab-label {
@@ -618,9 +637,17 @@
 }
 
 @keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(248, 194, 145, 0.7); }
-  70% { box-shadow: 0 0 0 10px rgba(248, 194, 145, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(248, 194, 145, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(248, 194, 145, 0.7);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(248, 194, 145, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(248, 194, 145, 0);
+  }
 }
 
 .timeline-card {
@@ -910,7 +937,7 @@
 
 .note-attached-image:hover {
   transform: scale(1.02);
-  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* === フォーム切り替えボタンのスタイル改善 === */
@@ -976,9 +1003,17 @@
 
 /* === アニメーション効果 === */
 @keyframes template-highlight {
-  0% { background-color: rgba(90, 126, 197, 0.1); }
-  50% { background-color: rgba(90, 126, 197, 0.2); }
-  100% { background-color: rgba(90, 126, 197, 0.1); }
+  0% {
+    background-color: rgba(90, 126, 197, 0.1);
+  }
+
+  50% {
+    background-color: rgba(90, 126, 197, 0.2);
+  }
+
+  100% {
+    background-color: rgba(90, 126, 197, 0.1);
+  }
 }
 
 .analysis-template-item:target {
@@ -986,8 +1021,15 @@
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 #noteFormCollapse.show .simplified-note-form {
@@ -1169,17 +1211,17 @@
     align-items: stretch;
     gap: 1rem;
   }
-  
+
   #toggleNoteForm {
     width: 100%;
     justify-content: center;
   }
-  
+
   .d-flex.gap-2 {
     flex-direction: column;
     gap: 0.5rem !important;
   }
-  
+
   .d-flex.gap-2 .btn {
     width: 100%;
   }
@@ -1198,6 +1240,7 @@
 }
 
 @media (max-width: 576px) {
+
   /* 極小画面での最適化 */
   .diary-detail-container {
     padding-left: 0.25rem;
@@ -1375,6 +1418,7 @@
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1468,12 +1512,12 @@
     font-size: 0.9rem;
     padding: 0.5rem;
   }
-  
+
   #transaction-preview {
     padding: 0.75rem;
     font-size: 0.875rem;
   }
-  
+
   #quantity-warning {
     padding: 0.625rem;
     font-size: 0.8125rem;

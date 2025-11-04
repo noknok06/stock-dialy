@@ -805,6 +805,69 @@ img {
     font-size: 0.75rem;
   }
 }
+  .diary-tag {
+    cursor: pointer !important;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .diary-tag::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.2);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  
+  .diary-tag:hover::before {
+    opacity: 1;
+  }
+  
+  .diary-tag:active {
+    transform: scale(0.95);
+  }
+  
+  .filter-notification {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    padding: 12px 20px;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateX(400px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .filter-notification.show {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  
+  @media (max-width: 768px) {
+    .filter-notification {
+      top: 70px;
+      right: 10px;
+      left: 10px;
+      font-size: 0.85rem;
+      padding: 10px 15px;
+    }
+  }
+  
+  .dark-mode .filter-notification,
+  [data-theme="dark"] .filter-notification {
+    background: linear-gradient(135deg, var(--dm-primary), var(--dm-primary-hover));
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
 </style>
 {% endblock %}
 
@@ -1746,6 +1809,116 @@ document.addEventListener('DOMContentLoaded', function() {
         .forEach(el => {
             el.addEventListener('change', updateFilterBadges);
         });
+});
+</script>
+
+<script>
+// タグクリックフィルタリング機能
+document.addEventListener('DOMContentLoaded', function() {
+  // タグクリック時のイベントリスナーを設定
+  function setupTagClickHandlers() {
+    const tagElements = document.querySelectorAll('.diary-tag');
+    
+    tagElements.forEach(tag => {
+      tag.removeEventListener('click', handleTagClick);
+      tag.addEventListener('click', handleTagClick);
+      tag.style.cursor = 'pointer';
+      tag.style.transition = 'all 0.2s ease';
+      
+      tag.addEventListener('mouseenter', function() {
+        this.style.transform = 'scale(1.05)';
+        this.style.opacity = '0.8';
+      });
+      
+      tag.addEventListener('mouseleave', function() {
+        this.style.transform = 'scale(1)';
+        this.style.opacity = '1';
+      });
+    });
+  }
+  
+  function handleTagClick(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const tagElement = event.currentTarget;
+    const tagId = tagElement.getAttribute('data-tag-id');
+    const tagName = tagElement.textContent.trim();
+    
+    if (!tagId) {
+      console.warn('タグIDが見つかりません');
+      return;
+    }
+    
+    applyTagFilter(tagId, tagName);
+  }
+  
+  function applyTagFilter(tagId, tagName) {
+    const tagFilterSelect = document.getElementById('tagFilter');
+    if (tagFilterSelect) {
+      tagFilterSelect.value = tagId;
+    }
+    
+    const advancedPanel = document.getElementById('advancedPanel');
+    const advancedToggle = document.getElementById('advancedToggle');
+    
+    if (advancedPanel && advancedPanel.classList.contains('collapsed')) {
+      advancedPanel.classList.remove('collapsed');
+      advancedPanel.classList.add('slide-down');
+      
+      if (advancedToggle) {
+        advancedToggle.innerHTML = '<i class="bi bi-x"></i>';
+        advancedToggle.setAttribute('aria-expanded', 'true');
+      }
+    }
+    
+    const searchForm = document.getElementById('optimizedSearchForm');
+    if (searchForm) {
+      htmx.trigger(searchForm, 'submit');
+      
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+      
+      showFilterNotification(tagName);
+    }
+  }
+  
+  function showFilterNotification(tagName) {
+    const existingNotification = document.querySelector('.filter-notification');
+    if (existingNotification) {
+      existingNotification.remove();
+    }
+    
+    const notification = document.createElement('div');
+    notification.className = 'filter-notification';
+    notification.innerHTML = `
+      <i class="bi bi-tag-fill me-2"></i>
+      タグ「${tagName}」でフィルタリング中
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.classList.add('show');
+    }, 10);
+    
+    setTimeout(() => {
+      notification.classList.remove('show');
+      setTimeout(() => {
+        notification.remove();
+      }, 300);
+    }, 3000);
+  }
+  
+  document.body.addEventListener('htmx:afterSwap', function(event) {
+    if (event.detail.target.id === 'diary-container') {
+      setTimeout(setupTagClickHandlers, 100);
+    }
+  });
+  
+  setupTagClickHandlers();
 });
 </script>
 {% endblock %}
