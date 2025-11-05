@@ -62,37 +62,33 @@
   }
   .dark-mode .tooltip-inner,
   [data-theme="dark"] .tooltip-inner {
-      background-color: #333; /* 背景色を暗く */
-      color: #f3f4f6; /* 文字色を明るく */
+      background-color: #333;
+      color: #f3f4f6;
   }
 
-  /* ダークモードのファイル入力フィールド */
   .dark-mode .form-control[type="file"],
   [data-theme="dark"] .form-control[type="file"] {
-    background-color: #333; /* 背景色を暗く */
-    color: #f3f4f6; /* 文字色を明るく */
-    border-color: #555; /* 枠線の色を暗く */
+    background-color: #333;
+    color: #f3f4f6;
+    border-color: #555;
   }
 
-  /* ダークモードでファイル選択ボタンのテキストを変更 */
   .dark-mode .form-control[type="file"]::file-selector-button,
   [data-theme="dark"] .form-control[type="file"]::file-selector-button {
-    background-color: #444; /* ボタンの背景色 */
-    color: #f3f4f6; /* ボタンの文字色 */
-    border: 1px solid #666; /* ボタンの枠線色 */
+    background-color: #444;
+    color: #f3f4f6;
+    border: 1px solid #666;
   }
 
-  /* ボタンにホバーしたときのスタイル */
   .dark-mode .form-control[type="file"]::file-selector-button:hover,
   [data-theme="dark"] .form-control[type="file"]::file-selector-button:hover {
-    background-color: #555; /* ボタンのホバー背景色 */
-    border-color: #777; /* ボタンのホバー枠線色 */
+    background-color: #555;
+    border-color: #777;
   }
 
-  /* ダークモードでツールチップの矢印色も変更 */
   .dark-mode .tooltip.bs-tooltip-top .tooltip-arrow::before,
   [data-theme="dark"] .tooltip.bs-tooltip-top .tooltip-arrow::before {
-      border-top-color: #333; /* 矢印の色を背景色に合わせる */
+      border-top-color: #333;
   }
 
   .diary-memo-textarea {
@@ -151,6 +147,26 @@
     color: #f59e0b;
   }
 
+  /* 🆕 取引区分のバッジスタイル */
+  .trade-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .trade-type-badge.cash {
+    background-color: #dcfce7;
+    color: #166534;
+  }
+
+  .trade-type-badge.margin {
+    background-color: #fef3c7;
+    color: #92400e;
+  }
 
   /* ========== 分析項目のレイアウト統一 ========== */
   .analysis-item {
@@ -167,7 +183,6 @@
     box-shadow: 0 2px 4px rgba(90, 126, 197, 0.15);
   }
 
-  /* 全項目タイプ共通のヘッダー */
   .analysis-item-header {
     display: flex;
     align-items: flex-start;
@@ -204,7 +219,6 @@
     line-height: 1.4;
   }
 
-  /* ブール型のチェックボックス */
   .analysis-item-checkbox {
     flex-shrink: 0;
   }
@@ -235,7 +249,6 @@
     outline: none;
   }
 
-  /* 入力フィールドを持つ項目 */
   .analysis-item-input-section {
     margin-top: 0.75rem;
   }
@@ -247,37 +260,33 @@
     margin-bottom: 0.375rem;
   }
 
-  /* ========== フォームコントロールの横幅調整 ========== */
   .analysis-item .form-control,
   .analysis-item .form-select {
     border: 2px solid #d1d5db;
     border-radius: 0.375rem;
     font-size: 0.95rem;
     transition: all 0.2s ease;
-    width: 100%; /* デフォルトは全幅 */
+    width: 100%;
   }
 
-  /* デスクトップでの横幅制限 */
   @media (min-width: 768px) {
     .analysis-item .form-control[type="number"] {
-      max-width: 200px; /* 数値入力は200px */
+      max-width: 200px;
     }
     
     .analysis-item .form-control[type="text"] {
-      max-width: 400px; /* テキスト入力は400px */
+      max-width: 400px;
     }
     
     .analysis-item .form-select {
-      max-width: 300px; /* セレクトボックスは300px */
+      max-width: 300px;
     }
-
   }
 
-  /* タブレットでの横幅調整 */
   @media (min-width: 577px) and (max-width: 767px) {
     .analysis-item .form-control,
     .analysis-item .form-select {
-      max-width: 100%; /* タブレットは全幅 */
+      max-width: 100%;
     }
   }
 
@@ -292,7 +301,6 @@
     color: #9ca3af;
   }
 
-  /* ========== スマホ対応 ========== */
   @media (max-width: 576px) {
     .analysis-item {
       padding: 0.875rem;
@@ -315,7 +323,6 @@
       height: 1.375rem;
     }
 
-    /* スマホでは全幅 */
     .analysis-item .form-control,
     .analysis-item .form-select {
       width: 100%;
@@ -323,9 +330,7 @@
     }
   }
 
-  /* ========== タッチデバイス対応 ========== */
   @media (hover: none) and (pointer: coarse) {
-    /* タッチ領域を最低44pxに */
     .analysis-item-checkbox .form-check-input {
       width: 1.75rem;
       height: 1.75rem;
@@ -344,13 +349,11 @@
     }
   }
 
-  /* ========== アクセシビリティ ========== */
   .analysis-item-checkbox .form-check-input:focus-visible {
     outline: 2px solid #5a7ec5;
     outline-offset: 2px;
   }
 
-  /* ========== 入力セクションの余白調整 ========== */
   .analysis-item-input-section {
     margin-top: 0.75rem;
   }
@@ -372,7 +375,6 @@
     </h1>
   </div>
 
-  <!-- 情報ボックス -->
   {% if not form.instance.pk %}
   <div class="info-box">
     <i class="bi bi-info-circle info-box-icon"></i>
@@ -382,7 +384,6 @@
   </div>
   {% endif %}
 
-  <!-- フォームカード -->
   <div class="diary-form">
     <div class="form-body">
       <form method="post" enctype="multipart/form-data" id="diaryForm">
@@ -394,7 +395,6 @@
             <i class="bi bi-graph-up"></i> 銘柄情報
           </h4>
 
-          <!-- 株価情報カード（銘柄検索後に表示） -->
           <div class="info-block d-none" id="stockInfoCard">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h5 class="mb-0" id="stockInfoTitle">会社情報</h5>
@@ -536,7 +536,7 @@
           {% endif %}
         </div>
 
-        <!-- 初回購入情報セクション（新規作成時のみ） -->
+        <!-- 🆕 初回購入情報セクション（取引区分追加） -->
         {% if not form.instance.pk %}
         <div class="form-section">
           <div class="form-check mb-3">
@@ -569,7 +569,28 @@
             </h6>
         
             <div class="row">
-              <div class="col-md-4 mb-3">
+              <!-- 🆕 取引区分 -->
+              <div class="col-md-3 mb-3">
+                <label for="id_initial_trade_type" class="form-label">
+                  取引区分<span class="text-danger">*</span>
+                </label>
+                <select class="form-select" 
+                        id="id_initial_trade_type"
+                        name="initial_trade_type">
+                  <option value="cash" selected>
+                    <i class="bi bi-wallet2"></i> 現物
+                  </option>
+                  <option value="margin">
+                    <i class="bi bi-currency-exchange"></i> 信用
+                  </option>
+                </select>
+                <small class="form-text text-muted">現物または信用取引</small>
+                {% if form.initial_trade_type.errors %}
+                <div class="text-danger small">{{ form.initial_trade_type.errors }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-3 mb-3">
                 <label for="id_initial_purchase_date" class="form-label">
                   購入日<span class="text-danger">*</span>
                 </label>
@@ -583,7 +604,7 @@
                 {% endif %}
               </div>
         
-              <div class="col-md-4 mb-3">
+              <div class="col-md-3 mb-3">
                 <label for="id_initial_purchase_price" class="form-label">
                   購入単価（円）<span class="text-danger">*</span>
                 </label>
@@ -598,7 +619,7 @@
                          value="{{ form.initial_purchase_price.value|default:'' }}">
                   <button type="button" class="btn btn-outline-primary" 
                           id="fetch-current-price" title="現在株価を取得">
-                    <i class="bi bi-arrow-repeat"></i> 現在株価
+                    <i class="bi bi-arrow-repeat"></i>
                   </button>
                 </div>
                 <small class="form-text text-muted">1株あたりの単価</small>
@@ -607,7 +628,7 @@
                 {% endif %}
               </div>
         
-              <div class="col-md-4 mb-3">
+              <div class="col-md-3 mb-3">
                 <label for="id_initial_purchase_quantity" class="form-label">
                   購入数量（株）<span class="text-danger">*</span>
                 </label>
@@ -626,10 +647,28 @@
               </div>
             </div>
         
+            <!-- 🆕 取引区分の説明 -->
+            <div class="alert alert-light mb-3" id="trade-type-info">
+              <div class="d-flex align-items-start gap-2">
+                <i class="bi bi-info-circle text-primary mt-1"></i>
+                <div>
+                  <strong id="trade-type-title">現物取引</strong>
+                  <p class="mb-0 small text-muted" id="trade-type-desc">
+                    自己資金で株式を購入・保有する取引です
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <!-- 合計金額の表示 -->
             <div class="alert alert-success" id="initial-purchase-preview" style="display: none;">
               <div class="d-flex justify-content-between align-items-center">
-                <strong>初回購入金額:</strong>
+                <div>
+                  <strong>初回購入金額:</strong>
+                  <span class="trade-type-badge ms-2" id="preview-trade-type-badge">
+                    <i class="bi bi-wallet2"></i> 現物
+                  </span>
+                </div>
                 <span id="initial-purchase-amount" class="fs-5">0</span>円
               </div>
             </div>
@@ -657,7 +696,6 @@
           </div>
         </div>
 
-        <!-- 分析項目の表示エリア -->
         <div id="analysisItemsContainer" class="form-section d-none">
           <h4 class="form-section-title">
             <i class="bi bi-table"></i> 分析項目
@@ -683,7 +721,6 @@
               チャート、スクリーンショット等（最大10MB、JPEG/PNG/GIF/WebP形式）
             </small>
 
-            <!-- 画像プレビュー -->
             <div id="image-preview-container" class="mt-3" style="display: none;">
               <div class="card" style="max-width: 300px;">
                 <img id="image-preview" class="card-img-top" 
@@ -697,7 +734,6 @@
               </div>
             </div>
 
-            <!-- 既存画像（編集時） -->
             {% if form.instance.image_url %}
             <div class="mt-3">
               <div class="card" style="max-width: 300px;">
@@ -718,7 +754,6 @@
           </div>
         </div>
 
-        <!-- フッター -->
         <div class="form-footer">
           <a href="{% if form.instance.pk %}{% url 'stockdiary:detail' form.instance.pk %}{% else %}{% url 'stockdiary:home' %}{% endif %}"
              class="btn btn-diary btn-diary-outline">
@@ -743,6 +778,49 @@
 document.addEventListener('DOMContentLoaded', function() {
 
 // ============================================
+// 🆕 取引区分の説明表示
+// ============================================
+const tradeTypeSelect = document.getElementById('id_initial_trade_type');
+const tradeTypeInfo = document.getElementById('trade-type-info');
+const tradeTypeTitle = document.getElementById('trade-type-title');
+const tradeTypeDesc = document.getElementById('trade-type-desc');
+const previewTradeBadge = document.getElementById('preview-trade-type-badge');
+
+if (tradeTypeSelect) {
+  tradeTypeSelect.addEventListener('change', function() {
+    updateTradeTypeInfo(this.value);
+    updateInitialPurchasePreview();
+  });
+  
+  // 初期表示
+  updateTradeTypeInfo(tradeTypeSelect.value);
+}
+
+function updateTradeTypeInfo(tradeType) {
+  if (tradeType === 'margin') {
+    tradeTypeTitle.textContent = '信用取引';
+    tradeTypeDesc.textContent = '証券会社から資金や株式を借りて行う取引です。レバレッジを効かせた取引が可能です。';
+    tradeTypeInfo.classList.remove('alert-light');
+    tradeTypeInfo.classList.add('alert-warning');
+    
+    if (previewTradeBadge) {
+      previewTradeBadge.className = 'trade-type-badge margin ms-2';
+      previewTradeBadge.innerHTML = '<i class="bi bi-currency-exchange"></i> 信用';
+    }
+  } else {
+    tradeTypeTitle.textContent = '現物取引';
+    tradeTypeDesc.textContent = '自己資金で株式を購入・保有する取引です。';
+    tradeTypeInfo.classList.remove('alert-warning');
+    tradeTypeInfo.classList.add('alert-light');
+    
+    if (previewTradeBadge) {
+      previewTradeBadge.className = 'trade-type-badge cash ms-2';
+      previewTradeBadge.innerHTML = '<i class="bi bi-wallet2"></i> 現物';
+    }
+  }
+}
+
+// ============================================
 // オートコンプリート機能
 // ============================================
 const stockSymbolInput = document.getElementById('id_stock_symbol');
@@ -751,7 +829,6 @@ let autocompleteResults = [];
 let selectedIndex = -1;
 
 if (stockSymbolInput) {
-  // オートコンプリート用の結果表示エリアを作成
   const autocompleteContainer = document.createElement('div');
   autocompleteContainer.id = 'autocomplete-results';
   autocompleteContainer.className = 'autocomplete-results';
@@ -770,14 +847,12 @@ if (stockSymbolInput) {
     display: none;
   `;
   
-  // 入力グループの親要素に追加
   const inputGroup = stockSymbolInput.closest('.input-group');
   if (inputGroup) {
     inputGroup.style.position = 'relative';
     inputGroup.appendChild(autocompleteContainer);
   }
   
-  // 入力時のオートコンプリート
   stockSymbolInput.addEventListener('input', function(e) {
     const query = e.target.value.trim();
     
@@ -788,7 +863,6 @@ if (stockSymbolInput) {
       return;
     }
     
-    // 300ms後に検索実行
     autocompleteTimeout = setTimeout(async () => {
       try {
         const response = await fetch(`/stockdiary/api/stock/search/?query=${encodeURIComponent(query)}&limit=10`);
@@ -807,7 +881,6 @@ if (stockSymbolInput) {
     }, 300);
   });
   
-  // 結果を表示
   function displayAutocompleteResults(companies) {
     let html = '<div class="list-group list-group-flush">';
     
@@ -835,7 +908,6 @@ if (stockSymbolInput) {
     autocompleteContainer.innerHTML = html;
     autocompleteContainer.style.display = 'block';
     
-    // クリックイベント設定
     const items = autocompleteContainer.querySelectorAll('.autocomplete-item');
     items.forEach(item => {
       item.addEventListener('click', function() {
@@ -852,7 +924,6 @@ if (stockSymbolInput) {
     });
   }
   
-  // 企業選択
   function selectCompany(company) {
     stockSymbolInput.value = company.code;
     
@@ -870,14 +941,12 @@ if (stockSymbolInput) {
     autocompleteContainer.style.display = 'none';
     selectedIndex = -1;
     
-    // 株価情報を自動取得
     const fetchStockInfoBtn = document.getElementById('fetchStockInfo');
     if (fetchStockInfoBtn) {
       fetchStockInfoBtn.click();
     }
   }
   
-  // キーボード操作
   stockSymbolInput.addEventListener('keydown', function(e) {
     const items = autocompleteContainer.querySelectorAll('.autocomplete-item');
     
@@ -912,7 +981,6 @@ if (stockSymbolInput) {
     });
   }
   
-  // 外側クリックで閉じる
   document.addEventListener('click', function(e) {
     if (!stockSymbolInput.contains(e.target) && !autocompleteContainer.contains(e.target)) {
       autocompleteContainer.style.display = 'none';
@@ -978,7 +1046,6 @@ if (fetchStockInfoBtn) {
   });
 }
 
-// 株式情報表示
 function displayStockInfo(data, stockCode) {
   document.getElementById('stockInfoTitle').textContent = data.company_name || '銘柄情報';
   document.getElementById('stockInfoCode').textContent = stockCode;
@@ -1012,7 +1079,6 @@ function displayStockInfo(data, stockCode) {
   stockInfoCard.classList.remove('d-none');
 }
 
-// 通知表示
 function showNotification(type, message) {
   const existingNotification = document.querySelector('.custom-notification');
   if (existingNotification) {
@@ -1090,17 +1156,20 @@ if (addInitialPurchaseCheckbox && initialPurchaseSection) {
 }
 
 function updateRequiredFields(required) {
+  const tradeTypeField = document.getElementById('id_initial_trade_type');
   const dateField = document.getElementById('id_initial_purchase_date');
   const priceField = document.getElementById('id_initial_purchase_price');
   const quantityField = document.getElementById('id_initial_purchase_quantity');
   
-  [dateField, priceField, quantityField].forEach(field => {
+  [tradeTypeField, dateField, priceField, quantityField].forEach(field => {
     if (field) {
       if (required) {
         field.setAttribute('required', 'required');
       } else {
         field.removeAttribute('required');
-        field.value = '';
+        if (field.id !== 'id_initial_trade_type') {
+          field.value = '';
+        }
       }
     }
   });
@@ -1191,7 +1260,7 @@ if (fetchCurrentPriceBtn) {
       showNotification('error', error.message);
     } finally {
       fetchCurrentPriceBtn.disabled = false;
-      fetchCurrentPriceBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> 現在株価';
+      fetchCurrentPriceBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i>';
     }
   });
 }
@@ -1282,13 +1351,10 @@ async function loadAnalysisItems(templateId) {
   `;
   
   try {
-    // 🔧 修正: 日記IDを取得（編集時のみ存在）
     const diaryId = '{{ form.instance.pk|default:"" }}';
     
-    // 🔧 修正: 正しいAPIエンドポイントを使用
     let url = `/analysis_template/api/items/?template_id=${templateId}`;
     
-    // 編集時は既存の分析値も取得
     if (diaryId) {
       url += `&diary_id=${diaryId}`;
     }
@@ -1305,7 +1371,6 @@ async function loadAnalysisItems(templateId) {
       throw new Error(data.error || '分析項目の取得に失敗しました');
     }
     
-    // 🔧 修正: 既存の値も渡す
     renderAnalysisItems(data.items, data.values || {});
     
   } catch (error) {
@@ -1334,13 +1399,10 @@ function renderAnalysisItems(items, values = {}) {
     return;
   }
   
-  // console.log('Rendering analysis items with values:', values);
-  
   let html = '';
   
   items.forEach((item, index) => {
     const existingValue = values[item.id];
-    // console.log(`Item ${item.id} (${item.name}):`, existingValue);
     
     let icon = 'bi-circle';
     if (item.item_type === 'boolean') icon = 'bi-check-circle';
@@ -1352,7 +1414,6 @@ function renderAnalysisItems(items, values = {}) {
     html += `<div class="analysis-item">`;
     
     if (item.item_type === 'boolean') {
-      // ✅ シンプルなチェックボックスレイアウト
       const checked = existingValue === true ? 'checked' : '';
       
       html += `
@@ -1379,7 +1440,6 @@ function renderAnalysisItems(items, values = {}) {
       `;
       
     } else if (item.item_type === 'boolean_with_value') {
-      // 複合型
       const boolChecked = existingValue?.boolean_value === true ? 'checked' : '';
       const numberValue = existingValue?.number_value ?? '';
       const valueLabel = item.value_label || '値';
@@ -1422,7 +1482,6 @@ function renderAnalysisItems(items, values = {}) {
       `;
       
     } else if (item.item_type === 'number') {
-      // 数値型
       const value = existingValue ?? '';
       
       html += `
@@ -1449,7 +1508,6 @@ function renderAnalysisItems(items, values = {}) {
       `;
       
     } else if (item.item_type === 'select') {
-      // 選択肢型
       html += `
         <div class="analysis-item-header">
           <div class="analysis-item-label-wrapper">
@@ -1486,7 +1544,6 @@ function renderAnalysisItems(items, values = {}) {
       html += `</select></div>`;
       
     } else {
-      // テキスト型
       const value = existingValue ?? '';
       html += `
         <div class="analysis-item-header">
@@ -1546,9 +1603,14 @@ if (form) {
 
 function validateInitialPurchase() {
   const errors = [];
+  const tradeTypeField = document.getElementById('id_initial_trade_type');
   const dateField = document.getElementById('id_initial_purchase_date');
   const priceField = document.getElementById('id_initial_purchase_price');
   const quantityField = document.getElementById('id_initial_purchase_quantity');
+  
+  if (!tradeTypeField.value) {
+    errors.push('取引区分を選択してください');
+  }
   
   if (!dateField.value) {
     errors.push('購入日を入力してください');
@@ -1574,14 +1636,12 @@ if (addInitialPurchaseCheckbox && addInitialPurchaseCheckbox.checked) {
   updateInitialPurchasePreview();
 }
 
-// ツールチップの初期化
 const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
 tooltipTriggerList.map(function (tooltipTriggerEl) {
   return new bootstrap.Tooltip(tooltipTriggerEl);
 });
 });
 
-// HTMLエスケープ関数
 function escapeHtml(text) {
     const map = {
         '&': '&amp;',

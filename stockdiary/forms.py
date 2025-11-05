@@ -39,6 +39,17 @@ class StockDiaryForm(forms.ModelForm):
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
     
+    # 🆕 初回購入の取引区分
+    initial_trade_type = forms.ChoiceField(
+        required=False,
+        choices=Transaction.TradeType.choices,
+        initial=Transaction.TradeType.CASH,
+        widget=forms.Select(attrs={
+            'class': 'form-select'
+        }),
+        label="取引区分"
+    )
+    
     initial_purchase_date = forms.DateField(
         required=False,
         widget=forms.DateInput(attrs={
@@ -132,6 +143,7 @@ class StockDiaryForm(forms.ModelForm):
         if not self.instance.pk:
             from django.utils import timezone
             self.fields['initial_purchase_date'].initial = timezone.now().date()
+            self.fields['initial_trade_type'].initial = Transaction.TradeType.CASH
 
     def clean_stock_name(self):
         """銘柄名のバリデーション"""
@@ -178,6 +190,7 @@ class StockDiaryForm(forms.ModelForm):
             initial_date = cleaned_data.get('initial_purchase_date')
             initial_price = cleaned_data.get('initial_purchase_price')
             initial_quantity = cleaned_data.get('initial_purchase_quantity')
+            initial_trade_type = cleaned_data.get('initial_trade_type')
             
             if not initial_date:
                 self.add_error('initial_purchase_date', '購入日を入力してください')
@@ -191,6 +204,9 @@ class StockDiaryForm(forms.ModelForm):
                 self.add_error('initial_purchase_quantity', '購入数量を入力してください')
             elif initial_quantity <= 0:
                 self.add_error('initial_purchase_quantity', '購入数量は正の数を入力してください')
+            
+            if not initial_trade_type:
+                self.add_error('initial_trade_type', '取引区分を選択してください')
         
         return cleaned_data
 
@@ -200,9 +216,14 @@ class TransactionForm(forms.ModelForm):
     
     class Meta:
         model = Transaction
-        fields = ['transaction_type', 'transaction_date', 'price', 'quantity', 'memo']
+        fields = ['transaction_type', 'trade_type', 'transaction_date', 'price', 'quantity', 'memo']
         widgets = {
             'transaction_type': forms.Select(attrs={
+                'class': 'form-select',
+                'required': 'required'
+            }),
+            # 🆕 取引区分（現物/信用）
+            'trade_type': forms.Select(attrs={
                 'class': 'form-select',
                 'required': 'required'
             }),
@@ -235,13 +256,15 @@ class TransactionForm(forms.ModelForm):
             }),
         }
         labels = {
-            'transaction_type': '取引種別',
+            'transaction_type': '売買区分',
+            'trade_type': '取引区分',  # 🆕
             'transaction_date': '取引日',
             'price': '単価（円）',
             'quantity': '数量（株）',
             'memo': 'メモ'
         }
         help_texts = {
+            'trade_type': '現物取引か信用取引かを選択',  # 🆕
             'price': '1株あたりの単価を入力',
             'quantity': '取引する株数を入力',
             'memo': '取引に関する補足情報（500文字以内）'
@@ -256,6 +279,7 @@ class TransactionForm(forms.ModelForm):
             from django.utils import timezone
             self.fields['transaction_date'].initial = timezone.now().date()
             self.fields['transaction_type'].initial = 'buy'
+            self.fields['trade_type'].initial = Transaction.TradeType.CASH  # 🆕 デフォルトは現物
 
     def clean_price(self):
         """単価のバリデーション"""
@@ -285,24 +309,34 @@ class TransactionForm(forms.ModelForm):
         return memo
 
     def clean(self):
-        """売却時の保有数チェック"""
+        """売却時の保有数チェック（現物・信用を区別）"""
         cleaned_data = super().clean()
         transaction_type = cleaned_data.get('transaction_type')
+        trade_type = cleaned_data.get('trade_type')
         quantity = cleaned_data.get('quantity')
         
         if transaction_type == 'sell' and quantity and self.diary:
-            # 現在の保有数を取得
-            current_holdings = self.diary.current_quantity
+            # 🔧 現物・信用で保有数を分けてチェック
+            if trade_type == Transaction.TradeType.CASH:
+                # 現物売却の場合、現物保有数をチェック
+                current_holdings = self.diary.current_quantity
+                holdings_label = "現物保有数"
+            else:
+                # 信用売却の場合、信用保有数をチェック（マイナスもあり得る）
+                current_holdings = self.diary.margin_current_quantity
+                holdings_label = "信用保有数"
             
             # 編集時は元の取引を除外して計算
             if self.instance.pk:
                 old_transaction = Transaction.objects.get(pk=self.instance.pk)
-                if old_transaction.transaction_type == 'sell':
+                # 同じ取引区分の場合のみ調整
+                if old_transaction.trade_type == trade_type and old_transaction.transaction_type == 'sell':
                     current_holdings += old_transaction.quantity
             
-            if quantity > current_holdings:
+            # 🔧 現物の場合のみ保有数超過チェック（信用売りは空売り可能なのでチェック不要）
+            if trade_type == Transaction.TradeType.CASH and quantity > current_holdings:
                 raise ValidationError({
-                    'quantity': f'保有数（{current_holdings}株）を超える売却はできません'
+                    'quantity': f'{holdings_label}（{current_holdings}株）を超える売却はできません'
                 })
         
         return cleaned_data
@@ -393,23 +427,25 @@ class DiaryNoteForm(forms.ModelForm):
             raise ValidationError('記録内容は1000文字以内で入力してください。')
         return content
 
+
 class TradeUploadForm(forms.Form):
     """取引履歴アップロードフォーム"""
     BROKER_CHOICES = [
         ('rakuten', '楽天証券'),
-        ('sbi', 'SBI証券'),  # 将来的に対応
+        ('sbi', 'SBI証券'),
     ]
     
     broker = forms.ChoiceField(
         label='証券会社',
         choices=BROKER_CHOICES,
         initial='rakuten',
-        widget=forms.Select(attrs={'class': 'form-select'})
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        help_text='CSVファイルの形式を自動判別します（現物・信用も自動判別）'  # 🆕
     )
     
     csv_file = forms.FileField(
         label='取引履歴CSVファイル',
-        help_text='楽天証券からダウンロードした取引履歴CSVファイルを選択してください',
+        help_text='証券会社からダウンロードした取引履歴CSVファイルを選択してください。現物・信用取引は自動的に判別されます。',  # 🆕
         widget=forms.FileInput(attrs={
             'class': 'form-control',
             'accept': '.csv'
@@ -428,4 +464,4 @@ class TradeUploadForm(forms.Form):
             if not csv_file.name.endswith('.csv'):
                 raise forms.ValidationError('CSVファイルを選択してください')
         
-        return csv_file        
+        return csv_file
