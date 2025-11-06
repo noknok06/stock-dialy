@@ -65,13 +65,15 @@
   }
   
   .preview-table th {
+
     font-weight: 600;
     position: sticky;
     top: 0;
   }
 
+  /* ✅ 合算行のハイライト */
   .preview-table tbody tr.merged-row {
-    background-color: #fff3cd;
+    background-color: #7da7a2;
   }
   
   .preview-table tbody tr.merged-row:hover {
@@ -87,26 +89,6 @@
     font-size: 0.75rem;
     font-weight: 600;
     margin-left: 0.5rem;
-  }
-  
-  /* 🆕 取引区分バッジ */
-  .trade-type-badge {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    margin-left: 0.5rem;
-  }
-  
-  .trade-type-badge.cash {
-    background-color: #d1f4e0;
-    color: #166534;
-  }
-  
-  .trade-type-badge.margin {
-    background-color: #fef3c7;
-    color: #92400e;
   }
   
   .trade-type-buy {
@@ -125,6 +107,7 @@
     justify-content: center;
   }
   
+  /* ✅ 注意事項ボックスを追加 */
   .alert-merge-info {
     border-left: 4px solid #ffc107;
     padding: 1rem;
@@ -156,7 +139,6 @@
       width: 100%;
     }
   }
-  
   .pagination-container {
     margin-top: 1.5rem;
     text-align: center;
@@ -202,13 +184,12 @@
       </div>
     </div>
     
-    <!-- 🆕 取引区分に関する説明を追加 -->
+    <!-- ✅ 合算に関する注意事項を追加 -->
     <div class="alert-merge-info">
       <i class="bi bi-info-circle"></i>
-      <strong>取引の自動判別について</strong>
+      <strong>数量合算について</strong>
       <ul class="mt-2">
-        <li><span class="trade-type-badge cash">現物</span> と <span class="trade-type-badge margin">信用</span> は自動的に判別されます</li>
-        <li>同じ日付・銘柄・単価・<strong>取引区分</strong>・取引種別の取引は数量が合算されます</li>
+        <li>同じ日付・銘柄・単価・取引種別の取引は<strong>数量が合算</strong>されます</li>
         <li>合算される行は<span class="merged-badge">合算</span>マークで表示されます</li>
         <li>既に登録済みの取引と重複する場合も、数量が合算されます</li>
       </ul>
@@ -219,7 +200,6 @@
             <thead>
             <tr>
                 <th>受渡日</th>
-                <th>取引区分</th> <!-- 🆕 -->
                 <th>銘柄コード</th>
                 <th>銘柄名</th>
                 <th>売買</th>
@@ -230,39 +210,19 @@
             </thead>
             <tbody>
             {% for trade in preview_data %}
+            <!-- ✅ 合算される行にはクラスを追加 -->
             <tr {% if trade.is_merged %}class="merged-row"{% endif %}>
                 <td>{{ trade.date }}</td>
-                <!-- 🆕 取引区分の表示 -->
-                <td>
-                  {% if 'trade_category' in trade %}
-                    {% if '信用' in trade.trade_category or '新規' in trade.trade_category or '返済' in trade.trade_category %}
-                      <span class="trade-type-badge margin">
-                        <i class="bi bi-currency-exchange"></i> 信用
-                      </span>
-                    {% else %}
-                      <span class="trade-type-badge cash">
-                        <i class="bi bi-wallet2"></i> 現物
-                      </span>
-                    {% endif %}
-                  {% else %}
-                    <span class="trade-type-badge cash">
-                      <i class="bi bi-wallet2"></i> 現物
-                    </span>
-                  {% endif %}
-                </td>
                 <td>{{ trade.stock_code }}</td>
                 <td>{{ trade.stock_name }}</td>
                 <td>
-                  <span class="{% if '買' in trade.trade_type or trade.buy_or_sell == '買' %}trade-type-buy{% else %}trade-type-sell{% endif %}">
-                    {% if 'buy_or_sell' in trade %}
-                      {{ trade.buy_or_sell }}
-                    {% else %}
-                      {{ trade.trade_type }}
-                    {% endif %}
-                  </span>
+                <span class="{% if '買' in trade.trade_type %}trade-type-buy{% else %}trade-type-sell{% endif %}">
+                    {{ trade.trade_type }}
+                </span>
                 </td>
                 <td class="text-end">
                     {{ trade.quantity }}株
+                    <!-- ✅ 合算バッジを表示 -->
                     {% if trade.is_merged %}
                     <span class="merged-badge">合算</span>
                     {% endif %}
@@ -272,7 +232,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="8" class="text-center text-muted">データがありません</td>
+                <td colspan="7" class="text-center text-muted">データがありません</td>
             </tr>
             {% endfor %}
             </tbody>
@@ -285,9 +245,8 @@
       <ul class="mb-0 mt-2">
         <li>既存の銘柄がある場合は、その銘柄に取引が追加されます</li>
         <li>新しい銘柄の場合は、自動的に日記が作成されます</li>
-        <li>既存の取引と同一キー（日付・銘柄・単価・<strong>取引区分</strong>）の場合は上書きされます（重複防止）</li>
+        <li>既存の取引と同一キーの場合は上書きされます（重複防止）</li>
         <li>1ファイル内で合算された行数も結果に表示されます</li>
-        <li>取引区分（現物・信用）は取引内容から自動判別されます</li>
       </ul>
     </div>
     
@@ -304,28 +263,31 @@
     </form>
   </div>
 </div>
-
 <script>
 document.addEventListener("DOMContentLoaded", function() {
   const rows = document.querySelectorAll(".preview-table tbody tr");
-  const rowsPerPage = 50;
+  const rowsPerPage = 50; // 1ページあたり表示件数
   const totalRows = rows.length;
   const totalPages = Math.ceil(totalRows / rowsPerPage);
   const paginationContainer = document.createElement("div");
   paginationContainer.classList.add("pagination-container");
 
   function showPage(page) {
+    // 全行非表示
     rows.forEach(row => row.style.display = "none");
 
+    // 表示範囲を計算
     const start = (page - 1) * rowsPerPage;
     const end = start + rowsPerPage;
 
+    // 対象行を表示
     rows.forEach((row, i) => {
       if (i >= start && i < end) {
         row.style.display = "";
       }
     });
 
+    // ページリンク更新
     document.querySelectorAll(".pagination-container button").forEach(btn => {
       btn.classList.remove("active");
     });
@@ -333,6 +295,7 @@ document.addEventListener("DOMContentLoaded", function() {
     if (activeBtn) activeBtn.classList.add("active");
   }
 
+  // ページボタン生成
   const nav = document.createElement("nav");
   const ul = document.createElement("ul");
   ul.classList.add("pagination", "justify-content-center");
@@ -352,9 +315,11 @@ document.addEventListener("DOMContentLoaded", function() {
   nav.appendChild(ul);
   paginationContainer.appendChild(nav);
 
+  // テーブルの下に追加
   const tableContainer = document.querySelector(".preview-table-container");
   tableContainer.after(paginationContainer);
 
+  // 初期表示
   showPage(1);
 });
 </script>

@@ -788,7 +788,6 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
                 initial_transaction = Transaction(
                     diary=self.object,
                     transaction_type='buy',
-                    trade_type=form.cleaned_data['initial_trade_type'],  # 🆕 追加
                     transaction_date=form.cleaned_data['initial_purchase_date'],
                     price=form.cleaned_data['initial_purchase_price'],
                     quantity=form.cleaned_data['initial_purchase_quantity'],

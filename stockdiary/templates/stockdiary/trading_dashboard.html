@@ -1162,178 +1162,29 @@
             max-height: 90vh;
         }
     }
-    /* 🆕 取引区分フィルター */
-    .filter-row {
-        display: flex;
-        gap: 16px;
-        flex-wrap: wrap;
-        align-items: center;
-    }
-    
-    .filter-group {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
-    
-    .filter-label {
-        font-size: 14px;
-        color: var(--muted);
-        margin-right: 8px;
-        display: flex;
-        align-items: center;
-    }
-    
-    /* 🆕 取引区分バッジ */
-    .trade-type-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 600;
-    }
-    
-    .trade-type-badge.cash {
-        background-color: rgba(16, 185, 129, 0.2);
-        color: var(--success);
-    }
-    
-    .trade-type-badge.margin {
-        background-color: rgba(245, 158, 11, 0.2);
-        color: var(--accent);
-    }
-    
-    @media (max-width: 767.98px) {
-        .filter-row {
-            flex-direction: column;
-            gap: 12px;
-        }
-        
-        .filter-group {
-            width: 100%;
-            justify-content: center;
-        }
-    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
-    <!-- Header with Filters -->
+    <!-- Header with Period Filter -->
     <div class="dashboard-header">
         <div class="header-content">
             <div>
                 <h1 class="dashboard-title">取引分析ダッシュボード</h1>
                 <p class="dashboard-subtitle">株式取引履歴の詳細分析と業種別パフォーマンス追跡</p>
             </div>
-            
-            <!-- 🆕 フィルター行 -->
-            <div class="filter-row">
-                <!-- 期間フィルター -->
-                <div class="filter-group">
-                    <span class="filter-label">期間:</span>
-                    <a href="?period=1m&trade_filter={{ current_trade_filter }}" 
-                       class="period-btn {% if current_period == '1m' %}active{% endif %}">1ヶ月</a>
-                    <a href="?period=3m&trade_filter={{ current_trade_filter }}" 
-                       class="period-btn {% if current_period == '3m' %}active{% endif %}">3ヶ月</a>
-                    <a href="?period=6m&trade_filter={{ current_trade_filter }}" 
-                       class="period-btn {% if current_period == '6m' %}active{% endif %}">6ヶ月</a>
-                    <a href="?period=1y&trade_filter={{ current_trade_filter }}" 
-                       class="period-btn {% if current_period == '1y' %}active{% endif %}">1年</a>
-                    <a href="?period=all&trade_filter={{ current_trade_filter }}" 
-                       class="period-btn {% if current_period == 'all' %}active{% endif %}">すべて</a>
-                </div>
-                
-                <!-- 🆕 取引区分フィルター -->
-                <div class="filter-group">
-                    <span class="filter-label">取引区分:</span>
-                    <a href="?period={{ current_period }}&trade_filter=all" 
-                       class="period-btn {% if current_trade_filter == 'all' %}active{% endif %}">すべて</a>
-                    <a href="?period={{ current_period }}&trade_filter=cash" 
-                       class="period-btn {% if current_trade_filter == 'cash' %}active{% endif %}">
-                       <i class="bi bi-wallet2"></i> 現物のみ
-                    </a>
-                    <a href="?period={{ current_period }}&trade_filter=margin" 
-                       class="period-btn {% if current_trade_filter == 'margin' %}active{% endif %}">
-                       <i class="bi bi-currency-exchange"></i> 信用のみ
-                    </a>
-                </div>
+            <div class="period-filter">
+                <a href="?period=1m" class="period-btn {% if current_period == '1m' %}active{% endif %}">1ヶ月</a>
+                <a href="?period=3m" class="period-btn {% if current_period == '3m' %}active{% endif %}">3ヶ月</a>
+                <a href="?period=6m" class="period-btn {% if current_period == '6m' %}active{% endif %}">6ヶ月</a>
+                <a href="?period=1y" class="period-btn {% if current_period == '1y' %}active{% endif %}">1年</a>
+                <a href="?period=all" class="period-btn {% if current_period == 'all' %}active{% endif %}">すべて</a>
             </div>
         </div>
     </div>
 
     {% if has_data %}
-    <!-- 🆕 取引区分別サマリー -->
-    <div class="card" style="margin-bottom: 24px;">
-        <div style="padding: 16px;">
-            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 12px;">
-                <i class="bi bi-bar-chart-line"></i> 取引区分別サマリー
-            </h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
-                <!-- 全体 -->
-                <div style="padding: 12px; border-radius: 8px; background: rgba(59, 130, 246, 0.1);">
-                    <div style="font-size: 12px; color: var(--muted); margin-bottom: 8px;">全体</div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <div style="font-size: 24px; font-weight: 700;">{{ total_transactions }}</div>
-                            <div style="font-size: 12px; color: var(--muted);">取引回数</div>
-                        </div>
-                        <div style="text-align: right;">
-                            <div style="font-size: 16px; font-weight: 600; color: {% if total_realized_profit >= 0 %}var(--success){% else %}var(--destructive){% endif %};">
-                                {% if total_realized_profit >= 0 %}+{% endif %}¥{{ total_realized_profit|intcomma_float:0 }}
-                            </div>
-                            <div style="font-size: 12px; color: var(--muted);">実現損益</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- 🆕 現物 -->
-                <div style="padding: 12px; border-radius: 8px; background: rgba(16, 185, 129, 0.1);">
-                    <div style="font-size: 12px; color: var(--muted); margin-bottom: 8px;">
-                        <span class="trade-type-badge cash">
-                            <i class="bi bi-wallet2"></i> 現物
-                        </span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <div style="font-size: 24px; font-weight: 700; color: var(--success);">{{ cash_transaction_count }}</div>
-                            <div style="font-size: 12px; color: var(--muted);">取引回数</div>
-                        </div>
-                        <div style="text-align: right;">
-                            <div style="font-size: 16px; font-weight: 600; color: {% if cash_realized_profit >= 0 %}var(--success){% else %}var(--destructive){% endif %};">
-                                {% if cash_realized_profit >= 0 %}+{% endif %}¥{{ cash_realized_profit|intcomma_float:0 }}
-                            </div>
-                            <div style="font-size: 12px; color: var(--muted);">実現損益</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- 🆕 信用 -->
-                <div style="padding: 12px; border-radius: 8px; background: rgba(245, 158, 11, 0.1);">
-                    <div style="font-size: 12px; color: var(--muted); margin-bottom: 8px;">
-                        <span class="trade-type-badge margin">
-                            <i class="bi bi-currency-exchange"></i> 信用
-                        </span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <div style="font-size: 24px; font-weight: 700; color: var(--accent);">{{ margin_transaction_count }}</div>
-                            <div style="font-size: 12px; color: var(--muted);">取引回数</div>
-                        </div>
-                        <div style="text-align: right;">
-                            <div style="font-size: 16px; font-weight: 600; color: {% if margin_realized_profit >= 0 %}var(--success){% else %}var(--destructive){% endif %};">
-                                {% if margin_realized_profit >= 0 %}+{% endif %}¥{{ margin_realized_profit|intcomma_float:0 }}
-                            </div>
-                            <div style="font-size: 12px; color: var(--muted);">実現損益</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Metrics Overview -->
     <div class="metrics-grid">
         <div class="card">
@@ -1341,15 +1192,7 @@
                 <div class="metric-content">
                     <p class="metric-label">総取引回数</p>
                     <p class="metric-value">{{ total_transactions|intcomma }}</p>
-                    <p class="metric-subtext">
-                        {% if current_trade_filter == 'all' %}
-                            現物: {{ cash_transaction_count }} | 信用: {{ margin_transaction_count }}
-                        {% elif current_trade_filter == 'cash' %}
-                            現物取引のみ
-                        {% elif current_trade_filter == 'margin' %}
-                            信用取引のみ
-                        {% endif %}
-                    </p>
+                    <p class="metric-subtext">すべての銘柄</p>
                 </div>
                 <div class="metric-icon" style="background: rgba(59, 130, 246, 0.2); color: var(--primary);">📊</div>
             </div>
@@ -1360,15 +1203,7 @@
                 <div class="metric-content">
                     <p class="metric-label">保有銘柄数</p>
                     <p class="metric-value">{{ holding_count|intcomma }}</p>
-                    <p class="metric-subtext">
-                        {% if current_trade_filter == 'all' %}
-                            現物: {{ cash_holding_count }} | 信用: {{ margin_holding_count }}
-                        {% elif current_trade_filter == 'cash' %}
-                            現物保有中
-                        {% elif current_trade_filter == 'margin' %}
-                            信用保有中
-                        {% endif %}
-                    </p>
+                    <p class="metric-subtext">現在保有中</p>
                 </div>
                 <div class="metric-icon" style="background: rgba(139, 92, 246, 0.2); color: var(--secondary);">⚡</div>
             </div>
@@ -1394,6 +1229,7 @@
                     <p class="metric-label">平均利益率</p>
                     <p class="metric-value">{{ avg_profit_rate|floatformat:1 }}%</p>
                     <p class="metric-subtext">売却ベース</p>
+                    <p>　</p>
                 </div>
                 <div class="metric-icon" style="background: rgba(245, 158, 11, 0.2); color: var(--accent);">🎯</div>
             </div>
