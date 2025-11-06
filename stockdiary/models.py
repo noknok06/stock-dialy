@@ -333,6 +333,78 @@ class StockDiary(models.Model):
             })
         return None
 
+    def calculate_cash_only_stats(self):
+        """現物取引（is_margin=False）のみの統計を計算"""
+        from decimal import Decimal, ROUND_HALF_UP
+        
+        cash_transactions = self.transactions.filter(is_margin=False).order_by('transaction_date', 'created_at')
+        
+        cash_quantity = Decimal('0')
+        cash_cost = Decimal('0')
+        cash_realized_profit = Decimal('0')
+        cash_bought_quantity = Decimal('0')
+        cash_sold_quantity = Decimal('0')
+        cash_buy_amount = Decimal('0')
+        cash_sell_amount = Decimal('0')
+        
+        # 株式分割の適用
+        splits = self.stock_splits.filter(is_applied=True).order_by('split_date')
+        
+        for transaction in cash_transactions:
+            # 分割調整を適用
+            adjusted_quantity = transaction.quantity
+            adjusted_price = transaction.price
+            
+            for split in splits:
+                if transaction.transaction_date < split.split_date:
+                    adjusted_quantity = adjusted_quantity * split.split_ratio
+                    adjusted_price = adjusted_price / split.split_ratio
+            
+            if transaction.transaction_type == 'buy':
+                # 購入処理
+                buy_amount = adjusted_price * adjusted_quantity
+                cash_cost += buy_amount
+                cash_quantity += adjusted_quantity
+                cash_bought_quantity += adjusted_quantity
+                cash_buy_amount += buy_amount
+                
+            elif transaction.transaction_type == 'sell':
+                # 売却処理
+                if cash_quantity > 0:
+                    avg_price = cash_cost / cash_quantity
+                    sell_quantity = min(adjusted_quantity, cash_quantity)
+                    sell_cost = avg_price * sell_quantity
+                    actual_sell_amount = adjusted_price * sell_quantity
+                    profit = actual_sell_amount - sell_cost
+                    cash_realized_profit += profit
+                    cash_cost -= sell_cost
+                    cash_quantity -= sell_quantity
+                    cash_sold_quantity += adjusted_quantity
+                    cash_sell_amount += adjusted_price * adjusted_quantity
+        
+        # 平均取得単価を計算
+        cash_avg_price = None
+        if cash_quantity > 0 and cash_cost > 0:
+            cash_avg_price = (cash_cost / cash_quantity).quantize(
+                Decimal('0.01'), rounding=ROUND_HALF_UP
+            )
+        
+        # 数値の丸め処理
+        cash_quantity = cash_quantity.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        cash_cost = cash_cost.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        cash_realized_profit = cash_realized_profit.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        
+        return {
+            'current_quantity': cash_quantity,
+            'average_purchase_price': cash_avg_price,
+            'total_cost': cash_cost,
+            'realized_profit': cash_realized_profit,
+            'total_bought_quantity': cash_bought_quantity,
+            'total_sold_quantity': cash_sold_quantity,
+            'total_buy_amount': cash_buy_amount,
+            'total_sell_amount': cash_sell_amount,
+        }
+        
     @property
     def image_url(self):
         return self.get_image_url()

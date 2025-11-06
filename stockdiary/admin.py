@@ -11,7 +11,7 @@ class TransactionInline(admin.TabularInline):
     model = Transaction
     extra = 0
     fields = (
-        'transaction_date', 'transaction_type', 'price', 'quantity', 
+        'transaction_date', 'transaction_type', 'is_margin',  'price', 'quantity', 
         'amount_display', 'memo'
     )
     readonly_fields = ('amount_display',)

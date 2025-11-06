@@ -166,18 +166,18 @@
     <div class="row g-3">
       <div class="col-md-3 col-6">
         <div class="summary-card-improved">
-          <div class="summary-label">現在保有数</div>
+          <div class="summary-label">現在保有数（現物のみ）</div>
           <div class="summary-value">
-            {{ diary.current_quantity|floatformat:0 }}<span class="unit">株</span>
+            {{ cash_only_stats.current_quantity|floatformat:0 }}<span class="unit">株</span>
           </div>
         </div>
       </div>
       <div class="col-md-3 col-6">
         <div class="summary-card-improved">
-          <div class="summary-label">平均取得単価</div>
+          <div class="summary-label">平均取得単価（現物のみ）</div>
           <div class="summary-value">
-            {% if diary.average_purchase_price %}
-              {{ diary.average_purchase_price|floatformat:2|intcomma }}<span class="unit">円</span>
+            {% if cash_only_stats.average_purchase_price %}
+              {{ cash_only_stats.average_purchase_price|floatformat:2|intcomma }}<span class="unit">円</span>
             {% else %}
               <span class="text-muted">--</span>
             {% endif %}
@@ -186,17 +186,17 @@
       </div>
       <div class="col-md-3 col-6">
         <div class="summary-card-improved">
-          <div class="summary-label">総取得原価</div>
+          <div class="summary-label">総取得原価（現物のみ）</div>
           <div class="summary-value">
-            {{ diary.total_cost|intcomma_float:0 }}<span class="unit">円</span>
+            {{ cash_only_stats.total_cost|intcomma_float:0 }}<span class="unit">円</span>
           </div>
         </div>
       </div>
       <div class="col-md-3 col-6">
-        <div class="summary-card-improved {% if diary.realized_profit > 0 %}profit{% elif diary.realized_profit < 0 %}loss{% endif %}">
-          <div class="summary-label">実現損益</div>
+        <div class="summary-card-improved {% if cash_only_stats.realized_profit > 0 %}profit{% elif cash_only_stats.realized_profit < 0 %}loss{% endif %}">
+          <div class="summary-label">実現損益（現物のみ）</div>
           <div class="summary-value">
-            {% if diary.realized_profit > 0 %}+{% endif %}{{ diary.realized_profit|intcomma_float:0 }}<span class="unit">円</span>
+            {% if cash_only_stats.realized_profit > 0 %}+{% endif %}{{ cash_only_stats.realized_profit|intcomma_float:0 }}<span class="unit">円</span>
           </div>
         </div>
       </div>
@@ -330,7 +330,6 @@
       {% if item.type == 'transaction' %}
         {% with transaction=item.data %}
         
-        <!-- 通常表示 -->
         <div class="transaction-item-improved mb-3" id="transaction-{{ transaction.id }}">
           <div class="transaction-header-improved">
             <div class="transaction-date-improved">
@@ -341,6 +340,12 @@
               <span class="badge {% if transaction.transaction_type == 'buy' %}badge-primary{% else %}badge-danger{% endif %}">
                 {{ transaction.get_transaction_type_display }}
               </span>
+              <!-- ✅ 信用取引バッジを追加 -->
+              {% if transaction.is_margin %}
+              <span class="badge badge-warning">
+                <i class="bi bi-lightning-charge me-1"></i>信用
+              </span>
+              {% endif %}
               <button class="btn-icon btn-success-icon" onclick="showEditForm({{ transaction.id }})">
                 <i class="bi bi-pencil"></i>
               </button>
@@ -372,10 +377,18 @@
               {{ transaction.memo }}
             </div>
             {% endif %}
+            
+            <!-- ✅ 信用取引の場合は注釈を追加 -->
+            {% if transaction.is_margin %}
+            <div class="alert-info-improved mt-2">
+              <i class="bi bi-info-circle me-2"></i>
+              この取引は信用取引のため、現物のみのサマリーには含まれません
+            </div>
+            {% endif %}
           </div>
         </div>
-
-        <!-- 編集フォーム（初期は非表示） -->
+        
+        <!-- 編集フォームにも信用取引チェックボックスを追加 -->
         <div class="form-card-improved mb-3" id="edit-form-{{ transaction.id }}" style="display: none;">
           <div class="form-header-improved btn-success">
             <span><i class="bi bi-pencil me-2"></i>取引を編集</span>
@@ -399,19 +412,31 @@
                 <div class="col-md-6">
                   <label class="form-label-improved">取引日</label>
                   <input type="date" class="form-input-improved" name="transaction_date" 
-                         value="{{ transaction.transaction_date|date:'Y-m-d' }}" required>
+                        value="{{ transaction.transaction_date|date:'Y-m-d' }}" required>
                 </div>
                 
                 <div class="col-md-6">
                   <label class="form-label-improved">単価（円）</label>
                   <input type="number" class="form-input-improved" name="price" 
-                         value="{{ transaction.price|floatformat:2|intcomma }}" step="0.01" min="0.01" required>
+                        value="{{ transaction.price }}" step="0.01" min="0.01" required>
                 </div>
                 
                 <div class="col-md-6">
                   <label class="form-label-improved">数量（株）</label>
                   <input type="number" class="form-input-improved" name="quantity" 
-                         value="{{ transaction.quantity }}" step="1" min="1" required>
+                        value="{{ transaction.quantity }}" step="1" min="1" required>
+                </div>
+                
+                <!-- ✅ 信用取引チェックボックスを追加 -->
+                <div class="col-12">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="is_margin" id="edit-is-margin-{{ transaction.id }}" 
+                          {% if transaction.is_margin %}checked{% endif %}>
+                    <label class="form-check-label" for="edit-is-margin-{{ transaction.id }}">
+                      <i class="bi bi-lightning-charge me-1"></i>信用取引
+                    </label>
+                  </div>
+                  <small class="form-text-improved">チェックすると信用取引として記録され、現物のみのサマリーには含まれません</small>
                 </div>
                 
                 <div class="col-12">

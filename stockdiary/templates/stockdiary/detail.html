@@ -1946,7 +1946,7 @@
           
           {% if diary.realized_profit != 0 %}
           <div class="profit-indicator {% if diary.realized_profit > 0 %}profit-positive{% elif diary.realized_profit < 0 %}profit-negative{% endif %}">
-            {% if diary.realized_profit > 0 %}+{% endif %}{{ diary.realized_profit|intcomma_float:0 }}円
+            {% if cash_only_stats.realized_profit > 0 %}+{% endif %}{{ cash_only_stats.realized_profit|intcomma_float:0 }}円
           </div>
           {% endif %}
         </div>

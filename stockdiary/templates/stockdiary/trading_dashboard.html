@@ -1162,6 +1162,591 @@
             max-height: 90vh;
         }
     }
+/* trading_dashboard.html の <style> に追加 */
+
+/* ========== モーダル改善版 ========== */
+
+/* モーダル全体 */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85);
+    z-index: 1000;
+    overflow-y: auto;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    -webkit-overflow-scrolling: touch;
+}
+
+.modal-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
+/* モーダルコンテナ */
+.modal-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 60px 12px 20px;
+}
+
+/* モーダルコンテンツ */
+.modal-content {
+    background-color: var(--card);
+    border-radius: 16px;
+    max-width: 600px;
+    width: 100%;
+    max-height: calc(100vh - 80px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+    transform: scale(0.95);
+    transition: transform 0.3s ease;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.modal-overlay.active .modal-content {
+    transform: scale(1);
+}
+
+/* モーダルヘッダー */
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.05));
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(10px);
+}
+
+.modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--foreground);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+}
+
+.modal-title span:first-child {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.modal-title span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.modal-close {
+    background: rgba(239, 68, 68, 0.1);
+    border: none;
+    color: var(--destructive);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    line-height: 1;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.modal-close:hover {
+    background-color: rgba(239, 68, 68, 0.2);
+    transform: rotate(90deg);
+}
+
+/* モーダルボディ */
+.modal-body {
+    padding: 0;
+    overflow-y: auto;
+    flex: 1;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ========== サマリーセクション（改善版） ========== */
+.summary-section {
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(139, 92, 246, 0.04));
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    backdrop-filter: blur(10px);
+}
+
+/* メインメトリクス（ROIと実現損益） */
+.main-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.metric-box {
+    background: rgba(71, 85, 105, 0.3);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+}
+
+.metric-box.highlight-positive {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.08));
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.metric-box.highlight-negative {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.08));
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.metric-box-label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.metric-box-value {
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.metric-box-value.positive {
+    color: var(--success);
+}
+
+.metric-box-value.negative {
+    color: var(--destructive);
+}
+
+.metric-box-unit {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--muted);
+    margin-left: 4px;
+}
+
+/* サブメトリクス */
+.sub-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 16px;
+    background: rgba(71, 85, 105, 0.2);
+    border-radius: 12px;
+}
+
+.sub-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sub-metric-label {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.sub-metric-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--foreground);
+}
+
+.sub-metric-value .unit {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--muted);
+    margin-left: 2px;
+}
+
+/* メタ情報 */
+.summary-meta {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(71, 85, 105, 0.3);
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.summary-badge {
+    background: rgba(59, 130, 246, 0.2);
+    color: var(--primary);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 10px;
+}
+
+/* ========== 詳細リスト（改善版） ========== */
+.detail-list {
+    padding: 16px;
+}
+
+.detail-card {
+    background: rgba(71, 85, 105, 0.2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: all 0.2s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.detail-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(to bottom, var(--primary), var(--secondary));
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.detail-card:hover {
+    background: rgba(71, 85, 105, 0.35);
+    border-color: var(--primary);
+    transform: translateX(4px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.detail-card:hover::before {
+    opacity: 1;
+}
+
+.detail-card:active {
+    transform: translateX(2px) scale(0.98);
+}
+
+/* カードヘッダー */
+.detail-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    gap: 12px;
+}
+
+.detail-card-title {
+    flex: 1;
+    min-width: 0;
+}
+
+.detail-card-name {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--foreground);
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.3;
+}
+
+.detail-card-meta {
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.detail-card-code {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.detail-card-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ROIバッジ */
+.detail-roi-badge {
+    font-weight: 800;
+    font-size: 20px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    min-width: 80px;
+    text-align: center;
+}
+
+.detail-roi-badge.positive {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(16, 185, 129, 0.15));
+    color: var(--success);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.detail-roi-badge.negative {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(239, 68, 68, 0.15));
+    color: var(--destructive);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* ステータスバッジ */
+.detail-status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+.detail-status-badge.holding {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--success);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.detail-status-badge.sold {
+    background: rgba(100, 116, 139, 0.2);
+    color: var(--muted);
+    border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+/* カード統計 */
+.detail-card-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 12px;
+    background: rgba(71, 85, 105, 0.15);
+    border-radius: 8px;
+}
+
+.detail-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.detail-stat-label {
+    font-size: 10px;
+    color: var(--muted);
+}
+
+.detail-stat-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--foreground);
+}
+
+.detail-stat-value.positive {
+    color: var(--success);
+}
+
+.detail-stat-value.negative {
+    color: var(--destructive);
+}
+
+/* 空状態 */
+.empty-message {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+}
+
+.empty-message-icon {
+    font-size: 48px;
+    opacity: 0.5;
+    margin-bottom: 16px;
+}
+
+.empty-message-text {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* ========== モバイル最適化 ========== */
+@media (max-width: 480px) {
+    .modal-container {
+        padding: 50px 8px 12px;
+    }
+
+    .modal-content {
+        border-radius: 12px;
+        max-height: calc(100vh - 62px);
+    }
+
+    .modal-header {
+        padding: 14px 16px;
+    }
+
+    .modal-title {
+        font-size: 16px;
+        gap: 8px;
+    }
+
+    .modal-title span:first-child {
+        font-size: 20px;
+    }
+
+    .modal-close {
+        width: 36px;
+        height: 36px;
+        font-size: 20px;
+    }
+
+    .summary-section {
+        padding: 16px;
+    }
+
+    .main-metrics {
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .metric-box {
+        padding: 12px;
+    }
+
+    .metric-box-label {
+        font-size: 10px;
+        margin-bottom: 6px;
+    }
+
+    .metric-box-value {
+        font-size: 24px;
+    }
+
+    .metric-box-unit {
+        font-size: 12px;
+    }
+
+    .sub-metrics {
+        gap: 10px;
+        padding: 12px;
+    }
+
+    .sub-metric-value {
+        font-size: 14px;
+    }
+
+    .detail-list {
+        padding: 12px;
+    }
+
+    .detail-card {
+        padding: 12px;
+        margin-bottom: 10px;
+    }
+
+    .detail-card-header {
+        margin-bottom: 10px;
+    }
+
+    .detail-card-name {
+        font-size: 14px;
+    }
+
+    .detail-roi-badge {
+        font-size: 18px;
+        padding: 6px 10px;
+        min-width: 70px;
+    }
+
+    .detail-card-stats {
+        gap: 6px;
+        padding: 10px;
+    }
+
+    .detail-stat-value {
+        font-size: 13px;
+    }
+}
+
+/* 極小デバイス */
+@media (max-width: 360px) {
+    .main-metrics {
+        grid-template-columns: 1fr;
+    }
+
+    .metric-box-value {
+        font-size: 22px;
+    }
+
+    .sub-metrics {
+        grid-template-columns: 1fr;
+    }
+
+    .detail-card-stats {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 横向きスマホ */
+@media (max-width: 767px) and (orientation: landscape) {
+    .modal-container {
+        padding: 40px 12px 12px;
+    }
+
+    .modal-content {
+        max-height: calc(100vh - 52px);
+    }
+
+    .summary-section {
+        position: relative;
+    }
+}
+
+/* タッチデバイス最適化 */
+@media (hover: none) and (pointer: coarse) {
+    .detail-card {
+        padding: 16px;
+        min-height: 44px;
+    }
+
+    .detail-card:active {
+        background: rgba(71, 85, 105, 0.4);
+    }
+
+    .modal-close {
+        min-width: 44px;
+        min-height: 44px;
+    }
+}    
 </style>
 {% endblock %}
 
@@ -1619,139 +2204,270 @@
         document.body.style.overflow = '';
     }
 
-    // 銘柄別日記リスト表示
+    // 銘柄別日記リスト表示（改善版）
     function showStockDiariesModal(stockCode, stockName) {
         const stockData = stockRankingData[stockCode];
         if (!stockData || !stockData.diaries) {
-            showModal(stockName, '📊', '<p class="text-muted">データがありません</p>');
+            showModal(stockName, '📊', '<p class="empty-message"><span class="empty-message-icon">📭</span><p class="empty-message-text">データがありません</p></p>');
             return;
         }
 
+        // 合計値を計算
+        let totalTransactions = stockData.transaction_count;
+        let totalInvested = 0;
+        let totalSell = 0;
+        let totalCurrentValue = 0;
+        let totalCurrentQuantity = 0;
+        
+        stockData.diaries.forEach(diary => {
+            totalInvested += diary.total_invested || 0;
+            totalSell += diary.total_sell_amount || 0;
+            totalCurrentValue += diary.current_value || 0;
+            totalCurrentQuantity += diary.current_quantity || 0;
+        });
+
+        // ROI計算
+        let totalRoi = 0;
+        if (totalInvested > 0) {
+            totalRoi = ((totalSell + totalCurrentValue - totalInvested) / totalInvested * 100);
+        }
+
+        // 実現損益
+        let realizedProfit = totalSell - (totalInvested - totalCurrentValue);
+        
+        const roiClass = totalRoi >= 0 ? 'highlight-positive' : 'highlight-negative';
+        const profitClass = realizedProfit >= 0 ? 'highlight-positive' : 'highlight-negative';
+
         let html = `
-            <div style="margin-bottom: 1rem; padding: 1rem; background: rgba(59, 130, 246, 0.1); border-radius: 8px;">
-                <div style="font-size: 14px; color: var(--muted);">証券コード: ${stockCode}</div>
-                <div style="font-size: 14px; color: var(--muted); margin-top: 4px;">
-                    合計取引回数: ${stockData.transaction_count}回 | 日記数: ${stockData.diaries.length}件
+            <div class="summary-section">
+                <!-- メインメトリクス -->
+                <div class="main-metrics">
+                    <div class="metric-box ${roiClass}">
+                        <div class="metric-box-label">投資効率 (ROI)</div>
+                        <div class="metric-box-value ${totalRoi >= 0 ? 'positive' : 'negative'}">
+                            ${totalRoi >= 0 ? '+' : ''}${totalRoi.toFixed(1)}<span class="metric-box-unit">%</span>
+                        </div>
+                    </div>
+                    <div class="metric-box ${profitClass}">
+                        <div class="metric-box-label">実現損益</div>
+                        <div class="metric-box-value ${realizedProfit >= 0 ? 'positive' : 'negative'}">
+                            ${realizedProfit >= 0 ? '+' : ''}¥${Math.abs(realizedProfit).toLocaleString()}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- サブメトリクス -->
+                <div class="sub-metrics">
+                    <div class="sub-metric">
+                        <div class="sub-metric-label">取引回数</div>
+                        <div class="sub-metric-value">${totalTransactions}<span class="unit">回</span></div>
+                    </div>
+                    <div class="sub-metric">
+                        <div class="sub-metric-label">保有数</div>
+                        <div class="sub-metric-value">${totalCurrentQuantity.toFixed(0)}<span class="unit">株</span></div>
+                    </div>
+                    <div class="sub-metric">
+                        <div class="sub-metric-label">投資額</div>
+                        <div class="sub-metric-value">¥${totalInvested.toLocaleString()}</div>
+                    </div>
+                    <div class="sub-metric">
+                        <div class="sub-metric-label">評価額</div>
+                        <div class="sub-metric-value">¥${totalCurrentValue.toLocaleString()}</div>
+                    </div>
+                </div>
+
+                <!-- メタ情報 -->
+                <div class="summary-meta">
+                    <span>証券コード: ${stockCode}</span>
+                    <span class="summary-badge">現物取引のみ</span>
                 </div>
             </div>
-            <div class="company-list">
+
+            <div class="detail-list">
         `;
 
         stockData.diaries.forEach((diary, index) => {
+            const statusBadge = diary.current_quantity > 0 ? 'holding' : 'sold';
+            const statusText = diary.current_quantity > 0 ? '保有中' : '売却済';
+            const roiClass = diary.roi >= 0 ? 'positive' : 'negative';
+            const roiSign = diary.roi >= 0 ? '+' : '';
             const profitClass = diary.realized_profit >= 0 ? 'positive' : 'negative';
-            const profitSign = diary.realized_profit >= 0 ? '+' : '';
-            const statusBadge = diary.current_quantity > 0 
-                ? '<span class="diary-badge holding">保有中</span>' 
-                : '<span class="diary-badge sold">売却済</span>';
 
             html += `
-                <div class="diary-list-item">
-                    <a href="/stockdiary/${diary.id}/" style="text-decoration: none; color: inherit; display: block;">
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
-                            <div>
-                                <div style="font-weight: 600; font-size: 14px; color: var(--foreground);">
-                                    #${index + 1} 日記 ${statusBadge}
-                                </div>
-                                <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">
-                                    📅 ${diary.created_at}〜
-                                </div>
+                <div class="detail-card" onclick="window.location.href='/stockdiary/${diary.id}/'">
+                    <div class="detail-card-header">
+                        <div class="detail-card-title">
+                            <div class="detail-card-name">
+                                #${index + 1} 日記
+                                <span class="detail-status-badge ${statusBadge}">${statusText}</span>
+                            </div>
+                            <div class="detail-card-meta">
+                                <span class="detail-card-date">📅 ${diary.created_at}〜</span>
                             </div>
                         </div>
-                        <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px;">
-                            <div>
-                                <span style="color: var(--muted);">取引回数:</span>
-                                <span style="font-weight: 600;">${diary.transaction_count}回</span>
-                            </div>
-                            <div>
-                                <span style="color: var(--muted);">保有数:</span>
-                                <span style="font-weight: 600;">${diary.current_quantity}株</span>
-                            </div>
-                            <div>
-                                <span style="color: var(--muted);">実現損益:</span>
-                                <span class="${profitClass}" style="font-weight: 600;">
-                                    ${profitSign}¥${Math.abs(diary.realized_profit).toLocaleString()}
-                                </span>
-                            </div>
-                            <div>
-                                <span style="color: var(--muted);">最終取引:</span>
-                                <span style="font-weight: 600;">${diary.last_trade_display}</span>
-                            </div>
+                        <div class="detail-roi-badge ${roiClass}">
+                            ${roiSign}${diary.roi.toFixed(1)}%
                         </div>
-                    </a>
+                    </div>
+
+                    <div class="detail-card-stats">
+                        <div class="detail-stat">
+                            <span class="detail-stat-label">取引回数</span>
+                            <span class="detail-stat-value">${diary.transaction_count}回</span>
+                        </div>
+                        <div class="detail-stat">
+                            <span class="detail-stat-label">保有数</span>
+                            <span class="detail-stat-value">${diary.current_quantity.toFixed(0)}株</span>
+                        </div>
+                        <div class="detail-stat">
+                            <span class="detail-stat-label">実現損益</span>
+                            <span class="detail-stat-value ${profitClass}">
+                                ${diary.realized_profit >= 0 ? '+' : ''}¥${Math.abs(diary.realized_profit).toLocaleString()}
+                            </span>
+                        </div>
+                        <div class="detail-stat">
+                            <span class="detail-stat-label">投資額</span>
+                            <span class="detail-stat-value">¥${diary.total_invested.toLocaleString()}</span>
+                        </div>
+                    </div>
                 </div>
             `;
         });
 
         html += '</div>';
-        showModal(`${stockName} の取引履歴`, '📊', html);
+        showModal(stockName, '📊', html);
     }
 
-    // 業種別日記リスト表示
+    // 業種別日記リスト表示（改善版）
     function showSectorDetail(sectorName, type) {
         const companies = sectorDetailData[sectorName] || [];
         
         if (companies.length === 0) {
             showModal(sectorName, type === 'profit' ? '✓' : '!', 
-                '<p class="text-muted">データがありません</p>');
+                '<p class="empty-message"><span class="empty-message-icon">📭</span><p class="empty-message-text">データがありません</p></p>');
             return;
         }
 
-        let html = '<div class="company-list">';
+        // 業種全体の統計を計算
+        let totalTransactions = 0;
+        let totalInvested = 0;
+        let totalSell = 0;
+        let totalCurrentValue = 0;
+        let totalCurrentQuantity = 0;
+
+        companies.forEach(company => {
+            totalTransactions += company.transaction_count || 0;
+            totalInvested += company.total_invested || 0;
+            totalSell += company.total_sell_amount || 0;
+            totalCurrentValue += company.current_value || 0;
+            totalCurrentQuantity += company.current_quantity || 0;
+        });
+
+        // ROI計算
+        let totalRoi = 0;
+        if (totalInvested > 0) {
+            totalRoi = ((totalSell + totalCurrentValue - totalInvested) / totalInvested * 100);
+        }
+
+        // 実現損益
+        let realizedProfit = totalSell - (totalInvested - totalCurrentValue);
+        
+        const roiClass = totalRoi >= 0 ? 'highlight-positive' : 'highlight-negative';
+        const profitClass = realizedProfit >= 0 ? 'highlight-positive' : 'highlight-negative';
+
+        let html = `
+            <div class="summary-section">
+                <!-- メインメトリクス -->
+                <div class="main-metrics">
+                    <div class="metric-box ${roiClass}">
+                        <div class="metric-box-label">投資効率 (ROI)</div>
+                        <div class="metric-box-value ${totalRoi >= 0 ? 'positive' : 'negative'}">
+                            ${totalRoi >= 0 ? '+' : ''}${totalRoi.toFixed(1)}<span class="metric-box-unit">%</span>
+                        </div>
+                    </div>
+                    <div class="metric-box ${profitClass}">
+                        <div class="metric-box-label">実現損益</div>
+                        <div class="metric-box-value ${realizedProfit >= 0 ? 'positive' : 'negative'}">
+                            ${realizedProfit >= 0 ? '+' : ''}¥${Math.abs(realizedProfit).toLocaleString()}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- サブメトリクス -->
+                <div class="sub-metrics">
+                    <div class="sub-metric">
+                        <div class="sub-metric-label">取引回数</div>
+                        <div class="sub-metric-value">${totalTransactions}<span class="unit">回</span></div>
+                    </div>
+                    <div class="sub-metric">
+                        <div class="sub-metric-label">保有数</div>
+                        <div class="sub-metric-value">${totalCurrentQuantity.toFixed(0)}<span class="unit">株</span></div>
+                    </div>
+                    <div class="sub-metric">
+                        <div class="sub-metric-label">投資額</div>
+                        <div class="sub-metric-value">¥${totalInvested.toLocaleString()}</div>
+                    </div>
+                    <div class="sub-metric">
+                        <div class="sub-metric-label">評価額</div>
+                        <div class="sub-metric-value">¥${totalCurrentValue.toLocaleString()}</div>
+                    </div>
+                </div>
+
+                <!-- メタ情報 -->
+                <div class="summary-meta">
+                    <span>銘柄数: ${companies.length}社</span>
+                    <span class="summary-badge">現物取引のみ</span>
+                </div>
+            </div>
+
+            <div class="detail-list">
+        `;
 
         companies.forEach((company, index) => {
+            const statusBadge = company.current_quantity > 0 ? 'holding' : 'sold';
+            const statusText = company.current_quantity > 0 ? '保有中' : '売却済';
+            const roiClass = company.roi >= 0 ? 'positive' : 'negative';
+            const roiSign = company.roi >= 0 ? '+' : '';
             const profitClass = company.realized_profit >= 0 ? 'positive' : 'negative';
-            const profitSign = company.realized_profit >= 0 ? '+' : '';
-            const statusBadge = company.current_quantity > 0 
-                ? '<span class="diary-badge holding">保有中</span>' 
-                : '<span class="diary-badge sold">売却済</span>';
-
-            let roiHtml = '';
-            if (company.roi !== null && company.roi !== undefined) {
-                const roiClass = company.roi >= 0 ? 'positive' : 'negative';
-                const roiSign = company.roi >= 0 ? '+' : '';
-                roiHtml = `
-                    <div>
-                        <span style="color: var(--muted);">投資効率:</span>
-                        <span class="${roiClass}" style="font-weight: 600;">${roiSign}${company.roi}%</span>
-                    </div>
-                `;
-            }
 
             html += `
-                <div class="diary-list-item">
-                    <a href="/stockdiary/${company.id}/" style="text-decoration: none; color: inherit; display: block;">
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
-                            <div>
-                                <div style="font-weight: 600; font-size: 16px; color: var(--foreground);">
-                                    ${company.name} ${statusBadge}
-                                </div>
-                                <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">
-                                    コード: ${company.code} | 📅 ${company.created_at}〜
-                                </div>
+                <div class="detail-card" onclick="window.location.href='/stockdiary/${company.id}/'">
+                    <div class="detail-card-header">
+                        <div class="detail-card-title">
+                            <div class="detail-card-name">
+                                ${company.name}
+                                <span class="detail-status-badge ${statusBadge}">${statusText}</span>
+                            </div>
+                            <div class="detail-card-meta">
+                                <span class="detail-card-code">コード: ${company.code}</span>
+                                <span class="detail-card-date">📅 ${company.created_at}〜</span>
                             </div>
                         </div>
-                        <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px;">
-                            <div>
-                                <span style="color: var(--muted);">取引回数:</span>
-                                <span style="font-weight: 600;">${company.transaction_count}回</span>
-                            </div>
-                            <div>
-                                <span style="color: var(--muted);">保有数:</span>
-                                <span style="font-weight: 600;">${company.current_quantity}株</span>
-                            </div>
-                            <div>
-                                <span style="color: var(--muted);">実現損益:</span>
-                                <span class="${profitClass}" style="font-weight: 600;">
-                                    ${profitSign}¥${Math.abs(company.realized_profit).toLocaleString()}
-                                </span>
-                            </div>
-                            <div>
-                                <span style="color: var(--muted);">投資額:</span>
-                                <span style="font-weight: 600;">¥${company.total_invested.toLocaleString()}</span>
-                            </div>
-                            ${roiHtml}
+                        <div class="detail-roi-badge ${roiClass}">
+                            ${roiSign}${company.roi.toFixed(1)}%
                         </div>
-                    </a>
+                    </div>
+
+                    <div class="detail-card-stats">
+                        <div class="detail-stat">
+                            <span class="detail-stat-label">取引回数</span>
+                            <span class="detail-stat-value">${company.transaction_count}回</span>
+                        </div>
+                        <div class="detail-stat">
+                            <span class="detail-stat-label">保有数</span>
+                            <span class="detail-stat-value">${company.current_quantity.toFixed(0)}株</span>
+                        </div>
+                        <div class="detail-stat">
+                            <span class="detail-stat-label">実現損益</span>
+                            <span class="detail-stat-value ${profitClass}">
+                                ${company.realized_profit >= 0 ? '+' : ''}¥${Math.abs(company.realized_profit).toLocaleString()}
+                            </span>
+                        </div>
+                        <div class="detail-stat">
+                            <span class="detail-stat-label">投資額</span>
+                            <span class="detail-stat-value">¥${company.total_invested.toLocaleString()}</span>
+                        </div>
+                    </div>
                 </div>
             `;
         });
