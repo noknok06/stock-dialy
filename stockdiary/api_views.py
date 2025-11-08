@@ -14,6 +14,7 @@ import json
 from pywebpush import webpush, WebPushException
 from decimal import Decimal, InvalidOperation
 import logging
+import traceback
 
 
 @require_GET
@@ -106,132 +107,96 @@ def unsubscribe_push(request):
         return JsonResponse({'error': str(e)}, status=500)
     
 
-@require_http_methods(["POST"])
 @login_required
+@require_http_methods(["POST"])
 def create_diary_notification(request, diary_id):
-    """日記の通知設定を作成"""
+    """日記の通知設定を作成（リマインダーのみ）"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
     try:
+        # 日記を取得
         diary = get_object_or_404(StockDiary, id=diary_id, user=request.user)
-        data = json.loads(request.body)
         
-        # デバッグログ
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.info(f"Creating notification for diary {diary_id}")
-        logger.info(f"Received data: {data}")
-        
-        # 必須フィールドの検証
-        notification_type = data.get('notification_type', 'reminder')
-        if notification_type not in ['price_alert', 'reminder', 'periodic']:
+        # リクエストボディをパース
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON decode error: {e}")
             return JsonResponse({
-                'error': '無効な通知タイプです',
-                'success': False
+                'success': False,
+                'error': 'Invalid JSON format'
             }, status=400)
         
-        # 通知オブジェクトの作成
+        # 必須フィールドのバリデーション
+        remind_at = data.get('remind_at')
+        if not remind_at:
+            return JsonResponse({
+                'success': False,
+                'error': '通知日時を入力してください'
+            }, status=400)
+        
+        # 日時をパース
+        try:
+            from datetime import datetime
+            remind_at_dt = datetime.fromisoformat(remind_at.replace('Z', '+00:00'))
+            
+            # タイムゾーンを適用
+            from django.utils import timezone
+            if timezone.is_naive(remind_at_dt):
+                remind_at_dt = timezone.make_aware(remind_at_dt)
+        except ValueError as e:
+            logger.error(f"Date parsing error: {e}")
+            return JsonResponse({
+                'success': False,
+                'error': '日時の形式が正しくありません'
+            }, status=400)
+        
+        # 過去の日時をチェック
+        now = timezone.now()
+        if remind_at_dt < now:
+            return JsonResponse({
+                'success': False,
+                'error': '過去の日時は指定できません'
+            }, status=400)
+        
+        # メッセージを取得（オプション）
+        message = data.get('message', '').strip()
+        
+        # 通知を作成
         notification_data = {
             'diary': diary,
-            'notification_type': notification_type,
-            'message': data.get('message', ''),
+            'remind_at': remind_at_dt,
+            'message': message,
             'is_active': True
         }
         
-        # 通知タイプ別の設定
-        if notification_type == 'price_alert':
-            target_price = data.get('target_price')
-            if not target_price:
-                return JsonResponse({
-                    'error': '目標価格を入力してください',
-                    'success': False
-                }, status=400)
-            
-            try:
-                notification_data['target_price'] = Decimal(str(target_price))
-                notification_data['alert_above'] = data.get('alert_above', True)
-            except (ValueError, InvalidOperation):
-                return JsonResponse({
-                    'error': '目標価格の形式が不正です',
-                    'success': False
-                }, status=400)
+        logger.info(f"Creating notification with data: {notification_data}")
         
-        elif notification_type == 'reminder':
-            remind_at_str = data.get('remind_at')
-            if not remind_at_str:
-                return JsonResponse({
-                    'error': '通知日時を入力してください',
-                    'success': False
-                }, status=400)
-            
-            try:
-                # ISO形式の日時文字列をパース
-                from datetime import datetime
-                remind_at = datetime.fromisoformat(remind_at_str.replace('Z', '+00:00'))
-                
-                # タイムゾーンを考慮
-                if timezone.is_naive(remind_at):
-                    remind_at = timezone.make_aware(remind_at)
-                
-                notification_data['remind_at'] = remind_at
-                logger.info(f"Parsed remind_at: {remind_at}")
-                
-            except (ValueError, AttributeError) as e:
-                logger.error(f"Date parsing error: {e}")
-                return JsonResponse({
-                    'error': f'日時の形式が不正です: {str(e)}',
-                    'success': False
-                }, status=400)
-        
-        elif notification_type == 'periodic':
-            frequency = data.get('frequency')
-            notify_time_str = data.get('notify_time')
-            
-            if not frequency or frequency not in ['daily', 'weekly', 'monthly']:
-                return JsonResponse({
-                    'error': '通知頻度を選択してください',
-                    'success': False
-                }, status=400)
-            
-            notification_data['frequency'] = frequency
-            
-            if notify_time_str:
-                try:
-                    # 時刻文字列をパース (HH:MM形式)
-                    from datetime import datetime
-                    notify_time = datetime.strptime(notify_time_str, '%H:%M').time()
-                    notification_data['notify_time'] = notify_time
-                    logger.info(f"Parsed notify_time: {notify_time}")
-                except ValueError as e:
-                    logger.error(f"Time parsing error: {e}")
-                    return JsonResponse({
-                        'error': f'時刻の形式が不正です: {str(e)}',
-                        'success': False
-                    }, status=400)
-        
-        # 通知を作成
         notification = DiaryNotification.objects.create(**notification_data)
         
-        logger.info(f"Notification created successfully: {notification.id}")
+        logger.info(f"✅ Notification created: {notification.id}")
         
         return JsonResponse({
             'success': True,
+            'message': 'リマインダーを設定しました',
             'notification_id': str(notification.id),
-            'message': '通知を設定しました',
-            'notification_type': notification.get_notification_type_display()
+            'notification': {
+                'id': str(notification.id),
+                'remind_at': notification.remind_at.isoformat(),
+                'message': notification.message,
+                'is_active': notification.is_active,
+                'created_at': notification.created_at.isoformat()
+            }
         })
         
-    except json.JSONDecodeError as e:
-        logger.error(f"JSON decode error: {e}")
-        return JsonResponse({
-            'error': 'リクエストデータの形式が不正です',
-            'success': False
-        }, status=400)
     except Exception as e:
-        import traceback
         logger.error(f"Unexpected error: {traceback.format_exc()}")
         return JsonResponse({
-            'error': f'通知設定中にエラーが発生しました: {str(e)}',
-            'success': False
+            'success': False,
+            'error': f'通知設定中にエラーが発生しました: {str(e)}'
         }, status=500)
+    
 
 @require_http_methods(["POST"])  # ← DELETEを削除、POSTのみ
 @login_required
@@ -257,31 +222,42 @@ def delete_diary_notification(request, notification_id):
         return JsonResponse({'error': str(e)}, status=500)
 
 
-@require_GET
 @login_required
+@require_http_methods(["GET"])
 def list_diary_notifications(request, diary_id):
     """日記の通知設定一覧を取得"""
     try:
         diary = get_object_or_404(StockDiary, id=diary_id, user=request.user)
-        notifications = diary.notifications.filter(is_active=True)
         
-        data = [{
-            'id': str(n.id),
-            'type': n.notification_type,
-            'type_display': n.get_notification_type_display(),
-            'target_price': str(n.target_price) if n.target_price else None,
-            'alert_above': n.alert_above,
-            'remind_at': n.remind_at.isoformat() if n.remind_at else None,
-            'frequency': n.frequency,
-            'notify_time': n.notify_time.isoformat() if n.notify_time else None,
-            'message': n.message,
-            'last_sent': n.last_sent.isoformat() if n.last_sent else None,
-        } for n in notifications]
+        notifications = DiaryNotification.objects.filter(
+            diary=diary
+        ).order_by('-created_at')
         
-        return JsonResponse({'notifications': data})
+        notification_list = []
+        for notification in notifications:
+            notification_list.append({
+                'id': str(notification.id),
+                'remind_at': notification.remind_at.isoformat(),
+                'message': notification.message,
+                'is_active': notification.is_active,
+                'last_sent': notification.last_sent.isoformat() if notification.last_sent else None,
+                'created_at': notification.created_at.isoformat(),
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'notifications': notification_list,
+            'count': len(notification_list)
+        })
         
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"List notifications error: {traceback.format_exc()}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
 
 
 @require_GET
@@ -403,33 +379,39 @@ def send_push_notification(user, title, message, url='/', tag='notification'):
     
     return success_count
 
-@require_GET
 @login_required
+@require_http_methods(["GET"])
 def list_all_notifications(request):
-    """ユーザーのすべての通知設定を取得"""
+    """すべての日記の通知設定一覧を取得"""
     try:
         notifications = DiaryNotification.objects.filter(
-            diary__user=request.user,
-            is_active=True
+            diary__user=request.user
         ).select_related('diary').order_by('-created_at')
         
-        data = [{
-            'id': str(n.id),
-            'diary_id': n.diary.id,
-            'diary_name': n.diary.stock_name,
-            'type': n.notification_type,
-            'type_display': n.get_notification_type_display(),
-            'target_price': str(n.target_price) if n.target_price else None,
-            'alert_above': n.alert_above,
-            'remind_at': n.remind_at.isoformat() if n.remind_at else None,
-            'frequency': n.frequency,
-            'notify_time': n.notify_time.isoformat() if n.notify_time else None,
-            'message': n.message,
-            'last_sent': n.last_sent.isoformat() if n.last_sent else None,
-            'created_at': n.created_at.isoformat(),
-        } for n in notifications]
+        notification_list = []
+        for notification in notifications:
+            notification_list.append({
+                'id': str(notification.id),
+                'diary_id': notification.diary.id,
+                'diary_name': notification.diary.stock_name,
+                'remind_at': notification.remind_at.isoformat(),
+                'message': notification.message,
+                'is_active': notification.is_active,
+                'last_sent': notification.last_sent.isoformat() if notification.last_sent else None,
+                'created_at': notification.created_at.isoformat(),
+            })
         
-        return JsonResponse({'notifications': data})
+        return JsonResponse({
+            'success': True,
+            'notifications': notification_list,
+            'count': len(notification_list)
+        })
         
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"List all notifications error: {traceback.format_exc()}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)

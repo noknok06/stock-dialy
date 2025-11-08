@@ -670,18 +670,7 @@ class PushSubscription(models.Model):
 
 
 class DiaryNotification(models.Model):
-    """日記の通知設定"""
-    NOTIFICATION_TYPES = [
-        ('price_alert', '価格アラート'),
-        ('reminder', 'リマインダー'),
-        ('periodic', '定期通知'),
-    ]
-    
-    FREQUENCY_CHOICES = [
-        ('daily', '毎日'),
-        ('weekly', '毎週'),
-        ('monthly', '毎月'),
-    ]
+    """日記の通知設定（リマインダーのみ）"""
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     diary = models.ForeignKey(
@@ -689,22 +678,7 @@ class DiaryNotification(models.Model):
         on_delete=models.CASCADE,
         related_name='notifications'
     )
-    notification_type = models.CharField(
-        max_length=20,
-        choices=NOTIFICATION_TYPES,
-        default='reminder'
-    )
-    target_price = models.DecimalField(
-        max_digits=10, decimal_places=2,
-        null=True, blank=True, verbose_name='目標価格'
-    )
-    alert_above = models.BooleanField(default=True, verbose_name='上回ったら通知')
-    remind_at = models.DateTimeField(null=True, blank=True, verbose_name='通知日時')
-    frequency = models.CharField(
-        max_length=20, choices=FREQUENCY_CHOICES,
-        null=True, blank=True, verbose_name='通知頻度'
-    )
-    notify_time = models.TimeField(null=True, blank=True, verbose_name='通知時刻')
+    remind_at = models.DateTimeField(verbose_name='通知日時')
     message = models.TextField(max_length=200, blank=True, verbose_name='メッセージ')
     is_active = models.BooleanField(default=True, verbose_name='有効')
     last_sent = models.DateTimeField(null=True, blank=True)
@@ -716,7 +690,6 @@ class DiaryNotification(models.Model):
         verbose_name_plural = '日記通知設定'
         indexes = [
             models.Index(fields=['diary', 'is_active']),
-            models.Index(fields=['notification_type', 'is_active']),
         ]
 
 

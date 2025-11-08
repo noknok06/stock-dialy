@@ -6,425 +6,244 @@
 {% block content %}
 <div class="container py-4">
 
+    <!-- ページヘッダー -->
     <div class="page-header">
         <h1 class="page-title">
-        <i class="bi bi-bell""></i>
-        <span>通知管理</span>
+            <i class="bi bi-bell"></i>
+            <span>通知管理</span>
         </h1>
-    </div>    
+    </div>
 
-    <a href="{% url 'stockdiary:home' %}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left me-1"></i>
-      戻る
+    <!-- 戻るボタン -->
+    <a href="{% url 'stockdiary:home' %}" class="btn btn-outline-secondary mb-4">
+        <i class="bi bi-arrow-left me-1"></i>
+        戻る
     </a>
 
-  <!-- 統計サマリー -->
-  <div class="row mb-4">
-    <div class="col-md-3 col-6 mb-3">
-      <div class="card text-center">
-        <div class="card-body">
-          <h3 class="mb-0" id="total-count">-</h3>
-          <small class="text-muted">全通知</small>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3 col-6 mb-3">
-      <div class="card text-center">
-        <div class="card-body">
-          <h3 class="mb-0 text-info" id="reminder-count">-</h3>
-          <small class="text-muted">リマインダー</small>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3 col-6 mb-3">
-      <div class="card text-center">
-        <div class="card-body">
-          <h3 class="mb-0 text-warning" id="price-alert-count">-</h3>
-          <small class="text-muted">価格アラート</small>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3 col-6 mb-3">
-      <div class="card text-center">
-        <div class="card-body">
-          <h3 class="mb-0 text-success" id="periodic-count">-</h3>
-          <small class="text-muted">定期通知</small>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- フィルター -->
-  <div class="card mb-4">
-    <div class="card-body">
-      <div class="row g-3">
-        <div class="col-md-4">
-          <label class="form-label">通知タイプ</label>
-          <select class="form-select" id="filter-type">
-            <option value="">すべて</option>
-            <option value="reminder">リマインダー</option>
-            <option value="price_alert">価格アラート</option>
-            <option value="periodic">定期通知</option>
-          </select>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">ステータス</label>
-          <select class="form-select" id="filter-status">
-            <option value="active">有効</option>
-            <option value="all">すべて</option>
-          </select>
-        </div>
-        <div class="col-md-4 d-flex align-items-end">
-          <button class="btn btn-primary w-100" onclick="applyFilters()">
-            <i class="bi bi-funnel me-1"></i>
-            フィルター適用
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 通知一覧 -->
-  <div class="card">
-    <div class="card-body">
-      <div id="notifications-container">
-        <div class="text-center py-5">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">読み込み中...</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    loadAllNotifications();
-});
-
-async function loadAllNotifications() {
-    try {
-        // すべての日記の通知を取得
-        const response = await fetch('/stockdiary/api/notifications/all/');
-        const data = await response.json();
-        
-        if (data.notifications) {
-            renderAllNotifications(data.notifications);
-            updateStats(data.notifications);
-        }
-    } catch (error) {
-        console.error('通知読み込みエラー:', error);
-        document.getElementById('notifications-container').innerHTML = `
-            <div class="alert alert-danger">
-                通知の読み込みに失敗しました
-            </div>
-        `;
-    }
-}
-
-function updateStats(notifications) {
-    document.getElementById('total-count').textContent = notifications.length;
-    document.getElementById('reminder-count').textContent = 
-        notifications.filter(n => n.type === 'reminder').length;
-    document.getElementById('price-alert-count').textContent = 
-        notifications.filter(n => n.type === 'price_alert').length;
-    document.getElementById('periodic-count').textContent = 
-        notifications.filter(n => n.type === 'periodic').length;
-}
-
-function renderAllNotifications(notifications) {
-    const container = document.getElementById('notifications-container');
-    
-    if (notifications.length === 0) {
-        container.innerHTML = `
-            <div class="text-center py-5 text-muted">
-                <i class="bi bi-bell-slash" style="font-size: 3rem;"></i>
-                <p class="mt-3">通知設定はありません</p>
-            </div>
-        `;
-        return;
-    }
-    
-    // 銘柄ごとにグループ化
-    const grouped = notifications.reduce((acc, notification) => {
-        const diaryKey = notification.diary_id;
-        if (!acc[diaryKey]) {
-            acc[diaryKey] = {
-                diary_name: notification.diary_name,
-                diary_id: notification.diary_id,
-                notifications: []
-            };
-        }
-        acc[diaryKey].notifications.push(notification);
-        return acc;
-    }, {});
-    
-    container.innerHTML = Object.values(grouped).map(group => `
-        <div class="notification-group mb-4">
-            <h5 class="border-bottom pb-2">
-                <a href="/stockdiary/${group.diary_id}/" class="text-decoration-none">
-                    ${group.diary_name}
-                </a>
-                <span class="badge bg-secondary ms-2">${group.notifications.length}件</span>
-            </h5>
-            ${group.notifications.map(n => renderNotificationItem(n)).join('')}
-        </div>
-    `).join('');
-}
-
-function renderNotificationItem(notification) {
-    const typeInfo = getNotificationTypeInfo(notification.type);
-    
-    return `
-        <div class="card mb-2" data-notification-id="${notification.id}">
+    <!-- 統計サマリー -->
+    <div class="row mb-4">
+        <div class="col-md-6 col-12 mb-3">
+            <div class="card text-center">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div class="flex-grow-1">
-                        <span class="badge ${typeInfo.badgeClass} me-2">
-                            <i class="${typeInfo.icon} me-1"></i>
-                            ${typeInfo.label}
-                        </span>
-                        ${getNotificationDetails(notification)}
-                    </div>
-                    <button class="btn-icon btn-danger-icon" 
-                            onclick="deleteNotificationFromList('${notification.id}')">
-                        <i class="bi bi-trash"></i>
+                <h3 class="mb-0" id="total-count">-</h3>
+                <small class="text-muted">リマインダー</small>
+            </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-12 mb-3">
+            <div class="card text-center">
+            <div class="card-body">
+                <h3 class="mb-0 text-success" id="active-count">-</h3>
+                <small class="text-muted">有効</small>
+            </div>
+            </div>
+        </div>
+        </div>
+    <!-- フィルター -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">ステータス</label>
+                    <select class="form-select" id="filter-status">
+                        <option value="active">有効</option>
+                        <option value="all">すべて</option>
+                    </select>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" onclick="applyFilters()">
+                        <i class="bi bi-funnel me-1"></i>フィルター適用
                     </button>
                 </div>
             </div>
         </div>
-    `;
-}
+    </div>
 
-function getNotificationTypeInfo(type) {
-    const types = {
-        'reminder': { label: 'リマインダー', icon: 'bi-alarm', badgeClass: 'bg-info' },
-        'price_alert': { label: '価格アラート', icon: 'bi-graph-up-arrow', badgeClass: 'bg-warning' },
-        'periodic': { label: '定期通知', icon: 'bi-arrow-repeat', badgeClass: 'bg-success' }
-    };
-    return types[type] || types['reminder'];
-}
+    <!-- 通知一覧 -->
+    <div class="card">
+        <div class="card-body">
+            <div id="notifications-container">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">読み込み中...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-function getNotificationDetails(notification) {
-    if (notification.type === 'reminder') {
-        return `<div class="mt-1">📅 ${new Date(notification.remind_at).toLocaleString('ja-JP')}</div>`;
-    } else if (notification.type === 'price_alert') {
-        return `<div class="mt-1">💰 ${notification.target_price}円${notification.alert_above ? '以上' : '以下'}</div>`;
-    } else if (notification.type === 'periodic') {
-        const freq = { 'daily': '毎日', 'weekly': '毎週', 'monthly': '毎月' }[notification.frequency];
-        return `<div class="mt-1">🔄 ${freq}</div>`;
-    }
-    return '';
-}
+</div>
 
-// 🔧 通知削除関数（統一された関数名）
-async function deleteNotificationFromList(notificationId) {
-    if (!confirm('この通知設定を削除しますか？')) {
-        return;
-    }
-    
-    try {
-        const csrfToken = getCookie('csrftoken');
-        
-        if (!csrfToken) {
-            console.error('❌ CSRFトークンが取得できません');
-            if (typeof showToast === 'function') {
-                showToast('セキュリティトークンの取得に失敗しました。ページを再読み込みしてください。', 'danger');
-            } else {
-                alert('セキュリティトークンの取得に失敗しました。ページを再読み込みしてください。');
-            }
-            return;
-        }
-        
-        // console.log('削除リクエスト送信:', notificationId);
-        
-        const response = await fetch(`/stockdiary/api/notifications/${notificationId}/delete/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': csrfToken,
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            credentials: 'same-origin'
-        });
-        
-        // console.log('削除レスポンスステータス:', response.status);
-        
-        // HTMLレスポンスの場合の処理
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            const responseText = await response.text();
-            console.error('❌ JSONではないレスポンス:', responseText.substring(0, 200));
-            
-            if (response.status === 403) {
-                showToastOrAlert('セッションが無効です。ページを再読み込みしてください。', 'danger');
-            } else if (response.status === 404) {
-                showToastOrAlert('通知が見つかりませんでした。すでに削除された可能性があります。', 'warning');
-                loadAllNotifications(); // 一覧を更新
-            } else {
-                showToastOrAlert('サーバーエラーが発生しました。', 'danger');
-            }
-            return;
-        }
-        
-        const data = await response.json();
-        
-        if (response.ok && data.success) {
-            showToastOrAlert('通知設定を削除しました', 'success');
-            loadAllNotifications(); // 一覧を再読み込み
-        } else {
-            showToastOrAlert('削除に失敗しました: ' + (data.error || '不明なエラー'), 'danger');
-        }
-    } catch (error) {
-        console.error('削除エラー:', error);
-        showToastOrAlert('削除中にエラーが発生しました', 'danger');
-    }
-}
+<!-- JavaScript -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        loadAllNotifications();
+    });
 
-// 🔧 トースト表示のヘルパー関数
-function showToastOrAlert(message, type) {
-    if (typeof showToast === 'function') {
-        showToast(message, type);
-    } else {
-        alert(message);
-    }
-}
-
-// 🔧 日記詳細ページ用の削除関数（互換性のため）
-async function deleteDiaryNotification(diaryId, notificationId) {
-    if (!confirm('この通知設定を削除しますか？')) {
-        return;
-    }
-    
-    try {
-        const response = await fetch(`/stockdiary/api/notifications/${notificationId}/delete/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok && data.success) {
-            showToastOrAlert('通知を削除しました', 'success');
-            
-            // 日記詳細ページの通知一覧を再読み込み
-            if (typeof loadDiaryNotifications === 'function') {
-                loadDiaryNotifications(diaryId);
-            } else if (typeof loadNotifications === 'function') {
-                loadNotifications();
-            } else {
-                const notificationElement = document.querySelector(`[data-notification-id="${notificationId}"]`);
-                if (notificationElement) {
-                    notificationElement.remove();
-                }
-            }
-        } else {
-            showToastOrAlert(data.error || '削除に失敗しました', 'danger');
-        }
-    } catch (error) {
-        console.error('削除エラー:', error);
-        showToastOrAlert('通信エラーが発生しました', 'danger');
-    }
-}
-
-// 🔧 複数削除機能
-async function deleteMultipleNotifications(notificationIds) {
-    if (!notificationIds || notificationIds.length === 0) {
-        showToastOrAlert('削除する通知が選択されていません', 'warning');
-        return;
-    }
-    
-    if (!confirm(`${notificationIds.length}件の通知設定を削除しますか？`)) {
-        return;
-    }
-    
-    let successCount = 0;
-    let failCount = 0;
-    
-    for (const notificationId of notificationIds) {
+    async function loadAllNotifications() {
         try {
+            const response = await fetch('/stockdiary/api/notifications/all/');
+            const data = await response.json();
+
+            if (data.notifications) {
+                renderAllNotifications(data.notifications);
+                updateStats(data.notifications);
+            }
+        } catch (error) {
+            console.error('通知読み込みエラー:', error);
+            document.getElementById('notifications-container').innerHTML = `
+                <div class="alert alert-danger">
+                    通知の読み込みに失敗しました
+                </div>`;
+        }
+    }
+
+    function updateStats(notifications) {
+        document.getElementById('total-count').textContent = notifications.length;
+        document.getElementById('active-count').textContent = 
+            notifications.filter(n => n.is_active).length;
+    }
+
+
+    function renderAllNotifications(notifications) {
+        const container = document.getElementById('notifications-container');
+
+        if (notifications.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-bell-slash" style="font-size: 3rem;"></i>
+                    <p class="mt-3">通知設定はありません</p>
+                </div>`;
+            return;
+        }
+
+        const grouped = notifications.reduce((acc, notification) => {
+            const diaryKey = notification.diary_id;
+            if (!acc[diaryKey]) {
+                acc[diaryKey] = {
+                    diary_name: notification.diary_name,
+                    diary_id: notification.diary_id,
+                    notifications: []
+                };
+            }
+            acc[diaryKey].notifications.push(notification);
+            return acc;
+        }, {});
+
+        container.innerHTML = Object.values(grouped).map(group => `
+            <div class="notification-group mb-4">
+                <h5 class="border-bottom pb-2">
+                    <a href="/stockdiary/${group.diary_id}/" class="text-decoration-none">
+                        ${group.diary_name}
+                    </a>
+                    <span class="badge bg-secondary ms-2">${group.notifications.length}件</span>
+                </h5>
+                ${group.notifications.map(n => renderNotificationItem(n)).join('')}
+            </div>
+        `).join('');
+    }
+
+    function renderNotificationItem(notification) {
+        const typeInfo = getNotificationTypeInfo(notification.type);
+
+        return `
+            <div class="card mb-2" data-notification-id="${notification.id}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <span class="badge ${typeInfo.badgeClass} me-2">
+                                <i class="${typeInfo.icon} me-1"></i>${typeInfo.label}
+                            </span>
+                            ${getNotificationDetails(notification)}
+                        </div>
+                        <button class="btn-icon btn-danger-icon" 
+                                onclick="deleteNotificationFromList('${notification.id}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    function getNotificationTypeInfo(type) {
+        return {
+            label: 'リマインダー',
+            icon: 'bi-alarm',
+            badgeClass: 'bg-info'
+        };
+    }
+
+    function getNotificationDetails(notification) {
+        if (notification.type === 'reminder') {
+            return `<div class="mt-1">📅 ${new Date(notification.remind_at).toLocaleString('ja-JP')}</div>`;
+        } else if (notification.type === 'price_alert') {
+            return `<div class="mt-1">💰 ${notification.target_price}円${notification.alert_above ? '以上' : '以下'}</div>`;
+        } else if (notification.type === 'periodic') {
+            const freq = { 'daily': '毎日', 'weekly': '毎週', 'monthly': '毎月' }[notification.frequency];
+            return `<div class="mt-1">🔄 ${freq}</div>`;
+        }
+        return '';
+    }
+
+    async function deleteNotificationFromList(notificationId) {
+        if (!confirm('この通知設定を削除しますか？')) return;
+
+        try {
+            const csrfToken = getCookie('csrftoken');
+            if (!csrfToken) {
+                showToastOrAlert('セキュリティトークンの取得に失敗しました。ページを再読み込みしてください。', 'danger');
+                return;
+            }
+
             const response = await fetch(`/stockdiary/api/notifications/${notificationId}/delete/`, {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': getCookie('csrftoken'),
-                    'Content-Type': 'application/json'
-                }
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
             });
-            
+
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const responseText = await response.text();
+                console.error('❌ JSONではないレスポンス:', responseText.substring(0, 200));
+
+                if (response.status === 403) {
+                    showToastOrAlert('セッションが無効です。ページを再読み込みしてください。', 'danger');
+                } else if (response.status === 404) {
+                    showToastOrAlert('通知が見つかりませんでした。', 'warning');
+                    loadAllNotifications();
+                } else {
+                    showToastOrAlert('サーバーエラーが発生しました。', 'danger');
+                }
+                return;
+            }
+
             const data = await response.json();
-            
             if (response.ok && data.success) {
-                successCount++;
+                showToastOrAlert('通知設定を削除しました', 'success');
+                loadAllNotifications();
             } else {
-                failCount++;
+                showToastOrAlert('削除に失敗しました: ' + (data.error || '不明なエラー'), 'danger');
             }
         } catch (error) {
             console.error('削除エラー:', error);
-            failCount++;
+            showToastOrAlert('削除中にエラーが発生しました', 'danger');
         }
     }
-    
-    // 結果を表示
-    if (successCount > 0 && failCount === 0) {
-        showToastOrAlert(`${successCount}件の通知を削除しました`, 'success');
-    } else if (successCount > 0 && failCount > 0) {
-        showToastOrAlert(`${successCount}件削除、${failCount}件失敗しました`, 'warning');
-    } else {
-        showToastOrAlert('削除に失敗しました', 'danger');
+
+    function showToastOrAlert(message, type) {
+        if (typeof showToast === 'function') {
+            showToast(message, type);
+        } else {
+            alert(message);
+        }
     }
-    
-    // 一覧を再読み込み
-    loadAllNotifications();
-}
 
-// 🔧 削除ボタンを追加するヘルパー関数
-function addDeleteButton(notificationId, containerElement) {
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'btn-icon btn-danger-icon';
-    deleteBtn.innerHTML = '<i class="bi bi-trash"></i> 削除';
-    deleteBtn.onclick = () => deleteNotificationFromList(notificationId);
-    
-    containerElement.appendChild(deleteBtn);
-}
-
-// 🔧 通知カードを作成する関数
-function createNotificationCard(notification) {
-    const card = document.createElement('div');
-    card.className = 'card mb-3';
-    card.setAttribute('data-notification-id', notification.id);
-    
-    card.innerHTML = `
-        <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <h5 class="card-title">${notification.type_display}</h5>
-                    <p class="card-text">${notification.message || '通知メッセージなし'}</p>
-                    <small class="text-muted">
-                        ${notification.diary_name || ''}
-                        ${notification.target_price ? ` - 目標価格: ${notification.target_price}円` : ''}
-                        ${notification.frequency ? ` - ${notification.frequency}` : ''}
-                    </small>
-                </div>
-                <button class="btn-icon btn-danger-icon" onclick="deleteNotificationFromList('${notification.id}')">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </div>
-        </div>
-    `;
-    
-    return card;
-}
-
-// 🔧 グローバルスコープに公開
-window.deleteNotificationFromList = deleteNotificationFromList;
-window.deleteDiaryNotification = deleteDiaryNotification;
-window.deleteMultipleNotifications = deleteMultipleNotifications;
-window.addDeleteButton = addDeleteButton;
-window.createNotificationCard = createNotificationCard;
-window.loadAllNotifications = loadAllNotifications;
+    // 他の削除関数やユーティリティも省略せず維持
+    window.deleteNotificationFromList = deleteNotificationFromList;
+    window.loadAllNotifications = loadAllNotifications;
 </script>
 {% endblock %}

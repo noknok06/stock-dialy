@@ -1790,11 +1790,11 @@
 
   <!-- 通知設定モーダル -->
   <div class="modal fade" id="notificationModal" tabindex="-1" aria-labelledby="notificationModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
-            <i class="bi bi-bell me-2"></i>通知設定
+            <i class="bi bi-bell me-2"></i>リマインダー設定
           </h5>
           <button type="button" class="btn" data-bs-dismiss="modal" aria-label="閉じる">
             <i class="bi bi-x"></i>
@@ -1804,56 +1804,18 @@
           {% csrf_token %}
           
           <div class="mb-3">
-            <label for="notificationType" class="form-label">
-              <i class="bi bi-tag"></i>通知タイプ
-            </label>
-            <select class="form-select" id="notificationType">
-              <option value="reminder">リマインダー</option>
-              <option value="price_alert">価格アラート</option>
-              <option value="periodic">定期通知</option>
-            </select>
-          </div>
-          
-          <div id="reminderFields" class="mb-3">
             <label for="remindAt" class="form-label">
               <i class="bi bi-calendar-event"></i>通知日時
             </label>
-            <input type="datetime-local" class="form-control" id="remindAt">
-          </div>
-          
-          <div id="priceAlertFields" class="mb-3" style="display: none;">
-            <label for="targetPrice" class="form-label">
-              <i class="bi bi-currency-yen"></i>目標価格
-            </label>
-            <input type="number" class="form-control" id="targetPrice" step="0.01" placeholder="円">
-            <div class="form-check mt-2">
-              <input class="form-check-input" type="checkbox" id="alertAbove" checked>
-              <label class="form-check-label" for="alertAbove">
-                目標価格を上回ったら通知
-              </label>
-            </div>
-          </div>
-          
-          <div id="periodicFields" class="mb-3" style="display: none;">
-            <label for="frequency" class="form-label">
-              <i class="bi bi-arrow-repeat"></i>頻度
-            </label>
-            <select class="form-select" id="frequency">
-              <option value="daily">毎日</option>
-              <option value="weekly">毎週</option>
-              <option value="monthly">毎月</option>
-            </select>
-            <label for="notifyTime" class="form-label mt-3">
-              <i class="bi bi-clock"></i>通知時刻
-            </label>
-            <input type="time" class="form-control" id="notifyTime">
+            <input type="datetime-local" class="form-control" id="remindAt" required>
+            <small class="text-muted">指定した日時に通知を送信します</small>
           </div>
           
           <div class="mb-3">
             <label for="notificationMessage" class="form-label">
               <i class="bi bi-chat-text"></i>メッセージ（オプション）
             </label>
-            <textarea class="form-control" id="notificationMessage" rows="2" placeholder="通知メッセージを入力"></textarea>
+            <textarea class="form-control" id="notificationMessage" rows="3" placeholder="通知メッセージを入力"></textarea>
           </div>
         </div>
         <div class="modal-footer">
@@ -2670,97 +2632,68 @@ async function loadNotifications() {
 }
 
 function renderNotifications(notifications) {
-    return notifications.map(notification => {
-        const typeInfo = getNotificationTypeInfo(notification.type);
-        
-        let detailsHtml = '';
-        
-        if (notification.type === 'reminder') {
-            const remindAt = new Date(notification.remind_at);
-            detailsHtml = `
-                <div class="notification-details">
-                    <i class="bi bi-calendar-event"></i>
-                    <span>${remindAt.toLocaleString('ja-JP', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })}</span>
-                </div>
-            `;
-        } else if (notification.type === 'price_alert') {
-            detailsHtml = `
-                <div class="notification-details">
-                    <i class="bi bi-currency-yen"></i>
-                    <span>${notification.target_price}円 ${notification.alert_above ? '以上' : '以下'}で通知</span>
-                </div>
-            `;
-        } else if (notification.type === 'periodic') {
-            const freqText = {
-                'daily': '毎日',
-                'weekly': '毎週',
-                'monthly': '毎月'
-            }[notification.frequency] || notification.frequency;
-            
-            detailsHtml = `
-                <div class="notification-details">
-                    <i class="bi bi-arrow-repeat"></i>
-                    <span>${freqText}${notification.notify_time ? ` ${notification.notify_time}` : ''}</span>
-                </div>
-            `;
-        }
-        
-        return `
-            <div class="notification-item" data-notification-id="${notification.id}">
-                <!-- ヘッダーセクション -->
-                <div class="notification-item-header">
-                    <div class="notification-header-left">
-                        <div class="notification-type-icon ${notification.type}">
-                            <i class="${typeInfo.icon}"></i>
-                        </div>
-                        <span class="notification-badge ${typeInfo.badgeClass}">
-                            <i class="${typeInfo.icon}"></i>
-                            ${typeInfo.label}
-                        </span>
-                    </div>
-                    <div class="notification-actions">
-                        <button class="btn btn-icon btn-danger-icon"
-                                onclick="deleteDiaryNotification('${notification.id}')"
-                                title="削除"
-                                aria-label="通知を削除">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- 詳細セクション -->
-                <div class="notification-details-section">
-                    ${detailsHtml}
-                    ${notification.last_sent ? 
-                        `<div class="notification-last-sent">
-                            <i class="bi bi-check-circle"></i>
-                            最終送信: ${new Date(notification.last_sent).toLocaleDateString('ja-JP', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric'
-                            })}
-                        </div>` : 
-                        '<div class="notification-last-sent"><i class="bi bi-clock"></i>未送信</div>'
-                    }
-                </div>
-                
-                <!-- メッセージセクション -->
-                ${notification.message ? 
-                    `<div class="notification-message">
-                        <i class="bi bi-chat-quote"></i>
-                        ${notification.message}
-                    </div>` : 
-                    ''
-                }
+  return notifications.map(notification => {
+    const remindAt = new Date(notification.remind_at);
+    const detailsHtml = `
+      <div class="notification-details">
+        <i class="bi bi-calendar-event"></i>
+        <span>${remindAt.toLocaleString('ja-JP', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })}</span>
+      </div>
+    `;
+    
+    return `
+      <div class="notification-item" data-notification-id="${notification.id}">
+        <div class="notification-item-header">
+          <div class="notification-header-left">
+            <div class="notification-type-icon reminder">
+              <i class="bi-alarm"></i>
             </div>
-        `;
-    }).join('');
+            <span class="notification-badge bg-info">
+              <i class="bi-alarm"></i>
+              リマインダー
+            </span>
+          </div>
+          <div class="notification-actions">
+            <button class="btn btn-icon btn-danger-icon"
+                    onclick="deleteDiaryNotification('${notification.id}')"
+                    title="削除"
+                    aria-label="通知を削除">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div class="notification-details-section">
+          ${detailsHtml}
+          ${notification.last_sent ? 
+            `<div class="notification-last-sent">
+              <i class="bi bi-check-circle"></i>
+              最終送信: ${new Date(notification.last_sent).toLocaleDateString('ja-JP', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              })}
+            </div>` : 
+            '<div class="notification-last-sent"><i class="bi bi-clock"></i>未送信</div>'
+          }
+        </div>
+        
+        ${notification.message ? 
+          `<div class="notification-message">
+            <i class="bi bi-chat-quote"></i>
+            ${notification.message}
+          </div>` : 
+          ''
+        }
+      </div>
+    `;
+  }).join('');
 }
 
 function getNotificationTypeInfo(type) {

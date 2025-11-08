@@ -683,12 +683,11 @@ class DiaryNotificationAdmin(admin.ModelAdmin):
     """日記通知設定管理"""
     
     list_display = (
-        'id', 'diary_link', 'notification_type_badge', 
-        'is_active_badge', 'target_price', 'remind_at', 
-        'frequency', 'last_sent', 'created_at'
+        'id', 'diary_link', 'is_active_badge', 
+        'remind_at', 'last_sent', 'created_at'
     )
     
-    list_filter = ('notification_type', 'is_active', 'frequency', 'created_at')
+    list_filter = ('is_active', 'created_at')
     
     search_fields = (
         'diary__stock_name', 'diary__stock_symbol', 
@@ -699,29 +698,17 @@ class DiaryNotificationAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('基本情報', {
-            'fields': ('id', 'diary', 'notification_type', 'is_active', 'message')
-        }),
-        ('価格アラート設定', {
-            'fields': ('target_price', 'alert_above'),
-            'classes': ('collapse',)
+            'fields': ('id', 'diary', 'is_active', 'message')
         }),
         ('リマインダー設定', {
             'fields': ('remind_at',),
-            'classes': ('collapse',)
-        }),
-        ('定期通知設定', {
-            'fields': ('frequency', 'notify_time'),
-            'classes': ('collapse',)
         }),
         ('システム情報', {
             'fields': ('last_sent', 'created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
     )
-    
-    date_hierarchy = 'created_at'
-    
-    actions = ['activate_notifications', 'deactivate_notifications']
+
     
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
