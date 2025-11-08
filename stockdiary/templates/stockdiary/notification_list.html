@@ -187,7 +187,7 @@ function renderNotificationItem(notification) {
                         </span>
                         ${getNotificationDetails(notification)}
                     </div>
-                    <button class="btn btn-sm btn-outline-danger" 
+                    <button class="btn-icon btn-danger-icon" 
                             onclick="deleteNotificationFromList('${notification.id}')">
                         <i class="bi bi-trash"></i>
                     </button>
@@ -384,7 +384,7 @@ async function deleteMultipleNotifications(notificationIds) {
 // 🔧 削除ボタンを追加するヘルパー関数
 function addDeleteButton(notificationId, containerElement) {
     const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'btn btn-sm btn-outline-danger';
+    deleteBtn.className = 'btn-icon btn-danger-icon';
     deleteBtn.innerHTML = '<i class="bi bi-trash"></i> 削除';
     deleteBtn.onclick = () => deleteNotificationFromList(notificationId);
     
@@ -409,7 +409,7 @@ function createNotificationCard(notification) {
                         ${notification.frequency ? ` - ${notification.frequency}` : ''}
                     </small>
                 </div>
-                <button class="btn btn-sm btn-outline-danger" onclick="deleteNotificationFromList('${notification.id}')">
+                <button class="btn-icon btn-danger-icon" onclick="deleteNotificationFromList('${notification.id}')">
                     <i class="bi bi-trash"></i>
                 </button>
             </div>

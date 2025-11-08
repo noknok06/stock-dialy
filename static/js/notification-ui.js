@@ -1,4 +1,3 @@
-// static/js/notification-ui.js
 class NotificationUI {
     constructor() {
       this.init();
@@ -122,35 +121,81 @@ class NotificationUI {
   
     async handleNotificationClick(logId, url) {
       try {
+        const csrfToken = this.getCookie('csrftoken');
+        
+        // 🔧 追加: CSRFトークンが取得できない場合のエラーハンドリング
+        if (!csrfToken) {
+          console.error('CSRFトークンが取得できません');
+          // トークンがない場合もURLには遷移させる
+          if (url && url !== 'undefined' && url !== 'null') {
+            window.location.href = url;
+          }
+          return;
+        }
+        
         await fetch(`/api/notifications/${logId}/read/`, {
           method: 'POST',
           headers: {
-            'X-CSRFToken': this.getCookie('csrftoken')
-          }
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json',  // 🔧 追加
+          },
+          credentials: 'same-origin'  // 🔧 追加
         });
   
-        if (url) {
+        if (url && url !== 'undefined' && url !== 'null') {
           window.location.href = url;
         }
       } catch (error) {
         console.error('通知クリックエラー:', error);
+        // エラーが発生してもURLには遷移させる
+        if (url && url !== 'undefined' && url !== 'null') {
+          window.location.href = url;
+        }
       }
     }
   
     async markAllAsRead() {
       try {
-        await fetch('/api/notifications/mark-all-read/', {
+        const csrfToken = this.getCookie('csrftoken');
+        
+        // 🔧 追加: CSRFトークンチェック
+        if (!csrfToken) {
+          console.error('CSRFトークンが取得できません');
+          if (typeof showToast === 'function') {
+            showToast('セッションが無効です。ページを再読み込みしてください。', 'warning');
+          } else {
+            alert('セッションが無効です。ページを再読み込みしてください。');
+          }
+          return;
+        }
+        
+        const response = await fetch('/api/notifications/mark-all-read/', {
           method: 'POST',
           headers: {
-            'X-CSRFToken': this.getCookie('csrftoken')
-          }
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json',  // 🔧 追加
+          },
+          credentials: 'same-origin'  // 🔧 追加
         });
+        
+        // 🔧 追加: レスポンスステータスチェック
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
   
         await this.loadNotificationLogs();
         await this.loadNotificationBadge();
-        showToast('すべての通知を既読にしました', 'success');
+        
+        if (typeof showToast === 'function') {
+          showToast('すべての通知を既読にしました', 'success');
+        }
       } catch (error) {
         console.error('一括既読エラー:', error);
+        if (typeof showToast === 'function') {
+          showToast('既読処理に失敗しました', 'danger');
+        } else {
+          alert('既読処理に失敗しました');
+        }
       }
     }
   
@@ -175,8 +220,11 @@ class NotificationUI {
       });
     }
   
+    // 🔧 改善: より堅牢なCSRFトークン取得
     getCookie(name) {
       let cookieValue = null;
+      
+      // 方法1: Cookieから取得
       if (document.cookie && document.cookie !== '') {
         const cookies = document.cookie.split(';');
         for (let i = 0; i < cookies.length; i++) {
@@ -187,9 +235,24 @@ class NotificationUI {
           }
         }
       }
+      
+      // 方法2: metaタグから取得（Cookieで取得できない場合）
+      if (!cookieValue) {
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        if (csrfMeta) {
+          cookieValue = csrfMeta.content;
+        }
+      }
+      
+      // 方法3: hiddenフィールドから取得（最終手段）
+      if (!cookieValue) {
+        const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+        if (csrfInput) {
+          cookieValue = csrfInput.value;
+        }
+      }
+      
       return cookieValue;
     }
   }
   
-  // グローバルインスタンス
-  const notificationUI = new NotificationUI();
