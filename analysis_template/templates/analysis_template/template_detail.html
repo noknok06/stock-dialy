@@ -12,30 +12,209 @@
     font-family: 'Noto Sans JP', sans-serif;
   }
   
-  .metric-card {
-    transition: all 0.2s ease;
+  /* ヘッダー */
+  .report-header {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    color: white;
+    padding: 0.75rem 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
   
-  .metric-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  .header-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
   }
   
-  .company-management-item {
-    transition: all 0.2s ease;
+  .header-subtitle {
+    font-size: 0.75rem;
+    opacity: 0.9;
   }
   
-  .company-management-item:hover {
-    background-color: rgba(0, 0, 0, 0.02);
+  .header-actions {
+    display: flex;
+    gap: 0.375rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
   }
   
-  @media print {
-    .no-print {
+  .header-actions .btn {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  /* コンパクトなセクション */
+  .section-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.375rem;
+    border-bottom: 2px solid #3b82f6;
+  }
+  
+  /* アコーディオン */
+  .accordion-button {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+    color: black;
+  }
+  
+  .accordion-body {
+    padding: 0.75rem;
+  }
+  
+  /* 企業カード - 超コンパクト */
+  .company-card-compact {
+    border-left: 3px solid;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .company-card-compact .company-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.125rem;
+  }
+  
+  .company-card-compact .company-code {
+    font-size: 0.7rem;
+    color: #64748b;
+  }
+  
+  .company-card-compact .score-badge {
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+  
+  .company-card-compact .metric-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+    border-top: 1px solid #f1f5f9;
+    font-size: 0.75rem;
+  }
+  
+  /* チャート */
+  .chart-container-mobile {
+    height: 220px;
+    margin: 0.5rem 0;
+  }
+  
+  /* タブ */
+  .nav-tabs {
+    border-bottom: 2px solid #e2e8f0;
+  }
+  
+  .nav-tabs .nav-link {
+    font-size: 0.8rem;
+    padding: 0.375rem 0.75rem;
+    border: none;
+    color: #64748b;
+  }
+  
+  .nav-tabs .nav-link.active {
+    color: #0369a1;
+    border-bottom: 2px solid #0369a1;
+    font-weight: 600;
+  }
+  
+  /* テーブル - コンパクト */
+  .table-compact {
+    font-size: 0.7rem;
+  }
+  
+  .table-compact th,
+  .table-compact td {
+    padding: 0.25rem;
+  }
+  
+  /* ベンチマークカード */
+  .benchmark-card-compact {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.375rem;
+    background: #f8fafc;
+    font-size: 0.75rem;
+  }
+  
+  /* 余白削減 */
+  .py-compact {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+  
+  .mb-compact {
+    margin-bottom: 0.75rem;
+  }
+  
+  /* デスクトップ */
+  @media (min-width: 768px) {
+    .report-header {
+      padding: 1.5rem 0;
+    }
+    
+    .header-title {
+      font-size: 1.75rem;
+    }
+    
+    .header-subtitle {
+      font-size: 1rem;
+    }
+    
+    .section-title {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .chart-container-mobile {
+      height: 400px;
+    }
+    
+    .company-card-compact {
+      padding: 1rem;
+    }
+    
+    .py-compact {
+      padding-top: 1.5rem;
+      padding-bottom: 1.5rem;
+    }
+    
+    .mb-compact {
+      margin-bottom: 1.5rem;
+    }
+  }
+  
+  /* モバイル専用 */
+  @media (max-width: 767.98px) {
+    .desktop-only {
+      display: none !important;
+    }
+    
+    .header-actions .btn-text {
       display: none;
     }
     
-    .page-break {
-      page-break-after: always;
+    /* 余白を最小限に */
+    .container {
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+    
+    .card {
+      margin-bottom: 0.75rem;
+    }
+    
+    .card-body {
+      padding: 0.75rem;
+    }
+  }
+  
+  /* 印刷 */
+  @media print {
+    .no-print {
+      display: none;
     }
   }
 </style>
@@ -44,126 +223,107 @@
 {% block content %}
 <div class="min-h-screen">
   <!-- ヘッダー -->
-  <header class="bg-gradient-to-r from-blue-900 to-blue-700 text-white py-8 shadow-lg no-print">
+  <header class="report-header no-print">
     <div class="container">
-      <div class="d-flex justify-content-between align-items-center">
-        <div>
-          <h1 class="text-4xl font-bold mb-2">{{ template.name }}</h1>
-          <p class="text-blue-100 text-lg">業種別ベンチマーク比較分析</p>
-          <p class="text-blue-200 text-sm mt-2">
-            作成日: <span id="current-date"></span>
-          </p>
-        </div>
-        <div class="d-flex gap-2">
-          <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn btn-success">
-            <i class="bi bi-building-add me-1"></i>企業管理
-          </a>
-          <a href="{% url 'analysis_template:update' template.pk %}" class="btn btn-info">
-            <i class="bi bi-pencil me-1"></i>編集
-          </a>
-          <a href="{% url 'analysis_template:metrics_edit' template.pk %}" class="btn btn-warning">
-            <i class="bi bi-bar-chart me-1"></i>指標編集
-          </a>
-          <a href="{% url 'analysis_template:list' %}" class="btn btn-secondary">
-            <i class="bi bi-arrow-left me-1"></i>一覧へ
-          </a>
-        </div>
+      <h1 class="header-title">{{ template.name }}</h1>
+      <p class="header-subtitle">業種別ベンチマーク比較分析</p>
+      <div class="header-actions">
+        <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn btn-success btn-sm">
+          <i class="bi bi-building-add"></i>
+          <span class="btn-text ms-1">企業</span>
+        </a>
+        <a href="{% url 'analysis_template:metrics_edit' template.pk %}" class="btn btn-warning btn-sm">
+          <i class="bi bi-bar-chart"></i>
+          <span class="btn-text ms-1">指標</span>
+        </a>
+        <a href="{% url 'analysis_template:list' %}" class="btn btn-secondary btn-sm">
+          <i class="bi bi-arrow-left"></i>
+          <span class="btn-text ms-1">一覧</span>
+        </a>
       </div>
     </div>
   </header>
 
   <!-- メインコンテンツ -->
-  <main class="container py-4">
+  <main class="container py-compact">
     
-    <!-- ⭐ 企業管理セクション（印刷時は非表示） -->
-    <section class="mb-5 no-print">
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-          <h3 class="mb-0">
-            <i class="bi bi-building me-2"></i>
-            登録企業一覧
-            <span class="badge bg-primary ms-2" id="company-count">0</span>
-          </h3>
-          <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn btn-sm btn-primary">
-            <i class="bi bi-plus-circle me-1"></i>企業を追加
-          </a>
+    <!-- 企業サマリー（コンパクト版） -->
+    <section class="mb-compact">
+      <h2 class="section-title">企業一覧</h2>
+      <div id="company-summary-compact">
+        <!-- JavaScriptで生成 -->
+      </div>
+    </section>
+
+    <!-- タブナビゲーション -->
+    <ul class="nav nav-tabs mb-3" role="tablist">
+      <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-chart">
+          <i class="bi bi-pie-chart"></i> チャート
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-details">
+          <i class="bi bi-list-ul"></i> 詳細
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-benchmark">
+          <i class="bi bi-graph-up"></i> 業種平均
+        </button>
+      </li>
+    </ul>
+
+    <!-- タブコンテンツ -->
+    <div class="tab-content">
+      <!-- チャートタブ -->
+      <div class="tab-pane fade show active" id="tab-chart">
+        <div class="card border-0 shadow-sm mb-compact">
+          <div class="card-body p-2">
+            <h6 class="mb-2" style="font-size: 0.875rem;">8指標レーダーチャート</h6>
+            <div class="chart-container-mobile">
+              <canvas id="radar-chart"></canvas>
+            </div>
+          </div>
         </div>
-        <div class="card-body">
-          <div class="row g-3" id="company-management-list">
-            <!-- JavaScriptで動的に生成 -->
+        
+        <!-- 比較テーブル（折りたたみ） -->
+        <div class="accordion" id="accordionComparison">
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTable">
+                <i class="bi bi-table me-2"></i>詳細比較表
+              </button>
+            </h2>
+            <div id="collapseTable" class="accordion-collapse collapse" data-bs-parent="#accordionComparison">
+              <div class="accordion-body">
+                <div class="table-responsive">
+                  <table class="table table-compact table-hover mb-0" id="comparison-table">
+                    <!-- JavaScriptで生成 -->
+                  </table>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </section>
-    
-    <!-- サマリーセクション -->
-    <section class="mb-5">
-      <h2 class="text-3xl font-bold text-slate-800 mb-4 pb-2 border-bottom border-primary border-4">
-        分析対象企業サマリー
-      </h2>
-      <div class="row g-4" id="company-summary">
-        <!-- 企業カードがJavaScriptで挿入されます -->
-      </div>
-    </section>
 
-    <!-- 企業別詳細分析 -->
-    <section class="mb-5">
-      <h2 class="text-3xl font-bold text-slate-800 mb-4 pb-2 border-bottom border-primary border-4">
-        企業別詳細分析
-      </h2>
-      <div id="company-details">
-        <!-- 企業詳細がJavaScriptで挿入されます -->
-      </div>
-    </section>
-
-    <!-- 比較分析 -->
-    <section class="mb-5">
-      <h2 class="text-3xl font-bold text-slate-800 mb-4 pb-2 border-bottom border-primary border-4">
-        企業間比較
-      </h2>
-      
-      <!-- レーダーチャート -->
-      <div class="card mb-4">
-        <div class="card-body p-4">
-          <h3 class="text-2xl font-bold text-slate-800 mb-4">主要指標レーダーチャート</h3>
-          <div class="mx-auto" style="max-width: 800px;">
-            <canvas id="radar-chart"></canvas>
-          </div>
+      <!-- 詳細タブ -->
+      <div class="tab-pane fade" id="tab-details">
+        <div class="accordion" id="accordionDetails">
+          <!-- JavaScriptで企業ごとのアコーディオンを生成 -->
         </div>
       </div>
 
-      <!-- 比較テーブル -->
-      <div class="card">
-        <div class="card-body p-4">
-          <h3 class="text-2xl font-bold text-slate-800 mb-4">指標比較表</h3>
-          <div class="table-responsive">
-            <table class="table" id="comparison-table">
-              <!-- テーブルがJavaScriptで挿入されます -->
-            </table>
-          </div>
+      <!-- 業種平均タブ -->
+      <div class="tab-pane fade" id="tab-benchmark">
+        <div id="benchmark-list">
+          <!-- JavaScriptで生成 -->
         </div>
       </div>
-    </section>
-
-    <!-- 業種別ベンチマーク -->
-    <section class="mb-5">
-      <h2 class="text-3xl font-bold text-slate-800 mb-4 pb-2 border-bottom border-primary border-4">
-        業種別ベンチマーク
-      </h2>
-      <div class="row g-4" id="industry-benchmarks">
-        <!-- ベンチマークカードがJavaScriptで挿入されます -->
-      </div>
-    </section>
+    </div>
 
   </main>
-
-  <!-- フッター -->
-  <footer class="bg-slate-800 text-slate-300 py-4 mt-5">
-    <div class="container text-center">
-      <p class="text-sm">本レポートは情報提供を目的としており、投資助言を行うものではありません。</p>
-      <p class="text-xs mt-2">データは業種別ベンチマークに基づいて評価されています。</p>
-    </div>
-  </footer>
 </div>
 
 <script>
@@ -172,192 +332,143 @@ const companiesData = {{ companies_data|safe }};
 const benchmarksData = {{ benchmarks_data|safe }};
 const templateId = {{ template.pk }};
 
+// デバッグモード
+const DEBUG_MODE = new URLSearchParams(window.location.search).get('debug') === '1';
+
+// ========================================
 // ユーティリティ関数
+// ========================================
 function formatNumber(num, decimals = 1) {
-  if (num === null || num === undefined) return '-';
-  return num.toFixed(decimals);
+  if (num === null || num === undefined || isNaN(num)) return '-';
+  return Number(num).toFixed(decimals);
 }
 
-function formatCurrency(num) {
-  if (num === null || num === undefined) return '-';
-  return num.toLocaleString('ja-JP') + '億円';
+function getScoreColor(score) {
+  if (score >= 70) return 'success';
+  if (score >= 50) return 'primary';
+  return 'warning';
 }
 
-function getEvaluation(value, benchmark) {
-  if (!value || !benchmark) return { level: 'unknown', label: '不明', color: 'slate' };
-  
-  if (benchmark.excellent && value >= benchmark.excellent) {
-    return { level: 'excellent', label: '優良', color: 'emerald' };
-  } else if (benchmark.poor && value <= benchmark.poor) {
-    return { level: 'poor', label: '要注意', color: 'red' };
-  } else if (benchmark.upper && value >= benchmark.upper) {
-    return { level: 'good', label: '良好', color: 'blue' };
-  } else if (benchmark.lower && value <= benchmark.lower) {
-    return { level: 'below', label: '平均以下', color: 'amber' };
-  } else {
-    return { level: 'average', label: '平均的', color: 'slate' };
-  }
-}
-
+// ========================================
+// スコア計算
+// ========================================
 function calculateScore(company) {
   const industryCode = company.industry_code_33;
   const benchmark = benchmarksData[industryCode];
-  
-  if (!benchmark) return 50;
-  
   const metrics = ['roe', 'roa', 'operating_margin'];
   let totalScore = 0;
   let count = 0;
   
-  metrics.forEach(metric => {
-    const value = company.metrics[metric];
-    const benchmarkData = benchmark[metric];
+  if (benchmark) {
+    metrics.forEach(metric => {
+      const value = company.metrics[metric];
+      const benchmarkData = benchmark[metric];
+      if (value !== null && value !== undefined && benchmarkData && benchmarkData.avg > 0) {
+        const score = (Number(value) / Number(benchmarkData.avg)) * 50;
+        totalScore += Math.max(0, Math.min(100, score));
+        count++;
+      }
+    });
+  }
+  
+  if (count === 0) {
+    const templateAverages = {};
+    metrics.forEach(metric => {
+      const values = companiesData
+        .map(c => c.metrics[metric])
+        .filter(v => v !== null && v !== undefined && !isNaN(v))
+        .map(v => Number(v));
+      if (values.length > 0) {
+        templateAverages[metric] = values.reduce((a, b) => a + b, 0) / values.length;
+      }
+    });
     
-    if (value && benchmarkData && benchmarkData.avg > 0) {
-      const score = (value / benchmarkData.avg) * 50;
-      totalScore += Math.max(0, Math.min(100, score));
-      count++;
-    }
-  });
+    metrics.forEach(metric => {
+      const value = company.metrics[metric];
+      const avg = templateAverages[metric];
+      if (value !== null && value !== undefined && avg && avg > 0) {
+        const score = (Number(value) / avg) * 50;
+        totalScore += Math.max(0, Math.min(100, score));
+        count++;
+      }
+    });
+  }
   
   return count > 0 ? totalScore / count : 50;
 }
 
-// ⭐ 企業管理リストを生成
-function generateCompanyManagementList() {
-  const container = document.getElementById('company-management-list');
-  const countBadge = document.getElementById('company-count');
+// ========================================
+// 正規化関数
+// ========================================
+function normalizeValue(value, metricKey, benchmark) {
+  if (value === null || value === undefined || isNaN(value)) return null;
   
+  const numValue = Number(value);
+  
+  if (benchmark && benchmark.avg && benchmark.avg > 0) {
+    let score = (numValue / Number(benchmark.avg)) * 50;
+    if (metricKey === 'pbr' || metricKey === 'per') {
+      score = 100 - score;
+    }
+    return Math.max(0, Math.min(100, score));
+  }
+  
+  const values = companiesData
+    .map(c => c.metrics[metricKey])
+    .filter(v => v !== null && v !== undefined && !isNaN(v))
+    .map(v => Number(v));
+  
+  if (values.length === 0) return null;
+  
+  const avg = values.reduce((a, b) => a + b, 0) / values.length;
+  if (avg === 0) return null;
+  
+  let score = (numValue / avg) * 50;
+  if (metricKey === 'pbr' || metricKey === 'per') {
+    score = 100 - score;
+  }
+  
+  return Math.max(0, Math.min(100, score));
+}
+
+// ========================================
+// コンパクト企業サマリー生成
+// ========================================
+function generateCompactSummary() {
+  const container = document.getElementById('company-summary-compact');
   if (!container) return;
   
   container.innerHTML = '';
-  countBadge.textContent = companiesData.length;
   
   if (companiesData.length === 0) {
-    container.innerHTML = `
-      <div class="col-12 text-center text-muted py-4">
-        <i class="bi bi-inbox" style="font-size: 3rem;"></i>
-        <p class="mt-3">企業が登録されていません</p>
-        <a href="/analysis_template/${templateId}/company-select/" class="btn btn-primary mt-2">
-          <i class="bi bi-plus-circle me-1"></i>企業を追加
-        </a>
-      </div>
-    `;
+    container.innerHTML = '<div class="alert alert-info small">企業が登録されていません</div>';
     return;
   }
-  
-  companiesData.forEach(company => {
-    const col = document.createElement('div');
-    col.className = 'col-md-6 col-lg-4';
-    col.innerHTML = `
-      <div class="company-management-item card h-100">
-        <div class="card-body d-flex justify-content-between align-items-start">
-          <div class="flex-grow-1">
-            <h6 class="mb-1">${company.name}</h6>
-            <small class="text-muted">${company.code}</small>
-            <div class="mt-2">
-              <span class="badge bg-light text-dark">${company.industry_name_33 || '-'}</span>
-            </div>
-          </div>
-          <button class="btn btn-icon btn-danger-icon" 
-                  onclick="removeCompany('${company.code}', '${company.name}')"
-                  title="この企業を削除">
-            <i class="bi bi-trash"></i>
-          </button>
-        </div>
-      </div>
-    `;
-    container.appendChild(col);
-  });
-}
-
-// ⭐ 企業を削除
-function removeCompany(code, name) {
-  if (!confirm(`${name} (${code}) をレポートから削除しますか？\n\n※この企業の指標データも削除されます。`)) {
-    return;
-  }
-  
-  fetch(`/analysis_template/${templateId}/api/company/remove/`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': getCookie('csrftoken')
-    },
-    body: JSON.stringify({ company_code: code })
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      alert('企業を削除しました');
-      location.reload();
-    } else {
-      alert('削除に失敗しました: ' + (data.error || '不明なエラー'));
-    }
-  })
-  .catch(error => {
-    console.error('Error:', error);
-    alert('削除に失敗しました');
-  });
-}
-
-// CSRFトークンを取得
-function getCookie(name) {
-  let cookieValue = null;
-  if (document.cookie && document.cookie !== '') {
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i].trim();
-      if (cookie.substring(0, name.length + 1) === (name + '=')) {
-        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-        break;
-      }
-    }
-  }
-  return cookieValue;
-}
-
-// 現在日付を設定
-document.getElementById('current-date').textContent = new Date().toLocaleDateString('ja-JP');
-
-// サマリーカードを生成
-function generateSummaryCards() {
-  const container = document.getElementById('company-summary');
-  container.innerHTML = '';
   
   companiesData.forEach(company => {
     const score = calculateScore(company);
-    const scoreColor = score >= 70 ? 'emerald' : score >= 50 ? 'blue' : 'amber';
+    const colorClass = getScoreColor(score);
     
     const card = document.createElement('div');
-    card.className = 'col-md-6 col-lg-4';
+    card.className = `company-card-compact border-${colorClass}`;
     card.innerHTML = `
-      <div class="metric-card card border-top border-${scoreColor} border-4">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-start mb-3">
-            <div>
-              <h5 class="card-title">${company.name}</h5>
-              <p class="text-muted small mb-0">${company.code} / ${company.industry_name_33}</p>
-            </div>
-            <div class="text-end">
-              <div class="fs-3 fw-bold text-${scoreColor}">${score.toFixed(1)}</div>
-              <div class="text-xs text-muted">総合スコア</div>
-            </div>
-          </div>
-          <div class="mt-3">
-            <div class="d-flex justify-content-between mb-2">
-              <span class="text-muted small">ROE</span>
-              <span class="fw-semibold">${formatNumber(company.metrics.roe)}%</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <span class="text-muted small">営業利益率</span>
-              <span class="fw-semibold">${formatNumber(company.metrics.operating_margin)}%</span>
-            </div>
-            <div class="d-flex justify-content-between">
-              <span class="text-muted small">時価総額</span>
-              <span class="fw-semibold">${formatCurrency(company.metrics.market_cap)}</span>
-            </div>
-          </div>
+      <div class="d-flex justify-content-between align-items-start">
+        <div class="flex-grow-1">
+          <div class="company-name">${company.name}</div>
+          <div class="company-code">${company.code}</div>
         </div>
+        <div class="text-end">
+          <div class="score-badge text-${colorClass}">${score.toFixed(0)}</div>
+          <small style="font-size: 0.65rem; color: #94a3b8;">スコア</small>
+        </div>
+      </div>
+      <div class="metric-row">
+        <span class="text-muted">ROE</span>
+        <strong>${formatNumber(company.metrics.roe)}%</strong>
+      </div>
+      <div class="metric-row">
+        <span class="text-muted">営業利益率</span>
+        <strong>${formatNumber(company.metrics.operating_margin)}%</strong>
       </div>
     `;
     
@@ -365,107 +476,117 @@ function generateSummaryCards() {
   });
 }
 
-// 企業詳細を生成
-function generateCompanyDetails() {
-  const container = document.getElementById('company-details');
+// ========================================
+// 企業詳細アコーディオン生成
+// ========================================
+function generateDetailsAccordion() {
+  const container = document.getElementById('accordionDetails');
+  if (!container) return;
+  
   container.innerHTML = '';
   
   companiesData.forEach((company, index) => {
-    const industryCode = company.industry_code_33;
-    const benchmark = benchmarksData[industryCode];
+    const benchmark = benchmarksData[company.industry_code_33];
     
-    const pageBreak = index < companiesData.length - 1 ? 'page-break' : '';
-    
-    const detail = document.createElement('div');
-    detail.className = `card mb-4 ${pageBreak}`;
-    detail.innerHTML = `
-      <div class="card-body p-4">
-        <div class="border-bottom pb-3 mb-4">
-          <h3 class="fs-4 fw-bold">${company.name}</h3>
-          <p class="text-muted mb-0">${company.code} / ${company.industry_name_33}</p>
-        </div>
-        
-        <!-- 収益性指標 -->
-        <div class="mb-4">
-          <h4 class="fs-5 fw-bold mb-3 d-flex align-items-center">
-            <span class="bg-primary" style="width: 4px; height: 24px; margin-right: 12px;"></span>
-            収益性指標
-          </h4>
-          <div class="row g-3">
-            ${generateMetricCard('ROE', company.metrics.roe, '%', benchmark?.roe)}
-            ${generateMetricCard('ROA', company.metrics.roa, '%', benchmark?.roa)}
-            ${generateMetricCard('営業利益率', company.metrics.operating_margin, '%', benchmark?.operating_margin)}
+    const item = document.createElement('div');
+    item.className = 'accordion-item';
+    item.innerHTML = `
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#detail${index}">
+          ${company.name} <small class="ms-2 text-muted">${company.code}</small>
+        </button>
+      </h2>
+      <div id="detail${index}" class="accordion-collapse collapse" data-bs-parent="#accordionDetails">
+        <div class="accordion-body">
+          <div class="mb-2">
+            <strong style="font-size: 0.8rem;">収益性</strong>
+            ${generateMetricBadge('ROE', company.metrics.roe, '%', benchmark?.roe)}
+            ${generateMetricBadge('ROA', company.metrics.roa, '%', benchmark?.roa)}
+            ${generateMetricBadge('営業利益率', company.metrics.operating_margin, '%', benchmark?.operating_margin)}
           </div>
-        </div>
-        
-        <!-- バリュエーション指標 -->
-        <div class="mb-4">
-          <h4 class="fs-5 fw-bold mb-3 d-flex align-items-center">
-            <span class="bg-purple" style="width: 4px; height: 24px; margin-right: 12px;"></span>
-            バリュエーション指標
-          </h4>
-          <div class="row g-3">
-            ${generateMetricCard('PER', company.metrics.per, '倍', benchmark?.per, true)}
-            ${generateMetricCard('PBR', company.metrics.pbr, '倍', benchmark?.pbr)}
-            ${generateMetricCard('配当利回り', company.metrics.dividend_yield, '%')}
+          <div class="mb-2">
+            <strong style="font-size: 0.8rem;">バリュエーション</strong>
+            ${generateMetricBadge('PER', company.metrics.per, '倍', benchmark?.per)}
+            ${generateMetricBadge('PBR', company.metrics.pbr, '倍', benchmark?.pbr)}
+            ${generateMetricBadge('配当利回り', company.metrics.dividend_yield, '%', benchmark?.dividend_yield)}
           </div>
-        </div>
-        
-        <!-- 財務健全性指標 -->
-        <div>
-          <h4 class="fs-5 fw-bold mb-3 d-flex align-items-center">
-            <span class="bg-success" style="width: 4px; height: 24px; margin-right: 12px;"></span>
-            財務健全性指標
-          </h4>
-          <div class="row g-3">
-            ${generateMetricCard('自己資本比率', company.metrics.equity_ratio, '%')}
-            ${generateMetricCard('負債比率', company.metrics.debt_equity_ratio, '%', null, true)}
-            ${generateMetricCard('時価総額', company.metrics.market_cap, '億円')}
+          <div>
+            <strong style="font-size: 0.8rem;">財務健全性</strong>
+            ${generateMetricBadge('自己資本比率', company.metrics.equity_ratio, '%', benchmark?.equity_ratio)}
           </div>
         </div>
       </div>
     `;
     
-    container.appendChild(detail);
+    container.appendChild(item);
   });
 }
 
-function generateMetricCard(label, value, unit, benchmarkData, lowerIsBetter = false) {
-  let evaluation = { level: 'average', label: '平均的', color: 'secondary' };
-  let comparisonText = '';
-  
-  if (benchmarkData && value) {
-    evaluation = getEvaluation(value, benchmarkData);
-    const diff = value - benchmarkData.avg;
-    const diffPercent = (diff / benchmarkData.avg * 100).toFixed(1);
+function generateMetricBadge(label, value, unit, benchmark) {
+  let comparison = '';
+  if (benchmark && value) {
+    const diff = Number(value) - Number(benchmark.avg);
     const arrow = diff > 0 ? '↑' : '↓';
-    comparisonText = `
-      <div class="text-xs text-muted mt-2">
-        業種平均: ${formatNumber(benchmarkData.avg)}${unit}
-        <span class="${diff > 0 ? 'text-primary' : 'text-danger'}">${arrow} ${Math.abs(diffPercent)}%</span>
-      </div>
-    `;
+    const color = diff > 0 ? 'text-success' : 'text-danger';
+    comparison = `<small class="${color} ms-1">${arrow}${Math.abs(diff).toFixed(1)}</small>`;
   }
   
   return `
-    <div class="col-md-4">
-      <div class="card rounded p-3 border-start border-${evaluation.color} border-4">
-        <div class="text-muted small mb-1">${label}</div>
-        <div class="fs-4 fw-bold">${formatNumber(value, 1)}${unit}</div>
-        <div class="mt-2">
-          <span class="badge bg-${evaluation.color}-subtle text-${evaluation.color}">
-            ${evaluation.label}
-          </span>
-        </div>
-        ${comparisonText}
-      </div>
+    <div class="d-flex justify-content-between py-1 border-bottom" style="font-size: 0.75rem;">
+      <span class="text-muted">${label}</span>
+      <span><strong>${formatNumber(value)}${unit}</strong>${comparison}</span>
     </div>
   `;
 }
 
-// 比較テーブルを生成
+// ========================================
+// 業種平均リスト生成
+// ========================================
+function generateBenchmarkList() {
+  const container = document.getElementById('benchmark-list');
+  if (!container) return;
+  
+  if (Object.keys(benchmarksData).length === 0) {
+    container.innerHTML = '<div class="alert alert-warning small">業種別ベンチマークが未登録です</div>';
+    return;
+  }
+  
+  container.innerHTML = '';
+  
+  Object.entries(benchmarksData).forEach(([code, benchmark]) => {
+    const card = document.createElement('div');
+    card.className = 'benchmark-card-compact';
+    card.innerHTML = `
+      <strong class="d-block mb-2">${benchmark.name}</strong>
+      ${generateBenchmarkRow('ROE', benchmark.roe)}
+      ${generateBenchmarkRow('ROA', benchmark.roa)}
+      ${generateBenchmarkRow('営業利益率', benchmark.operating_margin)}
+    `;
+    container.appendChild(card);
+  });
+}
+
+function generateBenchmarkRow(label, data) {
+  if (!data) return '';
+  return `
+    <div class="d-flex justify-content-between py-1">
+      <span>${label}</span>
+      <span><strong>${formatNumber(data.avg)}</strong> <small class="text-muted">(優良:${formatNumber(data.excellent)})</small></span>
+    </div>
+  `;
+}
+
+// ========================================
+// 比較テーブル生成
+// ========================================
 function generateComparisonTable() {
   const table = document.getElementById('comparison-table');
+  if (!table) return;
+  
+  if (companiesData.length === 0) {
+    table.innerHTML = '<tbody><tr><td class="text-center py-3 small">企業が登録されていません</td></tr></tbody>';
+    return;
+  }
   
   const metrics = [
     { key: 'roe', label: 'ROE', unit: '%' },
@@ -473,42 +594,21 @@ function generateComparisonTable() {
     { key: 'operating_margin', label: '営業利益率', unit: '%' },
     { key: 'per', label: 'PER', unit: '倍' },
     { key: 'pbr', label: 'PBR', unit: '倍' },
-    { key: 'dividend_yield', label: '配当利回り', unit: '%' },
-    { key: 'equity_ratio', label: '自己資本比率', unit: '%' }
+    { key: 'dividend_yield', label: '配当', unit: '%' }
   ];
   
-  let html = `
-    <thead class="table-dark">
-      <tr>
-        <th class="text-start fw-semibold">指標</th>
-        ${companiesData.map(c => `<th class="text-center fw-semibold">${c.name}</th>`).join('')}
-      </tr>
-    </thead>
-    <tbody>
-  `;
+  let html = '<thead><tr><th>指標</th>';
+  companiesData.forEach(c => {
+    html += `<th style="font-size: 0.65rem;">${c.name}</th>`;
+  });
+  html += '</tr></thead><tbody>';
   
-  metrics.forEach((metric, index) => {
-    const bgColor = index % 2 === 0 ? '' : 'table-light';
-    html += `<tr class="${bgColor}">`;
-    html += `<td class="fw-semibold">${metric.label}</td>`;
-    
-    const values = companiesData.map(c => c.metrics[metric.key] || 0);
-    const max = Math.max(...values);
-    const min = Math.min(...values);
-    
+  metrics.forEach(metric => {
+    html += '<tr><td class="fw-semibold">' + metric.label + '</td>';
     companiesData.forEach(company => {
       const value = company.metrics[metric.key];
-      let cellClass = '';
-      
-      if (value === max) {
-        cellClass = 'text-success fw-bold bg-success-subtle';
-      } else if (value === min) {
-        cellClass = 'text-danger bg-danger-subtle';
-      }
-      
-      html += `<td class="text-center ${cellClass}">${formatNumber(value)}${metric.unit}</td>`;
+      html += `<td class="text-center">${formatNumber(value)}${metric.unit}</td>`;
     });
-    
     html += '</tr>';
   });
   
@@ -516,9 +616,17 @@ function generateComparisonTable() {
   table.innerHTML = html;
 }
 
-// レーダーチャートを生成
+// ========================================
+// レーダーチャート生成
+// ========================================
 function generateRadarChart() {
-  const ctx = document.getElementById('radar-chart').getContext('2d');
+  const ctx = document.getElementById('radar-chart');
+  if (!ctx) return;
+  
+  if (companiesData.length === 0) {
+    ctx.parentElement.innerHTML = '<div class="alert alert-info small">企業が登録されていません</div>';
+    return;
+  }
   
   const datasets = companiesData.map((company, index) => {
     const colors = [
@@ -532,29 +640,34 @@ function generateRadarChart() {
     const color = colors[index % colors.length];
     const benchmark = benchmarksData[company.industry_code_33];
     
+    const data = [
+      normalizeValue(company.metrics.roe, 'roe', benchmark?.roe),
+      normalizeValue(company.metrics.roa, 'roa', benchmark?.roa),
+      normalizeValue(company.metrics.operating_margin, 'operating_margin', benchmark?.operating_margin),
+      normalizeValue(company.metrics.revenue_growth, 'revenue_growth', benchmark?.revenue_growth),
+      normalizeValue(company.metrics.profit_growth, 'profit_growth', benchmark?.profit_growth),
+      normalizeValue(company.metrics.equity_ratio, 'equity_ratio', benchmark?.equity_ratio),
+      normalizeValue(company.metrics.dividend_yield, 'dividend_yield', benchmark?.dividend_yield),
+      normalizeValue(company.metrics.pbr, 'pbr', benchmark?.pbr)
+    ];
+    
     return {
       label: company.name,
-      data: [
-        benchmark?.roe?.avg ? (company.metrics.roe / benchmark.roe.avg) * 50 : 50,
-        benchmark?.roa?.avg ? (company.metrics.roa / benchmark.roa.avg) * 50 : 50,
-        benchmark?.operating_margin?.avg ? (company.metrics.operating_margin / benchmark.operating_margin.avg) * 50 : 50,
-        company.metrics.equity_ratio || 50,
-        company.metrics.revenue_growth > 0 ? Math.min(company.metrics.revenue_growth * 5, 100) : 0
-      ],
+      data: data,
       backgroundColor: color.bg,
       borderColor: color.border,
-      borderWidth: 2,
+      borderWidth: 1.5,
       pointBackgroundColor: color.border,
       pointBorderColor: '#fff',
-      pointHoverBackgroundColor: '#fff',
-      pointHoverBorderColor: color.border
+      pointRadius: 2,
+      pointHoverRadius: 4
     };
   });
   
   new Chart(ctx, {
     type: 'radar',
     data: {
-      labels: ['ROE', 'ROA', '営業利益率', '自己資本比率', '売上成長性'],
+      labels: ['ROE', 'ROA', '営業\n利益率', '売上\n成長率', '利益\n成長率', '自己資本\n比率', '配当\n利回り', 'PBR'],
       datasets: datasets
     },
     options: {
@@ -565,7 +678,11 @@ function generateRadarChart() {
           beginAtZero: true,
           max: 100,
           ticks: {
-            stepSize: 20
+            stepSize: 25,
+            font: { size: 8 }
+          },
+          pointLabels: {
+            font: { size: 9 }
           }
         }
       },
@@ -573,10 +690,9 @@ function generateRadarChart() {
         legend: {
           position: 'bottom',
           labels: {
-            padding: 15,
-            font: {
-              size: 12
-            }
+            padding: 6,
+            font: { size: 9 },
+            boxWidth: 10
           }
         }
       }
@@ -584,71 +700,15 @@ function generateRadarChart() {
   });
 }
 
-// 業種別ベンチマークを生成
-function generateIndustryBenchmarks() {
-  const container = document.getElementById('industry-benchmarks');
-  container.innerHTML = '';
-  
-  Object.entries(benchmarksData).forEach(([code, benchmark]) => {
-    const card = document.createElement('div');
-    card.className = 'col-md-6';
-    card.innerHTML = `
-      <div class="card">
-        <div class="card-body p-4">
-          <h3 class="fs-5 fw-bold mb-3 pb-2 border-bottom border-primary">
-            ${benchmark.name}
-          </h3>
-          <div class="d-flex flex-column gap-3">
-            ${generateBenchmarkRow('ROE', benchmark.roe)}
-            ${generateBenchmarkRow('ROA', benchmark.roa)}
-            ${generateBenchmarkRow('営業利益率', benchmark.operating_margin)}
-            ${generateBenchmarkRow('PER', benchmark.per)}
-            ${generateBenchmarkRow('PBR', benchmark.pbr)}
-          </div>
-        </div>
-      </div>
-    `;
-    
-    container.appendChild(card);
-  });
-}
-
-function generateBenchmarkRow(label, data) {
-  if (!data) return '';
-  
-  return `
-    <div class="card rounded p-3">
-      <div class="fw-semibold mb-2">${label}</div>
-      <div class="row g-2 small">
-        <div class="col-6">
-          <span class="text-muted">業種平均:</span>
-          <span class="fw-semibold ms-1">${formatNumber(data.avg)}</span>
-        </div>
-        <div class="col-6">
-          <span class="text-muted">優良基準:</span>
-          <span class="fw-semibold ms-1 text-success">${formatNumber(data.excellent)}</span>
-        </div>
-        <div class="col-6">
-          <span class="text-muted">上位25%:</span>
-          <span class="fw-semibold ms-1">${formatNumber(data.upper)}</span>
-        </div>
-        <div class="col-6">
-          <span class="text-muted">下位25%:</span>
-          <span class="fw-semibold ms-1">${formatNumber(data.lower)}</span>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
+// ========================================
 // 初期化
+// ========================================
 document.addEventListener('DOMContentLoaded', () => {
-  generateCompanyManagementList();
-  generateSummaryCards();
-  generateCompanyDetails();
+  generateCompactSummary();
+  generateDetailsAccordion();
+  generateBenchmarkList();
   generateComparisonTable();
   generateRadarChart();
-  generateIndustryBenchmarks();
 });
 </script>
 {% endblock %}
