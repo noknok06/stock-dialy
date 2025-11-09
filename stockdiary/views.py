@@ -23,12 +23,10 @@ from django.urls import reverse
 from django.core.exceptions import ValidationError
 
 from utils.mixins import ObjectNotFoundRedirectMixin
-from .utils import process_analysis_values, calculate_analysis_completion_rate
 from .models import StockDiary, DiaryNote
 from .models import Transaction, StockSplit
 from .forms import TransactionForm, StockSplitForm, TradeUploadForm
 from .forms import StockDiaryForm, DiaryNoteForm
-from analysis_template.models import AnalysisTemplate, AnalysisItem, DiaryAnalysisValue
 from company_master.models import CompanyMaster
 from tags.models import Tag
 from django.views.generic import FormView
@@ -572,7 +570,7 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
     
     def get_queryset(self):
         return StockDiary.objects.filter(user=self.request.user).select_related('user').prefetch_related(
-            'notes', 'tags', 'checklist', 'analysis_values__analysis_item',
+            'notes', 'tags', 'checklist',
             'transactions', 'stock_splits'
         )
     
@@ -613,9 +611,6 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         # 継続記録
         context['note_form'] = DiaryNoteForm(initial={'date': timezone.now().date()})
         context['notes'] = self.object.notes.all().order_by('-date')
-        
-        # 分析テンプレート情報
-        context['analysis_templates_info'] = self._get_analysis_templates_info()
         
         # 信用倍率データ
         if MARGIN_TRADING_AVAILABLE:
@@ -663,100 +658,6 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         
         return context
     
-    def _get_analysis_templates_info(self):
-        """分析テンプレート情報を取得"""
-        from collections import defaultdict
-        from analysis_template.models import DiaryAnalysisValue
-        
-        diary = self.object
-        analysis_values = DiaryAnalysisValue.objects.filter(
-            diary=diary
-        ).select_related('analysis_item__template').order_by('analysis_item__order')
-        
-        if not analysis_values.exists():
-            return []
-        
-        templates_data = defaultdict(lambda: {
-            'template': None,
-            'total_items': 0,
-            'completed_items': 0,
-            'completion_rate': 0,
-            'values': [],
-            'items_with_values': []
-        })
-        
-        for value in analysis_values:
-            template = value.analysis_item.template
-            template_id = template.id
-            
-            if templates_data[template_id]['template'] is None:
-                templates_data[template_id]['template'] = template
-                templates_data[template_id]['total_items'] = template.items.count()
-            
-            templates_data[template_id]['values'].append(value)
-            
-            item_with_value = {
-                'item': value.analysis_item,
-                'value': value,
-                'display_value': self._get_analysis_display_value(value),
-                'is_completed': self._is_analysis_item_completed(value)
-            }
-            templates_data[template_id]['items_with_values'].append(item_with_value)
-            
-            if item_with_value['is_completed']:
-                templates_data[template_id]['completed_items'] += 1
-        
-        result = []
-        for template_data in templates_data.values():
-            if template_data['total_items'] > 0:
-                completion_rate = (template_data['completed_items'] / template_data['total_items']) * 100
-                template_data['completion_rate'] = round(completion_rate, 1)
-            result.append(template_data)
-        
-        result.sort(key=lambda x: x['template'].name)
-        return result
-    
-    def _get_analysis_display_value(self, analysis_value):
-        """分析値の表示用テキストを取得"""
-        item = analysis_value.analysis_item
-        
-        if item.item_type == 'boolean':
-            return "はい" if analysis_value.boolean_value else "いいえ"
-        elif item.item_type == 'boolean_with_value':
-            result = "✓" if analysis_value.boolean_value else "✗"
-            if analysis_value.boolean_value:
-                if analysis_value.number_value is not None:
-                    result += f" {analysis_value.number_value:.2f}"  # 小数点2桁にフォーマット
-                    if analysis_value.analysis_item.value_label:
-                        result += f" {analysis_value.analysis_item.value_label}"
-                elif analysis_value.text_value:
-                    result += f" {analysis_value.text_value}"
-            return result
-        elif item.item_type == 'number':
-            return f"{analysis_value.number_value:.2f}" if analysis_value.number_value is not None else "-"  # 小数点2桁にフォーマット
-        elif item.item_type == 'select':
-            return analysis_value.text_value if analysis_value.text_value else "-"
-        elif item.item_type == 'text':
-            return analysis_value.text_value if analysis_value.text_value else "-"
-        
-        return "-"
-
-    
-    def _is_analysis_item_completed(self, analysis_value):
-        """分析項目が完了しているかを判定"""
-        item = analysis_value.analysis_item
-        
-        if item.item_type == 'boolean':
-            return analysis_value.boolean_value is True
-        elif item.item_type == 'boolean_with_value':
-            return analysis_value.boolean_value is True
-        elif item.item_type == 'number':
-            return analysis_value.number_value is not None
-        elif item.item_type in ['text', 'select']:
-            return bool(analysis_value.text_value and analysis_value.text_value.strip())
-        
-        return False
-
 class StockDiaryCreateView(LoginRequiredMixin, CreateView):
     model = StockDiary
     form_class = StockDiaryForm
@@ -778,13 +679,7 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
             success = self.object.process_and_save_image(image_file)
             if not success:
                 messages.warning(self.request, '日記は作成されましたが、画像の処理に失敗しました。')
-        
-        # 分析テンプレートの処理
-        analysis_template_id = self.request.POST.get('analysis_template')
-        if analysis_template_id:
-            from .utils import process_analysis_values
-            process_analysis_values(self.request, self.object, analysis_template_id)
-        
+                
         # 初回購入情報の処理
         if form.cleaned_data.get('add_initial_purchase'):
             try:
@@ -893,28 +788,11 @@ class StockDiaryUpdateView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Upda
             success = self.object.process_and_save_image(image_file)
             if not success:
                 messages.warning(self.request, '日記は更新されましたが、画像の処理に失敗しました。')
-        
-        analysis_template_id = self.request.POST.get('analysis_template')
-        if analysis_template_id:
-            DiaryAnalysisValue.objects.filter(diary_id=self.object.id).delete()
-            process_analysis_values(self.request, self.object, analysis_template_id)
-        
+                
         return response
     
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
-        
-        diary = self.get_object()
-        diary_analysis_values = DiaryAnalysisValue.objects.filter(diary=diary).select_related('analysis_item__template')
-        
-        used_templates = set()
-        for value in diary_analysis_values:
-            used_templates.add(value.analysis_item.template_id)
-        
-        if used_templates:
-            template_id = list(used_templates)[0]
-            form.fields['analysis_template'].initial = template_id
-        
         return form
     
     def get_success_url(self):
@@ -1121,226 +999,150 @@ class DiaryTabContentView(LoginRequiredMixin, View):
         html += '</div></div>'
         return html
             
-    def _render_analysis_tab(self, diary):
-        """分析タブのHTMLを直接生成"""
+    
+    def _render_details_tab(self, context):
+        """取引タブのHTMLを直接生成"""
+        diary = context['diary']
         html = '<div class="px-1 py-2">'
         
-        analysis_values = DiaryAnalysisValue.objects.filter(diary=diary).select_related('analysis_item__template')
+        # 🔧 修正: 購入情報の表示
+        # 取引履歴があり、平均取得単価と保有数が設定されている場合
+        if diary.transaction_count > 0 and diary.average_purchase_price is not None:
+            # 現在の総投資額を計算
+            if diary.current_quantity > 0:
+                total_investment = float(diary.average_purchase_price) * float(diary.current_quantity)
+            else:
+                # 売却済みの場合は総購入額を表示
+                total_investment = float(diary.total_buy_amount) if diary.total_buy_amount else 0
+            
+            html += '''
+            <div class="info-block mb-3">
+            <div class="info-row">
+                <div class="info-item">
+                <div class="info-icon">
+                    <i class="bi bi-currency-yen"></i>
+                </div>
+                <div class="info-content">
+                    <span class="info-label">平均取得単価</span>
+                    <span class="info-value">{:,.2f}円</span>
+                </div>
+                </div>
+                
+                <div class="info-item">
+                <div class="info-icon">
+                    <i class="bi bi-graph-up"></i>
+                </div>
+                <div class="info-content">
+                    <span class="info-label">現在保有数</span>
+                    <span class="info-value">{:.2f}株</span>
+                </div>
+                </div>
+                
+                <div class="info-item">
+                <div class="info-icon">
+                    <i class="bi bi-calendar-date"></i>
+                </div>
+                <div class="info-content">
+                    <span class="info-label">初回購入日</span>
+                    <span class="info-value">{}</span>
+                </div>
+                </div>
+                
+                <div class="info-item">
+                <div class="info-icon">
+                    <i class="bi bi-cash-stack"></i>
+                </div>
+                <div class="info-content">
+                    <span class="info-label">総投資額</span>
+                    <span class="info-value">{:,.0f}円</span>
+                </div>
+                </div>
+            </div>
+            </div>
+            '''.format(
+                float(diary.average_purchase_price),
+                float(diary.current_quantity) if diary.current_quantity else 0,
+                diary.first_purchase_date.strftime('%Y年%m月%d日') if diary.first_purchase_date else '未設定',
+                total_investment
+            )
         
-        if analysis_values.exists():
-            templates = defaultdict(list)
+        # 🔧 修正: 売却情報の表示
+        # 売却済み（保有数0、取引あり）かつ実現損益がある場合
+        if diary.is_sold_out and diary.realized_profit is not None:
+            profit = float(diary.realized_profit)
+            # 損益率を計算（総売却額 ÷ 総購入額）
+            profit_rate = 0
+            if diary.total_buy_amount and float(diary.total_buy_amount) > 0:
+                profit_rate = (profit / float(diary.total_buy_amount)) * 100
             
-            for value in analysis_values:
-                template = value.analysis_item.template
-                templates[template.id].append(value)
+            profit_class = "profit" if profit > 0 else ("loss" if profit < 0 else "text-muted")
+            profit_sign = "+" if profit > 0 else ""
             
-            for template_id, values in templates.items():
-                if not values:
-                    continue
-                    
-                template = values[0].analysis_item.template
+            html += '''
+            <div class="sell-info">
+            <div class="info-row">
+                <div class="info-item">
+                <div class="info-icon">
+                    <i class="bi bi-calendar-check"></i>
+                </div>
+                <div class="info-content">
+                    <span class="info-label">最終取引日</span>
+                    <span class="info-value">{}</span>
+                </div>
+                </div>
                 
-                html += f'''
-                <div class="analysis-template-summary mb-3" data-template-id="{template.id}">
-                  <h6 class="mb-2">
-                    <i class="bi bi-clipboard-check"></i> {template.name}
-                  </h6>
-                  <div class="progress mb-2" style="height: 6px;">
-                '''
+                <div class="info-item">
+                <div class="info-icon">
+                    <i class="bi bi-graph-up-arrow"></i>
+                </div>
+                <div class="info-content">
+                    <span class="info-label">実現損益</span>
+                    <span class="info-value {}">{}{:,.0f}円</span>
+                </div>
+                </div>
                 
-                items_count = template.items.count()
-                filled_count = len(values)
-                completion = int((filled_count / items_count) * 100) if items_count > 0 else 0
+                <div class="info-item">
+                <div class="info-icon">
+                    <i class="bi bi-percent"></i>
+                </div>
+                <div class="info-content">
+                    <span class="info-label">損益率</span>
+                    <span class="info-value {}">{}{:.2f}%</span>
+                </div>
+                </div>
                 
-                html += f'<div class="progress-bar bg-primary" style="width: {completion}%"></div></div>'
-                html += '<div class="analysis-item-preview">'
-                
-                for value in values[:5]:
-                    item_name = value.analysis_item.name
-                    item = value.analysis_item
-                    
-                    if item.item_type == 'boolean_with_value':
-                        display_value = "✓" if value.boolean_value else ""
-                        if value.boolean_value:
-                            if value.number_value is not None:
-                                display_value += f" {value.number_value:.2f}"
-                            elif value.text_value:
-                                display_value += f" {value.text_value}"
-                    elif item.item_type == 'number':
-                        display_value = f"{float(value.number_value):.2f}" if value.number_value is not None else "-"
-                    elif item.item_type == 'boolean':
-                        display_value = "はい" if value.boolean_value else "いいえ"
-                    elif item.item_type == 'select':
-                        display_value = value.text_value or "-"
-                    else:
-                        display_value = value.text_value or "-"
-                    
-                    html += f'''
-                    <div class="analysis-preview-item">
-                      <span class="key">{item_name}:</span>
-                      <span class="value">{display_value}</span>
-                    </div>
-                    '''
-                
-                if len(values) > 5:
-                    html += f'''
-                    <div class="text-end mt-2">
-                      <a href="/stockdiary/{diary.id}/" class="text-primary text-decoration-none small">
-                        すべて表示 <i class="bi bi-arrow-right"></i>
-                      </a>
-                    </div>
-                    '''
-                
-                html += '</div></div>'
-        else:
-            html += '<p class="text-muted">分析データはありません</p>'
+                <div class="info-item">
+                <div class="info-icon">
+                    <i class="bi bi-cash-stack"></i>
+                </div>
+                <div class="info-content">
+                    <span class="info-label">総売却額</span>
+                    <span class="info-value">{:,.0f}円</span>
+                </div>
+                </div>
+            </div>
+            </div>
+            '''.format(
+                diary.last_transaction_date.strftime('%Y年%m月%d日') if diary.last_transaction_date else '未設定',
+                profit_class,
+                profit_sign,
+                profit,
+                profit_class,
+                profit_sign,
+                profit_rate,
+                float(diary.total_sell_amount) if diary.total_sell_amount else 0
+            )
+        elif diary.is_memo:
+            # メモのみの場合
+            html += '''
+            <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            この日記はメモとして記録されています。取引情報が設定されていません。
+            </div>
+            '''
         
         html += '</div>'
         return html
-    
-def _render_details_tab(self, context):
-    """取引タブのHTMLを直接生成"""
-    diary = context['diary']
-    html = '<div class="px-1 py-2">'
-    
-    # 🔧 修正: 購入情報の表示
-    # 取引履歴があり、平均取得単価と保有数が設定されている場合
-    if diary.transaction_count > 0 and diary.average_purchase_price is not None:
-        # 現在の総投資額を計算
-        if diary.current_quantity > 0:
-            total_investment = float(diary.average_purchase_price) * float(diary.current_quantity)
-        else:
-            # 売却済みの場合は総購入額を表示
-            total_investment = float(diary.total_buy_amount) if diary.total_buy_amount else 0
-        
-        html += '''
-        <div class="info-block mb-3">
-          <div class="info-row">
-            <div class="info-item">
-              <div class="info-icon">
-                <i class="bi bi-currency-yen"></i>
-              </div>
-              <div class="info-content">
-                <span class="info-label">平均取得単価</span>
-                <span class="info-value">{:,.2f}円</span>
-              </div>
-            </div>
-            
-            <div class="info-item">
-              <div class="info-icon">
-                <i class="bi bi-graph-up"></i>
-              </div>
-              <div class="info-content">
-                <span class="info-label">現在保有数</span>
-                <span class="info-value">{:.2f}株</span>
-              </div>
-            </div>
-            
-            <div class="info-item">
-              <div class="info-icon">
-                <i class="bi bi-calendar-date"></i>
-              </div>
-              <div class="info-content">
-                <span class="info-label">初回購入日</span>
-                <span class="info-value">{}</span>
-              </div>
-            </div>
-            
-            <div class="info-item">
-              <div class="info-icon">
-                <i class="bi bi-cash-stack"></i>
-              </div>
-              <div class="info-content">
-                <span class="info-label">総投資額</span>
-                <span class="info-value">{:,.0f}円</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        '''.format(
-            float(diary.average_purchase_price),
-            float(diary.current_quantity) if diary.current_quantity else 0,
-            diary.first_purchase_date.strftime('%Y年%m月%d日') if diary.first_purchase_date else '未設定',
-            total_investment
-        )
-    
-    # 🔧 修正: 売却情報の表示
-    # 売却済み（保有数0、取引あり）かつ実現損益がある場合
-    if diary.is_sold_out and diary.realized_profit is not None:
-        profit = float(diary.realized_profit)
-        # 損益率を計算（総売却額 ÷ 総購入額）
-        profit_rate = 0
-        if diary.total_buy_amount and float(diary.total_buy_amount) > 0:
-            profit_rate = (profit / float(diary.total_buy_amount)) * 100
-        
-        profit_class = "profit" if profit > 0 else ("loss" if profit < 0 else "text-muted")
-        profit_sign = "+" if profit > 0 else ""
-        
-        html += '''
-        <div class="sell-info">
-          <div class="info-row">
-            <div class="info-item">
-              <div class="info-icon">
-                <i class="bi bi-calendar-check"></i>
-              </div>
-              <div class="info-content">
-                <span class="info-label">最終取引日</span>
-                <span class="info-value">{}</span>
-              </div>
-            </div>
-            
-            <div class="info-item">
-              <div class="info-icon">
-                <i class="bi bi-graph-up-arrow"></i>
-              </div>
-              <div class="info-content">
-                <span class="info-label">実現損益</span>
-                <span class="info-value {}">{}{:,.0f}円</span>
-              </div>
-            </div>
-            
-            <div class="info-item">
-              <div class="info-icon">
-                <i class="bi bi-percent"></i>
-              </div>
-              <div class="info-content">
-                <span class="info-label">損益率</span>
-                <span class="info-value {}">{}{:.2f}%</span>
-              </div>
-            </div>
-            
-            <div class="info-item">
-              <div class="info-icon">
-                <i class="bi bi-cash-stack"></i>
-              </div>
-              <div class="info-content">
-                <span class="info-label">総売却額</span>
-                <span class="info-value">{:,.0f}円</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        '''.format(
-            diary.last_transaction_date.strftime('%Y年%m月%d日') if diary.last_transaction_date else '未設定',
-            profit_class,
-            profit_sign,
-            profit,
-            profit_class,
-            profit_sign,
-            profit_rate,
-            float(diary.total_sell_amount) if diary.total_sell_amount else 0
-        )
-    elif diary.is_memo:
-        # メモのみの場合
-        html += '''
-        <div class="alert alert-info">
-          <i class="bi bi-info-circle me-2"></i>
-          この日記はメモとして記録されています。取引情報が設定されていません。
-        </div>
-        '''
-    
-    html += '</div>'
-    return html
 
 
 class StockListView(LoginRequiredMixin, TemplateView):
@@ -1777,27 +1579,7 @@ def tab_content(request, diary_id, tab_type):
                 notes = diary.notes.all().order_by('-date')[:3]
                 context['notes'] = notes
                 template_name = 'stockdiary/partials/tab_notes.html'
-            
-            elif tab_type == 'analysis':
-                template_groups = []
-                analysis_values = DiaryAnalysisValue.objects.filter(diary=diary).select_related('analysis_item__template')
-                
-                templates_map = defaultdict(list)
-                for value in analysis_values:
-                    if hasattr(value.analysis_item, 'template') and value.analysis_item.template:
-                        templates_map[value.analysis_item.template.id].append(value)
-                
-                for template_id, values in templates_map.items():
-                    if values:
-                        template = values[0].analysis_item.template
-                        template_groups.append({
-                            'template': template,
-                            'values': values[:3]
-                        })
-                
-                context['template_groups'] = template_groups
-                template_name = 'stockdiary/partials/tab_analysis.html'
-            
+                        
             elif tab_type == 'details':
                 # 取引タブの処理を追加
                 transactions = diary.transactions.all().order_by('-transaction_date', '-created_at')[:5]

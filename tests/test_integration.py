@@ -9,7 +9,6 @@ from decimal import Decimal
 from datetime import date, timedelta
 
 from stockdiary.models import StockDiary, Transaction, DiaryNote
-from analysis_template.models import AnalysisTemplate, AnalysisItem, DiaryAnalysisValue
 from tags.models import Tag
 
 User = get_user_model()
@@ -209,92 +208,6 @@ class TestMultipleStocksManagement:
         assert response.status_code == 200
         active_diaries = list(response.context['diaries'])
         assert len(active_diaries) == 2
-
-
-@pytest.mark.integration
-class TestAnalysisTemplateWorkflow:
-    """分析テンプレートの統合フロー"""
-    
-    def setup_method(self):
-        self.user = User.objects.create_user(
-            username='analysisuser',
-            email='analysis@example.com',
-            password='analysispass123'
-        )
-    
-    def test_create_template_and_apply_to_diary(self, client):
-        """テンプレート作成→日記に適用のフロー"""
-        
-        client.login(username='analysisuser', password='analysispass123')
-        
-        # 1. 分析テンプレートを作成
-        template = AnalysisTemplate.objects.create(
-            user=self.user,
-            name='財務分析',
-            description='財務指標の分析'
-        )
-        
-        # 分析項目を追加
-        items = [
-            AnalysisItem.objects.create(
-                template=template,
-                name='PER',
-                description='株価収益率',
-                item_type='number',
-                order=1
-            ),
-            AnalysisItem.objects.create(
-                template=template,
-                name='PBR',
-                description='株価純資産倍率',
-                item_type='number',
-                order=2
-            ),
-            AnalysisItem.objects.create(
-                template=template,
-                name='業績好調',
-                description='直近の業績',
-                item_type='boolean',
-                order=3
-            ),
-        ]
-        
-        # 2. 日記を作成
-        diary = StockDiary.objects.create(
-            user=self.user,
-            stock_symbol='7203',
-            stock_name='トヨタ自動車',
-            reason='分析テスト用'
-        )
-        
-        # 3. 分析値を設定
-        DiaryAnalysisValue.objects.create(
-            diary=diary,
-            analysis_item=items[0],
-            number_value=Decimal('12.5')
-        )
-        
-        DiaryAnalysisValue.objects.create(
-            diary=diary,
-            analysis_item=items[1],
-            number_value=Decimal('1.2')
-        )
-        
-        DiaryAnalysisValue.objects.create(
-            diary=diary,
-            analysis_item=items[2],
-            boolean_value=True
-        )
-        
-        # 4. 日記に分析値が関連付けられたことを確認
-        analysis_values = diary.analysis_values.all()
-        assert analysis_values.count() == 3
-        
-        # 5. 詳細ページで分析値が表示されることを確認
-        url = reverse('stockdiary:detail', kwargs={'pk': diary.pk})
-        response = client.get(url)
-        assert response.status_code == 200
-        assert 'analysis_templates_info' in response.context
 
 
 @pytest.mark.integration

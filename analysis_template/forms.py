@@ -1,189 +1,201 @@
 # analysis_template/forms.py
 from django import forms
-from .models import AnalysisTemplate, AnalysisItem, DiaryAnalysisValue
-from django.forms import inlineformset_factory
+from django.core.exceptions import ValidationError
+from company_master.models import CompanyMaster
+from .models import AnalysisTemplate, TemplateMetrics, MetricDefinition
+
 
 class AnalysisTemplateForm(forms.ModelForm):
+    """分析テンプレートフォーム"""
+    
     class Meta:
         model = AnalysisTemplate
         fields = ['name', 'description']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'テンプレート名を入力',
+                'maxlength': '200'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'テンプレートの説明を入力（任意）'
+            }),
         }
+    
+    def clean_name(self):
+        name = self.cleaned_data.get('name')
+        if not name or not name.strip():
+            raise ValidationError('テンプレート名は必須です')
+        return name.strip()
 
-class AnalysisItemForm(forms.ModelForm):
+
+class CompanySelectionForm(forms.Form):
+    """企業選択フォーム"""
+    company_code = forms.CharField(
+        max_length=10,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '株式コードを入力',
+            'id': 'company-code-input',
+            'autocomplete': 'off'
+        }),
+        label='株式コード'
+    )
+    
+    companies = forms.ModelMultipleChoiceField(
+        queryset=CompanyMaster.objects.all().order_by('code'),
+        required=False,
+        widget=forms.CheckboxSelectMultiple(),
+        label='企業を選択'
+    )
+    
+    def clean_company_code(self):
+        code = self.cleaned_data.get('company_code')
+        if code:
+            try:
+                CompanyMaster.objects.get(code=code)
+            except CompanyMaster.DoesNotExist:
+                raise ValidationError(f'株式コード {code} は存在しません')
+        return code
+
+
+class TemplateMetricsForm(forms.ModelForm):
+    """テンプレート指標入力フォーム"""
+    
     class Meta:
-        model = AnalysisItem
-        fields = ['name', 'description', 'item_type', 'choices', 'value_label', 'order']
+        model = TemplateMetrics
+        fields = ['metric_definition', 'value', 'fiscal_year', 'notes']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-            'item_type': forms.Select(attrs={'class': 'form-select', 'id': 'item_type_select'}),
-            'choices': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-            'value_label': forms.TextInput(attrs={'class': 'form-control'}),  # 追加
-            'order': forms.NumberInput(attrs={'class': 'form-control'})
+            'metric_definition': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'value': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'placeholder': '指標値を入力'
+            }),
+            'fiscal_year': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '例: 2024',
+                'maxlength': '10'
+            }),
+            'notes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2,
+                'placeholder': '備考（任意）'
+            }),
         }
-
-# 既存のフォームセットファクトリを更新して、新しいフィールドを含める
-AnalysisItemFormSet = inlineformset_factory(
-    AnalysisTemplate, 
-    AnalysisItem, 
-    form=AnalysisItemForm,
-    extra=0,  # 新規作成時に表示する空のフォームの数
-    min_num=1,  # 最低限必要なフォームの数
-    validate_min=True,  # 最低数の検証を行うか
-    can_delete=True  # 削除ボタンを表示するか
-)
-
-
-class DiaryAnalysisValueForm(forms.ModelForm):
-    class Meta:
-        model = DiaryAnalysisValue
-        fields = ['analysis_item', 'number_value', 'text_value']
-
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # アクティブな指標定義のみ表示
+        self.fields['metric_definition'].queryset = MetricDefinition.objects.filter(
+            is_active=True
+        ).order_by('display_order', 'name')
+
+
+class BulkMetricsForm(forms.Form):
+    """一括指標入力フォーム"""
+    
+    def __init__(self, *args, template=None, companies=None, **kwargs):
+        super().__init__(*args, **kwargs)
         
-        # analysis_itemのインスタンスが設定されている場合
-        if self.instance and self.instance.analysis_item:
-            self._setup_form_fields()
-    
-    def _setup_form_fields(self):
-        """項目タイプに基づいてフォームフィールドを設定"""
-        item = self.instance.analysis_item
+        if not template or not companies:
+            return
         
-        # 項目タイプごとのフィールド設定を適切なメソッドに委譲
-        if item.item_type == 'number':
-            self._setup_number_field(item)
-        elif item.item_type == 'select':
-            self._setup_select_field(item)
-        elif item.item_type == 'boolean':
-            self._setup_boolean_field(item)
-        elif item.item_type == 'boolean_with_value':
-            self._setup_boolean_with_value_field(item)
-        else:  # text
-            self._setup_text_field(item)
+        # 各企業×指標の組み合わせでフィールドを動的生成
+        metrics = MetricDefinition.objects.filter(is_active=True).order_by('display_order')
         
-        # 説明があれば表示
-        self._add_help_text(item)
+        for company in companies:
+            for metric in metrics:
+                field_name = f'metric_{company.code}_{metric.id}'
+                
+                # 既存値を取得
+                existing_value = None
+                try:
+                    existing_metric = TemplateMetrics.objects.get(
+                        template=template,
+                        company=company,
+                        metric_definition=metric
+                    )
+                    existing_value = existing_metric.value
+                except TemplateMetrics.DoesNotExist:
+                    pass
+                
+                self.fields[field_name] = forms.DecimalField(
+                    required=False,
+                    max_digits=15,
+                    decimal_places=2,
+                    initial=existing_value,
+                    widget=forms.NumberInput(attrs={
+                        'class': 'form-control form-control-sm',
+                        'placeholder': metric.get_formatted_unit(),
+                        'step': '0.01'
+                    }),
+                    label=f'{company.name} - {metric.display_name}'
+                )
+
+
+class CompanySearchForm(forms.Form):
+    """企業検索フォーム"""
+    query = forms.CharField(
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '企業名または株式コードで検索',
+            'id': 'company-search-input'
+        }),
+        label='検索'
+    )
     
-    def _setup_number_field(self, item):
-        """数値フィールドの設定"""
-        self.fields['number_value'] = forms.DecimalField(
-            label=item.name,
-            required=False,
-            widget=forms.NumberInput(attrs={'class': 'form-control'})
-        )
-        self.fields['text_value'].widget = forms.HiddenInput()
-        self.fields['boolean_value'].widget = forms.HiddenInput()
+    industry = forms.ChoiceField(
+        choices=[('', '全業種')] + [
+            (industry, industry) for industry in 
+            CompanyMaster.objects.values_list('industry_name_33', flat=True)
+            .distinct().order_by('industry_name_33') if industry
+        ],
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-select'
+        }),
+        label='業種'
+    )
     
-    def _setup_select_field(self, item):
-        """選択フィールドの設定"""
-        if item.choices:
-            choices = [(choice, choice) for choice in item.get_choices_list()]
-            choices.insert(0, ('', '選択してください'))
-            self.fields['text_value'] = forms.ChoiceField(
-                label=item.name,
-                choices=choices,
-                required=False,
-                widget=forms.Select(attrs={'class': 'form-select'})
-            )
-            self.fields['number_value'].widget = forms.HiddenInput()
-            self.fields['boolean_value'].widget = forms.HiddenInput()
+    market = forms.ChoiceField(
+        choices=[('', '全市場')] + [
+            (market, market) for market in 
+            CompanyMaster.objects.values_list('market', flat=True)
+            .distinct().order_by('market') if market
+        ],
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-select'
+        }),
+        label='市場'
+    )
+
+
+class MetricDefinitionForm(forms.ModelForm):
+    """指標定義フォーム（管理者用）"""
     
-    def _setup_text_field(self, item):
-        """テキストフィールドの設定"""
-        self.fields['text_value'] = forms.CharField(
-            label=item.name,
-            required=False,
-            widget=forms.TextInput(attrs={'class': 'form-control'})
-        )
-        self.fields['number_value'].widget = forms.HiddenInput()
-        self.fields['boolean_value'].widget = forms.HiddenInput()
-    
-    def _setup_boolean_field(self, item):
-        """ブールフィールドの設定"""
-        self.fields['boolean_value'] = forms.BooleanField(
-            label=item.name,
-            required=False,
-            widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
-        )
-        self.fields['number_value'].widget = forms.HiddenInput()
-        self.fields['text_value'].widget = forms.HiddenInput()
-    
-    def _setup_boolean_with_value_field(self, item):
-        """複合型（チェック+値）フィールドの設定"""
-        # チェックボックス部分
-        self.fields['boolean_value'] = forms.BooleanField(
-            label=item.name,
-            required=False,
-            widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
-        )
-        
-        # 値部分（デフォルトは数値だが、テキストも可能に）
-        value_label = item.value_label or "値"
-        self.fields['number_value'] = forms.DecimalField(
-            label=value_label,
-            required=False,
-            widget=forms.NumberInput(attrs={'class': 'form-control'})
-        )
-        self.fields['text_value'] = forms.CharField(
-            label=f"{value_label} (テキスト)",
-            required=False,
-            widget=forms.TextInput(attrs={'class': 'form-control mt-2'})
-        )
-    
-    def _add_help_text(self, item):
-        """説明テキストの追加"""
-        if item.description:
-            help_text = item.description
-            
-            # 説明テキストを適切なフィールドに追加
-            if item.item_type == 'number':
-                self.fields['number_value'].help_text = help_text
-            elif item.item_type == 'boolean':
-                self.fields['boolean_value'].help_text = help_text
-            elif item.item_type == 'boolean_with_value':
-                self.fields['boolean_value'].help_text = help_text
-            else:
-                self.fields['text_value'].help_text = help_text
-# 分析項目値のセットを作成するための工場関数
-def create_analysis_value_formset(template, diary=None, data=None):
-    """
-    指定されたテンプレートの分析項目に基づいてフォームセットを作成
-    
-    Args:
-        template: AnalysisTemplateインスタンス
-        diary: 既存のStockDiaryインスタンス（編集時など）
-        data: POSTデータ（保存時）
-    
-    Returns:
-        分析項目値のフォームのリスト
-    """
-    forms = []
-    
-    # テンプレートの各分析項目についてフォームを作成
-    for item in template.items.all():
-        initial = {}
-        instance = None
-        
-        # 既存の日記がある場合、その分析項目の値を取得
-        if diary:
-            try:
-                instance = DiaryAnalysisValue.objects.get(diary=diary, analysis_item=item)
-            except DiaryAnalysisValue.DoesNotExist:
-                instance = DiaryAnalysisValue(diary=diary, analysis_item=item)
-        else:
-            instance = DiaryAnalysisValue(analysis_item=item)
-            
-        # フォームを作成して追加
-        prefix = f"analysis_item_{item.id}"
-        if data:
-            form = DiaryAnalysisValueForm(data=data, instance=instance, prefix=prefix)
-        else:
-            form = DiaryAnalysisValueForm(instance=instance, prefix=prefix)
-            
-        forms.append((item, form))
-    
-    return forms
+    class Meta:
+        model = MetricDefinition
+        fields = [
+            'name', 'display_name', 'metric_type', 'description',
+            'unit', 'min_value', 'max_value', 'is_active', 'display_order'
+        ]
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'display_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'metric_type': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'unit': forms.TextInput(attrs={'class': 'form-control'}),
+            'min_value': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'max_value': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'display_order': forms.NumberInput(attrs={'class': 'form-control'}),
+        }

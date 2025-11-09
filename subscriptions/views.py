@@ -719,12 +719,6 @@ class SubscriptionUsageView(LoginRequiredMixin, TemplateView):
             tag_limit = plan.max_tags
             tag_percent = int(tag_count / tag_limit * 100) if tag_limit > 0 else 0 if tag_limit == -1 else 100
             
-            # テンプレートデータ
-            templates = user.analysistemplate_set.all()
-            template_count = templates.count()
-            template_limit = plan.max_templates
-            template_percent = int(template_count / template_limit * 100) if template_limit > 0 else 0 if template_limit == -1 else 100
-                        
             # 株式記録データ
             records = user.stockdiary_set.all()
             record_count = records.count()
@@ -741,14 +735,6 @@ class SubscriptionUsageView(LoginRequiredMixin, TemplateView):
                         'percent': tag_percent,
                         'name': 'タグ',
                         'status': 'danger' if tag_percent > 90 else 'warning' if tag_percent > 70 else 'success',
-                    },
-                    'templates': {
-                        'items': templates,
-                        'count': template_count,
-                        'limit': template_limit,
-                        'percent': template_percent,
-                        'name': '分析テンプレート',
-                        'status': 'danger' if template_percent > 90 else 'warning' if template_percent > 70 else 'success',
                     },
                     'records': {
                         'items': records,

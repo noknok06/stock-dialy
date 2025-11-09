@@ -5,7 +5,6 @@ from decimal import Decimal
 from datetime import date, timedelta
 
 from stockdiary.models import StockDiary, Transaction, StockSplit, DiaryNote
-from analysis_template.models import AnalysisTemplate, AnalysisItem, DiaryAnalysisValue
 from tags.models import Tag
 
 User = get_user_model()
@@ -332,71 +331,6 @@ class TestDiaryNoteModel:
         assert note.diary == self.diary
         assert note.content == '四半期決算が好調'
         assert note.note_type == 'earnings'
-
-
-@pytest.mark.django_db(transaction=True)
-class TestAnalysisTemplateIntegration:
-    """分析テンプレートとの統合テスト"""
-    
-    def setup_method(self):
-        self.user = User.objects.create_user(
-            username='testuser',
-            email='test@example.com',
-            password='testpass123'
-        )
-        self.diary = StockDiary.objects.create(
-            user=self.user,
-            stock_symbol='6758',
-            stock_name='ソニーグループ',
-            reason='テスト用'
-        )
-        
-        # 分析テンプレートを作成
-        self.template = AnalysisTemplate.objects.create(
-            user=self.user,
-            name='基本分析',
-            description='基本的な分析項目'
-        )
-        
-        # 分析項目を作成
-        self.item_number = AnalysisItem.objects.create(
-            template=self.template,
-            name='PER',
-            description='株価収益率',
-            item_type='number',
-            order=1
-        )
-        
-        self.item_boolean = AnalysisItem.objects.create(
-            template=self.template,
-            name='業績好調',
-            description='直近の業績',
-            item_type='boolean',
-            order=2
-        )
-    
-    def test_create_analysis_values(self):
-        """分析値の作成"""
-        # 数値型の分析値
-        value1 = DiaryAnalysisValue.objects.create(
-            diary=self.diary,
-            analysis_item=self.item_number,
-            number_value=Decimal('15.5')
-        )
-        
-        # ブール型の分析値
-        value2 = DiaryAnalysisValue.objects.create(
-            diary=self.diary,
-            analysis_item=self.item_boolean,
-            boolean_value=True
-        )
-        
-        assert value1.number_value == Decimal('15.5')
-        assert value2.boolean_value is True
-        
-        # 日記から分析値を取得
-        analysis_values = self.diary.analysis_values.all()
-        assert analysis_values.count() == 2
 
 
 @pytest.mark.django_db(transaction=True)

@@ -1,765 +1,182 @@
 {% extends 'base.html' %}
-{% load ads_tags %}
-
-{% block title %}分析テンプレート管理 | カブログ{% endblock %}
 {% load static %}
 
-{% block head %}
-<style>
-  body {
-    background-color: var(--bg-color);
-  }
-
-  /* カードスタイル */
-  .card {
-    border: none;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--card-shadow);
-    overflow: hidden;
-    margin-bottom: 1.5rem;
-    transition: all var(--duration-200) var(--ease-in-out);
-  }
-
-  .card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-  }
-
-  .card-header {
-    background-color: white;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    padding: 1rem 1.25rem;
-  }
-
-  .card-body {
-    padding: 1.25rem;
-  }
-
-  .card-footer {
-    background-color: rgba(0, 0, 0, 0.02);
-    padding: 0.75rem 1.25rem;
-    display: flex;
-    justify-content: center;
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
-  }
-
-  /* カードタイトル */
-  .card-title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-  }
-
-  .card-title a {
-    color: var(--text-primary);
-    text-decoration: none;
-    transition: color var(--duration-200) var(--ease-in-out);
-  }
-
-  .card-title a:hover {
-    color: var(--primary-color);
-    text-decoration: underline;
-  }
-
-  /* 検索フォーム */
-  .search-card {
-    margin-bottom: 1.5rem;
-  }
-
-  .search-icon {
-    position: absolute;
-    left: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-secondary);
-    pointer-events: none;
-  }
-
-  .search-input {
-    padding-left: 2.5rem;
-  }
-
-  /* テンプレート情報 */
-  .template-item-count {
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-  }
-
-  .template-description {
-    color: var(--text-secondary);
-    margin-bottom: 1rem;
-    line-height: 1.5;
-    min-height: 3em;
-  }
-
-  /* エンプティステート */
-  .empty-state {
-    text-align: center;
-    padding: 3rem 1.5rem;
-    background-color: white;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--card-shadow);
-  }
-
-  .empty-state-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 64px;
-    height: 64px;
-    background-color: var(--primary-light);
-    color: var(--primary-color);
-    border-radius: 9999px;
-    margin-bottom: 1.5rem;
-  }
-
-  .empty-state-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: 0.75rem;
-    color: var(--text-primary);
-  }
-
-  .empty-state-description {
-    color: var(--text-secondary);
-    margin-bottom: 1.5rem;
-    max-width: 500px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  /* タブナビゲーション */
-  .nav-tabs {
-    border-bottom: 2px solid var(--border-primary);
-  }
-
-  .nav-tabs .nav-link {
-    border: none;
-    border-bottom: 3px solid transparent;
-    color: var(--text-secondary);
-    font-weight: 500;
-    padding: 0.75rem 1.25rem;
-    transition: all var(--duration-200) var(--ease-in-out);
-  }
-
-  .nav-tabs .nav-link:hover {
-    border-bottom-color: var(--primary-color);
-    color: var(--primary-color);
-  }
-
-  .nav-tabs .nav-link.active {
-    border-bottom-color: var(--primary-color);
-    color: var(--primary-color);
-    background-color: transparent;
-  }
-
-  .nav-tabs .nav-link i {
-    margin-right: 0.375rem;
-  }
-
-  /* テーブルスタイル */
-  .table {
-    margin-bottom: 0;
-  }
-
-  .table thead th {
-    background-color: var(--bg-secondary);
-    border-bottom: 2px solid var(--border-primary);
-    font-weight: 600;
-    color: var(--text-secondary);
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-  }
-
-  .table tbody td {
-    padding: 1rem;
-    vertical-align: middle;
-    border-bottom: 1px solid var(--border-light);
-  }
-
-  .table tbody tr:last-child td {
-    border-bottom: none;
-  }
-
-  .table tbody tr:hover {
-    background-color: rgba(90, 126, 197, 0.04);
-  }
-
-  /* カードビューのグリッド調整 */
-  .row-cols-lg-3>* {
-    display: flex;
-  }
-
-  .card.h-100 {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .card.h-100 .card-body {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .card.h-100 .card-body> :last-child {
-    margin-top: auto;
-  }
-
-  /* レスポンシブ調整 */
-  @media (max-width: 768px) {
-    .search-card .card-body {
-      padding: 1rem;
-    }
-
-    /* モバイルでのボタン配置 */
-    .mb-4.d-flex {
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .mb-4.d-flex>div {
-      width: 100%;
-    }
-
-    .mb-4.d-flex .btn {
-      width: 100%;
-      justify-content: center;
-    }
-
-    /* 検索フォームのボタン配置 */
-    .col-md-4.d-flex {
-      flex-direction: column;
-      margin-top: 0.5rem;
-    }
-
-    .col-md-4.d-flex .btn {
-      width: 100%;
-      margin: 0 0 0.5rem 0 !important;
-    }
-
-    .col-md-4.d-flex .btn:last-child {
-      margin-bottom: 0 !important;
-    }
-
-    /* タブのレスポンシブ */
-    .nav-tabs .nav-link {
-      padding: 0.5rem 0.75rem;
-      font-size: 0.875rem;
-    }
-
-    /* テーブルのレスポンシブ */
-    .table-responsive {
-      font-size: 0.875rem;
-    }
-
-    .table th,
-    .table td {
-      padding: 0.5rem;
-    }
-  }
-
-  @media (max-width: 576px) {
-    .container {
-      padding-left: 0.5rem;
-      padding-right: 0.5rem;
-    }
-
-    .card-header {
-      padding: 0.875rem 1rem;
-    }
-
-    .card-body {
-      padding: 1rem;
-    }
-
-    .card-title {
-      font-size: 1rem;
-    }
-
-    .template-item-count,
-    .text-muted {
-      font-size: 0.75rem;
-    }
-
-    /* モバイルでのタブ表示 */
-    .nav-tabs {
-      display: flex;
-      justify-content: center;
-    }
-
-    .nav-tabs .nav-link {
-      flex: 1;
-      text-align: center;
-      padding: 0.5rem;
-      font-size: 0.8rem;
-    }
-
-    .nav-tabs .nav-link span {
-      display: none;
-    }
-
-    /* テーブルの極小画面対応 */
-    .table {
-      font-size: 0.8rem;
-    }
-
-    .btn-group-sm .btn {
-      padding: 0.25rem 0.4rem;
-      font-size: 0.75rem;
-    }
-  }
-
-  /* タッチデバイス対応 */
-  @media (hover: none) {
-    .card:active {
-      transform: scale(0.98);
-    }
-
-    .nav-tabs .nav-link:active {
-      background-color: rgba(90, 126, 197, 0.1);
-    }
-  }
-
-  /* ========== Dark Mode Support ========== */
-  .dark-mode body,
-  [data-theme="dark"] body {
-    background-color: var(--dm-background);
-  }
-
-  /* 検索カード */
-  .dark-mode .search-card,
-  [data-theme="dark"] .search-card {
-    background-color: var(--dm-card);
-    border: 1px solid var(--dm-border);
-  }
-
-  .dark-mode .search-card .card-title,
-  [data-theme="dark"] .search-card .card-title {
-    color: var(--dm-foreground);
-  }
-
-  .dark-mode .search-icon,
-  [data-theme="dark"] .search-icon {
-    color: var(--dm-muted-foreground);
-  }
-
-  /* エンプティステート */
-  .dark-mode .empty-state,
-  [data-theme="dark"] .empty-state {
-    background-color: var(--dm-card);
-    border: 1px solid var(--dm-border);
-  }
-
-  .dark-mode .empty-state-icon,
-  [data-theme="dark"] .empty-state-icon {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
-    color: var(--dm-primary);
-  }
-
-  .dark-mode .empty-state-title,
-  [data-theme="dark"] .empty-state-title {
-    color: var(--dm-foreground);
-  }
-
-  .dark-mode .empty-state-description,
-  [data-theme="dark"] .empty-state-description {
-    color: var(--dm-muted-foreground);
-  }
-
-  /* タブナビゲーション */
-  .dark-mode .nav-tabs,
-  [data-theme="dark"] .nav-tabs {
-    border-bottom-color: var(--dm-border);
-  }
-
-  .dark-mode .nav-tabs .nav-link,
-  [data-theme="dark"] .nav-tabs .nav-link {
-    color: var(--dm-muted-foreground);
-    border-bottom-color: transparent;
-  }
-
-  .dark-mode .nav-tabs .nav-link:hover,
-  [data-theme="dark"] .nav-tabs .nav-link:hover {
-    border-bottom-color: var(--dm-primary);
-    color: var(--dm-primary);
-  }
-
-  .dark-mode .nav-tabs .nav-link.active,
-  [data-theme="dark"] .nav-tabs .nav-link.active {
-    border-bottom-color: var(--dm-primary);
-    color: var(--dm-primary);
-    background-color: transparent;
-  }
-
-  /* カード */
-  .dark-mode .card-title a,
-  [data-theme="dark"] .card-title a {
-    color: var(--dm-foreground);
-  }
-
-  .dark-mode .card-title a:hover,
-  [data-theme="dark"] .card-title a:hover {
-    color: var(--dm-primary);
-  }
-
-  .dark-mode .template-item-count,
-  [data-theme="dark"] .template-item-count {
-    color: var(--dm-muted-foreground);
-  }
-
-  .dark-mode .template-description,
-  [data-theme="dark"] .template-description {
-    color: var(--dm-muted-foreground);
-  }
-
-  /* 使い方ガイド */
-  .dark-mode .card .bg-primary,
-  [data-theme="dark"] .card .bg-primary {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1)) !important;
-  }
-
-  .dark-mode .card .text-primary,
-  [data-theme="dark"] .card .text-primary {
-    color: var(--dm-primary) !important;
-  }
-
-  .dark-mode .card h6,
-  [data-theme="dark"] .card h6 {
-    color: var(--dm-foreground);
-  }
-
-  .dark-mode .card .text-muted,
-  [data-theme="dark"] .card .text-muted {
-    color: var(--dm-muted-foreground) !important;
-  }
-
-  /* テーブル内のリンク */
-  .dark-mode .table .fw-semibold,
-  [data-theme="dark"] .table .fw-semibold {
-    color: var(--dm-foreground);
-  }
-
-  .dark-mode .table .fw-semibold:hover,
-  [data-theme="dark"] .table .fw-semibold:hover {
-    color: var(--dm-primary);
-  }
-
-  .dark-mode .table .fst-italic,
-  [data-theme="dark"] .table .fst-italic {
-    color: var(--dm-muted-foreground);
-  }
-</style>
-{% endblock %}
+{% block title %}分析テンプレート一覧 - カブログ{% endblock %}
 
 {% block content %}
-<body class="dark-mode">
-  <div class="container py-4">
-    <div class="page-header">
-      <h1 class="page-title">
-        <i class="bi bi-clipboard-data"></i>
-        <span>分析テンプレート管理</span>
-      </h1>
-    </div>
-
-    <!-- 検索フォーム -->
-    <div class="card search-card">
-      <div class="card-body">
-        <h5 class="card-title mb-3">検索</h5>
-        <form method="get" class="row g-3">
-          <div class="col-md-8">
-            <div class="position-relative">
-              <i class="bi bi-search search-icon"></i>
-              <input type="text" name="query" class="form-control search-input" placeholder="テンプレート名"
-                value="{{ request.GET.query }}">
-            </div>
-          </div>
-
-          <div class="col-md-4 d-flex align-items-end gap-2">
-            <button type="submit" class="btn btn-primary flex-grow-1">
-              <i class="bi bi-search"></i>
-              <span>検索</span>
-            </button>
-            <a href="{% url 'analysis_template:list' %}" class="btn btn-outline-secondary flex-grow-1">
-              <i class="bi bi-arrow-counterclockwise"></i>
-              <span>リセット</span>
+<div class="container mt-4 mb-5">
+    <!-- ページヘッダー -->
+    <div class="page-header page-header-with-actions mb-4">
+        <div class="page-header-content">
+            <h1 class="page-title">
+                <i class="bi bi-clipboard-data"></i>
+                <span class="page-title-text">分析テンプレート</span>
+            </h1>
+            <p class="page-subtitle">
+                複数企業の指標を比較・分析するためのテンプレートを作成・管理できます
+            </p>
+        </div>
+        <div class="page-header-actions">
+            <a href="{% url 'analysis_template:create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>新規作成
             </a>
-          </div>
-        </form>
-      </div>
+        </div>
     </div>
 
-    <!-- コンテンツ上部の広告 -->
-    {% if show_ads %}
-    {% show_placement_ad "content_top" %}
-    {% endif %}
-
-    <!-- テンプレート一覧とアクションボタン -->
-    <div class="mb-4 d-flex justify-content-between flex-wrap gap-3">
-      <div>
-        <a href="{% url 'analysis_template:create' %}" class="btn btn-success">
-          <i class="bi bi-plus-lg"></i>
-          <span>新規作成</span>
-        </a>
-      </div>
-      <div>
-        <a href="{% url 'stockdiary:home' %}" class="btn btn-info">
-          <i class="bi bi-journal-text"></i>
-          <span>記録一覧に戻る</span>
-        </a>
-      </div>
-    </div>
-
-    <!-- テンプレート一覧 -->
-    {% if templates %}
-    <!-- タブ切り替えナビゲーション -->
-    <ul class="nav nav-tabs mb-4" id="viewTabs" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="card-tab" data-bs-toggle="tab" data-bs-target="#card-view" type="button"
-          role="tab" aria-controls="card-view" aria-selected="true">
-          <i class="bi bi-grid-3x3-gap"></i>
-          <span>カード表示</span>
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="table-tab" data-bs-toggle="tab" data-bs-target="#table-view" type="button" role="tab"
-          aria-controls="table-view" aria-selected="false">
-          <i class="bi bi-table"></i>
-          <span>テーブル表示</span>
-        </button>
-      </li>
-    </ul>
-
-    <!-- タブコンテンツ -->
-    <div class="tab-content" id="viewTabsContent">
-      <!-- カード表示 -->
-      <div class="tab-pane fade show active" id="card-view" role="tabpanel" aria-labelledby="card-tab">
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-          {% for template in templates %}
-          <div class="col">
-            <div class="card h-100">
-              <div class="card-header">
-                <h5 class="card-title">
-                  <a href="{% url 'analysis_template:detail' template.id %}">{{ template.name }}</a>
-                </h5>
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                  <span class="template-item-count">
-                    <i class="bi bi-list-check"></i>
-                    <span>項目数: {{ template.items.count }}</span>
-                  </span>
-                  <small class="text-muted">
-                    <i class="bi bi-calendar-event"></i>
-                    <span>{{ template.created_at|date:"Y/m/d" }}</span>
-                  </small>
+    {% if total_count == 0 %}
+    <!-- 空状態 -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+            <div class="empty-state">
+                <div class="empty-state-icon mb-3">
+                    <i class="bi bi-clipboard-data" style="font-size: 4rem; color: var(--text-tertiary);"></i>
                 </div>
-              </div>
-              <div class="card-body">
-                {% if template.description %}
-                <p class="template-description">{{ template.description }}</p>
-                {% else %}
-                <p class="template-description fst-italic text-muted">説明はありません</p>
-                {% endif %}
-
-                <div class="d-flex justify-content-between align-items-center">
-                  <div>
-                    <span class="badge bg-primary">分析テンプレート</span>
-                  </div>
-                  <a href="{% url 'analysis_template:report' template.id %}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-bar-chart"></i>
-                    <span>レポート</span>
-                  </a>
-                </div>
-              </div>
+                <h3 class="empty-state-title h5 mb-2">テンプレートがありません</h3>
+                <p class="empty-state-description text-muted mb-4">
+                    分析テンプレートを作成して、複数企業の指標を比較分析しましょう
+                </p>
+                <a href="{% url 'analysis_template:create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i>最初のテンプレートを作成
+                </a>
             </div>
-          </div>
-          {% endfor %}
         </div>
-      </div>
-
-      <!-- テーブル表示 -->
-      <div class="tab-pane fade" id="table-view" role="tabpanel" aria-labelledby="table-tab">
-        <div class="card">
-          <div class="card-body p-0">
-            <div class="table-responsive">
-              <table class="table table-hover">
-                <thead>
-                  <tr>
-                    <th>テンプレート名</th>
-                    <th>説明</th>
-                    <th class="text-center" style="width: 120px;">項目数</th>
-                    <th class="text-center" style="width: 100px;">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for template in templates %}
-                  <tr>
-                    <td>
-                      <a href="{% url 'analysis_template:detail' template.id %}" class="fw-semibold text-decoration-none">
-                        {{ template.name }}
-                      </a>
-                      <br>
-                      <small class="text-muted">
-                        <i class="bi bi-calendar-event"></i>
-                        {{ template.created_at|date:"Y/m/d" }}
-                      </small>
-                    </td>
-                    <td>
-                      {% if template.description %}
-                      {{ template.description|truncatechars:80 }}
-                      {% else %}
-                      <span class="text-muted fst-italic">説明なし</span>
-                      {% endif %}
-                    </td>
-                    <td class="text-center">
-                      <span class="badge bg-secondary">{{ template.items.count }}</span>
-                    </td>
-                    <td>
-                      <div class="d-flex gap-1 justify-content-center">
-                        <a href="{% url 'analysis_template:detail' template.id %}" class="btn btn-sm btn-outline-primary"
-                          title="詳細">
-                          <i class="bi bi-eye"></i>
-                        </a>
-                        <a href="{% url 'analysis_template:report' template.id %}" class="btn btn-sm btn-outline-info"
-                          title="レポート">
-                          <i class="bi bi-bar-chart"></i>
-                        </a>
-                      </div>
-                    </td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
     {% else %}
-    <div class="empty-state">
-      <div class="empty-state-icon">
-        <i class="bi bi-clipboard-data fs-3"></i>
-      </div>
-      <h3 class="empty-state-title">分析テンプレートがありません</h3>
-      <p class="empty-state-description">
-        分析テンプレートを作成して、投資の意思決定プロセスを標準化しましょう。
-        各銘柄の分析項目を定型化して容易に比較できます。
-      </p>
-      <a href="{% url 'analysis_template:create' %}" class="btn btn-success">
-        <i class="bi bi-plus-lg"></i>
-        <span>最初のテンプレートを作成</span>
-      </a>
-    </div>
-    {% endif %}
-
-    <!-- 分析テンプレートの使い方ガイド -->
-    <div class="card mt-4">
-      <div class="card-header">
-        <h5 class="mb-0">
-          <i class="bi bi-info-circle text-primary me-2"></i> 分析テンプレートの使い方
-        </h5>
-      </div>
-      <div class="card-body">
-        <div class="row">
-          <div class="col-md-4 mb-3">
-            <div class="d-flex align-items-start">
-              <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
-                <i class="bi bi-clipboard-data text-primary fs-4"></i>
-              </div>
-              <div>
-                <h6 class="mb-2">投資分析を標準化</h6>
-                <p class="text-muted small mb-0">一貫した分析項目で銘柄を評価し、客観的な比較ができます。</p>
-              </div>
+    <!-- テンプレート一覧 -->
+    <div class="row g-3">
+        {% for template in page_obj %}
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-2">
+                        <a href="{% url 'analysis_template:detail' template.pk %}" 
+                           class="text-decoration-none text-dark">
+                            {{ template.name }}
+                        </a>
+                    </h5>
+                    
+                    {% if template.description %}
+                    <p class="card-text text-muted small mb-3">
+                        {{ template.description|truncatewords:20 }}
+                    </p>
+                    {% endif %}
+                    
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="badge badge-primary">
+                            <i class="bi bi-building me-1"></i>{{ template.company_count }}社
+                        </span>
+                        <span class="badge badge-info">
+                            <i class="bi bi-graph-up me-1"></i>指標あり
+                        </span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center text-muted small">
+                        <span>
+                            <i class="bi bi-clock me-1"></i>
+                            {{ template.updated_at|date:"Y/m/d H:i" }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="card-footer bg-transparent border-top-0 pt-0">
+                    <div class="btn-group w-100" role="group">
+                        <a href="{% url 'analysis_template:detail' template.pk %}" 
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye me-1"></i>詳細
+                        </a>
+                        <a href="{% url 'analysis_template:update' template.pk %}" 
+                           class="btn btn-sm btn-outline-warning">
+                            <i class="bi bi-pencil me-1"></i>編集
+                        </a>
+                        <a href="{% url 'analysis_template:delete' template.pk %}" 
+                           class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-trash me-1"></i>削除
+                        </a>
+                    </div>
+                </div>
             </div>
-          </div>
-          <div class="col-md-4 mb-3">
-            <div class="d-flex align-items-start">
-              <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
-                <i class="bi bi-table text-primary fs-4"></i>
-              </div>
-              <div>
-                <h6 class="mb-2">銘柄の比較が簡単</h6>
-                <p class="text-muted small mb-0">複数銘柄の分析結果を一覧で比較し、投資判断の質を高めます。</p>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-4 mb-3">
-            <div class="d-flex align-items-start">
-              <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
-                <i class="bi bi-bar-chart text-primary fs-4"></i>
-              </div>
-              <div>
-                <h6 class="mb-2">投資戦略の進化</h6>
-                <p class="text-muted small mb-0">時間をかけて分析項目を改善し、投資パフォーマンスの向上につながります。</p>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
+        {% endfor %}
     </div>
-  </div>
+
+    <!-- ページネーション -->
+    {% if page_obj.has_other_pages %}
+    <nav aria-label="ページネーション" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+    {% endif %}
 </div>
 
-{% include 'speed_dial.html' with actions=page_actions %}
-{% endblock %}
+<style>
+.empty-state {
+    max-width: 500px;
+    margin: 0 auto;
+}
 
-{% block scripts %}
-{{ block.super }}
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    // スピードダイアルを初期化
-    initializeSpeedDial();
+.empty-state-icon {
+    opacity: 0.5;
+}
 
-    // 検索フォーム送信時の処理
-    const searchForm = document.querySelector('form[method="get"]');
-    if (searchForm) {
-      searchForm.addEventListener('submit', function () {
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const btnText = submitBtn.querySelector('span');
-        const btnIcon = submitBtn.querySelector('i');
+.card {
+    transition: all 0.2s ease;
+}
 
-        btnIcon.className = 'bi bi-hourglass-split';
-        if (btnText) {
-          btnText.textContent = '検索中...';
-        }
-        submitBtn.disabled = true;
-      });
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg) !important;
+}
+
+@media (max-width: 767.98px) {
+    .page-header-with-actions {
+        flex-direction: column;
     }
-
-    // タブ切り替え時のアニメーション
-    const tabButtons = document.querySelectorAll('[data-bs-toggle="tab"]');
-    tabButtons.forEach(button => {
-      button.addEventListener('shown.bs.tab', function (event) {
-        // タブ切り替え完了時の処理（必要に応じて追加）
-        const targetPane = document.querySelector(event.target.getAttribute('data-bs-target'));
-        if (targetPane) {
-          targetPane.style.opacity = '0';
-          setTimeout(() => {
-            targetPane.style.transition = 'opacity 0.3s ease';
-            targetPane.style.opacity = '1';
-          }, 10);
-        }
-      });
-    });
-
-    // ローカルストレージにタブの選択状態を保存
-    const savedTab = localStorage.getItem('analysisTemplateViewTab');
-    if (savedTab) {
-      const tabButton = document.querySelector(`[data-bs-target="${savedTab}"]`);
-      if (tabButton) {
-        const tab = new bootstrap.Tab(tabButton);
-        tab.show();
-      }
+    
+    .page-header-actions {
+        width: 100%;
     }
-
-    // タブ切り替え時に選択状態を保存
-    tabButtons.forEach(button => {
-      button.addEventListener('click', function () {
-        const target = this.getAttribute('data-bs-target');
-        localStorage.setItem('analysisTemplateViewTab', target);
-      });
-    });
-  });
-</script>
+    
+    .page-header-actions .btn {
+        width: 100%;
+    }
+}
+</style>
 {% endblock %}

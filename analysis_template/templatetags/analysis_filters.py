@@ -11,3 +11,15 @@ def get_item(dictionary, key):
 @register.filter
 def multiply(value, arg):
     return value * arg    
+
+
+@register.filter
+def index(indexable, i):
+    """
+    Returns the item at index i from indexable (list/dict).
+    Usage: {{ mydict|index:key }} or {{ mylist|index:0 }}
+    """
+    try:
+        return indexable[i]
+    except (KeyError, IndexError, TypeError):
+        return None

@@ -1,302 +1,629 @@
 {% extends 'base.html' %}
 {% load static %}
-
-{% block title %}{{ template.name }} | カブログ{% endblock %}
+{% load analysis_filters %}
+{% block title %}{{ template.name }} - 分析テンプレート - カブログ{% endblock %}
 
 {% block head %}
-{{ block.super }}
-<style>
-  /* ========== Template Detail Specific Styles ========== */
-  .template-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .template-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin: 0;
-    flex: 1;
-    min-width: 200px;
-  }
-
-  .template-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    align-items: center;
-  }
-
-  .template-description {
-    background-color: var(--bg-secondary);
-    border-left: 3px solid var(--primary-color);
-    padding: 1rem;
-    border-radius: var(--radius-sm);
-    margin-bottom: 1.5rem;
-  }
-
-  .section-title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .section-title i {
-    color: var(--primary-color);
-  }
-
-  .items-table th {
-    font-weight: 600;
-    font-size: 0.875rem;
-  }
-
-  .item-type-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.25rem 0.75rem;
-    border-radius: var(--radius-full);
-    font-size: 0.8125rem;
-    font-weight: 600;
-    white-space: nowrap;
-  }
-
-  .choices-list {
-    margin: 0;
-    padding-left: 1.25rem;
-    list-style-type: disc;
-  }
-
-  .choices-list li {
-    padding: 0.125rem 0;
-    font-size: 0.875rem;
-  }
-
-  .template-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    padding: 0.75rem 1rem;
-  }
-
-  .footer-date {
-    display: flex;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-  }
-
-  /* ========== Dark Mode Support ========== */
-  .dark-mode .template-title,
-  [data-theme="dark"] .template-title {
-    color: var(--dm-foreground);
-  }
-
-  .dark-mode .template-description,
-  [data-theme="dark"] .template-description {
-    background-color: rgba(71, 85, 105, 0.2);
-    border-left-color: var(--dm-primary);
-    color: var(--dm-foreground);
-  }
-
-  .dark-mode .section-title,
-  [data-theme="dark"] .section-title {
-    color: var(--dm-foreground);
-  }
-
-  .dark-mode .section-title i,
-  [data-theme="dark"] .section-title i {
-    color: var(--dm-primary);
-  }
-
-  .dark-mode .choices-list,
-  [data-theme="dark"] .choices-list {
-    color: var(--dm-foreground);
-  }
-
-  .dark-mode .template-footer,
-  [data-theme="dark"] .template-footer {
-    color: var(--dm-muted-foreground);
-  }
-
-  .dark-mode .table-striped tbody tr:nth-of-type(odd),
-  [data-theme="dark"] .table-striped tbody tr:nth-of-type(odd) {
-    background-color: rgba(71, 85, 105, 0.2);
-  }
-
-  /* ========== Responsive ========== */
-  @media (max-width: 768px) {
-    .template-header {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    .template-title {
-      font-size: 1.25rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .template-actions {
-      width: 100%;
-    }
-
-    .template-actions .btn {
-      flex: 1;
-    }
-
-    .template-actions .btn span {
-      display: none;
-    }
-
-    .footer-date {
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-  }
-
-  @media (max-width: 576px) {
-    .template-title {
-      font-size: 1.125rem;
-    }
-
-    .section-title {
-      font-size: 1rem;
-    }
-
-    .template-description {
-      padding: 0.75rem;
-      font-size: 0.875rem;
-    }
-
-    .items-table {
-      font-size: 0.875rem;
-    }
-  }
-</style>
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 {% endblock %}
 
 {% block content %}
-<body class="{% if request.COOKIES.theme == 'dark' %}dark-mode{% endif %}">
-  <div class="card">
-    <div class="card-header d-flex flex-wrap justify-content-between align-items-center">
-      <h3 class="mb-0">{{ template.name }}</h3>
+<div class="container mt-4 mb-5">
+    <!-- ページヘッダー -->
+    <div class="page-header page-header-with-actions mb-4">
+        <div class="page-header-content">
+            <nav aria-label="breadcrumb" class="mb-2">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'analysis_template:list' %}">テンプレート一覧</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ template.name }}</li>
+                </ol>
+            </nav>
+            <h1 class="page-title">
+                <i class="bi bi-clipboard-data"></i>
+                <span class="page-title-text">{{ template.name }}</span>
+            </h1>
+            {% if template.description %}
+            <p class="page-subtitle">{{ template.description }}</p>
+            {% endif %}
+        </div>
+        <div class="page-header-actions">
+            <div class="btn-group" role="group">
+                <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn btn-outline-primary">
+                    <i class="bi bi-building me-1"></i>企業編集
+                </a>
+                <a href="{% url 'analysis_template:metrics_input' template.pk %}" class="btn btn-outline-primary">
+                    <i class="bi bi-graph-up me-1"></i>指標編集
+                </a>
+                <a href="{% url 'analysis_template:update' template.pk %}" class="btn btn-outline-warning">
+                    <i class="bi bi-pencil me-1"></i>編集
+                </a>
+            </div>
+        </div>
+    </div>
 
-      <!-- レスポンシブ対応のボタングループ（右寄せ） -->
-      <div class="d-flex flex-wrap gap-2 justify-content-end">
-        <button id="clone-btn" class="btn btn-info" title="このテンプレートを複製">
-          <i class="bi bi-files"></i> <span class="d-none d-md-inline">複製</span>
-        </button>
-        <a href="{% url 'analysis_template:update' template.id %}" class="btn btn-warning">
-          <i class="bi bi-pencil"></i> <span class="d-none d-md-inline">編集</span>
-        </a>
-        <a href="{% url 'analysis_template:report' template.id %}" class="btn btn-info">
-          <i class="bi bi-bar-chart"></i> <span class="d-none d-md-inline">レポート</span>
-        </a>
-        <a href="{% url 'analysis_template:delete' template.id %}" class="btn btn-danger">
-          <i class="bi bi-trash"></i> <span class="d-none d-md-inline">削除</span>
-        </a>
-        <a href="{% url 'analysis_template:list' %}" class="btn btn-secondary">
-          <i class="bi bi-arrow-left"></i> <span class="d-none d-md-inline">戻る</span>
-        </a>
-      </div>
+    <!-- 総合スコアランキング -->
+    {% if score_ranking %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-trophy me-2"></i>総合スコアランキング
+                    </h5>
+                    <a href="?recalculate=1" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-arrow-clockwise me-1"></i>再計算
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for score in score_ranking %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="score-card p-3 border rounded {% if score.rank == 1 %}border-warning bg-warning bg-opacity-10{% elif score.rank == 2 %}border-secondary{% elif score.rank == 3 %}border-info{% endif %}">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <span class="badge {% if score.rank == 1 %}bg-warning text-dark{% elif score.rank == 2 %}bg-secondary{% elif score.rank == 3 %}bg-info{% else %}bg-light text-dark{% endif %} me-2">
+                                            #{{ score.rank }}
+                                        </span>
+                                        <strong>{{ score.company.name }}</strong>
+                                    </div>
+                                    <div class="text-end">
+                                        {% with grade=score.get_grade %}
+                                        <span class="badge {% if grade.0 == 'S' %}bg-danger{% elif grade.0 == 'A' %}bg-primary{% elif grade.0 == 'B' %}bg-success{% elif grade.0 == 'C' %}bg-warning text-dark{% else %}bg-secondary{% endif %} fs-6">
+                                            {{ grade.0 }}
+                                        </span>
+                                        {% endwith %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <h3 class="mb-0">{{ score.total_score }}</h3>
+                                    <small class="text-muted">総合スコア（100点満点）</small>
+                                </div>
+                                
+                                <div class="row g-2 small">
+                                    {% if score.profitability_score %}
+                                    <div class="col-6">
+                                        <div class="text-muted">収益性</div>
+                                        <strong>{{ score.profitability_score }}</strong>
+                                    </div>
+                                    {% endif %}
+                                    {% if score.growth_score %}
+                                    <div class="col-6">
+                                        <div class="text-muted">成長性</div>
+                                        <strong>{{ score.growth_score }}</strong>
+                                    </div>
+                                    {% endif %}
+                                    {% if score.valuation_score %}
+                                    <div class="col-6">
+                                        <div class="text-muted">割安度</div>
+                                        <strong>{{ score.valuation_score }}</strong>
+                                    </div>
+                                    {% endif %}
+                                    {% if score.financial_health_score %}
+                                    <div class="col-6">
+                                        <div class="text-muted">健全性</div>
+                                        <strong>{{ score.financial_health_score }}</strong>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mt-2">
+                                    <div class="progress" style="height: 4px;">
+                                        <div class="progress-bar bg-success" 
+                                             style="width: {{ score.data_completeness }}%"></div>
+                                    </div>
+                                    <small class="text-muted">データ完全性: {{ score.data_completeness }}%</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="alert alert-info mt-3 mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>スコアの見方:</strong> 
+                        各指標を業種平均=50として正規化し、総合的に評価しています。
+                        Sランク(80以上)が最高評価です。
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    
-    <div class="card-body">
-      {% if template.description %}
-      <div class="mb-4">
-        <h5>説明</h5>
-        <p>{{ template.description }}</p>
-      </div>
-      {% endif %}
+    {% endif %}
 
-      <h5>分析項目</h5>
-      {% if template.items.all %}
-      <div class="table-responsive">
-        <table class="table table-striped">
-          <thead>
-            <tr>
-              <th>項目名</th>
-              <th>種類</th>
-              <th>説明</th>
-              <th>選択肢</th>
-              <th>順序</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in template.items.all %}
-            <tr>
-              <td>{{ item.name }}</td>
-              <td>
-                {% if item.item_type == 'number' %}
-                <span class="badge bg-primary">数値</span>
-                {% elif item.item_type == 'text' %}
-                <span class="badge bg-success">テキスト</span>
-                {% elif item.item_type == 'boolean' %}
-                <span class="badge bg-warning">チェックボックス</span>
-                {% elif item.item_type == 'boolean_with_value' %}
-                <span class="badge bg-danger">チェック+値入力</span>
-                {% else %}
-                <span class="badge bg-info">選択肢</span>
-                {% endif %}
-              </td>
-              <td>{{ item.description|default:"-" }}</td>
-              <td>
-                {% if item.item_type == 'select' and item.choices %}
-                <ul class="mb-0 ps-3">
-                  {% for choice in item.get_choices_list %}
-                  <li>{{ choice }}</li>
-                  {% endfor %}
-                </ul>
-                {% else %}
-                -
-                {% endif %}
-              </td>
-              <td>{{ item.order }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% else %}
-      <div class="alert alert-info">
-        分析項目がありません。
-      </div>
-      {% endif %}
+    <!-- 正規化レーダーチャート -->
+    {% for group_code, group_data in normalized_chart_data.items %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pentagon me-2"></i>{{ group_data.name }} - 正規化レーダーチャート
+                    </h5>
+                    <small class="text-muted">業種平均を50として正規化（0-100スケール）</small>
+                </div>
+                <div class="card-body">
+                    <div style="position: relative; height: 400px;">
+                        <canvas id="radarChart{{ group_code }}"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    
-    <div class="card-footer text-muted">
-      作成日時: {{ template.created_at }} | 更新日時: {{ template.updated_at }}
+    {% endfor %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">データ充足率</h6>
+                            <small class="text-muted">入力された指標の割合</small>
+                        </div>
+                        <div class="text-end">
+                            <h3 class="mb-0 {% if coverage >= 80 %}text-success{% elif coverage >= 50 %}text-warning{% else %}text-danger{% endif %}">
+                                {{ coverage }}%
+                            </h3>
+                            <small class="text-muted">
+                                {% if coverage >= 80 %}
+                                <i class="bi bi-check-circle-fill text-success"></i> 充分なデータ
+                                {% elif coverage >= 50 %}
+                                <i class="bi bi-exclamation-circle-fill text-warning"></i> まずまず
+                                {% else %}
+                                <i class="bi bi-x-circle-fill text-danger"></i> データ不足
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="progress mt-2" style="height: 8px;">
+                        <div class="progress-bar {% if coverage >= 80 %}bg-success{% elif coverage >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                             role="progressbar" 
+                             style="width: {{ coverage }}%;" 
+                             aria-valuenow="{{ coverage }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
+
+    <!-- グループ別チャート表示 -->
+    {% for group_code, group_data in chart_data.items %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bar-chart-line me-2"></i>{{ group_data.name }}の比較
+                    </h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <input type="radio" class="btn-check" name="chartType{{ group_code }}" id="barChart{{ group_code }}" checked>
+                        <label class="btn btn-outline-primary" for="barChart{{ group_code }}">
+                            <i class="bi bi-bar-chart-fill"></i>
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="chartType{{ group_code }}" id="lineChart{{ group_code }}">
+                        <label class="btn btn-outline-primary" for="lineChart{{ group_code }}">
+                            <i class="bi bi-graph-up"></i>
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="chartType{{ group_code }}" id="radarChart{{ group_code }}">
+                        <label class="btn btn-outline-primary" for="radarChart{{ group_code }}">
+                            <i class="bi bi-pentagon"></i>
+                        </label>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div style="position: relative; height: 400px;">
+                        <canvas id="chart{{ group_code }}"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% if not chart_data %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i>
+        チャートを表示するには、指標データを入力してください。
+        <a href="{% url 'analysis_template:metrics_input' template.pk %}" class="alert-link">指標入力画面へ</a>
+    </div>
+    {% endif %}
+
+    <!-- グループ別データテーブル -->
+    {% for group_code, group_info in metrics_by_group.items %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent">
+            <h5 class="mb-0">
+                <i class="bi bi-table me-2"></i>{{ group_info.name }} - 詳細データ
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 200px;">企業</th>
+                            {% for metric in group_info.metrics %}
+                            <th class="text-center" style="min-width: 150px;">
+                                {{ metric.display_name }}
+                                <br>
+                                <small class="text-muted fw-normal">{{ metric.get_formatted_unit }}</small>
+                            </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for company_data in companies_data %}
+                        <tr>
+                            <td class="fw-semibold">
+                                <div>{{ company_data.company.code }}</div>
+                                <small class="text-muted">{{ company_data.company.name }}</small>
+                                {% if company_data.company.industry_name_33 %}
+                                <br><small class="badge badge-info">{{ company_data.company.industry_name_33 }}</small>
+                                {% endif %}
+                            </td>
+                            {% for metric in group_info.metrics %}
+                            <td class="text-center">
+                                {% with company_data.metrics|dictsort:"metric_definition_id" as sorted_metrics %}
+                                    {% for m in sorted_metrics %}
+                                        {% if m.metric_definition_id == metric.id %}
+                                            <div class="d-flex flex-column align-items-center">
+                                                <span class="badge badge-primary mb-1">{{ m.get_formatted_value }}</span>
+                                                {% if benchmark_data and metric.id in benchmark_data and company_data.company.code in benchmark_data|index:metric.id %}
+                                                    {% with bench=benchmark_data|index:metric.id|index:company_data.company.code %}
+                                                    <small class="text-muted">業種平均: {{ bench.average }}{{ metric.get_formatted_unit }}</small>
+                                                    {% endwith %}
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endwith %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="{{ group_info.metrics.count|add:1 }}" class="text-center text-muted py-4">
+                                データがありません
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- 情報カード -->
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-info-circle me-1"></i>テンプレート情報
+                    </h6>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">登録企業数</dt>
+                        <dd class="col-sm-8">{{ template.get_company_count }}社</dd>
+                        
+                        <dt class="col-sm-4">指標データ数</dt>
+                        <dd class="col-sm-8">{{ template.metrics.count }}件</dd>
+                        
+                        <dt class="col-sm-4">作成日時</dt>
+                        <dd class="col-sm-8">{{ template.created_at|date:"Y年m月d日 H:i" }}</dd>
+                        
+                        <dt class="col-sm-4">最終更新</dt>
+                        <dd class="col-sm-8">{{ template.updated_at|date:"Y年m月d日 H:i" }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-gear me-1"></i>操作
+                    </h6>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn btn-outline-primary">
+                            <i class="bi bi-building me-1"></i>企業を追加・削除
+                        </a>
+                        <a href="{% url 'analysis_template:metrics_input' template.pk %}" class="btn btn-outline-primary">
+                            <i class="bi bi-graph-up me-1"></i>指標値を編集
+                        </a>
+                        <a href="{% url 'analysis_template:update' template.pk %}" class="btn btn-outline-warning">
+                            <i class="bi bi-pencil me-1"></i>テンプレート情報を編集
+                        </a>
+                        <a href="{% url 'analysis_template:delete' template.pk %}" class="btn btn-outline-danger">
+                            <i class="bi bi-trash me-1"></i>このテンプレートを削除
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-{% include 'speed_dial.html' with actions=page_actions %}
-{% endblock %}
-
-{% block scripts %}
-{{ block.super }}
-<!-- スピードダイアルのJSを明示的に読み込む -->
 <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    // スピードダイアルを初期化
-    initializeSpeedDial();
+const chartData = {{ chart_data|safe }};
+const normalizedChartData = {{ normalized_chart_data|safe }};
+const currentCharts = {};
 
-    // 複製ボタンのクリックイベント
-    document.getElementById('clone-btn').addEventListener('click', function () {
-      if (confirm('このテンプレートを複製しますか？\n複製後は新しいテンプレートの編集画面に移動します。')) {
-        window.location.href = "{% url 'analysis_template:clone' template.id %}";
-      }
+// チャートの色パレット
+const colors = [
+    'rgba(90, 126, 197, 0.8)',
+    'rgba(16, 185, 129, 0.8)',
+    'rgba(239, 68, 68, 0.8)',
+    'rgba(245, 158, 11, 0.8)',
+    'rgba(59, 130, 246, 0.8)',
+    'rgba(139, 92, 246, 0.8)',
+    'rgba(236, 72, 153, 0.8)',
+    'rgba(14, 165, 233, 0.8)',
+];
+
+function createChart(groupCode, type = 'bar') {
+    const ctx = document.getElementById(`chart${groupCode}`);
+    
+    if (!ctx || !chartData[groupCode]) {
+        return;
+    }
+    
+    if (currentCharts[groupCode]) {
+        currentCharts[groupCode].destroy();
+    }
+    
+    const data = chartData[groupCode];
+    const datasets = data.datasets.map((dataset, index) => ({
+        label: dataset.label,
+        data: dataset.data,
+        backgroundColor: colors[index % colors.length],
+        borderColor: colors[index % colors.length].replace('0.8', '1'),
+        borderWidth: 2,
+        fill: type === 'radar',
+        spanGaps: true // nullデータをスキップ
+    }));
+    
+    currentCharts[groupCode] = new Chart(ctx, {
+        type: type,
+        data: {
+            labels: data.labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            if (context.parsed.y === null) {
+                                return context.dataset.label + ': データなし';
+                            }
+                            const dataset = data.datasets[context.datasetIndex];
+                            return context.dataset.label + ': ' + context.parsed.y + dataset.unit;
+                        }
+                    }
+                }
+            },
+            scales: type !== 'radar' ? {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            // 単位に応じたフォーマット
+                            const firstDataset = data.datasets[0];
+                            if (firstDataset && firstDataset.metric_type === 'amount') {
+                                return value.toLocaleString();
+                            }
+                            return value;
+                        }
+                    }
+                }
+            } : {}
+        }
     });
-  });
+}
+
+function createNormalizedRadarChart(groupCode) {
+    const ctx = document.getElementById(`radarChart${groupCode}`);
+    
+    if (!ctx || !normalizedChartData[groupCode]) {
+        return;
+    }
+    
+    const data = normalizedChartData[groupCode];
+    const datasets = data.datasets.map((dataset, index) => ({
+        label: dataset.label,
+        data: dataset.data,
+        backgroundColor: colors[index % colors.length].replace('0.8', '0.2'),
+        borderColor: colors[index % colors.length],
+        borderWidth: 2,
+        pointBackgroundColor: colors[index % colors.length],
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: colors[index % colors.length]
+    }));
+    
+    // 業種平均の参照線（50）を追加
+    datasets.push({
+        label: '業種平均',
+        data: new Array(data.labels.length).fill(50),
+        backgroundColor: 'rgba(128, 128, 128, 0.1)',
+        borderColor: 'rgba(128, 128, 128, 0.5)',
+        borderWidth: 2,
+        borderDash: [5, 5],
+        pointRadius: 0
+    });
+    
+    new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: data.labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.r.toFixed(1);
+                        }
+                    }
+                }
+            },
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    min: 0,
+                    max: 100,
+                    ticks: {
+                        stepSize: 25,
+                        callback: function(value) {
+                            if (value === 50) return '50 (平均)';
+                            return value;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// 初期チャート作成
+document.addEventListener('DOMContentLoaded', function() {
+    // グループ別チャート
+    Object.keys(chartData).forEach(groupCode => {
+        createChart(groupCode, 'bar');
+        
+        // チャートタイプ切り替えイベント
+        document.querySelectorAll(`input[name="chartType${groupCode}"]`).forEach(input => {
+            input.addEventListener('change', function() {
+                const type = this.id.includes('bar') ? 'bar' : 
+                             this.id.includes('line') ? 'line' : 'radar';
+                createChart(groupCode, type);
+            });
+        });
+    });
+    
+    // 正規化レーダーチャート
+    Object.keys(normalizedChartData).forEach(groupCode => {
+        createNormalizedRadarChart(groupCode);
+    });
+});
+
+// データ充足率の詳細表示（クリックで詳細表示）
+document.querySelector('.progress')?.addEventListener('click', function() {
+    alert('データ充足率: {{ coverage }}%\n\n' +
+          '入力済み指標数 / 全体の指標数\n' +
+          '部分的なデータでもチャートは表示されます。');
+});
 </script>
+
+<style>
+.table th {
+    background-color: var(--bg-secondary);
+    border-bottom: 2px solid var(--border-primary);
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.table tbody tr:hover {
+    background-color: var(--bg-secondary);
+}
+
+dl {
+    font-size: 0.9rem;
+}
+
+dt {
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+dd {
+    margin-bottom: 0.5rem;
+}
+
+.score-card {
+    transition: all 0.2s ease;
+}
+
+.score-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.score-card h3 {
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+.badge.fs-6 {
+    font-size: 1.25rem !important;
+    padding: 0.5rem 0.75rem;
+}
+
+@media (max-width: 767.98px) {
+    .page-header-with-actions {
+        flex-direction: column;
+    }
+    
+    .page-header-actions {
+        width: 100%;
+        margin-top: 1rem;
+    }
+    
+    .page-header-actions .btn-group {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .page-header-actions .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    #chartTypeToggle {
+        flex-wrap: wrap;
+    }
+}
+
+/* Dark Mode Support for Score Cards */
+.dark-mode .score-card,
+[data-theme="dark"] .score-card {
+    background-color: rgba(71, 85, 105, 0.2);
+    border-color: var(--dm-border) !important;
+}
+
+.dark-mode .score-card.border-warning,
+[data-theme="dark"] .score-card.border-warning {
+    border-color: var(--dm-accent) !important;
+    background-color: rgba(226, 184, 112, 0.1) !important;
+}
+
+.dark-mode .score-card h3,
+[data-theme="dark"] .score-card h3 {
+    color: var(--dm-primary);
+}
+
+.dark-mode .score-card .text-muted,
+[data-theme="dark"] .score-card .text-muted {
+    color: var(--dm-muted-foreground) !important;
+}
+</style>
 {% endblock %}

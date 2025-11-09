@@ -1,65 +1,132 @@
 # analysis_template/admin.py
 from django.contrib import admin
-from .models import AnalysisTemplate, AnalysisItem, DiaryAnalysisValue
-from django.db.models import Count
+from .models import (
+    AnalysisTemplate, TemplateCompany, MetricDefinition, TemplateMetrics,
+    IndustryBenchmark
+)
 
 
-class AnalysisItemInline(admin.TabularInline):
-    model = AnalysisItem
+class TemplateCompanyInline(admin.TabularInline):
+    model = TemplateCompany
     extra = 1
-    fields = ('name', 'item_type', 'description', 'order', 'choices', 'value_label')
+    autocomplete_fields = ['company']
+
+
+class TemplateMetricsInline(admin.TabularInline):
+    model = TemplateMetrics
+    extra = 1
+    autocomplete_fields = ['company', 'metric_definition']
+
 
 @admin.register(AnalysisTemplate)
 class AnalysisTemplateAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'user', 'created_at', 'updated_at', 'item_count')
-    list_filter = ('user', 'created_at')
-    search_fields = ('name', 'description', 'user__username')
-    date_hierarchy = 'created_at'
-    inlines = [AnalysisItemInline]
+    list_display = [
+        'name', 'user', 'get_company_count', 'created_at', 'updated_at'
+    ]
+    list_filter = ['created_at', 'updated_at', 'user']
+    search_fields = ['name', 'description', 'user__username']
+    readonly_fields = ['created_at', 'updated_at']
+    inlines = [TemplateCompanyInline, TemplateMetricsInline]
     
-    def get_queryset(self, request):
-        # items の数をあらかじめ計算してクエリセットに追加
-        queryset = super().get_queryset(request)
-        queryset = queryset.annotate(items_count=Count('items'))
-        return queryset
+    fieldsets = (
+        ('基本情報', {
+            'fields': ('name', 'description', 'user')
+        }),
+        ('タイムスタンプ', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
     
-    def item_count(self, obj):
-        # annotate された値を使用
-        return obj.items_count
-    item_count.short_description = '項目数'
-    item_count.admin_order_field = 'items_count'  # 項目数でのソートを可能に
-    
+    def get_company_count(self, obj):
+        return obj.get_company_count()
+    get_company_count.short_description = '企業数'
 
-@admin.register(AnalysisItem)
-class AnalysisItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'template', 'item_type', 'order')
-    list_filter = ('item_type', 'template__name')
-    search_fields = ('name', 'description', 'template__name')
-    list_select_related = ('template',)
 
-@admin.register(DiaryAnalysisValue)
-class DiaryAnalysisValueAdmin(admin.ModelAdmin):
-    list_display = ('id', 'diary', 'analysis_item', 'get_item_type', 'get_display_value')
-    list_filter = ('analysis_item__template', 'analysis_item__item_type')
-    search_fields = ('diary__title', 'diary__stock_name', 'analysis_item__name')
-    list_select_related = ('diary', 'analysis_item')
+@admin.register(TemplateCompany)
+class TemplateCompanyAdmin(admin.ModelAdmin):
+    list_display = ['template', 'company', 'display_order', 'added_at']
+    list_filter = ['added_at', 'template']
+    search_fields = ['template__name', 'company__name', 'company__code']
+    autocomplete_fields = ['template', 'company']
+    ordering = ['template', 'display_order']
+
+
+@admin.register(MetricDefinition)
+class MetricDefinitionAdmin(admin.ModelAdmin):
+    list_display = [
+        'display_name', 'name', 'metric_type', 'metric_group', 'unit',
+        'chart_suitable', 'is_active', 'display_order'
+    ]
+    list_filter = ['metric_type', 'metric_group', 'chart_suitable', 'is_active']
+    search_fields = ['name', 'display_name', 'description']
+    list_editable = ['chart_suitable', 'is_active', 'display_order']
+    ordering = ['metric_group', 'display_order', 'name']
     
-    def get_item_type(self, obj):
-        return obj.analysis_item.get_item_type_display()
-    get_item_type.short_description = '項目タイプ'
+    fieldsets = (
+        ('基本情報', {
+            'fields': ('name', 'display_name', 'metric_type', 'metric_group', 'description')
+        }),
+        ('値の設定', {
+            'fields': ('unit', 'min_value', 'max_value')
+        }),
+        ('表示設定', {
+            'fields': ('chart_suitable', 'is_active', 'display_order')
+        }),
+    )
+
+
+@admin.register(TemplateMetrics)
+class TemplateMetricsAdmin(admin.ModelAdmin):
+    list_display = [
+        'template', 'company', 'metric_definition', 'value',
+        'fiscal_year', 'updated_at'
+    ]
+    list_filter = ['fiscal_year', 'updated_at', 'metric_definition']
+    search_fields = [
+        'template__name', 'company__name', 'company__code',
+        'metric_definition__display_name'
+    ]
+    readonly_fields = ['created_at', 'updated_at']
+    autocomplete_fields = ['template', 'company', 'metric_definition']
     
-    def get_display_value(self, obj):
-        if obj.analysis_item.item_type == 'number':
-            return obj.number_value
-        elif obj.analysis_item.item_type == 'boolean':
-            return '✓' if obj.boolean_value else '✗'
-        elif obj.analysis_item.item_type == 'boolean_with_value':
-            boolean_status = '✓' if obj.boolean_value else '✗'
-            if obj.number_value is not None:
-                return f"{boolean_status} ({obj.number_value})"
-            elif obj.text_value:
-                return f"{boolean_status} ({obj.text_value})"
-            return boolean_status
-        else:
-            return obj.text_value
-    get_display_value.short_description = '値'
+    fieldsets = (
+        ('関連情報', {
+            'fields': ('template', 'company', 'metric_definition')
+        }),
+        ('指標値', {
+            'fields': ('value', 'fiscal_year', 'notes')
+        }),
+        ('タイムスタンプ', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(IndustryBenchmark)
+class IndustryBenchmarkAdmin(admin.ModelAdmin):
+    list_display = [
+        'industry_name', 'metric_definition', 'average_value',
+        'excellent_threshold', 'poor_threshold', 'fiscal_year'
+    ]
+    list_filter = ['fiscal_year', 'industry_code', 'metric_definition']
+    search_fields = ['industry_name', 'industry_code', 'metric_definition__display_name']
+    autocomplete_fields = ['metric_definition']
+    readonly_fields = ['created_at', 'updated_at']
+    
+    fieldsets = (
+        ('基本情報', {
+            'fields': ('industry_code', 'industry_name', 'metric_definition', 'fiscal_year')
+        }),
+        ('統計値', {
+            'fields': ('average_value', 'median_value', 'lower_quartile', 'upper_quartile')
+        }),
+        ('評価基準', {
+            'fields': ('excellent_threshold', 'poor_threshold', 'notes')
+        }),
+        ('タイムスタンプ', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )

@@ -4,7 +4,6 @@ from django.core.exceptions import ValidationError
 from .models import StockDiary, Transaction, StockSplit, DiaryNote
 from tags.models import Tag
 from checklist.models import Checklist
-from analysis_template.models import AnalysisTemplate
 from decimal import Decimal
 
 
@@ -21,16 +20,7 @@ class StockDiaryForm(forms.ModelForm):
         }),
         help_text="日記に関連する画像（チャート、スクリーンショット等）"
     )
-    
-    # 分析テンプレート選択
-    analysis_template = forms.ModelChoiceField(
-        queryset=AnalysisTemplate.objects.none(),
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        label="分析テンプレート",
-        help_text="分析データを入力する場合は、テンプレートを選択してください"
-    )
-    
+        
     # 初回購入情報（オプション）
     add_initial_purchase = forms.BooleanField(
         required=False,
@@ -119,7 +109,6 @@ class StockDiaryForm(forms.ModelForm):
         if user:
             self.fields['checklist'].queryset = Checklist.objects.filter(user=user)
             self.fields['tags'].queryset = Tag.objects.filter(user=user)
-            self.fields['analysis_template'].queryset = AnalysisTemplate.objects.filter(user=user)
         
         # ラベル設定
         self.fields['stock_symbol'].label = "銘柄コード（任意）"

@@ -59,7 +59,6 @@ class ProfileView(LoginRequiredMixin, TemplateView):
         
         # ユーザーの統計情報を取得
         context['diary_count'] = user.stockdiary_set.count()
-        context['template_count'] = user.analysistemplate_set.count()
         context['tag_count'] = user.tag_set.count()
         
         # 最近の投資日記を取得（最新5件）

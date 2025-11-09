@@ -9,7 +9,6 @@ from decimal import Decimal
 from datetime import date, timedelta
 
 from stockdiary.models import StockDiary, Transaction, DiaryNote, StockSplit
-from analysis_template.models import AnalysisTemplate, AnalysisItem
 from tags.models import Tag
 
 User = get_user_model()
@@ -125,45 +124,6 @@ def sample_tags(user):
     tag2 = Tag.objects.create(user=user, name='配当狙い')
     tag3 = Tag.objects.create(user=user, name='成長株')
     return [tag1, tag2, tag3]
-
-
-@pytest.fixture
-def sample_template(user):
-    """サンプル分析テンプレート"""
-    template = AnalysisTemplate.objects.create(
-        user=user,
-        name='基本分析',
-        description='基本的な分析項目'
-    )
-    
-    # 数値型項目
-    AnalysisItem.objects.create(
-        template=template,
-        name='PER',
-        description='株価収益率',
-        item_type='number',
-        order=1
-    )
-    
-    # ブール型項目
-    AnalysisItem.objects.create(
-        template=template,
-        name='業績好調',
-        description='直近の業績',
-        item_type='boolean',
-        order=2
-    )
-    
-    # テキスト型項目
-    AnalysisItem.objects.create(
-        template=template,
-        name='投資メモ',
-        description='その他メモ',
-        item_type='text',
-        order=3
-    )
-    
-    return template
 
 
 @pytest.fixture

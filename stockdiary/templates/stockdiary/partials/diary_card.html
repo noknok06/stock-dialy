@@ -153,22 +153,6 @@
         </button>
         {% endif %}
         
-        <!-- 分析タブ -->
-        {% if diary.analysis_values.exists %}
-        <button class="nav-link tab-btn" id="analysis-tab-{{ diary.id }}"
-                data-bs-toggle="tab" 
-                data-bs-target="#analysis-content-{{ diary.id }}"
-                hx-get="{% url 'stockdiary:tab_content' diary.id 'analysis' %}"
-                hx-target="#analysis-content-{{ diary.id }}"
-                hx-trigger="click once"
-                hx-swap="innerHTML"
-                hx-indicator="#tab-loading-indicator-{{ diary.id }}"
-                type="button" role="tab">
-          <i class="bi bi-clipboard-data"></i> 
-          <span class="d-none d-sm-inline">分析</span>
-        </button>
-        {% endif %}
-        
         <!-- 詳細タブ -->
         <button class="nav-link tab-btn" id="details-tab-{{ diary.id }}"
                 data-bs-toggle="tab" 
@@ -223,13 +207,6 @@
       </div>
       {% endif %}
       
-      <!-- 分析テンプレートタブ -->
-      {% if diary.analysis_values.exists %}
-      <div class="tab-pane fade" id="analysis-content-{{ diary.id }}" role="tabpanel">
-        <!-- 空のまま - HTMXで内容を挿入 -->
-      </div>
-      {% endif %}
-
       <!-- 詳細情報タブ -->
       <div class="tab-pane fade" id="details-content-{{ diary.id }}" role="tabpanel">
         <!-- 空のまま - HTMXで内容を挿入 -->
