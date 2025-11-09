@@ -138,7 +138,8 @@ class BulkMetricsForm(forms.Form):
                     widget=forms.NumberInput(attrs={
                         'class': 'form-control',
                         'step': '0.01',
-                        'placeholder': f'{metric_def.get_formatted_unit()}'
+                        'placeholder': f'{metric_def.get_formatted_unit()}',
+                        'id': f'id_metric_{metric_def.id}'  # ここを追加
                     })
                 )
 

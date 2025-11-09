@@ -20,8 +20,31 @@
             <span class="page-title-text">指標入力</span>
         </h1>
         <p class="page-subtitle">
-            選択した企業の財務指標を入力してください
+            Yahoo Finance APIから自動取得、または手動で入力できます
         </p>
+    </div>
+
+    <!-- ⭐ 自動取得コントロールパネル -->
+    <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="card-body text-white">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h5 class="mb-2">
+                        <i class="bi bi-cloud-download me-2"></i>
+                        Yahoo Finance APIから自動取得
+                    </h5>
+                    <p class="mb-0 small opacity-75">
+                        選択した企業の財務指標を一括で取得できます（ROE、PER、PBRなど約20指標）
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <button type="button" class="btn btn-light btn-lg" id="autoFetchBtn">
+                        <i class="bi bi-download me-2"></i>
+                        一括自動取得
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <form method="post" id="metricsForm">
@@ -45,7 +68,7 @@
                     <div class="col-md-9">
                         <div class="alert alert-info mb-0">
                             <i class="bi bi-info-circle me-2"></i>
-                            各企業の財務指標を入力してください。空欄のまま保存すると、その指標は保存されません。
+                            空欄のまま保存すると、その指標は保存されません。APIで取得できない指標は手動で入力してください。
                         </div>
                     </div>
                 </div>
@@ -54,16 +77,27 @@
 
         <!-- 企業別指標入力 -->
         {% for company in companies %}
-        <div class="card border-0 shadow-sm mb-4">
+        <div class="card border-0 shadow-sm mb-4" data-company-code="{{ company.code }}">
             <div class="card-header bg-transparent">
-                <h5 class="mb-0">
-                    <i class="bi bi-building me-2"></i>
-                    {{ company.name }}
-                    <small class="text-muted ms-2">{{ company.code }}</small>
-                    {% if company.industry_name_33 %}
-                    <span class="badge bg-light text-dark ms-2">{{ company.industry_name_33 }}</span>
-                    {% endif %}
-                </h5>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">
+                            <i class="bi bi-building me-2"></i>
+                            {{ company.name }}
+                            <small class="text-muted ms-2">{{ company.code }}</small>
+                            {% if company.industry_name_33 %}
+                            <span class="badge bg-light text-dark ms-2">{{ company.industry_name_33 }}</span>
+                            {% endif %}
+                        </h5>
+                    </div>
+                    <button type="button" 
+                            class="btn btn-sm btn-primary fetch-single-btn"
+                            data-company-code="{{ company.code }}"
+                            data-company-name="{{ company.name }}">
+                        <i class="bi bi-cloud-download me-1"></i>
+                        この企業のデータを取得
+                    </button>
+                </div>
             </div>
             <div class="card-body">
                 {% for group_code, group_info in metric_groups.items %}
@@ -85,9 +119,10 @@
                             </label>
                             <div class="input-group input-group-sm">
                                 <input type="number" 
-                                       class="form-control" 
+                                       class="form-control metric-input" 
                                        id="metric_{{ company.id }}_{{ metric.id }}"
                                        name="metric_{{ company.id }}_{{ metric.id }}"
+                                       data-metric-name="{{ metric.name }}"
                                        value="{{ existing_data|get_item:'metric_'|add:company.id|add:'_'|add:metric.id }}"
                                        step="0.01"
                                        placeholder="0.00">
@@ -121,14 +156,292 @@
     </form>
 </div>
 
+<!-- ⭐ 自動取得モーダル -->
+<div class="modal fade" id="autoFetchModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-cloud-download me-2"></i>
+                    Yahoo Finance APIから自動取得
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>取得可能な指標:</strong> ROE、ROA、営業利益率、PER、PBR、配当利回り、自己資本比率など約20指標
+                </div>
+                
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="overwriteExisting">
+                    <label class="form-check-label" for="overwriteExisting">
+                        既存のデータを上書きする
+                        <small class="text-muted d-block">チェックしない場合、既にデータがある指標はスキップされます</small>
+                    </label>
+                </div>
+                
+                <div id="fetchProgress" class="d-none">
+                    <div class="progress mb-3">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" 
+                             style="width: 0%"
+                             id="progressBar"></div>
+                    </div>
+                    <div id="fetchStatus" class="small text-muted"></div>
+                </div>
+                
+                <div id="fetchResults" class="d-none">
+                    <h6 class="mb-3">取得結果</h6>
+                    <div id="resultsList"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                <button type="button" class="btn btn-primary" id="executeAutoFetch">
+                    <i class="bi bi-download me-1"></i>
+                    実行
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+const templateId = {{ template.pk }};
+const csrfToken = '{{ csrf_token }}';
+
 document.addEventListener('DOMContentLoaded', function() {
     // ツールチップ初期化
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
+    tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
+    
+    // モーダル
+    const autoFetchModal = new bootstrap.Modal(document.getElementById('autoFetchModal'));
+    
+    // ⭐ 一括自動取得ボタン
+    document.getElementById('autoFetchBtn').addEventListener('click', function() {
+        autoFetchModal.show();
+    });
+    
+    // ⭐ 実行ボタン
+    document.getElementById('executeAutoFetch').addEventListener('click', function() {
+        executeBulkFetch();
+    });
+    
+    // ⭐ 個別取得ボタン
+    document.querySelectorAll('.fetch-single-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const code = this.dataset.companyCode;
+            const name = this.dataset.companyName;
+            fetchSingleCompany(code, name);
+        });
     });
 });
+
+// ⭐ 一括取得実行
+async function executeBulkFetch() {
+    const companyCodes = Array.from(document.querySelectorAll('[data-company-code]'))
+        .map(card => card.dataset.companyCode);
+    
+    const fiscalYear = document.getElementById('fiscal_year').value;
+    const overwrite = document.getElementById('overwriteExisting').checked;
+    
+    const progressDiv = document.getElementById('fetchProgress');
+    const resultsDiv = document.getElementById('fetchResults');
+    const progressBar = document.getElementById('progressBar');
+    const statusText = document.getElementById('fetchStatus');
+    const executeBtn = document.getElementById('executeAutoFetch');
+    
+    // UI準備
+    progressDiv.classList.remove('d-none');
+    resultsDiv.classList.add('d-none');
+    executeBtn.disabled = true;
+    progressBar.style.width = '0%';
+    statusText.textContent = 'データを取得しています...';
+    
+    try {
+        const response = await fetch(`/analysis_template/${templateId}/metrics/auto-fetch/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                company_codes: companyCodes,
+                fiscal_year: fiscalYear,
+                overwrite: overwrite
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // プログレスバー更新
+            progressBar.style.width = '50%';
+            statusText.textContent = 'フォームに反映しています...';
+            
+            // フォームにデータを反映
+            updateFormWithResults(data.results);
+            
+            // 結果を表示
+            displayResults(data);
+            
+            progressBar.style.width = '100%';
+            progressBar.classList.remove('progress-bar-animated');
+            progressBar.classList.add('bg-success');
+            statusText.textContent = `✓ 完了: ${data.summary.success}社成功 / ${data.summary.error}社失敗 / ${data.summary.skipped}指標スキップ`;
+        } else {
+            progressBar.classList.add('bg-danger');
+            statusText.textContent = 'エラー: ' + data.error;
+            alert('エラー: ' + data.error);
+        }
+    } catch (error) {
+        progressBar.classList.add('bg-danger');
+        statusText.textContent = '取得に失敗しました: ' + error.message;
+        alert('取得に失敗しました: ' + error.message);
+    } finally {
+        executeBtn.disabled = false;
+    }
+}
+
+// ⭐ 個別取得
+async function fetchSingleCompany(code, name) {
+    const btn = document.querySelector(`[data-company-code="${code}"].fetch-single-btn`);
+    const originalHtml = btn.innerHTML;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>取得中...';
+    
+    const fiscalYear = document.getElementById('fiscal_year').value;
+    
+    try {
+        const response = await fetch(`/analysis_template/${templateId}/metrics/auto-fetch/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                company_codes: [code],
+                fiscal_year: fiscalYear,
+                overwrite: true
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.results.length > 0) {
+            const result = data.results[0];
+            
+            if (result.status === 'success') {
+                // フォームにデータを反映
+                updateFormWithResults([result]);
+                
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-success');
+                btn.innerHTML = `<i class="bi bi-check-circle me-1"></i>取得完了 (${result.metrics_count}指標)`;
+                
+                setTimeout(() => {
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-primary');
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                }, 3000);
+            } else {
+                alert(`取得失敗: ${result.message}`);
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        } else {
+            alert('データの取得に失敗しました');
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    } catch (error) {
+        alert('取得に失敗しました: ' + error.message);
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+    }
+}
+
+// ⭐ 結果表示
+function displayResults(data) {
+    const resultsDiv = document.getElementById('fetchResults');
+    const resultsList = document.getElementById('resultsList');
+    
+    let html = `
+        <div class="alert alert-success">
+            <strong>取得完了:</strong> ${data.summary.success}/${data.summary.total}社
+        </div>
+        <div class="list-group">
+    `;
+    
+    data.results.forEach(result => {
+        const iconClass = result.status === 'success' ? 'bi-check-circle text-success' : 
+                         result.status === 'error' ? 'bi-x-circle text-danger' : 
+                         'bi-dash-circle text-warning';
+        
+        html += `
+            <div class="list-group-item">
+                <div class="d-flex align-items-start">
+                    <i class="bi ${iconClass} me-2 mt-1"></i>
+                    <div class="flex-grow-1">
+                        <strong>${result.name || result.code}</strong>
+                        ${result.metrics_count ? `<span class="badge bg-primary ms-2">${result.metrics_count}指標</span>` : ''}
+                        ${result.message ? `<div class="small text-muted">${result.message}</div>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    resultsList.innerHTML = html;
+    resultsDiv.classList.remove('d-none');
+}
+
+// ⭐ フォームにデータを反映
+function updateFormWithResults(results) {
+    console.log('📊 Updating form with results:', results);
+    
+    let updatedCount = 0;
+    
+    results.forEach(result => {
+        if (result.status !== 'success' || !result.values) {
+            console.warn(`⚠️ Skipping ${result.code}: status=${result.status}, has values=${!!result.values}`);
+            return;
+        }
+        
+        const companyCard = document.querySelector(`[data-company-code="${result.code}"]`);
+        if (!companyCard) {
+            console.error(`❌ Company card not found for code: ${result.code}`);
+            return;
+        }
+        
+        console.log(`✓ Processing ${result.name} (${result.code})`);
+        
+        // 各指標の値をフォームに設定
+        Object.entries(result.values).forEach(([metricName, metricData]) => {
+            const input = document.getElementById(metricData.field_name);
+            if (input) {
+                input.value = metricData.value;
+                updatedCount++;
+                console.log(`  ✓ ${metricName}: ${metricData.value} → ${metricData.field_name}`);
+                
+                // アニメーション効果を追加
+                input.classList.add('bg-success', 'bg-opacity-10');
+                setTimeout(() => {
+                    input.classList.remove('bg-success', 'bg-opacity-10');
+                }, 1000);
+            } else {
+                console.warn(`  ⚠️ Input field not found: ${metricData.field_name}`);
+            }
+        });
+    });
+    
+    console.log(`✅ Total ${updatedCount} fields updated`);
+}
 
 // フォームクリア
 function clearForm() {
@@ -163,6 +476,7 @@ document.getElementById('metricsForm').addEventListener('submit', function(e) {
 <style>
 .input-group-sm .form-control {
     font-size: 0.875rem;
+    transition: all 0.3s ease;
 }
 
 .input-group-sm .input-group-text {
@@ -172,6 +486,26 @@ document.getElementById('metricsForm').addEventListener('submit', function(e) {
 
 .card-header h5 {
     font-size: 1.125rem;
+}
+
+/* ⭐ データ取得時のアニメーション */
+.metric-input.bg-success {
+    animation: pulse-success 1s ease-in-out;
+}
+
+@keyframes pulse-success {
+    0% {
+        background-color: transparent;
+        transform: scale(1);
+    }
+    50% {
+        background-color: rgba(25, 135, 84, 0.2);
+        transform: scale(1.02);
+    }
+    100% {
+        background-color: transparent;
+        transform: scale(1);
+    }
 }
 
 @media (max-width: 767.98px) {
@@ -209,19 +543,6 @@ document.getElementById('metricsForm').addEventListener('submit', function(e) {
     background-color: rgba(71, 85, 105, 0.4);
     border-color: var(--dm-primary);
     color: var(--dm-foreground);
-}
-
-.dark-mode .alert-info,
-[data-theme="dark"] .alert-info {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
-    border-color: rgba(59, 130, 246, 0.3);
-    color: var(--dm-info);
-}
-
-.dark-mode .badge.bg-light,
-[data-theme="dark"] .badge.bg-light {
-    background: rgba(71, 85, 105, 0.3) !important;
-    color: var(--dm-foreground) !important;
 }
 </style>
 {% endblock %}

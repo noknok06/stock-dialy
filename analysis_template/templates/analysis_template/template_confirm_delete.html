@@ -1,198 +1,63 @@
+<!-- ========================================
+templates/analysis_template/template_confirm_delete.html
+======================================== -->
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}テンプレート削除 - {{ template.name }} - カブログ{% endblock %}
+{% block title %}レポート削除確認 - カブログ{% endblock %}
 
 {% block content %}
-<div class="container mt-4 mb-5" style="max-width: 600px;">
-    <!-- ページヘッダー -->
-    <div class="page-header mb-4">
-        <h1 class="page-title">
-            <i class="bi bi-trash"></i>
-            <span class="page-title-text">テンプレート削除</span>
-        </h1>
-        <p class="page-subtitle">
-            以下のテンプレートを削除してもよろしいですか？
-        </p>
-    </div>
-
-    <!-- 警告カード -->
-    <div class="alert alert-danger d-flex align-items-start" role="alert">
-        <i class="bi bi-exclamation-triangle-fill me-2 fs-4"></i>
-        <div>
-            <h6 class="alert-heading mb-2">この操作は取り消せません</h6>
-            <p class="mb-0">
-                テンプレートを削除すると、関連する企業選択や指標データもすべて削除されます。
-            </p>
-        </div>
-    </div>
-
-    <!-- 削除対象の情報 -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body">
-            <h5 class="card-title mb-3">{{ template.name }}</h5>
-            
-            {% if template.description %}
-            <p class="card-text text-muted mb-3">
-                {{ template.description }}
-            </p>
-            {% endif %}
-            
-            <dl class="row mb-0">
-                <dt class="col-sm-4 text-muted">登録企業数</dt>
-                <dd class="col-sm-8">
-                    <span class="badge bg-primary">{{ template.get_company_count }}社</span>
-                </dd>
-                
-                <dt class="col-sm-4 text-muted">指標データ数</dt>
-                <dd class="col-sm-8">
-                    <span class="badge bg-info">{{ template.metrics.count }}件</span>
-                </dd>
-                
-                <dt class="col-sm-4 text-muted">作成日時</dt>
-                <dd class="col-sm-8">{{ template.created_at|date:"Y年m月d日 H:i" }}</dd>
-                
-                <dt class="col-sm-4 text-muted">最終更新</dt>
-                <dd class="col-sm-8">{{ template.updated_at|date:"Y年m月d日 H:i" }}</dd>
-            </dl>
-        </div>
-    </div>
-
-    <!-- 削除対象の企業一覧 -->
-    {% if template.companies.exists %}
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-transparent">
-            <h6 class="mb-0">
-                <i class="bi bi-building me-1"></i>削除される企業データ
-            </h6>
-        </div>
-        <div class="card-body">
-            <div class="d-flex flex-wrap gap-2">
-                {% for company in template.companies.all|slice:":10" %}
-                <span class="badge bg-secondary">{{ company.code }}: {{ company.name }}</span>
-                {% endfor %}
-                {% if template.companies.count > 10 %}
-                <span class="badge bg-secondary">... 他{{ template.companies.count|add:"-10" }}社</span>
-                {% endif %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        削除確認
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning mb-4">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        この操作は取り消せません
+                    </div>
+                    
+                    <p class="mb-3">以下のレポートを削除してもよろしいですか？</p>
+                    
+                    <div class="bg-light rounded p-3 mb-4">
+                        <h6 class="mb-2">{{ template.name }}</h6>
+                        {% if template.description %}
+                        <p class="text-muted small mb-2">{{ template.description }}</p>
+                        {% endif %}
+                        <div class="small text-muted">
+                            <i class="bi bi-building me-1"></i>
+                            対象企業: {{ template.get_company_count }}社
+                        </div>
+                    </div>
+                    
+                    <p class="text-danger small mb-4">
+                        <i class="bi bi-info-circle me-1"></i>
+                        レポートに関連する全てのデータ（企業設定、指標値、スコアなど）が削除されます。
+                    </p>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-danger flex-fill">
+                                <i class="bi bi-trash me-1"></i>
+                                削除する
+                            </button>
+                            <a href="{% url 'analysis_template:detail' template.pk %}" 
+                               class="btn btn-secondary flex-fill">
+                                <i class="bi bi-x-circle me-1"></i>
+                                キャンセル
+                            </a>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-    {% endif %}
-
-    <!-- 確認フォーム -->
-    <div class="card border-danger shadow-sm">
-        <div class="card-body">
-            <form method="post">
-                {% csrf_token %}
-                
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">
-                        削除を確認するため、テンプレート名を入力してください
-                    </label>
-                    <input type="text" 
-                           class="form-control" 
-                           id="confirmInput" 
-                           placeholder="{{ template.name }}"
-                           required>
-                    <div class="form-text">
-                        確認のため「{{ template.name }}」と正確に入力してください
-                    </div>
-                </div>
-
-                <div class="d-flex gap-2 justify-content-end">
-                    <a href="{% url 'analysis_template:detail' template.pk %}" class="btn btn-secondary">
-                        <i class="bi bi-x-circle me-1"></i>キャンセル
-                    </a>
-                    <button type="submit" class="btn btn-danger" id="deleteButton" disabled>
-                        <i class="bi bi-trash me-1"></i>完全に削除
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- 代替案の提案 -->
-    <div class="card border-0 bg-light mt-4">
-        <div class="card-body">
-            <h6 class="card-title">
-                <i class="bi bi-lightbulb me-1"></i>削除する前に
-            </h6>
-            <p class="card-text small text-muted mb-2">
-                テンプレートを削除する代わりに、以下の方法も検討してください：
-            </p>
-            <ul class="small text-muted mb-0">
-                <li>企業や指標を編集して、テンプレートを更新する</li>
-                <li>テンプレート名を変更して、別の目的で再利用する</li>
-                <li>一時的に使用しないだけなら、削除せずに残しておく</li>
-            </ul>
-        </div>
-    </div>
 </div>
-
-<script>
-const confirmInput = document.getElementById('confirmInput');
-const deleteButton = document.getElementById('deleteButton');
-const templateName = "{{ template.name }}";
-
-confirmInput.addEventListener('input', function() {
-    if (this.value === templateName) {
-        deleteButton.disabled = false;
-        deleteButton.classList.remove('disabled');
-    } else {
-        deleteButton.disabled = true;
-        deleteButton.classList.add('disabled');
-    }
-});
-
-// フォーム送信時の最終確認
-document.querySelector('form').addEventListener('submit', function(e) {
-    if (!confirm('本当に削除してもよろしいですか？この操作は取り消せません。')) {
-        e.preventDefault();
-    }
-});
-</script>
-
-<style>
-.alert-danger {
-    background-color: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.3);
-    color: var(--danger-color);
-}
-
-.card-header {
-    background-color: transparent;
-    border-bottom: 1px solid var(--border-light);
-}
-
-dl {
-    font-size: 0.9rem;
-}
-
-dt {
-    font-weight: 600;
-}
-
-dd {
-    margin-bottom: 0.5rem;
-}
-
-.border-danger {
-    border-color: var(--danger-color) !important;
-}
-
-.btn-danger:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-@media (max-width: 767.98px) {
-    .d-flex.gap-2.justify-content-end {
-        flex-direction: column;
-    }
-    
-    .d-flex.gap-2.justify-content-end .btn {
-        width: 100%;
-    }
-}
-</style>
 {% endblock %}

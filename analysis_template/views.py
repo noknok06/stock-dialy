@@ -2,13 +2,14 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q, Count, Avg
+from django.db.models import Q, Count, Avg, Max
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
-from django.db import transaction
+from django.db import transaction, models
 import json
 from decimal import Decimal
+from common.services.yahoo_finance_service import YahooFinanceService
 
 from .models import (
     AnalysisTemplate, TemplateCompany, TemplateMetrics,
@@ -55,7 +56,7 @@ def template_create(request):
         'form': form,
         'action': 'create'
     }
-    return render(request, 'analysis_template/form.html', context)
+    return render(request, 'analysis_template/template_form.html', context)
 
 
 @login_required
@@ -93,24 +94,47 @@ def company_select(request, pk):
     
     if request.method == 'POST':
         company_codes = request.POST.getlist('companies')
+        action = request.POST.get('action', 'replace')  # ⭐ アクションを取得
         
         with transaction.atomic():
-            # 既存の選択をクリア
-            TemplateCompany.objects.filter(template=template).delete()
+            if action == 'replace':
+                # ⭐ 置き換えモード: 既存をすべてクリア
+                TemplateCompany.objects.filter(template=template).delete()
+                start_order = 0
+            else:
+                # ⭐ 追加モード: 既存の最大display_orderを取得
+                max_order = TemplateCompany.objects.filter(
+                    template=template
+                ).aggregate(models.Max('display_order'))['display_order__max']
+                start_order = (max_order or -1) + 1
             
-            # 新しい選択を追加
+            added_count = 0
             for i, code in enumerate(company_codes):
                 try:
                     company = CompanyMaster.objects.get(code=code)
+                    
+                    # ⭐ 追加モードの場合、既に存在するかチェック
+                    if action == 'add':
+                        if TemplateCompany.objects.filter(
+                            template=template, 
+                            company=company
+                        ).exists():
+                            continue  # 既に存在する場合はスキップ
+                    
                     TemplateCompany.objects.create(
                         template=template,
                         company=company,
-                        display_order=i
+                        display_order=start_order + i
                     )
+                    added_count += 1
                 except CompanyMaster.DoesNotExist:
                     pass
         
-        messages.success(request, f'{len(company_codes)}社を選択しました')
+        if action == 'replace':
+            messages.success(request, f'{added_count}社を選択しました')
+        else:
+            messages.success(request, f'{added_count}社を追加しました')
+        
         return redirect('analysis_template:metrics_input', pk=template.pk)
     
     context = {
@@ -121,7 +145,6 @@ def company_select(request, pk):
         'selected_codes': selected_codes,
     }
     return render(request, 'analysis_template/company_select.html', context)
-
 
 @login_required
 @require_http_methods(["GET", "POST"])
@@ -143,7 +166,7 @@ def template_update(request, pk):
         'template': template,
         'action': 'update'
     }
-    return render(request, 'analysis_template/form.html', context)
+    return render(request, 'analysis_template/template_form.html', context)
 
 
 def get_normalized_chart_data(template):
@@ -573,16 +596,34 @@ def company_metrics_ajax(request, pk, company_id):
     )
     company = get_object_or_404(CompanyMaster, pk=company_id)
     
+    # ⭐ fiscal_yearでフィルタしない（最新のデータを取得）
     metrics = TemplateMetrics.objects.filter(
         template=template,
         company=company
     ).select_related('metric_definition')
     
-    data = {}
-    for tm in metrics:
-        data[f'metric_{tm.metric_definition.id}'] = str(tm.value)
+    # デバッグ用ログ出力
+    print(f"=== Debug Info ===")
+    print(f"Template ID: {template.pk}")
+    print(f"Company ID: {company.pk} ({company.name})")
+    print(f"Query: {metrics.query}")
+    print(f"Count: {metrics.count()}")
+    print(f"================")
     
-    data['fiscal_year'] = metrics.first().fiscal_year if metrics.exists() else ''
+    data = {}
+    
+    # 指標データを辞書に格納
+    for tm in metrics:
+        field_name = f'metric_{tm.metric_definition.id}'
+        data[field_name] = str(tm.value)
+        print(f"  {field_name}: {tm.value}")  # デバッグ出力
+    
+    # 会計年度を取得（最初のレコードから）
+    if metrics.exists():
+        data['fiscal_year'] = metrics.first().fiscal_year
+    else:
+        data['fiscal_year'] = ''
+        print("  ⚠️ No metrics found for this company")
     
     return JsonResponse(data)
 
@@ -658,3 +699,245 @@ def calculate_scores(request, pk):
     
     messages.success(request, 'スコアを計算しました。')
     return redirect('analysis_template:detail', pk=template.pk)
+
+@login_required
+@require_http_methods(["POST"])
+def company_remove_api(request, pk):
+    """企業削除API"""
+    template = get_object_or_404(
+        AnalysisTemplate,
+        pk=pk,
+        user=request.user
+    )
+    
+    try:
+        data = json.loads(request.body)
+        company_code = data.get('company_code')
+        
+        if not company_code:
+            return JsonResponse({
+                'success': False,
+                'error': '企業コードが指定されていません'
+            }, status=400)
+        
+        # 企業を取得
+        try:
+            company = CompanyMaster.objects.get(code=company_code)
+        except CompanyMaster.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': '企業が見つかりません'
+            }, status=404)
+        
+        # テンプレートから企業を削除
+        with transaction.atomic():
+            # TemplateCompanyを削除（これにより関連する指標データも削除される）
+            deleted_count = TemplateCompany.objects.filter(
+                template=template,
+                company=company
+            ).delete()[0]
+            
+            if deleted_count == 0:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'この企業はテンプレートに登録されていません'
+                }, status=404)
+            
+            # 関連する指標データも削除
+            TemplateMetrics.objects.filter(
+                template=template,
+                company=company
+            ).delete()
+            
+            # スコアも削除
+            CompanyScore.objects.filter(
+                template=template,
+                company=company
+            ).delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'{company.name}を削除しました'
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': '不正なリクエスト形式です'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+        
+@login_required
+@require_http_methods(["POST"])
+def metrics_auto_fetch(request, pk):
+    """APIから指標データを自動取得"""
+    template = get_object_or_404(AnalysisTemplate, pk=pk, user=request.user)
+    
+    try:
+        data = json.loads(request.body)
+        company_codes = data.get('company_codes', [])
+        fiscal_year = data.get('fiscal_year', '')
+        overwrite = data.get('overwrite', False)  # 既存データを上書きするか
+        
+        if not company_codes:
+            return JsonResponse({
+                'success': False,
+                'error': '企業が選択されていません'
+            }, status=400)
+        
+        success_count = 0
+        error_count = 0
+        skipped_count = 0
+        results = []
+        
+        with transaction.atomic():
+            for code in company_codes:
+                try:
+                    # 企業を取得
+                    company = CompanyMaster.objects.get(code=code)
+                    
+                    # APIからデータ取得
+                    api_data = YahooFinanceService.fetch_company_data(code, fiscal_year)
+                    
+                    if not api_data:
+                        error_count += 1
+                        results.append({
+                            'code': code,
+                            'name': company.name,
+                            'status': 'error',
+                            'message': 'APIからデータを取得できませんでした'
+                        })
+                        continue
+                    
+                    saved_metrics = []
+                    saved_values = {}  # ⭐ 保存した値を格納
+                    
+                    # 各指標を保存
+                    for metric_name, value in api_data.items():
+                        try:
+                            # 指標定義を取得
+                            metric_def = MetricDefinition.objects.get(
+                                name=metric_name,
+                                is_active=True
+                            )
+                            
+                            # 既存データをチェック
+                            existing = TemplateMetrics.objects.filter(
+                                template=template,
+                                company=company,
+                                metric_definition=metric_def,
+                                fiscal_year=fiscal_year
+                            ).first()
+                            
+                            if existing and not overwrite:
+                                skipped_count += 1
+                                continue
+                            
+                            # データを保存
+                            TemplateMetrics.objects.update_or_create(
+                                template=template,
+                                company=company,
+                                metric_definition=metric_def,
+                                fiscal_year=fiscal_year,
+                                defaults={'value': value}
+                            )
+                            
+                            saved_metrics.append(metric_def.display_name)
+                            # ⭐ フィールド名と値をマッピング
+                            field_name = f'metric_{company.id}_{metric_def.id}'
+                            saved_values[metric_name] = {
+                                'field_name': field_name,
+                                'value': str(value),
+                                'metric_id': metric_def.id
+                            }
+                            
+                        except MetricDefinition.DoesNotExist:
+                            logger.warning(f"Metric definition not found: {metric_name}")
+                            continue
+                    
+                    if saved_metrics:
+                        success_count += 1
+                        results.append({
+                            'code': code,
+                            'name': company.name,
+                            'status': 'success',
+                            'metrics_count': len(saved_metrics),
+                            'metrics': saved_metrics,
+                            'values': saved_values  # ⭐ 値を含める
+                        })
+                    else:
+                        skipped_count += 1
+                        results.append({
+                            'code': code,
+                            'name': company.name,
+                            'status': 'skipped',
+                            'message': '保存する指標がありませんでした'
+                        })
+                
+                except CompanyMaster.DoesNotExist:
+                    error_count += 1
+                    results.append({
+                        'code': code,
+                        'status': 'error',
+                        'message': '企業が見つかりません'
+                    })
+                except Exception as e:
+                    error_count += 1
+                    results.append({
+                        'code': code,
+                        'status': 'error',
+                        'message': str(e)
+                    })
+        
+        return JsonResponse({
+            'success': True,
+            'summary': {
+                'total': len(company_codes),
+                'success': success_count,
+                'error': error_count,
+                'skipped': skipped_count
+            },
+            'results': results
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': '不正なリクエスト形式です'
+        }, status=400)
+    except Exception as e:
+        logger.error(f"Error in metrics_auto_fetch: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def check_api_availability(request, pk):
+    """APIでデータ取得可能かチェック"""
+    template = get_object_or_404(AnalysisTemplate, pk=pk, user=request.user)
+    
+    company_code = request.GET.get('code')
+    if not company_code:
+        return JsonResponse({'available': False, 'error': '企業コードが指定されていません'})
+    
+    available = YahooFinanceService.validate_ticker(company_code)
+    
+    if available:
+        # 取得可能な指標リストも返す
+        available_metrics = YahooFinanceService.get_available_metrics()
+        return JsonResponse({
+            'available': True,
+            'metrics': available_metrics
+        })
+    else:
+        return JsonResponse({
+            'available': False,
+            'error': 'この企業のデータは取得できません'
+        })

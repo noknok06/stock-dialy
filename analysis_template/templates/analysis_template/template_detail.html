@@ -1,6 +1,5 @@
 {% extends 'base.html' %}
 {% load static %}
-{% load analysis_filters %}
 
 {% block title %}{{ template.name }} - 分析レポート{% endblock %}
 
@@ -20,6 +19,14 @@
   .metric-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .company-management-item {
+    transition: all 0.2s ease;
+  }
+  
+  .company-management-item:hover {
+    background-color: rgba(0, 0, 0, 0.02);
   }
   
   @media print {
@@ -48,15 +55,15 @@
           </p>
         </div>
         <div class="d-flex gap-2">
-          <a href="{% url 'analysis_template:update' template.pk %}" class="btn btn-success">
+          <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn btn-success">
+            <i class="bi bi-building-add me-1"></i>企業管理
+          </a>
+          <a href="{% url 'analysis_template:update' template.pk %}" class="btn btn-info">
             <i class="bi bi-pencil me-1"></i>編集
           </a>
           <a href="{% url 'analysis_template:metrics_edit' template.pk %}" class="btn btn-warning">
             <i class="bi bi-bar-chart me-1"></i>指標編集
           </a>
-          <button onclick="window.print()" class="btn btn-info">
-            <i class="bi bi-printer me-1"></i>印刷
-          </button>
           <a href="{% url 'analysis_template:list' %}" class="btn btn-secondary">
             <i class="bi bi-arrow-left me-1"></i>一覧へ
           </a>
@@ -67,6 +74,27 @@
 
   <!-- メインコンテンツ -->
   <main class="container py-4">
+    
+    <!-- ⭐ 企業管理セクション（印刷時は非表示） -->
+    <section class="mb-5 no-print">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+          <h3 class="mb-0">
+            <i class="bi bi-building me-2"></i>
+            登録企業一覧
+            <span class="badge bg-primary ms-2" id="company-count">0</span>
+          </h3>
+          <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn btn-sm btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>企業を追加
+          </a>
+        </div>
+        <div class="card-body">
+          <div class="row g-3" id="company-management-list">
+            <!-- JavaScriptで動的に生成 -->
+          </div>
+        </div>
+      </div>
+    </section>
     
     <!-- サマリーセクション -->
     <section class="mb-5">
@@ -142,6 +170,7 @@
 // データをJavaScriptに渡す
 const companiesData = {{ companies_data|safe }};
 const benchmarksData = {{ benchmarks_data|safe }};
+const templateId = {{ template.pk }};
 
 // ユーティリティ関数
 function formatNumber(num, decimals = 1) {
@@ -192,6 +221,99 @@ function calculateScore(company) {
   });
   
   return count > 0 ? totalScore / count : 50;
+}
+
+// ⭐ 企業管理リストを生成
+function generateCompanyManagementList() {
+  const container = document.getElementById('company-management-list');
+  const countBadge = document.getElementById('company-count');
+  
+  if (!container) return;
+  
+  container.innerHTML = '';
+  countBadge.textContent = companiesData.length;
+  
+  if (companiesData.length === 0) {
+    container.innerHTML = `
+      <div class="col-12 text-center text-muted py-4">
+        <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+        <p class="mt-3">企業が登録されていません</p>
+        <a href="/analysis_template/${templateId}/company-select/" class="btn btn-primary mt-2">
+          <i class="bi bi-plus-circle me-1"></i>企業を追加
+        </a>
+      </div>
+    `;
+    return;
+  }
+  
+  companiesData.forEach(company => {
+    const col = document.createElement('div');
+    col.className = 'col-md-6 col-lg-4';
+    col.innerHTML = `
+      <div class="company-management-item card h-100">
+        <div class="card-body d-flex justify-content-between align-items-start">
+          <div class="flex-grow-1">
+            <h6 class="mb-1">${company.name}</h6>
+            <small class="text-muted">${company.code}</small>
+            <div class="mt-2">
+              <span class="badge bg-light text-dark">${company.industry_name_33 || '-'}</span>
+            </div>
+          </div>
+          <button class="btn btn-icon btn-danger-icon" 
+                  onclick="removeCompany('${company.code}', '${company.name}')"
+                  title="この企業を削除">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </div>
+    `;
+    container.appendChild(col);
+  });
+}
+
+// ⭐ 企業を削除
+function removeCompany(code, name) {
+  if (!confirm(`${name} (${code}) をレポートから削除しますか？\n\n※この企業の指標データも削除されます。`)) {
+    return;
+  }
+  
+  fetch(`/analysis_template/${templateId}/api/company/remove/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrftoken')
+    },
+    body: JSON.stringify({ company_code: code })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert('企業を削除しました');
+      location.reload();
+    } else {
+      alert('削除に失敗しました: ' + (data.error || '不明なエラー'));
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('削除に失敗しました');
+  });
+}
+
+// CSRFトークンを取得
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
 }
 
 // 現在日付を設定
@@ -521,6 +643,7 @@ function generateBenchmarkRow(label, data) {
 
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
+  generateCompanyManagementList();
   generateSummaryCards();
   generateCompanyDetails();
   generateComparisonTable();

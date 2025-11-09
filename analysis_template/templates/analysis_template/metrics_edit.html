@@ -1,12 +1,10 @@
 {% extends 'base.html' %}
 {% load static %}
-{% load analysis_filters %}
 
 {% block title %}指標編集 - {{ template.name }}{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <!-- ページヘッダー -->
     <div class="page-header mb-4">
         <h1 class="page-title">
             <i class="bi bi-bar-chart"></i>
@@ -19,7 +17,6 @@
 
     <div class="row">
         <div class="col-lg-8">
-            <!-- 指標入力フォーム -->
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0">
@@ -31,12 +28,10 @@
                     <form method="post" id="metrics-form">
                         {% csrf_token %}
                         
-                        <!-- 企業・会計年度選択 -->
                         <div class="row mb-4">
                             <div class="col-md-8">
                                 <label for="{{ form.company.id_for_label }}" class="form-label">
-                                    企業
-                                    <span class="text-danger">*</span>
+                                    企業 <span class="text-danger">*</span>
                                 </label>
                                 {{ form.company }}
                             </div>
@@ -48,33 +43,18 @@
                             </div>
                         </div>
 
-                        <!-- 指標入力（グループ別） -->
-                        {% regroup metric_definitions by metric_group as grouped_metrics %}
-                        {% for group in grouped_metrics %}
-                        <div class="mb-4">
-                            <h6 class="mb-3 pb-2 border-bottom">
-                                <i class="bi bi-graph-up me-2"></i>
-                                {{ group.grouper|get_group_label }}
-                            </h6>
-                            <div class="row g-3">
-                                {% for metric_def in group.list %}
-                                <div class="col-md-4">
-                                    <label for="id_metric_{{ metric_def.id }}" class="form-label">
-                                        {{ metric_def.display_name }}
-                                        {% if metric_def.description %}
-                                        <i class="bi bi-info-circle text-muted" 
-                                           data-bs-toggle="tooltip" 
-                                           title="{{ metric_def.description }}"></i>
-                                        {% endif %}
+                        {# ⭐ すべてのフォームフィールドを表示 #}
+                        {% for field in form %}
+                            {% if field.name != 'company' and field.name != 'fiscal_year' %}
+                                <div class="mb-3">
+                                    <label for="{{ field.id_for_label }}" class="form-label">
+                                        {{ field.label }}
                                     </label>
-                                    {{ form|get_item:"metric_"|add:metric_def.id }}
+                                    {{ field }}
                                 </div>
-                                {% endfor %}
-                            </div>
-                        </div>
+                            {% endif %}
                         {% endfor %}
 
-                        <!-- 送信ボタン -->
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-save me-1"></i>
@@ -156,7 +136,6 @@
         </div>
 
         <div class="col-lg-4">
-            <!-- 操作ガイド -->
             <div class="card bg-light mb-4">
                 <div class="card-body">
                     <h5 class="card-title">
@@ -177,7 +156,6 @@
                 </div>
             </div>
 
-            <!-- アクション -->
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title mb-3">アクション</h5>
@@ -215,13 +193,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const loadButton = document.getElementById('load-metrics');
     const templateId = {{ template.pk }};
     
-    // ツールチップ初期化
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-    
-    // 既存データ読込
     loadButton.addEventListener('click', function() {
         const companyId = companySelect.value;
         if (!companyId) {
@@ -229,16 +200,26 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        fetch(`/analysis/${templateId}/api/company/${companyId}/metrics/`)
+        console.log('Loading metrics for company:', companyId);
+        
+        fetch(`/analysis_template/${templateId}/api/company/${companyId}/metrics/`)
             .then(response => response.json())
             .then(data => {
-                // フォームに値を設定
+                console.log('Received data:', data);
+                
+                let foundCount = 0;
                 Object.entries(data).forEach(([key, value]) => {
-                    const input = document.querySelector(`[name="${key}"]`);
+                    const input = document.getElementById(`id_${key}`);
                     if (input) {
                         input.value = value;
+                        foundCount++;
+                        console.log(`✓ Loaded ${key}: ${value}`);
+                    } else {
+                        console.warn(`✗ Field not found: id_${key}`);
                     }
                 });
+                
+                alert(`${foundCount}件のデータを読み込みました`);
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -246,7 +227,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     });
     
-    // テーブルから企業データを読込
     document.querySelectorAll('.load-company-data').forEach(button => {
         button.addEventListener('click', function() {
             const companyId = this.dataset.companyId;

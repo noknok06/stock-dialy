@@ -59,6 +59,10 @@
                 <div class="card-body">
                     <form method="post" id="companySelectForm">
                         {% csrf_token %}
+                        
+                        {# ⭐ アクション選択用の隠しフィールド #}
+                        <input type="hidden" name="action" id="actionInput" value="add">
+                        
                         <div class="table-responsive">
                             <table class="table table-hover align-middle">
                                 <thead>
@@ -74,14 +78,19 @@
                                 </thead>
                                 <tbody>
                                     {% for company in page_obj %}
-                                    <tr>
+                                    <tr {% if company.code in selected_codes %}class="table-active"{% endif %}>
                                         <td>
                                             <input type="checkbox" name="companies" value="{{ company.code }}"
                                                    class="form-check-input company-checkbox"
                                                    {% if company.code in selected_codes %}checked{% endif %}>
                                         </td>
                                         <td class="fw-medium">{{ company.code }}</td>
-                                        <td>{{ company.name }}</td>
+                                        <td>
+                                            {{ company.name }}
+                                            {% if company.code in selected_codes %}
+                                            <span class="badge bg-success ms-2">選択済み</span>
+                                            {% endif %}
+                                        </td>
                                         <td><small class="text-muted">{{ company.industry_name_33|default:"-" }}</small></td>
                                         <td><small class="text-muted">{{ company.market|default:"-" }}</small></td>
                                     </tr>
@@ -125,12 +134,16 @@
                         </nav>
                         {% endif %}
 
+                        {# ⭐ ボタンを2つに分ける #}
                         <div class="d-flex gap-2 justify-content-end mt-3">
                             <a href="{% url 'analysis_template:detail' template.pk %}" class="btn btn-secondary">
                                 <i class="bi bi-x-circle me-1"></i>キャンセル
                             </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle me-1"></i>次へ（指標入力）
+                            <button type="button" class="btn btn-success" onclick="submitForm('add')">
+                                <i class="bi bi-plus-circle me-1"></i>選択企業を追加
+                            </button>
+                            <button type="button" class="btn btn-primary" onclick="submitForm('replace')">
+                                <i class="bi bi-check-circle me-1"></i>選択企業で置き換え
                             </button>
                         </div>
                     </form>
@@ -151,14 +164,14 @@
                     {% if selected_companies %}
                     <div class="list-group list-group-flush">
                         {% for company in selected_companies %}
-                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <div class="d-flex justify-content-between align-items-center px-0">
                             <div>
                                 <div class="fw-semibold">{{ company.code }}</div>
                                 <small class="text-muted">{{ company.name }}</small>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                            <button type="button" class="btn btn-icon btn-danger-icon" 
                                     onclick="removeCompany('{{ company.code }}')">
-                                <i class="bi bi-x"></i>
+                                <i class="bi bi-trash"></i>
                             </button>
                         </div>
                         {% endfor %}
@@ -171,11 +184,53 @@
                     {% endif %}
                 </div>
             </div>
+            
+            {# ⭐ 説明を追加 #}
+            <div class="card border-0 shadow-sm mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-info-circle text-primary me-1"></i>
+                        操作について
+                    </h6>
+                    <ul class="small mb-0">
+                        <li class="mb-2">
+                            <strong>追加:</strong> 既存の企業を残したまま、新しく選択した企業を追加します
+                        </li>
+                        <li class="mb-2">
+                            <strong>置き換え:</strong> 既存の企業をすべて削除し、新しく選択した企業のみにします
+                        </li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
+// ⭐ フォーム送信関数
+function submitForm(action) {
+    const form = document.getElementById('companySelectForm');
+    const actionInput = document.getElementById('actionInput');
+    const checkedBoxes = document.querySelectorAll('.company-checkbox:checked');
+    
+    if (checkedBoxes.length === 0) {
+        alert('企業を選択してください');
+        return;
+    }
+    
+    let message = '';
+    if (action === 'add') {
+        message = `${checkedBoxes.length}社を追加します。よろしいですか？`;
+    } else {
+        message = `既存の企業を削除し、${checkedBoxes.length}社で置き換えます。よろしいですか？`;
+    }
+    
+    if (confirm(message)) {
+        actionInput.value = action;
+        form.submit();
+    }
+}
+
 // 全選択チェックボックス
 document.getElementById('selectAll')?.addEventListener('change', function() {
     const checkboxes = document.querySelectorAll('.company-checkbox');
@@ -187,11 +242,16 @@ document.getElementById('selectAll')?.addEventListener('change', function() {
 // 企業削除
 function removeCompany(code) {
     if (confirm('この企業を選択から外しますか?')) {
+        // チェックボックスを外して、置き換えモードで送信
         const checkbox = document.querySelector(`input[value="${code}"]`);
         if (checkbox) {
             checkbox.checked = false;
         }
-        document.getElementById('companySelectForm').submit();
+        
+        // 現在選択されているすべての企業（削除対象を除く）のコードを取得
+        const allChecked = document.querySelectorAll('.company-checkbox:checked');
+        
+        submitForm('replace');
     }
 }
 </script>
@@ -208,6 +268,10 @@ function removeCompany(code) {
 .table td {
     padding: 0.75rem;
     vertical-align: middle;
+}
+
+.table-active {
+    background-color: rgba(13, 110, 253, 0.05);
 }
 
 .list-group-item {
