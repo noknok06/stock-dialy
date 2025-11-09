@@ -102,7 +102,7 @@
                             <ul class="pagination pagination-sm justify-content-center mb-0">
                                 {% if page_obj.has_previous %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}{% if request.GET.industry %}&industry={{ request.GET.industry }}{% endif %}{% if request.GET.market %}&market={{ request.GET.market }}{% endif %}">
                                         <i class="bi bi-chevron-left"></i>
                                     </a>
                                 </li>
@@ -116,7 +116,7 @@
                                 
                                 {% if page_obj.has_next %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}{% if request.GET.industry %}&industry={{ request.GET.industry }}{% endif %}{% if request.GET.market %}&market={{ request.GET.market }}{% endif %}">
                                         <i class="bi bi-chevron-right"></i>
                                     </a>
                                 </li>

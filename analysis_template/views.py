@@ -5,6 +5,8 @@ from django.contrib import messages
 from django.db.models import Q, Count, Avg
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.core.paginator import Paginator
+from django.db import transaction
 import json
 from decimal import Decimal
 
@@ -35,6 +37,7 @@ def template_list(request):
 
 
 @login_required
+@require_http_methods(["GET", "POST"])
 def template_create(request):
     """テンプレート作成"""
     if request.method == 'POST':
@@ -43,16 +46,298 @@ def template_create(request):
             template = form.save(commit=False)
             template.user = request.user
             template.save()
-            messages.success(request, 'テンプレートを作成しました。')
-            return redirect('analysis_template:edit', pk=template.pk)
+            messages.success(request, 'テンプレートを作成しました')
+            return redirect('analysis_template:company_select', pk=template.pk)
     else:
         form = AnalysisTemplateForm()
     
     context = {
         'form': form,
-        'is_create': True,
+        'action': 'create'
     }
-    return render(request, 'analysis_template/template_form.html', context)
+    return render(request, 'analysis_template/form.html', context)
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def company_select(request, pk):
+    """企業選択"""
+    template = get_object_or_404(AnalysisTemplate, pk=pk, user=request.user)
+    search_form = CompanySearchForm(request.GET or None)
+    
+    # 検索条件
+    companies = CompanyMaster.objects.all()
+    
+    if search_form.is_valid():
+        query = search_form.cleaned_data.get('query')
+        industry = search_form.cleaned_data.get('industry')
+        market = search_form.cleaned_data.get('market')
+        
+        if query:
+            companies = companies.filter(
+                Q(code__icontains=query) | Q(name__icontains=query)
+            )
+        if industry:
+            companies = companies.filter(industry_code_33=industry)
+        if market:
+            companies = companies.filter(market=market)
+    
+    # 既に選択されている企業
+    selected_companies = template.companies.all()
+    selected_codes = set(selected_companies.values_list('code', flat=True))
+    
+    # ページネーション
+    paginator = Paginator(companies.order_by('code'), 50)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    if request.method == 'POST':
+        company_codes = request.POST.getlist('companies')
+        
+        with transaction.atomic():
+            # 既存の選択をクリア
+            TemplateCompany.objects.filter(template=template).delete()
+            
+            # 新しい選択を追加
+            for i, code in enumerate(company_codes):
+                try:
+                    company = CompanyMaster.objects.get(code=code)
+                    TemplateCompany.objects.create(
+                        template=template,
+                        company=company,
+                        display_order=i
+                    )
+                except CompanyMaster.DoesNotExist:
+                    pass
+        
+        messages.success(request, f'{len(company_codes)}社を選択しました')
+        return redirect('analysis_template:metrics_input', pk=template.pk)
+    
+    context = {
+        'template': template,
+        'search_form': search_form,
+        'page_obj': page_obj,
+        'selected_companies': selected_companies,
+        'selected_codes': selected_codes,
+    }
+    return render(request, 'analysis_template/company_select.html', context)
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def template_update(request, pk):
+    """テンプレート編集"""
+    template = get_object_or_404(AnalysisTemplate, pk=pk, user=request.user)
+    
+    if request.method == 'POST':
+        form = AnalysisTemplateForm(request.POST, instance=template)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'テンプレートを更新しました')
+            return redirect('analysis_template:detail', pk=template.pk)
+    else:
+        form = AnalysisTemplateForm(instance=template)
+    
+    context = {
+        'form': form,
+        'template': template,
+        'action': 'update'
+    }
+    return render(request, 'analysis_template/form.html', context)
+
+
+def get_normalized_chart_data(template):
+    """正規化されたチャートデータを取得（レーダーチャート用）
+    
+    各指標について:
+    - 業種ベンチマークがある場合: 業種平均=50として正規化
+    - 業種ベンチマークがない場合: テンプレート内の企業平均=50として正規化
+    - データがない場合: null（チャートで線が途切れる）
+    """
+    companies = template.companies.all().order_by('templatecompany__display_order')
+    
+    # グループ別に正規化データを作成
+    grouped_data = {}
+    
+    for group_code, group_name in MetricDefinition.METRIC_GROUPS:
+        if group_code == 'scale':  # 規模は正規化に適さない
+            continue
+            
+        metrics = MetricDefinition.objects.filter(
+            is_active=True,
+            metric_group=group_code,
+            chart_suitable=True
+        ).order_by('display_order')
+        
+        # 指標名のリスト（レーダーチャートの軸）
+        metric_labels = [m.display_name for m in metrics]
+        
+        # 各指標ごとにテンプレート内の平均値を計算（ベンチマークがない場合の代替）
+        metric_averages = {}
+        for metric in metrics:
+            values = []
+            for company in companies:
+                try:
+                    tm = TemplateMetrics.objects.get(
+                        template=template,
+                        company=company,
+                        metric_definition=metric
+                    )
+                    if tm.value is not None:
+                        values.append(float(tm.value))
+                except TemplateMetrics.DoesNotExist:
+                    pass
+            
+            if values:
+                metric_averages[metric.id] = sum(values) / len(values)
+            else:
+                metric_averages[metric.id] = None
+        
+        # 各企業のデータセット
+        datasets = []
+        
+        for company in companies:
+            values = []
+            has_any_data = False
+            
+            for metric in metrics:
+                try:
+                    tm = TemplateMetrics.objects.get(
+                        template=template,
+                        company=company,
+                        metric_definition=metric
+                    )
+                    
+                    value = float(tm.value)
+                    has_any_data = True
+                    
+                    # ベンチマークで正規化を試みる
+                    try:
+                        benchmark = IndustryBenchmark.objects.get(
+                            industry_code=company.industry_code_33,
+                            metric_definition=metric
+                        )
+                        normalized = benchmark.normalize_value(tm.value)
+                        values.append(normalized if normalized is not None else None)
+                    except IndustryBenchmark.DoesNotExist:
+                        # ベンチマークがない場合、テンプレート内平均を基準に正規化
+                        avg = metric_averages.get(metric.id)
+                        if avg and avg != 0:
+                            # 平均を50として正規化
+                            normalized = (value / avg) * 50
+                            # 0-100の範囲に制限
+                            normalized = max(0, min(100, normalized))
+                            values.append(round(normalized, 1))
+                        else:
+                            # 平均が0の場合はnull
+                            values.append(None)
+                
+                except TemplateMetrics.DoesNotExist:
+                    # データがない場合はnull（チャートで線が途切れる）
+                    values.append(None)
+            
+            # 1つでもデータがあれば追加
+            if has_any_data:
+                datasets.append({
+                    'label': company.name,
+                    'data': values
+                })
+        
+        if datasets and metric_labels:
+            grouped_data[group_code] = {
+                'name': group_name,
+                'labels': metric_labels,
+                'datasets': datasets,
+                'has_benchmark': any(
+                    IndustryBenchmark.objects.filter(
+                        metric_definition=metric
+                    ).exists() for metric in metrics
+                )
+            }
+    
+    return grouped_data
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def metrics_input(request, pk):
+    """指標一括入力"""
+    template = get_object_or_404(AnalysisTemplate, pk=pk, user=request.user)
+    companies = template.companies.all().order_by('templatecompany__display_order')
+    
+    if not companies.exists():
+        messages.warning(request, '企業が選択されていません')
+        return redirect('analysis_template:company_select', pk=template.pk)
+    
+    # 指標定義をグループ別に取得
+    metric_groups = {}
+    for group_code, group_name in MetricDefinition.METRIC_GROUPS:
+        metrics = MetricDefinition.objects.filter(
+            is_active=True,
+            metric_group=group_code
+        ).order_by('display_order')
+        
+        if metrics.exists():
+            metric_groups[group_code] = {
+                'name': group_name,
+                'metrics': metrics
+            }
+    
+    if request.method == 'POST':
+        fiscal_year = request.POST.get('fiscal_year', '')
+        saved_count = 0
+        
+        with transaction.atomic():
+            for company in companies:
+                for metric in MetricDefinition.objects.filter(is_active=True):
+                    field_name = f'metric_{company.id}_{metric.id}'
+                    value = request.POST.get(field_name)
+                    
+                    if value and value.strip():
+                        try:
+                            value_decimal = Decimal(value)
+                            TemplateMetrics.objects.update_or_create(
+                                template=template,
+                                company=company,
+                                metric_definition=metric,
+                                fiscal_year=fiscal_year,
+                                defaults={'value': value_decimal}
+                            )
+                            saved_count += 1
+                        except (ValueError, Decimal.InvalidOperation):
+                            pass
+        
+        if saved_count > 0:
+            messages.success(request, f'{saved_count}件の指標を保存しました')
+            return redirect('analysis_template:detail', pk=template.pk)
+        else:
+            messages.warning(request, '保存するデータがありません')
+    
+    # 既存データを取得
+    existing_data = {}
+    latest_fiscal_year = None
+    
+    for company in companies:
+        company_metrics = TemplateMetrics.objects.filter(
+            template=template,
+            company=company
+        ).select_related('metric_definition')
+        
+        if company_metrics.exists() and not latest_fiscal_year:
+            latest_fiscal_year = company_metrics.first().fiscal_year
+        
+        for tm in company_metrics:
+            key = f'metric_{company.id}_{tm.metric_definition.id}'
+            existing_data[key] = str(tm.value)
+    
+    context = {
+        'template': template,
+        'companies': companies,
+        'metric_groups': metric_groups,
+        'existing_data': existing_data,
+        'latest_fiscal_year': latest_fiscal_year or '',
+    }
+    return render(request, 'analysis_template/metrics_input.html', context)
 
 
 @login_required
@@ -146,10 +431,14 @@ def template_detail(request, pk):
                     'lower': float(ib.lower_quartile) if ib.lower_quartile else None,
                 }
     
+    # 正規化されたチャートデータを取得
+    chart_data = get_normalized_chart_data(template)
+    
     context = {
         'template': template,
         'companies_data': json.dumps(companies_data),
         'benchmarks_data': json.dumps(benchmarks),
+        'chart_data': json.dumps(chart_data),
     }
     return render(request, 'analysis_template/template_detail.html', context)
 
@@ -220,11 +509,16 @@ def metrics_edit(request, pk):
         
         metrics_dict = {
             'company': company,
-            'metrics': {}
+            'metrics': {},
+            'first_metric': None,  # ← 追加
         }
         
         for tm in company_metrics:
             metrics_dict['metrics'][tm.metric_definition.name] = tm
+        
+        # dictの最初の値を first_metric にセット
+        if metrics_dict['metrics']:
+            metrics_dict['first_metric'] = next(iter(metrics_dict['metrics'].values()))
         
         metrics_data.append(metrics_dict)
     

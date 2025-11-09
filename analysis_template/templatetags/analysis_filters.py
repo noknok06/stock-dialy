@@ -30,4 +30,3 @@ def get_group_label(group_code):
         'scale': '規模・実績',
     }
     return labels.get(group_code, group_code)
-

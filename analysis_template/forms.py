@@ -160,12 +160,34 @@ class CompanySearchForm(forms.Form):
         required=False,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
+    market = forms.CharField(
+        label='市場',
+        max_length=50,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
         # 業種の選択肢を動的に設定
-        industries = CompanyMaster.objects.values_list(
+        industries = CompanyMaster.objects.exclude(
+            industry_code_33__isnull=True
+        ).exclude(
+            industry_code_33=''
+        ).values_list(
             'industry_code_33', 'industry_name_33'
         ).distinct().order_by('industry_code_33')
         
         self.fields['industry'].widget.choices = [('', '全業種')] + list(industries)
+        
+        # 市場の選択肢を動的に設定
+        markets = CompanyMaster.objects.exclude(
+            market__isnull=True
+        ).exclude(
+            market=''
+        ).values_list(
+            'market', 'market'
+        ).distinct().order_by('market')
+        
+        self.fields['market'].widget.choices = [('', '全市場')] + list(markets)

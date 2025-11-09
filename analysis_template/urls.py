@@ -9,10 +9,14 @@ urlpatterns = [
     path('', views.template_list, name='list'),
     path('create/', views.template_create, name='create'),
     path('<int:pk>/', views.template_detail, name='detail'),
-    path('<int:pk>/edit/', views.template_edit, name='edit'),
+    path('<int:pk>/update/', views.template_update, name='update'),
     path('<int:pk>/delete/', views.template_delete, name='delete'),
     
+    # 企業選択
+    path('<int:pk>/company-select/', views.company_select, name='company_select'),
+    
     # 指標管理
+    path('<int:pk>/metrics/input/', views.metrics_input, name='metrics_input'),
     path('<int:pk>/metrics/', views.metrics_edit, name='metrics_edit'),
     path('<int:pk>/calculate/', views.calculate_scores, name='calculate_scores'),
     

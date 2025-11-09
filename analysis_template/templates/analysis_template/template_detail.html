@@ -48,7 +48,7 @@
           </p>
         </div>
         <div class="d-flex gap-2">
-          <a href="{% url 'analysis_template:edit' template.pk %}" class="btn btn-light">
+          <a href="{% url 'analysis_template:update' template.pk %}" class="btn btn-success">
             <i class="bi bi-pencil me-1"></i>編集
           </a>
           <a href="{% url 'analysis_template:metrics_edit' template.pk %}" class="btn btn-warning">
@@ -327,7 +327,7 @@ function generateMetricCard(label, value, unit, benchmarkData, lowerIsBetter = f
   
   return `
     <div class="col-md-4">
-      <div class="bg-light rounded p-3 border-start border-${evaluation.color} border-4">
+      <div class="card rounded p-3 border-start border-${evaluation.color} border-4">
         <div class="text-muted small mb-1">${label}</div>
         <div class="fs-4 fw-bold">${formatNumber(value, 1)}${unit}</div>
         <div class="mt-2">
@@ -495,7 +495,7 @@ function generateBenchmarkRow(label, data) {
   if (!data) return '';
   
   return `
-    <div class="bg-light rounded p-3">
+    <div class="card rounded p-3">
       <div class="fw-semibold mb-2">${label}</div>
       <div class="row g-2 small">
         <div class="col-6">

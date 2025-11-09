@@ -121,15 +121,15 @@
                                         <span class="badge bg-primary">{{ data.metrics|length }}件</span>
                                     </td>
                                     <td>
-                                        {% if data.metrics.values|first %}
-                                        {{ data.metrics.values|first|first.fiscal_year|default:"-" }}
+                                        {% if data.first_metric %}
+                                            {{ data.first_metric.fiscal_year|default:"-" }}
                                         {% else %}
-                                        -
+                                            -
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if data.metrics.values|first %}
-                                        {{ data.metrics.values|first|first.updated_at|date:"Y/m/d H:i" }}
+                                        {% if data.first_metric %}
+                                            {{ data.first_metric.updated_at|date:"Y/m/d H:i" }}
                                         {% else %}
                                         -
                                         {% endif %}
@@ -187,7 +187,7 @@
                             <i class="bi bi-eye me-1"></i>
                             レポート表示
                         </a>
-                        <a href="{% url 'analysis_template:edit' template.pk %}" 
+                        <a href="{% url 'analysis_template:update' template.pk %}" 
                            class="btn btn-outline-secondary">
                             <i class="bi bi-pencil me-1"></i>
                             基本情報編集

@@ -1,28 +1,37 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{% if is_create %}レポート作成{% else %}レポート編集{% endif %} - カブログ{% endblock %}
+{% block title %}{% if action == 'create' %}レポート作成{% else %}レポート編集{% endif %} - カブログ{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
     <!-- ページヘッダー -->
     <div class="page-header mb-4">
+        {% if action == 'update' %}
+        <nav aria-label="breadcrumb" class="mb-2">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'analysis_template:list' %}">テンプレート一覧</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'analysis_template:detail' template.pk %}">{{ template.name }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">編集</li>
+            </ol>
+        </nav>
+        {% endif %}
         <h1 class="page-title">
-            <i class="bi bi-{% if is_create %}plus-circle{% else %}pencil{% endif %}"></i>
-            <span>{% if is_create %}新規レポート作成{% else %}レポート編集{% endif %}</span>
+            <i class="bi bi-{% if action == 'create' %}plus-circle{% else %}pencil{% endif %}"></i>
+            <span>{% if action == 'create' %}新規レポート作成{% else %}レポート編集{% endif %}</span>
         </h1>
         <p class="page-subtitle">
-            {% if is_create %}
+            {% if action == 'create' %}
             企業分析レポートの基本情報を入力してください
             {% else %}
-            レポートの基本情報と対象企業を編集できます
+            レポートの基本情報を編集できます
             {% endif %}
         </p>
     </div>
 
     <div class="row">
         <div class="col-lg-8">
-            <div class="card">
+            <div class="card border-0 shadow-sm">
                 <div class="card-body">
                     <form method="post" novalidate>
                         {% csrf_token %}
@@ -45,6 +54,9 @@
                                     {{ form.name.errors }}
                                 </div>
                                 {% endif %}
+                                <div class="form-text">
+                                    レポートを識別しやすい名前を付けてください
+                                </div>
                             </div>
                             
                             <div class="mb-3">
@@ -57,58 +69,19 @@
                                     {{ form.description.errors }}
                                 </div>
                                 {% endif %}
-                            </div>
-                        </div>
-
-                        {% if not is_create %}
-                        <!-- 対象企業 -->
-                        <div class="mb-4">
-                            <h5 class="mb-3">
-                                <i class="bi bi-building text-primary me-2"></i>
-                                対象企業
-                            </h5>
-                            
-                            {{ formset.management_form }}
-                            
-                            <div id="company-formset">
-                                {% for company_form in formset %}
-                                <div class="company-form-row border rounded p-3 mb-3">
-                                    <div class="row g-3">
-                                        <div class="col-md-8">
-                                            <label class="form-label">企業</label>
-                                            {{ company_form.company }}
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label class="form-label">表示順</label>
-                                            {{ company_form.display_order }}
-                                        </div>
-                                        <div class="col-md-1 d-flex align-items-end">
-                                            {{ company_form.DELETE }}
-                                            {% if company_form.instance.pk %}
-                                            <label for="{{ company_form.DELETE.id_for_label }}" class="btn btn-outline-danger btn-sm">
-                                                <i class="bi bi-trash"></i>
-                                            </label>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    {{ company_form.id }}
+                                <div class="form-text">
+                                    レポートの目的や内容について簡単な説明（任意）
                                 </div>
-                                {% endfor %}
                             </div>
-                            
-                            <button type="button" class="btn btn-outline-primary btn-sm" id="add-company">
-                                <i class="bi bi-plus-circle me-1"></i>企業を追加
-                            </button>
                         </div>
-                        {% endif %}
 
                         <!-- 送信ボタン -->
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-circle me-1"></i>
-                                {% if is_create %}作成{% else %}更新{% endif %}
+                                {% if action == 'create' %}作成して企業選択へ{% else %}更新{% endif %}
                             </button>
-                            <a href="{% if is_create %}{% url 'analysis_template:list' %}{% else %}{% url 'analysis_template:detail' template.pk %}{% endif %}" 
+                            <a href="{% if action == 'create' %}{% url 'analysis_template:list' %}{% else %}{% url 'analysis_template:detail' template.pk %}{% endif %}" 
                                class="btn btn-secondary">
                                 <i class="bi bi-x-circle me-1"></i>
                                 キャンセル
@@ -120,54 +93,83 @@
         </div>
         
         <div class="col-lg-4">
-            <div class="card bg-light">
+            <div class="card border-0 shadow-sm bg-light">
                 <div class="card-body">
                     <h5 class="card-title">
                         <i class="bi bi-lightbulb text-warning me-2"></i>
-                        ヒント
+                        {% if action == 'create' %}作成の流れ{% else %}ヒント{% endif %}
                     </h5>
+                    {% if action == 'create' %}
+                    <ol class="small mb-0">
+                        <li class="mb-2"><strong>基本情報入力</strong><br>レポート名と説明を入力</li>
+                        <li class="mb-2"><strong>企業選択</strong><br>分析対象の企業を選択</li>
+                        <li class="mb-2"><strong>指標入力</strong><br>各企業の財務指標を入力</li>
+                        <li class="mb-2"><strong>レポート表示</strong><br>比較分析レポートを確認</li>
+                    </ol>
+                    {% else %}
                     <ul class="small mb-0">
                         <li class="mb-2">テンプレート名は後から変更できます</li>
                         <li class="mb-2">説明は任意項目です</li>
-                        {% if is_create %}
-                        <li class="mb-2">作成後、対象企業と指標を設定できます</li>
-                        {% else %}
-                        <li class="mb-2">企業を追加したら、指標も入力してください</li>
-                        <li class="mb-2">表示順で並び替えができます</li>
-                        {% endif %}
+                        <li class="mb-2">企業や指標は別画面で管理します</li>
                     </ul>
+                    {% endif %}
                 </div>
             </div>
+
+            {% if action == 'update' %}
+            <div class="card border-0 shadow-sm mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-tools me-2"></i>
+                        その他の操作
+                    </h5>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-building me-1"></i>企業選択
+                        </a>
+                        <a href="{% url 'analysis_template:metrics_input' template.pk %}" class="btn btn-outline-success btn-sm">
+                            <i class="bi bi-bar-chart me-1"></i>指標入力
+                        </a>
+                        <a href="{% url 'analysis_template:metrics_edit' template.pk %}" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-pencil me-1"></i>指標編集
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
 
-{% if not is_create %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const addButton = document.getElementById('add-company');
-    const formset = document.getElementById('company-formset');
-    const totalForms = document.querySelector('input[name$="-TOTAL_FORMS"]');
+<style>
+.form-text {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.card.bg-light {
+    background-color: var(--bg-secondary) !important;
+}
+
+@media (max-width: 767.98px) {
+    .d-flex.gap-2 {
+        flex-direction: column;
+    }
     
-    addButton.addEventListener('click', function() {
-        const formCount = parseInt(totalForms.value);
-        const newForm = formset.querySelector('.company-form-row').cloneNode(true);
-        
-        // フォームのインデックスを更新
-        newForm.innerHTML = newForm.innerHTML.replace(/-\d+-/g, `-${formCount}-`);
-        newForm.innerHTML = newForm.innerHTML.replace(/id_form-\d+-/g, `id_form-${formCount}-`);
-        
-        // 値をクリア
-        newForm.querySelectorAll('input, select').forEach(input => {
-            if (input.type !== 'hidden') {
-                input.value = '';
-            }
-        });
-        
-        formset.appendChild(newForm);
-        totalForms.value = formCount + 1;
-    });
-});
-</script>
-{% endif %}
+    .d-flex.gap-2 .btn {
+        width: 100%;
+    }
+}
+
+/* ダークモード対応 */
+.dark-mode .card.bg-light,
+[data-theme="dark"] .card.bg-light {
+    background-color: rgba(71, 85, 105, 0.2) !important;
+}
+
+.dark-mode .form-text,
+[data-theme="dark"] .form-text {
+    color: var(--dm-muted-foreground);
+}
+</style>
 {% endblock %}
