@@ -2,9 +2,6 @@
 import yfinance as yf
 from decimal import Decimal
 from typing import Dict, Optional
-import logging
-
-logger = logging.getLogger(__name__)
 
 
 class YahooFinanceService:
