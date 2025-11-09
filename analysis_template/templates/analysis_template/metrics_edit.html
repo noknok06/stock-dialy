@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load analysis_filters %}
+
+{% block title %}指標編集 - {{ template.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- ページヘッダー -->
+    <div class="page-header mb-4">
+        <h1 class="page-title">
+            <i class="bi bi-bar-chart"></i>
+            <span>指標編集</span>
+        </h1>
+        <p class="page-subtitle">
+            {{ template.name }} の企業指標を入力・編集します
+        </p>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- 指標入力フォーム -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pencil-square me-2"></i>
+                        指標入力
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="metrics-form">
+                        {% csrf_token %}
+                        
+                        <!-- 企業・会計年度選択 -->
+                        <div class="row mb-4">
+                            <div class="col-md-8">
+                                <label for="{{ form.company.id_for_label }}" class="form-label">
+                                    企業
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.company }}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form.fiscal_year.id_for_label }}" class="form-label">
+                                    会計年度
+                                </label>
+                                {{ form.fiscal_year }}
+                            </div>
+                        </div>
+
+                        <!-- 指標入力（グループ別） -->
+                        {% regroup metric_definitions by metric_group as grouped_metrics %}
+                        {% for group in grouped_metrics %}
+                        <div class="mb-4">
+                            <h6 class="mb-3 pb-2 border-bottom">
+                                <i class="bi bi-graph-up me-2"></i>
+                                {{ group.grouper|get_group_label }}
+                            </h6>
+                            <div class="row g-3">
+                                {% for metric_def in group.list %}
+                                <div class="col-md-4">
+                                    <label for="id_metric_{{ metric_def.id }}" class="form-label">
+                                        {{ metric_def.display_name }}
+                                        {% if metric_def.description %}
+                                        <i class="bi bi-info-circle text-muted" 
+                                           data-bs-toggle="tooltip" 
+                                           title="{{ metric_def.description }}"></i>
+                                        {% endif %}
+                                    </label>
+                                    {{ form|get_item:"metric_"|add:metric_def.id }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        <!-- 送信ボタン -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-1"></i>
+                                保存
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="load-metrics">
+                                <i class="bi bi-arrow-clockwise me-1"></i>
+                                既存データ読込
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 登録済み指標一覧 -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-table me-2"></i>
+                        登録済み指標一覧
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>企業</th>
+                                    <th>指標数</th>
+                                    <th>会計年度</th>
+                                    <th>最終更新</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for data in metrics_data %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ data.company.name }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ data.company.code }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ data.metrics|length }}件</span>
+                                    </td>
+                                    <td>
+                                        {% if data.metrics.values|first %}
+                                        {{ data.metrics.values|first|first.fiscal_year|default:"-" }}
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if data.metrics.values|first %}
+                                        {{ data.metrics.values|first|first.updated_at|date:"Y/m/d H:i" }}
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary load-company-data"
+                                                data-company-id="{{ data.company.id }}">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">
+                                        指標データがありません
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- 操作ガイド -->
+            <div class="card bg-light mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-lightbulb text-warning me-2"></i>
+                        操作ガイド
+                    </h5>
+                    <ol class="small mb-0">
+                        <li class="mb-2">企業を選択します</li>
+                        <li class="mb-2">各指標の値を入力します</li>
+                        <li class="mb-2">「保存」ボタンをクリックします</li>
+                        <li class="mb-2">他の企業も同様に入力します</li>
+                    </ol>
+                    <hr>
+                    <p class="small mb-0">
+                        <i class="bi bi-info-circle me-1"></i>
+                        既存データがある企業は「既存データ読込」で編集できます
+                    </p>
+                </div>
+            </div>
+
+            <!-- アクション -->
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">アクション</h5>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'analysis_template:detail' template.pk %}" 
+                           class="btn btn-outline-primary">
+                            <i class="bi bi-eye me-1"></i>
+                            レポート表示
+                        </a>
+                        <a href="{% url 'analysis_template:edit' template.pk %}" 
+                           class="btn btn-outline-secondary">
+                            <i class="bi bi-pencil me-1"></i>
+                            基本情報編集
+                        </a>
+                        <a href="{% url 'analysis_template:calculate_scores' template.pk %}" 
+                           class="btn btn-outline-success">
+                            <i class="bi bi-calculator me-1"></i>
+                            スコア計算
+                        </a>
+                        <a href="{% url 'analysis_template:list' %}" 
+                           class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>
+                            一覧へ戻る
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const companySelect = document.querySelector('select[name="company"]');
+    const loadButton = document.getElementById('load-metrics');
+    const templateId = {{ template.pk }};
+    
+    // ツールチップ初期化
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // 既存データ読込
+    loadButton.addEventListener('click', function() {
+        const companyId = companySelect.value;
+        if (!companyId) {
+            alert('企業を選択してください');
+            return;
+        }
+        
+        fetch(`/analysis/${templateId}/api/company/${companyId}/metrics/`)
+            .then(response => response.json())
+            .then(data => {
+                // フォームに値を設定
+                Object.entries(data).forEach(([key, value]) => {
+                    const input = document.querySelector(`[name="${key}"]`);
+                    if (input) {
+                        input.value = value;
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('データの読み込みに失敗しました');
+            });
+    });
+    
+    // テーブルから企業データを読込
+    document.querySelectorAll('.load-company-data').forEach(button => {
+        button.addEventListener('click', function() {
+            const companyId = this.dataset.companyId;
+            companySelect.value = companyId;
+            loadButton.click();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    });
+});
+</script>
+{% endblock %}

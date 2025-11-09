@@ -362,7 +362,7 @@ class IndustryBenchmark(models.Model):
 class CompanyScore(models.Model):
     """企業の総合スコア"""
     template = models.ForeignKey(
-        'AnalysisTemplate',
+        AnalysisTemplate,
         on_delete=models.CASCADE,
         related_name='company_scores',
         verbose_name="テンプレート"

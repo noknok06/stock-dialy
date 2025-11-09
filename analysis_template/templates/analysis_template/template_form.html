@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if is_create %}レポート作成{% else %}レポート編集{% endif %} - カブログ{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- ページヘッダー -->
+    <div class="page-header mb-4">
+        <h1 class="page-title">
+            <i class="bi bi-{% if is_create %}plus-circle{% else %}pencil{% endif %}"></i>
+            <span>{% if is_create %}新規レポート作成{% else %}レポート編集{% endif %}</span>
+        </h1>
+        <p class="page-subtitle">
+            {% if is_create %}
+            企業分析レポートの基本情報を入力してください
+            {% else %}
+            レポートの基本情報と対象企業を編集できます
+            {% endif %}
+        </p>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- 基本情報 -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">
+                                <i class="bi bi-info-circle text-primary me-2"></i>
+                                基本情報
+                            </h5>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.name.id_for_label }}" class="form-label">
+                                    テンプレート名
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.name.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">
+                                    説明
+                                </label>
+                                {{ form.description }}
+                                {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.description.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if not is_create %}
+                        <!-- 対象企業 -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">
+                                <i class="bi bi-building text-primary me-2"></i>
+                                対象企業
+                            </h5>
+                            
+                            {{ formset.management_form }}
+                            
+                            <div id="company-formset">
+                                {% for company_form in formset %}
+                                <div class="company-form-row border rounded p-3 mb-3">
+                                    <div class="row g-3">
+                                        <div class="col-md-8">
+                                            <label class="form-label">企業</label>
+                                            {{ company_form.company }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">表示順</label>
+                                            {{ company_form.display_order }}
+                                        </div>
+                                        <div class="col-md-1 d-flex align-items-end">
+                                            {{ company_form.DELETE }}
+                                            {% if company_form.instance.pk %}
+                                            <label for="{{ company_form.DELETE.id_for_label }}" class="btn btn-outline-danger btn-sm">
+                                                <i class="bi bi-trash"></i>
+                                            </label>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {{ company_form.id }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="add-company">
+                                <i class="bi bi-plus-circle me-1"></i>企業を追加
+                            </button>
+                        </div>
+                        {% endif %}
+
+                        <!-- 送信ボタン -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-1"></i>
+                                {% if is_create %}作成{% else %}更新{% endif %}
+                            </button>
+                            <a href="{% if is_create %}{% url 'analysis_template:list' %}{% else %}{% url 'analysis_template:detail' template.pk %}{% endif %}" 
+                               class="btn btn-secondary">
+                                <i class="bi bi-x-circle me-1"></i>
+                                キャンセル
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-lightbulb text-warning me-2"></i>
+                        ヒント
+                    </h5>
+                    <ul class="small mb-0">
+                        <li class="mb-2">テンプレート名は後から変更できます</li>
+                        <li class="mb-2">説明は任意項目です</li>
+                        {% if is_create %}
+                        <li class="mb-2">作成後、対象企業と指標を設定できます</li>
+                        {% else %}
+                        <li class="mb-2">企業を追加したら、指標も入力してください</li>
+                        <li class="mb-2">表示順で並び替えができます</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if not is_create %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const addButton = document.getElementById('add-company');
+    const formset = document.getElementById('company-formset');
+    const totalForms = document.querySelector('input[name$="-TOTAL_FORMS"]');
+    
+    addButton.addEventListener('click', function() {
+        const formCount = parseInt(totalForms.value);
+        const newForm = formset.querySelector('.company-form-row').cloneNode(true);
+        
+        // フォームのインデックスを更新
+        newForm.innerHTML = newForm.innerHTML.replace(/-\d+-/g, `-${formCount}-`);
+        newForm.innerHTML = newForm.innerHTML.replace(/id_form-\d+-/g, `id_form-${formCount}-`);
+        
+        // 値をクリア
+        newForm.querySelectorAll('input, select').forEach(input => {
+            if (input.type !== 'hidden') {
+                input.value = '';
+            }
+        });
+        
+        formset.appendChild(newForm);
+        totalForms.value = formCount + 1;
+    });
+});
+</script>
+{% endif %}
+{% endblock %}
