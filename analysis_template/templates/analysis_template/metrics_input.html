@@ -8,44 +8,15 @@
 <div class="container mt-4 mb-5">
     <!-- ページヘッダー -->
     <div class="page-header mb-4">
-        <nav aria-label="breadcrumb" class="mb-2">
-            <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="{% url 'analysis_template:list' %}">テンプレート一覧</a></li>
-                <li class="breadcrumb-item"><a href="{% url 'analysis_template:detail' template.pk %}">{{ template.name }}</a></li>
-                <li class="breadcrumb-item active" aria-current="page">指標入力</li>
-            </ol>
-        </nav>
         <h1 class="page-title">
             <i class="bi bi-bar-chart"></i>
-            <span class="page-title-text">指標入力</span>
+            <span>指標入力</span>
         </h1>
-        <p class="page-subtitle">
-            Yahoo Finance APIから自動取得、または手動で入力できます
-        </p>
     </div>
-
-    <!-- ⭐ 自動取得コントロールパネル -->
-    <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-        <div class="card-body text-white">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h5 class="mb-2">
-                        <i class="bi bi-cloud-download me-2"></i>
-                        Yahoo Finance APIから自動取得
-                    </h5>
-                    <p class="mb-0 small opacity-75">
-                        選択した企業の財務指標を一括で取得できます（ROE、PER、PBRなど約20指標）
-                    </p>
-                </div>
-                <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                    <button type="button" class="btn btn-light btn-lg" id="autoFetchBtn">
-                        <i class="bi bi-download me-2"></i>
-                        一括自動取得
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <button type="button" style="display: none;" id="autoFetchBtn">
+        <i class="bi bi-download me-2"></i>
+        一括自動取得
+    </button>
 
     <form method="post" id="metricsForm">
         {% csrf_token %}
