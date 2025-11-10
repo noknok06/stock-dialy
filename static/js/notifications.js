@@ -39,6 +39,7 @@ function getCSRFToken() {
   return token;
 }
 
+// 🔧 修正: リマインダー専用に簡略化
 async function saveNotification(diaryId) {
   const message = document.getElementById('notificationMessage').value;
   const remindAtValue = document.getElementById('remindAt').value;
@@ -48,6 +49,7 @@ async function saveNotification(diaryId) {
     return;
   }
   
+  // 🔧 修正: リマインダー専用のシンプルなデータ構造
   const data = {
     remind_at: remindAtValue,
     message: message
@@ -92,6 +94,7 @@ async function saveNotification(diaryId) {
     if (!contentType || !contentType.includes('application/json')) {
       const responseText = await response.text();
       console.error('❌ Response is not JSON. Content-Type:', contentType);
+      console.error('Response text:', responseText.substring(0, 500));
       showToast('サーバーエラーが発生しました。', 'danger');
       return;
     }
@@ -101,11 +104,13 @@ async function saveNotification(diaryId) {
     if (response.ok && result.success) {
       showToast(result.message || '通知を設定しました', 'success');
       
+      // モーダルを閉じる
       const modal = bootstrap.Modal.getInstance(document.getElementById('notificationModal'));
       if (modal) {
         modal.hide();
       }
       
+      // フォームをリセット
       document.getElementById('notificationMessage').value = '';
       document.getElementById('remindAt').value = '';
       
