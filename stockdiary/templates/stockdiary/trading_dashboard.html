@@ -1931,9 +1931,7 @@
                         <span class="pl-rate profit">+{{ sector.roi|floatformat:1 }}%</span>
                     </div>
                     <p class="pl-count">取引数: {{ sector.transaction_count }}件 | 銘柄数: {{ sector.diary_count }}社</p>
-                    <p class="pl-count" style="color: var(--success); margin-top: 0.25rem;">
-                        実現損益: +¥{{ sector.realized_profit|intcomma_float:0 }} / 投資額: ¥{{ sector.total_invested|intcomma_float:0 }}
-                    </p>
+                    <p class="pl-count" style="color: var(--success); margin-top: 0.25rem;">実現損益: +¥{{ sector.realized_profit|intcomma_float:0 }} / 投資額: ¥{{ sector.total_invested|intcomma_float:0 }}</p>
                 </div>
                 {% empty %}
                 <p class="text-muted text-center py-3">データがありません</p>
@@ -1955,9 +1953,7 @@
                         <span class="pl-rate loss">{{ sector.roi|floatformat:1 }}%</span>
                     </div>
                     <p class="pl-count">取引数: {{ sector.transaction_count }}件 | 銘柄数: {{ sector.diary_count }}社</p>
-                    <p class="pl-count" style="color: var(--destructive); margin-top: 0.25rem;">
-                        実現損益: ¥{{ sector.realized_profit|intcomma_float:0 }} / 投資額: ¥{{ sector.total_invested|intcomma_float:0 }}
-                    </p>
+                    <p class="pl-count" style="color: var(--destructive); margin-top: 0.25rem;">実現損益: ¥{{ sector.realized_profit|intcomma_float:0 }} / 投資額: ¥{{ sector.total_invested|intcomma_float:0 }}</p>
                 </div>
                 {% empty %}
                 <p class="text-muted text-center py-3">データがありません</p>
