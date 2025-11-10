@@ -2523,19 +2523,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     loadNotifications();
     
-    // 通知タイプ切り替え
-    const notificationType = document.getElementById('notificationType');
-    if (notificationType) {
-        notificationType.addEventListener('change', function() {
-            document.getElementById('reminderFields').style.display = 
-                this.value === 'reminder' ? 'block' : 'none';
-            document.getElementById('priceAlertFields').style.display = 
-                this.value === 'price_alert' ? 'block' : 'none';
-            document.getElementById('periodicFields').style.display = 
-                this.value === 'periodic' ? 'block' : 'none';
-        });
-    }
-    
     // プッシュ通知ステータス更新時のUI更新
     document.addEventListener('pushStatusUpdated', function(e) {
         const status = e.detail;
