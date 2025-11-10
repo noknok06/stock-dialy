@@ -5,15 +5,27 @@
 
 {% block content %}
 <div class="container mt-4">
+    <!-- ページヘッダー -->
     <div class="page-header mb-4">
+        {% if action == 'update' %}
+        <nav aria-label="breadcrumb" class="mb-2">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'analysis_template:list' %}">テンプレート一覧</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'analysis_template:detail' template.pk %}">{{ template.name }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">編集</li>
+            </ol>
+        </nav>
+        {% endif %}
         <h1 class="page-title">
             <i class="bi bi-{% if action == 'create' %}plus-circle{% else %}pencil{% endif %}"></i>
             <span>{% if action == 'create' %}新規レポート作成{% else %}レポート編集{% endif %}</span>
         </h1>
         <p class="page-subtitle">
-{% if action == 'create' %}
-企業分析レポートの基本情報を入力してください
-{% else %} レポートの基本情報を編集できます{% endif %}
+            {% if action == 'create' %}
+            企業分析レポートの基本情報を入力してください
+            {% else %}
+            レポートの基本情報を編集できます
+            {% endif %}
         </p>
     </div>
 

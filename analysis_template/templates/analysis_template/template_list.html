@@ -4,117 +4,60 @@
 {% block title %}分析レポート一覧 - カブログ{% endblock %}
 
 {% block content %}
-<div class="container mt-4 mb-5">
+<div class="container mt-4">
     <!-- ページヘッダー -->
-    <div class="page-header mb-4">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
-            <div>
-                <h1 class="page-title d-flex align-items-center gap-2 mb-2">
-                    <i class="bi bi-clipboard-data text-primary"></i>
-                    分析レポート一覧
-                </h1>
-                <p class="text-muted mb-0">企業の財務指標を比較分析するレポートを管理できます</p>
-            </div>
-            <div class="page-header-actions">
-                <a href="{% url 'analysis_template:create' %}" class="btn btn-primary d-flex align-items-center gap-2">
-                    <i class="bi bi-plus-circle"></i>
-                    <span>新規レポート作成</span>
-                </a>
-            </div>
+    <div class="page-header page-header-with-actions mb-4">
+        <div class="page-header-content">
+            <h1 class="page-title">
+                <i class="bi bi-clipboard-data"></i>
+                <span>分析レポート一覧</span>
+            </h1>
+            <p class="page-subtitle">企業の財務指標を比較分析するレポートを管理できます</p>
+        </div>
+        <div class="page-header-actions">
+            <a href="{% url 'analysis_template:create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>新規レポート作成
+            </a>
         </div>
     </div>
 
     {% if templates %}
-    <!-- ⭐ 一括操作バー -->
-    <div class="bulk-action-bar mb-4" id="bulkActionBar">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body py-3">
-                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3">
-                    <div class="selection-info">
-                        <span class="text-muted">選択中: </span>
-                        <strong class="text-primary fs-5" id="selectedCount">0</strong>
-                        <span class="text-muted">件</span>
-                    </div>
-                    <div class="d-flex gap-2 flex-wrap">
-                        <button type="button" class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1" onclick="bulkDelete()">
-                            <i class="bi bi-trash"></i>
-                            <span>まとめて削除</span>
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" onclick="clearSelection()">
-                            <i class="bi bi-x-circle"></i>
-                            <span>選択解除</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ⭐ レポート一覧 -->
+    <!-- レポート一覧 -->
     <div class="row g-4">
         {% for template in templates %}
-        <div class="col-12 col-sm-6 col-lg-4">
-            <div class="card h-100 template-card shadow-sm" data-template-id="{{ template.pk }}">
-                <!-- ⭐ カードヘッダー（チェックボックスとバッジを含む） -->
-                <div class="card-header-custom">
-                    <div class="checkbox-wrapper">
-                        <input type="checkbox" 
-                               class="form-check-input template-checkbox" 
-                               id="template-{{ template.pk }}"
-                               value="{{ template.pk }}"
-                               onclick="updateSelection()">
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title mb-0">{{ template.name }}</h5>
+                        <span class="badge bg-primary">{{ template.company_count }}社</span>
                     </div>
-                    <span class="company-badge">{{ template.company_count }}社</span>
-                </div>
-                
-                <div class="card-body d-flex flex-column pt-2">
-                    <h5 class="card-title mb-3">{{ template.name }}</h5>
                     
                     {% if template.description %}
-                    <p class="card-text text-muted small mb-3 flex-grow-1">{{ template.description|truncatewords:20 }}</p>
-                    {% else %}
-                    <p class="card-text text-muted small mb-3 flex-grow-1 fst-italic">説明なし</p>
+                    <p class="card-text text-muted small">{{ template.description|truncatewords:20 }}</p>
                     {% endif %}
                     
-                    <div class="card-meta mt-auto">
-                        <small class="text-muted d-flex align-items-center gap-1">
-                            <i class="bi bi-clock"></i>
-                            <span>{{ template.updated_at|date:"Y/m/d H:i" }}</span>
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="bi bi-clock me-1"></i>
+                            最終更新: {{ template.updated_at|date:"Y/m/d H:i" }}
                         </small>
                     </div>
                 </div>
-                
-                <div class="card-footer bg-transparent border-top">
-                    <div class="action-buttons">
+                <div class="card-footer bg-transparent border-top-0">
+                    <div class="d-flex gap-2">
                         <a href="{% url 'analysis_template:detail' template.pk %}" 
-                           class="btn btn-sm btn-primary w-100 mb-2 d-flex align-items-center justify-content-center gap-1">
-                            <i class="bi bi-eye"></i>
-                            <span>表示</span>
+                           class="btn btn-sm btn-primary flex-fill">
+                            <i class="bi bi-eye me-1"></i>レポート表示
                         </a>
-                        <div class="d-flex gap-2">
-                            <a href="{% url 'analysis_template:update' template.pk %}" 
-                               class="btn btn-sm btn-outline-secondary flex-fill d-flex align-items-center justify-content-center"
-                               title="編集">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            <button type="button" 
-                                    class="btn btn-sm btn-outline-success flex-fill d-flex align-items-center justify-content-center"
-                                    onclick="duplicateTemplate({{ template.pk }})"
-                                    title="複製">
-                                <i class="bi bi-files"></i>
-                            </button>
-                            <a href="{% url 'analysis_template:export' template.pk %}" 
-                               class="btn btn-sm btn-outline-info flex-fill d-flex align-items-center justify-content-center"
-                               title="エクスポート">
-                                <i class="bi bi-download"></i>
-                            </a>
-                            <button type="button" 
-                                    class="btn btn-sm btn-outline-danger flex-fill d-flex align-items-center justify-content-center"
-                                    onclick="confirmDelete({{ template.pk }}, '{{ template.name|escapejs }}')"
-                                    title="削除">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </div>
+                        <a href="{% url 'analysis_template:update' template.pk %}" 
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{% url 'analysis_template:metrics_edit' template.pk %}" 
+                           class="btn btn-sm btn-outline-success">
+                            <i class="bi bi-bar-chart"></i>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -123,478 +66,59 @@
     </div>
     {% else %}
     <!-- 空の状態 -->
-    <div class="empty-state text-center py-5 my-5">
+    <div class="empty-state text-center py-5">
         <div class="empty-state-icon mb-4">
-            <i class="bi bi-clipboard-data"></i>
+            <i class="bi bi-clipboard-data" style="font-size: 4rem; color: #cbd5e1;"></i>
         </div>
-        <h3 class="empty-state-title mb-3">レポートがありません</h3>
+        <h3 class="empty-state-title">レポートがありません</h3>
         <p class="empty-state-description mb-4">
             企業の財務指標を比較分析するレポートを作成してみましょう
         </p>
-        <a href="{% url 'analysis_template:create' %}" class="btn btn-primary btn-lg d-inline-flex align-items-center gap-2">
-            <i class="bi bi-plus-circle"></i>
-            <span>最初のレポートを作成</span>
+        <a href="{% url 'analysis_template:create' %}" class="btn btn-primary btn-lg">
+            <i class="bi bi-plus-circle me-2"></i>最初のレポートを作成
         </a>
     </div>
     {% endif %}
 </div>
 
-<!-- 削除確認用のフォーム（非表示） -->
-<form id="deleteForm" method="post" style="display: none;">
-    {% csrf_token %}
-</form>
-
-<script>
-const csrfToken = '{{ csrf_token }}';
-let selectedTemplates = new Set();
-
-// 選択状態の更新
-function updateSelection() {
-    selectedTemplates.clear();
-    
-    document.querySelectorAll('.template-checkbox:checked').forEach(checkbox => {
-        selectedTemplates.add(parseInt(checkbox.value));
-    });
-    
-    const count = selectedTemplates.size;
-    const bulkActionBar = document.getElementById('bulkActionBar');
-    const selectedCountEl = document.getElementById('selectedCount');
-    
-    selectedCountEl.textContent = count;
-    
-    if (count > 0) {
-        bulkActionBar.style.display = 'block';
-        bulkActionBar.classList.add('show');
-    } else {
-        bulkActionBar.classList.remove('show');
-        setTimeout(() => {
-            if (selectedTemplates.size === 0) {
-                bulkActionBar.style.display = 'none';
-            }
-        }, 300);
-    }
-}
-
-// 選択解除
-function clearSelection() {
-    document.querySelectorAll('.template-checkbox').forEach(checkbox => {
-        checkbox.checked = false;
-    });
-    updateSelection();
-}
-
-// 一括削除
-function bulkDelete() {
-    const count = selectedTemplates.size;
-    
-    if (count === 0) {
-        alert('削除するレポートを選択してください');
-        return;
-    }
-    
-    if (!confirm(`選択した${count}件のレポートを削除しますか？\n\nこの操作は取り消せません。`)) {
-        return;
-    }
-    
-    fetch('{% url "analysis_template:bulk_delete" %}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrfToken
-        },
-        body: JSON.stringify({
-            template_ids: Array.from(selectedTemplates)
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(data.message);
-            location.reload();
-        } else {
-            alert('エラー: ' + data.error);
-        }
-    })
-    .catch(error => {
-        alert('削除に失敗しました: ' + error.message);
-    });
-}
-
-// 個別削除
-function confirmDelete(templateId, templateName) {
-    if (!confirm(`「${templateName}」を削除しますか？\n\nこの操作は取り消せません。`)) {
-        return;
-    }
-    
-    const form = document.getElementById('deleteForm');
-    form.action = `/analysis_template/${templateId}/delete/`;
-    form.submit();
-}
-
-// 複製
-function duplicateTemplate(templateId) {
-    if (!confirm('このレポートを複製しますか？')) {
-        return;
-    }
-    
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = `/analysis_template/${templateId}/duplicate/`;
-    
-    const csrfInput = document.createElement('input');
-    csrfInput.type = 'hidden';
-    csrfInput.name = 'csrfmiddlewaretoken';
-    csrfInput.value = csrfToken;
-    form.appendChild(csrfInput);
-    
-    document.body.appendChild(form);
-    form.submit();
-}
-
-// 初期化時にバーを非表示に
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('bulkActionBar').style.display = 'none';
-});
-</script>
-
 <style>
-/* ページヘッダー */
-.page-header {
-    animation: fadeInDown 0.4s ease-out;
-}
-
-.page-title {
-    font-size: 1.75rem;
-    font-weight: 600;
-    color: var(--text-primary, #1e293b);
-}
-
-/* 一括操作バー */
-.bulk-action-bar {
-    display: none;
-    animation: slideDown 0.3s ease-out;
-}
-
-.bulk-action-bar.show {
-    animation: slideDown 0.3s ease-out;
-}
-
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes fadeInDown {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.selection-info {
-    font-size: 1rem;
-}
-
-/* ⭐ テンプレートカード */
-.template-card {
-    position: relative;
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    transition: all 0.3s ease;
-    animation: fadeInUp 0.4s ease-out backwards;
-    overflow: hidden;
-}
-
-.template-card:nth-child(1) { animation-delay: 0.05s; }
-.template-card:nth-child(2) { animation-delay: 0.1s; }
-.template-card:nth-child(3) { animation-delay: 0.15s; }
-.template-card:nth-child(4) { animation-delay: 0.2s; }
-.template-card:nth-child(5) { animation-delay: 0.25s; }
-.template-card:nth-child(6) { animation-delay: 0.3s; }
-
-.template-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1) !important;
-    border-color: #cbd5e1;
-}
-
-.template-card:has(.template-checkbox:checked) {
-    border-color: #3b82f6;
-    background-color: rgba(59, 130, 246, 0.05);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
-}
-
-/* ⭐ カードヘッダー（チェックボックスとバッジ） */
-.card-header-custom {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 0.75rem 1rem;
-    background-color: rgba(248, 250, 252, 0.5);
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.checkbox-wrapper {
-    display: flex;
-    align-items: center;
-}
-
-.checkbox-wrapper .form-check-input {
-    width: 1.25rem;
-    height: 1.25rem;
-    cursor: pointer;
-    margin: 0;
-    border: 2px solid #cbd5e1;
-    transition: all 0.2s ease;
-}
-
-.checkbox-wrapper .form-check-input:checked {
-    background-color: #3b82f6;
-    border-color: #3b82f6;
-}
-
-.checkbox-wrapper .form-check-input:focus {
-    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
-}
-
-/* ⭐ バッジ */
-.company-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.375rem 0.75rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: white;
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    border-radius: 20px;
-    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
-}
-
-/* カードコンテンツ */
-.card-title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--text-primary, #1e293b);
-    line-height: 1.4;
-    margin-bottom: 0.75rem;
-}
-
-.card-text {
-    line-height: 1.6;
-}
-
-.card-meta {
-    padding-top: 0.5rem;
-    border-top: 1px solid #f1f5f9;
-}
-
-.card-footer {
-    padding: 1rem;
-    background-color: #f8fafc !important;
-}
-html<style>
-/* 既存のスタイルに以下を追加 */
-
-/* ⭐ ボタンの高さを統一 */
-.action-buttons .btn {
-    transition: all 0.2s ease;
-    font-weight: 500;
-    font-size: 0.875rem;
-    height: 32px; /* 明示的に高さを指定 */
-    line-height: 1; /* line-heightを統一 */
-    padding: 0.375rem 0.75rem; /* paddingを統一 */
-    border-width: 1px; /* borderの太さを統一 */
-    display: inline-flex; /* すべてinline-flexに */
-    align-items: center;
-    justify-content: center;
-}
-
-/* ⭐ buttonタグ特有のスタイルをリセット */
-.action-buttons button.btn {
-    border-style: solid; /* borderスタイルを明示 */
-}
-
-.action-buttons .btn:hover {
-    transform: translateY(-1px);
-}
-
-.action-buttons .btn-primary {
-    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
-}
-
-.action-buttons .btn-primary:hover {
-    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
-}
-
-.action-buttons .btn i {
-    font-size: 1rem;
-    line-height: 1; /* アイコンのline-heightも統一 */
-}
-
-/* ⭐ 2行目のボタン群の高さを確実に揃える */
-.action-buttons .d-flex.gap-2 .btn {
-    min-height: 32px;
-    max-height: 32px;
-}
-
-/* 空の状態 */
 .empty-state {
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    border-radius: 16px;
-    padding: 4rem 2rem;
-    animation: fadeInUp 0.5s ease-out;
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: 3rem 2rem;
 }
 
-.empty-state-icon i {
-    font-size: 5rem;
-    color: #cbd5e1;
+.empty-state-icon {
     opacity: 0.5;
 }
 
 .empty-state-title {
     font-size: 1.5rem;
     font-weight: 600;
-    color: #334155;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
 }
 
 .empty-state-description {
-    color: #64748b;
+    color: var(--text-secondary);
     max-width: 600px;
     margin: 0 auto;
-    font-size: 1rem;
 }
 
-/* レスポンシブデザイン */
 @media (max-width: 767.98px) {
-    .page-title {
-        font-size: 1.5rem;
+    .page-header-with-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .page-header-actions {
+        width: 100%;
+        margin-top: 1rem;
     }
     
     .page-header-actions .btn {
         width: 100%;
-        justify-content: center;
     }
-    
-    .card-header-custom {
-        padding: 0.5rem 0.75rem;
-    }
-    
-    .card-title {
-        font-size: 1rem;
-    }
-    
-    .action-buttons .btn {
-        font-size: 0.8125rem;
-    }
-    
-    .empty-state {
-        padding: 3rem 1.5rem;
-    }
-    
-    .empty-state-icon i {
-        font-size: 4rem;
-    }
-    
-    .empty-state-title {
-        font-size: 1.25rem;
-    }
-}
-
-/* ⭐ ダークモード対応 */
-.dark-mode .page-title,
-[data-theme="dark"] .page-title {
-    color: var(--dm-foreground, #f1f5f9);
-}
-
-.dark-mode .template-card,
-[data-theme="dark"] .template-card {
-    border-color: #334155;
-    background-color: var(--dm-card, #1e293b);
-}
-
-.dark-mode .template-card:hover,
-[data-theme="dark"] .template-card:hover {
-    border-color: #475569;
-}
-
-.dark-mode .template-card:has(.template-checkbox:checked),
-[data-theme="dark"] .template-card:has(.template-checkbox:checked) {
-    border-color: #60a5fa;
-    background-color: rgba(59, 130, 246, 0.1);
-}
-
-.dark-mode .card-header-custom,
-[data-theme="dark"] .card-header-custom {
-    background-color: rgba(15, 23, 42, 0.5);
-    border-bottom-color: #334155;
-}
-
-.dark-mode .card-title,
-[data-theme="dark"] .card-title {
-    color: var(--dm-foreground, #f1f5f9);
-}
-
-.dark-mode .card-meta,
-[data-theme="dark"] .card-meta {
-    border-top-color: #334155;
-}
-
-.dark-mode .card-footer,
-[data-theme="dark"] .card-footer {
-    background-color: var(--dm-background, #0f172a) !important;
-}
-
-.dark-mode .checkbox-wrapper .form-check-input,
-[data-theme="dark"] .checkbox-wrapper .form-check-input {
-    border-color: #475569;
-    background-color: #1e293b;
-}
-
-.dark-mode .checkbox-wrapper .form-check-input:checked,
-[data-theme="dark"] .checkbox-wrapper .form-check-input:checked {
-    background-color: #3b82f6;
-    border-color: #3b82f6;
-}
-
-.dark-mode .empty-state,
-[data-theme="dark"] .empty-state {
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-}
-
-.dark-mode .empty-state-icon i,
-[data-theme="dark"] .empty-state-icon i {
-    color: #475569;
-}
-
-.dark-mode .empty-state-title,
-[data-theme="dark"] .empty-state-title {
-    color: #f1f5f9;
-}
-
-.dark-mode .empty-state-description,
-[data-theme="dark"] .empty-state-description {
-    color: #94a3b8;
 }
 </style>
 {% endblock %}
