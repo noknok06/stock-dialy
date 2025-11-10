@@ -225,14 +225,14 @@
 {% block content %}
 <body class="dark-mode">
 <div class="dashboard-container py-4">
-  <div class="dashboard-header">
-    <h1 class="page-title">
-      <i class="bi bi-tag"></i>
-      <span>{% if form.instance.pk %}タグの編集{% else %}新規タグ作成{% endif %}</span>
-    </h1>
-    <p class="page-subtitle">
-      投資記録を分類・整理するためのタグを{% if form.instance.pk %}編集{% else %}作成{% endif %}します
-    </p>
+  <div class="page-header page-header-with-actions mb-4">
+      <div class="page-header-content">
+          <h1 class="page-title">
+              <i class="bi bi-tags"></i>
+              <span>タグ管理</span>
+          </h1>
+        <p class="page-subtitle">投資記録を分類・整理するためのタグを{% if form.instance.pk %}編集{% else %}作成{% endif %}します</p>
+      </div>
   </div>
 
   <div class="row justify-content-center">
