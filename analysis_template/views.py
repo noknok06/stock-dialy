@@ -21,6 +21,9 @@ from .forms import (
 )
 from company_master.models import CompanyMaster
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 @login_required
 def template_list(request):
