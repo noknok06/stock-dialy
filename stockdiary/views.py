@@ -2836,19 +2836,9 @@ def parse_rakuten_csv_preview(csv_content):
 class NotificationListView(LoginRequiredMixin, TemplateView):
     """通知管理ページ"""
     template_name = 'stockdiary/notification_list.html'
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['page_actions'] = [
-            {
-                'type': 'back',
-                'url': reverse_lazy('stockdiary:home'),
-                'icon': 'bi-arrow-left',
-                'label': '戻る',
-                'aria_label': '戻る' 
-            }
-        ]
-        return context
     
+# stockdiary/views.py に以下の関数を追加
+
 def parse_sbi_csv_preview(csv_content):
     """SBI証券CSVをパースしてプレビュー用データを返す"""
     lines = csv_content.strip().split('\n')
