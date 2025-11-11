@@ -31,6 +31,16 @@ class Command(BaseCommand):
                 'chart_suitable': True,
             },
             {
+                'name': 'dividend_rate',  # ⭐ 追加
+                'display_name': '配当金額',
+                'metric_type': 'amount',
+                'metric_group': 'dividend',
+                'description': '1株あたりの年間配当金額。株主が受け取る配当の実額を示す。',
+                'unit': '円',
+                'display_order': 85,
+                'chart_suitable': False,
+            },
+            {
                 'name': 'operating_margin',
                 'display_name': '営業利益率',
                 'metric_type': 'percentage',

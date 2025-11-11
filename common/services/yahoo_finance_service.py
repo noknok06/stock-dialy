@@ -2,10 +2,8 @@
 import yfinance as yf
 from decimal import Decimal
 from typing import Dict, Optional
-
 import logging
 
-# ⭐ loggerを初期化
 logger = logging.getLogger(__name__)
 
 class YahooFinanceService:
@@ -13,49 +11,52 @@ class YahooFinanceService:
     
     # APIフィールドと指標定義のマッピング
     METRIC_MAPPING = {
+        # ========================================
         # 収益性指標
-        'roe': ('returnOnEquity', lambda x: x * 100 if x else None),  # 小数→%
+        # ========================================
+        'roe': ('returnOnEquity', lambda x: x * 100 if x else None),
         'roa': ('returnOnAssets', lambda x: x * 100 if x else None),
         'operating_margin': ('operatingMargins', lambda x: x * 100 if x else None),
-        'profit_margin': ('profitMargins', lambda x: x * 100 if x else None),
         
+        # ========================================
+        # 成長性指標
+        # ========================================
+        'revenue_growth': ('revenueGrowth', lambda x: x * 100 if x else None),
+        'profit_growth': ('earningsGrowth', lambda x: x * 100 if x else None),
+        
+        # ========================================
         # バリュエーション指標
+        # ========================================
         'per': ('trailingPE', None),
-        'forward_per': ('forwardPE', None),
         'pbr': ('priceToBook', None),
-        'psr': ('priceToSalesTrailing12Months', None),
         
+        # ========================================
         # 配当指標
-        'dividend_yield': ('dividendYield', lambda x: x * 100 if x else None),
+        # ========================================
+        # ✅ dividendYieldは既に%形式で返ってくる（3.03 = 3.03%）
         'dividend_rate': ('dividendRate', None),
+        'dividend_yield': ('dividendYield', None),
         'payout_ratio': ('payoutRatio', lambda x: x * 100 if x else None),
         
+        # ========================================
         # 財務健全性指標
-        'equity_ratio': ('debtToEquity', lambda x: 100 - x if x else None),  # 負債比率→自己資本比率
+        # ========================================
+        # ⚠️ 日本株ではtotalStockholderEquity, totalAssetsが取得不可
+        'equity_ratio': ('_calc_equity_ratio', None),  # debtToEquityから逆算
         'debt_equity_ratio': ('debtToEquity', None),
         'current_ratio': ('currentRatio', lambda x: x * 100 if x else None),
-        'quick_ratio': ('quickRatio', lambda x: x * 100 if x else None),
         
-        # 成長性指標
-        'revenue_growth': ('revenueGrowth', lambda x: x * 100 if x else None),
-        'earnings_growth': ('earningsGrowth', lambda x: x * 100 if x else None),
-        
+        # ========================================
         # 規模・実績指標
+        # ========================================
         'market_cap': ('marketCap', lambda x: x / 100000000 if x else None),  # 円→億円
-        'revenue': ('totalRevenue', lambda x: x / 100000000 if x else None),
-        'total_assets': ('totalAssets', lambda x: x / 100000000 if x else None),
-        'eps': ('trailingEps', None),
-        'forward_eps': ('forwardEps', None),
-        'beta': ('beta', None),
-        
-        # 効率性指標
-        'asset_turnover': ('assetTurnover', None),
+        'revenue': ('totalRevenue', lambda x: x / 100000000 if x else None),  # 円→億円
+        'operating_profit': ('_calc_operating_profit', None),  # 売上高×営業利益率
     }
     
     @staticmethod
     def get_ticker_symbol(company_code: str) -> str:
         """企業コードからYahoo Financeのティッカーシンボルを生成"""
-        # 日本株の場合は .T を付ける
         return f"{company_code}.T"
     
     @classmethod
@@ -65,7 +66,7 @@ class YahooFinanceService:
         
         Args:
             company_code: 企業コード（例: 7203）
-            fiscal_year: 会計年度（現在は未使用、将来的に履歴データ取得に使用）
+            fiscal_year: 会計年度（現在は未使用）
         
         Returns:
             指標名とその値の辞書
@@ -84,6 +85,20 @@ class YahooFinanceService:
             
             # マッピングに基づいてデータを取得
             for metric_name, (api_field, transform) in cls.METRIC_MAPPING.items():
+                # ✅ 自己資本比率は特殊処理
+                if api_field == '_calc_equity_ratio':
+                    equity_ratio = cls._calculate_equity_ratio(info)
+                    if equity_ratio is not None:
+                        result[metric_name] = Decimal(str(round(equity_ratio, 2)))
+                    continue
+                
+                # ✅ 営業利益は特殊処理
+                if api_field == '_calc_operating_profit':
+                    operating_profit = cls._calculate_operating_profit(info)
+                    if operating_profit is not None:
+                        result[metric_name] = Decimal(str(round(operating_profit, 2)))
+                    continue
+                
                 value = info.get(api_field)
                 
                 if value is not None:
@@ -105,6 +120,60 @@ class YahooFinanceService:
         except Exception as e:
             logger.error(f"Error fetching data for {ticker_symbol}: {str(e)}")
             return {}
+    
+    @staticmethod
+    def _calculate_equity_ratio(info: dict) -> Optional[float]:
+        """
+        自己資本比率を計算（日本株では精度制限あり）
+        
+        計算式: 100 / (1 + 負債比率/100) × 100
+        
+        ⚠️ 注意: totalStockholderEquityとtotalAssetsが取得できないため、
+        debtToEquityから逆算していますが、完全に正確ではありません。
+        
+        正確な計算式:
+        - 負債比率(D/E) = 総負債 ÷ 自己資本
+        - 自己資本比率 = 自己資本 ÷ (自己資本 + 総負債)
+        -              = 1 ÷ (1 + D/E)
+        
+        Args:
+            info: yfinanceから取得した企業情報
+        
+        Returns:
+            自己資本比率（%）、または計算不可の場合None
+        """
+        debt_to_equity = info.get('debtToEquity')
+        
+        if debt_to_equity is not None and debt_to_equity >= 0:
+            # debtToEquityは既に%形式（103.66 = 103.66%）
+            equity_ratio = (1 / (1 + debt_to_equity / 100)) * 100
+            return equity_ratio
+        
+        return None
+    
+    @staticmethod
+    def _calculate_operating_profit(info: dict) -> Optional[float]:
+        """
+        営業利益を計算（億円単位）
+        
+        計算式: 売上高 × 営業利益率 ÷ 100,000,000
+        
+        Args:
+            info: yfinanceから取得した企業情報
+        
+        Returns:
+            営業利益（億円）、または計算不可の場合None
+        """
+        revenue = info.get('totalRevenue')
+        operating_margin = info.get('operatingMargins')
+        
+        if revenue and operating_margin:
+            # 営業利益 = 売上高 × 営業利益率
+            operating_profit = revenue * operating_margin
+            # 円 → 億円
+            return operating_profit / 100000000
+        
+        return None
     
     @classmethod
     def fetch_bulk_data(cls, company_codes: list, fiscal_year: Optional[str] = None) -> Dict[str, Dict[str, Decimal]]:
