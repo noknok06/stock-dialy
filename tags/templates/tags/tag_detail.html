@@ -4,6 +4,11 @@
 {% block title %}タグ詳細: {{ tag.name }} | カブログ{% endblock %}
 
 {% block head %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<!-- 共通モーダルCSS -->
+<link rel="stylesheet" href="{% static 'css/2-layouts/stock_diary_modal.css' %}">
 <style>
   /* ========== Tag detail specific styles ========== */
   .tag-badge-large {
@@ -351,19 +356,11 @@
                 <span class="stock-sector">{{ stock.sector|default:"未分類" }}</span>
               </td>
               <td class="text-center">
-                <div class="btn-group btn-group-sm">
-                  <a href="{% url 'stockdiary:stock_list' %}?q={{ stock.symbol }}" 
-                     class="btn btn-outline-primary" 
-                     title="記録一覧">
+
+                <div class="ranking-item" onclick="showStockDiariesModal('{{ stock.symbol }}', '{{ stock.name }}')">
+                  <a class="btn btn-outline-primary me-2" title="投資記録一覧">
                     <i class="bi bi-list"></i>
                   </a>
-                  {% if stock.symbol %}
-                    <a href="{% url 'stockdiary:create' %}?symbol={{ stock.symbol }}&name={{ stock.name|urlencode }}" 
-                       class="btn btn-outline-success" 
-                       title="新規記録作成">
-                      <i class="bi bi-plus"></i>
-                    </a>
-                  {% endif %}
                 </div>
               </td>
             </tr>
@@ -413,6 +410,7 @@
 
 {% block scripts %}
 {{ block.super }}
+<script src="{% static 'js/stock_diary_modal.js' %}"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     initializeSpeedDial();

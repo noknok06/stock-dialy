@@ -2095,7 +2095,9 @@ def api_stock_diaries(request, symbol):
         for diary in diaries:
             tags = [tag.name for tag in diary.tags.all()]
             
-            # 🔧 修正: 新しいフィールドを含めたデータ構造
+            # ✅ 現物取引のみの統計を取得
+            cash_stats = diary.calculate_cash_only_stats()
+            
             diary_data.append({
                 'id': diary.id,
                 'first_purchase_date': diary.first_purchase_date.strftime('%Y年%m月%d日') if diary.first_purchase_date else None,
@@ -2107,12 +2109,12 @@ def api_stock_diaries(request, symbol):
                 'is_memo': diary.is_memo,
                 'is_holding': diary.is_holding,
                 'is_sold_out': diary.is_sold_out,
-                # 取引情報
-                'average_purchase_price': float(diary.average_purchase_price) if diary.average_purchase_price else None,
-                'current_quantity': float(diary.current_quantity) if diary.current_quantity else None,
-                'total_buy_amount': float(diary.total_buy_amount) if diary.total_buy_amount else None,
-                'total_sell_amount': float(diary.total_sell_amount) if diary.total_sell_amount else None,
-                'realized_profit': float(diary.realized_profit) if diary.realized_profit else None,
+                # 現物取引の統計
+                'average_purchase_price': float(cash_stats['average_purchase_price']) if cash_stats['average_purchase_price'] else None,
+                'current_quantity': float(cash_stats['current_quantity']) if cash_stats['current_quantity'] else None,
+                'total_buy_amount': float(cash_stats['total_buy_amount']) if cash_stats['total_buy_amount'] else None,
+                'total_sell_amount': float(cash_stats['total_sell_amount']) if cash_stats['total_sell_amount'] else None,
+                'realized_profit': float(cash_stats['realized_profit']) if cash_stats['realized_profit'] else None,
                 'transaction_count': diary.transaction_count,
             })
         
@@ -2124,7 +2126,7 @@ def api_stock_diaries(request, symbol):
         })
         
     except Exception as e:
-        print(f"Stock diaries API error: {traceback.format_exc()}")
+        # エラーハンドリング
         return JsonResponse({
             'error': str(e),
             'success': False
