@@ -2888,6 +2888,15 @@ class NotificationListView(LoginRequiredMixin, TemplateView):
             ).count(),
         })
         
+        
+        context['page_actions'] = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('stockdiary:home'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            }
+        ]    
         return context
 
 # stockdiary/views.py に以下の関数を追加
