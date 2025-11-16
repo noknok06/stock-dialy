@@ -23,7 +23,7 @@ from django.urls import reverse
 from django.core.exceptions import ValidationError
 
 from utils.mixins import ObjectNotFoundRedirectMixin
-from .models import StockDiary, DiaryNote
+from .models import StockDiary, DiaryNote, DiaryNotification
 from .models import Transaction, StockSplit
 from .forms import TransactionForm, StockSplitForm, TradeUploadForm
 from .forms import StockDiaryForm, DiaryNoteForm
@@ -2836,9 +2836,60 @@ def parse_rakuten_csv_preview(csv_content):
     return preview_data
 
 class NotificationListView(LoginRequiredMixin, TemplateView):
-    """通知管理ページ"""
+    """通知管理ページ - 予定の表示"""
     template_name = 'stockdiary/notification_list.html'
     
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        notifications = DiaryNotification.objects.filter(
+            diary__user=self.request.user,
+            is_active=True
+        ).select_related('diary').order_by('remind_at')
+        
+        # Get filter parameter from GET request
+        filter_type = self.request.GET.get('filter', 'all')
+        today = timezone.now()
+        today_start = timezone.make_aware(timezone.datetime.combine(today.date(), timezone.datetime.min.time()))
+        today_end = timezone.make_aware(timezone.datetime.combine(today.date(), timezone.datetime.max.time()))
+        
+        # Apply date filters
+        if filter_type == 'today':
+            notifications = notifications.filter(remind_at__gte=today_start, remind_at__lte=today_end)
+        elif filter_type == 'upcoming':
+            notifications = notifications.filter(remind_at__gte=today_start)
+        
+        # Paginate results
+        paginator = Paginator(notifications, 20)
+        page_number = self.request.GET.get('page', 1)
+        
+        try:
+            page_obj = paginator.page(page_number)
+        except (PageNotAnInteger, EmptyPage):
+            page_obj = paginator.page(1)
+        
+        # Add preview information for each notification
+        for notification in page_obj:
+            notification.title = notification.diary.stock_name
+            notification.sent_at = notification.remind_at
+            notification.is_read = False  # 予定は未読状態
+            notification.message_preview = notification.message[:100] if notification.message else '通知予定'
+            if notification.message and len(notification.message) > 100:
+                notification.message_preview += '...'
+            notification.diary_url = reverse('stockdiary:detail', kwargs={'pk': notification.diary.pk})
+        
+        context.update({
+            'notifications': page_obj,
+            'filter_type': filter_type,
+            'unread_count': DiaryNotification.objects.filter(
+                diary__user=self.request.user,
+                is_active=True,
+                remind_at__gte=today_start
+            ).count(),
+        })
+        
+        return context
+
 # stockdiary/views.py に以下の関数を追加
 
 def parse_sbi_csv_preview(csv_content):

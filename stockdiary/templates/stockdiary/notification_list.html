@@ -1,249 +1,333 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}通知管理 | カブログ{% endblock %}
+{% block title %}通知 - カブログ{% endblock %}
+
+{% block head %}
+<style>
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.notification-filters {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+
+.filter-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-light);
+    background-color: var(--bg-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+}
+
+.filter-badge:hover {
+    border-color: var(--primary-color);
+    background-color: rgba(90, 126, 197, 0.05);
+}
+
+.filter-badge.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.notification-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* Notification card with truncated preview */
+.notification-card {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+}
+
+.notification-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+}
+
+.notification-card.unread {
+    background-color: rgba(90, 126, 197, 0.03);
+    border-left: 3px solid var(--primary-color);
+}
+
+.notification-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+    gap: 1rem;
+}
+
+.notification-title {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin: 0;
+    flex: 1;
+}
+
+.notification-date {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.notification-preview {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.notification-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    font-size: 0.75rem;
+}
+
+.notification-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+.notification-status.unread {
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+}
+
+.notification-status.read {
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+}
+
+.notification-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+}
+
+.notification-indicator.read {
+    background-color: transparent;
+}
+
+/* Empty state */
+.empty-notification-state {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.empty-notification-icon {
+    font-size: 4rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-notification-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.empty-notification-text {
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+/* Desktop & Mobile responsive */
+@media (max-width: 768px) {
+    .notification-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .notification-filters {
+        width: 100%;
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .notification-card {
+        padding: 0.875rem;
+    }
+    
+    .notification-card-header {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .notification-date {
+        align-self: flex-start;
+    }
+    
+    .notification-preview {
+        -webkit-line-clamp: 1;
+    }
+    
+    .notification-meta {
+        gap: 0.5rem;
+    }
+}
+
+/* Dark mode support */
+.dark-mode .notification-card,
+[data-theme="dark"] .notification-card {
+    background-color: var(--dm-card);
+    border-color: var(--dm-border);
+}
+
+.dark-mode .notification-card:hover,
+[data-theme="dark"] .notification-card:hover {
+    border-color: var(--dm-primary);
+}
+
+.dark-mode .notification-card.unread,
+[data-theme="dark"] .notification-card.unread {
+    background-color: rgba(59, 130, 246, 0.08);
+    border-left-color: var(--dm-primary);
+}
+
+.dark-mode .notification-title,
+[data-theme="dark"] .notification-title {
+    color: var(--dm-foreground);
+}
+
+.dark-mode .notification-preview,
+[data-theme="dark"] .notification-preview {
+    color: var(--dm-muted-foreground);
+}
+
+.dark-mode .notification-status.unread,
+[data-theme="dark"] .notification-status.unread {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: var(--dm-primary);
+}
+
+.dark-mode .notification-status.read,
+[data-theme="dark"] .notification-status.read {
+    background-color: rgba(71, 85, 105, 0.3);
+    color: var(--dm-muted-foreground);
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container py-4">
-
-    <!-- ページヘッダー -->
-    <div class="page-header">
+    <!-- Page header -->
+    <div class="page-header mb-4">
         <h1 class="page-title">
             <i class="bi bi-bell"></i>
-            <span>通知管理</span>
+            通知
         </h1>
+        <p class="page-subtitle">予定と通知一覧</p>
     </div>
 
-    <!-- 戻るボタン -->
-    <a href="{% url 'stockdiary:home' %}" class="btn btn-outline-secondary mb-4">
-        <i class="bi bi-arrow-left me-1"></i>
-        戻る
-    </a>
-
-    <!-- 統計サマリー -->
-    <div class="row mb-4">
-        <div class="col-md-6 col-12 mb-3">
-            <div class="card text-center">
-            <div class="card-body">
-                <h3 class="mb-0" id="total-count">-</h3>
-                <small class="text-muted">リマインダー</small>
-            </div>
-            </div>
-        </div>
-        <div class="col-md-6 col-12 mb-3">
-            <div class="card text-center">
-            <div class="card-body">
-                <h3 class="mb-0 text-success" id="active-count">-</h3>
-                <small class="text-muted">有効</small>
-            </div>
-            </div>
-        </div>
-        </div>
-    <!-- フィルター -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">ステータス</label>
-                    <select class="form-select" id="filter-status">
-                        <option value="active">有効</option>
-                        <option value="all">すべて</option>
-                    </select>
-                </div>
-                <div class="col-md-6 d-flex align-items-end">
-                    <button class="btn btn-primary w-100" onclick="applyFilters()">
-                        <i class="bi bi-funnel me-1"></i>フィルター適用
-                    </button>
-                </div>
-            </div>
+    <!-- Filter controls -->
+    <div class="notification-header">
+        <div class="notification-filters">
+            <a href="?filter=all" class="filter-badge {% if filter_type == 'all' %}active{% endif %}">
+                <i class="bi bi-funnel"></i>
+                すべて
+            </a>
+            <a href="?filter=today" class="filter-badge {% if filter_type == 'today' %}active{% endif %}">
+                <i class="bi bi-calendar-check"></i>
+                本日
+            </a>
+            <a href="?filter=upcoming" class="filter-badge {% if filter_type == 'upcoming' %}active{% endif %}">
+                <i class="bi bi-calendar-event"></i>
+                本日以降
+            </a>
         </div>
     </div>
 
-    <!-- 通知一覧 -->
-    <div class="card">
-        <div class="card-body">
-            <div id="notifications-container">
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">読み込み中...</span>
+    <!-- Notifications list -->
+    <div class="notification-list" id="notificationList">
+        {% if notifications %}
+            {% for notification in notifications %}
+            <!-- Add clickable link to diary detail page -->
+            <a href="{{ notification.diary_url }}" class="notification-card-link" style="text-decoration: none;">
+                <div class="notification-card unread">
+                    
+                    <div class="notification-card-header">
+                        <h3 class="notification-title">{{ notification.title }}</h3>
+                        <time class="notification-date" datetime="{{ notification.sent_at|date:'c' }}">
+                            {{ notification.sent_at|date:'m月d日 H:i' }}
+                        </time>
+                    </div>
+                    
+                    <p class="notification-preview">{{ notification.message_preview }}</p>
+                    
+                    <div class="notification-meta">
+                        <span class="notification-status unread">
+                            <span class="notification-indicator"></span>
+                            予定あり
+                        </span>
                     </div>
                 </div>
+            </a>
+            {% endfor %}
+        {% else %}
+        <!-- Empty state -->
+        <div class="empty-notification-state">
+            <div class="empty-notification-icon">
+                <i class="bi bi-inbox"></i>
             </div>
+            <h2 class="empty-notification-title">通知がありません</h2>
+            <p class="empty-notification-text">予定が登録されると、ここに表示されます</p>
+            <a href="{% url 'stockdiary:home' %}" class="btn btn-primary btn-sm">
+                <i class="bi bi-arrow-left"></i>
+                ホームに戻る
+            </a>
         </div>
+        {% endif %}
     </div>
-
 </div>
+{% endblock %}
 
-<!-- JavaScript -->
+{% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        loadAllNotifications();
-    });
-
-    async function loadAllNotifications() {
-        try {
-            const response = await fetch('/stockdiary/api/notifications/all/');
-            const data = await response.json();
-
-            if (data.notifications) {
-                renderAllNotifications(data.notifications);
-                updateStats(data.notifications);
-            }
-        } catch (error) {
-            console.error('通知読み込みエラー:', error);
-            document.getElementById('notifications-container').innerHTML = `
-                <div class="alert alert-danger">
-                    通知の読み込みに失敗しました
-                </div>`;
-        }
-    }
-
-    function updateStats(notifications) {
-        document.getElementById('total-count').textContent = notifications.length;
-        document.getElementById('active-count').textContent = 
-            notifications.filter(n => n.is_active).length;
-    }
-
-
-    function renderAllNotifications(notifications) {
-        const container = document.getElementById('notifications-container');
-
-        if (notifications.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-5 text-muted">
-                    <i class="bi bi-bell-slash" style="font-size: 3rem;"></i>
-                    <p class="mt-3">通知設定はありません</p>
-                </div>`;
-            return;
-        }
-
-        const grouped = notifications.reduce((acc, notification) => {
-            const diaryKey = notification.diary_id;
-            if (!acc[diaryKey]) {
-                acc[diaryKey] = {
-                    diary_name: notification.diary_name,
-                    diary_id: notification.diary_id,
-                    notifications: []
-                };
-            }
-            acc[diaryKey].notifications.push(notification);
-            return acc;
-        }, {});
-
-        container.innerHTML = Object.values(grouped).map(group => `
-            <div class="notification-group mb-4">
-                <h5 class="border-bottom pb-2">
-                    <a href="/stockdiary/${group.diary_id}/" class="text-decoration-none">
-                        ${group.diary_name}
-                    </a>
-                    <span class="badge bg-secondary ms-2">${group.notifications.length}件</span>
-                </h5>
-                ${group.notifications.map(n => renderNotificationItem(n)).join('')}
-            </div>
-        `).join('');
-    }
-
-    function renderNotificationItem(notification) {
-        const typeInfo = getNotificationTypeInfo(notification.type);
-
-        return `
-            <div class="card mb-2" data-notification-id="${notification.id}">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div class="flex-grow-1">
-                            <span class="badge ${typeInfo.badgeClass} me-2">
-                                <i class="${typeInfo.icon} me-1"></i>${typeInfo.label}
-                            </span>
-                            ${getNotificationDetails(notification)}
-                        </div>
-                        <button class="btn-icon btn-danger-icon" 
-                                onclick="deleteNotificationFromList('${notification.id}')">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>`;
-    }
-
-    function getNotificationTypeInfo(type) {
-        return {
-            label: 'リマインダー',
-            icon: 'bi-alarm',
-            badgeClass: 'bg-info'
-        };
-    }
-
-    function getNotificationDetails(notification) {
-        if (notification.type === 'reminder') {
-            return `<div class="mt-1">📅 ${new Date(notification.remind_at).toLocaleString('ja-JP')}</div>`;
-        } else if (notification.type === 'price_alert') {
-            return `<div class="mt-1">💰 ${notification.target_price}円${notification.alert_above ? '以上' : '以下'}</div>`;
-        } else if (notification.type === 'periodic') {
-            const freq = { 'daily': '毎日', 'weekly': '毎週', 'monthly': '毎月' }[notification.frequency];
-            return `<div class="mt-1">🔄 ${freq}</div>`;
-        }
-        return '';
-    }
-
-    async function deleteNotificationFromList(notificationId) {
-        if (!confirm('この通知設定を削除しますか？')) return;
-
-        try {
-            const csrfToken = getCookie('csrftoken');
-            if (!csrfToken) {
-                showToastOrAlert('セキュリティトークンの取得に失敗しました。ページを再読み込みしてください。', 'danger');
-                return;
-            }
-
-            const response = await fetch(`/stockdiary/api/notifications/${notificationId}/delete/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': csrfToken,
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                credentials: 'same-origin'
-            });
-
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                const responseText = await response.text();
-                console.error('❌ JSONではないレスポンス:', responseText.substring(0, 200));
-
-                if (response.status === 403) {
-                    showToastOrAlert('セッションが無効です。ページを再読み込みしてください。', 'danger');
-                } else if (response.status === 404) {
-                    showToastOrAlert('通知が見つかりませんでした。', 'warning');
-                    loadAllNotifications();
-                } else {
-                    showToastOrAlert('サーバーエラーが発生しました。', 'danger');
-                }
-                return;
-            }
-
-            const data = await response.json();
-            if (response.ok && data.success) {
-                showToastOrAlert('通知設定を削除しました', 'success');
-                loadAllNotifications();
-            } else {
-                showToastOrAlert('削除に失敗しました: ' + (data.error || '不明なエラー'), 'danger');
-            }
-        } catch (error) {
-            console.error('削除エラー:', error);
-            showToastOrAlert('削除中にエラーが発生しました', 'danger');
-        }
-    }
-
-    function showToastOrAlert(message, type) {
-        if (typeof showToast === 'function') {
-            showToast(message, type);
-        } else {
-            alert(message);
-        }
-    }
-
-    // 他の削除関数やユーティリティも省略せず維持
-    window.deleteNotificationFromList = deleteNotificationFromList;
-    window.loadAllNotifications = loadAllNotifications;
+// Removed modal and old click handlers - replaced with direct links
 </script>
 {% endblock %}
