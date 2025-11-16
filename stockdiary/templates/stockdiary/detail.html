@@ -1764,7 +1764,7 @@
     
     <div class="desktop-actions">
       <button type="button" 
-              class="btn btn-warning btn--sm"
+              class="btn-icon btn-warning btn--sm"
               data-bs-toggle="modal"
               data-bs-target="#notificationModal"
               title="通知設定">
@@ -1773,14 +1773,14 @@
       </button>
       
       <a href="{% url 'stockdiary:update' diary.id %}" 
-         class="btn btn-success btn--sm"
+         class="btn-icon btn-success btn--sm"
          title="編集">
         <i class="bi bi-pencil"></i>
         <span class="d-none d-lg-inline ms-1">編集</span>
       </a>
       
       <a href="{% url 'stockdiary:delete' diary.id %}" 
-         class="btn btn-danger btn--sm"
+         class="btn-icon btn-danger btn--sm"
          title="削除">
         <i class="bi bi-trash"></i>
         <span class="d-none d-lg-inline ms-1">削除</span>
@@ -2220,7 +2220,7 @@
                 <div class="form-section mobile-optimized">
                   <div class="section-title">
                     <i class="bi bi-exclamation-circle"></i>
-                    重要��
+                    重要度
                   </div>
                   <div class="option-pills mobile-optimized">
                     <div class="option-pill importance-pill low" data-value="low" data-target="note_importance">
@@ -2323,12 +2323,12 @@
                   </div>
                   <div class="transaction-actions-improved">
                     <span class="badge 
-                      {% if note.note_type == 'analysis' %}bg-primary
-                      {% elif note.note_type == 'news' %}bg-info
-                      {% elif note.note_type == 'earnings' %}bg-success
-                      {% elif note.note_type == 'insight' %}bg-warning
-                      {% elif note.note_type == 'risk' %}bg-danger
-                      {% else %}bg-secondary{% endif %}">
+                      {% if note.note_type == 'analysis' %}badge-primary
+                      {% elif note.note_type == 'news' %}badge-info
+                      {% elif note.note_type == 'earnings' %}badge-success
+                      {% elif note.note_type == 'insight' %}badge-warning
+                      {% elif note.note_type == 'risk' %}badge-danger
+                      {% else %}badge-secondary{% endif %}">
                       {% if note.note_type == 'analysis' %}分析更新
                       {% elif note.note_type == 'news' %}ニュース
                       {% elif note.note_type == 'earnings' %}決算情報
@@ -2337,18 +2337,23 @@
                       {% else %}その他{% endif %}
                     </span>
                     {% if note.importance == 'high' %}
-                    <span class="importance-indicator high">
+                    <span class="badge badge-danger high">
                       <i class="bi bi-exclamation-triangle"></i>
                       重要
                     </span>
                     {% elif note.importance == 'medium' %}
-                    <span class="importance-indicator medium">
+                    <span class="badge badge-warning medium">
                       <i class="bi bi-info-circle"></i>
                       中
                     </span>
+                    {% elif note.importance == 'low' %}
+                    <span class="badge badge-info low">
+                      <i class="bi bi-info-circle"></i>
+                      低
+                    </span>
                     {% endif %}
                     
-                    <button class="btn-icon btn-danger-icon" 
+                    <button class="btn-icon btn-danger" 
                             onclick="confirmDeleteNote({{ note.id }}, '{{ note.date|date:"Y年m月d日" }}', '{% if note.note_type == 'analysis' %}分析更新{% elif note.note_type == 'news' %}ニュース{% elif note.note_type == 'earnings' %}決算情報{% elif note.note_type == 'insight' %}新たな気づき{% elif note.note_type == 'risk' %}リスク要因{% else %}その他{% endif %}', {{ diary.id }})"
                             title="この記録を削除">
                       <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
@@ -2423,7 +2428,7 @@
                 <div class="timeline-date mb-2">
                   {{ timeline_diary.first_purchase_date|date:"Y年m月d日" }}
                   {% if timeline_diary.id == diary.id %}
-                  <span class="badge bg-warning ms-2">現在表示中</span>
+                  <span class="badge badge-warning ms-2">現在表示中</span>
                   {% endif %}
                 </div>
 
@@ -2638,13 +2643,13 @@ function renderNotifications(notifications) {
             <div class="notification-type-icon reminder">
               <i class="bi-alarm"></i>
             </div>
-            <span class="notification-badge bg-info">
+            <span class="notification-badge badge-info">
               <i class="bi-alarm"></i>
               リマインダー
             </span>
           </div>
           <div class="notification-actions">
-            <button class="btn btn-icon btn-danger-icon"
+            <button class="btn-icon btn-danger-icon"
                     onclick="deleteDiaryNotification('${notification.id}')"
                     title="削除"
                     aria-label="通知を削除">

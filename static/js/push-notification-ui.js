@@ -454,13 +454,13 @@ class PushNotificationUI {
     showStatus(message, type) {
         if (!this.statusDiv) return;
         const badges = {
-            'success': 'bg-success',
-            'danger': 'bg-danger',
-            'warning': 'bg-warning',
-            'info': 'bg-info',
-            'secondary': 'bg-secondary'
+            'success': 'badge-success',
+            'danger': 'badge-danger',
+            'warning': 'badge-warning',
+            'info': 'badge-info',
+            'secondary': 'badge-secondary'
         };
-        this.statusDiv.innerHTML = `<span class="badge ${badges[type] || 'bg-secondary'}">${message}</span>`;
+        this.statusDiv.innerHTML = `<span class="badge ${badges[type] || 'badge-secondary'}">${message}</span>`;
     }
     
     showError(message) {
