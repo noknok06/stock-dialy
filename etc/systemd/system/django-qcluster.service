@@ -1,0 +1,18 @@
+[Unit]
+Description=Django Q Cluster (stock-dialy)
+After=network.target
+
+[Service]
+User=naoki
+Group=naoki
+WorkingDirectory=/var/www/django/stock-dialy
+Environment="DJANGO_SETTINGS_MODULE=config.settings"
+
+# 仮想環境の python を使用
+ExecStart=/var/www/django/stock-dialy/venv/bin/python manage.py qcluster
+
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
