@@ -1102,12 +1102,12 @@ Q_CLUSTER = {
     'name': 'kabulog',
     'workers': 2,
     'recycle': 500,
-    'timeout': 300,        # タスクのタイムアウト: 5分
+    'timeout': 120,        # タスクのタイムアウト: 2分
     'retry': 600,          # 🔧 リトライ待機時間: 10分（timeoutより大きく）
     'compress': True,
     'save_limit': 100,
-    'queue_limit': 50,
-    'cpu_affinity': 1,
+    'queue_limit': 300,
+    'cpu_affinity': [0, 1],
     'label': 'Django Q',
     'redis': {
         'host': '127.0.0.1',
