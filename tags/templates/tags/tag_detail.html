@@ -311,16 +311,22 @@
 
     <form method="get" class="search-form">
       <input type="hidden" name="status" value="{{ status_filter }}">
-      <input type="text" 
-             name="q" 
-             class="form-control" 
-             placeholder="銘柄名・証券コード・業種で検索" 
-             value="{{ search_query }}">
-      <button type="submit" class="btn btn-primary">
-        <i class="bi bi-search"></i>
-        <span class="d-none d-sm-inline">検索</span>
-      </button>
-      {% if search_query %}
+      <div class="row center-gap-2 w-100">
+        <div class="col flex-grow-1">
+          <input type="text" 
+                 name="q" 
+                 class="form-control" 
+                 placeholder="銘柄名・証券コード・業種で検索" 
+                 value="{{ search_query }}">
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-icon btn-primary">
+            <i class="bi bi-search"></i>
+            <span class="d-none d-sm-inline"></span>
+          </button>
+        </div>
+      </div>
+        {% if search_query %}
         <a href="?status={{ status_filter }}" class="btn btn-outline-secondary">
           <i class="bi bi-x-lg"></i>
           <span class="d-none d-sm-inline">クリア</span>
@@ -358,7 +364,7 @@
               <td class="text-center">
 
                 <div class="ranking-item" onclick="showStockDiariesModal('{{ stock.symbol }}', '{{ stock.name }}')">
-                  <a class="btn btn-outline-primary me-2" title="投資記録一覧">
+                  <a class="btn-icon btn-info" title="投資記録一覧">
                     <i class="bi bi-list"></i>
                   </a>
                 </div>

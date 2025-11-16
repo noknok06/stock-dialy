@@ -1058,11 +1058,14 @@
   animation: tab-glow 0.3s ease-out;
 }
 
-/* ========== ダークモード対応 ========== */
+/* ========== ダークモード対応（統合版） ========== */
+
+/* === カード全体 === */
 .dark-mode .diary-card,
 [data-theme="dark"] .diary-card {
   background-color: var(--dm-card);
   border-color: var(--dm-border);
+  transition: border-color 0.2s ease;
 }
 
 .dark-mode .diary-card:hover,
@@ -1070,6 +1073,7 @@
   border-color: rgba(59, 130, 246, 0.5);
 }
 
+/* === カードヘッダー === */
 .dark-mode .diary-card-header,
 [data-theme="dark"] .diary-card-header {
   background-color: rgba(71, 85, 105, 0.3);
@@ -1086,12 +1090,21 @@
   color: var(--dm-muted-foreground);
 }
 
+/* === バッジとタグ === */
 .dark-mode .status-badge,
 [data-theme="dark"] .status-badge {
   background-color: rgba(71, 85, 105, 0.3);
   border: 1px solid var(--dm-border);
 }
 
+.dark-mode .diary-tag,
+[data-theme="dark"] .diary-tag {
+  background-color: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: var(--dm-primary);
+}
+
+/* === タブナビゲーション === */
 .dark-mode .card-tabs,
 [data-theme="dark"] .card-tabs {
   background-color: rgba(71, 85, 105, 0.2);
@@ -1101,20 +1114,32 @@
 .dark-mode .card-tabs .nav-link,
 [data-theme="dark"] .card-tabs .nav-link {
   color: var(--dm-muted-foreground);
+  transition: all 0.2s ease;
+}
+
+.dark-mode .card-tabs .nav-link:hover,
+[data-theme="dark"] .card-tabs .nav-link:hover {
+  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .dark-mode .card-tabs .nav-link.active,
 [data-theme="dark"] .card-tabs .nav-link.active {
   color: var(--dm-primary);
   background-color: rgba(59, 130, 246, 0.1);
+  border-bottom: 2px solid var(--dm-primary);
 }
 
+/* === コンテンツエリア === */
 .dark-mode .reason-content,
 [data-theme="dark"] .reason-content {
   background-color: rgba(71, 85, 105, 0.2);
   color: var(--dm-foreground);
+  border-radius: 8px;
+  padding: 1rem;
 }
 
+/* === 継続記録（ノート） === */
 .dark-mode .note-item,
 [data-theme="dark"] .note-item {
   background-color: var(--dm-card);
@@ -1139,6 +1164,7 @@
   color: var(--dm-muted-foreground);
 }
 
+/* === 分析テンプレート === */
 .dark-mode .analysis-templates-container,
 [data-theme="dark"] .analysis-templates-container {
   background-color: rgba(59, 130, 246, 0.05);
@@ -1176,6 +1202,7 @@
   color: var(--dm-foreground);
 }
 
+/* === 情報ブロック === */
 .dark-mode .info-block,
 [data-theme="dark"] .info-block {
   background-color: rgba(59, 130, 246, 0.05);
@@ -1204,19 +1231,52 @@
   color: var(--dm-foreground);
 }
 
-.dark-mode .diary-tag,
-[data-theme="dark"] .diary-tag {
-  background-color: rgba(59, 130, 246, 0.15);
-  border-color: rgba(59, 130, 246, 0.3);
-  color: var(--dm-primary);
-}
-
+/* === 売却情報 === */
 .dark-mode .sell-info,
 [data-theme="dark"] .sell-info {
   background: linear-gradient(to right, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.15));
   border-color: rgba(239, 68, 68, 0.3);
 }
 
+/* === 取引サマリー === */
+.dark-mode .transaction-summary-compact,
+[data-theme="dark"] .transaction-summary-compact {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .summary-item,
+[data-theme="dark"] .summary-item {
+  background-color: rgba(71, 85, 105, 0.3);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.dark-mode .summary-label,
+[data-theme="dark"] .summary-label {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .summary-value,
+[data-theme="dark"] .summary-value {
+  color: var(--dm-foreground);
+  font-weight: 600;
+}
+
+.dark-mode .transaction-item-compact,
+[data-theme="dark"] .transaction-item-compact {
+  background-color: rgba(71, 85, 105, 0.3);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  transition: background-color 0.2s ease;
+}
+
+.dark-mode .transaction-item-compact:hover,
+[data-theme="dark"] .transaction-item-compact:hover {
+  background-color: rgba(71, 85, 105, 0.4);
+}
+
+.dark-mode .recent-transactions h6,
+[data-theme="dark"] .recent-transactions h6 {
+  color: var(--dm-foreground);
+}
 /* ========== メディアクエリ - レスポンシブ対応 ========== */
 @media (max-width: 992px) {
   .diary-card-body {

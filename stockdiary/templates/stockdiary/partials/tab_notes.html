@@ -13,12 +13,12 @@
           <i class="bi bi-calendar-date"></i>
           {{ note.date|date:"Y年m月d日" }}
         </span>
-        <span class="badge {% if note.note_type == 'analysis' %}bg-primary
-                {% elif note.note_type == 'news' %}bg-info
-                {% elif note.note_type == 'earnings' %}bg-success
-                {% elif note.note_type == 'insight' %}bg-warning
-                {% elif note.note_type == 'risk' %}bg-danger
-                {% else %}bg-secondary{% endif %}" style="font-size: 0.75rem; padding: 0.35rem 0.65rem;">
+        <span class="badge {% if note.note_type == 'analysis' %}badge-primary
+                {% elif note.note_type == 'news' %}badge-info
+                {% elif note.note_type == 'earnings' %}badge-success
+                {% elif note.note_type == 'insight' %}badge-warning
+                {% elif note.note_type == 'risk' %}badge-danger
+                {% else %}badge-secondary{% endif %}" style="font-size: 0.75rem; padding: 0.35rem 0.65rem;">
           {% if note.note_type == 'analysis' %}分析更新
           {% elif note.note_type == 'news' %}ニュース
           {% elif note.note_type == 'earnings' %}決算情報
