@@ -6,8 +6,8 @@ app_name = 'analysis_template'
 
 urlpatterns = [
     # テンプレート管理
-    path('', views.template_list, name='list'),
-    path('create/', views.template_create, name='create'),
+    path('', views.TemplateListView.as_view(), name='list'),
+    path('create/', views.TemplateCreateView.as_view(), name='create'),
     path('<int:pk>/', views.template_detail, name='detail'),
     path('<int:pk>/update/', views.template_update, name='update'),
     path('<int:pk>/delete/', views.template_delete, name='delete'),

@@ -40,7 +40,7 @@
         </div>
         
         <!-- Improved delete button with better touch target size -->
-        <button class="btn-icon btn-info-icon" 
+        <button class="btn-icon btn-danger" 
                 onclick="confirmDeleteNote({{ note.id }}, '{{ note.date|date:"Y年m月d日" }}', '{% if note.note_type == 'analysis' %}分析更新{% elif note.note_type == 'news' %}ニュース{% elif note.note_type == 'earnings' %}決算情報{% elif note.note_type == 'insight' %}新たな気づき{% elif note.note_type == 'risk' %}リスク要因{% else %}その他{% endif %}', {{ diary.id }})" 
                 title="この記録を削除"
                 style="min-width: 36px; min-height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 8px; transition: all 0.2s ease;">

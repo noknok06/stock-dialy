@@ -89,23 +89,23 @@
                         </a>
                         <div class="d-flex gap-2">
                             <a href="{% url 'analysis_template:update' template.pk %}" 
-                               class="btn btn-sm btn-outline-secondary flex-fill d-flex align-items-center justify-content-center"
+                               class="btn-icon btn-secondary-icon flex-fill d-flex align-items-center justify-content-center"
                                title="編集">
                                 <i class="bi bi-pencil"></i>
                             </a>
                             <button type="button" 
-                                    class="btn btn-sm btn-outline-success flex-fill d-flex align-items-center justify-content-center"
+                                    class="btn-icon btn-success-icon flex-fill d-flex align-items-center justify-content-center"
                                     onclick="duplicateTemplate({{ template.pk }})"
                                     title="複製">
                                 <i class="bi bi-files"></i>
                             </button>
                             <a href="{% url 'analysis_template:export' template.pk %}" 
-                               class="btn btn-sm btn-outline-info flex-fill d-flex align-items-center justify-content-center"
+                               class="btn-icon btn-info-icon flex-fill d-flex align-items-center justify-content-center"
                                title="エクスポート">
                                 <i class="bi bi-download"></i>
                             </a>
                             <button type="button" 
-                                    class="btn btn-sm btn-outline-danger flex-fill d-flex align-items-center justify-content-center"
+                                    class="btn-icon btn-danger-icon flex-fill d-flex align-items-center justify-content-center"
                                     onclick="confirmDelete({{ template.pk }}, '{{ template.name|escapejs }}')"
                                     title="削除">
                                 <i class="bi bi-trash"></i>
@@ -139,6 +139,8 @@
 <form id="deleteForm" method="post" style="display: none;">
     {% csrf_token %}
 </form>
+
+{% include 'speed_dial.html' with actions=form_actions %}
 
 <script>
 const csrfToken = '{{ csrf_token }}';

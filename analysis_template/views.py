@@ -1,5 +1,6 @@
 # analysis_template/views.py
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse_lazy
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, Count, Avg, Max
@@ -22,29 +23,61 @@ from .forms import (
 from company_master.models import CompanyMaster
 
 import logging
+from django.views import View
 
 logger = logging.getLogger(__name__)
 
-@login_required
-def template_list(request):
+class TemplateListView(View):
     """テンプレート一覧"""
-    templates = AnalysisTemplate.objects.filter(
-        user=request.user
-    ).prefetch_related('companies').annotate(
-        company_count=Count('companies')
-    )
     
-    context = {
-        'templates': templates,
-    }
-    return render(request, 'analysis_template/template_list.html', context)
+    def get(self, request):
+        templates = AnalysisTemplate.objects.filter(
+            user=request.user
+        ).prefetch_related('companies').annotate(
+            company_count=Count('companies')
+        )
+        
+        context = {
+            'templates': templates,
+            'form_actions': [
+                {
+                    'type': 'back',
+                    'url': reverse_lazy('stockdiary:home'),
+                    'icon': 'bi-arrow-left',
+                    'label': '戻る'
+                },
+                {
+                    'type': 'add',
+                    'url': reverse_lazy('analysis_template:create'),
+                    'icon': 'bi-plus-lg',
+                    'label': '新規作成'
+                }
+            ]
+        }
+        return render(request, 'analysis_template/template_list.html', context)
 
 
-@login_required
-@require_http_methods(["GET", "POST"])
-def template_create(request):
+from django.contrib.auth.mixins import LoginRequiredMixin
+
+class TemplateCreateView(LoginRequiredMixin, View):
     """テンプレート作成"""
-    if request.method == 'POST':
+    def get(self, request):
+        form = AnalysisTemplateForm()
+        context = {
+            'form': form,
+            'action': 'create',
+            'form_actions': [
+                {
+                    'type': 'back',
+                    'url': reverse_lazy('stockdiary:home'),
+                    'icon': 'bi-arrow-left',
+                    'label': '戻る'
+                }
+            ]
+        }
+        return render(request, 'analysis_template/template_form.html', context)
+
+    def post(self, request):
         form = AnalysisTemplateForm(request.POST)
         if form.is_valid():
             template = form.save(commit=False)
@@ -52,16 +85,13 @@ def template_create(request):
             template.save()
             messages.success(request, 'テンプレートを作成しました')
             return redirect('analysis_template:company_select', pk=template.pk)
-    else:
-        form = AnalysisTemplateForm()
+        context = {
+            'form': form,
+            'action': 'create'
+        }
+        return render(request, 'analysis_template/template_form.html', context)
     
-    context = {
-        'form': form,
-        'action': 'create'
-    }
-    return render(request, 'analysis_template/template_form.html', context)
-
-
+    
 @login_required
 @require_http_methods(["GET", "POST"])
 def company_select(request, pk):

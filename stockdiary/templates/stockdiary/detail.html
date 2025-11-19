@@ -2032,7 +2032,7 @@
                     <i class="bi bi-cash-stack"></i>
                   </div>
                   <div class="info-content-improved">
-                    <div class="info-label-improved">総取得原価</div>
+                    <div class="info-label-improved">総取得原価(信用含む)</div>
                     <div class="info-value-improved">{{ diary.total_cost|intcomma_float:0 }}円</div>
                   </div>
                 </div>
@@ -2043,7 +2043,7 @@
                     <i class="bi bi-piggy-bank"></i>
                   </div>
                   <div class="info-content-improved">
-                    <div class="info-label-improved">実現損益</div>
+                    <div class="info-label-improved">実現損益(信用含む)</div>
                     <div class="info-value-improved {% if diary.realized_profit > 0 %}text-success{% else %}text-danger{% endif %}">
                       {% if diary.realized_profit > 0 %}+{% endif %}{{ diary.realized_profit|intcomma_float:0 }}円
                     </div>
