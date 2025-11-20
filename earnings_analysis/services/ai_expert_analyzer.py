@@ -161,13 +161,19 @@ class AIExpertAnalyzer:
             if not response.text:
                 return self._fallback_analysis(basic_analysis)
             
+            # JSON応答をパース
+            result = self._parse_ai_response(response.text)
+            logger.info("AI応答パース完了")
+            
             # 整合性チェックを追加
             result = self._validate_score_consistency(result)
+            logger.info("整合性チェック完了")
+            
             
             # メタデータ追加
             result['analysis_metadata'] = {
                 'method': 'ai_expert_comprehensive',
-                'model': 'gemini-2.0-flash-exp',
+                'model': 'gemini-2.5-flash',
                 'timestamp': timezone.now().isoformat(),
                 'api_available': True,
                 'confidence': result.get('confidence', 0.8),
@@ -179,9 +185,6 @@ class AIExpertAnalyzer:
             logger.error(f"AI Expert分析エラー: {e}")
             return self._fallback_analysis(basic_analysis)
             
-        except Exception as e:
-            logger.error(f"AI Expert分析エラー: {e}")
-            return self._fallback_analysis(basic_analysis)
     
     def _build_expert_analysis_prompt(
         self, 

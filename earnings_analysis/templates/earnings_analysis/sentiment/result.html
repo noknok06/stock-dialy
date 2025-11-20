@@ -24,30 +24,6 @@
         }
     }
 
-    /* ========== スコア表示エリア ========== */
-    .score-main-display {
-        padding: 2rem;
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #f8f9fa 100%);
-        border-radius: 1rem;
-    }
-    
-    .score-circle-container {
-        filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
-    }
-    
-    .score-circle-container svg circle {
-        transition: stroke-dashoffset 2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    .score-number-large {
-        font-size: 2.5rem;
-        font-weight: 700;
-        line-height: 1.2;
-    }
-    
-    .score-indicator {
-        transition: left 2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
 
     /* ========== 分析タブ ========== */
     .analysis-tabs {
@@ -304,9 +280,6 @@
 
     /* ========== レスポンシブ対応 ========== */
     @media (max-width: 991.98px) {
-        .score-main-display {
-            padding: 1.5rem;
-        }
         
         .ai-score-comparison {
             grid-template-columns: 1fr;
@@ -351,9 +324,6 @@
     }
     
     @media (max-width: 575.98px) {
-        .score-main-display {
-            padding: 1rem;
-        }
         
         .score-circle-container {
             width: 120px !important;
@@ -496,98 +466,6 @@
 <div class="row g-3 g-md-4">
     <!-- メインコンテンツエリア -->
     <div class="col-12 col-lg-8">
-        <!-- 全体スコア表示 -->
-        <div class="analysis-card card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-thermometer-half me-2"></i>総合評価スコア
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="score-main-display">
-                    <div class="row align-items-center g-4">
-                        <!-- スコア円グラフ -->
-                        <div class="col-12 col-lg-6 text-center">
-                            <div class="score-circle-container mb-3" style="position: relative; width: 200px; height: 200px; margin: 0 auto;">
-                                <svg width="200" height="200" viewBox="0 0 200 200" style="position: absolute; top: 0; left: 0;">
-                                    <circle cx="100" cy="100" r="80" fill="none" stroke="#e9ecef" stroke-width="12"></circle>
-                                    <circle id="score-arc" cx="100" cy="100" r="80" fill="none" 
-                                            stroke-width="12" 
-                                            stroke-dasharray="502.65" 
-                                            stroke-dashoffset="502.65"
-                                            style="transform: rotate(-90deg); transform-origin: center; transition: stroke-dashoffset 2s cubic-bezier(0.4, 0, 0.2, 1);">
-                                    </circle>
-                                </svg>
-                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 100%;">
-                                    <div class="score-number-large" id="animated-score">0.000</div>
-                                    <div style="margin-top: 0.5rem;">
-                                        {% if session.sentiment_label == 'positive' %}
-                                            <span class="badge bg-success" style="font-size: 0.875rem; padding: 0.35em 0.65em;" id="sentiment-badge">
-                                                <i class="fas fa-smile me-1"></i>ポジティブ
-                                            </span>
-                                        {% elif session.sentiment_label == 'negative' %}
-                                            <span class="badge bg-danger" style="font-size: 0.875rem; padding: 0.35em 0.65em;" id="sentiment-badge">
-                                                <i class="fas fa-frown me-1"></i>ネガティブ
-                                            </span>
-                                        {% else %}
-                                            <span class="badge bg-secondary" style="font-size: 0.875rem; padding: 0.35em 0.65em;" id="sentiment-badge">
-                                                <i class="fas fa-meh me-1"></i>中立
-                                            </span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- スコア範囲ガイド -->
-                            <div class="mt-3" style="max-width: 300px; margin-left: auto; margin-right: auto;">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <small class="text-danger fw-bold">-1.0</small>
-                                    <small class="text-muted">スコア範囲</small>
-                                    <small class="text-success fw-bold">+1.0</small>
-                                </div>
-                                <div class="position-relative" style="height: 12px;">
-                                    <div class="progress" style="height: 8px; margin-top: 2px;">
-                                        <div class="progress-bar bg-danger" style="width: 50%"></div>
-                                        <div class="progress-bar bg-success" style="width: 50%"></div>
-                                    </div>
-                                    <div class="score-indicator" id="score-position" 
-                                        style="position: absolute; top: 0; width: 12px; height: 12px; 
-                                                background: #007bff; border: 2px solid white; border-radius: 50%; 
-                                                box-shadow: 0 2px 4px rgba(0,0,0,0.3); transform: translateX(-50%);
-                                                transition: left 2s cubic-bezier(0.4, 0, 0.2, 1); left: 50%;">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- AI比較 -->
-                        <div class="col-12 col-lg-6">
-                            {% if session.analysis_result.ai_expert_analysis %}
-                                <div class="ai-score-comparison">
-                                    <div class="score-box secondary">
-                                        <div class="small text-muted mb-2">ワードベース分析</div>
-                                        <div class="h3 mb-1">{{ session.overall_score|floatformat:3 }}</div>
-                                        <small class="text-muted">語彙パターン検出</small>
-                                    </div>
-                                    <div class="score-box primary">
-                                        <div class="small text-primary mb-2">AI専門家分析</div>
-                                        <div class="h3 text-primary mb-1">{{ session.analysis_result.ai_overall_score|floatformat:3 }}</div>
-                                        <small class="text-muted">文脈理解・将来予測</small>
-                                    </div>
-                                </div>
-                            {% else %}
-                                <div class="alert alert-info">
-                                    <h6 class="alert-heading">
-                                        <i class="fas fa-lightbulb me-2"></i>分析から読み取れるポイント
-                                    </h6>
-                                    <p class="mb-0">{{ session.sentiment_label|yesno:"前向きな経営姿勢が表れています,慎重な経営スタンスが見られます,バランスの取れた客観的な内容です" }}</p>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         {% include 'earnings_analysis/ads/ad_responsive.html' %}
 
@@ -1112,62 +990,6 @@ document.querySelectorAll('.analysis-tab').forEach(tab => {
 });
 
 // ========================================
-// スコアアニメーション
-// ========================================
-function animateScoreArc() {
-    const arc = document.getElementById('score-arc');
-    const radius = 80;
-    const circumference = 2 * Math.PI * radius;
-    
-    let strokeColor;
-    if (actualScore > 0.4) strokeColor = '#198754';
-    else if (actualScore > 0.15) strokeColor = '#0dcaf0';
-    else if (actualScore >= -0.15) strokeColor = '#6c757d';
-    else if (actualScore >= -0.4) strokeColor = '#fd7e14';
-    else strokeColor = '#dc3545';
-    
-    arc.style.stroke = strokeColor;
-    
-    const percentage = (actualScore + 1) / 2;
-    const offset = circumference - (percentage * circumference);
-    
-    setTimeout(() => {
-        arc.style.strokeDashoffset = offset;
-    }, 500);
-}
-
-function animateScoreNumber() {
-    const scoreElement = document.getElementById('animated-score');
-    const duration = 2000;
-    const startTime = performance.now();
-    
-    function updateScore(currentTime) {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const easedProgress = 1 - Math.pow(1 - progress, 3);
-        const currentScore = actualScore * easedProgress;
-        
-        scoreElement.textContent = currentScore.toFixed(3);
-        
-        if (progress < 1) {
-            requestAnimationFrame(updateScore);
-        }
-    }
-    
-    requestAnimationFrame(updateScore);
-}
-
-function animatePositionIndicator() {
-    const indicator = document.getElementById('score-position');
-    const percentage = (actualScore + 1) / 2;
-    const leftPosition = percentage * 100;
-    
-    setTimeout(() => {
-        indicator.style.left = leftPosition + '%';
-    }, 1000);
-}
-
-// ========================================
 // ワードクラウド機能
 // ========================================
 const actualWordcloudData = {
@@ -1582,11 +1404,6 @@ function updateDisplayedCount(count) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOMContentLoaded - 初期化開始');
     console.log('分析データ:', actualAnalysisData);
-    
-    // アニメーション実行
-    animateScoreArc();
-    animateScoreNumber();
-    animatePositionIndicator();
     
     // ワードクラウド初期化（タブが表示されていなくても初期化）
     setTimeout(() => {
