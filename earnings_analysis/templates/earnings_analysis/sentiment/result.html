@@ -387,6 +387,69 @@
             transition: none !important;
         }
     }
+.score-grade-relationship .info-box {
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px solid var(--border-light);
+}
+
+.info-box-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.75rem;
+}
+
+.info-box-value {
+    margin-bottom: 0.5rem;
+}
+
+.info-box-description {
+    margin-top: 0.5rem;
+}
+
+.factor-item {
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+}
+
+.factor-item:hover {
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.analysis-reasoning-section .list-group-item {
+    border-left: 3px solid var(--primary-color);
+    background-color: var(--bg-secondary);
+}
+
+.analysis-reasoning-section .list-group-item:hover {
+    background-color: var(--bg-tertiary);
+}
+
+/* Dark Mode Support */
+.dark-mode .info-box,
+[data-theme="dark"] .info-box {
+    background-color: rgba(71, 85, 105, 0.3);
+    border-color: var(--dm-border);
+}
+
+.dark-mode .factor-item,
+[data-theme="dark"] .factor-item {
+    background-color: rgba(71, 85, 105, 0.2);
+    border-color: var(--dm-border);
+}
+
+.dark-mode .analysis-reasoning-section .list-group-item,
+[data-theme="dark"] .analysis-reasoning-section .list-group-item {
+    background-color: rgba(71, 85, 105, 0.3);
+    border-color: var(--dm-border);
+    color: var(--dm-foreground);
+}
 </style>
 {% endblock %}
 
@@ -549,20 +612,134 @@
                 <div class="card-body">
                     {% if session.analysis_result.ai_expert_analysis %}
                         {% with ai=session.analysis_result.ai_expert_analysis %}
-                            <!-- 投資グレード -->
-                            <div class="ai-grade-display">
-                                <div class="ai-grade-badge 
-                                    {% if ai.investment_grade == 'A+' or ai.investment_grade == 'A' %}bg-success
-                                    {% elif ai.investment_grade == 'B' %}bg-info
-                                    {% elif ai.investment_grade == 'C' %}bg-warning
-                                    {% else %}bg-danger{% endif %}">
-                                    {{ ai.investment_grade }}
+                            
+                            <!-- 評価の整合性チェック -->
+                            {% if ai.consistency_check and not ai.consistency_check.passed %}
+                                <div class="alert alert-warning mb-4">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>評価調整のお知らせ</strong><br>
+                                    <small>
+                                        総合スコア（{{ session.analysis_result.ai_overall_score|floatformat:2 }}）と当初の推奨グレード（{{ ai.original_grade }}）に
+                                        不整合が検出されたため、グレードを<strong>{{ ai.investment_grade }}</strong>に調整しました。
+                                    </small>
                                 </div>
-                                <div class="h5">投資推奨グレード</div>
-                                <small class="text-muted">AI確信度: {{ ai.confidence|floatformat:0|mul:100 }}%</small>
+                            {% endif %}
+                            
+                            <!-- スコアとグレードの関係を視覚的に表示 -->
+                            <div class="score-grade-relationship mb-4">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="info-box">
+                                            <div class="info-box-label">総合評価スコア</div>
+                                            <div class="info-box-value display-4 fw-bold 
+                                                {% if session.analysis_result.ai_overall_score > 0.3 %}text-success
+                                                {% elif session.analysis_result.ai_overall_score < -0.3 %}text-danger
+                                                {% else %}text-secondary{% endif %}">
+                                                {{ session.analysis_result.ai_overall_score|floatformat:2 }}
+                                            </div>
+                                            <div class="info-box-description text-muted small">
+                                                {{ ai.consistency_check.score_range }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="info-box">
+                                            <div class="info-box-label">投資推奨グレード</div>
+                                            <div class="info-box-value">
+                                                <div class="ai-grade-badge 
+                                                    {% if ai.investment_grade == 'A+' or ai.investment_grade == 'A' %}bg-success
+                                                    {% elif ai.investment_grade == 'B' or ai.investment_grade == 'B+' %}bg-info
+                                                    {% elif ai.investment_grade == 'C' %}bg-warning
+                                                    {% else %}bg-danger{% endif %}">
+                                                    {{ ai.investment_grade }}
+                                                </div>
+                                            </div>
+                                            <div class="info-box-description text-muted small">
+                                                {% if ai.consistency_check %}
+                                                    スコア範囲に基づく推奨
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             
-                            <!-- 詳細スコア -->
+                            <!-- スコア内訳の表示（新規追加） -->
+                            {% if ai.score_breakdown %}
+                                <div class="score-breakdown-section mb-4">
+                                    <h6 class="mb-3">
+                                        <i class="fas fa-calculator me-2"></i>スコア算出の内訳
+                                    </h6>
+                                    
+                                    <!-- ポジティブ要因 -->
+                                    {% if ai.score_breakdown.positive_factors %}
+                                        <div class="mb-3">
+                                            <div class="small text-success fw-semibold mb-2">
+                                                <i class="fas fa-plus-circle me-1"></i>プラス要因
+                                            </div>
+                                            {% for factor in ai.score_breakdown.positive_factors %}
+                                                <div class="factor-item p-2 mb-2 border-start border-3 border-success bg-light">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <div class="flex-grow-1">
+                                                            <strong>{{ factor.factor }}</strong>
+                                                            <div class="small text-muted">{{ factor.description }}</div>
+                                                        </div>
+                                                        <span class="badge bg-success ms-2">+{{ factor.impact }}</span>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- ネガティブ要因 -->
+                                    {% if ai.score_breakdown.negative_factors %}
+                                        <div class="mb-3">
+                                            <div class="small text-danger fw-semibold mb-2">
+                                                <i class="fas fa-minus-circle me-1"></i>マイナス要因
+                                            </div>
+                                            {% for factor in ai.score_breakdown.negative_factors %}
+                                                <div class="factor-item p-2 mb-2 border-start border-3 border-danger bg-light">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <div class="flex-grow-1">
+                                                            <strong>{{ factor.factor }}</strong>
+                                                            <div class="small text-muted">{{ factor.description }}</div>
+                                                        </div>
+                                                        <span class="badge bg-danger ms-2">{{ factor.impact }}</span>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- 計算ロジック -->
+                                    {% if ai.score_breakdown.score_calculation_logic %}
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <strong>計算ロジック:</strong><br>
+                                            <small>{{ ai.score_breakdown.score_calculation_logic }}</small>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            
+                            <!-- 分析根拠の表示 -->
+                            {% if ai.reasoning %}
+                                <div class="analysis-reasoning-section mb-4">
+                                    <h6 class="mb-3">
+                                        <i class="fas fa-list-check me-2"></i>評価の根拠
+                                    </h6>
+                                    <ul class="list-group">
+                                        {% for reason in ai.reasoning %}
+                                            <li class="list-group-item">
+                                                <i class="fas fa-check-circle text-primary me-2"></i>
+                                                {{ reason }}
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+                            
+                            <!-- 既存の詳細スコア表示 -->
                             <div class="detailed-scores-grid">
                                 {% for key, label in scores_labels.items %}
                                     <div class="score-item">
@@ -589,6 +766,7 @@
                                     {% endfor %}
                                 </div>
                             {% endif %}
+                            
                         {% endwith %}
                     {% else %}
                         <div class="text-center py-5">
@@ -599,7 +777,8 @@
                     {% endif %}
                 </div>
             </div>
-            
+
+
             <!-- 語彙分析タブ -->
             <div class="tab-content-panel" id="word-analysis">
                 <div class="card-body">

@@ -3,6 +3,7 @@ import re
 import csv
 import os
 import threading
+import traceback
 import time
 import logging
 from typing import Dict, List, Tuple, Any, Optional
@@ -772,10 +773,10 @@ class UserInsightGenerator:
         
         return recommendations
 
-class TransparentSentimentAnalyzer:
-    """分かりやすい感情分析エンジン（完全統合版・修正版）"""
-    
 
+class TransparentSentimentAnalyzer:
+    """分かりやすい感情分析エンジン（完全統合版・デバッグ強化版）"""
+    
     def __init__(self, config: Optional[AnalysisConfig] = None):
         self.config = config or AnalysisConfig()
         self.dictionary = TransparentSentimentDictionary()
@@ -784,18 +785,48 @@ class TransparentSentimentAnalyzer:
         
         # AI専門家アナライザーを追加
         try:
-            from .ai_expert_analyzer import AIExpertAnalyzer
             self.ai_expert = AIExpertAnalyzer()
-        except ImportError:
-            logger.warning("AIExpertAnalyzerがインポートできません")
+            if self.ai_expert:
+                status = self.ai_expert.get_status()
+                logger.info(f"AIExpertAnalyzer初期化完了: {status}")
+            else:
+                logger.warning("AIExpertAnalyzerがNoneです")
+        except ImportError as e:
+            logger.warning(f"AIExpertAnalyzerがインポートできません: {e}")
+            self.ai_expert = None
+        except Exception as e:
+            logger.error(f"AIExpertAnalyzer初期化エラー: {e}")
+            logger.error(f"エラー詳細: {traceback.format_exc()}")
             self.ai_expert = None
     
-
     def analyze_text(self, text: str, session_id: str = None, document_info: Dict[str, str] = None) -> Dict[str, Any]:
-        """透明性の高い感情分析（AI専門家統合版・既存ロジック保持）"""
+        """透明性の高い感情分析（AI専門家統合版・デバッグ強化版）"""
         try:
             if not text or len(text.strip()) < 10:
                 return self._empty_result(session_id)
+            
+            # ===== デバッグ情報を詳細に出力 =====
+            logger.info("=" * 60)
+            logger.info("感情分析開始")
+            logger.info(f"テキスト長: {len(text)} 文字")
+            logger.info(f"セッションID: {session_id}")
+            logger.info(f"document_info提供: {document_info is not None}")
+            if document_info:
+                logger.info(f"企業名: {document_info.get('company_name', '不明')}")
+            
+            if self.ai_expert:
+                status = self.ai_expert.get_status()
+                logger.info("AI Expert Analyzer 状態:")
+                logger.info(f"  - AI Expert存在: True")
+                logger.info(f"  - API利用可能: {status['api_available']}")
+                logger.info(f"  - モデル初期化: {status['model_initialized']}")
+                logger.info(f"  - APIキー設定: {status['api_key_configured']}")
+                if status['initialization_error']:
+                    logger.error(f"  - 初期化エラー: {status['initialization_error']}")
+            else:
+                logger.warning("AI Expert Analyzerが初期化されていません (None)")
+            
+            logger.info("=" * 60)
             
             # ===== 既存の基本分析を完全実行（変更なし） =====
             cleaned_text = self.text_processor.preprocess(text)
@@ -843,7 +874,7 @@ class TransparentSentimentAnalyzer:
                 'sentiment_label': sentiment_label,
                 'analysis_reasoning': analysis_reasoning,
                 'score_calculation': score_calculation,
-                'analysis_steps': analysis_steps,  # 重要: これが必須
+                'analysis_steps': analysis_steps,
                 'keyword_analysis': keyword_analysis,
                 'keyword_frequency_data': keyword_frequency_data,
                 'sample_sentences': {
@@ -871,13 +902,18 @@ class TransparentSentimentAnalyzer:
                     'analyzed_at': timezone.now().isoformat(),
                     'dictionary_size': len(self.dictionary.sentiment_dict),
                     'session_id': session_id,
-                    'analysis_version': '3.0_ai_expert_integrated',
+                    'analysis_version': '3.0_ai_expert_integrated_debug',
                     'features_enabled': ['重複カウント', '否定文対応', '複合語処理', '文脈強化']
                 }
             }
             
             # ===== AI専門家分析を追加レイヤーとして実行 =====
+            ai_analysis_attempted = False
+            ai_analysis_success = False
+            ai_analysis_error = None
+            
             if self.ai_expert and self.ai_expert.api_available and document_info:
+                ai_analysis_attempted = True
                 try:
                     logger.info("AI専門家による追加分析を開始")
                     
@@ -885,11 +921,17 @@ class TransparentSentimentAnalyzer:
                     max_text_length = 30000
                     analysis_text = text[:max_text_length] if len(text) > max_text_length else text
                     
+                    logger.info(f"AI分析用テキスト長: {len(analysis_text)} 文字")
+                    
                     ai_result = self.ai_expert.analyze_document_comprehensive(
                         analysis_text,
                         document_info,
-                        basic_result  # 基本分析結果を参考として渡す
+                        basic_result
                     )
+                    
+                    logger.info(f"AI分析結果取得: {ai_result is not None}")
+                    if ai_result:
+                        logger.info(f"AI分析結果にinvestment_grade含む: {'investment_grade' in ai_result}")
                     
                     # AI分析結果を追加（基本分析は保持）
                     if ai_result and 'investment_grade' in ai_result:
@@ -901,6 +943,8 @@ class TransparentSentimentAnalyzer:
                             'future_outlook': ai_result.get('future_outlook', {}),
                             'confidence': ai_result.get('confidence', 0.5),
                             'reasoning': ai_result.get('analysis_reasoning', []),
+                            'score_breakdown': ai_result.get('score_breakdown', {}),
+                            'consistency_check': ai_result.get('consistency_check', {}),
                             'metadata': ai_result.get('analysis_metadata', {})
                         }
                         
@@ -908,13 +952,47 @@ class TransparentSentimentAnalyzer:
                         basic_result['ai_overall_score'] = ai_result.get('overall_score')
                         basic_result['ai_sentiment_label'] = ai_result.get('sentiment_label')
                         
-                        logger.info("AI専門家分析完了し統合")
+                        ai_analysis_success = True
+                        logger.info("AI専門家分析完了し統合成功")
+                        logger.info(f"投資グレード: {ai_result.get('investment_grade')}")
+                        logger.info(f"AIスコア: {ai_result.get('overall_score')}")
                     else:
-                        logger.warning("AI分析結果が不完全です")
+                        ai_analysis_error = "AI分析結果が不完全です（investment_gradeなし）"
+                        logger.warning(ai_analysis_error)
+                        if ai_result:
+                            logger.warning(f"取得されたキー: {list(ai_result.keys())}")
                         
                 except Exception as e:
+                    ai_analysis_error = str(e)
                     logger.error(f"AI専門家分析エラー（基本分析は継続）: {e}")
-                    # エラーが起きても基本分析結果は返す
+                    logger.error(f"エラー詳細: {traceback.format_exc()}")
+            else:
+                # AI分析がスキップされた理由をログ出力
+                skip_reasons = []
+                if not self.ai_expert:
+                    skip_reasons.append("AI Expert Analyzerが初期化されていません (None)")
+                elif not self.ai_expert.api_available:
+                    skip_reasons.append(f"APIが利用できません（理由: {self.ai_expert.initialization_error or 'APIキー未設定または初期化失敗'}）")
+                if not document_info:
+                    skip_reasons.append("document_infoが提供されていません")
+                
+                logger.info(f"AI専門家分析スキップ: {', '.join(skip_reasons)}")
+            
+            # デバッグ情報をメタデータに追加
+            basic_result['analysis_metadata']['ai_analysis'] = {
+                'attempted': ai_analysis_attempted,
+                'success': ai_analysis_success,
+                'error': ai_analysis_error,
+                'ai_expert_available': self.ai_expert is not None,
+                'api_available': self.ai_expert.api_available if self.ai_expert else False,
+                'has_ai_expert_analysis': 'ai_expert_analysis' in basic_result
+            }
+            
+            logger.info("=" * 60)
+            logger.info("感情分析完了")
+            logger.info(f"基本スコア: {overall_score}")
+            logger.info(f"AI分析成功: {ai_analysis_success}")
+            logger.info("=" * 60)
             
             # ユーザー向け詳細見解を生成（既存ロジック）
             if document_info:
@@ -925,10 +1003,11 @@ class TransparentSentimentAnalyzer:
             
         except Exception as e:
             logger.error(f"強化感情分析エラー: {e}")
+            logger.error(f"エラー詳細: {traceback.format_exc()}")
             raise Exception(f"感情分析処理中にエラーが発生しました: {str(e)}")
-        
+    
     def analyze_text_sections(self, text_sections: Dict[str, str], session_id: str = None, document_info: Dict[str, str] = None) -> Dict[str, Any]:
-        """複数セクションの分析（既存ロジック保持）"""
+        """複数セクションの分析（既存ロジック保持・デバッグ強化）"""
         try:
             logger.info(f"セクション分析開始: {len(text_sections)}セクション")
             
@@ -958,8 +1037,8 @@ class TransparentSentimentAnalyzer:
                 
                 logger.info(f"セクション分析中: {section_name}")
                 
-                # AI専門家分析は最後に1回だけ実行するため、ここではuse_ai=Falseで実行
-                result = self.analyze_text(text, session_id, None)  # document_infoをNullにしてAI分析をスキップ
+                # AI専門家分析は最後に1回だけ実行するため、ここではdocument_infoをNullにしてAI分析をスキップ
+                result = self.analyze_text(text, session_id, None)
                 section_results[section_name] = result
                 combined_steps.extend(result.get('analysis_steps', []))
                 
@@ -1069,19 +1148,26 @@ class TransparentSentimentAnalyzer:
                     'dictionary_size': len(self.dictionary.sentiment_dict),
                     'session_id': session_id,
                     'sections_analyzed': list(text_sections.keys()),
-                    'analysis_version': '3.0_ai_expert_sections',
+                    'analysis_version': '3.0_ai_expert_sections_debug',
                     'integration_method': 'complete_section_aggregation',
                     'features_enabled': ['重複カウント', '否定文対応', '複合語処理', 'セクション統合強化']
                 }
             }
             
             # ===== AI専門家分析を1回だけ実行（全セクション統合テキストで） =====
+            ai_analysis_attempted = False
+            ai_analysis_success = False
+            ai_analysis_error = None
+            
             if self.ai_expert and self.ai_expert.api_available and document_info:
+                ai_analysis_attempted = True
                 try:
                     logger.info("統合テキストでAI専門家分析を実行")
                     
                     max_text_length = 30000
                     analysis_text = combined_text[:max_text_length] if len(combined_text) > max_text_length else combined_text
+                    
+                    logger.info(f"統合AI分析用テキスト長: {len(analysis_text)} 文字")
                     
                     ai_result = self.ai_expert.analyze_document_comprehensive(
                         analysis_text,
@@ -1098,185 +1184,60 @@ class TransparentSentimentAnalyzer:
                             'future_outlook': ai_result.get('future_outlook', {}),
                             'confidence': ai_result.get('confidence', 0.5),
                             'reasoning': ai_result.get('analysis_reasoning', []),
+                            'score_breakdown': ai_result.get('score_breakdown', {}),
+                            'consistency_check': ai_result.get('consistency_check', {}),
                             'metadata': ai_result.get('analysis_metadata', {})
                         }
                         
                         basic_result['ai_overall_score'] = ai_result.get('overall_score')
                         basic_result['ai_sentiment_label'] = ai_result.get('sentiment_label')
                         
+                        ai_analysis_success = True
                         logger.info("セクション統合AI分析完了")
+                    else:
+                        ai_analysis_error = "AI分析結果が不完全です"
+                        logger.warning(ai_analysis_error)
                         
                 except Exception as e:
+                    ai_analysis_error = str(e)
                     logger.error(f"AI専門家分析エラー（基本分析は継続）: {e}")
+                    logger.error(f"エラー詳細: {traceback.format_exc()}")
+            else:
+                skip_reasons = []
+                if not self.ai_expert:
+                    skip_reasons.append("AI Expert Analyzerが初期化されていません")
+                elif not self.ai_expert.api_available:
+                    skip_reasons.append(f"APIが利用できません（理由: {self.ai_expert.initialization_error or '不明'}）")
+                if not document_info:
+                    skip_reasons.append("document_infoが提供されていません")
+                
+                logger.info(f"セクション統合AI分析スキップ: {', '.join(skip_reasons)}")
+            
+            # デバッグ情報をメタデータに追加
+            basic_result['analysis_metadata']['ai_analysis'] = {
+                'attempted': ai_analysis_attempted,
+                'success': ai_analysis_success,
+                'error': ai_analysis_error,
+                'ai_expert_available': self.ai_expert is not None,
+                'api_available': self.ai_expert.api_available if self.ai_expert else False,
+                'has_ai_expert_analysis': 'ai_expert_analysis' in basic_result
+            }
             
             # ユーザー向け詳細見解を生成
             if document_info:
                 user_insights = self.insight_generator.generate_detailed_insights(basic_result, document_info)
                 basic_result['user_insights'] = user_insights
             
-            logger.info(f"統合セクション分析完了: {len(section_results)}セクション")
+            logger.info(f"統合セクション分析完了: {len(section_results)}セクション, AI成功: {ai_analysis_success}")
             
             return basic_result
             
         except Exception as e:
             logger.error(f"セクション分析エラー: {e}")
+            logger.error(f"エラー詳細: {traceback.format_exc()}")
             raise Exception(f"感情分析処理中にエラーが発生しました: {str(e)}")
-        
     
-    def _perform_basic_analysis(
-        self, 
-        text: str, 
-        session_id: str, 
-        document_info: Dict[str, str]
-    ) -> Dict[str, Any]:
-        """従来のワードベース分析（既存ロジック）"""
-        try:
-            if not text or len(text.strip()) < 10:
-                return self._empty_result(session_id)
-            
-            # テキスト前処理
-            cleaned_text = self.text_processor.preprocess(text)
-            
-            # 段階的な分析プロセス
-            analysis_steps = []
-            
-            # ステップ1: 文脈パターンの検出（強化版）
-            context_matches = self._find_context_patterns(cleaned_text)
-            if context_matches:
-                analysis_steps.append({
-                    'step': '文脈パターン検出（強化版）',
-                    'description': '否定文・複合表現を考慮した文脈パターンを検出',
-                    'matches': context_matches,
-                    'impact': sum(score * count for _, score, _, count in context_matches)
-                })
-            
-            # ステップ2: 基本語彙の検出（重複カウント対応版）
-            basic_matches = self._find_basic_words(cleaned_text, context_matches)
-            if basic_matches:
-                analysis_steps.append({
-                    'step': '基本語彙検出（重複カウント対応版）',
-                    'description': '出現回数を考慮した語彙検出',
-                    'matches': basic_matches,
-                    'impact': sum(score * count for _, score, _, count in basic_matches)
-                })
-            
-            # 全てのマッチを統合（新形式：word, score, type, count）
-            all_matches = context_matches + basic_matches
-            
-            # スコア計算（新形式対応）
-            score_calculation = self._calculate_detailed_score(all_matches)
-            
-            # 全体スコアと判定
-            overall_score = score_calculation['final_score']
-            sentiment_label = self._determine_sentiment_label(overall_score)
-            
-            # 分析根拠の生成（強化版）
-            analysis_reasoning = self._generate_enhanced_reasoning(
-                analysis_steps, score_calculation, overall_score, sentiment_label
-            )
-            
-            # キーワード分析（新形式対応）
-            keyword_analysis = self._analyze_enhanced_keywords(all_matches)
-            
-            # キーワード頻度分析（新形式対応）
-            keyword_frequency_data = self._analyze_enhanced_keyword_frequency(all_matches)
-            
-            # 文章レベル分析
-            sentences = self._split_sentences(cleaned_text)
-            sentence_analysis = self._analyze_sentences(sentences)
-            
-            # 基本結果の構築
-            basic_result = {
-                'overall_score': round(overall_score, 3),
-                'sentiment_label': sentiment_label,
-                'analysis_reasoning': analysis_reasoning,
-                'score_calculation': score_calculation,
-                'analysis_steps': analysis_steps,
-                'keyword_analysis': keyword_analysis,
-                'keyword_frequency_data': keyword_frequency_data,
-                'sample_sentences': {
-                    'positive': [s for s in sentence_analysis if s['score'] > self.config.positive_threshold][:5],
-                    'negative': [s for s in sentence_analysis if s['score'] < self.config.negative_threshold][:5],
-                },
-                'statistics': {
-                    'total_words_analyzed': len(all_matches),
-                    'total_occurrences': sum(count for _, _, _, count in all_matches),
-                    'context_patterns_found': len(context_matches),
-                    'basic_words_found': len(basic_matches),
-                    'sentences_analyzed': len(sentences),
-                    'unique_words_found': len(set(word for word, _, _, _ in all_matches)),
-                    'positive_words_count': len([s for _, s, _, _ in all_matches if s > 0]),
-                    'negative_words_count': len([s for _, s, _, _ in all_matches if s < 0]),
-                    'positive_sentences_count': len([s for s in sentence_analysis if s['score'] > self.config.positive_threshold]),
-                    'negative_sentences_count': len([s for s in sentence_analysis if s['score'] < self.config.negative_threshold]),
-                    'threshold_positive': self.config.positive_threshold,
-                    'threshold_negative': self.config.negative_threshold,
-                    'total_keyword_occurrences': sum(item['count'] for item in keyword_frequency_data['positive'] + keyword_frequency_data['negative']),
-                    'most_frequent_positive': max(keyword_frequency_data['positive'], key=lambda x: x['count']) if keyword_frequency_data['positive'] else None,
-                    'most_frequent_negative': max(keyword_frequency_data['negative'], key=lambda x: x['count']) if keyword_frequency_data['negative'] else None,
-                },
-                'analysis_metadata': {
-                    'analyzed_at': timezone.now().isoformat(),
-                    'dictionary_size': len(self.dictionary.sentiment_dict),
-                    'session_id': session_id,
-                    'analysis_version': '3.0_complete_integration',
-                    'features_enabled': ['重複カウント', '否定文対応', '複合語処理', '文脈強化']
-                }
-            }
-            
-            # ユーザー向け詳細見解を生成
-            if document_info:
-                user_insights = self.insight_generator.generate_detailed_insights(basic_result, document_info)
-                basic_result['user_insights'] = user_insights
-            
-            return basic_result
-            
-        except Exception as e:
-            logger.error(f"強化感情分析エラー: {e}")
-            raise Exception(f"感情分析処理中にエラーが発生しました: {str(e)}")
-
-    def _merge_analyses(
-        self, 
-        basic_result: Dict[str, Any], 
-        ai_result: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """基本分析とAI分析を統合"""
-        # AI分析結果を優先しつつ、基本分析の詳細データも保持
-        merged = {
-            # AI専門家のスコアを採用
-            'overall_score': ai_result.get('overall_score', basic_result['overall_score']),
-            'sentiment_label': ai_result.get('sentiment_label', basic_result['sentiment_label']),
-            
-            # AI専門家の評価を追加
-            'investment_grade': ai_result.get('investment_grade'),
-            'detailed_scores': ai_result.get('detailed_scores', {}),
-            'ai_investment_points': ai_result.get('investment_points', []),
-            'risk_analysis': ai_result.get('risk_analysis', {}),
-            'future_outlook': ai_result.get('future_outlook', {}),
-            'confidence': ai_result.get('confidence', 0.5),
-            'ai_reasoning': ai_result.get('analysis_reasoning', []),
-            
-            # 基本分析の詳細データを保持（透明性のため）
-            'basic_analysis': {
-                'keyword_analysis': basic_result.get('keyword_analysis', {}),
-                'sample_sentences': basic_result.get('sample_sentences', {}),
-                'statistics': basic_result.get('statistics', {}),
-                'score_calculation': basic_result.get('score_calculation', {}),
-            },
-            
-            # メタデータ統合
-            'analysis_metadata': {
-                'primary_method': 'ai_expert',
-                'fallback_method': 'word_based',
-                'ai_metadata': ai_result.get('analysis_metadata', {}),
-                'basic_metadata': basic_result.get('analysis_metadata', {}),
-                'analyzed_at': timezone.now().isoformat(),
-            }
-        }
-        
-        return merged
-    
-    # 以下は既存のヘルパーメソッド（インデント修正）
+    # 以下、既存のヘルパーメソッド（変更なし）
     def _find_context_patterns(self, text: str) -> List[Tuple[str, float, str, int]]:
         """文脈パターンの検出（新形式：word, score, type, count）"""
         matches = []
@@ -1814,19 +1775,20 @@ class TransparentSentimentAnalyzer:
                 'analyzed_at': timezone.now().isoformat(),
                 'dictionary_size': len(self.dictionary.sentiment_dict),
                 'session_id': session_id,
-                'analysis_version': '3.0_complete_empty',
+                'analysis_version': '3.0_complete_empty_debug',
                 'features_enabled': ['重複カウント', '否定文対応', '複合語処理', '文脈強化']
             }
         }
 
 
+
 class SentimentAnalysisService:
-    """感情分析サービス（完全統合版）"""
+    """感情分析サービス（完全統合版・document_info修正版）"""
     
     def __init__(self):
         self.analyzer = TransparentSentimentAnalyzer()
         self.xbrl_service = EDINETXBRLService()
-        
+    
     def start_analysis(self, document_id: str, force: bool = False, user_ip: str = None) -> Dict[str, Any]:
         """感情分析開始（期限切れセッション対応版）"""
         from ..models import DocumentMetadata, SentimentAnalysisSession
@@ -1976,7 +1938,7 @@ class SentimentAnalysisService:
             return {'status': 'not_found', 'message': 'セッションが見つかりません'}
     
     def _execute_analysis(self, session_id: int, user_ip: str = None):
-        """分析実行"""
+        """分析実行（document_info修正版）"""
         from ..models import SentimentAnalysisSession, SentimentAnalysisHistory
         
         start_time = time.time()
@@ -1987,20 +1949,33 @@ class SentimentAnalysisService:
             session.analysis_result = {'progress': 5, 'current_step': '完全統合版エンジン初期化中...'}
             session.save()
             
-            # 書類情報を準備
+            # ===== 書類情報を準備（重要：ここが問題だった） =====
             document_info = {
-                'company_name': session.document.company_name,
-                'doc_description': session.document.doc_description,
-                'doc_type_code': session.document.doc_type_code,
-                'submit_date': session.document.submit_date_time.strftime('%Y-%m-%d'),
+                'company_name': session.document.company_name or '不明',
+                'doc_description': session.document.doc_description or '不明',
+                'doc_type_code': session.document.doc_type_code or '不明',
+                'submit_date': session.document.submit_date_time.strftime('%Y-%m-%d') if session.document.submit_date_time else '不明',
                 'securities_code': session.document.securities_code or '',
+                'edinet_code': session.document.edinet_code or '',
+                'period_start': str(session.document.period_start) if session.document.period_start else '',
+                'period_end': str(session.document.period_end) if session.document.period_end else '',
             }
+            
+            # デバッグログ出力
+            logger.info("=" * 60)
+            logger.info("書類情報（document_info）:")
+            logger.info(f"  企業名: {document_info['company_name']}")
+            logger.info(f"  書類種別: {document_info['doc_description']}")
+            logger.info(f"  証券コード: {document_info['securities_code']}")
+            logger.info(f"  提出日: {document_info['submit_date']}")
+            logger.info("=" * 60)
             
             session.analysis_result = {'progress': 20, 'current_step': 'XBRLファイル取得中...'}
             session.save()
             
             try:
                 xbrl_text_sections = self.xbrl_service.get_xbrl_text_from_document(session.document)
+                logger.info(f"XBRL取得成功: {len(xbrl_text_sections) if xbrl_text_sections else 0}セクション")
             except Exception as e:
                 logger.warning(f"XBRL取得失敗: {e}")
                 xbrl_text_sections = None
@@ -2009,19 +1984,37 @@ class SentimentAnalysisService:
                 session.analysis_result = {'progress': 40, 'current_step': '基本情報を使用して完全統合版分析中...'}
                 session.save()
                 
+                logger.info("XBRLテキストなし - 基本テキストで分析")
                 document_text = self._extract_enhanced_document_text(session.document)
+                
+                # ここでdocument_infoを渡す
                 result = self.analyzer.analyze_text(document_text, str(session.session_id), document_info)
             else:
                 session.analysis_result = {'progress': 50, 'current_step': 'XBRLテキスト前処理中...'}
                 session.save()
                 
+                logger.info(f"XBRLテキストあり - {len(xbrl_text_sections)}セクションで分析")
+                
                 session.analysis_result = {'progress': 70, 'current_step': '完全統合版感情分析実行中（重複カウント・否定文対応）...'}
                 session.save()
                 
+                # ここでdocument_infoを渡す（重要！）
                 result = self.analyzer.analyze_text_sections(xbrl_text_sections, str(session.session_id), document_info)
             
             session.analysis_result = {'progress': 90, 'current_step': '分析結果最適化中...'}
             session.save()
+            
+            # AI分析の結果を確認
+            if 'ai_expert_analysis' in result:
+                logger.info("✓ AI Expert分析結果が含まれています")
+                logger.info(f"  投資グレード: {result['ai_expert_analysis'].get('investment_grade')}")
+            else:
+                logger.warning("✗ AI Expert分析結果が含まれていません")
+                if 'analysis_metadata' in result and 'ai_analysis' in result['analysis_metadata']:
+                    ai_meta = result['analysis_metadata']['ai_analysis']
+                    logger.warning(f"  AI分析試行: {ai_meta.get('attempted')}")
+                    logger.warning(f"  AI分析成功: {ai_meta.get('success')}")
+                    logger.warning(f"  エラー: {ai_meta.get('error')}")
             
             # セッション更新
             session.overall_score = result['overall_score']
@@ -2044,6 +2037,7 @@ class SentimentAnalysisService:
             
         except Exception as e:
             logger.error(f"完全統合版感情分析エラー: {session_id} - {e}")
+            logger.error(f"エラー詳細: {traceback.format_exc()}")
             
             try:
                 session = SentimentAnalysisSession.objects.get(id=session_id)
@@ -2080,21 +2074,3 @@ class SentimentAnalysisService:
         
         text_parts.extend(enhanced_scenarios)
         return " ".join(text_parts)
-    
-    def cleanup_expired_sessions(self) -> int:
-        """期限切れセッションのクリーンアップ"""
-        from ..models import SentimentAnalysisSession
-        
-        try:
-            expired_count = SentimentAnalysisSession.objects.filter(
-                expires_at__lt=timezone.now()
-            ).delete()[0]
-            
-            logger.info(f"期限切れセッション削除: {expired_count}件")
-            return expired_count
-            
-        except Exception as e:
-            logger.error(f"クリーンアップエラー: {e}")
-            return 0
-
-
