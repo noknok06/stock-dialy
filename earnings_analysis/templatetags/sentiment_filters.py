@@ -780,3 +780,16 @@ def div(value, divisor):
         return int(float(value) / float(divisor))
     except (ValueError, TypeError, ZeroDivisionError):
         return 0
+    
+@register.filter
+def get_item(dictionary, key):
+    """辞書から値を取得"""
+    return dictionary.get(key, 0)
+
+@register.filter
+def mul(value, arg):
+    """乗算"""
+    try:
+        return float(value) * float(arg)
+    except (ValueError, TypeError):
+        return 0

@@ -5,626 +5,391 @@
 
 {% block title %}感情分析結果 - {{ document.company_name }} -コポモ{% endblock %}
 
-    <style>
-        .insight-section {
-            position: relative;
+{% block extra_css %}
+<style>
+    /* ========== 共通スタイル ========== */
+    .analysis-card {
+        margin-bottom: 1.5rem;
+        animation: fadeInUp 0.6s ease-out;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
         }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 
-        .insight-section h6 {
-            font-weight: 600;
-            margin-bottom: 1rem;
-        }
+    /* ========== スコア表示エリア ========== */
+    .score-main-display {
+        padding: 2rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #f8f9fa 100%);
+        border-radius: 1rem;
+    }
+    
+    .score-circle-container {
+        filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
+    }
+    
+    .score-circle-container svg circle {
+        transition: stroke-dashoffset 2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .score-number-large {
+        font-size: 2.5rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+    
+    .score-indicator {
+        transition: left 2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
-        .insight-section .badge {
-            font-size: 0.85em;
-            padding: 0.4em 0.8em;
-        }
-
-        .insight-section ul {
-            padding-left: 1.5rem;
-        }
-
-        .insight-section ul li {
-            margin-bottom: 0.5rem;
-        }
-
-        .insight-section ul li:last-child {
-            margin-bottom: 0;
-        }
-
-        /* デスクトップのみでホバー効果 */
-        @media (hover: hover) and (pointer: fine) {
-            .insight-section {
-                transition: transform 0.2s ease, box-shadow 0.2s ease;
-            }
-            
-            .insight-section:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            }
-            
-            .wordcloud-canvas:hover {
-                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            }
-        }
-
-        /* ワードクラウド用CSS - モバイル最適化強化版 */
-        .wordcloud-canvas {
-            cursor: pointer;
-            border: 1px solid #dee2e6;
-            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-            min-height: 400px; /* モバイル基本高さを縮小 */
-            width: 100%;
-            overflow: hidden;
-            -webkit-overflow-scrolling: touch;
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
-            touch-action: manipulation;
-        }
-
-        .wordcloud-legend-color {
-            width: 14px;
-            height: 14px;
-            border-radius: 2px;
-        }
-
-        /* モバイル最適化強化 */
-        @media (max-width: 768px) {
-            .wordcloud-canvas {
-                min-height: 350px !important; /* さらに縮小 */
-                max-height: 500px;
-            }
-            
-            .btn-group-sm .btn {
-                font-size: 0.75rem;
-                padding: 0.25rem 0.5rem;
-            }
-            
-            /* モバイル用統計表示の調整 */
-            .row.mb-3.text-center .col-3 {
-                margin-bottom: 0.5rem;
-            }
-            
-            .row.mb-3.text-center .fw-bold {
-                font-size: 1rem;
-            }
-            
-            /* モバイルでアニメーション無効化 */
-            .analysis-card {
-                animation: none !important;
-                transition: none !important;
-                transform: none !important;
-                opacity: 1 !important;
-            }
-            
-            /* 語彙詳細モーダルのモバイル最適化 */
-            .word-detail-modal .modal-dialog {
-                margin: 1rem;
-                max-width: calc(100% - 2rem);
-            }
-            
-            .word-detail-modal .modal-body {
-                padding: 1rem;
-            }
-            
-            .word-detail-modal .row {
-                margin-bottom: 1rem;
-            }
-            
-            .word-detail-modal .col-md-6 {
-                margin-bottom: 1rem;
-            }
-            
-            /* 文脈表示の最適化 */
-            .context-sentence {
-                padding: 0.75rem;
-                margin-bottom: 0.75rem;
-                border: 1px solid #dee2e6;
-                border-radius: 0.5rem;
-                font-size: 0.875rem;
-                line-height: 1.4;
-            }
-            
-            .highlighted-word {
-                background-color: #fff3cd;
-                padding: 0.1rem 0.2rem;
-                border-radius: 0.25rem;
-                font-weight: 600;
-            }
-        }
-
-        /* 極小画面向け */
-        @media (max-width: 576px) {
-            .wordcloud-canvas {
-                min-height: 300px !important;
-                max-height: 400px;
-            }
-            
-            .word-detail-modal .modal-dialog {
-                margin: 0.5rem;
-                max-width: calc(100% - 1rem);
-            }
-            
-            .word-detail-modal .modal-header h5 {
-                font-size: 1.1rem;
-            }
-            
-            .context-sentence {
-                font-size: 0.8rem;
-                padding: 0.5rem;
-            }
-        }
-
-        /* 語彙詳細モーダルの強化 */
-        .word-detail-modal .modal-content {
-            border-radius: 1rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
-        
-        .word-detail-modal .modal-header {
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-            color: white;
-            border-top-left-radius: 1rem;
-            border-top-right-radius: 1rem;
-        }
-        
-        .word-detail-modal .btn-close {
-            filter: invert(1);
-        }
-        
-        /* 文脈表示の改善 */
-        .context-sentence {
-            transition: all 0.2s ease;
-        }
-        
-        .context-sentence:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-        
-        .context-sentence.border-success {
-            border-left: 4px solid #28a745;
-            background-color: #f8fff9;
-        }
-        
-        .context-sentence.border-danger {
-            border-left: 4px solid #dc3545;
-            background-color: #fff8f8;
-        }
-        
-        .context-sentence.border-secondary {
-            border-left: 4px solid #6c757d;
-            background-color: #f8f9fa;
-        }
-
-        /* タッチデバイス向け最適化 */
-        @media (pointer: coarse) {
-            .btn, .badge, .card {
-                min-height: 44px; /* タッチターゲットサイズ */
-            }
-            
-            .btn-sm {
-                min-height: 36px;
-            }
-            
-            .word-detail-modal .btn {
-                min-height: 48px;
-                font-size: 1rem;
-            }
-            
-            .wordcloud-canvas {
-                /* タッチ操作の改善 */
-                -webkit-touch-callout: none;
-                -webkit-user-select: none;
-                user-select: none;
-            }
-        }
-
-        /* 高コントラストモード対応 */
-        @media (prefers-contrast: high) {
-            .wordcloud-canvas {
-                border: 2px solid #000;
-            }
-            
-            .context-sentence {
-                border-width: 2px;
-            }
-        }
-
-        /* 動きを減らすモード対応 */
-        @media (prefers-reduced-motion: reduce) {
-            .analysis-card,
-            .insight-section,
-            .wordcloud-canvas canvas,
-            .context-sentence {
-                animation: none !important;
-                transition: none !important;
-            }
-        }
-        .score-circle-container {
-            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
-        }
-
-        .point-item {
-            display: flex;
-            align-items: flex-start;
-            margin-bottom: 0.75rem;
-        }
-
-        .point-item i {
-            margin-top: 0.125rem;
-            flex-shrink: 0;
-        }
-
-        .score-range-item {
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
-            min-height: 60px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .score-range-item:hover {
-            transform: translateY(-2px) !important;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
-            border-color: rgba(255,255,255,0.3);
-        }
-
-        .interpretation-main .alert {
-            border-radius: 1rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        /* 星評価関連CSS */
-        .rating-item {
-            transition: all 0.3s ease;
-            border: 1px solid rgba(0,0,0,0.1);
-            min-height: 70px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .rating-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-
-        .star-rating {
-            letter-spacing: 1px;
-            line-height: 1;
-            transition: all 0.3s ease;
-        }
-
-        .x-small {
-            font-size: 0.7rem;
-        }
-
-        /* 信頼性メトリクス関連CSS */
-        .reliability-gauge {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        }
-
-        .reliability-circle-container {
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-        }
-
-        .data-quality-metrics,
-        .analysis-methods {
-            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-            transition: all 0.3s ease;
-        }
-
-        .data-quality-metrics:hover,
-        .analysis-methods:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .metric-item {
-            padding: 0.25rem 0;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-
-        .metric-item:last-child {
-            border-bottom: none;
-        }
-
-        .feature-item {
-            padding: 0.125rem 0;
-            display: flex;
-            align-items: center;
-        }
-
-        .feature-item i {
-            flex-shrink: 0;
-        }
-
-        /* 信頼性レベル別の色分け */
-        .reliability-exceptional { background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); }
-        .reliability-very-high { background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%); }
-        .reliability-high { background: linear-gradient(135deg, #e2e3e5 0%, #d6d8db 100%); }
-        .reliability-medium { background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); }
-        .reliability-low { background: linear-gradient(135deg, #f8d7da 0%, #f1b0b7 100%); }
-
-        @media (max-width: 768px) {
-            .score-circle-container {
-                width: 150px !important;
-                height: 150px !important;
-            }
-            
-            .score-circle-container svg {
-                width: 150px !important;
-                height: 150px !important;
-            }
-            
-            .score-circle-container circle {
-                cx: 75 !important;
-                cy: 75 !important;
-                r: 60 !important;
-            }
-            
-            .score-number-large {
-                font-size: 1.8rem !important;
-            }
-            
-            .score-range-item {
-                margin-bottom: 0.5rem;
-                min-height: 50px;
-                padding: 0.5rem !important;
-            }
-            
-            .score-range-item .fw-bold {
-                font-size: 0.8rem;
-            }
-            
-            .score-range-item .x-small {
-                font-size: 0.65rem;
-            }
-            
-            .reliability-circle-container {
-                width: 80px !important;
-                height: 80px !important;
-            }
-            
-            .reliability-circle-container svg {
-                width: 80px !important;
-                height: 80px !important;
-            }
-            
-            .reliability-circle-container circle {
-                cx: 40 !important;
-                cy: 40 !important;
-                r: 28 !important;
-            }
-            
-            .data-quality-metrics,
-            .analysis-methods {
-                margin-bottom: 1rem;
-            }
-            
-            /* 星評価のモバイル調整 */
-            .rating-item {
-                min-height: 60px;
-                padding: 0.75rem !important;
-            }
-            
-            .star-rating {
-                font-size: 0.8rem !important;
-            }
-            
-            /* 投資家向けポイントの調整 */
-            .point-item {
-                margin-bottom: 0.5rem;
-            }
-            
-            .point-item .fw-semibold {
-                font-size: 0.9rem;
-            }
-            
-            .point-item .small {
-                font-size: 0.8rem;
-            }
-            
-            /* アラート内の調整 */
-            .interpretation-main .alert {
-                padding: 1rem;
-            }
-            
-            .interpretation-main .alert h6 {
-                font-size: 1rem;
-            }
-            
-            .interpretation-main .alert p {
-                font-size: 0.9rem;
-                margin-bottom: 1rem;
-            }
-        }
-
-        @media (max-width: 576px) {
-            .score-circle-container {
-                width: 120px !important;
-                height: 120px !important;
-            }
-            
-            .score-circle-container svg {
-                width: 120px !important;
-                height: 120px !important;
-            }
-            
-            .score-circle-container circle {
-                cx: 60 !important;
-                cy: 60 !important;
-                r: 45 !important;
-            }
-            
-            .score-number-large {
-                font-size: 1.5rem !important;
-            }
-            
-            .reliability-circle-container {
-                width: 70px !important;
-                height: 70px !important;
-            }
-            
-            .reliability-circle-container svg {
-                width: 70px !important;
-                height: 70px !important;
-            }
-            
-            .reliability-circle-container circle {
-                cx: 35 !important;
-                cy: 35 !important;
-                r: 25 !important;
-            }
-            
-            .rating-item {
-                min-height: 55px;
-                padding: 0.5rem !important;
-            }
-            
-            .rating-item .small {
-                font-size: 0.75rem;
-            }
-            
-            .star-rating {
-                font-size: 0.75rem !important;
-            }
-            
-            .score-range-item {
-                min-height: 45px;
-                padding: 0.4rem !important;
-            }
-            
-            .score-range-item .fw-bold {
-                font-size: 0.7rem;
-            }
-            
-            .score-range-item .x-small {
-                font-size: 0.6rem;
-            }
-        }
-
-        /* アクセシビリティ：アニメーション無効化 */
-        @media (prefers-reduced-motion: reduce) {
-            .score-circle-container *,
-            .reliability-circle-container *,
-            .score-range-item,
-            .rating-item,
-            .point-item,
-            .interpretation-main,
-            .metric-item,
-            .feature-item {
-                animation: none !important;
-                transition: none !important;
-            }
-        }        
-    .context-item {
+    /* ========== 分析タブ ========== */
+    .analysis-tabs {
         display: flex;
-        padding: 1.25rem;
-        margin-bottom: 0.75rem;
-        border: 1px solid;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 2px solid var(--border-light);
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .analysis-tab {
+        padding: 0.75rem 1.5rem;
+        background: transparent;
+        border: none;
+        border-bottom: 3px solid transparent;
+        color: var(--text-secondary);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+    }
+    
+    .analysis-tab.active {
+        color: var(--primary-color);
+        border-bottom-color: var(--primary-color);
+    }
+    
+    .analysis-tab:hover:not(.active) {
+        color: var(--text-primary);
+    }
+    
+    .tab-content-panel {
+        display: none;
+        animation: fadeIn 0.3s ease-in;
+    }
+    
+    .tab-content-panel.active {
+        display: block;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    /* ========== AI分析セクション ========== */
+    .ai-grade-display {
+        text-align: center;
+        padding: 2rem;
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+        border-radius: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .ai-grade-badge {
+        font-size: 4rem;
+        font-weight: 800;
+        padding: 1rem 2rem;
+        border-radius: 1rem;
+        display: inline-block;
+        margin-bottom: 1rem;
+    }
+    
+    .ai-score-comparison {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+    
+    .score-box {
+        padding: 1.5rem;
         border-radius: 0.75rem;
-        background: rgba(255, 255, 255, 0.8);
-        border-left: 4px solid;
-        transition: all 0.2s ease;
+        text-align: center;
+    }
+    
+    .score-box.primary {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        border: 2px solid #93c5fd;
+    }
+    
+    .score-box.secondary {
+        background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+        border: 2px solid #d1d5db;
     }
 
-    .context-item:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        background: white;
+    /* ========== 詳細スコア ========== */
+    .detailed-scores-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 1rem;
+        margin: 1.5rem 0;
+    }
+    
+    .score-item {
+        text-align: center;
+        padding: 1rem;
+        background: var(--bg-secondary);
+        border-radius: 0.5rem;
+        border: 1px solid var(--border-light);
+    }
+    
+    .score-item-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 0.25rem;
+    }
+    
+    .score-item-label {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
     }
 
-    .context-item:last-of-type {
-        margin-bottom: 0;
-    }
-
-    .context-number {
-        flex-shrink: 0;
-        margin-right: 1.25rem;
+    /* ========== 投資ポイント ========== */
+    .investment-points {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
-        align-items: center;
-        width: 60px; /* ← 必要に応じて調整（例: 60〜80px） */
+        gap: 1rem;
     }
-
-    .context-index {
-        width: 24px;
-        height: 24px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        font-size: 14px;
-        color: #fff;
+    
+    .point-card {
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border-left: 4px solid;
+        background: var(--bg-primary);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease;
     }
-
-    .context-content {
-        flex: 1;
-        min-width: 0;
+    
+    .point-card:hover {
+        transform: translateX(4px);
     }
-
-    .context-text {
-        margin-bottom: 0.75rem;
-        font-size: 0.9rem;
-        line-height: 1.6;
-        color: #2c3e50;
+    
+    .point-card.positive {
+        border-left-color: var(--success-color);
+        background: linear-gradient(90deg, rgba(16, 185, 129, 0.05) 0%, transparent 100%);
     }
-
-    .context-meta {
+    
+    .point-card.negative {
+        border-left-color: var(--danger-color);
+        background: linear-gradient(90deg, rgba(239, 68, 68, 0.05) 0%, transparent 100%);
+    }
+    
+    .point-card.neutral {
+        border-left-color: var(--gray-400);
+    }
+    
+    .point-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .point-title {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    
+    .importance-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .importance-badge.high {
+        background: var(--danger-color);
+        color: white;
+    }
+    
+    .importance-badge.medium {
+        background: var(--warning-color);
+        color: white;
+    }
+    
+    .importance-badge.low {
+        background: var(--info-color);
+        color: white;
     }
 
-    .context-divider {
-        margin: 1rem 0;
-        border: none;
-        border-top: 2px dashed #dee2e6;
-        opacity: 0.6;
+    /* ========== ワードクラウドセクション ========== */
+    .wordcloud-controls {
+        background: var(--bg-secondary);
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .wordcloud-canvas {
+        cursor: pointer;
+        border: 1px solid var(--border-light);
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        min-height: 400px;
+        border-radius: 0.5rem;
+        overflow: hidden;
     }
 
-    /* 既存のhighlighted-wordスタイルを強化 */
-    .highlighted-word {
-        background: linear-gradient(120deg, #fff3cd 0%, #ffeaa7 100%);
+    /* ========== サンプル文章セクション ========== */
+    .sentence-accordion .accordion-item {
+        border: 1px solid var(--border-light);
+        border-radius: 0.5rem;
+        margin-bottom: 0.5rem;
+        overflow: hidden;
+    }
+    
+    .sentence-accordion .accordion-button {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+    
+    .sentence-accordion .accordion-button:not(.collapsed) {
+        background: var(--primary-color);
+        color: white;
+    }
+    
+    .keyword-highlight {
+        background-color: #fff3cd;
         padding: 0.15rem 0.3rem;
         border-radius: 0.25rem;
         font-weight: 600;
         border: 1px solid #ffc107;
-        box-shadow: 0 1px 2px rgba(255, 193, 7, 0.3);
     }
 
-    /* モバイル対応 */
-    @media (max-width: 768px) {
-        .context-item {
-            padding: 1rem;
-            flex-direction: column;
-            margin-bottom: 1rem;
+    /* ========== サイドバー ========== */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+    
+    .stat-box {
+        padding: 1rem;
+        background: var(--bg-secondary);
+        border-radius: 0.5rem;
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 0.25rem;
+    }
+    
+    .stat-label {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+
+    /* ========== レスポンシブ対応 ========== */
+    @media (max-width: 991.98px) {
+        .score-main-display {
+            padding: 1.5rem;
         }
         
-        .context-number {
-            flex-direction: row;
-            align-items: center;
-            margin-right: 0;
-            margin-bottom: 0.75rem;
+        .ai-score-comparison {
+            grid-template-columns: 1fr;
         }
         
-        .context-meta {
-            flex-direction: column;
-            align-items: flex-start;
+        .detailed-scores-grid {
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        }
+    }
+    
+    @media (max-width: 767.98px) {
+        .analysis-tabs {
             gap: 0.25rem;
         }
         
-        .context-text {
-            font-size: 0.85rem;
-            margin-bottom: 0.5rem;
+        .analysis-tab {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+        
+        .score-circle-container {
+            width: 150px !important;
+            height: 150px !important;
+        }
+        
+        .score-number-large {
+            font-size: 1.8rem !important;
+        }
+        
+        .ai-grade-badge {
+            font-size: 3rem;
+            padding: 0.75rem 1.5rem;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .wordcloud-canvas {
+            min-height: 350px !important;
         }
     }
-    </style>
+    
+    @media (max-width: 575.98px) {
+        .score-main-display {
+            padding: 1rem;
+        }
+        
+        .score-circle-container {
+            width: 120px !important;
+            height: 120px !important;
+        }
+        
+        .score-number-large {
+            font-size: 1.5rem !important;
+        }
+        
+        .ai-grade-badge {
+            font-size: 2.5rem;
+        }
+        
+        .detailed-scores-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+        }
+        
+        .wordcloud-canvas {
+            min-height: 300px !important;
+        }
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+        .analysis-card,
+        .point-card,
+        .score-indicator,
+        svg circle {
+            animation: none !important;
+            transition: none !important;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block breadcrumb %}
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
@@ -637,29 +402,27 @@
 {% endblock %}
 
 {% block content %}
-<!-- Header -->
+<!-- ヘッダー -->
 <div class="page-header mb-4">
     <div class="row align-items-center g-3">
         <div class="col-12 col-md-8">
-            <h1 class="h3 h-md-2 mb-2">
-                <i class="fas fa-chart-line me-2 me-md-3"></i>感情分析結果
+            <h1 class="h3 mb-2">
+                <i class="fas fa-chart-line me-2"></i>感情分析結果
             </h1>
-            <p class="h6 h-md-5 mb-3 opacity-90 text-truncate">{{ document.company_name }}</p>
-            <p class="mb-0 opacity-80 text-truncate-2">{{ document.doc_description }}</p>
+            <p class="h6 mb-2 opacity-90">{{ document.company_name }}</p>
+            <p class="mb-0 opacity-80 small">{{ document.doc_description }}</p>
         </div>
         <div class="col-12 col-md-4 text-center text-md-end">
             <div class="d-flex flex-column gap-2">
-                <div class="badge bg-primary bg-opacity-90 px-3 py-2">
+                <div class="badge bg-primary px-3 py-2">
                     <i class="fas fa-calendar me-1"></i>{{ session.created_at|date:"Y/m/d H:i" }}
                 </div>
                 <div class="badge bg-success px-3 py-2">
                     <i class="fas fa-check me-1"></i>分析完了
                 </div>
-                <!-- 有効期限情報を追加 -->
                 {% if time_remaining %}
                     <div class="badge bg-info px-3 py-2">
-                        <i class="fas fa-clock me-1"></i>
-                        期限: {{ session.expires_at|date:"m/d H:i" }}
+                        <i class="fas fa-clock me-1"></i>期限: {{ session.expires_at|date:"m/d H:i" }}
                     </div>
                 {% endif %}
             </div>
@@ -668,50 +431,43 @@
 </div>
 
 <div class="row g-3 g-md-4">
-    <!-- Main Results Area -->
+    <!-- メインコンテンツエリア -->
     <div class="col-12 col-lg-8">
-        <!-- Overall Sentiment Score -->
+        <!-- 全体スコア表示 -->
         <div class="analysis-card card mb-4">
             <div class="card-header">
                 <h5 class="mb-0">
-                    <i class="fas fa-thermometer-half me-2"></i>全体感情スコア
+                    <i class="fas fa-thermometer-half me-2"></i>総合評価スコア
                 </h5>
             </div>
             <div class="card-body">
-                <!-- スコア表示エリア -->
-                <div class="row align-items-center g-4">
-                    <!-- 左側：メインスコア表示 -->
-                    <div class="col-12 col-lg-6">
-                        <div class="score-main-display text-center">
-                            <!-- 大きなスコア数値 -->
+                <div class="score-main-display">
+                    <div class="row align-items-center g-4">
+                        <!-- スコア円グラフ -->
+                        <div class="col-12 col-lg-6 text-center">
                             <div class="score-circle-container mb-3" style="position: relative; width: 200px; height: 200px; margin: 0 auto;">
-                                <!-- 背景円 -->
-                                <svg width="200" height="200" style="position: absolute; top: 0; left: 0;">
+                                <svg width="200" height="200" viewBox="0 0 200 200" style="position: absolute; top: 0; left: 0;">
                                     <circle cx="100" cy="100" r="80" fill="none" stroke="#e9ecef" stroke-width="12"></circle>
-                                    <!-- スコア円弧 -->
                                     <circle id="score-arc" cx="100" cy="100" r="80" fill="none" 
                                             stroke-width="12" 
                                             stroke-dasharray="502.65" 
                                             stroke-dashoffset="502.65"
-                                            style="transform: rotate(-90deg); transform-origin: 100px 100px; transition: stroke-dashoffset 2s ease-in-out;">
+                                            style="transform: rotate(-90deg); transform-origin: center; transition: stroke-dashoffset 2s cubic-bezier(0.4, 0, 0.2, 1);">
                                     </circle>
                                 </svg>
-                                
-                                <!-- 中央のスコア表示 -->
-                                <div class="score-center-content" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
-                                    <div class="score-number-large" style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;" 
-                                        id="animated-score">0.000</div>
-                                    <div class="score-sentiment-badge">
+                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 100%;">
+                                    <div class="score-number-large" id="animated-score">0.000</div>
+                                    <div style="margin-top: 0.5rem;">
                                         {% if session.sentiment_label == 'positive' %}
-                                            <span class="badge bg-success fs-6" id="sentiment-badge">
+                                            <span class="badge bg-success" style="font-size: 0.875rem; padding: 0.35em 0.65em;" id="sentiment-badge">
                                                 <i class="fas fa-smile me-1"></i>ポジティブ
                                             </span>
                                         {% elif session.sentiment_label == 'negative' %}
-                                            <span class="badge bg-danger fs-6" id="sentiment-badge">
+                                            <span class="badge bg-danger" style="font-size: 0.875rem; padding: 0.35em 0.65em;" id="sentiment-badge">
                                                 <i class="fas fa-frown me-1"></i>ネガティブ
                                             </span>
                                         {% else %}
-                                            <span class="badge bg-secondary fs-6" id="sentiment-badge">
+                                            <span class="badge bg-secondary" style="font-size: 0.875rem; padding: 0.35em 0.65em;" id="sentiment-badge">
                                                 <i class="fas fa-meh me-1"></i>中立
                                             </span>
                                         {% endif %}
@@ -720,83 +476,50 @@
                             </div>
                             
                             <!-- スコア範囲ガイド -->
-                            <div class="score-range-guide">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="mt-3" style="max-width: 300px; margin-left: auto; margin-right: auto;">
+                                <div class="d-flex justify-content-between mb-2">
                                     <small class="text-danger fw-bold">-1.0</small>
                                     <small class="text-muted">スコア範囲</small>
                                     <small class="text-success fw-bold">+1.0</small>
                                 </div>
-                                <div class="position-relative">
-                                    <div class="progress" style="height: 8px;">
+                                <div class="position-relative" style="height: 12px;">
+                                    <div class="progress" style="height: 8px; margin-top: 2px;">
                                         <div class="progress-bar bg-danger" style="width: 50%"></div>
                                         <div class="progress-bar bg-success" style="width: 50%"></div>
                                     </div>
-                                    <!-- 現在位置インジケーター -->
                                     <div class="score-indicator" id="score-position" 
-                                        style="position: absolute; top: -2px; width: 12px; height: 12px; 
+                                        style="position: absolute; top: 0; width: 12px; height: 12px; 
                                                 background: #007bff; border: 2px solid white; border-radius: 50%; 
                                                 box-shadow: 0 2px 4px rgba(0,0,0,0.3); transform: translateX(-50%);
-                                                transition: left 2s ease-in-out;">
+                                                transition: left 2s cubic-bezier(0.4, 0, 0.2, 1); left: 50%;">
                                     </div>
-                                </div>
-                                <div class="d-flex justify-content-between mt-1">
-                                    <small class="text-muted">非常にネガティブ</small>
-                                    <small class="text-muted">非常にポジティブ</small>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- 右側：詳細解釈 -->
-                    <div class="col-12 col-lg-6">
-                        <div class="score-interpretation">
-                            <div class="investment-points">
-                                <h6 class="fw-bold mb-3">
-                                    <i class="fas fa-lightbulb text-warning me-2"></i>分析から読み取れるポイント
-                                    {% if formatted_insights.gemini_metadata.generated_by == 'gemini_api' %}
-                                        <span class="badge bg-info ms-2">
-                                            <i class="fas fa-robot me-1"></i>AI分析
-                                        </span>
-                                    {% elif formatted_insights.gemini_metadata.generated_by == 'fallback_logic' %}
-                                        <span class="badge bg-secondary ms-2">
-                                            <i class="fas fa-cog me-1"></i>標準分析
-                                        </span>
-                                    {% endif %}
-                                </h6>
-                                
-                                {% if formatted_insights.gemini_investment_points %}
-                                    <!-- 生成されたポイント -->
-                                    {% for point in formatted_insights.gemini_investment_points %}
-                                        <div class="point-item mb-3">
-                                            <i class="fas fa-{% if point.source == 'gemini_generated' %}robot text-info{% else %}lightbulb text-primary{% endif %} me-2"></i>
-                                            <div>
-                                                <span class="fw-semibold">{{ point.title }}</span>
-                                                <div class="small text-muted ms-0">{{ point.description }}</div>
-                                            </div>
-                                        </div>
-                                    {% endfor %}
-                                    
-                                    <!-- 簡素な品質表示 -->
-                                    {% if formatted_insights.gemini_metadata.api_available %}
-                                        <div class="small text-success mt-2">
-                                            <i class="fas fa-check-circle me-1"></i>
-                                            AI分析による見解が含まれています
-                                        </div>
-                                    {% else %}
-                                        <div class="small text-muted mt-2">
-                                            <i class="fas fa-info-circle me-1"></i>
-                                            標準的な分析ロジックによる見解です
-                                        </div>
-                                    {% endif %}
-                                    
-                                {% else %}
-                                    <!-- エラー時のフォールバック表示 -->
-                                    <div class="text-center py-3">
-                                        <i class="fas fa-info-circle text-muted fa-2x mb-2"></i>
-                                        <div class="text-muted">投資判断ポイントの生成ができませんでした</div>
+                        
+                        <!-- AI比較 -->
+                        <div class="col-12 col-lg-6">
+                            {% if session.analysis_result.ai_expert_analysis %}
+                                <div class="ai-score-comparison">
+                                    <div class="score-box secondary">
+                                        <div class="small text-muted mb-2">ワードベース分析</div>
+                                        <div class="h3 mb-1">{{ session.overall_score|floatformat:3 }}</div>
+                                        <small class="text-muted">語彙パターン検出</small>
                                     </div>
-                                {% endif %}
-                            </div>
+                                    <div class="score-box primary">
+                                        <div class="small text-primary mb-2">AI専門家分析</div>
+                                        <div class="h3 text-primary mb-1">{{ session.analysis_result.ai_overall_score|floatformat:3 }}</div>
+                                        <small class="text-muted">文脈理解・将来予測</small>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-info">
+                                    <h6 class="alert-heading">
+                                        <i class="fas fa-lightbulb me-2"></i>分析から読み取れるポイント
+                                    </h6>
+                                    <p class="mb-0">{{ session.sentiment_label|yesno:"前向きな経営姿勢が表れています,慎重な経営スタンスが見られます,バランスの取れた客観的な内容です" }}</p>
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -804,586 +527,281 @@
         </div>
 
         {% include 'earnings_analysis/ads/ad_responsive.html' %}
-        <!-- Detailed Score Breakdown -->
-        {% if session.analysis_result.score_calculation %}
-            {% with calc=session.analysis_result.score_calculation %}
-                <div class="analysis-card card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="fas fa-calculator me-2"></i>語彙レベルでのスコア計算詳細
-                        </h5>
-                        <div class="small text-muted mt-1">
-                            <i class="fas fa-info-circle me-1"></i>
-                            検出された個別の語彙を集計（1つの文章に複数の語彙が含まれる場合があります）
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3 text-center mb-4">
-                            <div class="col-6 col-md-3">
-                                <div class="border rounded p-3">
-                                    <div class="h4 text-success mb-1">{{ calc.positive_scores|length }}</div>
-                                    <div class="small text-muted">ポジティブ語彙数</div>
-                                    {% if calc.positive_sum > 0 %}
-                                        <div class="small text-success mt-1">合計: +{{ calc.positive_sum|floatformat:2 }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            
-                            <div class="col-6 col-md-3">
-                                <div class="border rounded p-3">
-                                    <div class="h4 text-danger mb-1">{{ calc.negative_scores|length }}</div>
-                                    <div class="small text-muted">ネガティブ語彙数</div>
-                                    {% if calc.negative_sum < 0 %}
-                                        <div class="small text-danger mt-1">合計: {{ calc.negative_sum|floatformat:2 }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            
-                            <div class="col-6 col-md-3">
-                                <div class="border rounded p-3">
-                                    <div class="h4 text-primary mb-1">{{ calc.score_count }}</div>
-                                    <div class="small text-muted">総分析語数</div>
-                                    <div class="small text-primary mt-1">
-                                        {% if session.analysis_result.statistics.unique_words_found %}
-                                            (ユニーク: {{ session.analysis_result.statistics.unique_words_found }}語)
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="col-6 col-md-3">
-                                <div class="border rounded p-3">
-                                    <div class="h4 text-info mb-1">{{ calc.final_score|floatformat:2 }}</div>
-                                    <div class="small text-muted">最終スコア</div>
-                                    <div class="small text-info mt-1">
-                                        平均: {{ calc.average_score|floatformat:2 }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Final Score Calculation -->
-                        <div class="border rounded p-3 bg-light">
-                            <h6 class="mb-2">
-                                <i class="fas fa-calculator me-1"></i>最終スコア計算
-                            </h6>
-                            <div class="small">
-                                {% if calc.positive_sum != 0 and calc.negative_sum != 0 %}
-                                    <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-2">
-                                        <span class="badge bg-success">ポジティブ: +{{ calc.positive_sum|floatformat:2 }}</span>
-                                        <span class="d-none d-sm-inline">+</span>
-                                        <span class="badge bg-danger">ネガティブ: {{ calc.negative_sum|floatformat:2 }}</span>
-                                        <span class="d-none d-sm-inline">=</span>
-                                        <span class="badge bg-primary fs-6">最終: {{ session.overall_score|floatformat:2 }}</span>
-                                    </div>
-                                    <div class="d-sm-none text-center mt-2">
-                                        <small class="text-muted">{{ calc.positive_sum|floatformat:2 }} + {{ calc.negative_sum|floatformat:2 }} = {{ session.overall_score|floatformat:2 }}</small>
-                                    </div>
-                                {% elif calc.positive_sum != 0 %}
-                                    <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-2">
-                                        <span class="badge bg-success">ポジティブのみ: +{{ calc.positive_sum|floatformat:2 }}</span>
-                                        <span class="d-none d-sm-inline">=</span>
-                                        <span class="badge bg-primary fs-6">最終: {{ session.overall_score|floatformat:2 }}</span>
-                                    </div>
-                                {% elif calc.negative_sum != 0 %}
-                                    <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-2">
-                                        <span class="badge bg-danger">ネガティブのみ: {{ calc.negative_sum|floatformat:2 }}</span>
-                                        <span class="d-none d-sm-inline">=</span>
-                                        <span class="badge bg-primary fs-6">最終: {{ session.overall_score|floatformat:2 }}</span>
-                                    </div>
-                                {% else %}
-                                    <span class="badge bg-secondary">感情語彙なし: 0.0</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            {% endwith %}
-        {% endif %}
 
-        <!-- ワードクラウドセクション -->
-        <div class="card">
+        <!-- 分析タブ -->
+        <div class="analysis-card card">
             <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-cloud me-2"></i>語彙の出現頻度（ワードクラウド）
-                    </h5>
-                    <!-- 表示切り替えボタン -->
-                    <div class="btn-group btn-group-sm" role="group">
-                        <button type="button" class="btn btn-primary active" id="wordcloud-sentiment-btn">
-                            <i class="fas fa-heart me-1"></i>感情語彙のみ
-                        </button>
-                        <button type="button" class="btn btn-outline-primary" id="wordcloud-all-btn">
-                            <i class="fas fa-list me-1"></i>全語彙
-                        </button>
-                    </div>
-                </div>
-                <div class="small text-muted mt-2">
-                    <i class="fas fa-info-circle me-1"></i>
-                    語彙の大きさは出現頻度に比例します。クリックすると詳細情報を表示します。（緑：ポジティブ、赤：ネガティブ、灰：中立）
+                <div class="analysis-tabs">
+                    <button class="analysis-tab active" data-tab="ai-analysis">
+                        <i class="fas fa-robot me-1"></i>AI分析
+                    </button>
+                    <button class="analysis-tab" data-tab="word-analysis">
+                        <i class="fas fa-cloud me-1"></i>語彙分析
+                    </button>
+                    <button class="analysis-tab" data-tab="samples">
+                        <i class="fas fa-file-text me-1"></i>判定文章
+                    </button>
                 </div>
             </div>
-            <div class="card-body">
-                <!-- 統計情報 -->
-                <div class="row mb-3 text-center">
-                    <div class="col-3">
-                        <div class="small text-muted">総語彙数</div>
-                        <div class="fw-bold text-primary" id="total-words">-</div>
-                    </div>
-                    <div class="col-3">
-                        <div class="small text-muted">表示語彙数</div>
-                        <div class="fw-bold text-info" id="wordcloud-displayed-count">-</div>
-                    </div>
-                    <div class="col-3">
-                        <div class="small text-muted">総出現回数</div>
-                        <div class="fw-bold text-success" id="total-occurrences">-</div>
-                    </div>
-                    <div class="col-3">
-                        <div class="small text-muted">最大出現回数</div>
-                        <div class="fw-bold text-warning" id="max-occurrences">-</div>
-                    </div>
+            
+            <!-- AI分析タブ -->
+            <div class="tab-content-panel active" id="ai-analysis">
+                <div class="card-body">
+                    {% if session.analysis_result.ai_expert_analysis %}
+                        {% with ai=session.analysis_result.ai_expert_analysis %}
+                            <!-- 投資グレード -->
+                            <div class="ai-grade-display">
+                                <div class="ai-grade-badge 
+                                    {% if ai.investment_grade == 'A+' or ai.investment_grade == 'A' %}bg-success
+                                    {% elif ai.investment_grade == 'B' %}bg-info
+                                    {% elif ai.investment_grade == 'C' %}bg-warning
+                                    {% else %}bg-danger{% endif %}">
+                                    {{ ai.investment_grade }}
+                                </div>
+                                <div class="h5">投資推奨グレード</div>
+                                <small class="text-muted">AI確信度: {{ ai.confidence|floatformat:0|mul:100 }}%</small>
+                            </div>
+                            
+                            <!-- 詳細スコア -->
+                            <div class="detailed-scores-grid">
+                                {% for key, label in scores_labels.items %}
+                                    <div class="score-item">
+                                        <div class="score-item-value">{{ ai.detailed_scores|get_item:key }}/10</div>
+                                        <div class="score-item-label">{{ label }}</div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <!-- 投資ポイント -->
+                            {% if ai.investment_points %}
+                                <h6 class="mt-4 mb-3">投資判断ポイント</h6>
+                                <div class="investment-points">
+                                    {% for point in ai.investment_points %}
+                                        <div class="point-card {{ point.impact }}">
+                                            <div class="point-header">
+                                                <span class="point-title">{{ point.title }}</span>
+                                                <span class="importance-badge {{ point.importance }}">
+                                                    {{ point.importance|upper }}
+                                                </span>
+                                            </div>
+                                            <p class="small mb-0 text-muted">{{ point.description }}</p>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        {% endwith %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">AI分析データがありません</h5>
+                            <p class="text-muted">標準的な語彙分析結果をご確認ください</p>
+                        </div>
+                    {% endif %}
                 </div>
-                
-                <!-- 感情別統計（全語彙表示時のみ表示） -->
-                <div class="row mb-3 text-center d-none" id="sentiment-stats">
-                    <div class="col-4">
-                        <div class="small text-success">ポジティブ</div>
-                        <div class="fw-bold" id="positive-count">-</div>
+            </div>
+            
+            <!-- 語彙分析タブ -->
+            <div class="tab-content-panel" id="word-analysis">
+                <div class="card-body">
+                    <!-- ワードクラウド制御 -->
+                    <div class="wordcloud-controls">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-12 col-md-6">
+                                <div class="btn-group btn-group-sm w-100" role="group">
+                                    <button type="button" class="btn btn-primary active" id="wordcloud-sentiment-btn">
+                                        <i class="fas fa-heart me-1"></i>感情語彙のみ
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary" id="wordcloud-all-btn">
+                                        <i class="fas fa-list me-1"></i>全語彙
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <select class="form-select form-select-sm" id="wordcloud-min-count">
+                                    <option value="3">3回以上</option>
+                                    <option value="5">5回以上</option>
+                                    <option value="10" selected>10回以上</option>
+                                    <option value="20">20回以上</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <button type="button" class="btn btn-sm btn-primary w-100" id="wordcloud-update-btn">
+                                    <i class="fas fa-sync-alt me-1"></i>更新
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-4">
-                        <div class="small text-danger">ネガティブ</div>
-                        <div class="fw-bold" id="negative-count">-</div>
+                    
+                    <!-- 統計情報 -->
+                    <div class="row mb-3 text-center">
+                        <div class="col-3">
+                            <div class="small text-muted">総語彙数</div>
+                            <div class="fw-bold text-primary" id="total-words">-</div>
+                        </div>
+                        <div class="col-3">
+                            <div class="small text-muted">表示語彙数</div>
+                            <div class="fw-bold text-info" id="wordcloud-displayed-count">-</div>
+                        </div>
+                        <div class="col-3">
+                            <div class="small text-muted">総出現回数</div>
+                            <div class="fw-bold text-success" id="total-occurrences">-</div>
+                        </div>
+                        <div class="col-3">
+                            <div class="small text-muted">最大出現</div>
+                            <div class="fw-bold text-warning" id="max-occurrences">-</div>
+                        </div>
                     </div>
-                    <div class="col-4">
-                        <div class="small text-secondary">中立</div>
-                        <div class="fw-bold" id="neutral-count">-</div>
-                    </div>
-                </div>
-                
-                <!-- ワードクラウド表示エリア -->
-                <div class="wordcloud-container">
-                    <div id="wordcloud-canvas" class="wordcloud-canvas bg-light rounded" style="min-height: 400px; position: relative;">
+                    
+                    <!-- ワードクラウド表示 -->
+                    <div id="wordcloud-canvas" class="wordcloud-canvas">
                         <div class="d-flex justify-content-center align-items-center h-100">
                             <div class="text-center">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">ワードクラウド生成中...</span>
-                                </div>
+                                <div class="spinner-border text-primary" role="status"></div>
                                 <div class="mt-2 text-muted">ワードクラウドを生成しています...</div>
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <!-- コントロールパネル -->
-                <div class="mt-3">
-                    <div class="row g-2">
-                        <div class="col-md-4">
-                            <label for="wordcloud-min-count" class="form-label small">最小出現回数</label>
-                            <select class="form-select form-select-sm" id="wordcloud-min-count">
-                                <option value="3">3回以上</option>
-                                <option value="5">5回以上</option>
-                                <option value="10" selected>10回以上</option>
-                                <option value="20">20回以上</option>
-                                <option value="50">50回以上</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="wordcloud-max-words" class="form-label small">最大表示語数</label>
-                            <select class="form-select form-select-sm" id="wordcloud-max-words">
-                                <option value="30">30語</option>
-                                <option value="50">50語</option>
-                                <option value="100" selected>100語（推奨）</option>
-                                <option value="200">200語</option>
-                                <option value="0">制限なし</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 d-flex align-items-end">
-                            <button type="button" class="btn btn-sm btn-primary w-100" id="wordcloud-update-btn">
-                                <i class="fas fa-sync-alt me-1"></i>更新
-                            </button>
-                        </div>
-                    </div>
-                </div>
             </div>
-        </div>
-
-        {% include 'earnings_analysis/ads/ad_responsive.html' %}
-
-        <!-- Sample Sentences -->
-        {% if session.analysis_result.sample_sentences %}
-            {% with samples=session.analysis_result.sample_sentences %}
-                <div class="analysis-card card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="fas fa-file-text me-2"></i>判定された文章の詳細
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <!-- Positive sentences -->
-                        {% if samples.positive %}
-                            <div class="mb-4">
-                                <h6 class="text-success d-flex align-items-center justify-content-between">
-                                    <span>
-                                        <i class="fas fa-smile me-2"></i>ポジティブと判定された文章
-                                    </span>
-                                    <span class="badge bg-success">{{ samples.positive|length }}件</span>
+            
+            <!-- サンプル文章タブ -->
+            <div class="tab-content-panel" id="samples">
+                <div class="card-body">
+                    {% if session.analysis_result.sample_sentences %}
+                        {% with samples=session.analysis_result.sample_sentences %}
+                            <!-- ポジティブ文章 -->
+                            {% if samples.positive %}
+                                <h6 class="text-success mb-3">
+                                    <i class="fas fa-smile me-2"></i>ポジティブと判定された文章
+                                    <span class="badge bg-success ms-2">{{ samples.positive|length }}件</span>
                                 </h6>
-                                
-                                <div class="accordion" id="positiveAccordion">
-                                    {% for sentence in samples.positive|slice:":10" %}
+                                <div class="accordion sentence-accordion mb-4" id="positiveAccordion">
+                                    {% for sentence in samples.positive|slice:":5" %}
                                         <div class="accordion-item">
-                                            <h2 class="accordion-header" id="positive-heading-{{ forloop.counter }}">
-                                                <button class="accordion-button" type="button" 
-                                                        data-bs-toggle="collapse" data-bs-target="#positive-collapse-{{ forloop.counter }}"
-                                                        aria-expanded="true">
-                                                    <div class="d-flex justify-content-between align-items-center w-100 me-3">
-                                                        <span class="fw-semibold text-success">
-                                                            スコア: {{ sentence.score|floatformat:2 }}
-                                                        </span>
-                                                        <span class="small text-muted">
-                                                            {% if sentence.score > 0.7 %}
-                                                                強いポジティブ
-                                                            {% elif sentence.score > 0.4 %}
-                                                                中程度のポジティブ
-                                                            {% else %}
-                                                                軽微なポジティブ
-                                                            {% endif %}
-                                                        </span>
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button collapsed" type="button" 
+                                                        data-bs-toggle="collapse" data-bs-target="#pos-{{ forloop.counter }}">
+                                                    <div class="d-flex justify-content-between w-100 me-3">
+                                                        <span class="fw-semibold">スコア: {{ sentence.score|floatformat:2 }}</span>
+                                                        <span class="small text-muted">{{ forloop.counter }}件目</span>
                                                     </div>
                                                 </button>
                                             </h2>
-                                            <div id="positive-collapse-{{ forloop.counter }}" 
-                                                 class="accordion-collapse collapse show"
-                                                 data-bs-parent="#positiveAccordion">
+                                            <div id="pos-{{ forloop.counter }}" class="accordion-collapse collapse">
                                                 <div class="accordion-body">
                                                     <div class="mb-3">
                                                         {% if sentence.highlighted_text %}
                                                             {{ sentence.highlighted_text|safe }}
-                                                        {% elif sentence.keywords %}
-                                                            {% with highlighted_text=sentence.text|highlight_all_keywords:sentence.keywords %}
-                                                                {{ highlighted_text|safe }}
-                                                            {% endwith %}
                                                         {% else %}
                                                             {{ sentence.text }}
                                                         {% endif %}
                                                     </div>
-                                                    
                                                     {% if sentence.keywords %}
                                                         <div class="small text-muted">
                                                             <strong>検出キーワード:</strong>
-                                                            <div class="mt-1">
-                                                                {% for keyword in sentence.keywords %}
-                                                                    <span class="badge bg-success me-1 mb-1">{{ keyword }}</span>
-                                                                {% endfor %}
-                                                            </div>
+                                                            {% for keyword in sentence.keywords %}
+                                                                <span class="badge bg-success me-1">{{ keyword }}</span>
+                                                            {% endfor %}
                                                         </div>
                                                     {% endif %}
                                                 </div>
                                             </div>
                                         </div>
                                     {% endfor %}
-                                    
-                                    {% if samples.positive|length > 10 %}
-                                        <div class="text-center mt-3">
-                                            <small class="text-muted">
-                                                他{{ samples.positive|length|add:"-10" }}件のポジティブ文章があります
-                                            </small>
-                                        </div>
-                                    {% endif %}
                                 </div>
-                            </div>
-                        {% endif %}
-                        
-
-                        {% include 'earnings_analysis/ads/ad_responsive.html' %}
-                        <!-- Negative sentences -->
-                        {% if samples.negative %}
-                            <div class="mb-4">
-                                <h6 class="text-danger d-flex align-items-center justify-content-between">
-                                    <span>
-                                        <i class="fas fa-frown me-2"></i>ネガティブと判定された文章
-                                    </span>
-                                    <span class="badge bg-danger">{{ samples.negative|length }}件</span>
+                            {% endif %}
+                            
+                            <!-- ネガティブ文章 -->
+                            {% if samples.negative %}
+                                <h6 class="text-danger mb-3">
+                                    <i class="fas fa-frown me-2"></i>ネガティブと判定された文章
+                                    <span class="badge bg-danger ms-2">{{ samples.negative|length }}件</span>
                                 </h6>
-                                
-                                <div class="accordion" id="negativeAccordion">
-                                    {% for sentence in samples.negative|slice:":10" %}
+                                <div class="accordion sentence-accordion" id="negativeAccordion">
+                                    {% for sentence in samples.negative|slice:":5" %}
                                         <div class="accordion-item">
-                                            <h2 class="accordion-header" id="negative-heading-{{ forloop.counter }}">
-                                                <button class="accordion-button" type="button" 
-                                                        data-bs-toggle="collapse" data-bs-target="#negative-collapse-{{ forloop.counter }}"
-                                                        aria-expanded="true">
-                                                    <div class="d-flex justify-content-between align-items-center w-100 me-3">
-                                                        <span class="fw-semibold text-danger">
-                                                            スコア: {{ sentence.score|floatformat:2 }}
-                                                        </span>
-                                                        <span class="small text-muted">
-                                                            {% if sentence.score < -0.7 %}
-                                                                強いネガティブ
-                                                            {% elif sentence.score < -0.4 %}
-                                                                中程度のネガティブ
-                                                            {% else %}
-                                                                軽微なネガティブ
-                                                            {% endif %}
-                                                        </span>
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button collapsed" type="button" 
+                                                        data-bs-toggle="collapse" data-bs-target="#neg-{{ forloop.counter }}">
+                                                    <div class="d-flex justify-content-between w-100 me-3">
+                                                        <span class="fw-semibold">スコア: {{ sentence.score|floatformat:2 }}</span>
+                                                        <span class="small text-muted">{{ forloop.counter }}件目</span>
                                                     </div>
                                                 </button>
                                             </h2>
-                                            <div id="negative-collapse-{{ forloop.counter }}" 
-                                                 class="accordion-collapse collapse show"
-                                                 data-bs-parent="#negativeAccordion">
+                                            <div id="neg-{{ forloop.counter }}" class="accordion-collapse collapse">
                                                 <div class="accordion-body">
                                                     <div class="mb-3">
                                                         {% if sentence.highlighted_text %}
                                                             {{ sentence.highlighted_text|safe }}
-                                                        {% elif sentence.keywords %}
-                                                            {% with highlighted_text=sentence.text|highlight_all_keywords:sentence.keywords %}
-                                                                {{ highlighted_text|safe }}
-                                                            {% endwith %}
                                                         {% else %}
                                                             {{ sentence.text }}
                                                         {% endif %}
                                                     </div>
-                                                    
                                                     {% if sentence.keywords %}
                                                         <div class="small text-muted">
                                                             <strong>検出キーワード:</strong>
-                                                            <div class="mt-1">
-                                                                {% for keyword in sentence.keywords %}
-                                                                    <span class="badge bg-danger me-1 mb-1">{{ keyword }}</span>
-                                                                {% endfor %}
-                                                            </div>
+                                                            {% for keyword in sentence.keywords %}
+                                                                <span class="badge bg-danger me-1">{{ keyword }}</span>
+                                                            {% endfor %}
                                                         </div>
                                                     {% endif %}
                                                 </div>
                                             </div>
                                         </div>
                                     {% endfor %}
-                                    
-                                    {% if samples.negative|length > 10 %}
-                                        <div class="text-center mt-3">
-                                            <small class="text-muted">
-                                                他{{ samples.negative|length|add:"-10" }}件のネガティブ文章があります
-                                            </small>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        {% endif %}
-                        
-                        {% if not samples.positive and not samples.negative %}
-                            <div class="text-center py-4">
-                                <i class="fas fa-search fa-3x text-muted mb-3"></i>
-                                <h5 class="text-muted">特徴的な文章は検出されませんでした</h5>
-                                <p class="text-muted">感情スコアが閾値を超える文章がありませんでした</p>
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-            {% endwith %}
-        {% endif %}
-        <!-- User Insights -->
-        {% include 'earnings_analysis/ads/ad_responsive.html' %}
-        <div class="analysis-card card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-lightbulb me-2"></i>分析から読み取れる見解
-                </h5>
-            </div>
-            <div class="card-body">
-                {% if formatted_insights %}
-                    <!-- Market Implications -->
-                    {% if formatted_insights.market_implications %}
-                        <div class="insight-section border rounded p-3 mb-4" style="background-color: #e7f3ff; border-color: #0d6efd !important;">
-                            <h6 class="text-primary mb-3">
-                                <i class="fas fa-chart-line me-2"></i>市場への影響分析
-                            </h6>
-                            {% if formatted_insights.market_implications.sentiment %}
-                                <div class="mb-2">
-                                    <strong class="text-dark">市場の反応予想:</strong> 
-                                    <span class="text-body">{{ formatted_insights.market_implications.sentiment }}</span>
                                 </div>
                             {% endif %}
-                            {% if formatted_insights.market_implications.stock_impact %}
-                                <div class="mb-0">
-                                    <strong class="text-dark">株価への影響:</strong> 
-                                    <span class="text-body">{{ formatted_insights.market_implications.stock_impact }}</span>
+                            
+                            {% if not samples.positive and not samples.negative %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">特徴的な文章は検出されませんでした</h5>
                                 </div>
                             {% endif %}
-                        </div>
+                        {% endwith %}
                     {% endif %}
-                    
-                    <!-- Strategy Reading -->
-                    {% if formatted_insights.strategy_reading %}
-                        <div class="insight-section border rounded p-3 mb-4" style="background-color: #e8f5e8; border-color: #198754 !important;">
-                            <h6 class="text-success mb-3">
-                                <i class="fas fa-chess me-2"></i>経営戦略の読み取り
-                            </h6>
-                            {% if formatted_insights.strategy_reading.management_stance %}
-                                <div class="mb-2">
-                                    <strong class="text-dark">経営スタンス:</strong> 
-                                    <span class="text-body">{{ formatted_insights.strategy_reading.management_stance }}</span>
-                                </div>
-                            {% endif %}
-                            {% if formatted_insights.strategy_reading.strategic_direction %}
-                                <div class="mb-0">
-                                    <strong class="text-dark">戦略的方向性:</strong> 
-                                    <span class="text-body">{{ formatted_insights.strategy_reading.strategic_direction }}</span>
-                                </div>
-                            {% endif %}
-                        </div>
-                    {% endif %}
-                    
-                    <!-- Risk Assessment -->
-                    {% if formatted_insights.risk_assessment %}
-                        <div class="insight-section border rounded p-3 mb-4" style="background-color: #fff3cd; border-color: #ffc107 !important;">
-                            <h6 class="text-warning mb-3">
-                                <i class="fas fa-shield-alt me-2"></i>リスク評価
-                            </h6>
-                            <div class="mb-2">
-                                <strong class="text-dark">リスクレベル:</strong> 
-                                {% if formatted_insights.risk_assessment.risk_level == 'high' %}
-                                    <span class="badge bg-danger ms-2">高</span>
-                                {% elif formatted_insights.risk_assessment.risk_level == 'medium' %}
-                                    <span class="badge badge-warning ms-2">中</span>
-                                {% else %}
-                                    <span class="badge bg-success ms-2">低</span>
-                                {% endif %}
-                            </div>
-                            {% if formatted_insights.risk_assessment.identified_risks %}
-                                <div class="mb-0">
-                                    <strong class="text-dark">特定されたリスク:</strong>
-                                    <ul class="mt-2 mb-0">
-                                        {% for risk in formatted_insights.risk_assessment.identified_risks %}
-                                            <li class="text-body">{{ risk }}</li>
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                            {% endif %}
-                        </div>
-                    {% endif %}
-                    
-                {% else %}
-                    <!-- Fallback insights -->
-                    <div class="insight-section border rounded p-3 mb-4" style="background-color: #e7f3ff; border-color: #0d6efd !important;">
-                        <h6 class="text-primary mb-3">
-                            <i class="fas fa-chart-line me-2"></i>全体的な傾向
-                        </h6>
-                        {% if session.sentiment_label == 'positive' %}
-                            <div class="mb-2">
-                                <span class="text-body">この書類からは<strong class="text-success">前向きな経営姿勢</strong>が読み取れます。</span>
-                            </div>
-                            {% if session.overall_score > 0.6 %}
-                                <div class="mb-0">
-                                    <span class="text-body">特に、成長への意欲や収益改善への取り組みが強く表現されており、投資家にとって安心感を与える内容となっています。</span>
-                                </div>
-                            {% endif %}
-                        {% elif session.sentiment_label == 'negative' %}
-                            <div class="mb-2">
-                                <span class="text-body">この書類からは<strong class="text-warning">慎重な経営スタンス</strong>や<strong class="text-danger">課題への言及</strong>が多く見られます。</span>
-                            </div>
-                            {% if session.overall_score < -0.6 %}
-                                <div class="mb-0">
-                                    <span class="text-body">リスクや困難な状況についての記述が目立ちますが、これは企業の透明性の表れとも捉えられます。</span>
-                                </div>
-                            {% endif %}
-                        {% else %}
-                            <div class="mb-0">
-                                <span class="text-body">この書類は<strong class="text-info">バランスの取れた内容</strong>となっており、客観的な報告が主体となっています。</span>
-                            </div>
-                        {% endif %}
-                    </div>
-                {% endif %}
-                
-                <!-- Reliability Assessment -->
-                {% if reliability_score %}
-                    <div class="insight-section border rounded p-3 mb-4" style="background-color: {% if reliability_score.level == 'very_high' or reliability_score.level == 'high' %}#e8f5e8{% elif reliability_score.level == 'medium' %}#fff3cd{% else %}#f8f9fa{% endif %}; border-color: {% if reliability_score.level == 'very_high' or reliability_score.level == 'high' %}#198754{% elif reliability_score.level == 'medium' %}#ffc107{% else %}#6c757d{% endif %} !important;">
-                        <h6 class="alert-heading {% if reliability_score.level == 'very_high' or reliability_score.level == 'high' %}text-success{% elif reliability_score.level == 'medium' %}text-warning{% else %}text-secondary{% endif %} mb-3">
-                            <i class="fas fa-shield-check me-2"></i>分析の信頼性評価
-                        </h6>
-                        <div class="mb-2">
-                            <span class="text-body">{{ reliability_score.description }}</span>
-                        </div>
-                        <div class="progress mb-2" style="height: 10px;">
-                            <div class="progress-bar {% if reliability_score.score >= 80 %}bg-success{% elif reliability_score.score >= 60 %}bg-info{% elif reliability_score.score >= 40 %}bg-warning{% else %}bg-secondary{% endif %}" 
-                                style="width: {{ reliability_score.score|score_percentage }}%">
-                            </div>
-                        </div>
-                        {% if reliability_score.factors %}
-                            <div class="mb-0">
-                                <small class="text-muted">根拠: {{ reliability_score.factors|join:"、" }}</small>
-                            </div>
-                        {% endif %}
-                    </div>
-                {% endif %}
-                
-                <!-- Important Notice -->
-                <div class="insight-section border rounded p-3" style="background-color: #e7f3ff; border-color: #0d6efd !important;">
-                    <div class="d-flex align-items-start">
-                        <i class="fas fa-exclamation-circle text-primary me-2 mt-1"></i>
-                        <div>
-                            <strong class="text-dark">注意事項:</strong> 
-                            <span class="text-body">この感情分析は文書の表現を機械的に分析したものです。投資判断や経営判断を行う際は、財務データや市場環境など他の要因も総合的に検討してください。</span>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
+
+        {% include 'earnings_analysis/ads/ad_responsive.html' %}
     </div>
     
-    <!-- Sidebar -->
+    <!-- サイドバー -->
     <div class="col-12 col-lg-4">
-        <!-- Statistics -->
+        <!-- 統計情報 -->
         {% if session.analysis_result.statistics %}
-            {% with stats=session.analysis_result.statistics %}
-                <div class="analysis-card card mb-4">
-                    <div class="card-header">
-                        <h6 class="mb-0">
-                            <i class="fas fa-chart-bar me-2"></i>分析統計
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="row text-center g-2">
-                            <div class="col-6">
-                                <div class="border rounded p-2">
-                                    <div class="h6 text-primary mb-1">{{ stats.total_words_analyzed }}</div>
-                                    <div class="small text-muted">分析語数</div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="border rounded p-2">
-                                    <div class="h6 text-info mb-1">{{ stats.context_patterns_found }}</div>
-                                    <div class="small text-muted">文脈パターン</div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="border rounded p-2">
-                                    <div class="h6 text-success mb-1">{{ stats.basic_words_found }}</div>
-                                    <div class="small text-muted">基本語彙</div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="border rounded p-2">
-                                    <div class="h6 text-secondary mb-1">{{ stats.sentences_analyzed }}</div>
-                                    <div class="small text-muted">分析文数</div>
-                                </div>
-                            </div>
+            <div class="analysis-card card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>分析統計
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-value">{{ session.analysis_result.statistics.total_words_analyzed }}</div>
+                            <div class="stat-label">分析語数</div>
                         </div>
-                        
-                        <div class="small text-muted mt-3">
-                            <div class="mb-2">
-                                <strong>文脈パターン:</strong> 「減収の改善」のような複合表現
-                            </div>
-                            <div>
-                                <strong>基本語彙:</strong> 辞書に登録された個別の語
-                            </div>
+                        <div class="stat-box">
+                            <div class="stat-value">{{ session.analysis_result.statistics.context_patterns_found }}</div>
+                            <div class="stat-label">文脈パターン</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value">{{ session.analysis_result.statistics.basic_words_found }}</div>
+                            <div class="stat-label">基本語彙</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value">{{ session.analysis_result.statistics.sentences_analyzed }}</div>
+                            <div class="stat-label">分析文数</div>
                         </div>
                     </div>
                 </div>
-            {% endwith %}
+            </div>
         {% endif %}
         
-        <!-- Actions -->
+        <!-- アクション -->
         <div class="analysis-card card">
             <div class="card-header">
                 <h6 class="mb-0">
@@ -1391,42 +809,29 @@
                 </h6>
             </div>
             <div class="card-body">
-                <!-- 有効期限の注意喚起 -->
-                {% if time_remaining %}
-                    {% if time_remaining.total_seconds < 3600 %}
-                        <div class="alert alert-warning py-2 mb-3">
-                            <small>
-                                <i class="fas fa-exclamation-triangle me-1"></i>
-                                <strong>この結果は約{{ time_remaining.seconds|floatformat:0|div:60 }}分後に期限切れとなります</strong>
-                            </small>
-                        </div>
-                    {% elif time_remaining.total_seconds < 7200 %}
-                        <div class="alert alert-info py-2 mb-3">
-                            <small>
-                                <i class="fas fa-info-circle me-1"></i>
-                                この結果は{{ session.expires_at|date:"H:i" }}に期限切れとなります
-                            </small>
-                        </div>
-                    {% endif %}
+                {% if time_remaining and time_remaining.total_seconds < 3600 %}
+                    <div class="alert alert-warning py-2 mb-3">
+                        <small>
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            この結果は約{{ time_remaining.seconds|floatformat:0|div:60 }}分後に期限切れとなります
+                        </small>
+                    </div>
                 {% endif %}
                 
-                <div class="action-buttons">
-                    <a href="{% url 'copomo:sentiment-analysis' document.doc_id %}" 
-                    class="btn btn-primary w-100">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'copomo:sentiment-analysis' document.doc_id %}" class="btn btn-primary">
                         <i class="fas fa-redo me-1"></i>再分析実行
                     </a>
-                    <a href="{% url 'copomo:financial-analysis' document.doc_id %}" 
-                    class="btn btn-outline-primary w-100">
+                    <a href="{% url 'copomo:financial-analysis' document.doc_id %}" class="btn btn-outline-primary">
                         <i class="fas fa-chart-pie me-1"></i>財務分析も実行
                     </a>
-                    <a href="{% url 'copomo:document-detail-ui' document.doc_id %}" 
-                    class="btn btn-outline-secondary w-100">
+                    <a href="{% url 'copomo:document-detail-ui' document.doc_id %}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-1"></i>書類詳細に戻る
                     </a>
-                    <button type="button" class="btn btn-outline-info w-100" onclick="shareResult()">
+                    <button type="button" class="btn btn-outline-info" onclick="shareResult()">
                         <i class="fas fa-share me-1"></i>結果を共有
                     </button>
-                    <button type="button" class="btn btn-outline-success w-100" onclick="exportSummary()">
+                    <button type="button" class="btn btn-outline-success" onclick="exportSummary()">
                         <i class="fas fa-download me-1"></i>サマリー保存
                     </button>
                 </div>
@@ -1435,63 +840,41 @@
     </div>
 </div>
 
-<!-- 語彙詳細モーダル（モバイル最適化版） -->
-<div class="modal fade" id="wordDetailModal" tabindex="-1" aria-labelledby="wordDetailModalLabel" aria-hidden="true">
+<!-- 語彙詳細モーダル -->
+<div class="modal fade" id="wordDetailModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content word-detail-modal">
-            <div class="modal-header">
-                <h5 class="modal-title" id="wordDetailModalLabel">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
                     <i class="fas fa-search me-2"></i>語彙詳細分析
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <!-- 語彙基本情報 -->
                 <div class="row">
                     <div class="col-md-6">
                         <div class="text-center mb-3">
-                            <h3 class="mb-0" id="selected-word">語彙</h3>
-                            <div class="mt-2">
-                                <span class="badge fs-6" id="word-sentiment-badge">感情</span>
-                            </div>
+                            <h3 id="selected-word">語彙</h3>
+                            <span class="badge fs-6" id="word-sentiment-badge">感情</span>
                         </div>
-                        
                         <div class="row text-center mb-3">
                             <div class="col-6">
-                                <div class="border rounded p-3">
-                                    <div class="h4 mb-1 text-primary" id="word-frequency">0</div>
-                                    <div class="small text-muted">出現回数</div>
+                                <div class="stat-box">
+                                    <div class="stat-value" id="word-frequency">0</div>
+                                    <div class="stat-label">出現回数</div>
                                 </div>
                             </div>
                             <div class="col-6">
-                                <div class="border rounded p-3">
-                                    <div class="h4 mb-1 text-info" id="word-score">0.0</div>
-                                    <div class="small text-muted">感情スコア</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- 語彙タイプ -->
-                        <div class="mb-3">
-                            <h6>語彙分類</h6>
-                            <span class="badge bg-secondary" id="word-type">分類</span>
-                        </div>
-                        
-                        <!-- 影響度 -->
-                        <div class="mb-3">
-                            <h6>影響度</h6>
-                            <div class="progress">
-                                <div class="progress-bar" id="word-impact-bar" role="progressbar" style="width: 0%">
-                                    <span id="word-impact-text">軽微</span>
+                                <div class="stat-box">
+                                    <div class="stat-value" id="word-score">0.0</div>
+                                    <div class="stat-label">感情スコア</div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- 出現文脈 -->
                     <div class="col-md-6">
                         <h6>出現文脈</h6>
-                        <div class="word-context-examples" id="word-context-list">
+                        <div id="word-context-list" style="max-height: 300px; overflow-y: auto;">
                             <div class="text-center text-muted py-3">
                                 <i class="fas fa-spinner fa-spin"></i>
                                 <div class="mt-2">文脈を検索中...</div>
@@ -1500,7 +883,6 @@
                     </div>
                 </div>
             </div>
-            {% include 'earnings_analysis/ads/ad_responsive.html' %}
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="fas fa-times me-1"></i>閉じる
@@ -1512,358 +894,136 @@
 {% endblock %}
 
 {% block extra_js %}
-
-<!-- WordCloud2.js CDN -->
-
-<!-- WordCloud2.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-<!-- kuromoji.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js"></script>
 
 <script>
 // ========================================
-// ワードクラウド関連変数とコード（モバイル最適化版）
+// データと変数
 // ========================================
-let wordcloudInstance = null;
-let currentWordcloudData = [];
-let currentDisplayMode = 'sentiment'; // 'sentiment' or 'all'
-let tokenizer = null; // kuromoji tokenizer
-let isWordcloudLocked = false; // モバイル用ロック機能
-let wordcloudGenerationInProgress = false; // 生成中フラグ
-
-// 実際の分析データを取得
+const actualScore = {{ session.overall_score }};
+const sentimentLabel = '{{ session.sentiment_label }}';
 const actualAnalysisData = {
     keyword_frequency_data: {{ session.analysis_result.keyword_frequency_data|safe|default:'{}' }},
     statistics: {{ session.analysis_result.statistics|safe|default:'{}' }},
-    sample_sentences: {{ session.analysis_result.sample_sentences|safe|default:'{}' }},
-    keyword_analysis: {{ session.analysis_result.keyword_analysis|safe|default:'{}' }}
+    sample_sentences: {{ session.analysis_result.sample_sentences|safe|default:'{}' }}
 };
 
-// ワードクラウドデータ構造
-const actualWordcloudData = {
-    sentiment: [],  // 感情語彙のみ
-    all: [],        // 全語彙
-    maxSize: 1,
-    stats: {}
-};
+let wordcloudInstance = null;
+let currentWordcloudData = [];
+let currentDisplayMode = 'sentiment';
+let tokenizer = null;
 
 // ========================================
-// 語彙詳細モーダル関連（関連語彙・強調機能削除版）
+// タブ切り替え機能
 // ========================================
-let selectedWordData = null;
-let wordDetailModal = null;
-
-function showWordDetail(wordText) {
-    // console.log('語彙詳細表示:', wordText);
-    
-    // 語彙データを検索
-    selectedWordData = findWordData(wordText);
-    
-    if (!selectedWordData) {
-        console.warn('語彙データが見つかりません:', wordText);
-        showToast('語彙の詳細情報が見つかりませんでした', 'warning');
-        return;
-    }
-    
-    // モーダルに情報を設定
-    populateWordDetailModal(selectedWordData);
-    
-    // 文脈を検索して表示
-    findWordContexts(wordText);
-    
-    // モーダル表示
-    if (!wordDetailModal) {
-        wordDetailModal = new bootstrap.Modal(document.getElementById('wordDetailModal'));
-    }
-    wordDetailModal.show();
-}
-
-function findWordData(wordText) {
-    // 現在表示中のワードクラウドデータから検索
-    for (const word of currentWordcloudData) {
-        if (word.text === wordText) {
-            return word;
-        }
-    }
-    
-    // 元の分析データからも検索
-    const allFrequencyData = [
-        ...(actualAnalysisData.keyword_frequency_data.positive || []),
-        ...(actualAnalysisData.keyword_frequency_data.negative || []),
-        ...(actualAnalysisData.keyword_frequency_data.neutral || [])
-    ];
-    
-    for (const item of allFrequencyData) {
-        if (item.word === wordText) {
-            return {
-                text: item.word,
-                size: item.count,
-                sentiment: item.score > 0 ? 'positive' : item.score < 0 ? 'negative' : 'neutral',
-                score: item.score,
-                type: item.type || '基本語彙',
-                color: item.score > 0 ? '#28a745' : item.score < 0 ? '#dc3545' : '#6c757d'
-            };
-        }
-    }
-    
-    return null;
-}
-
-function populateWordDetailModal(wordData) {
-    // 基本情報設定
-    document.getElementById('selected-word').textContent = wordData.text;
-    document.getElementById('word-frequency').textContent = wordData.size;
-    document.getElementById('word-score').textContent = wordData.score ? wordData.score.toFixed(2) : '0.0';
-    document.getElementById('word-type').textContent = wordData.type || '基本語彙';
-    
-    // 感情バッジ設定
-    const sentimentBadge = document.getElementById('word-sentiment-badge');
-    const sentimentText = wordData.sentiment === 'positive' ? 'ポジティブ' : 
-                         wordData.sentiment === 'negative' ? 'ネガティブ' : '中立';
-    const sentimentClass = wordData.sentiment === 'positive' ? 'bg-success' : 
-                          wordData.sentiment === 'negative' ? 'bg-danger' : 'bg-secondary';
-    
-    sentimentBadge.textContent = sentimentText;
-    sentimentBadge.className = `badge fs-6 ${sentimentClass}`;
-    
-    // 影響度バー設定
-    const impactBar = document.getElementById('word-impact-bar');
-    const impactText = document.getElementById('word-impact-text');
-    
-    const absScore = Math.abs(wordData.score || 0);
-    let impactLevel, impactPercentage, impactColor;
-    
-    if (absScore >= 0.8) {
-        impactLevel = '非常に強い';
-        impactPercentage = 100;
-        impactColor = 'bg-danger';
-    } else if (absScore >= 0.6) {
-        impactLevel = '強い';
-        impactPercentage = 80;
-        impactColor = 'bg-warning';
-    } else if (absScore >= 0.4) {
-        impactLevel = '中程度';
-        impactPercentage = 60;
-        impactColor = 'bg-info';
-    } else if (absScore >= 0.2) {
-        impactLevel = '軽微';
-        impactPercentage = 40;
-        impactColor = 'bg-success';
-    } else {
-        impactLevel = '微弱';
-        impactPercentage = 20;
-        impactColor = 'bg-secondary';
-    }
-    
-    impactText.textContent = impactLevel;
-    impactBar.className = `progress-bar ${impactColor}`;
-    impactBar.style.width = `${impactPercentage}%`;
-}
-
-function findWordContexts(wordText) {
-    // console.log('語彙の文脈検索開始:', wordText);
-    
-    const contextList = document.getElementById('word-context-list');
-    
-    // ローディング表示
-    contextList.innerHTML = `
-        <div class="text-center text-muted py-3">
-            <i class="fas fa-spinner fa-spin"></i>
-            <div class="mt-2">文脈を検索中...</div>
-        </div>
-    `;
-    
-    // サンプル文章から該当語彙を含む文を検索
-    const contexts = [];
-    const sentences = [
-        ...(actualAnalysisData.sample_sentences.positive || []),
-        ...(actualAnalysisData.sample_sentences.negative || [])
-    ];
-    
-    sentences.forEach(sentence => {
-        if (sentence.text && sentence.text.includes(wordText)) {
-            // 語彙をハイライト
-            const highlightedText = sentence.text.replace(
-                new RegExp(wordText, 'g'),
-                `<span class="highlighted-word">${wordText}</span>`
-            );
-            
-            contexts.push({
-                text: highlightedText,
-                score: sentence.score || 0,
-                sentiment: sentence.score > 0 ? 'positive' : sentence.score < 0 ? 'negative' : 'neutral'
-            });
-        }
+document.querySelectorAll('.analysis-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        // タブのアクティブ状態切り替え
+        document.querySelectorAll('.analysis-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        
+        // コンテンツパネルの表示切り替え
+        const targetTab = this.dataset.tab;
+        document.querySelectorAll('.tab-content-panel').forEach(panel => {
+            panel.classList.remove('active');
+        });
+        document.getElementById(targetTab).classList.add('active');
     });
+});
+
+// ========================================
+// スコアアニメーション
+// ========================================
+function animateScoreArc() {
+    const arc = document.getElementById('score-arc');
+    const radius = 80;
+    const circumference = 2 * Math.PI * radius;
     
-    // console.log('検索された文脈数:', contexts.length);
+    let strokeColor;
+    if (actualScore > 0.4) strokeColor = '#198754';
+    else if (actualScore > 0.15) strokeColor = '#0dcaf0';
+    else if (actualScore >= -0.15) strokeColor = '#6c757d';
+    else if (actualScore >= -0.4) strokeColor = '#fd7e14';
+    else strokeColor = '#dc3545';
     
-    // 結果表示
+    arc.style.stroke = strokeColor;
+    
+    const percentage = (actualScore + 1) / 2;
+    const offset = circumference - (percentage * circumference);
+    
     setTimeout(() => {
-        if (contexts.length === 0) {
-            contextList.innerHTML = `
-                <div class="text-center text-muted py-3">
-                    <i class="fas fa-search"></i>
-                    <div class="mt-2">この語彙の文脈は見つかりませんでした</div>
-                </div>
-            `;
-        } else {
-            // 改善案2: シンプル + 番号付きのHTML生成
-            const contextHTML = contexts.slice(0, 5).map((context, index) => {
-                const sentimentClass = context.sentiment === 'positive' ? 'border-success' : 
-                                     context.sentiment === 'negative' ? 'border-danger' : 'border-secondary';
-                const iconClass = context.sentiment === 'positive' ? 'fa-smile text-success' : 
-                                 context.sentiment === 'negative' ? 'fa-frown text-danger' : 'fa-meh text-secondary';
-                const numberBg = context.sentiment === 'positive' ? 'bg-success' : 
-                                context.sentiment === 'negative' ? 'bg-danger' : 'bg-secondary';
-                const sentimentLabel = context.sentiment === 'positive' ? 'ポジティブ' : 
-                                      context.sentiment === 'negative' ? 'ネガティブ' : '中立';
-                
-                return `
-                    <div class="context-item ${sentimentClass}">
-                        <div class="context-number">
-                            <span class="context-index">${index + 1}</span>
-                            <i class="fas ${iconClass} ms-2"></i>
-                        </div>
-                        <div class="context-content">
-                            <div class="context-text">${context.text}</div>
-                            <div class="context-meta">
-                                <small class="text-muted">
-                                    <i class="fas fa-chart-bar me-1"></i>
-                                    感情スコア: ${context.score.toFixed(2)}
-                                </small>
-                                <small class="text-muted">
-                                    ${sentimentLabel}な文脈
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-                    ${index < contexts.slice(0, 5).length - 1 ? '<hr class="context-divider">' : ''}
-                `;
-            }).join('');
-            
-            contextList.innerHTML = contextHTML;
-            
-            // 5件を超える場合の表示
-            if (contexts.length > 5) {
-                contextList.innerHTML += `
-                    <div class="text-center mt-3 pt-3 border-top">
-                        <small class="text-muted">
-                            <i class="fas fa-plus-circle me-1"></i>
-                            他${contexts.length - 5}件の文脈があります
-                        </small>
-                    </div>
-                `;
-            }
-        }
+        arc.style.strokeDashoffset = offset;
     }, 500);
 }
 
+function animateScoreNumber() {
+    const scoreElement = document.getElementById('animated-score');
+    const duration = 2000;
+    const startTime = performance.now();
+    
+    function updateScore(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easedProgress = 1 - Math.pow(1 - progress, 3);
+        const currentScore = actualScore * easedProgress;
+        
+        scoreElement.textContent = currentScore.toFixed(3);
+        
+        if (progress < 1) {
+            requestAnimationFrame(updateScore);
+        }
+    }
+    
+    requestAnimationFrame(updateScore);
+}
+
+function animatePositionIndicator() {
+    const indicator = document.getElementById('score-position');
+    const percentage = (actualScore + 1) / 2;
+    const leftPosition = percentage * 100;
+    
+    setTimeout(() => {
+        indicator.style.left = leftPosition + '%';
+    }, 1000);
+}
+
 // ========================================
-// ワードクラウド機能（モバイル最適化版）
+// ワードクラウド機能
 // ========================================
+const actualWordcloudData = {
+    sentiment: [],
+    all: []
+};
 
-// モバイル判定関数
-function isMobileDevice() {
-    return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-}
-
-function isSmallMobile() {
-    return window.innerWidth <= 576;
-}
-
-// kuromoji初期化
-function initializeKuromoji() {
-    // console.log('kuromoji.js初期化開始...');
-    
-    const canvas = document.getElementById('wordcloud-canvas');
-    if (canvas) {
-        canvas.innerHTML = `
-            <div class="d-flex justify-content-center align-items-center h-100">
-                <div class="text-center">
-                    <div class="spinner-border text-primary mb-3" role="status">
-                        <span class="visually-hidden">初期化中...</span>
-                    </div>
-                    <div class="text-muted">
-                        <div>ワードクラウドを初期化しています...</div>
-                        <small>少々お待ちください</small>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-    
-    if (typeof kuromoji === 'undefined') {
-        console.warn('kuromoji.jsが利用できません。簡易版を使用します。');
-        tokenizer = null;
-        initializeWordcloud();
-        return;
-    }
-    
-    let initTimeout = setTimeout(() => {
-        console.warn('kuromoji初期化タイムアウト - 簡易版で続行');
-        tokenizer = null;
-        initializeWordcloud();
-    }, 10000);
-    
-    try {
-        kuromoji.builder({ 
-            dicPath: "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/" 
-        }).build(function (err, _tokenizer) {
-            clearTimeout(initTimeout);
-            
-            if (err) {
-                console.warn('kuromoji初期化エラー:', err);
-                // console.log('簡易版で続行します');
-                tokenizer = null;
-                initializeWordcloud();
-                return;
-            }
-            
-            // console.log('kuromoji.js初期化完了');
-            tokenizer = _tokenizer;
-            initializeWordcloud();
-        });
-    } catch (error) {
-        clearTimeout(initTimeout);
-        console.warn('kuromoji.js初期化で例外発生:', error);
-        // console.log('簡易版で続行します');
-        tokenizer = null;
-        initializeWordcloud();
-    }
-}
-
-// ワードクラウド初期化
 function initializeWordcloud() {
-    // console.log('ワードクラウド初期化開始');
-    // console.log('分析データ:', actualAnalysisData);
+    console.log('ワードクラウド初期化開始');
     
     // 感情語彙のみのデータを作成
     actualWordcloudData.sentiment = convertToWordcloudData(actualAnalysisData.keyword_frequency_data || {}, false);
+    currentWordcloudData = actualWordcloudData.sentiment;
     
-    // 全語彙のデータは遅延生成（クリック時）
-    actualWordcloudData.all = [];
+    console.log('感情語彙データ数:', actualWordcloudData.sentiment.length);
     
-    // console.log('感情語彙数:', actualWordcloudData.sentiment.length);
-    
-    // 初期表示は感情語彙のみ
-    currentDisplayMode = 'sentiment';
-    applyCurrentFilters();
+    // 初期表示
+    if (actualWordcloudData.sentiment.length > 0) {
+        generateWordcloud(actualWordcloudData.sentiment);
+    } else {
+        showWordcloudError('表示する語彙がありません');
+    }
     
     // イベントリスナー設定
     setupWordcloudEvents();
 }
 
-// データをワードクラウド用に変換
 function convertToWordcloudData(frequencyData, includeAll = false) {
     const wordcloudData = [];
     const sentimentWords = new Set();
     
-    // console.log('convertToWordcloudData開始:', { frequencyData, includeAll });
+    console.log('convertToWordcloudData:', { frequencyData, includeAll });
     
     if (frequencyData.positive) {
-        // console.log('ポジティブ語彙数:', frequencyData.positive.length);
+        console.log('ポジティブ語彙数:', frequencyData.positive.length);
         frequencyData.positive.forEach(item => {
             sentimentWords.add(item.word);
             wordcloudData.push({
@@ -1877,7 +1037,7 @@ function convertToWordcloudData(frequencyData, includeAll = false) {
     }
     
     if (frequencyData.negative) {
-        // console.log('ネガティブ語彙数:', frequencyData.negative.length);
+        console.log('ネガティブ語彙数:', frequencyData.negative.length);
         frequencyData.negative.forEach(item => {
             sentimentWords.add(item.word);
             wordcloudData.push({
@@ -1890,23 +1050,13 @@ function convertToWordcloudData(frequencyData, includeAll = false) {
         });
     }
     
-    if (includeAll) {
-        let allWords;
-        if (tokenizer) {
-            // console.log('kuromojiで全語彙抽出');
-            allWords = extractAllWordsFromSentences();
-        } else {
-            // console.log('簡易版で全語彙抽出');
-            allWords = extractAllWordsSimple();
-        }
-        
-        // console.log('全語彙抽出結果:', Object.keys(allWords).length, '語');
-        
-        Object.entries(allWords).forEach(([word, count]) => {
-            if (!sentimentWords.has(word) && count >= 1) {
+    if (frequencyData.neutral && includeAll) {
+        console.log('中立語彙数:', frequencyData.neutral.length);
+        frequencyData.neutral.forEach(item => {
+            if (!sentimentWords.has(item.word)) {
                 wordcloudData.push({
-                    text: word,
-                    size: count,
+                    text: item.word,
+                    size: item.count,
                     sentiment: "neutral",
                     score: 0,
                     color: "#6c757d"
@@ -1917,8 +1067,8 @@ function convertToWordcloudData(frequencyData, includeAll = false) {
     
     wordcloudData.sort((a, b) => b.size - a.size);
     
-    // console.log('最終的なワードクラウドデータ数:', wordcloudData.length);
-    // console.log('上位10語:', wordcloudData.slice(0, 10).map(w => `${w.text}(${w.size}回)`));
+    console.log('最終的なワードクラウドデータ数:', wordcloudData.length);
+    console.log('上位5語:', wordcloudData.slice(0, 5).map(w => `${w.text}(${w.size}回)`));
     
     if (wordcloudData.length === 0) {
         return [{
@@ -1933,9 +1083,8 @@ function convertToWordcloudData(frequencyData, includeAll = false) {
     return wordcloudData;
 }
 
-// ワードクラウド生成（モバイル最適化版）
 function generateWordcloud(wordsData) {
-    // console.log('ワードクラウド生成開始:', wordsData.length, '語');
+    console.log('ワードクラウド生成開始:', wordsData.length, '語');
     
     const canvas = document.getElementById('wordcloud-canvas');
     if (!canvas) {
@@ -1948,563 +1097,124 @@ function generateWordcloud(wordsData) {
         return;
     }
     
-    const isMobile = isMobileDevice();
-    if (isMobile && isWordcloudLocked) {
-        // console.log('モバイルでワードクラウドがロック中 - 再生成をスキップ');
-        return;
-    }
+    // データを最大50語に制限（スタックオーバーフロー防止）
+    const limitedData = wordsData.slice(0, 50);
+    console.log('表示語彙数を制限:', limitedData.length, '語');
     
-    if (wordcloudGenerationInProgress) {
-        // console.log('ワードクラウド生成中 - 重複実行をスキップ');
-        return;
-    }
-    
-    wordcloudGenerationInProgress = true;
     canvas.innerHTML = '';
     
     try {
-        const isSmall = isSmallMobile();
+        const isMobile = window.innerWidth <= 768;
         const containerWidth = Math.floor(canvas.offsetWidth);
         let containerHeight;
         
-        // モバイル向けサイズ最適化
-        if (isSmall) {
-            containerHeight = Math.floor(Math.max(300, Math.min(containerWidth * 1.2, 400)));
-        } else if (isMobile) {
-            containerHeight = Math.floor(Math.max(350, Math.min(containerWidth * 1.3, 500)));
-        } else {
-            containerHeight = Math.floor(Math.max(400, containerWidth * 0.6));
+        if (containerWidth <= 0) {
+            console.warn('無効なキャンバス幅、デフォルト値を使用');
+            canvas.style.width = (isMobile ? '320px' : '800px');
+            canvas.style.height = (isMobile ? '350px' : '400px');
+            return;
         }
         
-        if (containerWidth <= 0 || containerHeight <= 0) {
-            console.warn('無効なキャンバスサイズ、デフォルト値を使用');
-            const defaultWidth = isMobile ? 320 : 800;
-            const defaultHeight = isMobile ? 350 : 400;
-            canvas.style.width = defaultWidth + 'px';
-            canvas.style.height = defaultHeight + 'px';
-        } else {
-            canvas.style.height = containerHeight + 'px';
-            canvas.style.width = containerWidth + 'px';
-        }
+        containerHeight = isMobile ? 
+            Math.max(350, Math.min(containerWidth * 1.2, 500)) : 
+            Math.max(400, containerWidth * 0.6);
         
-        // console.log('キャンバスサイズ:', { containerWidth, containerHeight, isMobile, isSmall });
+        canvas.style.height = containerHeight + 'px';
+        canvas.style.width = containerWidth + 'px';
         
-        const counts = wordsData.map(w => w.size);
+        console.log('キャンバスサイズ:', { containerWidth, containerHeight });
+        
+        // カウントの範囲を計算
+        const counts = limitedData.map(w => w.size);
         const minCount = Math.min(...counts);
         const maxCount = Math.max(...counts);
         
-        // console.log('カウント範囲:', { minCount, maxCount });
+        console.log('カウント範囲:', { minCount, maxCount, 比率: maxCount / minCount });
         
-        const wordcloudList = wordsData.map(word => {
+        // WordCloud用のリストを作成（フォントサイズ計算を簡素化）
+        const wordcloudList = limitedData.map(word => {
             let fontSize;
             
             if (maxCount === minCount) {
-                fontSize = isMobile ? 18 : 28;
+                // 全て同じカウントの場合
+                fontSize = isMobile ? 16 : 24;
             } else {
+                // 相対的な位置を計算（0-1の範囲）
                 const relativePosition = (word.size - minCount) / (maxCount - minCount);
                 
-                let scaledValue;
-                if (maxCount / minCount > 10) {
-                    scaledValue = Math.log10(1 + relativePosition * 9);
-                } else {
-                    scaledValue = relativePosition;
-                }
+                // フォントサイズの範囲を設定（控えめに）
+                const minFontSize = isMobile ? 12 : 14;
+                const maxFontSize = isMobile ? 36 : 48;  // 最大値を抑える
                 
-                let minFontSize, maxFontSize;
-                
-                if (isSmall) {
-                    minFontSize = 10;
-                    maxFontSize = Math.min(40, Math.floor(containerWidth / 10));
-                } else if (isMobile) {
-                    minFontSize = 12;
-                    maxFontSize = Math.min(50, Math.floor(containerWidth / 8));
-                } else {
-                    minFontSize = 14;
-                    maxFontSize = Math.min(100, Math.floor(containerWidth / 10));
-                }
-                
-                fontSize = minFontSize + (maxFontSize - minFontSize) * scaledValue;
-                
-                if (isMobile) {
-                    if (relativePosition > 0.8) {
-                        fontSize *= 1.02;
-                    }
-                } else {
-                    if (relativePosition > 0.8) {
-                        fontSize *= 1.1;
-                    } else if (relativePosition > 0.6) {
-                        fontSize *= 1.05;
-                    }
-                }
+                // 線形スケーリング
+                fontSize = minFontSize + (maxFontSize - minFontSize) * relativePosition;
             }
             
-            let minLimit, maxLimit;
-            if (isSmall) {
-                minLimit = 10;
-                maxLimit = Math.min(35, Math.floor(containerHeight / 15));
-            } else if (isMobile) {
-                minLimit = 12;
-                maxLimit = Math.min(45, Math.floor(containerHeight / 12));
-            } else {
-                minLimit = 14;
-                maxLimit = Math.min(100, Math.floor(containerHeight / 10));
-            }
+            // フォントサイズを整数に丸める
+            fontSize = Math.floor(Math.max(12, Math.min(fontSize, 60)));
             
-            fontSize = Math.floor(Math.max(minLimit, Math.min(fontSize, maxLimit)));
-            
-            if (fontSize <= 0 || !isFinite(fontSize)) {
-                fontSize = minLimit;
-            }
-            
-            return [word.text, fontSize, null, null, null, null, word.color];
+            // [word, size, rotation, rotationFit, attributes, extraData, color]
+            return [word.text, fontSize, 0, 0, null, null, word.color];
         });
         
-        // WordCloud2.js設定（モバイル最適化版）
+        console.log('WordCloudリスト作成完了:', wordcloudList.length, '語');
+        console.log('フォントサイズ範囲:', {
+            min: Math.min(...wordcloudList.map(w => w[1])),
+            max: Math.max(...wordcloudList.map(w => w[1]))
+        });
+        
+        // 上位5語を表示
+        console.log('上位5語:', wordcloudList.slice(0, 5).map(w => `${w[0]}(size:${w[1]})`));
+        
+        // WordCloud2.jsのオプション（安全な設定）
         const options = {
             list: wordcloudList,
-            gridSize: Math.max(2, Math.floor((isMobile ? 6 : 12) * containerWidth / 1024)),
-            weightFactor: function(size) {
-                let scaleFactor;
-                if (isSmall) {
-                    scaleFactor = Math.min(1.2, containerWidth / 320);
-                } else if (isMobile) {
-                    scaleFactor = Math.min(1.8, containerWidth / 400);
-                } else {
-                    scaleFactor = containerWidth / 800;
-                }
-                const result = Math.max(0.5, size * scaleFactor);
-                return isFinite(result) ? result : 1;
-            },
-            fontFamily: '"Hiragino Kaku Gothic Pro", "ヒラギノ角ゴ Pro", "Yu Gothic", "游ゴシック", Meiryo, "メイリオ", sans-serif',
-            color: function(word, weight, fontSize, distance, theta) {
-                try {
-                    const wordData = wordsData.find(w => w.text === word);
-                    return wordData ? wordData.color : '#666';
-                } catch (e) {
-                    return '#666';
-                }
+            gridSize: Math.max(8, Math.floor(16 * (isMobile ? 0.5 : 1))),
+            weightFactor: 1,  // 固定値（フォントサイズは既に計算済み）
+            fontFamily: 'Hiragino Kaku Gothic Pro, メイリオ, Arial, sans-serif',
+            color: function(word, weight) {
+                const wordData = limitedData.find(w => w.text === word);
+                return wordData ? wordData.color : '#666666';
             },
             backgroundColor: 'transparent',
-            rotateRatio: isMobile ? 0.0 : 0.2,
-            maxRotation: 0,
+            rotateRatio: 0,  // 回転を無効化（パフォーマンス向上）
             minRotation: 0,
-            shuffle: true,
+            maxRotation: 0,
             rotationSteps: 0,
-            ellipticity: isMobile ? 1.0 : 0.7,
-            shrinkToFit: true,
+            shuffle: true,
+            ellipticity: isMobile ? 1 : 0.65,
             drawOutOfBound: false,
-            hover: isMobile ? null : function(item, dimension, event) {
-                try {
-                    if (item) {
-                        showWordTooltip(item[0], item[1], event);
-                    }
-                } catch (e) {
-                    console.warn('ホバーイベントエラー:', e);
-                }
+            shrinkToFit: true,
+            clearCanvas: true,
+            wait: isMobile ? 50 : 0,  // モバイルでは描画待機時間を設定
+            abortThreshold: 10000,  // タイムアウト設定
+            abort: function() {
+                console.warn('WordCloud描画タイムアウト');
+                return false;
             },
             click: function(item, dimension, event) {
-                try {
-                    if (item && item[0]) {
-                        // console.log('ワードクリック:', item[0]);
-                        
-                        // ツールチップを非表示
-                        hideWordTooltip();
-                        
-                        // 詳細モーダルを表示
-                        showWordDetail(item[0]);
-                    }
-                } catch (e) {
-                    console.warn('クリックイベントエラー:', e);
+                if (item && item[0]) {
+                    console.log('ワードクリック:', item[0]);
+                    showWordDetail(item[0]);
                 }
             }
         };
         
-        // データの事前検証
-        const validList = wordcloudList.filter(item => {
-            const [text, size] = item;
-            return text && 
-                   typeof text === 'string' && 
-                   text.length > 0 &&
-                   typeof size === 'number' && 
-                   size > 0 && 
-                   isFinite(size);
-        });
+        console.log('WordCloud2.js実行開始');
         
-        if (validList.length === 0) {
-            showWordcloudError('有効な語彙データがありません');
-            wordcloudGenerationInProgress = false;
-            return;
-        }
+        // WordCloud生成
+        WordCloud(canvas, options);
         
-        // console.log('検証済みデータ数:', validList.length, '/ 元データ数:', wordcloudList.length);
+        console.log('ワードクラウド生成完了');
         
-        options.list = validList;
-        
-        // WordCloud実行（エラーハンドリング強化）
-        try {
-            WordCloud(canvas, options);
-            
-            updateDisplayedCount(validList.length);
-            
-            // console.log('ワードクラウド生成完了');
-            const sizeDistribution = {
-                '0-20': validList.filter(w => w[1] < 20).length,
-                '20-40': validList.filter(w => w[1] >= 20 && w[1] < 40).length,
-                '40+': validList.filter(w => w[1] >= 40).length
-            };
-            // console.log('サイズ分布:', sizeDistribution);
-            
-            if (isMobile) {
-                setTimeout(() => {
-                    const canvasElement = canvas.querySelector('canvas');
-                    if (canvasElement) {
-                        canvasElement.style.touchAction = 'manipulation';
-                        canvasElement.style.userSelect = 'none';
-                        canvasElement.style.pointerEvents = 'auto';
-                        canvasElement.style.position = 'static';
-                        canvasElement.style.transform = 'none';
-                        canvasElement.style.willChange = 'auto';
-                        
-                        isWordcloudLocked = true;
-                        // console.log('モバイル用ワードクラウドロック有効化（クリック機能付き）');
-                        
-                        const canvasRect = canvasElement.getBoundingClientRect();
-                        // console.log('最終キャンバスサイズ:', canvasRect);
-                    }
-                    wordcloudGenerationInProgress = false;
-                }, 1000);
-            } else {
-                wordcloudGenerationInProgress = false;
-            }
-            
-        } catch (wordcloudError) {
-            console.error('WordCloud2.js実行エラー:', wordcloudError);
-            wordcloudGenerationInProgress = false;
-            
-            if (isMobile) {
-                showSimpleWordList(validList);
-            } else {
-                showWordcloudError('ワードクラウドの生成に失敗しました（技術的問題）');
-            }
-        }
+        // 統計情報を更新
+        updateDisplayedCount(limitedData.length);
+        updateStatistics(limitedData);
         
     } catch (error) {
         console.error('ワードクラウド生成エラー:', error);
-        wordcloudGenerationInProgress = false;
-        
-        if (isMobileDevice()) {
-            showSimpleWordList(wordsData);
-        } else {
-            showWordcloudError('ワードクラウドの生成に失敗しました');
-        }
-    }
-}
-
-// モバイル用簡易語彙リスト表示（クリック機能付き）
-function showSimpleWordList(wordsData) {
-    const canvas = document.getElementById('wordcloud-canvas');
-    if (!canvas || !wordsData || wordsData.length === 0) return;
-    
-    const sortedWords = wordsData
-        .sort((a, b) => b.size - a.size)
-        .slice(0, 30);
-    
-    let html = `
-        <div class="p-3">
-            <div class="text-center mb-3 text-muted">
-                <i class="fas fa-list me-2"></i>
-                <strong>語彙一覧表示</strong>
-                <small class="d-block">（ワードクラウドの代替表示）</small>
-            </div>
-            <div class="row g-2">
-    `;
-    
-    sortedWords.forEach(word => {
-        const [text, size, , , , , color] = word;
-        const isArray = Array.isArray(word);
-        const actualText = isArray ? text : word.text;
-        const actualSize = isArray ? size : word.size;
-        const actualColor = isArray ? color : word.color;
-        
-        const fontSize = Math.max(0.8, Math.min(1.8, actualSize / 10)) + 'rem';
-        
-        html += `
-            <div class="col-6 col-sm-4">
-                <div class="border rounded p-2 text-center" 
-                     style="background-color: ${actualColor}15; cursor: pointer; min-height: 60px;"
-                     onclick="showWordDetail('${actualText}')">
-                    <div style="color: ${actualColor}; font-size: ${fontSize}; font-weight: bold;">
-                        ${actualText}
-                    </div>
-                    <small class="text-muted">${actualSize}回</small>
-                </div>
-            </div>
-        `;
-    });
-    
-    html += `
-            </div>
-            <div class="text-center mt-3">
-                <button class="btn btn-sm btn-primary" onclick="location.reload()">
-                    <i class="fas fa-redo me-1"></i>ワードクラウドで再試行
-                </button>
-            </div>
-        </div>
-    `;
-    
-    canvas.innerHTML = html;
-    updateDisplayedCount(sortedWords.length);
-}
-
-// ========================================
-// その他の既存機能（継続）
-// ========================================
-
-// 全語彙抽出（既存コードを使用）
-const STOP_WORDS = new Set([
-    'の', 'に', 'は', 'を', 'が', 'で', 'と', 'から', 'まで', 'より', 'へ', 'や', 'か',
-    'だ', 'である', 'です', 'ます', 'だっ', 'であっ', 'でし', 'まし', 'た', 'て', 'し',
-    'これ', 'それ', 'あれ', 'この', 'その', 'あの', 'ここ', 'そこ', 'あそこ',
-    'こと', 'もの', 'ため', 'よう', 'など', 'なる', 'ある', 'いる', 'する', 'れる', 'られる'
-]);
-
-function extractAllWordsFromSentences() {
-    if (!tokenizer) {
-        console.warn('tokenizerが初期化されていません');
-        return {};
-    }
-    
-    const wordFrequency = {};
-    const sentences = collectSentences();
-    
-    sentences.forEach((sentenceObj) => {
-        if (!sentenceObj.text) return;
-        
-        const cleanText = cleanSentenceText(sentenceObj.text);
-        
-        try {
-            const tokens = tokenizer.tokenize(cleanText);
-            
-            tokens.forEach(token => {
-                const word = processToken(token);
-                if (word && isValidWord(word, token)) {
-                    wordFrequency[word] = (wordFrequency[word] || 0) + 1;
-                }
-            });
-            
-        } catch (error) {
-            console.error('形態素解析エラー:', error);
-        }
-    });
-    
-    return wordFrequency;
-}
-
-function extractAllWordsSimple() {
-    // console.log('簡易版単語抽出を開始');
-    
-    const wordFrequency = {};
-    const sentences = collectSentences();
-    
-    sentences.forEach((sentenceObj) => {
-        if (!sentenceObj.text) return;
-        
-        const cleanText = cleanSentenceText(sentenceObj.text);
-        const words = segmentJapaneseText(cleanText);
-        
-        words.forEach(word => {
-            if (isValidSimpleWord(word)) {
-                wordFrequency[word] = (wordFrequency[word] || 0) + 1;
-            }
-        });
-    });
-    
-    return wordFrequency;
-}
-
-function collectSentences() {
-    const sentences = [];
-    
-    if (actualAnalysisData.sample_sentences) {
-        if (actualAnalysisData.sample_sentences.positive) {
-            sentences.push(...actualAnalysisData.sample_sentences.positive);
-        }
-        if (actualAnalysisData.sample_sentences.negative) {
-            sentences.push(...actualAnalysisData.sample_sentences.negative);
-        }
-    }
-    
-    return sentences;
-}
-
-function cleanSentenceText(text) {
-    return text
-        .replace(/<[^>]*>/g, '')
-        .replace(/&[a-zA-Z0-9#]+;/g, '')
-        .replace(/https?:\/\/[^\s]+/g, '')
-        .replace(/[【】『』「」（）()［］｛｝]/g, '')
-        .replace(/[・※★☆♪♫]/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-}
-
-function processToken(token) {
-    let word = token.surface_form;
-    const pos = token.pos;
-    const basicForm = token.basic_form;
-    
-    if ((pos === '動詞' || pos === '形容詞') && basicForm && basicForm !== '*') {
-        word = basicForm;
-    }
-    
-    return word;
-}
-
-function isValidWord(word, token) {
-    const pos = token.pos;
-    const posDetail1 = token.pos_detail_1;
-    
-    if (STOP_WORDS.has(word)) return false;
-    if (word.length < 2) return false;
-    if (/^[0-9０-９]+$/.test(word)) return false;
-    if (/^[a-zA-Z]+$/.test(word)) return false;
-    if (/^[\s　\-\+\*\/\=\<\>\!\?]+$/.test(word)) return false;
-    
-    switch (pos) {
-        case '名詞':
-            const validNounTypes = ['一般', '固有名詞', 'サ変接続', '形容動詞語幹'];
-            if (!validNounTypes.includes(posDetail1)) return false;
-            if (posDetail1 === '数' || posDetail1 === '非自立') return false;
-            break;
-        case '動詞':
-            if (posDetail1 === '非自立') return false;
-            break;
-        case '形容詞':
-            if (posDetail1 === '非自立') return false;
-            break;
-        case '副詞':
-            if (posDetail1 !== '一般') return false;
-            break;
-        default:
-            return false;
-    }
-    
-    return true;
-}
-
-function segmentJapaneseText(text) {
-    const words = [];
-    const sentences = text.split(/[。！？\n]/);
-    
-    sentences.forEach(sentence => {
-        const phrases = sentence.split(/[、，,]/);
-        phrases.forEach(phrase => {
-            const tokens = phrase.split(/[\s　]+/);
-            tokens.forEach(token => {
-                if (token.length === 0) return;
-                const segmented = segmentByCharacterType(token);
-                words.push(...segmented);
-            });
-        });
-    });
-    
-    return words.filter(word => word.length > 0);
-}
-
-function segmentByCharacterType(text) {
-    const words = [];
-    let currentWord = '';
-    let currentType = '';
-    
-    for (let i = 0; i < text.length; i++) {
-        const char = text[i];
-        let charType = getCharacterType(char);
-        
-        if (charType !== currentType) {
-            if (currentWord.length > 0) {
-                words.push(currentWord);
-            }
-            currentWord = char;
-            currentType = charType;
-        } else {
-            currentWord += char;
-        }
-    }
-    
-    if (currentWord.length > 0) {
-        words.push(currentWord);
-    }
-    
-    return words;
-}
-
-function getCharacterType(char) {
-    const code = char.charCodeAt(0);
-    
-    if ((code >= 0x3040 && code <= 0x309F)) return 'hiragana';
-    if ((code >= 0x30A0 && code <= 0x30FF)) return 'katakana';
-    if ((code >= 0x4E00 && code <= 0x9FAF)) return 'kanji';
-    if ((code >= 0xFF10 && code <= 0xFF19) || (code >= 0x30 && code <= 0x39)) return 'number';
-    if ((code >= 0x41 && code <= 0x5A) || (code >= 0x61 && code <= 0x7A) || 
-        (code >= 0xFF21 && code <= 0xFF3A) || (code >= 0xFF41 && code <= 0xFF5A)) return 'alphabet';
-    
-    return 'other';
-}
-
-function isValidSimpleWord(word) {
-    if (STOP_WORDS.has(word)) return false;
-    if (word.length < 2) return false;
-    if (/^[0-9０-９]+$/.test(word)) return false;
-    if (/^[a-zA-Z]+$/.test(word)) return false;
-    if (/^[\s　\-\+\*\/\=\<\>\!\?、。，．]+$/.test(word)) return false;
-    if (word.length <= 2 && /^[ぁ-ゟ]+$/.test(word)) return false;
-    
-    return true;
-}
-
-// 統計表示の更新
-function updateStatisticsDisplay() {
-    const currentData = currentDisplayMode === 'all' ? actualWordcloudData.all : actualWordcloudData.sentiment;
-    const stats = calculateStats(currentData);
-    
-    document.getElementById('total-words').textContent = stats.total_unique_words;
-    document.getElementById('total-occurrences').textContent = stats.total_occurrences;
-    
-    const maxOccurrences = currentData.length > 0 ? Math.max(...currentData.map(w => w.size)) : 0;
-    document.getElementById('max-occurrences').textContent = maxOccurrences;
-    
-    const positiveCountEl = document.getElementById('positive-count');
-    const negativeCountEl = document.getElementById('negative-count');
-    const neutralCountEl = document.getElementById('neutral-count');
-    
-    if (positiveCountEl) positiveCountEl.textContent = stats.positive_count;
-    if (negativeCountEl) negativeCountEl.textContent = stats.negative_count;
-    if (neutralCountEl) neutralCountEl.textContent = stats.neutral_count;
-    
-    const sentimentStatsElement = document.getElementById('sentiment-stats');
-    if (sentimentStatsElement) {
-        if (currentDisplayMode === 'all') {
-            sentimentStatsElement.classList.remove('d-none');
-        } else {
-            sentimentStatsElement.classList.add('d-none');
-        }
-    }
-}
-
-function calculateStats(wordcloudData) {
-    return {
-        total_unique_words: wordcloudData.length,
-        total_occurrences: wordcloudData.reduce((sum, w) => sum + w.size, 0),
-        positive_count: wordcloudData.filter(w => w.sentiment === 'positive').length,
-        negative_count: wordcloudData.filter(w => w.sentiment === 'negative').length,
-        neutral_count: wordcloudData.filter(w => w.sentiment === 'neutral').length
-    };
-}
-
-function updateDisplayedCount(count) {
-    const countElement = document.getElementById('wordcloud-displayed-count');
-    if (countElement) {
-        countElement.textContent = count;
+        console.error('エラースタック:', error.stack);
+        showWordcloudError('ワードクラウドの生成に失敗しました');
     }
 }
 
@@ -2525,705 +1235,223 @@ function showWordcloudError(message) {
     }
 }
 
-// ツールチップ表示（モバイル最適化版）
-function showWordTooltip(word, weight, event) {
-    const wordData = currentWordcloudData.find(w => w.text === word);
-    if (!wordData) return;
+function updateStatistics(wordsData) {
+    const totalWords = wordsData.length;
+    const totalOccurrences = wordsData.reduce((sum, w) => sum + w.size, 0);
+    const maxOccurrences = wordsData.length > 0 ? Math.max(...wordsData.map(w => w.size)) : 0;
     
-    hideWordTooltip();
+    const el1 = document.getElementById('total-words');
+    const el2 = document.getElementById('total-occurrences');
+    const el3 = document.getElementById('max-occurrences');
     
-    const tooltip = document.createElement('div');
-    tooltip.id = 'wordcloud-tooltip';
-    tooltip.className = 'position-absolute bg-dark text-white p-2 rounded shadow-sm small';
-    tooltip.style.zIndex = '1000';
-    tooltip.style.pointerEvents = 'none';
-    
-    const sentimentText = wordData.sentiment === 'positive' ? 'ポジティブ' : 
-                        wordData.sentiment === 'negative' ? 'ネガティブ' : '中立';
-    tooltip.innerHTML = `
-        <div><strong>${word}</strong></div>
-        <div>出現回数: ${wordData.size}回</div>
-        <div>感情: ${sentimentText}</div>
-        ${wordData.score !== 0 ? `<div>スコア: ${wordData.score.toFixed(2)}</div>` : ''}
-        <small class="text-info"><i class="fas fa-click me-1"></i>クリックで詳細表示</small>
-    `;
-    
-    document.body.appendChild(tooltip);
-    
-    const rect = tooltip.getBoundingClientRect();
-    const isMobile = isMobileDevice();
-    
-    let left, top;
-    
-    if (isMobile) {
-        left = (window.innerWidth - rect.width) / 2;
-        top = 10;
-    } else {
-        left = event.pageX - rect.width / 2;
-        top = event.pageY - rect.height - 10;
-        
-        left = Math.max(10, Math.min(left, window.innerWidth - rect.width - 10));
-        top = Math.max(10, top);
-    }
-    
-    tooltip.style.left = left + 'px';
-    tooltip.style.top = top + 'px';
-    
-    if (isMobile) {
-        setTimeout(hideWordTooltip, 2000);
-    }
+    if (el1) el1.textContent = totalWords;
+    if (el2) el2.textContent = totalOccurrences;
+    if (el3) el3.textContent = maxOccurrences;
 }
 
-function hideWordTooltip() {
-    const tooltip = document.getElementById('wordcloud-tooltip');
-    if (tooltip) {
-        tooltip.remove();
-    }
-}
-
-// イベントリスナー設定
 function setupWordcloudEvents() {
-    try {
-        const sentimentBtn = document.getElementById('wordcloud-sentiment-btn');
-        const allBtn = document.getElementById('wordcloud-all-btn');
-        
-        if (sentimentBtn && allBtn) {
-            sentimentBtn.addEventListener('click', function() {
-                try {
-                    if (currentDisplayMode !== 'sentiment') {
-                        currentDisplayMode = 'sentiment';
-                        this.classList.add('active', 'btn-primary');
-                        this.classList.remove('btn-outline-primary');
-                        allBtn.classList.remove('active', 'btn-primary');
-                        allBtn.classList.add('btn-outline-primary');
-                        
-                        applyCurrentFilters();
-                    }
-                } catch (e) {
-                    console.error('感情語彙ボタンエラー:', e);
+    console.log('ワードクラウドイベント設定');
+    
+    const sentimentBtn = document.getElementById('wordcloud-sentiment-btn');
+    const allBtn = document.getElementById('wordcloud-all-btn');
+    const updateBtn = document.getElementById('wordcloud-update-btn');
+    
+    if (sentimentBtn) {
+        sentimentBtn.addEventListener('click', function() {
+            console.log('感情語彙ボタンクリック');
+            if (currentDisplayMode !== 'sentiment') {
+                currentDisplayMode = 'sentiment';
+                this.classList.add('active', 'btn-primary');
+                this.classList.remove('btn-outline-primary');
+                if (allBtn) {
+                    allBtn.classList.remove('active', 'btn-primary');
+                    allBtn.classList.add('btn-outline-primary');
                 }
-            });
-            
-            allBtn.addEventListener('click', function() {
-                try {
-                    if (currentDisplayMode !== 'all') {
-                        currentDisplayMode = 'all';
-                        this.classList.add('active', 'btn-primary');
-                        this.classList.remove('btn-outline-primary');
-                        sentimentBtn.classList.remove('active', 'btn-primary');
-                        sentimentBtn.classList.add('btn-outline-primary');
-                        
-                        if (actualWordcloudData.all.length === 0) {
-                            // console.log('全語彙データ生成開始');
-                            actualWordcloudData.all = convertToWordcloudData(actualAnalysisData.keyword_frequency_data || {}, true);
-                        }
-                        
-                        applyCurrentFilters();
-                    }
-                } catch (e) {
-                    console.error('全語彙ボタンエラー:', e);
-                }
-            });
-        }
-        
-        const updateBtn = document.getElementById('wordcloud-update-btn');
-        if (updateBtn) {
-            updateBtn.addEventListener('click', function() {
-                try {
-                    applyCurrentFilters();
-                } catch (e) {
-                    console.error('更新ボタンエラー:', e);
-                }
-            });
-        }
-        
-        let resizeTimeout;
-        let isResizing = false;
-        
-        window.addEventListener('resize', function() {
-            try {
-                if (isResizing) return;
                 
-                clearTimeout(resizeTimeout);
-                resizeTimeout = setTimeout(() => {
-                    try {
-                        isResizing = true;
-                        
-                        if (currentWordcloudData.length > 0) {
-                            // console.log('リサイズによる再生成');
-                            
-                            const canvas = document.getElementById('wordcloud-canvas');
-                            if (canvas && canvas.offsetWidth > 0) {
-                                generateWordcloud(currentWordcloudData);
-                            }
-                        }
-                    } catch (e) {
-                        console.error('リサイズ処理エラー:', e);
-                    } finally {
-                        isResizing = false;
-                    }
-                }, 500);
-            } catch (e) {
-                console.error('リサイズイベントエラー:', e);
+                currentWordcloudData = actualWordcloudData.sentiment;
+                generateWordcloud(currentWordcloudData);
             }
         });
-        
-        if (isMobileDevice()) {
-            const canvas = document.getElementById('wordcloud-canvas');
-            if (canvas) {
-                canvas.addEventListener('touchstart', function(e) {
-                    try {
-                        // タッチでもクリック機能を有効にするため、preventDefaultは使わない
-                    } catch (error) {
-                        console.warn('タッチイベントエラー:', error);
-                    }
-                }, { passive: true });
+    }
+    
+    if (allBtn) {
+        allBtn.addEventListener('click', function() {
+            console.log('全語彙ボタンクリック');
+            if (currentDisplayMode !== 'all') {
+                currentDisplayMode = 'all';
+                this.classList.add('active', 'btn-primary');
+                this.classList.remove('btn-outline-primary');
+                if (sentimentBtn) {
+                    sentimentBtn.classList.remove('active', 'btn-primary');
+                    sentimentBtn.classList.add('btn-outline-primary');
+                }
+                
+                // 全語彙データがまだない場合は生成
+                if (actualWordcloudData.all.length === 0) {
+                    console.log('全語彙データ生成');
+                    actualWordcloudData.all = convertToWordcloudData(
+                        actualAnalysisData.keyword_frequency_data || {}, 
+                        true
+                    );
+                }
+                
+                currentWordcloudData = actualWordcloudData.all;
+                generateWordcloud(currentWordcloudData);
             }
-        }
-        
-    } catch (error) {
-        console.error('イベントリスナー設定エラー:', error);
+        });
+    }
+    
+    if (updateBtn) {
+        updateBtn.addEventListener('click', function() {
+            console.log('更新ボタンクリック');
+            applyFilters();
+        });
     }
 }
 
-function applyCurrentFilters() {
-    try {
-        const minCount = parseInt(document.getElementById('wordcloud-min-count')?.value || '2');
-        const maxWords = parseInt(document.getElementById('wordcloud-max-words')?.value || '50');
-        
-        const sourceData = currentDisplayMode === 'all' ? actualWordcloudData.all : actualWordcloudData.sentiment;
-        
-        // console.log('フィルター適用:', { mode: currentDisplayMode, sourceDataLength: sourceData.length, minCount, maxWords });
-        
-        if (!sourceData || sourceData.length === 0) {
-            console.warn('フィルター対象データが存在しません');
-            showWordcloudError('表示する語彙がありません');
-            return;
-        }
-        
-        let filteredData = sourceData.filter(word => word && word.size >= minCount);
-        
-        if (maxWords > 0) {
-            filteredData = filteredData.slice(0, maxWords);
-        }
-        
-        // console.log('フィルター後のデータ数:', filteredData.length);
-        
-        if (filteredData.length === 0) {
-            showWordcloudError('選択した条件に一致する語彙がありません');
-            updateStatisticsDisplay();
-            return;
-        }
-        
-        currentWordcloudData = filteredData;
-        generateWordcloud(filteredData);
-        updateStatisticsDisplay();
-        
-    } catch (error) {
-        console.error('フィルター適用エラー:', error);
-        showWordcloudError('フィルター処理中にエラーが発生しました');
+function applyFilters() {
+    const minCount = parseInt(document.getElementById('wordcloud-min-count')?.value || '10');
+    console.log('フィルター適用: minCount =', minCount);
+    
+    const sourceData = currentDisplayMode === 'all' ? actualWordcloudData.all : actualWordcloudData.sentiment;
+    const filteredData = sourceData.filter(word => word && word.size >= minCount);
+    
+    console.log('フィルター後:', filteredData.length, '語');
+    
+    if (filteredData.length === 0) {
+        showWordcloudError('選択した条件に一致する語彙がありません');
+        return;
     }
+    
+    generateWordcloud(filteredData);
 }
 
-// Toast notification
-function showToast(message, type = 'info') {
-    let container = document.getElementById('toast-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'toast-container';
-        container.className = 'position-fixed top-0 end-0 p-3';
-        container.style.zIndex = '9999';
-        document.body.appendChild(container);
-    }
-
-    const toast = document.createElement('div');
-    toast.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'primary'} border-0`;
-    toast.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body">
-                <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
-                ${message}
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
-    `;
-
-    container.appendChild(toast);
-    const bsToast = new bootstrap.Toast(toast);
-    bsToast.show();
-    toast.addEventListener('hidden.bs.toast', () => toast.remove());
+function showWordDetail(wordText) {
+    const wordData = currentWordcloudData.find(w => w.text === wordText);
+    if (!wordData) return;
+    
+    document.getElementById('selected-word').textContent = wordData.text;
+    document.getElementById('word-frequency').textContent = wordData.size;
+    document.getElementById('word-score').textContent = wordData.score ? wordData.score.toFixed(2) : '0.0';
+    
+    const sentimentBadge = document.getElementById('word-sentiment-badge');
+    const sentimentText = wordData.sentiment === 'positive' ? 'ポジティブ' : 
+                         wordData.sentiment === 'negative' ? 'ネガティブ' : '中立';
+    const sentimentClass = wordData.sentiment === 'positive' ? 'bg-success' : 
+                          wordData.sentiment === 'negative' ? 'bg-danger' : 'bg-secondary';
+    
+    sentimentBadge.textContent = sentimentText;
+    sentimentBadge.className = `badge fs-6 ${sentimentClass}`;
+    
+    findWordContexts(wordText);
+    
+    const modal = new bootstrap.Modal(document.getElementById('wordDetailModal'));
+    modal.show();
 }
 
-// その他の機能
+function findWordContexts(wordText) {
+    const contextList = document.getElementById('word-context-list');
+    contextList.innerHTML = '<div class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin"></i><div class="mt-2">文脈を検索中...</div></div>';
+    
+    const contexts = [];
+    const sentences = [
+        ...(actualAnalysisData.sample_sentences.positive || []),
+        ...(actualAnalysisData.sample_sentences.negative || [])
+    ];
+    
+    sentences.forEach(sentence => {
+        if (sentence.text && sentence.text.includes(wordText)) {
+            const highlightedText = sentence.text.replace(
+                new RegExp(wordText, 'g'),
+                `<span class="keyword-highlight">${wordText}</span>`
+            );
+            contexts.push({
+                text: highlightedText,
+                score: sentence.score || 0,
+                sentiment: sentence.score > 0 ? 'positive' : sentence.score < 0 ? 'negative' : 'neutral'
+            });
+        }
+    });
+    
+    setTimeout(() => {
+        if (contexts.length === 0) {
+            contextList.innerHTML = '<div class="text-center text-muted py-3"><i class="fas fa-search"></i><div class="mt-2">この語彙の文脈は見つかりませんでした</div></div>';
+        } else {
+            const contextHTML = contexts.slice(0, 3).map((context, index) => {
+                const borderClass = context.sentiment === 'positive' ? 'border-success' : 
+                                   context.sentiment === 'negative' ? 'border-danger' : 'border-secondary';
+                return `
+                    <div class="p-3 mb-2 border-start border-3 ${borderClass}" style="background: var(--bg-secondary);">
+                        <div class="mb-2">${context.text}</div>
+                        <small class="text-muted">スコア: ${context.score.toFixed(2)}</small>
+                    </div>
+                `;
+            }).join('');
+            contextList.innerHTML = contextHTML;
+        }
+    }, 300);
+}
+
+function updateDisplayedCount(count) {
+    const el = document.getElementById('wordcloud-displayed-count');
+    if (el) el.textContent = count;
+}
+
+// ========================================
+// イベントリスナー
+// ========================================
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded - 初期化開始');
+    console.log('分析データ:', actualAnalysisData);
+    
+    // アニメーション実行
+    animateScoreArc();
+    animateScoreNumber();
+    animatePositionIndicator();
+    
+    // ワードクラウド初期化（タブが表示されていなくても初期化）
+    setTimeout(() => {
+        console.log('ワードクラウド初期化タイマー実行');
+        initializeWordcloud();
+    }, 500);
+    
+    // ページトップへスクロール
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// ========================================
+// ユーティリティ関数
+// ========================================
 function shareResult() {
     const url = window.location.href;
     const title = `感情分析結果: {{ document.company_name }} (スコア: {{ session.overall_score|floatformat:2 }})`;
     
     if (navigator.share) {
-        navigator.share({
-            title: title,
-            url: url
-        }).catch(error => {
-            // console.log('Share failed:', error);
-            fallbackShare(url, title);
-        });
-    } else {
-        fallbackShare(url, title);
-    }
-}
-
-function fallbackShare(url, title) {
-    if (navigator.clipboard) {
+        navigator.share({ title, url }).catch(() => {});
+    } else if (navigator.clipboard) {
         navigator.clipboard.writeText(url).then(() => {
-            showToast('URLをコピーしました', 'success');
-        }).catch(() => {
-            promptShare(url);
+            alert('URLをコピーしました');
         });
-    } else {
-        promptShare(url);
     }
-}
-
-function promptShare(url) {
-    const textarea = document.createElement('textarea');
-    textarea.value = url;
-    document.body.appendChild(textarea);
-    textarea.select();
-    try {
-        document.execCommand('copy');
-        showToast('URLをコピーしました', 'success');
-    } catch (err) {
-        prompt('URLをコピーしてください:', url);
-    }
-    document.body.removeChild(textarea);
 }
 
 function exportSummary() {
     const summary = {
         company: '{{ document.company_name }}',
-        document: '{{ document.doc_description }}',
         analysis_date: '{{ session.created_at|date:"Y-m-d H:i:s" }}',
         overall_score: {{ session.overall_score }},
-        sentiment_label: '{{ session.sentiment_label }}',
-        positive_words: {{ session.analysis_result.score_calculation.positive_scores|length|default:0 }},
-        negative_words: {{ session.analysis_result.score_calculation.negative_scores|length|default:0 }},
-        total_analyzed_words: {{ session.analysis_result.statistics.total_words_analyzed|default:0 }},
-        key_insights: [
-            {% if session.sentiment_label == 'positive' %}
-                '前向きな経営姿勢が表れている',
-                '成長への期待が持てる内容'
-            {% elif session.sentiment_label == 'negative' %}
-                'リスクや課題への言及が多い',
-                '慎重な経営スタンス'
-            {% else %}
-                'バランスの取れた客観的な内容',
-                '安定した状況を示している'
-            {% endif %}
-        ]
+        sentiment_label: '{{ session.sentiment_label }}'
     };
     
     const blob = new Blob([JSON.stringify(summary, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `sentiment_analysis_${summary.company}_${summary.analysis_date.replace(/[: ]/g, '_')}.json`;
+    a.download = `sentiment_analysis_${summary.company}_${Date.now()}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-}
-
-// ページ読み込み時の初期化（モバイル最適化版）
-document.addEventListener('DOMContentLoaded', function() {
-    const isMobile = isMobileDevice();
-    
-    // アニメーション効果（デスクトップのみ）
-    if (!isMobile) {
-        const cards = document.querySelectorAll('.analysis-card');
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach((entry, index) => {
-                if (entry.isIntersecting) {
-                    setTimeout(() => {
-                        entry.target.style.opacity = '1';
-                        entry.target.style.transform = 'translateY(0)';
-                    }, index * 100);
-                }
-            });
-        }, { threshold: 0.1 });
-
-        cards.forEach(card => {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(20px)';
-            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-            observer.observe(card);
-        });
-    } else {
-        const cards = document.querySelectorAll('.analysis-card');
-        cards.forEach(card => {
-            card.style.opacity = '1';
-            card.style.transform = 'none';
-            card.style.transition = 'none';
-        });
-    }
-
-    // kuromoji初期化
-    initializeKuromoji();
-    
-    // ページトップへスクロール
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    
-    // モバイル向けの追加初期化
-    if (isMobile) {
-        // console.log('モバイルデバイス検出 - 追加初期化実行');
-        
-        const wordcloudContainer = document.querySelector('.wordcloud-container');
-        if (wordcloudContainer) {
-            wordcloudContainer.style.touchAction = 'manipulation';
-        }
-        
-        let viewport = document.querySelector('meta[name=viewport]');
-        if (!viewport) {
-            viewport = document.createElement('meta');
-            viewport.name = 'viewport';
-            viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
-            document.head.appendChild(viewport);
-        }
-        
-        document.body.style.overflowX = 'hidden';
-        document.body.style.webkitOverflowScrolling = 'touch';
-        
-        const touchElements = document.querySelectorAll('.btn, .card, .analysis-card');
-        touchElements.forEach(element => {
-            element.style.touchAction = 'manipulation';
-        });
-        
-        // モバイルでアニメーション無効化
-        const allElements = document.querySelectorAll('*');
-        allElements.forEach(element => {
-            element.style.animationDuration = '0s';
-            element.style.animationDelay = '0s';
-            element.style.transitionDuration = '0s';
-            element.style.transitionDelay = '0s';
-        });
-        
-        const mainElements = document.querySelectorAll('.card, .analysis-card, .page-header');
-        mainElements.forEach(element => {
-            element.style.transform = 'translateZ(0)';
-            element.style.backfaceVisibility = 'hidden';
-        });
-    }
-    // 実際のスコア値
-    const actualScore = {{ session.overall_score }};
-    const sentimentLabel = '{{ session.sentiment_label }}';
-    
-    // スコア円弧のアニメーション
-    function animateScoreArc() {
-        const arc = document.getElementById('score-arc');
-        const radius = 80;
-        const circumference = 2 * Math.PI * radius; // 502.65
-        
-        // スコアに基づく色の決定
-        let strokeColor;
-        if (actualScore > 0.4) {
-            strokeColor = '#198754'; // 緑
-        } else if (actualScore > 0.15) {
-            strokeColor = '#0dcaf0'; // 水色
-        } else if (actualScore >= -0.15) {
-            strokeColor = '#6c757d'; // グレー
-        } else if (actualScore >= -0.4) {
-            strokeColor = '#fd7e14'; // オレンジ
-        } else {
-            strokeColor = '#dc3545'; // 赤
-        }
-        
-        arc.style.stroke = strokeColor;
-        
-        // スコアを0-100%に変換（-1.0 to 1.0 → 0% to 100%）
-        const percentage = (actualScore + 1) / 2;
-        const offset = circumference - (percentage * circumference);
-        
-        setTimeout(() => {
-            arc.style.strokeDashoffset = offset;
-        }, 500);
-    }
-    
-    // スコア数値のアニメーション
-    function animateScoreNumber() {
-        const scoreElement = document.getElementById('animated-score');
-        const duration = 2000;
-        const startTime = performance.now();
-        
-        function updateScore(currentTime) {
-            const elapsed = currentTime - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            
-            // イージング関数（easeOutCubic）
-            const easedProgress = 1 - Math.pow(1 - progress, 3);
-            const currentScore = actualScore * easedProgress;
-            
-            scoreElement.textContent = currentScore.toFixed(3);
-            
-            if (progress < 1) {
-                requestAnimationFrame(updateScore);
-            }
-        }
-        
-        requestAnimationFrame(updateScore);
-    }
-    
-    // ポジションインジケーターのアニメーション
-    function animatePositionIndicator() {
-        const indicator = document.getElementById('score-position');
-        
-        // スコアを0-100%に変換
-        const percentage = (actualScore + 1) / 2;
-        const leftPosition = percentage * 100;
-        
-        setTimeout(() => {
-            indicator.style.left = leftPosition + '%';
-        }, 1000);
-    }
-    
-    // バッジのアニメーション
-    function animateBadge() {
-        const badge = document.getElementById('sentiment-badge');
-        
-        setTimeout(() => {
-            badge.style.transform = 'scale(1.1)';
-            setTimeout(() => {
-                badge.style.transform = 'scale(1)';
-            }, 200);
-        }, 2000);
-    }
-    
-    // 星評価のアニメーション
-    function animateStars() {
-        const starRatings = document.querySelectorAll('.star-rating');
-        starRatings.forEach((rating, index) => {
-            setTimeout(() => {
-                rating.style.transform = 'scale(1.2)';
-                rating.style.color = '#ffc107';
-                setTimeout(() => {
-                    rating.style.transform = 'scale(1)';
-                }, 300);
-            }, 2500 + (index * 100));
-        });
-    }
-    
-    // インタープリテーションエリアのアニメーション
-    function animateInterpretation() {
-        const interpretation = document.querySelector('.interpretation-main');
-        if (interpretation) {
-            interpretation.style.opacity = '0';
-            interpretation.style.transform = 'translateY(20px)';
-            interpretation.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
-            
-            setTimeout(() => {
-                interpretation.style.opacity = '1';
-                interpretation.style.transform = 'translateY(0)';
-            }, 1500);
-        }
-    }
-    
-    // ポイントアイテムのシーケンシャルアニメーション
-    function animatePoints() {
-        const points = document.querySelectorAll('.point-item');
-        points.forEach((point, index) => {
-            point.style.opacity = '0';
-            point.style.transform = 'translateX(-20px)';
-            point.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-            
-            setTimeout(() => {
-                point.style.opacity = '1';
-                point.style.transform = 'translateX(0)';
-            }, 3000 + (index * 200));
-        });
-    }
-    
-    // 信頼性ゲージのアニメーション
-    function animateReliabilityGauge() {
-        const reliabilityArc = document.getElementById('reliability-arc');
-        const reliabilityPercentage = document.getElementById('reliability-percentage');
-        
-        if (!reliabilityArc || !reliabilityPercentage) return;
-        
-        const percentage = {{ reliability_score.confidence_percentage|default:50 }};
-        const radius = 35;
-        const circumference = 2 * Math.PI * radius; // 219.91
-        
-        // パーセンテージに基づく色の決定
-        let strokeColor;
-        if (percentage >= 85) {
-            strokeColor = '#198754'; // 緑
-        } else if (percentage >= 70) {
-            strokeColor = '#0dcaf0'; // 水色
-        } else if (percentage >= 55) {
-            strokeColor = '#ffc107'; // 黄色
-        } else {
-            strokeColor = '#6c757d'; // グレー
-        }
-        
-        reliabilityArc.style.stroke = strokeColor;
-        
-        // パーセンテージを0-100%に変換
-        const offset = circumference - ((percentage / 100) * circumference);
-        
-        setTimeout(() => {
-            reliabilityArc.style.strokeDashoffset = offset;
-        }, 3500);
-        
-        // パーセンテージ数値のアニメーション
-        const startTime = performance.now();
-        const duration = 1500;
-        
-        function updatePercentage(currentTime) {
-            const elapsed = currentTime - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            
-            const easedProgress = 1 - Math.pow(1 - progress, 3);
-            const currentPercentage = Math.floor(percentage * easedProgress);
-            
-            reliabilityPercentage.textContent = currentPercentage + '%';
-            
-            if (progress < 1) {
-                requestAnimationFrame(updatePercentage);
-            }
-        }
-        
-        setTimeout(() => {
-            requestAnimationFrame(updatePercentage);
-        }, 3500);
-    }
-    
-    // メトリクスアイテムのアニメーション
-    function animateMetrics() {
-        const metricItems = document.querySelectorAll('.metric-item, .feature-item');
-        metricItems.forEach((item, index) => {
-            item.style.opacity = '0';
-            item.style.transform = 'translateY(10px)';
-            item.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-            
-            setTimeout(() => {
-                item.style.opacity = '1';
-                item.style.transform = 'translateY(0)';
-            }, 4000 + (index * 100));
-        });
-    }
-    
-    // 信頼性メトリクス全体のアニメーション
-    function animateReliabilitySection() {
-        const reliabilitySection = document.querySelector('.mt-4.pt-4.border-top:has([class*="reliability"])');
-        if (reliabilitySection) {
-            reliabilitySection.style.opacity = '0';
-            reliabilitySection.style.transform = 'translateY(30px)';
-            reliabilitySection.style.transition = 'opacity 1s ease, transform 1s ease';
-            
-            setTimeout(() => {
-                reliabilitySection.style.opacity = '1';
-                reliabilitySection.style.transform = 'translateY(0)';
-            }, 3000);
-        }
-    }
-    
-    // スコア範囲アイテムのアニメーション
-    function animateScoreRanges() {
-        const ranges = document.querySelectorAll('.score-range-item');
-        ranges.forEach((range, index) => {
-            range.style.opacity = '0';
-            range.style.transform = 'scale(0.8)';
-            range.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-            
-            setTimeout(() => {
-                range.style.opacity = '1';
-                range.style.transform = 'scale(1)';
-                
-                // 現在のスコア範囲をハイライト
-                const scoreValue = actualScore;
-                let isCurrentRange = false;
-                
-                if (index === 0 && scoreValue <= -0.5) isCurrentRange = true;
-                else if (index === 1 && scoreValue > -0.5 && scoreValue <= -0.15) isCurrentRange = true;
-                else if (index === 2 && scoreValue > -0.15 && scoreValue <= 0.15) isCurrentRange = true;
-                else if (index === 3 && scoreValue > 0.15 && scoreValue <= 0.4) isCurrentRange = true;
-                else if (index === 4 && scoreValue > 0.4 && scoreValue <= 0.7) isCurrentRange = true;
-                else if (index === 5 && scoreValue > 0.7) isCurrentRange = true;
-                
-                if (isCurrentRange) {
-                    setTimeout(() => {
-                        range.style.transform = 'scale(1.1)';
-                        range.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-                        setTimeout(() => {
-                            range.style.transform = 'scale(1)';
-                        }, 500);
-                    }, 200);
-                }
-            }, 5500 + (index * 100));
-        });
-    }
-    
-    // 全アニメーションの実行
-    animateScoreArc();
-    animateScoreNumber();
-    animatePositionIndicator();
-    animateBadge();
-    animateStars();
-    animateInterpretation();
-    animatePoints();
-    animateReliabilitySection();
-    animateReliabilityGauge();
-    animateMetrics();
-    animateScoreRanges();
-    
-    // ホバー効果
-    const scoreCircle = document.querySelector('.score-circle-container');
-    if (scoreCircle) {
-        scoreCircle.addEventListener('mouseenter', function() {
-            this.style.transform = 'scale(1.05)';
-            this.style.transition = 'transform 0.3s ease';
-        });
-        
-        scoreCircle.addEventListener('mouseleave', function() {
-            this.style.transform = 'scale(1)';
-        });
-    }
-});
-
-// 画面向き変更対応
-window.addEventListener('orientationchange', function() {
-    if (isMobileDevice()) {
-        try {
-            setTimeout(() => {
-                try {
-                    // console.log('画面向き変更 - ワードクラウド再生成');
-                    if (currentWordcloudData.length > 0) {
-                        const canvas = document.getElementById('wordcloud-canvas');
-                        if (canvas && canvas.offsetWidth > 0) {
-                            generateWordcloud(currentWordcloudData);
-                        }
-                    }
-                } catch (error) {
-                    console.error('画面向き変更時の再生成エラー:', error);
-                }
-            }, 800);
-        } catch (error) {
-            console.error('画面向き変更イベントエラー:', error);
-        }
-    }
-});
-
-// パフォーマンス監視（デスクトップのみ）
-if (!isMobileDevice() && typeof performance !== 'undefined' && performance.mark) {
-    performance.mark('wordcloud-init-start');
-    
-    setTimeout(() => {
-        performance.mark('wordcloud-init-end');
-        performance.measure('wordcloud-init', 'wordcloud-init-start', 'wordcloud-init-end');
-        
-        const measures = performance.getEntriesByName('wordcloud-init');
-        if (measures.length > 0) {
-            // console.log(`ワードクラウド初期化時間: ${measures[0].duration.toFixed(2)}ms`);
-        }
-    }, 5000);
 }
 </script>
 {% endblock %}
