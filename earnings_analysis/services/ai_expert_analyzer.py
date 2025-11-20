@@ -34,8 +34,8 @@ class AIExpertAnalyzer:
             genai.configure(api_key=api_key)
             logger.info("Gemini API設定完了")
             
-            self.model = genai.GenerativeModel("gemini-2.0-flash-exp")
-            logger.info("Geminiモデル初期化成功: gemini-2.0-flash-exp")
+            self.model = genai.GenerativeModel("gemini-2.5-flash")
+            logger.info("Geminiモデル初期化成功: gemini-2.5-flash")
             
             self.api_available = True
             logger.info("AI Expert Analyzer初期化成功")
