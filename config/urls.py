@@ -58,7 +58,7 @@ urlpatterns = [
     path('', views.landing_page, name='landing_page'),
     
     # 管理画面
-    path("admin/", admin.site.urls),
+    path("admin_xyz/", admin.site.urls),
     
     # ユーザー認証関連
     path("users/", include("users.urls")),

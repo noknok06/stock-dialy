@@ -243,6 +243,6 @@ class DataImportLogAdmin(admin.ModelAdmin):
     execute_new_batch.short_description = "新しいJPXデータ取得を実行"
 
 # カスタムAdminサイト設定
-admin.site.site_header = "JPX信用取引データ管理"
-admin.site.site_title = "JPX管理画面"
+admin.site.site_header = "株ログデータ管理"
+admin.site.site_title = "株ログ管理画面"
 admin.site.index_title = "データ管理"
