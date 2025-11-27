@@ -503,20 +503,37 @@
                                 </div>
                             {% endif %}
                             
-                            <!-- スコアとグレードの関係を視覚的に表示 -->
+                            <!-- スコア表示部分の修正版 -->
                             <div class="score-grade-relationship mb-4">
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <div class="info-box">
                                             <div class="info-box-label">総合評価スコア</div>
                                             <div class="info-box-value display-4 fw-bold 
-                                                {% if session.analysis_result.ai_overall_score > 0.3 %}text-success
-                                                {% elif session.analysis_result.ai_overall_score < -0.3 %}text-danger
-                                                {% else %}text-secondary{% endif %}">
-                                                {{ session.analysis_result.ai_overall_score|floatformat:2 }}
+                                                {% if session.analysis_result.ai_overall_score >= 75 %}text-success
+                                                {% elif session.analysis_result.ai_overall_score >= 50 %}text-info
+                                                {% elif session.analysis_result.ai_overall_score >= 35 %}text-warning
+                                                {% else %}text-danger{% endif %}">
+                                                {{ session.analysis_result.ai_overall_score|floatformat:0 }}<small class="fs-4">/100点</small>
                                             </div>
                                             <div class="info-box-description text-muted small">
                                                 {{ ai.consistency_check.score_range }}
+                                            </div>
+                                            <div class="mt-2">
+                                                <!-- プログレスバー -->
+                                                <div class="progress" style="height: 8px;">
+                                                    <div class="progress-bar 
+                                                        {% if session.analysis_result.ai_overall_score >= 75 %}bg-success
+                                                        {% elif session.analysis_result.ai_overall_score >= 50 %}bg-info
+                                                        {% elif session.analysis_result.ai_overall_score >= 35 %}bg-warning
+                                                        {% else %}bg-danger{% endif %}"
+                                                        role="progressbar" 
+                                                        style="width: {{ session.analysis_result.ai_overall_score }}%"
+                                                        aria-valuenow="{{ session.analysis_result.ai_overall_score }}" 
+                                                        aria-valuemin="0" 
+                                                        aria-valuemax="100">
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -533,21 +550,55 @@
                                                 </div>
                                             </div>
                                             <div class="info-box-description text-muted small">
-                                                {% if ai.consistency_check %}
-                                                    スコア範囲に基づく推奨
+                                                {% if ai.investment_grade == 'A+' %}
+                                                    強気買い推奨 (85点以上)
+                                                {% elif ai.investment_grade == 'A' %}
+                                                    買い推奨 (75～84点)
+                                                {% elif ai.investment_grade == 'B+' %}
+                                                    やや買い推奨 (65～74点)
+                                                {% elif ai.investment_grade == 'B' %}
+                                                    中立・保有 (50～64点)
+                                                {% elif ai.investment_grade == 'C' %}
+                                                    慎重・売り検討 (35～49点)
+                                                {% else %}
+                                                    強気売り推奨 (34点以下)
                                                 {% endif %}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <!-- スコア内訳の表示（新規追加） -->
+
+                            <!-- 評価基準の説明 -->
+                            <div class=" mb-4">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-info-circle me-2"></i>評価基準について
+                                </h6>
+                                <ul class="mb-0 small">
+                                    <li><strong>60点</strong>を標準点として設定しています</li>
+                                    <li>明確なポジティブ要素で加点、リスク要因で減点</li>
+                                    <li>単なる増収増益では65点程度、大幅な増収増益で70～75点</li>
+                                    <li>80点以上は非常に優れた内容、90点以上は例外的</li>
+                                    <li>厳格な基準により、より良い結果を際立たせています</li>
+                                </ul>
+                            </div>
+
+                            <!-- スコア内訳の表示（改良版） -->
                             {% if ai.score_breakdown %}
                                 <div class="score-breakdown-section mb-4">
                                     <h6 class="mb-3">
-                                        <i class="fas fa-calculator me-2"></i>スコア算出の内訳
+                                        <i class="fas fa-calculator me-2"></i>スコア算出の詳細
                                     </h6>
+                                    
+                                    <!-- 基準点 -->
+                                    {% if ai.score_breakdown.base_score %}
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                                <span class="fw-semibold">基準点</span>
+                                                <span class="badge bg-secondary fs-6">{{ ai.score_breakdown.base_score }}点</span>
+                                            </div>
+                                        </div>
+                                    {% endif %}
                                     
                                     <!-- ポジティブ要因 -->
                                     {% if ai.score_breakdown.positive_factors %}
@@ -562,7 +613,7 @@
                                                             <strong>{{ factor.factor }}</strong>
                                                             <div class="small text-muted">{{ factor.description }}</div>
                                                         </div>
-                                                        <span class="badge bg-success ms-2">+{{ factor.impact }}</span>
+                                                        <span class="badge bg-success ms-2">+{{ factor.impact }}点</span>
                                                     </div>
                                                 </div>
                                             {% endfor %}
@@ -582,68 +633,46 @@
                                                             <strong>{{ factor.factor }}</strong>
                                                             <div class="small text-muted">{{ factor.description }}</div>
                                                         </div>
-                                                        <span class="badge bg-danger ms-2">{{ factor.impact }}</span>
+                                                        <span class="badge bg-danger ms-2">{{ factor.impact }}点</span>
                                                     </div>
                                                 </div>
                                             {% endfor %}
                                         </div>
                                     {% endif %}
                                     
-                                    <!-- 計算ロジック -->
-                                    {% if ai.score_breakdown.score_calculation_logic %}
-                                        <div class="alert alert-info">
-                                            <i class="fas fa-info-circle me-2"></i>
-                                            <strong>計算ロジック:</strong><br>
-                                            <small>{{ ai.score_breakdown.score_calculation_logic }}</small>
+                                    <!-- 調整の詳細 -->
+                                    {% if ai.score_breakdown.adjustments %}
+                                        <div class="mb-3">
+                                            <div class="small fw-semibold mb-2">
+                                                <i class="fas fa-adjust me-1"></i>調整の内訳
+                                            </div>
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-bordered">
+                                                    <tbody>
+                                                        {% for adj in ai.score_breakdown.adjustments %}
+                                                            <tr>
+                                                                <td>{{ adj.item }}</td>
+                                                                <td class="text-end {% if adj.value > 0 %}text-success{% elif adj.value < 0 %}text-danger{% endif %}">
+                                                                    {% if adj.value > 0 %}+{% endif %}{{ adj.value }}点
+                                                                </td>
+                                                            </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- 最終計算 -->
+                                    {% if ai.score_breakdown.final_calculation %}
+                                        <div class="alert alert-primary">
+                                            <i class="fas fa-equals me-2"></i>
+                                            <strong>最終計算:</strong><br>
+                                            <small>{{ ai.score_breakdown.final_calculation }}</small>
                                         </div>
                                     {% endif %}
                                 </div>
-                            {% endif %}
-                            
-                            <!-- 分析根拠の表示 -->
-                            {% if ai.reasoning %}
-                                <div class="analysis-reasoning-section mb-4">
-                                    <h6 class="mb-3">
-                                        <i class="fas fa-list-check me-2"></i>評価の根拠
-                                    </h6>
-                                    <ul class="list-group">
-                                        {% for reason in ai.reasoning %}
-                                            <li class="list-group-item">
-                                                <i class="fas fa-check-circle text-primary me-2"></i>
-                                                {{ reason }}
-                                            </li>
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                            {% endif %}
-                            
-                            <!-- 既存の詳細スコア表示 -->
-                            <div class="detailed-scores-grid">
-                                {% for key, label in scores_labels.items %}
-                                    <div class="score-item">
-                                        <div class="score-item-value">{{ ai.detailed_scores|get_item:key }}/10</div>
-                                        <div class="score-item-label">{{ label }}</div>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                            
-                            <!-- 投資ポイント -->
-                            {% if ai.investment_points %}
-                                <h6 class="mt-4 mb-3">投資判断ポイント</h6>
-                                <div class="investment-points">
-                                    {% for point in ai.investment_points %}
-                                        <div class="point-card {{ point.impact }}">
-                                            <div class="point-header">
-                                                <span class="point-title">{{ point.title }}</span>
-                                                <span class="importance-badge {{ point.importance }}">
-                                                    {{ point.importance|upper }}
-                                                </span>
-                                            </div>
-                                            <p class="small mb-0 text-muted">{{ point.description }}</p>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
+                            {% endif %}                            
                             
                         {% endwith %}
                     {% else %}

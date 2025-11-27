@@ -73,7 +73,7 @@ class StockDiaryForm(forms.ModelForm):
         widgets = {
             'stock_symbol': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': '日本株: 7203, 米国株: AAPL など',
+                'placeholder': '日本株: 7203 など',
                 'maxlength': '50',
             }),
             'stock_name': forms.TextInput(attrs={
@@ -112,7 +112,7 @@ class StockDiaryForm(forms.ModelForm):
         
         # ラベル設定
         self.fields['stock_symbol'].label = "銘柄コード（任意）"
-        self.fields['stock_symbol'].help_text = "例: 7203（トヨタ）、AAPL（アップル）など"
+        self.fields['stock_symbol'].help_text = "米国株も検索可能ですが、為替対応はありません。"
         self.fields['stock_symbol'].required = False
         self.fields['reason'].label = "投資理由 / 分析内容"
         self.fields['memo'].label = "追加メモ"
