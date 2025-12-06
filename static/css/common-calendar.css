@@ -1,0 +1,340 @@
+/* ========================================
+   common-calendar.css (最適化版)
+   カレンダーコンポーネント専用スタイル
+   ======================================== */
+
+/* ========== カレンダービュー ========== */
+.calendar-view {
+  background-color: var(--card-bg-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* PCでのカレンダー列調整 */
+@media (min-width: 992px) {
+  .calendar-view .row > .col-lg-7 {
+    padding-right: 1rem;
+  }
+
+  .calendar-view .row > .col-lg-5 {
+    padding-left: 1rem;
+  }
+}
+
+/* ========== カレンダーヘッダー ========== */
+.calendar-header {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+}
+
+.calendar-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.calendar-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.calendar-badges {
+  display: flex;
+  gap: 8px;
+}
+
+/* ========== カレンダーコントロール ========== */
+.calendar-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.calendar-nav-buttons {
+  display: flex;
+  gap: 5px;
+}
+
+.calendar-nav-button {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  color: #495057;
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.calendar-date-display {
+  font-size: 20px;
+  font-weight: 600;
+  color: #4f46e5;
+}
+
+.calendar-view-toggle {
+  background-color: #212529;
+  color: white;
+  border: none;
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+/* ========== FullCalendar カスタマイズ ========== */
+.fc {
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.fc .fc-toolbar {
+  display: none !important;
+}
+
+.fc .fc-header-toolbar {
+  margin-bottom: 0.75rem !important;
+}
+
+.calendar-container {
+  min-height: 350px;
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* ========== カレンダーイベント ========== */
+.fc-event {
+  border-radius: 4px;
+  border: none;
+  padding: 2px 4px;
+  font-size: 0.8rem;
+}
+
+.purchase-event {
+  background-color: var(--success-color) !important;
+  border-color: var(--success-color) !important;
+  color: white !important;
+}
+
+.sell-event {
+  background-color: var(--danger-color) !important;
+  border-color: var(--danger-color) !important;
+  color: white !important;
+}
+
+.memo-event {
+  background-color: var(--info-color) !important;
+  border-color: var(--info-color) !important;
+  color: white !important;
+  opacity: 0.8;
+}
+
+/* ========== 日付セル ========== */
+.fc .fc-daygrid-day-top {
+  justify-content: center;
+  padding-top: 5px;
+}
+
+.fc .fc-daygrid-day-number {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+/* ========== イベント一覧 ========== */
+.calendar-events {
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: var(--card-shadow);
+  height: 450px;
+  overflow-y: auto;
+}
+
+.calendar-event-badge {
+  width: 80px;
+  text-align: center;
+}
+
+.calendar-event-item {
+  text-decoration: none;
+  color: inherit;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.2s ease;
+  background-color: rgba(249, 250, 251, 0.5);
+  border: 1px solid rgba(229, 231, 235, 0.5);
+}
+
+.calendar-event-item:hover {
+  background-color: rgba(243, 244, 246, 1);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+/* ========== スマホ最適化 ========== */
+@media (max-width: 767.98px) {
+  .calendar-title-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .calendar-badges {
+    align-self: flex-end;
+  }
+
+  .calendar-controls {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .calendar-date-display {
+    font-size: 18px;
+    width: 100%;
+    text-align: center;
+    order: -1;
+  }
+
+  .calendar-nav-buttons {
+    margin-right: auto;
+  }
+
+  .fc .fc-daygrid-day-number {
+    font-size: 0.85rem;
+  }
+
+  .fc .fc-toolbar {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 1.1rem;
+    order: 0;
+    width: 100%;
+    text-align: center;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .fc-prev-button,
+  .fc-next-button,
+  .fc-today-button {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  .fc-daygrid-day {
+    min-height: 2rem;
+  }
+
+  .fc-daygrid-event {
+    margin: 1px;
+    padding: 0 2px;
+    font-size: 0.65rem;
+  }
+
+  .fc-toolbar-chunk:first-child {
+    margin-right: auto;
+  }
+
+  .fc-toolbar-chunk:last-child {
+    margin-left: auto;
+  }
+}
+
+/* ========== ダークモードサポート ========== */
+.dark-mode .calendar-view,
+[data-theme="dark"] .calendar-view {
+  background-color: var(--dm-card);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .calendar-header,
+[data-theme="dark"] .calendar-header {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .calendar-title,
+[data-theme="dark"] .calendar-title {
+  color: var(--dm-primary);
+}
+
+.dark-mode .calendar-nav-button,
+[data-theme="dark"] .calendar-nav-button {
+  background-color: rgba(71, 85, 105, 0.5);
+  border-color: var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .calendar-nav-button:hover,
+[data-theme="dark"] .calendar-nav-button:hover {
+  background-color: rgba(71, 85, 105, 0.7);
+}
+
+.dark-mode .calendar-date-display,
+[data-theme="dark"] .calendar-date-display {
+  color: var(--dm-primary);
+}
+
+.dark-mode .calendar-view-toggle,
+[data-theme="dark"] .calendar-view-toggle {
+  background-color: var(--dm-primary);
+}
+
+.dark-mode .calendar-container,
+[data-theme="dark"] .calendar-container {
+  background-color: var(--dm-card);
+}
+
+.dark-mode .fc,
+[data-theme="dark"] .fc {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .fc .fc-daygrid-day,
+[data-theme="dark"] .fc .fc-daygrid-day {
+  background-color: var(--dm-card);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .fc .fc-daygrid-day.fc-day-today,
+[data-theme="dark"] .fc .fc-daygrid-day.fc-day-today {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.dark-mode .fc .fc-col-header-cell,
+[data-theme="dark"] .fc .fc-col-header-cell {
+  background-color: rgba(71, 85, 105, 0.3);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .calendar-events,
+[data-theme="dark"] .calendar-events {
+  background-color: var(--dm-card);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .calendar-event-item,
+[data-theme="dark"] .calendar-event-item {
+  background-color: rgba(71, 85, 105, 0.3);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .calendar-event-item:hover,
+[data-theme="dark"] .calendar-event-item:hover {
+  background-color: rgba(71, 85, 105, 0.5);
+}

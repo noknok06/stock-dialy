@@ -1,9 +1,9 @@
 /* ========================================
-   統合変数定義 - variables.css
+   統合変数定義 - variables.css (最適化版)
    すべてのCSSファイルで使用する変数を一元管理
    
    命名規則:
-   - ���リミティブカラー: --[color]-[shade] (例: --blue-500)
+   - プリミティブカラー: --[color]-[shade] (例: --blue-500)
    - セマンティックカラー: --[purpose]-[variant] (例: --primary-color)
    - 機能別: --[category]-[type] (例: --bg-primary)
    ======================================== */
@@ -188,11 +188,6 @@
   --card-shadow-hover: var(--shadow-lg);
   --button-shadow: 0 2px 5px rgba(90, 126, 197, 0.2);
   
-  /* レガシー互換 */
-  --card-shadow: var(--shadow-sm);
-  --card-shadow-hover: var(--shadow-lg);
-  --button-shadow: 0 2px 5px rgba(90, 126, 197, 0.2);
-  
   /* ========== Typography（タイポグラフィ） ========== */
   /* Font Families */
   --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 
@@ -265,15 +260,6 @@
   --notebook-line-height: 2rem;
   --notebook-binding: var(--primary-color);
   --masking-tape: rgba(248, 194, 145, 0.6);
-  
-  /* ========== Breakpoints（参考値） ========== */
-  /* CSS変数では直接使えないため、メディアクエリで使用 */
-  /* --breakpoint-xs: 0px; */
-  /* --breakpoint-sm: 576px; */
-  /* --breakpoint-md: 768px; */
-  /* --breakpoint-lg: 992px; */
-  /* --breakpoint-xl: 1200px; */
-  /* --breakpoint-xxl: 1400px; */
 }
 
 /* ========================================
@@ -281,7 +267,6 @@
    ======================================== */
 @media print {
   :root {
-    /* Remove shadows for print */
     --shadow-xs: none;
     --shadow-sm: none;
     --shadow-md: none;
@@ -292,7 +277,6 @@
     --card-shadow-hover: none;
     --button-shadow: none;
     
-    /* Adjust colors for print */
     --bg-primary: #ffffff;
     --bg-secondary: #ffffff;
     --bg-tertiary: #f9fafb;
@@ -306,13 +290,10 @@
    ======================================== */
 @media (prefers-contrast: high) {
   :root {
-    /* Increase contrast for accessibility */
     --text-primary: #000000;
     --text-secondary: #1a1a1a;
     --border-primary: #000000;
     --border-secondary: #333333;
-    
-    /* Strengthen shadows */
     --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.3);
@@ -324,7 +305,6 @@
    ======================================== */
 @media (prefers-reduced-motion: reduce) {
   :root {
-    /* Minimize animation duration */
     --duration-75: 1ms;
     --duration-100: 1ms;
     --duration-150: 1ms;
@@ -333,6 +313,7 @@
     --duration-500: 1ms;
   }
 }
+
 /* ========================================
    Dark Mode Variables
    ======================================== */
@@ -357,7 +338,7 @@
   --dm-accent: #e2b870;
   --dm-info: #4685eb;
   
-  /* ========== Override Light Mode Variables in Dark Mode ========== */
+  /* ========== Override Light Mode Variables ========== */
   --bg-primary: var(--dm-card);
   --bg-secondary: rgba(71, 85, 105, 0.3);
   --bg-tertiary: rgba(71, 85, 105, 0.2);
@@ -383,43 +364,3 @@
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
   --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
 }
-
-
-/* ========================================
-   Usage Guidelines (コメント)
-   ======================================== */
-
-/*
-【推奨される使用方法】
-
-1. セマンティックカラーを優先:
-   ✅ color: var(--text-primary);
-   ❌ color: var(--gray-900);
-
-2. 機能別変数を使用:
-   ✅ background: var(--bg-primary);
-   ❌ background: #ffffff;
-
-3. スペーシングスケールに従う:
-   ✅ padding: var(--spacing-md);
-   ❌ padding: 17px;
-
-4. レガシー変数は新規コードで使用しない:
-   ✅ box-shadow: var(--shadow-md);
-   ❌ box-shadow: var(--card-shadow);
-
-【変数の選択フロー】
-
-色の選択:
-1. セマンティックカラー（--primary-color等）
-2. 機能別カラー（--bg-primary等）
-3. プリミティブカラー（--blue-500等）
-
-間隔の選択:
-1. スペーシングスケール（--spacing-md等）
-2. 詳細スペーシング（--space-4等）
-
-影の選択:
-1. 新しいシャドウ変数（--shadow-md等）
-2. レガシーは既存コード互換のみ
-*/
