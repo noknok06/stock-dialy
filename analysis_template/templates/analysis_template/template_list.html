@@ -122,6 +122,7 @@
     {% csrf_token %}
 </form>
 
+{% include 'speed_dial.html' with actions=form_actions %}
 <script>
 const csrfToken = '{{ csrf_token }}';
 let selectedTemplates = new Set();

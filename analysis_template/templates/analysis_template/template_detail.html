@@ -109,6 +109,7 @@
   </div>
 </div>
 
+{% include 'speed_dial.html' with actions=form_actions %}
 <script>
 const companiesData = {{ companies_data|safe }};
 const benchmarksData = {{ benchmarks_data|safe }};
@@ -129,59 +130,169 @@ function getScoreColor(score) {
 }
 
 // ========================================
-// スコア計算
+// スコア計算（改善版）
+// normalizeValue関数を使用して総合スコアを算出
 // ========================================
 function calculateScore(company) {
   const benchmark = benchmarksData[company.industry_code_33];
-  const metrics = ['roe', 'roa', 'operating_margin'];
-  let totalScore = 0, count = 0;
   
-  if (benchmark) {
-    metrics.forEach(m => {
-      const v = company.metrics[m];
-      const b = benchmark[m];
-      if (v != null && b?.avg > 0) {
-        totalScore += Math.max(0, Math.min(100, (Number(v) / Number(b.avg)) * 50));
-        count++;
-      }
-    });
-  }
+  // スコア計算に使用する主要指標（重み付け可能）
+  const scoreMetrics = [
+    { key: 'roe', weight: 1.5 },           // 収益性（重要）
+    { key: 'roa', weight: 1.0 },           // 収益性
+    { key: 'operating_margin', weight: 1.2 }, // 収益性
+    { key: 'per', weight: 1.0 },           // バリュエーション
+    { key: 'pbr', weight: 0.8 },           // バリュエーション
+    { key: 'dividend_yield', weight: 0.8 }, // 配当
+    { key: 'equity_ratio', weight: 0.8 },  // 財務健全性
+    { key: 'revenue_growth', weight: 0.7 }, // 成長性
+    { key: 'profit_growth', weight: 0.7 }, // 成長性
+  ];
   
-  if (count === 0) {
-    const avgs = {};
-    metrics.forEach(m => {
-      const vals = companiesData.map(c => c.metrics[m]).filter(v => v != null).map(Number);
-      if (vals.length) avgs[m] = vals.reduce((a, b) => a + b, 0) / vals.length;
-    });
+  let totalWeightedScore = 0;
+  let totalWeight = 0;
+  
+  scoreMetrics.forEach(({ key, weight }) => {
+    const value = company.metrics[key];
+    if (value == null) return;
     
-    metrics.forEach(m => {
-      const v = company.metrics[m];
-      if (v != null && avgs[m] > 0) {
-        totalScore += Math.max(0, Math.min(100, (Number(v) / avgs[m]) * 50));
-        count++;
-      }
-    });
-  }
+    const b = benchmark ? benchmark[key] : null;
+    const score = normalizeValue(value, key, b);
+    
+    if (score != null) {
+      totalWeightedScore += score * weight;
+      totalWeight += weight;
+    }
+  });
   
-  return count > 0 ? totalScore / count : 50;
+  return totalWeight > 0 ? totalWeightedScore / totalWeight : 50;
 }
 
-// 正規化
+// ========================================
+// 指標別の正規化設定
+// 業種ベンチマークがない場合のフォールバック用
+// 
+// 構造: poor → avg → excellent の方向でスコアが上がる
+// 通常指標: poor < avg < excellent（値が大きいほど良い）
+// 逆指標:   poor > avg > excellent（値が小さいほど良い）
+// ========================================
+const METRIC_DEFAULTS = {
+  // 収益性（高いほど良い）
+  roe:              { poor: 4,   avg: 8,   excellent: 15 },
+  roa:              { poor: 2,   avg: 4,   excellent: 8 },
+  operating_margin: { poor: 3,   avg: 7,   excellent: 13 },
+  net_margin:       { poor: 2,   avg: 4,   excellent: 10 },
+  
+  // 成長性（高いほど良い）
+  revenue_growth:   { poor: -3,  avg: 5,   excellent: 15 },
+  profit_growth:    { poor: -5,  avg: 8,   excellent: 18 },
+  eps_growth:       { poor: -5,  avg: 8,   excellent: 20 },
+  
+  // バリュエーション（低いほど良い）: poor > avg > excellent
+  per:              { poor: 30,  avg: 15,  excellent: 10 },
+  pbr:              { poor: 2.5, avg: 1.2, excellent: 0.7 },
+  psr:              { poor: 3.0, avg: 1.5, excellent: 0.8 },
+  pcfr:             { poor: 20,  avg: 12,  excellent: 7 },
+  ev_ebitda:        { poor: 15,  avg: 10,  excellent: 6 },
+  
+  // 配当（高いほど良い）
+  dividend_yield:   { poor: 0.8, avg: 2.0, excellent: 3.5 },
+  dividend_payout:  { poor: 15,  avg: 35,  excellent: 50 },
+  payout_ratio:     { poor: 15,  avg: 35,  excellent: 50 },
+  
+  // 財務健全性
+  equity_ratio:     { poor: 25,  avg: 42,  excellent: 60 },       // 高いほど良い
+  current_ratio:    { poor: 100, avg: 150, excellent: 200 },      // 高いほど良い
+  debt_equity_ratio:{ poor: 180, avg: 100, excellent: 50 },       // 低いほど良い
+  
+  // 効率性（高いほど良い）
+  asset_turnover:   { poor: 0.5, avg: 1.0, excellent: 1.8 },
+  inventory_turnover:{ poor: 4,  avg: 8,   excellent: 15 },
+};
+
+/**
+ * 値を0-100のスコアに正規化
+ * 
+ * 方式: 3点線形補間
+ * - poor（要注意）= 0点
+ * - avg（平均）= 50点  
+ * - excellent（優良）= 100点
+ * 
+ * 逆指標（PER, PBR等）はベンチマークの構造から自動判定:
+ * - excellent < avg の場合、値が小さいほど良い
+ * 
+ * @param {number} value - 実際の値
+ * @param {string} key - 指標キー（roe, per等）
+ * @param {object} benchmark - 業種ベンチマーク {avg, excellent, poor}
+ * @returns {number|null} 0-100のスコア
+ */
 function normalizeValue(value, key, benchmark) {
   if (value == null || isNaN(value)) return null;
   const v = Number(value);
   
-  let avg = benchmark?.avg;
-  if (!avg || avg <= 0) {
+  // ベンチマークまたはデフォルト設定から基準値を取得
+  let poor, avg, excellent;
+  
+  if (benchmark && benchmark.avg != null) {
+    // 業種ベンチマークがある場合
+    avg = Number(benchmark.avg);
+    excellent = Number(benchmark.excellent ?? (avg > 0 ? avg * 1.5 : avg * 0.5));
+    poor = Number(benchmark.poor ?? (avg > 0 ? avg * 0.4 : avg * 1.6));
+  } else if (METRIC_DEFAULTS[key]) {
+    // デフォルト設定を使用
+    const def = METRIC_DEFAULTS[key];
+    poor = def.poor;
+    avg = def.avg;
+    excellent = def.excellent;
+  } else {
+    // フォールバック: テンプレート内平均を使用
     const vals = companiesData.map(c => c.metrics[key]).filter(x => x != null).map(Number);
     if (!vals.length) return null;
     avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+    if (avg === 0) return 50;
+    poor = avg * 0.4;
+    excellent = avg * 1.5;
   }
-  if (!avg || avg === 0) return null;
   
-  let score = (v / avg) * 50;
-  if (key === 'pbr' || key === 'per') score = 100 - score;
-  return Math.max(0, Math.min(100, score));
+  // 逆指標判定: excellent < avg の場合（PER, PBR等）
+  const isReverse = excellent < avg;
+  
+  // 3点線形補間でスコア計算
+  let score;
+  
+  if (isReverse) {
+    // 逆指標: 値が小さいほど良い (poor > avg > excellent)
+    if (v >= poor) {
+      // poor以上 → 0点（悪い）
+      score = 0;
+    } else if (v <= excellent) {
+      // excellent以下 → 100点（優良）
+      score = 100;
+    } else if (v >= avg) {
+      // avg〜poor → 50〜0点の線形補間
+      score = 50 * (1 - (v - avg) / (poor - avg));
+    } else {
+      // excellent〜avg → 100〜50点の線形補間
+      score = 50 + 50 * (1 - (v - excellent) / (avg - excellent));
+    }
+  } else {
+    // 通常指標: 値が大きいほど良い (poor < avg < excellent)
+    if (v <= poor) {
+      // poor以下 → 0点
+      score = 0;
+    } else if (v >= excellent) {
+      // excellent以上 → 100点
+      score = 100;
+    } else if (v <= avg) {
+      // poor〜avg → 0〜50点の線形補間
+      score = ((v - poor) / (avg - poor)) * 50;
+    } else {
+      // avg〜excellent → 50〜100点の線形補間
+      score = 50 + ((v - avg) / (excellent - avg)) * 50;
+    }
+  }
+  
+  return Math.max(0, Math.min(100, Math.round(score * 10) / 10));
 }
 
 // ========================================
@@ -273,23 +384,30 @@ function generateDetailsAccordion() {
           <div class="at-form-section">
             <div class="at-form-section-title"><i class="bi bi-graph-up-arrow me-2"></i>収益性</div>
             ${generateMetricRows([
-              ['ROE', company.metrics.roe, '%', benchmark?.roe],
-              ['ROA', company.metrics.roa, '%', benchmark?.roa],
-              ['営業利益率', company.metrics.operating_margin, '%', benchmark?.operating_margin]
+              ['ROE', company.metrics.roe, '%', benchmark?.roe, 'roe'],
+              ['ROA', company.metrics.roa, '%', benchmark?.roa, 'roa'],
+              ['営業利益率', company.metrics.operating_margin, '%', benchmark?.operating_margin, 'operating_margin']
             ])}
           </div>
           <div class="at-form-section">
             <div class="at-form-section-title"><i class="bi bi-currency-yen me-2"></i>バリュエーション</div>
             ${generateMetricRows([
-              ['PER', company.metrics.per, '倍', benchmark?.per],
-              ['PBR', company.metrics.pbr, '倍', benchmark?.pbr],
-              ['配当利回り', company.metrics.dividend_yield, '%', benchmark?.dividend_yield]
+              ['PER', company.metrics.per, '倍', benchmark?.per, 'per'],
+              ['PBR', company.metrics.pbr, '倍', benchmark?.pbr, 'pbr'],
+              ['配当利回り', company.metrics.dividend_yield, '%', benchmark?.dividend_yield, 'dividend_yield']
             ])}
           </div>
           <div class="at-form-section">
             <div class="at-form-section-title"><i class="bi bi-shield-check me-2"></i>財務健全性</div>
             ${generateMetricRows([
-              ['自己資本比率', company.metrics.equity_ratio, '%', benchmark?.equity_ratio]
+              ['自己資本比率', company.metrics.equity_ratio, '%', benchmark?.equity_ratio, 'equity_ratio']
+            ])}
+          </div>
+          <div class="at-form-section">
+            <div class="at-form-section-title"><i class="bi bi-graph-up me-2"></i>成長性</div>
+            ${generateMetricRows([
+              ['売上成長率', company.metrics.revenue_growth, '%', benchmark?.revenue_growth, 'revenue_growth'],
+              ['利益成長率', company.metrics.profit_growth, '%', benchmark?.profit_growth, 'profit_growth']
             ])}
           </div>
         </div>
@@ -300,16 +418,36 @@ function generateDetailsAccordion() {
 }
 
 function generateMetricRows(metrics) {
-  return metrics.map(([label, value, unit, benchmark]) => {
+  return metrics.map(([label, value, unit, benchmark, key]) => {
     let comparison = '';
+    let scoreBar = '';
+    
     if (benchmark && value != null) {
       const diff = Number(value) - Number(benchmark.avg);
-      comparison = `<small class="${diff > 0 ? 'at-text-success' : 'at-text-danger'} ms-2">${diff > 0 ? '↑' : '↓'}${Math.abs(diff).toFixed(1)}</small>`;
+      
+      // 逆指標判定: excellent < avg の場合
+      const isReverse = benchmark.excellent != null && benchmark.excellent < benchmark.avg;
+      
+      // 逆指標の場合は色を反転（低い方が良い）
+      const isPositive = isReverse ? (diff < 0) : (diff > 0);
+      const colorClass = isPositive ? 'at-text-success' : 'at-text-danger';
+      const arrow = isPositive ? '↑' : '↓';
+      
+      comparison = `<small class="${colorClass} ms-2">${arrow}${Math.abs(diff).toFixed(1)}</small>`;
+      
+      // スコアバー（normalizeValueを使用）
+      if (key) {
+        const score = normalizeValue(value, key, benchmark);
+        if (score != null) {
+          const barColor = score >= 70 ? 'var(--at-success)' : score >= 50 ? 'var(--at-primary)' : 'var(--at-warning)';
+          scoreBar = `<div class="at-score-bar" style="width:80px;height:6px;background:var(--at-bg-secondary);border-radius:3px;margin-left:8px;overflow:hidden;"><div style="width:${score}%;height:100%;background:${barColor};border-radius:3px;"></div></div>`;
+        }
+      }
     }
     return `
-      <div class="at-benchmark-row">
+      <div class="at-benchmark-row" style="align-items:center;">
         <span class="at-benchmark-label">${label}</span>
-        <span><strong class="at-benchmark-value">${formatNumber(value)}${unit}</strong>${comparison}</span>
+        <span style="display:flex;align-items:center;"><strong class="at-benchmark-value">${formatNumber(value)}${unit}</strong>${comparison}${scoreBar}</span>
       </div>`;
   }).join('');
 }
@@ -332,24 +470,50 @@ function generateBenchmarkList() {
     card.className = 'at-benchmark-card';
     card.innerHTML = `
       <div class="at-benchmark-title">${benchmark.name}</div>
-      ${generateBenchmarkMetricRow('ROE', benchmark.roe)}
-      ${generateBenchmarkMetricRow('ROA', benchmark.roa)}
-      ${generateBenchmarkMetricRow('営業利益率', benchmark.operating_margin)}
-      ${generateBenchmarkMetricRow('PER', benchmark.per)}
-      ${generateBenchmarkMetricRow('PBR', benchmark.pbr)}
+      <div class="at-form-section">
+        <div class="at-form-section-title" style="font-size:0.8rem;"><i class="bi bi-graph-up-arrow me-1"></i>収益性</div>
+        ${generateBenchmarkMetricRow('ROE', benchmark.roe)}
+        ${generateBenchmarkMetricRow('ROA', benchmark.roa)}
+        ${generateBenchmarkMetricRow('営業利益率', benchmark.operating_margin)}
+      </div>
+      <div class="at-form-section">
+        <div class="at-form-section-title" style="font-size:0.8rem;"><i class="bi bi-currency-yen me-1"></i>バリュエーション</div>
+        ${generateBenchmarkMetricRow('PER', benchmark.per, true)}
+        ${generateBenchmarkMetricRow('PBR', benchmark.pbr, true)}
+      </div>
+      <div class="at-form-section">
+        <div class="at-form-section-title" style="font-size:0.8rem;"><i class="bi bi-graph-up me-1"></i>成長性・配当</div>
+        ${generateBenchmarkMetricRow('売上成長率', benchmark.revenue_growth)}
+        ${generateBenchmarkMetricRow('利益成長率', benchmark.profit_growth)}
+        ${generateBenchmarkMetricRow('配当利回り', benchmark.dividend_yield)}
+      </div>
     `;
     container.appendChild(card);
   });
 }
 
-function generateBenchmarkMetricRow(label, data) {
+function generateBenchmarkMetricRow(label, data, isReverse = false) {
   if (!data) return '';
+  
+  // 逆指標の場合は自動判定も行う
+  const actualReverse = isReverse || (data.excellent != null && data.excellent < data.avg);
+  
+  // 評価基準の表示
+  let thresholds = '';
+  if (data.excellent != null && data.poor != null) {
+    if (actualReverse) {
+      thresholds = `<span class="at-benchmark-thresholds"><span class="at-text-success">優良≤${formatNumber(data.excellent)}</span> / <span class="at-text-danger">要注意≥${formatNumber(data.poor)}</span></span>`;
+    } else {
+      thresholds = `<span class="at-benchmark-thresholds"><span class="at-text-success">優良≥${formatNumber(data.excellent)}</span> / <span class="at-text-danger">要注意≤${formatNumber(data.poor)}</span></span>`;
+    }
+  }
+  
   return `
     <div class="at-benchmark-row">
       <span class="at-benchmark-label">${label}</span>
-      <span>
+      <span class="at-benchmark-values">
         <strong class="at-benchmark-value">${formatNumber(data.avg)}</strong>
-        ${data.excellent ? `<span class="at-benchmark-excellent">(優良: ${formatNumber(data.excellent)})</span>` : ''}
+        ${thresholds}
       </span>
     </div>`;
 }

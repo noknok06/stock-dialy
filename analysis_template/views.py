@@ -26,10 +26,11 @@ from company_master.models import CompanyMaster
 
 import logging
 from django.views import View
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 logger = logging.getLogger(__name__)
 
-class TemplateListView(View):
+class TemplateListView(LoginRequiredMixin, View):
     """テンプレート一覧"""
     
     def get(self, request):
@@ -59,8 +60,6 @@ class TemplateListView(View):
         return render(request, 'analysis_template/template_list.html', context)
 
 
-from django.contrib.auth.mixins import LoginRequiredMixin
-
 class TemplateCreateView(LoginRequiredMixin, View):
     """テンプレート作成"""
     def get(self, request):
@@ -71,7 +70,7 @@ class TemplateCreateView(LoginRequiredMixin, View):
             'form_actions': [
                 {
                     'type': 'back',
-                    'url': reverse_lazy('stockdiary:home'),
+                    'url': reverse_lazy('analysis_template:list'),
                     'icon': 'bi-arrow-left',
                     'label': '戻る'
                 }
@@ -178,7 +177,16 @@ def company_select(request, pk):
         'page_obj': page_obj,
         'selected_companies': selected_companies,
         'selected_codes': selected_codes,
+        'form_actions': [
+            {
+                'type': 'back',
+                'url': reverse_lazy('analysis_template:list'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            }
+        ]
     }
+    
     return render(request, 'analysis_template/company_select.html', context)
 
 @login_required
@@ -199,7 +207,15 @@ def template_update(request, pk):
     context = {
         'form': form,
         'template': template,
-        'action': 'update'
+        'action': 'update',
+        'form_actions': [
+            {
+                'type': 'back',
+                'url': reverse_lazy('analysis_template:list'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            }
+        ]
     }
     return render(request, 'analysis_template/template_form.html', context)
 
@@ -394,6 +410,14 @@ def metrics_input(request, pk):
         'metric_groups': metric_groups,
         'existing_data': existing_data,
         'latest_fiscal_year': latest_fiscal_year or '',
+        'form_actions': [
+            {
+                'type': 'back',
+                'url': reverse_lazy('analysis_template:list'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            }
+        ]
     }
     return render(request, 'analysis_template/metrics_input.html', context)
 
@@ -425,6 +449,14 @@ def template_edit(request, pk):
         'formset': formset,
         'template': template,
         'is_create': False,
+        'form_actions': [
+            {
+                'type': 'back',
+                'url': reverse_lazy('analysis_template:list'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            }
+        ]
     }
     return render(request, 'analysis_template/template_form.html', context)
 
@@ -497,6 +529,14 @@ def template_detail(request, pk):
         'companies_data': json.dumps(companies_data),
         'benchmarks_data': json.dumps(benchmarks),
         'chart_data': json.dumps(chart_data),
+        'form_actions': [
+            {
+                'type': 'back',
+                'url': reverse_lazy('analysis_template:list'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            }
+        ]
     }
     return render(request, 'analysis_template/template_detail.html', context)
 
@@ -590,6 +630,14 @@ def metrics_edit(request, pk):
         'form': form,
         'metrics_data': metrics_data,
         'metric_definitions': metric_definitions,
+        'form_actions': [
+            {
+                'type': 'back',
+                'url': reverse_lazy('analysis_template:list'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            }
+        ]
     }
     return render(request, 'analysis_template/metrics_edit.html', context)
 
