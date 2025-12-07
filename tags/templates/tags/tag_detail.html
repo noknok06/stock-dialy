@@ -422,26 +422,11 @@
   {% else %}
   <!-- 空状態（コンポーネント使用） -->
   {% if search_query %}
-    {% include "stockdiary/components/_empty_state.html" with 
-       icon="bi-search" 
-       title="検索結果が見つかりません" 
-       description="「"|add:search_query|add:"」に該当する銘柄が見つかりませんでした。検索条件を変更して再度お試しください。"
-    %}
+    {% include "stockdiary/components/_empty_state.html" with icon="bi-search" title="検索結果が見つかりません" description="「"|add:search_query|add:"」に該当する銘柄が見つかりませんでした。検索条件を変更して再度お試しください。" %}
   {% elif status_filter != 'all' %}
-    {% include "stockdiary/components/_empty_state.html" with 
-       icon="bi-funnel" 
-       title="条件に合う銘柄がありません" 
-       description="選択した条件に該当する銘柄がありません。フィルターを変更して確認してください。"
-    %}
+    {% include "stockdiary/components/_empty_state.html" with icon="bi-funnel" title="条件に合う銘柄がありません" description="選択した条件に該当する銘柄がありません。フィルターを変更して確認してください。" %}
   {% else %}
-    {% include "stockdiary/components/_empty_state.html" with 
-       icon="bi-tag" 
-       title="このタグが設定された銘柄がありません" 
-       description="まだこのタグを使った投資記録がありません。新しい投資記録を作成してタグを活用しましょう。"
-       action_url="stockdiary:create"
-       action_text="新しい投資記録を作成"
-       action_icon="bi-plus-lg"
-    %}
+    {% include "stockdiary/components/_empty_state.html" with icon="bi-tag" title="このタグが設定された銘柄がありません" description="まだこのタグを使った投資記録がありません。新しい投資記録を作成してタグを活用しましょう。" action_url="stockdiary:create" action_text="新しい投資記録を作成" action_icon="bi-plus-lg" %}
   {% endif %}
   {% endif %}
 </div>
