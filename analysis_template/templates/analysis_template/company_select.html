@@ -216,6 +216,13 @@
 const templateId = {{ template.pk }};
 const storageKey = `template_${templateId}_selected_companies`;
 
+// ⭐ 既存の選択企業（テンプレートに登録済み）
+const existingCompanies = {
+    {% for company in selected_companies %}
+    '{{ company.code }}': { code: '{{ company.code }}', name: '{{ company.name|escapejs }}' }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+};
+
 // 選択状態を管理するオブジェクト
 let selectedCompanies = {};
 
@@ -242,6 +249,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ========================================
 
 // sessionStorageから選択状態を読み込み
+// sessionStorageから選択状態を読み込み
 function loadSelections() {
     const saved = sessionStorage.getItem(storageKey);
     if (saved) {
@@ -253,8 +261,15 @@ function loadSelections() {
             selectedCompanies = {};
         }
     } else {
-        console.log('ℹ️ 保存された選択状態がありません');
-        selectedCompanies = {};
+        // ⭐ sessionStorageが空の場合、既存の登録企業を初期値として設定
+        if (Object.keys(existingCompanies).length > 0) {
+            selectedCompanies = { ...existingCompanies };
+            saveSelections();  // sessionStorageに保存
+            console.log('📋 既存の登録企業を初期選択として設定:', selectedCompanies);
+        } else {
+            console.log('ℹ️ 保存された選択状態がありません');
+            selectedCompanies = {};
+        }
     }
 }
 

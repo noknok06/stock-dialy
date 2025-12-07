@@ -2,6 +2,22 @@
 {% load static %}
 
 {% block title %}指標編集 - {{ template.name }}{% endblock %}
+<style>
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeOut {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-10px); }
+}
+.form-control.bg-success {
+    transition: background-color 0.5s ease;
+}
+.form-control.bg-info {
+    transition: background-color 0.5s ease;
+}
+</style>
 
 {% block content %}
 <div class="container mt-4">
@@ -61,6 +77,11 @@
                             <button type="button" class="btn btn-secondary" id="load-metrics">
                                 <i class="bi bi-arrow-clockwise me-1"></i>
                                 既存データ読込
+                            </button>
+                            <!-- ⭐ 追加: APIから取得ボタン -->
+                            <button type="button" class="btn btn-info" id="fetch-api-data">
+                                <i class="bi bi-cloud-download me-1"></i>
+                                APIから取得
                             </button>
                         </div>
                     </form>
@@ -189,16 +210,72 @@
 document.addEventListener('DOMContentLoaded', function() {
     const companySelect = document.querySelector('select[name="company"]');
     const loadButton = document.getElementById('load-metrics');
+    const fetchApiButton = document.getElementById('fetch-api-data');
     const templateId = {{ template.pk }};
+    const csrfToken = '{{ csrf_token }}';
     
+    // ⭐ 企業選択時に自動的に既存データを読み込む
+    companySelect.addEventListener('change', function() {
+        const companyId = this.value;
+        if (companyId) {
+            loadExistingMetrics(companyId);
+        }
+    });
+    
+    // ⭐ 初期表示時：最初の企業が選択されていれば読み込む
+    if (companySelect.value) {
+        loadExistingMetrics(companySelect.value);
+    }
+    
+    // 既存データ読込ボタン
     loadButton.addEventListener('click', function() {
         const companyId = companySelect.value;
         if (!companyId) {
             alert('企業を選択してください');
             return;
         }
+        loadExistingMetrics(companyId);
+    });
+    
+    // ⭐ APIから取得ボタン
+    fetchApiButton.addEventListener('click', function() {
+        const companyId = companySelect.value;
+        if (!companyId) {
+            alert('企業を選択してください');
+            return;
+        }
         
+        // 選択中の企業のコードを取得
+        const selectedOption = companySelect.options[companySelect.selectedIndex];
+        const companyCode = selectedOption.text.match(/^(\d+)/)?.[1];
+        const companyName = selectedOption.text;
+        
+        if (!companyCode) {
+            alert('企業コードを取得できませんでした');
+            return;
+        }
+        
+        fetchFromApi(companyCode, companyName);
+    });
+    
+    // 登録済み企業の編集ボタン
+    document.querySelectorAll('.load-company-data').forEach(button => {
+        button.addEventListener('click', function() {
+            const companyId = this.dataset.companyId;
+            companySelect.value = companyId;
+            loadExistingMetrics(companyId);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    });
+    
+    // ========================================
+    // 既存データ読込関数
+    // ========================================
+    function loadExistingMetrics(companyId) {
         console.log('Loading metrics for company:', companyId);
+        
+        loadButton.disabled = true;
+        loadButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>読込中...';
         
         fetch(`/analysis_template/${templateId}/api/company/${companyId}/metrics/`)
             .then(response => response.json())
@@ -212,27 +289,129 @@ document.addEventListener('DOMContentLoaded', function() {
                         input.value = value;
                         foundCount++;
                         console.log(`✓ Loaded ${key}: ${value}`);
+                        
+                        // ハイライト効果
+                        input.classList.add('bg-success', 'bg-opacity-10');
+                        setTimeout(() => {
+                            input.classList.remove('bg-success', 'bg-opacity-10');
+                        }, 1000);
                     } else {
                         console.warn(`✗ Field not found: id_${key}`);
                     }
                 });
                 
-                alert(`${foundCount}件のデータを読み込みました`);
+                if (foundCount > 0) {
+                    showToast(`${foundCount}件のデータを読み込みました`, 'success');
+                } else {
+                    showToast('この企業のデータはまだ登録されていません', 'info');
+                }
             })
             .catch(error => {
                 console.error('Error:', error);
                 alert('データの読み込みに失敗しました');
+            })
+            .finally(() => {
+                loadButton.disabled = false;
+                loadButton.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>既存データ読込';
             });
-    });
+    }
     
-    document.querySelectorAll('.load-company-data').forEach(button => {
-        button.addEventListener('click', function() {
-            const companyId = this.dataset.companyId;
-            companySelect.value = companyId;
-            loadButton.click();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+    // ========================================
+    // ⭐ APIからデータ取得関数
+    // ========================================
+    function fetchFromApi(companyCode, companyName) {
+        const fiscalYear = document.getElementById('id_fiscal_year')?.value || '';
+        
+        fetchApiButton.disabled = true;
+        fetchApiButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>取得中...';
+        
+        fetch(`/analysis_template/${templateId}/metrics/auto-fetch/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                company_codes: [companyCode],
+                fiscal_year: fiscalYear,
+                overwrite: true
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('API response:', data);
+            
+            if (data.success && data.results.length > 0) {
+                const result = data.results[0];
+                
+                if (result.status === 'success' && result.values) {
+                    // フォームにデータを反映
+                    let updatedCount = 0;
+                    Object.entries(result.values).forEach(([metricName, metricData]) => {
+                        // metric_定義IDの形式でフィールドを探す
+                        const input = document.getElementById(`id_metric_${metricData.metric_id}`);
+                        if (input) {
+                            input.value = metricData.value;
+                            updatedCount++;
+                            
+                            // ハイライト効果
+                            input.classList.add('bg-info', 'bg-opacity-25');
+                            setTimeout(() => {
+                                input.classList.remove('bg-info', 'bg-opacity-25');
+                            }, 1500);
+                        }
+                    });
+                    
+                    showToast(`${updatedCount}件の指標をAPIから取得しました`, 'success');
+                    
+                    // ボタンを一時的に成功表示に
+                    fetchApiButton.classList.remove('btn-info');
+                    fetchApiButton.classList.add('btn-success');
+                    fetchApiButton.innerHTML = `<i class="bi bi-check-circle me-1"></i>取得完了 (${result.metrics_count}指標)`;
+                    
+                    setTimeout(() => {
+                        fetchApiButton.classList.remove('btn-success');
+                        fetchApiButton.classList.add('btn-info');
+                        fetchApiButton.innerHTML = '<i class="bi bi-cloud-download me-1"></i>APIから取得';
+                    }, 3000);
+                } else {
+                    alert(`取得失敗: ${result.message || 'データを取得できませんでした'}`);
+                }
+            } else {
+                alert('データの取得に失敗しました: ' + (data.error || '不明なエラー'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('APIからの取得に失敗しました: ' + error.message);
+        })
+        .finally(() => {
+            fetchApiButton.disabled = false;
+            if (!fetchApiButton.classList.contains('btn-success')) {
+                fetchApiButton.innerHTML = '<i class="bi bi-cloud-download me-1"></i>APIから取得';
+            }
         });
-    });
+    }
+    
+    // ========================================
+    // トースト通知（簡易版）
+    // ========================================
+    function showToast(message, type = 'info') {
+        // 既存のトーストがあれば削除
+        const existingToast = document.querySelector('.metrics-toast');
+        if (existingToast) existingToast.remove();
+        
+        const toast = document.createElement('div');
+        toast.className = `metrics-toast alert alert-${type} position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; animation: fadeIn 0.3s ease;';
+        toast.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>${message}`;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.animation = 'fadeOut 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
 });
 </script>
 {% endblock %}
