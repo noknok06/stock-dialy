@@ -1,0 +1,17 @@
+{% load i18n %}
+
+<span class="badge {% if transaction_type == 'buy' %}badge-primary{% else %}badge-danger{% endif %}">
+  {% if transaction_type == 'buy' %}
+    <i class="bi bi-cart-plus me-1"></i>
+    {% if show_label != False %}購入{% endif %}
+  {% else %}
+    <i class="bi bi-cart-dash me-1"></i>
+    {% if show_label != False %}売却{% endif %}
+  {% endif %}
+</span>
+
+{% if is_margin %}
+<span class="badge badge-warning ms-1">
+  <i class="bi bi-lightning-charge me-1"></i>信用
+</span>
+{% endif %}

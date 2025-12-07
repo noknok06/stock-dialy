@@ -1,0 +1,61 @@
+<div class="form-group {{ extra_class|default:'' }}">
+  <label class="form-label-improved" for="{{ name }}">
+    {% if icon %}<i class="{{ icon }} me-1"></i>{% endif %}
+    {{ label }}
+    {% if required %}<span class="text-danger ms-1">*</span>{% endif %}
+  </label>
+  
+  {% if type == "textarea" %}
+    <textarea 
+      class="form-input-improved {% if error %}is-invalid{% endif %}"
+      id="{{ name }}"
+      name="{{ name }}"
+      rows="{{ rows|default:3 }}"
+      {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
+      {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+      {% if required %}required{% endif %}
+      {% if disabled %}disabled{% endif %}
+      {% if readonly %}readonly{% endif %}
+    >{{ value|default:"" }}</textarea>
+    
+  {% elif type == "select" %}
+    <select 
+      class="form-input-improved {% if error %}is-invalid{% endif %}"
+      id="{{ name }}"
+      name="{{ name }}"
+      {% if required %}required{% endif %}
+      {% if disabled %}disabled{% endif %}
+    >
+      {% for option in options %}
+        <option value="{{ option.value }}" {% if option.selected %}selected{% endif %}>
+          {{ option.label }}
+        </option>
+      {% endfor %}
+    </select>
+    
+  {% else %}
+    <input 
+      type="{{ type }}"
+      class="form-input-improved {% if error %}is-invalid{% endif %}"
+      id="{{ name }}"
+      name="{{ name }}"
+      {% if value %}value="{{ value }}"{% endif %}
+      {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+      {% if step %}step="{{ step }}"{% endif %}
+      {% if min %}min="{{ min }}"{% endif %}
+      {% if max %}max="{{ max }}"{% endif %}
+      {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
+      {% if required %}required{% endif %}
+      {% if disabled %}disabled{% endif %}
+      {% if readonly %}readonly{% endif %}
+    >
+  {% endif %}
+  
+  {% if help_text %}
+    <small class="form-text-improved">{{ help_text }}</small>
+  {% endif %}
+  
+  {% if error %}
+    <div class="invalid-feedback">{{ error }}</div>
+  {% endif %}
+</div>

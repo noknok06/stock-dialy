@@ -4,8 +4,14 @@
 {% block title %}タグ管理 | カブログ{% endblock %}
 
 {% block head %}
+<!-- コンポーネントCSS -->
+<link rel="stylesheet" href="{% static 'css/3-components/components.css' %}">
+<link rel="stylesheet" href="{% static 'css/3-components/dark-mode-components.css' %}">
+
 <style>
-  /* ========== Tag-specific styles only ========== */
+  /* ========== ページ固有スタイル ========== */
+  
+  /* タグバッジ（テーブル内） */
   .table-tag-badge {
     display: inline-flex;
     align-items: center;
@@ -16,7 +22,7 @@
     border-radius: 9999px;
     font-weight: 500;
     font-size: 14px;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
     text-decoration: none;
   }
 
@@ -31,11 +37,74 @@
     margin-right: 6px;
   }
 
-  /* Dark mode support */
+  /* ガイドカードアイコン */
+  .guide-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark, #2563eb));
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
+  }
+
+  .guide-icon i {
+    color: white;
+    font-size: 1.25rem;
+  }
+
+  .guide-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .guide-item h6 {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+  }
+
+  .guide-item p {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  /* 検索フォーム */
+  .search-input-wrapper {
+    position: relative;
+  }
+
+  .search-input-wrapper .search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+
+  .search-input-wrapper .form-control {
+    padding-left: 2.75rem;
+  }
+
+  /* テーブル行のホバー効果 */
+  .table tbody tr {
+    transition: background-color 0.2s ease;
+  }
+
+  .table tbody tr:hover {
+    background-color: var(--bg-hover, rgba(0, 0, 0, 0.02));
+  }
+
+  /* ダークモード */
   .dark-mode .table-tag-badge,
   [data-theme="dark"] .table-tag-badge {
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.2));
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-color: rgba(59, 130, 246, 0.3);
     color: var(--dm-primary);
   }
 
@@ -46,213 +115,218 @@
     color: var(--dm-primary);
   }
 
-  /* Guide card icons */
-  .bg-primary {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
-  }
-
-  .dark-mode .bg-primary,
-  [data-theme="dark"] .bg-primary {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
-  }
-
-  /* Guide card headings */
-  h6 {
-    color: var(--text-primary);
-  }
-
-  .dark-mode h6,
-  [data-theme="dark"] h6 {
+  .dark-mode .guide-item h6,
+  [data-theme="dark"] .guide-item h6 {
     color: var(--dm-foreground);
   }
 
-  /* Responsive adjustments */
+  .dark-mode .guide-item p,
+  [data-theme="dark"] .guide-item p {
+    color: var(--dm-muted-foreground);
+  }
+
+  .dark-mode .table tbody tr:hover,
+  [data-theme="dark"] .table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+  }
+
+  /* レスポンシブ調整 */
   @media (max-width: 576px) {
     .table-tag-badge {
       font-size: 12px;
       padding: 4px 12px;
+    }
+
+    .guide-icon {
+      width: 40px;
+      height: 40px;
+    }
+
+    .guide-icon i {
+      font-size: 1rem;
     }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<body class="dark-mode">
 <div class="dashboard-container py-4">
   <!-- ページヘッダー -->
   <div class="page-header page-header-with-actions mb-4">
-      <div class="page-header-content">
-          <h1 class="page-title">
-              <i class="bi bi-tags"></i>
-              <span>タグ管理</span>
-          </h1>
-        <p class="page-subtitle">投資記録を分類・整理するためのタグを管理</p>
-      </div>
-  </div>
-  <!-- 検索フォーム -->
-  <div class="card search-card">
-    <div class="card-body">
-      <h5 class="card-title mb-3">
-        <i class="bi bi-search"></i> 検索
-      </h5>
-      <form method="get" class="row g-3">
-        <div class="col-md-8">
-          <div class="position-relative">
-            <i class="bi bi-search search-icon"></i>
-            <input type="text" 
-                   name="query" 
-                   class="form-control search-input" 
-                   placeholder="タグ名で検索" 
-                   value="{{ request.GET.query }}">
-          </div>
-        </div>
-        
-        <div class="col-md-4 d-flex align-items-end gap-2">
-          <button type="submit" class="btn btn-primary flex-grow-1">
-            <i class="bi bi-search"></i>
-            <span>検索</span>
-          </button>
-          <a href="{% url 'tags:list' %}" class="btn btn-outline-secondary flex-grow-1">
-            <i class="bi bi-arrow-counterclockwise"></i>
-            <span>リセット</span>
-          </a>
-        </div>
-      </form>
+    <div class="page-header-content">
+      <h1 class="page-title">
+        <i class="bi bi-tags"></i>
+        <span>タグ管理</span>
+      </h1>
+      <p class="page-subtitle">投資記録を分類・整理するためのタグを管理</p>
     </div>
   </div>
+
+  <!-- 検索フォーム -->
+  <div class="form-section mb-4">
+    <h5 class="form-section-title">
+      <i class="bi bi-search"></i> 検索
+    </h5>
+    <form method="get" class="row g-3">
+      <div class="col-md-8">
+        <div class="search-input-wrapper">
+          <i class="bi bi-search search-icon"></i>
+          <input type="text" 
+                 name="query" 
+                 class="form-control" 
+                 placeholder="タグ名で検索" 
+                 value="{{ request.GET.query }}">
+        </div>
+      </div>
+      
+      <div class="col-md-4 d-flex align-items-end gap-2">
+        <button type="submit" class="btn btn-primary flex-grow-1">
+          <i class="bi bi-search"></i>
+          <span>検索</span>
+        </button>
+        <a href="{% url 'tags:list' %}" class="btn btn-outline-secondary flex-grow-1">
+          <i class="bi bi-arrow-counterclockwise"></i>
+          <span>リセット</span>
+        </a>
+      </div>
+    </form>
+  </div>
   
-  <!-- タグ一覧とアクションボタン -->
+  <!-- アクションボタン -->
   <div class="mb-4 d-flex justify-content-between flex-wrap gap-3">
     <div>
       <a href="{% url 'tags:create' %}" class="btn btn-success">
-        <i class="bi bi-plus-lg"></i>
+        <i class="bi bi-plus-lg me-1"></i>
         <span>新規タグ作成</span>
       </a>
     </div>
     <div>
       <a href="{% url 'stockdiary:home' %}" class="btn btn-info">
-        <i class="bi bi-journal-text"></i>
+        <i class="bi bi-journal-text me-1"></i>
         <span>日記一覧に戻る</span>
       </a>
     </div>
   </div>
   
   {% if tags %}
-    <div class="card">
-      <div class="card-header">
-        <h5 class="card-title">タグ一覧</h5>
-      </div>
-      <div class="card-body">
-        <div class="table-responsive">
-          <table class="table">
-            <thead>
-              <tr>
-                <th style="width: 60%">タグ名</th>
-                <th style="width: 40%">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for tag in tags %}
-                <tr>
-                  <td>
-                    <div class="table-tag-name">
-                      <a href="{% url 'tags:detail' tag.id %}" class="text-decoration-none">
-                        <span class="table-tag-badge">
-                          <i class="bi bi-tag-fill"></i>
-                          {{ tag.name }}
-                        </span>
-                      </a>
-                      {% with diary_count=tag.stockdiary_set.count %}
-                        {% if diary_count > 0 %}
-                          <small class="text-muted d-block mt-1">{{ diary_count }}件の記録で使用中</small>
-                        {% else %}
-                          <small class="text-muted d-block mt-1">未使用</small>
-                        {% endif %}
-                      {% endwith %}
-                    </div>
-                  </td>
-                  <td>
-                    <div class="d-flex gap-2 flex-wrap">
-                      <a href="{% url 'tags:detail' tag.id %}" 
-                         class="btn-icon btn-primary" 
-                         title="詳細を見る">
-                        <i class="bi bi-eye"></i>
-                      </a>
-                      <a href="{% url 'tags:update' tag.id %}" 
-                         class="btn-icon btn-warning" 
-                         title="編集">
-                        <i class="bi bi-pencil"></i>
-                      </a>
-                      <a href="{% url 'tags:delete' tag.id %}" 
-                         class="btn-icon btn-danger" 
-                         title="削除">
-                        <i class="bi bi-trash"></i>
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+  <!-- タグ一覧カード -->
+  <div class="card">
+    <div class="card-header">
+      <h5 class="card-title mb-0">
+        <i class="bi bi-list-ul me-2"></i>タグ一覧
+        {% include "stockdiary/components/_badge.html" with type="info" text=tags|length extra_class="ms-2" %}
+      </h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th style="width: 60%">タグ名</th>
+              <th style="width: 40%">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for tag in tags %}
+            <tr>
+              <td>
+                <div class="table-tag-name">
+                  <a href="{% url 'tags:detail' tag.id %}" class="text-decoration-none">
+                    <span class="table-tag-badge">
+                      <i class="bi bi-tag-fill"></i>
+                      {{ tag.name }}
+                    </span>
+                  </a>
+                  {% with diary_count=tag.stockdiary_set.count %}
+                  {% if diary_count > 0 %}
+                  <small class="text-muted d-block mt-1">
+                    <i class="bi bi-journal-text me-1"></i>{{ diary_count }}件の記録で使用中
+                  </small>
+                  {% else %}
+                  <small class="text-muted d-block mt-1">
+                    <i class="bi bi-dash-circle me-1"></i>未使用
+                  </small>
+                  {% endif %}
+                  {% endwith %}
+                </div>
+              </td>
+              <td>
+                <div class="d-flex gap-2 flex-wrap">
+                  <a href="{% url 'tags:detail' tag.id %}" 
+                     class="btn-icon btn-primary-icon" 
+                     title="詳細を見る">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  <a href="{% url 'tags:update' tag.id %}" 
+                     class="btn-icon btn-warning-icon" 
+                     title="編集">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <a href="{% url 'tags:delete' tag.id %}" 
+                     class="btn-icon btn-danger-icon" 
+                     title="削除">
+                    <i class="bi bi-trash"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
+  </div>
   {% else %}
-    <div class="empty-state">
-      <div class="empty-state-icon">
-        <i class="bi bi-tags"></i>
-      </div>
-      <h3 class="empty-state-title">タグがありません</h3>
-      <p class="empty-state-description">
-        タグを作成して、株式日記を整理・分類しましょう。
-        タグを使うことで、投資の傾向や特定の銘柄グループを簡単に見つけることができます。
-      </p>
-      <a href="{% url 'tags:create' %}" class="btn btn-success">
-        <i class="bi bi-plus-lg"></i>
-        <span>最初のタグを作成</span>
-      </a>
-    </div>
+  <!-- 空状態（コンポーネント使用） -->
+  {% include "stockdiary/components/_empty_state.html" with 
+     icon="bi-tags" 
+     title="タグがありません" 
+     description="タグを作成して、株式日記を整理・分類しましょう。タグを使うことで、投資の傾向や特定の銘柄グループを簡単に見つけることができます。"
+     action_url="tags:create"
+     action_text="最初のタグを作成"
+     action_icon="bi-plus-lg"
+  %}
   {% endif %}
   
   <!-- タグの使い方ガイド -->
   <div class="card mt-4">
     <div class="card-header">
-      <h5 class="card-title">
-        <i class="bi bi-info-circle text-primary me-2"></i> タグの使い方
+      <h5 class="card-title mb-0">
+        <i class="bi bi-lightbulb me-2 text-warning"></i>タグの使い方
       </h5>
     </div>
     <div class="card-body">
-      <div class="row">
-        <div class="col-md-4 mb-3">
-          <div class="d-flex align-items-start">
-            <div class="bg-primary p-2 rounded-3 me-3">
-              <i class="bi bi-tag text-white fs-4"></i>
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="guide-item">
+            <div class="guide-icon">
+              <i class="bi bi-tag"></i>
             </div>
             <div>
-              <h6 class="mb-2">銘柄を分類</h6>
-              <p class="text-muted small mb-0">業種、投資戦略、市場などでタグ付けして銘柄を整理します。</p>
+              <h6>銘柄を分類</h6>
+              <p>業種、投資戦略、市場などでタグ付けして銘柄を整理します。</p>
             </div>
           </div>
         </div>
-        <div class="col-md-4 mb-3">
-          <div class="d-flex align-items-start">
-            <div class="bg-primary p-2 rounded-3 me-3">
-              <i class="bi bi-search text-white fs-4"></i>
+        <div class="col-md-4">
+          <div class="guide-item">
+            <div class="guide-icon">
+              <i class="bi bi-search"></i>
             </div>
             <div>
-              <h6 class="mb-2">素早く検索</h6>
-              <p class="text-muted small mb-0">タグを使って関連する投資記録をすばやく見つけることができます。</p>
+              <h6>素早く検索</h6>
+              <p>タグを使って関連する投資記録をすばやく見つけることができます。</p>
             </div>
           </div>
         </div>
-        <div class="col-md-4 mb-3">
-          <div class="d-flex align-items-start">
-            <div class="bg-primary p-2 rounded-3 me-3">
-              <i class="bi bi-graph-up text-white fs-4"></i>
+        <div class="col-md-4">
+          <div class="guide-item">
+            <div class="guide-icon">
+              <i class="bi bi-graph-up"></i>
             </div>
             <div>
-              <h6 class="mb-2">傾向を分析</h6>
-              <p class="text-muted small mb-0">タグごとのパフォーマンスを比較して投資戦略を最適化できます。</p>
+              <h6>傾向を分析</h6>
+              <p>タグごとのパフォーマンスを比較して投資戦略を最適化できます。</p>
             </div>
           </div>
         </div>
@@ -262,29 +336,32 @@
 </div>
 
 {% include 'speed_dial.html' with actions=page_actions %}
-</body>
 {% endblock %}
 
 {% block scripts %}
 {{ block.super }}
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() {
+  // スピードダイアル初期化
+  if (typeof initializeSpeedDial === 'function') {
     initializeSpeedDial();
-    
-    const searchForm = document.querySelector('form[method="get"]');
-    if (searchForm) {
-      searchForm.addEventListener('submit', function() {
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const btnText = submitBtn.querySelector('span');
-        const btnIcon = submitBtn.querySelector('i');
-        
-        btnIcon.className = 'bi bi-hourglass-split';
-        if (btnText) {
-          btnText.textContent = '検索中...';
-        }
-        submitBtn.disabled = true;
-      });
-    }
-  });
+  }
+  
+  // 検索フォームのローディング表示
+  const searchForm = document.querySelector('form[method="get"]');
+  if (searchForm) {
+    searchForm.addEventListener('submit', function() {
+      const submitBtn = this.querySelector('button[type="submit"]');
+      const btnText = submitBtn.querySelector('span');
+      const btnIcon = submitBtn.querySelector('i');
+      
+      btnIcon.className = 'bi bi-hourglass-split';
+      if (btnText) {
+        btnText.textContent = '検索中...';
+      }
+      submitBtn.disabled = true;
+    });
+  }
+});
 </script>
 {% endblock %}

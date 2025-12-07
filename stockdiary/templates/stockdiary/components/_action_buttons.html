@@ -1,0 +1,61 @@
+{% with btn_size=size|default:"sm" btn_layout=layout|default:"inline" %}
+
+<div class="action-buttons {% if btn_layout == 'stacked' %}action-buttons-stacked{% endif %}">
+
+  {% if actions %}
+    {# カスタムアクションモード #}
+    {% for action in actions %}
+      {% if action.url %}
+        <a href="{{ action.url }}" 
+           class="btn-icon btn-{{ action.type|default:'primary' }}-icon btn--{{ btn_size }}"
+           {% if action.title %}title="{{ action.title }}"{% endif %}>
+          <i class="{{ action.icon|default:'bi-gear' }}"></i>
+        </a>
+      {% elif action.onclick %}
+        <button type="button"
+                class="btn-icon btn-{{ action.type|default:'primary' }}-icon btn--{{ btn_size }}"
+                onclick="{{ action.onclick }}"
+                {% if action.title %}title="{{ action.title }}"{% endif %}>
+          <i class="{{ action.icon|default:'bi-gear' }}"></i>
+        </button>
+      {% endif %}
+    {% endfor %}
+    
+  {% else %}
+    {# シンプルモード (edit/delete) #}
+    
+    {% if edit_url %}
+      <a href="{{ edit_url }}" 
+         class="btn-icon btn-success-icon btn--{{ btn_size }}"
+         title="編集">
+        <i class="bi bi-pencil"></i>
+      </a>
+    {% elif edit_onclick %}
+      <button type="button"
+              class="btn-icon btn-success-icon btn--{{ btn_size }}"
+              onclick="{{ edit_onclick }}"
+              title="編集">
+        <i class="bi bi-pencil"></i>
+      </button>
+    {% endif %}
+    
+    {% if delete_url %}
+      <a href="{{ delete_url }}" 
+         class="btn-icon btn-danger-icon btn--{{ btn_size }}"
+         title="削除">
+        <i class="bi bi-trash"></i>
+      </a>
+    {% elif delete_onclick %}
+      <button type="button"
+              class="btn-icon btn-danger-icon btn--{{ btn_size }}"
+              onclick="{{ delete_onclick }}"
+              title="削除">
+        <i class="bi bi-trash"></i>
+      </button>
+    {% endif %}
+    
+  {% endif %}
+  
+</div>
+
+{% endwith %}

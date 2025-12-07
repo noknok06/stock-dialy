@@ -1,0 +1,23 @@
+{% with date_format=format|default:"full" display_icon=icon|default:"bi-calendar-date" %}
+
+<span class="date-display {{ extra_class|default:'' }}">
+  {% if show_icon != False %}
+  <i class="{{ display_icon }} me-1"></i>
+  {% endif %}
+  
+  {% if label %}
+  <span class="date-label text-muted">{{ label }}: </span>
+  {% endif %}
+  
+  <span class="date-value">
+    {% if date_format == "short" %}
+      {{ date|date:"m/d" }}
+    {% elif date_format == "month" %}
+      {{ date|date:"Y年m月" }}
+    {% else %}
+      {{ date|date:"Y年m月d日" }}
+    {% endif %}
+  </span>
+</span>
+
+{% endwith %}

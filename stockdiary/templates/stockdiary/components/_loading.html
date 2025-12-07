@@ -1,0 +1,21 @@
+{% with spinner_size=size|default:"md" spinner_color=color|default:"primary" %}
+
+<div {% if id %}id="{{ id }}"{% endif %} 
+     class="loading-spinner {% if htmx %}htmx-indicator{% endif %} {% if inline %}loading-inline{% endif %} {{ extra_class|default:'' }}"
+     {% if htmx %}style="display: none;"{% endif %}>
+  
+  <div class="spinner-border 
+    {% if spinner_size == 'sm' %}spinner-border-sm{% endif %}
+    text-{{ spinner_color }}" 
+    role="status">
+    <span class="visually-hidden">{% if text %}{{ text }}{% else %}読み込み中...{% endif %}</span>
+  </div>
+  
+  {% if text %}
+  <{% if inline %}span{% else %}p{% endif %} class="loading-text {% if inline %}ms-2{% else %}mt-2{% endif %}">
+    {{ text }}
+  </{% if inline %}span{% else %}p{% endif %}>
+  {% endif %}
+</div>
+
+{% endwith %}

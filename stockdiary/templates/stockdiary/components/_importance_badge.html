@@ -1,0 +1,34 @@
+{% with imp=importance|default:"medium" display_style=style|default:"full" %}
+
+{% if display_style == "icon_only" %}
+  {# アイコンのみ表示 #}
+  {% if imp == 'high' %}
+    <i class="bi bi-exclamation-triangle text-danger" title="高重要度" style="font-size: 1.1rem;"></i>
+  {% elif imp == 'medium' %}
+    <i class="bi bi-info-circle text-warning" title="中重要度" style="font-size: 1.1rem;"></i>
+  {% else %}
+    <i class="bi bi-info-circle text-muted" title="低重要度" style="font-size: 1.1rem;"></i>
+  {% endif %}
+
+{% else %}
+  {# バッジ表示 #}
+  <span class="badge 
+    {% if imp == 'high' %}badge-danger
+    {% elif imp == 'medium' %}badge-warning
+    {% else %}badge-info{% endif %}
+    {% if size %}badge-{{ size }}{% endif %}
+    {{ imp }}">
+    
+    {% if display_style != "text_only" %}
+      {% if imp == 'high' %}<i class="bi bi-exclamation-triangle me-1"></i>
+      {% elif imp == 'medium' %}<i class="bi bi-info-circle me-1"></i>
+      {% else %}<i class="bi bi-info-circle me-1"></i>{% endif %}
+    {% endif %}
+    
+    {% if imp == 'high' %}重要
+    {% elif imp == 'medium' %}中
+    {% else %}低{% endif %}
+  </span>
+{% endif %}
+
+{% endwith %}

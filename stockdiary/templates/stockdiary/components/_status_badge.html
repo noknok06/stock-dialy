@@ -1,0 +1,18 @@
+
+{% if diary %}
+  {% if diary.is_memo %}
+    {% with status="memo" %}{% include "stockdiary/components/_status_badge_inner.html" %}{% endwith %}
+  {% elif diary.is_sold_out %}
+    {% with status="sold" %}{% include "stockdiary/components/_status_badge_inner.html" %}{% endwith %}
+  {% elif diary.is_holding %}
+    {% with status="active" %}{% include "stockdiary/components/_status_badge_inner.html" %}{% endwith %}
+  {% endif %}
+{% else %}
+  {% if is_memo %}
+    {% with status="memo" %}{% include "stockdiary/components/_status_badge_inner.html" %}{% endwith %}
+  {% elif is_sold %}
+    {% with status="sold" %}{% include "stockdiary/components/_status_badge_inner.html" %}{% endwith %}
+  {% elif is_holding %}
+    {% with status="active" %}{% include "stockdiary/components/_status_badge_inner.html" %}{% endwith %}
+  {% endif %}
+{% endif %}

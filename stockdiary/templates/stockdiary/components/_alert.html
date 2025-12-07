@@ -1,0 +1,40 @@
+{% with alert_style=style|default:"default" %}
+
+{% if alert_style == "improved" %}
+  <div class="alert-{{ type }}-improved {{ extra_class|default:'' }}">
+    {% if icon %}
+      <i class="{{ icon }} me-2"></i>
+    {% else %}
+      {% if type == 'info' %}<i class="bi bi-info-circle me-2"></i>
+      {% elif type == 'success' %}<i class="bi bi-check-circle me-2"></i>
+      {% elif type == 'warning' %}<i class="bi bi-exclamation-triangle me-2"></i>
+      {% elif type == 'danger' %}<i class="bi bi-x-circle me-2"></i>
+      {% endif %}
+    {% endif %}
+    
+    {% if title %}<strong>{{ title }}</strong><br>{% endif %}
+    {{ message }}
+  </div>
+
+{% else %}
+  <div class="alert alert-{{ type }} {% if dismissible %}alert-dismissible fade show{% endif %} {{ extra_class|default:'' }}" role="alert">
+    {% if icon %}
+      <i class="{{ icon }} me-2"></i>
+    {% else %}
+      {% if type == 'info' %}<i class="bi bi-info-circle me-2"></i>
+      {% elif type == 'success' %}<i class="bi bi-check-circle me-2"></i>
+      {% elif type == 'warning' %}<i class="bi bi-exclamation-triangle me-2"></i>
+      {% elif type == 'danger' %}<i class="bi bi-x-circle me-2"></i>
+      {% endif %}
+    {% endif %}
+    
+    {% if title %}<strong>{{ title }}</strong> {% endif %}
+    {{ message }}
+    
+    {% if dismissible %}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="閉じる"></button>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% endwith %}

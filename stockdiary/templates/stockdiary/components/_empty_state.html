@@ -1,0 +1,21 @@
+{% with display_style=style|default:"default" display_size=size|default:"md" %}
+
+<div class="empty-state{% if display_style == 'improved' %}-improved{% endif %} empty-state-{{ display_size }} {{ extra_class|default:'' }}">
+  <div class="empty-icon{% if display_style == 'improved' %}-improved{% endif %}">
+    <i class="{{ icon }}"></i>
+  </div>
+  
+  <h4 class="empty-title{% if display_style == 'improved' %}-improved{% endif %}">{{ title }}</h4>
+  
+  {% if description %}
+  <p class="empty-text{% if display_style == 'improved' %}-improved{% endif %}">{{ description }}</p>
+  {% endif %}
+  
+  {% if action_url and action_text %}
+  <a href="{{ action_url }}" class="btn btn-primary mt-3">
+    {{ action_text }}
+  </a>
+  {% endif %}
+</div>
+
+{% endwith %}

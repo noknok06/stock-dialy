@@ -1,0 +1,36 @@
+{# 内部コンポーネント - 直接使用しないでください #}
+
+{% with badge_style=style|default:"improved" %}
+
+{% if badge_style == "improved" %}
+<span class="status-badge-improved 
+  {% if status == 'memo' %}status-badge-memo
+  {% elif status == 'sold' %}status-badge-sold
+  {% elif status == 'active' %}status-badge-active
+  {% endif %}
+  {% if size %}status-badge-{{ size }}{% endif %}">
+  
+  {% if status == 'memo' %}
+    <i class="bi bi-sticky"></i>
+    記録のみ
+  {% elif status == 'sold' %}
+    <i class="bi bi-check-circle"></i>
+    売却済み
+  {% elif status == 'active' %}
+    <i class="bi bi-graph-up"></i>
+    保有中
+  {% endif %}
+</span>
+
+{% else %}
+{# simple style #}
+<span class="status-badge 
+  {% if status == 'memo' %}memo-badge
+  {% elif status == 'sold' %}sold-badge
+  {% elif status == 'active' %}active-badge
+  {% endif %}">
+  {{ status }}
+</span>
+{% endif %}
+
+{% endwith %}

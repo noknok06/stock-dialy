@@ -5,45 +5,19 @@
 
 {% block head %}
 {{ block.super }}
+<!-- コンポーネントCSS -->
+<link rel="stylesheet" href="{% static 'css/3-components/components.css' %}">
+<link rel="stylesheet" href="{% static 'css/3-components/dark-mode-components.css' %}">
+
 <style>
-  .form-section {
-    background-color: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
-
-  .form-section-title {
-    color: #374151;
-    border-bottom: 2px solid #e5e7eb;
-    padding-bottom: 0.5rem;
-    margin-bottom: 1rem;
-    font-size: 1.1rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .form-control, .form-select {
-    border: 2px solid #d1d5db;
-    transition: all 0.2s ease;
-  }
-
-  .form-control:focus, .form-select:focus {
-    border-color: #5a7ec5;
-    box-shadow: 0 0 0 3px rgba(90, 126, 197, 0.25);
-    outline: none;
-  }
-
+  /* ========== ページ固有スタイル ========== */
+  
   /* 日記らしいテキストエリア */
   .diary-textarea {
     font-family: 'Hiragino Kaku Gothic Pro', 'メイリオ', sans-serif;
     line-height: 1.8;
     padding: 1rem;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-md);
     background-color: #fefefe;
     background-image: linear-gradient(transparent 1.7rem, #e5e7eb 1.7rem, #e5e7eb 1.8rem, transparent 1.8rem);
     background-size: 100% 1.8rem;
@@ -52,62 +26,29 @@
 
   .dark-mode .diary-textarea,
   [data-theme="dark"] .diary-textarea {
+    background-color: var(--dm-card);
     background-image: linear-gradient(transparent 1.7rem, #52626d 1.7rem, #0e2147 1.8rem, transparent 1.8rem);
-  }
-
-  .dark-mode .input-group-text,
-  [data-theme="dark"] .input-group-text {
-    background-color: #1e293b;
-    color: #f3f4f6;
-  }
-  .dark-mode .tooltip-inner,
-  [data-theme="dark"] .tooltip-inner {
-      background-color: #333; /* 背景色を暗く */
-      color: #f3f4f6; /* 文字色を明るく */
-  }
-
-  /* ダークモードのファイル入力フィールド */
-  .dark-mode .form-control[type="file"],
-  [data-theme="dark"] .form-control[type="file"] {
-    background-color: #333; /* 背景色を暗く */
-    color: #f3f4f6; /* 文字色を明るく */
-    border-color: #555; /* 枠線の色を暗く */
-  }
-
-  /* ダークモードでファイル選択ボタンのテキストを変更 */
-  .dark-mode .form-control[type="file"]::file-selector-button,
-  [data-theme="dark"] .form-control[type="file"]::file-selector-button {
-    background-color: #444; /* ボタンの背景色 */
-    color: #f3f4f6; /* ボタンの文字色 */
-    border: 1px solid #666; /* ボタンの枠線色 */
-  }
-
-  /* ボタンにホバーしたときのスタイル */
-  .dark-mode .form-control[type="file"]::file-selector-button:hover,
-  [data-theme="dark"] .form-control[type="file"]::file-selector-button:hover {
-    background-color: #555; /* ボタンのホバー背景色 */
-    border-color: #777; /* ボタンのホバー枠線色 */
-  }
-
-  /* ダークモードでツールチップの矢印色も変更 */
-  .dark-mode .tooltip.bs-tooltip-top .tooltip-arrow::before,
-  [data-theme="dark"] .tooltip.bs-tooltip-top .tooltip-arrow::before {
-      border-top-color: #333; /* 矢印の色を背景色に合わせる */
   }
 
   .diary-memo-textarea {
     font-family: 'Hiragino Kaku Gothic Pro', 'メイリオ', sans-serif;
     line-height: 1.8;
     padding: 1rem;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-md);
     background-color: #fffef5;
-    border: 2px solid #fbbf24;
+    border: 2px solid var(--warning-color);
     min-height: 150px;
   }
 
+  .dark-mode .diary-memo-textarea,
+  [data-theme="dark"] .diary-memo-textarea {
+    background-color: rgba(251, 191, 36, 0.1);
+  }
+
+  /* 初回購入セクション */
   .initial-purchase-section {
-    border: 2px dashed #d1d5db;
-    border-radius: 0.5rem;
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-md);
     padding: 1rem;
     margin-top: 1rem;
   }
@@ -127,47 +68,37 @@
     }
   }
 
-  .info-box {
-    background-color: #eff6ff;
-    border-left: 4px solid #3b82f6;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    border-radius: 0.25rem;
-  }
-
-  .info-box-icon {
-    color: #3b82f6;
-    margin-right: 0.5rem;
-  }
-
+  /* 文字数カウンター */
   .character-count {
     font-size: 0.875rem;
-    color: #6b7280;
+    color: var(--text-muted);
     text-align: right;
     margin-top: 0.25rem;
   }
 
   .character-count.warning {
-    color: #f59e0b;
+    color: var(--warning-color);
   }
 
+  .character-count.danger {
+    color: var(--danger-color);
+  }
 
-  /* ========== 分析項目のレイアウト統一 ========== */
+  /* ========== 分析項目のレイアウト ========== */
   .analysis-item {
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
     padding: 1rem;
     margin-bottom: 0.75rem;
     transition: all 0.2s ease;
   }
 
   .analysis-item:hover {
-    border-color: #5a7ec5;
-    box-shadow: 0 2px 4px rgba(90, 126, 197, 0.15);
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-sm);
   }
 
-  /* 全項目タイプ共通のヘッダー */
   .analysis-item-header {
     display: flex;
     align-items: flex-start;
@@ -186,12 +117,13 @@
     flex-shrink: 0;
     margin-right: 0.5rem;
     margin-top: 0.25rem;
+    color: var(--primary-color);
   }
 
   .analysis-item-label {
     font-weight: 600;
     font-size: 0.95rem;
-    color: #111827;
+    color: var(--text-primary);
     margin: 0;
     cursor: pointer;
     line-height: 1.4;
@@ -199,19 +131,9 @@
 
   .analysis-item-desc {
     font-size: 0.8rem;
-    color: #6b7280;
+    color: var(--text-muted);
     margin-top: 0.25rem;
     line-height: 1.4;
-  }
-
-  /* ブール型のチェックボックス */
-  .analysis-item-checkbox {
-    flex-shrink: 0;
-  }
-
-  .analysis-item-checkbox .form-check {
-    margin: 0;
-    padding: 0;
   }
 
   .analysis-item-checkbox .form-check-input {
@@ -219,113 +141,86 @@
     height: 1.5rem;
     margin: 0;
     cursor: pointer;
-    border: 2px solid #d1d5db;
-    border-radius: 0.375rem;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-sm);
     transition: all 0.2s ease;
   }
 
   .analysis-item-checkbox .form-check-input:checked {
-    background-color: #10b981;
-    border-color: #10b981;
+    background-color: var(--success-color);
+    border-color: var(--success-color);
   }
 
-  .analysis-item-checkbox .form-check-input:focus {
-    border-color: #5a7ec5;
-    box-shadow: 0 0 0 0.25rem rgba(90, 126, 197, 0.25);
-    outline: none;
-  }
-
-  /* 入力フィールドを持つ項目 */
   .analysis-item-input-section {
     margin-top: 0.75rem;
-  }
-
-  .analysis-item-input-section .form-label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #4b5563;
-    margin-bottom: 0.375rem;
-  }
-
-  /* ========== フォームコントロールの横幅調整 ========== */
-  .analysis-item .form-control,
-  .analysis-item .form-select {
-    border: 2px solid #d1d5db;
-    border-radius: 0.375rem;
-    font-size: 0.95rem;
-    transition: all 0.2s ease;
-    width: 100%; /* デフォルトは全幅 */
   }
 
   /* デスクトップでの横幅制限 */
   @media (min-width: 768px) {
     .analysis-item .form-control[type="number"] {
-      max-width: 200px; /* 数値入力は200px */
+      max-width: 200px;
     }
     
     .analysis-item .form-control[type="text"] {
-      max-width: 400px; /* テキスト入力は400px */
+      max-width: 400px;
     }
     
     .analysis-item .form-select {
-      max-width: 300px; /* セレクトボックスは300px */
-    }
-
-  }
-
-  /* タブレットでの横幅調整 */
-  @media (min-width: 577px) and (max-width: 767px) {
-    .analysis-item .form-control,
-    .analysis-item .form-select {
-      max-width: 100%; /* タブレットは全幅 */
+      max-width: 300px;
     }
   }
 
-  .analysis-item .form-control:focus,
-  .analysis-item .form-select:focus {
-    border-color: #5a7ec5;
-    box-shadow: 0 0 0 3px rgba(90, 126, 197, 0.25);
-    outline: none;
+  /* ダークモード */
+  .dark-mode .analysis-item,
+  [data-theme="dark"] .analysis-item {
+    background: var(--dm-card);
+    border-color: var(--dm-border);
   }
 
-  .analysis-item .form-control::placeholder {
-    color: #9ca3af;
+  .dark-mode .analysis-item:hover,
+  [data-theme="dark"] .analysis-item:hover {
+    border-color: var(--dm-primary);
   }
 
-  /* ========== スマホ対応 ========== */
-  @media (max-width: 576px) {
-    .analysis-item {
-      padding: 0.875rem;
-    }
-    
-    .analysis-item-header {
-      gap: 0.75rem;
-    }
-    
-    .analysis-item-label {
-      font-size: 0.9rem;
-    }
-    
-    .analysis-item-desc {
-      font-size: 0.75rem;
-    }
-    
-    .analysis-item-checkbox .form-check-input {
-      width: 1.375rem;
-      height: 1.375rem;
-    }
-
-    /* スマホでは全幅 */
-    .analysis-item .form-control,
-    .analysis-item .form-select {
-      width: 100%;
-      max-width: 100%;
-    }
+  .dark-mode .analysis-item-label,
+  [data-theme="dark"] .analysis-item-label {
+    color: var(--dm-foreground);
   }
 
-  /* ========== タッチデバイス対応 ========== */
+  .dark-mode .analysis-item-desc,
+  [data-theme="dark"] .analysis-item-desc {
+    color: var(--dm-muted-foreground);
+  }
+
+  .dark-mode .input-group-text,
+  [data-theme="dark"] .input-group-text {
+    background-color: var(--dm-card);
+    color: var(--dm-foreground);
+    border-color: var(--dm-border);
+  }
+
+  .dark-mode .form-control[type="file"],
+  [data-theme="dark"] .form-control[type="file"] {
+    background-color: var(--dm-card);
+    color: var(--dm-foreground);
+    border-color: var(--dm-border);
+  }
+
+  .dark-mode .form-control[type="file"]::file-selector-button,
+  [data-theme="dark"] .form-control[type="file"]::file-selector-button {
+    background-color: var(--dm-muted);
+    color: var(--dm-foreground);
+    border: 1px solid var(--dm-border);
+  }
+
+  .dark-mode .tooltip-inner,
+  [data-theme="dark"] .tooltip-inner {
+    background-color: var(--dm-card);
+    color: var(--dm-foreground);
+  }
+
+  /* タッチデバイス対応 */
   @media (hover: none) and (pointer: coarse) {
-    /* タッチ領域を最低44pxに */
     .analysis-item-checkbox .form-check-input {
       width: 1.75rem;
       height: 1.75rem;
@@ -343,24 +238,6 @@
       min-height: 44px;
     }
   }
-
-  /* ========== アクセシビリティ ========== */
-  .analysis-item-checkbox .form-check-input:focus-visible {
-    outline: 2px solid #5a7ec5;
-    outline-offset: 2px;
-  }
-
-  /* ========== 入力セクションの余白調整 ========== */
-  .analysis-item-input-section {
-    margin-top: 0.75rem;
-  }
-
-  .analysis-item-input-section .form-label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #4b5563;
-    margin-bottom: 0.375rem;
-  }
 </style>
 {% endblock %}
 
@@ -372,14 +249,9 @@
     </h1>
   </div>
 
-  <!-- 情報ボックス -->
+  <!-- 情報ボックス（コンポーネント使用） -->
   {% if not form.instance.pk %}
-  <div class="info-box">
-    <i class="bi bi-info-circle info-box-icon"></i>
-    <strong>投資日記について:</strong>
-    投資判断の理由や気づいたことを自由に記録できます。
-    後から「取引履歴」タブで実際の売買を記録することもできます。
-  </div>
+  {% include "stockdiary/components/_alert.html" with type="info" icon="bi-info-circle" message="<strong>投資日記について:</strong> 投資判断の理由や気づいたことを自由に記録できます。後から「取引履歴」タブで実際の売買を記録することもできます。" %}
   {% endif %}
 
   <!-- フォームカード -->
@@ -398,7 +270,7 @@
           <div class="info-block d-none" id="stockInfoCard">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h5 class="mb-0" id="stockInfoTitle">会社情報</h5>
-              <span class="badge bg-primary" id="stockInfoCode"></span>
+              <span id="stockInfoCode"></span>
             </div>
             <div class="info-row">
               <div class="info-item">
@@ -435,7 +307,7 @@
           <div class="row">
             <div class="col-md-6 mb-3">
               <label for="{{ form.stock_symbol.id_for_label }}" class="form-label">
-                {{ form.stock_symbol.label }}
+                <i class="bi bi-hash me-1"></i>{{ form.stock_symbol.label }}
               </label>
               <div class="input-group">
                 {{ form.stock_symbol }}
@@ -443,11 +315,9 @@
                   <i class="bi bi-search"></i> 検索
                 </button>
               </div>
-              <div class="spinner-container mt-2 d-none" id="symbolSpinnerContainer">
-                <div class="spinner-border text-primary spinner-symbol" role="status">
-                  <span class="visually-hidden">Loading...</span>
-                </div>
-                <small class="text-muted">会社情報を取得中...</small>
+              <!-- ローディング（コンポーネント使用） -->
+              <div class="d-none" id="symbolSpinnerContainer">
+                {% include "stockdiary/components/_loading.html" with text="会社情報を取得中..." inline=True size="sm" %}
               </div>
               <small class="form-text text-muted">{{ form.stock_symbol.help_text }}</small>
               {% if form.stock_symbol.errors %}
@@ -457,7 +327,7 @@
 
             <div class="col-md-6 mb-3">
               <label for="{{ form.stock_name.id_for_label }}" class="form-label">
-                銘柄名/メモタイトル<span class="text-danger">*</span>
+                <i class="bi bi-building me-1"></i>銘柄名/メモタイトル<span class="text-danger">*</span>
               </label>
               {{ form.stock_name }}
               <small class="form-text text-muted">株式の場合は銘柄名、メモの場合はタイトルを入力</small>
@@ -469,7 +339,9 @@
 
           <div class="row">
             <div class="col-md-6 mb-3">
-              <label for="{{ form.sector.id_for_label }}" class="form-label">業種</label>
+              <label for="{{ form.sector.id_for_label }}" class="form-label">
+                <i class="bi bi-diagram-3 me-1"></i>業種
+              </label>
               <div class="input-group">
                 {{ form.sector }}
                 <span class="input-group-text">
@@ -481,17 +353,20 @@
             </div>
             
             <div class="col-md-6 mb-3">
-              <label for="{{ form.tags.id_for_label }}" class="form-label">タグ</label>
+              <label for="{{ form.tags.id_for_label }}" class="form-label">
+                <i class="bi bi-tags me-1"></i>タグ
+              </label>
               {{ form.tags }}
               <small class="form-text text-muted">複数選択可能です</small>
             </div>
           </div>
         </div>
 
-        <div class="mb-4">
-          <label for="{{ form.reason.id_for_label }}" class="form-label">
-            <strong>投資理由・分析内容</strong>
-          </label>
+        <!-- 投資理由セクション -->
+        <div class="form-section">
+          <h4 class="form-section-title">
+            <i class="bi bi-journal-text"></i> 投資理由・分析内容
+          </h4>
           <textarea class="form-control diary-textarea" 
                     name="reason" 
                     id="{{ form.reason.id_for_label }}"
@@ -511,13 +386,12 @@
           {% endif %}
         </div>
 
-        <div class="mb-3">
-          <label for="{{ form.memo.id_for_label }}" class="form-label">
-            <strong>メモ・気づいたこと</strong>
-            <span class="badge badge-warning ms-2">
-              <i class="bi bi-sticky"></i> メモ
-            </span>
-          </label>
+        <!-- メモセクション -->
+        <div class="form-section">
+          <h4 class="form-section-title">
+            <i class="bi bi-sticky"></i> メモ・気づいたこと
+            {% include "stockdiary/components/_badge.html" with type="warning" text="メモ" icon="bi-sticky" extra_class="ms-2" %}
+          </h4>
           <textarea class="form-control diary-memo-textarea" 
                     name="memo" 
                     id="{{ form.memo.id_for_label }}"
@@ -554,15 +428,9 @@
         
           <div class="initial-purchase-section" id="initialPurchaseSection" 
                {% if not form.add_initial_purchase.value %}style="display: none;"{% endif %}>
-            <div class="alert alert-info mb-3">
-              <i class="bi bi-info-circle me-2"></i>
-              <strong>初回購入について:</strong>
-              <ul class="mb-0 mt-2 small">
-                <li>日記作成後、「取引履歴」タブから追加購入・売却を記録できます</li>
-                <li>まだ購入していない場合は、チェックを外してください</li>
-                <li>後から「取引履歴」タブで追加できます</li>
-              </ul>
-            </div>
+            
+            <!-- 情報アラート（コンポーネント使用） -->
+            {% include "stockdiary/components/_alert.html" with type="info" icon="bi-info-circle" message="<strong>初回購入について:</strong><ul class='mb-0 mt-2 small'><li>日記作成後、「取引履歴」タブから追加購入・売却を記録できます</li><li>まだ購入していない場合は、チェックを外してください</li><li>後から「取引履歴」タブで追加できます</li></ul>" %}
         
             <h6 class="mb-3">
               <i class="bi bi-cart-plus"></i> 初回購入情報
@@ -571,7 +439,7 @@
             <div class="row">
               <div class="col-md-4 mb-3">
                 <label for="id_initial_purchase_date" class="form-label">
-                  購入日<span class="text-danger">*</span>
+                  <i class="bi bi-calendar-date me-1"></i>購入日<span class="text-danger">*</span>
                 </label>
                 <input type="date" 
                        class="form-control" 
@@ -585,7 +453,7 @@
         
               <div class="col-md-4 mb-3">
                 <label for="id_initial_purchase_price" class="form-label">
-                  購入単価（円）<span class="text-danger">*</span>
+                  <i class="bi bi-currency-yen me-1"></i>購入単価（円）<span class="text-danger">*</span>
                 </label>
                 <div class="input-group">
                   <input type="number" 
@@ -609,7 +477,7 @@
         
               <div class="col-md-4 mb-3">
                 <label for="id_initial_purchase_quantity" class="form-label">
-                  購入数量（株）<span class="text-danger">*</span>
+                  <i class="bi bi-stack me-1"></i>購入数量（株）<span class="text-danger">*</span>
                 </label>
                 <input type="number" 
                        class="form-control"
@@ -626,11 +494,12 @@
               </div>
             </div>
         
-            <!-- 合計金額の表示 -->
-            <div class="alert alert-success" id="initial-purchase-preview" style="display: none;">
-              <div class="d-flex justify-content-between align-items-center">
-                <strong>初回購入金額:</strong>
-                <span id="initial-purchase-amount" class="fs-5">0</span>円
+            <!-- 合計金額の表示（コンポーネント使用） -->
+            <div id="initial-purchase-preview" style="display: none;">
+              {% include "stockdiary/components/_alert.html" with type="success" icon="bi-calculator" %}
+              <div class="alert alert-success d-flex justify-content-between align-items-center">
+                <strong><i class="bi bi-calculator me-2"></i>初回購入金額:</strong>
+                <span id="initial-purchase-amount" class="fs-5 fw-bold">0</span>円
               </div>
             </div>
           </div>
@@ -644,7 +513,9 @@
           </h4>
 
           <div class="mb-3">
-            <label for="id_image" class="form-label">画像ファイル</label>
+            <label for="id_image" class="form-label">
+              <i class="bi bi-cloud-upload me-1"></i>画像ファイル
+            </label>
             {{ form.image }}
             <small class="form-text text-muted">
               チャート、スクリーンショット等（最大10MB、JPEG/PNG/GIF/WebP形式）
@@ -729,10 +600,10 @@ if (stockSymbolInput) {
     right: 0;
     max-height: 300px;
     overflow-y: auto;
-    background: white;
-    border: 1px solid #d1d5db;
-    border-radius: 0.375rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    background: var(--card-bg, white);
+    border: 1px solid var(--border-color, #d1d5db);
+    border-radius: var(--radius-md, 0.375rem);
+    box-shadow: var(--shadow-lg, 0 4px 6px rgba(0, 0, 0, 0.1));
     z-index: 1000;
     display: none;
   `;
@@ -786,12 +657,12 @@ if (stockSymbolInput) {
                 style="border: none; padding: 0.75rem 1rem; cursor: pointer; text-align: left;">
           <div class="d-flex justify-content-between align-items-start">
             <div>
-              <strong style="color: #2563eb;">${escapeHtml(company.code)}</strong>
-              <span style="color: #374151; margin-left: 0.5rem;">${escapeHtml(company.name)}</span>
+              <strong class="text-primary">${escapeHtml(company.code)}</strong>
+              <span class="ms-2">${escapeHtml(company.name)}</span>
             </div>
             <div style="text-align: right;">
-              <small style="color: #6b7280; display: block;">${escapeHtml(company.market)}</small>
-              <small style="color: #9ca3af; display: block;">${escapeHtml(company.industry)}</small>
+              <small class="text-muted d-block">${escapeHtml(company.market)}</small>
+              <small class="text-muted d-block">${escapeHtml(company.industry)}</small>
             </div>
           </div>
         </button>
@@ -811,10 +682,10 @@ if (stockSymbolInput) {
       });
       
       item.addEventListener('mouseenter', function() {
-        this.style.backgroundColor = '#f3f4f6';
+        this.style.backgroundColor = 'var(--bg-hover, #f3f4f6)';
       });
       item.addEventListener('mouseleave', function() {
-        this.style.backgroundColor = 'white';
+        this.style.backgroundColor = 'var(--card-bg, white)';
       });
     });
   }
@@ -871,10 +742,10 @@ if (stockSymbolInput) {
   function updateSelection(items) {
     items.forEach((item, index) => {
       if (index === selectedIndex) {
-        item.style.backgroundColor = '#dbeafe';
+        item.style.backgroundColor = 'var(--primary-light, #dbeafe)';
         item.scrollIntoView({ block: 'nearest' });
       } else {
-        item.style.backgroundColor = 'white';
+        item.style.backgroundColor = 'var(--card-bg, white)';
       }
     });
   }
@@ -949,6 +820,7 @@ if (fetchStockInfoBtn) {
 function displayStockInfo(data, stockCode) {
   document.getElementById('stockInfoTitle').textContent = data.company_name || '銘柄情報';
   document.getElementById('stockInfoCode').textContent = stockCode;
+  document.getElementById('stockInfoCode').className = 'badge badge-primary';
   
   if (data.price !== null && data.price !== undefined) {
     document.getElementById('stockInfoPrice').textContent = 
@@ -963,8 +835,8 @@ function displayStockInfo(data, stockCode) {
   if (data.change_percent !== null && data.change_percent !== undefined) {
     const changeElement = document.getElementById('stockInfoChange');
     const changePercent = parseFloat(data.change_percent);
-    const changeClass = changePercent > 0 ? 'text-success' : 
-                       (changePercent < 0 ? 'text-danger' : 'text-muted');
+    const changeClass = changePercent > 0 ? 'profit-positive' : 
+                       (changePercent < 0 ? 'profit-negative' : 'text-muted');
     const changeSign = changePercent > 0 ? '+' : '';
     
     changeElement.textContent = `${changeSign}${changePercent.toFixed(2)}%`;
@@ -987,10 +859,13 @@ function showNotification(type, message) {
   }
   
   const notification = document.createElement('div');
-  notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show custom-notification`;
+  const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+  const iconClass = type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle';
+  
+  notification.className = `alert ${alertClass} alert-dismissible fade show custom-notification`;
   notification.style.cssText = 'position: fixed; top: 80px; right: 20px; z-index: 9999; min-width: 300px;';
   notification.innerHTML = `
-    <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+    <i class="bi ${iconClass} me-2"></i>
     ${message}
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   `;
@@ -1241,21 +1116,15 @@ if (analysisTemplateSelect) {
 async function loadAnalysisItems(templateId) {
   analysisItemsContent.innerHTML = `
     <div class="text-center py-3">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">読み込み中...</span>
-      </div>
-      <div class="mt-2">分析項目を読み込んでいます...</div>
+      <div class="loading-spinner"></div>
+      <div class="loading-text mt-2">分析項目を読み込んでいます...</div>
     </div>
   `;
   
   try {
-    // 🔧 修正: 日記IDを取得（編集時のみ存在）
     const diaryId = '{{ form.instance.pk|default:"" }}';
-    
-    // 🔧 修正: 正しいAPIエンドポイントを使用
     let url = `/analysis_template/api/items/?template_id=${templateId}`;
     
-    // 編集時は既存の分析値も取得
     if (diaryId) {
       url += `&diary_id=${diaryId}`;
     }
@@ -1272,7 +1141,6 @@ async function loadAnalysisItems(templateId) {
       throw new Error(data.error || '分析項目の取得に失敗しました');
     }
     
-    // 🔧 修正: 既存の値も渡す
     renderAnalysisItems(data.items, data.values || {});
     
   } catch (error) {
@@ -1293,21 +1161,19 @@ async function loadAnalysisItems(templateId) {
 function renderAnalysisItems(items, values = {}) {
   if (!items || items.length === 0) {
     analysisItemsContent.innerHTML = `
-      <div class="alert alert-info">
-        <i class="bi bi-info-circle me-2"></i>
-        このテンプレートには分析項目がありません
+      <div class="empty-state">
+        <div class="empty-icon"><i class="bi bi-info-circle"></i></div>
+        <h4>分析項目がありません</h4>
+        <p>このテンプレートには分析項目が設定されていません</p>
       </div>
     `;
     return;
   }
   
-  // console.log('Rendering analysis items with values:', values);
-  
   let html = '';
   
   items.forEach((item, index) => {
     const existingValue = values[item.id];
-    // console.log(`Item ${item.id} (${item.name}):`, existingValue);
     
     let icon = 'bi-circle';
     if (item.item_type === 'boolean') icon = 'bi-check-circle';
@@ -1319,13 +1185,12 @@ function renderAnalysisItems(items, values = {}) {
     html += `<div class="analysis-item">`;
     
     if (item.item_type === 'boolean') {
-      // ✅ シンプルなチェックボックスレイアウト
       const checked = existingValue === true ? 'checked' : '';
       
       html += `
         <div class="analysis-item-header">
           <div class="analysis-item-label-wrapper">
-            <i class="bi ${icon} text-primary"></i>
+            <i class="bi ${icon}"></i>
             <div>
               <label class="analysis-item-label" for="analysis_item_${item.id}">
                 ${escapeHtml(item.name)}
@@ -1346,7 +1211,6 @@ function renderAnalysisItems(items, values = {}) {
       `;
       
     } else if (item.item_type === 'boolean_with_value') {
-      // 複合型
       const boolChecked = existingValue?.boolean_value === true ? 'checked' : '';
       const numberValue = existingValue?.number_value ?? '';
       const valueLabel = item.value_label || '値';
@@ -1354,7 +1218,7 @@ function renderAnalysisItems(items, values = {}) {
       html += `
         <div class="analysis-item-header">
           <div class="analysis-item-label-wrapper">
-            <i class="bi ${icon} text-primary"></i>
+            <i class="bi ${icon}"></i>
             <div>
               <label class="analysis-item-label">
                 ${escapeHtml(item.name)}
@@ -1389,13 +1253,12 @@ function renderAnalysisItems(items, values = {}) {
       `;
       
     } else if (item.item_type === 'number') {
-      // 数値型
       const value = existingValue ?? '';
       
       html += `
         <div class="analysis-item-header">
           <div class="analysis-item-label-wrapper">
-            <i class="bi ${icon} text-primary"></i>
+            <i class="bi ${icon}"></i>
             <div>
               <label class="analysis-item-label" for="analysis_item_${item.id}">
                 ${escapeHtml(item.name)}
@@ -1416,11 +1279,10 @@ function renderAnalysisItems(items, values = {}) {
       `;
       
     } else if (item.item_type === 'select') {
-      // 選択肢型
       html += `
         <div class="analysis-item-header">
           <div class="analysis-item-label-wrapper">
-            <i class="bi ${icon} text-primary"></i>
+            <i class="bi ${icon}"></i>
             <div>
               <label class="analysis-item-label" for="analysis_item_${item.id}">
                 ${escapeHtml(item.name)}
@@ -1453,12 +1315,11 @@ function renderAnalysisItems(items, values = {}) {
       html += `</select></div>`;
       
     } else {
-      // テキスト型
       const value = existingValue ?? '';
       html += `
         <div class="analysis-item-header">
           <div class="analysis-item-label-wrapper">
-            <i class="bi ${icon} text-primary"></i>
+            <i class="bi ${icon}"></i>
             <div>
               <label class="analysis-item-label" for="analysis_item_${item.id}">
                 ${escapeHtml(item.name)}

@@ -1,0 +1,777 @@
+/* ========================================
+   ダークモード - 統合コンポーネントスタイル
+   stockdiary/static/css/3-components/dark-mode-components.css
+   ======================================== */
+
+/* ========== Dark Mode Variables ========== */
+.dark-mode,
+[data-theme="dark"] {
+  /* Core Colors */
+  --dm-background: #0f172a;
+  --dm-foreground: #f1f5f9;
+  
+  /* Card & Borders */
+  --dm-card: #1e293b;
+  --dm-card-header: #283548;
+  --dm-border: #334155;
+  
+  /* Primary */
+  --dm-primary: #3b82f6;
+  --dm-primary-hover: #2563eb;
+  --dm-primary-light: rgba(59, 130, 246, 0.2);
+  
+  /* Success */
+  --dm-success: #22c55e;
+  --dm-success-light: rgba(34, 197, 94, 0.2);
+  
+  /* Destructive/Danger */
+  --dm-destructive: #ef4444;
+  --dm-destructive-light: rgba(239, 68, 68, 0.2);
+  
+  /* Accent/Warning */
+  --dm-accent: #f59e0b;
+  --dm-accent-light: rgba(245, 158, 11, 0.2);
+  
+  /* Info */
+  --dm-info: #3b82f6;
+  --dm-info-light: rgba(59, 130, 246, 0.2);
+  
+  /* Muted */
+  --dm-muted: #64748b;
+  --dm-muted-foreground: #94a3b8;
+
+  /* Legacy Variable Overrides */
+  --card-bg: var(--dm-card);
+  --card-bg-color: var(--dm-card);
+  --bg-color: var(--dm-background);
+  --bg-primary: var(--dm-card);
+  --bg-secondary: rgba(71, 85, 105, 0.3);
+  --bg-hover: rgba(71, 85, 105, 0.4);
+  --text-color: var(--dm-foreground);
+  --text-primary: var(--dm-foreground);
+  --text-muted: var(--dm-muted-foreground);
+  --border-color: var(--dm-border);
+  --border-light: var(--dm-border);
+  --primary-color: var(--dm-primary);
+}
+
+/* ========================================
+   Bootstrap Standard Components
+   ======================================== */
+
+/* ========== Card ========== */
+.dark-mode .card,
+[data-theme="dark"] .card {
+  background-color: var(--dm-card);
+  border-color: var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .card-header,
+[data-theme="dark"] .card-header {
+  background-color: var(--dm-card-header);
+  border-bottom-color: var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .card-body,
+[data-theme="dark"] .card-body {
+  background-color: var(--dm-card);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .card-footer,
+[data-theme="dark"] .card-footer {
+  background-color: var(--dm-card-header);
+  border-top-color: var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .card-title,
+[data-theme="dark"] .card-title {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .card-subtitle,
+[data-theme="dark"] .card-subtitle {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .card-text,
+[data-theme="dark"] .card-text {
+  color: var(--dm-foreground);
+}
+
+/* ========== Table ========== */
+.dark-mode .table,
+[data-theme="dark"] .table {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .table thead th,
+[data-theme="dark"] .table thead th {
+  background-color: var(--dm-card-header);
+  border-bottom-color: var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .table tbody,
+[data-theme="dark"] .table tbody {
+  background-color: var(--dm-card);
+}
+
+.dark-mode .table tbody td,
+[data-theme="dark"] .table tbody td {
+  background-color: var(--dm-card);
+  border-bottom-color: var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .table-hover tbody tr:hover,
+[data-theme="dark"] .table-hover tbody tr:hover {
+  background-color: rgba(71, 85, 105, 0.3);
+}
+
+.dark-mode .table-hover tbody tr:hover td,
+[data-theme="dark"] .table-hover tbody tr:hover td {
+  background-color: rgba(71, 85, 105, 0.3);
+}
+
+.dark-mode .table-striped tbody tr:nth-of-type(odd),
+[data-theme="dark"] .table-striped tbody tr:nth-of-type(odd) {
+  background-color: rgba(71, 85, 105, 0.15);
+}
+
+.dark-mode .table-striped tbody tr:nth-of-type(odd) td,
+[data-theme="dark"] .table-striped tbody tr:nth-of-type(odd) td {
+  background-color: rgba(71, 85, 105, 0.15);
+}
+
+/* ========== Form Controls ========== */
+.dark-mode .form-control,
+[data-theme="dark"] .form-control {
+  background-color: rgba(71, 85, 105, 0.3);
+  border-color: var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .form-control:focus,
+[data-theme="dark"] .form-control:focus {
+  background-color: rgba(71, 85, 105, 0.4);
+  border-color: var(--dm-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .form-control::placeholder,
+[data-theme="dark"] .form-control::placeholder {
+  color: var(--dm-muted);
+}
+
+.dark-mode .form-select,
+[data-theme="dark"] .form-select {
+  background-color: rgba(71, 85, 105, 0.3);
+  border-color: var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .form-select:focus,
+[data-theme="dark"] .form-select:focus {
+  background-color: rgba(71, 85, 105, 0.4);
+  border-color: var(--dm-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.dark-mode .form-label,
+[data-theme="dark"] .form-label {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .form-text,
+[data-theme="dark"] .form-text {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .form-section,
+[data-theme="dark"] .form-section {
+  border-color: var(--dm-border);
+}
+
+.dark-mode .form-section-title,
+[data-theme="dark"] .form-section-title {
+  color: var(--dm-foreground);
+  border-bottom-color: var(--dm-border);
+}
+
+.dark-mode .input-group-text,
+[data-theme="dark"] .input-group-text {
+  background-color: var(--dm-card-header);
+  border-color: var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+/* ========== Modal ========== */
+.dark-mode .modal-content,
+[data-theme="dark"] .modal-content {
+  background-color: var(--dm-card);
+  border-color: var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .modal-header,
+[data-theme="dark"] .modal-header {
+  border-bottom-color: var(--dm-border);
+}
+
+.dark-mode .modal-footer,
+[data-theme="dark"] .modal-footer {
+  border-top-color: var(--dm-border);
+}
+
+.dark-mode .modal-title,
+[data-theme="dark"] .modal-title {
+  color: var(--dm-foreground);
+}
+
+/* ========== Dropdown ========== */
+.dark-mode .dropdown-menu,
+[data-theme="dark"] .dropdown-menu {
+  background-color: var(--dm-card);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .dropdown-item,
+[data-theme="dark"] .dropdown-item {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .dropdown-item:hover,
+[data-theme="dark"] .dropdown-item:hover {
+  background-color: rgba(71, 85, 105, 0.3);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .dropdown-divider,
+[data-theme="dark"] .dropdown-divider {
+  border-top-color: var(--dm-border);
+}
+
+/* ========== List Group ========== */
+.dark-mode .list-group-item,
+[data-theme="dark"] .list-group-item {
+  background-color: var(--dm-card);
+  border-color: var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .list-group-item-action:hover,
+[data-theme="dark"] .list-group-item-action:hover {
+  background-color: rgba(71, 85, 105, 0.3);
+  color: var(--dm-foreground);
+}
+
+/* ========== Pagination ========== */
+.dark-mode .page-link,
+[data-theme="dark"] .page-link {
+  background-color: var(--dm-card);
+  border-color: var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .page-link:hover,
+[data-theme="dark"] .page-link:hover {
+  background-color: rgba(71, 85, 105, 0.3);
+  border-color: var(--dm-border);
+  color: var(--dm-primary);
+}
+
+.dark-mode .page-item.active .page-link,
+[data-theme="dark"] .page-item.active .page-link {
+  background-color: var(--dm-primary);
+  border-color: var(--dm-primary);
+  color: white;
+}
+
+.dark-mode .page-item.disabled .page-link,
+[data-theme="dark"] .page-item.disabled .page-link {
+  background-color: var(--dm-card);
+  border-color: var(--dm-border);
+  color: var(--dm-muted);
+}
+
+/* ========== Breadcrumb ========== */
+.dark-mode .breadcrumb,
+[data-theme="dark"] .breadcrumb {
+  background-color: var(--dm-card);
+}
+
+.dark-mode .breadcrumb-item a,
+[data-theme="dark"] .breadcrumb-item a {
+  color: var(--dm-primary);
+}
+
+.dark-mode .breadcrumb-item.active,
+[data-theme="dark"] .breadcrumb-item.active {
+  color: var(--dm-muted-foreground);
+}
+
+/* ========================================
+   Custom Components
+   ======================================== */
+
+/* ========== Badges ========== */
+.dark-mode .badge-primary,
+[data-theme="dark"] .badge-primary {
+  background-color: var(--dm-primary-light);
+  color: var(--dm-primary);
+}
+
+.dark-mode .badge-success,
+[data-theme="dark"] .badge-success {
+  background-color: var(--dm-success-light);
+  color: var(--dm-success);
+}
+
+.dark-mode .badge-danger,
+[data-theme="dark"] .badge-danger {
+  background-color: var(--dm-destructive-light);
+  color: var(--dm-destructive);
+}
+
+.dark-mode .badge-warning,
+[data-theme="dark"] .badge-warning {
+  background-color: var(--dm-accent-light);
+  color: var(--dm-accent);
+}
+
+.dark-mode .badge-info,
+[data-theme="dark"] .badge-info {
+  background-color: var(--dm-info-light);
+  color: var(--dm-info);
+}
+
+.dark-mode .badge-secondary,
+[data-theme="dark"] .badge-secondary {
+  background-color: rgba(71, 85, 105, 0.3);
+  color: var(--dm-muted-foreground);
+}
+
+/* ========== Status Badges ========== */
+.dark-mode .status-badge-memo,
+[data-theme="dark"] .status-badge-memo {
+  background-color: var(--dm-info-light);
+  color: var(--dm-info);
+}
+
+.dark-mode .status-badge-sold,
+[data-theme="dark"] .status-badge-sold {
+  background-color: var(--dm-destructive-light);
+  color: var(--dm-destructive);
+}
+
+.dark-mode .status-badge-active,
+[data-theme="dark"] .status-badge-active {
+  background-color: var(--dm-success-light);
+  color: var(--dm-success);
+}
+
+/* ========== Empty State ========== */
+.dark-mode .empty-state,
+[data-theme="dark"] .empty-state {
+  background: rgba(71, 85, 105, 0.3);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .empty-icon,
+[data-theme="dark"] .empty-icon {
+  background: var(--dm-primary-light);
+}
+
+.dark-mode .empty-icon i,
+[data-theme="dark"] .empty-icon i {
+  color: var(--dm-primary);
+}
+
+.dark-mode .empty-state h4,
+.dark-mode .empty-title,
+.dark-mode .empty-title-improved,
+[data-theme="dark"] .empty-state h4,
+[data-theme="dark"] .empty-title,
+[data-theme="dark"] .empty-title-improved {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .empty-state p,
+.dark-mode .empty-text,
+.dark-mode .empty-text-improved,
+[data-theme="dark"] .empty-state p,
+[data-theme="dark"] .empty-text,
+[data-theme="dark"] .empty-text-improved {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .empty-icon-improved,
+[data-theme="dark"] .empty-icon-improved {
+  color: var(--dm-muted);
+}
+
+/* ========== Loading ========== */
+.dark-mode .loading-spinner,
+[data-theme="dark"] .loading-spinner {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .spinner-border,
+[data-theme="dark"] .spinner-border {
+  color: var(--dm-primary);
+}
+
+.dark-mode .loading-text,
+[data-theme="dark"] .loading-text {
+  color: var(--dm-muted-foreground);
+}
+
+/* ========== Action Buttons ========== */
+.dark-mode .btn-icon,
+[data-theme="dark"] .btn-icon {
+  background: rgba(71, 85, 105, 0.3);
+  color: var(--dm-foreground);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .btn-primary-icon,
+[data-theme="dark"] .btn-primary-icon {
+  background: var(--dm-primary-light);
+  color: var(--dm-primary);
+}
+
+.dark-mode .btn-primary-icon:hover,
+[data-theme="dark"] .btn-primary-icon:hover {
+  background: var(--dm-primary);
+  color: white;
+}
+
+.dark-mode .btn-success-icon,
+[data-theme="dark"] .btn-success-icon {
+  background: var(--dm-success-light);
+  color: var(--dm-success);
+}
+
+.dark-mode .btn-success-icon:hover,
+[data-theme="dark"] .btn-success-icon:hover {
+  background: var(--dm-success);
+  color: white;
+}
+
+.dark-mode .btn-danger-icon,
+[data-theme="dark"] .btn-danger-icon {
+  background: var(--dm-destructive-light);
+  color: var(--dm-destructive);
+}
+
+.dark-mode .btn-danger-icon:hover,
+[data-theme="dark"] .btn-danger-icon:hover {
+  background: var(--dm-destructive);
+  color: white;
+}
+
+.dark-mode .btn-warning-icon,
+[data-theme="dark"] .btn-warning-icon {
+  background: var(--dm-accent-light);
+  color: var(--dm-accent);
+}
+
+.dark-mode .btn-warning-icon:hover,
+[data-theme="dark"] .btn-warning-icon:hover {
+  background: var(--dm-accent);
+  color: white;
+}
+
+.dark-mode .btn-info-icon,
+[data-theme="dark"] .btn-info-icon {
+  background: var(--dm-info-light);
+  color: var(--dm-info);
+}
+
+.dark-mode .btn-info-icon:hover,
+[data-theme="dark"] .btn-info-icon:hover {
+  background: var(--dm-info);
+  color: white;
+}
+
+/* ========== Alerts ========== */
+.dark-mode .alert,
+[data-theme="dark"] .alert {
+  border-color: var(--dm-border);
+}
+
+.dark-mode .alert-info,
+.dark-mode .alert-info-improved,
+[data-theme="dark"] .alert-info,
+[data-theme="dark"] .alert-info-improved {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
+  color: var(--dm-info);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.dark-mode .alert-warning,
+.dark-mode .alert-warning-improved,
+[data-theme="dark"] .alert-warning,
+[data-theme="dark"] .alert-warning-improved {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.1));
+  color: var(--dm-accent);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.dark-mode .alert-danger,
+.dark-mode .alert-danger-improved,
+[data-theme="dark"] .alert-danger,
+[data-theme="dark"] .alert-danger-improved {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1));
+  color: var(--dm-destructive);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.dark-mode .alert-success,
+.dark-mode .alert-success-improved,
+[data-theme="dark"] .alert-success,
+[data-theme="dark"] .alert-success-improved {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.1));
+  color: var(--dm-success);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+/* ========================================
+   Improved Form Components
+   ======================================== */
+
+.dark-mode .form-card-improved,
+[data-theme="dark"] .form-card-improved {
+  background-color: var(--dm-card);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .form-body-improved,
+[data-theme="dark"] .form-body-improved {
+  background-color: var(--dm-card);
+}
+
+.dark-mode .form-label-improved,
+[data-theme="dark"] .form-label-improved {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .form-input-improved,
+[data-theme="dark"] .form-input-improved {
+  background-color: rgba(71, 85, 105, 0.3);
+  border-color: var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .form-input-improved:focus,
+[data-theme="dark"] .form-input-improved:focus {
+  background-color: rgba(71, 85, 105, 0.4);
+  border-color: var(--dm-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.dark-mode .form-input-improved::placeholder,
+[data-theme="dark"] .form-input-improved::placeholder {
+  color: var(--dm-muted);
+}
+
+.dark-mode .form-text-improved,
+[data-theme="dark"] .form-text-improved {
+  color: var(--dm-muted-foreground);
+}
+
+/* ========================================
+   Display Components
+   ======================================== */
+
+/* ========== Price & Profit Display ========== */
+.dark-mode .price-value,
+.dark-mode .profit-value,
+[data-theme="dark"] .price-value,
+[data-theme="dark"] .profit-value {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .price-label,
+.dark-mode .price-unit,
+.dark-mode .price-quantity,
+.dark-mode .price-total,
+.dark-mode .profit-label,
+.dark-mode .profit-unit,
+[data-theme="dark"] .price-label,
+[data-theme="dark"] .price-unit,
+[data-theme="dark"] .price-quantity,
+[data-theme="dark"] .price-total,
+[data-theme="dark"] .profit-label,
+[data-theme="dark"] .profit-unit {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .profit-card.profit,
+[data-theme="dark"] .profit-card.profit {
+  background: var(--dm-success-light);
+}
+
+.dark-mode .profit-card.loss,
+[data-theme="dark"] .profit-card.loss {
+  background: var(--dm-destructive-light);
+}
+
+.dark-mode .profit-card.profit .profit-value,
+[data-theme="dark"] .profit-card.profit .profit-value {
+  color: var(--dm-success);
+}
+
+.dark-mode .profit-card.loss .profit-value,
+[data-theme="dark"] .profit-card.loss .profit-value {
+  color: var(--dm-destructive);
+}
+
+.dark-mode .price-change.positive,
+.dark-mode .profit-positive,
+[data-theme="dark"] .price-change.positive,
+[data-theme="dark"] .profit-positive {
+  color: var(--dm-success) !important;
+}
+
+.dark-mode .price-change.negative,
+.dark-mode .profit-negative,
+[data-theme="dark"] .price-change.negative,
+[data-theme="dark"] .profit-negative {
+  color: var(--dm-destructive) !important;
+}
+
+/* ========== Date Display ========== */
+.dark-mode .date-display,
+[data-theme="dark"] .date-display {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .date-display i,
+[data-theme="dark"] .date-display i {
+  color: var(--dm-primary);
+}
+
+.dark-mode .date-label,
+[data-theme="dark"] .date-label {
+  color: var(--dm-muted-foreground);
+}
+
+/* ========== Card Improved ========== */
+.dark-mode .card-improved,
+[data-theme="dark"] .card-improved {
+  background: var(--dm-card);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .card-header-improved,
+[data-theme="dark"] .card-header-improved {
+  background: var(--dm-card-header);
+  border-bottom-color: var(--dm-border);
+}
+
+/* ========================================
+   Utility Classes
+   ======================================== */
+
+/* ========== Text Colors ========== */
+.dark-mode .text-primary,
+[data-theme="dark"] .text-primary {
+  color: var(--dm-primary) !important;
+}
+
+.dark-mode .text-success,
+[data-theme="dark"] .text-success {
+  color: var(--dm-success) !important;
+}
+
+.dark-mode .text-danger,
+[data-theme="dark"] .text-danger {
+  color: var(--dm-destructive) !important;
+}
+
+.dark-mode .text-warning,
+[data-theme="dark"] .text-warning {
+  color: var(--dm-accent) !important;
+}
+
+.dark-mode .text-info,
+[data-theme="dark"] .text-info {
+  color: var(--dm-info) !important;
+}
+
+.dark-mode .text-muted,
+[data-theme="dark"] .text-muted {
+  color: var(--dm-muted-foreground) !important;
+}
+
+/* ========== Border ========== */
+.dark-mode .border,
+[data-theme="dark"] .border {
+  border-color: var(--dm-border) !important;
+}
+
+.dark-mode .border-top,
+[data-theme="dark"] .border-top {
+  border-top-color: var(--dm-border) !important;
+}
+
+.dark-mode .border-bottom,
+[data-theme="dark"] .border-bottom {
+  border-bottom-color: var(--dm-border) !important;
+}
+
+/* ========== Background ========== */
+.dark-mode .bg-white,
+[data-theme="dark"] .bg-white {
+  background-color: var(--dm-card) !important;
+}
+
+.dark-mode .bg-light,
+[data-theme="dark"] .bg-light {
+  background-color: rgba(71, 85, 105, 0.2) !important;
+}
+
+/* ========== Page Header ========== */
+.dark-mode .page-header,
+[data-theme="dark"] .page-header {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .page-title,
+[data-theme="dark"] .page-title {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .page-subtitle,
+[data-theme="dark"] .page-subtitle {
+  color: var(--dm-muted-foreground);
+}
+
+/* ========== Scrollbar ========== */
+.dark-mode ::-webkit-scrollbar,
+[data-theme="dark"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark-mode ::-webkit-scrollbar-track,
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: rgba(71, 85, 105, 0.2);
+}
+
+.dark-mode ::-webkit-scrollbar-thumb,
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.5);
+  border-radius: 4px;
+}
+
+.dark-mode ::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(71, 85, 105, 0.7);
+}

@@ -1,0 +1,43 @@
+{% load stockdiary_filters %}
+{% load humanize %}
+
+{% with display_style=style|default:"inline" decimal_places=decimals|default:2 currency_unit=currency|default:"円" %}
+
+{% if display_style == "badge" %}
+  <span class="badge bg-light text-dark {% if size %}badge-{{ size }}{% endif %}">
+    {{ price|floatformat:decimal_places|intcomma }}{{ currency_unit }}
+  </span>
+  
+{% elif display_style == "block" %}
+  <div class="price-display-block {% if size %}price-{{ size }}{% endif %}">
+    {% if label %}
+    <div class="price-label">{{ label }}</div>
+    {% endif %}
+    <div class="price-value">
+      {{ price|floatformat:decimal_places|intcomma }}<span class="price-unit">{{ currency_unit }}</span>
+    </div>
+    {% if quantity %}
+    <div class="price-quantity">× {{ quantity|floatformat:0 }}株</div>
+    {% endif %}
+    {% if show_total and quantity %}
+    <div class="price-total">
+      計: {{ price|multiply:quantity|intcomma_float:0 }}{{ currency_unit }}
+    </div>
+    {% endif %}
+  </div>
+
+{% else %}
+  {# inline style #}
+  {% if label %}<span class="text-muted">{{ label }}: </span>{% endif %}
+  <span class="price-value {% if size %}price-{{ size }}{% endif %}">
+    {{ price|floatformat:decimal_places|intcomma }}{{ currency_unit }}
+  </span>
+  {% if quantity %}
+    <span class="text-muted"> × {{ quantity|floatformat:0 }}株</span>
+  {% endif %}
+  {% if show_total and quantity %}
+    <span class="text-muted"> (計: {{ price|multiply:quantity|intcomma_float:0 }}{{ currency_unit }})</span>
+  {% endif %}
+{% endif %}
+
+{% endwith %}
