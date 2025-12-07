@@ -3,122 +3,104 @@
 
 {% block title %}{% if action == 'create' %}レポート作成{% else %}レポート編集{% endif %} - カブログ{% endblock %}
 
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/2-layouts/analysis-template.css' %}">
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <!-- ページヘッダー -->
+<div class="at-container">
+    <!-- ヘッダー -->
     <div class="page-header mb-4">
         <h1 class="page-title">
             <i class="bi bi-{% if action == 'create' %}plus-circle{% else %}pencil{% endif %}"></i>
             <span>{% if action == 'create' %}新規レポート作成{% else %}レポート編集{% endif %}</span>
         </h1>
-        <p class="page-subtitle">{% if action == 'create' %}企業分析レポートの基本情報を入力してください{% else %}レポートの基本情報を編集できます{% endif %}</p>
+        <p class="page-subtitle">{% if action == 'create' %}企業分析レポートの基本情報を入力{% else %}レポートの基本情報を編集{% endif %}</p>
     </div>
 
-    <div class="row">
+    <div class="row g-4">
         <div class="col-lg-8">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <form method="post" novalidate>
-                        {% csrf_token %}
+            <div class="at-card">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="at-form-section">
+                        <div class="at-form-section-title">
+                            <i class="bi bi-info-circle me-1"></i>基本情報
+                        </div>
                         
-                        <!-- 基本情報 -->
-                        <div class="mb-4">
-                            <h5 class="mb-3">
-                                <i class="bi bi-info-circle text-primary me-2"></i>
-                                基本情報
-                            </h5>
-                            
-                            <div class="mb-3">
-                                <label for="{{ form.name.id_for_label }}" class="form-label">
-                                    テンプレート名
-                                    <span class="text-danger">*</span>
-                                </label>
-                                {{ form.name }}
-                                {% if form.name.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.name.errors }}
-                                </div>
-                                {% endif %}
-                                <div class="form-text">
-                                    レポートを識別しやすい名前を付けてください
-                                </div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="{{ form.description.id_for_label }}" class="form-label">
-                                    説明
-                                </label>
-                                {{ form.description }}
-                                {% if form.description.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.description.errors }}
-                                </div>
-                                {% endif %}
-                                <div class="form-text">
-                                    レポートの目的や内容について簡単な説明（任意）
-                                </div>
-                            </div>
+                        <div class="at-form-group">
+                            <label for="{{ form.name.id_for_label }}" class="at-form-label">
+                                テンプレート名 <span class="text-danger">*</span>
+                            </label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                            <div class="text-danger small mt-1">{{ form.name.errors }}</div>
+                            {% endif %}
+                            <div class="small at-text-muted mt-1">レポートを識別しやすい名前を付けてください</div>
                         </div>
+                        
+                        <div class="at-form-group">
+                            <label for="{{ form.description.id_for_label }}" class="at-form-label">説明</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                            <div class="text-danger small mt-1">{{ form.description.errors }}</div>
+                            {% endif %}
+                            <div class="small at-text-muted mt-1">レポートの目的や内容について簡単な説明（任意）</div>
+                        </div>
+                    </div>
 
-                        <!-- 送信ボタン -->
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle me-1"></i>
-                                {% if action == 'create' %}作成して企業選択へ{% else %}更新{% endif %}
-                            </button>
-                            <a href="{% if action == 'create' %}{% url 'analysis_template:list' %}{% else %}{% url 'analysis_template:detail' template.pk %}{% endif %}" 
-                               class="btn btn-secondary">
-                                <i class="bi bi-x-circle me-1"></i>
-                                キャンセル
-                            </a>
-                        </div>
-                    </form>
-                </div>
+                    <div class="at-action-group">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i>
+                            {% if action == 'create' %}作成して企業選択へ{% else %}更新{% endif %}
+                        </button>
+                        <a href="{% if action == 'create' %}{% url 'analysis_template:list' %}{% else %}{% url 'analysis_template:detail' template.pk %}{% endif %}" 
+                           class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-1"></i>キャンセル
+                        </a>
+                    </div>
+                </form>
             </div>
         </div>
         
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm bg-light">
-                <div class="card-body">
-                    <h5 class="card-title">
-                        <i class="bi bi-lightbulb text-warning me-2"></i>
-                        {% if action == 'create' %}作成の流れ{% else %}ヒント{% endif %}
-                    </h5>
-                    {% if action == 'create' %}
-                    <ol class="small mb-0">
-                        <li class="mb-2"><strong>基本情報入力</strong><br>レポート名と説明を入力</li>
-                        <li class="mb-2"><strong>企業選択</strong><br>分析対象の企業を選択</li>
-                        <li class="mb-2"><strong>指標入力</strong><br>各企業の財務指標を入力</li>
-                        <li class="mb-2"><strong>レポート表示</strong><br>比較分析レポートを確認</li>
-                    </ol>
-                    {% else %}
-                    <ul class="small mb-0">
-                        <li class="mb-2">テンプレート名は後から変更できます</li>
-                        <li class="mb-2">説明は任意項目です</li>
-                        <li class="mb-2">企業や指標は別画面で管理します</li>
-                    </ul>
-                    {% endif %}
-                </div>
+            <div class="at-card">
+                <h6 class="at-card-title">
+                    <i class="bi bi-lightbulb text-warning me-2"></i>
+                    {% if action == 'create' %}作成の流れ{% else %}ヒント{% endif %}
+                </h6>
+                {% if action == 'create' %}
+                <ol class="small mb-0 ps-3">
+                    <li class="mb-2"><strong>基本情報入力</strong><br>レポート名と説明を入力</li>
+                    <li class="mb-2"><strong>企業選択</strong><br>分析対象の企業を選択</li>
+                    <li class="mb-2"><strong>指標入力</strong><br>各企業の財務指標を入力（API自動取得可）</li>
+                    <li class="mb-2"><strong>レポート表示</strong><br>比較分析レポートを確認</li>
+                </ol>
+                {% else %}
+                <ul class="small mb-0 ps-3">
+                    <li class="mb-2">テンプレート名は後から変更できます</li>
+                    <li class="mb-2">説明は任意項目です</li>
+                    <li class="mb-2">企業や指標は別画面で管理します</li>
+                </ul>
+                {% endif %}
             </div>
 
             {% if action == 'update' %}
-            <div class="card border-0 shadow-sm mt-3">
-                <div class="card-body">
-                    <h5 class="card-title">
-                        <i class="bi bi-tools me-2"></i>
-                        その他の操作
-                    </h5>
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn btn-outline-primary btn-sm">
-                            <i class="bi bi-building me-1"></i>企業選択
-                        </a>
-                        <a href="{% url 'analysis_template:metrics_input' template.pk %}" class="btn btn-outline-success btn-sm">
-                            <i class="bi bi-bar-chart me-1"></i>指標入力
-                        </a>
-                        <a href="{% url 'analysis_template:metrics_edit' template.pk %}" class="btn btn-outline-info btn-sm">
-                            <i class="bi bi-pencil me-1"></i>指標編集
-                        </a>
-                    </div>
+            <div class="at-card mt-3">
+                <h6 class="at-card-title">
+                    <i class="bi bi-tools me-2"></i>その他の操作
+                </h6>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-building me-1"></i>企業選択
+                    </a>
+                    <a href="{% url 'analysis_template:metrics_input' template.pk %}" class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-bar-chart me-1"></i>指標入力
+                    </a>
+                    <a href="{% url 'analysis_template:metrics_edit' template.pk %}" class="btn btn-outline-info btn-sm">
+                        <i class="bi bi-pencil me-1"></i>指標編集
+                    </a>
                 </div>
             </div>
             {% endif %}
@@ -126,37 +108,30 @@
     </div>
 </div>
 
-{% include 'speed_dial.html' with actions=form_actions %}
-
 <style>
-.form-text {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
+/* フォームコントロールのダークモード対応 */
+.dark-mode .form-control,
+.dark-mode .form-select,
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select {
+    background-color: var(--at-bg-card-hover, rgba(71, 85, 105, 0.3));
+    border-color: var(--at-border, #334155);
+    color: var(--at-text-primary, #f1f5f9);
 }
 
-.card.bg-light {
-    background-color: var(--bg-secondary) !important;
+.dark-mode .form-control:focus,
+.dark-mode .form-select:focus,
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus {
+    background-color: var(--at-bg-card-hover, rgba(71, 85, 105, 0.4));
+    border-color: var(--at-primary, #3b82f6);
+    color: var(--at-text-primary, #f1f5f9);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-@media (max-width: 767.98px) {
-    .d-flex.gap-2 {
-        flex-direction: column;
-    }
-    
-    .d-flex.gap-2 .btn {
-        width: 100%;
-    }
-}
-
-/* ダークモード対応 */
-.dark-mode .card.bg-light,
-[data-theme="dark"] .card.bg-light {
-    background-color: rgba(71, 85, 105, 0.2) !important;
-}
-
-.dark-mode .form-text,
-[data-theme="dark"] .form-text {
-    color: var(--dm-muted-foreground);
+.dark-mode .form-control::placeholder,
+[data-theme="dark"] .form-control::placeholder {
+    color: var(--at-text-muted, #64748b);
 }
 </style>
 {% endblock %}

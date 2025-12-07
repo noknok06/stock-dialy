@@ -3,208 +3,191 @@
 
 {% block title %}企業選択 - {{ template.name }} - カブログ{% endblock %}
 
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/2-layouts/analysis-template.css' %}">
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4 mb-5">
-    <!-- ページヘッダー -->
-    <div class="page-header page-header-with-actions mb-4">
-        <div class="page-header-content">
-            <h1 class="page-title">
-                <i class="bi bi-building"></i>
-                <span>企業選択</span>
-            </h1>
-          <p class="page-subtitle">複数の企業を選択してから、まとめて登録できます</p>
-        </div>
+<div class="at-container">
+    <!-- ヘッダー -->
+    <div class="page-header mb-4">
+        <h1 class="page-title">
+            <i class="bi bi-building"></i>
+            <span>企業選択</span>
+        </h1>
+        <p class="page-subtitle">{{ template.name }} - 複数の企業を選択してまとめて登録できます</p>
     </div>
-    <div class="row">
-        <!-- 左側: 企業検索・選択 -->
-        <div class="col-lg-8 mb-4">
+
+    <div class="row g-4">
+        <!-- 左: 企業検索・選択 -->
+        <div class="col-lg-8">
             <!-- 検索フォーム -->
-            <div class="card border-0 shadow-sm mb-3">
-                <div class="card-body">
-                    <form method="get" class="row g-3" id="searchForm">
-                        <div class="col-md-6">
+            <div class="at-card mb-3">
+                <form method="get" id="searchForm">
+                    <div class="row g-2">
+                        <div class="col-12 col-sm-6">
                             {{ search_form.query }}
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-6 col-sm-3">
                             {{ search_form.industry }}
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-6 col-sm-3">
                             {{ search_form.market }}
                         </div>
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-primary" onclick="saveBeforeSearch()">
-                                <i class="bi bi-search me-1"></i>検索
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary ms-2" onclick="resetSearch()">
-                                <i class="bi bi-arrow-clockwise me-1"></i>リセット
-                            </button>
-                        </div>
-                    </form>
-                </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="submit" class="btn btn-primary btn-sm" onclick="saveBeforeSearch()">
+                            <i class="bi bi-search me-1"></i>検索
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetSearch()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>リセット
+                        </button>
+                    </div>
+                </form>
             </div>
 
             <!-- 企業リスト -->
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-transparent">
-                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <h6 class="mb-0">
-                            企業一覧
-                            <small class="text-muted ms-2">（このページのみを全選択）</small>
-                        </h6>
-                        <div class="d-flex gap-2 align-items-center flex-wrap">
-                            <span class="badge bg-primary fs-6" id="selectionCount">0</span>
-                            <button type="button" class="btn btn-sm btn-outline-warning" onclick="selectAllOnPage()">
-                                <i class="bi bi-check-square me-1"></i>このページを全選択
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearAllSelections()">
-                                <i class="bi bi-x-circle me-1"></i>すべてクリア
-                            </button>
-                        </div>
+            <div class="at-card">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <h6 class="mb-0 at-card-title">
+                        企業一覧
+                        <span class="badge bg-primary ms-2" id="selectionCount">0</span>
+                    </h6>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-sm btn-outline-warning" onclick="selectAllOnPage()">
+                            <i class="bi bi-check-square me-1"></i>
+                            <span class="d-none d-sm-inline">このページを全選択</span>
+                            <span class="d-sm-none">全選択</span>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearAllSelections()">
+                            <i class="bi bi-x-circle me-1"></i>
+                            <span class="d-none d-sm-inline">すべてクリア</span>
+                            <span class="d-sm-none">クリア</span>
+                        </button>
                     </div>
                 </div>
-                <div class="card-body">
-                    <form method="post" id="companySelectForm">
-                        {% csrf_token %}
-                        
-                        {# アクション選択用の隠しフィールド #}
-                        <input type="hidden" name="action" id="actionInput" value="add">
-                        
-                        <!-- 選択した企業コードを保持する隠しフィールド（動的に追加） -->
-                        <div id="hiddenInputsContainer"></div>
-                        
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 50px;">選択</th>
-                                        <th>コード</th>
-                                        <th>銘柄名</th>
-                                        <th>業種</th>
-                                        <th>市場</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for company in page_obj %}
-                                    <tr data-company-code="{{ company.code }}" class="company-row">
-                                        <td>
-                                            <input type="checkbox" 
-                                                   value="{{ company.code }}"
-                                                   class="form-check-input company-checkbox"
-                                                   data-company-code="{{ company.code }}"
-                                                   data-company-name="{{ company.name }}">
-                                        </td>
-                                        <td class="fw-medium">{{ company.code }}</td>
-                                        <td>
-                                            {{ company.name }}
-                                            <span class="badge bg-success ms-2 selected-badge d-none">✓</span>
-                                        </td>
-                                        <td><small class="text-muted">{{ company.industry_name_33|default:"-" }}</small></td>
-                                        <td><small class="text-muted">{{ company.market|default:"-" }}</small></td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="5" class="text-center text-muted py-4">
-                                            該当する企業が見つかりませんでした
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
 
-                        <!-- ページネーション -->
-                        {% if page_obj.has_other_pages %}
-                        <nav aria-label="ページネーション" class="mt-3">
-                            <ul class="pagination pagination-sm justify-content-center mb-0">
-                                {% if page_obj.has_previous %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}{% if request.GET.industry %}&industry={{ request.GET.industry }}{% endif %}{% if request.GET.market %}&market={{ request.GET.market }}{% endif %}" onclick="saveBeforeNavigate(event)">
-                                        <i class="bi bi-chevron-left"></i>
-                                    </a>
-                                </li>
-                                {% endif %}
-                                
-                                <li class="page-item active">
-                                    <span class="page-link">
-                                        {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
-                                    </span>
-                                </li>
-                                
-                                {% if page_obj.has_next %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}{% if request.GET.industry %}&industry={{ request.GET.industry }}{% endif %}{% if request.GET.market %}&market={{ request.GET.market }}{% endif %}" onclick="saveBeforeNavigate(event)">
-                                        <i class="bi bi-chevron-right"></i>
-                                    </a>
-                                </li>
-                                {% endif %}
-                            </ul>
-                        </nav>
-                        {% endif %}
+                <form method="post" id="companySelectForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" id="actionInput" value="add">
+                    <div id="hiddenInputsContainer"></div>
+                    
+                    <div class="at-table-wrapper">
+                        <table class="at-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;"></th>
+                                    <th>コード</th>
+                                    <th>銘柄名</th>
+                                    <th class="d-none d-md-table-cell">業種</th>
+                                    <th class="d-none d-sm-table-cell">市場</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for company in page_obj %}
+                                <tr class="company-row" data-company-code="{{ company.code }}">
+                                    <td>
+                                        <input type="checkbox" 
+                                               value="{{ company.code }}"
+                                               class="at-checkbox company-checkbox"
+                                               data-company-code="{{ company.code }}"
+                                               data-company-name="{{ company.name }}">
+                                    </td>
+                                    <td class="fw-medium">{{ company.code }}</td>
+                                    <td>
+                                        {{ company.name }}
+                                        <span class="badge bg-success ms-1 selected-badge d-none">✓</span>
+                                    </td>
+                                    <td class="d-none d-md-table-cell">
+                                        <small class="at-text-muted">{{ company.industry_name_33|default:"-" }}</small>
+                                    </td>
+                                    <td class="d-none d-sm-table-cell">
+                                        <small class="at-text-muted">{{ company.market|default:"-" }}</small>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center at-text-muted py-4">
+                                        該当する企業が見つかりませんでした
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
 
-                        {# ボタン #}
-                        <div class="d-flex gap-2 justify-content-end mt-3 flex-wrap">
-                            <a href="{% url 'analysis_template:detail' template.pk %}" class="btn btn-secondary">
-                                <i class="bi bi-x-circle me-1"></i>キャンセル
-                            </a>
-                            <button type="button" class="btn btn-success" onclick="submitForm('add')">
-                                <i class="bi bi-plus-circle me-1"></i>選択企業を追加
-                            </button>
-                            <button type="button" class="btn btn-primary" onclick="submitForm('replace')">
-                                <i class="bi bi-check-circle me-1"></i>選択企業で置き換え
-                            </button>
-                        </div>
-                    </form>
-                </div>
+                    <!-- ページネーション -->
+                    {% if page_obj.has_other_pages %}
+                    <nav class="mt-3">
+                        <ul class="pagination pagination-sm justify-content-center mb-0">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}{% if request.GET.industry %}&industry={{ request.GET.industry }}{% endif %}{% if request.GET.market %}&market={{ request.GET.market }}{% endif %}" onclick="saveBeforeNavigate(event)">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+                            </li>
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}{% if request.GET.industry %}&industry={{ request.GET.industry }}{% endif %}{% if request.GET.market %}&market={{ request.GET.market }}{% endif %}" onclick="saveBeforeNavigate(event)">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+
+                    <!-- アクションボタン -->
+                    <div class="at-action-group justify-content-end mt-4">
+                        <a href="{% url 'analysis_template:detail' template.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-1"></i>キャンセル
+                        </a>
+                        <button type="button" class="btn btn-success" onclick="submitForm('add')">
+                            <i class="bi bi-plus-circle me-1"></i>追加
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="submitForm('replace')">
+                            <i class="bi bi-check-circle me-1"></i>置き換え
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
 
-        <!-- 右側: 選択済み企業 -->
+        <!-- 右: 選択済み企業 -->
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm sticky-top" style="top: 1rem;">
-                <div class="card-header bg-transparent">
-                    <h6 class="mb-0">
-                        <i class="bi bi-check-circle me-1"></i>選択済み企業
-                        <span class="badge bg-primary ms-2" id="selectedCount">0</span>
-                    </h6>
-                </div>
-                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
-                    <div id="selectedCompaniesList">
-                        <div class="text-center text-muted py-4" id="emptyState">
-                            <i class="bi bi-inbox" style="font-size: 2rem;"></i>
-                            <p class="mb-0 mt-2 small">企業が選択されていません</p>
-                            <p class="mb-0 text-muted" style="font-size: 0.75rem;">
-                                チェックボックスを選択してください
-                            </p>
-                        </div>
+            <div class="at-card sticky-lg-top" style="top: 1rem;">
+                <h6 class="at-card-title mb-3">
+                    <i class="bi bi-check-circle me-1"></i>選択済み企業
+                    <span class="badge bg-primary ms-2" id="selectedCount">0</span>
+                </h6>
+                <div id="selectedCompaniesList" style="max-height: 300px; overflow-y: auto;">
+                    <div class="text-center at-text-muted py-4" id="emptyState">
+                        <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.5;"></i>
+                        <p class="mb-0 mt-2 small">企業が選択されていません</p>
                     </div>
                 </div>
             </div>
             
-            {# 説明 #}
-            <div class="card border-0 shadow-sm mt-3">
-                <div class="card-body">
-                    <h6 class="card-title">
-                        <i class="bi bi-info-circle text-primary me-1"></i>
-                        使い方
-                    </h6>
-                    <ol class="small mb-0 ps-3">
-                        <li class="mb-2">
-                            企業を検索してチェックボックスで選択
-                        </li>
-                        <li class="mb-2">
-                            <strong>検索条件を変えて別の企業を探す</strong><br>
-                            <small class="text-muted">※選択状態は自動的に保持されます</small>
-                        </li>
-                        <li class="mb-2">
-                            必要な企業をすべて選択したら、<br>
-                            「追加」または「置き換え」をクリック
-                        </li>
-                    </ol>
-                    <hr class="my-3">
-                    <div class="small">
-                        <p class="mb-2"><strong>追加:</strong> 既存の企業を残して追加</p>
-                        <p class="mb-0"><strong>置き換え:</strong> 既存を削除して置き換え</p>
-                    </div>
+            <!-- 使い方 -->
+            <div class="at-card mt-3">
+                <h6 class="at-card-title">
+                    <i class="bi bi-info-circle me-1"></i>使い方
+                </h6>
+                <ol class="small mb-0 ps-3">
+                    <li class="mb-2">企業を検索してチェックボックスで選択</li>
+                    <li class="mb-2">検索条件を変えて別の企業を探す<br>
+                        <small class="at-text-muted">※選択状態は自動保持</small>
+                    </li>
+                    <li class="mb-2">「追加」または「置き換え」をクリック</li>
+                </ol>
+                <hr class="my-3">
+                <div class="small">
+                    <p class="mb-1"><strong>追加:</strong> 既存企業を残して追加</p>
+                    <p class="mb-0"><strong>置き換え:</strong> 既存を削除して置換</p>
                 </div>
             </div>
         </div>
@@ -212,96 +195,52 @@
 </div>
 
 <script>
-// テンプレートID
 const templateId = {{ template.pk }};
 const storageKey = `template_${templateId}_selected_companies`;
 
-// ⭐ 既存の選択企業（テンプレートに登録済み）
 const existingCompanies = {
     {% for company in selected_companies %}
     '{{ company.code }}': { code: '{{ company.code }}', name: '{{ company.name|escapejs }}' }{% if not forloop.last %},{% endif %}
     {% endfor %}
 };
 
-// 選択状態を管理するオブジェクト
 let selectedCompanies = {};
 
-// ========================================
-// 初期化
-// ========================================
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 ページ読み込み開始');
-    
-    // 選択状態を復元
     loadSelections();
-    
-    // イベントリスナーを設定
     setupEventListeners();
-    
-    // UIを更新（チェックボックスの状態を復元）
     updateUI();
-    
-    console.log('✅ 初期化完了。現在の選択:', selectedCompanies);
 });
 
-// ========================================
-// 選択状態の保存・読み込み
-// ========================================
-
-// sessionStorageから選択状態を読み込み
-// sessionStorageから選択状態を読み込み
 function loadSelections() {
     const saved = sessionStorage.getItem(storageKey);
     if (saved) {
         try {
             selectedCompanies = JSON.parse(saved);
-            console.log('💾 選択状態を復元:', selectedCompanies);
         } catch (e) {
-            console.error('❌ 選択状態の読み込みに失敗:', e);
             selectedCompanies = {};
         }
-    } else {
-        // ⭐ sessionStorageが空の場合、既存の登録企業を初期値として設定
-        if (Object.keys(existingCompanies).length > 0) {
-            selectedCompanies = { ...existingCompanies };
-            saveSelections();  // sessionStorageに保存
-            console.log('📋 既存の登録企業を初期選択として設定:', selectedCompanies);
-        } else {
-            console.log('ℹ️ 保存された選択状態がありません');
-            selectedCompanies = {};
-        }
+    } else if (Object.keys(existingCompanies).length > 0) {
+        selectedCompanies = { ...existingCompanies };
+        saveSelections();
     }
 }
 
-// sessionStorageに選択状態を保存
 function saveSelections() {
-    try {
-        sessionStorage.setItem(storageKey, JSON.stringify(selectedCompanies));
-        console.log('💾 選択状態を保存:', selectedCompanies);
-    } catch (e) {
-        console.error('❌ 選択状態の保存に失敗:', e);
-    }
+    sessionStorage.setItem(storageKey, JSON.stringify(selectedCompanies));
 }
-
-// ========================================
-// イベントリスナー
-// ========================================
 
 function setupEventListeners() {
-    // 個別チェックボックスの変更
-    document.querySelectorAll('.company-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', function(e) {
+    document.querySelectorAll('.company-checkbox').forEach(cb => {
+        cb.addEventListener('change', function(e) {
             e.stopPropagation();
-            
             const code = this.value;
             const name = this.dataset.companyName;
             
             if (this.checked) {
-                selectedCompanies[code] = { code: code, name: name };
-                console.log(`✓ 選択: ${name} (${code})`);
+                selectedCompanies[code] = { code, name };
             } else {
                 delete selectedCompanies[code];
-                console.log(`✗ 解除: ${name} (${code})`);
             }
             
             saveSelections();
@@ -310,60 +249,28 @@ function setupEventListeners() {
     });
 }
 
-// ========================================
-// UI更新
-// ========================================
-
 function updateUI() {
-    // 1. チェックボックスの状態を更新
-    updateCheckboxes();
-    
-    // 2. 選択数を更新
-    updateCounts();
-    
-    // 3. 選択済みリストを更新
-    updateSelectedList();
-}
-
-// チェックボックスの状態を更新
-function updateCheckboxes() {
-    document.querySelectorAll('.company-checkbox').forEach(checkbox => {
-        const code = checkbox.value;
+    // チェックボックス状態
+    document.querySelectorAll('.company-checkbox').forEach(cb => {
+        const code = cb.value;
         const isSelected = selectedCompanies.hasOwnProperty(code);
+        cb.checked = isSelected;
         
-        // チェック状態を更新
-        checkbox.checked = isSelected;
-        
-        // 行のスタイルを更新
-        const row = checkbox.closest('tr');
+        const row = cb.closest('tr');
         if (row) {
-            if (isSelected) {
-                row.classList.add('table-active');
-                const badge = row.querySelector('.selected-badge');
-                if (badge) badge.classList.remove('d-none');
-            } else {
-                row.classList.remove('table-active');
-                const badge = row.querySelector('.selected-badge');
-                if (badge) badge.classList.add('d-none');
-            }
+            row.classList.toggle('table-active', isSelected);
+            const badge = row.querySelector('.selected-badge');
+            if (badge) badge.classList.toggle('d-none', !isSelected);
         }
     });
-}
-
-// 選択数を更新
-function updateCounts() {
+    
+    // カウント更新
     const count = Object.keys(selectedCompanies).length;
-    const countElements = document.querySelectorAll('#selectionCount, #selectedCount');
-    countElements.forEach(el => {
-        el.textContent = count;
-    });
-}
-
-// 選択済みリストを更新
-function updateSelectedList() {
+    document.querySelectorAll('#selectionCount, #selectedCount').forEach(el => el.textContent = count);
+    
+    // 選択済みリスト更新
     const container = document.getElementById('selectedCompaniesList');
     const emptyState = document.getElementById('emptyState');
-    const count = Object.keys(selectedCompanies).length;
     
     if (count === 0) {
         emptyState.classList.remove('d-none');
@@ -372,26 +279,17 @@ function updateSelectedList() {
     }
     
     emptyState.classList.add('d-none');
-    
-    // 既存のリストをクリア
     container.querySelectorAll('.selected-company-item').forEach(item => item.remove());
     
-    // 選択済み企業を表示（コード順にソート）
-    const sortedCompanies = Object.values(selectedCompanies).sort((a, b) => {
-        return a.code.localeCompare(b.code);
-    });
-    
-    sortedCompanies.forEach(company => {
+    Object.values(selectedCompanies).sort((a, b) => a.code.localeCompare(b.code)).forEach(company => {
         const item = document.createElement('div');
-        item.className = 'selected-company-item d-flex justify-content-between align-items-center p-2 border-bottom';
+        item.className = 'selected-company-item d-flex justify-content-between align-items-center py-2 border-bottom';
         item.innerHTML = `
-            <div class="flex-grow-1">
+            <div>
                 <div class="fw-semibold small">${company.code}</div>
-                <small class="text-muted" style="font-size: 0.75rem;">${company.name}</small>
+                <small class="at-text-muted">${company.name}</small>
             </div>
-            <button type="button" class="btn btn-sm btn-link text-danger p-0" 
-                    onclick="removeFromSelection('${company.code}')"
-                    title="選択を解除">
+            <button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="removeFromSelection('${company.code}')">
                 <i class="bi bi-x-circle"></i>
             </button>
         `;
@@ -399,53 +297,36 @@ function updateSelectedList() {
     });
 }
 
-// ========================================
-// 操作関数
-// ========================================
-
-// 選択から除外
 function removeFromSelection(code) {
-    const company = selectedCompanies[code];
-    if (!company) return;
-    
-    console.log(`🗑️ 選択解除: ${company.name} (${code})`);
     delete selectedCompanies[code];
     saveSelections();
     updateUI();
 }
 
-// すべての選択をクリア
 function clearAllSelections() {
     const count = Object.keys(selectedCompanies).length;
-    if (count === 0) {
+    if (!count) {
         alert('選択されている企業がありません');
         return;
     }
-    
     if (confirm(`${count}社の選択をすべてクリアしますか？`)) {
-        console.log('🗑️ すべてクリア');
         selectedCompanies = {};
         saveSelections();
         updateUI();
     }
 }
 
-// このページの企業を全選択
 function selectAllOnPage() {
-    let addedCount = 0;
-    
-    document.querySelectorAll('.company-checkbox').forEach(checkbox => {
-        const code = checkbox.value;
-        const name = checkbox.dataset.companyName;
-        
+    let added = 0;
+    document.querySelectorAll('.company-checkbox').forEach(cb => {
+        const code = cb.value;
         if (!selectedCompanies[code]) {
-            selectedCompanies[code] = { code: code, name: name };
-            addedCount++;
+            selectedCompanies[code] = { code, name: cb.dataset.companyName };
+            added++;
         }
     });
     
-    if (addedCount > 0) {
-        console.log(`✓ このページの${addedCount}社を選択`);
+    if (added > 0) {
         saveSelections();
         updateUI();
     } else {
@@ -453,61 +334,31 @@ function selectAllOnPage() {
     }
 }
 
-// ========================================
-// 検索・ナビゲーション
-// ========================================
+function saveBeforeSearch() { saveSelections(); }
+function saveBeforeNavigate(e) { saveSelections(); }
 
-// 検索前に保存
-function saveBeforeSearch() {
-    console.log('🔍 検索実行前に保存');
-    saveSelections();
-}
-
-// ページ遷移前に保存
-function saveBeforeNavigate(event) {
-    console.log('📄 ページ遷移前に保存');
-    saveSelections();
-    // リンク遷移を継続
-}
-
-// 検索リセット
 function resetSearch() {
-    saveSelections(); // 選択状態は保持
+    saveSelections();
     window.location.href = '{% url "analysis_template:company_select" template.pk %}';
 }
 
-// ========================================
-// フォーム送信
-// ========================================
-
 function submitForm(action) {
     const count = Object.keys(selectedCompanies).length;
-    
-    if (count === 0) {
+    if (!count) {
         alert('企業を選択してください');
         return;
     }
     
-    let message = '';
-    if (action === 'add') {
-        message = `${count}社を追加します。よろしいですか？`;
-    } else {
-        message = `既存の企業を削除し、${count}社で置き換えます。よろしいですか？`;
-    }
+    const msg = action === 'add' 
+        ? `${count}社を追加します。よろしいですか？`
+        : `既存の企業を削除し、${count}社で置き換えます。よろしいですか？`;
     
-    if (!confirm(message)) {
-        return;
-    }
+    if (!confirm(msg)) return;
     
-    console.log(`📤 送信: ${action}モード, ${count}社`);
-    
-    // アクションを設定
     document.getElementById('actionInput').value = action;
     
-    // 選択された企業コードを隠しフィールドとして追加
     const container = document.getElementById('hiddenInputsContainer');
     container.innerHTML = '';
-    
     Object.keys(selectedCompanies).forEach(code => {
         const input = document.createElement('input');
         input.type = 'hidden';
@@ -516,96 +367,29 @@ function submitForm(action) {
         container.appendChild(input);
     });
     
-    // フォーム送信後にストレージをクリア
     sessionStorage.removeItem(storageKey);
-    console.log('🗑️ sessionStorageをクリア');
-    
-    // フォーム送信
     document.getElementById('companySelectForm').submit();
 }
 </script>
 
 <style>
-.table th {
-    background-color: var(--bg-secondary);
-    border-bottom: 2px solid var(--border-primary);
-    font-weight: 600;
-    color: var(--text-secondary);
-    padding: 0.75rem 0.5rem;
-}
-
-.table td {
-    padding: 0.75rem 0.5rem;
-    vertical-align: middle;
-}
-
 .table-active {
-    background-color: rgba(13, 110, 253, 0.1) !important;
+    background-color: rgba(59, 130, 246, 0.1) !important;
 }
 
-.company-row {
-    transition: background-color 0.15s ease;
-}
-
-.company-row:hover {
-    background-color: rgba(0, 0, 0, 0.02);
-}
-
-.selected-company-item {
-    transition: background-color 0.2s;
-}
-
-.selected-company-item:hover {
-    background-color: rgba(0, 0, 0, 0.03);
+.dark-mode .table-active,
+[data-theme="dark"] .table-active {
+    background-color: rgba(59, 130, 246, 0.2) !important;
 }
 
 .selected-company-item:last-child {
     border-bottom: none !important;
 }
 
-#selectionCount {
-    min-width: 2.5rem;
-    text-align: center;
-    padding: 0.35rem 0.65rem;
-}
-
-.company-checkbox {
-    cursor: pointer;
-    width: 1.2rem;
-    height: 1.2rem;
-}
-
 @media (max-width: 991.98px) {
-    .sticky-top {
+    .sticky-lg-top {
         position: relative !important;
-        top: 0 !important;
     }
-}
-
-@media (max-width: 767.98px) {
-    .d-flex.gap-2.justify-content-end.flex-wrap {
-        flex-direction: column;
-    }
-    
-    .d-flex.gap-2.justify-content-end.flex-wrap .btn {
-        width: 100%;
-    }
-}
-
-/* ダークモード対応 */
-.dark-mode .table-active,
-[data-theme="dark"] .table-active {
-    background-color: rgba(59, 130, 246, 0.2) !important;
-}
-
-.dark-mode .company-row:hover,
-[data-theme="dark"] .company-row:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-}
-
-.dark-mode .selected-company-item:hover,
-[data-theme="dark"] .selected-company-item:hover {
-    background-color: rgba(255, 255, 255, 0.05);
 }
 </style>
 {% endblock %}
