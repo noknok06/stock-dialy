@@ -1,213 +1,839 @@
-<!-- earnings_analysis/templates/earnings_analysis/sentiment/analysis.html -->
+<!-- earnings_analysis/templates/earnings_analysis/sentiment/analysis_improved.html -->
 {% extends 'earnings_analysis/base.html' %}
 {% load static %}
 
-{% block title %}感情分析 - {{ document.company_name }} -コポモ{% endblock %}
+{% block title %}感情分析 - {{ document.company_name }} - コポモ{% endblock %}
 
-{% block breadcrumb %}
+{% block extra_css %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 <style>
-    .score-range-card.active-range {
-        transform: translateY(-5px) scale(1.05);
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-        border-width: 2px;
-        background: rgba(255, 255, 255, 1);
-        z-index: 10;
-        position: relative;
-    }
+:root {
+    --primary-500: #3b82f6;
+    --primary-600: #2563eb;
+    --primary-700: #1d4ed8;
+    --primary-100: #dbeafe;
+    --primary-50: #eff6ff;
+    --success-500: #10b981;
+    --success-600: #059669;
+    --success-100: #d1fae5;
+    --success-50: #ecfdf5;
+    --warning-500: #f59e0b;
+    --warning-100: #fef3c7;
+    --warning-50: #fffbeb;
+    --danger-500: #ef4444;
+    --danger-600: #dc2626;
+    --danger-100: #fee2e2;
+    --danger-50: #fef2f2;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.5rem;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+}
 
-    .score-range-card.active-range::before {
-        content: '';
-        position: absolute;
-        top: -2px;
-        left: -2px;
-        right: -2px;
-        bottom: -2px;
-        background: linear-gradient(45deg, #007bff, #28a745, #ffc107, #dc3545);
-        border-radius: inherit;
-        z-index: -1;
-        animation: borderGlow 2s ease-in-out infinite;
-    }
+body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--gray-50);
+}
 
-    @keyframes borderGlow {
-        0%, 100% { opacity: 0.7; }
-        50% { opacity: 1; }
-    }
+/* パンくず */
+.breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0;
+    margin: 0 0 1.5rem;
+    list-style: none;
+    font-size: 0.875rem;
+}
 
-    /* スコアプレビュー用スタイル */
-    .score-preview {
-        font-family: 'Courier New', monospace;
-        white-space: nowrap;
-    }
+.breadcrumb-item {
+    display: flex;
+    align-items: center;
+}
 
-    .score-preview::after {
-        content: '';
-        position: absolute;
-        top: 100%;
-        left: 50%;
-        transform: translateX(-50%);
-        border: 5px solid transparent;
-        border-top-color: inherit;
-    }
+.breadcrumb-item + .breadcrumb-item::before {
+    content: '/';
+    margin-right: 0.5rem;
+    color: var(--gray-400);
+}
 
-    /* パフォーマンス最適化 */
-    .score-segment,
-    .score-range-card,
-    .neutral-marker {
-        will-change: transform;
-    }
+.breadcrumb-item a {
+    color: var(--gray-600);
+    text-decoration: none;
+}
 
-    /* アクセシビリティ改善 */
-    .score-range-card:focus {
-        outline: 3px solid #007bff;
-        outline-offset: 2px;
-    }
+.breadcrumb-item a:hover {
+    color: var(--primary-600);
+}
 
-    /* 高コントラストモード対応 */
-    @media (prefers-contrast: high) {
-        .score-explanation-container {
-            border: 2px solid #000;
-        }
-        
-        .score-range-card {
-            border-width: 2px;
-            border-style: solid;
-        }
-        
-        .score-progress {
-            border-width: 3px;
-        }
-    }
-    /* Progress Overlay (Modal風スタイル) */
-    .progress-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 1050;
-        overflow-x: hidden;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-    }
+.breadcrumb-item.active {
+    color: var(--gray-500);
+}
 
-    .progress-backdrop {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-        z-index: 1040;
-    }
+/* ページヘッダー */
+.page-header {
+    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, var(--primary-600) 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: var(--radius-xl);
+    margin-bottom: 1.5rem;
+}
 
-    .progress-container {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        display: flex;
+@media (min-width: 768px) {
+    .page-header {
+        padding: 2rem;
+    }
+}
+
+.page-header-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .page-header-content {
+        flex-direction: row;
         align-items: center;
-        justify-content: center;
-        padding: 1rem;
-        z-index: 1055;
+        justify-content: space-between;
     }
+}
 
-    .progress-content {
-        background: white;
-        border-radius: 1rem;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-        max-width: 600px;
-        width: 100%;
-        max-height: 90vh;
-        overflow-y: auto;
-        position: relative;
+.page-header h1 {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: white;
+}
+
+@media (min-width: 768px) {
+    .page-header h1 {
+        font-size: 1.75rem;
     }
+}
 
-    .progress-header {
-        padding: 1.5rem 1.5rem 0;
-        border-bottom: none;
+.page-header-subtitle {
+    font-size: 1rem;
+    opacity: 0.95;
+    margin-bottom: 0.25rem;
+}
+
+.page-header-desc {
+    font-size: 0.875rem;
+    opacity: 0.85;
+}
+
+.page-header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255,255,255,0.2);
+    border-radius: var(--radius-lg);
+    font-size: 0.875rem;
+    backdrop-filter: blur(4px);
+}
+
+/* メインレイアウト */
+.main-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+@media (min-width: 992px) {
+    .main-layout {
+        grid-template-columns: 1fr 320px;
     }
+}
 
-    .progress-title {
-        margin: 0;
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: #333;
-        text-align: center;
+/* カード */
+.card {
+    background: white;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-100);
+    overflow: hidden;
+}
+
+.card-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--gray-100);
+    background: var(--gray-50);
+}
+
+.card-header h5,
+.card-header h6 {
+    margin: 0;
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    color: var(--gray-800);
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+@media (min-width: 768px) {
+    .card-header {
+        padding: 1.25rem 1.5rem;
     }
-
-    .progress-body {
+    .card-body {
         padding: 1.5rem;
     }
+}
 
-    .progress-footer {
-        padding: 0 1.5rem 1.5rem;
-        text-align: center;
-        border-top: none;
+/* 分析実行セクション */
+.analysis-hero {
+    text-align: center;
+    padding: 2rem 1rem;
+}
+
+@media (min-width: 768px) {
+    .analysis-hero {
+        padding: 3rem 2rem;
     }
+}
 
-    /* 広告コンテナ */
-    .progress-ad-container {
-        min-height: 280px;
-        display: flex;
-        align-items: center;
+.analysis-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--primary-100), #e0e7ff);
+    border-radius: 50%;
+    font-size: 2rem;
+    color: var(--primary-600);
+}
+
+@media (min-width: 768px) {
+    .analysis-icon {
+        width: 100px;
+        height: 100px;
+        font-size: 2.5rem;
+    }
+}
+
+.analysis-title {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin-bottom: 1rem;
+}
+
+.analysis-info {
+    background: var(--primary-50);
+    border: 1px solid var(--primary-100);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+.analysis-info-title {
+    font-weight: 600;
+    color: var(--primary-700);
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.analysis-info-text {
+    font-size: 0.8125rem;
+    color: var(--gray-600);
+}
+
+.analysis-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    min-height: 56px;
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+    color: white;
+    border: none;
+    border-radius: var(--radius-lg);
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-size: 1.125rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.analysis-btn:hover {
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+}
+
+.analysis-btn-success {
+    background: linear-gradient(135deg, var(--success-500), var(--success-600));
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.analysis-btn-success:hover {
+    background: linear-gradient(135deg, var(--success-600), #047857);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+.analysis-hint {
+    margin-top: 1rem;
+    font-size: 0.8125rem;
+    color: var(--gray-500);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+/* 分析結果あり状態 */
+.analysis-result-exists {
+    background: var(--success-50);
+    border: 1px solid var(--success-100);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.analysis-result-exists-title {
+    font-weight: 600;
+    color: var(--success-600);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.analysis-result-exists-text {
+    font-size: 0.8125rem;
+    color: var(--gray-600);
+}
+
+.analysis-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-width: 320px;
+    margin: 0 auto;
+}
+
+@media (min-width: 576px) {
+    .analysis-buttons {
+        flex-direction: row;
+        max-width: none;
         justify-content: center;
-        background-color: #f8f9fa;
-        border-radius: 8px;
-        border: 1px solid #dee2e6;
-        width: 100%;
     }
+}
 
-    .ad-placeholder {
-        text-align: center;
-        color: #6c757d;
-    }
+.analysis-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 48px;
+    padding: 0.75rem 1.5rem;
+    background: white;
+    color: var(--warning-500);
+    border: 2px solid var(--warning-500);
+    border-radius: var(--radius-lg);
+    font-weight: 600;
+    font-size: 0.9375rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
 
-    /* 実際の広告が表示されたときのスタイル */
-    .progress-ad-container .adsbygoogle {
-        width: 100% !important;
-        min-height: 250px;
-    }
-    /* アニメーション */
-    .progress-overlay {
-        animation: fadeIn 0.3s ease-out;
-    }
+.analysis-btn-secondary:hover {
+    background: var(--warning-50);
+}
 
-    .progress-content {
-        animation: slideInDown 0.3s ease-out;
-    }
+/* スコア説明 */
+.score-explanation {
+    margin-top: 1.5rem;
+}
 
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
+.score-bar-container {
+    position: relative;
+    height: 40px;
+    background: linear-gradient(to right, 
+        var(--danger-500) 0%, 
+        var(--warning-500) 35%, 
+        var(--gray-300) 45%, 
+        var(--gray-300) 55%, 
+        #22c55e 65%, 
+        var(--success-500) 100%
+    );
+    border-radius: var(--radius-lg);
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+}
 
-    @keyframes slideInDown {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
+.score-bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    margin-bottom: 1.5rem;
+}
 
-    /* モバイル対応 */
-    @media (max-width: 768px) {
-        .progress-container {
-            padding: 0.5rem;
-        }
-        
-        .progress-content {
-            max-height: 95vh;
-            border-radius: 0.5rem;
-        }
-        
-        .progress-ad-container {
-            min-height: 200px;
-        }
-    }    
+.score-ranges {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+    .score-ranges {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.score-range-card {
+    padding: 1rem;
+    border-radius: var(--radius-lg);
+    text-align: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.score-range-card:hover {
+    transform: translateY(-2px);
+}
+
+.score-range-card.range-negative {
+    background: var(--danger-50);
+    border: 2px solid var(--danger-100);
+}
+
+.score-range-card.range-negative:hover {
+    border-color: var(--danger-500);
+}
+
+.score-range-card.range-slightly-negative {
+    background: var(--warning-50);
+    border: 2px solid var(--warning-100);
+}
+
+.score-range-card.range-slightly-negative:hover {
+    border-color: var(--warning-500);
+}
+
+.score-range-card.range-slightly-positive {
+    background: #ecfdf5;
+    border: 2px solid #a7f3d0;
+}
+
+.score-range-card.range-slightly-positive:hover {
+    border-color: #22c55e;
+}
+
+.score-range-card.range-positive {
+    background: var(--success-50);
+    border: 2px solid var(--success-100);
+}
+
+.score-range-card.range-positive:hover {
+    border-color: var(--success-500);
+}
+
+.score-range-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.range-negative .score-range-icon { color: var(--danger-500); }
+.range-slightly-negative .score-range-icon { color: var(--warning-500); }
+.range-slightly-positive .score-range-icon { color: #22c55e; }
+.range-positive .score-range-icon { color: var(--success-500); }
+
+.score-range-title {
+    font-weight: 600;
+    font-size: 0.8125rem;
+    margin-bottom: 0.25rem;
+}
+
+.range-negative .score-range-title { color: var(--danger-600); }
+.range-slightly-negative .score-range-title { color: var(--warning-600); }
+.range-slightly-positive .score-range-title { color: #16a34a; }
+.range-positive .score-range-title { color: var(--success-600); }
+
+.score-range-value {
+    font-weight: 700;
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+}
+
+.range-negative .score-range-value { color: var(--danger-500); }
+.range-slightly-negative .score-range-value { color: var(--warning-500); }
+.range-slightly-positive .score-range-value { color: #22c55e; }
+.range-positive .score-range-value { color: var(--success-500); }
+
+.score-range-desc {
+    font-size: 0.6875rem;
+    color: var(--gray-500);
+}
+
+.score-neutral-note {
+    text-align: center;
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: var(--gray-100);
+    border-radius: var(--radius-lg);
+    font-size: 0.8125rem;
+    color: var(--gray-600);
+}
+
+/* サイドバー */
+.sidebar-card {
+    margin-bottom: 1rem;
+}
+
+.history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid var(--gray-100);
+    border-radius: var(--radius-lg);
+    margin-bottom: 0.75rem;
+}
+
+.history-item:last-child {
+    margin-bottom: 0;
+}
+
+.history-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.history-label.positive { color: var(--success-600); }
+.history-label.negative { color: var(--danger-500); }
+.history-label.neutral { color: var(--gray-500); }
+
+.history-date {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    margin-top: 0.25rem;
+}
+
+.history-score {
+    text-align: right;
+}
+
+.history-score-value {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--gray-800);
+}
+
+.history-score-duration {
+    font-size: 0.6875rem;
+    color: var(--gray-500);
+}
+
+/* ヘルプカード */
+.help-item {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.help-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.help-item-title {
+    font-weight: 600;
+    font-size: 0.8125rem;
+    color: var(--gray-700);
+    margin-bottom: 0.25rem;
+}
+
+.help-item-text {
+    font-size: 0.8125rem;
+    color: var(--gray-500);
+}
+
+.help-item-warning {
+    background: var(--warning-50);
+    border-left: 3px solid var(--warning-500);
+    padding: 0.75rem;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    font-size: 0.8125rem;
+    color: var(--warning-600);
+}
+
+/* アクションボタン */
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-lg);
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: 2px solid var(--gray-200);
+    background: white;
+    color: var(--gray-700);
+}
+
+.action-btn:hover {
+    border-color: var(--primary-500);
+    color: var(--primary-600);
+    background: var(--primary-50);
+    text-decoration: none;
+}
+
+.action-btn-primary {
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+    color: white;
+    border: none;
+}
+
+.action-btn-primary:hover {
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+    color: white;
+}
+
+/* プログレスオーバーレイ */
+.progress-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1050;
+    display: none;
+}
+
+.progress-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+}
+
+.progress-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.progress-content {
+    background: white;
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-xl);
+    max-width: 480px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.progress-header {
+    padding: 1.5rem 1.5rem 0;
+    text-align: center;
+}
+
+.progress-title {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+.progress-body {
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.progress-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-100);
+    border-radius: 50%;
+    font-size: 2rem;
+    color: var(--primary-500);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.progress-bar-wrapper {
+    background: var(--gray-200);
+    border-radius: 9999px;
+    height: 12px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-500), #8b5cf6);
+    border-radius: 9999px;
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.progress-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.progress-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-600);
+    margin-bottom: 0.5rem;
+}
+
+.progress-status {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    margin-bottom: 1.5rem;
+}
+
+.progress-ad-container {
+    background: var(--gray-100);
+    border-radius: var(--radius-lg);
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.progress-hint {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+}
+
+.progress-footer {
+    padding: 0 1.5rem 1.5rem;
+    text-align: center;
+}
+
+.progress-cancel-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0.75rem 1.5rem;
+    background: var(--gray-100);
+    color: var(--gray-600);
+    border: none;
+    border-radius: var(--radius-lg);
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.progress-cancel-btn:hover {
+    background: var(--gray-200);
+}
+
+/* 開発モードバッジ */
+.dev-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background: var(--warning-100);
+    color: var(--warning-600);
+    border-radius: var(--radius-md);
+    font-size: 0.6875rem;
+    font-weight: 600;
+}
 </style>
+{% endblock %}
+
+{% block breadcrumb %}
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{% url 'copomo:index' %}">ホーム</a></li>
@@ -222,214 +848,216 @@
 <form style="display: none;" id="csrf-form">
     {% csrf_token %}
 </form>
-<!-- Header -->
-<div class="page-header mb-4">
-    <div class="row align-items-center g-3">
-        <div class="col-12 col-md-8">
-            <h1 class="h3 h-md-2 mb-2">
-                <i class="fas fa-brain me-2 me-md-3"></i>感情分析
+
+<!-- ページヘッダー -->
+<header class="page-header">
+    <div class="page-header-content">
+        <div>
+            <h1>
+                <i class="fas fa-brain"></i>
+                感情分析
             </h1>
-            <p class="h6 h-md-5 mb-3 opacity-90 text-truncate">{{ document.company_name }}</p>
-            <p class="mb-0 opacity-80 text-truncate-2">{{ document.doc_description }}</p>
+            <p class="page-header-subtitle">{{ document.company_name }}</p>
+            <p class="page-header-desc">{{ document.doc_description|truncatechars:60 }}</p>
         </div>
-        <div class="col-12 col-md-4 text-center text-md-end">
-            <div class="badge bg-primary bg-opacity-20 px-3 py-2">
-                <i class="fas fa-file-alt me-1"></i>{{ document.doc_id }}
-            </div>
+        <div class="page-header-badge">
+            <i class="fas fa-file-alt"></i>
+            {{ document.doc_id }}
         </div>
     </div>
-</div>
+</header>
 
-<div class="row g-3 g-md-4">
-    <!-- Main Analysis Area -->
-    <div class="col-12 col-lg-8">
-        
-        <div class="analysis-card card mb-4">
+<!-- メインレイアウト -->
+<div class="main-layout">
+    <!-- メインコンテンツ -->
+    <div class="main-content">
+        <!-- 分析実行カード -->
+        <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-play-circle me-2"></i>感情分析実行
+                <h5>
+                    <i class="fas fa-play-circle text-primary"></i>
+                    感情分析実行
                     {% if dev_mode %}
-                        <span class="badge badge-warning ms-2">
-                            <i class="fas fa-wrench me-1"></i>開発モード
+                        <span class="dev-badge">
+                            <i class="fas fa-wrench"></i>
+                            開発モード
                         </span>
                     {% endif %}
                 </h5>
             </div>
-            <div class="card-body">                
-                <div class="text-center py-4">
-                    <i class="fas fa-brain fa-4x text-primary mb-4"></i>
+            <div class="card-body">
+                <div class="analysis-hero">
+                    <div class="analysis-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
                     
-                    {% if not has_analysis_result or has_expired_session %} 
-                        <!-- 初回分析の場合 -->
-                        <h5 class="mb-3">感情分析を開始</h5>
-                        <div class="text-center py-4">
-                            <button type="button" class="btn btn-primary btn-lg" 
-                                    onclick="startSentimentAnalysis('{{ document.doc_id }}', false)">
-                                <i class="fas fa-play me-2"></i>分析を実行
-                            </button>
+                    {% if not has_analysis_result or has_expired_session %}
+                        <!-- 初回分析 -->
+                        <h3 class="analysis-title">感情分析を開始</h3>
+                        
+                        <div class="analysis-info">
+                            <div class="analysis-info-title">
+                                <i class="fas fa-info-circle me-1"></i>
+                                分析対象書類
+                            </div>
+                            <div class="analysis-info-text">
+                                {{ document.doc_description }}
+                            </div>
+                        </div>
+                        
+                        <button type="button" class="analysis-btn" 
+                                onclick="startSentimentAnalysis('{{ document.doc_id }}', false)">
+                            <i class="fas fa-play"></i>
+                            分析を実行
+                        </button>
+                        
+                        <div class="analysis-hint">
+                            <i class="fas fa-clock"></i>
+                            分析には約1-2分かかる場合があります
                         </div>
                         
                     {% elif has_analysis_result %}
-                        <!-- 分析結果がある場合 -->
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            <strong>分析結果があります</strong><br>
-                            <small>最新の分析: {{ latest_session.created_at|date:"Y/m/d H:i" }}</small>
+                        <!-- 分析結果あり -->
+                        <h3 class="analysis-title">分析結果があります</h3>
+                        
+                        <div class="analysis-result-exists">
+                            <div class="analysis-result-exists-title">
+                                <i class="fas fa-check-circle"></i>
+                                最新の分析完了
+                            </div>
+                            <div class="analysis-result-exists-text">
+                                {{ latest_session.created_at|date:"Y年m月d日 H:i" }} に分析済み
+                            </div>
                         </div>
                         
-                        <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
-                            <!-- 分析結果表示ボタン（常に表示） -->
+                        <div class="analysis-buttons">
                             <a href="{% url 'copomo:sentiment-result' latest_session.session_id %}" 
-                               class="btn btn-primary btn-lg">
-                                <i class="fas fa-chart-line me-2"></i>分析結果を表示
+                               class="analysis-btn analysis-btn-success">
+                                <i class="fas fa-chart-line"></i>
+                                分析結果を表示
                             </a>
                             
                             {% if dev_mode %}
-                                <!-- 開発モードの場合のみ再分析ボタン表示 -->
-                                <button type="button" class="btn btn-outline-warning" 
+                                <button type="button" class="analysis-btn-secondary" 
                                         onclick="startSentimentAnalysis('{{ document.doc_id }}', true)">
-                                    <i class="fas fa-redo me-2"></i>再分析（開発用）
+                                    <i class="fas fa-redo"></i>
+                                    再分析（開発用）
                                 </button>
                             {% endif %}
                         </div>
-                        
                     {% endif %}
-                    
-                    <!-- 分析説明を簡潔に -->
-                    <div class="mt-4 text-center">
-                        <small class="text-muted">
-                            <i class="fas fa-clock me-1"></i>分析には約1-2分かかる場合があります。
-                        </small>
-                    </div>
                 </div>
             </div>
         </div>
 
         {% include 'earnings_analysis/ads/ad_responsive.html' %}
-        <!-- Score Explanation -->
-        <div class="analysis-card card">
+
+        <!-- スコア説明 -->
+        <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-info-circle me-2"></i>感情スコアについて
+                <h5>
+                    <i class="fas fa-info-circle text-primary"></i>
+                    感情スコアについて
                 </h5>
             </div>
             <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-12">
-                            <div class="score-ranges">
-                                <div class="row g-2">
-                                    <div class="col-6 col-lg-3">
-                                        <div class="score-range-card h-100 p-2 text-center border border-danger rounded">
-                                            <div class="score-range-header text-danger fw-bold mb-1">
-                                                <i class="fas fa-frown-open me-1"></i>非常にネガティブ
-                                            </div>
-                                            <div class="score-range-value text-danger fw-bold">
-                                                -1.0 〜 -0.5
-                                            </div>
-                                            <div class="score-range-description small text-muted">
-                                                深刻な問題や困難
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-6 col-lg-3">
-                                        <div class="score-range-card h-100 p-2 text-center border border-warning rounded">
-                                            <div class="score-range-header text-warning fw-bold mb-1">
-                                                <i class="fas fa-frown me-1"></i>やや否定的
-                                            </div>
-                                            <div class="score-range-value text-warning fw-bold">
-                                                -0.5 〜 -0.1
-                                            </div>
-                                            <div class="score-range-description small text-muted">
-                                                課題や慎重姿勢
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-6 col-lg-3">
-                                        <div class="score-range-card h-100 p-2 text-center border border-info rounded">
-                                            <div class="score-range-header text-info fw-bold mb-1">
-                                                <i class="fas fa-smile me-1"></i>やや肯定的
-                                            </div>
-                                            <div class="score-range-value text-info fw-bold">
-                                                +0.1 〜 +0.5
-                                            </div>
-                                            <div class="score-range-description small text-muted">
-                                                改善や前向き姿勢
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-6 col-lg-3">
-                                        <div class="score-range-card h-100 p-2 text-center border border-success rounded">
-                                            <div class="score-range-header text-success fw-bold mb-1">
-                                                <i class="fas fa-laugh me-1"></i>非常にポジティブ
-                                            </div>
-                                            <div class="score-range-value text-success fw-bold">
-                                                +0.5 〜 +1.0
-                                            </div>
-                                            <div class="score-range-description small text-muted">
-                                                大幅な成長や成功
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                <div class="score-explanation">
+                    <!-- スコアバー -->
+                    <div class="score-bar-container"></div>
+                    <div class="score-bar-labels">
+                        <span>-1.0（ネガティブ）</span>
+                        <span>0（中立）</span>
+                        <span>+1.0（ポジティブ）</span>
+                    </div>
+                    
+                    <!-- スコア範囲カード -->
+                    <div class="score-ranges">
+                        <div class="score-range-card range-negative">
+                            <div class="score-range-icon">
+                                <i class="fas fa-frown-open"></i>
                             </div>
-                            
-                            <!-- 中立説明 -->
-                            <div class="neutral-explanation text-center mt-3">
-                                <div class="badge bg-secondary bg-opacity-20 px-3 py-2">
-                                    <i class="fas fa-balance-scale me-2 text-secondary"></i>
-                                    <span class="text-secondary fw-bold">中立範囲（-0.1 〜 +0.1）:</span>
-                                    <span class="text-muted ms-1">客観的・事実的な表現</span>
-                                </div>
+                            <div class="score-range-title">非常にネガティブ</div>
+                            <div class="score-range-value">-1.0 〜 -0.5</div>
+                            <div class="score-range-desc">深刻な問題や困難</div>
+                        </div>
+                        
+                        <div class="score-range-card range-slightly-negative">
+                            <div class="score-range-icon">
+                                <i class="fas fa-frown"></i>
                             </div>
+                            <div class="score-range-title">やや否定的</div>
+                            <div class="score-range-value">-0.5 〜 -0.1</div>
+                            <div class="score-range-desc">課題や慎重姿勢</div>
+                        </div>
+                        
+                        <div class="score-range-card range-slightly-positive">
+                            <div class="score-range-icon">
+                                <i class="fas fa-smile"></i>
+                            </div>
+                            <div class="score-range-title">やや肯定的</div>
+                            <div class="score-range-value">+0.1 〜 +0.5</div>
+                            <div class="score-range-desc">改善や前向き姿勢</div>
+                        </div>
+                        
+                        <div class="score-range-card range-positive">
+                            <div class="score-range-icon">
+                                <i class="fas fa-laugh"></i>
+                            </div>
+                            <div class="score-range-title">非常にポジティブ</div>
+                            <div class="score-range-value">+0.5 〜 +1.0</div>
+                            <div class="score-range-desc">大幅な成長や成功</div>
+                        </div>
+                    </div>
+                    
+                    <div class="score-neutral-note">
+                        <i class="fas fa-balance-scale me-2"></i>
+                        <strong>中立範囲（-0.1 〜 +0.1）：</strong>客観的・事実的な表現
                     </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- Sidebar -->
-    <div class="col-12 col-lg-4">
-        <!-- Analysis History -->
+    <!-- サイドバー -->
+    <div class="sidebar">
+        <!-- 分析履歴 -->
         {% if analysis_history %}
-            <div class="analysis-card card mb-4">
+            <div class="card sidebar-card">
                 <div class="card-header">
-                    <h6 class="mb-0">
-                        <i class="fas fa-history me-2"></i>分析履歴
+                    <h6>
+                        <i class="fas fa-history text-primary"></i>
+                        分析履歴
                     </h6>
                 </div>
                 <div class="card-body">
                     {% for history in analysis_history %}
-                        <div class="border rounded p-3 mb-3">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <div>
-                                    <div class="fw-semibold">
-                                        {% if history.sentiment_label == 'positive' %}
-                                            <span class="text-success">
-                                                <i class="fas fa-smile me-1"></i>ポジティブ
-                                            </span>
-                                        {% elif history.sentiment_label == 'negative' %}
-                                            <span class="text-danger">
-                                                <i class="fas fa-frown me-1"></i>ネガティブ
-                                            </span>
-                                        {% else %}
-                                            <span class="text-secondary">
-                                                <i class="fas fa-meh me-1"></i>中立
-                                            </span>
-                                        {% endif %}
-                                    </div>
-                                    <div class="small text-muted">
-                                        {{ history.analysis_date|date:"m/d H:i" }}
-                                    </div>
-                                </div>
-                                <div class="text-end">
-                                    <div class="fw-bold">{{ history.overall_score|floatformat:3 }}</div>
-                                    {% if history.analysis_duration %}
-                                        <div class="small text-muted">{{ history.analysis_duration|floatformat:1 }}秒</div>
+                        <div class="history-item">
+                            <div>
+                                <div class="history-label {% if history.sentiment_label == 'positive' %}positive{% elif history.sentiment_label == 'negative' %}negative{% else %}neutral{% endif %}">
+                                    {% if history.sentiment_label == 'positive' %}
+                                        <i class="fas fa-smile"></i>
+                                        ポジティブ
+                                    {% elif history.sentiment_label == 'negative' %}
+                                        <i class="fas fa-frown"></i>
+                                        ネガティブ
+                                    {% else %}
+                                        <i class="fas fa-meh"></i>
+                                        中立
                                     {% endif %}
                                 </div>
+                                <div class="history-date">
+                                    {{ history.analysis_date|date:"m/d H:i" }}
+                                </div>
+                            </div>
+                            <div class="history-score">
+                                <div class="history-score-value">
+                                    {{ history.overall_score|floatformat:3 }}
+                                </div>
+                                {% if history.analysis_duration %}
+                                    <div class="history-score-duration">
+                                        {{ history.analysis_duration|floatformat:1 }}秒
+                                    </div>
+                                {% endif %}
                             </div>
                         </div>
                     {% endfor %}
@@ -437,111 +1065,119 @@
             </div>
         {% endif %}
         
-        <!-- Help -->
-        <div class="analysis-card card mb-4">
+        <!-- ヘルプ -->
+        <div class="card sidebar-card">
             <div class="card-header">
-                <h6 class="mb-0">
-                    <i class="fas fa-question-circle me-2"></i>感情分析について
+                <h6>
+                    <i class="fas fa-question-circle text-primary"></i>
+                    感情分析について
                 </h6>
             </div>
             <div class="card-body">
-                <div class="small">
-                    <div class="mb-2">
-                        <strong>感情スコア:</strong> -1.0（非常にネガティブ）から +1.0（非常にポジティブ）の範囲で算出されます。
+                <div class="help-item">
+                    <div class="help-item-title">感情スコア</div>
+                    <div class="help-item-text">
+                        -1.0（非常にネガティブ）から +1.0（非常にポジティブ）の範囲で算出されます。
                     </div>
-                    
-                    <div class="mb-2">
-                        <strong>分析対象:</strong> 書類内のテキスト全体から感情を表現する語彙を抽出し、統計的に分析します。
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-item-title">分析対象</div>
+                    <div class="help-item-text">
+                        書類内のテキスト全体から感情を表現する語彙を抽出し、統計的に分析します。
                     </div>
-                    
-                    <div class="mb-2">
-                        <strong>文脈解析:</strong> 単語だけでなく、前後の文脈も考慮して総合的に判定します。
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-item-title">文脈解析</div>
+                    <div class="help-item-text">
+                        単語だけでなく、前後の文脈も考慮して総合的に判定します。
                     </div>
-                    
-                    <div class="text-warning">
-                        <strong>注意事項:</strong> 分析結果は参考情報です。投資判断には十分な検討をお願いします。
-                    </div>
+                </div>
+                
+                <div class="help-item-warning">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    分析結果は参考情報です。投資判断には十分な検討をお願いします。
                 </div>
             </div>
         </div>
         
-        <!-- Actions -->
-        <div class="analysis-card card">
+        <!-- アクション -->
+        <div class="card sidebar-card">
             <div class="card-header">
-                <h6 class="mb-0">
-                    <i class="fas fa-tools me-2"></i>アクション
+                <h6>
+                    <i class="fas fa-tools text-primary"></i>
+                    アクション
                 </h6>
             </div>
             <div class="card-body">
                 <div class="action-buttons">
-                    <a href="{% url 'copomo:financial-analysis' document.doc_id %}" 
-                       class="btn btn-outline-primary w-100">
-                        <i class="fas fa-chart-pie me-1"></i>財務分析も実行
+                    <a href="{% url 'copomo:financial-analysis' document.doc_id %}" class="action-btn action-btn-primary">
+                        <i class="fas fa-chart-pie"></i>
+                        財務分析も実行
                     </a>
-                    <a href="{% url 'copomo:document-detail-ui' document.doc_id %}" 
-                       class="btn btn-outline-secondary w-100">
-                        <i class="fas fa-arrow-left me-1"></i>書類詳細に戻る
+                    <a href="{% url 'copomo:document-detail-ui' document.doc_id %}" class="action-btn">
+                        <i class="fas fa-arrow-left"></i>
+                        書類詳細に戻る
                     </a>
-                    <button type="button" class="btn btn-outline-info w-100" onclick="window.print()">
-                        <i class="fas fa-print me-1"></i>この画面を印刷
+                    <button type="button" class="action-btn" onclick="window.print()">
+                        <i class="fas fa-print"></i>
+                        この画面を印刷
                     </button>
                 </div>
             </div>
-            {% include 'earnings_analysis/ads/ad_responsive.html' %}
         </div>
+        
+        {% include 'earnings_analysis/ads/ad_responsive.html' %}
     </div>
 </div>
 
-<!-- Progress Overlay -->
-<div id="progressOverlay" class="progress-overlay" style="display: none;">
+<!-- プログレスオーバーレイ -->
+<div id="progressOverlay" class="progress-overlay">
     <div class="progress-backdrop"></div>
     <div class="progress-container">
         <div class="progress-content">
             <div class="progress-header">
                 <h5 class="progress-title">
-                    <i class="fas fa-brain me-2"></i>感情分析実行中
+                    <i class="fas fa-brain text-primary"></i>
+                    感情分析実行中
                 </h5>
             </div>
             
-            <div class="progress-body text-center py-4">
-                <div class="mb-4">
-                    <i class="fas fa-spinner fa-spin fa-4x text-primary"></i>
+            <div class="progress-body">
+                <div class="progress-icon">
+                    <i class="fas fa-spinner fa-spin"></i>
                 </div>
                 
-                <div class="progress mb-3" style="height: 20px;">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                         id="progressBar" role="progressbar" style="width: 0%">
-                        <span id="progressText" class="fw-semibold">0%</span>
+                <div class="progress-bar-wrapper">
+                    <div class="progress-bar-fill" id="progressBar" style="width: 0%"></div>
+                </div>
+                
+                <div class="progress-text" id="progressText">0%</div>
+                <div class="progress-status" id="statusMessage">分析を開始しています...</div>
+                
+                <div id="progressAdContainer" class="progress-ad-container">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-ad fa-2x mb-2"></i>
+                        <div>広告を読み込み中...</div>
                     </div>
                 </div>
                 
-                <div id="statusMessage" class="text-muted mb-3">分析を開始しています...</div>
-                
-                <!-- 広告コンテナ（動的挿入用） -->
-                <div id="progressAdContainer" class="progress-ad-container my-4">
-                    <div class="ad-placeholder">
-                        <i class="fas fa-ad text-muted fa-2x mb-2"></i>
-                        <div class="text-muted">広告を読み込み中...</div>
-                    </div>
-                </div>
-                
-                <div class="mt-4">
-                    <small class="text-muted">
-                        この処理には数分かかる場合があります。<br>
-                        テキストの解析と感情スコアの計算を行います。
-                    </small>
+                <div class="progress-hint">
+                    この処理には数分かかる場合があります。<br>
+                    テキストの解析と感情スコアの計算を行います。
                 </div>
             </div>
             
             <div class="progress-footer">
-                <button type="button" class="btn btn-secondary" id="cancelBtn" onclick="cancelAnalysis()">
-                    <i class="fas fa-times me-1"></i>キャンセル
+                <button type="button" class="progress-cancel-btn" id="cancelBtn" onclick="cancelAnalysis()">
+                    <i class="fas fa-times"></i>
+                    キャンセル
                 </button>
             </div>
         </div>
     </div>
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
@@ -549,78 +1185,41 @@
 let currentSessionId = null;
 let progressInterval = null;
 
-
-// CSRFトークンを動的に取得する関数
 function getCSRFToken() {
-    // 1. メタタグから取得を試行
     const metaCsrf = document.querySelector('meta[name=csrf-token]');
-    if (metaCsrf) {
-        return metaCsrf.getAttribute('content');
-    }
+    if (metaCsrf) return metaCsrf.getAttribute('content');
     
-    // 2. クッキーから取得を試行
     const cookieCsrf = getCookie('csrftoken');
-    if (cookieCsrf) {
-        return cookieCsrf;
-    }
+    if (cookieCsrf) return cookieCsrf;
     
-    // 3. 隠しフィールドから取得を試行
-    const hiddenCsrf = document.querySelector('input[name=csrfmiddlewaretoken]');
-    if (hiddenCsrf) {
-        return hiddenCsrf.value;
-    }
+    const hiddenCsrf = document.querySelector('#csrf-form input[name=csrfmiddlewaretoken]');
+    if (hiddenCsrf) return hiddenCsrf.value;
     
-    // 4. Djangoテンプレートから取得（最後の手段）
-    try {
-        return '{{ csrf_token }}';
-    } catch (e) {
-        console.warn('CSRFトークンの取得に失敗しました');
-        return null;
-    }
+    return null;
 }
 
-// CSRFトークンが有効かチェックする関数
-async function validateCSRFToken() {
-    const token = getCSRFToken();
-    if (!token) {
-        console.warn('CSRFトークンが見つかりません');
-        return false;
-    }
-    
-    try {
-        // 簡単なHEADリクエストでトークンの有効性をチェック
-        const response = await fetch(window.location.href, {
-            method: 'HEAD',
-            headers: {
-                'X-CSRFToken': token,
-                'Content-Type': 'application/json'
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
             }
-        });
-        return response.ok;
-    } catch (error) {
-        console.warn('CSRFトークンの検証に失敗:', error);
-        return false;
+        }
     }
-}
-
-// ページリロードしてCSRFトークンを更新する関数
-function refreshCSRFToken() {
-    showToast('認証情報を更新しています...', 'info');
-    setTimeout(() => {
-        window.location.reload();
-    }, 1000);
+    return cookieValue;
 }
 
 function startSentimentAnalysis(docId, force = false) {
-    // Show progress overlay (モーダルの代わり)
     showProgressOverlay();
     
-    // CSRFトークンを取得
     const csrfToken = getCSRFToken();
     if (!csrfToken) {
         hideProgressOverlay();
-        showToast('認証に必要な情報が取得できません。ページをリロードしてください。', 'error');
-        setTimeout(refreshCSRFToken, 2000);
+        showToast('認証情報を取得できません。ページをリロードしてください。', 'error');
         return;
     }
     
@@ -630,35 +1229,24 @@ function startSentimentAnalysis(docId, force = false) {
             'Content-Type': 'application/json',
             'X-CSRFToken': csrfToken
         },
-        credentials: 'same-origin', // 重要: クッキーを含める
+        credentials: 'same-origin',
         body: JSON.stringify({
             doc_id: docId,
             force: force
         })
     })
-    .then(async response => {
-        // console.log('API応答ステータス:', response.status);
-        
+    .then(response => {
         if (response.status === 403) {
-            // CSRF エラーの場合
             hideProgressOverlay();
-            showToast('認証エラーが発生しました。ページをリロードして再試行してください。', 'error');
-            setTimeout(refreshCSRFToken, 2000);
+            showToast('認証エラーが発生しました。ページをリロードしてください。', 'error');
+            setTimeout(() => window.location.reload(), 2000);
             return null;
         }
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('API エラー応答:', errorText);
-            throw new Error(`HTTP ${response.status}: ${errorText}`);
-        }
-        
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
     })
     .then(data => {
-        if (!data) return; // CSRF エラー時は何もしない
-        
-        // console.log('API応答データ:', data);
+        if (!data) return;
         
         if (data.status === 'started') {
             currentSessionId = data.session_id;
@@ -673,108 +1261,24 @@ function startSentimentAnalysis(docId, force = false) {
     .catch(error => {
         console.error('Analysis start error:', error);
         hideProgressOverlay();
-        
-        // CSRF関連のエラーかチェック
-        if (error.message.includes('403') || error.message.includes('Forbidden') || error.message.includes('Failed to fetch')) {
-            showToast('認証エラーが発生しました。ページをリロードして再試行してください。', 'error');
-            setTimeout(refreshCSRFToken, 3000);
-        } else {
-            showToast('分析開始に失敗しました: ' + error.message, 'error');
-        }
+        showToast('分析開始に失敗しました: ' + error.message, 'error');
     });
 }
 
 function startProgressPolling() {
     if (!currentSessionId) return;
     
-    progressInterval = setInterval(() => {
-        fetchProgress();
-    }, 2000); // 2 second intervals
-    
-    // Initial execution
+    progressInterval = setInterval(fetchProgress, 2000);
     fetchProgress();
-}
-
-function showProgressOverlay() {
-    document.getElementById('progressOverlay').style.display = 'block';
-    document.body.style.overflow = 'hidden';
-    
-    // オーバーレイ表示後に広告を初期化
-    setTimeout(initializeProgressAd, 500);
-}
-
-function initializeProgressAd() {
-    const adContainer = document.getElementById('progressAdContainer');
-    
-    if (adContainer && !adContainer.querySelector('.adsbygoogle')) {
-        // 広告HTMLを動的に作成
-        const adHTML = `
-            <ins class="adsbygoogle"
-                 style="display:block; width:100%; min-height:250px;"
-                 data-ad-client="ca-pub-3954701883136363"
-                 data-ad-slot="2912928129"
-                 data-ad-format="auto"
-                 data-full-width-responsive="true"></ins>
-        `;
-        
-        // プレースホルダーを広告に置き換え
-        adContainer.innerHTML = adHTML;
-        
-        // AdSenseを初期化
-        try {
-            if (window.adsbygoogle) {
-                (adsbygoogle = window.adsbygoogle || []).push({});
-            }
-        } catch (error) {
-            console.warn('広告の初期化に失敗:', error);
-            // エラー時はプレースホルダーを表示
-            adContainer.innerHTML = `
-                <div class="ad-placeholder">
-                    <i class="fas fa-info-circle text-muted fa-2x mb-2"></i>
-                    <div class="text-muted">広告をスキップしました</div>
-                </div>
-            `;
-        }
-    }
-}
-
-function hideProgressOverlay() {
-    document.getElementById('progressOverlay').style.display = 'none';
-    document.body.style.overflow = '';
-    
-    // 広告コンテナをリセット
-    const adContainer = document.getElementById('progressAdContainer');
-    if (adContainer) {
-        adContainer.innerHTML = `
-            <div class="ad-placeholder">
-                <i class="fas fa-ad text-muted fa-2x mb-2"></i>
-                <div class="text-muted">広告を読み込み中...</div>
-            </div>
-        `;
-    }
-}
-
-function cancelAnalysis() {
-    if (progressInterval) {
-        clearInterval(progressInterval);
-    }
-    
-    hideProgressOverlay();
-    currentSessionId = null;
 }
 
 function fetchProgress() {
     if (!currentSessionId) return;
     
     fetch(`{% url "copomo:sentiment-progress" %}?session_id=${currentSessionId}`, {
-        credentials: 'same-origin' // クッキーを含める
+        credentials: 'same-origin'
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
         updateProgressUI(data);
         
@@ -785,17 +1289,12 @@ function fetchProgress() {
             }, 1000);
         } else if (data.status === 'FAILED') {
             clearInterval(progressInterval);
-            document.getElementById('progressModal').querySelector('.modal-header h5').innerHTML = 
-                '<i class="fas fa-exclamation-triangle me-2"></i>分析失敗';
-            document.getElementById('statusMessage').innerHTML = 
-                '<span class="text-danger">分析中にエラーが発生しました</span>';
-            document.getElementById('cancelBtn').innerHTML = 
-                '<i class="fas fa-times me-1"></i>閉じる';
+            document.getElementById('statusMessage').innerHTML = '<span style="color: var(--danger-500);">分析中にエラーが発生しました</span>';
+            document.getElementById('cancelBtn').textContent = '閉じる';
         }
     })
     .catch(error => {
         console.error('Progress fetch error:', error);
-        // プログレス取得エラーは比較的軽微なので、ユーザーには表示しない
     });
 }
 
@@ -810,268 +1309,57 @@ function updateProgressUI(data) {
     statusMessage.textContent = data.message || '処理中...';
     
     if (progress >= 100) {
-        progressBar.classList.remove('progress-bar-animated');
-        progressBar.classList.add('bg-success');
-        statusMessage.innerHTML = '<span class="text-success">分析完了！結果画面に移動します...</span>';
+        statusMessage.innerHTML = '<span style="color: var(--success-500);">分析完了！結果画面に移動します...</span>';
     }
 }
 
-// 改良版CSRFトークン取得関数
-function getCSRFTokenImproved() {
-    let token = null;
-    
-    // 1. メタタグから取得
-    const metaCsrf = document.querySelector('meta[name=csrf-token]');
-    if (metaCsrf && metaCsrf.getAttribute('content')) {
-        token = metaCsrf.getAttribute('content');
-        // console.log('CSRFトークンをメタタグから取得');
-        return token;
-    }
-    
-    // 2. 隠しフォームから取得
-    const hiddenCsrf = document.querySelector('#csrf-form input[name=csrfmiddlewaretoken]');
-    if (hiddenCsrf && hiddenCsrf.value) {
-        token = hiddenCsrf.value;
-        // console.log('CSRFトークンを隠しフォームから取得');
-        return token;
-    }
-    
-    // 3. クッキーから取得
-    const cookieCsrf = getCookie('csrftoken');
-    if (cookieCsrf) {
-        token = cookieCsrf;
-        // console.log('CSRFトークンをクッキーから取得');
-        return token;
-    }
-    
-    // 4. その他の隠しフィールドから取得
-    const anyHiddenCsrf = document.querySelector('input[name=csrfmiddlewaretoken]');
-    if (anyHiddenCsrf && anyHiddenCsrf.value) {
-        token = anyHiddenCsrf.value;
-        // console.log('CSRFトークンを任意の隠しフィールドから取得');
-        return token;
-    }
-    
-    console.error('CSRFトークンが見つかりません');
-    return null;
+function showProgressOverlay() {
+    document.getElementById('progressOverlay').style.display = 'block';
+    document.body.style.overflow = 'hidden';
 }
 
-// CSRFトークン取得関数をより確実なものに変更
-function getCSRFToken() {
-    return getCSRFTokenImproved();
+function hideProgressOverlay() {
+    document.getElementById('progressOverlay').style.display = 'none';
+    document.body.style.overflow = '';
 }
 
-// Toast notification（改良版）
+function cancelAnalysis() {
+    if (progressInterval) {
+        clearInterval(progressInterval);
+    }
+    hideProgressOverlay();
+    currentSessionId = null;
+}
+
 function showToast(message, type = 'info') {
     let container = document.getElementById('toast-container');
     if (!container) {
         container = document.createElement('div');
         container.id = 'toast-container';
-        container.className = 'position-fixed top-0 end-0 p-3';
-        container.style.zIndex = '9999';
+        container.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;';
         document.body.appendChild(container);
     }
 
-    const toastId = 'toast-' + Date.now();
     const toast = document.createElement('div');
-    toast.id = toastId;
-    toast.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'primary'} border-0`;
-    toast.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body">
-                <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
-                ${message}
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
-    `;
-
-    container.appendChild(toast);
-    const bsToast = new bootstrap.Toast(toast, {
-        delay: type === 'error' ? 8000 : 5000 // エラーは長めに表示
-    });
-    bsToast.show();
+    const bgColor = type === 'error' ? 'var(--danger-500)' : type === 'success' ? 'var(--success-500)' : 'var(--primary-500)';
+    toast.style.cssText = `background:${bgColor};color:white;padding:1rem 1.5rem;border-radius:var(--radius-lg);margin-bottom:0.5rem;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:0.5rem;animation:slideUp 0.3s ease-out;`;
+    toast.innerHTML = `<i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : 'info-circle'}"></i>${message}`;
     
-    toast.addEventListener('hidden.bs.toast', () => toast.remove());
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
 }
 
-// Page leave warning
+// ページ離脱警告
 window.addEventListener('beforeunload', function(e) {
     if (currentSessionId) {
         e.preventDefault();
         e.returnValue = '分析実行中です。ページを離れますか？';
     }
 });
-
-// ページ読み込み時の初期化（デバッグ情報追加版）
-document.addEventListener('DOMContentLoaded', function() {
-    // CSRFトークンのデバッグ情報
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        // console.log('=== CSRF デバッグ情報 ===');
-        const token = getCSRFToken();
-        if (token) {
-            // console.log('CSRFトークン取得成功:', token.substring(0, 8) + '...');
-        } else {
-            console.error('CSRFトークン取得失敗');
-        }
-        
-        // 利用可能なCSRFソースを確認
-        const sources = [];
-        if (document.querySelector('meta[name=csrf-token]')) sources.push('メタタグ');
-        if (document.querySelector('#csrf-form input[name=csrfmiddlewaretoken]')) sources.push('隠しフォーム');
-        if (getCookie('csrftoken')) sources.push('クッキー');
-        // console.log('利用可能なCSRFソース:', sources.join(', '));
-        // console.log('========================');
-    }
-    
-    // CSRFトークンの有効性をチェック
-    validateCSRFToken().then(isValid => {
-        if (!isValid) {
-            console.warn('CSRFトークンが無効です');
-            // ユーザーには見えない形で準備
-        }
-    });
-    
-    // Animate cards on load
-    const cards = document.querySelectorAll('.analysis-card');
-    cards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        
-        setTimeout(() => {
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, index * 100);
-    });
-});
-
-// スコア説明UIの初期化
-function initializeScoreExplanation() {
-    // ツールチップの初期化
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl, {
-            trigger: 'hover focus',
-            html: true,
-            delay: { show: 100, hide: 300 }
-        });
-    });
-
-    // プログレスバーのアニメーション
-    setTimeout(() => {
-        const progressSegments = document.querySelectorAll('.score-segment');
-        progressSegments.forEach((segment, index) => {
-            setTimeout(() => {
-                segment.style.opacity = '0';
-                segment.style.transform = 'scaleX(0)';
-                segment.style.transformOrigin = 'left center';
-                segment.style.transition = 'all 0.6s ease';
-                
-                requestAnimationFrame(() => {
-                    segment.style.opacity = '1';
-                    segment.style.transform = 'scaleX(1)';
-                });
-            }, index * 150);
-        });
-    }, 500);
-
-    // スコア範囲カードのインタラクション
-    const rangeCards = document.querySelectorAll('.score-range-card');
-    rangeCards.forEach((card, index) => {
-        // カードのアニメーション
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        card.style.transition = 'all 0.5s ease';
-        
-        setTimeout(() => {
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, 800 + (index * 100));
-
-        // クリック時のフィードバック
-        card.addEventListener('click', function() {
-            // 全カードのアクティブクラスを削除
-            rangeCards.forEach(c => c.classList.remove('active-range'));
-            
-            // クリックされたカードにアクティブクラスを追加
-            this.classList.add('active-range');
-            
-            // 軽いバイブレーション効果（対応ブラウザのみ）
-            if (navigator.vibrate) {
-                navigator.vibrate(50);
-            }
-            
-            // 視覚的フィードバック
-            this.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                this.style.transform = 'scale(1)';
-            }, 150);
-        });
-
-        // ホバー効果の強化
-        card.addEventListener('mouseenter', function() {
-            const correspondingSegment = document.querySelectorAll('.score-segment')[index];
-            if (correspondingSegment) {
-                correspondingSegment.style.transform = 'translateY(-2px)';
-                correspondingSegment.style.filter = 'brightness(1.15)';
-            }
-        });
-
-        card.addEventListener('mouseleave', function() {
-            const correspondingSegment = document.querySelectorAll('.score-segment')[index];
-            if (correspondingSegment) {
-                correspondingSegment.style.transform = 'translateY(0)';
-                correspondingSegment.style.filter = 'brightness(1)';
-            }
-        });
-    });
-
-    // 中立マーカーのアニメーション制御
-    const neutralMarker = document.querySelector('.neutral-marker');
-    if (neutralMarker) {
-        // マウスオーバーで一時停止
-        neutralMarker.addEventListener('mouseenter', function() {
-            this.style.animationPlayState = 'paused';
-        });
-        
-        neutralMarker.addEventListener('mouseleave', function() {
-            this.style.animationPlayState = 'running';
-        });
-    }
-
-    // レスポンシブ対応：画面サイズ変更時の調整
-    let resizeTimeout;
-    window.addEventListener('resize', function() {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-            adjustScoreExplanationLayout();
-        }, 250);
-    });
-}
-
-// レイアウト調整関数
-function adjustScoreExplanationLayout() {
-    const isMobile = window.innerWidth < 768;
-    const scoreLabels = document.querySelectorAll('.score-label');
-    const mobileLabels = document.querySelector('.score-labels-mobile');
-    
-    if (isMobile) {
-        scoreLabels.forEach(label => {
-            label.style.display = 'none';
-        });
-        if (mobileLabels) {
-            mobileLabels.style.display = 'block';
-        }
-    } else {
-        scoreLabels.forEach(label => {
-            label.style.display = 'inline';
-        });
-        if (mobileLabels) {
-            mobileLabels.style.display = 'none';
-        }
-    }
-}
-
 </script>
 {% endblock %}

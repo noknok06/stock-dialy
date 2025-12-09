@@ -1,453 +1,934 @@
-<!-- earnings_analysis/templates/earnings_analysis/simple_index.html（書類種別表示名対応版） -->
+<!-- earnings_analysis/templates/earnings_analysis/simple_index_improved.html -->
 {% extends 'earnings_analysis/simple_base.html' %}
 
-{% block title %}ホーム -コポモ{% endblock %}
+{% block title %}ホーム - コポモ{% endblock %}
 
 {% block extra_css %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 <style>
-/* カードのoverflow設定 */
-.analysis-card {
-    overflow: visible !important;
+/* ============================================
+   ホームページ専用スタイル
+   ============================================ */
+:root {
+    --primary-500: #3b82f6;
+    --primary-600: #2563eb;
+    --primary-700: #1d4ed8;
+    --primary-100: #dbeafe;
+    --success-500: #10b981;
+    --success-600: #059669;
+    --warning-500: #f59e0b;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.5rem;
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
 }
 
-.analysis-card .card-body {
-    overflow: visible !important;
+body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    min-height: 100vh;
 }
 
-/* 検索候補の改善スタイル */
+/* ヒーローセクション */
+.hero-section {
+    background: linear-gradient(135deg, var(--primary-600) 0%, #4f46e5 50%, #7c3aed 100%);
+    color: white;
+    padding: 3rem 1.5rem;
+    border-radius: var(--radius-2xl);
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 60%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+    pointer-events: none;
+}
+
+.hero-title {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.hero-subtitle {
+    font-size: 1rem;
+    opacity: 0.95;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.7;
+}
+
+@media (min-width: 768px) {
+    .hero-section {
+        padding: 4rem 2rem;
+    }
+    .hero-title {
+        font-size: 2.75rem;
+    }
+    .hero-subtitle {
+        font-size: 1.125rem;
+    }
+}
+
+/* 検索セクション */
+.search-section {
+    background: white;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+@media (min-width: 768px) {
+    .search-section {
+        padding: 2rem;
+    }
+}
+
+.search-title {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.search-input-wrapper {
+    position: relative;
+}
+
+.search-input-group {
+    display: flex;
+    gap: 0;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border: 2px solid var(--gray-200);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-input-group:focus-within {
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 3px var(--primary-100);
+}
+
+.search-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    background: var(--gray-50);
+    color: var(--gray-400);
+    flex-shrink: 0;
+}
+
+.search-input {
+    flex: 1;
+    border: none;
+    padding: 1rem;
+    font-size: 1rem;
+    min-height: 52px;
+    background: white;
+}
+
+.search-input:focus {
+    outline: none;
+}
+
+.search-input::placeholder {
+    color: var(--gray-400);
+}
+
+.search-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0 1.5rem;
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+    color: white;
+    border: none;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 100px;
+}
+
+.search-btn:hover {
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+}
+
+@media (max-width: 575.98px) {
+    .search-btn span {
+        display: none;
+    }
+    .search-btn {
+        min-width: 52px;
+        padding: 0 1rem;
+    }
+}
+
+.search-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--gray-500);
+}
+
+/* 検索候補ドロップダウン */
 .search-suggestions {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 8px);
     left: 0;
     right: 0;
     background: white;
-    border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-    border: 1px solid #dee2e6;
-    max-height: 60vh;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl);
+    border: 1px solid var(--gray-200);
+    max-height: 65vh;
     overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e0 #f8f9fa;
-    z-index: 9999;
-    margin-top: 4px;
+    z-index: 1000;
+    display: none;
 }
 
-.search-suggestions::-webkit-scrollbar {
-    width: 8px;
-}
-
-.search-suggestions::-webkit-scrollbar-track {
-    background: #f8f9fa;
-    border-radius: 4px;
-}
-
-.search-suggestions::-webkit-scrollbar-thumb {
-    background: #cbd5e0;
-    border-radius: 4px;
-}
-
-.search-suggestions::-webkit-scrollbar-thumb:hover {
-    background: #a0aec0;
-}
-
-/* 候補項目の改善 */
-.suggestion-item {
-    padding: 16px !important;
-    border-bottom: 1px solid #e9ecef;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    min-height: 80px;
+.suggestion-header {
+    position: sticky;
+    top: 0;
+    background: var(--gray-50);
+    padding: 0.75rem 1rem;
+    font-size: 0.8125rem;
+    color: var(--gray-500);
+    border-bottom: 1px solid var(--gray-100);
     display: flex;
     align-items: center;
+    gap: 0.5rem;
 }
 
-.suggestion-item:hover,
-.suggestion-item.active {
-    background-color: #f8f9fa;
-    border-left: 4px solid #007bff;
+.suggestion-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--gray-100);
+    cursor: pointer;
+    transition: background 0.15s ease;
+    min-height: 72px;
 }
 
 .suggestion-item:last-child {
     border-bottom: none;
 }
 
-/* スマホでのタッチ領域改善 */
-@media (max-width: 768px) {
-    .suggestion-item {
-        padding: 20px 16px !important;
-        min-height: 90px;
-    }
-    
-    .search-suggestions {
-        max-height: 50vh;
-    }
-    
-    .suggestion-item .fw-semibold {
-        font-size: 1.1rem;
-    }
-    
-    .suggestion-item .small {
-        font-size: 0.9rem;
-    }
+.suggestion-item:hover,
+.suggestion-item.active {
+    background: var(--primary-100);
 }
 
-/* 検索状態とエラー表示の改善 */
-#searchStatus, #noResults {
-    padding: 20px;
+.suggestion-item-icon {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gray-100);
+    color: var(--gray-500);
+    border-radius: var(--radius-lg);
+    flex-shrink: 0;
+}
+
+.suggestion-item:hover .suggestion-item-icon,
+.suggestion-item.active .suggestion-item-icon {
+    background: var(--primary-500);
+    color: white;
+}
+
+.suggestion-item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.suggestion-item-title {
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.suggestion-item-title mark {
+    background: #fef3c7;
+    color: #d97706;
+    padding: 0 4px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.suggestion-item-meta {
+    font-size: 0.8125rem;
+    color: var(--gray-500);
+}
+
+.suggestion-item-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    background: var(--primary-100);
+    color: var(--primary-700);
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+}
+
+.suggestion-item-count {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.suggestion-item-count-value {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--primary-600);
+}
+
+.suggestion-item-count-label {
+    font-size: 0.6875rem;
+    color: var(--gray-500);
+}
+
+.search-loading,
+.search-no-results {
+    padding: 2rem;
     text-align: center;
+    color: var(--gray-500);
+}
+
+.search-loading i {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--primary-500);
+}
+
+/* プロセスフロー */
+.process-section {
+    background: white;
+    border-radius: var(--radius-xl);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+    .process-section {
+        padding: 2rem;
+    }
+}
+
+.process-title {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin-bottom: 1.5rem;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.process-steps {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .process-steps {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+    }
+}
+
+.process-step {
+    text-align: center;
+    padding: 1rem;
+    position: relative;
+}
+
+.process-step-number {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.75rem;
+    border-radius: 50%;
+    font-weight: 700;
     font-size: 1rem;
+    color: white;
 }
 
-/* mark要素の改善 */
-.suggestion-item mark {
-    background-color: #fff3cd;
-    padding: 2px 4px;
-    border-radius: 3px;
+.process-step:nth-child(1) .process-step-number { background: var(--primary-500); }
+.process-step:nth-child(2) .process-step-number { background: var(--success-500); }
+.process-step:nth-child(3) .process-step-number { background: var(--warning-500); }
+.process-step:nth-child(4) .process-step-number { background: #8b5cf6; }
+
+.process-step-title {
     font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 0.25rem;
+    font-size: 0.9375rem;
 }
 
-/* バッジの改善 */
-.suggestion-item .badge {
+.process-step-desc {
+    font-size: 0.8125rem;
+    color: var(--gray-500);
+}
+
+/* ステップ間の矢印（PC表示時のみ） */
+@media (min-width: 768px) {
+    .process-step:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        top: 28px;
+        right: -12px;
+        width: 24px;
+        height: 2px;
+        background: var(--gray-200);
+    }
+}
+
+/* 統計セクション */
+.stats-section {
+    margin-bottom: 2rem;
+}
+
+.stats-title {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin-bottom: 1rem;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.stat-card {
+    background: white;
+    border-radius: var(--radius-xl);
+    box-shadow: 0 2px 4px rgb(0 0 0 / 0.05);
+    padding: 1.25rem;
+    text-align: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgb(0 0 0 / 0.1);
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    font-size: 1.25rem;
+}
+
+.stat-icon-primary { background: var(--primary-100); color: var(--primary-600); }
+.stat-icon-success { background: #d1fae5; color: var(--success-600); }
+.stat-icon-info { background: #e0e7ff; color: #4f46e5; }
+.stat-icon-warning { background: #fef3c7; color: #d97706; }
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 0.125rem;
+}
+
+.stat-label {
     font-size: 0.75rem;
-    padding: 4px 8px;
+    color: var(--gray-500);
 }
 
-/* 候補数が多い場合の表示改善 */
-.suggestion-count {
-    position: sticky;
-    top: 0;
-    background: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-    padding: 8px 16px;
-    font-size: 0.85rem;
-    color: #6c757d;
-    z-index: 10;
+/* クイックアクセス */
+.quick-access-section {
+    margin-bottom: 2rem;
 }
 
-/* 書類種別表示名用のスタイル */
-.doc-type-display {
-    color: #28a745;
+.quick-access-title {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin-bottom: 1rem;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.quick-access-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .quick-access-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.quick-access-card {
+    background: white;
+    border-radius: var(--radius-xl);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.quick-access-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.quick-access-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.quick-access-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.quick-access-icon-primary { background: var(--primary-100); color: var(--primary-600); }
+.quick-access-icon-warning { background: #fef3c7; color: #d97706; }
+
+.quick-access-info h5 {
+    font-weight: 700;
+    color: var(--gray-800);
+    margin: 0 0 0.25rem;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.quick-access-info p {
+    font-size: 0.875rem;
+    color: var(--gray-500);
+    margin: 0;
+}
+
+.quick-access-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    background: #fee2e2;
+    color: #dc2626;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
     font-weight: 600;
 }
 
-.latest-doc-info {
-    background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
-    border-radius: 6px;
-    padding: 6px 10px;
-    margin-top: 8px;
+.quick-access-features {
+    font-size: 0.8125rem;
+    color: var(--success-600);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.quick-access-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.5rem;
+    border-radius: var(--radius-lg);
+    font-weight: 600;
+    font-size: 0.9375rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    min-height: 48px;
+}
+
+.quick-access-btn-primary {
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+    color: white;
+}
+
+.quick-access-btn-primary:hover {
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+    transform: translateY(-1px);
+    text-decoration: none;
+    color: white;
+}
+
+.quick-access-btn-outline {
+    background: white;
+    border: 2px solid var(--gray-200);
+    color: var(--gray-700);
+}
+
+.quick-access-btn-outline:hover {
+    border-color: var(--primary-500);
+    color: var(--primary-600);
+    background: var(--primary-100);
+    text-decoration: none;
+}
+
+/* アニメーション */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.3s; }
+
+/* スピナー */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.fa-spin {
+    animation: spin 1s linear infinite;
 }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Hero Section -->
-<div class="page-header text-center mb-4">
-    <div class="row align-items-center">
-        <div class="col-12">
-            <h1 class="display-5 display-md-4 fw-bold mb-3">
-                <i class="fas fa-chart-line me-2 me-md-3"></i>
-                <span class="d-block d-sm-inline">コポモ（CopoMo）</span>
-            </h1>
-            <p class="lead mb-3 mb-md-4">
-                「コポモ」は、“Corporate Mood（企業のムード）”を読み取るアプリです。
-            </p>
-        </div>
-    </div>
-</div>
+<!-- ヒーローセクション -->
+<section class="hero-section text-center animate-fade-in-up">
+    <h1 class="hero-title">
+        <i class="fas fa-chart-line"></i>
+        <span>コポモ（CopoMo）</span>
+    </h1>
+    <p class="hero-subtitle">
+        企業の決算書類をAIが分析し、経営陣のムード（感情）を可視化。<br class="d-none d-md-inline">
+        投資判断をサポートする新しい分析ツールです。
+    </p>
+</section>
 
-<!-- Search Section -->
-<div class="row justify-content-center mb-4 mb-md-5">
-    <div class="col-12 col-lg-10 col-xl-8">
-        <div class="card analysis-card">
-            <div class="card-body p-3 p-md-4">
-                <h3 class="card-title text-center mb-3 mb-md-4">
-                    <i class="fas fa-search text-primary me-2"></i>企業検索
-                </h3>
-                
-                <div class="search-container position-relative">
-                    <div class="input-group input-group-lg">
-                        <span class="input-group-text bg-light border-end-0">
-                            <i class="fas fa-building text-muted"></i>
-                        </span>
-                        <input type="text" 
-                               class="form-control border-start-0" 
-                               id="companySearch" 
-                               placeholder="企業名または証券コード"
-                               autocomplete="off"
-                               aria-describedby="searchHelp">
-                        <button class="btn btn-primary px-3 px-md-4" type="button" onclick="performDirectSearch()" 
-                                aria-label="検索実行">
-                            <i class="fas fa-search"></i>
-                            <span class="d-none d-sm-inline ms-2">検索</span>
-                        </button>
-                    </div>
-                    
-                    <!-- Search Suggestions Dropdown -->
-                    <div class="position-absolute w-100" style="z-index: 1050; top: 100%;">
-                        <div id="searchSuggestions" class="search-suggestions" style="display: none;">
-                            <!-- 候補数表示 -->
-                            <div id="suggestionCount" class="suggestion-count" style="display: none;">
-                                <i class="fas fa-list me-1"></i>
-                                <span id="countText">0件の候補</span>
-                            </div>
-                            
-                            <div id="suggestionsList">
-                                <!-- Dynamic suggestions -->
-                            </div>
-                            
-                            <div id="searchStatus" class="px-4 py-3 text-muted text-center" style="display: none;">
-                                <i class="fas fa-spinner fa-spin me-2"></i>検索中...
-                            </div>
-                            
-                            <div id="noResults" class="px-4 py-3 text-muted text-center" style="display: none;">
-                                <i class="fas fa-search me-2"></i>該当する企業が見つかりませんでした
-                                <div class="small mt-2">
-                                    企業名の一部や証券コードで検索してください
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row mt-3 g-2">
-                    <div class="col-12 col-md-8">
-                        <small id="searchHelp" class="text-muted d-block">
-                            <i class="fas fa-lightbulb me-1"></i>
-                            <strong>検索のコツ:</strong> 企業名の一部、証券コード、EDINETコードで検索できます
-                        </small>
-                    </div>
-                    <div class="col-12 col-md-4 text-md-end">
-                        <small class="text-muted d-none d-md-block">
-                            <i class="fas fa-keyboard me-1"></i>
-                            <kbd>↑</kbd><kbd>↓</kbd>で選択、<kbd>Enter</kbd>で決定
-                        </small>
-                    </div>
+<!-- 検索セクション -->
+<section class="search-section animate-fade-in-up delay-1">
+    <h2 class="search-title">
+        <i class="fas fa-search text-primary"></i>
+        企業を検索
+    </h2>
+    
+    <div class="search-input-wrapper">
+        <div class="search-input-group">
+            <div class="search-icon">
+                <i class="fas fa-building"></i>
+            </div>
+            <input type="text" 
+                   class="search-input" 
+                   id="companySearch"
+                   placeholder="企業名または証券コードを入力"
+                   autocomplete="off"
+                   aria-label="企業検索">
+            <button type="button" class="search-btn" onclick="performDirectSearch()" aria-label="検索">
+                <i class="fas fa-search"></i>
+                <span>検索</span>
+            </button>
+        </div>
+        
+        <!-- 検索候補 -->
+        <div id="searchSuggestions" class="search-suggestions">
+            <div id="suggestionHeader" class="suggestion-header" style="display: none;">
+                <i class="fas fa-lightbulb"></i>
+                <span id="suggestionCount">0件の候補</span>
+            </div>
+            <div id="suggestionsList"></div>
+            <div id="searchLoading" class="search-loading" style="display: none;">
+                <i class="fas fa-spinner fa-spin"></i>
+                <div>検索中...</div>
+            </div>
+            <div id="searchNoResults" class="search-no-results" style="display: none;">
+                <i class="fas fa-search mb-2" style="font-size: 1.5rem;"></i>
+                <div>該当する企業が見つかりませんでした</div>
+                <div class="mt-2" style="font-size: 0.8125rem;">
+                    企業名の一部や証券コードで検索してください
                 </div>
             </div>
         </div>
     </div>
-</div>
+    
+    <div class="search-hint">
+        <i class="fas fa-lightbulb"></i>
+        <span>企業名の一部、証券コード、EDINETコードで検索できます</span>
+    </div>
+</section>
 
 {% include 'earnings_analysis/ads/ad_responsive.html' %}
-<!-- Process Flow -->
-<div class="row justify-content-center mb-4 mb-md-5">
-    <div class="col-12 col-lg-11">
-        <div class="card">
-            <div class="card-body p-3 p-md-4">
-                <h4 class="text-center mb-3 mb-md-4">
-                    <i class="fas fa-route text-success me-2"></i>簡単4ステップで分析実行
-                </h4>
-                <div class="row g-3">
-                    <div class="col-6 col-md-3">
-                        <div class="text-center p-2 p-md-3">
-                            <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2 mb-md-3" 
-                                 style="width: 40px; height: 40px; font-size: 1.1rem; font-weight: 600;">
-                                1
-                            </div>
-                            <h6 class="mb-1 mb-md-2">企業検索</h6>
-                            <small class="text-muted">企業名または証券コード</small>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="text-center p-2 p-md-3">
-                            <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2 mb-md-3" 
-                                 style="width: 40px; height: 40px; font-size: 1.1rem; font-weight: 600;">
-                                2
-                            </div>
-                            <h6 class="mb-1 mb-md-2">企業選択</h6>
-                            <small class="text-muted">企業詳細ページへ</small>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="text-center p-2 p-md-3">
-                            <div class="bg-warning text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2 mb-md-3" 
-                                 style="width: 40px; height: 40px; font-size: 1.1rem; font-weight: 600;">
-                                3
-                            </div>
-                            <h6 class="mb-1 mb-md-2">分析実行</h6>
-                            <small class="text-muted">ワンクリックまたは選択</small>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="text-center p-2 p-md-3">
-                            <div class="bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2 mb-md-3" 
-                                 style="width: 40px; height: 40px; font-size: 1.1rem; font-weight: 600;">
-                                4
-                            </div>
-                            <h6 class="mb-1 mb-md-2">結果確認</h6>
-                            <small class="text-muted">詳細分析結果</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Statistics -->
-<div class="row mb-4 mb-md-5 g-3">
-    <div class="col-12 mb-3">
-        <h3 class="text-center">
-            <i class="fas fa-chart-bar text-primary me-2"></i>システム統計
-        </h3>
-    </div>
+<!-- プロセスフロー -->
+<section class="process-section animate-fade-in-up delay-2">
+    <h3 class="process-title">
+        <i class="fas fa-route text-success"></i>
+        かんたん4ステップで分析
+    </h3>
     
-    <div class="col-6 col-md-3">
-        <div class="card text-center h-100">
-            <div class="card-body p-3">
-                <i class="fas fa-building fa-2x fa-md-3x text-primary mb-2 mb-md-3"></i>
-                <div class="h3 h-md-2 text-primary" data-count="{{ total_companies|default:0 }}">0</div>
-                <div class="small text-muted">登録企業数</div>
-            </div>
+    <div class="process-steps">
+        <div class="process-step">
+            <div class="process-step-number">1</div>
+            <div class="process-step-title">企業検索</div>
+            <div class="process-step-desc">企業名またはコード</div>
+        </div>
+        <div class="process-step">
+            <div class="process-step-number">2</div>
+            <div class="process-step-title">企業選択</div>
+            <div class="process-step-desc">詳細ページへ移動</div>
+        </div>
+        <div class="process-step">
+            <div class="process-step-number">3</div>
+            <div class="process-step-title">分析実行</div>
+            <div class="process-step-desc">ワンクリックで開始</div>
+        </div>
+        <div class="process-step">
+            <div class="process-step-number">4</div>
+            <div class="process-step-title">結果確認</div>
+            <div class="process-step-desc">AIによる詳細分析</div>
         </div>
     </div>
-    
-    <div class="col-6 col-md-3">
-        <div class="card text-center h-100">
-            <div class="card-body p-3">
-                <i class="fas fa-file-alt fa-2x fa-md-3x text-success mb-2 mb-md-3"></i>
-                <div class="h3 h-md-2 text-success" data-count="{{ total_documents|default:0 }}">0</div>
-                <div class="small text-muted">利用可能書類数</div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-6 col-md-3">
-        <div class="card text-center h-100">
-            <div class="card-body p-3">
-                <i class="fas fa-plus-circle fa-2x fa-md-3x text-info mb-2 mb-md-3"></i>
-                <div class="h3 h-md-2 text-info" data-count="{{ recent_documents_count|default:0 }}">0</div>
-                <div class="small text-muted">今週の新着</div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-6 col-md-3">
-        <div class="card text-center h-100">
-            <div class="card-body p-3">
-                <i class="fas fa-brain fa-2x fa-md-3x text-warning mb-2 mb-md-3"></i>
-                <div class="h3 h-md-2 text-warning">AI</div>
-                <div class="small text-muted">分析機能</div>
-            </div>
-        </div>
-    </div>
-</div>
+</section>
 
-<!-- Quick Access -->
-<div class="row g-3">
-    <div class="col-12 mb-3">
-        <h3 class="text-center">
-            <i class="fas fa-bolt text-primary me-2"></i>クイックアクセス
-        </h3>
-    </div>
+<!-- 統計セクション -->
+<section class="stats-section animate-fade-in-up delay-3">
+    <h3 class="stats-title">
+        <i class="fas fa-chart-bar text-primary"></i>
+        システム統計
+    </h3>
     
-    <div class="col-12 col-md-6">
-        <div class="card h-100">
-            <div class="card-body d-flex flex-column">
-                <div class="d-flex align-items-center mb-3">
-                    <i class="fas fa-list text-primary me-3 fa-2x"></i>
-                    <div>
-                        <h5 class="card-title mb-1">書類一覧</h5>
-                        <p class="card-text small text-muted mb-0">最近提出された書類を確認</p>
-                    </div>
-                </div>
-                <div class="mt-auto">
-                    <a href="{% url 'copomo:document-list-ui' %}" class="btn btn-primary w-100">
-                        <i class="fas fa-arrow-right me-2"></i>書類一覧へ
-                    </a>
-                </div>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-primary">
+                <i class="fas fa-building"></i>
             </div>
+            <div class="stat-value" data-count="{{ total_companies|default:0 }}">0</div>
+            <div class="stat-label">登録企業数</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-success">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="stat-value" data-count="{{ total_documents|default:0 }}">0</div>
+            <div class="stat-label">利用可能書類数</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-info">
+                <i class="fas fa-plus-circle"></i>
+            </div>
+            <div class="stat-value" data-count="{{ recent_documents_count|default:0 }}">0</div>
+            <div class="stat-label">今週の新着</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-warning">
+                <i class="fas fa-brain"></i>
+            </div>
+            <div class="stat-value">AI</div>
+            <div class="stat-label">分析機能</div>
         </div>
     </div>
-    
-    <div class="col-12 col-md-6">
-        <div class="card h-100">
-            <div class="card-body d-flex flex-column">
-                <div class="d-flex align-items-center mb-3">
-                    <i class="fas fa-rocket text-warning me-3 fa-2x"></i>
-                    <div>
-                        <h5 class="card-title mb-1">
-                            ワンクリック分析
-                            <span class="badge bg-danger small ms-1">NEW</span>
-                        </h5>
-                        <p class="card-text small text-muted mb-0">企業の最新決算書類を自動選択して包括分析</p>
-                    </div>
-                </div>
-                <div class="small text-success mb-3">
-                    <i class="fas fa-check me-1"></i>財務分析 + 感情分析を一括実行
-                </div>
-                <div class="mt-auto">
-                    <button class="btn btn-warning w-100" onclick="showAnalysisInfo()">
-                        <i class="fas fa-info-circle me-2"></i>詳細を見る
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+</section>
 
-<!-- Analysis Info Modal -->
+<!-- クイックアクセス -->
+<section class="quick-access-section">
+    <h3 class="quick-access-title">
+        <i class="fas fa-bolt text-warning"></i>
+        クイックアクセス
+    </h3>
+    
+    <div class="quick-access-grid">
+        <div class="quick-access-card">
+            <div class="quick-access-header">
+                <div class="quick-access-icon quick-access-icon-primary">
+                    <i class="fas fa-list"></i>
+                </div>
+                <div class="quick-access-info">
+                    <h5>書類一覧</h5>
+                    <p>最近提出された書類を確認</p>
+                </div>
+            </div>
+            <a href="{% url 'copomo:document-list-ui' %}" class="quick-access-btn quick-access-btn-primary">
+                <i class="fas fa-arrow-right"></i>
+                書類一覧へ
+            </a>
+        </div>
+        
+        <div class="quick-access-card">
+            <div class="quick-access-header">
+                <div class="quick-access-icon quick-access-icon-warning">
+                    <i class="fas fa-rocket"></i>
+                </div>
+                <div class="quick-access-info">
+                    <h5>
+                        ワンクリック分析
+                        <span class="quick-access-badge">NEW</span>
+                    </h5>
+                    <p>最新決算書類を自動選択して包括分析</p>
+                </div>
+            </div>
+            <div class="quick-access-features">
+                <i class="fas fa-check"></i>
+                財務分析 + 感情分析を一括実行
+            </div>
+            <button class="quick-access-btn quick-access-btn-outline" onclick="showAnalysisInfo()">
+                <i class="fas fa-info-circle"></i>
+                詳細を見る
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- 分析情報モーダル -->
 <div class="modal fade" id="analysisInfoModal" tabindex="-1" aria-labelledby="analysisInfoModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="border-radius: var(--radius-xl); overflow: hidden;">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--primary-600), #4f46e5); color: white; border: none;">
                 <h5 class="modal-title" id="analysisInfoModalLabel">
-                    <i class="fas fa-rocket me-2"></i>ワンクリック包括分析について
+                    <i class="fas fa-rocket me-2"></i>ワンクリック包括分析
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="閉じる"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <div class="row g-4">
-                    <div class="col-12">
-                        <h6 class="text-primary">
-                            <i class="fas fa-chart-pie me-2"></i>財務分析機能
-                        </h6>
-                        <ul class="list-unstyled ps-3">
-                            <li class="mb-2">
-                                <i class="fas fa-check text-success me-2"></i>
-                                キャッシュフロー構造分析（理想型、成長型、危険型等の判定）
-                            </li>
-                            <li class="mb-2">
-                                <i class="fas fa-check text-success me-2"></i>
-                                財務健全性評価と投資リスク評価
-                            </li>
-                            <li class="mb-2">
-                                <i class="fas fa-check text-success me-2"></i>
-                                投資推奨度の総合判定
-                            </li>
-                        </ul>
+                    <div class="col-md-6">
+                        <div style="background: var(--primary-50); border-radius: var(--radius-lg); padding: 1.25rem;">
+                            <h6 style="color: var(--primary-700); margin-bottom: 1rem;">
+                                <i class="fas fa-chart-pie me-2"></i>財務分析機能
+                            </h6>
+                            <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.875rem;">
+                                <li style="margin-bottom: 0.5rem;">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    キャッシュフロー構造分析
+                                </li>
+                                <li style="margin-bottom: 0.5rem;">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    財務健全性評価
+                                </li>
+                                <li>
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    投資推奨度の総合判定
+                                </li>
+                            </ul>
+                        </div>
                     </div>
-                    <div class="col-12">
-                        <h6 class="text-warning">
-                            <i class="fas fa-brain me-2"></i>感情分析機能
-                        </h6>
-                        <ul class="list-unstyled ps-3">
-                            <li class="mb-2">
-                                <i class="fas fa-check text-success me-2"></i>
-                                経営陣の自信度測定（決算説明書のテキスト分析）
-                            </li>
-                            <li class="mb-2">
-                                <i class="fas fa-check text-success me-2"></i>
-                                ポジティブ・ネガティブ表現の自動検出
-                            </li>
-                            <li class="mb-2">
-                                <i class="fas fa-check text-success me-2"></i>
-                                市場への影響予測
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="col-12">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            <strong>分析時間:</strong> 約3-5分で包括的な分析結果をお届けします
+                    <div class="col-md-6">
+                        <div style="background: #fef3c7; border-radius: var(--radius-lg); padding: 1.25rem;">
+                            <h6 style="color: #d97706; margin-bottom: 1rem;">
+                                <i class="fas fa-brain me-2"></i>感情分析機能
+                            </h6>
+                            <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.875rem;">
+                                <li style="margin-bottom: 0.5rem;">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    経営陣の自信度測定
+                                </li>
+                                <li style="margin-bottom: 0.5rem;">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    ポジティブ・ネガティブ検出
+                                </li>
+                                <li>
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    市場への影響予測
+                                </li>
+                            </ul>
                         </div>
                     </div>
                 </div>
+                <div class="alert alert-info mt-4 mb-0" style="border-radius: var(--radius-lg);">
+                    <i class="fas fa-clock me-2"></i>
+                    <strong>分析時間:</strong> 約3-5分で包括的な分析結果をお届けします
+                </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
-                <button type="button" class="btn btn-primary" onclick="startSearch()">
+            <div class="modal-footer" style="border: none; padding: 1rem 1.5rem 1.5rem;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: var(--radius-lg);">閉じる</button>
+                <button type="button" class="btn btn-primary" onclick="startSearch()" style="border-radius: var(--radius-lg);">
                     <i class="fas fa-search me-2"></i>企業検索を開始
                 </button>
             </div>
@@ -458,7 +939,7 @@
 
 {% block extra_js %}
 <script>
-// Search functionality
+// 検索機能
 let searchTimeout;
 let currentSuggestions = [];
 let selectedIndex = -1;
@@ -467,10 +948,10 @@ let isSearching = false;
 const searchInput = document.getElementById('companySearch');
 const suggestionsContainer = document.getElementById('searchSuggestions');
 const suggestionsList = document.getElementById('suggestionsList');
-const searchStatus = document.getElementById('searchStatus');
-const noResults = document.getElementById('noResults');
-const suggestionCount = document.getElementById('suggestionCount');
-const countText = document.getElementById('countText');
+const suggestionHeader = document.getElementById('suggestionHeader');
+const suggestionCountEl = document.getElementById('suggestionCount');
+const searchLoading = document.getElementById('searchLoading');
+const searchNoResults = document.getElementById('searchNoResults');
 
 document.addEventListener('DOMContentLoaded', function() {
     setupSearchHandlers();
@@ -488,7 +969,11 @@ function setupSearchHandlers() {
         }
     });
     
-    document.addEventListener('click', handleOutsideClick);
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.search-input-wrapper')) {
+            hideSuggestions();
+        }
+    });
 }
 
 function handleSearchInput(event) {
@@ -506,124 +991,72 @@ function handleSearchInput(event) {
 }
 
 function handleKeyNavigation(event) {
-    if (!suggestionsContainer.style.display || suggestionsContainer.style.display === 'none') {
+    if (suggestionsContainer.style.display === 'none') {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+        }
         return;
     }
     
     switch (event.key) {
         case 'ArrowDown':
             event.preventDefault();
-            navigateDown();
+            if (selectedIndex < currentSuggestions.length - 1) {
+                selectedIndex++;
+                updateSelectedItem();
+            }
             break;
         case 'ArrowUp':
             event.preventDefault();
-            navigateUp();
+            if (selectedIndex > 0) {
+                selectedIndex--;
+                updateSelectedItem();
+            }
             break;
         case 'Enter':
             event.preventDefault();
-            selectCurrent();
+            if (selectedIndex >= 0) {
+                selectCompany(currentSuggestions[selectedIndex]);
+            }
             break;
         case 'Escape':
             hideSuggestions();
             break;
-    }
-}
-
-function navigateDown() {
-    if (selectedIndex < currentSuggestions.length - 1) {
-        selectedIndex++;
-        updateSelectedItem();
-    }
-}
-
-function navigateUp() {
-    if (selectedIndex > 0) {
-        selectedIndex--;
-        updateSelectedItem();
-    } else if (selectedIndex === 0) {
-        selectedIndex = -1;
-        updateSelectedItem();
     }
 }
 
 function updateSelectedItem() {
     const items = suggestionsList.querySelectorAll('.suggestion-item');
-    
     items.forEach((item, index) => {
+        item.classList.toggle('active', index === selectedIndex);
         if (index === selectedIndex) {
-            item.classList.add('active');
             item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-        } else {
-            item.classList.remove('active');
         }
     });
-    
-    if (selectedIndex >= 0) {
-        searchInput.value = currentSuggestions[selectedIndex].company_name;
-    }
-}
-
-function handleKeyNavigation(event) {
-    // 候補が表示されていない場合はキーナビゲーションを無効化
-    if (!suggestionsContainer.style.display || suggestionsContainer.style.display === 'none') {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            // 何もしない（直接検索を防ぐ）
-            return;
-        }
-        return;
-    }
-    
-    switch (event.key) {
-        case 'ArrowDown':
-            event.preventDefault();
-            navigateDown();
-            break;
-        case 'ArrowUp':
-            event.preventDefault();
-            navigateUp();
-            break;
-        case 'Enter':
-            event.preventDefault();
-            selectCurrent();
-            break;
-        case 'Escape':
-            hideSuggestions();
-            break;
-    }
-}
-
-function handleOutsideClick(event) {
-    if (!event.target.closest('.search-container')) {
-        hideSuggestions();
-    }
 }
 
 async function fetchCompanySuggestions(query) {
     if (isSearching) return;
     
     isSearching = true;
-    showSearchStatus();
+    showSearchLoading();
     
     try {
         const response = await fetch(`/copomo/companies/search/?q=${encodeURIComponent(query)}`);
         const data = await response.json();
         
-        if (data.error) {
-            throw new Error(data.error);
-        }
+        if (data.error) throw new Error(data.error);
         
         currentSuggestions = data.results || [];
         selectedIndex = -1;
         
         displaySuggestions(currentSuggestions, query);
-        
     } catch (error) {
         console.error('Search error:', error);
-        showError();
+        showNoResults();
     } finally {
         isSearching = false;
-        hideSearchStatus();
+        hideSearchLoading();
     }
 }
 
@@ -633,8 +1066,9 @@ function displaySuggestions(companies, query) {
         return;
     }
     
-    // 候補数の表示
-    updateSuggestionCount(companies.length);
+    suggestionCountEl.textContent = `${companies.length}件の候補`;
+    suggestionHeader.style.display = 'flex';
+    searchNoResults.style.display = 'none';
     
     suggestionsList.innerHTML = '';
     
@@ -646,55 +1080,32 @@ function displaySuggestions(companies, query) {
     showSuggestions();
 }
 
-function updateSuggestionCount(count) {
-    countText.textContent = `${count}件の候補が見つかりました`;
-    suggestionCount.style.display = count > 0 ? 'block' : 'none';
-}
-
 function createSuggestionItem(company, index, query) {
     const item = document.createElement('div');
     item.className = 'suggestion-item';
     
-    const matchBadge = getMatchTypeBadge(company.match_type);
-    const analysisStatus = company.has_analysis_ready ? 
-        '<span class="badge bg-success ms-2">分析可能</span>' : 
-        '<span class="badge bg-secondary ms-2">書類のみ</span>';
-    
-    // 最新決算書類の表示名対応
-    let latestDocInfo = '';
-    if (company.latest_financial_date && company.latest_financial_type_name) {
-        latestDocInfo = `
-            <div class="latest-doc-info">
-                <i class="fas fa-chart-line me-1"></i>
-                <span class="doc-type-display">${company.latest_financial_type_name}</span>
-                <small class="text-muted ms-1">(${new Date(company.latest_financial_date).toLocaleDateString('ja-JP')})</small>
-            </div>
-        `;
-    }
+    const badge = company.has_analysis_ready 
+        ? '<span class="suggestion-item-badge"><i class="fas fa-check"></i> 分析可</span>'
+        : '';
     
     item.innerHTML = `
-        <div class="d-flex justify-content-between align-items-start w-100">
-            <div class="flex-grow-1 pe-3">
-                <div class="fw-semibold mb-2" style="line-height: 1.3;">
-                    ${highlightMatch(company.company_name, query)}
-                    ${matchBadge}
-                    ${analysisStatus}
-                </div>
-                <div class="small text-muted mb-2">
-                    ${company.securities_code ? `証券: <strong>${company.securities_code}</strong>` : ''}
-                    ${company.securities_code && company.edinet_code ? ' | ' : ''}
-                    EDINET: ${company.edinet_code}
-                </div>
-                ${latestDocInfo}
+        <div class="suggestion-item-icon">
+            <i class="fas fa-building"></i>
+        </div>
+        <div class="suggestion-item-content">
+            <div class="suggestion-item-title">
+                ${highlightMatch(company.company_name, query)}
+                ${badge}
             </div>
-            <div class="text-end flex-shrink-0">
-                <div class="badge bg-primary rounded-pill mb-1">${company.document_count}件</div>
-                ${company.financial_count > 0 ? `
-                    <div class="small text-success">
-                        <i class="fas fa-rocket me-1"></i>決算${company.financial_count}件
-                    </div>
-                ` : ''}
+            <div class="suggestion-item-meta">
+                ${company.securities_code ? `証券: <strong>${company.securities_code}</strong>` : ''}
+                ${company.securities_code ? ' | ' : ''}
+                EDINET: ${company.edinet_code}
             </div>
+        </div>
+        <div class="suggestion-item-count">
+            <div class="suggestion-item-count-value">${company.document_count}</div>
+            <div class="suggestion-item-count-label">書類</div>
         </div>
     `;
     
@@ -707,88 +1118,12 @@ function createSuggestionItem(company, index, query) {
     return item;
 }
 
-function getMatchTypeBadge(matchType) {
-    const badges = {
-        'securities_exact': '<span class="badge badge-warning text-dark">証券コード</span>',
-        'name_prefix': '<span class="badge bg-info">前方一致</span>',
-        'securities_prefix': '<span class="badge badge-warning text-dark">証券コード</span>',
-        'name_partial': '<span class="badge bg-secondary">部分一致</span>',
-        'other': ''
-    };
-    return badges[matchType] || '';
-}
-
 function highlightMatch(text, query) {
     if (!query) return escapeHtml(text);
-    
     const escapedText = escapeHtml(text);
     const escapedQuery = escapeHtml(query);
-    
     const regex = new RegExp(`(${escapedQuery})`, 'gi');
     return escapedText.replace(regex, '<mark>$1</mark>');
-}
-
-function selectCompany(company) {
-    searchInput.value = company.company_name;
-    hideSuggestions();
-    
-    const url = `/copomo/company/${company.edinet_code}/`;
-    
-    searchInput.value = `${company.company_name} - 移動中...`;
-    searchInput.disabled = true;
-    
-    setTimeout(() => {
-        window.location.href = url;
-    }, 200);
-}
-
-function performDirectSearch() {
-    const query = searchInput.value.trim();
-    
-    if (query) {
-        const url = `/copomo/documents/?company=${encodeURIComponent(query)}`;
-        window.location.href = url;
-    }
-}
-
-function showSuggestions() {
-    suggestionsContainer.style.display = 'block';
-    hideSearchStatus();
-    hideNoResults();
-}
-
-function hideSuggestions() {
-    suggestionsContainer.style.display = 'none';
-    selectedIndex = -1;
-    suggestionCount.style.display = 'none';
-}
-
-function showSearchStatus() {
-    hideNoResults();
-    suggestionCount.style.display = 'none';
-    searchStatus.style.display = 'block';
-    suggestionsContainer.style.display = 'block';
-}
-
-function hideSearchStatus() {
-    searchStatus.style.display = 'none';
-}
-
-function showNoResults() {
-    hideSearchStatus();
-    suggestionCount.style.display = 'none';
-    noResults.style.display = 'block';
-    suggestionsContainer.style.display = 'block';
-}
-
-function hideNoResults() {
-    noResults.style.display = 'none';
-}
-
-function showError() {
-    hideSearchStatus();
-    hideNoResults();
-    suggestionCount.style.display = 'none';
 }
 
 function escapeHtml(text) {
@@ -797,7 +1132,51 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Number animation
+function selectCompany(company) {
+    searchInput.value = company.company_name + ' - 移動中...';
+    searchInput.disabled = true;
+    hideSuggestions();
+    
+    setTimeout(() => {
+        window.location.href = `/copomo/company/${company.edinet_code}/`;
+    }, 200);
+}
+
+function performDirectSearch() {
+    const query = searchInput.value.trim();
+    if (query) {
+        window.location.href = `/copomo/documents/?company=${encodeURIComponent(query)}`;
+    }
+}
+
+function showSuggestions() {
+    suggestionsContainer.style.display = 'block';
+}
+
+function hideSuggestions() {
+    suggestionsContainer.style.display = 'none';
+    selectedIndex = -1;
+}
+
+function showSearchLoading() {
+    suggestionHeader.style.display = 'none';
+    searchNoResults.style.display = 'none';
+    searchLoading.style.display = 'block';
+    suggestionsContainer.style.display = 'block';
+}
+
+function hideSearchLoading() {
+    searchLoading.style.display = 'none';
+}
+
+function showNoResults() {
+    suggestionHeader.style.display = 'none';
+    searchLoading.style.display = 'none';
+    searchNoResults.style.display = 'block';
+    suggestionsContainer.style.display = 'block';
+}
+
+// 数値アニメーション
 function animateNumbers() {
     const numberElements = document.querySelectorAll('[data-count]');
     
@@ -825,8 +1204,7 @@ function animateNumber(element, start, end, duration) {
     function updateNumber(currentTime) {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        
-        const current = Math.floor(start + (end - start) * progress);
+        const current = Math.floor(start + (end - start) * easeOutQuart(progress));
         element.textContent = current.toLocaleString();
         
         if (progress < 1) {
@@ -837,7 +1215,11 @@ function animateNumber(element, start, end, duration) {
     requestAnimationFrame(updateNumber);
 }
 
-// Modal functions
+function easeOutQuart(x) {
+    return 1 - Math.pow(1 - x, 4);
+}
+
+// モーダル
 function showAnalysisInfo() {
     const modal = new bootstrap.Modal(document.getElementById('analysisInfoModal'));
     modal.show();
