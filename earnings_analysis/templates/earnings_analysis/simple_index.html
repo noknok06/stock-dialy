@@ -37,6 +37,8 @@
 }
 
 body {
+    position: relative;
+    z-index: 0;
     font-family: 'Noto Sans JP', sans-serif;
     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
     min-height: 100vh;
@@ -210,7 +212,6 @@ body {
 
 /* 検索候補ドロップダウン */
 .search-suggestions {
-    position: absolute;
     top: calc(100% + 8px);
     left: 0;
     right: 0;
@@ -220,7 +221,8 @@ body {
     border: 1px solid var(--gray-200);
     max-height: 65vh;
     overflow-y: auto;
-    z-index: 1000;
+    position: relative;
+    z-index: 9999;
     display: none;
 }
 
@@ -865,7 +867,6 @@ body {
         </div>
     </div>
 </section>
-
 {% include 'earnings_analysis/ads/ad_responsive.html' %}
 
 <!-- 分析情報モーダル -->
