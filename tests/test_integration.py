@@ -346,9 +346,7 @@ class TestStockSplitIntegration:
         # 4. 分割適用後の状態を確認
         diary.refresh_from_db()
         
-        # 実装上の二重調整: 150株 × 3 × 3 = 1350株
-        # (apply_split で 150→450, update_aggregates で 450→1350)
-        assert diary.current_quantity == Decimal('1350.00')
+        assert diary.current_quantity == Decimal('450.00')
         
         # 各取引の数量が調整されている
         transactions = diary.transactions.all()
