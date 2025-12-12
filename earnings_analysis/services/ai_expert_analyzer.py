@@ -1,15 +1,25 @@
-# earnings_analysis/services/ai_expert_analyzer.py (0-100点スケール版)
+# earnings_analysis/services/ai_expert_analyzer.py (API呼び出し統合版)
 import google.generativeai as genai
 import logging
 from django.conf import settings
 from django.utils import timezone
 from typing import Dict, Any
 import json
+import re
 
 logger = logging.getLogger(__name__)
 
 class AIExpertAnalyzer:
-    """AI専門家による統合感情分析サービス (0-100点スケール)"""
+    """AI専門家による統合感情分析サービス (0-100点スケール + 投資家向け見解統合)
+    
+    このクラスは1回のAPI呼び出しで以下を全て生成します：
+    - 総合評価スコア
+    - 投資推奨グレード
+    - スコア内訳
+    - 投資家向け見解（investor_insights）
+    - リスク分析
+    - 将来見通し
+    """
     
     def __init__(self):
         api_key = getattr(settings, 'GEMINI_API_KEY', None)
@@ -189,7 +199,7 @@ class AIExpertAnalyzer:
         basic_analysis: Dict[str, Any] = None
     ) -> Dict[str, Any]:
         """
-        文書の包括的AI分析（1回のAPIコールで全て実行）
+        文書の包括的AI分析（1回のAPIコールで全て実行 - 投資家向け見解含む）
         
         Args:
             document_text: 分析対象テキスト
@@ -197,7 +207,7 @@ class AIExpertAnalyzer:
             basic_analysis: 既存のワードベース分析結果（参考用）
         
         Returns:
-            統合分析結果
+            統合分析結果（investor_insights含む）
         """
         if not self.model:
             return self._fallback_analysis(basic_analysis)
@@ -225,13 +235,15 @@ class AIExpertAnalyzer:
             
             # メタデータ追加
             result['analysis_metadata'] = {
-                'method': 'ai_expert_comprehensive',
+                'method': 'ai_expert_comprehensive_unified',
                 'model': 'gemini-2.5-flash',
                 'timestamp': timezone.now().isoformat(),
                 'api_available': True,
                 'confidence': result.get('confidence', 0.8),
                 'consistency_validated': True,
-                'score_scale': '0-100'
+                'score_scale': '0-100',
+                'includes_investor_insights': 'investor_insights' in result,
+                'api_calls': 1  # 1回のAPI呼び出しで全て取得
             }
             
             return result
@@ -245,7 +257,7 @@ class AIExpertAnalyzer:
         doc_info: Dict[str, str],
         basic_analysis: Dict[str, Any] = None
     ) -> str:
-        """株式専門家としての統合分析プロンプト構築 (0-100点版)"""
+        """株式専門家としての統合分析プロンプト構築 (0-100点版 + 投資家向け見解統合)"""
         
         # テキストを適切な長さに制限（Geminiのコンテキスト制限対策）
         max_text_length = 30000
@@ -262,12 +274,14 @@ class AIExpertAnalyzer:
 - 基本スコア: {basic_analysis.get('overall_score', 0):.3f}
 """
         
+        company_name = doc_info.get('company_name', '不明')
+        
         prompt = f"""
 あなたは30年以上の経験を持つ株式アナライストで、政治経済に精通し、企業の将来性を見抜く洞察力を持っています。
-以下の決算書類を分析し、投資判断に必要な包括的評価を行ってください。
+以下の決算書類を分析し、投資判断に必要な包括的評価と投資家向けの具体的な見解を行ってください。
 
 【企業情報】
-企業名: {doc_info.get('company_name', '不明')}
+企業名: {company_name}
 証券コード: {doc_info.get('securities_code', '不明')}
 書類種別: {doc_info.get('doc_description', '不明')}
 提出日: {doc_info.get('submit_date', '不明')}
@@ -327,6 +341,14 @@ overall_score = base_score + (全てのpositive_factorsのimpact合計) + (全�
    - 'C': 慎重・売り検討（35～49点）
    - 'D': 強気売り推奨（34点以下）
 
+3. **投資家向け見解 (investor_insights)** - 3～5個の実用的なポイント
+   以下の観点から具体的で実用的な投資判断ポイントを生成してください：
+   - 経営姿勢の読み取り（経営陣の方針・戦略）
+   - 業績トレンド（現在の動向と将来性）
+   - リスク要因（注意すべき課題）
+   - 投資機会（注目すべき分野や動き）
+   - 市場反応（株価・市場インパクト）
+
 【出力するJSON形式】
 {{
   "overall_score": 72,
@@ -366,6 +388,23 @@ overall_score = base_score + (全てのpositive_factorsのimpact合計) + (全�
       "impact": "positive"
     }}
   ],
+  "investor_insights": [
+    {{
+      "title": "経営陣の積極的な成長戦略",
+      "description": "新規事業への投資と既存事業の効率化を両立。経営陣の前向きな姿勢が決算書から読み取れる。",
+      "source": "ai_generated"
+    }},
+    {{
+      "title": "安定した収益基盤",
+      "description": "主力事業の継続的な成長により、安定したキャッシュフローが期待できる。",
+      "source": "ai_generated"
+    }},
+    {{
+      "title": "注目すべきリスク要因",
+      "description": "海外売上比率が高く、為替変動の影響を受けやすい。円高局面では注意が必要。",
+      "source": "ai_generated"
+    }}
+  ],
   "risk_analysis": {{
     "major_risks": [
       "為替変動リスク（海外売上比率60%）",
@@ -390,110 +429,107 @@ overall_score = base_score + (全てのpositive_factorsのimpact合計) + (全�
 }}
 
 **繰り返しますが、上記のJSON形式のみを出力し、それ以外の説明文やコメントは一切含めないでください。**
+**investor_insightsは必ず3～5個の具体的で実用的なポイントを含めてください。**
 """
         return prompt.strip()
     
     def _parse_ai_response(self, response_text: str) -> Dict[str, Any]:
-        """AI応答のパース（強化版：前置き説明文対応）"""
+        """AI応答をパース（直接JSON対応版）"""
         try:
-            import re
+            # 応答テキストの前後の空白を除去
+            cleaned_text = response_text.strip()
             
-            # ステップ1: JSON部分を抽出
-            json_text = None
+            # ===== 修正: 直接JSONの場合を最初にチェック =====
+            # 応答が { で始まり } で終わる場合は直接JSONとして試行
+            if cleaned_text.startswith('{') and cleaned_text.endswith('}'):
+                try:
+                    result = json.loads(cleaned_text)
+                    logger.info("直接JSON形式でパース成功")
+                    return result
+                except json.JSONDecodeError as e:
+                    logger.debug(f"直接JSONパース失敗、他の形式を試行: {e}")
             
-            # パターン1: ```json ... ``` の形式
-            json_match = re.search(r'```json\s*\n(.*?)\n```', response_text, re.DOTALL)
-            if json_match:
-                json_text = json_match.group(1)
-                logger.info("パターン1でJSON抽出成功 (```json```)")
+            # ===== Markdownコードブロックからの抽出 =====
+            # パターン1: ```json ... ```
+            json_pattern = r'```json\s*([\s\S]*?)\s*```'
+            match = re.search(json_pattern, cleaned_text)
             
-            # パターン2: ``` ... ``` の形式（jsonなし）
-            if not json_text:
-                json_match = re.search(r'```\s*\n(.*?)\n```', response_text, re.DOTALL)
-                if json_match:
-                    json_text = json_match.group(1)
-                    logger.info("パターン2でJSON抽出成功 (```のみ)")
+            if match:
+                json_str = match.group(1).strip()
+                result = json.loads(json_str)
+                logger.info("Markdownコードブロックからパース成功")
+                return result
             
-            # パターン3: { ... } の形式（コードブロックなし）
-            if not json_text:
-                # 最初の { から最後の } までを抽出
-                start_idx = response_text.find('{')
-                if start_idx != -1:
-                    # 対応する閉じ括弧を探す（ネストを考慮）
-                    bracket_count = 0
-                    end_idx = -1
-                    for i in range(start_idx, len(response_text)):
-                        if response_text[i] == '{':
-                            bracket_count += 1
-                        elif response_text[i] == '}':
-                            bracket_count -= 1
-                            if bracket_count == 0:
-                                end_idx = i + 1
-                                break
-                    
-                    if end_idx != -1:
-                        json_text = response_text[start_idx:end_idx]
-                        logger.info("パターン3でJSON抽出成功 ({}のみ)")
+            # パターン2: ``` ... ``` (言語指定なし)
+            code_pattern = r'```\s*([\s\S]*?)\s*```'
+            match = re.search(code_pattern, cleaned_text)
             
-            if not json_text:
-                logger.error("JSON部分が見つかりませんでした")
-                logger.error(f"応答の最初の500文字: {response_text[:500]}")
-                raise ValueError("応答からJSON部分を抽出できませんでした")
+            if match:
+                json_str = match.group(1).strip()
+                if json_str.startswith('{'):
+                    result = json.loads(json_str)
+                    logger.info("コードブロック（言語指定なし）からパース成功")
+                    return result
             
-            # ステップ2: JSON文字列のクリーニング
-            json_text = json_text.strip()
+            # パターン3: JSONオブジェクトの開始・終了を探す
+            start_idx = cleaned_text.find('{')
+            end_idx = cleaned_text.rfind('}')
             
-            # 念のため、前後の不要な文字を除去
-            if not json_text.startswith('{'):
-                # { が見つかるまでスキップ
-                start = json_text.find('{')
-                if start != -1:
-                    json_text = json_text[start:]
+            if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+                json_str = cleaned_text[start_idx:end_idx + 1]
+                try:
+                    result = json.loads(json_str)
+                    logger.info("JSON部分抽出でパース成功")
+                    return result
+                except json.JSONDecodeError:
+                    pass
             
-            if not json_text.endswith('}'):
-                # 最後の } までを取得
-                end = json_text.rfind('}')
-                if end != -1:
-                    json_text = json_text[:end+1]
-            
-            logger.info(f"クリーニング後のJSON長: {len(json_text)} 文字")
-            logger.info(f"JSON開始: {json_text[:100]}")
-            
-            # ステップ3: JSONパース
-            result = json.loads(json_text)
-            logger.info("JSONパース成功")
-            
-            # ステップ4: 必須フィールドの検証
-            required_fields = ['overall_score', 'sentiment_label', 'investment_grade']
-            for field in required_fields:
-                if field not in result:
-                    logger.error(f"必須フィールド '{field}' が見つかりません")
-                    logger.error(f"結果キー: {list(result.keys())}")
-                    raise ValueError(f"必須フィールド '{field}' が見つかりません")
-            
-            # ステップ5: スコアの範囲チェック (0-100点)
-            if not 0 <= result['overall_score'] <= 100:
-                logger.warning(f"スコアが範囲外: {result['overall_score']}")
-                result['overall_score'] = max(0, min(100, result['overall_score']))
-            
-            logger.info(f"最終スコア: {result['overall_score']}点, グレード: {result['investment_grade']}")
-            
-            return result
+            # パースできなかった場合
+            logger.error(f"応答の最初の500文字: {cleaned_text[:500]}")
+            raise ValueError("応答からJSON部分を抽出できませんでした")
             
         except json.JSONDecodeError as e:
-            logger.error(f"JSON解析エラー: {e}")
-            logger.error(f"問題のJSON (最初の500文字): {json_text[:500] if json_text else 'N/A'}")
-            logger.error(f"元の応答 (最初の500文字): {response_text[:500]}")
-            raise
+            logger.error(f"JSONパースエラー: {e}")
+            logger.error(f"応答テキスト: {response_text[:1000]}")
+            raise ValueError(f"JSON解析エラー: {e}")
         except Exception as e:
             logger.error(f"応答パースエラー: {e}")
-            logger.error(f"エラー詳細: {str(e)}")
-            import traceback
-            logger.error(f"スタックトレース: {traceback.format_exc()}")
             raise
+        
+    
+    def _convert_investment_points_to_insights(self, result: Dict[str, Any]) -> list:
+        """investment_pointsをinvestor_insights形式に変換"""
+        insights = []
+        
+        # investment_pointsから変換
+        investment_points = result.get('investment_points', [])
+        for point in investment_points[:5]:
+            insights.append({
+                'title': point.get('title', 'ポイント'),
+                'description': point.get('description', ''),
+                'source': 'ai_generated'
+            })
+        
+        # 不足している場合はfuture_outlookから追加
+        if len(insights) < 3:
+            future_outlook = result.get('future_outlook', {})
+            if future_outlook.get('short_term'):
+                insights.append({
+                    'title': '短期見通し',
+                    'description': future_outlook['short_term'],
+                    'source': 'ai_generated'
+                })
+            if future_outlook.get('medium_term') and len(insights) < 3:
+                insights.append({
+                    'title': '中期見通し',
+                    'description': future_outlook['medium_term'],
+                    'source': 'ai_generated'
+                })
+        
+        return insights[:5]
     
     def _fallback_analysis(self, basic_analysis: Dict[str, Any] = None) -> Dict[str, Any]:
-        """AIが利用できない場合のフォールバック (0-100点版)"""
+        """AIが利用できない場合のフォールバック (0-100点版 + investor_insights含む)"""
         if basic_analysis:
             # -1.0~1.0 を 0~100 に変換
             old_score = basic_analysis.get('overall_score', 0.0)
@@ -520,6 +556,9 @@ overall_score = base_score + (全てのpositive_factorsのimpact合計) + (全�
         else:
             grade = 'D'
         
+        # フォールバック用のinvestor_insights生成
+        investor_insights = self._generate_fallback_investor_insights(score, sentiment)
+        
         return {
             'overall_score': score,
             'sentiment_label': sentiment,
@@ -540,6 +579,7 @@ overall_score = base_score + (全てのpositive_factorsのimpact合計) + (全�
                     'impact': 'neutral'
                 }
             ],
+            'investor_insights': investor_insights,
             'risk_analysis': {
                 'major_risks': ['詳細分析が実施されていません'],
                 'risk_severity': 'unknown',
@@ -556,6 +596,83 @@ overall_score = base_score + (全てのpositive_factorsのimpact合計) + (全�
                 'method': 'fallback_basic',
                 'api_available': False,
                 'timestamp': timezone.now().isoformat(),
-                'score_scale': '0-100'
+                'score_scale': '0-100',
+                'includes_investor_insights': True,
+                'api_calls': 0
             }
         }
+    
+    def _generate_fallback_investor_insights(self, score: float, sentiment: str) -> list:
+        """フォールバック用の投資家向け見解を生成"""
+        insights = []
+        
+        if sentiment == 'positive':
+            if score >= 75:
+                insights = [
+                    {
+                        'title': '強いポジティブシグナル',
+                        'description': f'感情分析スコア{score}点は非常に前向きな内容を示しており、成長期待が持てる企業として評価されます。',
+                        'source': 'fallback_generated'
+                    },
+                    {
+                        'title': '投資魅力度の向上',
+                        'description': '市場での評価向上が期待され、中長期的な投資戦略に適している可能性があります。',
+                        'source': 'fallback_generated'
+                    },
+                    {
+                        'title': '成長モメンタムの継続',
+                        'description': 'ポジティブな表現の一貫性から、持続的な成長軌道にあることが示唆されます。',
+                        'source': 'fallback_generated'
+                    }
+                ]
+            else:
+                insights = [
+                    {
+                        'title': '安定した成長基盤',
+                        'description': 'ポジティブな要素が確認され、着実な事業運営が期待されます。',
+                        'source': 'fallback_generated'
+                    },
+                    {
+                        'title': '継続的な改善',
+                        'description': '経営陣の前向きな取り組みが感じられ、今後の成長に期待が持てます。',
+                        'source': 'fallback_generated'
+                    }
+                ]
+        elif sentiment == 'negative':
+            insights = [
+                {
+                    'title': 'リスク要因の認識',
+                    'description': f'感情分析スコア{score}点は課題や困難な状況への言及を示し、慎重な投資判断が必要です。',
+                    'source': 'fallback_generated'
+                },
+                {
+                    'title': '構造改革の機会',
+                    'description': '現在の困難は将来の抜本的な改革や戦略転換への重要な契機となる可能性があります。',
+                    'source': 'fallback_generated'
+                },
+                {
+                    'title': '透明性の高い経営',
+                    'description': '困難な状況への率直な言及は、誠実で透明性の高い経営姿勢として評価できます。',
+                    'source': 'fallback_generated'
+                }
+            ]
+        else:
+            insights = [
+                {
+                    'title': '安定した事業基盤',
+                    'description': 'バランスの取れた経営により、安定したパフォーマンスが期待されます。',
+                    'source': 'fallback_generated'
+                },
+                {
+                    'title': 'ディフェンシブ投資適性',
+                    'description': '大きな変動リスクは低く、ディフェンシブな投資戦略に適しています。',
+                    'source': 'fallback_generated'
+                },
+                {
+                    'title': '冷静な経営判断',
+                    'description': '客観的で事実ベースの報告姿勢は、冷静な経営判断力を示しています。',
+                    'source': 'fallback_generated'
+                }
+            ]
+        
+        return insights

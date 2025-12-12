@@ -1,4 +1,8 @@
-# earnings_analysis/services/sentiment_analyzer.py（完全統合版）
+# earnings_analysis/services/sentiment_analyzer.py（API呼び出し最適化版）
+# 変更点: AIExpertAnalyzer結果を再利用し、GeminiInsightsGeneratorの重複呼び出しを削減
+# これにより1回の分析でのGemini API呼び出しが2回→1回に削減
+# 追加変更: シングルトンパターンで初期化コストを削減
+
 import re
 import csv
 import os
@@ -20,6 +24,31 @@ from .langextract_sentiment import LangExtractSentimentAnalyzer
 from .ai_expert_analyzer import AIExpertAnalyzer
 
 logger = logging.getLogger(__name__)
+
+# ===== シングルトンキャッシュ（初期化コスト削減） =====
+_ai_expert_instance = None
+_ai_expert_lock = threading.Lock()
+_sentiment_dict_instance = None
+_sentiment_dict_lock = threading.Lock()
+
+
+def get_ai_expert_singleton():
+    """AIExpertAnalyzerのシングルトンインスタンスを取得"""
+    global _ai_expert_instance
+    if _ai_expert_instance is None:
+        with _ai_expert_lock:
+            if _ai_expert_instance is None:
+                try:
+                    _ai_expert_instance = AIExpertAnalyzer()
+                    status = _ai_expert_instance.get_status()
+                    logger.info(f"AIExpertAnalyzer シングルトン初期化完了: {status}")
+                except Exception as e:
+                    logger.error(f"AIExpertAnalyzer シングルトン初期化エラー: {e}")
+                    _ai_expert_instance = None
+    return _ai_expert_instance
+
+
+# 注意: get_sentiment_dict_singleton は TransparentSentimentDictionary クラス定義後に定義
 
 @dataclass
 class AnalysisConfig:
@@ -277,6 +306,17 @@ class TransparentSentimentDictionary:
         self._build_patterns()
 
 
+def get_sentiment_dict_singleton(dict_path: Optional[str] = None):
+    """感情辞書のシングルトンインスタンスを取得"""
+    global _sentiment_dict_instance
+    if _sentiment_dict_instance is None:
+        with _sentiment_dict_lock:
+            if _sentiment_dict_instance is None:
+                _sentiment_dict_instance = TransparentSentimentDictionary(dict_path)
+                logger.info("感情辞書 シングルトン初期化完了")
+    return _sentiment_dict_instance
+
+
 class TransparentTextProcessor:
     """分かりやすいテキスト前処理クラス"""
     
@@ -328,7 +368,7 @@ class TransparentTextProcessor:
 
 
 class UserInsightGenerator:
-    """ユーザー向け見解生成クラス（Gemini API統合版・最終修正）"""
+    """ユーザー向け見解生成クラス（API呼び出し最適化版）"""
     
     def __init__(self):
         self.business_terms = {
@@ -351,56 +391,89 @@ class UserInsightGenerator:
     
 
     def generate_detailed_insights(self, analysis_result: Dict[str, Any], document_info: Dict[str, str]) -> Dict[str, Any]:
-        """詳細な見解を生成（Gemini API統合版・最終修正）"""
+        """詳細な見解を生成（API呼び出し最適化版 - AI Expert結果を再利用）"""
         overall_score = analysis_result.get('overall_score', 0)
         sentiment_label = analysis_result.get('sentiment_label', 'neutral')
         statistics = analysis_result.get('statistics', {})
         keyword_analysis = analysis_result.get('keyword_analysis', {})
         
-        # Gemini APIで投資家向けポイントを生成
+        # ========== API呼び出し最適化: AI Expert分析結果を再利用 ==========
         gemini_insights = {}
         
-        if self.gemini_generator:
-            try:
-                logger.info("Gemini API投資家向けポイント生成開始")
-                gemini_insights = self.gemini_generator.generate_investment_insights(analysis_result, document_info)
-                logger.info(f"Gemini API呼び出し完了: {gemini_insights.get('generated_by', 'unknown')}")
-                
-            except Exception as e:
-                logger.error(f"Gemini API投資家向けポイント生成エラー: {e}")
-                # エラー時の情報を保持
+        # 既にAI Expert分析結果がある場合はそれを使用（追加のAPI呼び出し不要）
+        if 'ai_expert_analysis' in analysis_result:
+            ai_expert = analysis_result['ai_expert_analysis']
+            investment_points_raw = ai_expert.get('investment_points', [])
+            
+            # investment_pointsを適切なフォーマットに変換
+            formatted_points = []
+            for point in investment_points_raw:
+                if isinstance(point, dict):
+                    formatted_points.append({
+                        'title': point.get('title', '分析ポイント'),
+                        'description': point.get('description', ''),
+                        'importance': point.get('importance', 'medium'),
+                        'impact': point.get('impact', 'neutral'),
+                        'source': 'ai_expert_reused'
+                    })
+            
+            if formatted_points:
+                logger.info(f"★ API呼び出し節約: AI Expert分析結果を再利用 ({len(formatted_points)}個のポイント)")
+                gemini_insights = {
+                    'investment_points': formatted_points,
+                    'generated_by': 'ai_expert_reused',
+                    'api_available': True,
+                    'api_success': True,
+                    'response_quality': 'high',
+                    'generation_timestamp': timezone.now().isoformat(),
+                    'points_count': len(formatted_points),
+                    'fallback_used': False,
+                    'api_call_saved': True,  # API呼び出し節約フラグ
+                    'reused_from': 'ai_expert_analysis'
+                }
+            else:
+                logger.info("AI Expert分析結果のinvestment_pointsが空のため、フォールバック使用")
+        
+        # AI Expert結果がない場合のみGemini APIを呼び出す
+        if not gemini_insights.get('investment_points'):
+            if self.gemini_generator:
+                try:
+                    logger.info("AI Expert結果なし - Gemini API投資家向けポイント生成開始")
+                    gemini_insights = self.gemini_generator.generate_investment_insights(analysis_result, document_info)
+                    logger.info(f"Gemini API呼び出し完了: {gemini_insights.get('generated_by', 'unknown')}")
+                    
+                except Exception as e:
+                    logger.error(f"Gemini API投資家向けポイント生成エラー: {e}")
+                    gemini_insights = {
+                        'investment_points': [],
+                        'generated_by': 'api_error',
+                        'api_available': False,
+                        'api_success': False,
+                        'fallback_used': True,
+                        'error_message': str(e),
+                        'generation_timestamp': timezone.now().isoformat(),
+                        'points_count': 0
+                    }
+            else:
+                logger.info("Gemini APIサービスが利用できないため、フォールバック処理を使用")
                 gemini_insights = {
                     'investment_points': [],
-                    'generated_by': 'api_error',
+                    'generated_by': 'service_unavailable',
                     'api_available': False,
                     'api_success': False,
                     'fallback_used': True,
-                    'error_message': str(e),
+                    'error_message': 'Gemini APIサービスが初期化されていません',
                     'generation_timestamp': timezone.now().isoformat(),
                     'points_count': 0
                 }
-        else:
-            logger.info("Gemini APIサービスが利用できないため、フォールバック処理を使用")
-            # Gemini APIサービス自体が初期化されていない場合
-            gemini_insights = {
-                'investment_points': [],
-                'generated_by': 'service_unavailable',
-                'api_available': False,
-                'api_success': False,
-                'fallback_used': True,
-                'error_message': 'Gemini APIサービスが初期化されていません',
-                'generation_timestamp': timezone.now().isoformat(),
-                'points_count': 0
-            }
         
-        # フォールバック処理: Gemini APIが失敗した場合の基本ポイント生成
+        # フォールバック処理: 投資ポイントが空の場合の基本ポイント生成
         if not gemini_insights.get('investment_points') or gemini_insights.get('generated_by') in ['api_error', 'service_unavailable', 'fallback_logic']:
             if not gemini_insights.get('investment_points'):
-                logger.info("Gemini APIポイントが空のため、フォールバックポイントを生成")
+                logger.info("投資ポイントが空のため、フォールバックポイントを生成")
                 fallback_points = self._generate_fallback_investment_points(overall_score, sentiment_label, keyword_analysis)
                 gemini_insights['investment_points'] = fallback_points.get('investment_points', [])
                 
-                # フォールバック使用の記録
                 if gemini_insights.get('generated_by') not in ['api_error', 'service_unavailable']:
                     gemini_insights['generated_by'] = 'fallback_logic'
                     gemini_insights['fallback_used'] = True
@@ -429,13 +502,15 @@ class UserInsightGenerator:
                 'points_count': gemini_insights.get('points_count', 0),
                 'model_used': gemini_insights.get('model_used'),
                 'successful_parses': gemini_insights.get('successful_parses'),
-                'fallback_reason': gemini_insights.get('fallback_reason')
+                'fallback_reason': gemini_insights.get('fallback_reason'),
+                'api_call_saved': gemini_insights.get('api_call_saved', False),  # 追加
+                'reused_from': gemini_insights.get('reused_from')  # 追加
             }
         }
         
         # デバッグ情報をログ出力
         logger.info(f"見解生成完了 - generated_by: {insights['gemini_metadata']['generated_by']}, "
-                   f"api_success: {insights['gemini_metadata']['api_success']}, "
+                   f"api_call_saved: {insights['gemini_metadata'].get('api_call_saved', False)}, "
                    f"points_count: {insights['gemini_metadata']['points_count']}")
         
         return insights
@@ -779,25 +854,17 @@ class TransparentSentimentAnalyzer:
     
     def __init__(self, config: Optional[AnalysisConfig] = None):
         self.config = config or AnalysisConfig()
-        self.dictionary = TransparentSentimentDictionary()
+        # 感情辞書をシングルトンから取得（初期化コスト削減）
+        self.dictionary = get_sentiment_dict_singleton()
         self.text_processor = TransparentTextProcessor()
         self.insight_generator = UserInsightGenerator()
         
-        # AI専門家アナライザーを追加
-        try:
-            self.ai_expert = AIExpertAnalyzer()
-            if self.ai_expert:
-                status = self.ai_expert.get_status()
-                logger.info(f"AIExpertAnalyzer初期化完了: {status}")
-            else:
-                logger.warning("AIExpertAnalyzerがNoneです")
-        except ImportError as e:
-            logger.warning(f"AIExpertAnalyzerがインポートできません: {e}")
-            self.ai_expert = None
-        except Exception as e:
-            logger.error(f"AIExpertAnalyzer初期化エラー: {e}")
-            logger.error(f"エラー詳細: {traceback.format_exc()}")
-            self.ai_expert = None
+        # AI専門家アナライザーをシングルトンから取得（初期化コスト削減）
+        self.ai_expert = get_ai_expert_singleton()
+        if self.ai_expert:
+            logger.debug("AIExpertAnalyzer シングルトン参照取得")
+        else:
+            logger.warning("AIExpertAnalyzer シングルトンが利用不可")
     
     def analyze_text(self, text: str, session_id: str = None, document_info: Dict[str, str] = None) -> Dict[str, Any]:
         """透明性の高い感情分析（AI専門家統合版・デバッグ強化版）"""
@@ -902,8 +969,8 @@ class TransparentSentimentAnalyzer:
                     'analyzed_at': timezone.now().isoformat(),
                     'dictionary_size': len(self.dictionary.sentiment_dict),
                     'session_id': session_id,
-                    'analysis_version': '3.0_ai_expert_integrated_debug',
-                    'features_enabled': ['重複カウント', '否定文対応', '複合語処理', '文脈強化']
+                    'analysis_version': '3.1_api_optimized',  # バージョン更新
+                    'features_enabled': ['重複カウント', '否定文対応', '複合語処理', '文脈強化', 'API呼び出し最適化']
                 }
             }
             
@@ -915,7 +982,7 @@ class TransparentSentimentAnalyzer:
             if self.ai_expert and self.ai_expert.api_available and document_info:
                 ai_analysis_attempted = True
                 try:
-                    logger.info("AI専門家による追加分析を開始")
+                    logger.info("★ AI専門家による分析を開始（1回のAPI呼び出し）")
                     
                     # テキストを適切な長さに制限（API制限対策）
                     max_text_length = 30000
@@ -953,7 +1020,7 @@ class TransparentSentimentAnalyzer:
                         basic_result['ai_sentiment_label'] = ai_result.get('sentiment_label')
                         
                         ai_analysis_success = True
-                        logger.info("AI専門家分析完了し統合成功")
+                        logger.info("★ AI専門家分析完了 - investment_pointsはユーザー見解生成で再利用されます")
                         logger.info(f"投資グレード: {ai_result.get('investment_grade')}")
                         logger.info(f"AIスコア: {ai_result.get('overall_score')}")
                     else:
@@ -994,7 +1061,8 @@ class TransparentSentimentAnalyzer:
             logger.info(f"AI分析成功: {ai_analysis_success}")
             logger.info("=" * 60)
             
-            # ユーザー向け詳細見解を生成（既存ロジック）
+            # ユーザー向け詳細見解を生成（既存ロジック - 最適化済み）
+            # ここでAI Expert結果が再利用され、追加のAPI呼び出しは行われない
             if document_info:
                 user_insights = self.insight_generator.generate_detailed_insights(basic_result, document_info)
                 basic_result['user_insights'] = user_insights
@@ -1148,9 +1216,9 @@ class TransparentSentimentAnalyzer:
                     'dictionary_size': len(self.dictionary.sentiment_dict),
                     'session_id': session_id,
                     'sections_analyzed': list(text_sections.keys()),
-                    'analysis_version': '3.0_ai_expert_sections_debug',
+                    'analysis_version': '3.1_api_optimized_sections',  # バージョン更新
                     'integration_method': 'complete_section_aggregation',
-                    'features_enabled': ['重複カウント', '否定文対応', '複合語処理', 'セクション統合強化']
+                    'features_enabled': ['重複カウント', '否定文対応', '複合語処理', 'セクション統合強化', 'API呼び出し最適化']
                 }
             }
             
@@ -1162,7 +1230,7 @@ class TransparentSentimentAnalyzer:
             if self.ai_expert and self.ai_expert.api_available and document_info:
                 ai_analysis_attempted = True
                 try:
-                    logger.info("統合テキストでAI専門家分析を実行")
+                    logger.info("★ 統合テキストでAI専門家分析を実行（1回のAPI呼び出し）")
                     
                     max_text_length = 30000
                     analysis_text = combined_text[:max_text_length] if len(combined_text) > max_text_length else combined_text
@@ -1193,7 +1261,7 @@ class TransparentSentimentAnalyzer:
                         basic_result['ai_sentiment_label'] = ai_result.get('sentiment_label')
                         
                         ai_analysis_success = True
-                        logger.info("セクション統合AI分析完了")
+                        logger.info("★ セクション統合AI分析完了 - investment_pointsはユーザー見解生成で再利用されます")
                     else:
                         ai_analysis_error = "AI分析結果が不完全です"
                         logger.warning(ai_analysis_error)
@@ -1223,7 +1291,7 @@ class TransparentSentimentAnalyzer:
                 'has_ai_expert_analysis': 'ai_expert_analysis' in basic_result
             }
             
-            # ユーザー向け詳細見解を生成
+            # ユーザー向け詳細見解を生成（最適化済み - AI Expert結果を再利用）
             if document_info:
                 user_insights = self.insight_generator.generate_detailed_insights(basic_result, document_info)
                 basic_result['user_insights'] = user_insights
@@ -1775,8 +1843,8 @@ class TransparentSentimentAnalyzer:
                 'analyzed_at': timezone.now().isoformat(),
                 'dictionary_size': len(self.dictionary.sentiment_dict),
                 'session_id': session_id,
-                'analysis_version': '3.0_complete_empty_debug',
-                'features_enabled': ['重複カウント', '否定文対応', '複合語処理', '文脈強化']
+                'analysis_version': '3.1_api_optimized_empty',
+                'features_enabled': ['重複カウント', '否定文対応', '複合語処理', '文脈強化', 'API呼び出し最適化']
             }
         }
 
@@ -1814,7 +1882,7 @@ class SentimentAnalysisService:
                         'status': 'already_analyzed',
                         'session_id': str(recent_session.session_id),
                         'result': recent_session.analysis_result,
-                        'message': '1時間以内に分析済みです（完全統合版）'
+                        'message': '1時間以内に分析済みです（API呼び出し最適化版）'
                     }
                 else:
                     # 期限切れセッションがある場合はログに記録
@@ -1844,7 +1912,7 @@ class SentimentAnalysisService:
             return {
                 'status': 'started',
                 'session_id': str(session.session_id),
-                'message': '完全統合版感情分析（重複カウント・否定文対応）を開始しました'
+                'message': 'API呼び出し最適化版感情分析を開始しました（Gemini API呼び出し: 1回）'
             }
             
         except DocumentMetadata.DoesNotExist:
@@ -1896,16 +1964,16 @@ class SentimentAnalysisService:
             if session.processing_status == 'PROCESSING':
                 result = session.analysis_result or {}
                 progress = result.get('progress', 50)
-                message = result.get('current_step', '完全統合版で詳細見解を生成中...')
+                message = result.get('current_step', 'API最適化版で詳細見解を生成中...')
             elif session.processing_status == 'COMPLETED':
                 progress = 100
-                message = '完全統合版詳細分析・見解生成完了'
+                message = 'API最適化版詳細分析・見解生成完了'
             elif session.processing_status == 'FAILED':
                 progress = 100
                 message = f'分析失敗: {session.error_message}'
             else:
                 progress = 0
-                message = '完全統合版エンジン待機中...'
+                message = 'API最適化版エンジン待機中...'
             
             return {
                 'progress': progress,
@@ -1932,7 +2000,7 @@ class SentimentAnalysisService:
             elif session.processing_status == 'FAILED':
                 return {'status': 'failed', 'error': session.error_message}
             else:
-                return {'status': 'processing', 'message': '完全統合版で分析中です'}
+                return {'status': 'processing', 'message': 'API最適化版で分析中です'}
                 
         except SentimentAnalysisSession.DoesNotExist:
             return {'status': 'not_found', 'message': 'セッションが見つかりません'}
@@ -1946,7 +2014,7 @@ class SentimentAnalysisService:
         try:
             session = SentimentAnalysisSession.objects.get(id=session_id)
             session.processing_status = 'PROCESSING'
-            session.analysis_result = {'progress': 5, 'current_step': '完全統合版エンジン初期化中...'}
+            session.analysis_result = {'progress': 5, 'current_step': 'API最適化版エンジン初期化中...'}
             session.save()
             
             # ===== 書類情報を準備（重要：ここが問題だった） =====
@@ -1981,7 +2049,7 @@ class SentimentAnalysisService:
                 xbrl_text_sections = None
             
             if not xbrl_text_sections:
-                session.analysis_result = {'progress': 40, 'current_step': '基本情報を使用して完全統合版分析中...'}
+                session.analysis_result = {'progress': 40, 'current_step': '基本情報を使用してAPI最適化版分析中...'}
                 session.save()
                 
                 logger.info("XBRLテキストなし - 基本テキストで分析")
@@ -1995,7 +2063,7 @@ class SentimentAnalysisService:
                 
                 logger.info(f"XBRLテキストあり - {len(xbrl_text_sections)}セクションで分析")
                 
-                session.analysis_result = {'progress': 70, 'current_step': '完全統合版感情分析実行中（重複カウント・否定文対応）...'}
+                session.analysis_result = {'progress': 70, 'current_step': 'API最適化版感情分析実行中...'}
                 session.save()
                 
                 # ここでdocument_infoを渡す（重要！）
@@ -2016,6 +2084,13 @@ class SentimentAnalysisService:
                     logger.warning(f"  AI分析成功: {ai_meta.get('success')}")
                     logger.warning(f"  エラー: {ai_meta.get('error')}")
             
+            # API呼び出し節約の確認
+            if 'user_insights' in result and 'gemini_metadata' in result['user_insights']:
+                gemini_meta = result['user_insights']['gemini_metadata']
+                if gemini_meta.get('api_call_saved'):
+                    logger.info("★ API呼び出し節約成功: AI Expert結果を再利用")
+                    logger.info(f"  再利用元: {gemini_meta.get('reused_from')}")
+            
             # セッション更新
             session.overall_score = result['overall_score']
             session.sentiment_label = result['sentiment_label']
@@ -2033,10 +2108,10 @@ class SentimentAnalysisService:
                 analysis_duration=analysis_duration
             )
             
-            logger.info(f"完全統合版感情分析完了: {session.session_id} ({analysis_duration:.2f}秒)")
+            logger.info(f"API最適化版感情分析完了: {session.session_id} ({analysis_duration:.2f}秒)")
             
         except Exception as e:
-            logger.error(f"完全統合版感情分析エラー: {session_id} - {e}")
+            logger.error(f"API最適化版感情分析エラー: {session_id} - {e}")
             logger.error(f"エラー詳細: {traceback.format_exc()}")
             
             try:
