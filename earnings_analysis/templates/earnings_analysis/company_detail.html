@@ -1,7 +1,905 @@
-<!-- earnings_analysis/templates/copomo/company_detail.html -->
+<!-- earnings_analysis/templates/earnings_analysis/company_detail.html -->
 {% extends 'earnings_analysis/simple_base.html' %}
 
-{% block title %}{{ company.company_name }} - 企業詳細 -コポモ{% endblock %}
+{% block title %}{{ company.company_name }} - 企業詳細 - コポモ{% endblock %}
+
+{% block extra_css %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --primary-500: #3b82f6;
+    --primary-600: #2563eb;
+    --primary-700: #1d4ed8;
+    --primary-100: #dbeafe;
+    --primary-50: #eff6ff;
+    --success-500: #10b981;
+    --success-600: #059669;
+    --success-100: #d1fae5;
+    --success-50: #ecfdf5;
+    --warning-500: #f59e0b;
+    --warning-600: #d97706;
+    --warning-100: #fef3c7;
+    --warning-50: #fffbeb;
+    --danger-500: #ef4444;
+    --danger-600: #dc2626;
+    --danger-100: #fee2e2;
+    --danger-50: #fef2f2;
+    --info-500: #8b5cf6;
+    --info-100: #ede9fe;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.5rem;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+}
+
+body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+/* パンくず */
+.breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0;
+    margin: 0 0 1.5rem;
+    list-style: none;
+    font-size: 0.875rem;
+}
+
+.breadcrumb-item {
+    display: flex;
+    align-items: center;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: '/';
+    margin-right: 0.5rem;
+    color: var(--gray-400);
+}
+
+.breadcrumb-item a {
+    color: var(--gray-600);
+    text-decoration: none;
+}
+
+.breadcrumb-item a:hover {
+    color: var(--primary-600);
+}
+
+.breadcrumb-item.active {
+    color: var(--gray-500);
+}
+
+/* 企業ヘッダー */
+.company-header {
+    background: linear-gradient(135deg, var(--primary-600) 0%, #4f46e5 50%, #7c3aed 100%);
+    color: white;
+    padding: 2rem 1.5rem;
+    border-radius: var(--radius-2xl);
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.company-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 60%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+    pointer-events: none;
+}
+
+@media (min-width: 768px) {
+    .company-header {
+        padding: 2.5rem 2rem;
+    }
+}
+
+.company-header-content {
+    position: relative;
+    z-index: 1;
+}
+
+.company-header-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .company-header-inner {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+}
+
+.company-title {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+    .company-title {
+        font-size: 2rem;
+    }
+}
+
+.company-kana {
+    font-size: 1rem;
+    opacity: 0.9;
+    margin-bottom: 1rem;
+}
+
+.company-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.company-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    background: rgba(255,255,255,0.2);
+    border-radius: var(--radius-lg);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    backdrop-filter: blur(4px);
+}
+
+.company-badge-warning {
+    background: var(--warning-500);
+    color: var(--gray-900);
+}
+
+.company-latest-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: rgba(255,255,255,0.15);
+    border-radius: var(--radius-xl);
+    backdrop-filter: blur(4px);
+}
+
+.company-latest-badge i {
+    font-size: 1.25rem;
+}
+
+/* メインレイアウト */
+.main-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+@media (min-width: 992px) {
+    .main-layout {
+        grid-template-columns: 1fr 320px;
+    }
+}
+
+/* カード */
+.card {
+    background: white;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-100);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--gray-100);
+    background: var(--gray-50);
+}
+
+.card-header h5,
+.card-header h6 {
+    margin: 0;
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    color: var(--gray-800);
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+@media (min-width: 768px) {
+    .card-header {
+        padding: 1.25rem 1.5rem;
+    }
+    .card-body {
+        padding: 1.5rem;
+    }
+}
+
+/* ワンクリック分析セクション */
+.analysis-hero-card {
+    border: none;
+    overflow: hidden;
+}
+
+.analysis-hero-header {
+    background: linear-gradient(135deg, var(--danger-500) 0%, #f97316 100%);
+    color: white;
+    padding: 1.25rem 1.5rem;
+}
+
+.analysis-hero-header h5 {
+    color: white;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.analysis-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.625rem;
+    background: rgba(255,255,255,0.25);
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+}
+
+.analysis-hero-body {
+    padding: 1.5rem;
+}
+
+.analysis-hero-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .analysis-hero-inner {
+        flex-direction: row;
+        align-items: center;
+    }
+}
+
+.analysis-hero-info {
+    flex: 1;
+}
+
+.analysis-hero-title {
+    font-weight: 700;
+    color: var(--gray-800);
+    margin-bottom: 0.75rem;
+    font-size: 1.125rem;
+}
+
+.analysis-hero-meta {
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.analysis-hero-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    margin-bottom: 0.375rem;
+}
+
+.analysis-hero-meta-item:last-child {
+    margin-bottom: 0;
+}
+
+.analysis-hero-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.8125rem;
+}
+
+.analysis-hero-feature {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: var(--success-600);
+}
+
+.analysis-hero-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: stretch;
+}
+
+@media (min-width: 768px) {
+    .analysis-hero-actions {
+        align-items: flex-end;
+        min-width: 200px;
+    }
+}
+
+.analysis-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    min-height: 52px;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, var(--danger-500), var(--danger-600));
+    color: white;
+    border: none;
+    border-radius: var(--radius-lg);
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    text-decoration: none;
+    width: 100%;
+}
+
+.analysis-btn-primary:hover {
+    background: linear-gradient(135deg, var(--danger-600), #b91c1c);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
+.analysis-done-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+    color: var(--success-600);
+}
+
+/* 推奨書類セクション */
+.recommended-card {
+    border: 2px solid var(--warning-100);
+}
+
+.recommended-header {
+    background: linear-gradient(135deg, var(--warning-50), #fef9c3);
+}
+
+.recommended-header h5 {
+    color: var(--warning-600);
+}
+
+.doc-item {
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    transition: all 0.2s ease;
+}
+
+.doc-item:last-child {
+    margin-bottom: 0;
+}
+
+.doc-item:hover {
+    border-color: var(--primary-300);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.doc-item-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .doc-item-inner {
+        flex-direction: row;
+        align-items: center;
+    }
+}
+
+.doc-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.doc-item-title {
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 0.5rem;
+}
+
+.doc-item-title a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.doc-item-title a:hover {
+    color: var(--primary-600);
+}
+
+.doc-item-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    font-size: 0.8125rem;
+    color: var(--gray-500);
+    margin-bottom: 0.5rem;
+}
+
+.doc-item-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.doc-item-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+}
+
+.badge-sm {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--radius-md);
+    font-size: 0.6875rem;
+    font-weight: 600;
+}
+
+.badge-primary { background: var(--primary-100); color: var(--primary-700); }
+.badge-danger { background: var(--danger-100); color: var(--danger-600); }
+.badge-success { background: var(--success-100); color: var(--success-600); }
+.badge-warning { background: var(--warning-100); color: var(--warning-600); }
+
+.doc-item-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+    .doc-item-actions {
+        width: 160px;
+    }
+}
+
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    min-height: 40px;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    cursor: pointer;
+}
+
+.action-btn-outline-success {
+    background: white;
+    border-color: var(--success-500);
+    color: var(--success-600);
+}
+
+.action-btn-outline-success:hover {
+    background: var(--success-500);
+    color: white;
+    text-decoration: none;
+}
+
+.action-btn-outline-primary {
+    background: white;
+    border-color: var(--primary-500);
+    color: var(--primary-600);
+}
+
+.action-btn-outline-primary:hover {
+    background: var(--primary-500);
+    color: white;
+    text-decoration: none;
+}
+
+/* 財務関連書類セクション */
+.financial-doc-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.financial-doc-item:last-child {
+    border-bottom: none;
+}
+
+@media (min-width: 768px) {
+    .financial-doc-item {
+        flex-direction: row;
+        align-items: center;
+    }
+}
+
+.financial-doc-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.financial-doc-title {
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 0.25rem;
+}
+
+.financial-doc-title a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.financial-doc-title a:hover {
+    color: var(--primary-600);
+}
+
+.financial-doc-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--gray-500);
+}
+
+.financial-doc-actions {
+    display: flex;
+    gap: 0.375rem;
+    flex-shrink: 0;
+}
+
+.action-btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    border: 1px solid var(--gray-200);
+    background: white;
+    color: var(--gray-600);
+    text-decoration: none;
+}
+
+.action-btn-icon:hover {
+    border-color: var(--primary-500);
+    color: var(--primary-600);
+    background: var(--primary-50);
+    text-decoration: none;
+}
+
+.action-btn-icon-primary:hover {
+    background: var(--primary-500);
+    color: white;
+    border-color: var(--primary-500);
+}
+
+.action-btn-icon-success:hover {
+    background: var(--success-500);
+    color: white;
+    border-color: var(--success-500);
+}
+
+/* 折りたたみボタン */
+.collapse-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    background: white;
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    color: var(--gray-600);
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.collapse-toggle-btn:hover {
+    border-color: var(--primary-500);
+    color: var(--primary-600);
+    background: var(--primary-50);
+}
+
+/* サイドバーカード */
+.sidebar-card {
+    margin-bottom: 1rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.stat-box {
+    text-align: center;
+    padding: 1rem;
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+}
+
+.stat-box-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-600);
+    margin-bottom: 0.125rem;
+}
+
+.stat-box-label {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+}
+
+.doc-type-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.doc-type-item:last-child {
+    border-bottom: none;
+}
+
+.doc-type-name {
+    font-size: 0.8125rem;
+    color: var(--gray-700);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 180px;
+}
+
+.doc-type-count {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.125rem 0.5rem;
+    background: var(--primary-100);
+    color: var(--primary-700);
+    border-radius: var(--radius-md);
+}
+
+/* 関連企業 */
+.related-company-item {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.related-company-item:last-child {
+    border-bottom: none;
+}
+
+.related-company-name {
+    font-weight: 600;
+    color: var(--gray-800);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.related-company-name:hover {
+    color: var(--primary-600);
+}
+
+.related-company-code {
+    font-size: 0.8125rem;
+    color: var(--gray-500);
+    margin-top: 0.125rem;
+}
+
+/* アクションボタン群 */
+.action-buttons-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sidebar-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-lg);
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: 2px solid var(--gray-200);
+    background: white;
+    color: var(--gray-700);
+}
+
+.sidebar-action-btn:hover {
+    border-color: var(--primary-500);
+    color: var(--primary-600);
+    background: var(--primary-50);
+    text-decoration: none;
+}
+
+.sidebar-action-btn-primary {
+    background: linear-gradient(135deg, var(--danger-500), var(--danger-600));
+    color: white;
+    border: none;
+}
+
+.sidebar-action-btn-primary:hover {
+    background: linear-gradient(135deg, var(--danger-600), #b91c1c);
+    color: white;
+}
+
+/* モーダル */
+.modal-custom .modal-content {
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    border: none;
+}
+
+.modal-custom .modal-header {
+    background: linear-gradient(135deg, var(--danger-500), #f97316);
+    color: white;
+    border: none;
+    padding: 1.25rem 1.5rem;
+}
+
+.modal-custom .modal-title {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-weight: 700;
+}
+
+.modal-custom .modal-body {
+    padding: 1.5rem;
+}
+
+.modal-custom .modal-footer {
+    border: none;
+    padding: 1rem 1.5rem 1.5rem;
+}
+
+.modal-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-100);
+    border-radius: 50%;
+    font-size: 2rem;
+    color: var(--primary-600);
+}
+
+.modal-feature-card {
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    height: 100%;
+}
+
+.modal-feature-title {
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.modal-feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+.modal-feature-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.375rem;
+}
+
+.modal-feature-list li:last-child {
+    margin-bottom: 0;
+}
+
+/* アニメーション */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
+.delay-1 { animation-delay: 0.1s; opacity: 0; }
+.delay-2 { animation-delay: 0.2s; opacity: 0; }
+.delay-3 { animation-delay: 0.3s; opacity: 0; }
+
+/* レスポンシブ */
+@media (max-width: 767.98px) {
+    .company-title {
+        font-size: 1.5rem;
+    }
+    
+    .company-badges {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .financial-doc-actions {
+        justify-content: flex-start;
+    }
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <nav aria-label="breadcrumb">
@@ -11,77 +909,99 @@
     </ol>
 </nav>
 
-<!-- Company Header -->
-<div class="page-header mb-4">
-    <div class="row align-items-center">
-        <div class="col-12 col-md-8">
-            <h1 class="h2 h-md-1 mb-2 text-truncate">{{ company.company_name }}</h1>
-            {% if company.company_name_kana %}
-                <p class="h6 h-md-5 mb-3 opacity-90 text-truncate">{{ company.company_name_kana }}</p>
-            {% endif %}
-            <div class="d-flex flex-wrap gap-2">
-                {% if company.securities_code %}
-                    <span class="badge badge-warning text-dark">証券: {{ company.securities_code }}</span>
+<!-- 企業ヘッダー -->
+<header class="company-header animate-fade-in-up">
+    <div class="company-header-content">
+        <div class="company-header-inner">
+            <div>
+                <h1 class="company-title">
+                    <i class="fas fa-building"></i>
+                    {{ company.company_name }}
+                </h1>
+                {% if company.company_name_kana %}
+                    <p class="company-kana">{{ company.company_name_kana }}</p>
                 {% endif %}
-                <span class="badge bg-light text-dark">EDINET: {{ company.edinet_code }}</span>
-                <span class="badge bg-success">書類{{ total_documents }}件</span>
+                <div class="company-badges">
+                    {% if company.securities_code %}
+                        <span class="company-badge company-badge-warning">
+                            <i class="fas fa-chart-line"></i>
+                            証券コード: {{ company.securities_code }}
+                        </span>
+                    {% endif %}
+                    <span class="company-badge">
+                        <i class="fas fa-id-card"></i>
+                        EDINET: {{ company.edinet_code }}
+                    </span>
+                    <span class="company-badge">
+                        <i class="fas fa-file-alt"></i>
+                        書類 {{ total_documents }}件
+                    </span>
+                </div>
             </div>
-        </div>
-        <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
             {% if latest_doc %}
-                <div class="badge bg-primary bg-opacity-20 px-3 py-2">
-                    <i class="fas fa-calendar me-1"></i>
-                    最新: {{ latest_doc.submit_date_time|date:"Y/m/d" }}
+                <div class="company-latest-badge">
+                    <i class="fas fa-calendar-check"></i>
+                    <div>
+                        <div style="font-size: 0.75rem; opacity: 0.9;">最新提出</div>
+                        <div style="font-weight: 600;">{{ latest_doc.submit_date_time|date:"Y/m/d" }}</div>
+                    </div>
                 </div>
             {% endif %}
         </div>
     </div>
-</div>
+</header>
 
-<div class="row g-3 g-md-4">
-    <!-- Main Content -->
-    <div class="col-12 col-lg-8">
-        <!-- One-Click Analysis Section -->
+<div class="main-layout">
+    <!-- メインコンテンツ -->
+    <div class="main-content">
+        <!-- ワンクリック分析セクション -->
         {% if latest_financial %}
-            <div class="card analysis-card mb-4">
-                <div class="card-header" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white;">
-                    <h5 class="mb-0 d-flex align-items-center">
-                        <i class="fas fa-rocket me-2"></i>
+            <div class="card analysis-hero-card animate-fade-in-up delay-1">
+                <div class="analysis-hero-header">
+                    <h5>
+                        <i class="fas fa-rocket"></i>
                         ワンクリック分析
-                        <span class="badge bg-light text-dark ms-2 small">推奨</span>
+                        <span class="analysis-hero-badge">推奨</span>
                     </h5>
                 </div>
-                <div class="card-body">
-                    <div class="row align-items-center g-3">
-                        <div class="col-12 col-md-8">
-                            <h6 class="mb-2">最新決算書類の自動分析</h6>
-                            <div class="mb-2">
-                                <div class="small">
-                                    <strong>対象書類:</strong> 
-                                    <span class="text-truncate d-inline-block" style="max-width: 250px;">
-                                        {{ latest_financial.doc_description }}
-                                    </span>
+                <div class="analysis-hero-body">
+                    <div class="analysis-hero-inner">
+                        <div class="analysis-hero-info">
+                            <h6 class="analysis-hero-title">最新決算書類の自動分析</h6>
+                            <div class="analysis-hero-meta">
+                                <div class="analysis-hero-meta-item">
+                                    <i class="fas fa-file-alt text-primary"></i>
+                                    <strong>対象書類:</strong>
+                                    <span class="text-truncate" style="max-width: 300px;">{{ latest_financial.doc_description }}</span>
                                 </div>
-                                <div class="small">
-                                    <strong>提出日:</strong> {{ latest_financial.submit_date_time|date:"Y年m月d日" }}
+                                <div class="analysis-hero-meta-item">
+                                    <i class="fas fa-calendar text-success"></i>
+                                    <strong>提出日:</strong>
+                                    {{ latest_financial.submit_date_time|date:"Y年m月d日" }}
                                 </div>
                             </div>
-                            <div class="small text-success">
-                                <i class="fas fa-check-circle me-1"></i>最新決算書類の自動分析
-                                <span class="d-block d-sm-inline ms-sm-3 mt-1 mt-sm-0">
-                                    <i class="fas fa-clock me-1"></i>約1-2分で完了
+                            <div class="analysis-hero-features">
+                                <span class="analysis-hero-feature">
+                                    <i class="fas fa-check-circle"></i>
+                                    最新決算書類を自動選択
+                                </span>
+                                <span class="analysis-hero-feature">
+                                    <i class="fas fa-clock"></i>
+                                    約1-2分で完了
                                 </span>
                             </div>
                         </div>
-                        <div class="col-12 col-md-4 text-center text-md-end">
+                        <div class="analysis-hero-actions">
                             <a href="{% url 'copomo:sentiment-analysis' latest_financial.doc_id %}" 
-                               class="btn btn-danger btn-lg w-100 w-md-auto mb-2">
-                                <i class="fas fa-rocket me-2"></i>今すぐ分析開始
+                               class="analysis-btn-primary">
+                                <i class="fas fa-rocket"></i>
+                                今すぐ分析開始
                             </a>
                             {% if has_recent_analysis %}
-                                <div class="small text-success">
-                                    <i class="fas fa-check me-1"></i>1時間以内に分析済み
-                                </div>
+                                <span class="analysis-done-badge">
+                                    <i class="fas fa-check"></i>
+                                    1時間以内に分析済み
+                                </span>
                             {% endif %}
                         </div>
                     </div>
@@ -91,57 +1011,59 @@
 
         {% include 'earnings_analysis/ads/ad_responsive.html' %}
 
-        <!-- Recommended Documents Section -->
+        <!-- 分析推奨書類 -->
         {% if recommended_docs %}
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0 d-flex align-items-center">
-                        <i class="fas fa-star text-warning me-2"></i>
+            <div class="card recommended-card animate-fade-in-up delay-2">
+                <div class="card-header recommended-header">
+                    <h5>
+                        <i class="fas fa-star"></i>
                         分析推奨書類
-                        <span class="badge badge-warning text-dark ms-2 small">{{ recommended_docs|length }}件</span>
+                        <span class="badge-sm badge-warning ms-2">{{ recommended_docs|length }}件</span>
                     </h5>
                 </div>
                 <div class="card-body">
                     {% for doc in recommended_docs %}
-                        <div class="border rounded p-3 mb-3">
-                            <div class="row align-items-center g-2">
-                                <div class="col-12 col-md-8">
-                                    <h6 class="mb-1">
-                                        <a href="{% url 'copomo:document-detail-ui' doc.doc_id %}" 
-                                           class="text-decoration-none text-truncate-2">
+                        <div class="doc-item">
+                            <div class="doc-item-inner">
+                                <div class="doc-item-info">
+                                    <h6 class="doc-item-title">
+                                        <a href="{% url 'copomo:document-detail-ui' doc.doc_id %}">
                                             {{ doc.doc_description }}
                                         </a>
                                     </h6>
-                                    <div class="small text-muted mb-2">
-                                        <i class="fas fa-calendar me-1"></i>{{ doc.submit_date_time|date:"Y/m/d" }}
+                                    <div class="doc-item-meta">
+                                        <span class="doc-item-meta-item">
+                                            <i class="fas fa-calendar"></i>
+                                            {{ doc.submit_date_time|date:"Y/m/d" }}
+                                        </span>
                                         {% if doc.period_start and doc.period_end %}
-                                            <span class="d-block d-sm-inline ms-sm-3">
-                                                <i class="fas fa-clock me-1"></i>
+                                            <span class="doc-item-meta-item">
+                                                <i class="fas fa-clock"></i>
                                                 {{ doc.period_start|date:"Y/m" }} 〜 {{ doc.period_end|date:"Y/m" }}
                                             </span>
                                         {% endif %}
                                     </div>
-                                    <div class="d-flex flex-wrap gap-1">
+                                    <div class="doc-item-badges">
                                         {% if doc.xbrl_flag %}
-                                            <span class="badge bg-primary small">XBRL</span>
+                                            <span class="badge-sm badge-primary">XBRL</span>
                                         {% endif %}
                                         {% if doc.pdf_flag %}
-                                            <span class="badge bg-danger small">PDF</span>
+                                            <span class="badge-sm badge-danger">PDF</span>
                                         {% endif %}
-                                        <span class="badge bg-success small">分析最適</span>
+                                        <span class="badge-sm badge-success">分析最適</span>
                                     </div>
                                 </div>
-                                <div class="col-12 col-md-4">
-                                    <div class="d-grid gap-1">
-                                        <a href="{% url 'copomo:sentiment-analysis' doc.doc_id %}" 
-                                           class="btn btn-outline-success btn-sm">
-                                            <i class="fas fa-brain me-1"></i>感情分析
-                                        </a>
-                                        <a href="{% url 'copomo:financial-analysis' doc.doc_id %}" 
-                                           class="btn btn-outline-primary btn-sm">
-                                            <i class="fas fa-chart-pie me-1"></i>財務分析
-                                        </a>
-                                    </div>
+                                <div class="doc-item-actions">
+                                    <a href="{% url 'copomo:sentiment-analysis' doc.doc_id %}" 
+                                       class="action-btn action-btn-outline-success">
+                                        <i class="fas fa-brain"></i>
+                                        感情分析
+                                    </a>
+                                    <a href="{% url 'copomo:financial-analysis' doc.doc_id %}" 
+                                       class="action-btn action-btn-outline-primary">
+                                        <i class="fas fa-chart-pie"></i>
+                                        財務分析
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -150,69 +1072,61 @@
             </div>
         {% endif %}
 
-        <!-- Financial Documents -->
+        <!-- 決算・財務関連書類 -->
         {% if suitable_documents %}
-            <div class="card mb-4">
+            <div class="card animate-fade-in-up delay-3">
                 <div class="card-header">
-                    <h5 class="mb-0 d-flex align-items-center">
-                        <i class="fas fa-chart-line text-primary me-2"></i>
+                    <h5>
+                        <i class="fas fa-chart-line text-primary"></i>
                         決算・財務関連書類
-                        <span class="badge bg-primary ms-2 small">{{ suitable_documents|length }}件</span>
+                        <span class="badge-sm badge-primary ms-2">{{ suitable_documents|length }}件</span>
                     </h5>
                 </div>
                 <div class="card-body">
                     {% for doc in suitable_documents %}
-                        <div class="border-bottom py-3">
-                            <div class="row align-items-center g-2">
-                                <div class="col-12 col-md-8">
-                                    <div class="fw-semibold mb-1">
-                                        <a href="{% url 'copomo:document-detail-ui' doc.doc_id %}" 
-                                           class="text-decoration-none text-truncate d-inline-block" 
-                                           style="max-width: 100%;">
-                                            {{ doc.doc_description }}
-                                        </a>
-                                    </div>
-                                    <div class="small text-muted">
-                                        {{ doc.submit_date_time|date:"Y/m/d" }}
-                                        {% if doc.xbrl_flag %}
-                                            <span class="badge bg-primary ms-2 small">XBRL</span>
-                                        {% endif %}
-                                        {% if doc.pdf_flag %}
-                                            <span class="badge bg-danger ms-1 small">PDF</span>
-                                        {% endif %}
-                                    </div>
+                        <div class="financial-doc-item">
+                            <div class="financial-doc-info">
+                                <div class="financial-doc-title">
+                                    <a href="{% url 'copomo:document-detail-ui' doc.doc_id %}">
+                                        {{ doc.doc_description }}
+                                    </a>
                                 </div>
-                                <div class="col-12 col-md-4">
-                                    <div class="btn-group w-100" role="group">
-                                        <a href="{% url 'copomo:financial-analysis' doc.doc_id %}" 
-                                           class="btn btn-outline-primary btn-sm"
-                                           data-bs-toggle="tooltip" title="財務分析">
-                                            <i class="fas fa-chart-pie"></i>
-                                            <span class="d-md-none ms-1">財務</span>
-                                        </a>
-                                        <a href="{% url 'copomo:sentiment-analysis' doc.doc_id %}" 
-                                           class="btn btn-outline-success btn-sm"
-                                           data-bs-toggle="tooltip" title="感情分析">
-                                            <i class="fas fa-brain"></i>
-                                            <span class="d-md-none ms-1">感情</span>
-                                        </a>
-                                        <a href="{% url 'copomo:document-detail-ui' doc.doc_id %}" 
-                                           class="btn btn-outline-secondary btn-sm"
-                                           data-bs-toggle="tooltip" title="詳細">
-                                            <i class="fas fa-info"></i>
-                                            <span class="d-md-none ms-1">詳細</span>
-                                        </a>
-                                    </div>
+                                <div class="financial-doc-meta">
+                                    <span>{{ doc.submit_date_time|date:"Y/m/d" }}</span>
+                                    {% if doc.xbrl_flag %}
+                                        <span class="badge-sm badge-primary">XBRL</span>
+                                    {% endif %}
+                                    {% if doc.pdf_flag %}
+                                        <span class="badge-sm badge-danger">PDF</span>
+                                    {% endif %}
                                 </div>
+                            </div>
+                            <div class="financial-doc-actions">
+                                <a href="{% url 'copomo:financial-analysis' doc.doc_id %}" 
+                                   class="action-btn-icon action-btn-icon-primary"
+                                   data-bs-toggle="tooltip" title="財務分析">
+                                    <i class="fas fa-chart-pie"></i>
+                                </a>
+                                <a href="{% url 'copomo:sentiment-analysis' doc.doc_id %}" 
+                                   class="action-btn-icon action-btn-icon-success"
+                                   data-bs-toggle="tooltip" title="感情分析">
+                                    <i class="fas fa-brain"></i>
+                                </a>
+                                <a href="{% url 'copomo:document-detail-ui' doc.doc_id %}" 
+                                   class="action-btn-icon"
+                                   data-bs-toggle="tooltip" title="詳細">
+                                    <i class="fas fa-info"></i>
+                                </a>
                             </div>
                         </div>
                     {% endfor %}
                     
                     {% if show_other_documents %}
                         <div class="text-center mt-3">
-                            <button class="btn btn-outline-primary" type="button" data-bs-toggle="collapse" 
+                            <button class="collapse-toggle-btn" type="button" data-bs-toggle="collapse" 
                                     data-bs-target="#otherDocuments" aria-expanded="false">
-                                <i class="fas fa-plus me-1"></i>その他の書類を表示
+                                <i class="fas fa-plus"></i>
+                                その他の書類を表示
                             </button>
                         </div>
                     {% endif %}
@@ -220,37 +1134,37 @@
             </div>
         {% endif %}
 
-        <!-- Other Documents (Collapsible) -->
+        <!-- その他の書類（折りたたみ） -->
         {% if show_other_documents %}
             <div class="collapse" id="otherDocuments">
-                <div class="card mb-4">
+                <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="fas fa-file-alt text-secondary me-2"></i>その他の書類
+                        <h5>
+                            <i class="fas fa-file-alt text-secondary"></i>
+                            その他の書類
                         </h5>
                     </div>
                     <div class="card-body">
                         {% for doc in other_documents %}
-                            <div class="border-bottom py-2">
-                                <div class="row align-items-center g-2">
-                                    <div class="col-12 col-md-10">
-                                        <div class="fw-semibold">
-                                            <a href="{% url 'copomo:document-detail-ui' doc.doc_id %}" 
-                                               class="text-decoration-none text-truncate-2">
-                                                {{ doc.doc_description }}
-                                            </a>
-                                        </div>
-                                        <div class="small text-muted">
-                                            {{ doc.submit_date_time|date:"Y/m/d" }}
-                                            <span class="ms-2">{{ doc.doc_type_code }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-12 col-md-2 text-end">
-                                        <a href="{% url 'copomo:document-detail-ui' doc.doc_id %}" 
-                                           class="btn btn-outline-secondary btn-sm w-100 w-md-auto">
-                                            詳細
+                            <div class="financial-doc-item">
+                                <div class="financial-doc-info">
+                                    <div class="financial-doc-title">
+                                        <a href="{% url 'copomo:document-detail-ui' doc.doc_id %}">
+                                            {{ doc.doc_description }}
                                         </a>
                                     </div>
+                                    <div class="financial-doc-meta">
+                                        <span>{{ doc.submit_date_time|date:"Y/m/d" }}</span>
+                                        <span class="badge-sm" style="background: var(--gray-100); color: var(--gray-600);">
+                                            {{ doc.doc_type_code }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="financial-doc-actions">
+                                    <a href="{% url 'copomo:document-detail-ui' doc.doc_id %}" 
+                                       class="action-btn-icon">
+                                        <i class="fas fa-info"></i>
+                                    </a>
                                 </div>
                             </div>
                         {% endfor %}
@@ -260,59 +1174,62 @@
         {% endif %}
     </div>
 
-    <!-- Sidebar -->
-    <div class="col-12 col-lg-4">
-        <!-- Company Statistics -->
-        <div class="card mb-4">
+    <!-- サイドバー -->
+    <div class="sidebar">
+        <!-- 企業統計 -->
+        <div class="card sidebar-card animate-fade-in-up delay-1">
             <div class="card-header">
-                <h6 class="mb-0">
-                    <i class="fas fa-chart-bar me-2"></i>企業統計
+                <h6>
+                    <i class="fas fa-chart-bar text-primary"></i>
+                    企業統計
                 </h6>
             </div>
             <div class="card-body">
-                <div class="row text-center g-3">
-                    <div class="col-6">
-                        <div class="h4 text-primary">{{ total_documents }}</div>
-                        <div class="small text-muted">総書類数</div>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-box-value">{{ total_documents }}</div>
+                        <div class="stat-box-label">総書類数</div>
                     </div>
-                    <div class="col-6">
-                        <div class="h4 text-success">{{ doc_type_stats|length }}</div>
-                        <div class="small text-muted">書類種別数</div>
+                    <div class="stat-box">
+                        <div class="stat-box-value">{{ doc_type_stats|length }}</div>
+                        <div class="stat-box-label">書類種別数</div>
                     </div>
                 </div>
                 
                 {% if doc_type_stats %}
-                    <hr class="my-3">
-                    <h6 class="mb-3">書類種別TOP5</h6>
+                    <h6 style="font-size: 0.875rem; font-weight: 600; color: var(--gray-700); margin-bottom: 0.75rem;">
+                        書類種別TOP5
+                    </h6>
                     {% for stat in doc_type_stats %}
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="small text-truncate me-2">{{ stat.doc_type_code }}</span>
-                            <span class="badge bg-primary">{{ stat.count }}件</span>
+                        <div class="doc-type-item">
+                            <span class="doc-type-name">{{ stat.doc_type_code }}</span>
+                            <span class="doc-type-count">{{ stat.count }}件</span>
                         </div>
                     {% endfor %}
                 {% endif %}
             </div>
         </div>
 
-        <!-- Related Companies -->
+        <!-- 関連企業 -->
         {% if related_companies %}
-            <div class="card mb-4">
+            <div class="card sidebar-card animate-fade-in-up delay-2">
                 <div class="card-header">
-                    <h6 class="mb-0">
-                        <i class="fas fa-link me-2"></i>関連企業
+                    <h6>
+                        <i class="fas fa-link text-primary"></i>
+                        関連企業
                     </h6>
                 </div>
                 <div class="card-body">
                     {% for related in related_companies %}
-                        <div class="border-bottom py-2">
-                            <div class="fw-semibold">
-                                <a href="{% url 'copomo:company-detail-ui' related.edinet_code %}" 
-                                   class="text-decoration-none text-truncate d-block">
-                                    {{ related.company_name }}
-                                </a>
-                            </div>
+                        <div class="related-company-item">
+                            <a href="{% url 'copomo:company-detail-ui' related.edinet_code %}" 
+                               class="related-company-name">
+                                {{ related.company_name }}
+                            </a>
                             {% if related.securities_code %}
-                                <div class="small text-muted">証券コード: {{ related.securities_code }}</div>
+                                <div class="related-company-code">
+                                    証券コード: {{ related.securities_code }}
+                                </div>
                             {% endif %}
                         </div>
                     {% endfor %}
@@ -320,41 +1237,46 @@
             </div>
         {% endif %}
 
-        <!-- Actions -->
-        <div class="card">
+        <!-- アクション -->
+        <div class="card sidebar-card animate-fade-in-up delay-3">
             <div class="card-header">
-                <h6 class="mb-0">
-                    <i class="fas fa-tools me-2"></i>アクション
+                <h6>
+                    <i class="fas fa-tools text-primary"></i>
+                    アクション
                 </h6>
             </div>
             <div class="card-body">
-                <div class="action-buttons">
+                <div class="action-buttons-grid">
                     {% if latest_financial %}
                         <a href="{% url 'copomo:financial-analysis' latest_financial.doc_id %}" 
-                           class="btn btn-danger w-100">
-                            <i class="fas fa-rocket me-2"></i>ワンクリック分析
+                           class="sidebar-action-btn sidebar-action-btn-primary">
+                            <i class="fas fa-rocket"></i>
+                            ワンクリック分析
                         </a>
                     {% endif %}
                     <a href="{% url 'copomo:document-list-ui' %}?company={{ company.company_name }}" 
-                       class="btn btn-outline-primary w-100">
-                        <i class="fas fa-list me-2"></i>全書類を表示
+                       class="sidebar-action-btn">
+                        <i class="fas fa-list"></i>
+                        全書類を表示
                     </a>
                     <a href="{% url 'copomo:index' %}" 
-                       class="btn btn-outline-secondary w-100">
-                        <i class="fas fa-search me-2"></i>他の企業を検索
+                       class="sidebar-action-btn">
+                        <i class="fas fa-search"></i>
+                        他の企業を検索
                     </a>
                 </div>
             </div>
         </div>
+        
         {% include 'earnings_analysis/ads/ad_responsive.html' %}
     </div>
 </div>
 
-<!-- Quick Analysis Modal -->
-<div class="modal fade" id="quickAnalysisModal" tabindex="-1" aria-labelledby="quickAnalysisModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+<!-- 包括分析モーダル -->
+<div class="modal fade modal-custom" id="quickAnalysisModal" tabindex="-1" aria-labelledby="quickAnalysisModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
+            <div class="modal-header">
                 <h5 class="modal-title" id="quickAnalysisModalLabel">
                     <i class="fas fa-rocket me-2"></i>ワンクリック包括分析
                 </h5>
@@ -362,50 +1284,72 @@
             </div>
             <div class="modal-body">
                 <div class="text-center mb-4">
-                    <i class="fas fa-chart-pie fa-3x text-primary mb-3"></i>
-                    <h5>{{ company.company_name }}の包括分析を開始します</h5>
+                    <div class="modal-icon">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <h5 style="color: var(--gray-800);">{{ company.company_name }}の包括分析を開始します</h5>
                 </div>
                 
                 <div class="row g-4">
                     <div class="col-md-6">
-                        <div class="border rounded p-3 h-100">
-                            <h6 class="text-primary">
-                                <i class="fas fa-chart-line me-2"></i>財務分析
+                        <div class="modal-feature-card">
+                            <h6 class="modal-feature-title" style="color: var(--primary-600);">
+                                <i class="fas fa-chart-line"></i>
+                                財務分析
                             </h6>
-                            <ul class="list-unstyled small mb-0">
-                                <li><i class="fas fa-check text-success me-1"></i>キャッシュフロー分析</li>
-                                <li><i class="fas fa-check text-success me-1"></i>健全性評価</li>
-                                <li><i class="fas fa-check text-success me-1"></i>投資判断支援</li>
+                            <ul class="modal-feature-list">
+                                <li>
+                                    <i class="fas fa-check text-success"></i>
+                                    キャッシュフロー分析
+                                </li>
+                                <li>
+                                    <i class="fas fa-check text-success"></i>
+                                    健全性評価
+                                </li>
+                                <li>
+                                    <i class="fas fa-check text-success"></i>
+                                    投資判断支援
+                                </li>
                             </ul>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="border rounded p-3 h-100">
-                            <h6 class="text-success">
-                                <i class="fas fa-brain me-2"></i>感情分析
+                        <div class="modal-feature-card">
+                            <h6 class="modal-feature-title" style="color: var(--success-600);">
+                                <i class="fas fa-brain"></i>
+                                感情分析
                             </h6>
-                            <ul class="list-unstyled small mb-0">
-                                <li><i class="fas fa-check text-success me-1"></i>経営陣自信度測定</li>
-                                <li><i class="fas fa-check text-success me-1"></i>市場への影響予測</li>
-                                <li><i class="fas fa-check text-success me-1"></i>リスク要因分析</li>
+                            <ul class="modal-feature-list">
+                                <li>
+                                    <i class="fas fa-check text-success"></i>
+                                    経営陣自信度測定
+                                </li>
+                                <li>
+                                    <i class="fas fa-check text-success"></i>
+                                    市場への影響予測
+                                </li>
+                                <li>
+                                    <i class="fas fa-check text-success"></i>
+                                    リスク要因分析
+                                </li>
                             </ul>
                         </div>
                     </div>
                 </div>
                 
                 {% if latest_financial %}
-                    <div class="alert alert-info mt-4">
+                    <div class="alert alert-info mt-4 mb-0" style="border-radius: var(--radius-lg);">
                         <strong>分析対象書類:</strong><br>
-                        <span class="text-truncate d-block">{{ latest_financial.doc_description }}</span>
+                        <span>{{ latest_financial.doc_description }}</span><br>
                         <small class="text-muted">提出日: {{ latest_financial.submit_date_time|date:"Y年m月d日" }}</small>
                     </div>
                 {% endif %}
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: var(--radius-lg);">キャンセル</button>
                 {% if latest_financial %}
                     <a href="{% url 'copomo:sentiment-analysis' latest_financial.doc_id %}" 
-                       class="btn btn-danger">
+                       class="btn btn-danger" style="border-radius: var(--radius-lg);">
                         <i class="fas fa-rocket me-2"></i>分析開始
                     </a>
                 {% endif %}
@@ -418,46 +1362,16 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Show quick analysis modal on main button click
-    const quickAnalysisButtons = document.querySelectorAll('[data-quick-analysis]');
-    quickAnalysisButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            const modal = new bootstrap.Modal(document.getElementById('quickAnalysisModal'));
-            modal.show();
+    // ツールチップ初期化
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+            trigger: 'hover focus',
+            delay: { show: 0, hide: 100 }
         });
     });
 
-    // Enhanced tooltip initialization for small screens
-    if (window.innerWidth <= 768) {
-        // On mobile, show tooltips on touch
-        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl, {
-                trigger: 'click hover focus',
-                delay: { show: 0, hide: 100 }
-            });
-        });
-    }
-
-    // Truncate long text on mobile
-    function truncateText() {
-        const truncateElements = document.querySelectorAll('.text-truncate-mobile');
-        truncateElements.forEach(element => {
-            if (window.innerWidth <= 768) {
-                const maxLength = parseInt(element.dataset.maxLength) || 50;
-                const text = element.textContent;
-                if (text.length > maxLength) {
-                    element.textContent = text.substring(0, maxLength) + '...';
-                }
-            }
-        });
-    }
-
-    truncateText();
-    window.addEventListener('resize', truncateText);
-
-    // Smooth scroll for collapsed sections
+    // 折りたたみセクションのスムーススクロール
     const collapseElements = document.querySelectorAll('[data-bs-toggle="collapse"]');
     collapseElements.forEach(element => {
         element.addEventListener('click', function() {
@@ -466,95 +1380,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (target && target.classList.contains('show')) {
                     target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
-            }, 350); // Wait for collapse animation
+            }, 350);
         });
     });
+
+    // タッチデバイス対応
+    if ('ontouchstart' in window) {
+        const hoverElements = document.querySelectorAll('.card, .action-btn, .doc-item, .action-btn-icon');
+        hoverElements.forEach(element => {
+            element.addEventListener('touchstart', function() {
+                this.classList.add('touch-active');
+            });
+            
+            element.addEventListener('touchend', function() {
+                setTimeout(() => {
+                    this.classList.remove('touch-active');
+                }, 150);
+            });
+        });
+    }
 });
 
-// Touch-friendly hover effects for mobile
-if ('ontouchstart' in window) {
-    const hoverElements = document.querySelectorAll('.card, .btn, .suggestion-item');
-    hoverElements.forEach(element => {
-        element.addEventListener('touchstart', function() {
-            this.classList.add('touch-active');
-        });
-        
-        element.addEventListener('touchend', function() {
-            setTimeout(() => {
-                this.classList.remove('touch-active');
-            }, 150);
-        });
-    });
+// クイック分析モーダル表示
+function showQuickAnalysisModal() {
+    const modal = new bootstrap.Modal(document.getElementById('quickAnalysisModal'));
+    modal.show();
 }
 </script>
-
-<style>
-/* Mobile-specific enhancements */
-@media (max-width: 767.98px) {
-    .btn-group {
-        display: flex !important;
-    }
-    
-    .btn-group .btn {
-        flex: 1;
-        font-size: 0.875rem;
-    }
-    
-    .touch-active {
-        transform: scale(0.98);
-        transition: transform 0.1s ease;
-    }
-    
-    .card-body .row .col-12:not(:last-child) {
-        margin-bottom: 1rem;
-    }
-    
-    /* Optimize badge display on mobile */
-    .badge {
-        font-size: 0.75rem;
-        padding: 0.25rem 0.5rem;
-    }
-    
-    /* Better spacing for action buttons */
-    .action-buttons .btn {
-        margin-bottom: 0.5rem;
-    }
-    
-    .action-buttons .btn:last-child {
-        margin-bottom: 0;
-    }
-}
-
-/* Enhanced focus styles for accessibility */
-.btn:focus,
-.card:focus,
-a:focus {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
-}
-
-/* Loading state for analysis buttons */
-.btn.loading {
-    pointer-events: none;
-    opacity: 0.65;
-}
-
-.btn.loading::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 16px;
-    height: 16px;
-    margin: -8px 0 0 -8px;
-    border: 2px solid currentColor;
-    border-top-color: transparent;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-</style>
 {% endblock %}

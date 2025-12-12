@@ -20,7 +20,6 @@ from datetime import timedelta
 from .xbrl_extractor import EDINETXBRLService
 from .gemini_insights import GeminiInsightsGenerator
 
-from .langextract_sentiment import LangExtractSentimentAnalyzer
 from .ai_expert_analyzer import AIExpertAnalyzer
 
 logger = logging.getLogger(__name__)
