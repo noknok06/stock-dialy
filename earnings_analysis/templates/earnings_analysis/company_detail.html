@@ -1,5 +1,5 @@
 <!-- earnings_analysis/templates/earnings_analysis/company_detail.html -->
-{% extends 'earnings_analysis/simple_base.html' %}
+{% extends 'earnings_analysis/base.html' %}
 
 {% block title %}{{ company.company_name }} - 企業詳細 - コポモ{% endblock %}
 
@@ -10,35 +10,49 @@
 
 <style>
 :root {
-    --primary-500: #3b82f6;
-    --primary-600: #2563eb;
-    --primary-700: #1d4ed8;
-    --primary-100: #dbeafe;
-    --primary-50: #eff6ff;
-    --success-500: #10b981;
+    /* プライマリカラー（青系） */
+    --primary-700: #2d5a8a;
+    --primary-600: #4072B3;
+    --primary-500: #6088C6;
+    --primary-400: #7a9fd1;
+    --primary-300: #AEC4E5;
+    --primary-200: #c5d6ed;
+    --primary-100: #dce7f4;
+    --primary-50: #f0f5fa;
+    
+    /* アクセントカラー（サーモンピンク） */
+    --accent-600: #d96a6a;
+    --accent-500: #EB8686;
+    --accent-400: #ef9e9e;
+    --accent-300: #f4b8b8;
+    --accent-200: #f9d1d1;
+    --accent-100: #fceaea;
+    --accent-50: #fef5f5;
+    
+    /* 成功（緑系） */
     --success-600: #059669;
+    --success-500: #10b981;
     --success-100: #d1fae5;
     --success-50: #ecfdf5;
-    --warning-500: #f59e0b;
+    
+    /* 警告（オレンジ系） */
     --warning-600: #d97706;
+    --warning-500: #f59e0b;
     --warning-100: #fef3c7;
     --warning-50: #fffbeb;
-    --danger-500: #ef4444;
-    --danger-600: #dc2626;
-    --danger-100: #fee2e2;
-    --danger-50: #fef2f2;
-    --info-500: #8b5cf6;
-    --info-100: #ede9fe;
+    
+    /* グレースケール */
     --gray-50: #f9fafb;
     --gray-100: #f3f4f6;
     --gray-200: #e5e7eb;
-    --gray-300: #d1d5db;
+    --gray-300: #C0C0C0;
     --gray-400: #9ca3af;
     --gray-500: #6b7280;
     --gray-600: #4b5563;
     --gray-700: #374151;
     --gray-800: #1f2937;
     --gray-900: #111827;
+    
     --radius-md: 0.5rem;
     --radius-lg: 0.75rem;
     --radius-xl: 1rem;
@@ -51,7 +65,7 @@
 
 body {
     font-family: 'Noto Sans JP', sans-serif;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    background: linear-gradient(135deg, var(--gray-50) 0%, var(--primary-50) 100%);
 }
 
 /* パンくず */
@@ -91,7 +105,7 @@ body {
 
 /* 企業ヘッダー */
 .company-header {
-    background: linear-gradient(135deg, var(--primary-600) 0%, #4f46e5 50%, #7c3aed 100%);
+    background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-500) 50%, var(--primary-400) 100%);
     color: white;
     padding: 2rem 1.5rem;
     border-radius: var(--radius-2xl);
@@ -177,9 +191,9 @@ body {
     backdrop-filter: blur(4px);
 }
 
-.company-badge-warning {
-    background: var(--warning-500);
-    color: var(--gray-900);
+.company-badge-accent {
+    background: var(--accent-500);
+    color: white;
 }
 
 .company-latest-badge {
@@ -257,7 +271,7 @@ body {
 }
 
 .analysis-hero-header {
-    background: linear-gradient(135deg, var(--danger-500) 0%, #f97316 100%);
+    background: linear-gradient(135deg, var(--accent-500) 0%, var(--accent-400) 100%);
     color: white;
     padding: 1.25rem 1.5rem;
 }
@@ -363,7 +377,7 @@ body {
     gap: 0.75rem;
     min-height: 52px;
     padding: 1rem 1.5rem;
-    background: linear-gradient(135deg, var(--danger-500), var(--danger-600));
+    background: linear-gradient(135deg, var(--accent-500), var(--accent-600));
     color: white;
     border: none;
     border-radius: var(--radius-lg);
@@ -372,15 +386,15 @@ body {
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    box-shadow: 0 4px 12px rgba(235, 134, 134, 0.3);
     text-decoration: none;
     width: 100%;
 }
 
 .analysis-btn-primary:hover {
-    background: linear-gradient(135deg, var(--danger-600), #b91c1c);
+    background: linear-gradient(135deg, var(--accent-600), #c45555);
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+    box-shadow: 0 6px 16px rgba(235, 134, 134, 0.4);
     color: white;
     text-decoration: none;
 }
@@ -490,7 +504,7 @@ body {
 }
 
 .badge-primary { background: var(--primary-100); color: var(--primary-700); }
-.badge-danger { background: var(--danger-100); color: var(--danger-600); }
+.badge-danger { background: var(--accent-100); color: var(--accent-600); }
 .badge-success { background: var(--success-100); color: var(--success-600); }
 .badge-warning { background: var(--warning-100); color: var(--warning-600); }
 
@@ -779,13 +793,13 @@ body {
 }
 
 .sidebar-action-btn-primary {
-    background: linear-gradient(135deg, var(--danger-500), var(--danger-600));
+    background: linear-gradient(135deg, var(--accent-500), var(--accent-600));
     color: white;
     border: none;
 }
 
 .sidebar-action-btn-primary:hover {
-    background: linear-gradient(135deg, var(--danger-600), #b91c1c);
+    background: linear-gradient(135deg, var(--accent-600), #c45555);
     color: white;
 }
 
@@ -797,7 +811,7 @@ body {
 }
 
 .modal-custom .modal-header {
-    background: linear-gradient(135deg, var(--danger-500), #f97316);
+    background: linear-gradient(135deg, var(--accent-500), var(--accent-400));
     color: white;
     border: none;
     padding: 1.25rem 1.5rem;
@@ -923,7 +937,7 @@ body {
                 {% endif %}
                 <div class="company-badges">
                     {% if company.securities_code %}
-                        <span class="company-badge company-badge-warning">
+                        <span class="company-badge company-badge-accent">
                             <i class="fas fa-chart-line"></i>
                             証券コード: {{ company.securities_code }}
                         </span>
@@ -970,12 +984,12 @@ body {
                             <h6 class="analysis-hero-title">最新決算書類の自動分析</h6>
                             <div class="analysis-hero-meta">
                                 <div class="analysis-hero-meta-item">
-                                    <i class="fas fa-file-alt text-primary"></i>
+                                    <i class="fas fa-file-alt" style="color: var(--primary-500);"></i>
                                     <strong>対象書類:</strong>
                                     <span class="text-truncate" style="max-width: 300px;">{{ latest_financial.doc_description }}</span>
                                 </div>
                                 <div class="analysis-hero-meta-item">
-                                    <i class="fas fa-calendar text-success"></i>
+                                    <i class="fas fa-calendar" style="color: var(--success-500);"></i>
                                     <strong>提出日:</strong>
                                     {{ latest_financial.submit_date_time|date:"Y年m月d日" }}
                                 </div>
@@ -1077,7 +1091,7 @@ body {
             <div class="card animate-fade-in-up delay-3">
                 <div class="card-header">
                     <h5>
-                        <i class="fas fa-chart-line text-primary"></i>
+                        <i class="fas fa-chart-line" style="color: var(--primary-500);"></i>
                         決算・財務関連書類
                         <span class="badge-sm badge-primary ms-2">{{ suitable_documents|length }}件</span>
                     </h5>
@@ -1140,7 +1154,7 @@ body {
                 <div class="card">
                     <div class="card-header">
                         <h5>
-                            <i class="fas fa-file-alt text-secondary"></i>
+                            <i class="fas fa-file-alt" style="color: var(--gray-500);"></i>
                             その他の書類
                         </h5>
                     </div>
@@ -1180,7 +1194,7 @@ body {
         <div class="card sidebar-card animate-fade-in-up delay-1">
             <div class="card-header">
                 <h6>
-                    <i class="fas fa-chart-bar text-primary"></i>
+                    <i class="fas fa-chart-bar" style="color: var(--primary-500);"></i>
                     企業統計
                 </h6>
             </div>
@@ -1215,7 +1229,7 @@ body {
             <div class="card sidebar-card animate-fade-in-up delay-2">
                 <div class="card-header">
                     <h6>
-                        <i class="fas fa-link text-primary"></i>
+                        <i class="fas fa-link" style="color: var(--primary-500);"></i>
                         関連企業
                     </h6>
                 </div>
@@ -1241,7 +1255,7 @@ body {
         <div class="card sidebar-card animate-fade-in-up delay-3">
             <div class="card-header">
                 <h6>
-                    <i class="fas fa-tools text-primary"></i>
+                    <i class="fas fa-tools" style="color: var(--primary-500);"></i>
                     アクション
                 </h6>
             </div>
@@ -1299,15 +1313,15 @@ body {
                             </h6>
                             <ul class="modal-feature-list">
                                 <li>
-                                    <i class="fas fa-check text-success"></i>
+                                    <i class="fas fa-check" style="color: var(--success-500);"></i>
                                     キャッシュフロー分析
                                 </li>
                                 <li>
-                                    <i class="fas fa-check text-success"></i>
+                                    <i class="fas fa-check" style="color: var(--success-500);"></i>
                                     健全性評価
                                 </li>
                                 <li>
-                                    <i class="fas fa-check text-success"></i>
+                                    <i class="fas fa-check" style="color: var(--success-500);"></i>
                                     投資判断支援
                                 </li>
                             </ul>
@@ -1321,15 +1335,15 @@ body {
                             </h6>
                             <ul class="modal-feature-list">
                                 <li>
-                                    <i class="fas fa-check text-success"></i>
+                                    <i class="fas fa-check" style="color: var(--success-500);"></i>
                                     経営陣自信度測定
                                 </li>
                                 <li>
-                                    <i class="fas fa-check text-success"></i>
+                                    <i class="fas fa-check" style="color: var(--success-500);"></i>
                                     市場への影響予測
                                 </li>
                                 <li>
-                                    <i class="fas fa-check text-success"></i>
+                                    <i class="fas fa-check" style="color: var(--success-500);"></i>
                                     リスク要因分析
                                 </li>
                             </ul>
@@ -1349,7 +1363,7 @@ body {
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: var(--radius-lg);">キャンセル</button>
                 {% if latest_financial %}
                     <a href="{% url 'copomo:sentiment-analysis' latest_financial.doc_id %}" 
-                       class="btn btn-danger" style="border-radius: var(--radius-lg);">
+                       class="btn btn-danger" style="border-radius: var(--radius-lg); background: linear-gradient(135deg, var(--accent-500), var(--accent-600)); border: none;">
                         <i class="fas fa-rocket me-2"></i>分析開始
                     </a>
                 {% endif %}

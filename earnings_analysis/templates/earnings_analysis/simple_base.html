@@ -1,7 +1,5 @@
 <!-- earnings_analysis/templates/earnings_analysis/simple_base.html -->
-{% load static %}
 {% load ads_tags %}
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -12,9 +10,9 @@
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
-
         gtag('config', 'G-3QHWL4H3M2');
     </script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=1.0, maximum-scale=5.0">
     <title>{% block title %}コポモ{% endblock %}</title>
@@ -22,324 +20,553 @@
     <!-- Preconnect for performance -->
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{% static 'css/mobile-optimized.css' %}">
     
     {% block extra_css %}{% endblock %}
     
     <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#4F83CC">
+    <meta name="theme-color" content="#4072B3">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="CMR">
+    <meta name="apple-mobile-web-app-title" content="コポモ">
+
+    <style>
+    /* ============================================
+       グローバルCSS変数 - 新カラーパレット
+       ============================================ */
+    :root {
+        /* Primary Blues */
+        --primary-700: #2d5a8a;
+        --primary-600: #4072B3;
+        --primary-500: #6088C6;
+        --primary-400: #7a9fd1;
+        --primary-300: #AEC4E5;
+        --primary-200: #c5d6ed;
+        --primary-100: #dce7f4;
+        --primary-50: #f0f5fa;
+        
+        /* Accent - Salmon Pink */
+        --accent-600: #d96a6a;
+        --accent-500: #EB8686;
+        --accent-400: #ef9e9e;
+        --accent-300: #f4b8b8;
+        --accent-200: #f9d1d1;
+        --accent-100: #fceaea;
+        --accent-50: #fef5f5;
+        
+        /* Neutral - Silver Gray */
+        --neutral-700: #6b6b6b;
+        --neutral-600: #8a8a8a;
+        --neutral-500: #C0C0C0;
+        --neutral-400: #d0d0d0;
+        --neutral-300: #e0e0e0;
+        --neutral-200: #ebebeb;
+        --neutral-100: #f5f5f5;
+        --neutral-50: #fafafa;
+        
+        /* Semantic Colors */
+        --success-500: #10b981;
+        --success-600: #059669;
+        --success-100: #d1fae5;
+        --warning-500: #f59e0b;
+        --warning-600: #d97706;
+        --warning-100: #fef3c7;
+        --danger-500: #ef4444;
+        --danger-600: #dc2626;
+        --danger-100: #fee2e2;
+        
+        /* Gray Scale */
+        --gray-50: #f9fafb;
+        --gray-100: #f3f4f6;
+        --gray-200: #e5e7eb;
+        --gray-300: #d1d5db;
+        --gray-400: #9ca3af;
+        --gray-500: #6b7280;
+        --gray-600: #4b5563;
+        --gray-700: #374151;
+        --gray-800: #1f2937;
+        --gray-900: #111827;
+        
+        /* Layout */
+        --radius-sm: 0.375rem;
+        --radius-md: 0.5rem;
+        --radius-lg: 0.75rem;
+        --radius-xl: 1rem;
+        --radius-2xl: 1.5rem;
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+    }
+
+    body {
+        font-family: 'Noto Sans JP', sans-serif;
+        background: linear-gradient(135deg, var(--neutral-50) 0%, var(--neutral-100) 100%);
+        min-height: 100vh;
+    }
+
+    /* ============================================
+       ナビゲーションバー
+       ============================================ */
+    .navbar {
+        background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-500) 50%, var(--primary-400) 100%) !important;
+        box-shadow: 0 4px 20px rgba(64, 114, 179, 0.3);
+        padding: 0.75rem 0;
+        position: sticky;
+        top: 0;
+        z-index: 1030;
+    }
+
+    .navbar-brand {
+        font-family: 'M PLUS Rounded 1c', sans-serif;
+        font-weight: 700;
+        font-size: 1.25rem;
+        color: white !important;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: opacity 0.2s ease;
+    }
+
+    .navbar-brand:hover {
+        opacity: 0.9;
+        color: white !important;
+    }
+
+    .navbar-brand i {
+        font-size: 1.5rem;
+    }
+
+    .nav-link {
+        color: rgba(255, 255, 255, 0.9) !important;
+        font-weight: 500;
+        padding: 0.5rem 1rem !important;
+        border-radius: var(--radius-md);
+        transition: all 0.2s ease;
+    }
+
+    .nav-link:hover {
+        color: white !important;
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    .nav-link.active {
+        color: white !important;
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .navbar-toggler {
+        border: none;
+        padding: 0.5rem;
+        color: white;
+    }
+
+    .navbar-toggler:focus {
+        box-shadow: none;
+    }
+
+    .navbar-toggler-icon {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.9%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+    }
+
+    /* ============================================
+       カード共通スタイル
+       ============================================ */
+    .card {
+        border: none;
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-md);
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-500) 100%);
+        color: white;
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0 !important;
+        padding: 1rem 1.25rem;
+        font-weight: 600;
+        border: none;
+    }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+
+    /* ============================================
+       ボタンスタイル
+       ============================================ */
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-500) 100%);
+        border: none;
+        border-radius: var(--radius-md);
+        padding: 0.625rem 1.25rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(64, 114, 179, 0.3);
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, var(--primary-700) 0%, var(--primary-600) 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(64, 114, 179, 0.4);
+    }
+
+    .btn-outline-primary {
+        color: var(--primary-600);
+        border-color: var(--primary-600);
+        border-radius: var(--radius-md);
+    }
+
+    .btn-outline-primary:hover {
+        background: var(--primary-600);
+        border-color: var(--primary-600);
+        color: white;
+    }
+
+    .btn-accent {
+        background: linear-gradient(135deg, var(--accent-500) 0%, var(--accent-400) 100%);
+        border: none;
+        color: white;
+        border-radius: var(--radius-md);
+        padding: 0.625rem 1.25rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(235, 134, 134, 0.3);
+    }
+
+    .btn-accent:hover {
+        background: linear-gradient(135deg, var(--accent-600) 0%, var(--accent-500) 100%);
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(235, 134, 134, 0.4);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, var(--success-500) 0%, var(--success-600) 100%);
+        border: none;
+        border-radius: var(--radius-md);
+    }
+
+    .btn-warning {
+        background: linear-gradient(135deg, var(--warning-500) 0%, var(--warning-600) 100%);
+        border: none;
+        color: white;
+        border-radius: var(--radius-md);
+    }
+
+    /* ============================================
+       バッジスタイル
+       ============================================ */
+    .badge-primary {
+        background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-400) 100%);
+        color: white;
+        padding: 0.375rem 0.75rem;
+        border-radius: var(--radius-md);
+        font-weight: 500;
+    }
+
+    .badge-accent {
+        background: linear-gradient(135deg, var(--accent-500) 0%, var(--accent-400) 100%);
+        color: white;
+        padding: 0.375rem 0.75rem;
+        border-radius: var(--radius-md);
+        font-weight: 500;
+    }
+
+    .badge-success {
+        background: var(--success-500);
+        color: white;
+        padding: 0.375rem 0.75rem;
+        border-radius: var(--radius-md);
+    }
+
+    .badge-warning {
+        background: var(--warning-500);
+        color: white;
+        padding: 0.375rem 0.75rem;
+        border-radius: var(--radius-md);
+    }
+
+    .badge-danger {
+        background: var(--danger-500);
+        color: white;
+        padding: 0.375rem 0.75rem;
+        border-radius: var(--radius-md);
+    }
+
+    /* ============================================
+       アラートスタイル
+       ============================================ */
+    .alert-success {
+        background: var(--success-100);
+        color: var(--success-600);
+        border: 1px solid var(--success-500);
+        border-radius: var(--radius-lg);
+    }
+
+    .alert-warning {
+        background: var(--warning-100);
+        color: var(--warning-600);
+        border: 1px solid var(--warning-500);
+        border-radius: var(--radius-lg);
+    }
+
+    .alert-danger {
+        background: var(--danger-100);
+        color: var(--danger-600);
+        border: 1px solid var(--danger-500);
+        border-radius: var(--radius-lg);
+    }
+
+    .alert-info {
+        background: var(--primary-100);
+        color: var(--primary-700);
+        border: 1px solid var(--primary-500);
+        border-radius: var(--radius-lg);
+    }
+
+    /* ============================================
+       フォームスタイル
+       ============================================ */
+    .form-control {
+        border: 1px solid var(--neutral-300);
+        border-radius: var(--radius-md);
+        padding: 0.625rem 1rem;
+        transition: all 0.2s ease;
+    }
+
+    .form-control:focus {
+        border-color: var(--primary-500);
+        box-shadow: 0 0 0 3px rgba(96, 136, 198, 0.2);
+    }
+
+    /* ============================================
+       フッター
+       ============================================ */
+    .footer {
+        background: linear-gradient(135deg, var(--gray-800) 0%, var(--gray-900) 100%);
+        color: var(--gray-300);
+        padding: 2rem 0;
+        margin-top: auto;
+    }
+
+    .footer a {
+        color: var(--primary-300);
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+    .footer a:hover {
+        color: var(--primary-200);
+    }
+
+    .footer-brand {
+        font-family: 'M PLUS Rounded 1c', sans-serif;
+        font-weight: 700;
+        font-size: 1.25rem;
+        color: white;
+    }
+
+    /* ============================================
+       ローディングスタイル
+       ============================================ */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.9);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .loading-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid var(--primary-200);
+        border-top-color: var(--primary-600);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* ============================================
+       ユーティリティ
+       ============================================ */
+    .text-primary { color: var(--primary-600) !important; }
+    .text-accent { color: var(--accent-500) !important; }
+    .text-success { color: var(--success-500) !important; }
+    .text-warning { color: var(--warning-500) !important; }
+    .text-danger { color: var(--danger-500) !important; }
+    .text-muted { color: var(--gray-500) !important; }
+
+    .bg-primary-light { background: var(--primary-50) !important; }
+    .bg-accent-light { background: var(--accent-50) !important; }
+    .bg-success-light { background: var(--success-100) !important; }
+    .bg-warning-light { background: var(--warning-100) !important; }
+
+    .border-primary { border-color: var(--primary-500) !important; }
+    .border-accent { border-color: var(--accent-500) !important; }
+
+    /* ============================================
+       レスポンシブ
+       ============================================ */
+    @media (max-width: 768px) {
+        .navbar-brand {
+            font-size: 1.1rem;
+        }
+
+        .card-body {
+            padding: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+        }
+    }
+
+    /* Touch optimization for mobile */
+    @media (hover: none) and (pointer: coarse) {
+        .btn, .nav-link, .card {
+            min-height: 44px;
+        }
+        
+        .card:hover {
+            transform: none;
+        }
+    }
+
+    {% block extra_styles %}{% endblock %}
+    </style>
 </head>
-<body class="d-flex flex-column min-vh-100">
-    <!-- Skip to main content -->
-    <a href="#main-content" class="sr-only sr-only-focusable btn btn-primary position-absolute" 
-       style="top: 10px; left: 10px; z-index: 9999;">
-        メインコンテンツへスキップ
-    </a>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
 
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
+    <nav class="navbar navbar-expand-lg">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="{% url 'copomo:index' %}">
-                <i class="fas fa-chart-line me-2"></i>
-                <span class="d-none d-sm-inline">コポモ（CopoMo）</span>
-                <span class="d-sm-none">コポモ（CopoMo）</span>
+            <a class="navbar-brand" href="{% url 'copomo:index' %}">
+                <i class="fas fa-chart-line"></i>
+                コポモ
             </a>
-            
-            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                    aria-controls="navbarNav" aria-expanded="false" aria-label="ナビゲーションメニュー">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
+                <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'copomo:index' %}">
                             <i class="fas fa-home me-1"></i>ホーム
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'copomo:document-list-ui' %}">
-                            <i class="fas fa-file-alt me-1"></i>書類一覧
                         </a>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
+
     <!-- Main Content -->
-    <main id="main-content" class="flex-grow-1 py-3 py-md-4">
+    <main class="py-4">
         <div class="container">
-            <!-- Flash Messages -->
             {% if messages %}
-                <div class="messages-container mb-4">
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            <div class="d-flex align-items-start">
-                                <div class="me-2 mt-1">
-                                    {% if message.tags == 'success' %}
-                                        <i class="fas fa-check-circle"></i>
-                                    {% elif message.tags == 'error' or message.tags == 'danger' %}
-                                        <i class="fas fa-exclamation-circle"></i>
-                                    {% elif message.tags == 'warning' %}
-                                        <i class="fas fa-exclamation-triangle"></i>
-                                    {% else %}
-                                        <i class="fas fa-info-circle"></i>
-                                    {% endif %}
-                                </div>
-                                <div class="flex-grow-1">{{ message }}</div>
-                            </div>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="閉じる"></button>
-                        </div>
-                    {% endfor %}
-                </div>
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
             {% endif %}
             
             {% block content %}{% endblock %}
         </div>
     </main>
 
-<!-- Footer -->
-    <footer class="mt-auto border-top">
-        <div class="container py-3 py-md-4">
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
             <div class="row">
                 <div class="col-md-6 mb-3 mb-md-0">
-                    <h6 class="mb-2 text-muted small">コポモ</h6>
-                    <p class="mb-2 small text-muted">「コポモ」は、“Corporate Mood（企業のムード）”を読み取るアプリです。</p>
-                    <div class="small text-muted">
-                        <i class="fas fa-database me-1"></i>
-                        データ提供: 金融庁 EDINET
+                    <div class="footer-brand mb-2">
+                        <i class="fas fa-chart-line me-2"></i>コポモ
                     </div>
+                    <p class="small mb-0">企業情報を簡単に検索・分析</p>
                 </div>
-                <div class="col-md-6">
-                    <div class="row">
-                        <div class="col-12 col-sm-6 mb-3 mb-sm-0">
-                            <h6 class="small text-muted mb-2">法的情報</h6>
-                            <ul class="list-unstyled small">
-                                <li class="mb-1">
-                                    <a href="{% url 'ads:terms' %}" class="text-muted text-decoration-none">
-                                        <i class="fas fa-file-text me-2"></i>利用規約・免責事項
-                                    </a>
-                                </li>
-                                <li class="mb-1">
-                                    <a href="{% url 'ads:privacy_policy' %}" class="text-muted text-decoration-none">
-                                        <i class="fas fa-shield-alt me-2"></i>プライバシーポリシー
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
-                        <div class="col-12 col-sm-6">
-                            <h6 class="small text-muted mb-2">サポート</h6>
-                            <ul class="list-unstyled small">
-                                <li class="mb-1">
-                                    <a href="{% url 'contact:contact' %}" class="text-muted text-decoration-none">
-                                        <i class="fas fa-envelope me-2"></i>お問い合わせ
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="{% url 'ads:privacy_policy' %}" class="me-3">プライバシーポリシー</a>
+                    <a href="{% url 'ads:terms' %}">利用規約</a>
                 </div>
             </div>
-            <hr class="mt-3 mb-3">
-            <div class="row align-items-center">
-                <div class="col-md-6 text-center text-md-start">
-                    <small class="text-muted">
-                        © 2024コポモ. All rights reserved.
-                    </small>
-                </div>
-                <div class="col-md-6 text-center text-md-end mt-2 mt-md-0">
-                    <small class="text-muted">
-                        Version 1.0 | Last updated: {{ "now"|date:"Y/m/d" }}
-                    </small>
-                </div>
-            </div>
+            <hr class="my-3" style="border-color: var(--gray-700);">
+            <p class="small text-center mb-0">&copy; 2024 コポモ All rights reserved.</p>
         </div>
     </footer>
 
-    <!-- Back to Top Button -->
-    <button id="backToTop" class="btn btn-primary position-fixed" 
-            style="bottom: 20px; right: 20px; display: none; z-index: 1000; border-radius: 50%; width: 50px; height: 50px;"
-            aria-label="ページトップに戻る">
-        <i class="fas fa-arrow-up"></i>
-    </button>
-
-    <!-- JavaScript -->
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    {% block extra_js %}{% endblock %}
-
+    
     <script>
-        // Common functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            // Back to top button
-            const backToTop = document.getElementById('backToTop');
-            if (backToTop) {
-                window.addEventListener('scroll', function() {
-                    if (window.pageYOffset > 300) {
-                        backToTop.style.display = 'block';
-                        backToTop.style.opacity = '1';
-                    } else {
-                        backToTop.style.display = 'none';
-                        backToTop.style.opacity = '0';
-                    }
-                });
+    // Loading functions
+    function showLoading() {
+        document.getElementById('loadingOverlay').classList.add('active');
+    }
 
-                backToTop.addEventListener('click', function() {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                });
-            }
+    function hideLoading() {
+        document.getElementById('loadingOverlay').classList.remove('active');
+    }
 
-            // Auto-hide alerts
-            const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
-            alerts.forEach(function(alert) {
-                setTimeout(function() {
-                    if (alert.parentNode) {
-                        const bsAlert = new bootstrap.Alert(alert);
-                        bsAlert.close();
-                    }
-                }, 5000);
-            });
+    // Download with feedback
+    function downloadDocument(url, filename) {
+        showLoading();
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename || '';
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(hideLoading, 1000);
+    }
 
-            // Initialize tooltips
-            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl, {
-                    trigger: 'hover focus'
-                });
-            });
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
         });
-
-        // Loading state management
-        function showLoading(button, text = '処理中...') {
-            if (!button) return '';
-            
-            const originalContent = button.innerHTML;
-            button.innerHTML = `<i class="fas fa-spinner fa-spin me-1"></i>${text}`;
-            button.disabled = true;
-            button.classList.add('loading');
-            return originalContent;
-        }
-
-        function hideLoading(button, originalContent) {
-            if (!button || !originalContent) return;
-            
-            setTimeout(() => {
-                button.innerHTML = originalContent;
-                button.disabled = false;
-                button.classList.remove('loading');
-            }, 100);
-        }
-
-        // Download document function with enhanced feedback
-        function downloadDocument(docId, docType, button) {
-            const originalContent = showLoading(button, 'ダウンロード中...');
-            
-            try {
-                const url = `/copomo/documents/${docId}/download/?type=${docType}`;
-                
-                // Create and trigger download
-                const link = document.createElement('a');
-                link.href = url;
-                link.target = '_blank';
-                link.style.display = 'none';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                // Provide user feedback
-                setTimeout(() => {
-                    hideLoading(button, originalContent);
-                    
-                    // Show success message
-                    const alertDiv = document.createElement('div');
-                    alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
-                    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px;';
-                    alertDiv.innerHTML = `
-                        <i class="fas fa-download me-2"></i>
-                        ダウンロードを開始しました
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    `;
-                    document.body.appendChild(alertDiv);
-                    
-                    // Auto remove after 3 seconds
-                    setTimeout(() => {
-                        if (alertDiv.parentNode) {
-                            const bsAlert = new bootstrap.Alert(alertDiv);
-                            bsAlert.close();
-                        }
-                    }, 3000);
-                }, 1000);
-                
-            } catch (error) {
-                console.error('Download error:', error);
-                hideLoading(button, originalContent);
-                
-                // Show error message
-                const alertDiv = document.createElement('div');
-                alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed';
-                alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px;';
-                alertDiv.innerHTML = `
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    ダウンロードに失敗しました
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                `;
-                document.body.appendChild(alertDiv);
-                
-                setTimeout(() => {
-                    if (alertDiv.parentNode) {
-                        const bsAlert = new bootstrap.Alert(alertDiv);
-                        bsAlert.close();
-                    }
-                }, 5000);
-            }
-        }
-
-        // Enhanced mobile detection and optimization
-        function isMobile() {
-            return window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        }
-
-        // Optimize for mobile devices
-        if (isMobile()) {
-            // Add mobile-specific classes
-            document.body.classList.add('mobile-device');
-            
-            // Optimize scroll behavior
-            document.addEventListener('touchstart', function() {}, { passive: true });
-            document.addEventListener('touchmove', function() {}, { passive: true });
-        }
-
-        // Performance optimization
-        window.addEventListener('load', function() {
-            // Lazy load non-critical resources
-            const lazyElements = document.querySelectorAll('[data-lazy]');
-            if ('IntersectionObserver' in window && lazyElements.length > 0) {
-                const lazyObserver = new IntersectionObserver(function(entries) {
-                    entries.forEach(function(entry) {
-                        if (entry.isIntersecting) {
-                            const element = entry.target;
-                            if (element.dataset.src) {
-                                element.src = element.dataset.src;
-                            }
-                            element.classList.remove('lazy');
-                            lazyObserver.unobserve(element);
-                        }
-                    });
-                });
-
-                lazyElements.forEach(function(element) {
-                    lazyObserver.observe(element);
-                });
-            }
-        });
+    });
     </script>
+    
+    {% block extra_js %}{% endblock %}
 </body>
 </html>
