@@ -677,28 +677,6 @@ body {
     color: white;
 }
 
-/* プログレスオーバーレイ */
-.progress-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1050;
-    /* display: none を削除し、以下に変更 */
-    visibility: hidden;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-}
-
-/* 表示状態 */
-.progress-overlay.active {
-    visibility: visible;
-    opacity: 1;
-    pointer-events: auto;
-}
-
 .progress-backdrop {
     position: absolute;
     top: 0;
@@ -709,25 +687,60 @@ body {
     backdrop-filter: blur(4px);
 }
 
-.progress-container {
-    position: relative;
+/* プログレスオーバーレイ - 修正版 */
+.progress-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
+    z-index: 1050;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
 }
 
+/* 表示状態 */
+.progress-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* コンテンツを初期状態で画面外に配置 */
 .progress-content {
     background: white;
     border-radius: var(--radius-2xl);
     box-shadow: var(--shadow-xl);
     max-width: 480px;
     width: 100%;
+    min-width: 320px;
     max-height: 90vh;
     overflow-y: auto;
-    animation: slideUp 0.3s ease-out;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.progress-overlay.active .progress-content {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+/* 広告コンテナ - 幅を明示的に指定 */
+.progress-ad-container {
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+    min-height: 250px;
+    width: 100%;
+    display: block;  /* flexからblockに変更 */
+    margin-bottom: 1rem;
+    padding: 1rem;
+    box-sizing: border-box;
+}
+
+#modalAdSlot {
+    width: 100%;
+    min-height: 200px;
 }
 
 @keyframes slideUp {
@@ -837,18 +850,6 @@ body {
     justify-content: center;
     margin-bottom: 1rem;
     padding: 1rem;
-}
-
-.progress-content {
-    background: white;
-    border-radius: var(--radius-2xl);
-    box-shadow: var(--shadow-xl);
-    max-width: 480px;
-    width: 100%;
-    min-width: 320px;  /* 追加: 最小幅を指定 */
-    max-height: 90vh;
-    overflow-y: auto;
-    animation: slideUp 0.3s ease-out;
 }
 
 .progress-hint {
@@ -1384,40 +1385,53 @@ function showProgressOverlay() {
     overlay.classList.add('active');
     document.body.style.overflow = 'hidden';
     
-    // モーダル表示後に広告を遅延読み込み
-    setTimeout(loadModalAd, 100);
+    // アニメーション完了後に広告を読み込み（transitionの300msを待つ）
+    setTimeout(loadModalAd, 350);
 }
 
 function loadModalAd() {
     const adSlot = document.getElementById('modalAdSlot');
     if (!adSlot || adSlot.dataset.adLoaded === 'true') return;
     
-    // 広告コンテナの幅を確認
     const container = document.getElementById('progressAdContainer');
-    if (container.offsetWidth === 0) {
-        // 幅が0の場合は少し待ってリトライ
-        setTimeout(loadModalAd, 200);
+    
+    // 幅を強制的に再計算
+    void container.offsetWidth;
+    
+    const width = container.clientWidth;
+    console.log('Ad container width:', width); // デバッグ用
+    
+    if (width < 100) {
+        // 幅が小さすぎる場合はリトライ
+        console.log('Container width too small, retrying...');
+        setTimeout(loadModalAd, 300);
         return;
     }
     
     // 広告要素を動的に作成
     adSlot.innerHTML = `
         <ins class="adsbygoogle"
-             style="display:block; min-height:200px;"
+             style="display:block; width:100%; min-height:200px;"
              data-ad-client="ca-pub-3954701883136363"
              data-ad-slot="2912928129"
-             data-ad-format="auto"
-             data-full-width-responsive="true"></ins>
+             data-ad-format="rectangle"
+             data-full-width-responsive="false"></ins>
     `;
     
-    // 広告を読み込み
-    try {
-        (adsbygoogle = window.adsbygoogle || []).push({});
-        adSlot.dataset.adLoaded = 'true';
-    } catch (e) {
-        console.warn('Ad loading failed:', e);
-    }
+    // 次のフレームで広告を読み込み
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            try {
+                (adsbygoogle = window.adsbygoogle || []).push({});
+                adSlot.dataset.adLoaded = 'true';
+                console.log('Ad loaded successfully');
+            } catch (e) {
+                console.warn('Ad loading failed:', e);
+            }
+        });
+    });
 }
+
 
 function hideProgressOverlay() {
     document.getElementById('progressOverlay').classList.remove('active');
