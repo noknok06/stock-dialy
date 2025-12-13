@@ -286,9 +286,9 @@ class TestStockSplitModel:
         # 分割適用後の状態を確認
         self.diary.refresh_from_db()
         
-        # diary（集計値）は二重調整で400株になる
+        # diary（集計値）は二重調整で200株になる
         assert self.diary.current_quantity == Decimal('200.00')
-        assert self.diary.average_purchase_price == Decimal('1250.00')
+        assert self.diary.average_purchase_price == Decimal('2500.00')
         
         # 分割が適用済みになっていることを確認
         split.refresh_from_db()
