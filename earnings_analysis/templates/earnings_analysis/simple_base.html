@@ -464,7 +464,49 @@
             transform: none;
         }
     }
+    .ad-container {
+        width: 100%;
+        min-width: 280px;
+        min-height: 100px;
+        display: block;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
 
+    /* メインコンテンツ内の広告 */
+    .main-content .ad-container,
+    .main-layout > .main-content .ad-container {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    /* サイドバー内の広告 */
+    .sidebar .ad-container {
+        width: 100%;
+        max-width: 320px;
+    }
+
+    /* グリッドレイアウト内での広告の幅確保 */
+    .main-layout .ad-container {
+        min-width: 0;  /* グリッドのオーバーフロー防止 */
+        width: 100%;
+    }
+
+    /* AdSense ins要素のスタイル */
+    .ad-container .adsbygoogle {
+        display: block !important;
+        width: 100% !important;
+        min-height: 100px;
+    }
+
+    /* PC向け - 広告の最大幅制限 */
+    @media (min-width: 992px) {
+        .main-content .ad-container {
+            max-width: 728px;  /* リーダーボード広告サイズ */
+            margin-left: auto;
+            margin-right: auto;
+        }
+    }
     {% block extra_styles %}{% endblock %}
     </style>
 </head>
