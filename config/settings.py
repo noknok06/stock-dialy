@@ -421,7 +421,11 @@ CSP_CONNECT_SRC = [
     "https://www.googletagmanager.com",
     "https://adtrafficquality.google", 
     "*.adtrafficquality.google",       
-    "https://ep1.adtrafficquality.google"
+    "https://ep1.adtrafficquality.google",
+    "pagead2.googlesyndication.com",
+    "*.googlesyndication.com",
+    "https://ep2.adtrafficquality.google",
+    "cdn.jsdelivr.net",  # Bootstrap用
 ]
 CSP_FRAME_SRC = [
     "'self'", 
@@ -433,7 +437,9 @@ CSP_FRAME_SRC = [
     "www.googletagmanager.com", 
     "*.googletagmanager.com",
     "*.googlesyndication.com", 
-    "pagead2.googlesyndication.com"
+    "pagead2.googlesyndication.com",
+    "ep2.adtrafficquality.google",
+    "*.adtrafficquality.google",
 ]
 # =============================================================================
 # 現在使用していない設定（コメントアウト）

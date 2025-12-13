@@ -830,11 +830,25 @@ body {
     background: var(--gray-50);
     border-radius: var(--radius-lg);
     min-height: 200px;
+    min-width: 300px;  /* 追加: 最小幅を指定 */
+    width: 100%;       /* 追加 */
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 1rem;
     padding: 1rem;
+}
+
+.progress-content {
+    background: white;
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-xl);
+    max-width: 480px;
+    width: 100%;
+    min-width: 320px;  /* 追加: 最小幅を指定 */
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease-out;
 }
 
 .progress-hint {
@@ -1211,7 +1225,8 @@ body {
                 <div class="progress-status" id="statusMessage">分析を開始しています...</div>
                 
                 <div id="progressAdContainer" class="progress-ad-container">
-                    {% include 'earnings_analysis/ads/ad_responsive.html' %}
+                    <!-- 広告は動的に挿入される -->
+                    <div id="modalAdSlot"></div>
                 </div>
                 
                 <div class="progress-hint">
@@ -1365,8 +1380,43 @@ function updateProgressUI(data) {
 }
 
 function showProgressOverlay() {
-    document.getElementById('progressOverlay').classList.add('active');
+    const overlay = document.getElementById('progressOverlay');
+    overlay.classList.add('active');
     document.body.style.overflow = 'hidden';
+    
+    // モーダル表示後に広告を遅延読み込み
+    setTimeout(loadModalAd, 100);
+}
+
+function loadModalAd() {
+    const adSlot = document.getElementById('modalAdSlot');
+    if (!adSlot || adSlot.dataset.adLoaded === 'true') return;
+    
+    // 広告コンテナの幅を確認
+    const container = document.getElementById('progressAdContainer');
+    if (container.offsetWidth === 0) {
+        // 幅が0の場合は少し待ってリトライ
+        setTimeout(loadModalAd, 200);
+        return;
+    }
+    
+    // 広告要素を動的に作成
+    adSlot.innerHTML = `
+        <ins class="adsbygoogle"
+             style="display:block; min-height:200px;"
+             data-ad-client="ca-pub-3954701883136363"
+             data-ad-slot="2912928129"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+    `;
+    
+    // 広告を読み込み
+    try {
+        (adsbygoogle = window.adsbygoogle || []).push({});
+        adSlot.dataset.adLoaded = 'true';
+    } catch (e) {
+        console.warn('Ad loading failed:', e);
+    }
 }
 
 function hideProgressOverlay() {
