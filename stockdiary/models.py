@@ -113,9 +113,6 @@ class StockDiary(models.Model):
         self.last_transaction_date = None
         self.average_purchase_price = None
         
-        # 株式分割の適用
-        splits = self.stock_splits.filter(is_applied=True).order_by('split_date')
-        
         # デバッグ用のログ
         import logging
         logger = logging.getLogger(__name__)
@@ -127,11 +124,6 @@ class StockDiary(models.Model):
             # 分割調整を適用
             adjusted_quantity = transaction.quantity
             adjusted_price = transaction.price
-            
-            for split in splits:
-                if transaction.transaction_date < split.split_date:
-                    adjusted_quantity = adjusted_quantity * split.split_ratio
-                    adjusted_price = adjusted_price / split.split_ratio
             
             # 処理前の状態をログ
             before_qty = self.current_quantity
@@ -347,19 +339,11 @@ class StockDiary(models.Model):
         cash_buy_amount = Decimal('0')
         cash_sell_amount = Decimal('0')
         
-        # 株式分割の適用
-        splits = self.stock_splits.filter(is_applied=True).order_by('split_date')
-        
         for transaction in cash_transactions:
             # 分割調整を適用
             adjusted_quantity = transaction.quantity
             adjusted_price = transaction.price
-            
-            for split in splits:
-                if transaction.transaction_date < split.split_date:
-                    adjusted_quantity = adjusted_quantity * split.split_ratio
-                    adjusted_price = adjusted_price / split.split_ratio
-            
+                        
             if transaction.transaction_type == 'buy':
                 # 購入処理
                 buy_amount = adjusted_price * adjusted_quantity
@@ -384,7 +368,7 @@ class StockDiary(models.Model):
         
         # 平均取得単価を計算
         cash_avg_price = None
-        if cash_quantity > 0 and cash_cost > 0:
+        if cash_quantity > 0:
             cash_avg_price = (cash_cost / cash_quantity).quantize(
                 Decimal('0.01'), rounding=ROUND_HALF_UP
             )
@@ -510,12 +494,22 @@ class StockSplit(models.Model):
                 raise ValidationError('適用済みの分割情報は編集できません')
 
     def apply_split(self):
-        # フラグだけ設定
+        # 対象取引（分割日より前）
+        transactions = self.diary.transactions.filter(
+            transaction_date__lt=self.split_date
+        )
+
+        for tx in transactions:
+            tx.quantity = tx.quantity * self.split_ratio
+            tx.price = tx.price / self.split_ratio
+            tx.save(update_fields=["quantity", "price"])
+
+        # フラグ更新
         self.is_applied = True
         self.applied_at = timezone.now()
-        self.save()
-        
-        # update_aggregatesで調整処理を一括実行
+        self.save(update_fields=["is_applied", "applied_at"])
+
+        # 再集計
         self.diary.update_aggregates()
 
 
