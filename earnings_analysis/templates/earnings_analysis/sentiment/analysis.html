@@ -687,7 +687,6 @@ body {
     backdrop-filter: blur(4px);
 }
 
-/* プログレスオーバーレイ - 修正版 */
 .progress-overlay {
     position: fixed;
     top: 0;
@@ -700,25 +699,47 @@ body {
     transition: opacity 0.3s ease;
 }
 
-/* 表示状態 */
 .progress-overlay.active {
     opacity: 1;
     pointer-events: auto;
 }
 
-/* コンテンツを初期状態で画面外に配置 */
+.progress-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+}
+
+.progress-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+/* モーダルコンテンツ - レスポンシブ対応 */
 .progress-content {
+    position: relative;
     background: white;
     border-radius: var(--radius-2xl);
     box-shadow: var(--shadow-xl);
-    max-width: 480px;
-    width: 100%;
-    min-width: 320px;
+    width: calc(100% - 2rem);  /* パディング分を引く */
+    max-width: 500px;          /* PC: 最大500px */
     max-height: 90vh;
     overflow-y: auto;
     transform: translateY(20px);
     opacity: 0;
     transition: transform 0.3s ease, opacity 0.3s ease;
+    margin: 0 auto;            /* 中央揃え */
 }
 
 .progress-overlay.active .progress-content {
@@ -726,14 +747,115 @@ body {
     opacity: 1;
 }
 
-/* 広告コンテナ - 幅を明示的に指定 */
+/* タブレット以上 */
+@media (min-width: 768px) {
+    .progress-content {
+        width: 90%;
+        max-width: 560px;
+    }
+}
+
+/* PC */
+@media (min-width: 992px) {
+    .progress-content {
+        width: 560px;
+        max-width: 600px;
+    }
+}
+
+.progress-header {
+    padding: 1.5rem 1.5rem 0;
+    text-align: center;
+}
+
+.progress-title {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+.progress-body {
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.progress-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-100);
+    border-radius: 50%;
+    font-size: 2rem;
+    color: var(--primary-600);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.progress-bar-wrapper {
+    background: var(--gray-200);
+    border-radius: 9999px;
+    height: 12px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-600), var(--accent-500));
+    border-radius: 9999px;
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.progress-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.progress-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-600);
+    margin-bottom: 0.5rem;
+}
+
+.progress-status {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    margin-bottom: 1.5rem;
+}
+
+/* 広告コンテナ - レスポンシブ対応 */
 .progress-ad-container {
     background: var(--gray-50);
     border-radius: var(--radius-lg);
     min-height: 250px;
     width: 100%;
-    display: block;  /* flexからblockに変更 */
-    margin-bottom: 1rem;
+    display: block;
+    margin: 0 auto 1rem;
     padding: 1rem;
     box-sizing: border-box;
 }
@@ -741,6 +863,46 @@ body {
 #modalAdSlot {
     width: 100%;
     min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#modalAdSlot .adsbygoogle {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.progress-hint {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    line-height: 1.6;
+}
+
+.progress-footer {
+    padding: 0 1.5rem 1.5rem;
+    text-align: center;
+}
+
+.progress-cancel-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0.75rem 1.5rem;
+    background: var(--gray-100);
+    color: var(--gray-600);
+    border: none;
+    border-radius: var(--radius-lg);
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.progress-cancel-btn:hover {
+    background: var(--gray-200);
 }
 
 @keyframes slideUp {
@@ -1399,23 +1561,22 @@ function loadModalAd() {
     void container.offsetWidth;
     
     const width = container.clientWidth;
-    console.log('Ad container width:', width); // デバッグ用
+    console.log('Ad container width:', width);
     
     if (width < 100) {
-        // 幅が小さすぎる場合はリトライ
         console.log('Container width too small, retrying...');
         setTimeout(loadModalAd, 300);
         return;
     }
     
-    // 広告要素を動的に作成
+    // 広告要素を動的に作成（レスポンシブ対応）
     adSlot.innerHTML = `
         <ins class="adsbygoogle"
              style="display:block; width:100%; min-height:200px;"
              data-ad-client="ca-pub-3954701883136363"
              data-ad-slot="2912928129"
-             data-ad-format="rectangle"
-             data-full-width-responsive="false"></ins>
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
     `;
     
     // 次のフレームで広告を読み込み
