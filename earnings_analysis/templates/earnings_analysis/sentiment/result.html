@@ -56,6 +56,236 @@ body {
     background: var(--gray-50);
 }
 
+/* 既存のCSS ... */
+
+/* ==================== */
+/* AI分析エラー表示用CSS */
+/* ==================== */
+
+/* AI分析エラー表示 */
+.ai-analysis-error {
+    display: flex;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, var(--danger-50) 0%, #fff5f5 100%);
+    border: 2px solid var(--danger-100);
+    border-radius: var(--radius-xl);
+    margin-bottom: 1.5rem;
+}
+
+.ai-analysis-error .error-icon {
+    flex-shrink: 0;
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--danger-100);
+    border-radius: var(--radius-lg);
+    color: var(--danger-500);
+    font-size: 1.75rem;
+}
+
+.ai-analysis-error .error-content {
+    flex: 1;
+}
+
+.ai-analysis-error .error-title {
+    margin: 0 0 0.75rem;
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-weight: 700;
+    color: var(--danger-600);
+    font-size: 1.125rem;
+}
+
+.ai-analysis-error .error-message {
+    margin: 0 0 0.5rem;
+    color: var(--gray-700);
+    font-size: 0.9375rem;
+}
+
+.ai-analysis-error .error-detail {
+    margin: 0 0 1rem;
+    color: var(--gray-500);
+    font-size: 0.875rem;
+    line-height: 1.6;
+}
+
+.ai-analysis-error .error-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+}
+
+.ai-analysis-error .retry-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--gray-500);
+}
+
+/* AI分析利用不可表示 */
+.ai-analysis-unavailable {
+    display: flex;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, var(--gray-50) 0%, white 100%);
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-xl);
+    margin-bottom: 1.5rem;
+}
+
+.ai-analysis-unavailable .unavailable-icon {
+    flex-shrink: 0;
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gray-100);
+    border-radius: var(--radius-lg);
+    color: var(--gray-400);
+    font-size: 1.75rem;
+}
+
+.ai-analysis-unavailable .unavailable-content {
+    flex: 1;
+}
+
+.ai-analysis-unavailable .unavailable-title {
+    margin: 0 0 0.75rem;
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-weight: 700;
+    color: var(--gray-700);
+    font-size: 1.125rem;
+}
+
+.ai-analysis-unavailable .unavailable-message {
+    margin: 0 0 0.5rem;
+    color: var(--gray-600);
+    font-size: 0.9375rem;
+}
+
+.ai-analysis-unavailable .unavailable-detail {
+    margin: 0 0 1rem;
+    color: var(--gray-500);
+    font-size: 0.875rem;
+    line-height: 1.6;
+}
+
+.ai-analysis-unavailable .unavailable-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+/* フォールバック分析通知 */
+.fallback-analysis-notice {
+    padding: 1rem 1.25rem;
+    background: var(--primary-50);
+    border: 1px solid var(--primary-100);
+    border-radius: var(--radius-lg);
+    margin-bottom: 1.5rem;
+}
+
+.fallback-analysis-notice .notice-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: var(--primary-700);
+    margin-bottom: 0.5rem;
+}
+
+.fallback-analysis-notice .notice-text {
+    margin: 0 0 0.75rem;
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    line-height: 1.6;
+}
+
+.fallback-analysis-notice .tab-switch-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    background: var(--primary-500);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.fallback-analysis-notice .tab-switch-btn:hover {
+    background: var(--primary-600);
+}
+
+/* 感情ラベルバッジ */
+.sentiment-label-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-lg);
+    font-size: 1.125rem;
+    font-weight: 700;
+}
+
+.sentiment-label-badge.positive {
+    background: linear-gradient(135deg, var(--success-100), var(--success-50));
+    color: var(--success-600);
+}
+
+.sentiment-label-badge.negative {
+    background: linear-gradient(135deg, var(--danger-100), var(--danger-50));
+    color: var(--danger-600);
+}
+
+.sentiment-label-badge.neutral {
+    background: linear-gradient(135deg, var(--gray-100), var(--gray-50));
+    color: var(--gray-600);
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 767.98px) {
+    .ai-analysis-error,
+    .ai-analysis-unavailable {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .ai-analysis-error .error-icon,
+    .ai-analysis-unavailable .unavailable-icon {
+        margin: 0 auto;
+    }
+    
+    .ai-analysis-error .error-actions,
+    .ai-analysis-unavailable .unavailable-actions {
+        justify-content: center;
+    }
+    
+    .ai-analysis-error .retry-hint {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* アニメーション */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.ai-analysis-error .error-icon i {
+    animation: pulse 2s ease-in-out infinite;
+}
+
 /* パンくず */
 .breadcrumb {
     display: flex;
@@ -985,6 +1215,7 @@ body {
 
 {% block content %}
 <!-- 結果ヘッダー -->
+
 <header class="result-header {{ session.sentiment_label }} animate-fade-in-up">
     <div class="result-header-content">
         <h1>
@@ -1008,9 +1239,27 @@ body {
                     期限: {{ session.expires_at|date:"m/d H:i" }}
                 </span>
             {% endif %}
+            
+            {# AI分析ステータスバッジ #}
+            {% with ai_status=session.analysis_result.analysis_metadata.ai_analysis %}
+            {% if ai_status %}
+                {% if ai_status.success %}
+                    <span class="result-badge" style="background: rgba(16, 185, 129, 0.3);">
+                        <i class="fas fa-robot"></i>
+                        AI分析完了
+                    </span>
+                {% elif ai_status.attempted %}
+                    <span class="result-badge" style="background: rgba(239, 68, 68, 0.3);">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        AI分析失敗
+                    </span>
+                {% endif %}
+            {% endif %}
+            {% endwith %}
         </div>
     </div>
 </header>
+
 
 {% include 'earnings_analysis/ads/ad_responsive.html' %}
 <!-- メインレイアウト -->
@@ -1039,39 +1288,182 @@ body {
             <!-- AI分析タブ -->
             <div class="tab-panel active" id="ai-analysis">
                 <div class="card-body">
-                    {% if session.analysis_result.ai_expert_analysis %}
+                    
+                    {# AI分析メタデータを変数に格納 #}
+                    {% with ai_meta=session.analysis_result.analysis_metadata.ai_analysis %}
+                    
+                    {# デバッグ用: AI分析状態を表示（本番では削除） #}
+                    {% if debug %}
+                    <div class="alert alert-secondary mb-3" style="font-size: 0.75rem;">
+                        <strong>デバッグ情報:</strong><br>
+                        attempted: {{ ai_meta.attempted|default:"未定義" }}<br>
+                        success: {{ ai_meta.success|default:"未定義" }}<br>
+                        error_type: {{ ai_meta.error_type|default:"なし" }}<br>
+                        error_message: {{ ai_meta.error_message|default:"なし" }}<br>
+                        has_ai_expert_analysis: {{ ai_meta.has_ai_expert_analysis|default:"未定義" }}
+                    </div>
+                    {% endif %}
+                    
+                    {# ケース1: AI分析を試行したが失敗した場合 #}
+                    {% if ai_meta.attempted and not ai_meta.success %}
+                        
+                        <div class="ai-analysis-error">
+                            <div class="error-icon">
+                                <i class="fas fa-exclamation-circle"></i>
+                            </div>
+                            <div class="error-content">
+                                <h5 class="error-title">AI分析を実行できませんでした</h5>
+                                
+                                {# エラータイプ別のメッセージ #}
+                                {% if ai_meta.error_type == 'rate_limit' %}
+                                    <p class="error-message">
+                                        <strong>原因:</strong> API利用制限に達しました
+                                    </p>
+                                    <p class="error-detail">
+                                        本機能はGeminiの無料枠にて運用しています。
+                                        <strong>しばらく時間をあけてから</strong>再度お試しください。
+                                    </p>
+                                {% elif ai_meta.error_type == 'quota_exceeded' %}
+                                    <p class="error-message">
+                                        <strong>原因:</strong> APIクォータを超過しました
+                                    </p>
+                                    <p class="error-detail">
+                                        本日のAPI利用上限に達しました。<strong>明日以降</strong>に再度お試しください。
+                                    </p>
+                                {% elif ai_meta.error_type == 'empty_response' or ai_meta.error_type == 'empty_text' %}
+                                    <p class="error-message">
+                                        <strong>原因:</strong> APIからの応答がありませんでした
+                                    </p>
+                                    <p class="error-detail">
+                                        サーバーが一時的に応答していません。しばらく時間をおいて再度お試しください。
+                                    </p>
+                                {% elif ai_meta.error_type == 'api_error' or ai_meta.error_type == 'exception' %}
+                                    <p class="error-message">
+                                        <strong>原因:</strong> AI分析中にエラーが発生しました
+                                    </p>
+                                    <p class="error-detail">
+                                        {% if ai_meta.error_message %}
+                                            {{ ai_meta.error_message }}
+                                        {% else %}
+                                            一時的な問題の可能性があります。再度分析をお試しください。
+                                        {% endif %}
+                                    </p>
+                                {% else %}
+                                    <p class="error-message">
+                                        <strong>原因:</strong> {{ ai_meta.error_message|default:'不明なエラーが発生しました' }}
+                                    </p>
+                                    <p class="error-detail">
+                                        一時的な問題の可能性があります。再度分析をお試しください。
+                                    </p>
+                                {% endif %}
+                                
+                                <div class="error-actions">
+                                    {% if ai_meta.is_retryable %}
+                                        <a href="{% url 'copomo:sentiment-analysis' document.doc_id %}?force=true" 
+                                        class="action-btn action-btn-primary">
+                                            <i class="fas fa-redo"></i>
+                                            AI分析を再試行
+                                        </a>
+                                    {% endif %}
+                                    <span class="retry-hint">
+                                        <i class="fas fa-clock"></i>
+                                        {% if ai_meta.error_type == 'rate_limit' %}
+                                            1〜2分後に再試行をお勧めします
+                                        {% elif ai_meta.error_type == 'quota_exceeded' %}
+                                            明日以降に再試行をお勧めします
+                                        {% else %}
+                                            しばらく時間をおいて再試行をお勧めします
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {# 基本分析結果への誘導 #}
+                        <div class="fallback-analysis-notice">
+                            <div class="notice-header">
+                                <i class="fas fa-info-circle"></i>
+                                基本分析結果をご確認ください
+                            </div>
+                            <p class="notice-text">
+                                AI分析は利用できませんでしたが、ワードベースの基本分析結果は正常に取得できています。
+                                「語彙分析」タブで詳細をご確認いただけます。
+                            </p>
+                            <button type="button" class="tab-switch-btn" onclick="switchToTab('word-analysis')">
+                                <i class="fas fa-arrow-right"></i>
+                                語彙分析タブを見る
+                            </button>
+                        </div>
+                        
+                        {# 基本スコア表示 #}
+                        <div class="score-display">
+                            <div class="score-box score-box-primary">
+                                <div class="score-box-label">基本分析スコア（参考値）</div>
+                                <div class="score-box-value {% if session.overall_score > 0.3 %}score-medium{% elif session.overall_score > 0 %}score-low{% else %}score-danger{% endif %}">
+                                    {{ session.overall_score|floatformat:2 }}
+                                </div>
+                                <div class="score-box-desc">
+                                    ワードベース分析による感情スコア（-1.0〜+1.0）
+                                </div>
+                            </div>
+                            
+                            <div class="score-box score-box-grade">
+                                <div class="score-box-label">感情ラベル</div>
+                                <div class="sentiment-label-badge {{ session.sentiment_label }}">
+                                    {% if session.sentiment_label == 'positive' %}
+                                        <i class="fas fa-smile"></i> ポジティブ
+                                    {% elif session.sentiment_label == 'negative' %}
+                                        <i class="fas fa-frown"></i> ネガティブ
+                                    {% else %}
+                                        <i class="fas fa-meh"></i> 中立
+                                    {% endif %}
+                                </div>
+                                <div class="score-box-desc">
+                                    語彙分析に基づく判定結果
+                                </div>
+                            </div>
+                        </div>
+                    
+                    {# ケース2: AI分析が成功した場合 #}
+                    {% elif session.analysis_result.ai_expert_analysis %}
+                        
                         {% with ai=session.analysis_result.ai_expert_analysis %}
                             
-                            <!-- 整合性チェック警告 -->
+                            {# 整合性チェック警告 #}
                             {% if ai.consistency_check and not ai.consistency_check.passed %}
                                 <div class="warning-alert">
                                     <i class="fas fa-exclamation-triangle warning-alert-icon"></i>
                                     <div class="warning-alert-content">
                                         <div class="warning-alert-title">評価調整のお知らせ</div>
-                                        総合スコア（{{ session.analysis_result.ai_overall_score|floatformat:2 }}）と当初の推奨グレード（{{ ai.original_grade }}）に
-                                        不整合が検出されたため、グレードを<strong>{{ ai.investment_grade }}</strong>に調整しました。
+                                        総合スコアと当初の推奨グレードに不整合が検出されたため、グレードを調整しました。
                                     </div>
                                 </div>
                             {% endif %}
                             
-                            <!-- スコア表示 -->
+                            {# スコア表示 #}
                             <div class="score-display">
+                                {# 総合評価スコア #}
                                 <div class="score-box score-box-primary">
                                     <div class="score-box-label">総合評価スコア</div>
-                                    <div class="score-box-value {% if session.analysis_result.ai_overall_score >= 75 %}score-high{% elif session.analysis_result.ai_overall_score >= 50 %}score-medium{% elif session.analysis_result.ai_overall_score >= 35 %}score-low{% else %}score-danger{% endif %}">
-                                        {{ session.analysis_result.ai_overall_score|floatformat:0 }}<span class="score-box-unit">/100点</span>
+                                    
+                                    {# ai.overall_score または session.analysis_result.ai_overall_score を使用 #}
+                                    {% with ai_score=ai.overall_score|default:session.analysis_result.ai_overall_score %}
+                                    <div class="score-box-value {% if ai_score >= 75 %}score-high{% elif ai_score >= 50 %}score-medium{% elif ai_score >= 35 %}score-low{% else %}score-danger{% endif %}">
+                                        {{ ai_score|floatformat:0 }}<span class="score-box-unit">/100点</span>
                                     </div>
-                                    <div class="score-box-desc">{{ ai.consistency_check.score_range }}</div>
+                                    <div class="score-box-desc">{{ ai.consistency_check.score_range|default:"AI分析によるスコア" }}</div>
                                     <div class="score-progress">
-                                        <div class="score-progress-bar {% if session.analysis_result.ai_overall_score >= 75 %}high{% elif session.analysis_result.ai_overall_score >= 50 %}medium{% elif session.analysis_result.ai_overall_score >= 35 %}low{% else %}danger{% endif %}" 
-                                             style="width: {{ session.analysis_result.ai_overall_score }}%"></div>
+                                        <div class="score-progress-bar {% if ai_score >= 75 %}high{% elif ai_score >= 50 %}medium{% elif ai_score >= 35 %}low{% else %}danger{% endif %}" 
+                                            style="width: {{ ai_score }}%"></div>
                                     </div>
+                                    {% endwith %}
                                 </div>
                                 
+                                {# 投資推奨グレード #}
                                 <div class="score-box score-box-grade">
                                     <div class="score-box-label">投資推奨グレード</div>
                                     <div class="grade-badge {% if ai.investment_grade == 'A+' or ai.investment_grade == 'A' %}grade-a{% elif ai.investment_grade == 'B' or ai.investment_grade == 'B+' %}grade-b{% elif ai.investment_grade == 'C' %}grade-c{% else %}grade-d{% endif %}">
-                                        {{ ai.investment_grade }}
+                                        {{ ai.investment_grade|default:"?" }}
                                     </div>
                                     <div class="score-box-desc">
                                         {% if ai.investment_grade == 'A+' %}強気買い推奨 (85点以上)
@@ -1084,7 +1476,7 @@ body {
                                 </div>
                             </div>
                             
-                            <!-- 評価基準説明 -->
+                            {# 評価基準説明 #}
                             <div class="criteria-info">
                                 <div class="criteria-info-title">
                                     <i class="fas fa-info-circle"></i>
@@ -1098,7 +1490,7 @@ body {
                                 </ul>
                             </div>
                             
-                            <!-- スコア内訳 -->
+                            {# スコア内訳 #}
                             {% if ai.score_breakdown %}
                                 <div class="score-breakdown">
                                     <h6 class="breakdown-title">
@@ -1113,6 +1505,7 @@ body {
                                         </div>
                                     {% endif %}
                                     
+                                    {# プラス要因 #}
                                     {% if ai.score_breakdown.positive_factors %}
                                         <div class="factor-section">
                                             <div class="factor-section-title positive">
@@ -1131,6 +1524,7 @@ body {
                                         </div>
                                     {% endif %}
                                     
+                                    {# マイナス要因 #}
                                     {% if ai.score_breakdown.negative_factors %}
                                         <div class="factor-section">
                                             <div class="factor-section-title negative">
@@ -1149,6 +1543,7 @@ body {
                                         </div>
                                     {% endif %}
                                     
+                                    {# 最終計算 #}
                                     {% if ai.score_breakdown.final_calculation %}
                                         <div class="final-calculation">
                                             <div class="final-calculation-title">
@@ -1162,15 +1557,60 @@ body {
                             {% endif %}
                             
                         {% endwith %}
+                    
+                    {# ケース3: AI分析が試行されなかった場合 #}
                     {% else %}
-                        <div class="empty-state">
-                            <div class="empty-state-icon">
-                                <i class="fas fa-info-circle"></i>
+                        
+                        <div class="ai-analysis-unavailable">
+                            <div class="unavailable-icon">
+                                <i class="fas fa-robot"></i>
                             </div>
-                            <h5 class="empty-state-title">AI分析データがありません</h5>
-                            <p class="empty-state-desc">標準的な語彙分析結果をご確認ください</p>
+                            <div class="unavailable-content">
+                                <h5 class="unavailable-title">AI分析が実行されていません</h5>
+                                <p class="unavailable-message">
+                                    {% if ai_meta.error_type == 'not_initialized' %}
+                                        AI分析機能が初期化されていません。
+                                    {% elif ai_meta.error_type == 'api_unavailable' %}
+                                        {{ ai_meta.error_message|default:'AI APIが利用できない状態です。' }}
+                                    {% elif ai_meta.error_type == 'no_document_info' %}
+                                        書類情報が不足しているため、AI分析を実行できませんでした。
+                                    {% else %}
+                                        この分析ではAI機能が使用されませんでした。
+                                    {% endif %}
+                                </p>
+                                <p class="unavailable-detail">
+                                    AI分析を含む完全な分析結果を取得するには、再分析を実行してください。
+                                </p>
+                                <div class="unavailable-actions">
+                                    <a href="{% url 'copomo:sentiment-analysis' document.doc_id %}?force=true" 
+                                    class="action-btn action-btn-primary">
+                                        <i class="fas fa-redo"></i>
+                                        AI分析付きで再実行
+                                    </a>
+                                </div>
+                            </div>
                         </div>
+                        
+                        {# 基本分析結果へ誘導 #}
+                        <div class="fallback-analysis-notice" style="margin-top: 1.5rem;">
+                            <div class="notice-header">
+                                <i class="fas fa-chart-bar"></i>
+                                基本分析結果は利用可能です
+                            </div>
+                            <p class="notice-text">
+                                ワードベースの感情分析結果は正常に取得できています。
+                                「語彙分析」タブで詳細をご確認いただけます。
+                            </p>
+                            <button type="button" class="tab-switch-btn" onclick="switchToTab('word-analysis')">
+                                <i class="fas fa-arrow-right"></i>
+                                語彙分析タブを見る
+                            </button>
+                        </div>
+                        
                     {% endif %}
+                    
+                    {% endwith %}
+                    
                 </div>
             </div>
             
@@ -1455,7 +1895,311 @@ body {
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.min.js"></script>
+<script>
 
+// タブ切り替え関数（プログラムから呼び出し用）
+function switchToTab(tabId) {
+    // すべてのタブボタンからactiveを削除
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // すべてのタブパネルからactiveを削除
+    document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.remove('active');
+    });
+    
+    // 指定されたタブをアクティブに
+    const targetBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+    const targetPanel = document.getElementById(tabId);
+    
+    if (targetBtn) {
+        targetBtn.classList.add('active');
+    }
+    
+    if (targetPanel) {
+        targetPanel.classList.add('active');
+        
+        // ワードクラウドタブの場合は再描画
+        if (tabId === 'word-analysis') {
+            setTimeout(() => {
+                if (typeof initializeWordcloud === 'function') {
+                    initializeWordcloud();
+                }
+            }, 100);
+        }
+    }
+}
+
+// AI分析再試行のカウントダウン表示
+function startRetryCountdown(seconds, elementId) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    let remaining = seconds;
+    
+    const updateDisplay = () => {
+        if (remaining <= 0) {
+            element.innerHTML = '<i class="fas fa-check-circle"></i> 再試行可能です';
+            element.classList.add('ready');
+            return;
+        }
+        
+        const minutes = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        const timeStr = minutes > 0 
+            ? `${minutes}分${secs}秒` 
+            : `${secs}秒`;
+        
+        element.innerHTML = `<i class="fas fa-clock"></i> 再試行まで: <span class="countdown-timer">${timeStr}</span>`;
+        remaining--;
+        setTimeout(updateDisplay, 1000);
+    };
+    
+    updateDisplay();
+}
+
+// AI分析エラー時の詳細表示切り替え
+function toggleErrorDetails(button) {
+    const details = button.closest('.ai-analysis-error').querySelector('.error-details-expanded');
+    if (details) {
+        details.classList.toggle('show');
+        button.textContent = details.classList.contains('show') ? '詳細を隠す' : '詳細を表示';
+    }
+}
+
+// 分析状態の確認（ポーリング用）
+async function checkAnalysisStatus(sessionId) {
+    try {
+        const response = await fetch(`/api/sentiment/progress/${sessionId}/`);
+        const data = await response.json();
+        
+        if (data.status === 'COMPLETED') {
+            // 分析完了時、AI分析の状態をチェック
+            const result = await fetch(`/api/sentiment/result/${sessionId}/`);
+            const resultData = await result.json();
+            
+            if (resultData.result && resultData.result.analysis_metadata) {
+                const aiMeta = resultData.result.analysis_metadata.ai_analysis;
+                if (aiMeta && !aiMeta.success && aiMeta.attempted) {
+                    // AI分析失敗時の通知
+                    showAIAnalysisFailureNotification(aiMeta);
+                }
+            }
+        }
+        
+        return data;
+    } catch (error) {
+        console.error('分析状態確認エラー:', error);
+        return null;
+    }
+}
+
+// AI分析失敗通知の表示
+function showAIAnalysisFailureNotification(aiMeta) {
+    // 既存の通知があれば削除
+    const existing = document.querySelector('.ai-failure-notification');
+    if (existing) existing.remove();
+    
+    const notification = document.createElement('div');
+    notification.className = 'ai-failure-notification';
+    
+    let message = 'AI分析を実行できませんでした。';
+    let retryHint = '';
+    
+    if (aiMeta.error_type === 'rate_limit') {
+        message = 'API利用制限に達したため、AI分析をスキップしました。';
+        retryHint = 'しばらく時間をおいて再分析をお試しください。';
+    } else if (aiMeta.error_type === 'quota_exceeded') {
+        message = 'APIクォータを超過したため、AI分析をスキップしました。';
+        retryHint = '明日以降に再分析をお試しください。';
+    }
+    
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div class="notification-text">
+                <strong>${message}</strong>
+                ${retryHint ? `<p>${retryHint}</p>` : ''}
+            </div>
+            <button class="notification-close" onclick="this.closest('.ai-failure-notification').remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // 10秒後に自動で消す
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.classList.add('fade-out');
+            setTimeout(() => notification.remove(), 300);
+        }
+    }, 10000);
+}
+
+// 通知用のスタイルを動的に追加
+const notificationStyles = `
+.ai-failure-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 400px;
+    animation: slideIn 0.3s ease-out;
+}
+
+.ai-failure-notification.fade-out {
+    animation: slideOut 0.3s ease-out forwards;
+}
+
+.ai-failure-notification .notification-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    background: linear-gradient(135deg, #fef3c7, #fffbeb);
+    border: 1px solid #fcd34d;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.ai-failure-notification .notification-content i:first-child {
+    color: #d97706;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.ai-failure-notification .notification-text {
+    flex: 1;
+    font-size: 0.875rem;
+    color: #92400e;
+}
+
+.ai-failure-notification .notification-text p {
+    margin: 4px 0 0;
+    font-size: 0.8125rem;
+    color: #78350f;
+}
+
+.ai-failure-notification .notification-close {
+    background: none;
+    border: none;
+    color: #d97706;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+`;
+
+// スタイルを動的に追加
+const styleSheet = document.createElement('style');
+styleSheet.textContent = notificationStyles;
+document.head.appendChild(styleSheet);
+
+// ページ読み込み時にAI分析状態をチェック
+document.addEventListener('DOMContentLoaded', function() {
+    // AI分析失敗時の自動通知（テンプレートからデータを取得）
+    const aiAnalysisData = window.aiAnalysisMetadata;
+    if (aiAnalysisData && aiAnalysisData.attempted && !aiAnalysisData.success) {
+        showAIAnalysisFailureNotification(aiAnalysisData);
+    }
+});
+</script>
+<script>
+// AI分析メタデータをJavaScriptで利用可能にする
+window.aiAnalysisMetadata = {{ session.analysis_result.analysis_metadata.ai_analysis|safe|default:'null' }};
+
+// タブ切り替え関数（プログラムから呼び出し用）
+function switchToTab(tabId) {
+    // すべてのタブボタンからactiveを削除
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // すべてのタブパネルからactiveを削除
+    document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.remove('active');
+    });
+    
+    // 指定されたタブをアクティブに
+    const targetBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+    const targetPanel = document.getElementById(tabId);
+    
+    if (targetBtn) {
+        targetBtn.classList.add('active');
+    }
+    
+    if (targetPanel) {
+        targetPanel.classList.add('active');
+        
+        // ワードクラウドタブの場合は再描画
+        if (tabId === 'word-analysis') {
+            setTimeout(() => {
+                if (typeof initializeWordcloud === 'function') {
+                    initializeWordcloud();
+                }
+            }, 100);
+        }
+    }
+}
+
+// 既存のJavaScriptコード（タブ切り替え、ワードクラウド等）
+document.querySelectorAll('.tab-btn').forEach(tab => {
+    tab.addEventListener('click', function() {
+        const targetTab = this.dataset.tab;
+        switchToTab(targetTab);
+    });
+});
+
+// 文章の展開/折りたたみ
+function toggleSentence(header) {
+    const body = header.nextElementSibling;
+    const isExpanded = body.classList.contains('expanded');
+    
+    document.querySelectorAll('.sentence-item-body.expanded').forEach(el => el.classList.remove('expanded'));
+    document.querySelectorAll('.sentence-item-header.expanded').forEach(el => el.classList.remove('expanded'));
+    
+    if (!isExpanded) {
+        body.classList.add('expanded');
+        header.classList.add('expanded');
+    }
+}
+
+// 初期化
+document.addEventListener('DOMContentLoaded', function() {
+    // AI分析失敗時の通知表示
+    if (window.aiAnalysisMetadata && window.aiAnalysisMetadata.attempted && !window.aiAnalysisMetadata.success) {
+        console.log('AI分析失敗:', window.aiAnalysisMetadata);
+    }
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+</script>
 <script>
 // データ
 const actualScore = {{ session.overall_score }};

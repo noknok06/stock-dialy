@@ -866,11 +866,10 @@ class TransparentSentimentAnalyzer:
             logger.warning("AIExpertAnalyzer シングルトンが利用不可")
     
     def analyze_text(self, text: str, session_id: str = None, document_info: Dict[str, str] = None) -> Dict[str, Any]:
-        """透明性の高い感情分析（AI専門家統合版・デバッグ強化版）"""
+        """透明性の高い感情分析（AI専門家統合版・デバッグ強化版 + 容量制限対応）"""
         try:
             if not text or len(text.strip()) < 10:
                 return self._empty_result(session_id)
-            
             # ===== デバッグ情報を詳細に出力 =====
             logger.info("=" * 60)
             logger.info("感情分析開始")
@@ -972,39 +971,42 @@ class TransparentSentimentAnalyzer:
                     'features_enabled': ['重複カウント', '否定文対応', '複合語処理', '文脈強化', 'API呼び出し最適化']
                 }
             }
-            
-            # ===== AI専門家分析を追加レイヤーとして実行 =====
             ai_analysis_attempted = False
             ai_analysis_success = False
-            ai_analysis_error = None
+            ai_analysis_error_type = None
+            ai_analysis_error_message = None
+            ai_analysis_is_retryable = False
             
             if self.ai_expert and self.ai_expert.api_available and document_info:
                 ai_analysis_attempted = True
+                
                 try:
-                    logger.info("★ AI専門家による分析を開始（1回のAPI呼び出し）")
+                    logger.info("★ AI専門家による分析を開始")
                     
-                    # テキストを適切な長さに制限（API制限対策）
                     max_text_length = 30000
                     analysis_text = text[:max_text_length] if len(text) > max_text_length else text
                     
-                    logger.info(f"AI分析用テキスト長: {len(analysis_text)} 文字")
-                    
+                    # AI分析を実行
                     ai_result = self.ai_expert.analyze_document_comprehensive(
                         analysis_text,
                         document_info,
                         basic_result
                     )
                     
-                    logger.info(f"AI分析結果取得: {ai_result is not None}")
-                    if ai_result:
-                        logger.info(f"AI分析結果にinvestment_grade含む: {'investment_grade' in ai_result}")
+                    # ★★★ 重要: ai_analysis_status をチェック ★★★
+                    ai_status = ai_result.get('ai_analysis_status', {})
                     
-                    # AI分析結果を追加（基本分析は保持）
-                    if ai_result and 'investment_grade' in ai_result:
+                    if ai_status.get('success', False):
+                        # AI分析成功
+                        ai_analysis_success = True
+                        
+                        # ai_expert_analysis に結果を格納
                         basic_result['ai_expert_analysis'] = {
                             'investment_grade': ai_result.get('investment_grade'),
+                            'overall_score': ai_result.get('overall_score'),  # ★ 0-100スコアも格納
                             'detailed_scores': ai_result.get('detailed_scores', {}),
                             'investment_points': ai_result.get('investment_points', []),
+                            'investor_insights': ai_result.get('investor_insights', []),
                             'risk_analysis': ai_result.get('risk_analysis', {}),
                             'future_outlook': ai_result.get('future_outlook', {}),
                             'confidence': ai_result.get('confidence', 0.5),
@@ -1014,54 +1016,70 @@ class TransparentSentimentAnalyzer:
                             'metadata': ai_result.get('analysis_metadata', {})
                         }
                         
-                        # AIスコアを追加（基本スコアは上書きしない）
+                        # トップレベルにもAIスコアを追加（テンプレートでのアクセス用）
                         basic_result['ai_overall_score'] = ai_result.get('overall_score')
                         basic_result['ai_sentiment_label'] = ai_result.get('sentiment_label')
                         
-                        ai_analysis_success = True
-                        logger.info("★ AI専門家分析完了 - investment_pointsはユーザー見解生成で再利用されます")
-                        logger.info(f"投資グレード: {ai_result.get('investment_grade')}")
-                        logger.info(f"AIスコア: {ai_result.get('overall_score')}")
+                        logger.info(f"★ AI分析成功: グレード={ai_result.get('investment_grade')}, スコア={ai_result.get('overall_score')}")
+                        
                     else:
-                        ai_analysis_error = "AI分析結果が不完全です（investment_gradeなし）"
-                        logger.warning(ai_analysis_error)
-                        if ai_result:
-                            logger.warning(f"取得されたキー: {list(ai_result.keys())}")
+                        # AI分析失敗（容量制限など）
+                        ai_analysis_success = False
+                        ai_analysis_error_type = ai_status.get('error_type', 'unknown')
+                        ai_analysis_error_message = ai_status.get('error_message', 'AI分析に失敗しました')
+                        ai_analysis_is_retryable = ai_status.get('is_retryable', True)
+                        
+                        logger.warning(f"★ AI分析失敗: type={ai_analysis_error_type}, message={ai_analysis_error_message}")
+                        
+                        # フォールバック結果を使用（オプション）
+                        if ai_result.get('investment_grade'):
+                            basic_result['ai_fallback_analysis'] = {
+                                'investment_grade': ai_result.get('investment_grade'),
+                                'overall_score': ai_result.get('overall_score'),
+                                'confidence': ai_result.get('confidence', 0.3),
+                                'is_fallback': True,
+                                'fallback_reason': ai_analysis_error_message
+                            }
+                            basic_result['ai_overall_score'] = ai_result.get('overall_score')
+                            basic_result['ai_sentiment_label'] = ai_result.get('sentiment_label')
                         
                 except Exception as e:
-                    ai_analysis_error = str(e)
-                    logger.error(f"AI専門家分析エラー（基本分析は継続）: {e}")
-                    logger.error(f"エラー詳細: {traceback.format_exc()}")
+                    ai_analysis_success = False
+                    ai_analysis_error_type = 'exception'
+                    ai_analysis_error_message = str(e)
+                    ai_analysis_is_retryable = True
+                    logger.error(f"AI分析例外エラー: {e}")
             else:
-                # AI分析がスキップされた理由をログ出力
-                skip_reasons = []
+                # AI分析がスキップされた理由を記録
                 if not self.ai_expert:
-                    skip_reasons.append("AI Expert Analyzerが初期化されていません (None)")
+                    ai_analysis_error_type = 'not_initialized'
+                    ai_analysis_error_message = 'AI Expertが初期化されていません'
                 elif not self.ai_expert.api_available:
-                    skip_reasons.append(f"APIが利用できません（理由: {self.ai_expert.initialization_error or 'APIキー未設定または初期化失敗'}）")
-                if not document_info:
-                    skip_reasons.append("document_infoが提供されていません")
+                    ai_analysis_error_type = 'api_unavailable'
+                    ai_analysis_error_message = self.ai_expert.initialization_error or 'APIが利用できません'
+                elif not document_info:
+                    ai_analysis_error_type = 'no_document_info'
+                    ai_analysis_error_message = '書類情報が提供されていません'
                 
-                logger.info(f"AI専門家分析スキップ: {', '.join(skip_reasons)}")
+                logger.info(f"AI分析スキップ: {ai_analysis_error_message}")
             
-            # デバッグ情報をメタデータに追加
+            # =================================================================
+            # ★★★ analysis_metadata.ai_analysis にステータスを格納 ★★★
+            # テンプレートはここを参照する
+            # =================================================================
             basic_result['analysis_metadata']['ai_analysis'] = {
                 'attempted': ai_analysis_attempted,
                 'success': ai_analysis_success,
-                'error': ai_analysis_error,
+                'error_type': ai_analysis_error_type,
+                'error_message': ai_analysis_error_message,
+                'is_retryable': ai_analysis_is_retryable,
                 'ai_expert_available': self.ai_expert is not None,
                 'api_available': self.ai_expert.api_available if self.ai_expert else False,
-                'has_ai_expert_analysis': 'ai_expert_analysis' in basic_result
+                'has_ai_expert_analysis': 'ai_expert_analysis' in basic_result,
+                'has_fallback': 'ai_fallback_analysis' in basic_result
             }
             
-            logger.info("=" * 60)
-            logger.info("感情分析完了")
-            logger.info(f"基本スコア: {overall_score}")
-            logger.info(f"AI分析成功: {ai_analysis_success}")
-            logger.info("=" * 60)
-            
-            # ユーザー向け詳細見解を生成（既存ロジック - 最適化済み）
-            # ここでAI Expert結果が再利用され、追加のAPI呼び出しは行われない
+            # ユーザー向け詳細見解を生成
             if document_info:
                 user_insights = self.insight_generator.generate_detailed_insights(basic_result, document_info)
                 basic_result['user_insights'] = user_insights
@@ -1069,9 +1087,9 @@ class TransparentSentimentAnalyzer:
             return basic_result
             
         except Exception as e:
-            logger.error(f"強化感情分析エラー: {e}")
-            logger.error(f"エラー詳細: {traceback.format_exc()}")
-            raise Exception(f"感情分析処理中にエラーが発生しました: {str(e)}")
+            logger.error(f"感情分析エラー: {e}")
+            raise
+
     
     def analyze_text_sections(self, text_sections: Dict[str, str], session_id: str = None, document_info: Dict[str, str] = None) -> Dict[str, Any]:
         """複数セクションの分析（既存ロジック保持・デバッグ強化）"""
@@ -1220,21 +1238,20 @@ class TransparentSentimentAnalyzer:
                     'features_enabled': ['重複カウント', '否定文対応', '複合語処理', 'セクション統合強化', 'API呼び出し最適化']
                 }
             }
-            
-            # ===== AI専門家分析を1回だけ実行（全セクション統合テキストで） =====
+                    
+            # ★★★ AI分析（上記と同じロジック）★★★
             ai_analysis_attempted = False
             ai_analysis_success = False
-            ai_analysis_error = None
+            ai_analysis_error_type = None
+            ai_analysis_error_message = None
+            ai_analysis_is_retryable = False
             
             if self.ai_expert and self.ai_expert.api_available and document_info:
                 ai_analysis_attempted = True
+                
                 try:
-                    logger.info("★ 統合テキストでAI専門家分析を実行（1回のAPI呼び出し）")
-                    
                     max_text_length = 30000
                     analysis_text = combined_text[:max_text_length] if len(combined_text) > max_text_length else combined_text
-                    
-                    logger.info(f"統合AI分析用テキスト長: {len(analysis_text)} 文字")
                     
                     ai_result = self.ai_expert.analyze_document_comprehensive(
                         analysis_text,
@@ -1242,11 +1259,17 @@ class TransparentSentimentAnalyzer:
                         basic_result
                     )
                     
-                    if ai_result and 'investment_grade' in ai_result:
+                    ai_status = ai_result.get('ai_analysis_status', {})
+                    
+                    if ai_status.get('success', False):
+                        ai_analysis_success = True
+                        
                         basic_result['ai_expert_analysis'] = {
                             'investment_grade': ai_result.get('investment_grade'),
+                            'overall_score': ai_result.get('overall_score'),
                             'detailed_scores': ai_result.get('detailed_scores', {}),
                             'investment_points': ai_result.get('investment_points', []),
+                            'investor_insights': ai_result.get('investor_insights', []),
                             'risk_analysis': ai_result.get('risk_analysis', {}),
                             'future_outlook': ai_result.get('future_outlook', {}),
                             'confidence': ai_result.get('confidence', 0.5),
@@ -1258,47 +1281,56 @@ class TransparentSentimentAnalyzer:
                         
                         basic_result['ai_overall_score'] = ai_result.get('overall_score')
                         basic_result['ai_sentiment_label'] = ai_result.get('sentiment_label')
-                        
-                        ai_analysis_success = True
-                        logger.info("★ セクション統合AI分析完了 - investment_pointsはユーザー見解生成で再利用されます")
                     else:
-                        ai_analysis_error = "AI分析結果が不完全です"
-                        logger.warning(ai_analysis_error)
+                        ai_analysis_success = False
+                        ai_analysis_error_type = ai_status.get('error_type', 'unknown')
+                        ai_analysis_error_message = ai_status.get('error_message', 'AI分析に失敗しました')
+                        ai_analysis_is_retryable = ai_status.get('is_retryable', True)
                         
+                        if ai_result.get('investment_grade'):
+                            basic_result['ai_fallback_analysis'] = {
+                                'investment_grade': ai_result.get('investment_grade'),
+                                'overall_score': ai_result.get('overall_score'),
+                                'is_fallback': True,
+                                'fallback_reason': ai_analysis_error_message
+                            }
+                            basic_result['ai_overall_score'] = ai_result.get('overall_score')
+                            
                 except Exception as e:
-                    ai_analysis_error = str(e)
-                    logger.error(f"AI専門家分析エラー（基本分析は継続）: {e}")
-                    logger.error(f"エラー詳細: {traceback.format_exc()}")
+                    ai_analysis_success = False
+                    ai_analysis_error_type = 'exception'
+                    ai_analysis_error_message = str(e)
+                    ai_analysis_is_retryable = True
             else:
-                skip_reasons = []
                 if not self.ai_expert:
-                    skip_reasons.append("AI Expert Analyzerが初期化されていません")
+                    ai_analysis_error_type = 'not_initialized'
+                    ai_analysis_error_message = 'AI Expertが初期化されていません'
                 elif not self.ai_expert.api_available:
-                    skip_reasons.append(f"APIが利用できません（理由: {self.ai_expert.initialization_error or '不明'}）")
-                if not document_info:
-                    skip_reasons.append("document_infoが提供されていません")
-                
-                logger.info(f"セクション統合AI分析スキップ: {', '.join(skip_reasons)}")
+                    ai_analysis_error_type = 'api_unavailable'
+                    ai_analysis_error_message = self.ai_expert.initialization_error or 'APIが利用できません'
+                elif not document_info:
+                    ai_analysis_error_type = 'no_document_info'
+                    ai_analysis_error_message = '書類情報が提供されていません'
             
-            # デバッグ情報をメタデータに追加
+            # ★★★ テンプレート用のステータス格納 ★★★
             basic_result['analysis_metadata']['ai_analysis'] = {
                 'attempted': ai_analysis_attempted,
                 'success': ai_analysis_success,
-                'error': ai_analysis_error,
+                'error_type': ai_analysis_error_type,
+                'error_message': ai_analysis_error_message,
+                'is_retryable': ai_analysis_is_retryable,
                 'ai_expert_available': self.ai_expert is not None,
                 'api_available': self.ai_expert.api_available if self.ai_expert else False,
-                'has_ai_expert_analysis': 'ai_expert_analysis' in basic_result
+                'has_ai_expert_analysis': 'ai_expert_analysis' in basic_result,
+                'has_fallback': 'ai_fallback_analysis' in basic_result
             }
             
-            # ユーザー向け詳細見解を生成（最適化済み - AI Expert結果を再利用）
             if document_info:
                 user_insights = self.insight_generator.generate_detailed_insights(basic_result, document_info)
                 basic_result['user_insights'] = user_insights
             
-            logger.info(f"統合セクション分析完了: {len(section_results)}セクション, AI成功: {ai_analysis_success}")
-            
             return basic_result
-            
+
         except Exception as e:
             logger.error(f"セクション分析エラー: {e}")
             logger.error(f"エラー詳細: {traceback.format_exc()}")
@@ -2004,8 +2036,9 @@ class SentimentAnalysisService:
         except SentimentAnalysisSession.DoesNotExist:
             return {'status': 'not_found', 'message': 'セッションが見つかりません'}
     
+    
     def _execute_analysis(self, session_id: int, user_ip: str = None):
-        """分析実行（document_info修正版）"""
+        """分析実行（AI分析ステータス追跡強化版）"""
         from ..models import SentimentAnalysisSession, SentimentAnalysisHistory
         
         start_time = time.time()
@@ -2016,7 +2049,7 @@ class SentimentAnalysisService:
             session.analysis_result = {'progress': 5, 'current_step': 'API最適化版エンジン初期化中...'}
             session.save()
             
-            # ===== 書類情報を準備（重要：ここが問題だった） =====
+            # 書類情報を準備
             document_info = {
                 'company_name': session.document.company_name or '不明',
                 'doc_description': session.document.doc_description or '不明',
@@ -2024,9 +2057,8 @@ class SentimentAnalysisService:
                 'submit_date': session.document.submit_date_time.strftime('%Y-%m-%d') if session.document.submit_date_time else '不明',
                 'securities_code': session.document.securities_code or '',
                 'edinet_code': session.document.edinet_code or '',
-                'period_start': str(session.document.period_start) if session.document.period_start else '',
-                'period_end': str(session.document.period_end) if session.document.period_end else '',
             }
+
             
             # デバッグログ出力
             logger.info("=" * 60)
@@ -2047,48 +2079,25 @@ class SentimentAnalysisService:
                 logger.warning(f"XBRL取得失敗: {e}")
                 xbrl_text_sections = None
             
+            # 分析実行
             if not xbrl_text_sections:
-                session.analysis_result = {'progress': 40, 'current_step': '基本情報を使用してAPI最適化版分析中...'}
-                session.save()
-                
-                logger.info("XBRLテキストなし - 基本テキストで分析")
                 document_text = self._extract_enhanced_document_text(session.document)
-                
-                # ここでdocument_infoを渡す
                 result = self.analyzer.analyze_text(document_text, str(session.session_id), document_info)
             else:
-                session.analysis_result = {'progress': 50, 'current_step': 'XBRLテキスト前処理中...'}
-                session.save()
-                
-                logger.info(f"XBRLテキストあり - {len(xbrl_text_sections)}セクションで分析")
-                
-                session.analysis_result = {'progress': 70, 'current_step': 'API最適化版感情分析実行中...'}
-                session.save()
-                
-                # ここでdocument_infoを渡す（重要！）
                 result = self.analyzer.analyze_text_sections(xbrl_text_sections, str(session.session_id), document_info)
             
-            session.analysis_result = {'progress': 90, 'current_step': '分析結果最適化中...'}
-            session.save()
-            
-            # AI分析の結果を確認
-            if 'ai_expert_analysis' in result:
-                logger.info("✓ AI Expert分析結果が含まれています")
-                logger.info(f"  投資グレード: {result['ai_expert_analysis'].get('investment_grade')}")
-            else:
-                logger.warning("✗ AI Expert分析結果が含まれていません")
-                if 'analysis_metadata' in result and 'ai_analysis' in result['analysis_metadata']:
-                    ai_meta = result['analysis_metadata']['ai_analysis']
-                    logger.warning(f"  AI分析試行: {ai_meta.get('attempted')}")
-                    logger.warning(f"  AI分析成功: {ai_meta.get('success')}")
-                    logger.warning(f"  エラー: {ai_meta.get('error')}")
-            
-            # API呼び出し節約の確認
-            if 'user_insights' in result and 'gemini_metadata' in result['user_insights']:
-                gemini_meta = result['user_insights']['gemini_metadata']
-                if gemini_meta.get('api_call_saved'):
-                    logger.info("★ API呼び出し節約成功: AI Expert結果を再利用")
-                    logger.info(f"  再利用元: {gemini_meta.get('reused_from')}")
+            # ===== 新規追加: AI分析ステータスのログ出力 =====
+            ai_meta = result.get('analysis_metadata', {}).get('ai_analysis', {})
+            if ai_meta:
+                if ai_meta.get('success'):
+                    logger.info(f"✓ AI分析成功: {session.session_id}")
+                elif ai_meta.get('attempted'):
+                    logger.warning(f"✗ AI分析失敗: {session.session_id}")
+                    logger.warning(f"  エラータイプ: {ai_meta.get('error_type')}")
+                    logger.warning(f"  エラー内容: {ai_meta.get('error')}")
+                    logger.warning(f"  再試行可能: {ai_meta.get('is_retryable')}")
+                else:
+                    logger.info(f"- AI分析スキップ: {session.session_id}")
             
             # セッション更新
             session.overall_score = result['overall_score']
@@ -2107,11 +2116,10 @@ class SentimentAnalysisService:
                 analysis_duration=analysis_duration
             )
             
-            logger.info(f"API最適化版感情分析完了: {session.session_id} ({analysis_duration:.2f}秒)")
+            logger.info(f"感情分析完了: {session.session_id} ({analysis_duration:.2f}秒)")
             
         except Exception as e:
-            logger.error(f"API最適化版感情分析エラー: {session_id} - {e}")
-            logger.error(f"エラー詳細: {traceback.format_exc()}")
+            logger.error(f"感情分析エラー: {session_id} - {e}")
             
             try:
                 session = SentimentAnalysisSession.objects.get(id=session_id)
@@ -2120,6 +2128,7 @@ class SentimentAnalysisService:
                 session.save()
             except:
                 pass
+
     
     def _extract_enhanced_document_text(self, document) -> str:
         """強化されたサンプルテキスト生成"""
