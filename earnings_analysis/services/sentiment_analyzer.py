@@ -1276,6 +1276,7 @@ class TransparentSentimentAnalyzer:
                             'reasoning': ai_result.get('analysis_reasoning', []),
                             'score_breakdown': ai_result.get('score_breakdown', {}),
                             'consistency_check': ai_result.get('consistency_check', {}),
+                            'expert_commentary': ai_result.get('expert_commentary', {}),
                             'metadata': ai_result.get('analysis_metadata', {})
                         }
                         

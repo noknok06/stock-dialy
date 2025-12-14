@@ -1,4 +1,4 @@
-# earnings_analysis/services/ai_expert_analyzer.py (API容量制限対応・完全版)
+# earnings_analysis/services/ai_expert_analyzer.py (API容量制限対応・専門家考察追加版)
 import google.generativeai as genai
 import logging
 from django.conf import settings
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class AIExpertAnalyzer:
-    """AI専門家による統合感情分析サービス (0-100点スケール + 容量制限対応)"""
+    """AI専門家による統合感情分析サービス (0-100点スケール + 容量制限対応 + 専門家考察)"""
     
     # 容量制限関連のエラーメッセージパターン
     RATE_LIMIT_PATTERNS = [
@@ -331,7 +331,7 @@ class AIExpertAnalyzer:
             return "大きな課題あり（34点以下）"
     
     def _build_expert_analysis_prompt(self, text: str, doc_info: Dict[str, str], basic_analysis: Dict[str, Any] = None) -> str:
-        """分析プロンプト構築"""
+        """分析プロンプト構築（専門家考察追加版）"""
         
         max_text_length = 30000
         if len(text) > max_text_length:
@@ -371,11 +371,28 @@ class AIExpertAnalyzer:
 - 単なる増収増益では65点程度、大幅な増収増益で70～75点
 - 80点以上は非常に優れた内容
 
+【専門家考察について】
+expert_commentaryセクションでは、30年以上の経験を持つアナリストとして、以下の観点から専門的な考察を記述してください：
+- summary: 文書全体を通しての総括的な評価（2-3文）
+- business_assessment: 事業の実態と競争力についての分析
+- financial_health: 財務健全性と資金繰りの評価
+- management_evaluation: 経営陣の姿勢と能力に対する評価
+- market_positioning: 市場でのポジショニングと業界内での立ち位置
+- key_concerns: 注意すべき点や今後の懸念材料
+
 【出力するJSON形式】
 {{
   "overall_score": 72,
   "sentiment_label": "positive",
   "investment_grade": "B+",
+  "expert_commentary": {{
+    "summary": "本決算書類を精査した結果、当社は○○という強みを持ち、△△の分野で着実な成長を遂げていると評価できます。全体として投資妙味のある銘柄と判断します。",
+    "business_assessment": "主力事業である○○は市場シェアXX%を維持し、収益性も安定しています。特に△△セグメントでの成長が顕著であり、今後の収益ドライバーとして期待できます。一方で、□□事業については構造改革の途上にあり、改善の余地があります。",
+    "financial_health": "自己資本比率XX%、流動比率XX%と財務基盤は堅固です。有利子負債の水準も適正であり、金利上昇局面でも十分に対応可能な体制と評価します。営業キャッシュフローは安定的に創出されており、設備投資と株主還元の両立が可能な状況です。",
+    "management_evaluation": "経営陣は課題を率直に認識し、具体的な改善策を提示しています。中期経営計画の達成に向けた施策は現実的であり、実行力にも一定の信頼が置けます。株主還元への意識も高く、配当性向の向上姿勢は評価できます。",
+    "market_positioning": "業界内では上位XX社に位置し、特に○○分野では競合他社に対して優位性を持っています。技術力・ブランド力を活かした差別化戦略が奏功しており、価格競争に巻き込まれにくい事業構造を構築しています。",
+    "key_concerns": "一方で、原材料価格の高騰や為替変動など外部環境リスクへの対応が課題となります。また、○○市場の成熟化に伴い、新たな成長領域の開拓が中長期的な課題として認識されます。人材確保・育成も継続的な取り組みが必要です。"
+  }},
   "score_breakdown": {{
     "base_score": 60,
     "positive_factors": [
@@ -491,6 +508,14 @@ class AIExpertAnalyzer:
             'overall_score': score,
             'sentiment_label': sentiment,
             'investment_grade': grade,
+            'expert_commentary': {
+                'summary': 'AI分析が利用できないため、詳細な考察は提供できません。ワードベース分析に基づく基本的な評価をご参照ください。',
+                'business_assessment': '詳細分析が必要です。',
+                'financial_health': '詳細分析が必要です。',
+                'management_evaluation': '詳細分析が必要です。',
+                'market_positioning': '詳細分析が必要です。',
+                'key_concerns': '詳細分析が必要です。'
+            },
             'detailed_scores': {
                 'growth_potential': 5,
                 'profitability_outlook': 5,

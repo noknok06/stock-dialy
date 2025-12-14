@@ -1,4 +1,5 @@
-<!-- earnings_analysis/templates/earnings_analysis/sentiment/result_improved.html -->
+<!-- earnings_analysis/templates/earnings_analysis/sentiment/result.html -->
+<!-- 専門家考察セクション追加版 -->
 {% extends 'earnings_analysis/base.html' %}
 {% load static %}
 {% load sentiment_filters %}
@@ -56,13 +57,163 @@ body {
     background: var(--gray-50);
 }
 
-/* 既存のCSS ... */
+/* ==================== */
+/* 専門家考察セクション用CSS */
+/* ==================== */
+
+.expert-commentary {
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.expert-commentary-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--primary-200);
+}
+
+.expert-commentary-header h6 {
+    margin: 0;
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-weight: 700;
+    color: var(--gray-800);
+    font-size: 1rem;
+}
+
+.expert-commentary-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+    border-radius: var(--radius-lg);
+    color: white;
+    font-size: 1.125rem;
+}
+
+.expert-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background: var(--primary-100);
+    color: var(--primary-700);
+    border-radius: var(--radius-md);
+    font-size: 0.6875rem;
+    font-weight: 600;
+}
+
+.commentary-summary {
+    background: linear-gradient(135deg, var(--primary-50) 0%, white 100%);
+    border: 1px solid var(--primary-100);
+    border-left: 4px solid var(--primary-500);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.commentary-summary-text {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: var(--gray-700);
+    margin: 0;
+}
+
+.commentary-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .commentary-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.commentary-item {
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    transition: all 0.2s ease;
+}
+
+.commentary-item:hover {
+    border-color: var(--primary-300);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.commentary-item-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.commentary-item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+}
+
+.commentary-item-icon.business { 
+    background: var(--info-100); 
+    color: var(--info-500); 
+}
+.commentary-item-icon.financial { 
+    background: var(--success-100); 
+    color: var(--success-600); 
+}
+.commentary-item-icon.management { 
+    background: var(--primary-100); 
+    color: var(--primary-600); 
+}
+.commentary-item-icon.market { 
+    background: var(--warning-100); 
+    color: var(--warning-600); 
+}
+.commentary-item-icon.concerns { 
+    background: var(--danger-100); 
+    color: var(--danger-600); 
+}
+
+.commentary-item-title {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--gray-700);
+}
+
+.commentary-item-text {
+    font-size: 0.8125rem;
+    line-height: 1.7;
+    color: var(--gray-600);
+    margin: 0;
+}
+
+/* 懸念事項は全幅で表示 */
+.commentary-item.concerns-item {
+    grid-column: 1 / -1;
+    background: var(--danger-50);
+    border-color: var(--danger-100);
+}
+
+.commentary-item.concerns-item .commentary-item-text {
+    color: var(--danger-600);
+}
 
 /* ==================== */
 /* AI分析エラー表示用CSS */
 /* ==================== */
 
-/* AI分析エラー表示 */
 .ai-analysis-error {
     display: flex;
     gap: 1.5rem;
@@ -273,6 +424,10 @@ body {
     .ai-analysis-error .retry-hint {
         width: 100%;
         justify-content: center;
+    }
+    
+    .expert-commentary-header {
+        flex-wrap: wrap;
     }
 }
 
@@ -1490,6 +1645,105 @@ body {
                                 </ul>
                             </div>
                             
+                            {# ========== 専門家考察セクション（新規追加）========== #}
+                            {% if ai.expert_commentary %}
+                                <div class="expert-commentary">
+                                    <div class="expert-commentary-header">
+                                        <div class="expert-commentary-icon">
+                                            <i class="fas fa-user-tie"></i>
+                                        </div>
+                                        <h6>
+                                            <i class="fas fa-comment-dots me-1"></i>
+                                            専門家による考察
+                                        </h6>
+                                        <span class="expert-badge">
+                                            <i class="fas fa-brain"></i>
+                                            AI分析
+                                        </span>
+                                    </div>
+                                    
+                                    {# 総括コメント #}
+                                    {% if ai.expert_commentary.summary %}
+                                        <div class="commentary-summary">
+                                            <p class="commentary-summary-text">
+                                                <i class="fas fa-quote-left me-2" style="color: var(--primary-400); opacity: 0.5;"></i>
+                                                {{ ai.expert_commentary.summary }}
+                                                <i class="fas fa-quote-right ms-2" style="color: var(--primary-400); opacity: 0.5;"></i>
+                                            </p>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    {# 詳細考察グリッド #}
+                                    <div class="commentary-grid">
+                                        {# 事業評価 #}
+                                        {% if ai.expert_commentary.business_assessment and ai.expert_commentary.business_assessment != '詳細分析が必要です。' %}
+                                            <div class="commentary-item">
+                                                <div class="commentary-item-header">
+                                                    <div class="commentary-item-icon business">
+                                                        <i class="fas fa-building"></i>
+                                                    </div>
+                                                    <span class="commentary-item-title">事業・競争力分析</span>
+                                                </div>
+                                                <p class="commentary-item-text">{{ ai.expert_commentary.business_assessment }}</p>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        {# 財務健全性 #}
+                                        {% if ai.expert_commentary.financial_health and ai.expert_commentary.financial_health != '詳細分析が必要です。' %}
+                                            <div class="commentary-item">
+                                                <div class="commentary-item-header">
+                                                    <div class="commentary-item-icon financial">
+                                                        <i class="fas fa-coins"></i>
+                                                    </div>
+                                                    <span class="commentary-item-title">財務健全性</span>
+                                                </div>
+                                                <p class="commentary-item-text">{{ ai.expert_commentary.financial_health }}</p>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        {# 経営評価 #}
+                                        {% if ai.expert_commentary.management_evaluation and ai.expert_commentary.management_evaluation != '詳細分析が必要です。' %}
+                                            <div class="commentary-item">
+                                                <div class="commentary-item-header">
+                                                    <div class="commentary-item-icon management">
+                                                        <i class="fas fa-users-cog"></i>
+                                                    </div>
+                                                    <span class="commentary-item-title">経営陣評価</span>
+                                                </div>
+                                                <p class="commentary-item-text">{{ ai.expert_commentary.management_evaluation }}</p>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        {# 市場ポジション #}
+                                        {% if ai.expert_commentary.market_positioning and ai.expert_commentary.market_positioning != '詳細分析が必要です。' %}
+                                            <div class="commentary-item">
+                                                <div class="commentary-item-header">
+                                                    <div class="commentary-item-icon market">
+                                                        <i class="fas fa-chart-line"></i>
+                                                    </div>
+                                                    <span class="commentary-item-title">市場ポジション</span>
+                                                </div>
+                                                <p class="commentary-item-text">{{ ai.expert_commentary.market_positioning }}</p>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        {# 懸念事項（全幅表示） #}
+                                        {% if ai.expert_commentary.key_concerns and ai.expert_commentary.key_concerns != '詳細分析が必要です。' %}
+                                            <div class="commentary-item concerns-item">
+                                                <div class="commentary-item-header">
+                                                    <div class="commentary-item-icon concerns">
+                                                        <i class="fas fa-exclamation-triangle"></i>
+                                                    </div>
+                                                    <span class="commentary-item-title">注意すべき点・懸念材料</span>
+                                                </div>
+                                                <p class="commentary-item-text">{{ ai.expert_commentary.key_concerns }}</p>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                            {# ========== 専門家考察セクション（ここまで）========== #}
+                            
                             {# スコア内訳 #}
                             {% if ai.score_breakdown %}
                                 <div class="score-breakdown">
@@ -1931,241 +2185,8 @@ function switchToTab(tabId) {
     }
 }
 
-// AI分析再試行のカウントダウン表示
-function startRetryCountdown(seconds, elementId) {
-    const element = document.getElementById(elementId);
-    if (!element) return;
-    
-    let remaining = seconds;
-    
-    const updateDisplay = () => {
-        if (remaining <= 0) {
-            element.innerHTML = '<i class="fas fa-check-circle"></i> 再試行可能です';
-            element.classList.add('ready');
-            return;
-        }
-        
-        const minutes = Math.floor(remaining / 60);
-        const secs = remaining % 60;
-        const timeStr = minutes > 0 
-            ? `${minutes}分${secs}秒` 
-            : `${secs}秒`;
-        
-        element.innerHTML = `<i class="fas fa-clock"></i> 再試行まで: <span class="countdown-timer">${timeStr}</span>`;
-        remaining--;
-        setTimeout(updateDisplay, 1000);
-    };
-    
-    updateDisplay();
-}
-
-// AI分析エラー時の詳細表示切り替え
-function toggleErrorDetails(button) {
-    const details = button.closest('.ai-analysis-error').querySelector('.error-details-expanded');
-    if (details) {
-        details.classList.toggle('show');
-        button.textContent = details.classList.contains('show') ? '詳細を隠す' : '詳細を表示';
-    }
-}
-
-// 分析状態の確認（ポーリング用）
-async function checkAnalysisStatus(sessionId) {
-    try {
-        const response = await fetch(`/api/sentiment/progress/${sessionId}/`);
-        const data = await response.json();
-        
-        if (data.status === 'COMPLETED') {
-            // 分析完了時、AI分析の状態をチェック
-            const result = await fetch(`/api/sentiment/result/${sessionId}/`);
-            const resultData = await result.json();
-            
-            if (resultData.result && resultData.result.analysis_metadata) {
-                const aiMeta = resultData.result.analysis_metadata.ai_analysis;
-                if (aiMeta && !aiMeta.success && aiMeta.attempted) {
-                    // AI分析失敗時の通知
-                    showAIAnalysisFailureNotification(aiMeta);
-                }
-            }
-        }
-        
-        return data;
-    } catch (error) {
-        console.error('分析状態確認エラー:', error);
-        return null;
-    }
-}
-
-// AI分析失敗通知の表示
-function showAIAnalysisFailureNotification(aiMeta) {
-    // 既存の通知があれば削除
-    const existing = document.querySelector('.ai-failure-notification');
-    if (existing) existing.remove();
-    
-    const notification = document.createElement('div');
-    notification.className = 'ai-failure-notification';
-    
-    let message = 'AI分析を実行できませんでした。';
-    let retryHint = '';
-    
-    if (aiMeta.error_type === 'rate_limit') {
-        message = 'API利用制限に達したため、AI分析をスキップしました。';
-        retryHint = 'しばらく時間をおいて再分析をお試しください。';
-    } else if (aiMeta.error_type === 'quota_exceeded') {
-        message = 'APIクォータを超過したため、AI分析をスキップしました。';
-        retryHint = '明日以降に再分析をお試しください。';
-    }
-    
-    notification.innerHTML = `
-        <div class="notification-content">
-            <i class="fas fa-exclamation-triangle"></i>
-            <div class="notification-text">
-                <strong>${message}</strong>
-                ${retryHint ? `<p>${retryHint}</p>` : ''}
-            </div>
-            <button class="notification-close" onclick="this.closest('.ai-failure-notification').remove()">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // 10秒後に自動で消す
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.classList.add('fade-out');
-            setTimeout(() => notification.remove(), 300);
-        }
-    }, 10000);
-}
-
-// 通知用のスタイルを動的に追加
-const notificationStyles = `
-.ai-failure-notification {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 9999;
-    max-width: 400px;
-    animation: slideIn 0.3s ease-out;
-}
-
-.ai-failure-notification.fade-out {
-    animation: slideOut 0.3s ease-out forwards;
-}
-
-.ai-failure-notification .notification-content {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 16px;
-    background: linear-gradient(135deg, #fef3c7, #fffbeb);
-    border: 1px solid #fcd34d;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-}
-
-.ai-failure-notification .notification-content i:first-child {
-    color: #d97706;
-    font-size: 1.25rem;
-    flex-shrink: 0;
-}
-
-.ai-failure-notification .notification-text {
-    flex: 1;
-    font-size: 0.875rem;
-    color: #92400e;
-}
-
-.ai-failure-notification .notification-text p {
-    margin: 4px 0 0;
-    font-size: 0.8125rem;
-    color: #78350f;
-}
-
-.ai-failure-notification .notification-close {
-    background: none;
-    border: none;
-    color: #d97706;
-    cursor: pointer;
-    padding: 4px;
-    line-height: 1;
-}
-
-@keyframes slideIn {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-@keyframes slideOut {
-    from {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    to {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-}
-`;
-
-// スタイルを動的に追加
-const styleSheet = document.createElement('style');
-styleSheet.textContent = notificationStyles;
-document.head.appendChild(styleSheet);
-
-// ページ読み込み時にAI分析状態をチェック
-document.addEventListener('DOMContentLoaded', function() {
-    // AI分析失敗時の自動通知（テンプレートからデータを取得）
-    const aiAnalysisData = window.aiAnalysisMetadata;
-    if (aiAnalysisData && aiAnalysisData.attempted && !aiAnalysisData.success) {
-        showAIAnalysisFailureNotification(aiAnalysisData);
-    }
-});
-</script>
-<script>
 // AI分析メタデータをJavaScriptで利用可能にする
 window.aiAnalysisMetadata = {{ session.analysis_result.analysis_metadata.ai_analysis|safe|default:'null' }};
-
-// タブ切り替え関数（プログラムから呼び出し用）
-function switchToTab(tabId) {
-    // すべてのタブボタンからactiveを削除
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
-    // すべてのタブパネルからactiveを削除
-    document.querySelectorAll('.tab-panel').forEach(panel => {
-        panel.classList.remove('active');
-    });
-    
-    // 指定されたタブをアクティブに
-    const targetBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
-    const targetPanel = document.getElementById(tabId);
-    
-    if (targetBtn) {
-        targetBtn.classList.add('active');
-    }
-    
-    if (targetPanel) {
-        targetPanel.classList.add('active');
-        
-        // ワードクラウドタブの場合は再描画
-        if (tabId === 'word-analysis') {
-            setTimeout(() => {
-                if (typeof initializeWordcloud === 'function') {
-                    initializeWordcloud();
-                }
-            }, 100);
-        }
-    }
-}
 
 // 既存のJavaScriptコード（タブ切り替え、ワードクラウド等）
 document.querySelectorAll('.tab-btn').forEach(tab => {
@@ -2213,18 +2234,6 @@ const actualAnalysisData = {
 let currentWordcloudData = [];
 let currentDisplayMode = 'sentiment';
 const actualWordcloudData = { sentiment: [], all: [] };
-
-// タブ切り替え
-document.querySelectorAll('.tab-btn').forEach(tab => {
-    tab.addEventListener('click', function() {
-        document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
-        this.classList.add('active');
-        
-        const targetTab = this.dataset.tab;
-        document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
-        document.getElementById(targetTab).classList.add('active');
-    });
-});
 
 // 文章の展開/折りたたみ
 function toggleSentence(header) {
