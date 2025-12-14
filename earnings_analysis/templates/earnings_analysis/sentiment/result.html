@@ -2188,6 +2188,40 @@ function switchToTab(tabId) {
 // AI分析メタデータをJavaScriptで利用可能にする
 window.aiAnalysisMetadata = {{ session.analysis_result.analysis_metadata.ai_analysis|safe|default:'null' }};
 
+// タブ切り替え関数（プログラムから呼び出し用）
+function switchToTab(tabId) {
+    // すべてのタブボタンからactiveを削除
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // すべてのタブパネルからactiveを削除
+    document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.remove('active');
+    });
+    
+    // 指定されたタブをアクティブに
+    const targetBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+    const targetPanel = document.getElementById(tabId);
+    
+    if (targetBtn) {
+        targetBtn.classList.add('active');
+    }
+    
+    if (targetPanel) {
+        targetPanel.classList.add('active');
+        
+        // ワードクラウドタブの場合は再描画
+        if (tabId === 'word-analysis') {
+            setTimeout(() => {
+                if (typeof initializeWordcloud === 'function') {
+                    initializeWordcloud();
+                }
+            }, 100);
+        }
+    }
+}
+
 // 既存のJavaScriptコード（タブ切り替え、ワードクラウド等）
 document.querySelectorAll('.tab-btn').forEach(tab => {
     tab.addEventListener('click', function() {
@@ -2220,6 +2254,203 @@ document.addEventListener('DOMContentLoaded', function() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
+// AI分析再試行のカウントダウン表示
+function startRetryCountdown(seconds, elementId) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    let remaining = seconds;
+    
+    const updateDisplay = () => {
+        if (remaining <= 0) {
+            element.innerHTML = '<i class="fas fa-check-circle"></i> 再試行可能です';
+            element.classList.add('ready');
+            return;
+        }
+        
+        const minutes = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        const timeStr = minutes > 0 
+            ? `${minutes}分${secs}秒` 
+            : `${secs}秒`;
+        
+        element.innerHTML = `<i class="fas fa-clock"></i> 再試行まで: <span class="countdown-timer">${timeStr}</span>`;
+        remaining--;
+        setTimeout(updateDisplay, 1000);
+    };
+    
+    updateDisplay();
+}
+
+// AI分析エラー時の詳細表示切り替え
+function toggleErrorDetails(button) {
+    const details = button.closest('.ai-analysis-error').querySelector('.error-details-expanded');
+    if (details) {
+        details.classList.toggle('show');
+        button.textContent = details.classList.contains('show') ? '詳細を隠す' : '詳細を表示';
+    }
+}
+
+// 分析状態の確認（ポーリング用）
+async function checkAnalysisStatus(sessionId) {
+    try {
+        const response = await fetch(`/api/sentiment/progress/${sessionId}/`);
+        const data = await response.json();
+        
+        if (data.status === 'COMPLETED') {
+            // 分析完了時、AI分析の状態をチェック
+            const result = await fetch(`/api/sentiment/result/${sessionId}/`);
+            const resultData = await result.json();
+            
+            if (resultData.result && resultData.result.analysis_metadata) {
+                const aiMeta = resultData.result.analysis_metadata.ai_analysis;
+                if (aiMeta && !aiMeta.success && aiMeta.attempted) {
+                    // AI分析失敗時の通知
+                    showAIAnalysisFailureNotification(aiMeta);
+                }
+            }
+        }
+        
+        return data;
+    } catch (error) {
+        console.error('分析状態確認エラー:', error);
+        return null;
+    }
+}
+
+// AI分析失敗通知の表示
+function showAIAnalysisFailureNotification(aiMeta) {
+    // 既存の通知があれば削除
+    const existing = document.querySelector('.ai-failure-notification');
+    if (existing) existing.remove();
+    
+    const notification = document.createElement('div');
+    notification.className = 'ai-failure-notification';
+    
+    let message = 'AI分析を実行できませんでした。';
+    let retryHint = '';
+    
+    if (aiMeta.error_type === 'rate_limit') {
+        message = 'API利用制限に達したため、AI分析をスキップしました。';
+        retryHint = 'しばらく時間をおいて再分析をお試しください。';
+    } else if (aiMeta.error_type === 'quota_exceeded') {
+        message = 'APIクォータを超過したため、AI分析をスキップしました。';
+        retryHint = '明日以降に再分析をお試しください。';
+    }
+    
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div class="notification-text">
+                <strong>${message}</strong>
+                ${retryHint ? `<p>${retryHint}</p>` : ''}
+            </div>
+            <button class="notification-close" onclick="this.closest('.ai-failure-notification').remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // 10秒後に自動で消す
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.classList.add('fade-out');
+            setTimeout(() => notification.remove(), 300);
+        }
+    }, 10000);
+}
+
+// 通知用のスタイルを動的に追加
+const notificationStyles = `
+.ai-failure-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 400px;
+    animation: slideIn 0.3s ease-out;
+}
+
+.ai-failure-notification.fade-out {
+    animation: slideOut 0.3s ease-out forwards;
+}
+
+.ai-failure-notification .notification-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    background: linear-gradient(135deg, #fef3c7, #fffbeb);
+    border: 1px solid #fcd34d;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.ai-failure-notification .notification-content i:first-child {
+    color: #d97706;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.ai-failure-notification .notification-text {
+    flex: 1;
+    font-size: 0.875rem;
+    color: #92400e;
+}
+
+.ai-failure-notification .notification-text p {
+    margin: 4px 0 0;
+    font-size: 0.8125rem;
+    color: #78350f;
+}
+
+.ai-failure-notification .notification-close {
+    background: none;
+    border: none;
+    color: #d97706;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+`;
+
+// スタイルを動的に追加
+const styleSheet = document.createElement('style');
+styleSheet.textContent = notificationStyles;
+document.head.appendChild(styleSheet);
+
+// ページ読み込み時にAI分析状態をチェック
+document.addEventListener('DOMContentLoaded', function() {
+    // AI分析失敗時の自動通知（テンプレートからデータを取得）
+    const aiAnalysisData = window.aiAnalysisMetadata;
+    if (aiAnalysisData && aiAnalysisData.attempted && !aiAnalysisData.success) {
+        showAIAnalysisFailureNotification(aiAnalysisData);
+    }
+});
 </script>
 <script>
 // データ
@@ -2234,6 +2465,18 @@ const actualAnalysisData = {
 let currentWordcloudData = [];
 let currentDisplayMode = 'sentiment';
 const actualWordcloudData = { sentiment: [], all: [] };
+
+// タブ切り替え
+document.querySelectorAll('.tab-btn').forEach(tab => {
+    tab.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        
+        const targetTab = this.dataset.tab;
+        document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+        document.getElementById(targetTab).classList.add('active');
+    });
+});
 
 // 文章の展開/折りたたみ
 function toggleSentence(header) {
