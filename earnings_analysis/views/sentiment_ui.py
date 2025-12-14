@@ -35,12 +35,21 @@ class SentimentAnalysisView(TemplateView):
             expires_at__gt=timezone.now()  # 期限切れでないもののみ
         ).order_by('-created_at').first()
         
+        if (
+            latest_valid_session
+            and latest_valid_session.analysis_result
+                .get("analysis_metadata", {})
+                .get("ai_analysis", {})
+                .get("error_type") == "rate_limit"
+        ):
+            latest_valid_session = None
+
         # 期限切れを含む最新セッション（履歴表示用）
         latest_session_any = SentimentAnalysisSession.objects.filter(
             document=document,
             processing_status='COMPLETED'
         ).order_by('-created_at').first()
-        
+           
         # 過去の分析履歴
         analysis_history = SentimentAnalysisHistory.objects.filter(
             document=document
