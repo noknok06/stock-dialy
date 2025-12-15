@@ -26,7 +26,7 @@ class GeminiInsightsGenerator:
         
         try:
             genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel("gemini-2.5-flash")
+            self.model = genai.GenerativeModel("gemini-2.5-flash-lite")
             logger.info("Gemini APIが正常に初期化されました")
         except Exception as e:
             logger.error(f"Gemini API初期化エラー: {e}")
@@ -72,7 +72,7 @@ class GeminiInsightsGenerator:
                     'fallback_used': False,
                     'generation_timestamp': start_time.isoformat(),
                     'points_count': points_generated,
-                    'model_used': 'gemini-2.5-flash',
+                    'model_used': 'gemini-2.5-flash-lite',
                     'response_length': len(response.text)
                 })
                 
