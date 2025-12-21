@@ -79,7 +79,7 @@ class StockDiaryAdmin(admin.ModelAdmin):
         ('基本情報', {
             'fields': (
                 'user', 'stock_symbol', 'stock_name', 'sector',
-                'reason', 'memo', 'tags', 'checklist'
+                'reason', 'memo', 'tags'
             )
         }),
         ('画像', {

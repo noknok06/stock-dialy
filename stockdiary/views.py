@@ -570,7 +570,7 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
     
     def get_queryset(self):
         return StockDiary.objects.filter(user=self.request.user).select_related('user').prefetch_related(
-            'notes', 'tags', 'checklist',
+            'notes', 'tags',
             'transactions', 'stock_splits'
         )
     

@@ -6,7 +6,7 @@ const STATIC_CACHE_NAME = 'kabulog-static-v1.0.8';
 const STATIC_ASSETS = [
   '/',
   '/stockdiary/',
-  '/static/css/common.css?v=1.0.8',
+  '/static/css/common-base?v=1.0.8',
   '/static/css/diary-theme.css?v=1.0.8',
   '/static/css/mobile-friendly.css?v=1.0.8',
   '/static/css/speed-dial.css?v=1.0.8',
@@ -16,7 +16,6 @@ const STATIC_ASSETS = [
   '/static/css/3-components/header.css?v=1.0.8',
   '/static/css/3-components/badge.css?v=1.0.8',
   '/static/css/3-components/card.css?v=1.0.8',
-  '/static/css/3-components/table.css?v=1.0.8',
   '/static/css/3-components/modal.css?v=1.0.8',
   '/static/js/speed-dial.js?v=1.0.8',
   '/static/js/common-utils.js?v=1.0.8',

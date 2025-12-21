@@ -8,7 +8,7 @@ self.addEventListener('install', (event) => {
       return cache.addAll([
         '/',
         '/stockdiary/',
-        '/static/css/common.css'
+        '/static/css/common-base'
       ]);
     })
   );

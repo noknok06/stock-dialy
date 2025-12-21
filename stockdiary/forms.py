@@ -3,7 +3,6 @@ from django import forms
 from django.core.exceptions import ValidationError
 from .models import StockDiary, Transaction, StockSplit, DiaryNote
 from tags.models import Tag
-from checklist.models import Checklist
 from decimal import Decimal
 
 
@@ -68,7 +67,7 @@ class StockDiaryForm(forms.ModelForm):
         model = StockDiary
         fields = [
             'stock_symbol', 'stock_name', 'reason',
-            'memo', 'checklist', 'tags', 'sector'
+            'memo', 'tags', 'sector'
         ]
         widgets = {
             'stock_symbol': forms.TextInput(attrs={
@@ -93,7 +92,6 @@ class StockDiaryForm(forms.ModelForm):
                 'maxlength': '1000',
                 'placeholder': 'その他のメモ'
             }),
-            'checklist': forms.SelectMultiple(attrs={'class': 'form-control', 'size': '5'}),
             'tags': forms.SelectMultiple(attrs={'class': 'form-control', 'size': '5'}),
             'sector': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -107,7 +105,6 @@ class StockDiaryForm(forms.ModelForm):
         super(StockDiaryForm, self).__init__(*args, **kwargs)
         
         if user:
-            self.fields['checklist'].queryset = Checklist.objects.filter(user=user)
             self.fields['tags'].queryset = Tag.objects.filter(user=user)
         
         # ラベル設定

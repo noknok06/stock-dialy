@@ -36,7 +36,6 @@ class StockDiary(models.Model):
     stock_symbol = models.CharField(max_length=50, blank=True, db_index=True, verbose_name='銘柄コード')
     stock_name = models.CharField(max_length=100, verbose_name='銘柄名')
     reason = models.TextField(verbose_name='投資理由', blank=True, max_length=1000)
-    checklist = models.ManyToManyField('checklist.Checklist', blank=True)
     tags = models.ManyToManyField(Tag, blank=True)
     memo = models.TextField(blank=True, max_length=1000, verbose_name='メモ')
     sector = models.CharField(max_length=50, blank=True, verbose_name='業種')
