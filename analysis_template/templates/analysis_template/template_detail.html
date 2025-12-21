@@ -118,7 +118,7 @@ const templateId = {{ template.pk }};
 // ========================================
 // ユーティリティ
 // ========================================
-function formatNumber(num, decimals = 1) {
+function formatNumber(num, decimals = 2) {
   if (num === null || num === undefined || isNaN(num)) return '-';
   return Number(num).toFixed(decimals);
 }
@@ -338,19 +338,19 @@ function generateCompanyCards() {
       <div class="at-metrics-grid">
         <div class="at-metric-item">
           <span class="at-metric-label">ROE</span>
-          <span class="at-metric-value">${formatNumber(company.metrics.roe)}%</span>
+          <span class="at-metric-value">${company.metrics.roe}%</span>
         </div>
         <div class="at-metric-item">
           <span class="at-metric-label">ROA</span>
-          <span class="at-metric-value">${formatNumber(company.metrics.roa)}%</span>
+          <span class="at-metric-value">${company.metrics.roa}%</span>
         </div>
         <div class="at-metric-item">
           <span class="at-metric-label">営業利益率</span>
-          <span class="at-metric-value">${formatNumber(company.metrics.operating_margin)}%</span>
+          <span class="at-metric-value">${company.metrics.operating_margin}%</span>
         </div>
         <div class="at-metric-item">
           <span class="at-metric-label">配当利回り</span>
-          <span class="at-metric-value">${formatNumber(company.metrics.dividend_yield)}%</span>
+          <span class="at-metric-value">${company.metrics.dividend_yield}%</span>
         </div>
       </div>
     `;
@@ -447,7 +447,7 @@ function generateMetricRows(metrics) {
     return `
       <div class="at-benchmark-row" style="align-items:center;">
         <span class="at-benchmark-label">${label}</span>
-        <span style="display:flex;align-items:center;"><strong class="at-benchmark-value">${formatNumber(value)}${unit}</strong>${comparison}${scoreBar}</span>
+        <span style="display:flex;align-items:center;"><strong class="at-benchmark-value">${value}${unit}</strong>${comparison}${scoreBar}</span>
       </div>`;
   }).join('');
 }
@@ -502,9 +502,9 @@ function generateBenchmarkMetricRow(label, data, isReverse = false) {
   let thresholds = '';
   if (data.excellent != null && data.poor != null) {
     if (actualReverse) {
-      thresholds = `<span class="at-benchmark-thresholds"><span class="at-text-success">優良≤${formatNumber(data.excellent)}</span> / <span class="at-text-danger">要注意≥${formatNumber(data.poor)}</span></span>`;
+      thresholds = `<span class="at-benchmark-thresholds"><span class="at-text-success">優良≤${data.excellent}</span> / <span class="at-text-danger">要注意≥${data.poor}</span></span>`;
     } else {
-      thresholds = `<span class="at-benchmark-thresholds"><span class="at-text-success">優良≥${formatNumber(data.excellent)}</span> / <span class="at-text-danger">要注意≤${formatNumber(data.poor)}</span></span>`;
+      thresholds = `<span class="at-benchmark-thresholds"><span class="at-text-success">優良≥${data.excellent}</span> / <span class="at-text-danger">要注意≤${data.poor}</span></span>`;
     }
   }
   
@@ -512,7 +512,7 @@ function generateBenchmarkMetricRow(label, data, isReverse = false) {
     <div class="at-benchmark-row">
       <span class="at-benchmark-label">${label}</span>
       <span class="at-benchmark-values">
-        <strong class="at-benchmark-value">${formatNumber(data.avg)}</strong>
+        <strong class="at-benchmark-value">${data.avg}</strong>
         ${thresholds}
       </span>
     </div>`;
@@ -547,7 +547,7 @@ function generateComparisonTable() {
     html += `<tr><td class="fw-semibold">${m.label}</td>`;
     companiesData.forEach(c => {
       const v = c.metrics[m.key];
-      html += `<td class="text-end">${formatNumber(v)}${v != null ? m.unit : ''}</td>`;
+      html += `<td class="text-end">${v}${v != null ? m.unit : ''}</td>`;
     });
     html += '</tr>';
   });
