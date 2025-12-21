@@ -16,13 +16,7 @@ class ExcelUploadForm(forms.Form):
     """管理画面用のExcelアップロードフォーム"""
     excel_file = forms.FileField(
         label='Excelファイル',
-        help_text='SBI証券などから取得したデータファイルをアップロードしてください'
-    )
-    replace_existing = forms.BooleanField(
-        label='既存データを置き換える',
-        required=False,
-        initial=True,
-        help_text='チェックすると、既存の企業マスタを全て削除して新しいデータで置き換えます。チェックしない場合は、既存データに追加または更新されます。'
+        help_text='SBI証券などから取得したデータファイルをアップロードしてください。企業コードをキーに既存データを更新し、新規データを追加します。'
     )
 
 @admin.register(CompanyMaster)
@@ -53,12 +47,11 @@ class CompanyMasterAdmin(admin.ModelAdmin):
 
     
     def import_excel(self, request):
-        """Excelファイルから企業データをインポートするビュー"""
+        """Excelファイルから企業データをインポートするビュー（企業コードで上書き方式）"""
         if request.method == 'POST':
             form = ExcelUploadForm(request.POST, request.FILES)
             if form.is_valid():
                 excel_file = form.cleaned_data['excel_file']
-                replace_existing = form.cleaned_data['replace_existing']
                 
                 try:
                     # ExcelをPandasで読み込み
@@ -96,13 +89,10 @@ class CompanyMasterAdmin(admin.ModelAdmin):
                     
                     # トランザクションを開始
                     with transaction.atomic():
-                        if replace_existing:
-                            # 既存データを全て削除
-                            CompanyMaster.objects.all().delete()
-                        
                         # 新しいデータを作成するためのリスト
                         companies_to_create = []
                         update_count = 0
+                        skip_count = 0
                         
                         # 既存レコードのコードを取得
                         existing_codes = set(CompanyMaster.objects.values_list('code', flat=True))
@@ -110,6 +100,7 @@ class CompanyMasterAdmin(admin.ModelAdmin):
                         for _, row in df.iterrows():
                             # 必須フィールドが欠けている場合はスキップ
                             if not row['コード'] or not row['銘柄名']:
+                                skip_count += 1
                                 continue
                             
                             # 企業データを作成
@@ -142,10 +133,17 @@ class CompanyMasterAdmin(admin.ModelAdmin):
                         total_created = len(companies_to_create)
                         total_processed = total_created + update_count
                         
-                        messages.success(request, 
-                            f'インポートが完了しました。{total_processed}件のデータを処理しました。'
-                            f'（新規: {total_created}件、更新: {update_count}件）'
-                        )
+                        message_parts = [
+                            f'インポートが完了しました。{total_processed}件のデータを処理しました。',
+                            f'（新規作成: {total_created}件、更新: {update_count}件'
+                        ]
+                        
+                        if skip_count > 0:
+                            message_parts.append(f'、スキップ: {skip_count}件）')
+                        else:
+                            message_parts.append('）')
+                        
+                        messages.success(request, ''.join(message_parts))
                 
                 except Exception as e:
                     messages.error(request, f'エラーが発生しました: {str(e)}')
