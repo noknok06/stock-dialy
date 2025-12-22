@@ -9,31 +9,28 @@
 {% endblock %}
 
 {% block content %}
-<div class="at-container">
-  <!-- ヘッダー -->
-  <div class="at-report-header">
-    <div class="at-header-content">
-      <div>
-        <h1 class="at-header-title">{{ template.name }}</h1>
-        <p class="at-header-subtitle">{{ template.description|default:"業種別ベンチマーク比較分析" }}</p>
-      </div>
-      <div class="at-header-actions">
-        <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn btn-primary btn-sm">
+<header class="page-header">
+    <div class="page-header-content">
+        <div>
+            <h1>
+                <i class="fas fa-brain"></i>
+                {{ template.name }}
+            </h1>
+            <p class="page-header-subtitle">{{ template.description|default:"業種別ベンチマーク比較分析" }}</p>
+        </div>
+        <div class="page-header-badge">
+        <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn-icon btn-info-icon btn--sm">
           <i class="bi bi-building-add"></i>
           <span class="d-none d-sm-inline">企業追加</span>
         </a>
-        <a href="{% url 'analysis_template:metrics_edit' template.pk %}" class="btn btn-success btn-sm">
+        <a href="{% url 'analysis_template:metrics_edit' template.pk %}" class="btn-icon btn-success-icon btn--sm">
           <i class="bi bi-bar-chart"></i>
           <span class="d-none d-sm-inline">指標編集</span>
         </a>
-        <a href="{% url 'analysis_template:list' %}" class="btn btn-outline-light btn-sm">
-          <i class="bi bi-arrow-left"></i>
-          <span class="d-none d-sm-inline">一覧</span>
-        </a>
-      </div>
+        </div>
     </div>
-  </div>
-
+</header>
+<div class="at-container">
   <!-- 企業一覧セクション -->
   <section class="mb-4">
     <h2 class="at-section-title">
