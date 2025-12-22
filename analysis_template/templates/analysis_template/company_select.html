@@ -5,103 +5,180 @@
 
 {% block head %}
 <link rel="stylesheet" href="{% static 'css/2-layouts/analysis-template.css' %}">
+<style>
+/* モバイル用追加スタイル */
+@media (max-width: 767px) {
+    .company-table-mobile {
+        display: block;
+    }
+    
+    .company-table-mobile thead {
+        display: none;
+    }
+    
+    .company-table-mobile tbody,
+    .company-table-mobile tr {
+        display: block;
+    }
+    
+    .company-table-mobile tr {
+        background: var(--at-bg-card, #ffffff);
+        border: 1px solid var(--at-border, #e2e8f0);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        position: relative;
+    }
+    
+    .company-table-mobile tr.table-active {
+        border-color: var(--at-primary, #3b82f6);
+        background: rgba(59, 130, 246, 0.05);
+    }
+    
+    .company-table-mobile td {
+        display: block;
+        padding: 0.5rem 0;
+        border: none;
+    }
+    
+    .company-table-mobile td:first-child {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+    }
+    
+    .company-table-mobile .fw-medium {
+        font-size: 1.125rem;
+        display: inline-block;
+        margin-right: 0.5rem;
+    }
+    
+    .company-checkbox-cell {
+        padding: 0 !important;
+    }
+}
+
+.sticky-actions {
+    position: sticky;
+    bottom: 0;
+    background: var(--at-bg-card, #ffffff);
+    border-top: 2px solid var(--at-border, #e2e8f0);
+    padding: 1rem;
+    margin: 0 -1rem -1rem;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+}
+
+@media (min-width: 768px) {
+    .sticky-actions {
+        position: static;
+        box-shadow: none;
+        margin: 1rem 0 0;
+        padding: 0;
+        border: none;
+    }
+}
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="at-container">
     <!-- ヘッダー -->
-    <div class="page-header mb-4">
+    <div class="page-header mb-3 mb-md-4">
         <h1 class="page-title">
             <i class="bi bi-building"></i>
             <span>企業選択</span>
         </h1>
-        <p class="page-subtitle">{{ template.name }} - 複数の企業を選択してまとめて登録できます</p>
+        <p class="page-subtitle">{{ template.name }}</p>
     </div>
 
-    <div class="row g-4">
+    <div class="row g-3 g-md-4">
         <!-- 左: 企業検索・選択 -->
         <div class="col-lg-8">
             <!-- 検索フォーム -->
             <div class="at-card mb-3">
                 <form method="get" id="searchForm">
                     <div class="row g-2">
-                        <div class="col-12 col-sm-6">
+                        <div class="col-12">
                             {{ search_form.query }}
                         </div>
-                        <div class="col-6 col-sm-3">
+                        <div class="col-6">
                             {{ search_form.industry }}
                         </div>
-                        <div class="col-6 col-sm-3">
+                        <div class="col-6">
                             {{ search_form.market }}
                         </div>
                     </div>
                     <div class="d-flex gap-2 mt-3">
-                        <button type="submit" class="btn btn-primary btn-sm" onclick="saveBeforeSearch()">
+                        <button type="submit" class="btn btn-primary btn-sm flex-fill" onclick="saveBeforeSearch()">
                             <i class="bi bi-search me-1"></i>検索
                         </button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetSearch()">
+                        <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" onclick="resetSearch()">
                             <i class="bi bi-arrow-clockwise me-1"></i>リセット
                         </button>
                     </div>
                 </form>
             </div>
 
-            <!-- 企業リスト -->
-            <div class="at-card">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                    <h6 class="mb-0 at-card-title">
-                        企業一覧
-                        <span class="badge bg-primary ms-2" id="selectionCount">0</span>
-                    </h6>
+            <!-- 一括選択バー -->
+            <div class="at-card mb-3">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-semibold">選択中:</span>
+                        <span class="badge bg-primary" id="selectionCount" style="font-size: 1rem; padding: 0.375rem 0.75rem;">0</span>
+                    </div>
                     <div class="d-flex gap-2 flex-wrap">
                         <button type="button" class="btn btn-sm btn-outline-warning" onclick="selectAllOnPage()">
                             <i class="bi bi-check-square me-1"></i>
-                            <span class="d-none d-sm-inline">このページを全選択</span>
+                            <span class="d-none d-sm-inline">ページ全選択</span>
                             <span class="d-sm-none">全選択</span>
                         </button>
                         <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearAllSelections()">
-                            <i class="bi bi-x-circle me-1"></i>
-                            <span class="d-none d-sm-inline">すべてクリア</span>
-                            <span class="d-sm-none">クリア</span>
+                            <i class="bi bi-x-circle me-1"></i>クリア
                         </button>
                     </div>
                 </div>
+            </div>
 
+            <!-- 企業リスト -->
+            <div class="at-card">
                 <form method="post" id="companySelectForm">
                     {% csrf_token %}
                     <input type="hidden" name="action" id="actionInput" value="add">
                     <div id="hiddenInputsContainer"></div>
                     
                     <div class="at-table-wrapper">
-                        <table class="at-table">
+                        <table class="at-table company-table-mobile">
                             <thead>
                                 <tr>
                                     <th style="width: 40px;"></th>
                                     <th>コード</th>
                                     <th>銘柄名</th>
                                     <th class="d-none d-md-table-cell">業種</th>
-                                    <th class="d-none d-sm-table-cell">市場</th>
+                                    <th class="d-none d-lg-table-cell">市場</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for company in page_obj %}
                                 <tr class="company-row" data-company-code="{{ company.code }}">
-                                    <td>
+                                    <td class="company-checkbox-cell">
                                         <input type="checkbox" 
                                                value="{{ company.code }}"
                                                class="at-checkbox company-checkbox"
                                                data-company-code="{{ company.code }}"
                                                data-company-name="{{ company.name }}">
                                     </td>
-                                    <td class="fw-medium">{{ company.code }}</td>
                                     <td>
-                                        {{ company.name }}
-                                        <span class="badge bg-success ms-1 selected-badge d-none">✓</span>
+                                        <span class="fw-medium">{{ company.code }}</span>
+                                        <span class="selected-badge badge bg-success ms-1 d-none">✓</span>
+                                    </td>
+                                    <td>
+                                        <strong>{{ company.name }}</strong>
                                     </td>
                                     <td class="d-none d-md-table-cell">
                                         <small class="at-text-muted">{{ company.industry_name_33|default:"-" }}</small>
                                     </td>
-                                    <td class="d-none d-sm-table-cell">
+                                    <td class="d-none d-lg-table-cell">
                                         <small class="at-text-muted">{{ company.market|default:"-" }}</small>
                                     </td>
                                 </tr>
@@ -142,16 +219,30 @@
                     {% endif %}
 
                     <!-- アクションボタン -->
-                    <div class="at-action-group justify-content-end mt-4">
-                        <a href="{% url 'analysis_template:detail' template.pk %}" class="btn btn-secondary">
-                            <i class="bi bi-x-circle me-1"></i>キャンセル
-                        </a>
-                        <button type="button" class="btn btn-success" onclick="submitForm('add')">
-                            <i class="bi bi-plus-circle me-1"></i>追加
-                        </button>
-                        <button type="button" class="btn btn-primary" onclick="submitForm('replace')">
-                            <i class="bi bi-check-circle me-1"></i>置き換え
-                        </button>
+                    <div class="sticky-actions">
+                        <div class="d-grid gap-2">
+                            <div class="row g-2">
+                                <div class="col-6 col-sm-4">
+                                    <a href="{% url 'analysis_template:detail' template.pk %}" class="btn btn-secondary w-100">
+                                        <i class="bi bi-x-circle me-1"></i>
+                                        <span class="d-none d-sm-inline">キャンセル</span>
+                                        <span class="d-sm-none">戻る</span>
+                                    </a>
+                                </div>
+                                <div class="col-6 col-sm-4">
+                                    <button type="button" class="btn btn-success w-100" onclick="submitForm('add')">
+                                        <i class="bi bi-plus-circle me-1"></i>追加
+                                    </button>
+                                </div>
+                                <div class="col-12 col-sm-4">
+                                    <button type="button" class="btn btn-primary w-100" onclick="submitForm('replace')">
+                                        <i class="bi bi-arrow-repeat me-1"></i>
+                                        <span class="d-none d-sm-inline">置き換え</span>
+                                        <span class="d-sm-none">置換</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -162,7 +253,7 @@
             <div class="at-card sticky-lg-top" style="top: 1rem;">
                 <h6 class="at-card-title mb-3">
                     <i class="bi bi-check-circle me-1"></i>選択済み企業
-                    <span class="badge bg-primary ms-2" id="selectedCount">0</span>
+                    <span class="badge bg-primary ms-2" id="selectedCount2">0</span>
                 </h6>
                 <div id="selectedCompaniesList" style="max-height: 300px; overflow-y: auto;">
                     <div class="text-center at-text-muted py-4" id="emptyState">
@@ -173,21 +264,19 @@
             </div>
             
             <!-- 使い方 -->
-            <div class="at-card mt-3">
+            <div class="at-card mt-3 d-none d-lg-block">
                 <h6 class="at-card-title">
                     <i class="bi bi-info-circle me-1"></i>使い方
                 </h6>
                 <ol class="small mb-0 ps-3">
-                    <li class="mb-2">企業を検索してチェックボックスで選択</li>
-                    <li class="mb-2">検索条件を変えて別の企業を探す<br>
-                        <small class="at-text-muted">※選択状態は自動保持</small>
-                    </li>
-                    <li class="mb-2">「追加」または「置き換え」をクリック</li>
+                    <li class="mb-2">企業を検索してチェック</li>
+                    <li class="mb-2">検索条件を変えて追加選択可</li>
+                    <li class="mb-2">「追加」または「置き換え」</li>
                 </ol>
                 <hr class="my-3">
                 <div class="small">
-                    <p class="mb-1"><strong>追加:</strong> 既存企業を残して追加</p>
-                    <p class="mb-0"><strong>置き換え:</strong> 既存を削除して置換</p>
+                    <p class="mb-1"><strong>追加:</strong> 既存+新規</p>
+                    <p class="mb-0"><strong>置き換え:</strong> 既存削除</p>
                 </div>
             </div>
         </div>
@@ -251,7 +340,6 @@ function setupEventListeners() {
 }
 
 function updateUI() {
-    // チェックボックス状態
     document.querySelectorAll('.company-checkbox').forEach(cb => {
         const code = cb.value;
         const isSelected = selectedCompanies.hasOwnProperty(code);
@@ -265,11 +353,9 @@ function updateUI() {
         }
     });
     
-    // カウント更新
     const count = Object.keys(selectedCompanies).length;
-    document.querySelectorAll('#selectionCount, #selectedCount').forEach(el => el.textContent = count);
+    document.querySelectorAll('#selectionCount, #selectedCount2').forEach(el => el.textContent = count);
     
-    // 選択済みリスト更新
     const container = document.getElementById('selectedCompaniesList');
     const emptyState = document.getElementById('emptyState');
     
@@ -372,25 +458,4 @@ function submitForm(action) {
     document.getElementById('companySelectForm').submit();
 }
 </script>
-
-<style>
-.table-active {
-    background-color: rgba(59, 130, 246, 0.1) !important;
-}
-
-.dark-mode .table-active,
-[data-theme="dark"] .table-active {
-    background-color: rgba(59, 130, 246, 0.2) !important;
-}
-
-.selected-company-item:last-child {
-    border-bottom: none !important;
-}
-
-@media (max-width: 991.98px) {
-    .sticky-lg-top {
-        position: relative !important;
-    }
-}
-</style>
 {% endblock %}

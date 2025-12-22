@@ -6,26 +6,190 @@
 
 {% block head %}
 <link rel="stylesheet" href="{% static 'css/2-layouts/analysis-template.css' %}">
+<style>
+/* モバイル最適化 */
+.metric-input-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+    .metric-input-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .metric-input-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (min-width: 1280px) {
+    .metric-input-grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
+}
+
+.metric-input-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.metric-label-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-bottom: 0.375rem;
+}
+
+.metric-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--at-text-secondary, #64748b);
+    line-height: 1.2;
+}
+
+.metric-info-icon {
+    font-size: 0.6875rem;
+    color: var(--at-text-muted, #94a3b8);
+    cursor: help;
+}
+
+.input-group-compact {
+    display: flex;
+    border: 2px solid var(--at-border, #e2e8f0);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.15s ease;
+}
+
+.input-group-compact:focus-within {
+    border-color: var(--at-primary, #3b82f6);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.input-group-compact input {
+    flex: 1;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    min-height: 38px;
+}
+
+.input-group-compact .input-group-text {
+    border: none;
+    background: var(--at-bg-secondary, #f8fafc);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.6875rem;
+    color: var(--at-text-muted, #94a3b8);
+    white-space: nowrap;
+}
+
+.company-card-mobile {
+    background: var(--at-bg-card, #ffffff);
+    border: 2px solid var(--at-border, #e2e8f0);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.company-header-mobile {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--at-border, #e2e8f0);
+}
+
+.company-info-mobile h5 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem 0;
+}
+
+.company-info-mobile small {
+    font-size: 0.8125rem;
+    color: var(--at-text-muted, #94a3b8);
+}
+
+.fetch-btn-mobile {
+    flex-shrink: 0;
+}
+
+.metric-section-mobile {
+    margin-bottom: 1.5rem;
+}
+
+.metric-section-title {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--at-text-primary, #0f172a);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.875rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--at-border, #e2e8f0);
+}
+
+.sticky-bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--at-bg-card, #ffffff);
+    border-top: 2px solid var(--at-border, #e2e8f0);
+    padding: 0.875rem;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+}
+
+@media (min-width: 768px) {
+    .sticky-bottom-bar {
+        position: static;
+        box-shadow: none;
+        padding: 1rem 0 0;
+        border: none;
+    }
+}
+
+/* スペースを確保（固定バー分） */
+.content-with-fixed-bar {
+    padding-bottom: 80px;
+}
+
+@media (min-width: 768px) {
+    .content-with-fixed-bar {
+        padding-bottom: 0;
+    }
+}
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="at-container">
+<div class="at-container content-with-fixed-bar">
     <!-- ヘッダー -->
-    <div class="page-header mb-4">
+    <div class="page-header mb-3 mb-md-4">
         <h1 class="page-title">
             <i class="bi bi-bar-chart"></i>
             <span>指標入力</span>
         </h1>
-        <p class="page-subtitle">{{ template.name }} - {{ companies|length }}社の指標を入力</p>
+        <p class="page-subtitle">{{ template.name }} - {{ companies|length }}社</p>
     </div>
 
     <form method="post" id="metricsForm">
         {% csrf_token %}
         
-        <!-- 会計年度・一括取得 -->
-        <div class="at-card mb-4">
+        <!-- 会計年度入力 -->
+        <div class="at-card mb-3 mb-md-4">
             <div class="row g-3 align-items-end">
-                <div class="col-12 col-sm-4 col-md-3">
+                <div class="col-12 col-sm-6 col-md-4">
                     <label for="fiscal_year" class="at-form-label">
                         <i class="bi bi-calendar3 me-1"></i>会計年度
                     </label>
@@ -36,10 +200,10 @@
                            value="{{ latest_fiscal_year }}"
                            placeholder="例: 2024">
                 </div>
-                <div class="col-12 col-sm-8 col-md-9">
-                    <div class="alert alert-info mb-0 small py-2">
+                <div class="col-12 col-sm-6 col-md-8">
+                    <div class="alert alert-info mb-0 small py-2 px-3">
                         <i class="bi bi-info-circle me-1"></i>
-                        空欄は保存されません。「この企業のデータを取得」でAPI自動取得可能です。
+                        空欄は保存されません
                     </div>
                 </div>
             </div>
@@ -47,57 +211,55 @@
 
         <!-- 企業別指標入力 -->
         {% for company in companies %}
-        <div class="at-card mb-4" data-company-code="{{ company.code }}">
-            <div class="at-card-header">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <div>
-                        <h5 class="at-card-title mb-0">
-                            {{ company.name }}
-                            <small class="at-text-muted ms-2">{{ company.code }}</small>
-                        </h5>
+        <div class="company-card-mobile" data-company-code="{{ company.code }}">
+            <div class="company-header-mobile">
+                <div class="company-info-mobile flex-grow-1">
+                    <h5>{{ company.name }}</h5>
+                    <small>
+                        <span class="fw-semibold">{{ company.code }}</span>
                         {% if company.industry_name_33 %}
-                        <small class="at-text-muted">{{ company.industry_name_33 }}</small>
+                        <span class="d-none d-sm-inline"> · {{ company.industry_name_33 }}</span>
                         {% endif %}
-                    </div>
-                    <button type="button" 
-                            class="btn btn-sm btn-primary fetch-single-btn"
-                            data-company-code="{{ company.code }}"
-                            data-company-name="{{ company.name }}">
-                        <i class="bi bi-cloud-download me-1"></i>
-                        <span class="d-none d-sm-inline">この企業のデータを取得</span>
-                        <span class="d-sm-none">API取得</span>
-                    </button>
+                    </small>
                 </div>
+                <button type="button" 
+                        class="btn btn-primary btn-sm fetch-btn-mobile fetch-single-btn"
+                        data-company-code="{{ company.code }}"
+                        data-company-name="{{ company.name }}">
+                    <i class="bi bi-cloud-download"></i>
+                    <span class="d-none d-sm-inline ms-1">取得</span>
+                </button>
             </div>
             
             {% for group_code, group_info in metric_groups.items %}
-            <div class="at-form-section">
-                <div class="at-form-section-title">
-                    <i class="bi bi-graph-up me-1"></i>{{ group_info.name }}
+            <div class="metric-section-mobile">
+                <div class="metric-section-title">
+                    <i class="bi bi-graph-up"></i>
+                    {{ group_info.name }}
                 </div>
-                <div class="row g-2">
+                <div class="metric-input-grid">
                     {% for metric in group_info.metrics %}
-                    <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                        <label for="metric_{{ company.id }}_{{ metric.id }}" class="at-form-label small">
-                            {{ metric.display_name }}
+                    <div class="metric-input-item">
+                        <div class="metric-label-wrapper">
+                            <label for="metric_{{ company.id }}_{{ metric.id }}" class="metric-label">
+                                {{ metric.display_name }}
+                            </label>
                             {% if metric.description %}
-                            <i class="bi bi-info-circle at-text-muted" 
+                            <i class="bi bi-info-circle metric-info-icon" 
                                data-bs-toggle="tooltip" 
-                               title="{{ metric.description }}"
-                               style="font-size: 0.7rem;"></i>
+                               title="{{ metric.description }}"></i>
                             {% endif %}
-                        </label>
-                        <div class="input-group input-group-sm">
+                        </div>
+                        <div class="input-group-compact">
                             <input type="number" 
-                                   class="form-control at-form-input metric-input" 
+                                   class="form-control metric-input" 
                                    id="metric_{{ company.id }}_{{ metric.id }}"
                                    name="metric_{{ company.id }}_{{ metric.id }}"
                                    data-metric-name="{{ metric.name }}"
                                    value="{{ existing_data|get_item:'metric_'|add:company.id|add:'_'|add:metric.id }}"
                                    step="0.01"
-                                   placeholder="0.00"
-                                   style="font-size: 0.8125rem;">
-                            <span class="input-group-text" style="font-size: 0.75rem;">{{ metric.get_formatted_unit }}</span>
+                                   placeholder="0.00">
+                            <span class="input-group-text">{{ metric.get_formatted_unit }}</span>
                         </div>
                     </div>
                     {% endfor %}
@@ -107,18 +269,28 @@
         </div>
         {% endfor %}
 
-        <!-- 送信ボタン -->
-        <div class="at-card">
-            <div class="at-action-group justify-content-end">
-                <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn btn-secondary">
-                    <i class="bi bi-arrow-left me-1"></i>戻る
-                </a>
-                <button type="button" class="btn btn-outline-secondary" onclick="clearForm()">
-                    <i class="bi bi-x-circle me-1"></i>クリア
-                </button>
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-save me-1"></i>保存してレポート表示
-                </button>
+        <!-- 固定ボタンバー -->
+        <div class="sticky-bottom-bar">
+            <div class="d-grid gap-2">
+                <div class="row g-2">
+                    <div class="col-6 col-sm-3">
+                        <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn btn-secondary w-100">
+                            <i class="bi bi-arrow-left me-1"></i>
+                            <span class="d-none d-sm-inline">戻る</span>
+                        </a>
+                    </div>
+                    <div class="col-6 col-sm-3">
+                        <button type="button" class="btn btn-outline-secondary w-100" onclick="clearForm()">
+                            <i class="bi bi-x-circle me-1"></i>
+                            <span class="d-none d-sm-inline">クリア</span>
+                        </button>
+                    </div>
+                    <div class="col-12 col-sm-6">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-save me-1"></i>保存してレポート表示
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </form>
@@ -137,17 +309,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // 個別取得ボタン
     document.querySelectorAll('.fetch-single-btn').forEach(btn => {
         btn.addEventListener('click', function() {
-            fetchSingleCompany(this.dataset.companyCode, this.dataset.companyName);
+            fetchSingleCompany(this.dataset.companyCode, this.dataset.companyName, this);
         });
     });
 });
 
-async function fetchSingleCompany(code, name) {
-    const btn = document.querySelector(`[data-company-code="${code}"].fetch-single-btn`);
-    const originalHtml = btn.innerHTML;
+async function fetchSingleCompany(code, name, button) {
+    const originalHtml = button.innerHTML;
     
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>取得中...';
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
     
     const fiscalYear = document.getElementById('fiscal_year').value;
     
@@ -173,30 +344,30 @@ async function fetchSingleCompany(code, name) {
             if (result.status === 'success') {
                 updateFormWithResults([result]);
                 
-                btn.classList.remove('btn-primary');
-                btn.classList.add('btn-success');
-                btn.innerHTML = `<i class="bi bi-check-circle me-1"></i>完了 (${result.metrics_count})`;
+                button.classList.remove('btn-primary');
+                button.classList.add('btn-success');
+                button.innerHTML = `<i class="bi bi-check-circle"></i><span class="d-none d-sm-inline ms-1">完了</span>`;
                 
                 setTimeout(() => {
-                    btn.classList.remove('btn-success');
-                    btn.classList.add('btn-primary');
-                    btn.innerHTML = originalHtml;
-                    btn.disabled = false;
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-primary');
+                    button.innerHTML = originalHtml;
+                    button.disabled = false;
                 }, 3000);
             } else {
                 alert(`取得失敗: ${result.message}`);
-                btn.disabled = false;
-                btn.innerHTML = originalHtml;
+                button.disabled = false;
+                button.innerHTML = originalHtml;
             }
         } else {
             alert('データの取得に失敗しました');
-            btn.disabled = false;
-            btn.innerHTML = originalHtml;
+            button.disabled = false;
+            button.innerHTML = originalHtml;
         }
     } catch (error) {
         alert('取得に失敗しました: ' + error.message);
-        btn.disabled = false;
-        btn.innerHTML = originalHtml;
+        button.disabled = false;
+        button.innerHTML = originalHtml;
     }
 }
 
@@ -208,8 +379,17 @@ function updateFormWithResults(results) {
             const input = document.getElementById(metricData.field_name);
             if (input) {
                 input.value = metricData.value;
-                input.classList.add('bg-success', 'bg-opacity-10');
-                setTimeout(() => input.classList.remove('bg-success', 'bg-opacity-10'), 1000);
+                
+                // アニメーション効果
+                const wrapper = input.closest('.input-group-compact');
+                if (wrapper) {
+                    wrapper.style.borderColor = '#10b981';
+                    wrapper.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                    setTimeout(() => {
+                        wrapper.style.borderColor = '';
+                        wrapper.style.boxShadow = '';
+                    }, 1500);
+                }
             }
         });
     });
@@ -235,25 +415,4 @@ document.getElementById('metricsForm').addEventListener('submit', function(e) {
     }
 });
 </script>
-
-<style>
-/* input-group のダークモード対応 */
-.dark-mode .input-group-text,
-[data-theme="dark"] .input-group-text {
-    background-color: var(--at-bg-card-hover);
-    border-color: var(--at-border);
-    color: var(--at-text-secondary);
-}
-
-/* 成功時のハイライト */
-.metric-input.bg-success {
-    animation: pulse-success 0.5s ease-out;
-}
-
-@keyframes pulse-success {
-    0% { background-color: transparent; }
-    50% { background-color: rgba(16, 185, 129, 0.2); }
-    100% { background-color: transparent; }
-}
-</style>
 {% endblock %}

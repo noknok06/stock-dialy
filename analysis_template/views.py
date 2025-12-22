@@ -13,6 +13,7 @@ from decimal import Decimal
 from common.services.yahoo_finance_service import YahooFinanceService
 from django.http import HttpResponse
 import csv
+from django.urls import reverse
 
 from .models import (
     AnalysisTemplate, TemplateCompany, TemplateMetrics,
@@ -180,7 +181,7 @@ def company_select(request, pk):
         'form_actions': [
             {
                 'type': 'back',
-                'url': reverse_lazy('analysis_template:list'),
+                'url': reverse('analysis_template:detail', kwargs={'pk': template.pk}),  # ← 修正
                 'icon': 'bi-arrow-left',
                 'label': '戻る'
             }
@@ -633,14 +634,13 @@ def metrics_edit(request, pk):
         'form_actions': [
             {
                 'type': 'back',
-                'url': reverse_lazy('analysis_template:list'),
+                'url': reverse('analysis_template:detail', kwargs={'pk': template.pk}),  # ← 修正
                 'icon': 'bi-arrow-left',
                 'label': '戻る'
             }
         ]
     }
     return render(request, 'analysis_template/metrics_edit.html', context)
-
 
 @login_required
 @require_http_methods(["GET"])
