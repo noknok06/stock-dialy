@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'copomo:tdnet-admin-disclosure-list' %}">開示情報一覧</a></li>
+                    <li class="breadcrumb-item active">{{ disclosure.disclosure_id }}</li>
+                </ol>
+            </nav>
+            
+            <h2>{{ page_title }}</h2>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-8">
+            <!-- 基本情報 -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">基本情報</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tbody>
+                            <tr>
+                                <th style="width: 150px;">開示ID</th>
+                                <td>{{ disclosure.disclosure_id }}</td>
+                            </tr>
+                            <tr>
+                                <th>企業名</th>
+                                <td>
+                                    <strong>{{ disclosure.company_name }}</strong>
+                                    {% if disclosure.company_master %}
+                                        <a href="{% url 'admin:company_master_companymaster_change' disclosure.company_master.id %}" 
+                                           class="btn btn-sm btn-outline-primary ms-2" target="_blank">
+                                            企業マスタ
+                                        </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>証券コード</th>
+                                <td>{{ disclosure.company_code }}</td>
+                            </tr>
+                            <tr>
+                                <th>開示日時</th>
+                                <td>{{ disclosure.disclosure_date|date:"Y年n月j日 H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <th>開示種別</th>
+                                <td>
+                                    <span class="badge bg-info">{{ disclosure.get_disclosure_type_display }}</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>タイトル</th>
+                                <td>{{ disclosure.title }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 概要 -->
+            {% if disclosure.summary %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">概要</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ disclosure.summary }}</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- PDF情報 -->
+            {% if disclosure.pdf_url %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">PDF情報</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>PDF URL:</strong><br>
+                        <a href="{{ disclosure.pdf_url }}" target="_blank" class="text-break">
+                            {{ disclosure.pdf_url }}
+                        </a>
+                    </div>
+                    {% if disclosure.pdf_cached %}
+                        <div class="alert alert-success mb-0">
+                            <i class="fas fa-check-circle"></i> PDFダウンロード済み
+                            {% if disclosure.pdf_file_path %}
+                                <br><small class="text-muted">保存先: {{ disclosure.pdf_file_path }}</small>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning mb-0">
+                            <i class="fas fa-exclamation-triangle"></i> PDF未ダウンロード
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- 関連レポート -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">関連レポート ({{ reports.count }}件)</h5>
+                </div>
+                <div class="card-body">
+                    {% if reports %}
+                        <div class="list-group">
+                            {% for report in reports %}
+                                <a href="{% url 'admin:earnings_analysis_tdnetreport_change' report.id %}" 
+                                   class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ report.title }}</h6>
+                                        <small>
+                                            {% if report.status == 'published' %}
+                                                <span class="badge bg-success">公開</span>
+                                            {% elif report.status == 'draft' %}
+                                                <span class="badge bg-secondary">下書き</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">アーカイブ</span>
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    <p class="mb-1 text-muted small">{{ report.summary|truncatewords:20 }}</p>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar"></i> {{ report.created_at|date:"Y/m/d H:i" }}
+                                        <i class="fas fa-eye ms-2"></i> {{ report.view_count }}回
+                                    </small>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">まだレポートが生成されていません。</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- アクション -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">アクション</h5>
+                </div>
+                <div class="card-body">
+                    {% if not disclosure.report_generated %}
+                        <form method="post" action="{% url 'copomo:tdnet-admin-generate' disclosure.disclosure_id %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="report_type" class="form-label">レポート種別</label>
+                                <select name="report_type" id="report_type" class="form-control">
+                                    <option value="earnings" {% if disclosure.disclosure_type == 'earnings' %}selected{% endif %}>決算短信</option>
+                                    <option value="forecast" {% if disclosure.disclosure_type == 'forecast' %}selected{% endif %}>業績予想</option>
+                                    <option value="dividend" {% if disclosure.disclosure_type == 'dividend' %}selected{% endif %}>配当</option>
+                                    <option value="merger" {% if disclosure.disclosure_type == 'merger' %}selected{% endif %}>合併・買収</option>
+                                    <option value="offering" {% if disclosure.disclosure_type == 'offering' %}selected{% endif %}>募集・発行</option>
+                                    <option value="governance" {% if disclosure.disclosure_type == 'governance' %}selected{% endif %}>ガバナンス</option>
+                                    <option value="other">その他</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-robot"></i> AIレポート生成
+                            </button>
+                        </form>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-check-circle"></i> レポート生成済み
+                        </div>
+                    {% endif %}
+                    
+                    <hr>
+                    
+                    <a href="{% url 'admin:earnings_analysis_tdnetdisclosure_change' disclosure.id %}" 
+                       class="btn btn-outline-secondary w-100 mb-2">
+                        <i class="fas fa-edit"></i> Django管理画面で編集
+                    </a>
+                    
+                    <a href="{% url 'copomo:tdnet-admin-disclosure-list' %}" 
+                       class="btn btn-outline-secondary w-100">
+                        <i class="fas fa-list"></i> 一覧に戻る
+                    </a>
+                </div>
+            </div>
+            
+            <!-- ステータス -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">ステータス</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>処理済み:</strong>
+                        {% if disclosure.is_processed %}
+                            <span class="badge bg-success">はい</span>
+                        {% else %}
+                            <span class="badge bg-secondary">いいえ</span>
+                        {% endif %}
+                    </div>
+                    <div class="mb-2">
+                        <strong>レポート生成済み:</strong>
+                        {% if disclosure.report_generated %}
+                            <span class="badge bg-success">はい</span>
+                        {% else %}
+                            <span class="badge bg-secondary">いいえ</span>
+                        {% endif %}
+                    </div>
+                    <hr>
+                    <small class="text-muted">
+                        作成: {{ disclosure.created_at|date:"Y/m/d H:i" }}<br>
+                        更新: {{ disclosure.updated_at|date:"Y/m/d H:i" }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

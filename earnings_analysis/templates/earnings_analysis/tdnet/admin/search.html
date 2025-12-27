@@ -1,0 +1,312 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - COPOMO{% endblock %}
+
+{% block extra_css %}
+<style>
+.search-form {
+    display: none;
+}
+.search-form.active {
+    display: block;
+}
+.disclosure-item {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    transition: all 0.3s;
+}
+.disclosure-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+.badge-saved {
+    background-color: #28a745;
+}
+.badge-unsaved {
+    background-color: #6c757d;
+}
+.btn-group-actions .btn {
+    margin-right: 5px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="fas fa-search"></i> {{ page_title }}</h2>
+            <p class="text-muted">TDNET（適時開示情報）から開示情報を検索します</p>
+        </div>
+    </div>
+    
+    <!-- 検索フォーム -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-filter"></i> 検索条件</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" id="searchForm">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">検索方法</label>
+                    <select name="search_type" class="form-select" id="searchTypeSelect">
+                        <option value="date" {% if search_criteria.search_type == 'date' %}selected{% endif %}>
+                            日付検索
+                        </option>
+                        <option value="company" {% if search_criteria.search_type == 'company' %}selected{% endif %}>
+                            企業コード検索
+                        </option>
+                        <option value="type" {% if search_criteria.search_type == 'type' %}selected{% endif %}>
+                            開示種別検索
+                        </option>
+                    </select>
+                </div>
+                
+                <!-- 日付検索フォーム -->
+                <div id="dateSearch" class="search-form {% if not search_criteria or search_criteria.search_type == 'date' %}active{% endif %}">
+                    <div class="mb-3">
+                        <label class="form-label">検索日付</label>
+                        <input type="date" name="date" class="form-control" 
+                               value="{{ search_criteria.date|default:today }}"
+                               max="{{ today }}">
+                        <small class="form-text text-muted">指定した日付の開示情報を検索します</small>
+                    </div>
+                </div>
+                
+                <!-- 企業コード検索フォーム -->
+                <div id="companySearch" class="search-form {% if search_criteria.search_type == 'company' %}active{% endif %}">
+                    <div class="mb-3">
+                        <label class="form-label">証券コード</label>
+                        <input type="text" name="company_code" class="form-control" 
+                               placeholder="例: 7203"
+                               value="{{ search_criteria.company_code|default:'' }}"
+                               pattern="[0-9]{4}">
+                        <small class="form-text text-muted">4桁の証券コードを入力してください</small>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">開始日</label>
+                            <input type="date" name="date_from" class="form-control"
+                                   value="{{ search_criteria.date_from|default:'' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">終了日</label>
+                            <input type="date" name="date_to" class="form-control"
+                                   value="{{ search_criteria.date_to|default:today }}">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 開示種別検索フォーム -->
+                <div id="typeSearch" class="search-form {% if search_criteria.search_type == 'type' %}active{% endif %}">
+                    <div class="mb-3">
+                        <label class="form-label">開示種別</label>
+                        <select name="disclosure_type" class="form-select">
+                            {% for value, label in disclosure_types %}
+                            <option value="{{ value }}" {% if search_criteria.disclosure_type == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">開始日</label>
+                            <input type="date" name="date_from" class="form-control"
+                                   value="{{ search_criteria.date_from|default:'' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">終了日</label>
+                            <input type="date" name="date_to" class="form-control"
+                                   value="{{ search_criteria.date_to|default:today }}">
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-search"></i> 検索
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 検索結果 -->
+    {% if search_result %}
+    <div class="card">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-list"></i> 検索結果: {{ search_result.total }}件
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if search_result.items %}
+            
+            {% for item in search_result.items %}
+            <div class="disclosure-item">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5 class="mb-2">
+                            {{ item.title }}
+                        </h5>
+                        <div class="mb-2">
+                            <strong>{{ item.company_name }}</strong>
+                            <span class="badge bg-secondary">{{ item.company_code }}</span>
+                            <span class="badge bg-info">{{ item.disclosure_type }}</span>
+                            {% if item.is_saved %}
+                            <span class="badge badge-saved">保存済み</span>
+                            {% else %}
+                            <span class="badge badge-unsaved">未保存</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-muted">
+                            <i class="far fa-clock"></i> {{ item.disclosure_date }}
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="btn-group-actions">
+                            {% if item.is_saved %}
+                            <a href="{% url 'copomo:tdnet-admin-disclosure-detail' item.disclosure_id %}" 
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i> 詳細
+                            </a>
+                            <a href="{% url 'copomo:tdnet-admin-generate' item.disclosure_id %}" 
+                               class="btn btn-sm btn-success">
+                                <i class="fas fa-magic"></i> レポート生成
+                            </a>
+                            {% else %}
+                            <button class="btn btn-sm btn-primary save-disclosure-btn" 
+                                    data-disclosure-id="{{ item.disclosure_id }}">
+                                <i class="fas fa-save"></i> 保存
+                            </button>
+                            <button class="btn btn-sm btn-success generate-report-btn" 
+                                    data-disclosure-id="{{ item.disclosure_id }}">
+                                <i class="fas fa-magic"></i> レポート生成
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                {% if item.summary %}
+                <div class="mt-2">
+                    <small class="text-muted">{{ item.summary|truncatewords:30 }}</small>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            
+            <!-- ページネーション -->
+            {% if search_result.total_pages > 1 %}
+            <nav aria-label="検索結果ページネーション">
+                <ul class="pagination justify-content-center mt-4">
+                    {% if search_result.has_prev %}
+                    <li class="page-item">
+                        <button class="page-link page-nav-btn" data-page="{{ search_result.page|add:-1 }}">
+                            <i class="fas fa-chevron-left"></i> 前へ
+                        </button>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">
+                            {{ search_result.page }} / {{ search_result.total_pages }}
+                        </span>
+                    </li>
+                    
+                    {% if search_result.has_next %}
+                    <li class="page-item">
+                        <button class="page-link page-nav-btn" data-page="{{ search_result.page|add:1 }}">
+                            次へ <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> 検索結果が見つかりませんでした。
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 検索タイプ切り替え
+document.getElementById('searchTypeSelect').addEventListener('change', function() {
+    const searchForms = document.querySelectorAll('.search-form');
+    searchForms.forEach(form => form.classList.remove('active'));
+    
+    const selectedType = this.value;
+    const formId = selectedType + 'Search';
+    document.getElementById(formId).classList.add('active');
+});
+
+// 保存ボタン（AJAX）
+document.querySelectorAll('.save-disclosure-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const disclosureId = this.dataset.disclosureId;
+        const button = this;
+        
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中...';
+        
+        fetch(`/api/tdnet/disclosure/${disclosureId}/save/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('保存しました');
+                location.reload();
+            } else {
+                alert('保存エラー: ' + data.error);
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-save"></i> 保存';
+            }
+        })
+        .catch(error => {
+            alert('エラーが発生しました: ' + error);
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-save"></i> 保存';
+        });
+    });
+});
+
+// ページネーションボタン
+document.querySelectorAll('.page-nav-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const page = this.dataset.page;
+        const form = document.getElementById('searchForm');
+        
+        // ページ番号を追加
+        let pageInput = form.querySelector('input[name="page"]');
+        if (!pageInput) {
+            pageInput = document.createElement('input');
+            pageInput.type = 'hidden';
+            pageInput.name = 'page';
+            form.appendChild(pageInput);
+        }
+        pageInput.value = page;
+        
+        form.submit();
+    });
+});
+</script>
+{% endblock %}

@@ -4,6 +4,7 @@ from django.views.generic import RedirectView
 from . import views
 from .views import ui, sentiment_ui, sentiment, financial_ui, financial
 
+from .views import tdnet_admin, tdnet_ui
 app_name = 'copomo'
 
 urlpatterns = [
@@ -80,7 +81,52 @@ urlpatterns = [
     path('search/documents/', 
          RedirectView.as_view(pattern_name='copomo:document-list-ui', permanent=False)),
     
-    # ======== 開発・デバッグ用URL ========
+    # PDF URL入力画面（メイン）
+    path('admin_xyz/tdnet/pdf-upload/', 
+         tdnet_admin.TDNETPDFUploadView.as_view(), 
+         name='tdnet-admin-pdf-upload'),
+    
+    # 開示情報一覧
+    path('admin_xyz/tdnet/disclosures/', 
+         tdnet_admin.TDNETDisclosureListView.as_view(), 
+         name='tdnet-admin-disclosure-list'),
+    
+    # 開示情報詳細
+    path('admin_xyz/tdnet/disclosure/<str:disclosure_id>/', 
+         tdnet_admin.TDNETDisclosureDetailView.as_view(), 
+         name='tdnet-admin-disclosure-detail'),
+    
+    # レポート生成（既存開示から）
+    path('admin_xyz/tdnet/disclosure/<str:disclosure_id>/generate/', 
+         tdnet_admin.TDNETReportGenerateView.as_view(), 
+         name='tdnet-admin-generate'),
+    
+    # レポート一覧
+    path('admin_xyz/tdnet/reports/', 
+         tdnet_admin.TDNETReportListView.as_view(), 
+         name='tdnet-admin-report-list'),
+    
+    # レポート公開/非公開
+    path('admin_xyz/tdnet/report/<str:report_id>/publish/', 
+         tdnet_admin.TDNETReportPublishView.as_view(), 
+         name='tdnet-admin-report-publish'),
+
+    # ===== TDNETユーザー用URL =====
+    
+    # レポート一覧（ユーザー用）
+    path('tdnet-reports/', 
+         tdnet_ui.TDNETReportListView.as_view(), 
+         name='tdnet-report-list'),
+    
+    # レポート詳細
+    path('tdnet-reports/<str:report_id>/', 
+         tdnet_ui.TDNETReportDetailView.as_view(), 
+         name='tdnet-report-detail'),
+    
+    # 企業別レポート
+    path('tdnet-reports/company/<str:company_code>/', 
+         tdnet_ui.CompanyTDNETReportListView.as_view(), 
+         name='tdnet-company-reports'),    
 ]
 
 # 開発環境用のデバッグURL

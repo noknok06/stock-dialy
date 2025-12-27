@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2>{{ page_title }}</h2>
+            <p class="text-muted">適時開示PDFのURLを入力してレポートを自動生成します</p>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- PDF URL -->
+                        <div class="mb-3">
+                            <label for="{{ form.pdf_url.id_for_label }}" class="form-label">
+                                {{ form.pdf_url.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.pdf_url }}
+                            {% if form.pdf_url.errors %}
+                                <div class="text-danger">{{ form.pdf_url.errors }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">{{ form.pdf_url.help_text }}</small>
+                        </div>
+                        
+                        <!-- 企業情報 -->
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ form.company_code.id_for_label }}" class="form-label">
+                                    {{ form.company_code.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.company_code }}
+                                {% if form.company_code.errors %}
+                                    <div class="text-danger">{{ form.company_code.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">{{ form.company_code.help_text }}</small>
+                            </div>
+                            
+                            <div class="col-md-8 mb-3">
+                                <label for="{{ form.company_name.id_for_label }}" class="form-label">
+                                    {{ form.company_name.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.company_name }}
+                                {% if form.company_name.errors %}
+                                    <div class="text-danger">{{ form.company_name.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- 開示情報 -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.disclosure_type.id_for_label }}" class="form-label">
+                                    {{ form.disclosure_type.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.disclosure_type }}
+                                {% if form.disclosure_type.errors %}
+                                    <div class="text-danger">{{ form.disclosure_type.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.max_pdf_pages.id_for_label }}" class="form-label">
+                                    {{ form.max_pdf_pages.label }}
+                                </label>
+                                {{ form.max_pdf_pages }}
+                                {% if form.max_pdf_pages.errors %}
+                                    <div class="text-danger">{{ form.max_pdf_pages.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">{{ form.max_pdf_pages.help_text }}</small>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.title.id_for_label }}" class="form-label">
+                                {{ form.title.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.title }}
+                            {% if form.title.errors %}
+                                <div class="text-danger">{{ form.title.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- オプション -->
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.auto_generate_report }}
+                                <label class="form-check-label" for="{{ form.auto_generate_report.id_for_label }}">
+                                    {{ form.auto_generate_report.label }}
+                                </label>
+                                <small class="form-text text-muted d-block">{{ form.auto_generate_report.help_text }}</small>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-file-pdf"></i> PDFを処理してレポート生成
+                            </button>
+                            <a href="{% url 'copomo:tdnet-admin-disclosure-list' %}" class="btn btn-secondary">
+                                キャンセル
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">使い方</h5>
+                    <ol class="small">
+                        <li>適時開示PDFのURLを取得</li>
+                        <li>企業情報を入力（証券コード、企業名）</li>
+                        <li>開示種別とタイトルを入力</li>
+                        <li>「PDFを処理してレポート生成」をクリック</li>
+                        <li>システムがPDFをダウンロード→テキスト抽出→AIレポート生成</li>
+                        <li>生成されたレポートを確認・編集</li>
+                        <li>問題なければ公開</li>
+                    </ol>
+                    
+                    <hr>
+                    
+                    <h6>注意事項</h6>
+                    <ul class="small">
+                        <li>PDFの読み取りには時間がかかります（30秒〜2分）</li>
+                        <li>ページ数が多いと処理時間が長くなります</li>
+                        <li>生成されたレポートは「下書き」状態で保存されます</li>
+                        <li>必ずレビューしてから公開してください</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6>PDF URLの例</h6>
+                    <code class="small">
+                        https://www.release.tdnet.info/inbs/140120240101234567.pdf
+                    </code>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

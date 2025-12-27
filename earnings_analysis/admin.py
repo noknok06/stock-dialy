@@ -21,6 +21,13 @@ from .models import (
     CompanyFinancialData, FinancialBenchmark
 )
 
+from .models import (
+    TDNETDisclosure,
+    TDNETReport,
+    TDNETReportSection,
+)
+
+
 # ログ設定（最優先で設定）
 logger = logging.getLogger(__name__)
 
@@ -1420,3 +1427,437 @@ admin.site.site_header = mark_safe('''
 </style>
 コポモ
 ''')
+
+
+@admin.register(TDNETDisclosure)
+class TDNETDisclosureAdmin(admin.ModelAdmin):
+    """TDNET開示情報管理"""
+    
+    list_display = [
+        'disclosure_id',
+        'company_info',
+        'disclosure_type',
+        'title_short',
+        'disclosure_date',
+        'status_badges',
+        'action_links',
+    ]
+    
+    list_filter = [
+        'disclosure_type',
+        'report_generated',
+        'is_processed',
+        'disclosure_date',
+        'created_at',
+    ]
+    
+    search_fields = [
+        'disclosure_id',
+        'company_name',
+        'company_code',
+        'title',
+        'summary',
+    ]
+    
+    readonly_fields = [
+        'disclosure_id',
+        'created_at',
+        'updated_at',
+        'pdf_url_link',
+    ]
+    
+    fieldsets = (
+        ('基本情報', {
+            'fields': (
+                'disclosure_id',
+                'company_code',
+                'company_name',
+                'company_master',
+            )
+        }),
+        ('開示情報', {
+            'fields': (
+                'disclosure_date',
+                'disclosure_type',
+                'disclosure_category',
+                'title',
+                'summary',
+            )
+        }),
+        ('データ', {
+            'fields': (
+                'pdf_url_link',
+                'pdf_cached',
+                'pdf_file_path',
+                'raw_data',
+            ),
+            'classes': ('collapse',),
+        }),
+        ('ステータス', {
+            'fields': (
+                'is_processed',
+                'report_generated',
+            )
+        }),
+        ('メタ情報', {
+            'fields': (
+                'created_at',
+                'updated_at',
+            ),
+            'classes': ('collapse',),
+        }),
+    )
+    
+    actions = ['generate_report_action', 'mark_as_processed']
+    
+    def company_info(self, obj):
+        """企業情報表示"""
+        return format_html(
+            '<strong>{}</strong><br><small>({})</small>',
+            obj.company_name,
+            obj.company_code
+        )
+    company_info.short_description = '企業'
+    
+    def title_short(self, obj):
+        """タイトル（短縮版）"""
+        if len(obj.title) > 50:
+            return obj.title[:50] + '...'
+        return obj.title
+    title_short.short_description = 'タイトル'
+    
+    def status_badges(self, obj):
+        """ステータスバッジ"""
+        badges = []
+        
+        if obj.report_generated:
+            badges.append('<span class="badge" style="background-color: #28a745; color: white;">レポート生成済み</span>')
+        else:
+            badges.append('<span class="badge" style="background-color: #6c757d; color: white;">未生成</span>')
+        
+        if obj.is_processed:
+            badges.append('<span class="badge" style="background-color: #17a2b8; color: white;">処理済み</span>')
+        
+        if obj.has_pdf:
+            badges.append('<span class="badge" style="background-color: #ffc107; color: black;">PDF有</span>')
+        
+        return format_html(' '.join(badges))
+    status_badges.short_description = 'ステータス'
+    
+    def action_links(self, obj):
+        """アクションリンク"""
+        links = []
+        
+        # レポート生成リンク
+        if not obj.report_generated:
+            links.append(
+                format_html(
+                    '<a class="button" href="{}">レポート生成</a>',
+                    reverse('copomo:tdnet-admin-generate', args=[obj.disclosure_id])
+                )
+            )
+        
+        # レポート一覧リンク
+        if obj.reports.exists():
+            links.append(
+                format_html(
+                    '<a class="button" href="{}?disclosure__id__exact={}">レポート一覧</a>',
+                    reverse('admin:earnings_analysis_tdnetreport_changelist'),
+                    obj.id
+                )
+            )
+        
+        return format_html(' '.join(links))
+    action_links.short_description = 'アクション'
+    
+    def pdf_url_link(self, obj):
+        """PDF URLリンク"""
+        if obj.pdf_url:
+            return format_html(
+                '<a href="{}" target="_blank">{}</a>',
+                obj.pdf_url,
+                obj.pdf_url
+            )
+        return '-'
+    pdf_url_link.short_description = 'PDF URL'
+    
+    def generate_report_action(self, request, queryset):
+        """レポート生成アクション"""
+        count = 0
+        for disclosure in queryset:
+            if not disclosure.report_generated:
+                # TODO: レポート生成ロジック呼び出し
+                count += 1
+        
+        self.message_user(request, f'{count}件のレポート生成を開始しました')
+    generate_report_action.short_description = 'レポート生成'
+    
+    def mark_as_processed(self, request, queryset):
+        """処理済みにする"""
+        count = queryset.update(is_processed=True)
+        self.message_user(request, f'{count}件を処理済みにしました')
+    mark_as_processed.short_description = '処理済みにする'
+
+
+@admin.register(TDNETReport)
+class TDNETReportAdmin(admin.ModelAdmin):
+    """TDNETレポート管理"""
+    
+    list_display = [
+        'report_id',
+        'title_short',
+        'report_type',
+        'status_badge',
+        'company_info',
+        'view_count',
+        'published_at',
+        'action_links',
+    ]
+    
+    list_filter = [
+        'status',
+        'report_type',
+        'published_at',
+        'created_at',
+    ]
+    
+    search_fields = [
+        'report_id',
+        'title',
+        'disclosure__company_name',
+        'disclosure__company_code',
+    ]
+    
+    readonly_fields = [
+        'report_id',
+        'view_count',
+        'created_at',
+        'updated_at',
+        'disclosure_link',
+    ]
+    
+    fieldsets = (
+        ('基本情報', {
+            'fields': (
+                'report_id',
+                'disclosure_link',
+                'title',
+                'report_type',
+            )
+        }),
+        ('内容', {
+            'fields': (
+                'summary',
+                'key_points',
+                'analysis',
+            )
+        }),
+        ('ステータス', {
+            'fields': (
+                'status',
+                'published_at',
+            )
+        }),
+        ('生成情報', {
+            'fields': (
+                'generated_by',
+                'generation_model',
+                'generation_prompt',
+                'generation_token_count',
+            ),
+            'classes': ('collapse',),
+        }),
+        ('統計', {
+            'fields': (
+                'view_count',
+            )
+        }),
+        ('メタ情報', {
+            'fields': (
+                'created_at',
+                'updated_at',
+            ),
+            'classes': ('collapse',),
+        }),
+    )
+    
+    actions = ['publish_action', 'unpublish_action', 'archive_action']
+    
+    def title_short(self, obj):
+        """タイトル（短縮版）"""
+        if len(obj.title) > 50:
+            return obj.title[:50] + '...'
+        return obj.title
+    title_short.short_description = 'タイトル'
+    
+    def company_info(self, obj):
+        """企業情報"""
+        return format_html(
+            '<strong>{}</strong><br><small>({})</small>',
+            obj.disclosure.company_name,
+            obj.disclosure.company_code
+        )
+    company_info.short_description = '企業'
+    
+    def status_badge(self, obj):
+        """ステータスバッジ"""
+        colors = {
+            'draft': '#6c757d',
+            'published': '#28a745',
+            'archived': '#ffc107',
+        }
+        color = colors.get(obj.status, '#6c757d')
+        
+        return format_html(
+            '<span class="badge" style="background-color: {}; color: white;">{}</span>',
+            color,
+            obj.get_status_display()
+        )
+    status_badge.short_description = 'ステータス'
+    
+    def action_links(self, obj):
+        """アクションリンク"""
+        links = []
+        
+        # 詳細ページリンク
+        links.append(
+            format_html(
+                '<a class="button" href="{}" target="_blank">詳細表示</a>',
+                reverse('copomo:tdnet-report-detail', args=[obj.report_id])
+            )
+        )
+        
+        # セクション管理リンク
+        links.append(
+            format_html(
+                '<a class="button" href="{}?report__id__exact={}">セクション管理</a>',
+                reverse('admin:earnings_analysis_tdnetreportsection_changelist'),
+                obj.id
+            )
+        )
+        
+        return format_html(' '.join(links))
+    action_links.short_description = 'アクション'
+    
+    def disclosure_link(self, obj):
+        """開示情報リンク"""
+        url = reverse('admin:earnings_analysis_tdnetdisclosure_change', args=[obj.disclosure.id])
+        return format_html(
+            '<a href="{}">{}</a>',
+            url,
+            obj.disclosure.disclosure_id
+        )
+    disclosure_link.short_description = '元開示情報'
+    
+    def publish_action(self, request, queryset):
+        """公開アクション"""
+        count = 0
+        for report in queryset:
+            if report.status != 'published':
+                report.publish()
+                count += 1
+        
+        self.message_user(request, f'{count}件のレポートを公開しました')
+    publish_action.short_description = 'レポート公開'
+    
+    def unpublish_action(self, request, queryset):
+        """非公開アクション"""
+        count = 0
+        for report in queryset:
+            if report.status == 'published':
+                report.unpublish()
+                count += 1
+        
+        self.message_user(request, f'{count}件のレポートを非公開にしました')
+    unpublish_action.short_description = 'レポート非公開'
+    
+    def archive_action(self, request, queryset):
+        """アーカイブアクション"""
+        count = queryset.update(status='archived')
+        self.message_user(request, f'{count}件のレポートをアーカイブしました')
+    archive_action.short_description = 'レポートアーカイブ'
+
+
+@admin.register(TDNETReportSection)
+class TDNETReportSectionAdmin(admin.ModelAdmin):
+    """レポートセクション管理"""
+    
+    list_display = [
+        'report_info',
+        'section_type',
+        'title',
+        'order',
+        'content_preview',
+    ]
+    
+    list_filter = [
+        'section_type',
+        'report__report_type',
+        'report__status',
+    ]
+    
+    search_fields = [
+        'report__report_id',
+        'title',
+        'content',
+    ]
+    
+    readonly_fields = [
+        'created_at',
+        'updated_at',
+        'report_link',
+    ]
+    
+    fieldsets = (
+        ('基本情報', {
+            'fields': (
+                'report_link',
+                'section_type',
+                'title',
+                'order',
+            )
+        }),
+        ('内容', {
+            'fields': (
+                'content',
+                'data',
+            )
+        }),
+        ('メタ情報', {
+            'fields': (
+                'created_at',
+                'updated_at',
+            ),
+            'classes': ('collapse',),
+        }),
+    )
+    
+    ordering = ['report', 'order']
+    
+    def report_info(self, obj):
+        """レポート情報"""
+        return format_html(
+            '<strong>{}</strong><br><small>{}</small>',
+            obj.report.report_id,
+            obj.report.title[:30] + '...' if len(obj.report.title) > 30 else obj.report.title
+        )
+    report_info.short_description = 'レポート'
+    
+    def content_preview(self, obj):
+        """内容プレビュー"""
+        if len(obj.content) > 100:
+            return obj.content[:100] + '...'
+        return obj.content
+    content_preview.short_description = '内容'
+    
+    def report_link(self, obj):
+        """レポートリンク"""
+        url = reverse('admin:earnings_analysis_tdnetreport_change', args=[obj.report.id])
+        return format_html(
+            '<a href="{}">{}</a>',
+            url,
+            obj.report.report_id
+        )
+    report_link.short_description = 'レポート'
+
+

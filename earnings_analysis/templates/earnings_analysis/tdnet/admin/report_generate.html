@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - COPOMO{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'copomo:tdnet-admin-search' %}">TDNET検索</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'copomo:tdnet-admin-disclosure-detail' disclosure.disclosure_id %}">
+                            {{ disclosure.disclosure_id }}
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active">レポート生成</li>
+                </ol>
+            </nav>
+            
+            <h2><i class="fas fa-magic"></i> {{ page_title }}</h2>
+        </div>
+    </div>
+    
+    <!-- 開示情報 -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">開示情報</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-4">開示ID:</dt>
+                        <dd class="col-sm-8">{{ disclosure.disclosure_id }}</dd>
+                        
+                        <dt class="col-sm-4">企業名:</dt>
+                        <dd class="col-sm-8">
+                            <strong>{{ disclosure.company_name }}</strong>
+                            <span class="badge bg-secondary">{{ disclosure.company_code }}</span>
+                        </dd>
+                        
+                        <dt class="col-sm-4">開示日時:</dt>
+                        <dd class="col-sm-8">{{ disclosure.disclosure_date }}</dd>
+                        
+                        <dt class="col-sm-4">開示種別:</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-primary">{{ disclosure.get_disclosure_type_display }}</span>
+                        </dd>
+                    </dl>
+                </div>
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-4">タイトル:</dt>
+                        <dd class="col-sm-8">{{ disclosure.title }}</dd>
+                    </dl>
+                    
+                    {% if disclosure.summary %}
+                    <dl class="row">
+                        <dt class="col-sm-4">概要:</dt>
+                        <dd class="col-sm-8">{{ disclosure.summary|truncatewords:50 }}</dd>
+                    </dl>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- レポート生成フォーム -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-file-alt"></i> レポート生成設定</h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">レポート種別 <span class="text-danger">*</span></label>
+                    <select name="report_type" class="form-select form-select-lg" required>
+                        <option value="">-- 選択してください --</option>
+                        {% for value, label in report_types %}
+                        <option value="{{ value }}" {% if disclosure.disclosure_type == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small class="form-text text-muted">
+                        開示種別に応じた適切なレポート種別を選択してください
+                    </small>
+                </div>
+                
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle"></i> レポート生成について</h6>
+                    <ul class="mb-0">
+                        <li>GEMINI APIを使用して自動的にレポートを生成します</li>
+                        <li>生成には数秒～数十秒かかる場合があります</li>
+                        <li>生成されたレポートは下書き状態で保存されます</li>
+                        <li>内容を確認・編集後、公開してください</li>
+                    </ul>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{% url 'copomo:tdnet-admin-disclosure-detail' disclosure.disclosure_id %}" 
+                       class="btn btn-secondary btn-lg">
+                        <i class="fas fa-arrow-left"></i> キャンセル
+                    </a>
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-magic"></i> レポート生成
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 既存レポート -->
+    {% if disclosure.reports.exists %}
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-list"></i> 既存のレポート</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>レポートID</th>
+                            <th>種別</th>
+                            <th>ステータス</th>
+                            <th>作成日時</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in disclosure.reports.all %}
+                        <tr>
+                            <td><code>{{ report.report_id }}</code></td>
+                            <td><span class="badge bg-info">{{ report.get_report_type_display }}</span></td>
+                            <td>
+                                {% if report.status == 'published' %}
+                                <span class="badge bg-success">公開</span>
+                                {% elif report.status == 'draft' %}
+                                <span class="badge bg-secondary">下書き</span>
+                                {% else %}
+                                <span class="badge bg-warning">{{ report.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ report.created_at|date:"Y-m-d H:i" }}</td>
+                            <td>
+                                <a href="{% url 'copomo:tdnet-admin-report-edit' report.report_id %}" 
+                                   class="btn btn-sm btn-primary">
+                                    <i class="fas fa-edit"></i> 編集
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

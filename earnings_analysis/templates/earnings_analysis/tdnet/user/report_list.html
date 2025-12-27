@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2>{{ page_title }}</h2>
+            
+            <!-- フィルタ -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="status" class="form-label">ステータス</label>
+                            <select name="status" id="status" class="form-control">
+                                <option value="">すべて</option>
+                                {% for value, label in status_choices %}
+                                    <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label for="type" class="form-label">レポート種別</label>
+                            <select name="type" id="type" class="form-control">
+                                <option value="">すべて</option>
+                                {% for value, label in report_types %}
+                                    <option value="{{ value }}" {% if request.GET.type == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="submit" class="btn btn-primary d-block">
+                                <i class="fas fa-search"></i> 検索
+                            </button>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <a href="{% url 'copomo:tdnet-admin-pdf-upload' %}" class="btn btn-success d-block">
+                                <i class="fas fa-plus"></i> 新規作成
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- レポート一覧 -->
+            <div class="card">
+                <div class="card-body">
+                    {% if reports %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>レポートID</th>
+                                        <th>タイトル</th>
+                                        <th>種別</th>
+                                        <th>ステータス</th>
+                                        <th>企業</th>
+                                        <th>閲覧数</th>
+                                        <th>作成日</th>
+                                        <th>アクション</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for report in reports %}
+                                        <tr>
+                                            <td>
+                                                <code>{{ report.report_id|truncatechars:20 }}</code>
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'admin:earnings_analysis_tdnetreport_change' report.id %}">
+                                                    {{ report.title|truncatechars:50 }}
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ report.get_report_type_display }}</span>
+                                            </td>
+                                            <td>
+                                                {% if report.status == 'published' %}
+                                                    <span class="badge bg-success">公開</span>
+                                                {% elif report.status == 'draft' %}
+                                                    <span class="badge bg-secondary">下書き</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">アーカイブ</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {{ report.disclosure.company_name|truncatechars:20 }}<br>
+                                                <small class="text-muted">{{ report.disclosure.company_code }}</small>
+                                            </td>
+                                            <td>{{ report.view_count }}</td>
+                                            <td>{{ report.created_at|date:"Y/m/d H:i" }}</td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="{% url 'copomo:tdnet-report-detail' report.report_id %}" 
+                                                       class="btn btn-outline-primary" 
+                                                       target="_blank"
+                                                       title="プレビュー">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <a href="{% url 'admin:earnings_analysis_tdnetreport_change' report.id %}" 
+                                                       class="btn btn-outline-secondary"
+                                                       title="編集">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    {% if report.status == 'draft' %}
+                                                        <form method="post" 
+                                                              action="{% url 'copomo:tdnet-admin-report-publish' report.report_id %}" 
+                                                              style="display:inline;">
+                                                            {% csrf_token %}
+                                                            <input type="hidden" name="action" value="publish">
+                                                            <button type="submit" 
+                                                                    class="btn btn-outline-success" 
+                                                                    title="公開">
+                                                                <i class="fas fa-upload"></i>
+                                                            </button>
+                                                        </form>
+                                                    {% elif report.status == 'published' %}
+                                                        <form method="post" 
+                                                              action="{% url 'copomo:tdnet-admin-report-publish' report.report_id %}" 
+                                                              style="display:inline;">
+                                                            {% csrf_token %}
+                                                            <input type="hidden" name="action" value="unpublish">
+                                                            <button type="submit" 
+                                                                    class="btn btn-outline-warning" 
+                                                                    title="非公開">
+                                                                <i class="fas fa-download"></i>
+                                                            </button>
+                                                        </form>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- ページネーション -->
+                        {% if is_paginated %}
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination justify-content-center">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}">最初</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}">前</a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    <li class="page-item active">
+                                        <span class="page-link">
+                                            {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                                        </span>
+                                    </li>
+                                    
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}">次</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}">最後</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> レポートが見つかりませんでした。
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
