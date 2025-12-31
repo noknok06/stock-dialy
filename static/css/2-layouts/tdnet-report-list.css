@@ -1,0 +1,483 @@
+/* ========================================
+   TDNET レポート一覧
+   static/css/2-layouts/tdnet-report-list.css
+   ======================================== */
+
+/* ===== 変数 ===== */
+:root {
+  --list-gap-xs: 6px;
+  --list-gap-sm: 10px;
+  --list-gap-md: 14px;
+  --list-gap-lg: 20px;
+}
+
+/* ===== 戻るリンク ===== */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-secondary, #64748b);
+  text-decoration: none;
+  font-size: 13px;
+  margin-bottom: var(--list-gap-sm);
+  padding: 4px 0;
+}
+.back-link:hover {
+  color: var(--primary-color, #3b82f6);
+}
+
+/* ===== 企業ヘッダー ===== */
+.company-hero {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 14px;
+  padding: var(--list-gap-md);
+  color: #fff;
+  margin-bottom: var(--list-gap-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--list-gap-sm);
+}
+
+.company-info-main {
+  display: flex;
+  align-items: center;
+  gap: var(--list-gap-sm);
+}
+
+.company-code-hero {
+  background: rgba(255,255,255,0.15);
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.company-name-hero {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.company-stats {
+  display: flex;
+  gap: var(--list-gap-lg);
+}
+
+.company-stat {
+  text-align: center;
+}
+
+.company-stat-value {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.company-stat-label {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+/* ===== レポートカード（グリッド） ===== */
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--list-gap-sm);
+}
+
+.report-card {
+  background: var(--bg-primary, #fff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.report-card:hover {
+  border-color: var(--primary-color, #3b82f6);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+  text-decoration: none;
+  color: inherit;
+}
+
+/* カードヘッダー */
+.report-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-light, #f1f5f9);
+  gap: 8px;
+}
+
+.report-date {
+  font-size: 11px;
+  color: var(--text-secondary, #64748b);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.report-signal {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.signal-tag {
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.signal-tag.strong_positive { background: #d1fae5; color: #065f46; }
+.signal-tag.positive { background: #cffafe; color: #0e7490; }
+.signal-tag.neutral { background: #f3f4f6; color: #4b5563; }
+.signal-tag.negative { background: #ffedd5; color: #9a3412; }
+.signal-tag.strong_negative { background: #fee2e2; color: #991b1b; }
+
+.score-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.score-badge.high { background: #d1fae5; color: #065f46; }
+.score-badge.medium { background: #fef3c7; color: #92400e; }
+.score-badge.low { background: #fee2e2; color: #991b1b; }
+
+/* カードボディ */
+.report-card-body {
+  padding: 10px 12px;
+}
+
+.report-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary, #1e293b);
+  margin-bottom: 6px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.report-summary {
+  font-size: 12px;
+  color: var(--text-secondary, #64748b);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* キーポイントチップ */
+.report-chips {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  background: var(--bg-secondary, #f8fafc);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  color: var(--text-secondary, #64748b);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== ページネーション ===== */
+.pagination-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: var(--list-gap-md);
+  padding: var(--list-gap-sm) 0;
+}
+
+.page-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: var(--bg-primary, #fff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  color: var(--text-secondary, #64748b);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.page-btn:hover {
+  background: var(--bg-secondary, #f8fafc);
+  border-color: var(--primary-color, #3b82f6);
+  color: var(--primary-color, #3b82f6);
+}
+
+.page-btn.active {
+  background: var(--primary-color, #3b82f6);
+  border-color: var(--primary-color, #3b82f6);
+  color: #fff;
+}
+
+.page-info {
+  color: var(--text-secondary, #64748b);
+  font-size: 12px;
+  padding: 0 8px;
+}
+
+/* ===== 空状態 ===== */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary, #64748b);
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
+.empty-state h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #1e293b);
+  margin-bottom: 6px;
+}
+
+.empty-state p {
+  font-size: 13px;
+  margin: 0;
+}
+
+/* ========================================
+   レスポンシブ（スマホ）
+   ======================================== */
+@media (max-width: 768px) {
+  .company-hero {
+    flex-direction: column;
+    text-align: center;
+    padding: 12px;
+  }
+
+  .company-info-main {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .company-code-hero {
+    font-size: 13px;
+    padding: 4px 10px;
+  }
+
+  .company-name-hero {
+    font-size: 16px;
+  }
+
+  .company-stats {
+    gap: var(--list-gap-md);
+  }
+
+  .company-stat-value {
+    font-size: 18px;
+  }
+
+  .company-stat-label {
+    font-size: 10px;
+  }
+
+  /* 1カラム */
+  .report-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .report-card-header {
+    padding: 8px 10px;
+  }
+
+  .report-card-body {
+    padding: 8px 10px;
+  }
+
+  .report-title {
+    font-size: 13px;
+  }
+
+  .report-summary {
+    font-size: 11px;
+    -webkit-line-clamp: 2;
+  }
+
+  .report-chips {
+    margin-top: 6px;
+  }
+
+  .chip {
+    font-size: 9px;
+    max-width: 100px;
+  }
+
+  .pagination-wrap {
+    margin-top: var(--list-gap-sm);
+  }
+
+  .page-btn {
+    min-width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+}
+
+/* ========================================
+   ダークモード
+   ======================================== */
+.dark-mode .company-hero,
+[data-theme="dark"] .company-hero {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+}
+
+.dark-mode .report-card,
+[data-theme="dark"] .report-card {
+  background: var(--dm-card, #1e293b);
+  border-color: var(--dm-border, #334155);
+}
+
+.dark-mode .report-card:hover,
+[data-theme="dark"] .report-card:hover {
+  border-color: var(--dm-primary, #3b82f6);
+}
+
+.dark-mode .report-card-header,
+[data-theme="dark"] .report-card-header {
+  border-bottom-color: var(--dm-border, #334155);
+}
+
+.dark-mode .report-date,
+.dark-mode .report-summary,
+[data-theme="dark"] .report-date,
+[data-theme="dark"] .report-summary {
+  color: var(--dm-muted-foreground, #94a3b8);
+}
+
+.dark-mode .report-title,
+[data-theme="dark"] .report-title {
+  color: var(--dm-foreground, #f1f5f9);
+}
+
+.dark-mode .chip,
+[data-theme="dark"] .chip {
+  background: rgba(71, 85, 105, 0.3);
+  color: var(--dm-muted-foreground, #94a3b8);
+}
+
+/* シグナルタグ ダークモード */
+.dark-mode .signal-tag.strong_positive,
+[data-theme="dark"] .signal-tag.strong_positive {
+  background: rgba(16, 185, 129, 0.2);
+  color: #4ade80;
+}
+
+.dark-mode .signal-tag.positive,
+[data-theme="dark"] .signal-tag.positive {
+  background: rgba(6, 182, 212, 0.2);
+  color: #22d3ee;
+}
+
+.dark-mode .signal-tag.neutral,
+[data-theme="dark"] .signal-tag.neutral {
+  background: rgba(107, 114, 128, 0.2);
+  color: #9ca3af;
+}
+
+.dark-mode .signal-tag.negative,
+[data-theme="dark"] .signal-tag.negative {
+  background: rgba(249, 115, 22, 0.2);
+  color: #fb923c;
+}
+
+.dark-mode .signal-tag.strong_negative,
+[data-theme="dark"] .signal-tag.strong_negative {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+/* スコアバッジ ダークモード */
+.dark-mode .score-badge.high,
+[data-theme="dark"] .score-badge.high {
+  background: rgba(16, 185, 129, 0.2);
+  color: #4ade80;
+}
+
+.dark-mode .score-badge.medium,
+[data-theme="dark"] .score-badge.medium {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+.dark-mode .score-badge.low,
+[data-theme="dark"] .score-badge.low {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+/* ページネーション ダークモード */
+.dark-mode .page-btn,
+[data-theme="dark"] .page-btn {
+  background: var(--dm-card, #1e293b);
+  border-color: var(--dm-border, #334155);
+  color: var(--dm-muted-foreground, #94a3b8);
+}
+
+.dark-mode .page-btn:hover,
+[data-theme="dark"] .page-btn:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: var(--dm-primary, #3b82f6);
+  color: var(--dm-primary, #3b82f6);
+}
+
+.dark-mode .page-btn.active,
+[data-theme="dark"] .page-btn.active {
+  background: var(--dm-primary, #3b82f6);
+  border-color: var(--dm-primary, #3b82f6);
+  color: #fff;
+}
+
+.dark-mode .page-info,
+[data-theme="dark"] .page-info {
+  color: var(--dm-muted-foreground, #94a3b8);
+}
+
+/* 空状態 ダークモード */
+.dark-mode .empty-state h4,
+[data-theme="dark"] .empty-state h4 {
+  color: var(--dm-foreground, #f1f5f9);
+}
+
+.dark-mode .empty-state p,
+[data-theme="dark"] .empty-state p {
+  color: var(--dm-muted-foreground, #94a3b8);
+}
