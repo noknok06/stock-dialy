@@ -2,7 +2,7 @@
 
 from django.db import models
 from django.utils import timezone
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 import uuid
 
 class TDNETDisclosure(models.Model):
@@ -141,12 +141,10 @@ class TDNETDisclosure(models.Model):
     
     @property
     def has_pdf(self):
-        """PDFが利用可能か"""
         return bool(self.pdf_url)
     
     @property
     def display_type(self):
-        """開示種別の表示名"""
         return dict(self.DISCLOSURE_TYPE_CHOICES).get(self.disclosure_type, self.disclosure_type)
 
 
@@ -169,28 +167,30 @@ class TDNETReport(models.Model):
         ('other', 'その他'),
     ]
     
+    SIGNAL_CHOICES = [
+        ('strong_positive', '強気'),
+        ('positive', 'やや強気'),
+        ('neutral', '中立'),
+        ('negative', 'やや弱気'),
+        ('strong_negative', '弱気'),
+    ]
+    
     # 基本情報
     report_id = models.CharField(
         'レポートID',
         max_length=100,
         unique=True,
-        db_index=True,
-        help_text='レポートの一意識別子'
+        db_index=True
     )
     disclosure = models.ForeignKey(
         TDNETDisclosure,
         on_delete=models.CASCADE,
         related_name='reports',
-        verbose_name='元開示情報',
-        help_text='このレポートの元となる開示情報'
+        verbose_name='元開示情報'
     )
     
     # レポート情報
-    title = models.CharField(
-        'レポートタイトル',
-        max_length=500,
-        help_text='レポートのタイトル'
-    )
+    title = models.CharField('レポートタイトル', max_length=500)
     report_type = models.CharField(
         'レポート種別',
         max_length=50,
@@ -199,20 +199,37 @@ class TDNETReport(models.Model):
         default='other'
     )
     
-    # 内容
-    summary = models.TextField(
-        '要約',
-        help_text='レポートの要約（3-5文）'
+    # 採点・評価（新規追加）
+    overall_score = models.IntegerField(
+        '総合スコア',
+        default=50,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text='0-100の総合評価スコア'
     )
-    key_points = models.JSONField(
-        '重要ポイント',
-        default=list,
-        help_text='重要なポイントのリスト'
+    signal = models.CharField(
+        '投資シグナル',
+        max_length=20,
+        choices=SIGNAL_CHOICES,
+        default='neutral',
+        help_text='投資判断シグナル'
     )
-    analysis = models.TextField(
-        '分析',
+    one_line_summary = models.CharField(
+        '一言サマリー',
+        max_length=100,
         blank=True,
-        help_text='詳細な分析内容'
+        help_text='スマホ画面で最初に表示する一言'
+    )
+    
+    # 内容
+    summary = models.TextField('要約', help_text='レポートの要約（3-5文）')
+    key_points = models.JSONField('重要ポイント', default=list)
+    analysis = models.TextField('分析', blank=True)
+    
+    # 採点詳細（新規追加）
+    score_details = models.JSONField(
+        '採点詳細',
+        default=dict,
+        help_text='各項目の採点詳細'
     )
     
     # ステータス
@@ -221,8 +238,7 @@ class TDNETReport(models.Model):
         max_length=20,
         choices=STATUS_CHOICES,
         default='draft',
-        db_index=True,
-        help_text='公開状態'
+        db_index=True
     )
     
     # 生成情報
@@ -232,33 +248,21 @@ class TDNETReport(models.Model):
         null=True,
         blank=True,
         related_name='generated_tdnet_reports',
-        verbose_name='生成者',
-        help_text='レポートを生成した管理者'
+        verbose_name='生成者'
     )
-    generation_model = models.CharField(
-        '生成モデル',
-        max_length=100,
-        default='gemini-pro',
-        help_text='使用したAIモデル'
-    )
-    generation_prompt = models.TextField(
-        '生成プロンプト',
-        blank=True,
-        help_text='AIに送信したプロンプト'
-    )
+    generation_model = models.CharField('生成モデル', max_length=100, default='gemini-pro')
+    generation_prompt = models.TextField('生成プロンプト', blank=True)
     generation_token_count = models.IntegerField(
         '生成トークン数',
         default=0,
-        validators=[MinValueValidator(0)],
-        help_text='生成に使用したトークン数'
+        validators=[MinValueValidator(0)]
     )
     
     # 統計
     view_count = models.IntegerField(
         '閲覧数',
         default=0,
-        validators=[MinValueValidator(0)],
-        help_text='レポートの閲覧回数'
+        validators=[MinValueValidator(0)]
     )
     
     # 既存システム連携
@@ -266,26 +270,13 @@ class TDNETReport(models.Model):
         'stockdiary.StockDiary',
         blank=True,
         related_name='related_tdnet_reports',
-        verbose_name='関連投資記録',
-        help_text='このレポートに関連する投資記録'
+        verbose_name='関連投資記録'
     )
     
     # メタ情報
-    published_at = models.DateTimeField(
-        '公開日時',
-        null=True,
-        blank=True,
-        db_index=True,
-        help_text='レポートが公開された日時'
-    )
-    created_at = models.DateTimeField(
-        '作成日時',
-        auto_now_add=True
-    )
-    updated_at = models.DateTimeField(
-        '更新日時',
-        auto_now=True
-    )
+    published_at = models.DateTimeField('公開日時', null=True, blank=True, db_index=True)
+    created_at = models.DateTimeField('作成日時', auto_now_add=True)
+    updated_at = models.DateTimeField('更新日時', auto_now=True)
     
     class Meta:
         db_table = 'earnings_tdnet_report'
@@ -303,30 +294,54 @@ class TDNETReport(models.Model):
     
     @property
     def is_published(self):
-        """公開されているか"""
         return self.status == 'published'
     
     @property
     def display_type(self):
-        """レポート種別の表示名"""
         return dict(self.REPORT_TYPE_CHOICES).get(self.report_type, self.report_type)
     
+    @property
+    def signal_display(self):
+        return dict(self.SIGNAL_CHOICES).get(self.signal, self.signal)
+    
+    @property
+    def signal_color(self):
+        """シグナルに応じた色を返す"""
+        colors = {
+            'strong_positive': '#22c55e',
+            'positive': '#84cc16',
+            'neutral': '#6b7280',
+            'negative': '#f97316',
+            'strong_negative': '#ef4444',
+        }
+        return colors.get(self.signal, '#6b7280')
+    
+    @property
+    def score_grade(self):
+        """スコアに応じたグレードを返す"""
+        if self.overall_score >= 80:
+            return 'A'
+        elif self.overall_score >= 60:
+            return 'B'
+        elif self.overall_score >= 40:
+            return 'C'
+        elif self.overall_score >= 20:
+            return 'D'
+        return 'E'
+    
     def publish(self):
-        """レポートを公開"""
         if self.status != 'published':
             self.status = 'published'
             self.published_at = timezone.now()
             self.save(update_fields=['status', 'published_at', 'updated_at'])
     
     def unpublish(self):
-        """レポートを非公開に"""
         if self.status == 'published':
             self.status = 'draft'
             self.published_at = None
             self.save(update_fields=['status', 'published_at', 'updated_at'])
     
     def increment_view_count(self):
-        """閲覧数をインクリメント"""
         self.view_count = models.F('view_count') + 1
         self.save(update_fields=['view_count'])
 
@@ -358,38 +373,14 @@ class TDNETReportSection(models.Model):
         choices=SECTION_TYPE_CHOICES,
         default='other'
     )
-    title = models.CharField(
-        'セクションタイトル',
-        max_length=255
-    )
-    content = models.TextField(
-        '内容',
-        help_text='セクションの本文'
-    )
-    order = models.IntegerField(
-        '表示順',
-        default=0,
-        validators=[MinValueValidator(0)],
-        help_text='セクションの表示順序'
-    )
+    title = models.CharField('セクションタイトル', max_length=255)
+    content = models.TextField('内容')
+    order = models.IntegerField('表示順', default=0, validators=[MinValueValidator(0)])
     
-    # データ
-    data = models.JSONField(
-        '構造化データ',
-        default=dict,
-        blank=True,
-        null=True,  # ← これがあるか確認
-        help_text='セクション固有の構造化データ'
-    )
+    data = models.JSONField('構造化データ', default=dict, blank=True, null=True)
     
-    created_at = models.DateTimeField(
-        '作成日時',
-        auto_now_add=True
-    )
-    updated_at = models.DateTimeField(
-        '更新日時',
-        auto_now=True
-    )
+    created_at = models.DateTimeField('作成日時', auto_now_add=True)
+    updated_at = models.DateTimeField('更新日時', auto_now=True)
     
     class Meta:
         db_table = 'earnings_tdnet_report_section'
@@ -406,5 +397,4 @@ class TDNETReportSection(models.Model):
     
     @property
     def display_type(self):
-        """セクション種別の表示名"""
         return dict(self.SECTION_TYPE_CHOICES).get(self.section_type, self.section_type)

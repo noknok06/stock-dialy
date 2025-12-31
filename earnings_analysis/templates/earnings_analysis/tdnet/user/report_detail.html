@@ -1,242 +1,343 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ page_title }} - COPOMO{% endblock %}
+{% block title %}{{ report.one_line_summary|default:report.title }} - COPOMO{% endblock %}
 
 {% block extra_css %}
 <style>
-.report-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 30px;
-    border-radius: 8px;
-    margin-bottom: 30px;
+:root {
+  --score-color: {{ report.signal_color }};
 }
+
+.report-container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 12px;
+}
+
+/* ヘッダーカード */
+.score-card {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 16px;
+  padding: 20px;
+  color: white;
+  margin-bottom: 16px;
+}
+
+.company-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.15);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.score-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.score-circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: conic-gradient(var(--score-color) calc(var(--score) * 3.6deg), rgba(255,255,255,0.1) 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.score-circle::before {
+  content: '';
+  width: 56px;
+  height: 56px;
+  background: #1a1a2e;
+  border-radius: 50%;
+  position: absolute;
+}
+
+.score-value {
+  position: relative;
+  z-index: 1;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.score-info {
+  flex: 1;
+}
+
+.signal-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--score-color);
+  margin-bottom: 6px;
+}
+
+.one-line {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.report-title {
+  font-size: 13px;
+  opacity: 0.8;
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+/* サマリー */
+.summary-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.summary-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #333;
+}
+
+/* キーポイント */
+.key-points {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.key-point {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 0;
+  font-size: 14px;
+  line-height: 1.4;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.key-point:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+/* スコア詳細 */
+.score-details {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.score-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.score-item:last-child {
+  border-bottom: none;
+}
+
+.score-label {
+  width: 60px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.score-bar-container {
+  flex: 1;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.score-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.score-bar.high { background: #22c55e; }
+.score-bar.mid { background: #eab308; }
+.score-bar.low { background: #ef4444; }
+
+.score-num {
+  width: 32px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.score-comment {
+  font-size: 11px;
+  color: #94a3b8;
+  width: 70px;
+  text-align: right;
+}
+
+/* セクション */
 .section-card {
-    border-left: 4px solid #007bff;
-    margin-bottom: 25px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  background: #fff;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  overflow: hidden;
 }
-.key-points-box {
-    background-color: #f8f9fa;
-    border-left: 4px solid #28a745;
-    padding: 20px;
-    border-radius: 4px;
-    margin-bottom: 25px;
+
+.section-header {
+  background: #f8fafc;
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-.related-report {
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    padding: 15px;
-    margin-bottom: 10px;
-    transition: all 0.3s;
+
+.section-content {
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #475569;
 }
-.related-report:hover {
-    background-color: #f8f9fa;
-    transform: translateX(5px);
+
+/* PDF リンク */
+.pdf-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+  text-decoration: none;
+  color: #3b82f6;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.pdf-link:hover {
+  background: #f8fafc;
+  border-color: #3b82f6;
+}
+
+/* メタ情報 */
+.meta-info {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  font-size: 11px;
+  color: #94a3b8;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 8px;
+}
+
+/* アイコン */
+.icon {
+  font-size: 16px;
 }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <!-- ヘッダー -->
-    <div class="report-header">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb bg-transparent mb-3">
-                <li class="breadcrumb-item">
-                    <a href="{% url 'copomo:tdnet-report-list' %}" class="text-white">
-                        TDNETレポート
-                    </a>
-                </li>
-                <li class="breadcrumb-item active text-white">{{ report.report_id }}</li>
-            </ol>
-        </nav>
-        
-        <h1 class="mb-3">{{ report.title }}</h1>
-        
-        <div class="d-flex flex-wrap gap-2 mb-3">
-            <span class="badge bg-light text-dark fs-6">{{ report.get_report_type_display }}</span>
-            <span class="badge bg-light text-dark fs-6">{{ report.disclosure.company_code }}</span>
-            <span class="badge bg-light text-dark fs-6">{{ report.disclosure.company_name }}</span>
-        </div>
-        
-        <div class="d-flex align-items-center text-white-50">
-            <div class="me-4">
-                <i class="far fa-clock"></i> {{ report.published_at|date:"Y年m月d日 H:i" }}
-            </div>
-            <div>
-                <i class="far fa-eye"></i> {{ report.view_count }} views
-            </div>
-        </div>
+<div class="report-container">
+  <!-- スコアカード -->
+  <div class="score-card" style="--score: {{ report.overall_score }}">
+    <div class="company-badge">
+      <span>{{ report.disclosure.company_code }}</span>
+      <span>{{ report.disclosure.company_name }}</span>
     </div>
     
-    <div class="row">
-        <!-- メインコンテンツ -->
-        <div class="col-lg-9">
-            <!-- 要約 -->
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-align-left"></i> 要約</h5>
-                </div>
-                <div class="card-body">
-                    <p class="lead">{{ report.summary }}</p>
-                </div>
-            </div>
-            
-            <!-- 重要ポイント -->
-            {% if report.key_points %}
-            <div class="key-points-box">
-                <h5 class="mb-3"><i class="fas fa-star"></i> 重要ポイント</h5>
-                <ul class="mb-0">
-                    {% for point in report.key_points %}
-                    <li class="mb-2"><strong>{{ point }}</strong></li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endif %}
-            
-            <!-- セクション -->
-            {% for section in sections %}
-            <div class="section-card card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <span class="badge bg-info me-2">{{ section.get_section_type_display }}</span>
-                        {{ section.title }}
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div style="white-space: pre-wrap;">{{ section.content }}</div>
-                    
-                    {% if section.data %}
-                    <div class="mt-3 p-3 bg-light border-start border-4 border-secondary">
-                        <h6><i class="fas fa-database"></i> データ:</h6>
-                        <dl class="row mb-0">
-                            {% for key, value in section.data.items %}
-                            <dt class="col-sm-4">{{ key }}:</dt>
-                            <dd class="col-sm-8">{{ value }}</dd>
-                            {% endfor %}
-                        </dl>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-            {% endfor %}
-            
-            <!-- 元開示情報 -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> 元開示情報</h5>
-                </div>
-                <div class="card-body">
-                    <dl class="row mb-0">
-                        <dt class="col-sm-3">開示ID:</dt>
-                        <dd class="col-sm-9"><code>{{ report.disclosure.disclosure_id }}</code></dd>
-                        
-                        <dt class="col-sm-3">企業名:</dt>
-                        <dd class="col-sm-9">
-                            {{ report.disclosure.company_name }}
-                            <span class="badge bg-secondary">{{ report.disclosure.company_code }}</span>
-                        </dd>
-                        
-                        <dt class="col-sm-3">開示日時:</dt>
-                        <dd class="col-sm-9">{{ report.disclosure.disclosure_date|date:"Y年m月d日 H:i" }}</dd>
-                        
-                        <dt class="col-sm-3">開示種別:</dt>
-                        <dd class="col-sm-9">
-                            <span class="badge bg-primary">{{ report.disclosure.get_disclosure_type_display }}</span>
-                        </dd>
-                        
-                        <dt class="col-sm-3">タイトル:</dt>
-                        <dd class="col-sm-9">{{ report.disclosure.title }}</dd>
-                        
-                        {% if report.disclosure.pdf_url %}
-                        <dt class="col-sm-3">PDF:</dt>
-                        <dd class="col-sm-9">
-                            <a href="{{ report.disclosure.pdf_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-file-pdf"></i> PDFを開く
-                            </a>
-                        </dd>
-                        {% endif %}
-                    </dl>
-                </div>
-            </div>
-            
-            <!-- ソーシャルシェア -->
-            <div class="card mb-4">
-                <div class="card-body text-center">
-                    <h6 class="mb-3">このレポートをシェア</h6>
-                    <div class="btn-group" role="group">
-                        <a href="https://twitter.com/intent/tweet?text={{ report.title|urlencode }}&url={{ request.build_absolute_uri }}" 
-                           target="_blank" class="btn btn-outline-primary">
-                            <i class="fab fa-twitter"></i> Twitter
-                        </a>
-                        <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}" 
-                           target="_blank" class="btn btn-outline-primary">
-                            <i class="fab fa-facebook"></i> Facebook
-                        </a>
-                        <button class="btn btn-outline-primary" onclick="copyToClipboard('{{ request.build_absolute_uri }}')">
-                            <i class="fas fa-link"></i> URLコピー
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- サイドバー -->
-        <div class="col-lg-3">
-            <!-- 企業情報 -->
-            <div class="card mb-3">
-                <div class="card-header">
-                    <h6 class="mb-0"><i class="fas fa-building"></i> 企業情報</h6>
-                </div>
-                <div class="card-body">
-                    <h6>{{ report.disclosure.company_name }}</h6>
-                    <p class="text-muted mb-2">
-                        <small>証券コード: {{ report.disclosure.company_code }}</small>
-                    </p>
-                    <a href="{% url 'copomo:tdnet-company-reports' report.disclosure.company_code %}" 
-                       class="btn btn-sm btn-outline-primary w-100">
-                        <i class="fas fa-list"></i> この企業の他のレポート
-                    </a>
-                </div>
-            </div>
-            
-            <!-- 関連レポート -->
-            {% if related_reports %}
-            <div class="card">
-                <div class="card-header">
-                    <h6 class="mb-0"><i class="fas fa-link"></i> 関連レポート</h6>
-                </div>
-                <div class="card-body">
-                    {% for related in related_reports %}
-                    <div class="related-report">
-                        <a href="{% url 'copomo:tdnet-report-detail' related.report_id %}" 
-                           class="text-decoration-none">
-                            <small class="d-block text-muted mb-1">
-                                {{ related.published_at|date:"Y/m/d" }}
-                            </small>
-                            <strong class="d-block">{{ related.title|truncatewords:10 }}</strong>
-                            <span class="badge bg-info mt-1">{{ related.get_report_type_display }}</span>
-                        </a>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-        </div>
+    <div class="score-main">
+      <div class="score-circle">
+        <span class="score-value">{{ report.overall_score }}</span>
+      </div>
+      <div class="score-info">
+        <div class="signal-badge">{{ report.signal_display }}</div>
+        <div class="one-line">{{ report.one_line_summary|default:"—" }}</div>
+      </div>
     </div>
-</div>
-{% endblock %}
+    
+    <div class="report-title">
+      {{ report.disclosure.title }}
+    </div>
+  </div>
 
-{% block extra_js %}
-<script>
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(function() {
-        alert('URLをコピーしました');
-    }, function() {
-        alert('コピーに失敗しました');
-    });
-}
-</script>
+  <!-- サマリー -->
+  <div class="summary-card">
+    <div class="summary-text">{{ report.summary }}</div>
+  </div>
+
+  <!-- キーポイント -->
+  {% if report.key_points %}
+  <div class="key-points">
+    {% for point in report.key_points %}
+    <div class="key-point">{{ point }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- スコア詳細 -->
+  {% if report.score_details %}
+  <div class="score-details">
+    {% for key, detail in report.score_details.items %}
+    <div class="score-item">
+      <span class="score-label">{{ detail.label }}</span>
+      <div class="score-bar-container">
+        <div class="score-bar {% if detail.score >= 60 %}high{% elif detail.score >= 40 %}mid{% else %}low{% endif %}" 
+             style="width: {{ detail.score }}%"></div>
+      </div>
+      <span class="score-num">{{ detail.score }}</span>
+      <span class="score-comment">{{ detail.comment }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- セクション -->
+  {% for section in sections %}
+  <div class="section-card">
+    <div class="section-header">
+      {% if section.section_type == 'overview' %}📋{% elif section.section_type == 'analysis' %}🔍{% elif section.section_type == 'risk' %}⚠️{% else %}📝{% endif %}
+      {{ section.title }}
+    </div>
+    <div class="section-content">{{ section.content|linebreaks }}</div>
+  </div>
+  {% endfor %}
+
+  <!-- PDF リンク -->
+  {% if report.disclosure.pdf_url %}
+  <a href="{{ report.disclosure.pdf_url }}" target="_blank" class="pdf-link">
+    📄 原文PDFを開く
+  </a>
+  {% endif %}
+
+  <!-- メタ情報 -->
+  <div class="meta-info">
+    <span>{{ report.published_at|date:"Y/m/d H:i" }}</span>
+    <span>👁 {{ report.view_count }}</span>
+    <span>{{ report.get_report_type_display }}</span>
+  </div>
+</div>
 {% endblock %}

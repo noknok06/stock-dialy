@@ -9,6 +9,11 @@ from .financial import (
     CompanyFinancialData,
     FinancialBenchmark
 )
+from .tdnet import (
+    TDNETDisclosure,
+    TDNETReport,
+    TDNETReportSection,
+)
 
 __all__ = [
     'Company',
@@ -20,4 +25,7 @@ __all__ = [
     'FinancialAnalysisHistory',
     'CompanyFinancialData',
     'FinancialBenchmark',
+    'TDNETDisclosure',
+    'TDNETReport',
+    'TDNETReportSection',
 ]

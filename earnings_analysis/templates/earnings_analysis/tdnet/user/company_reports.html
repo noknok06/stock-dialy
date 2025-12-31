@@ -3,108 +3,309 @@
 
 {% block title %}{{ page_title }}{% endblock %}
 
+{% block extra_css %}
+<style>
+* { box-sizing: border-box; }
+
+body {
+  background: #0f0f1a;
+}
+
+.list-container {
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 16px 12px 32px;
+}
+
+/* ===== 戻るリンク ===== */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #64748b;
+  text-decoration: none;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+/* ===== 企業ヘッダー ===== */
+.company-header {
+  background: linear-gradient(145deg, #1e1e2f 0%, #151521 100%);
+  border-radius: 20px;
+  padding: 28px 24px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255,255,255,0.06);
+  text-align: center;
+}
+
+.company-code-big {
+  display: inline-block;
+  background: rgba(165, 180, 252, 0.15);
+  color: #a5b4fc;
+  padding: 6px 16px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+.company-name-big {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.report-count {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.report-count strong {
+  color: #a5b4fc;
+}
+
+/* ===== レポートカード ===== */
+.report-card {
+  display: block;
+  background: linear-gradient(145deg, #1a1a2e 0%, #12121f 100%);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 12px;
+  text-decoration: none;
+}
+
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+/* スコアバッジ */
+.score-box {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.score-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0.9;
+}
+
+.score-box.positive::before { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); }
+.score-box.neutral::before { background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); }
+.score-box.negative::before { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+
+.score-box-num {
+  position: relative;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+
+.score-box-grade {
+  position: relative;
+  font-size: 10px;
+  color: rgba(255,255,255,0.8);
+  margin-top: 2px;
+}
+
+/* カード情報 */
+.card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.one-liner {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.signal-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.signal-tag.strong_positive { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+.signal-tag.positive { background: rgba(132, 204, 22, 0.2); color: #a3e635; }
+.signal-tag.neutral { background: rgba(148, 163, 184, 0.2); color: #94a3b8; }
+.signal-tag.negative { background: rgba(251, 146, 60, 0.2); color: #fb923c; }
+.signal-tag.strong_negative { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+/* サマリー */
+.card-summary {
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+/* メタ */
+.card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.meta-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ===== ページネーション ===== */
+.pagination-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.page-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.page-btn.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-color: transparent;
+  color: #fff;
+}
+
+.page-info {
+  color: #64748b;
+  font-size: 12px;
+  padding: 0 8px;
+}
+
+/* ===== 空状態 ===== */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #64748b;
+}
+
+.empty-icon {
+  font-size: 56px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 15px;
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-md-12">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'copomo:tdnet-report-list' %}">TDNETレポート</a></li>
-                    <li class="breadcrumb-item active">{{ company_name }}</li>
-                </ol>
-            </nav>
-            
-            <h2>{{ page_title }}</h2>
-            <p class="text-muted">証券コード: {{ company_code }}</p>
+<div class="list-container">
+  
+  <!-- 戻るリンク -->
+  <a href="{% url 'copomo:tdnet-report-list' %}" class="back-link">
+    ← レポート一覧に戻る
+  </a>
+
+  <!-- 企業ヘッダー -->
+  <div class="company-header">
+    <div class="company-code-big">{{ company_code }}</div>
+    <div class="company-name-big">{{ company_name }}</div>
+    <div class="report-count"><strong>{{ reports|length }}</strong> 件のレポート</div>
+  </div>
+
+  <!-- レポート一覧 -->
+  {% if reports %}
+    {% for report in reports %}
+    <a href="{% url 'copomo:tdnet-report-detail' report.report_id %}" class="report-card">
+      <div class="card-header">
+        <div class="score-box {% if report.overall_score >= 60 %}positive{% elif report.overall_score >= 40 %}neutral{% else %}negative{% endif %}">
+          <span class="score-box-num">{{ report.overall_score }}</span>
+          <span class="score-box-grade">{{ report.score_grade }}</span>
         </div>
-    </div>
-    
-    <div class="row mt-4">
-        <div class="col-md-12">
-            {% if reports %}
-                <div class="row">
-                    {% for report in reports %}
-                        <div class="col-md-6 mb-4">
-                            <div class="card h-100">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <h5 class="card-title">
-                                            <a href="{% url 'copomo:tdnet-report-detail' report.report_id %}">
-                                                {{ report.title|truncatechars:60 }}
-                                            </a>
-                                        </h5>
-                                        <span class="badge bg-secondary">{{ report.get_report_type_display }}</span>
-                                    </div>
-                                    
-                                    <p class="card-text text-muted small">
-                                        {{ report.summary|truncatechars:150 }}
-                                    </p>
-                                    
-                                    <hr>
-                                    
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <small class="text-muted">
-                                            <i class="fas fa-calendar"></i> {{ report.published_at|date:"Y/m/d" }}
-                                            <i class="fas fa-eye ms-2"></i> {{ report.view_count }}
-                                        </small>
-                                        <a href="{% url 'copomo:tdnet-report-detail' report.report_id %}" 
-                                           class="btn btn-sm btn-primary">
-                                            詳細を見る
-                                        </a>
-                                    </div>
-                                    
-                                    {% if report.key_points %}
-                                        <div class="mt-3">
-                                            <small class="text-muted"><strong>重要ポイント:</strong></small>
-                                            <ul class="small mb-0">
-                                                {% for point in report.key_points|slice:":3" %}
-                                                    <li>{{ point|truncatechars:60 }}</li>
-                                                {% endfor %}
-                                            </ul>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-                
-                <!-- ページネーション -->
-                {% if is_paginated %}
-                    <nav aria-label="Page navigation">
-                        <ul class="pagination justify-content-center">
-                            {% if page_obj.has_previous %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page=1">最初</a>
-                                </li>
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">前</a>
-                                </li>
-                            {% endif %}
-                            
-                            <li class="page-item active">
-                                <span class="page-link">
-                                    {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
-                                </span>
-                            </li>
-                            
-                            {% if page_obj.has_next %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">次</a>
-                                </li>
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">最後</a>
-                                </li>
-                            {% endif %}
-                        </ul>
-                    </nav>
-                {% endif %}
-            {% else %}
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> {{ company_name }}のレポートはまだありません。
-                </div>
-            {% endif %}
+        <div class="card-info">
+          <div class="one-liner">{{ report.one_line_summary|default:report.disclosure.title|truncatechars:28 }}</div>
+          <span class="signal-tag {{ report.signal }}">
+            {% if report.signal == 'strong_positive' %}🚀{% elif report.signal == 'positive' %}📈{% elif report.signal == 'neutral' %}➡️{% elif report.signal == 'negative' %}📉{% else %}⚠️{% endif %}
+            {{ report.signal_display }}
+          </span>
         </div>
+      </div>
+      <div class="card-summary">{{ report.summary|truncatechars:70 }}</div>
+      <div class="card-meta">
+        <div class="meta-left">
+          <span>📅 {{ report.published_at|date:"Y/m/d" }}</span>
+          <span>🏷️ {{ report.get_report_type_display }}</span>
+        </div>
+        <span>👁 {{ report.view_count }}</span>
+      </div>
+    </a>
+    {% endfor %}
+
+    <!-- ページネーション -->
+    {% if is_paginated %}
+    <div class="pagination-wrap">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}" class="page-btn">‹ 前</a>
+      {% endif %}
+      
+      <span class="page-info">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}" class="page-btn">次 ›</a>
+      {% endif %}
     </div>
+    {% endif %}
+
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">📭</div>
+    <div class="empty-text">{{ company_name }}のレポートはまだありません</div>
+  </div>
+  {% endif %}
+  
 </div>
 {% endblock %}
