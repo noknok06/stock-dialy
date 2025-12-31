@@ -10,53 +10,94 @@
 }
 
 .report-container {
-  max-width: 480px;
+  max-width: 960px;
   margin: 0 auto;
-  padding: 0 12px;
+  padding: 0 16px;
 }
 
-/* ヘッダーカード */
+/* 戻るリンク */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 14px;
+  margin-bottom: 16px;
+  transition: color 0.2s;
+}
+.back-link:hover { color: var(--primary-color); }
+
+/* ========== ヒーローセクション（横並び） ========== */
+.hero-section {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+/* スコアカード */
 .score-card {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   border-radius: 16px;
-  padding: 20px;
+  padding: 24px;
   color: white;
+  display: flex;
+  flex-direction: column;
+}
+
+.company-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 16px;
 }
 
 .company-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   background: rgba(255,255,255,0.15);
-  padding: 4px 10px;
+  padding: 6px 12px;
   border-radius: 20px;
+  font-size: 13px;
+}
+
+.company-badge .code {
+  font-weight: 700;
+  background: rgba(255,255,255,0.2);
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.disclosure-date {
   font-size: 12px;
-  margin-bottom: 12px;
+  opacity: 0.7;
 }
 
 .score-main {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 12px;
+  gap: 20px;
+  flex: 1;
 }
 
 .score-circle {
-  width: 72px;
-  height: 72px;
+  width: 88px;
+  height: 88px;
   border-radius: 50%;
   background: conic-gradient(var(--score-color) calc(var(--score) * 3.6deg), rgba(255,255,255,0.1) 0);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
+  flex-shrink: 0;
 }
 
 .score-circle::before {
   content: '';
-  width: 56px;
-  height: 56px;
+  width: 68px;
+  height: 68px;
   background: #1a1a2e;
   border-radius: 50%;
   position: absolute;
@@ -65,100 +106,82 @@
 .score-value {
   position: relative;
   z-index: 1;
-  font-size: 24px;
-  font-weight: bold;
+  font-size: 32px;
+  font-weight: 800;
 }
 
 .score-info {
   flex: 1;
+  min-width: 0;
 }
 
 .signal-badge {
-  display: inline-block;
-  padding: 4px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
   border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   background: var(--score-color);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .one-line {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 700;
   line-height: 1.3;
+  margin-bottom: 8px;
 }
 
 .report-title {
   font-size: 13px;
-  opacity: 0.8;
-  margin-top: 8px;
+  opacity: 0.75;
   line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-/* サマリー */
-.summary-card {
+/* スコア詳細サイドバー */
+.score-sidebar {
   background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-}
-
-.summary-text {
-  font-size: 14px;
-  line-height: 1.6;
-  color: #333;
-}
-
-/* キーポイント */
-.key-points {
-  background: #f8fafc;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
-}
-
-.key-point {
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 8px 0;
-  font-size: 14px;
-  line-height: 1.4;
-  border-bottom: 1px solid #e2e8f0;
+  flex-direction: column;
 }
 
-.key-point:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-/* スコア詳細 */
-.score-details {
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+.sidebar-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .score-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: 10px 0;
   border-bottom: 1px solid #f1f5f9;
 }
 
 .score-item:last-child {
   border-bottom: none;
+  padding-bottom: 0;
 }
 
 .score-label {
-  width: 60px;
+  width: 52px;
   font-size: 12px;
   color: #64748b;
+  flex-shrink: 0;
 }
 
 .score-bar-container {
@@ -172,172 +195,417 @@
 .score-bar {
   height: 100%;
   border-radius: 4px;
-  transition: width 0.5s ease;
+  transition: width 0.6s ease;
 }
 
-.score-bar.high { background: #22c55e; }
-.score-bar.mid { background: #eab308; }
-.score-bar.low { background: #ef4444; }
+.score-bar.high { background: linear-gradient(90deg, #22c55e, #16a34a); }
+.score-bar.mid { background: linear-gradient(90deg, #eab308, #ca8a04); }
+.score-bar.low { background: linear-gradient(90deg, #ef4444, #dc2626); }
 
 .score-num {
-  width: 32px;
+  width: 28px;
   text-align: right;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .score-comment {
   font-size: 11px;
   color: #94a3b8;
-  width: 70px;
-  text-align: right;
+  text-align: center;
+  margin-top: 4px;
 }
 
-/* セクション */
+/* ========== コンテンツグリッド ========== */
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+/* サマリー＆キーポイント */
+.summary-section {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+.section-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.summary-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #334155;
+}
+
+/* キーポイント */
+.key-points-section {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #bbf7d0;
+}
+
+.key-point {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #166534;
+  border-bottom: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.key-point:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.key-point-emoji {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+/* ========== セクション横並び ========== */
+.sections-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
 .section-card {
   background: #fff;
-  border-radius: 12px;
-  margin-bottom: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .section-header {
-  background: #f8fafc;
-  padding: 12px 16px;
+  padding: 14px 16px;
   font-weight: 600;
   font-size: 14px;
-  border-bottom: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.section-header.overview {
+  background: linear-gradient(135deg, #dbeafe, #eff6ff);
+  color: #1e40af;
+  border-bottom: 2px solid #93c5fd;
+}
+
+.section-header.analysis {
+  background: linear-gradient(135deg, #d1fae5, #ecfdf5);
+  color: #065f46;
+  border-bottom: 2px solid #6ee7b7;
+}
+
+.section-header.risk {
+  background: linear-gradient(135deg, #fee2e2, #fef2f2);
+  color: #991b1b;
+  border-bottom: 2px solid #fca5a5;
+}
+
+.section-header.other {
+  background: linear-gradient(135deg, #f3f4f6, #f9fafb);
+  color: #374151;
+  border-bottom: 2px solid #d1d5db;
 }
 
 .section-content {
   padding: 16px;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.65;
   color: #475569;
+  flex: 1;
 }
 
-/* PDF リンク */
+/* ========== フッター ========== */
+.footer-row {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+}
+
 .pdf-link {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  gap: 10px;
+  background: linear-gradient(135deg, #fef3c7, #fffbeb);
+  border: 1px solid #fcd34d;
   border-radius: 12px;
-  padding: 14px;
-  margin-bottom: 12px;
+  padding: 16px;
   text-decoration: none;
-  color: #3b82f6;
-  font-weight: 500;
+  color: #92400e;
+  font-weight: 600;
+  font-size: 14px;
   transition: all 0.2s;
 }
 
 .pdf-link:hover {
+  background: linear-gradient(135deg, #fde68a, #fef3c7);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+.meta-card {
   background: #f8fafc;
-  border-color: #3b82f6;
-}
-
-/* メタ情報 */
-.meta-info {
+  border-radius: 12px;
+  padding: 16px 20px;
   display: flex;
-  justify-content: space-between;
-  padding: 12px 0;
-  font-size: 11px;
-  color: #94a3b8;
-  border-top: 1px solid #e2e8f0;
-  margin-top: 8px;
+  gap: 24px;
+  align-items: center;
+  font-size: 13px;
+  color: #64748b;
 }
 
-/* アイコン */
-.icon {
-  font-size: 16px;
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.meta-item i { color: #94a3b8; }
+
+/* ========== レスポンシブ ========== */
+@media (max-width: 768px) {
+  .report-container {
+    padding: 0 12px;
+  }
+
+  .hero-section {
+    grid-template-columns: 1fr;
+  }
+
+  .score-card {
+    padding: 20px;
+  }
+
+  .score-circle {
+    width: 72px;
+    height: 72px;
+  }
+
+  .score-circle::before {
+    width: 56px;
+    height: 56px;
+  }
+
+  .score-value {
+    font-size: 26px;
+  }
+
+  .one-line {
+    font-size: 17px;
+  }
+
+  .score-sidebar {
+    order: -1;
+  }
+
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sections-row {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-row {
+    flex-direction: column;
+  }
+
+  .meta-card {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+}
+
+/* ダークモード */
+.dark-mode .score-sidebar,
+.dark-mode .summary-section,
+.dark-mode .section-card,
+[data-theme="dark"] .score-sidebar,
+[data-theme="dark"] .summary-section,
+[data-theme="dark"] .section-card {
+  background: var(--dm-card);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+
+.dark-mode .key-points-section,
+[data-theme="dark"] .key-points-section {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(16, 185, 129, 0.1));
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.dark-mode .key-point,
+[data-theme="dark"] .key-point {
+  color: var(--dm-success);
+  border-bottom-color: rgba(34, 197, 94, 0.15);
+}
+
+.dark-mode .summary-text,
+.dark-mode .section-content,
+[data-theme="dark"] .summary-text,
+[data-theme="dark"] .section-content {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .meta-card,
+[data-theme="dark"] .meta-card {
+  background: rgba(71, 85, 105, 0.3);
+}
+
+.dark-mode .pdf-link,
+[data-theme="dark"] .pdf-link {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.1));
+  border-color: rgba(245, 158, 11, 0.3);
+  color: var(--dm-accent);
 }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="report-container">
-  <!-- スコアカード -->
-  <div class="score-card" style="--score: {{ report.overall_score }}">
-    <div class="company-badge">
-      <span>{{ report.disclosure.company_code }}</span>
-      <span>{{ report.disclosure.company_name }}</span>
-    </div>
-    
-    <div class="score-main">
-      <div class="score-circle">
-        <span class="score-value">{{ report.overall_score }}</span>
-      </div>
-      <div class="score-info">
-        <div class="signal-badge">{{ report.signal_display }}</div>
-        <div class="one-line">{{ report.one_line_summary|default:"—" }}</div>
-      </div>
-    </div>
-    
-    <div class="report-title">
-      {{ report.disclosure.title }}
-    </div>
-  </div>
-
-  <!-- サマリー -->
-  <div class="summary-card">
-    <div class="summary-text">{{ report.summary }}</div>
-  </div>
-
-  <!-- キーポイント -->
-  {% if report.key_points %}
-  <div class="key-points">
-    {% for point in report.key_points %}
-    <div class="key-point">{{ point }}</div>
-    {% endfor %}
-  </div>
-  {% endif %}
-
-  <!-- スコア詳細 -->
-  {% if report.score_details %}
-  <div class="score-details">
-    {% for key, detail in report.score_details.items %}
-    <div class="score-item">
-      <span class="score-label">{{ detail.label }}</span>
-      <div class="score-bar-container">
-        <div class="score-bar {% if detail.score >= 60 %}high{% elif detail.score >= 40 %}mid{% else %}low{% endif %}" 
-             style="width: {{ detail.score }}%"></div>
-      </div>
-      <span class="score-num">{{ detail.score }}</span>
-      <span class="score-comment">{{ detail.comment }}</span>
-    </div>
-    {% endfor %}
-  </div>
-  {% endif %}
-
-  <!-- セクション -->
-  {% for section in sections %}
-  <div class="section-card">
-    <div class="section-header">
-      {% if section.section_type == 'overview' %}📋{% elif section.section_type == 'analysis' %}🔍{% elif section.section_type == 'risk' %}⚠️{% else %}📝{% endif %}
-      {{ section.title }}
-    </div>
-    <div class="section-content">{{ section.content|linebreaks }}</div>
-  </div>
-  {% endfor %}
-
-  <!-- PDF リンク -->
-  {% if report.disclosure.pdf_url %}
-  <a href="{{ report.disclosure.pdf_url }}" target="_blank" class="pdf-link">
-    📄 原文PDFを開く
+  <!-- 戻るリンク -->
+  <a href="{% url 'copomo:tdnet-report-list' %}" class="back-link">
+    <i class="bi bi-arrow-left"></i> レポート一覧
   </a>
+
+  <!-- ヒーローセクション -->
+  <div class="hero-section" style="--score: {{ report.overall_score }}">
+    <!-- メインスコアカード -->
+    <div class="score-card">
+      <div class="company-row">
+        <div class="company-badge">
+          <span class="code">{{ report.disclosure.company_code }}</span>
+          <span>{{ report.disclosure.company_name }}</span>
+        </div>
+        <span class="disclosure-date">
+          <i class="bi bi-calendar3"></i> {{ report.disclosure.disclosure_date|date:"Y/m/d" }}
+        </span>
+      </div>
+      
+      <div class="score-main">
+        <div class="score-circle">
+          <span class="score-value">{{ report.overall_score }}</span>
+        </div>
+        <div class="score-info">
+          <div class="signal-badge">
+            {% if report.signal == 'strong_positive' %}<i class="bi bi-arrow-up-circle-fill"></i> 強い買い
+            {% elif report.signal == 'positive' %}<i class="bi bi-arrow-up"></i> やや強気
+            {% elif report.signal == 'neutral' %}<i class="bi bi-dash-circle"></i> 様子見
+            {% elif report.signal == 'negative' %}<i class="bi bi-arrow-down"></i> やや弱気
+            {% else %}<i class="bi bi-arrow-down-circle-fill"></i> 警戒{% endif %}
+          </div>
+          <div class="one-line">{{ report.one_line_summary|default:"—" }}</div>
+          <div class="report-title">{{ report.disclosure.title }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- スコア詳細サイドバー -->
+    {% if report.score_details %}
+    <div class="score-sidebar">
+      <div class="sidebar-title"><i class="bi bi-bar-chart-fill"></i> 評価詳細</div>
+      {% for key, detail in report.score_details.items %}
+      <div class="score-item">
+        <span class="score-label">{{ detail.label }}</span>
+        <div class="score-bar-container">
+          <div class="score-bar {% if detail.score >= 60 %}high{% elif detail.score >= 40 %}mid{% else %}low{% endif %}" 
+               style="width: {{ detail.score }}%"></div>
+        </div>
+        <span class="score-num">{{ detail.score }}</span>
+      </div>
+      {% if detail.comment %}<div class="score-comment">{{ detail.comment }}</div>{% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- サマリー＆キーポイント -->
+  <div class="content-grid">
+    <div class="summary-section">
+      <div class="section-label"><i class="bi bi-chat-quote"></i> サマリー</div>
+      <div class="summary-text">{{ report.summary }}</div>
+    </div>
+
+    {% if report.key_points %}
+    <div class="key-points-section">
+      <div class="section-label" style="color: #166534;"><i class="bi bi-check-circle-fill"></i> キーポイント</div>
+      {% for point in report.key_points %}
+      <div class="key-point">
+        <span class="key-point-emoji">{{ point|slice:":2" }}</span>
+        <span>{{ point|slice:"2:" }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- セクション横並び -->
+  {% if sections %}
+  <div class="sections-row">
+    {% for section in sections %}
+    <div class="section-card">
+      <div class="section-header {{ section.section_type }}">
+        {% if section.section_type == 'overview' %}<i class="bi bi-lightbulb-fill"></i>
+        {% elif section.section_type == 'analysis' %}<i class="bi bi-graph-up-arrow"></i>
+        {% elif section.section_type == 'risk' %}<i class="bi bi-exclamation-triangle-fill"></i>
+        {% else %}<i class="bi bi-file-text"></i>{% endif %}
+        {{ section.title }}
+      </div>
+      <div class="section-content">{{ section.content|linebreaks }}</div>
+    </div>
+    {% endfor %}
+  </div>
   {% endif %}
 
-  <!-- メタ情報 -->
-  <div class="meta-info">
-    <span>{{ report.published_at|date:"Y/m/d H:i" }}</span>
-    <span>👁 {{ report.view_count }}</span>
-    <span>{{ report.get_report_type_display }}</span>
+  <!-- フッター -->
+  <div class="footer-row">
+    {% if report.disclosure.pdf_url %}
+    <a href="{{ report.disclosure.pdf_url }}" target="_blank" rel="noopener" class="pdf-link">
+      <i class="bi bi-file-earmark-pdf-fill"></i> 原文PDFを開く
+      <i class="bi bi-box-arrow-up-right"></i>
+    </a>
+    {% endif %}
+
+    <div class="meta-card">
+      <div class="meta-item">
+        <i class="bi bi-clock"></i>
+        {{ report.published_at|date:"Y/m/d H:i" }}
+      </div>
+      <div class="meta-item">
+        <i class="bi bi-eye"></i>
+        {{ report.view_count }}回閲覧
+      </div>
+      <div class="meta-item">
+        <i class="bi bi-tag"></i>
+        {{ report.get_report_type_display }}
+      </div>
+      <div class="meta-item">
+        <i class="bi bi-cpu"></i>
+        {{ report.generation_model|default:"AI" }}
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

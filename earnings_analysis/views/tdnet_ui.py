@@ -2,6 +2,7 @@
 
 from django.views.generic import ListView, DetailView
 from django.shortcuts import get_object_or_404
+from django.db.models import Count, Q
 from ..models import TDNETReport, TDNETDisclosure
 import logging
 
@@ -39,6 +40,17 @@ class TDNETReportListView(ListView):
         context = super().get_context_data(**kwargs)
         context['page_title'] = '開示レポート'
         context['report_types'] = TDNETReport.REPORT_TYPE_CHOICES
+        
+        # シグナル別の統計を追加
+        base_qs = TDNETReport.objects.filter(status='published')
+        context['positive_count'] = base_qs.filter(
+            signal__in=['strong_positive', 'positive']
+        ).count()
+        context['neutral_count'] = base_qs.filter(signal='neutral').count()
+        context['negative_count'] = base_qs.filter(
+            signal__in=['strong_negative', 'negative']
+        ).count()
+        
         return context
 
 
@@ -70,6 +82,13 @@ class TDNETReportDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         context['page_title'] = self.object.one_line_summary or self.object.title
         context['sections'] = self.object.sections.order_by('order')
+        
+        # 同じ企業の他のレポート（最新3件）
+        context['related_reports'] = TDNETReport.objects.filter(
+            status='published',
+            disclosure__company_code=self.object.disclosure.company_code
+        ).exclude(pk=self.object.pk).order_by('-published_at')[:3]
+        
         return context
 
 
@@ -107,5 +126,13 @@ class CompanyTDNETReportListView(ListView):
             context['company_code'] = self.company_code
         
         context['page_title'] = f'{context["company_name"]}のレポート'
+        
+        # 平均スコアを計算
+        reports = self.get_queryset()
+        if reports.exists():
+            from django.db.models import Avg
+            context['avg_score'] = reports.aggregate(
+                avg=Avg('overall_score')
+            )['avg']
         
         return context
