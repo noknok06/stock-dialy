@@ -2,7 +2,7 @@
 
 from django.views.generic import ListView, DetailView
 from django.shortcuts import get_object_or_404
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Avg
 from ..models import TDNETReport, TDNETDisclosure
 import logging
 
@@ -12,27 +12,50 @@ logger = logging.getLogger('earnings_analysis.tdnet')
 class TDNETReportListView(ListView):
     """
     レポート一覧（ユーザー向け・スマホ最適化）
-    公開されているレポートのみ表示
+    公開されているレポートのみ表示、検索・フィルタ機能付き
     """
     model = TDNETReport
     template_name = 'earnings_analysis/tdnet/user/report_list.html'
     context_object_name = 'reports'
-    paginate_by = 15
+    paginate_by = 20
     
     def get_queryset(self):
         queryset = TDNETReport.objects.filter(
             status='published'
         ).select_related('disclosure').order_by('-published_at')
         
+        # キーワード検索（企業名 or 証券コード or タイトル）
+        keyword = self.request.GET.get('q', '').strip()
+        if keyword:
+            queryset = queryset.filter(
+                Q(disclosure__company_name__icontains=keyword) |
+                Q(disclosure__company_code__icontains=keyword) |
+                Q(title__icontains=keyword) |
+                Q(one_line_summary__icontains=keyword)
+            )
+        
+        # レポートタイプでフィルタ
         report_type = self.request.GET.get('type')
         if report_type:
             queryset = queryset.filter(report_type=report_type)
         
-        company_name = self.request.GET.get('company')
-        if company_name:
-            queryset = queryset.filter(
-                disclosure__company_name__icontains=company_name
-            )
+        # シグナルでフィルタ
+        signal = self.request.GET.get('signal')
+        if signal:
+            if signal == 'positive':
+                queryset = queryset.filter(signal__in=['strong_positive', 'positive'])
+            elif signal == 'negative':
+                queryset = queryset.filter(signal__in=['strong_negative', 'negative'])
+            elif signal == 'neutral':
+                queryset = queryset.filter(signal='neutral')
+        
+        # スコア範囲でフィルタ
+        min_score = self.request.GET.get('min_score')
+        if min_score:
+            try:
+                queryset = queryset.filter(overall_score__gte=int(min_score))
+            except ValueError:
+                pass
         
         return queryset
     
@@ -41,8 +64,15 @@ class TDNETReportListView(ListView):
         context['page_title'] = '開示レポート'
         context['report_types'] = TDNETReport.REPORT_TYPE_CHOICES
         
-        # シグナル別の統計を追加
+        # 現在の検索条件を保持
+        context['current_keyword'] = self.request.GET.get('q', '')
+        context['current_type'] = self.request.GET.get('type', '')
+        context['current_signal'] = self.request.GET.get('signal', '')
+        context['current_min_score'] = self.request.GET.get('min_score', '')
+        
+        # シグナル別の統計
         base_qs = TDNETReport.objects.filter(status='published')
+        context['total_count'] = base_qs.count()
         context['positive_count'] = base_qs.filter(
             signal__in=['strong_positive', 'positive']
         ).count()
@@ -50,6 +80,10 @@ class TDNETReportListView(ListView):
         context['negative_count'] = base_qs.filter(
             signal__in=['strong_negative', 'negative']
         ).count()
+        
+        # 平均スコア
+        avg = base_qs.aggregate(avg=Avg('overall_score'))['avg']
+        context['avg_score'] = round(avg, 1) if avg else 0
         
         return context
 
@@ -105,10 +139,17 @@ class CompanyTDNETReportListView(ListView):
     def get_queryset(self):
         self.company_code = self.kwargs['company_code']
         
-        return TDNETReport.objects.filter(
+        queryset = TDNETReport.objects.filter(
             status='published',
             disclosure__company_code=self.company_code
         ).select_related('disclosure').order_by('-published_at')
+        
+        # レポートタイプでフィルタ
+        report_type = self.request.GET.get('type')
+        if report_type:
+            queryset = queryset.filter(report_type=report_type)
+        
+        return queryset
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -126,11 +167,12 @@ class CompanyTDNETReportListView(ListView):
             context['company_code'] = self.company_code
         
         context['page_title'] = f'{context["company_name"]}のレポート'
+        context['report_types'] = TDNETReport.REPORT_TYPE_CHOICES
+        context['current_type'] = self.request.GET.get('type', '')
         
         # 平均スコアを計算
         reports = self.get_queryset()
         if reports.exists():
-            from django.db.models import Avg
             context['avg_score'] = reports.aggregate(
                 avg=Avg('overall_score')
             )['avg']

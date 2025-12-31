@@ -1,37 +1,109 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}{{ company_name }}のレポート | カブログ{% endblock %}
+{% block title %}開示レポート一覧 | カブログ{% endblock %}
 
 {% block head %}
 <link rel="stylesheet" href="{% static 'css/2-layouts/tdnet-report-list.css' %}">
 {% endblock %}
 
 {% block content %}
-<!-- 戻るリンク -->
-<a href="{% url 'copomo:tdnet-report-list' %}" class="back-link">
-  <i class="bi bi-arrow-left"></i> レポート一覧に戻る
-</a>
-
-<!-- 企業ヘッダー -->
-<div class="company-hero">
-  <div class="company-info-main">
-    <div class="company-code-hero">{{ company_code }}</div>
-    <div class="company-name-hero">{{ company_name }}</div>
+<!-- 検索ヘッダー -->
+<div class="search-header">
+  <div class="search-title">
+    <i class="bi bi-file-earmark-text"></i>
+    開示レポート
   </div>
-  <div class="company-stats">
-    <div class="company-stat">
-      <div class="company-stat-value">{{ reports.count }}</div>
-      <div class="company-stat-label">レポート数</div>
+  
+  <!-- 検索フォーム -->
+  <form method="get" class="search-form">
+    <div class="search-input-wrap">
+      <i class="bi bi-search search-icon"></i>
+      <input type="text" 
+             name="q" 
+             class="search-input" 
+             placeholder="企業名・証券コードで検索..."
+             value="{{ current_keyword }}"
+             autocomplete="off">
     </div>
-    {% if avg_score %}
-    <div class="company-stat">
-      <div class="company-stat-value">{{ avg_score|floatformat:0 }}</div>
-      <div class="company-stat-label">平均スコア</div>
-    </div>
+    <!-- 他のフィルター値を保持 -->
+    {% if current_type %}<input type="hidden" name="type" value="{{ current_type }}">{% endif %}
+    {% if current_signal %}<input type="hidden" name="signal" value="{{ current_signal }}">{% endif %}
+    <button type="submit" class="search-btn">
+      <i class="bi bi-search"></i> 検索
+    </button>
+  </form>
+  
+  <!-- フィルター -->
+  <div class="filter-row">
+    <span class="filter-label">シグナル:</span>
+    <a href="?{% if current_keyword %}q={{ current_keyword }}&{% endif %}{% if current_type %}type={{ current_type }}{% endif %}" 
+       class="filter-btn {% if not current_signal %}active{% endif %}">
+      すべて<span class="count">({{ total_count }})</span>
+    </a>
+    <a href="?{% if current_keyword %}q={{ current_keyword }}&{% endif %}{% if current_type %}type={{ current_type }}&{% endif %}signal=positive" 
+       class="filter-btn {% if current_signal == 'positive' %}active{% endif %}">
+      📈 強気<span class="count">({{ positive_count }})</span>
+    </a>
+    <a href="?{% if current_keyword %}q={{ current_keyword }}&{% endif %}{% if current_type %}type={{ current_type }}&{% endif %}signal=neutral" 
+       class="filter-btn {% if current_signal == 'neutral' %}active{% endif %}">
+      ➡️ 中立<span class="count">({{ neutral_count }})</span>
+    </a>
+    <a href="?{% if current_keyword %}q={{ current_keyword }}&{% endif %}{% if current_type %}type={{ current_type }}&{% endif %}signal=negative" 
+       class="filter-btn {% if current_signal == 'negative' %}active{% endif %}">
+      📉 弱気<span class="count">({{ negative_count }})</span>
+    </a>
+    
+    <!-- <span class="filter-label" style="margin-left: 12px;">種別:</span>
+    <select name="type" class="type-select" onchange="this.form.submit()" form="type-form">
+      <option value="">すべて</option>
+      {% for value, label in report_types %}
+      <option value="{{ value }}" {% if current_type == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <form id="type-form" method="get" style="display:none;">
+      {% if current_keyword %}<input type="hidden" name="q" value="{{ current_keyword }}">{% endif %}
+      {% if current_signal %}<input type="hidden" name="signal" value="{{ current_signal }}">{% endif %}
+    </form>
+     -->
+    {% if current_keyword or current_type or current_signal %}
+    <a href="{% url 'copomo:tdnet-report-list' %}" class="clear-link">
+      <i class="bi bi-x-circle"></i> クリア
+    </a>
     {% endif %}
   </div>
+  
+  <!-- 統計 -->
+  <div class="stats-row">
+    <div class="stat-item">
+      <div class="stat-value">{{ total_count }}</div>
+      <div class="stat-label">総レポート</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value positive">{{ positive_count }}</div>
+      <div class="stat-label">強気</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value neutral">{{ neutral_count }}</div>
+      <div class="stat-label">中立</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value negative">{{ negative_count }}</div>
+      <div class="stat-label">弱気</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">{{ avg_score }}</div>
+      <div class="stat-label">平均スコア</div>
+    </div>
+  </div>
 </div>
+
+<!-- 検索結果メッセージ -->
+{% if current_keyword %}
+<div style="margin-bottom: 10px; font-size: 13px; color: var(--text-secondary);">
+  「<strong>{{ current_keyword }}</strong>」の検索結果: {{ reports|length }}件
+</div>
+{% endif %}
 
 <!-- レポート一覧（グリッド） -->
 {% if reports %}
@@ -57,12 +129,16 @@
       </div>
     </div>
     <div class="report-card-body">
+      <div class="report-company">
+        <span class="company-code">{{ report.disclosure.company_code }}</span>
+        <span class="company-name">{{ report.disclosure.company_name }}</span>
+      </div>
       <h3 class="report-title">{{ report.one_line_summary|default:report.title }}</h3>
-      <p class="report-summary">{{ report.summary }}</p>
+      <p class="report-summary">{{ report.summary|truncatechars:80 }}</p>
       {% if report.key_points %}
       <div class="report-chips">
         {% for point in report.key_points|slice:":2" %}
-        <span class="chip">{{ point|truncatechars:20 }}</span>
+        <span class="chip">{{ point|truncatechars:18 }}</span>
         {% endfor %}
       </div>
       {% endif %}
@@ -75,7 +151,7 @@
 {% if page_obj.has_other_pages %}
 <div class="pagination-wrap">
   {% if page_obj.has_previous %}
-  <a href="?page={{ page_obj.previous_page_number }}" class="page-btn">
+  <a href="?page={{ page_obj.previous_page_number }}{% if current_keyword %}&q={{ current_keyword }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_signal %}&signal={{ current_signal }}{% endif %}" class="page-btn">
     <i class="bi bi-chevron-left"></i>
   </a>
   {% endif %}
@@ -83,7 +159,7 @@
   <span class="page-info">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
   
   {% if page_obj.has_next %}
-  <a href="?page={{ page_obj.next_page_number }}" class="page-btn">
+  <a href="?page={{ page_obj.next_page_number }}{% if current_keyword %}&q={{ current_keyword }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_signal %}&signal={{ current_signal }}{% endif %}" class="page-btn">
     <i class="bi bi-chevron-right"></i>
   </a>
   {% endif %}
@@ -95,8 +171,15 @@
   <div class="empty-icon">
     <i class="bi bi-file-earmark-x"></i>
   </div>
-  <h4>レポートがありません</h4>
-  <p>この企業の公開レポートはまだありません。</p>
+  <h4>レポートが見つかりません</h4>
+  {% if current_keyword or current_type or current_signal %}
+  <p>検索条件を変更してお試しください</p>
+  <a href="{% url 'copomo:tdnet-report-list' %}" class="filter-btn" style="margin-top: 10px; display: inline-block; background: var(--primary-color); color: #fff; padding: 8px 16px;">
+    条件をクリア
+  </a>
+  {% else %}
+  <p>公開されているレポートはまだありません</p>
+  {% endif %}
 </div>
 {% endif %}
 {% endblock %}
