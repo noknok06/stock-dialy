@@ -5,138 +5,63 @@
 
 {% block head %}
 <link rel="stylesheet" href="{% static 'css/2-layouts/analysis-template.css' %}">
-<style>
-/* モバイル用追加スタイル */
-@media (max-width: 767px) {
-    .company-table-mobile {
-        display: block;
-    }
-    
-    .company-table-mobile thead {
-        display: none;
-    }
-    
-    .company-table-mobile tbody,
-    .company-table-mobile tr {
-        display: block;
-    }
-    
-    .company-table-mobile tr {
-        background: var(--at-bg-card, #ffffff);
-        border: 1px solid var(--at-border, #e2e8f0);
-        border-radius: 12px;
-        padding: 1rem;
-        margin-bottom: 0.75rem;
-        position: relative;
-    }
-    
-    .company-table-mobile tr.table-active {
-        border-color: var(--at-primary, #3b82f6);
-        background: rgba(59, 130, 246, 0.05);
-    }
-    
-    .company-table-mobile td {
-        display: block;
-        padding: 0.5rem 0;
-        border: none;
-    }
-    
-    .company-table-mobile td:first-child {
-        position: absolute;
-        top: 1rem;
-        right: 1rem;
-    }
-    
-    .company-table-mobile .fw-medium {
-        font-size: 1.125rem;
-        display: inline-block;
-        margin-right: 0.5rem;
-    }
-    
-    .company-checkbox-cell {
-        padding: 0 !important;
-    }
-}
 
-.sticky-actions {
-    position: sticky;
-    bottom: 0;
-    background: var(--at-bg-card, #ffffff);
-    border-top: 2px solid var(--at-border, #e2e8f0);
-    padding: 1rem;
-    margin: 0 -1rem -1rem;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
-    z-index: 10;
-}
-
-@media (min-width: 768px) {
-    .sticky-actions {
-        position: static;
-        box-shadow: none;
-        margin: 1rem 0 0;
-        padding: 0;
-        border: none;
-    }
-}
-</style>
 {% endblock %}
 
 {% block content %}
 <div class="at-container">
     <!-- ヘッダー -->
-    <div class="page-header mb-3 mb-md-4">
-        <h1 class="page-title">
+    <div class="at-page-header-mobile">
+        <h1 class="at-page-title-mobile">
             <i class="bi bi-building"></i>
-            <span>企業選択</span>
+            企業選択
         </h1>
-        <p class="page-subtitle">{{ template.name }}</p>
+        <p class="at-page-subtitle-mobile">{{ template.name }}</p>
     </div>
 
     <div class="row g-3 g-md-4">
         <!-- 左: 企業検索・選択 -->
         <div class="col-lg-8">
             <!-- 検索フォーム -->
-            <div class="at-card mb-3">
+            <div class="at-card at-card--compact mb-3">
                 <form method="get" id="searchForm">
-                    <div class="row g-2">
-                        <div class="col-12">
+                    <div class="at-search-row">
+                        <div class="at-search-input-wrap">
                             {{ search_form.query }}
                         </div>
-                        <div class="col-6">
+                        <button type="submit" class="btn btn-primary btn-sm at-search-submit" onclick="saveBeforeSearch()">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                    <div class="at-filter-row">
+                        <div class="at-filter-item">
                             {{ search_form.industry }}
                         </div>
-                        <div class="col-6">
+                        <div class="at-filter-item">
                             {{ search_form.market }}
                         </div>
-                    </div>
-                    <div class="d-flex gap-2 mt-3">
-                        <button type="submit" class="btn btn-primary btn-sm flex-fill" onclick="saveBeforeSearch()">
-                            <i class="bi bi-search me-1"></i>検索
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" onclick="resetSearch()">
-                            <i class="bi bi-arrow-clockwise me-1"></i>リセット
+                        <button type="button" class="at-filter-reset" onclick="resetSearch()">
+                            <i class="bi bi-arrow-clockwise"></i>
                         </button>
                     </div>
                 </form>
             </div>
 
             <!-- 一括選択バー -->
-            <div class="at-card mb-3">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="fw-semibold">選択中:</span>
-                        <span class="badge bg-primary" id="selectionCount" style="font-size: 1rem; padding: 0.375rem 0.75rem;">0</span>
-                    </div>
-                    <div class="d-flex gap-2 flex-wrap">
-                        <button type="button" class="btn btn-sm btn-outline-warning" onclick="selectAllOnPage()">
-                            <i class="bi bi-check-square me-1"></i>
-                            <span class="d-none d-sm-inline">ページ全選択</span>
-                            <span class="d-sm-none">全選択</span>
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearAllSelections()">
-                            <i class="bi bi-x-circle me-1"></i>クリア
-                        </button>
-                    </div>
+            <div class="at-selection-bar mb-3">
+                <div class="at-selection-bar-left">
+                    <span class="at-selection-label">選択</span>
+                    <span class="at-selection-count-badge" id="selectionCount">0</span>
+                </div>
+                <div class="at-selection-bar-right">
+                    <button type="button" class="at-chip-btn" onclick="selectAllOnPage()">
+                        <i class="bi bi-check-square"></i>
+                        全選択
+                    </button>
+                    <button type="button" class="at-chip-btn at-chip-btn--danger" onclick="clearAllSelections()">
+                        <i class="bi bi-x-circle"></i>
+                        クリア
+                    </button>
                 </div>
             </div>
 
@@ -218,70 +143,52 @@
                     </nav>
                     {% endif %}
 
-                    <!-- アクションボタン -->
-                    <div class="sticky-actions">
-                        <div class="d-grid gap-2">
-                            <div class="row g-2">
-                                <div class="col-6 col-sm-4">
-                                    <a href="{% url 'analysis_template:detail' template.pk %}" class="btn btn-secondary w-100">
-                                        <i class="bi bi-x-circle me-1"></i>
-                                        <span class="d-none d-sm-inline">キャンセル</span>
-                                        <span class="d-sm-none">戻る</span>
-                                    </a>
-                                </div>
-                                <div class="col-6 col-sm-4">
-                                    <button type="button" class="btn btn-success w-100" onclick="submitForm('add')">
-                                        <i class="bi bi-plus-circle me-1"></i>追加
-                                    </button>
-                                </div>
-                                <div class="col-12 col-sm-4">
-                                    <button type="button" class="btn btn-primary w-100" onclick="submitForm('replace')">
-                                        <i class="bi bi-arrow-repeat me-1"></i>
-                                        <span class="d-none d-sm-inline">置き換え</span>
-                                        <span class="d-sm-none">置換</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                    <!-- 固定ボトムバー -->
+                    <div class="at-fixed-bottom-bar at-fixed-bottom-bar--triple">
+                        <a href="{% url 'analysis_template:detail' template.pk %}" class="btn btn-secondary at-fixed-btn">
+                            <i class="bi bi-arrow-left"></i>
+                            <span>戻る</span>
+                        </a>
+                        <button type="button" class="btn btn-success at-fixed-btn" onclick="submitForm('add')">
+                            <i class="bi bi-plus-circle"></i>
+                            <span>追加</span>
+                        </button>
+                        <button type="button" class="btn btn-primary at-fixed-btn" onclick="submitForm('replace')">
+                            <i class="bi bi-arrow-repeat"></i>
+                            <span>置換</span>
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <!-- 右: 選択済み企業 -->
+        <!-- 右: 選択済み企業（PC表示のみフル表示、モバイルは折りたたみ） -->
         <div class="col-lg-4">
-            <div class="at-card sticky-lg-top" style="top: 1rem;">
-                <h6 class="at-card-title mb-3">
+            <div class="at-card at-selected-panel">
+                <button class="at-selected-panel-toggle d-lg-none" type="button" onclick="toggleSelectedPanel(this)">
+                    <span>
+                        <i class="bi bi-check-circle me-1"></i>
+                        選択済み <strong id="selectedCount2">0</strong> 社
+                    </span>
+                    <i class="bi bi-chevron-down at-toggle-icon"></i>
+                </button>
+                <h6 class="at-card-title mb-3 d-none d-lg-block">
                     <i class="bi bi-check-circle me-1"></i>選択済み企業
-                    <span class="badge bg-primary ms-2" id="selectedCount2">0</span>
+                    <span class="badge bg-primary ms-2" id="selectedCount3">0</span>
                 </h6>
-                <div id="selectedCompaniesList" style="max-height: 300px; overflow-y: auto;">
+                <div id="selectedCompaniesList" class="at-selected-list" style="max-height: 300px; overflow-y: auto;">
                     <div class="text-center at-text-muted py-4" id="emptyState">
-                        <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.5;"></i>
+                        <i class="bi bi-inbox" style="font-size: 1.5rem; opacity: 0.5;"></i>
                         <p class="mb-0 mt-2 small">企業が選択されていません</p>
                     </div>
-                </div>
-            </div>
-            
-            <!-- 使い方 -->
-            <div class="at-card mt-3 d-none d-lg-block">
-                <h6 class="at-card-title">
-                    <i class="bi bi-info-circle me-1"></i>使い方
-                </h6>
-                <ol class="small mb-0 ps-3">
-                    <li class="mb-2">企業を検索してチェック</li>
-                    <li class="mb-2">検索条件を変えて追加選択可</li>
-                    <li class="mb-2">「追加」または「置き換え」</li>
-                </ol>
-                <hr class="my-3">
-                <div class="small">
-                    <p class="mb-1"><strong>追加:</strong> 既存+新規</p>
-                    <p class="mb-0"><strong>置き換え:</strong> 既存削除</p>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- 固定ボトムバー分のスペーサー -->
+<div style="height: 80px;"></div>
 
 {% include 'speed_dial.html' with actions=form_actions %}
 <script>
@@ -354,7 +261,7 @@ function updateUI() {
     });
     
     const count = Object.keys(selectedCompanies).length;
-    document.querySelectorAll('#selectionCount, #selectedCount2').forEach(el => el.textContent = count);
+    document.querySelectorAll('#selectionCount, #selectedCount2, #selectedCount3').forEach(el => el.textContent = count);
     
     const container = document.getElementById('selectedCompaniesList');
     const emptyState = document.getElementById('emptyState');
@@ -427,6 +334,14 @@ function saveBeforeNavigate(e) { saveSelections(); }
 function resetSearch() {
     saveSelections();
     window.location.href = '{% url "analysis_template:company_select" template.pk %}';
+}
+
+function toggleSelectedPanel(btn) {
+    const list = document.getElementById('selectedCompaniesList');
+    const icon = btn.querySelector('.at-toggle-icon');
+    list.classList.toggle('at-selected-list--open');
+    icon.classList.toggle('bi-chevron-down');
+    icon.classList.toggle('bi-chevron-up');
 }
 
 function submitForm(action) {

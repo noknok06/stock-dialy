@@ -10,19 +10,17 @@
 {% block content %}
 <div class="at-container">
     <!-- ページヘッダー -->
-    <div class="page-header page-header-with-actions mb-4">
-        <div class="page-header-content">
-            <h1 class="page-title">
+    <div class="at-page-header-mobile">
+        <div class="at-page-header-top">
+            <h1 class="at-page-title-mobile">
                 <i class="bi bi-clipboard-data"></i>
-                <span>分析レポート一覧</span>
+                分析レポート
             </h1>
-            <p class="page-subtitle">企業の財務指標を比較分析するレポートを管理できます</p>
+            <a href="{% url 'analysis_template:create' %}" class="at-fab-btn" aria-label="新規レポート作成">
+                <i class="bi bi-plus-lg"></i>
+            </a>
         </div>
-        <a href="{% url 'analysis_template:create' %}" class="btn btn-primary d-flex align-items-center gap-2">
-            <i class="bi bi-plus-circle"></i>
-            <span class="d-none d-sm-inline">新規レポート作成</span>
-            <span class="d-sm-none">新規作成</span>
-        </a>
+        <p class="at-page-subtitle-mobile">企業の財務指標を比較分析</p>
     </div>
 
     {% if templates %}
@@ -32,74 +30,69 @@
             <div class="at-selection-count">
                 選択中: <strong id="selectedCount">0</strong> 件
             </div>
-            <div class="at-action-group">
+            <div class="at-bulk-actions">
                 <button type="button" class="btn btn-sm btn-outline-danger" onclick="bulkDelete()">
-                    <i class="bi bi-trash me-1"></i>まとめて削除
+                    <i class="bi bi-trash me-1"></i>削除
                 </button>
                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearSelection()">
-                    <i class="bi bi-x-circle me-1"></i>選択解除
+                    <i class="bi bi-x-circle me-1"></i>解除
                 </button>
             </div>
         </div>
     </div>
 
     <!-- レポート一覧 -->
-    <div class="at-company-grid">
+    <div class="at-list-mobile">
         {% for template in templates %}
-        <div class="at-template-card" data-template-id="{{ template.pk }}">
-            <!-- カードヘッダー -->
-            <div class="at-template-card-header">
-                <label class="d-flex align-items-center gap-2 mb-0" style="cursor: pointer;">
+        <div class="at-list-item" data-template-id="{{ template.pk }}">
+            <!-- チェックボックス + メインコンテンツ -->
+            <div class="at-list-item-main">
+                <label class="at-list-checkbox-area" aria-label="選択">
                     <input type="checkbox" 
                            class="at-checkbox template-checkbox" 
                            value="{{ template.pk }}"
                            onchange="updateSelection()">
                 </label>
-                <span class="at-company-badge">{{ template.company_count }}社</span>
-            </div>
-            
-            <!-- カードボディ -->
-            <div class="at-template-card-body">
-                <h5 class="at-template-title">{{ template.name }}</h5>
-                {% if template.description %}
-                <p class="at-template-desc">{{ template.description|truncatewords:15 }}</p>
-                {% else %}
-                <p class="at-template-desc at-text-muted" style="font-style: italic;">説明なし</p>
-                {% endif %}
-                <div class="at-template-meta mt-3">
-                    <i class="bi bi-clock"></i>
-                    <span>{{ template.updated_at|date:"Y/m/d H:i" }}</span>
-                </div>
-            </div>
-            
-            <!-- カードフッター -->
-            <div class="at-template-card-footer">
-                <a href="{% url 'analysis_template:detail' template.pk %}" 
-                   class="btn btn-primary btn-sm w-100 mb-2">
-                    <i class="bi bi-eye me-1"></i>レポート表示
+                <a href="{% url 'analysis_template:detail' template.pk %}" class="at-list-item-content">
+                    <div class="at-list-item-header">
+                        <h3 class="at-list-item-title">{{ template.name }}</h3>
+                        <span class="at-list-item-badge">{{ template.company_count }}社</span>
+                    </div>
+                    {% if template.description %}
+                    <p class="at-list-item-desc">{{ template.description|truncatewords:12 }}</p>
+                    {% endif %}
+                    <div class="at-list-item-meta">
+                        <i class="bi bi-clock"></i>
+                        <span>{{ template.updated_at|date:"Y/m/d H:i" }}</span>
+                    </div>
                 </a>
-                <div class="d-flex gap-2">
-                    <a href="{% url 'analysis_template:update' template.pk %}" 
-                       class="at-btn-icon flex-fill" title="編集">
-                        <i class="bi bi-pencil"></i>
-                    </a>
-                    <button type="button" 
-                            class="at-btn-icon flex-fill"
-                            onclick="duplicateTemplate({{ template.pk }})"
-                            title="複製">
-                        <i class="bi bi-files"></i>
-                    </button>
-                    <a href="{% url 'analysis_template:export' template.pk %}" 
-                       class="at-btn-icon flex-fill" title="エクスポート">
-                        <i class="bi bi-download"></i>
-                    </a>
-                    <button type="button" 
-                            class="at-btn-icon danger flex-fill"
-                            onclick="confirmDelete({{ template.pk }}, '{{ template.name|escapejs }}')"
-                            title="削除">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
+            </div>
+            <!-- アクションボタン行 -->
+            <div class="at-list-item-actions">
+                <a href="{% url 'analysis_template:update' template.pk %}" 
+                   class="at-action-chip" title="編集">
+                    <i class="bi bi-pencil"></i>
+                    <span>編集</span>
+                </a>
+                <button type="button" 
+                        class="at-action-chip"
+                        onclick="duplicateTemplate({{ template.pk }})"
+                        title="複製">
+                    <i class="bi bi-files"></i>
+                    <span>複製</span>
+                </button>
+                <a href="{% url 'analysis_template:export' template.pk %}" 
+                   class="at-action-chip" title="エクスポート">
+                    <i class="bi bi-download"></i>
+                    <span>出力</span>
+                </a>
+                <button type="button" 
+                        class="at-action-chip at-action-chip--danger"
+                        onclick="confirmDelete({{ template.pk }}, '{{ template.name|escapejs }}')"
+                        title="削除">
+                    <i class="bi bi-trash"></i>
+                    <span>削除</span>
+                </button>
             </div>
         </div>
         {% endfor %}
@@ -107,7 +100,9 @@
     {% else %}
     <!-- 空の状態 -->
     <div class="at-empty-state">
-        <div class="at-empty-icon">📊</div>
+        <div class="at-empty-icon-wrap">
+            <i class="bi bi-clipboard-data"></i>
+        </div>
         <h3 class="at-empty-title">レポートがありません</h3>
         <p class="at-empty-desc">企業の財務指標を比較分析するレポートを作成してみましょう</p>
         <a href="{% url 'analysis_template:create' %}" class="btn btn-primary btn-lg">

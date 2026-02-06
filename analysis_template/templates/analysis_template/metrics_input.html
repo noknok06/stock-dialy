@@ -175,12 +175,12 @@
 {% block content %}
 <div class="at-container content-with-fixed-bar">
     <!-- ヘッダー -->
-    <div class="page-header mb-3 mb-md-4">
-        <h1 class="page-title">
+    <div class="at-page-header-mobile">
+        <h1 class="at-page-title-mobile">
             <i class="bi bi-bar-chart"></i>
-            <span>指標入力</span>
+            指標入力
         </h1>
-        <p class="page-subtitle">{{ template.name }} - {{ companies|length }}社</p>
+        <p class="at-page-subtitle-mobile">{{ template.name }} - {{ companies|length }}社</p>
     </div>
 
     <form method="post" id="metricsForm">
@@ -269,29 +269,20 @@
         </div>
         {% endfor %}
 
-        <!-- 固定ボタンバー -->
-        <div class="sticky-bottom-bar">
-            <div class="d-grid gap-2">
-                <div class="row g-2">
-                    <div class="col-6 col-sm-3">
-                        <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn btn-secondary w-100">
-                            <i class="bi bi-arrow-left me-1"></i>
-                            <span class="d-none d-sm-inline">戻る</span>
-                        </a>
-                    </div>
-                    <div class="col-6 col-sm-3">
-                        <button type="button" class="btn btn-outline-secondary w-100" onclick="clearForm()">
-                            <i class="bi bi-x-circle me-1"></i>
-                            <span class="d-none d-sm-inline">クリア</span>
-                        </button>
-                    </div>
-                    <div class="col-12 col-sm-6">
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="bi bi-save me-1"></i>保存してレポート表示
-                        </button>
-                    </div>
-                </div>
-            </div>
+        <!-- 固定ボトムバー -->
+        <div class="at-fixed-bottom-bar at-fixed-bottom-bar--triple">
+            <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn btn-secondary at-fixed-btn">
+                <i class="bi bi-arrow-left"></i>
+                <span>戻る</span>
+            </a>
+            <button type="button" class="btn btn-outline-secondary at-fixed-btn" onclick="clearForm()">
+                <i class="bi bi-x-circle"></i>
+                <span>クリア</span>
+            </button>
+            <button type="submit" class="btn btn-primary at-fixed-btn at-fixed-btn--primary">
+                <i class="bi bi-save"></i>
+                <span>保存</span>
+            </button>
         </div>
     </form>
 </div>

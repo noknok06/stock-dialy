@@ -7,58 +7,56 @@ templates/analysis_template/template_confirm_delete.html
 {% block title %}レポート削除確認 - カブログ{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-6">
-            <div class="card border-danger">
-                <div class="card-header bg-danger text-white">
-                    <h5 class="mb-0">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        削除確認
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-warning mb-4">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                        この操作は取り消せません
-                    </div>
-                    
-                    <p class="mb-3">以下のレポートを削除してもよろしいですか？</p>
-                    
-                    <div class="bg-light rounded p-3 mb-4">
-                        <h6 class="mb-2">{{ template.name }}</h6>
-                        {% if template.description %}
-                        <p class="text-muted small mb-2">{{ template.description }}</p>
-                        {% endif %}
-                        <div class="small text-muted">
-                            <i class="bi bi-building me-1"></i>
-                            対象企業: {{ template.get_company_count }}社
-                        </div>
-                    </div>
-                    
-                    <p class="text-danger small mb-4">
-                        <i class="bi bi-info-circle me-1"></i>
-                        レポートに関連する全てのデータ（企業設定、指標値、スコアなど）が削除されます。
-                    </p>
-                    
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-danger flex-fill">
-                                <i class="bi bi-trash me-1"></i>
-                                削除する
-                            </button>
-                            <a href="{% url 'analysis_template:detail' template.pk %}" 
-                               class="btn btn-secondary flex-fill">
-                                <i class="bi bi-x-circle me-1"></i>
-                                キャンセル
-                            </a>
-                        </div>
-                    </form>
-                </div>
+<div class="at-container">
+    <div class="at-page-header-mobile">
+        <h1 class="at-page-title-mobile" style="color: var(--at-danger, #ef4444);">
+            <i class="bi bi-exclamation-triangle"></i>
+            削除確認
+        </h1>
+    </div>
+
+    <div class="at-card">
+        <div class="at-delete-warning">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span>この操作は取り消せません</span>
+        </div>
+        
+        <p class="at-text-secondary" style="margin-bottom: 1rem;">以下のレポートを削除してもよろしいですか？</p>
+        
+        <div class="at-delete-target">
+            <h6 style="margin: 0 0 0.375rem 0; font-weight: 700;">{{ template.name }}</h6>
+            {% if template.description %}
+            <p class="at-text-muted small" style="margin-bottom: 0.375rem;">{{ template.description }}</p>
+            {% endif %}
+            <div class="small at-text-muted">
+                <i class="bi bi-building me-1"></i>
+                対象企業: {{ template.get_company_count }}社
             </div>
         </div>
+        
+        <p class="at-text-danger small" style="margin-bottom: 1.5rem;">
+            <i class="bi bi-info-circle me-1"></i>
+            レポートに関連する全てのデータ（企業設定、指標値、スコアなど）が削除されます。
+        </p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="at-fixed-bottom-bar">
+                <a href="{% url 'analysis_template:detail' template.pk %}" 
+                   class="btn btn-secondary at-fixed-btn">
+                    <i class="bi bi-arrow-left"></i>
+                    <span>戻る</span>
+                </a>
+                <button type="submit" class="btn btn-danger at-fixed-btn">
+                    <i class="bi bi-trash"></i>
+                    <span>削除する</span>
+                </button>
+            </div>
+        </form>
     </div>
 </div>
+
+<!-- 固定ボトムバー分のスペーサー -->
+<div style="height: 80px;"></div>
 {% include 'speed_dial.html' with actions=form_actions %}
 {% endblock %}

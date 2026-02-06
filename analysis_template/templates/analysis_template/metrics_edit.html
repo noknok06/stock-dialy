@@ -9,17 +9,17 @@
 
 {% block content %}
 <div class="at-container">
-    <div class="page-header mb-4">
-        <h1 class="page-title">
+    <div class="at-page-header-mobile">
+        <h1 class="at-page-title-mobile">
             <i class="bi bi-bar-chart"></i>
-            <span>指標編集</span>
+            指標編集
         </h1>
-        <p class="page-subtitle">{{ template.name }} の企業指標を入力・編集します</p>
+        <p class="at-page-subtitle-mobile">{{ template.name }}</p>
     </div>
 
-    <div class="row g-4">
+    <div class="row g-3 g-lg-4">
         <div class="col-lg-8">
-            <div class="at-card mb-4">
+            <div class="at-card mb-3">
                 <div class="at-card-header">
                     <h5 class="at-card-title mb-0">
                         <i class="bi bi-pencil-square me-2"></i>指標入力
@@ -29,17 +29,15 @@
                 <form method="post" id="metrics-form">
                     {% csrf_token %}
                     
-                    <div class="row g-3 mb-4">
-                        <div class="col-12 col-md-8">
-                            <label for="{{ form.company.id_for_label }}" class="at-form-label">
-                                企業 <span class="text-danger">*</span>
-                            </label>
-                            {{ form.company }}
-                        </div>
-                        <div class="col-12 col-md-4">
-                            <label for="{{ form.fiscal_year.id_for_label }}" class="at-form-label">会計年度</label>
-                            {{ form.fiscal_year }}
-                        </div>
+                    <div class="at-form-group">
+                        <label for="{{ form.company.id_for_label }}" class="at-form-label">
+                            企業 <span class="text-danger">*</span>
+                        </label>
+                        {{ form.company }}
+                    </div>
+                    <div class="at-form-group">
+                        <label for="{{ form.fiscal_year.id_for_label }}" class="at-form-label">会計年度</label>
+                        {{ form.fiscal_year }}
                     </div>
 
                     {% for field in form %}
@@ -51,16 +49,18 @@
                         {% endif %}
                     {% endfor %}
 
-                    <div class="at-action-group">
-                        <button type="submit" class="btn btn-primary">
+                    <div class="at-action-stack">
+                        <button type="submit" class="btn btn-primary w-100">
                             <i class="bi bi-save me-1"></i>保存
                         </button>
-                        <button type="button" class="btn btn-secondary" id="load-metrics">
-                            <i class="bi bi-arrow-clockwise me-1"></i>既存データ読込
-                        </button>
-                        <button type="button" class="btn btn-info" id="fetch-api-data">
-                            <i class="bi bi-cloud-download me-1"></i>APIから取得
-                        </button>
+                        <div class="at-action-row">
+                            <button type="button" class="btn btn-secondary btn-sm flex-fill" id="load-metrics">
+                                <i class="bi bi-arrow-clockwise me-1"></i>読込
+                            </button>
+                            <button type="button" class="btn btn-info btn-sm flex-fill" id="fetch-api-data">
+                                <i class="bi bi-cloud-download me-1"></i>API取得
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -116,37 +116,28 @@
         </div>
 
         <div class="col-lg-4">
-            <div class="at-card mb-3">
-                <h6 class="at-card-title">
-                    <i class="bi bi-lightbulb text-warning me-2"></i>操作ガイド
-                </h6>
-                <ol class="small mb-0 ps-3">
-                    <li class="mb-2">企業を選択します</li>
-                    <li class="mb-2">各指標の値を入力します</li>
-                    <li class="mb-2">「保存」ボタンをクリックします</li>
-                    <li class="mb-2">他の企業も同様に入力します</li>
-                </ol>
-                <hr class="my-3">
-                <p class="small mb-0 at-text-muted">
-                    <i class="bi bi-info-circle me-1"></i>
-                    既存データがある企業は「既存データ読込」で編集できます
-                </p>
-            </div>
-
             <div class="at-card">
-                <h6 class="at-card-title mb-3">アクション</h6>
-                <div class="d-grid gap-2">
-                    <a href="{% url 'analysis_template:detail' template.pk %}" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-eye me-1"></i>レポート表示
+                <h6 class="at-card-title mb-3">ナビゲーション</h6>
+                <div class="at-link-list">
+                    <a href="{% url 'analysis_template:detail' template.pk %}" class="at-link-list-item">
+                        <i class="bi bi-eye"></i>
+                        <span>レポート表示</span>
+                        <i class="bi bi-chevron-right at-link-list-arrow"></i>
                     </a>
-                    <a href="{% url 'analysis_template:update' template.pk %}" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-pencil me-1"></i>基本情報編集
+                    <a href="{% url 'analysis_template:update' template.pk %}" class="at-link-list-item">
+                        <i class="bi bi-pencil"></i>
+                        <span>基本情報編集</span>
+                        <i class="bi bi-chevron-right at-link-list-arrow"></i>
                     </a>
-                    <a href="{% url 'analysis_template:calculate_scores' template.pk %}" class="btn btn-outline-success btn-sm">
-                        <i class="bi bi-calculator me-1"></i>スコア計算
+                    <a href="{% url 'analysis_template:calculate_scores' template.pk %}" class="at-link-list-item">
+                        <i class="bi bi-calculator"></i>
+                        <span>スコア計算</span>
+                        <i class="bi bi-chevron-right at-link-list-arrow"></i>
                     </a>
-                    <a href="{% url 'analysis_template:list' %}" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-arrow-left me-1"></i>一覧へ戻る
+                    <a href="{% url 'analysis_template:list' %}" class="at-link-list-item">
+                        <i class="bi bi-arrow-left"></i>
+                        <span>一覧へ戻る</span>
+                        <i class="bi bi-chevron-right at-link-list-arrow"></i>
                     </a>
                 </div>
             </div>

@@ -9,28 +9,30 @@
 {% endblock %}
 
 {% block content %}
-<header class="page-header">
-    <div class="page-header-content">
-        <div>
-            <h1>
-                <i class="fas fa-brain"></i>
-                {{ template.name }}
-            </h1>
-            <p class="page-header-subtitle">{{ template.description|default:"業種別ベンチマーク比較分析" }}</p>
-        </div>
-        <div class="page-header-badge">
-        <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn-icon btn-info-icon btn--sm">
-          <i class="bi bi-building-add"></i>
-        </a>
-        <a href="{% url 'analysis_template:metrics_edit' template.pk %}" class="btn-icon btn-success-icon btn--sm">
-          <i class="bi bi-bar-chart"></i>
-        </a>
-        </div>
-    </div>
-</header>
 <div class="at-container">
+  <!-- モバイルヘッダー -->
+  <div class="at-page-header-mobile">
+      <div class="at-page-header-top">
+          <h1 class="at-page-title-mobile">
+              <i class="bi bi-clipboard-data"></i>
+              {{ template.name }}
+          </h1>
+      </div>
+      <p class="at-page-subtitle-mobile">{{ template.description|default:"業種別ベンチマーク比較分析" }}</p>
+      <div class="at-detail-actions">
+          <a href="{% url 'analysis_template:company_select' template.pk %}" class="at-action-chip">
+              <i class="bi bi-building-add"></i>
+              <span>企業追加</span>
+          </a>
+          <a href="{% url 'analysis_template:metrics_edit' template.pk %}" class="at-action-chip">
+              <i class="bi bi-bar-chart"></i>
+              <span>指標編集</span>
+          </a>
+      </div>
+  </div>
+
   <!-- 企業一覧セクション -->
-  <section class="mb-4">
+  <section class="at-section-mobile">
     <h2 class="at-section-title">
       <i class="bi bi-building"></i>
       企業一覧
