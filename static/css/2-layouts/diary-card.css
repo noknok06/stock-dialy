@@ -1,0 +1,476 @@
+/* ========================================
+   Diary Card - モバイルファースト最適化
+   ======================================== */
+
+.diary-article {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-light);
+  padding: 1.25rem 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.diary-article:last-child {
+  border-bottom: none;
+}
+
+/* ========== Header ========== */
+.diary-header {
+  margin-bottom: 1rem;
+}
+
+.diary-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.diary-name {
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0;
+  color: var(--text-primary);
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.diary-code {
+  display: inline-block;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-left: 0.5rem;
+  white-space: nowrap;
+}
+
+.diary-profit-pill {
+  flex-shrink: 0;
+}
+
+.diary-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+
+/* ========== タグ行（独立） ========== */
+.diary-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: var(--primary-light);
+  color: var(--primary-color);
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.tag-pill i {
+  font-size: 0.75rem;
+}
+
+.tag-pill:hover {
+  background: var(--primary-color);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(var(--primary-rgb), 0.2);
+}
+
+.tag-pill:active {
+  transform: translateY(0);
+}
+
+/* ========== Figure ========== */
+.diary-figure {
+  margin: 0 -1rem 1rem;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+.diary-figure img {
+  width: 100%;
+  height: auto;
+  max-height: 200px;
+  object-fit: cover;
+  display: block;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.diary-figure:hover img {
+  transform: scale(1.03);
+}
+
+/* ========== Tabs Navigation ========== */
+.diary-tabs {
+  display: flex;
+  gap: 0.25rem;
+  background: var(--bg-secondary);
+  padding: 0.375rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.diary-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-btn {
+  flex: 1;
+  min-width: fit-content;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  position: relative;
+}
+
+.tab-btn i {
+  font-size: 1.125rem;
+  flex-shrink: 0;
+}
+
+.tab-label {
+  display: none;
+}
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.375rem;
+  background: var(--text-tertiary);
+  color: white;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tab-btn:hover {
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--primary-color);
+}
+
+.tab-btn.active {
+  background: var(--bg-primary);
+  color: var(--primary-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tab-btn.active .tab-badge {
+  background: var(--primary-color);
+}
+
+/* スマホ横向き・タブレット以上でラベル表示 */
+@media (min-width: 480px) {
+  .tab-label {
+    display: inline;
+  }
+  
+  .tab-btn {
+    padding: 0.75rem 1.25rem;
+  }
+}
+
+/* PC */
+@media (min-width: 768px) {
+  .diary-tabs {
+    padding: 0.5rem;
+  }
+  
+  .tab-btn {
+    font-size: 0.9375rem;
+    padding: 0.875rem 1.5rem;
+  }
+  
+  .tab-btn i {
+    font-size: 1.25rem;
+  }
+}
+
+/* ========== Tab Content ========== */
+.diary-tab-content {
+  position: relative;
+  min-height: 150px;
+}
+
+.tab-panel {
+  animation: fadeIn 0.3s ease;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.panel-text {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+}
+
+.panel-text p {
+  margin-bottom: 0.75rem;
+}
+
+.panel-text p:last-child {
+  margin-bottom: 0;
+}
+
+.read-more {
+  display: inline-flex;
+  align-items: center;
+  color: var(--primary-color);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: gap 0.2s ease;
+}
+
+.read-more:hover {
+  gap: 0.25rem;
+}
+
+.panel-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 3rem 1rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+/* ========== Footer ========== */
+.diary-footer {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-light);
+}
+
+.view-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--primary-color);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: gap 0.2s ease;
+}
+
+.view-detail:hover {
+  gap: 0.5rem;
+}
+
+/* ========================================
+   Tablet & Desktop
+   ======================================== */
+
+@media (min-width: 768px) {
+  .diary-article {
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-light);
+    margin-bottom: 1.5rem;
+  }
+  
+  .diary-article:last-child {
+    border-bottom: 1px solid var(--border-light);
+  }
+  
+  .diary-article:hover {
+    box-shadow: var(--shadow-sm);
+  }
+  
+  .diary-name {
+    font-size: 1.25rem;
+  }
+  
+  .diary-meta-row {
+    font-size: 0.9375rem;
+  }
+  
+  .diary-figure {
+    margin: 0 0 1.5rem;
+    border-radius: var(--radius-md);
+  }
+  
+  .diary-figure img {
+    max-height: 240px;
+    border-radius: var(--radius-md);
+  }
+  
+  .panel-text {
+    font-size: 1rem;
+  }
+  
+  .diary-tab-content {
+    min-height: 180px;
+  }
+}
+
+/* ========================================
+   Dark Mode
+   ======================================== */
+
+.dark-mode .diary-article,
+[data-theme="dark"] .diary-article {
+  background: var(--dm-card);
+  border-bottom-color: var(--dm-border);
+}
+
+@media (min-width: 768px) {
+  .dark-mode .diary-article,
+  [data-theme="dark"] .diary-article {
+    border-color: var(--dm-border);
+  }
+}
+
+.dark-mode .diary-name,
+[data-theme="dark"] .diary-name {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .diary-code,
+[data-theme="dark"] .diary-code {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .tag-pill,
+[data-theme="dark"] .tag-pill {
+  background: rgba(59, 130, 246, 0.2);
+  color: var(--dm-primary);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.dark-mode .tag-pill:hover,
+[data-theme="dark"] .tag-pill:hover {
+  background: var(--dm-primary);
+  color: white;
+}
+
+.dark-mode .diary-tabs,
+[data-theme="dark"] .diary-tabs {
+  background: rgba(71, 85, 105, 0.3);
+}
+
+.dark-mode .tab-btn,
+[data-theme="dark"] .tab-btn {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .tab-btn:hover,
+[data-theme="dark"] .tab-btn:hover {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--dm-primary);
+}
+
+.dark-mode .tab-btn.active,
+[data-theme="dark"] .tab-btn.active {
+  background: var(--dm-card);
+  color: var(--dm-primary);
+}
+
+.dark-mode .tab-badge,
+[data-theme="dark"] .tab-badge {
+  background: var(--dm-muted);
+}
+
+.dark-mode .tab-btn.active .tab-badge,
+[data-theme="dark"] .tab-btn.active .tab-badge {
+  background: var(--dm-primary);
+}
+
+.dark-mode .panel-text,
+[data-theme="dark"] .panel-text {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .diary-footer,
+[data-theme="dark"] .diary-footer {
+  border-top-color: var(--dm-border);
+}
+
+.dark-mode .view-detail,
+.dark-mode .read-more,
+[data-theme="dark"] .view-detail,
+[data-theme="dark"] .read-more {
+  color: var(--dm-primary);
+}
+
+/* ========================================
+   Accessibility
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .diary-article,
+  .diary-figure img,
+  .tab-btn,
+  .view-detail,
+  .read-more,
+  .tag-pill,
+  .tab-panel {
+    transition: none;
+    animation: none;
+  }
+}
+
+@media (hover: none) {
+  .tab-btn {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-contrast: high) {
+  .diary-article,
+  .tag-pill,
+  .tab-btn {
+    border-width: 2px;
+  }
+}
