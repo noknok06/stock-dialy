@@ -1126,23 +1126,40 @@
             </div>
           </div>
         </div>
-        
+
         <!-- 価格サマリー -->
         {% if not diary.is_memo and diary.average_purchase_price %}
         <div class="price-summary">
-          <div class="sub-info">平均取得単価</div>
-          {% include "stockdiary/components/_price_display.html" with price=diary.average_purchase_price style="block" size="lg" %}
-          {% if diary.current_quantity > 0 %}
-          <div class="sub-info mt-2">
-            保有: {{ diary.current_quantity|floatformat:0 }}株
+          <!-- 損益を最上部に表示（最重要情報） -->
+          {% if diary.realized_profit != 0 %}
+          <div class="profit-hero-card {% if diary.realized_profit < 0 %}loss{% endif %}">
+            <div class="profit-label">評価損益</div>
+            <div class="profit-value">
+              <span class="profit-icon">{% if diary.realized_profit > 0 %}↗{% else %}↘{% endif %}</span>
+              <span>{{ diary.realized_profit|floatformat:0|intcomma }}</span>
+              <span class="profit-unit">円</span>
+            </div>
           </div>
           {% endif %}
           
-          {% if diary.realized_profit != 0 %}
-          <div class="profit-indicator">
-            {% include "stockdiary/components/_profit_display.html" with profit=cash_only_stats.realized_profit style="badge" %}
+          <!-- 取得単価と保有数を2x2グリッドで表示 -->
+          <div class="price-details-grid">
+            <div class="price-detail-card">
+              <div class="price-detail-label">平均取得単価</div>
+              <div class="price-detail-value">
+                {{ diary.average_purchase_price|floatformat:2|intcomma }}<span class="unit">円</span>
+              </div>
+            </div>
+            
+            {% if diary.current_quantity > 0 %}
+            <div class="price-detail-card">
+              <div class="price-detail-label">保有数量</div>
+              <div class="price-detail-value">
+                {{ diary.current_quantity|floatformat:0 }}<span class="unit">株</span>
+              </div>
+            </div>
+            {% endif %}
           </div>
-          {% endif %}
         </div>
         {% endif %}
       </div>
@@ -1544,33 +1561,45 @@
           <div class="notes-list mobile-optimized">
             {% for note in notes %}
             <div class="note-card mobile-optimized fade-in">
-              <div class="note-card-header mobile-optimized">
-                <div class="note-meta-left">
-                  <div class="note-date">
-                    {% include "stockdiary/components/_date_display.html" with date=note.date %}
+              <div class="note-card-header-modern">
+                <!-- 左側：日付とメタ情報 -->
+                <div class="note-header-left">
+                  <div class="note-date-large">
+                    <span class="date-day">{{ note.date|date:"d" }}</span>
+                    <div class="date-year-month">
+                      <span class="date-year">{{ note.date|date:"Y" }}</span>
+                      <span class="date-month">{{ note.date|date:"m月" }}</span>
+                    </div>
                   </div>
-                  <div class="transaction-actions-improved">
+                  
+                  <div class="note-meta-badges">
                     {% include "stockdiary/components/_note_type_badge.html" with note_type=note.note_type %}
                     {% include "stockdiary/components/_importance_badge.html" with importance=note.importance %}
-                    
-                    <button class="btn-icon btn-danger-icon" 
-                            onclick="confirmDeleteNote({{ note.id }}, '{{ note.date|date:"Y年m月d日" }}', '{% if note.note_type == 'analysis' %}分析更新{% elif note.note_type == 'news' %}ニュース{% elif note.note_type == 'earnings' %}決算情報{% elif note.note_type == 'insight' %}新たな気づき{% elif note.note_type == 'risk' %}リスク要因{% else %}その他{% endif %}', {{ diary.id }})"
-                            title="この記録を削除">
-                      <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
-                    </button>
                   </div>
                 </div>
-                {% if note.current_price %}
-                <div class="note-price-summary">
-                  {% include "stockdiary/components/_price_display.html" with price=note.current_price style="badge" %}
-                  <div class="price-label">記録時価格</div>
-                  {% with price_change=note.get_price_change %}
-                  {% if price_change %}
-                    {% include "stockdiary/components/_profit_display.html" with percent=price_change %}
+                
+                <!-- 右側：価格とアクション -->
+                <div class="note-header-right">
+                  {% if note.current_price %}
+                  <div class="price-info-compact">
+                    <div class="current-price">{{ note.current_price|floatformat:2|intcomma }}<span class="unit">円</span></div>
+                    {% with price_change=note.get_price_change %}
+                    {% if price_change %}
+                    <div class="price-change-badge {% if price_change > 0 %}gain{% else %}loss{% endif %}">
+                      <i class="bi bi-arrow-{% if price_change > 0 %}up{% else %}down{% endif %}-right"></i>
+                      {% if price_change > 0 %}+{% endif %}{{ price_change|floatformat:2 }}%
+                    </div>
+                    {% endif %}
+                    {% endwith %}
+                  </div>
                   {% endif %}
-                  {% endwith %}
+                  
+                  <button class="btn-delete-note" 
+                          onclick="confirmDeleteNote({{ note.id }}, '{{ note.date|date:"Y年m月d日" }}', '{% if note.note_type == 'analysis' %}分析更新{% elif note.note_type == 'news' %}ニュース{% elif note.note_type == 'earnings' %}決算情報{% elif note.note_type == 'insight' %}新たな気づき{% elif note.note_type == 'risk' %}リスク要因{% else %}その他{% endif %}', {{ diary.id }})"
+                          title="削除">
+                    <i class="bi bi-trash3"></i>
+                  </button>
                 </div>
-                {% endif %}
               </div>
               
               <div class="note-card-body mobile-optimized">

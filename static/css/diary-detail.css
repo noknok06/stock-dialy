@@ -1,32 +1,56 @@
-/* diary-detail.css - 日記詳細ページ専用スタイル（スマホ最適化版） */
+/* diary-detail.css - プロ仕様デザイン完全版 */
 
-/* === 基本コンテナの最適化 === */
+/* === 基本コンテナ === */
 .diary-detail-container {
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
 }
 
-/* === ヘッダー情報の整理（スマホ最適化） === */
+/* === ヘッダー情報（プロ仕様） === */
 .diary-header-improved {
+  position: relative;
   padding: 1.25rem 1.5rem;
-  background: linear-gradient(135deg, rgba(90, 126, 197, 0.05), rgba(90, 126, 197, 0.02));
-  border-bottom: 1px solid rgba(90, 126, 197, 0.1);
+  background: linear-gradient(135deg, rgba(90, 126, 197, 0.08) 0%, rgba(90, 126, 197, 0.03) 100%);
+  border-bottom: 1px solid rgba(90, 126, 197, 0.15);
   border-radius: 12px 12px 0 0;
+  overflow: hidden;
 }
 
-.diary-header-improved.mobile-optimized {
-  padding: 1rem;
+/* 背景グロー効果 */
+.diary-header-improved::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(90, 126, 197, 0.15) 0%, transparent 70%);
+  filter: blur(40px);
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 損失時の背景 */
+.diary-header-improved.loss {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.03) 100%);
+}
+
+.diary-header-improved.loss::before {
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.15) 0%, transparent 70%);
 }
 
 .header-main-info {
+  position: relative;
+  z-index: 1;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 1rem;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
+/* === 銘柄情報セクション === */
 .stock-identity {
   flex: 1;
   min-width: 0;
@@ -35,119 +59,316 @@
 .stock-name-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   margin-bottom: 0.5rem;
   flex-wrap: wrap;
 }
 
 .stock-title {
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 700;
   color: var(--primary-color);
   margin: 0;
   word-break: break-word;
+  line-height: 1.2;
 }
 
 .stock-symbol-badge {
-  background-color: rgba(90, 126, 197, 0.1);
+  background: linear-gradient(135deg, rgba(90, 126, 197, 0.15) 0%, rgba(90, 126, 197, 0.25) 100%);
   color: var(--primary-color);
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
+  border: 1px solid rgba(90, 126, 197, 0.3);
+  flex-shrink: 0;
 }
 
 .header-meta-info {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
+  margin-top: 0.25rem;
 }
 
 .purchase-date {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  color: var(--text-light);
-  font-size: 0.9rem;
+  gap: 0.35rem;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
 }
 
 .status-badges {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.375rem;
+  flex-wrap: wrap;
 }
 
 .status-badge-improved {
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
   font-weight: 600;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  border: 1px solid;
 }
 
 .status-badge-memo {
-  background-color: rgba(93, 161, 229, 0.15);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%);
   color: var(--info-color);
+  border-color: rgba(59, 130, 246, 0.3);
 }
 
 .status-badge-sold {
-  background-color: rgba(225, 90, 90, 0.15);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.08) 100%);
   color: var(--danger-color);
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
 .status-badge-active {
-  background-color: rgba(93, 176, 117, 0.15);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.08) 100%);
   color: var(--success-color);
+  border-color: rgba(16, 185, 129, 0.3);
 }
 
+/* === 価格サマリーセクション（完全改訂） === */
 .price-summary {
-  text-align: right;
-  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 180px;
   flex-shrink: 0;
 }
 
-.main-price {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--primary-color);
-  margin-bottom: 0.25rem;
-}
-
-.sub-info {
-  font-size: 0.85rem;
-  color: var(--text-light);
-  margin-bottom: 0.25rem;
-}
-
-.profit-indicator {
-  font-weight: 600;
-  padding: 0.15rem 0.5rem;
+/* 損益ヒーローカード */
+.profit-hero-card {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.08) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.3);
   border-radius: 12px;
-  font-size: 0.8rem;
+  padding: 1rem;
+  position: relative;
+  overflow: hidden;
+  text-align: right;
 }
 
-.profit-positive {
-  background-color: rgba(93, 176, 117, 0.15);
+.profit-hero-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.profit-hero-card.loss {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.08) 100%);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.profit-label {
+  font-size: 0.65rem;
+  color: var(--text-tertiary);
+  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+.profit-value {
+  font-size: 1.5rem;
+  font-weight: 800;
   color: var(--success-color);
+  line-height: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 0.3rem;
 }
 
-.profit-negative {
-  background-color: rgba(225, 90, 90, 0.15);
+.profit-hero-card.loss .profit-value {
   color: var(--danger-color);
 }
 
-/* === 改善されたタブナビゲーション（スマホ最適化） === */
+.profit-icon {
+  font-size: 1.25rem;
+}
+
+.profit-unit {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: inherit;
+}
+
+/* 価格詳細グリッド */
+.price-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.price-detail-card {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  padding: 0.6rem;
+  text-align: right;
+  transition: all 0.2s ease;
+}
+
+.price-detail-card:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.price-detail-label {
+  font-size: 0.65rem;
+  color: var(--text-tertiary);
+  margin-bottom: 0.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.price-detail-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.price-detail-value .unit {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-left: 0.15rem;
+}
+
+/* === スマホ最適化（768px以下） === */
+@media (max-width: 768px) {
+  .diary-header-improved {
+    padding: 1rem;
+  }
+
+  .header-main-info {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .stock-title {
+    font-size: 1.2rem;
+  }
+
+  .stock-symbol-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+  }
+
+  /* 価格サマリーを左寄せ、フルサイズに */
+  .price-summary {
+    align-items: stretch;
+    width: 100%;
+    min-width: auto;
+  }
+
+  .profit-hero-card {
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .profit-value {
+    justify-content: center;
+    font-size: 1.75rem;
+  }
+
+  .price-details-grid {
+    gap: 0.5rem;
+  }
+
+  .price-detail-card {
+    padding: 0.5rem;
+    text-align: center;
+  }
+
+  .price-detail-value {
+    font-size: 1rem;
+  }
+}
+
+/* === 超小型スマホ（576px以下） === */
+@media (max-width: 576px) {
+  .diary-header-improved {
+    padding: 0.875rem;
+  }
+
+  .header-main-info {
+    gap: 0.875rem;
+  }
+
+  .stock-title {
+    font-size: 1.1rem;
+  }
+
+  .stock-symbol-badge {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.4rem;
+  }
+
+  .profit-hero-card {
+    padding: 0.875rem;
+  }
+
+  .profit-value {
+    font-size: 1.5rem;
+  }
+
+  .price-details-grid {
+    gap: 0.4rem;
+  }
+
+  .price-detail-card {
+    padding: 0.4rem;
+  }
+
+  .price-detail-label {
+    font-size: 0.6rem;
+  }
+
+  .price-detail-value {
+    font-size: 0.95rem;
+  }
+}
+
+/* === 極小スマホ（360px以下） === */
+@media (max-width: 360px) {
+  .diary-header-improved {
+    padding: 0.75rem;
+  }
+
+  .stock-title {
+    font-size: 1rem;
+  }
+
+  .profit-value {
+    font-size: 1.35rem;
+  }
+
+  .price-detail-value {
+    font-size: 0.9rem;
+  }
+}
+
+/* === タブナビゲーション === */
 .tabs-section {
   background-color: transparent;
   border-radius: 0 0 12px 12px;
   overflow: hidden;
   margin-bottom: 1.5rem;
-}
-
-.tabs-section.mobile-optimized {
-  margin-bottom: 1rem;
 }
 
 .improved-tabs {
@@ -158,7 +379,7 @@
   scrollbar-width: none;
   -ms-overflow-style: none;
   list-style: none;
-  margin: 2;
+  margin: 0;
   padding: 0;
 }
 
@@ -178,7 +399,7 @@
   align-items: center;
   justify-content: center;
   padding: 1rem 0.75rem;
-  color: var(--text-light);
+  color: var(--text-secondary);
   text-decoration: none;
   transition: all 0.3s ease;
   border: none;
@@ -191,6 +412,10 @@
 .improved-tab-link::after {
   content: '';
   position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
   background-color: transparent;
   transition: background-color 0.3s ease;
 }
@@ -216,7 +441,506 @@
   margin-bottom: 0.4rem;
 }
 
-/* バッジをアイコン右下に配置 */
+.tab-icon .badge {
+  position: absolute;
+  bottom: -3px;
+  right: -6px;
+  font-size: 0.65rem;
+  padding: 2px 5px;
+  border-radius: 50%;
+  line-height: 1;
+  min-width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-label {
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+/* === タブコンテンツ === */
+.tab-content-improved {
+  padding: 2rem 1.5rem;
+  background-color: white;
+  border-radius: 0 0 12px 12px;
+  min-height: 400px;
+}
+
+/* === 継続記録フォーム === */
+.simplified-note-form {
+  background: linear-gradient(135deg, rgba(248, 249, 250, 0.8), rgba(255, 255, 255, 0.9));
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-section {
+  margin-bottom: 1.25rem;
+}
+
+.form-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.option-pills {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.option-pill {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: white;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.option-pill:hover {
+  background-color: rgba(90, 126, 197, 0.05);
+  border-color: rgba(90, 126, 197, 0.3);
+}
+
+.option-pill.active {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+/* === 情報ブロック === */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.info-card {
+  background: linear-gradient(135deg, rgba(248, 249, 250, 0.8), rgba(255, 255, 255, 0.9));
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.info-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.info-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.info-item-improved {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background-color: white;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.info-icon-improved {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(90, 126, 197, 0.1), rgba(90, 126, 197, 0.2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.info-content-improved {
+  flex: 1;
+  min-width: 0;
+}
+
+.info-label-improved {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.info-value-improved {
+  font-weight: 600;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+/* === 継続記録カード === */
+.note-card {
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  margin-bottom: 1.5rem;
+}
+
+.note-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.note-card-header {
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, rgba(248, 249, 250, 0.8), rgba(255, 255, 255, 0.9));
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.note-meta-left {
+  flex: 1;
+}
+
+.note-date {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.note-card-body {
+  padding: 1.25rem;
+}
+
+.note-content-text {
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+/* === タイムライン === */
+.timeline-list {
+  position: relative;
+  padding-left: 2rem;
+  margin: 0;
+  list-style: none;
+}
+
+.timeline-list::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 18px;
+  height: 100%;
+  width: 1px;
+  background-color: rgba(90, 126, 197, 0.2);
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 2rem;
+  list-style: none;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  top: 15px;
+  left: -30px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  border: 2px solid white;
+  box-shadow: 0 0 0 2px rgba(90, 126, 197, 0.3);
+  z-index: 2;
+}
+
+.timeline-card {
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.timeline-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* === 操作バー === */
+.action-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: linear-gradient(135deg, rgba(248, 249, 250, 0.95), rgba(255, 255, 255, 0.95));
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 0.75rem 1rem;
+  margin: -1rem -1rem 1rem -1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.back-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.back-link:hover {
+  transform: translateX(-2px);
+}
+
+.desktop-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* === レスポンシブ追加調整 === */
+@media (max-width: 768px) {
+  .desktop-actions {
+    display: none;
+  }
+
+  .tab-content-improved {
+    padding: 1rem 0.75rem;
+  }
+
+  .simplified-note-form {
+    padding: 1rem;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .info-items {
+    grid-template-columns: 1fr;
+  }
+
+  .info-card {
+    padding: 1rem;
+  }
+
+  .info-item-improved {
+    padding: 0.5rem;
+  }
+
+  .note-card-header {
+    padding: 0.875rem;
+  }
+
+  .note-card-body {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .improved-tab-link {
+    min-height: 65px;
+    padding: 0.6rem 0.4rem;
+  }
+
+  .tab-icon {
+    font-size: 1.2rem;
+  }
+
+  .tab-label {
+    font-size: 0.75rem;
+  }
+
+  .tab-content-improved {
+    padding: 0.875rem 0.5rem;
+  }
+
+  .info-card {
+    padding: 0.875rem;
+  }
+
+  .simplified-note-form {
+    padding: 0.875rem;
+  }
+}
+
+/* === ダークモード対応 === */
+.dark-mode .diary-header-improved,
+[data-theme="dark"] .diary-header-improved {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+  border-bottom-color: var(--dm-border);
+}
+
+.dark-mode .diary-header-improved::before,
+[data-theme="dark"] .diary-header-improved::before {
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+}
+
+.dark-mode .stock-title,
+[data-theme="dark"] .stock-title {
+  color: var(--dm-primary);
+}
+
+.dark-mode .profit-hero-card,
+[data-theme="dark"] .profit-hero-card {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.dark-mode .profit-hero-card.loss,
+[data-theme="dark"] .profit-hero-card.loss {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.dark-mode .price-detail-card,
+[data-theme="dark"] .price-detail-card {
+  background: rgba(71, 85, 105, 0.3);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .price-detail-value,
+[data-theme="dark"] .price-detail-value {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .tab-content-improved,
+[data-theme="dark"] .tab-content-improved {
+  background-color: var(--dm-card);
+}
+
+.dark-mode .info-card,
+[data-theme="dark"] .info-card {
+  background: linear-gradient(135deg, rgba(71, 85, 105, 0.3), rgba(71, 85, 105, 0.2));
+  border-color: var(--dm-border);
+}
+
+.dark-mode .note-card,
+[data-theme="dark"] .note-card {
+  background-color: var(--dm-card);
+  border-color: var(--dm-border);
+}
+
+/* === 改善されたタブナビゲーション（スマホ最適化） === */
+.tabs-section {
+  background-color: transparent;
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.tabs-section.mobile-optimized {
+  margin-bottom: 1rem;
+}
+
+.improved-tabs {
+  display: flex;
+  background-color: rgba(248, 249, 250, 0.8);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.improved-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.improved-tab-item {
+  flex: 1;
+  min-width: 120px;
+  text-align: center;
+}
+
+.improved-tab-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 0.75rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: none;
+  background: none;
+  width: 100%;
+  position: relative;
+  min-height: 80px;
+}
+
+.improved-tab-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: transparent;
+  transition: background-color 0.3s ease;
+}
+
+.improved-tab-link.active {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.improved-tab-link.active::after {
+  background-color: var(--primary-color);
+}
+
+.improved-tab-link:hover:not(.active) {
+  background-color: rgba(90, 126, 197, 0.05);
+  color: var(--primary-color);
+}
+
+.tab-icon {
+  position: relative;
+  display: inline-block;
+  font-size: 1.4rem;
+  margin-bottom: 0.4rem;
+}
+
 .tab-icon .notes-count-badge,
 .tab-icon .badge {
   position: absolute;
@@ -240,7 +964,7 @@
 
 .tab-count {
   font-size: 0.7rem;
-  color: var(--text-light);
+  color: var(--text-secondary);
   margin-top: 0.25rem;
 }
 
@@ -286,7 +1010,7 @@
 .section-title {
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--text-color);
+  color: var(--text-primary);
   margin-bottom: 0.75rem;
   display: flex;
   align-items: center;
@@ -308,7 +1032,7 @@
   border-radius: 20px;
   border: 1px solid rgba(0, 0, 0, 0.1);
   background-color: white;
-  color: var(--text-color);
+  color: var(--text-primary);
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 0.85rem;
@@ -333,8 +1057,8 @@
 }
 
 .importance-pill.low.active {
-  background-color: var(--text-light);
-  border-color: var(--text-light);
+  background-color: var(--text-secondary);
+  border-color: var(--text-secondary);
 }
 
 .importance-pill.high {
@@ -427,13 +1151,13 @@
 
 .info-label-improved {
   font-size: 0.8rem;
-  color: var(--text-light);
+  color: var(--text-secondary);
   margin-bottom: 0.25rem;
 }
 
 .info-value-improved {
   font-weight: 600;
-  color: var(--text-color);
+  color: var(--text-primary);
   word-break: break-word;
 }
 
@@ -478,7 +1202,7 @@
 
 .note-date {
   font-size: 0.9rem;
-  color: var(--text-light);
+  color: var(--text-secondary);
   margin-bottom: 0.5rem;
   display: flex;
   align-items: center;
@@ -512,33 +1236,100 @@
   color: var(--primary-color);
 }
 
-.note-price-summary {
-  text-align: right;
-  min-width: 100px;
-  flex-shrink: 0;
-}
-
 .price-label {
   font-size: 0.75rem;
-  color: var(--text-light);
+  color: var(--text-secondary);
   margin-bottom: 0.25rem;
+}
+/* === 継続記録の価格表示（コンパクト版） === */
+.note-price-summary {
+  flex-shrink: 0;
+  min-width: auto;
+}
+
+.price-compact-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.price-badge {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: rgba(248, 249, 250, 0.8);
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  white-space: nowrap;
 }
 
 .price-change {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  padding: 0.1rem 0.4rem;
-  border-radius: 8px;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  white-space: nowrap;
 }
 
 .price-change.positive {
-  background-color: rgba(93, 176, 117, 0.15);
+  background-color: rgba(16, 185, 129, 0.12);
   color: var(--success-color);
 }
 
 .price-change.negative {
-  background-color: rgba(225, 90, 90, 0.15);
+  background-color: rgba(239, 68, 68, 0.12);
   color: var(--danger-color);
+}
+
+/* スマホでの調整 */
+@media (max-width: 768px) {
+  .note-card-header {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .note-price-summary {
+    align-self: flex-start;
+  }
+  
+  .price-compact-row {
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .price-badge {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.5rem;
+  }
+  
+  .price-change {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.4rem;
+  }
+}
+
+/* ダークモード */
+.dark-mode .price-badge,
+[data-theme="dark"] .price-badge {
+  background: rgba(71, 85, 105, 0.4);
+  border-color: var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .price-change.positive,
+[data-theme="dark"] .price-change.positive {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: var(--dm-success);
+}
+
+.dark-mode .price-change.negative,
+[data-theme="dark"] .price-change.negative {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: var(--dm-destructive);
 }
 
 .note-card-body {
@@ -551,7 +1342,7 @@
 
 .note-content-text {
   line-height: 1.6;
-  color: var(--text-color);
+  color: var(--text-primary);
 }
 
 .note-content-text p {
@@ -588,7 +1379,7 @@
   top: 0;
   left: 18px;
   height: 100%;
-  width: 2px;
+  width: 1px;
   background-color: rgba(90, 126, 197, 0.2);
 }
 
@@ -607,18 +1398,18 @@
   position: absolute;
   top: 15px;
   left: -30px;
-  width: 14px;
-  height: 14px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background-color: var(--primary-color);
-  border: 3px solid white;
+  border: 2px solid white;
   box-shadow: 0 0 0 2px rgba(90, 126, 197, 0.3);
   z-index: 2;
 }
 
 .timeline-item.current::before {
-  width: 18px;
-  height: 18px;
+  width: 13px;
+  height: 13px;
   left: -32px;
   top: 14px;
   background-color: var(--secondary-color);
@@ -640,11 +1431,9 @@
   0% {
     box-shadow: 0 0 0 0 rgba(248, 194, 145, 0.7);
   }
-
   70% {
     box-shadow: 0 0 0 10px rgba(248, 194, 145, 0);
   }
-
   100% {
     box-shadow: 0 0 0 0 rgba(248, 194, 145, 0);
   }
@@ -699,12 +1488,12 @@
 
 .timeline-price-info {
   font-size: 0.9rem;
-  color: var(--text-light);
+  color: var(--text-secondary);
   margin-bottom: 0.75rem;
 }
 
 .timeline-content {
-  color: var(--text-color);
+  color: var(--text-primary);
   line-height: 1.5;
 }
 
@@ -816,8 +1605,8 @@
 }
 
 .analysis-template-item .btn-outline-secondary:hover {
-  background-color: var(--text-light);
-  border-color: var(--text-light);
+  background-color: var(--text-secondary);
+  border-color: var(--text-secondary);
   color: white;
 }
 
@@ -865,7 +1654,7 @@
   align-items: center;
   margin-bottom: 0.5rem;
   font-weight: 500;
-  color: var(--text-color);
+  color: var(--text-primary);
 }
 
 .item-order {
@@ -1006,11 +1795,9 @@
   0% {
     background-color: rgba(90, 126, 197, 0.1);
   }
-
   50% {
     background-color: rgba(90, 126, 197, 0.2);
   }
-
   100% {
     background-color: rgba(90, 126, 197, 0.1);
   }
@@ -1025,7 +1812,6 @@
     opacity: 0;
     transform: translateY(20px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1239,7 +2025,6 @@
 }
 
 @media (max-width: 576px) {
-
   /* 極小画面での最適化 */
   .diary-detail-container {
     padding-left: 0.25rem;
@@ -1364,7 +2149,6 @@
   outline-offset: 2px;
 }
 
-
 .btn-close {
   opacity: 0.6;
   transition: opacity 0.2s, transform 0.2s;
@@ -1417,7 +2201,6 @@
     opacity: 0;
     transform: translateY(-10px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1504,8 +2287,6 @@
 }
 
 /* ========== スマートフォン用の最適化 ========== */
-
-/* 小型スマートフォン用 */
 @media (max-width: 575px) {
   .btn-close {
     font-size: 0.9rem;
@@ -1536,6 +2317,21 @@
   border-bottom-color: var(--dm-border);
 }
 
+.dark-mode .diary-header-improved::before,
+[data-theme="dark"] .diary-header-improved::before {
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+}
+
+.dark-mode .diary-header-improved.loss,
+[data-theme="dark"] .diary-header-improved.loss {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+}
+
+.dark-mode .diary-header-improved.loss::before,
+[data-theme="dark"] .diary-header-improved.loss::before {
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.15) 0%, transparent 70%);
+}
+
 .dark-mode .stock-title,
 [data-theme="dark"] .stock-title {
   color: var(--dm-primary);
@@ -1543,13 +2339,32 @@
 
 .dark-mode .stock-symbol-badge,
 [data-theme="dark"] .stock-symbol-badge {
-  background-color: rgba(59, 130, 246, 0.2);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.3));
   color: var(--dm-primary);
+  border-color: rgba(59, 130, 246, 0.4);
 }
 
 .dark-mode .purchase-date,
 [data-theme="dark"] .purchase-date {
   color: var(--dm-muted-foreground);
+}
+
+.dark-mode .status-badge-memo,
+[data-theme="dark"] .status-badge-memo {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.1));
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.dark-mode .status-badge-sold,
+[data-theme="dark"] .status-badge-sold {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.dark-mode .status-badge-active,
+[data-theme="dark"] .status-badge-active {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
+  border-color: rgba(16, 185, 129, 0.4);
 }
 
 .dark-mode .tabs-section,
@@ -1749,4 +2564,348 @@
   .option-pill:active {
     transform: scale(0.95);
   }
+}
+
+/* === 継続記録カードヘッダー（モダンデザイン） === */
+.note-card-header-modern {
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, rgba(248, 249, 250, 0.95) 0%, rgba(255, 255, 255, 0.95) 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+/* 左側：日付とメタ */
+.note-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+/* 日付表示（大きく目立たせる） */
+.note-date-large {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: linear-gradient(135deg, var(--primary-color) 0%, #4869ad 100%);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(90, 126, 197, 0.25);
+  flex-shrink: 0;
+}
+
+.date-day {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: white;
+  line-height: 1;
+  min-width: 32px;
+  text-align: center;
+}
+
+.date-year-month {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.date-year {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1;
+}
+
+.date-month {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  line-height: 1;
+}
+
+/* メタバッジ */
+.note-meta-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.note-meta-badges .badge {
+  font-size: 0.7rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  font-weight: 600;
+  border: 1px solid;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* 右側：価格とアクション */
+.note-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* 価格情報（コンパクト） */
+.price-info-compact {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.current-price {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.current-price .unit {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-left: 0.15rem;
+}
+
+.price-change-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+.price-change-badge.gain {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.08) 100%);
+  color: var(--success-color);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.price-change-badge.loss {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.08) 100%);
+  color: var(--danger-color);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.price-change-badge i {
+  font-size: 0.8rem;
+}
+
+/* 削除ボタン */
+.btn-delete-note {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.05) 100%);
+  color: var(--danger-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.btn-delete-note:hover {
+  background: var(--danger-color);
+  color: white;
+  border-color: var(--danger-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.btn-delete-note:active {
+  transform: translateY(0);
+}
+
+/* === スマホ最適化（768px以下） === */
+@media (max-width: 768px) {
+  .note-card-header-modern {
+    padding: 1rem;
+    gap: 1rem;
+  }
+  
+  .note-header-left {
+    gap: 0.75rem;
+  }
+  
+  .note-date-large {
+    padding: 0.4rem 0.6rem;
+  }
+  
+  .date-day {
+    font-size: 1.5rem;
+    min-width: 28px;
+  }
+  
+  .date-year {
+    font-size: 0.6rem;
+  }
+  
+  .date-month {
+    font-size: 0.7rem;
+  }
+  
+  .note-meta-badges .badge {
+    font-size: 0.65rem;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .current-price {
+    font-size: 1rem;
+  }
+  
+  .price-change-badge {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.4rem;
+  }
+  
+  .btn-delete-note {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+  }
+}
+
+/* === 超小型スマホ（576px以下） === */
+@media (max-width: 576px) {
+  .note-card-header-modern {
+    padding: 0.875rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.875rem;
+  }
+  
+  .note-header-left {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .note-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .price-info-compact {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .note-date-large {
+    padding: 0.35rem 0.5rem;
+  }
+  
+  .date-day {
+    font-size: 1.35rem;
+    min-width: 24px;
+  }
+  
+  .note-meta-badges {
+    gap: 0.375rem;
+  }
+  
+  .note-meta-badges .badge {
+    font-size: 0.6rem;
+    padding: 0.2rem 0.4rem;
+  }
+  
+  .current-price {
+    font-size: 0.95rem;
+  }
+  
+  .price-change-badge {
+    font-size: 0.65rem;
+  }
+}
+
+/* === 極小スマホ（360px以下） === */
+@media (max-width: 360px) {
+  .note-card-header-modern {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+  
+  .note-date-large {
+    padding: 0.3rem 0.4rem;
+  }
+  
+  .date-day {
+    font-size: 1.25rem;
+  }
+  
+  .date-year {
+    font-size: 0.55rem;
+  }
+  
+  .date-month {
+    font-size: 0.65rem;
+  }
+  
+  .current-price {
+    font-size: 0.9rem;
+  }
+}
+
+/* === ダークモード対応 === */
+.dark-mode .note-card-header-modern,
+[data-theme="dark"] .note-card-header-modern {
+  background: linear-gradient(135deg, rgba(71, 85, 105, 0.4) 0%, rgba(71, 85, 105, 0.3) 100%);
+  border-bottom-color: var(--dm-border);
+}
+
+.dark-mode .note-date-large,
+[data-theme="dark"] .note-date-large {
+  background: linear-gradient(135deg, var(--dm-primary) 0%, #2563eb 100%);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.dark-mode .current-price,
+[data-theme="dark"] .current-price {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .current-price .unit,
+[data-theme="dark"] .current-price .unit {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .price-change-badge.gain,
+[data-theme="dark"] .price-change-badge.gain {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
+  color: var(--dm-success);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.dark-mode .price-change-badge.loss,
+[data-theme="dark"] .price-change-badge.loss {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%);
+  color: var(--dm-destructive);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.dark-mode .btn-delete-note,
+[data-theme="dark"] .btn-delete-note {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.1) 100%);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.dark-mode .btn-delete-note:hover,
+[data-theme="dark"] .btn-delete-note:hover {
+  background: var(--dm-destructive);
+  border-color: var(--dm-destructive);
 }
