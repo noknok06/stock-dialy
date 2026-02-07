@@ -93,57 +93,57 @@ body:not(.modal-open) .modal-backdrop,
   width: 8px;
 }
 .modal-body::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--bg-200);
   border-radius: 4px;
 }
 .modal-body::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: var(--bg-300);
   border-radius: 4px;
 }
 .modal-body::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: var(--primary-200);
 }
 .modal-body {
   scrollbar-width: thin;
-  scrollbar-color: #c1c1c1 #f1f1f1;
+  scrollbar-color: var(--bg-300) var(--bg-200);
 }
 
 /* ========== フォーム要素 ========== */
 .modal-body .form-label {
   font-weight: 500;
-  color: #374151;
+  color: var(--text-100);
   display: flex;
   align-items: center;
   gap: 0.25rem;
 }
 
 .modal-body .form-label .text-danger {
-  color: #dc2626;
+  color: var(--danger-color);
   font-size: 1rem;
 }
 
 .modal-body .form-control:focus,
 .modal-body .form-select:focus {
-  border-color: #5a7ec5;
-  box-shadow: 0 0 0 0.2rem rgba(90, 126, 197, 0.25);
+  border-color: var(--accent-100);
+  box-shadow: 0 0 0 0.2rem rgba(0, 102, 140, 0.15);
   outline: none;
 }
 
 .modal-body .form-control:focus-visible,
 .modal-body .form-select:focus-visible {
-  outline: 2px solid #5a7ec5;
+  outline: 2px solid var(--accent-100);
   outline-offset: 2px;
 }
 
 .modal-body .form-text {
-  color: #6b7280;
+  color: var(--text-200);
   margin-top: 0.25rem;
 }
 
 /* バリデーション状態 */
 .modal-body .form-control.is-invalid,
 .modal-body .form-select.is-invalid {
-  border-color: #dc2626;
+  border-color: var(--danger-color);
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' ... %3e");
   background-repeat: no-repeat;
   background-position: right calc(0.375em + 0.1875rem) center;
@@ -153,14 +153,14 @@ body:not(.modal-open) .modal-backdrop,
 
 .modal-body .invalid-feedback {
   display: block;
-  color: #dc2626;
+  color: var(--danger-color);
   font-size: 0.875rem;
   margin-top: 0.25rem;
 }
 
 .modal-body .form-control.is-valid,
 .modal-body .form-select.is-valid {
-  border-color: #10b981;
+  border-color: var(--success-color);
 }
 
 /* ========== ローディング状態 ========== */
@@ -187,16 +187,16 @@ body:not(.modal-open) .modal-backdrop,
   margin-bottom: 1rem;
 }
 .modal-body .alert-info {
-  background: #e0f2fe; border-color: #bae6fd; color: #075985;
+  background: var(--primary-100); border-color: var(--primary-200); color: var(--accent-200);
 }
 .modal-body .alert-warning {
-  background: #fef3c7; border-color: #fde68a; color: #92400e;
+  background: var(--warning-light); border-color: #fde68a; color: #92400e;
 }
 .modal-body .alert-danger {
-  background: #fee2e2; border-color: #fecaca; color: #991b1b;
+  background: var(--danger-light); border-color: #fecaca; color: #991b1b;
 }
 .modal-body .alert-success {
-  background: #d1fae5; border-color: #a7f3d0; color: #065f46;
+  background: var(--success-light); border-color: #a7f3d0; color: #065f46;
 }
 
 /* ========== プレビュー・警告表示 ========== */
@@ -207,11 +207,11 @@ body:not(.modal-open) .modal-backdrop,
   margin-top: 0.5rem;
 }
 #transaction-preview {
-  background: #dbeafe;
-  border: 1px solid #93c5fd;
+  background: var(--primary-100);
+  border: 1px solid var(--primary-200);
 }
 #quantity-warning {
-  background: #fee2e2;
+  background: var(--danger-light);
   border: 1px solid #fecaca;
   color: #991b1b;
 }
@@ -278,7 +278,7 @@ body:not(.modal-open) .modal-backdrop,
   }
   .modal-header {
     padding: 1rem;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--bg-300);
   }
   .modal-body {
     padding: 1rem;
@@ -288,7 +288,7 @@ body:not(.modal-open) .modal-backdrop,
   }
   .modal-footer {
     padding: 0.75rem 1rem;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid var(--bg-300);
     display: flex;
     flex-direction: column;
     gap: 0.5rem;

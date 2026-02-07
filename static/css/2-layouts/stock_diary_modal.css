@@ -1,6 +1,9 @@
-/* ========== 銘柄別日記リストモーダル（共通スタイル） ========== */
+/* ========================================
+   銘柄別日記リストモーダル
+   ライトモード・ダークモード対応版
+   ======================================== */
 
-/* モーダル全体 */
+/* ========== モーダル全体 ========== */
 .modal-overlay {
     display: none;
     position: fixed;
@@ -8,7 +11,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.85);
+    background-color: rgba(0, 0, 0, 0.5);
     z-index: 1000;
     overflow-y: auto;
     opacity: 0;
@@ -32,7 +35,7 @@
 
 /* モーダルコンテンツ */
 .modal-content {
-    background-color: var(--card, #1e293b);
+    background-color: var(--bg-100);
     border-radius: 16px;
     max-width: 600px;
     width: 100%;
@@ -40,24 +43,26 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--border, #334155);
+    border: 1px solid var(--border-light);
     transform: scale(0.95);
     transition: transform 0.3s ease;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-xl);
 }
 
 .modal-overlay.active .modal-content {
     transform: scale(1);
 }
 
-/* モーダルヘッダー */
+/* ========== モーダルヘッダー ========== */
 .modal-header {
     padding: 20px;
-    border-bottom: 1px solid var(--border, #334155);
+    border-bottom: 1px solid var(--border-light);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.05));
+    background: linear-gradient(135deg, 
+        rgba(113, 196, 239, 0.1), 
+        rgba(0, 102, 140, 0.05));
     position: sticky;
     top: 0;
     z-index: 10;
@@ -67,7 +72,7 @@
 .modal-title {
     font-size: 18px;
     font-weight: 700;
-    color: var(--foreground, #f1f5f9);
+    color: var(--text-100);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -89,7 +94,7 @@
 .modal-close {
     background: rgba(239, 68, 68, 0.1);
     border: none;
-    color: var(--destructive, #ef4444);
+    color: var(--danger-color);
     font-size: 24px;
     cursor: pointer;
     padding: 8px;
@@ -120,8 +125,10 @@
 /* ========== サマリーセクション ========== */
 .summary-section {
     padding: 20px;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(139, 92, 246, 0.04));
-    border-bottom: 1px solid var(--border, #334155);
+    background: linear-gradient(135deg, 
+        rgba(113, 196, 239, 0.08), 
+        rgba(0, 102, 140, 0.04));
+    border-bottom: 1px solid var(--border-light);
     position: sticky;
     top: 0;
     z-index: 5;
@@ -137,27 +144,31 @@
 }
 
 .metric-box {
-    background: rgba(71, 85, 105, 0.3);
+    background: var(--bg-200);
     border-radius: 12px;
     padding: 16px;
     text-align: center;
-    border: 1px solid transparent;
+    border: 1px solid var(--border-light);
     transition: all 0.2s;
 }
 
 .metric-box.highlight-positive {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.08));
+    background: linear-gradient(135deg, 
+        rgba(16, 185, 129, 0.15), 
+        rgba(16, 185, 129, 0.08));
     border-color: rgba(16, 185, 129, 0.3);
 }
 
 .metric-box.highlight-negative {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.08));
+    background: linear-gradient(135deg, 
+        rgba(239, 68, 68, 0.15), 
+        rgba(239, 68, 68, 0.08));
     border-color: rgba(239, 68, 68, 0.3);
 }
 
 .metric-box-label {
     font-size: 11px;
-    color: var(--muted, #94a3b8);
+    color: var(--text-200);
     margin-bottom: 8px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -168,20 +179,21 @@
     font-size: 28px;
     font-weight: 800;
     line-height: 1.2;
+    color: var(--text-100);
 }
 
 .metric-box-value.positive {
-    color: var(--success, #10b981);
+    color: var(--success-color);
 }
 
 .metric-box-value.negative {
-    color: var(--destructive, #ef4444);
+    color: var(--danger-color);
 }
 
 .metric-box-unit {
     font-size: 14px;
     font-weight: 400;
-    color: var(--muted, #94a3b8);
+    color: var(--text-200);
     margin-left: 4px;
 }
 
@@ -191,8 +203,9 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
     padding: 16px;
-    background: rgba(71, 85, 105, 0.2);
+    background: var(--bg-200);
     border-radius: 12px;
+    border: 1px solid var(--border-light);
 }
 
 .sub-metric {
@@ -203,7 +216,7 @@
 
 .sub-metric-label {
     font-size: 10px;
-    color: var(--muted, #94a3b8);
+    color: var(--text-200);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -211,13 +224,13 @@
 .sub-metric-value {
     font-size: 16px;
     font-weight: 700;
-    color: var(--foreground, #f1f5f9);
+    color: var(--text-100);
 }
 
 .sub-metric-value .unit {
     font-size: 11px;
     font-weight: 400;
-    color: var(--muted, #94a3b8);
+    color: var(--text-200);
     margin-left: 2px;
 }
 
@@ -225,21 +238,22 @@
 .summary-meta {
     margin-top: 16px;
     padding-top: 16px;
-    border-top: 1px solid rgba(71, 85, 105, 0.3);
+    border-top: 1px solid var(--border-light);
     font-size: 11px;
-    color: var(--muted, #94a3b8);
+    color: var(--text-200);
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 .summary-badge {
-    background: rgba(59, 130, 246, 0.2);
-    color: var(--primary, #3b82f6);
+    background: rgba(113, 196, 239, 0.2);
+    color: var(--accent-200);
     padding: 4px 10px;
     border-radius: 12px;
     font-weight: 600;
     font-size: 10px;
+    border: 1px solid rgba(113, 196, 239, 0.3);
 }
 
 /* ========== 詳細リスト ========== */
@@ -248,8 +262,8 @@
 }
 
 .detail-card {
-    background: rgba(71, 85, 105, 0.2);
-    border: 1px solid var(--border, #334155);
+    background: var(--bg-100);
+    border: 1px solid var(--border-light);
     border-radius: 12px;
     padding: 16px;
     margin-bottom: 12px;
@@ -266,16 +280,16 @@
     top: 0;
     bottom: 0;
     width: 4px;
-    background: linear-gradient(to bottom, var(--primary, #3b82f6), var(--secondary, #8b5cf6));
+    background: var(--gradient-primary);
     opacity: 0;
     transition: opacity 0.2s;
 }
 
 .detail-card:hover {
-    background: rgba(71, 85, 105, 0.35);
-    border-color: var(--primary, #3b82f6);
+    background: var(--primary-100);
+    border-color: var(--accent-200);
     transform: translateX(4px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-md);
 }
 
 .detail-card:hover::before {
@@ -303,7 +317,7 @@
 .detail-card-name {
     font-weight: 700;
     font-size: 16px;
-    color: var(--foreground, #f1f5f9);
+    color: var(--text-100);
     margin-bottom: 4px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -315,7 +329,7 @@
 
 .detail-card-meta {
     font-size: 11px;
-    color: var(--muted, #94a3b8);
+    color: var(--text-200);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -334,14 +348,18 @@
 }
 
 .detail-roi-badge.positive {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(16, 185, 129, 0.15));
-    color: var(--success, #10b981);
+    background: linear-gradient(135deg, 
+        rgba(16, 185, 129, 0.25), 
+        rgba(16, 185, 129, 0.15));
+    color: var(--success-color);
     border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .detail-roi-badge.negative {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(239, 68, 68, 0.15));
-    color: var(--destructive, #ef4444);
+    background: linear-gradient(135deg, 
+        rgba(239, 68, 68, 0.25), 
+        rgba(239, 68, 68, 0.15));
+    color: var(--danger-color);
     border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
@@ -358,19 +376,19 @@
 
 .detail-status-badge.holding {
     background: rgba(16, 185, 129, 0.2);
-    color: var(--success, #10b981);
+    color: var(--success-color);
     border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .detail-status-badge.sold {
-    background: rgba(100, 116, 139, 0.2);
-    color: var(--muted, #94a3b8);
-    border: 1px solid rgba(100, 116, 139, 0.3);
+    background: var(--bg-200);
+    color: var(--text-200);
+    border: 1px solid var(--border-light);
 }
 
 .detail-status-badge.memo {
     background: rgba(245, 158, 11, 0.2);
-    color: var(--accent, #f59e0b);
+    color: var(--warning-color);
     border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
@@ -380,7 +398,7 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
     padding: 12px;
-    background: rgba(71, 85, 105, 0.15);
+    background: var(--bg-200);
     border-radius: 8px;
 }
 
@@ -392,42 +410,248 @@
 
 .detail-stat-label {
     font-size: 10px;
-    color: var(--muted, #94a3b8);
+    color: var(--text-200);
 }
 
 .detail-stat-value {
     font-size: 14px;
     font-weight: 700;
-    color: var(--foreground, #f1f5f9);
+    color: var(--text-100);
 }
 
 .detail-stat-value.positive {
-    color: var(--success, #10b981);
+    color: var(--success-color);
 }
 
 .detail-stat-value.negative {
-    color: var(--destructive, #ef4444);
+    color: var(--danger-color);
 }
 
 /* 空状態 */
 .empty-message {
     text-align: center;
     padding: 60px 20px;
-    color: var(--muted, #94a3b8);
+    color: var(--text-200);
 }
 
 .empty-message-icon {
     font-size: 48px;
     opacity: 0.5;
     margin-bottom: 16px;
+    color: var(--text-200);
 }
 
 .empty-message-text {
     font-size: 16px;
     font-weight: 600;
+    color: var(--text-100);
 }
 
-/* ========== モバイル最適化 ========== */
+/* ========================================
+   ダークモード対応
+   ======================================== */
+.dark-mode .modal-overlay,
+[data-theme="dark"] .modal-overlay {
+    background-color: rgba(0, 0, 0, 0.85);
+}
+
+.dark-mode .modal-content,
+[data-theme="dark"] .modal-content {
+    background-color: var(--dm-card);
+    border-color: var(--dm-border);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.dark-mode .modal-header,
+[data-theme="dark"] .modal-header {
+    background: linear-gradient(135deg, 
+        rgba(89, 142, 243, 0.1), 
+        rgba(139, 92, 246, 0.05));
+    border-bottom-color: var(--dm-border);
+}
+
+.dark-mode .modal-title,
+[data-theme="dark"] .modal-title {
+    color: var(--dm-foreground);
+}
+
+.dark-mode .modal-close,
+[data-theme="dark"] .modal-close {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--dm-destructive);
+}
+
+.dark-mode .modal-close:hover,
+[data-theme="dark"] .modal-close:hover {
+    background-color: rgba(239, 68, 68, 0.25);
+}
+
+.dark-mode .summary-section,
+[data-theme="dark"] .summary-section {
+    background: linear-gradient(135deg, 
+        rgba(59, 130, 246, 0.08), 
+        rgba(139, 92, 246, 0.04));
+    border-bottom-color: var(--dm-border);
+}
+
+.dark-mode .metric-box,
+[data-theme="dark"] .metric-box {
+    background: rgba(71, 85, 105, 0.3);
+    border-color: var(--dm-border);
+}
+
+.dark-mode .metric-box-label,
+[data-theme="dark"] .metric-box-label {
+    color: var(--dm-muted-foreground);
+}
+
+.dark-mode .metric-box-value,
+[data-theme="dark"] .metric-box-value {
+    color: var(--dm-foreground);
+}
+
+.dark-mode .metric-box-value.positive,
+[data-theme="dark"] .metric-box-value.positive {
+    color: var(--dm-success);
+}
+
+.dark-mode .metric-box-value.negative,
+[data-theme="dark"] .metric-box-value.negative {
+    color: var(--dm-destructive);
+}
+
+.dark-mode .metric-box-unit,
+[data-theme="dark"] .metric-box-unit {
+    color: var(--dm-muted-foreground);
+}
+
+.dark-mode .sub-metrics,
+[data-theme="dark"] .sub-metrics {
+    background: rgba(71, 85, 105, 0.2);
+    border-color: var(--dm-border);
+}
+
+.dark-mode .sub-metric-label,
+[data-theme="dark"] .sub-metric-label {
+    color: var(--dm-muted-foreground);
+}
+
+.dark-mode .sub-metric-value,
+[data-theme="dark"] .sub-metric-value {
+    color: var(--dm-foreground);
+}
+
+.dark-mode .sub-metric-value .unit,
+[data-theme="dark"] .sub-metric-value .unit {
+    color: var(--dm-muted-foreground);
+}
+
+.dark-mode .summary-meta,
+[data-theme="dark"] .summary-meta {
+    border-top-color: var(--dm-border);
+    color: var(--dm-muted-foreground);
+}
+
+.dark-mode .summary-badge,
+[data-theme="dark"] .summary-badge {
+    background: rgba(59, 130, 246, 0.2);
+    color: var(--dm-primary);
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.dark-mode .detail-card,
+[data-theme="dark"] .detail-card {
+    background: rgba(71, 85, 105, 0.2);
+    border-color: var(--dm-border);
+}
+
+.dark-mode .detail-card:hover,
+[data-theme="dark"] .detail-card:hover {
+    background: rgba(71, 85, 105, 0.35);
+    border-color: var(--dm-primary);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .detail-card-name,
+[data-theme="dark"] .detail-card-name {
+    color: var(--dm-foreground);
+}
+
+.dark-mode .detail-card-meta,
+[data-theme="dark"] .detail-card-meta {
+    color: var(--dm-muted-foreground);
+}
+
+.dark-mode .detail-roi-badge.positive,
+[data-theme="dark"] .detail-roi-badge.positive {
+    color: var(--dm-success);
+}
+
+.dark-mode .detail-roi-badge.negative,
+[data-theme="dark"] .detail-roi-badge.negative {
+    color: var(--dm-destructive);
+}
+
+.dark-mode .detail-status-badge.holding,
+[data-theme="dark"] .detail-status-badge.holding {
+    color: var(--dm-success);
+}
+
+.dark-mode .detail-status-badge.sold,
+[data-theme="dark"] .detail-status-badge.sold {
+    background: rgba(100, 116, 139, 0.2);
+    color: var(--dm-muted-foreground);
+    border-color: rgba(100, 116, 139, 0.3);
+}
+
+.dark-mode .detail-status-badge.memo,
+[data-theme="dark"] .detail-status-badge.memo {
+    color: var(--dm-accent);
+}
+
+.dark-mode .detail-card-stats,
+[data-theme="dark"] .detail-card-stats {
+    background: rgba(71, 85, 105, 0.15);
+}
+
+.dark-mode .detail-stat-label,
+[data-theme="dark"] .detail-stat-label {
+    color: var(--dm-muted-foreground);
+}
+
+.dark-mode .detail-stat-value,
+[data-theme="dark"] .detail-stat-value {
+    color: var(--dm-foreground);
+}
+
+.dark-mode .detail-stat-value.positive,
+[data-theme="dark"] .detail-stat-value.positive {
+    color: var(--dm-success);
+}
+
+.dark-mode .detail-stat-value.negative,
+[data-theme="dark"] .detail-stat-value.negative {
+    color: var(--dm-destructive);
+}
+
+.dark-mode .empty-message,
+[data-theme="dark"] .empty-message {
+    color: var(--dm-muted-foreground);
+}
+
+.dark-mode .empty-message-icon,
+[data-theme="dark"] .empty-message-icon {
+    color: var(--dm-muted);
+}
+
+.dark-mode .empty-message-text,
+[data-theme="dark"] .empty-message-text {
+    color: var(--dm-foreground);
+}
+
+/* ========================================
+   モバイル最適化
+   ======================================== */
 @media (max-width: 480px) {
     .modal-container {
         padding: 50px 8px 12px;
@@ -567,6 +791,11 @@
     }
 
     .detail-card:active {
+        background: var(--primary-100);
+    }
+    
+    .dark-mode .detail-card:active,
+    [data-theme="dark"] .detail-card:active {
         background: rgba(71, 85, 105, 0.4);
     }
 

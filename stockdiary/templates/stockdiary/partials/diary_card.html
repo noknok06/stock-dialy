@@ -7,7 +7,9 @@
   <header class="diary-header">
     <div class="diary-title-row">
       <h3 class="diary-name">
-        {{ diary.stock_name }}
+        <a href="{% url 'stockdiary:detail' diary.id %}">
+          {{ diary.stock_name }}
+        </a>        
         {% if diary.stock_symbol %}
           <span class="diary-code">{{ diary.stock_symbol }}</span>
         {% endif %}

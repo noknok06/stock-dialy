@@ -16,16 +16,11 @@
 <link rel="stylesheet" href="{% static 'css/3-components/dark-mode-components.css' %}">
 
 <style>
-/* ========== ページ固有スタイル ========== */
-body {
-  background-color: var(--bg-color);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
 /* ========== 検索フォーム ========== */
 .mobile-search-container {
-  background-color: var(--card-bg-color);
-  border-radius: var(--border-radius);
+  background-color: var(--bg-100);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
   box-shadow: var(--card-shadow);
   padding: var(--spacing-lg);
   margin-bottom: var(--spacing-lg);
@@ -41,7 +36,7 @@ body {
 .search-title {
   font-size: 1.1rem;
   font-weight: 600;
-  color: var(--primary-color);
+  color: var(--accent-200);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -50,7 +45,7 @@ body {
 .search-toggle {
   background: none;
   border: none;
-  color: var(--primary-color);
+  color: var(--accent-200);
   font-size: 1.2rem;
   padding: 0.25rem;
   border-radius: 4px;
@@ -58,7 +53,7 @@ body {
 }
 
 .search-toggle:hover {
-  background-color: rgba(90, 126, 197, 0.1);
+  background-color: rgba(113, 196, 239, 0.15);
 }
 
 /* メイン検索バー */
@@ -71,26 +66,22 @@ body {
   width: 100%;
   min-height: var(--button-height-md);
   padding: 0.75rem 3rem 0.75rem 1rem;
-  border: 2px solid #e5e7eb;
-  border-radius: var(--border-radius);
+  border: 2px solid var(--bg-300);
+  border-radius: var(--radius-md);
   font-size: 16px;
   transition: all 0.2s ease;
-}
-
-.dark-mode .main-search-input,
-[data-theme="dark"] .main-search-input {
-  background: var(--reverse-bg-color);
-  border: var(--primary-color) 1px solid;
+  background: var(--bg-100);
+  color: var(--text-100);
 }
 
 .main-search-input:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(90, 126, 197, 0.1);
+  border-color: var(--accent-200);
+  box-shadow: 0 0 0 3px rgba(0, 102, 140, 0.1);
 }
 
 .main-search-input::placeholder {
-  color: #9ca3af;
+  color: var(--text-200);
   font-size: 0.95rem;
 }
 
@@ -99,14 +90,14 @@ body {
   right: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: var(--text-200);
   font-size: 1.2rem;
   pointer-events: none;
 }
 
 /* アドバンス検索パネル */
 .advanced-search-panel {
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border-light);
   padding-top: var(--spacing-md);
   margin-top: var(--spacing-md);
 }
@@ -121,23 +112,25 @@ body {
 
 .form-label {
   font-weight: 500;
-  color: var(--text-color);
+  color: var(--text-100);
   margin-bottom: var(--spacing-sm);
   font-size: 0.9rem;
 }
 
 .form-control, .form-select {
   min-height: var(--button-height-md);
-  border: 1px solid #d1d5db;
-  border-radius: var(--border-radius);
+  border: 1px solid var(--bg-300);
+  border-radius: var(--radius-md);
   font-size: 16px;
   padding: 0.75rem 1rem;
   transition: all 0.2s ease;
+  background: var(--bg-100);
+  color: var(--text-100);
 }
 
 .form-control:focus, .form-select:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(90, 126, 197, 0.1);
+  border-color: var(--accent-200);
+  box-shadow: 0 0 0 3px rgba(0, 102, 140, 0.1);
   outline: none;
 }
 
@@ -147,11 +140,11 @@ body {
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-100);
+  border: 1px solid var(--border-light);
   border-top: none;
-  border-radius: 0 0 var(--border-radius) var(--border-radius);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  box-shadow: var(--shadow-lg);
   z-index: 1000;
   max-height: 300px;
   overflow-y: auto;
@@ -159,7 +152,7 @@ body {
 
 .suggestion-item {
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--border-light);
   cursor: pointer;
   transition: background-color 0.2s;
   display: flex;
@@ -168,7 +161,7 @@ body {
 }
 
 .suggestion-item:hover {
-  background-color: #f8f9fa;
+  background-color: var(--primary-100);
 }
 
 .suggestion-item:last-child {
@@ -176,18 +169,19 @@ body {
 }
 
 .suggestion-icon {
-  color: var(--primary-color);
+  color: var(--accent-200);
   font-size: 1rem;
 }
 
 .suggestion-text {
   flex: 1;
+  color: var(--text-100);
 }
 
 .suggestion-type {
   font-size: 0.8rem;
-  color: var(--text-light);
-  background-color: #f3f4f6;
+  color: var(--text-200);
+  background-color: var(--bg-200);
   padding: 0.2rem 0.5rem;
   border-radius: 12px;
 }
@@ -208,7 +202,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: var(--primary-color);
+  background: var(--gradient-primary);
   color: white;
   padding: 0.5rem 0.75rem;
   border-radius: 20px;
@@ -231,7 +225,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: var(--primary-color);
+  color: var(--accent-200);
   font-size: 0.9rem;
 }
 
@@ -276,12 +270,12 @@ body {
 .search-history {
   margin-top: var(--spacing-md);
   padding-top: var(--spacing-md);
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--border-light);
 }
 
 .history-title {
   font-size: 0.85rem;
-  color: var(--text-light);
+  color: var(--text-200);
   margin-bottom: var(--spacing-sm);
 }
 
@@ -292,34 +286,34 @@ body {
 }
 
 .history-item {
-  background-color: #f8f9fa;
-  border: 1px solid #e5e7eb;
+  background-color: var(--bg-200);
+  border: 1px solid var(--border-light);
   padding: 0.4rem 0.8rem;
   border-radius: 16px;
   font-size: 0.85rem;
-  color: var(--text-color);
+  color: var(--text-100);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .history-item:hover {
-  background-color: var(--primary-color);
+  background-color: var(--accent-200);
   color: white;
-  border-color: var(--primary-color);
+  border-color: var(--accent-200);
 }
 
 /* 検索結果カウント */
 .search-results-info {
-  background-color: #f8f9fa;
-  border: 1px solid #e5e7eb;
-  border-radius: var(--border-radius);
+  background-color: var(--bg-200);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
   padding: 0.75rem 1rem;
   margin-bottom: var(--spacing-lg);
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-size: 0.9rem;
-  color: var(--text-color);
+  color: var(--text-100);
 }
 
 /* 日記カードグリッド */
@@ -393,7 +387,7 @@ body {
   position: fixed;
   top: 80px;
   right: 20px;
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  background: var(--gradient-primary);
   color: white;
   padding: 12px 20px;
   border-radius: var(--radius-md);
@@ -423,6 +417,7 @@ body {
   }
 }
 
+/* ========== Dark Mode Overrides ========== */
 .dark-mode .filter-notification,
 [data-theme="dark"] .filter-notification {
   background: linear-gradient(135deg, var(--dm-primary), var(--dm-primary-hover));
@@ -431,38 +426,100 @@ body {
 
 .dark-mode .mobile-search-container,
 [data-theme="dark"] .mobile-search-container {
-  background-color: var(--bg-100);
-  border: 1px solid var(--bg-200);
+  background-color: var(--dm-card);
+  border: 1px solid var(--dm-border);
 }
 
 .dark-mode .main-search-input,
 [data-theme="dark"] .main-search-input {
-  background-color: var(--bg-200);
-  border-color: var(--bg-300);
-  color: var(--text-100);
+  background-color: var(--dm-background);
+  border-color: var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .main-search-input::placeholder,
+[data-theme="dark"] .main-search-input::placeholder {
+  color: var(--dm-muted-foreground);
 }
 
 .dark-mode .main-search-input:focus,
 [data-theme="dark"] .main-search-input:focus {
-  border-color: var(--primary-200);
-  box-shadow: 0 0 0 3px rgba(89, 142, 243, 0.2);
+  border-color: var(--dm-primary);
+  box-shadow: 0 0 0 3px rgba(113, 196, 239, 0.2);
 }
 
 .dark-mode .search-suggestions,
 [data-theme="dark"] .search-suggestions {
-  background-color: var(--bg-100);
-  border-color: var(--bg-200);
+  background-color: var(--dm-card);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .suggestion-item,
+[data-theme="dark"] .suggestion-item {
+  border-bottom-color: var(--dm-border);
 }
 
 .dark-mode .suggestion-item:hover,
 [data-theme="dark"] .suggestion-item:hover {
-  background-color: var(--bg-200);
+  background-color: rgba(113, 196, 239, 0.1);
+}
+
+.dark-mode .suggestion-text,
+[data-theme="dark"] .suggestion-text {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .suggestion-type,
+[data-theme="dark"] .suggestion-type {
+  background-color: var(--dm-muted);
+  color: var(--dm-muted-foreground);
 }
 
 .dark-mode .filter-chip,
 [data-theme="dark"] .filter-chip {
-  background: linear-gradient(135deg, var(--primary-100), var(--primary-200));
+  background: var(--gradient-primary);
   color: white;
+}
+
+.dark-mode .form-control,
+.dark-mode .form-select,
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select {
+  background-color: var(--dm-background);
+  border-color: var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .form-label,
+[data-theme="dark"] .form-label {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .search-title,
+.dark-mode .search-toggle,
+[data-theme="dark"] .search-title,
+[data-theme="dark"] .search-toggle {
+  color: var(--dm-primary);
+}
+
+.dark-mode .history-item,
+[data-theme="dark"] .history-item {
+  background-color: var(--dm-card);
+  border-color: var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .history-item:hover,
+[data-theme="dark"] .history-item:hover {
+  background-color: var(--dm-primary);
+  color: white;
+}
+
+.dark-mode .search-results-info,
+[data-theme="dark"] .search-results-info {
+  background-color: var(--dm-card);
+  border-color: var(--dm-border);
+  color: var(--dm-foreground);
 }
 </style>
 {% endblock %}
@@ -626,87 +683,43 @@ body {
         {% endif %}
       </div>
 
-      <!-- 詳細検索パネル -->
+      <!-- アドバンス検索パネル -->
       <div class="advanced-search-panel collapsed" id="advancedPanel">
         <div class="advanced-fields">
-          
-          <!-- 保有状態フィルター -->
           <div class="form-group">
-            <label class="form-label" for="statusFilter">
-              <i class="bi bi-circle-fill me-1"></i>
-              保有状態
-            </label>
+            <label for="statusFilter" class="form-label">ステータス</label>
             <select class="form-select" id="statusFilter" name="status">
-              {% with status_value=request.GET.status|default:"active" %}
-                <option value="active" {% if status_value == 'active' %}selected{% endif %}>保有中のみ</option>
-                <option value="all" {% if status_value == 'all' %}selected{% endif %}>すべて表示</option>
-                <option value="sold" {% if status_value == 'sold' %}selected{% endif %}>売却済み</option>
-                <option value="memo" {% if status_value == 'memo' %}selected{% endif %}>メモのみ</option>
-              {% endwith %}
+              <option value="active" {% if request.GET.status == 'active' or not request.GET.status %}selected{% endif %}>保有中のみ</option>
+              <option value="all" {% if request.GET.status == 'all' %}selected{% endif %}>すべて表示</option>
+              <option value="sold" {% if request.GET.status == 'sold' %}selected{% endif %}>売却済み</option>
+              <option value="memo" {% if request.GET.status == 'memo' %}selected{% endif %}>メモのみ</option>
             </select>
           </div>
 
-          <!-- タグフィルター -->
           <div class="form-group">
-            <label class="form-label" for="tagFilter">
-              <i class="bi bi-tag me-1"></i>
-              タグで絞り込み
-            </label>
+            <label for="tagFilter" class="form-label">タグ</label>
             <select class="form-select" id="tagFilter" name="tag">
-              <option value="">すべて表示</option>
+              <option value="">すべてのタグ</option>
               {% for tag in tags %}
-                <option value="{{ tag.id }}" {% if request.GET.tag == tag.id|stringformat:"i" %}selected{% endif %}>
-                  {{ tag.name }}
-                </option>
+                <option value="{{ tag.id }}" {% if request.GET.tag|stringformat:"i" == tag.id|stringformat:"i" %}selected{% endif %}>{{ tag.name }}</option>
               {% endfor %}
             </select>
           </div>
 
-          <!-- 業種フィルター -->
           <div class="form-group">
-            <label class="form-label" for="sectorFilter">
-              <i class="bi bi-diagram-3 me-1"></i>
-              業種で絞り込み
-            </label>
+            <label for="sectorFilter" class="form-label">業種</label>
             <select class="form-select" id="sectorFilter" name="sector">
-              <option value="">すべて表示</option>
+              <option value="">すべての業種</option>
               {% for sector in sectors %}
-                <option value="{{ sector }}" {% if request.GET.sector == sector %}selected{% endif %}>
-                  {{ sector }}
-                </option>
+                <option value="{{ sector }}" {% if request.GET.sector == sector %}selected{% endif %}>{{ sector }}</option>
               {% endfor %}
             </select>
           </div>
 
-          <!-- ソート順 -->
           <div class="form-group">
-            <label class="form-label" for="sortFilter">
-              <i class="bi bi-sort-down me-1"></i>
-              並び順
-            </label>
-            <select class="form-select" id="sortFilter" name="sort">
-              <option value="" {% if not request.GET.sort %}selected{% endif %}>更新日時（新しい順）</option>
-              <option value="date_desc" {% if request.GET.sort == 'date_desc' %}selected{% endif %}>取引日（新しい順）</option>
-              <option value="date_asc" {% if request.GET.sort == 'date_asc' %}selected{% endif %}>取引日（古い順）</option>
-              <option value="name" {% if request.GET.sort == 'name' %}selected{% endif %}>銘柄名（あいうえお順）</option>
-              <option value="symbol" {% if request.GET.sort == 'symbol' %}selected{% endif %}>証券コード順</option>
-              <option value="profit_desc" {% if request.GET.sort == 'profit_desc' %}selected{% endif %}>実現損益（高い順）</option>
-              <option value="profit_asc" {% if request.GET.sort == 'profit_asc' %}selected{% endif %}>実現損益（低い順）</option>
-              <option value="transaction_count_desc" {% if request.GET.sort == 'transaction_count_desc' %}selected{% endif %}>取引回数（多い順）</option>
-              <option value="transaction_count_asc" {% if request.GET.sort == 'transaction_count_asc' %}selected{% endif %}>取引回数（少ない順）</option>
-              <option value="total_cost_desc" {% if request.GET.sort == 'total_cost_desc' %}selected{% endif %}>総取得原価（高い順）</option>
-              <option value="total_cost_asc" {% if request.GET.sort == 'total_cost_asc' %}selected{% endif %}>総取得原価（低い順）</option>
-            </select>
-          </div>
-
-          <!-- トランザクション期間フィルター -->
-          <div class="form-group">
-            <label class="form-label" for="transactionDateRangeFilter">
-              <i class="bi bi-clock-history me-1"></i>
-              取引登録日で絞り込み
-            </label>
+            <label for="transactionDateRangeFilter" class="form-label">取引登録期間</label>
             <select class="form-select" id="transactionDateRangeFilter" name="transaction_date_range">
-              <option value="" {% if not request.GET.transaction_date_range %}selected{% endif %}>すべての期間</option>
+              <option value="">指定なし</option>
               <option value="1w" {% if request.GET.transaction_date_range == '1w' %}selected{% endif %}>過去1週間</option>
               <option value="1m" {% if request.GET.transaction_date_range == '1m' %}selected{% endif %}>過去1ヶ月</option>
               <option value="3m" {% if request.GET.transaction_date_range == '3m' %}selected{% endif %}>過去3ヶ月</option>
@@ -715,14 +728,10 @@ body {
             </select>
           </div>
 
-          <!-- 日付範囲フィルター -->
           <div class="form-group">
-            <label class="form-label" for="dateRangeFilter">
-              <i class="bi bi-calendar-range me-1"></i>
-              購入日で絞り込み
-            </label>
+            <label for="dateRangeFilter" class="form-label">購入日期間</label>
             <select class="form-select" id="dateRangeFilter" name="date_range">
-              <option value="" {% if not request.GET.date_range %}selected{% endif %}>すべての期間</option>
+              <option value="">指定なし</option>
               <option value="1w" {% if request.GET.date_range == '1w' %}selected{% endif %}>過去1週間</option>
               <option value="1m" {% if request.GET.date_range == '1m' %}selected{% endif %}>過去1ヶ月</option>
               <option value="3m" {% if request.GET.date_range == '3m' %}selected{% endif %}>過去3ヶ月</option>
@@ -730,67 +739,65 @@ body {
               <option value="1y" {% if request.GET.date_range == '1y' %}selected{% endif %}>過去1年</option>
             </select>
           </div>
-        </div>
 
-        <!-- 検索履歴 -->
-        <div class="search-history" id="searchHistory" style="display: none;">
-          <div class="history-title">最近の検索</div>
-          <div class="history-items" id="historyItems"></div>
+          <div class="form-group">
+            <label for="sortFilter" class="form-label">並び順</label>
+            <select class="form-select" id="sortFilter" name="sort">
+              <option value="">デフォルト</option>
+              <option value="date_desc" {% if request.GET.sort == 'date_desc' %}selected{% endif %}>取引日（新しい順）</option>
+              <option value="date_asc" {% if request.GET.sort == 'date_asc' %}selected{% endif %}>取引日（古い順）</option>
+              <option value="name" {% if request.GET.sort == 'name' %}selected{% endif %}>銘柄名順</option>
+              <option value="symbol" {% if request.GET.sort == 'symbol' %}selected{% endif %}>コード順</option>
+              <option value="profit_desc" {% if request.GET.sort == 'profit_desc' %}selected{% endif %}>損益（高い順）</option>
+              <option value="profit_asc" {% if request.GET.sort == 'profit_asc' %}selected{% endif %}>損益（低い順）</option>
+              <option value="transaction_count_desc" {% if request.GET.sort == 'transaction_count_desc' %}selected{% endif %}>取引回数（多い順）</option>
+              <option value="transaction_count_asc" {% if request.GET.sort == 'transaction_count_asc' %}selected{% endif %}>取引回数（少ない順）</option>
+              <option value="total_cost_desc" {% if request.GET.sort == 'total_cost_desc' %}selected{% endif %}>総原価（高い順）</option>
+              <option value="total_cost_asc" {% if request.GET.sort == 'total_cost_asc' %}selected{% endif %}>総原価（低い順）</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      <!-- アクションボタン -->
+      <!-- 検索ボタン -->
       <div class="search-actions">
         <button type="submit" class="btn btn-primary">
-          <i class="bi bi-search"></i>
-          検索
+          <i class="bi bi-search me-1"></i> 検索
         </button>
-        <a href="{% url 'stockdiary:home' %}?status=active" class="btn btn-outline-primary"
-           hx-get="{% url 'stockdiary:diary_list' %}?status=active" 
-           hx-target="#diary-container"
-           hx-push-url="true">
-          <i class="bi bi-arrow-counterclockwise"></i>
-          リセット
-        </a>
+        <button type="button" class="btn btn-secondary" onclick="resetSearch()">
+          <i class="bi bi-arrow-clockwise me-1"></i> リセット
+        </button>
       </div>
 
-      <!-- ローディングインジケーター（コンポーネント使用） -->
-      {% include "stockdiary/components/_loading.html" with id="search-indicator" htmx=True text="検索中..." inline=True size="sm" %}
+      <!-- 検索インジケーター -->
+      <div id="search-indicator" class="search-indicator mt-3" style="display: none;">
+        <div class="spinner-border spinner-border-sm" role="status">
+          <span class="visually-hidden">検索中...</span>
+        </div>
+        <span>検索中...</span>
+      </div>
     </form>
   </div>
 
-  <!-- 日記カード一覧 -->
-  <h4 class="mb-3 diary-title px-2">
-    <i class="bi bi-journal-richtext"></i> 株式日記リスト
-  </h4>
-
-  <!-- オフライン通知（コンポーネント使用） -->
-  <div class="offline-alert mb-3">
-    {% include "stockdiary/components/_alert.html" with type="warning" icon="bi-wifi-off" message="オフライン状態です。ネットワーク接続を確認してください。" %}
-  </div>
-
-  <!-- 日記リストコンテナ -->
-  <div id="diary-container" class="home-diary-grid"
-       hx-get="{% url 'stockdiary:diary_list' %}?status=active"
-       hx-trigger="load, pulldown"
-       hx-indicator="#diary-loading"
-       data-hx-offline-queue="true">
-    {% include "stockdiary/components/_loading.html" with id="diary-loading" htmx=True text="日記を読み込んでいます..." extra_class="grid-column-span" %}
+  <!-- 日記コンテナ -->
+  <div id="diary-container" class="home-diary-grid">
+    <!-- コンテンツはHTMXで動的に読み込まれます -->
   </div>
 </div>
 
+<!-- コンテンツ下部の広告 -->
+{% if show_ads %}
+  {% show_template_ad "diary_bottom" %}
+{% endif %}
+
 {% include 'speed_dial.html' with actions=form_actions %}
-{% include "stockdiary/partials/quick_diary_modal.html" %}
 {% endblock %}
 
-{% block scripts %}
+{% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/locales/ja.js"></script>
-<script src="{% static 'js/mobile-gestures.js' %}"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-// 詳細検索パネルの切り替え
+// アドバンス検索の開閉
 document.getElementById('advancedToggle').addEventListener('click', function() {
   const panel = document.getElementById('advancedPanel');
   const isCollapsed = panel.classList.contains('collapsed');
@@ -799,60 +806,48 @@ document.getElementById('advancedToggle').addEventListener('click', function() {
     panel.classList.remove('collapsed');
     panel.classList.add('slide-down');
     this.innerHTML = '<i class="bi bi-x"></i>';
+    this.setAttribute('aria-expanded', 'true');
   } else {
     panel.classList.add('collapsed');
+    panel.classList.remove('slide-down');
     this.innerHTML = '<i class="bi bi-sliders"></i>';
+    this.setAttribute('aria-expanded', 'false');
   }
 });
 
-// メイン検索入力のフォーカス処理
-const mainSearchInput = document.getElementById('mainSearchInput');
-const searchSuggestions = document.getElementById('searchSuggestions');
-
-mainSearchInput.addEventListener('focus', function() {
-  if (this.value.length > 0) {
-    searchSuggestions.style.display = 'block';
-  }
-});
-
-mainSearchInput.addEventListener('input', function() {
-  if (this.value.length > 1) {
-    searchSuggestions.style.display = 'block';
-  } else {
-    searchSuggestions.style.display = 'none';
-  }
-});
-
-// 外部クリックでサジェスチョンを閉じる
-document.addEventListener('click', function(e) {
-  if (!e.target.closest('.main-search-wrapper')) {
-    searchSuggestions.style.display = 'none';
-  }
-});
-
-// レスポンシブ対応
-function handleResize() {
-  const isMobile = window.innerWidth < 768;
-  const advancedFields = document.querySelector('.advanced-fields');
+// 検索リセット
+function resetSearch() {
+  document.getElementById('optimizedSearchForm').reset();
+  document.getElementById('mainSearchInput').value = '';
+  document.getElementById('statusFilter').value = 'active';
   
-  if (advancedFields) {
-    if (isMobile) {
-      advancedFields.style.display = 'block';
-    } else {
-      advancedFields.style.display = 'grid';
+  // フィルターをリセットしてフォームを送信
+  htmx.ajax('GET', '{% url 'stockdiary:diary_list' %}?status=active', {
+    target: '#diary-container',
+    swap: 'innerHTML',
+    pushUrl: true
+  }).then(() => {
+    if (typeof updateFilterBadges === 'function') {
+      updateFilterBadges();
     }
-  }
+  });
 }
 
-window.addEventListener('resize', handleResize);
-handleResize();
-</script>
+// フォーム送信時にフィルターバッジを更新
+document.getElementById('optimizedSearchForm').addEventListener('submit', function(e) {
+  setTimeout(updateFilterBadges, 100);
+});
 
-<script>
+// 初期ロード時の処理
 document.addEventListener('DOMContentLoaded', function() {
-  if (typeof initializeSpeedDial === 'function') {
-    initializeSpeedDial();
-  }
+  // 初回のコンテンツ読み込み
+  const statusParam = new URLSearchParams(window.location.search).get('status') || 'active';
+  const initialUrl = `{% url 'stockdiary:diary_list' %}?${window.location.search || 'status=' + statusParam}`;
+  
+  htmx.ajax('GET', initialUrl, {
+    target: '#diary-container',
+    swap: 'innerHTML'
+  });
   
   // オフライン状態の監視
   window.addEventListener('online', function() {

@@ -6,16 +6,16 @@
   border-radius: 20px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 0 10px 30px rgba(0, 0, 0, 0.05);
   overflow: hidden;
-  background: #ffffff;
+  background: var(--bg-100);
 }
 
 .quick-diary-header {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, var(--accent-200) 0%, var(--primary-300) 100%);
   color: white;
   border-bottom: none;
   padding: 1.5rem 2rem;
   position: relative;
-  box-shadow: 0 4px 20px rgba(79, 70, 229, 0.3);
+  box-shadow: 0 4px 20px rgba(0, 102, 140, 0.3);
 }
 
 .quick-diary-header .modal-title {
@@ -38,17 +38,17 @@
 /* ========== プログレスバー ========== */
 .quick-diary-progress {
   height: 6px;
-  background: #f1f5f9;
+  background: var(--bg-200);
   position: relative;
   overflow: hidden;
 }
 
 .quick-diary-progress .progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #4f46e5, #7c3aed);
+  background: linear-gradient(90deg, var(--accent-200), var(--accent-100));
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.3);
+  box-shadow: 0 2px 10px rgba(0, 102, 140, 0.3);
 }
 
 .quick-diary-progress .progress-bar::after {
@@ -72,7 +72,7 @@
   padding: 2rem;
   min-height: 500px;
   position: relative;
-  background: #ffffff;
+  background: var(--bg-100);
 }
 
 /* ========== ステップインジケーター（PC） ========== */
@@ -105,23 +105,23 @@
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
-  border: 3px solid #cbd5e1;
+  background: linear-gradient(135deg, var(--bg-200), var(--bg-300));
+  border: 3px solid var(--bg-300);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.3rem;
-  color: #64748b;
+  color: var(--text-200);
   transition: all 0.4s ease;
-  box-shadow: 0 4px 15px rgba(148, 163, 184, 0.2);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
 }
 
 .step.active .step-circle {
-  background: linear-gradient(135deg, #3b82f6, #06d6a0);
-  border-color: #22d3ee;
+  background: linear-gradient(135deg, var(--accent-200), var(--accent-100));
+  border-color: var(--accent-100);
   color: white;
   transform: scale(1.15);
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4), 0 4px 15px rgba(6, 214, 160, 0.3);
+  box-shadow: 0 8px 25px rgba(0, 102, 140, 0.4), 0 4px 15px rgba(113, 196, 239, 0.3);
   animation: pulse-glow 2s infinite;
 }
 
@@ -133,8 +133,8 @@
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4), 0 4px 15px rgba(6, 214, 160, 0.3); }
-  50% { box-shadow: 0 12px 35px rgba(59, 130, 246, 0.6), 0 6px 20px rgba(6, 214, 160, 0.5); }
+  0%, 100% { box-shadow: 0 8px 25px rgba(0, 102, 140, 0.4), 0 4px 15px rgba(113, 196, 239, 0.3); }
+  50% { box-shadow: 0 12px 35px rgba(0, 102, 140, 0.6), 0 6px 20px rgba(113, 196, 239, 0.5); }
 }
 
 .step-content {
@@ -144,19 +144,19 @@
 .step-title {
   font-weight: 600;
   font-size: 1rem;
-  color: #1f2937;
+  color: var(--text-100);
   margin-bottom: 0.25rem;
 }
 
 .step-subtitle {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--text-200);
 }
 
 .step-connector {
   flex: 1;
   height: 4px;
-  background: linear-gradient(90deg, #e2e8f0, #f1f5f9);
+  background: linear-gradient(90deg, var(--bg-300), var(--bg-200));
   margin: 0 1rem;
   position: relative;
   overflow: hidden;
@@ -169,10 +169,10 @@
   top: 0;
   left: 0;
   height: 100%;
-  background: linear-gradient(90deg, #22d3ee, #06d6a0);
+  background: linear-gradient(90deg, var(--accent-100), var(--accent-200));
   animation: progressFill 0.8s ease-out forwards;
   border-radius: 2px;
-  box-shadow: 0 2px 8px rgba(34, 211, 238, 0.4);
+  box-shadow: 0 2px 8px rgba(113, 196, 239, 0.4);
 }
 
 @keyframes progressFill {
@@ -185,16 +185,16 @@
   text-align: center;
   margin-bottom: 2rem;
   padding: 1.5rem;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(16, 185, 129, 0.08));
+  background: linear-gradient(135deg, rgba(0, 102, 140, 0.08), rgba(113, 196, 239, 0.08));
   border-radius: 16px;
-  border: 2px solid rgba(34, 211, 238, 0.2);
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.1);
+  border: 2px solid rgba(113, 196, 239, 0.2);
+  box-shadow: 0 8px 25px rgba(0, 102, 140, 0.1);
 }
 
 .step-counter {
   font-size: 1.25rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #3b82f6, #06d6a0);
+  background: linear-gradient(135deg, var(--accent-200), var(--accent-100));
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -203,7 +203,7 @@
 
 .step-title-mobile {
   font-size: 1.1rem;
-  color: #1e293b;
+  color: var(--text-100);
   font-weight: 600;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
@@ -233,7 +233,7 @@
 
 .form-label {
   font-weight: 600;
-  color: #374151;
+  color: var(--text-100);
   margin-bottom: 0.5rem;
   display: flex;
   align-items: center;
@@ -248,21 +248,21 @@
 
 .label-optional {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--text-200);
   font-weight: 400;
   margin-left: 0.5rem;
   padding: 0.125rem 0.5rem;
-  background: #f3f4f6;
+  background: var(--bg-200);
   border-radius: 12px;
 }
 
 .form-control-enhanced {
   padding: 0.875rem 1rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--bg-300);
   border-radius: 12px;
   font-size: 1rem;
   transition: all 0.2s ease;
-  background: #ffffff;
+  background: var(--bg-100);
 }
 
 .form-control-enhanced:focus {
@@ -303,15 +303,15 @@
 }
 
 .btn-action:hover {
-  background: #4338ca;
-  border-color: #4338ca;
+  background: var(--accent-200);
+  border-color: var(--accent-200);
   color: white;
   transform: translateY(-1px);
 }
 
 .help-text {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--text-200);
   margin-top: 0.5rem;
   display: flex;
   align-items: center;
@@ -344,26 +344,26 @@
   align-items: center;
   gap: 1.25rem;
   padding: 1.5rem;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--bg-300);
   border-radius: 20px;
-  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  background: linear-gradient(135deg, var(--bg-100), var(--bg-200));
   cursor: pointer;
   transition: all 0.3s ease;
   height: 100%;
-  box-shadow: 0 4px 15px rgba(148, 163, 184, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
 
 .record-option-label:hover {
-  border-color: #22d3ee;
-  background: linear-gradient(135deg, rgba(34, 211, 238, 0.05), rgba(6, 214, 160, 0.05));
+  border-color: var(--accent-100);
+  background: linear-gradient(135deg, rgba(113, 196, 239, 0.05), rgba(0, 102, 140, 0.05));
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(34, 211, 238, 0.15);
+  box-shadow: 0 8px 25px rgba(113, 196, 239, 0.15);
 }
 
 .record-option input:checked + .record-option-label {
-  border-color: #06d6a0;
-  background: linear-gradient(135deg, rgba(6, 214, 160, 0.1), rgba(34, 211, 238, 0.05));
-  box-shadow: 0 8px 30px rgba(6, 214, 160, 0.25), 0 4px 15px rgba(34, 211, 238, 0.15);
+  border-color: var(--accent-200);
+  background: linear-gradient(135deg, rgba(0, 102, 140, 0.1), rgba(113, 196, 239, 0.05));
+  box-shadow: 0 8px 30px rgba(0, 102, 140, 0.25), 0 4px 15px rgba(113, 196, 239, 0.15);
   transform: translateY(-2px);
 }
 

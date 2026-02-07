@@ -1,22 +1,31 @@
 /* ========================================
    日記カード ダークモード配色調整
    サンプル画像に忠実な再現版
+   
+   ⚠️ 重要: このファイルはダークモード専用です
+   ライトモードの変数は variables.css で定義されています
    ======================================== */
 
-:root {
-  /* カラーパレット定義 */
-  --primary-100: #2563eb;
-  --primary-200: #598EF3;
-  --primary-300: #D3E6FE;
-  --accent-100: #d946ef;
-  --accent-200: #fae8ff;
-  --text-100: #e2e8f0;
-  --text-200: #94a3b8;
-  --text-300: #64748b;
-  --bg-100: #1e293b;
-  --bg-200: #334155;
-  --bg-300: #475569;
-  --bg-base: #0f172a; /* より暗いベース背景 */
+/* ========================================
+   ダークモード: カラーパレット定義
+   ======================================== */
+.dark-mode,
+[data-theme="dark"],
+body.dark-mode,
+html[data-theme="dark"] body {
+  /* ダークモード専用カラーパレット */
+  --dm-primary-100: #2563eb;
+  --dm-primary-200: #598EF3;
+  --dm-primary-300: #D3E6FE;
+  --dm-accent-100: #d946ef;
+  --dm-accent-200: #fae8ff;
+  --dm-text-100: #e2e8f0;
+  --dm-text-200: #94a3b8;
+  --dm-text-300: #64748b;
+  --dm-bg-100: #1e293b;
+  --dm-bg-200: #334155;
+  --dm-bg-300: #475569;
+  --dm-bg-base: #0f172a; /* より暗いベース背景 */
 }
 
 /* ========================================
@@ -24,12 +33,12 @@
    ======================================== */
 .dark-mode,
 [data-theme="dark"] {
-  background-color: var(--bg-base);
+  background-color: var(--dm-bg-base);
 }
 
 .dark-mode body,
 [data-theme="dark"] body {
-  background-color: var(--bg-base);
+  background-color: var(--dm-bg-base);
 }
 
 /* ========================================
@@ -108,26 +117,26 @@
 /* タイトル - より明るく目立たせる */
 .dark-mode .diary-title,
 [data-theme="dark"] .diary-title {
-  color: var(--text-100);
+  color: var(--dm-text-100);
   text-shadow: 0 0 10px rgba(89, 142, 243, 0.3);
   font-weight: 700;
 }
 
 .dark-mode .diary-title .text-muted,
 [data-theme="dark"] .diary-title .text-muted {
-  color: var(--text-200) !important;
+  color: var(--dm-text-200) !important;
   text-shadow: none;
 }
 
 /* メタ情報 */
 .dark-mode .diary-meta,
 [data-theme="dark"] .diary-meta {
-  color: var(--text-200);
+  color: var(--dm-text-200);
 }
 
 .dark-mode .diary-date,
 [data-theme="dark"] .diary-date {
-  color: var(--text-100);
+  color: var(--dm-text-100);
 }
 
 /* ========================================
@@ -148,7 +157,7 @@
   background: linear-gradient(135deg, 
     rgba(89, 142, 243, 0.3) 0%, 
     rgba(37, 99, 235, 0.2) 100%);
-  color: var(--primary-300);
+  color: var(--dm-primary-300);
   border: 1px solid rgba(89, 142, 243, 0.5);
   box-shadow: 
     0 2px 8px rgba(0, 0, 0, 0.3),
@@ -161,7 +170,7 @@
   background: linear-gradient(135deg, 
     rgba(217, 70, 239, 0.3) 0%, 
     rgba(217, 70, 239, 0.2) 100%);
-  color: var(--accent-200);
+  color: var(--dm-accent-200);
   border: 1px solid rgba(217, 70, 239, 0.5);
   box-shadow: 
     0 2px 8px rgba(0, 0, 0, 0.3),
@@ -174,7 +183,7 @@
   background: linear-gradient(135deg, 
     rgba(37, 99, 235, 0.3) 0%, 
     rgba(37, 99, 235, 0.2) 100%);
-  color: var(--primary-300);
+  color: var(--dm-primary-300);
   border: 1px solid rgba(37, 99, 235, 0.5);
   box-shadow: 
     0 2px 8px rgba(0, 0, 0, 0.3),
@@ -188,7 +197,7 @@
   background: linear-gradient(135deg, 
     rgba(89, 142, 243, 0.4) 0%, 
     rgba(37, 99, 235, 0.6) 100%) !important;
-  color: var(--primary-300) !important;
+  color: var(--dm-primary-300) !important;
   border: 1px solid rgba(89, 142, 243, 0.6);
   box-shadow: 
     0 2px 8px rgba(0, 0, 0, 0.3),
@@ -202,7 +211,7 @@
   background: linear-gradient(135deg, 
     rgba(217, 70, 239, 0.4) 0%, 
     rgba(217, 70, 239, 0.6) 100%) !important;
-  color: var(--accent-200) !important;
+  color: var(--dm-accent-200) !important;
   border: 1px solid rgba(217, 70, 239, 0.6);
   box-shadow: 
     0 2px 8px rgba(0, 0, 0, 0.3),
@@ -219,7 +228,7 @@
   background: linear-gradient(135deg, 
     rgba(89, 142, 243, 0.25) 0%, 
     rgba(37, 99, 235, 0.15) 100%);
-  color: var(--primary-300);
+  color: var(--dm-primary-300);
   border: 1px solid rgba(89, 142, 243, 0.4);
   box-shadow: 
     0 2px 4px rgba(0, 0, 0, 0.2),
@@ -242,7 +251,7 @@
 
 .dark-mode .diary-tag i,
 [data-theme="dark"] .diary-tag i {
-  color: var(--primary-200);
+  color: var(--dm-primary-200);
   text-shadow: 0 0 5px rgba(89, 142, 243, 0.5);
 }
 
@@ -260,13 +269,13 @@
 
 .dark-mode .card-tabs .nav-link,
 [data-theme="dark"] .card-tabs .nav-link {
-  color: var(--text-200);
+  color: var(--dm-text-200);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dark-mode .card-tabs .nav-link:hover:not(.active),
 [data-theme="dark"] .card-tabs .nav-link:hover:not(.active) {
-  color: var(--text-100);
+  color: var(--dm-text-100);
   background: linear-gradient(135deg, 
     rgba(71, 85, 105) 0%, 
     rgba(51, 65, 85, 0.4) 100%);
@@ -274,7 +283,7 @@
 
 .dark-mode .card-tabs .nav-link.active,
 [data-theme="dark"] .card-tabs .nav-link.active {
-  color: var(--primary-300);
+  color: var(--dm-primary-300);
   background: linear-gradient(135deg, 
     rgba(37, 99, 235, 0.2) 0%, 
     rgba(37, 99, 235, 0.1) 100%);
@@ -285,264 +294,133 @@
 [data-theme="dark"] .card-tabs .nav-link.active::after {
   background: linear-gradient(90deg, 
     transparent 0%,
-    var(--primary-100) 50%,
+    var(--dm-primary-100) 50%,
     transparent 100%);
   box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
 }
 
 /* ========================================
-   ダークモード: コンテンツエリア
+   ダークモード: カードボディ
    ======================================== */
-
-.dark-mode .reason-content,
-[data-theme="dark"] .reason-content {
-  background: linear-gradient(135deg, 
-    rgba(51, 65, 85, 0.4) 0%, 
-    rgba(30, 41, 59, 0.6) 100%);
-  color: var(--text-100);
-  border: 1px solid rgba(71, 85, 105);
-  box-shadow: 
-    inset 0 1px 2px rgba(0, 0, 0, 0.2),
-    0 1px 0 rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(5px);
+.dark-mode .diary-card-body,
+[data-theme="dark"] .diary-card-body {
+  background: transparent;
 }
 
 /* ========================================
-   ダークモード: 継続記録（ノート）
+   ダークモード: テキストコンテンツ
+   ======================================== */
+.dark-mode .reason-content,
+[data-theme="dark"] .reason-content {
+  background: linear-gradient(135deg, 
+    rgba(51, 65, 85, 0.3) 0%, 
+    rgba(30, 41, 59, 0.4) 100%);
+  border: 1px solid rgba(71, 85, 105);
+  color: var(--dm-text-100);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.dark-mode .diary-content,
+.dark-mode .diary-text,
+[data-theme="dark"] .diary-content,
+[data-theme="dark"] .diary-text {
+  color: var(--dm-text-100);
+}
+
+/* ========================================
+   ダークモード: ノート（タイムライン）
    ======================================== */
 .dark-mode .note-item,
 [data-theme="dark"] .note-item {
-  background: linear-gradient(145deg, 
-    #1e293b 0%, 
-    #0f172a 100%);
+  background: linear-gradient(135deg, 
+    rgba(51, 65, 85, 0.3) 0%, 
+    rgba(30, 41, 59, 0.4) 100%);
   border: 1px solid rgba(71, 85, 105);
   box-shadow: 
-    0 4px 6px -1px rgba(0, 0, 0, 0.4),
-    0 2px 4px -1px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(89, 142, 243, 0.05);
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(5px);
 }
 
 .dark-mode .note-item:hover,
 [data-theme="dark"] .note-item:hover {
-  border-color: rgba(89, 142, 243, 0.4);
-  box-shadow: 
-    0 10px 15px -3px rgba(0, 0, 0, 0.5),
-    0 4px 6px -2px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(89, 142, 243, 0.2),
-    0 0 20px rgba(37, 99, 235, 0.15);
-}
-
-.dark-mode .note-header,
-[data-theme="dark"] .note-header {
   background: linear-gradient(135deg, 
     rgba(51, 65, 85, 0.5) 0%, 
     rgba(30, 41, 59, 0.6) 100%);
-  border-bottom: 1px solid rgba(71, 85, 105);
-  backdrop-filter: blur(5px);
+  border-color: rgba(89, 142, 243, 0.5);
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 15px rgba(37, 99, 235, 0.2);
 }
 
 .dark-mode .note-date,
 [data-theme="dark"] .note-date {
-  color: var(--text-200);
+  color: var(--dm-text-200);
 }
-
 
 .dark-mode .note-text,
 [data-theme="dark"] .note-text {
-  background: linear-gradient(135deg, 
-    rgba(51, 65, 85, 0.4) 0%, 
-    rgba(30, 41, 59, 0.5) 100%);
-  color: var(--text-100);
-  border: 1px solid rgba(71, 85, 105);
-  box-shadow: 
-    inset 0 1px 2px rgba(0, 0, 0, 0.2),
-    0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.dark-mode .note-price-info,
-[data-theme="dark"] .note-price-info {
-  background: linear-gradient(135deg, 
-    rgba(71, 85, 105, 0.4) 0%, 
-    rgba(51, 65, 85, 0.5) 100%);
-  border: 1px solid rgba(71, 85, 105);
-  color: var(--text-100);
-  box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.dark-mode .note-price-info strong,
-[data-theme="dark"] .note-price-info strong {
-  color: var(--text-100);
-  text-shadow: 0 0 5px rgba(89, 142, 243, 0.3);
+  color: var(--dm-text-100);
 }
 
 /* ========================================
    ダークモード: 分析テンプレート
    ======================================== */
-.dark-mode .analysis-templates-container,
-[data-theme="dark"] .analysis-templates-container {
-  background: linear-gradient(135deg, 
-    rgba(37, 99, 235, 0.1) 0%, 
-    rgba(37, 99, 235, 0.05) 100%);
-  border: 1px solid rgba(37, 99, 235, 0.2);
-  box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
 .dark-mode .analysis-template-card,
 [data-theme="dark"] .analysis-template-card {
-  background: #1e293b;
+  background: linear-gradient(135deg, 
+    rgba(51, 65, 85, 0.3) 0%, 
+    rgba(30, 41, 59, 0.4) 100%);
   border: 1px solid rgba(71, 85, 105);
   box-shadow: 
-    0 4px 6px -1px rgba(0, 0, 0, 0.4),
-    0 2px 4px -1px rgba(0, 0, 0, 0.3);
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(5px);
 }
 
 .dark-mode .analysis-template-card:hover,
 [data-theme="dark"] .analysis-template-card:hover {
-  border-color: rgba(89, 142, 243, 0.4);
-  box-shadow: 
-    0 10px 15px -3px rgba(0, 0, 0, 0.5),
-    0 4px 6px -2px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(37, 99, 235, 0.15);
-}
-
-.dark-mode .analysis-template-header,
-[data-theme="dark"] .analysis-template-header {
   background: linear-gradient(135deg, 
-    rgba(51, 65, 85, 0.6) 0%, 
-    rgba(30, 41, 59, 0.7) 100%);
-  border-bottom: 1px solid rgba(71, 85, 105);
-}
-
-.dark-mode .analysis-template-header h6,
-[data-theme="dark"] .analysis-template-header h6 {
-  color: var(--primary-300);
-  text-shadow: 0 0 10px rgba(89, 142, 243, 0.3);
-}
-
-.dark-mode .analysis-item,
-[data-theme="dark"] .analysis-item {
-  border-bottom: 1px solid rgba(71, 85, 105, 0.2);
-}
-
-.dark-mode .analysis-item-name,
-[data-theme="dark"] .analysis-item-name {
-  color: var(--text-200);
-}
-
-.dark-mode .analysis-item-value,
-[data-theme="dark"] .analysis-item-value {
-  color: var(--text-100);
-  font-weight: 600;
-}
-
-.dark-mode .analysis-template-progress,
-[data-theme="dark"] .analysis-template-progress {
-  background-color: rgba(37, 99, 235, 0.15);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-
-.dark-mode .analysis-template-progress-bar,
-[data-theme="dark"] .analysis-template-progress-bar {
-  background: linear-gradient(90deg, 
-    var(--primary-100) 0%, 
-    var(--primary-200) 100%);
-  box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
-}
-
-/* ========================================
-   ダークモード: 情報ブロック
-   ======================================== */
-.dark-mode .info-block,
-[data-theme="dark"] .info-block {
-  background: linear-gradient(135deg, 
-    rgba(37, 99, 235, 0.1) 0%, 
-    rgba(37, 99, 235, 0.05) 100%);
-  border: 1px solid rgba(37, 99, 235, 0.2);
-  box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.dark-mode .info-item,
-[data-theme="dark"] .info-item {
-  background: #1e293b;
-  border: 1px solid rgba(71, 85, 105);
-  box-shadow: 
-    0 2px 4px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.dark-mode .info-item:hover,
-[data-theme="dark"] .info-item:hover {
-  border-color: rgba(89, 142, 243, 0.4);
+    rgba(51, 65, 85, 0.5) 0%, 
+    rgba(30, 41, 59, 0.6) 100%);
+  border-color: rgba(89, 142, 243, 0.5);
   box-shadow: 
     0 4px 8px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
     0 0 15px rgba(37, 99, 235, 0.2);
 }
 
-.dark-mode .info-icon,
-[data-theme="dark"] .info-icon {
+.dark-mode .template-title,
+[data-theme="dark"] .template-title {
+  color: var(--dm-text-100);
+}
+
+.dark-mode .template-description,
+[data-theme="dark"] .template-description {
+  color: var(--dm-text-200);
+}
+
+/* ========================================
+   ダークモード: 情報アイテム
+   ======================================== */
+.dark-mode .info-item,
+[data-theme="dark"] .info-item {
   background: linear-gradient(135deg, 
-    rgba(89, 142, 243, 0.3) 0%, 
-    rgba(37, 99, 235, 0.2) 100%);
-  color: var(--primary-300);
-  box-shadow: 
-    0 2px 4px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 0 10px rgba(37, 99, 235, 0.3);
+    rgba(51, 65, 85, 0.25) 0%, 
+    rgba(30, 41, 59, 0.3) 100%);
+  border: 1px solid rgba(71, 85, 105, 0.3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
 .dark-mode .info-label,
 [data-theme="dark"] .info-label {
-  color: var(--text-200);
+  color: var(--dm-text-200);
 }
 
 .dark-mode .info-value,
 [data-theme="dark"] .info-value {
-  color: var(--text-100);
-  font-weight: 700;
-  text-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
-}
-
-/* ========================================
-   ダークモード: 売却情報
-   ======================================== */
-.dark-mode .sell-info,
-[data-theme="dark"] .sell-info {
-  background: linear-gradient(to right, 
-    rgba(217, 70, 239, 0.15) 0%, 
-    rgba(217, 70, 239, 0.08) 100%);
-  border: 1px solid rgba(217, 70, 239, 0.3);
-  box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 2px 8px rgba(0, 0, 0, 0.3),
-    0 0 15px rgba(217, 70, 239, 0.2);
-}
-
-/* ========================================
-   ダークモード: 損益表示
-   ======================================== */
-.dark-mode .profit,
-[data-theme="dark"] .profit {
-  color: var(--primary-300);
-  background: linear-gradient(135deg, 
-    rgba(89, 142, 243, 0.2) 0%, 
-    rgba(37, 99, 235, 0.15) 100%);
-  text-shadow: 0 0 10px rgba(89, 142, 243, 0.4);
-}
-
-.dark-mode .loss,
-[data-theme="dark"] .loss {
-  color: var(--accent-200);
-  background: linear-gradient(135deg, 
-    rgba(217, 70, 239, 0.2) 0%, 
-    rgba(217, 70, 239, 0.15) 100%);
-  text-shadow: 0 0 10px rgba(217, 70, 239, 0.4);
+  color: var(--dm-text-100);
 }
 
 /* ========================================
@@ -551,23 +429,29 @@
 .dark-mode .btn-diary-primary,
 [data-theme="dark"] .btn-diary-primary {
   background: linear-gradient(135deg, 
-    var(--primary-100) 0%, 
-    var(--primary-200) 100%);
-  border: 1px solid var(--primary-100);
+    var(--dm-primary-100) 0%, 
+    var(--dm-primary-200) 100%);
+  border: 1px solid rgba(89, 142, 243, 0.5);
   color: white;
   box-shadow: 
-    0 2px 8px rgba(37, 99, 235, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.2),
     0 0 10px rgba(37, 99, 235, 0.3);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .btn-diary-outline,
+[data-theme="dark"] .btn-diary-outline {
+  background: transparent;
+  border: 1px solid var(--dm-primary-200);
+  color: var(--dm-primary-300);
 }
 
 .dark-mode .btn-diary-primary:hover,
 [data-theme="dark"] .btn-diary-primary:hover {
   background: linear-gradient(135deg, 
-    var(--primary-200) 0%, 
-    var(--primary-100) 100%);
-  border-color: var(--primary-200);
+    var(--dm-primary-200) 0%, 
+    var(--dm-primary-100) 100%);
+  border-color: var(--dm-primary-200);
   transform: translateY(-2px);
   box-shadow: 
     0 4px 12px rgba(37, 99, 235, 0.5),
@@ -580,8 +464,8 @@
   background: linear-gradient(135deg, 
     rgba(37, 99, 235, 0.2) 0%, 
     rgba(37, 99, 235, 0.15) 100%);
-  border-color: var(--primary-200);
-  color: var(--primary-300);
+  border-color: var(--dm-primary-200);
+  color: var(--dm-primary-300);
   box-shadow: 0 0 20px rgba(37, 99, 235, 0.4);
 }
 
@@ -590,7 +474,7 @@
    ======================================== */
 .dark-mode .diary-card a,
 [data-theme="dark"] .diary-card a {
-  color: var(--primary-300);
+  color: var(--dm-primary-300);
   text-shadow: 0 0 5px rgba(89, 142, 243, 0.3);
 }
 
@@ -609,8 +493,8 @@
 [data-theme="dark"] .notes-timeline::-webkit-scrollbar-thumb,
 [data-theme="dark"] .analysis-templates-container::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, 
-    var(--bg-300) 0%, 
-    var(--bg-200) 100%);
+    var(--dm-bg-300) 0%, 
+    var(--dm-bg-200) 100%);
   border-radius: 10px;
   border: 1px solid rgba(71, 85, 105);
 }
@@ -620,8 +504,8 @@
 [data-theme="dark"] .notes-timeline::-webkit-scrollbar-thumb:hover,
 [data-theme="dark"] .analysis-templates-container::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, 
-    var(--primary-200) 0%, 
-    var(--primary-100) 100%);
+    var(--dm-primary-200) 0%, 
+    var(--dm-primary-100) 100%);
   box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
 }
 
@@ -667,13 +551,13 @@
     rgba(51, 65, 85, 0.6) 0%, 
     rgba(30, 41, 59, 0.8) 100%);
   border: 1px solid rgba(71, 85, 105, 0.4);
-  color: var(--text-100);
+  color: var(--dm-text-100);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .dark-mode .main-search-input:focus,
 [data-theme="dark"] .main-search-input:focus {
-  border-color: var(--primary-200);
+  border-color: var(--dm-primary-200);
   box-shadow: 
     0 0 0 3px rgba(89, 142, 243, 0.2),
     inset 0 1px 2px rgba(0, 0, 0, 0.3),
@@ -682,7 +566,7 @@
 
 .dark-mode .main-search-input::placeholder,
 [data-theme="dark"] .main-search-input::placeholder {
-  color: var(--text-300);
+  color: var(--dm-text-300);
 }
 
 .dark-mode .search-suggestions,
@@ -705,8 +589,8 @@
 .dark-mode .filter-chip,
 [data-theme="dark"] .filter-chip {
   background: linear-gradient(135deg, 
-    var(--primary-100) 0%, 
-    var(--primary-200) 100%);
+    var(--dm-primary-100) 0%, 
+    var(--dm-primary-200) 100%);
   color: white;
   border: 1px solid rgba(89, 142, 243, 0.5);
   box-shadow: 
@@ -723,18 +607,18 @@
   background: linear-gradient(135deg, 
     rgba(71, 85, 105, 0.4) 0%, 
     rgba(51, 65, 85, 0.5) 100%);
-  color: var(--text-200);
+  color: var(--dm-text-200);
   border: 1px solid rgba(71, 85, 105);
 }
 
 .dark-mode .empty-message,
 [data-theme="dark"] .empty-message {
-  color: var(--text-200);
+  color: var(--dm-text-200);
 }
 
 .dark-mode .empty-message-icon,
 [data-theme="dark"] .empty-message-icon {
-  color: var(--text-300);
+  color: var(--dm-text-300);
   opacity: 0.3;
 }
 
@@ -744,8 +628,8 @@
 .dark-mode .filter-notification,
 [data-theme="dark"] .filter-notification {
   background: linear-gradient(135deg, 
-    var(--primary-100) 0%, 
-    var(--primary-200) 100%);
+    var(--dm-primary-100) 0%, 
+    var(--dm-primary-200) 100%);
   box-shadow: 
     0 4px 16px rgba(0, 0, 0, 0.6),
     0 0 20px rgba(37, 99, 235, 0.4);

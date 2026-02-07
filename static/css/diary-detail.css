@@ -92,14 +92,6 @@
   margin-top: 0.25rem;
 }
 
-.purchase-date {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  color: var(--text-200);
-  font-size: 0.8rem;
-}
-
 .status-badges {
   display: flex;
   gap: 0.375rem;
@@ -971,9 +963,46 @@
   color: var(--accent-100);
 }
 
+[data-theme="dark"] .purchase-date {
+  color: var(--dm-foreground);
+}
+
+/* タブナビゲーションのダークモード */
+.dark-mode .tabs-section,
+[data-theme="dark"] .tabs-section {
+  background-color: transparent;
+}
+
+.dark-mode .improved-tabs,
+[data-theme="dark"] .improved-tabs {
+  background-color: rgba(71, 85, 105, 0.3);
+  border-bottom-color: var(--dm-border);
+}
+
+.dark-mode .improved-tab-link,
+[data-theme="dark"] .improved-tab-link {
+  color: var(--dm-muted-foreground);
+}
+
 .dark-mode .improved-tab-link.active,
 [data-theme="dark"] .improved-tab-link.active {
   color: var(--accent-100);
+}
+
+.dark-mode .improved-tab-link.active::after,
+[data-theme="dark"] .improved-tab-link.active::after {
+  background-color: var(--accent-100);
+}
+
+.dark-mode .improved-tab-link:hover:not(.active),
+[data-theme="dark"] .improved-tab-link:hover:not(.active) {
+  background-color: rgba(113, 196, 239, 0.1);
+  color: var(--accent-100);
+}
+
+.dark-mode .tab-content-improved,
+[data-theme="dark"] .tab-content-improved {
+  background-color: var(--dm-card);
 }
 
 .dark-mode .info-card-title,
@@ -989,4 +1018,202 @@
 .dark-mode .note-date-large,
 [data-theme="dark"] .note-date-large {
   background: linear-gradient(135deg, var(--accent-100) 0%, #4a9fd9 100%);
+}
+
+/* 操作バーのダークモード */
+.dark-mode .action-bar,
+[data-theme="dark"] .action-bar {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+  border-bottom-color: var(--dm-border);
+  backdrop-filter: blur(10px);
+}
+
+/* info-cardのダークモード */
+.dark-mode .info-card,
+[data-theme="dark"] .info-card {
+  background: linear-gradient(135deg, rgba(71, 85, 105, 0.3), rgba(30, 41, 59, 0.5));
+  border-color: var(--dm-border);
+}
+
+.dark-mode .info-item-improved,
+[data-theme="dark"] .info-item-improved {
+  background-color: var(--dm-card);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .info-icon-improved,
+[data-theme="dark"] .info-icon-improved {
+  background: linear-gradient(135deg, rgba(113, 196, 239, 0.2), rgba(113, 196, 239, 0.3));
+  color: var(--accent-100);
+}
+
+.dark-mode .info-label-improved,
+[data-theme="dark"] .info-label-improved {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .info-value-improved,
+[data-theme="dark"] .info-value-improved {
+  color: var(--dm-foreground);
+}
+
+/* note-cardのダークモード */
+.dark-mode .note-card,
+[data-theme="dark"] .note-card {
+  background: var(--dm-card);
+  border-color: var(--dm-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .note-card:hover,
+[data-theme="dark"] .note-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.dark-mode .note-card-header,
+[data-theme="dark"] .note-card-header {
+  background: linear-gradient(135deg, rgba(71, 85, 105, 0.3), rgba(30, 41, 59, 0.5));
+  border-bottom-color: var(--dm-border);
+}
+
+.dark-mode .note-date,
+[data-theme="dark"] .note-date {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .note-content-text,
+[data-theme="dark"] .note-content-text {
+  color: var(--dm-foreground);
+}
+
+/* note-card-header-modernのダークモード */
+.dark-mode .note-card-header-modern,
+[data-theme="dark"] .note-card-header-modern {
+  background: linear-gradient(135deg, rgba(71, 85, 105, 0.4), rgba(30, 41, 59, 0.6));
+  border-bottom-color: var(--dm-border);
+}
+
+.dark-mode .current-price,
+[data-theme="dark"] .current-price {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .current-price .unit,
+[data-theme="dark"] .current-price .unit {
+  color: var(--dm-muted-foreground);
+}
+
+/* price-detail-cardのダークモード */
+.dark-mode .price-detail-card,
+[data-theme="dark"] .price-detail-card {
+  background: rgba(71, 85, 105, 0.3);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .price-detail-card:hover,
+[data-theme="dark"] .price-detail-card:hover {
+  background: rgba(71, 85, 105, 0.4);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .price-detail-label,
+[data-theme="dark"] .price-detail-label {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .price-detail-value,
+[data-theme="dark"] .price-detail-value {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .price-detail-value .unit,
+[data-theme="dark"] .price-detail-value .unit {
+  color: var(--dm-muted-foreground);
+}
+
+/* stock-symbol-badgeのダークモード */
+.dark-mode .stock-symbol-badge,
+[data-theme="dark"] .stock-symbol-badge {
+  background: linear-gradient(135deg, rgba(89, 142, 243, 0.2) 0%, rgba(89, 142, 243, 0.3) 100%);
+  color: var(--dm-primary-200);
+  border-color: rgba(89, 142, 243, 0.4);
+}
+
+/* profit-hero-cardのダークモード */
+.dark-mode .profit-hero-card,
+[data-theme="dark"] .profit-hero-card {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.dark-mode .profit-hero-card.loss,
+[data-theme="dark"] .profit-hero-card.loss {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.dark-mode .profit-hero-card .profit-label,
+[data-theme="dark"] .profit-hero-card .profit-label {
+  color: var(--dm-muted-foreground);
+}
+
+/* timeline-cardのダークモード */
+.dark-mode .timeline-card,
+[data-theme="dark"] .timeline-card {
+  background: var(--dm-card);
+  border-color: var(--dm-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .timeline-card:hover,
+[data-theme="dark"] .timeline-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  border-color: rgba(89, 142, 243, 0.3);
+}
+
+/* timeline-listのダークモード */
+.dark-mode .timeline-list::before,
+[data-theme="dark"] .timeline-list::before {
+  background-color: var(--dm-border);
+}
+
+.dark-mode .timeline-item::before,
+[data-theme="dark"] .timeline-item::before {
+  background-color: var(--dm-primary-200);
+  border-color: var(--dm-card);
+  box-shadow: 0 0 0 2px rgba(89, 142, 243, 0.3);
+}
+
+/* simplified-note-formのダークモード */
+.dark-mode .simplified-note-form,
+[data-theme="dark"] .simplified-note-form {
+  background: linear-gradient(135deg, rgba(71, 85, 105, 0.3), rgba(30, 41, 59, 0.5));
+  border-color: var(--dm-border);
+}
+
+/* option-pillのダークモード */
+.dark-mode .option-pill,
+[data-theme="dark"] .option-pill {
+  background-color: var(--dm-bg-200);
+  border-color: var(--dm-border);
+  color: var(--dm-text-100);
+}
+
+.dark-mode .option-pill:hover,
+[data-theme="dark"] .option-pill:hover {
+  background-color: rgba(89, 142, 243, 0.15);
+  border-color: var(--dm-primary-200);
+}
+
+.dark-mode .option-pill.active,
+[data-theme="dark"] .option-pill.active {
+  background-color: var(--dm-primary-100);
+  border-color: var(--dm-primary-100);
+  color: white;
+}
+
+/* section-titleのダークモード */
+.dark-mode .section-title,
+[data-theme="dark"] .section-title {
+  color: var(--dm-text-100);
 }

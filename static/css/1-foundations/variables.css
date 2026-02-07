@@ -193,9 +193,13 @@
 
 /* ========================================
    Dark Mode Variables（新パレット対応）
+   ⚠️ 重要: ダークモード専用の変数定義
+   bodyやhtmlに.dark-modeクラスまたは[data-theme="dark"]が
+   付いている場合のみ適用される
    ======================================== */
-.dark-mode,
-[data-theme="dark"] {
+body.dark-mode,
+html[data-theme="dark"],
+html[data-theme="dark"] body {
   /* ダークモード基本色 */
   --dm-background: #0f172a;
   --dm-foreground: #f1f5f9;
@@ -215,11 +219,11 @@
   --dm-accent: #e2b870;
   --dm-info: var(--accent-100);
   
-  /* Override */
+  /* ⚠️ 重要: これらの変数をオーバーライド */
   --bg-primary: var(--dm-card);
   --bg-secondary: rgba(71, 85, 105, 0.3);
   --bg-tertiary: rgba(71, 85, 105, 0.2);
-  --bg-color: var(--dm-background);
+  --bg-color: var(--dm-background) !important;  /* 強制適用 */
   --card-bg-color: var(--dm-card);
   
   --text-primary: var(--dm-foreground);
@@ -245,6 +249,17 @@
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
   --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+/* より高い詳細度でダークモードを保証 */
+.dark-mode {
+  --bg-color: var(--dm-background) !important;
+  --text-color: var(--dm-foreground) !important;
+}
+
+[data-theme="dark"] {
+  --bg-color: var(--dm-background) !important;
+  --text-color: var(--dm-foreground) !important;
 }
 
 /* ========================================
