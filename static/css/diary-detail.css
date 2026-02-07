@@ -1,4 +1,4 @@
-/* diary-detail.css - プロ仕様デザイン完全版 */
+/* diary-detail.css - 新カラーパレット完全適用版 */
 
 /* === 基本コンテナ === */
 .diary-detail-container {
@@ -7,12 +7,12 @@
   overflow-x: hidden;
 }
 
-/* === ヘッダー情報（プロ仕様） === */
+/* === ヘッダー情報（新パレット適用） === */
 .diary-header-improved {
   position: relative;
   padding: 1.25rem 1.5rem;
-  background: linear-gradient(135deg, rgba(90, 126, 197, 0.08) 0%, rgba(90, 126, 197, 0.03) 100%);
-  border-bottom: 1px solid rgba(90, 126, 197, 0.15);
+  background: linear-gradient(135deg, rgba(212, 234, 247, 0.08) 0%, rgba(212, 234, 247, 0.03) 100%);
+  border-bottom: 1px solid var(--primary-200);
   border-radius: 12px 12px 0 0;
   overflow: hidden;
 }
@@ -25,7 +25,7 @@
   right: -20%;
   width: 200px;
   height: 200px;
-  background: radial-gradient(circle, rgba(90, 126, 197, 0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(113, 196, 239, 0.15) 0%, transparent 70%);
   filter: blur(40px);
   opacity: 0.3;
   pointer-events: none;
@@ -67,20 +67,20 @@
 .stock-title {
   font-size: 1.35rem;
   font-weight: 700;
-  color: var(--primary-color);
+  color: var(--accent-200);
   margin: 0;
   word-break: break-word;
   line-height: 1.2;
 }
 
 .stock-symbol-badge {
-  background: linear-gradient(135deg, rgba(90, 126, 197, 0.15) 0%, rgba(90, 126, 197, 0.25) 100%);
-  color: var(--primary-color);
+  background: linear-gradient(135deg, rgba(113, 196, 239, 0.15) 0%, rgba(113, 196, 239, 0.25) 100%);
+  color: var(--accent-200);
   padding: 0.25rem 0.6rem;
   border-radius: 6px;
   font-weight: 600;
   font-size: 0.75rem;
-  border: 1px solid rgba(90, 126, 197, 0.3);
+  border: 1px solid var(--accent-100);
   flex-shrink: 0;
 }
 
@@ -96,7 +96,7 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  color: var(--text-secondary);
+  color: var(--text-200);
   font-size: 0.8rem;
 }
 
@@ -118,9 +118,9 @@
 }
 
 .status-badge-memo {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%);
-  color: var(--info-color);
-  border-color: rgba(59, 130, 246, 0.3);
+  background: linear-gradient(135deg, rgba(113, 196, 239, 0.15) 0%, rgba(113, 196, 239, 0.08) 100%);
+  color: var(--accent-100);
+  border-color: rgba(113, 196, 239, 0.3);
 }
 
 .status-badge-sold {
@@ -135,7 +135,7 @@
   border-color: rgba(16, 185, 129, 0.3);
 }
 
-/* === 価格サマリーセクション（完全改訂） === */
+/* === 価格サマリーセクション === */
 .price-summary {
   display: flex;
   flex-direction: column;
@@ -173,7 +173,7 @@
 
 .profit-label {
   font-size: 0.65rem;
-  color: var(--text-tertiary);
+  color: var(--bg-300);
   margin-bottom: 0.4rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -213,8 +213,8 @@
 }
 
 .price-detail-card {
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: var(--bg-200);
+  border: 1px solid var(--bg-300);
   border-radius: 8px;
   padding: 0.6rem;
   text-align: right;
@@ -222,14 +222,14 @@
 }
 
 .price-detail-card:hover {
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--bg-100);
   transform: translateY(-1px);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .price-detail-label {
   font-size: 0.65rem;
-  color: var(--text-tertiary);
+  color: var(--text-200);
   margin-bottom: 0.3rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -238,18 +238,18 @@
 .price-detail-value {
   font-size: 1.1rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--text-100);
   line-height: 1.2;
 }
 
 .price-detail-value .unit {
   font-size: 0.7rem;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--text-200);
   margin-left: 0.15rem;
 }
 
-/* === スマホ最適化（768px以下） === */
+/* === スマホ最適化 === */
 @media (max-width: 768px) {
   .diary-header-improved {
     padding: 1rem;
@@ -269,7 +269,6 @@
     padding: 0.2rem 0.5rem;
   }
 
-  /* 価格サマリーを左寄せ、フルサイズに */
   .price-summary {
     align-items: stretch;
     width: 100%;
@@ -300,7 +299,6 @@
   }
 }
 
-/* === 超小型スマホ（576px以下） === */
 @media (max-width: 576px) {
   .diary-header-improved {
     padding: 0.875rem;
@@ -344,7 +342,6 @@
   }
 }
 
-/* === 極小スマホ（360px以下） === */
 @media (max-width: 360px) {
   .diary-header-improved {
     padding: 0.75rem;
@@ -373,8 +370,8 @@
 
 .improved-tabs {
   display: flex;
-  background-color: rgba(248, 249, 250, 0.8);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: var(--bg-200);
+  border-bottom: 1px solid var(--bg-300);
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -399,7 +396,7 @@
   align-items: center;
   justify-content: center;
   padding: 1rem 0.75rem;
-  color: var(--text-secondary);
+  color: var(--text-200);
   text-decoration: none;
   transition: all 0.3s ease;
   border: none;
@@ -421,17 +418,17 @@
 }
 
 .improved-tab-link.active {
-  color: var(--primary-color);
+  color: var(--accent-200);
   font-weight: 600;
 }
 
 .improved-tab-link.active::after {
-  background-color: var(--primary-color);
+  background-color: var(--accent-200);
 }
 
 .improved-tab-link:hover:not(.active) {
-  background-color: rgba(90, 126, 197, 0.05);
-  color: var(--primary-color);
+  background-color: rgba(113, 196, 239, 0.05);
+  color: var(--accent-200);
 }
 
 .tab-icon {
@@ -464,15 +461,15 @@
 /* === タブコンテンツ === */
 .tab-content-improved {
   padding: 2rem 1.5rem;
-  background-color: white;
+  background-color: var(--bg-100);
   border-radius: 0 0 12px 12px;
   min-height: 400px;
 }
 
 /* === 継続記録フォーム === */
 .simplified-note-form {
-  background: linear-gradient(135deg, rgba(248, 249, 250, 0.8), rgba(255, 255, 255, 0.9));
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: linear-gradient(135deg, var(--bg-200), var(--bg-100));
+  border: 1px solid var(--bg-300);
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
@@ -489,7 +486,7 @@
 .section-title {
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-100);
   margin-bottom: 0.75rem;
   display: flex;
   align-items: center;
@@ -505,9 +502,9 @@
 .option-pill {
   padding: 0.5rem 1rem;
   border-radius: 20px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  background-color: white;
-  color: var(--text-primary);
+  border: 1px solid var(--bg-300);
+  background-color: var(--bg-100);
+  color: var(--text-100);
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 0.85rem;
@@ -517,13 +514,13 @@
 }
 
 .option-pill:hover {
-  background-color: rgba(90, 126, 197, 0.05);
-  border-color: rgba(90, 126, 197, 0.3);
+  background-color: rgba(113, 196, 239, 0.08);
+  border-color: var(--accent-100);
 }
 
 .option-pill.active {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
+  background-color: var(--accent-200);
+  border-color: var(--accent-200);
   color: white;
 }
 
@@ -536,8 +533,8 @@
 }
 
 .info-card {
-  background: linear-gradient(135deg, rgba(248, 249, 250, 0.8), rgba(255, 255, 255, 0.9));
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: linear-gradient(135deg, var(--bg-200), var(--bg-100));
+  border: 1px solid var(--bg-300);
   border-radius: 12px;
   padding: 1.5rem;
 }
@@ -545,7 +542,7 @@
 .info-card-title {
   font-size: 1rem;
   font-weight: 600;
-  color: var(--primary-color);
+  color: var(--accent-200);
   margin-bottom: 1rem;
   display: flex;
   align-items: center;
@@ -563,20 +560,20 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem;
-  background-color: white;
+  background-color: var(--bg-100);
   border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--bg-300);
 }
 
 .info-icon-improved {
   width: 40px;
   height: 40px;
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(90, 126, 197, 0.1), rgba(90, 126, 197, 0.2));
+  background: linear-gradient(135deg, rgba(113, 196, 239, 0.15), rgba(113, 196, 239, 0.25));
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--primary-color);
+  color: var(--accent-200);
   font-size: 1.1rem;
   flex-shrink: 0;
 }
@@ -588,20 +585,20 @@
 
 .info-label-improved {
   font-size: 0.8rem;
-  color: var(--text-secondary);
+  color: var(--text-200);
   margin-bottom: 0.25rem;
 }
 
 .info-value-improved {
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-100);
   word-break: break-word;
 }
 
 /* === 継続記録カード === */
 .note-card {
-  background: white;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--bg-100);
+  border: 1px solid var(--bg-300);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   overflow: hidden;
@@ -616,8 +613,8 @@
 
 .note-card-header {
   padding: 1rem 1.25rem;
-  background: linear-gradient(135deg, rgba(248, 249, 250, 0.8), rgba(255, 255, 255, 0.9));
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  background: linear-gradient(135deg, var(--bg-200), var(--bg-100));
+  border-bottom: 1px solid var(--bg-300);
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -630,7 +627,7 @@
 
 .note-date {
   font-size: 0.9rem;
-  color: var(--text-secondary);
+  color: var(--text-200);
   margin-bottom: 0.5rem;
   display: flex;
   align-items: center;
@@ -643,7 +640,7 @@
 
 .note-content-text {
   line-height: 1.6;
-  color: var(--text-primary);
+  color: var(--text-100);
 }
 
 /* === タイムライン === */
@@ -661,7 +658,7 @@
   left: 18px;
   height: 100%;
   width: 1px;
-  background-color: rgba(90, 126, 197, 0.2);
+  background-color: var(--primary-200);
 }
 
 .timeline-item {
@@ -678,15 +675,15 @@
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background-color: var(--primary-color);
-  border: 2px solid white;
-  box-shadow: 0 0 0 2px rgba(90, 126, 197, 0.3);
+  background-color: var(--accent-200);
+  border: 2px solid var(--bg-100);
+  box-shadow: 0 0 0 2px rgba(113, 196, 239, 0.3);
   z-index: 2;
 }
 
 .timeline-card {
-  background: white;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--bg-100);
+  border: 1px solid var(--bg-300);
   border-radius: 12px;
   padding: 1.25rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
@@ -706,9 +703,9 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  background: linear-gradient(135deg, rgba(248, 249, 250, 0.95), rgba(255, 255, 255, 0.95));
+  background: linear-gradient(135deg, rgba(245, 244, 241, 0.95), rgba(255, 254, 251, 0.95));
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--bg-300);
   padding: 0.75rem 1rem;
   margin: -1rem -1rem 1rem -1rem;
   display: flex;
@@ -720,7 +717,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: var(--primary-color);
+  color: var(--accent-200);
   text-decoration: none;
   font-weight: 500;
   transition: all 0.2s ease;
@@ -802,1782 +799,17 @@
   }
 }
 
-/* === ダークモード対応 === */
-.dark-mode .diary-header-improved,
-[data-theme="dark"] .diary-header-improved {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
-  border-bottom-color: var(--dm-border);
-}
-
-.dark-mode .diary-header-improved::before,
-[data-theme="dark"] .diary-header-improved::before {
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
-}
-
-.dark-mode .stock-title,
-[data-theme="dark"] .stock-title {
-  color: var(--dm-primary);
-}
-
-.dark-mode .profit-hero-card,
-[data-theme="dark"] .profit-hero-card {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
-  border-color: rgba(16, 185, 129, 0.4);
-}
-
-.dark-mode .profit-hero-card.loss,
-[data-theme="dark"] .profit-hero-card.loss {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
-  border-color: rgba(239, 68, 68, 0.4);
-}
-
-.dark-mode .price-detail-card,
-[data-theme="dark"] .price-detail-card {
-  background: rgba(71, 85, 105, 0.3);
-  border-color: var(--dm-border);
-}
-
-.dark-mode .price-detail-value,
-[data-theme="dark"] .price-detail-value {
-  color: var(--dm-foreground);
-}
-
-.dark-mode .tab-content-improved,
-[data-theme="dark"] .tab-content-improved {
-  background-color: var(--dm-card);
-}
-
-.dark-mode .info-card,
-[data-theme="dark"] .info-card {
-  background: linear-gradient(135deg, rgba(71, 85, 105, 0.3), rgba(71, 85, 105, 0.2));
-  border-color: var(--dm-border);
-}
-
-.dark-mode .note-card,
-[data-theme="dark"] .note-card {
-  background-color: var(--dm-card);
-  border-color: var(--dm-border);
-}
-
-/* === 改善されたタブナビゲーション（スマホ最適化） === */
-.tabs-section {
-  background-color: transparent;
-  border-radius: 0 0 12px 12px;
-  overflow: hidden;
-  margin-bottom: 1.5rem;
-}
-
-.tabs-section.mobile-optimized {
-  margin-bottom: 1rem;
-}
-
-.improved-tabs {
-  display: flex;
-  background-color: rgba(248, 249, 250, 0.8);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.improved-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.improved-tab-item {
-  flex: 1;
-  min-width: 120px;
-  text-align: center;
-}
-
-.improved-tab-link {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem 0.75rem;
-  color: var(--text-secondary);
-  text-decoration: none;
-  transition: all 0.3s ease;
-  border: none;
-  background: none;
-  width: 100%;
-  position: relative;
-  min-height: 80px;
-}
-
-.improved-tab-link::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background-color: transparent;
-  transition: background-color 0.3s ease;
-}
-
-.improved-tab-link.active {
-  color: var(--primary-color);
-  font-weight: 600;
-}
-
-.improved-tab-link.active::after {
-  background-color: var(--primary-color);
-}
-
-.improved-tab-link:hover:not(.active) {
-  background-color: rgba(90, 126, 197, 0.05);
-  color: var(--primary-color);
-}
-
-.tab-icon {
-  position: relative;
-  display: inline-block;
-  font-size: 1.4rem;
-  margin-bottom: 0.4rem;
-}
-
-.tab-icon .notes-count-badge,
-.tab-icon .badge {
-  position: absolute;
-  bottom: -3px;
-  right: -6px;
-  font-size: 0.65rem;
-  padding: 2px 5px;
-  border-radius: 50%;
-  line-height: 1;
-  min-width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.tab-label {
-  font-size: 0.9rem;
-  line-height: 1.2;
-}
-
-.tab-count {
-  font-size: 0.7rem;
-  color: var(--text-secondary);
-  margin-top: 0.25rem;
-}
-
-/* === タブコンテンツの改善（スマホ最適化） === */
-.tab-content-improved {
-  padding: 2rem 1.5rem;
-  background-color: white;
-  border-radius: 0 0 12px 12px;
-  min-height: 400px;
-}
-
-.tab-content-improved.mobile-optimized {
-  padding: 1rem 0.75rem;
-  min-height: 300px;
-}
-
-/* === 継続記録フォームの簡素化（スマホ最適化） === */
-.simplified-note-form {
-  background: linear-gradient(135deg, rgba(248, 249, 250, 0.8), rgba(255, 255, 255, 0.9));
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.simplified-note-form.mobile-optimized {
-  padding: 1rem;
-  margin-bottom: 1rem;
-}
-
-.form-section {
-  margin-bottom: 1.25rem;
-}
-
-.form-section.mobile-optimized {
-  margin-bottom: 1rem;
-}
-
-.form-section:last-child {
-  margin-bottom: 0;
-}
-
-.section-title {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 0.75rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.option-pills {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.option-pills.mobile-optimized {
-  gap: 0.375rem;
-}
-
-.option-pill {
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  background-color: white;
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.85rem;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.option-pill:hover {
-  background-color: rgba(90, 126, 197, 0.05);
-  border-color: rgba(90, 126, 197, 0.3);
-}
-
-.option-pill.active {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-  color: white;
-}
-
-.importance-pill.low {
-  border-color: rgba(107, 114, 128, 0.3);
-}
-
-.importance-pill.low.active {
-  background-color: var(--text-secondary);
-  border-color: var(--text-secondary);
-}
-
-.importance-pill.high {
-  border-color: rgba(225, 90, 90, 0.3);
-}
-
-.importance-pill.high.active {
-  background-color: var(--danger-color);
-  border-color: var(--danger-color);
-}
-
-/* === 情報ブロックの改善（スマホ最適化） === */
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.info-grid.mobile-optimized {
-  grid-template-columns: 1fr;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.info-card {
-  background: linear-gradient(135deg, rgba(248, 249, 250, 0.8), rgba(255, 255, 255, 0.9));
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  border-radius: 12px;
-  padding: 1.5rem;
-}
-
-.info-card.mobile-optimized {
-  padding: 1rem;
-}
-
-.info-card-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--primary-color);
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.info-items {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-}
-
-.info-items.mobile-optimized {
-  grid-template-columns: 1fr;
-  gap: 0.75rem;
-}
-
-.info-item-improved {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  background-color: white;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.03);
-}
-
-.info-item-improved.mobile-optimized {
-  padding: 0.5rem;
-  gap: 0.5rem;
-}
-
-.info-icon-improved {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, rgba(90, 126, 197, 0.1), rgba(90, 126, 197, 0.2));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--primary-color);
-  font-size: 1.1rem;
-  flex-shrink: 0;
-}
-
-.info-content-improved {
-  flex: 1;
-  min-width: 0;
-}
-
-.info-label-improved {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  margin-bottom: 0.25rem;
-}
-
-.info-value-improved {
-  font-weight: 600;
-  color: var(--text-primary);
-  word-break: break-word;
-}
-
-/* === 継続記録カードのスタイル（スマホ最適化） === */
-.note-card {
-  background: white;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  overflow: hidden;
-  transition: all 0.3s ease;
-}
-
-.note-card.mobile-optimized {
-  border-radius: 8px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-}
-
-.note-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.note-card-header {
-  padding: 1rem 1.25rem;
-  background: linear-gradient(135deg, rgba(248, 249, 250, 0.8), rgba(255, 255, 255, 0.9));
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-}
-
-.note-card-header.mobile-optimized {
-  padding: 0.75rem;
-  gap: 0.5rem;
-}
-
-.note-meta-left {
-  flex: 1;
-}
-
-.note-date {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  margin-bottom: 0.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.note-badges {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.importance-indicator {
-  padding: 0.2rem 0.6rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.importance-indicator.high {
-  background-color: rgba(225, 90, 90, 0.15);
-  color: var(--danger-color);
-}
-
-.importance-indicator.medium {
-  background-color: rgba(90, 126, 197, 0.15);
-  color: var(--primary-color);
-}
-
-.price-label {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  margin-bottom: 0.25rem;
-}
-/* === 継続記録の価格表示（コンパクト版） === */
-.note-price-summary {
-  flex-shrink: 0;
-  min-width: auto;
-}
-
-.price-compact-row {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.25rem;
-}
-
-.price-badge {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  background: rgba(248, 249, 250, 0.8);
-  padding: 0.25rem 0.6rem;
-  border-radius: 6px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  white-space: nowrap;
-}
-
-.price-change {
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.15rem 0.5rem;
-  border-radius: 4px;
-  white-space: nowrap;
-}
-
-.price-change.positive {
-  background-color: rgba(16, 185, 129, 0.12);
-  color: var(--success-color);
-}
-
-.price-change.negative {
-  background-color: rgba(239, 68, 68, 0.12);
-  color: var(--danger-color);
-}
-
-/* スマホでの調整 */
-@media (max-width: 768px) {
-  .note-card-header {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-  
-  .note-price-summary {
-    align-self: flex-start;
-  }
-  
-  .price-compact-row {
-    flex-direction: row;
-    gap: 0.5rem;
-  }
-}
-
-@media (max-width: 576px) {
-  .price-badge {
-    font-size: 0.8rem;
-    padding: 0.2rem 0.5rem;
-  }
-  
-  .price-change {
-    font-size: 0.7rem;
-    padding: 0.15rem 0.4rem;
-  }
-}
-
-/* ダークモード */
-.dark-mode .price-badge,
-[data-theme="dark"] .price-badge {
-  background: rgba(71, 85, 105, 0.4);
-  border-color: var(--dm-border);
-  color: var(--dm-foreground);
-}
-
-.dark-mode .price-change.positive,
-[data-theme="dark"] .price-change.positive {
-  background-color: rgba(16, 185, 129, 0.2);
-  color: var(--dm-success);
-}
-
-.dark-mode .price-change.negative,
-[data-theme="dark"] .price-change.negative {
-  background-color: rgba(239, 68, 68, 0.2);
-  color: var(--dm-destructive);
-}
-
-.note-card-body {
-  padding: 1.25rem;
-}
-
-.note-card-body.mobile-optimized {
-  padding: 1rem;
-}
-
-.note-content-text {
-  line-height: 1.6;
-  color: var(--text-primary);
-}
-
-.note-content-text p {
-  margin-bottom: 0.75rem;
-}
-
-.note-content-text p:last-child {
-  margin-bottom: 0;
-}
-
-/* === タイムライン関連スタイル（スマホ最適化） === */
-.timeline-section {
-  padding: 1rem 0;
-}
-
-.timeline-section.mobile-optimized {
-  padding: 0.5rem 0;
-}
-
-.timeline-list {
-  position: relative;
-  padding-left: 2rem;
-  margin: 0;
-  list-style: none;
-}
-
-.timeline-list.mobile-optimized {
-  padding-left: 1.5rem;
-}
-
-.timeline-list::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 18px;
-  height: 100%;
-  width: 1px;
-  background-color: rgba(90, 126, 197, 0.2);
-}
-
-.timeline-item {
-  position: relative;
-  margin-bottom: 2rem;
-  list-style: none;
-}
-
-.timeline-item.mobile-optimized {
-  margin-bottom: 1.5rem;
-}
-
-.timeline-item::before {
-  content: '';
-  position: absolute;
-  top: 15px;
-  left: -30px;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background-color: var(--primary-color);
-  border: 2px solid white;
-  box-shadow: 0 0 0 2px rgba(90, 126, 197, 0.3);
-  z-index: 2;
-}
-
-.timeline-item.current::before {
-  width: 13px;
-  height: 13px;
-  left: -32px;
-  top: 14px;
-  background-color: var(--secondary-color);
-  box-shadow: 0 0 0 3px rgba(248, 194, 145, 0.4);
-  animation: pulse 2s infinite;
-}
-
-.timeline-item.sold::before {
-  background-color: var(--success-color);
-  box-shadow: 0 0 0 2px rgba(93, 176, 117, 0.3);
-}
-
-.timeline-item.memo::before {
-  background-color: var(--info-color);
-  box-shadow: 0 0 0 2px rgba(93, 161, 229, 0.3);
-}
-
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(248, 194, 145, 0.7);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(248, 194, 145, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(248, 194, 145, 0);
-  }
-}
-
-.timeline-card {
-  background: white;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 12px;
-  padding: 1.25rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  transition: all 0.3s ease;
-  text-decoration: none;
-  color: inherit;
-  display: block;
-}
-
-.timeline-card.mobile-optimized {
-  padding: 1rem;
-  border-radius: 8px;
-}
-
-.timeline-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  color: inherit;
-  text-decoration: none;
-}
-
-.timeline-card.current {
-  border: 2px solid var(--secondary-color);
-  box-shadow: 0 4px 12px rgba(248, 194, 145, 0.2);
-}
-
-.timeline-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1rem;
-}
-
-.timeline-stock-info h6 {
-  margin: 0;
-  color: var(--primary-color);
-  font-weight: 600;
-}
-
-.timeline-badges {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.timeline-price-info {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  margin-bottom: 0.75rem;
-}
-
-.timeline-content {
-  color: var(--text-primary);
-  line-height: 1.5;
-}
-
-/* === 操作ボタンの配置改善 === */
-.action-bar {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: linear-gradient(135deg, rgba(248, 249, 250, 0.95), rgba(255, 255, 255, 0.95));
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  padding: 0.75rem 1rem;
-  margin: -1rem -1rem 1rem -1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.back-link {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--primary-color);
-  text-decoration: none;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.back-link:hover {
-  color: var(--primary-color);
-  transform: translateX(-2px);
-}
-
-.desktop-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-/* === 分析テンプレート表示の改善（スマホ最適化） === */
-.analysis-templates-summary {
-  width: 100%;
-}
-
-.analysis-template-item {
-  padding: 1rem;
-  background: linear-gradient(135deg, rgba(248, 249, 250, 0.8), rgba(255, 255, 255, 0.9));
-  border: 1px solid rgba(90, 126, 197, 0.1);
-  border-radius: 10px;
-  transition: all 0.2s ease;
-  position: relative;
-}
-
-.analysis-template-item.mobile-optimized {
-  padding: 0.75rem;
-  border-radius: 8px;
-}
-
-.analysis-template-item:hover {
-  border-color: rgba(90, 126, 197, 0.2);
-  box-shadow: 0 2px 8px rgba(90, 126, 197, 0.1);
-  transform: translateY(-1px);
-}
-
-.analysis-template-item .template-name a {
-  font-size: 1rem;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  transition: color 0.2s ease;
-}
-
-.analysis-template-item .template-name a:hover {
-  color: var(--primary-color) !important;
-}
-
-.completion-badge .badge {
-  font-size: 0.75rem;
-  padding: 0.3rem 0.6rem;
-  border-radius: 12px;
-}
-
-.template-description {
-  line-height: 1.4;
-  margin-top: 0.5rem;
-  padding-left: 1.5rem;
-}
-
-.template-actions {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.analysis-template-item .btn-outline-primary,
-.analysis-template-item .btn-outline-secondary {
-  border-color: rgba(90, 126, 197, 0.3);
-  transition: all 0.2s ease;
-  font-size: 0.8rem;
-  padding: 0.25rem 0.5rem;
-}
-
-.analysis-template-item .btn-outline-primary:hover {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-  color: white;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 5px rgba(90, 126, 197, 0.3);
-}
-
-.analysis-template-item .btn-outline-secondary:hover {
-  background-color: var(--text-secondary);
-  border-color: var(--text-secondary);
-  color: white;
-}
-
-/* === 分析項目詳細表示（スマホ最適化） === */
-.analysis-items-detail {
-  background: linear-gradient(135deg, rgba(248, 250, 252, 0.8), rgba(255, 255, 255, 0.9));
-  border: 1px solid rgba(90, 126, 197, 0.1);
-  border-radius: 8px;
-  padding: 1rem;
-  margin-top: 0.5rem;
-}
-
-.analysis-items-detail.mobile-optimized {
-  padding: 0.75rem;
-}
-
-.analysis-items-title {
-  color: var(--primary-color);
-  font-size: 0.95rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(90, 126, 197, 0.2);
-}
-
-.analysis-item-detail {
-  padding: 0.75rem;
-  background-color: white;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.analysis-item-detail.mobile-optimized {
-  padding: 0.5rem;
-}
-
-.analysis-item-detail:hover {
-  border-color: rgba(90, 126, 197, 0.2);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.analysis-item-question {
-  display: flex;
-  align-items: center;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.item-order {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  background-color: rgba(90, 126, 197, 0.1);
-  color: var(--primary-color);
-  border-radius: 50%;
-  font-size: 0.75rem;
-  font-weight: 600;
-  margin-right: 0.5rem;
-  flex-shrink: 0;
-}
-
-.item-name {
-  flex: 1;
-}
-
-.item-description {
-  margin-left: 0.25rem;
-  cursor: help;
-}
-
-.answer-full {
-  background-color: rgba(248, 249, 250, 0.5);
-  padding: 0.5rem;
-  border-radius: 4px;
-  border-left: 3px solid var(--primary-color);
-  line-height: 1.5;
-  font-size: 0.85rem;
-}
-
-.analysis-item-detail .badge.bg-warning {
-  font-size: 0.7rem;
-  padding: 0.2rem 0.4rem;
-}
-
-/* === 継続記録用の画像アップロードエリア（スマホ最適化） === */
-.image-upload-area-note {
-  border: 2px dashed #dee2e6;
-  border-radius: 8px;
-  padding: 1.5rem;
-  text-align: center;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  background-color: #f8f9fa;
-}
-
-.image-upload-area-note.mobile-optimized {
-  padding: 1rem;
-}
-
-.image-upload-area-note:hover {
-  border-color: var(--primary-color, #5a7ec5);
-  background-color: rgba(90, 126, 197, 0.05);
-}
-
-.image-upload-area-note.dragover {
-  border-color: var(--primary-color, #5a7ec5);
-  background-color: rgba(90, 126, 197, 0.1);
-}
-
-.note-attached-image {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.note-attached-image:hover {
-  transform: scale(1.02);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* === フォーム切り替えボタンのスタイル改善 === */
-#toggleNoteForm {
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
-}
-
-#toggleNoteForm:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
-}
-
-#toggleNoteForm[aria-expanded="true"] {
-  background-color: #6c757d;
-  border-color: #6c757d;
-}
-
-#toggleNoteForm[aria-expanded="true"] .toggle-text::before {
-  content: "フォームを閉じる";
-}
-
-#toggleNoteForm[aria-expanded="false"] .toggle-text::before {
-  content: "記録を追加";
-}
-
-.toggle-text {
-  font-size: 0;
-}
-
-.toggle-text::before {
-  font-size: 0.875rem;
-}
-
-/* === フォーム表示時のアニメーション === */
-#noteFormCollapse {
-  transition: all 0.3s ease;
-}
-
-#noteFormCollapse.collapsing {
-  opacity: 0.7;
-}
-
-#noteFormCollapse.show {
-  opacity: 1;
-}
-
-.notes-list {
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  padding-top: 1rem;
-  margin-top: 1rem;
-}
-
-.notes-list.mobile-optimized {
-  padding-top: 0.75rem;
-  margin-top: 0.75rem;
-}
-
-.notes-count-badge {
-  font-size: 0.6rem;
-  padding: 0.15rem 0.35rem;
-}
-
-/* === アニメーション効果 === */
-@keyframes template-highlight {
-  0% {
-    background-color: rgba(90, 126, 197, 0.1);
-  }
-  50% {
-    background-color: rgba(90, 126, 197, 0.2);
-  }
-  100% {
-    background-color: rgba(90, 126, 197, 0.1);
-  }
-}
-
-.analysis-template-item:target {
-  animation: template-highlight 1s ease-out;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-#noteFormCollapse.show .simplified-note-form {
-  animation: fadeInUp 0.3s ease-out;
-}
-
-/* === テキストコンテンツの最適化 === */
-.reason-content {
-  padding: 0.75rem 1rem;
-  line-height: 1.6;
-  font-size: 0.95rem;
-  background-color: rgba(248, 250, 252, 0.5);
-  border-radius: 8px;
-  margin: 0.5rem 0;
-  word-break: break-word;
-  overflow-wrap: break-word;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-.reason-content.mobile-optimized {
-  padding: 0.5rem 0.75rem;
-}
-
-/* === レスポンシブ改善 === */
-@media (max-width: 768px) {
-  .desktop-actions {
-    display: none;
-  }
-
-  .diary-header-improved {
-    padding: 1rem;
-  }
-
-  .header-main-info {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
-  }
-
-  .stock-name-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .stock-title {
-    font-size: 1.25rem;
-  }
-
-  .header-meta-info {
-    justify-content: space-between;
-  }
-
-  .price-summary {
-    text-align: left;
-    min-width: auto;
-  }
-
-  .improved-tab-link {
-    min-height: 70px;
-    padding: 0.75rem 0.5rem;
-  }
-
-  .tab-icon {
-    font-size: 1.25rem;
-    margin-bottom: 0.25rem;
-  }
-
-  .tab-label {
-    font-size: 0.8rem;
-  }
-
-  .tab-content-improved {
-    padding: 1rem 0.5rem;
-  }
-
-  .simplified-note-form {
-    padding: 0.75rem;
-  }
-
-  .option-pills {
-    gap: 0.375rem;
-  }
-
-  .option-pill {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.8rem;
-  }
-
-  .info-grid {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
-  }
-
-  .info-items {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
-  }
-
-  .info-card {
-    padding: 0.75rem;
-  }
-
-  .info-item-improved {
-    padding: 0.5rem;
-  }
-
-  .info-icon-improved {
-    width: 32px;
-    height: 32px;
-    font-size: 1rem;
-  }
-
-  .analysis-template-item {
-    padding: 0.75rem;
-  }
-
-  .analysis-template-item .d-flex {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .completion-badge {
-    align-self: flex-end;
-  }
-
-  .template-description {
-    padding-left: 0;
-  }
-
-  .template-actions {
-    flex-direction: column;
-    width: 100%;
-    gap: 0.25rem;
-  }
-
-  .template-actions .btn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .analysis-item-question {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
-  }
-
-  .item-order {
-    margin-right: 0;
-    margin-bottom: 0.25rem;
-  }
-
-  .analysis-item-answer {
-    padding-left: 0.75rem;
-  }
-
-  .analysis-items-detail {
-    padding: 0.75rem;
-  }
-
-  .image-upload-area-note {
-    padding: 0.75rem;
-    font-size: 0.9rem;
-  }
-
-  .image-upload-area-note i {
-    font-size: 1.5rem !important;
-  }
-
-  #note-image-preview-container .card {
-    max-width: 100% !important;
-  }
-
-  .d-flex.justify-content-between.align-items-center {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
-  }
-
-  #toggleNoteForm {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .d-flex.gap-2 {
-    gap: 0.5rem !important;
-  }
-
-  .d-flex.gap-2 .btn {
-    width: 100%;
-  }
-
-  .timeline-list {
-    padding-left: 1.5rem;
-  }
-
-  .timeline-item {
-    margin-bottom: 1.5rem;
-  }
-
-  .timeline-card {
-    padding: 0.75rem;
-  }
-}
-
-@media (max-width: 576px) {
-  /* 極小画面での最適化 */
-  .diary-detail-container {
-    padding-left: 0.25rem;
-    padding-right: 0.25rem;
-  }
-
-  .action-bar {
-    padding: 0.5rem;
-    margin: -0.5rem -0.25rem 0.75rem -0.25rem;
-  }
-
-  .diary-header-improved {
-    padding: 0.75rem;
-  }
-
-  .stock-name-row {
-    align-items: center;
-  }
-
-  .stock-title {
-    font-size: 1.1rem;
-  }
-
-  .stock-symbol-badge {
-    font-size: 0.75rem;
-    padding: 0.2rem 0.6rem;
-  }
-
-  .improved-tabs {
-    margin: 0 -4px;
-  }
-
-  .improved-tab-item {
-    min-width: 90px;
-  }
-
-  .improved-tab-link {
-    min-height: 60px;
-    padding: 0.5rem 0.25rem;
-  }
-
-  .tab-icon {
-    font-size: 1.1rem;
-  }
-
-  .tab-label {
-    font-size: 0.75rem;
-  }
-
-  .tab-count {
-    display: none;
-  }
-
-  .notes-count-badge {
-    font-size: 0.6rem;
-    padding: 0.15rem 0.35rem;
-  }
-
-  .tab-content-improved {
-    padding: 0.75rem 0.25rem;
-  }
-
-  .info-card {
-    padding: 0.5rem;
-  }
-
-  .info-item-improved {
-    padding: 0.375rem;
-    gap: 0.375rem;
-  }
-
-  .info-icon-improved {
-    width: 28px;
-    height: 28px;
-    font-size: 0.9rem;
-  }
-
-  .simplified-note-form {
-    padding: 0.5rem;
-  }
-
-  .option-pill {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-  }
-
-  .note-card-header {
-    padding: 0.5rem;
-  }
-
-  .note-card-body {
-    padding: 0.5rem;
-  }
-
-  .analysis-template-item {
-    padding: 0.5rem;
-  }
-
-  .analysis-items-detail {
-    padding: 0.5rem;
-  }
-
-  .timeline-card {
-    padding: 0.5rem;
-  }
-}
-
-/* === アクセシビリティとタッチ改善 === */
-@media (hover: none) {
-  .improved-tab-link:active {
-    background-color: rgba(90, 126, 197, 0.1);
-  }
-
-  .option-pill:active {
-    transform: scale(0.95);
-  }
-}
-
-/* === フォーカス状態の改善 === */
-#toggleNoteForm:focus {
-  outline: 2px solid var(--primary-color);
-  outline-offset: 2px;
-}
-
-.btn-close {
-  opacity: 0.6;
-  transition: opacity 0.2s, transform 0.2s;
-}
-
-.btn-close:hover {
-  opacity: 1;
-  transform: scale(1.1);
-}
-
-/* ========== プレビュー表示 ========== */
-#transaction-preview {
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-  border: 1.5px solid #93c5fd;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  margin-top: 1rem;
-  animation: slideDown 0.3s ease;
-}
-
-#transaction-preview .d-flex {
-  gap: 1rem;
-}
-
-#transaction-preview strong {
-  color: #1e40af;
-  font-weight: 600;
-}
-
-#transaction-preview #transaction-amount {
-  color: #1e3a8a;
-  font-weight: 700;
-}
-
-#quantity-warning {
-  background-color: #fee2e2;
-  border: 1.5px solid #fecaca;
-  border-radius: 0.375rem;
-  padding: 0.75rem;
-  margin-top: 0.5rem;
-  animation: slideDown 0.3s ease;
-}
-
-#quantity-warning i {
-  margin-right: 0.375rem;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ========== モーダルフッターの改善 ========== */
-.modal-footer {
-  background-color: #f9fafb;
-  border-top: 2px solid #e5e7eb;
-  padding: 1rem 1.5rem;
-  gap: 0.75rem;
-}
-
-.modal-footer .btn {
-  font-weight: 500;
-  padding: 0.625rem 1.5rem;
-  border-radius: 0.375rem;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  min-height: 42px;
-}
-
-.modal-footer .btn i {
-  font-size: 1rem;
-}
-
-.modal-footer .btn-secondary {
-  background-color: #6b7280;
-  border-color: #6b7280;
-  color: #ffffff;
-}
-
-.modal-footer .btn-secondary:hover {
-  background-color: #4b5563;
-  border-color: #4b5563;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
-}
-
-.modal-footer .btn-primary {
-  background-color: #5a7ec5;
-  border-color: #5a7ec5;
-  color: #ffffff;
-}
-
-.modal-footer .btn-primary:hover {
-  background-color: #4a6eaf;
-  border-color: #4a6eaf;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(90, 126, 197, 0.3);
-}
-
-.modal-footer .btn-info {
-  background-color: #5da1e5;
-  border-color: #5da1e5;
-  color: #ffffff;
-}
-
-.modal-footer .btn-info:hover {
-  background-color: #4a8cd4;
-  border-color: #4a8cd4;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(93, 161, 229, 0.3);
-}
-
-.modal-footer .btn:active {
-  transform: translateY(0);
-}
-
-.modal-footer .btn:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.modal-footer .btn .spinner-border-sm {
-  width: 1rem;
-  height: 1rem;
-  border-width: 0.15em;
-}
-
-/* ========== スマートフォン用の最適化 ========== */
-@media (max-width: 575px) {
-  .btn-close {
-    font-size: 0.9rem;
-    padding: 0.5rem;
-  }
-
-  #transaction-preview {
-    padding: 0.75rem;
-    font-size: 0.875rem;
-  }
-
-  #quantity-warning {
-    padding: 0.625rem;
-    font-size: 0.8125rem;
-  }
-}
-
-/* ========== ダークモード対応 ========== */
-.dark-mode .diary-detail-container,
-[data-theme="dark"] .diary-detail-container {
-  background-color: var(--dm-background);
-  color: var(--dm-foreground);
-}
-
-.dark-mode .diary-header-improved,
-[data-theme="dark"] .diary-header-improved {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
-  border-bottom-color: var(--dm-border);
-}
-
-.dark-mode .diary-header-improved::before,
-[data-theme="dark"] .diary-header-improved::before {
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
-}
-
-.dark-mode .diary-header-improved.loss,
-[data-theme="dark"] .diary-header-improved.loss {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
-}
-
-.dark-mode .diary-header-improved.loss::before,
-[data-theme="dark"] .diary-header-improved.loss::before {
-  background: radial-gradient(circle, rgba(239, 68, 68, 0.15) 0%, transparent 70%);
-}
-
-.dark-mode .stock-title,
-[data-theme="dark"] .stock-title {
-  color: var(--dm-primary);
-}
-
-.dark-mode .stock-symbol-badge,
-[data-theme="dark"] .stock-symbol-badge {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.3));
-  color: var(--dm-primary);
-  border-color: rgba(59, 130, 246, 0.4);
-}
-
-.dark-mode .purchase-date,
-[data-theme="dark"] .purchase-date {
-  color: var(--dm-muted-foreground);
-}
-
-.dark-mode .status-badge-memo,
-[data-theme="dark"] .status-badge-memo {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.1));
-  border-color: rgba(59, 130, 246, 0.4);
-}
-
-.dark-mode .status-badge-sold,
-[data-theme="dark"] .status-badge-sold {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
-  border-color: rgba(239, 68, 68, 0.4);
-}
-
-.dark-mode .status-badge-active,
-[data-theme="dark"] .status-badge-active {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
-  border-color: rgba(16, 185, 129, 0.4);
-}
-
-.dark-mode .tabs-section,
-[data-theme="dark"] .tabs-section {
-  background-color: transparent;
-}
-
-.dark-mode .improved-tabs,
-[data-theme="dark"] .improved-tabs {
-  background-color: rgba(71, 85, 105, 0.3);
-  border-bottom-color: var(--dm-border);
-}
-
-.dark-mode .improved-tab-link,
-[data-theme="dark"] .improved-tab-link {
-  color: var(--dm-muted-foreground);
-}
-
-.dark-mode .improved-tab-link.active,
-[data-theme="dark"] .improved-tab-link.active {
-  color: var(--dm-primary);
-}
-
-.dark-mode .tab-content-improved,
-[data-theme="dark"] .tab-content-improved {
-  background-color: var(--dm-card);
-}
-
-.dark-mode .simplified-note-form,
-[data-theme="dark"] .simplified-note-form {
-  background: linear-gradient(135deg, rgba(71, 85, 105, 0.3), rgba(71, 85, 105, 0.2));
-  border-color: var(--dm-border);
-}
-
-.dark-mode .option-pill,
-[data-theme="dark"] .option-pill {
-  background-color: rgba(71, 85, 105, 0.3);
-  border-color: var(--dm-border);
-  color: var(--dm-foreground);
-}
-
-.dark-mode .option-pill.active,
-[data-theme="dark"] .option-pill.active {
-  background-color: var(--dm-primary);
-  border-color: var(--dm-primary);
-  color: white;
-}
-
-.dark-mode .info-grid .info-card,
-[data-theme="dark"] .info-grid .info-card {
-  background: linear-gradient(135deg, rgba(71, 85, 105, 0.3), rgba(71, 85, 105, 0.2));
-  border-color: var(--dm-border);
-}
-
-.dark-mode .info-card-title,
-[data-theme="dark"] .info-card-title {
-  color: var(--dm-primary);
-}
-
-.dark-mode .info-item-improved,
-[data-theme="dark"] .info-item-improved {
-  background-color: var(--dm-card);
-  border-color: var(--dm-border);
-}
-
-.dark-mode .info-icon-improved,
-[data-theme="dark"] .info-icon-improved {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.3));
-  color: var(--dm-primary);
-}
-
-.dark-mode .info-label-improved,
-[data-theme="dark"] .info-label-improved {
-  color: var(--dm-muted-foreground);
-}
-
-.dark-mode .info-value-improved,
-[data-theme="dark"] .info-value-improved {
-  color: var(--dm-foreground);
-}
-
-.dark-mode .note-card,
-[data-theme="dark"] .note-card {
-  background-color: var(--dm-card);
-  border-color: var(--dm-border);
-}
-
-.dark-mode .note-card-header,
-[data-theme="dark"] .note-card-header {
-  background: linear-gradient(135deg, rgba(71, 85, 105, 0.3), rgba(71, 85, 105, 0.2));
-  border-bottom-color: var(--dm-border);
-}
-
-.dark-mode .note-date,
-[data-theme="dark"] .note-date {
-  color: var(--dm-muted-foreground);
-}
-
-.dark-mode .note-card-body,
-[data-theme="dark"] .note-card-body {
-  background-color: var(--dm-card);
-}
-
-.dark-mode .note-content-text,
-[data-theme="dark"] .note-content-text {
-  color: var(--dm-foreground);
-}
-
-.dark-mode .timeline-card,
-[data-theme="dark"] .timeline-card {
-  background-color: var(--dm-card);
-  border-color: var(--dm-border);
-}
-
-.dark-mode .action-bar,
-[data-theme="dark"] .action-bar {
-  background: linear-gradient(135deg, rgba(71, 85, 105, 0.95), rgba(71, 85, 105, 0.9));
-  border-bottom-color: var(--dm-border);
-}
-
-.dark-mode .back-link,
-[data-theme="dark"] .back-link {
-  color: var(--dm-primary);
-}
-
-.dark-mode .analysis-templates-summary .analysis-template-item,
-[data-theme="dark"] .analysis-templates-summary .analysis-template-item {
-  background: linear-gradient(135deg, rgba(71, 85, 105, 0.3), rgba(71, 85, 105, 0.2));
-  border-color: var(--dm-border);
-}
-
-.dark-mode .analysis-items-detail,
-[data-theme="dark"] .analysis-items-detail {
-  background: linear-gradient(135deg, rgba(71, 85, 105, 0.3), rgba(71, 85, 105, 0.2));
-  border-color: var(--dm-border);
-}
-
-.dark-mode .analysis-items-title,
-[data-theme="dark"] .analysis-items-title {
-  color: var(--dm-primary);
-  border-bottom-color: var(--dm-border);
-}
-
-.dark-mode .analysis-item-detail,
-[data-theme="dark"] .analysis-item-detail {
-  background-color: var(--dm-card);
-  border-color: var(--dm-border);
-}
-
-.dark-mode .analysis-item-question,
-[data-theme="dark"] .analysis-item-question {
-  color: var(--dm-foreground);
-}
-
-.dark-mode .item-order,
-[data-theme="dark"] .item-order {
-  background-color: rgba(59, 130, 246, 0.2);
-  color: var(--dm-primary);
-}
-
-.dark-mode .answer-full,
-[data-theme="dark"] .answer-full {
-  background-color: rgba(71, 85, 105, 0.2);
-  border-left-color: var(--dm-primary);
-  color: var(--dm-foreground);
-}
-
-.dark-mode .image-upload-area-note,
-[data-theme="dark"] .image-upload-area-note {
-  border-color: var(--dm-border);
-  background-color: rgba(71, 85, 105, 0.2);
-}
-
-.dark-mode .image-upload-area-note:hover,
-[data-theme="dark"] .image-upload-area-note:hover {
-  border-color: var(--dm-primary);
-  background-color: rgba(59, 130, 246, 0.1);
-}
-
-.dark-mode .notes-list,
-[data-theme="dark"] .notes-list {
-  border-top-color: var(--dm-border);
-}
-
-.dark-mode .reason-content,
-[data-theme="dark"] .reason-content {
-  background-color: rgba(71, 85, 105, 0.2);
-  color: var(--dm-foreground);
-}
-
-/* ========== アクセシビリティとタッチ改善 ========== */
-@media (hover: none) {
-  .improved-tab-link:active {
-    background-color: rgba(90, 126, 197, 0.1);
-  }
-
-  .option-pill:active {
-    transform: scale(0.95);
-  }
-}
-
 /* === 継続記録カードヘッダー（モダンデザイン） === */
 .note-card-header-modern {
   padding: 1.25rem 1.5rem;
-  background: linear-gradient(135deg, rgba(248, 249, 250, 0.95) 0%, rgba(255, 255, 255, 0.95) 100%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: linear-gradient(135deg, var(--bg-200) 0%, var(--bg-100) 100%);
+  border-bottom: 1px solid var(--bg-300);
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 1.5rem;
 }
 
-/* 左側：日付とメタ */
 .note-header-left {
   display: flex;
   align-items: center;
@@ -2586,15 +818,14 @@
   min-width: 0;
 }
 
-/* 日付表示（大きく目立たせる） */
 .note-date-large {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  background: linear-gradient(135deg, var(--primary-color) 0%, #4869ad 100%);
+  background: linear-gradient(135deg, var(--accent-200) 0%, #005775 100%);
   border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(90, 126, 197, 0.25);
+  box-shadow: 0 2px 8px rgba(0, 102, 140, 0.25);
   flex-shrink: 0;
 }
 
@@ -2627,7 +858,6 @@
   line-height: 1;
 }
 
-/* メタバッジ */
 .note-meta-badges {
   display: flex;
   align-items: center;
@@ -2646,7 +876,6 @@
   gap: 0.25rem;
 }
 
-/* 右側：価格とアクション */
 .note-header-right {
   display: flex;
   align-items: center;
@@ -2654,7 +883,6 @@
   flex-shrink: 0;
 }
 
-/* 価格情報（コンパクト） */
 .price-info-compact {
   display: flex;
   flex-direction: column;
@@ -2665,14 +893,14 @@
 .current-price {
   font-size: 1.1rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--text-100);
   line-height: 1.2;
 }
 
 .current-price .unit {
   font-size: 0.7rem;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--text-200);
   margin-left: 0.15rem;
 }
 
@@ -2703,7 +931,6 @@
   font-size: 0.8rem;
 }
 
-/* 削除ボタン */
 .btn-delete-note {
   width: 36px;
   height: 36px;
@@ -2732,180 +959,34 @@
   transform: translateY(0);
 }
 
-/* === スマホ最適化（768px以下） === */
-@media (max-width: 768px) {
-  .note-card-header-modern {
-    padding: 1rem;
-    gap: 1rem;
-  }
-  
-  .note-header-left {
-    gap: 0.75rem;
-  }
-  
-  .note-date-large {
-    padding: 0.4rem 0.6rem;
-  }
-  
-  .date-day {
-    font-size: 1.5rem;
-    min-width: 28px;
-  }
-  
-  .date-year {
-    font-size: 0.6rem;
-  }
-  
-  .date-month {
-    font-size: 0.7rem;
-  }
-  
-  .note-meta-badges .badge {
-    font-size: 0.65rem;
-    padding: 0.25rem 0.5rem;
-  }
-  
-  .current-price {
-    font-size: 1rem;
-  }
-  
-  .price-change-badge {
-    font-size: 0.7rem;
-    padding: 0.15rem 0.4rem;
-  }
-  
-  .btn-delete-note {
-    width: 32px;
-    height: 32px;
-    font-size: 0.9rem;
-  }
-}
-
-/* === 超小型スマホ（576px以下） === */
-@media (max-width: 576px) {
-  .note-card-header-modern {
-    padding: 0.875rem;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.875rem;
-  }
-  
-  .note-header-left {
-    width: 100%;
-    justify-content: space-between;
-  }
-  
-  .note-header-right {
-    width: 100%;
-    justify-content: space-between;
-  }
-  
-  .price-info-compact {
-    flex-direction: row;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  .note-date-large {
-    padding: 0.35rem 0.5rem;
-  }
-  
-  .date-day {
-    font-size: 1.35rem;
-    min-width: 24px;
-  }
-  
-  .note-meta-badges {
-    gap: 0.375rem;
-  }
-  
-  .note-meta-badges .badge {
-    font-size: 0.6rem;
-    padding: 0.2rem 0.4rem;
-  }
-  
-  .current-price {
-    font-size: 0.95rem;
-  }
-  
-  .price-change-badge {
-    font-size: 0.65rem;
-  }
-}
-
-/* === 極小スマホ（360px以下） === */
-@media (max-width: 360px) {
-  .note-card-header-modern {
-    padding: 0.75rem;
-    gap: 0.75rem;
-  }
-  
-  .note-date-large {
-    padding: 0.3rem 0.4rem;
-  }
-  
-  .date-day {
-    font-size: 1.25rem;
-  }
-  
-  .date-year {
-    font-size: 0.55rem;
-  }
-  
-  .date-month {
-    font-size: 0.65rem;
-  }
-  
-  .current-price {
-    font-size: 0.9rem;
-  }
-}
-
 /* === ダークモード対応 === */
-.dark-mode .note-card-header-modern,
-[data-theme="dark"] .note-card-header-modern {
-  background: linear-gradient(135deg, rgba(71, 85, 105, 0.4) 0%, rgba(71, 85, 105, 0.3) 100%);
+.dark-mode .diary-header-improved,
+[data-theme="dark"] .diary-header-improved {
+  background: linear-gradient(135deg, rgba(113, 196, 239, 0.1), rgba(113, 196, 239, 0.05));
   border-bottom-color: var(--dm-border);
+}
+
+.dark-mode .stock-title,
+[data-theme="dark"] .stock-title {
+  color: var(--accent-100);
+}
+
+.dark-mode .improved-tab-link.active,
+[data-theme="dark"] .improved-tab-link.active {
+  color: var(--accent-100);
+}
+
+.dark-mode .info-card-title,
+[data-theme="dark"] .info-card-title {
+  color: var(--accent-100);
+}
+
+.dark-mode .back-link,
+[data-theme="dark"] .back-link {
+  color: var(--accent-100);
 }
 
 .dark-mode .note-date-large,
 [data-theme="dark"] .note-date-large {
-  background: linear-gradient(135deg, var(--dm-primary) 0%, #2563eb 100%);
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-}
-
-.dark-mode .current-price,
-[data-theme="dark"] .current-price {
-  color: var(--dm-foreground);
-}
-
-.dark-mode .current-price .unit,
-[data-theme="dark"] .current-price .unit {
-  color: var(--dm-muted-foreground);
-}
-
-.dark-mode .price-change-badge.gain,
-[data-theme="dark"] .price-change-badge.gain {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
-  color: var(--dm-success);
-  border-color: rgba(16, 185, 129, 0.4);
-}
-
-.dark-mode .price-change-badge.loss,
-[data-theme="dark"] .price-change-badge.loss {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%);
-  color: var(--dm-destructive);
-  border-color: rgba(239, 68, 68, 0.4);
-}
-
-.dark-mode .btn-delete-note,
-[data-theme="dark"] .btn-delete-note {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.1) 100%);
-  border-color: rgba(239, 68, 68, 0.3);
-}
-
-.dark-mode .btn-delete-note:hover,
-[data-theme="dark"] .btn-delete-note:hover {
-  background: var(--dm-destructive);
-  border-color: var(--dm-destructive);
+  background: linear-gradient(135deg, var(--accent-100) 0%, #4a9fd9 100%);
 }

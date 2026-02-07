@@ -1,26 +1,213 @@
-/* =========================================
-   card.css
-   カード共通スタイルとダークモード対応
-   ========================================= */
+/* ========================================
+   Card Component - 2025年リデザイン版
+   サンプル画像風の洗練されたカードデザイン
+   ======================================== */
 
-/* ========== Base Card Styles ========== */
+/* ========== Base Card ========== */
 .card {
   border: none;
   border-radius: var(--radius-lg);
-  box-shadow: var(--card-shadow);
-  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   margin-bottom: var(--spacing-lg);
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  background-color: var(--bg-primary);
+  background: var(--gradient-card);
+  overflow: hidden;
+  position: relative;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--gradient-primary);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 12px -1px rgba(0, 0, 0, 0.1), 0 4px 8px -1px rgba(0, 0, 0, 0.06);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
 }
 
+.card:hover::before {
+  opacity: 1;
+}
+
+/* ========== Hero Card（大きな数値表示用） ========== */
+.card-hero {
+  background: var(--gradient-primary);
+  color: var(--text-inverse);
+  padding: 2rem;
+  border-radius: var(--radius-xl);
+  position: relative;
+  overflow: hidden;
+}
+
+.card-hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.card-hero-title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  opacity: 0.9;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.card-hero-value {
+  font-size: 3rem;
+  font-weight: var(--font-extrabold);
+  line-height: 1.1;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.card-hero-subtitle {
+  font-size: var(--text-sm);
+  opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+  .card-hero-value {
+    font-size: 2.25rem;
+  }
+}
+
+/* ========== Stats Card（統計情報カード） ========== */
+.card-stats {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.card-stats:hover {
+  border-color: var(--primary-light);
+  background: var(--gradient-secondary);
+}
+
+.card-stats-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: var(--primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.card-stats-icon i {
+  font-size: 1.5rem;
+  color: var(--accent-200);
+}
+
+.card-stats-label {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-weight: var(--font-medium);
+  margin-bottom: 0.5rem;
+}
+
+.card-stats-value {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.card-stats-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+}
+
+.card-stats-trend.up {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success-color);
+}
+
+.card-stats-trend.down {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger-color);
+}
+
+/* ========== Compact Card（コンパクトカード） ========== */
+.card-compact {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.2s ease;
+}
+
+.card-compact:hover {
+  background: var(--primary-light);
+  transform: translateX(4px);
+}
+
+.card-compact-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--gradient-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.card-compact-icon i {
+  font-size: 1.25rem;
+  color: var(--text-inverse);
+}
+
+.card-compact-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-compact-label {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.card-compact-value {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ========== Header & Body ========== */
 .card-header {
   background-color: transparent;
   border-bottom: 1px solid var(--border-light);
@@ -29,77 +216,183 @@
 
 .card-body {
   padding: 1.5rem;
+  background: var(--bg-primary);
 }
 
 .card-footer {
-  background-color: var(--bg-secondary);
-  padding: 0.75rem 1.25rem;
+  background: var(--bg-secondary);
+  padding: 1rem 1.5rem;
   border-top: 1px solid var(--border-light);
 }
 
 .card-title {
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   margin-bottom: 0.5rem;
   color: var(--text-primary);
+  font-size: var(--text-lg);
 }
 
-/* Shadow Card */
-.card.shadow {
+/* ========== Investment Card（投資情報カード） ========== */
+.card-investment {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.card-investment:hover {
   box-shadow: var(--shadow-md);
+  border-color: var(--accent-100);
 }
 
-/* ========== Dark Mode Support ========== */
-.dark-mode .card,
-[data-theme="dark"] .card {
-  background-color: var(--dm-card);
-  border: 1px solid var(--dm-border);
+.card-investment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.dark-mode .card:hover,
-[data-theme="dark"] .card:hover {
-  border-color: rgba(59, 130, 246, 0.5);
+.card-investment-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem 0.75rem;
+  background: var(--primary-100);
+  border-radius: 999px;
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--accent-200);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.card-investment-company {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.card-investment-change {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.card-investment-change.positive {
+  color: var(--success-color);
+}
+
+.card-investment-change.negative {
+  color: var(--danger-color);
+}
+
+/* ========== Button in Card ========== */
+.card-action-btn {
+  background: var(--gradient-primary);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1.5rem;
+  font-weight: var(--font-semibold);
+  font-size: var(--text-base);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--button-shadow);
+  width: 100%;
+}
+
+.card-action-btn:hover {
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 102, 140, 0.25);
 }
 
-.dark-mode .card-header,
-[data-theme="dark"] .card-header {
-  background-color: transparent;
-  border-bottom-color: var(--dm-border);
-}
-
-.dark-mode .card-body,
-[data-theme="dark"] .card-body {
-  color: var(--dm-foreground);
-}
-
-.dark-mode .card-footer,
-[data-theme="dark"] .card-footer {
-  background-color: rgba(71, 85, 105, 0.3);
-  border-top-color: var(--dm-border);
-}
-
-.dark-mode .card-title,
-[data-theme="dark"] .card-title {
-  color: var(--dm-foreground);
+.card-action-btn:active {
+  transform: translateY(0);
 }
 
 /* ========== Responsive ========== */
 @media (max-width: 768px) {
-  .card-header {
-    padding: 1rem;
-  }
-  
-  .card-body {
-    padding: 1rem;
-  }
-  
+  .card-header,
+  .card-body,
   .card-footer {
-    padding: 0.75rem 1rem;
+    padding: 1rem;
+  }
+  
+  .card-hero {
+    padding: 1.5rem;
+  }
+  
+  .card-stats {
+    padding: 1.25rem;
   }
 }
 
-@media (max-width: 576px) {
-  .card {
-    margin-bottom: 1rem;
-  }
+/* ========== Dark Mode ========== */
+.dark-mode .card,
+[data-theme="dark"] .card {
+  background: var(--gradient-card);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .card-hero,
+[data-theme="dark"] .card-hero {
+  background: var(--gradient-primary);
+}
+
+.dark-mode .card-stats,
+.dark-mode .card-compact,
+.dark-mode .card-investment,
+[data-theme="dark"] .card-stats,
+[data-theme="dark"] .card-compact,
+[data-theme="dark"] .card-investment {
+  background: var(--dm-card);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .card-stats:hover,
+.dark-mode .card-compact:hover,
+[data-theme="dark"] .card-stats:hover,
+[data-theme="dark"] .card-compact:hover {
+  background: rgba(113, 196, 239, 0.05);
+  border-color: rgba(113, 196, 239, 0.3);
+}
+
+.dark-mode .card-stats-icon,
+[data-theme="dark"] .card-stats-icon {
+  background: rgba(113, 196, 239, 0.15);
+}
+
+.dark-mode .card-compact-icon,
+[data-theme="dark"] .card-compact-icon {
+  background: var(--gradient-primary);
+}
+
+.dark-mode .card-investment-badge,
+[data-theme="dark"] .card-investment-badge {
+  background: rgba(113, 196, 239, 0.15);
+  color: var(--accent-100);
+}
+
+.dark-mode .card-title,
+.dark-mode .card-stats-value,
+.dark-mode .card-compact-value,
+.dark-mode .card-investment-company,
+[data-theme="dark"] .card-title,
+[data-theme="dark"] .card-stats-value,
+[data-theme="dark"] .card-compact-value,
+[data-theme="dark"] .card-investment-company {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .card-stats-label,
+.dark-mode .card-compact-label,
+[data-theme="dark"] .card-stats-label,
+[data-theme="dark"] .card-compact-label {
+  color: var(--dm-muted-foreground);
 }

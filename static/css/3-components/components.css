@@ -1,14 +1,14 @@
 /* ========================================
    共通コンポーネントスタイル
-   stockdiary/static/css/components.css
+   新カラーパレット適用版
    ======================================== */
 
 /* ========== CSS Variables ========== */
 :root {
-  /* Colors */
-  --primary-color: #3b82f6;
-  --primary-light: rgba(59, 130, 246, 0.1);
-  --primary-dark: #2563eb;
+  /* 新カラーパレット適用済み */
+  --primary-color: var(--accent-200);
+  --primary-light: rgba(113, 196, 239, 0.15);
+  --primary-dark: var(--primary-300);
   
   --success-color: #22c55e;
   --success-light: rgba(34, 197, 94, 0.1);
@@ -19,21 +19,21 @@
   --warning-color: #f59e0b;
   --warning-light: rgba(245, 158, 11, 0.1);
   
-  --info-color: #3b82f6;
-  --info-light: rgba(59, 130, 246, 0.1);
+  --info-color: var(--accent-100);
+  --info-light: rgba(113, 196, 239, 0.1);
   
   /* Text */
-  --text-primary: #1f2937;
-  --text-secondary: #6b7280;
-  --text-tertiary: #9ca3af;
+  --text-primary: var(--text-100);
+  --text-secondary: var(--text-200);
+  --text-tertiary: var(--bg-300);
   
   /* Background */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
+  --bg-primary: var(--bg-100);
+  --bg-secondary: var(--bg-200);
   
   /* Border */
-  --border-color: #e5e7eb;
-  --border-light: #f3f4f6;
+  --border-color: var(--bg-300);
+  --border-light: var(--primary-100);
   
   /* Spacing */
   --spacing-xs: 0.25rem;
@@ -75,8 +75,8 @@
 }
 
 .badge-primary {
-  background-color: var(--primary-light);
-  color: var(--primary-color);
+  background-color: rgba(113, 196, 239, 0.15);
+  color: var(--accent-200);
 }
 
 .badge-success {
@@ -95,13 +95,13 @@
 }
 
 .badge-info {
-  background-color: var(--info-light);
-  color: var(--info-color);
+  background-color: rgba(113, 196, 239, 0.1);
+  color: var(--accent-100);
 }
 
 .badge-secondary {
-  background-color: var(--bg-secondary);
-  color: var(--text-secondary);
+  background-color: var(--bg-200);
+  color: var(--text-200);
 }
 
 /* ========== Status Badges ========== */
@@ -116,8 +116,8 @@
 }
 
 .status-badge-memo {
-  background-color: var(--info-light);
-  color: var(--info-color);
+  background-color: rgba(113, 196, 239, 0.1);
+  color: var(--accent-100);
 }
 
 .status-badge-sold {
@@ -134,9 +134,9 @@
 .empty-state {
   text-align: center;
   padding: var(--spacing-xl) var(--spacing-lg);
-  background: var(--bg-secondary);
+  background: var(--bg-200);
   border-radius: var(--radius-md);
-  border: 1px dashed var(--border-color);
+  border: 1px dashed var(--bg-300);
 }
 
 .empty-state-sm {
@@ -152,7 +152,7 @@
   height: 64px;
   margin: 0 auto var(--spacing-md);
   border-radius: var(--radius-md);
-  background: var(--primary-light);
+  background: rgba(113, 196, 239, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -160,12 +160,12 @@
 
 .empty-icon i {
   font-size: 2rem;
-  color: var(--primary-color);
+  color: var(--accent-200);
 }
 
 .empty-state h4,
 .empty-title {
-  color: var(--text-primary);
+  color: var(--text-100);
   font-weight: 600;
   margin-bottom: var(--spacing-sm);
   font-size: 1.125rem;
@@ -173,7 +173,7 @@
 
 .empty-state p,
 .empty-text {
-  color: var(--text-secondary);
+  color: var(--text-200);
   margin: 0;
   font-size: 0.9375rem;
 }
@@ -186,19 +186,19 @@
 
 .empty-icon-improved {
   font-size: 3rem;
-  color: var(--text-tertiary);
+  color: var(--bg-300);
   margin-bottom: var(--spacing-md);
   opacity: 0.5;
 }
 
 .empty-title-improved {
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-100);
   margin-bottom: var(--spacing-sm);
 }
 
 .empty-text-improved {
-  color: var(--text-secondary);
+  color: var(--text-200);
   margin: 0;
 }
 
@@ -221,7 +221,7 @@
   width: 2.5rem;
   height: 2.5rem;
   border-width: 0.25em;
-  color: var(--primary-color);
+  color: var(--accent-200);
 }
 
 .spinner-border-sm {
@@ -230,7 +230,7 @@
 }
 
 .loading-text {
-  color: var(--text-secondary);
+  color: var(--text-200);
   font-size: 0.875rem;
 }
 
@@ -288,12 +288,12 @@
 }
 
 .btn-primary-icon {
-  background: var(--primary-light);
-  color: var(--primary-color);
+  background: rgba(113, 196, 239, 0.15);
+  color: var(--accent-200);
 }
 
 .btn-primary-icon:hover {
-  background: var(--primary-color);
+  background: var(--accent-200);
   color: white;
 }
 
@@ -328,19 +328,19 @@
 }
 
 .btn-info-icon {
-  background: var(--info-light);
-  color: var(--info-color);
+  background: rgba(113, 196, 239, 0.1);
+  color: var(--accent-100);
 }
 
 .btn-info-icon:hover {
-  background: var(--info-color);
+  background: var(--accent-100);
   color: white;
 }
 
 /* ========== Alerts ========== */
 .alert-info-improved {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--primary-100);
+  color: var(--accent-200);
   padding: 0.875rem 1rem;
   border-radius: var(--radius-sm);
   font-size: 0.9375rem;
@@ -386,7 +386,7 @@
 .form-label-improved {
   display: block;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--text-100);
   margin-bottom: var(--spacing-sm);
   font-size: 0.9375rem;
 }
@@ -394,18 +394,18 @@
 .form-input-improved {
   width: 100%;
   padding: 0.625rem 0.875rem;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--bg-300);
   border-radius: var(--radius-sm);
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background: var(--bg-100);
+  color: var(--text-100);
   font-size: 0.9375rem;
   transition: all 0.2s ease;
 }
 
 .form-input-improved:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: var(--accent-200);
+  box-shadow: 0 0 0 3px rgba(113, 196, 239, 0.1);
 }
 
 .form-input-improved.is-invalid {
@@ -413,7 +413,7 @@
 }
 
 .form-input-improved:disabled {
-  background: var(--bg-secondary);
+  background: var(--bg-200);
   cursor: not-allowed;
   opacity: 0.7;
 }
@@ -422,7 +422,7 @@
   display: block;
   margin-top: var(--spacing-xs);
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: var(--text-200);
 }
 
 .form-actions-improved {
@@ -438,27 +438,27 @@
 
 .price-label {
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: var(--text-200);
   margin-bottom: var(--spacing-xs);
 }
 
 .price-value {
   font-size: 1.25rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-100);
 }
 
 .price-unit {
   font-size: 0.875rem;
   font-weight: 400;
-  color: var(--text-secondary);
+  color: var(--text-200);
   margin-left: 0.125rem;
 }
 
 .price-quantity,
 .price-total {
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: var(--text-200);
   margin-top: var(--spacing-xs);
 }
 
@@ -488,7 +488,7 @@
 
 .profit-label {
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: var(--text-200);
   margin-bottom: var(--spacing-xs);
 }
 
@@ -527,11 +527,11 @@
   display: inline-flex;
   align-items: center;
   font-size: 0.9375rem;
-  color: var(--text-primary);
+  color: var(--text-100);
 }
 
 .date-display i {
-  color: var(--primary-color);
+  color: var(--accent-200);
 }
 
 .date-label {
@@ -540,8 +540,8 @@
 
 /* ========== Card Styles ========== */
 .card-improved {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
+  background: var(--bg-100);
+  border: 1px solid var(--bg-300);
   border-radius: var(--radius-lg);
   overflow: hidden;
   transition: all 0.2s ease;
@@ -553,8 +553,8 @@
 
 .card-header-improved {
   padding: var(--spacing-lg);
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-200);
+  border-bottom: 1px solid var(--bg-300);
 }
 
 .card-body-improved {
@@ -563,8 +563,8 @@
 
 /* Form card variant */
 .form-card-improved {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
+  background: var(--bg-100);
+  border: 1px solid var(--bg-300);
   border-radius: var(--radius-md);
   overflow: hidden;
 }
