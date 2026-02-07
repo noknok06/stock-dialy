@@ -76,19 +76,24 @@
   /* 検索フォーム */
   .search-input-wrapper {
     position: relative;
+    display: flex;
+    align-items: center;
   }
 
   .search-input-wrapper .search-icon {
     position: absolute;
-    left: 1rem;
+    right: 0.875rem;
     top: 50%;
     transform: translateY(-50%);
-    color: var(--text-muted);
+    color: var(--text-200);
     pointer-events: none;
+    font-size: 0.875rem;
+    z-index: 1;
+    line-height: 1;
   }
 
   .search-input-wrapper .form-control {
-    padding-left: 2.75rem;
+    padding-right: 2.5rem;
   }
 
   /* テーブル行のホバー効果 */
@@ -100,34 +105,203 @@
     background-color: var(--bg-hover, rgba(0, 0, 0, 0.02));
   }
 
-  /* ダークモード */
-  .dark-mode .table-tag-badge,
-  [data-theme="dark"] .table-tag-badge {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.2));
-    border-color: rgba(59, 130, 246, 0.3);
-    color: var(--dm-primary);
+  /* ========== ダークモード ========== */
+
+  /* Bootstrap テーブル変数オーバーライド */
+  .dark-mode .table,
+  [data-theme="dark"] .table {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--dm-text-100);
+    --bs-table-border-color: var(--dm-border);
+    --bs-table-striped-bg: rgba(71, 85, 105, 0.15);
+    --bs-table-hover-bg: rgba(89, 142, 243, 0.08);
+    --bs-table-hover-color: var(--dm-text-100);
+    color: var(--dm-text-100) !important;
+    border-color: var(--dm-border) !important;
   }
 
-  .dark-mode .table-tag-badge:hover,
-  [data-theme="dark"] .table-tag-badge:hover {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(37, 99, 235, 0.3));
-    border-color: var(--dm-primary);
-    color: var(--dm-primary);
+  .dark-mode .table thead th,
+  [data-theme="dark"] .table thead th {
+    background-color: rgba(71, 85, 105, 0.4) !important;
+    color: var(--dm-text-200) !important;
+    border-bottom-color: var(--dm-border) !important;
+    border-top: none;
   }
 
-  .dark-mode .guide-item h6,
-  [data-theme="dark"] .guide-item h6 {
-    color: var(--dm-foreground);
-  }
-
-  .dark-mode .guide-item p,
-  [data-theme="dark"] .guide-item p {
-    color: var(--dm-muted-foreground);
+  .dark-mode .table tbody tr,
+  [data-theme="dark"] .table tbody tr {
+    background-color: transparent !important;
   }
 
   .dark-mode .table tbody tr:hover,
   [data-theme="dark"] .table tbody tr:hover {
-    background-color: rgba(255, 255, 255, 0.02);
+    background-color: rgba(89, 142, 243, 0.08) !important;
+  }
+
+  .dark-mode .table tbody td,
+  [data-theme="dark"] .table tbody td {
+    border-bottom-color: var(--dm-border) !important;
+    color: var(--dm-text-100) !important;
+    background-color: transparent !important;
+  }
+
+  .dark-mode .table-responsive,
+  [data-theme="dark"] .table-responsive {
+    border-color: var(--dm-border);
+  }
+
+  /* カード */
+  .dark-mode .card,
+  [data-theme="dark"] .card {
+    background-color: var(--dm-card) !important;
+    border-color: var(--dm-border) !important;
+  }
+
+  .dark-mode .card-header,
+  [data-theme="dark"] .card-header {
+    background-color: rgba(71, 85, 105, 0.3) !important;
+    border-bottom-color: var(--dm-border) !important;
+    color: var(--dm-text-100);
+  }
+
+  .dark-mode .card-title,
+  [data-theme="dark"] .card-title {
+    color: var(--dm-text-100) !important;
+  }
+
+  .dark-mode .card-body,
+  [data-theme="dark"] .card-body {
+    background-color: transparent !important;
+  }
+
+  /* タグバッジ */
+  .dark-mode .table-tag-badge,
+  [data-theme="dark"] .table-tag-badge {
+    background: linear-gradient(135deg, rgba(89, 142, 243, 0.2), rgba(37, 99, 235, 0.2)) !important;
+    border-color: rgba(89, 142, 243, 0.4) !important;
+    color: var(--dm-primary-200) !important;
+  }
+
+  .dark-mode .table-tag-badge:hover,
+  [data-theme="dark"] .table-tag-badge:hover {
+    background: linear-gradient(135deg, rgba(89, 142, 243, 0.35), rgba(37, 99, 235, 0.35)) !important;
+    border-color: var(--dm-primary-200) !important;
+    color: var(--dm-primary-200) !important;
+  }
+
+  /* テーブル内ボタン */
+  .dark-mode .btn-icon.btn-primary-icon,
+  [data-theme="dark"] .btn-icon.btn-primary-icon {
+    background: rgba(89, 142, 243, 0.2) !important;
+    color: var(--dm-primary-200) !important;
+  }
+
+  .dark-mode .btn-icon.btn-primary-icon:hover,
+  [data-theme="dark"] .btn-icon.btn-primary-icon:hover {
+    background: var(--dm-primary-100) !important;
+    color: white !important;
+  }
+
+  .dark-mode .btn-icon.btn-warning-icon,
+  [data-theme="dark"] .btn-icon.btn-warning-icon {
+    background: rgba(245, 158, 11, 0.2) !important;
+    color: #fbbf24 !important;
+  }
+
+  .dark-mode .btn-icon.btn-warning-icon:hover,
+  [data-theme="dark"] .btn-icon.btn-warning-icon:hover {
+    background: #f59e0b !important;
+    color: white !important;
+  }
+
+  .dark-mode .btn-icon.btn-danger-icon,
+  [data-theme="dark"] .btn-icon.btn-danger-icon {
+    background: rgba(239, 68, 68, 0.2) !important;
+    color: #fca5a5 !important;
+  }
+
+  .dark-mode .btn-icon.btn-danger-icon:hover,
+  [data-theme="dark"] .btn-icon.btn-danger-icon:hover {
+    background: #ef4444 !important;
+    color: white !important;
+  }
+
+  /* 使用件数テキスト */
+  .dark-mode .text-muted,
+  [data-theme="dark"] .text-muted {
+    color: var(--dm-text-200) !important;
+  }
+
+  /* ページヘッダー */
+  .dark-mode .page-title,
+  [data-theme="dark"] .page-title {
+    color: var(--dm-text-100) !important;
+  }
+
+  .dark-mode .page-subtitle,
+  [data-theme="dark"] .page-subtitle {
+    color: var(--dm-text-200) !important;
+  }
+
+  /* フォームセクション */
+  .dark-mode .form-section-title,
+  [data-theme="dark"] .form-section-title {
+    color: var(--dm-text-100) !important;
+  }
+
+  /* 検索フォーム */
+  .dark-mode .search-input-wrapper .search-icon,
+  [data-theme="dark"] .search-input-wrapper .search-icon {
+    color: var(--dm-text-200) !important;
+  }
+
+  .dark-mode .form-control,
+  [data-theme="dark"] .form-control {
+    background-color: rgba(71, 85, 105, 0.3) !important;
+    border-color: var(--dm-border) !important;
+    color: var(--dm-text-100) !important;
+  }
+
+  .dark-mode .form-control:focus,
+  [data-theme="dark"] .form-control:focus {
+    background-color: rgba(71, 85, 105, 0.4) !important;
+    border-color: var(--dm-primary-200) !important;
+    box-shadow: 0 0 0 0.25rem rgba(89, 142, 243, 0.15) !important;
+  }
+
+  .dark-mode .form-control::placeholder,
+  [data-theme="dark"] .form-control::placeholder {
+    color: var(--dm-text-300) !important;
+  }
+
+  /* ボタン */
+  .dark-mode .btn-outline-secondary,
+  [data-theme="dark"] .btn-outline-secondary {
+    border-color: var(--dm-border) !important;
+    color: var(--dm-text-200) !important;
+  }
+
+  .dark-mode .btn-outline-secondary:hover,
+  [data-theme="dark"] .btn-outline-secondary:hover {
+    background-color: rgba(71, 85, 105, 0.3) !important;
+    border-color: var(--dm-text-200) !important;
+    color: var(--dm-text-100) !important;
+  }
+
+  /* ガイドカード */
+  .dark-mode .guide-item h6,
+  [data-theme="dark"] .guide-item h6 {
+    color: var(--dm-text-100) !important;
+  }
+
+  .dark-mode .guide-item p,
+  [data-theme="dark"] .guide-item p {
+    color: var(--dm-text-200) !important;
+  }
+
+  .dark-mode .guide-icon,
+  [data-theme="dark"] .guide-icon {
+    background: linear-gradient(135deg, var(--dm-primary-100), var(--dm-primary-200)) !important;
   }
 
   /* レスポンシブ調整 */

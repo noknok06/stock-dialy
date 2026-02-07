@@ -379,8 +379,8 @@
 ・PERが同業他社と比べて割安
 ・配当利回りが高い
 ・技術的に強いサポートラインがある"
-                    maxlength="3000">{{ form.reason.value|default:'' }}</textarea>
-          <div class="character-count" id="reasonCharCount">0 / 3000文字</div>
+                    maxlength="1000">{{ form.reason.value|default:'' }}</textarea>
+          <div class="character-count" id="reasonCharCount">0 / 1000文字</div>
           {% if form.reason.errors %}
           <div class="text-danger small mt-1">{{ form.reason.errors }}</div>
           {% endif %}
@@ -898,9 +898,9 @@ function updateCharCount(textarea, countElement, maxLength) {
 }
 
 if (reasonTextarea && reasonCharCount) {
-  updateCharCount(reasonTextarea, reasonCharCount, 3000);
+  updateCharCount(reasonTextarea, reasonCharCount, 1000);
   reasonTextarea.addEventListener('input', function() {
-    updateCharCount(this, reasonCharCount, 3000);
+    updateCharCount(this, reasonCharCount, 1000);
   });
 }
 

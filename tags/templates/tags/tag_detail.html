@@ -140,60 +140,183 @@
     background-color: var(--bg-hover);
   }
 
-  /* ダークモード */
+  /* ========== ダークモード ========== */
+
+  /* ページ固有要素 */
   .dark-mode .tag-badge-large,
   [data-theme="dark"] .tag-badge-large {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.2));
-    border-color: rgba(59, 130, 246, 0.3);
-    color: var(--dm-primary);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.2)) !important;
+    border-color: rgba(59, 130, 246, 0.3) !important;
+    color: var(--dm-primary-200) !important;
   }
 
   .dark-mode .filter-controls,
   [data-theme="dark"] .filter-controls {
-    background-color: var(--dm-card);
-    border-color: var(--dm-border);
+    background-color: var(--dm-bg-200) !important;
+    border-color: var(--dm-border) !important;
   }
 
   .dark-mode .filter-tab,
   [data-theme="dark"] .filter-tab {
-    border-color: var(--dm-border);
-    color: var(--dm-foreground);
+    border-color: var(--dm-border) !important;
+    color: var(--dm-text-200) !important;
   }
 
   .dark-mode .filter-tab:hover,
   [data-theme="dark"] .filter-tab:hover {
-    background-color: rgba(71, 85, 105, 0.3);
-    border-color: var(--dm-muted);
-    color: var(--dm-foreground);
+    background-color: rgba(71, 85, 105, 0.3) !important;
+    border-color: var(--dm-text-200) !important;
+    color: var(--dm-text-100) !important;
   }
 
   .dark-mode .filter-tab.active,
   [data-theme="dark"] .filter-tab.active {
-    background-color: var(--dm-primary);
-    color: white;
-    border-color: var(--dm-primary);
+    background-color: var(--dm-primary-100) !important;
+    color: white !important;
+    border-color: var(--dm-primary-100) !important;
   }
 
   .dark-mode .stock-name,
   [data-theme="dark"] .stock-name {
-    color: var(--dm-foreground);
+    color: var(--dm-text-100) !important;
   }
 
   .dark-mode .stock-symbol,
   [data-theme="dark"] .stock-symbol {
-    color: var(--dm-primary);
+    color: var(--dm-primary-200) !important;
   }
 
   .dark-mode .stock-sector,
   [data-theme="dark"] .stock-sector {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
-    color: var(--dm-primary);
-    border-color: rgba(59, 130, 246, 0.3);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1)) !important;
+    color: var(--dm-primary-200) !important;
+    border-color: rgba(59, 130, 246, 0.3) !important;
+  }
+
+  /* Bootstrap テーブル変数オーバーライド */
+  .dark-mode .table,
+  [data-theme="dark"] .table {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--dm-text-100);
+    --bs-table-border-color: var(--dm-border);
+    --bs-table-striped-bg: rgba(71, 85, 105, 0.15);
+    --bs-table-hover-bg: rgba(89, 142, 243, 0.08);
+    --bs-table-hover-color: var(--dm-text-100);
+    color: var(--dm-text-100) !important;
+    border-color: var(--dm-border) !important;
+  }
+
+  .dark-mode .table thead th,
+  [data-theme="dark"] .table thead th {
+    background-color: rgba(71, 85, 105, 0.4) !important;
+    color: var(--dm-text-200) !important;
+    border-bottom-color: var(--dm-border) !important;
+    border-top: none;
+  }
+
+  .dark-mode .table tbody tr,
+  [data-theme="dark"] .table tbody tr {
+    background-color: transparent !important;
   }
 
   .dark-mode .table tbody tr:hover,
   [data-theme="dark"] .table tbody tr:hover {
-    background-color: rgba(255, 255, 255, 0.02);
+    background-color: rgba(89, 142, 243, 0.08) !important;
+  }
+
+  .dark-mode .table tbody td,
+  [data-theme="dark"] .table tbody td {
+    border-bottom-color: var(--dm-border) !important;
+    color: var(--dm-text-100) !important;
+    background-color: transparent !important;
+  }
+
+  .dark-mode .table-responsive,
+  [data-theme="dark"] .table-responsive {
+    border-color: var(--dm-border);
+  }
+
+  /* カード */
+  .dark-mode .card,
+  [data-theme="dark"] .card {
+    background-color: var(--dm-card) !important;
+    border-color: var(--dm-border) !important;
+  }
+
+  .dark-mode .card-header,
+  [data-theme="dark"] .card-header {
+    background-color: rgba(71, 85, 105, 0.3) !important;
+    border-bottom-color: var(--dm-border) !important;
+    color: var(--dm-text-100);
+  }
+
+  .dark-mode .card-title,
+  [data-theme="dark"] .card-title {
+    color: var(--dm-text-100) !important;
+  }
+
+  .dark-mode .card-body,
+  [data-theme="dark"] .card-body {
+    background-color: transparent !important;
+  }
+
+  /* テーブル内ボタン */
+  .dark-mode .btn-icon.btn-info-icon,
+  [data-theme="dark"] .btn-icon.btn-info-icon {
+    background: rgba(89, 142, 243, 0.2) !important;
+    color: var(--dm-primary-200) !important;
+  }
+
+  .dark-mode .btn-icon.btn-info-icon:hover,
+  [data-theme="dark"] .btn-icon.btn-info-icon:hover {
+    background: var(--dm-primary-100) !important;
+    color: white !important;
+  }
+
+  /* テキスト */
+  .dark-mode .text-muted,
+  [data-theme="dark"] .text-muted {
+    color: var(--dm-text-200) !important;
+  }
+
+  /* ページヘッダー */
+  .dark-mode .page-title,
+  [data-theme="dark"] .page-title {
+    color: var(--dm-text-100) !important;
+  }
+
+  /* 検索フォーム */
+  .dark-mode .form-control,
+  [data-theme="dark"] .form-control {
+    background-color: rgba(71, 85, 105, 0.3) !important;
+    border-color: var(--dm-border) !important;
+    color: var(--dm-text-100) !important;
+  }
+
+  .dark-mode .form-control:focus,
+  [data-theme="dark"] .form-control:focus {
+    background-color: rgba(71, 85, 105, 0.4) !important;
+    border-color: var(--dm-primary-200) !important;
+    box-shadow: 0 0 0 0.25rem rgba(89, 142, 243, 0.15) !important;
+  }
+
+  .dark-mode .form-control::placeholder,
+  [data-theme="dark"] .form-control::placeholder {
+    color: var(--dm-text-300) !important;
+  }
+
+  /* ボタン */
+  .dark-mode .btn-outline-secondary,
+  [data-theme="dark"] .btn-outline-secondary {
+    border-color: var(--dm-border) !important;
+    color: var(--dm-text-200) !important;
+  }
+
+  .dark-mode .btn-outline-secondary:hover,
+  [data-theme="dark"] .btn-outline-secondary:hover {
+    background-color: rgba(71, 85, 105, 0.3) !important;
+    border-color: var(--dm-text-200) !important;
+    color: var(--dm-text-100) !important;
   }
 
   /* レスポンシブ */

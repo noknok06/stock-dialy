@@ -4,6 +4,77 @@
 
 {% block title %}広告設定 - カブログ{% endblock %}
 
+{% block head %}
+{{ block.super }}
+<style>
+  /* ========== ダークモード ========== */
+  .dark-mode .card,
+  [data-theme="dark"] .card {
+    background-color: var(--dm-card) !important;
+    border-color: var(--dm-border) !important;
+  }
+
+  .dark-mode .card-header.bg-primary,
+  [data-theme="dark"] .card-header.bg-primary {
+    background-color: var(--dm-primary-100) !important;
+    border-bottom-color: var(--dm-border) !important;
+  }
+
+  .dark-mode .card-body,
+  [data-theme="dark"] .card-body {
+    background-color: transparent !important;
+    color: var(--dm-text-100) !important;
+  }
+
+  .dark-mode .card-body p,
+  [data-theme="dark"] .card-body p {
+    color: var(--dm-text-200) !important;
+  }
+
+  .dark-mode .alert-info,
+  [data-theme="dark"] .alert-info {
+    background-color: rgba(89, 142, 243, 0.1) !important;
+    border-color: rgba(89, 142, 243, 0.3) !important;
+    color: var(--dm-text-100) !important;
+  }
+
+  .dark-mode .alert-heading,
+  [data-theme="dark"] .alert-heading {
+    color: var(--dm-text-100) !important;
+  }
+
+  .dark-mode .alert-info .text-info,
+  [data-theme="dark"] .alert-info .text-info {
+    color: var(--dm-primary-200) !important;
+  }
+
+  .dark-mode .border-top,
+  [data-theme="dark"] .border-top {
+    border-top-color: var(--dm-border) !important;
+  }
+
+  .dark-mode h3,
+  [data-theme="dark"] h3 {
+    color: var(--dm-text-100) !important;
+  }
+
+  .dark-mode .text-muted,
+  [data-theme="dark"] .text-muted {
+    color: var(--dm-text-200) !important;
+  }
+
+  .dark-mode .form-check-label,
+  [data-theme="dark"] .form-check-label {
+    color: var(--dm-text-100) !important;
+  }
+
+  .dark-mode a.text-decoration-none,
+  [data-theme="dark"] a.text-decoration-none {
+    color: var(--dm-primary-200) !important;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
