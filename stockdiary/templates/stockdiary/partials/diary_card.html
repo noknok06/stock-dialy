@@ -97,11 +97,11 @@
     <div class="tab-panel active" 
          id="reason-{{ diary.id }}" 
          role="tabpanel">
-      <div class="panel-text">
+      <div class="panel-text markdown-content">
         {% if request.GET.query %}
-          {{ diary.reason|safe|linebreaks|highlight:request.GET.query|truncatewords_html:50 }}
+          {{ diary.reason|render_markdown|highlight:request.GET.query|truncatewords_html:50 }}
         {% else %}
-          {{ diary.reason|safe|linebreaks|truncatewords_html:50 }}
+          {{ diary.reason|render_markdown|truncatewords_html:50 }}
         {% endif %}
       </div>
       {% if diary.reason|wordcount > 50 %}

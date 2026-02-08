@@ -81,10 +81,11 @@ class StockDiaryForm(forms.ModelForm):
                 'maxlength': '100',
             }),
             'reason': forms.Textarea(attrs={
-                'rows': 5, 
+                'rows': 10,
                 'class': 'form-control',
-                'maxlength': '1000',
-                'placeholder': '投資理由や分析内容を記録'
+                'maxlength': '5000',
+                'id': 'id_reason',
+                'placeholder': '投資理由や分析内容を記録（Markdown対応）'
             }),
             'memo': forms.Textarea(attrs={
                 'rows': 5, 
@@ -129,8 +130,8 @@ class StockDiaryForm(forms.ModelForm):
     def clean_reason(self):
         """投資理由のバリデーション"""
         reason = self.cleaned_data.get('reason')
-        if reason and len(reason) > 1000:
-            raise ValidationError('投資理由は1000文字以内で入力してください。')
+        if reason and len(reason) > 5000:
+            raise ValidationError('投資理由は5000文字以内で入力してください。')
         return reason
 
     def clean_memo(self):

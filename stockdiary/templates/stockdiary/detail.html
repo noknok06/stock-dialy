@@ -1247,8 +1247,8 @@
                 <i class="bi bi-journal-text"></i>
                 {% if diary.is_memo %}メモ内容{% else %}投資理由{% endif %}
               </div>
-              <div class="reason-content mobile-optimized">
-                {{ diary.reason|safe|linebreaks }}
+              <div class="reason-content mobile-optimized markdown-content">
+                {{ diary.reason|render_markdown }}
               </div>
             </div>
 
@@ -1672,8 +1672,8 @@
                   </div>
                   {% endif %}
 
-                  <div class="timeline-content">
-                    {{ timeline_diary.reason|linebreaks|safe|truncatewords_html:30 }}
+                  <div class="timeline-content markdown-content">
+                    {{ timeline_diary.reason|render_markdown|truncatewords_html:30 }}
                   </div>
                 </div>
                 {% else %}
@@ -1696,8 +1696,8 @@
                   </div>
                   {% endif %}
 
-                  <div class="timeline-content">
-                    {{ timeline_diary.reason|linebreaks|safe|truncatewords_html:20 }}
+                  <div class="timeline-content markdown-content">
+                    {{ timeline_diary.reason|render_markdown|truncatewords_html:20 }}
                   </div>
 
                   {% if timeline_diary.tags.exists %}

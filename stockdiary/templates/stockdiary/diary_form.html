@@ -8,6 +8,8 @@
 <!-- コンポーネントCSS -->
 <link rel="stylesheet" href="{% static 'css/3-components/components.css' %}?v={{ STATIC_VERSION }}">
 <link rel="stylesheet" href="{% static 'css/3-components/dark-mode-components.css' %}?v={{ STATIC_VERSION }}">
+<!-- EasyMDE Markdown Editor -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.css">
 
 <style>
   /* ========== ページ固有スタイル ========== */
@@ -566,6 +568,170 @@
     color: var(--dm-text-200) !important;
   }
 
+  /* ========== EasyMDE Markdown Editor ========== */
+  .EasyMDEContainer {
+    margin-bottom: 0.25rem;
+  }
+
+  .EasyMDEContainer .CodeMirror {
+    font-family: 'Hiragino Kaku Gothic Pro', 'メイリオ', sans-serif;
+    line-height: 1.8;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color, #d1d5db);
+    min-height: 250px;
+    padding: 0.5rem;
+  }
+
+  .EasyMDEContainer .CodeMirror-focused {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(0, 102, 140, 0.15);
+  }
+
+  .EasyMDEContainer .editor-toolbar {
+    border-color: var(--border-color, #d1d5db);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+  }
+
+  .EasyMDEContainer .editor-toolbar button {
+    color: var(--text-secondary, #6b7280) !important;
+  }
+
+  .EasyMDEContainer .editor-toolbar button:hover,
+  .EasyMDEContainer .editor-toolbar button.active {
+    background: var(--primary-light, #d4eaf7) !important;
+    border-color: var(--primary-color) !important;
+    color: var(--primary-color) !important;
+  }
+
+  .EasyMDEContainer .editor-statusbar {
+    border-color: var(--border-color, #d1d5db);
+    color: var(--text-secondary, #6b7280);
+    padding: 0.5rem 0.75rem;
+  }
+
+  .EasyMDEContainer .editor-preview,
+  .EasyMDEContainer .editor-preview-side {
+    font-family: 'Hiragino Kaku Gothic Pro', 'メイリオ', sans-serif;
+    line-height: 1.8;
+    padding: 1rem;
+  }
+
+  /* EasyMDE ダークモード */
+  .dark-mode .EasyMDEContainer .CodeMirror,
+  [data-theme="dark"] .EasyMDEContainer .CodeMirror {
+    background-color: rgba(71, 85, 105, 0.3) !important;
+    color: var(--dm-text-100) !important;
+    border-color: var(--dm-border) !important;
+  }
+
+  .dark-mode .EasyMDEContainer .CodeMirror-focused,
+  [data-theme="dark"] .EasyMDEContainer .CodeMirror-focused {
+    border-color: var(--dm-primary-200) !important;
+    box-shadow: 0 0 0 0.2rem rgba(89, 142, 243, 0.15) !important;
+  }
+
+  .dark-mode .EasyMDEContainer .CodeMirror-cursor,
+  [data-theme="dark"] .EasyMDEContainer .CodeMirror-cursor {
+    border-left-color: var(--dm-text-100) !important;
+  }
+
+  .dark-mode .EasyMDEContainer .CodeMirror-selected,
+  [data-theme="dark"] .EasyMDEContainer .CodeMirror-selected {
+    background: rgba(89, 142, 243, 0.3) !important;
+  }
+
+  .dark-mode .EasyMDEContainer .editor-toolbar,
+  [data-theme="dark"] .EasyMDEContainer .editor-toolbar {
+    background-color: var(--dm-card) !important;
+    border-color: var(--dm-border) !important;
+  }
+
+  .dark-mode .EasyMDEContainer .editor-toolbar button,
+  [data-theme="dark"] .EasyMDEContainer .editor-toolbar button {
+    color: var(--dm-text-200) !important;
+  }
+
+  .dark-mode .EasyMDEContainer .editor-toolbar button:hover,
+  .dark-mode .EasyMDEContainer .editor-toolbar button.active,
+  [data-theme="dark"] .EasyMDEContainer .editor-toolbar button:hover,
+  [data-theme="dark"] .EasyMDEContainer .editor-toolbar button.active {
+    background: rgba(89, 142, 243, 0.15) !important;
+    border-color: var(--dm-primary-200) !important;
+    color: var(--dm-primary-200) !important;
+  }
+
+  .dark-mode .EasyMDEContainer .editor-toolbar i.separator,
+  [data-theme="dark"] .EasyMDEContainer .editor-toolbar i.separator {
+    border-left-color: var(--dm-border) !important;
+    border-right-color: var(--dm-border) !important;
+  }
+
+  .dark-mode .EasyMDEContainer .editor-statusbar,
+  [data-theme="dark"] .EasyMDEContainer .editor-statusbar {
+    border-color: var(--dm-border) !important;
+    color: var(--dm-text-200) !important;
+  }
+
+  .dark-mode .EasyMDEContainer .editor-preview,
+  .dark-mode .EasyMDEContainer .editor-preview-side,
+  [data-theme="dark"] .EasyMDEContainer .editor-preview,
+  [data-theme="dark"] .EasyMDEContainer .editor-preview-side {
+    background: var(--dm-card) !important;
+    color: var(--dm-text-100) !important;
+  }
+
+  .dark-mode .EasyMDEContainer .editor-preview pre,
+  [data-theme="dark"] .EasyMDEContainer .editor-preview pre {
+    background: rgba(71, 85, 105, 0.5) !important;
+    color: var(--dm-text-100) !important;
+  }
+
+  .dark-mode .EasyMDEContainer .editor-preview blockquote,
+  [data-theme="dark"] .EasyMDEContainer .editor-preview blockquote {
+    border-left-color: var(--dm-primary-200) !important;
+    color: var(--dm-text-200) !important;
+  }
+
+  .dark-mode .EasyMDEContainer .cm-header,
+  [data-theme="dark"] .EasyMDEContainer .cm-header {
+    color: var(--dm-primary-200) !important;
+  }
+
+  .dark-mode .EasyMDEContainer .cm-strong,
+  .dark-mode .EasyMDEContainer .cm-em,
+  [data-theme="dark"] .EasyMDEContainer .cm-strong,
+  [data-theme="dark"] .EasyMDEContainer .cm-em {
+    color: var(--dm-text-100) !important;
+  }
+
+  .dark-mode .EasyMDEContainer .cm-link,
+  .dark-mode .EasyMDEContainer .cm-url,
+  [data-theme="dark"] .EasyMDEContainer .cm-link,
+  [data-theme="dark"] .EasyMDEContainer .cm-url {
+    color: var(--dm-primary-200) !important;
+  }
+
+  .dark-mode .EasyMDEContainer .cm-comment,
+  [data-theme="dark"] .EasyMDEContainer .cm-comment {
+    color: var(--dm-text-200) !important;
+  }
+
+  /* EasyMDE フルスクリーンダークモード */
+  .dark-mode .EasyMDEContainer .CodeMirror-fullscreen,
+  [data-theme="dark"] .EasyMDEContainer .CodeMirror-fullscreen {
+    background-color: var(--dm-bg-100, #1e293b) !important;
+  }
+
+  .dark-mode .EasyMDEContainer .editor-toolbar.fullscreen,
+  [data-theme="dark"] .EasyMDEContainer .editor-toolbar.fullscreen {
+    background-color: var(--dm-card) !important;
+  }
+
+  .dark-mode .EasyMDEContainer .editor-preview-side,
+  [data-theme="dark"] .EasyMDEContainer .editor-preview-side {
+    border-left-color: var(--dm-border) !important;
+  }
+
   /* タッチデバイス対応 */
   @media (hover: none) and (pointer: coarse) {
     .analysis-item-checkbox .form-check-input {
@@ -709,25 +875,20 @@
           </div>
         </div>
 
-        <!-- 投資理由セクション -->
+        <!-- 投資理由セクション（Markdownエディタ） -->
         <div class="form-section">
           <h4 class="form-section-title">
             <i class="bi bi-journal-text"></i> 投資理由・分析内容
+            <small class="text-muted ms-2" style="font-size: 0.75rem; font-weight: 400;">
+              <i class="bi bi-markdown me-1"></i>Markdown対応
+            </small>
           </h4>
-          <textarea class="form-control diary-textarea" 
-                    name="reason" 
-                    id="{{ form.reason.id_for_label }}"
+          <textarea class="form-control"
+                    name="reason"
+                    id="id_reason"
                     rows="10"
-                    placeholder="なぜこの銘柄に注目したのか、どのような分析をしたのか、将来の見通しなどを自由に記録してください...
-
-例:
-・決算が好調で増益傾向にある
-・新製品の発売が控えており期待できる
-・PERが同業他社と比べて割安
-・配当利回りが高い
-・技術的に強いサポートラインがある"
-                    maxlength="1000">{{ form.reason.value|default:'' }}</textarea>
-          <div class="character-count" id="reasonCharCount">0 / 1000文字</div>
+                    maxlength="5000">{{ form.reason.value|default:'' }}</textarea>
+          <div class="character-count" id="reasonCharCount">0 / 5000文字</div>
           {% if form.reason.errors %}
           <div class="text-danger small mt-1">{{ form.reason.errors }}</div>
           {% endif %}
@@ -923,6 +1084,8 @@
 
 {% block scripts %}
 {{ block.super }}
+<!-- EasyMDE Markdown Editor -->
+<script src="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js"></script>
 <script>
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1223,30 +1386,81 @@ function showNotification(type, message) {
 }
 
 // ============================================
-// 文字数カウンター
+// EasyMDE Markdown Editor 初期化
 // ============================================
-const reasonTextarea = document.getElementById('{{ form.reason.id_for_label }}');
-const memoTextarea = document.getElementById('{{ form.memo.id_for_label }}');
+const reasonTextareaEl = document.getElementById('id_reason');
 const reasonCharCount = document.getElementById('reasonCharCount');
+const MAX_REASON_LENGTH = 5000;
+
+if (reasonTextareaEl) {
+  const easyMDE = new EasyMDE({
+    element: reasonTextareaEl,
+    spellChecker: false,
+    autosave: {
+      enabled: false,
+    },
+    placeholder: 'なぜこの銘柄に注目したのか、どのような分析をしたのか、将来の見通しなどを自由に記録してください...\n\n**太字**、*斜体*、- リスト、## 見出し などのMarkdown記法が使えます',
+    maxHeight: '400px',
+    toolbar: [
+      'bold', 'italic', 'heading', '|',
+      'unordered-list', 'ordered-list', '|',
+      'link', 'quote', 'code', 'table', '|',
+      'preview', 'side-by-side', 'fullscreen', '|',
+      'guide'
+    ],
+    status: false,
+    renderingConfig: {
+      singleLineBreaks: true,
+      codeSyntaxHighlighting: false,
+    },
+    uploadImage: false,
+  });
+
+  // EasyMDE用の文字数カウンター
+  function updateEasyMDECharCount() {
+    const count = easyMDE.value().length;
+    reasonCharCount.textContent = `${count} / ${MAX_REASON_LENGTH}文字`;
+
+    reasonCharCount.classList.remove('warning', 'danger');
+    if (count > MAX_REASON_LENGTH * 0.9) {
+      reasonCharCount.classList.add('danger');
+    } else if (count > MAX_REASON_LENGTH * 0.7) {
+      reasonCharCount.classList.add('warning');
+    }
+  }
+
+  easyMDE.codemirror.on('change', updateEasyMDECharCount);
+  updateEasyMDECharCount();
+
+  // 送信前の文字数チェック
+  const diaryForm = document.getElementById('diaryForm');
+  if (diaryForm) {
+    diaryForm.addEventListener('submit', function(e) {
+      if (easyMDE.value().length > MAX_REASON_LENGTH) {
+        e.preventDefault();
+        alert(`投資理由は${MAX_REASON_LENGTH}文字以内で入力してください。現在: ${easyMDE.value().length}文字`);
+        return false;
+      }
+    });
+  }
+}
+
+// ============================================
+// メモ文字数カウンター
+// ============================================
+const memoTextarea = document.getElementById('{{ form.memo.id_for_label }}');
 const memoCharCount = document.getElementById('memoCharCount');
 
 function updateCharCount(textarea, countElement, maxLength) {
   const count = textarea.value.length;
   countElement.textContent = `${count} / ${maxLength}文字`;
-  
+
   countElement.classList.remove('warning', 'danger');
   if (count > maxLength * 0.9) {
     countElement.classList.add('danger');
   } else if (count > maxLength * 0.7) {
     countElement.classList.add('warning');
   }
-}
-
-if (reasonTextarea && reasonCharCount) {
-  updateCharCount(reasonTextarea, reasonCharCount, 1000);
-  reasonTextarea.addEventListener('input', function() {
-    updateCharCount(this, reasonCharCount, 1000);
-  });
 }
 
 if (memoTextarea && memoCharCount) {

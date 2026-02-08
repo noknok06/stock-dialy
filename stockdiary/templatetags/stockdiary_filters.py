@@ -5,6 +5,8 @@ from django.utils.safestring import mark_safe
 from django import template
 from django.template.defaultfilters import stringfilter
 import decimal
+import markdown
+import bleach
 
 register = template.Library()
 
@@ -525,4 +527,48 @@ def intcomma_float(value, decimal_places=0):
         return formatted
     except (ValueError, TypeError):
         return "0"
-    
+
+
+@register.filter(name='render_markdown')
+@stringfilter
+def render_markdown(value):
+    """
+    Markdownテキストを安全なHTMLに変換するフィルタ。
+    python-markdownで変換し、bleachでXSSサニタイズする。
+    既存のプレーンテキスト（Markdown記法なし）も正常に表示される。
+
+    使用例: {{ diary.reason|render_markdown }}
+    """
+    if not value:
+        return ''
+
+    # MarkdownをHTMLに変換
+    html = markdown.markdown(
+        value,
+        extensions=['nl2br', 'fenced_code', 'tables', 'sane_lists'],
+        output_format='html'
+    )
+
+    # 許可するHTMLタグとアトリビュート（imgは意図的に除外）
+    allowed_tags = [
+        'p', 'br', 'strong', 'em', 'ul', 'ol', 'li',
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'blockquote', 'pre', 'code',
+        'table', 'thead', 'tbody', 'tr', 'th', 'td',
+        'hr', 'del', 'a',
+    ]
+    allowed_attrs = {
+        'a': ['href', 'title'],
+        'th': ['align'],
+        'td': ['align'],
+    }
+
+    # サニタイズ
+    clean_html = bleach.clean(
+        html,
+        tags=allowed_tags,
+        attributes=allowed_attrs,
+        strip=True,
+    )
+
+    return mark_safe(clean_html)
