@@ -1340,39 +1340,6 @@
   <script src="{% static 'js/speed-dial.js' %}"></script>
   <script src="{% static 'js/image-compression.js' %}"></script>
 <script>
-// 画像モーダル表示機能
-function showImageModal(imageUrl, title) {
-  const modal = new bootstrap.Modal(document.getElementById('imageModal'));
-  const modalImage = document.getElementById('modalImage');
-  const modalTitle = document.getElementById('imageModalLabel');
-  const downloadBtn = document.getElementById('modalImageDownload');
-  
-  modalImage.src = imageUrl;
-  modalTitle.textContent = title || '画像表示';
-  downloadBtn.href = imageUrl;
-  
-  // ダウンロードファイル名を設定
-  const fileName = title ? `${title.replace(/[^a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/g, '_')}.jpg` : 'image.jpg';
-  downloadBtn.setAttribute('download', fileName);
-  
-  modal.show();
-}
-
-// 画像読み込みエラー時の処理
-document.addEventListener('DOMContentLoaded', function() {
-  // すべての画像に対してエラーハンドリングを追加
-  document.querySelectorAll('img[onclick*="showImageModal"]').forEach(img => {
-    img.addEventListener('error', function() {
-      this.style.display = 'none';
-      console.error('画像の読み込みに失敗しました:', this.src);
-    });
-    
-    img.addEventListener('load', function() {
-      // 読み込み成功時の処理（必要に応じて）
-      this.style.opacity = '1';
-    });
-  });
-});
 
 // ドラッグ&ドロップ機能（オプション）
 document.addEventListener('DOMContentLoaded', function() {

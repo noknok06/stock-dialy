@@ -454,9 +454,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 });
-
 // ========== 画像モーダル表示機能 ==========
 function showImageModal(imageUrl, title) {
+  // 現在のスクロール位置を保存
+  const scrollY = window.scrollY || window.pageYOffset;
+  
   // 既存のモーダルを削除
   const existingModal = document.getElementById('imageModal');
   if (existingModal) {
@@ -489,13 +491,37 @@ function showImageModal(imageUrl, title) {
   // モーダルをDOMに追加
   document.body.insertAdjacentHTML('beforeend', modalHtml);
   
+  const modalElement = document.getElementById('imageModal');
+  
+  // モーダル表示前のイベント - スクロール位置を維持
+  modalElement.addEventListener('show.bs.modal', function() {
+    // body要素にスクロール位置を保存
+    document.body.dataset.scrollY = scrollY;
+  });
+  
+  // モーダル表示後のイベント - スクロール位置を復元
+  modalElement.addEventListener('shown.bs.modal', function() {
+    // モーダルが完全に表示された後、元の位置に戻す
+    window.scrollTo(0, scrollY);
+  });
+  
   // モーダルを表示
-  const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+  const modal = new bootstrap.Modal(modalElement, {
+    backdrop: true,
+    keyboard: true,
+    focus: true
+  });
   modal.show();
   
   // モーダルが閉じられたらDOMから削除
-  document.getElementById('imageModal').addEventListener('hidden.bs.modal', function() {
+  modalElement.addEventListener('hidden.bs.modal', function() {
     this.remove();
+    // 念のため、もう一度スクロール位置を復元
+    const savedScrollY = parseInt(document.body.dataset.scrollY || '0');
+    if (savedScrollY > 0) {
+      window.scrollTo(0, savedScrollY);
+      delete document.body.dataset.scrollY;
+    }
   });
 }
 
