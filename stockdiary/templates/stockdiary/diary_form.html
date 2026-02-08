@@ -84,6 +84,21 @@
     color: var(--danger-color);
   }
 
+  /* ========== オートコンプリート ========== */
+  .autocomplete-results {
+    background: var(--card-bg, white);
+    border: 1px solid var(--border-color, #d1d5db);
+    box-shadow: var(--shadow-lg, 0 4px 6px rgba(0, 0, 0, 0.1));
+  }
+
+  .autocomplete-hover {
+    background-color: var(--bg-hover, #f3f4f6) !important;
+  }
+
+  .autocomplete-selected {
+    background-color: var(--primary-light, #dbeafe) !important;
+  }
+
   /* ========== 分析項目のレイアウト ========== */
   .analysis-item {
     background: var(--card-bg);
@@ -217,6 +232,338 @@
   [data-theme="dark"] .tooltip-inner {
     background-color: var(--dm-card);
     color: var(--dm-foreground);
+  }
+
+  /* ========== ダークモード: フォーム全般 ========== */
+
+  /* フォームセクション */
+  .dark-mode .form-section,
+  [data-theme="dark"] .form-section {
+    border-color: var(--dm-border) !important;
+  }
+
+  .dark-mode .form-section-title,
+  [data-theme="dark"] .form-section-title {
+    color: var(--dm-text-100) !important;
+  }
+
+  .dark-mode .form-section-title i,
+  [data-theme="dark"] .form-section-title i {
+    color: var(--dm-primary-200) !important;
+  }
+
+  /* フォームラベル */
+  .dark-mode .form-label,
+  [data-theme="dark"] .form-label {
+    color: var(--dm-text-100) !important;
+  }
+
+  .dark-mode .form-label i,
+  [data-theme="dark"] .form-label i {
+    color: var(--dm-primary-200) !important;
+  }
+
+  /* フォームコントロール */
+  .dark-mode .form-control,
+  [data-theme="dark"] .form-control {
+    background-color: rgba(71, 85, 105, 0.3) !important;
+    color: var(--dm-text-100) !important;
+    border-color: var(--dm-border) !important;
+  }
+
+  .dark-mode .form-control:focus,
+  [data-theme="dark"] .form-control:focus {
+    background-color: rgba(71, 85, 105, 0.4) !important;
+    border-color: var(--dm-primary-200) !important;
+    box-shadow: 0 0 0 0.2rem rgba(89, 142, 243, 0.15) !important;
+  }
+
+  .dark-mode .form-control::placeholder,
+  [data-theme="dark"] .form-control::placeholder {
+    color: var(--dm-text-200) !important;
+    opacity: 0.6;
+  }
+
+  /* フォームセレクト */
+  .dark-mode .form-select,
+  [data-theme="dark"] .form-select {
+    background-color: rgba(71, 85, 105, 0.3) !important;
+    color: var(--dm-text-100) !important;
+    border-color: var(--dm-border) !important;
+  }
+
+  .dark-mode .form-select:focus,
+  [data-theme="dark"] .form-select:focus {
+    background-color: rgba(71, 85, 105, 0.4) !important;
+    border-color: var(--dm-primary-200) !important;
+    box-shadow: 0 0 0 0.2rem rgba(89, 142, 243, 0.15) !important;
+  }
+
+  /* フォームテキスト・ヘルプテキスト */
+  .dark-mode .form-text,
+  [data-theme="dark"] .form-text {
+    color: var(--dm-text-200) !important;
+  }
+
+  .dark-mode .text-muted,
+  [data-theme="dark"] .text-muted {
+    color: var(--dm-text-200) !important;
+  }
+
+  .dark-mode .text-danger,
+  [data-theme="dark"] .text-danger {
+    color: #fca5a5 !important;
+  }
+
+  /* チェックボックス */
+  .dark-mode .form-check-input,
+  [data-theme="dark"] .form-check-input {
+    background-color: rgba(71, 85, 105, 0.3) !important;
+    border-color: var(--dm-border) !important;
+  }
+
+  .dark-mode .form-check-input:checked,
+  [data-theme="dark"] .form-check-input:checked {
+    background-color: var(--dm-primary-100) !important;
+    border-color: var(--dm-primary-100) !important;
+  }
+
+  .dark-mode .form-check-label,
+  [data-theme="dark"] .form-check-label {
+    color: var(--dm-text-100) !important;
+  }
+
+  .dark-mode .form-check-label small,
+  [data-theme="dark"] .form-check-label small {
+    color: var(--dm-text-200) !important;
+  }
+
+  /* ========== ダークモード: 株式情報カード ========== */
+  .dark-mode .info-block,
+  [data-theme="dark"] .info-block {
+    background-color: rgba(37, 99, 235, 0.08) !important;
+    border-color: rgba(89, 142, 243, 0.2) !important;
+  }
+
+  .dark-mode .info-block h5,
+  [data-theme="dark"] .info-block h5 {
+    color: var(--dm-text-100) !important;
+  }
+
+  .dark-mode .info-icon,
+  [data-theme="dark"] .info-icon {
+    background: linear-gradient(135deg, rgba(89, 142, 243, 0.15), rgba(89, 142, 243, 0.25)) !important;
+    color: var(--dm-primary-200) !important;
+  }
+
+  /* ========== ダークモード: 文字数カウンター ========== */
+  .dark-mode .character-count,
+  [data-theme="dark"] .character-count {
+    color: var(--dm-text-200) !important;
+  }
+
+  /* ========== ダークモード: 初回購入セクション ========== */
+  .dark-mode .initial-purchase-section,
+  [data-theme="dark"] .initial-purchase-section {
+    border-color: var(--dm-border) !important;
+    background-color: rgba(71, 85, 105, 0.1);
+  }
+
+  .dark-mode .initial-purchase-section h6,
+  [data-theme="dark"] .initial-purchase-section h6 {
+    color: var(--dm-text-100) !important;
+  }
+
+  /* ========== ダークモード: 画像プレビューカード ========== */
+  .dark-mode .card,
+  [data-theme="dark"] .card {
+    background-color: var(--dm-card) !important;
+    border-color: var(--dm-border) !important;
+  }
+
+  .dark-mode .card-body,
+  [data-theme="dark"] .card-body {
+    background-color: var(--dm-card) !important;
+    color: var(--dm-text-100) !important;
+  }
+
+  /* ========== ダークモード: アラート ========== */
+  .dark-mode .alert-success,
+  [data-theme="dark"] .alert-success {
+    background-color: rgba(16, 185, 129, 0.15) !important;
+    border-color: rgba(16, 185, 129, 0.3) !important;
+    color: #6ee7b7 !important;
+  }
+
+  .dark-mode .alert-info,
+  [data-theme="dark"] .alert-info {
+    background-color: rgba(59, 130, 246, 0.15) !important;
+    border-color: rgba(59, 130, 246, 0.3) !important;
+    color: #93c5fd !important;
+  }
+
+  .dark-mode .alert-warning,
+  [data-theme="dark"] .alert-warning {
+    background-color: rgba(251, 191, 36, 0.15) !important;
+    border-color: rgba(251, 191, 36, 0.3) !important;
+    color: #fcd34d !important;
+  }
+
+  .dark-mode .alert-danger,
+  [data-theme="dark"] .alert-danger {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+    color: #fca5a5 !important;
+  }
+
+  .dark-mode .alert .btn-close,
+  [data-theme="dark"] .alert .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+  }
+
+  /* ========== ダークモード: フォームフッター ========== */
+  .dark-mode .form-footer,
+  [data-theme="dark"] .form-footer {
+    border-color: var(--dm-border) !important;
+  }
+
+  /* ========== ダークモード: ページタイトル ========== */
+  .dark-mode .page-title,
+  [data-theme="dark"] .page-title {
+    color: var(--dm-text-100) !important;
+  }
+
+  .dark-mode .page-title i,
+  [data-theme="dark"] .page-title i {
+    color: var(--dm-primary-200) !important;
+  }
+
+  /* ========== ダークモード: ボタン ========== */
+  .dark-mode .btn-primary,
+  [data-theme="dark"] .btn-primary {
+    background-color: var(--dm-primary-100) !important;
+    border-color: var(--dm-primary-100) !important;
+  }
+
+  .dark-mode .btn-primary:hover,
+  [data-theme="dark"] .btn-primary:hover {
+    background-color: var(--dm-primary-200) !important;
+    border-color: var(--dm-primary-200) !important;
+  }
+
+  .dark-mode .btn-outline-primary,
+  [data-theme="dark"] .btn-outline-primary {
+    color: var(--dm-primary-200) !important;
+    border-color: var(--dm-primary-200) !important;
+  }
+
+  .dark-mode .btn-outline-primary:hover,
+  [data-theme="dark"] .btn-outline-primary:hover {
+    background-color: rgba(89, 142, 243, 0.1) !important;
+    color: var(--dm-primary-300) !important;
+  }
+
+  .dark-mode .btn-outline-danger,
+  [data-theme="dark"] .btn-outline-danger {
+    color: #fca5a5 !important;
+    border-color: rgba(239, 68, 68, 0.5) !important;
+  }
+
+  .dark-mode .btn-outline-danger:hover,
+  [data-theme="dark"] .btn-outline-danger:hover {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+    color: #fca5a5 !important;
+  }
+
+  /* ========== ダークモード: オートコンプリート ========== */
+  .dark-mode .autocomplete-results,
+  [data-theme="dark"] .autocomplete-results {
+    background: var(--dm-card) !important;
+    border-color: var(--dm-border) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  .dark-mode .autocomplete-item,
+  .dark-mode .list-group-item,
+  [data-theme="dark"] .autocomplete-item,
+  [data-theme="dark"] .list-group-item {
+    background-color: var(--dm-card) !important;
+    color: var(--dm-text-100) !important;
+    border-color: var(--dm-border) !important;
+  }
+
+  .dark-mode .autocomplete-item:hover,
+  .dark-mode .list-group-item-action:hover,
+  [data-theme="dark"] .autocomplete-item:hover,
+  [data-theme="dark"] .list-group-item-action:hover {
+    background-color: rgba(89, 142, 243, 0.1) !important;
+  }
+
+  .dark-mode .autocomplete-item .text-primary,
+  [data-theme="dark"] .autocomplete-item .text-primary {
+    color: var(--dm-primary-200) !important;
+  }
+
+  .dark-mode .autocomplete-hover,
+  [data-theme="dark"] .autocomplete-hover {
+    background-color: rgba(89, 142, 243, 0.1) !important;
+  }
+
+  .dark-mode .autocomplete-selected,
+  [data-theme="dark"] .autocomplete-selected {
+    background-color: rgba(89, 142, 243, 0.15) !important;
+  }
+
+  /* ========== ダークモード: 分析テンプレートラベルアイコン ========== */
+  .dark-mode .analysis-item-label-wrapper i,
+  [data-theme="dark"] .analysis-item-label-wrapper i {
+    color: var(--dm-primary-200) !important;
+  }
+
+  .dark-mode .analysis-item-checkbox .form-check-input,
+  [data-theme="dark"] .analysis-item-checkbox .form-check-input {
+    border-color: var(--dm-border) !important;
+  }
+
+  /* ========== ダークモード: 通知 ========== */
+  .dark-mode .custom-notification.alert-success,
+  [data-theme="dark"] .custom-notification.alert-success {
+    background-color: rgba(16, 185, 129, 0.9) !important;
+    color: white !important;
+  }
+
+  .dark-mode .custom-notification.alert-danger,
+  [data-theme="dark"] .custom-notification.alert-danger {
+    background-color: rgba(239, 68, 68, 0.9) !important;
+    color: white !important;
+  }
+
+  /* ========== ダークモード: diary-form全体 ========== */
+  .dark-mode .diary-form,
+  [data-theme="dark"] .diary-form {
+    color: var(--dm-text-100);
+  }
+
+  .dark-mode .form-body,
+  [data-theme="dark"] .form-body {
+    color: var(--dm-text-100);
+  }
+
+  /* ========== ダークモード: empty-state ========== */
+  .dark-mode .empty-state h4,
+  [data-theme="dark"] .empty-state h4 {
+    color: var(--dm-text-100) !important;
+  }
+
+  .dark-mode .empty-state p,
+  [data-theme="dark"] .empty-state p {
+    color: var(--dm-text-200) !important;
+  }
+
+  /* ========== ダークモード: loading ========== */
+  .dark-mode .loading-text,
+  [data-theme="dark"] .loading-text {
+    color: var(--dm-text-200) !important;
   }
 
   /* タッチデバイス対応 */
@@ -600,10 +947,7 @@ if (stockSymbolInput) {
     right: 0;
     max-height: 300px;
     overflow-y: auto;
-    background: var(--card-bg, white);
-    border: 1px solid var(--border-color, #d1d5db);
     border-radius: var(--radius-md, 0.375rem);
-    box-shadow: var(--shadow-lg, 0 4px 6px rgba(0, 0, 0, 0.1));
     z-index: 1000;
     display: none;
   `;
@@ -682,10 +1026,12 @@ if (stockSymbolInput) {
       });
       
       item.addEventListener('mouseenter', function() {
-        this.style.backgroundColor = 'var(--bg-hover, #f3f4f6)';
+        this.style.backgroundColor = '';
+        this.classList.add('autocomplete-hover');
       });
       item.addEventListener('mouseleave', function() {
-        this.style.backgroundColor = 'var(--card-bg, white)';
+        this.style.backgroundColor = '';
+        this.classList.remove('autocomplete-hover');
       });
     });
   }
@@ -741,11 +1087,10 @@ if (stockSymbolInput) {
   
   function updateSelection(items) {
     items.forEach((item, index) => {
+      item.classList.remove('autocomplete-selected');
       if (index === selectedIndex) {
-        item.style.backgroundColor = 'var(--primary-light, #dbeafe)';
+        item.classList.add('autocomplete-selected');
         item.scrollIntoView({ block: 'nearest' });
-      } else {
-        item.style.backgroundColor = 'var(--card-bg, white)';
       }
     });
   }
