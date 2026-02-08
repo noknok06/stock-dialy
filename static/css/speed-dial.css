@@ -1,6 +1,7 @@
 /* Enhanced Speed Dial Component for Mobile */
+/* Phase 1-3 Improvements Implemented */
 
-/* 基本コンテナ - 位置の強制指定を追加 */
+/* 基本コンテナ - GPU加速を追加 */
 .speed-dial-container {
   position: fixed !important;
   z-index: 1040 !important;
@@ -9,11 +10,15 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  /* GPU加速とパフォーマンス最適化 */
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 /* メイントリガーボタン - アクセシビリティとタップ対象サイズ改善 */
 .speed-dial-trigger {
-  width: 56px !important; /* Apple HIG推奨最小サイズ */
+  width: 56px !important;
   height: 56px !important;
   background-color: rgba(0, 102, 140, 0.7);
   border-radius: 50%;
@@ -26,17 +31,47 @@
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   z-index: 10;
+  position: relative;
+  overflow: visible;
+  /* GPU加速 */
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .speed-dial-trigger:hover,
 .speed-dial-trigger:focus {
-  transform: scale(1.05);
+  transform: scale(1.05) translateZ(0);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
 }
 
 /* アクティブ状態のトリガーボタン */
 .speed-dial-trigger.active {
-  transform: rotate(45deg);
+  transform: rotate(45deg) translateZ(0);
+}
+
+/* プログレスリング - 自動閉じるまでの時間を視覚化 */
+.progress-ring {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: 60px;
+  height: 60px;
+  pointer-events: none;
+  transform: rotate(-90deg);
+}
+
+.progress-ring-circle {
+  transition: stroke-dashoffset 0.1s linear;
+}
+
+@keyframes countdown {
+  from {
+    stroke-dashoffset: 176;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 /* アクションリスト */
@@ -52,7 +87,10 @@
   visibility: hidden;
   transform: translateY(10px);
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  pointer-events: none; /* 非表示時はクリックできないように */
+  pointer-events: none;
+  /* GPU加速 */
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
 /* アクティブ状態のアクションリスト */
@@ -60,7 +98,7 @@
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
-  pointer-events: auto; /* アクティブ時はクリック可能に */
+  pointer-events: auto;
 }
 
 /* アクションアイテム行 */
@@ -71,6 +109,8 @@
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   opacity: 0;
   transform: scale(0.8) translateY(8px);
+  /* GPU加速 */
+  will-change: transform, opacity;
 }
 
 /* アニメーション用のアクティブクラス */
@@ -96,9 +136,9 @@
   transition-delay: 0.25s;
 }
 
-/* アクションボタン - タップ対象サイズ改善 */
+/* アクションボタン - リップルエフェクト対応 */
 .speed-dial-btn {
-  width: 48px !important; /* 最低限のタップターゲットサイズを確保 */
+  width: 48px !important;
   height: 48px !important;
   background-color: var(--bg-100);
   border-radius: 50%;
@@ -111,12 +151,47 @@
   transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
   font-size: 1.25rem;
   border: none;
+  position: relative;
+  overflow: hidden;
+  /* GPU加速 */
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* リップルエフェクト */
+.speed-dial-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease-out, height 0.6s ease-out, opacity 0.6s ease-out;
+  opacity: 0;
+}
+
+.speed-dial-btn:active::after {
+  width: 200%;
+  height: 200%;
+  opacity: 1;
+  transition: width 0s, height 0s, opacity 0s;
 }
 
 .speed-dial-btn:hover,
 .speed-dial-btn:active {
-  transform: scale(1.1);
+  transform: scale(1.1) translateZ(0);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 長押しプレビュー用のスタイル */
+.speed-dial-btn.long-press-active {
+  transform: scale(1.15) translateZ(0);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  z-index: 100;
 }
 
 /* 各アクションタイプのカラー */
@@ -182,13 +257,49 @@
   transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
   pointer-events: none;
   margin-right: 8px;
-  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
-  pointer-events: none;
 }
 
 .speed-dial-action:hover .action-label {
   opacity: 1;
   transform: translateX(0);
+}
+
+/* プレビューツールチップ - 長押し時に表示 */
+.action-preview {
+  position: absolute;
+  right: 64px;
+  background-color: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(10px);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.action-preview.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+.action-preview::after {
+  content: '';
+  position: absolute;
+  right: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 8px 0 8px 8px;
+  border-color: transparent transparent transparent rgba(0, 0, 0, 0.9);
 }
 
 /* オーバーレイ背景 */
@@ -211,10 +322,25 @@
   visibility: visible;
 }
 
-/* モバイル向け最適化 - iPhone Xのようなノッチ付きデバイス対応 */
+/* 片手操作モード */
+.speed-dial-container.one-handed-left {
+  right: auto !important;
+  left: 16px !important;
+}
+
+.speed-dial-container.one-handed-mode {
+  bottom: 120px !important; /* 親指の届く範囲 */
+}
+
+/* モバイル向け最適化 */
 @media (max-width: 767.98px) {
   .speed-dial-container {
-    bottom: 24px !important; /* ノッチ付きiPhoneの下部セーフエリア対応 */
+    bottom: 24px !important;
+  }
+
+  /* キーボード表示時の調整用クラス */
+  .speed-dial-container.keyboard-visible {
+    transition: bottom 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   }
 
   /* より大きなタップエリア */
@@ -235,10 +361,17 @@
   }
 }
 
+/* 大画面スマホ（6インチ以上）向け最適化 */
+@media (min-width: 414px) and (max-width: 767.98px) {
+  .speed-dial-container.one-handed-mode {
+    bottom: 140px !important;
+  }
+}
+
 /* アクティブエフェクト - タッチデバイス用 */
 @media (hover: none) {
   .speed-dial-btn:active {
-    transform: scale(0.95);
+    transform: scale(0.95) translateZ(0);
   }
 }
 
@@ -261,26 +394,26 @@
   transform: scale(1);
 }
 
-/* シンプルなバウンスイン/アウトアニメーション */
+/* バウンスインアニメーション */
 @keyframes bounceIn {
   0% {
     opacity: 0;
-    transform: scale(0.3);
+    transform: scale(0.3) translateZ(0);
   }
   50% {
     opacity: 1;
-    transform: scale(1.05);
+    transform: scale(1.05) translateZ(0);
   }
   70% {
-    transform: scale(0.9);
+    transform: scale(0.9) translateZ(0);
   }
   100% {
-    transform: scale(1);
+    transform: scale(1) translateZ(0);
   }
 }
 
 .speed-dial-container {
-  animation: bounceIn 0.6s;
+  animation: bounceIn 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 /* アクセシビリティ向上 - フォーカススタイル */
@@ -289,33 +422,84 @@
   outline-offset: 2px;
 }
 
-/* 非表示タイマースタイル */
-.speed-dial-actions .timeout-indicator {
-  position: absolute;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  pointer-events: none;
+.speed-dial-trigger:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 2px;
 }
 
-.timeout-indicator::before {
+/* 使用頻度インジケーター */
+.speed-dial-action.frequently-used::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  right: 42px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.5);
-  box-sizing: border-box;
-  animation: timeout-animation 4s linear forwards;
+  background-color: #FFD700;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
 }
 
-@keyframes timeout-animation {
-  0% {
-    clip-path: circle(50% at 50% 50%);
+/* コンテキスト表示 - スクロール位置に応じたアクション */
+.speed-dial-action.context-aware {
+  animation: contextHighlight 0.5s ease-out;
+}
+
+@keyframes contextHighlight {
+  0%, 100% {
+    transform: scale(1) translateY(0);
   }
-  100% {
-    clip-path: circle(0% at 50% 50%);
+  50% {
+    transform: scale(1.1) translateY(-4px);
+  }
+}
+
+/* 音声読み上げ用の非表示要素 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* prefers-reduced-motion対応 */
+@media (prefers-reduced-motion: reduce) {
+  .speed-dial-container,
+  .speed-dial-trigger,
+  .speed-dial-btn,
+  .speed-dial-actions,
+  .speed-dial-action {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  .action-label {
+    background-color: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+  }
+  
+  .action-preview {
+    background-color: rgba(255, 255, 255, 0.95);
+    color: #000;
+  }
+  
+  .action-preview::after {
+    border-color: transparent transparent transparent rgba(255, 255, 255, 0.95);
+  }
+}
+
+/* セーフエリア対応（ノッチ付きデバイス） */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .speed-dial-container {
+    bottom: calc(16px + env(safe-area-inset-bottom)) !important;
   }
 }

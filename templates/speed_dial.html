@@ -1,33 +1,47 @@
 {% comment %}
-共通のスピードダイアルコンポーネント
+共通のスピードダイアルコンポーネント（Phase 1-3改善版）
 使用方法:
 {% include 'speed_dial.html' with actions=page_actions %}
 
 page_actionsは以下のような構造のリストを含む変数名:
 [
   {
+    'id': 'edit-action',  # 使用頻度追跡用のID（オプション）
     'type': 'edit',
     'url': url_path,
     'icon': 'bi-pencil',
     'label': '編集',
-    'condition': True  # 条件付きで表示/非表示制御可能
+    'aria_label': 'このアイテムを編集',  # アクセシビリティ向上
+    'condition': True
   },
   {
+    'id': 'notify-action',
     'type': 'modal',
     'modal_target': '#notificationModal',
     'icon': 'bi-bell',
     'label': '通知設定',
+    'aria_label': '通知設定を開く',
     'condition': True
   },
   ...
 ]
+
+新機能:
+- 長押しでアクションのプレビュー表示
+- 使用頻度に基づく自動並び替え
+- タッチデバイス向け触覚フィードバック
+- キーボード表示時の自動位置調整
+- コンテキストに応じたアクション強調
+- 自動閉じるまでのプログレス表示
 {% endcomment %}
 
 <div class="speed-dial-container" {% if speed_dial_id %}id="{{ speed_dial_id }}"{% endif %}>
-  <div class="speed-dial-actions">
+  <div class="speed-dial-actions" role="menu" aria-orientation="vertical">
     {% for action in actions %}
       {% if action.condition != False %}
-      <div class="speed-dial-action">
+      <div class="speed-dial-action" 
+           role="menuitem"
+           data-action-id="{{ action.id|default:action.type }}">
         <span class="action-label">{{ action.label }}</span>
         
         {% if action.type == 'modal' %}
@@ -36,14 +50,17 @@ page_actionsは以下のような構造のリストを含む変数名:
                   class="speed-dial-btn action-{{ action.type }}"
                   data-bs-toggle="modal"
                   data-bs-target="{{ action.modal_target }}"
-                  aria-label="{{ action.label }}">
+                  aria-label="{{ action.aria_label|default:action.label }}"
+                  title="{{ action.label }}">
             <i class="bi {{ action.icon }}"></i>
           </button>
         {% else %}
           {# 通常のリンクボタン #}
           <a href="{{ action.url }}" 
              class="speed-dial-btn action-{{ action.type }}"
-             aria-label="{{ action.label }}">
+             role="button"
+             aria-label="{{ action.aria_label|default:action.label }}"
+             title="{{ action.label }}">
             <i class="bi {{ action.icon }}"></i>
           </a>
         {% endif %}
@@ -51,10 +68,59 @@ page_actionsは以下のような構造のリストを含む変数名:
       {% endif %}
     {% endfor %}
   </div>
-  <button class="speed-dial-trigger" type="button" aria-label="アクションメニュー">
+  
+  <button class="speed-dial-trigger" 
+          type="button" 
+          aria-label="アクションメニュー"
+          aria-haspopup="menu"
+          aria-expanded="false">
     <i class="bi bi-plus-lg"></i>
   </button>
 </div>
 
 <!-- オーバーレイ背景 -->
 <div class="speed-dial-overlay"></div>
+
+{% comment %}
+使用例:
+
+1. 基本的な使用:
+{% with actions=page_actions %}
+  {% include 'speed_dial.html' %}
+{% endwith %}
+
+2. カスタムIDを指定:
+{% include 'speed_dial.html' with actions=page_actions speed_dial_id="custom-speed-dial" %}
+
+3. JavaScriptで動的に生成:
+<script>
+const speedDial = createSpeedDial({
+  actions: [
+    {
+      id: 'add-item',
+      type: 'add',
+      url: '/items/add/',
+      icon: 'bi-plus-circle',
+      label: '追加',
+      aria_label: '新しいアイテムを追加'
+    },
+    {
+      id: 'edit-item',
+      type: 'edit',
+      url: '/items/edit/123/',
+      icon: 'bi-pencil',
+      label: '編集',
+      aria_label: 'このアイテムを編集'
+    }
+  ],
+  autoCloseTime: 5000,
+  enableHaptics: true,
+  enableFrequencySort: true,
+  oneHandedMode: true
+});
+</script>
+
+片手操作モードの有効化:
+localStorage.setItem('preferredHand', 'left'); // または 'right'
+ページをリロードすると、設定した利き手に応じて配置が調整されます。
+{% endcomment %}
