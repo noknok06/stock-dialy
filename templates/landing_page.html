@@ -547,6 +547,67 @@
           line-height: 1.6;
         }
 
+        /* App Showcase */
+        .app-showcase-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+          gap: 1.5rem;
+          margin-top: 3rem;
+        }
+
+        .app-showcase-card {
+          background: var(--surface-elevated);
+          border: 1px solid var(--border-primary);
+          border-radius: var(--radius-xl);
+          box-shadow: var(--shadow-sm);
+          overflow: hidden;
+          transition: transform var(--duration-300) var(--ease-out), box-shadow var(--duration-300) var(--ease-out);
+        }
+
+        .app-showcase-card:hover {
+          transform: translateY(-4px);
+          box-shadow: var(--shadow-lg);
+        }
+
+        .app-showcase-image {
+          width: 100%;
+          height: 170px;
+          object-fit: cover;
+          display: block;
+          border-bottom: 1px solid var(--border-primary);
+        }
+
+        .app-showcase-body {
+          padding: 1.25rem;
+        }
+
+        .app-showcase-label {
+          display: inline-block;
+          font-size: 0.75rem;
+          color: var(--primary-600);
+          background: var(--primary-50);
+          border: 1px solid var(--primary-100);
+          border-radius: 999px;
+          padding: 0.25rem 0.6rem;
+          margin-bottom: 0.75rem;
+          font-weight: 600;
+          letter-spacing: 0.02em;
+        }
+
+        .app-showcase-title {
+          font-size: 1.05rem;
+          font-weight: 700;
+          margin-bottom: 0.5rem;
+          color: var(--text-primary);
+        }
+
+        .app-showcase-description {
+          font-size: 0.92rem;
+          color: var(--text-secondary);
+          line-height: 1.6;
+          margin-bottom: 0;
+        }
+
         /* Benefits Section */
         .benefits-grid {
           display: grid;
@@ -982,6 +1043,9 @@
                         <a class="nav-link" href="#benefits">メリット</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="#app-showcase">利用イメージ</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="#comparison">比較</a>
                     </li>
                     <li class="nav-item">
@@ -1114,6 +1178,54 @@
                     <h3 class="feature-title">決算レポート</h3>
                     <p class="feature-description">企業の決算情報を整理・記録。財務データと株価の関係を分析し、投資判断の材料にできます。</p>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- App Showcase Section -->
+    <section class="section" id="app-showcase" style="background: var(--surface);">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2 class="section-title">stockdiary・tags・templates・earnings_analysisを1画面で活用</h2>
+                <p class="section-subtitle">実際の利用画面を見ながら、記録→整理→分析の流れをイメージできます。</p>
+            </div>
+
+            <div class="app-showcase-grid">
+                <article class="app-showcase-card fade-in">
+                    <img src="../static/images/dialy.webp" alt="stockdiaryの記録画面" class="app-showcase-image">
+                    <div class="app-showcase-body">
+                        <span class="app-showcase-label">stockdiary</span>
+                        <h3 class="app-showcase-title">売買理由と結果を日次で蓄積</h3>
+                        <p class="app-showcase-description">取引の背景・感情・反省点まで残せるので、後から勝ちパターンと改善点を具体的に振り返れます。</p>
+                    </div>
+                </article>
+
+                <article class="app-showcase-card fade-in">
+                    <img src="../static/images/detail.webp" alt="tagsの銘柄管理画面" class="app-showcase-image">
+                    <div class="app-showcase-body">
+                        <span class="app-showcase-label">tags</span>
+                        <h3 class="app-showcase-title">投資テーマ別に銘柄を整理</h3>
+                        <p class="app-showcase-description">「高配当」「成長株」「短期トレード」などでタグ管理し、銘柄選定の再現性を高められます。</p>
+                    </div>
+                </article>
+
+                <article class="app-showcase-card fade-in">
+                    <img src="../static/images/template.webp" alt="templatesの分析テンプレート画面" class="app-showcase-image">
+                    <div class="app-showcase-body">
+                        <span class="app-showcase-label">templates</span>
+                        <h3 class="app-showcase-title">分析テンプレートで判断軸を統一</h3>
+                        <p class="app-showcase-description">チェック項目をテンプレート化し、銘柄が変わっても同じ基準で比較・評価できます。</p>
+                    </div>
+                </article>
+
+                <article class="app-showcase-card fade-in">
+                    <img src="../static/images/analytics.webp" alt="earnings_analysisの決算分析画面" class="app-showcase-image">
+                    <div class="app-showcase-body">
+                        <span class="app-showcase-label">earnings_analysis</span>
+                        <h3 class="app-showcase-title">決算データを視覚的に分析</h3>
+                        <p class="app-showcase-description">売上・利益・成長率をまとめて確認し、決算跨ぎの判断をデータドリブンに行えます。</p>
+                    </div>
+                </article>
             </div>
         </div>
     </section>
