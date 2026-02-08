@@ -1,52 +1,31 @@
-// static/sw.js
-const CACHE_NAME = 'kabulog-v1.0.8';  
-const STATIC_CACHE_NAME = 'kabulog-static-v1.0.8';
+// static/sw.js - シンプル版
+const VERSION = '1.0.9';  // ← CSS変更時はここだけ変更すればOK
+const CACHE_NAME = `kabulog-v${VERSION}`;
+const STATIC_CACHE_NAME = `kabulog-static-v${VERSION}`;
 
-// キャッシュするリソース
-const STATIC_ASSETS = [
-  '/',
-  '/stockdiary/',
-  '/static/css/common-base?v=1.0.8',
-  '/static/css/diary-theme.css?v=1.0.8',
-  '/static/css/mobile-friendly.css?v=1.0.8',
-  '/static/css/speed-dial.css?v=1.0.8',
-  '/static/css/notifications.css?v=1.0.8',
-  '/static/css/1-foundations/variables.css?v=1.0.8',
-  '/static/css/3-components/buttons.css?v=1.0.8',
-  '/static/css/3-components/header.css?v=1.0.8',
-  '/static/css/3-components/badge.css?v=1.0.8',
-  '/static/css/3-components/card.css?v=1.0.8',
-  '/static/css/3-components/modal.css?v=1.0.8',
-  '/static/js/speed-dial.js?v=1.0.8',
-  '/static/js/common-utils.js?v=1.0.8',
-  '/static/js/toast.js?v=1.0.8',
-  '/static/js/push-notifications.js?v=1.0.8',
-  '/static/js/notification-ui.js?v=1.0.8',
-  '/static/js/image-compression.js?v=1.0.8',
+// キャッシュするのは画像とCDNのみ（CSS/JSは除外）
+// ★重要：CSS/JSはリストに含めない（常にネットワークから取得するため）
+const PRECACHE_URLS = [
   '/static/images/icon-modern.svg',
   '/static/images/icon-192.png',
   '/static/images/icon-512.png',
+  '/static/images/icon-96.png',
   '/static/images/badge-72.png',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
   'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css'
 ];
 
-// オフライン時のフォールバックページ
 const OFFLINE_FALLBACK = '/offline/';
 
 // インストール時の処理
 self.addEventListener('install', event => {
-  console.log('Service Worker: Installing version', CACHE_NAME);
+  console.log('Service Worker: Installing version', VERSION);
   
   event.waitUntil(
     caches.open(STATIC_CACHE_NAME)
       .then(cache => {
         console.log('Service Worker: Caching static assets');
-        // CDNリソースと画像のみをプリキャッシュ
-        const cdnAndImages = STATIC_ASSETS.filter(url => 
-          url.startsWith('https://') || url.includes('/images/')
-        );
-        return cache.addAll(cdnAndImages);
+        return cache.addAll(PRECACHE_URLS);
       })
       .catch(err => {
         console.error('Service Worker: Cache failed:', err);
@@ -57,7 +36,7 @@ self.addEventListener('install', event => {
 
 // アクティベート時の処理
 self.addEventListener('activate', event => {
-  console.log('Service Worker: Activating version', CACHE_NAME);
+  console.log('Service Worker: Activating version', VERSION);
   
   event.waitUntil(
     caches.keys()
@@ -99,17 +78,19 @@ self.addEventListener('fetch', event => {
     return;
   }
   
-  // 自サイトのCSS/JSファイルは「ネットワーク優先」（常に最新を取得）
+  // ★重要：自サイトのCSS/JSファイルは「ネットワーク優先」（常に最新を取得）
+  // キャッシュはフォールバック用のみ
   if (url.origin === self.location.origin && 
       (request.url.includes('/static/css/') || 
-      request.url.includes('/static/js/'))) {
+       request.url.includes('/static/js/'))) {
     event.respondWith(
       fetch(request)
         .then(response => {
-          // 成功したら新しいキャッシュに保存
+          // 成功したら新しいキャッシュに保存（フォールバック用）
           if (response.ok && request.method === 'GET') {
-            const cache = caches.open(CACHE_NAME);
-            cache.then(c => c.put(request, response.clone()));
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(request, response.clone());
+            });
           }
           return response;
         })
@@ -148,37 +129,7 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// ネットワーク優先戦略（タイムアウト付き）
-async function networkFirstWithTimeout(request, timeout = 3000) {
-  try {
-    // タイムアウト設定
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Network timeout')), timeout)
-    );
-    
-    const networkResponse = await Promise.race([
-      fetch(request),
-      timeoutPromise
-    ]);
-    
-    // 成功したGETリクエストのみキャッシュ
-    if (networkResponse.ok && request.method === 'GET') {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(request, networkResponse.clone());
-    }
-    
-    return networkResponse;
-  } catch (error) {
-    console.log('Network failed, trying cache:', request.url);
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    throw error;
-  }
-}
-
-// ネットワーク優先戦略（通常版）
+// ネットワーク優先戦略
 async function networkFirstStrategy(request) {
   try {
     const networkResponse = await fetch(request);

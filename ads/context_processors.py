@@ -1,5 +1,6 @@
 # ads/context_processors.py
 from .models import AdPlacement, AdUnit, UserAdPreference
+from django.conf import settings
 
 def ads_processor(request):
     """広告関連のグローバル変数をテンプレートに提供"""
@@ -47,3 +48,8 @@ def ads_processor(request):
         context['ad_placements'] = ad_placements
     
     return context
+
+def static_version(request):
+    return {
+        'STATIC_VERSION': settings.STATIC_VERSION,
+    }

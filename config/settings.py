@@ -195,6 +195,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'subscriptions.context_processors.subscription_status',  # サブスクリプション状態
                 'ads.context_processors.ads_processor',  # 広告表示
+                'ads.context_processors.static_version',
             ],
         },
     },
@@ -673,3 +674,5 @@ Q_CLUSTER = {
     },
     'orm': 'default',
 }
+
+const VERSION = '1.0.9';
