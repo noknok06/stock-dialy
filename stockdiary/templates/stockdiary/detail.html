@@ -1028,6 +1028,172 @@
 [data-theme="dark"] .note-content-text {
   color: var(--dm-foreground);
 }
+
+/* ========== 投資理由 全画面展開 ========== */
+.reason-expand-btn {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--border-color, #cccbc8);
+  border-radius: var(--radius-sm, 6px);
+  color: var(--text-secondary, #6b7280);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.reason-expand-btn:hover {
+  background: var(--bg-200, #f5f4f1);
+  color: var(--accent-200, #00668c);
+  border-color: var(--accent-200, #00668c);
+}
+
+/* 全画面モーダル */
+.reason-fullscreen-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  animation: reasonFadeIn 0.2s ease-out;
+}
+
+.reason-fullscreen-overlay.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes reasonFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.reason-fullscreen-panel {
+  background: var(--bg-100, #fffefb);
+  width: 90%;
+  max-width: 900px;
+  max-height: 90vh;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  animation: reasonSlideUp 0.25s ease-out;
+}
+
+@keyframes reasonSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.reason-fullscreen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color, #cccbc8);
+  flex-shrink: 0;
+}
+
+.reason-fullscreen-header h5 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--accent-200, #00668c);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.reason-fullscreen-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-secondary, #6b7280);
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 1;
+  border-radius: var(--radius-sm, 6px);
+  transition: all 0.2s ease;
+}
+
+.reason-fullscreen-close:hover {
+  background: var(--bg-200, #f5f4f1);
+  color: var(--text-primary, #1d1c1c);
+}
+
+.reason-fullscreen-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+  line-height: 1.8;
+}
+
+/* ダークモード */
+.dark-mode .reason-expand-btn,
+[data-theme="dark"] .reason-expand-btn {
+  border-color: var(--dm-border);
+  color: var(--dm-text-200);
+}
+
+.dark-mode .reason-expand-btn:hover,
+[data-theme="dark"] .reason-expand-btn:hover {
+  background: rgba(89, 142, 243, 0.1);
+  color: var(--dm-primary-200);
+  border-color: var(--dm-primary-200);
+}
+
+.dark-mode .reason-fullscreen-panel,
+[data-theme="dark"] .reason-fullscreen-panel {
+  background: var(--dm-bg-100, #1e293b);
+}
+
+.dark-mode .reason-fullscreen-header,
+[data-theme="dark"] .reason-fullscreen-header {
+  border-bottom-color: var(--dm-border);
+}
+
+.dark-mode .reason-fullscreen-header h5,
+[data-theme="dark"] .reason-fullscreen-header h5 {
+  color: var(--dm-primary-200);
+}
+
+.dark-mode .reason-fullscreen-close,
+[data-theme="dark"] .reason-fullscreen-close {
+  color: var(--dm-text-200);
+}
+
+.dark-mode .reason-fullscreen-close:hover,
+[data-theme="dark"] .reason-fullscreen-close:hover {
+  background: rgba(71, 85, 105, 0.3);
+  color: var(--dm-text-100);
+}
+
+.dark-mode .reason-fullscreen-body,
+[data-theme="dark"] .reason-fullscreen-body {
+  color: var(--dm-text-100);
+}
+
+@media (max-width: 576px) {
+  .reason-fullscreen-panel {
+    width: 100%;
+    height: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .reason-expand-btn span {
+    display: none;
+  }
+}
 </style>
 {% endblock %}
 
@@ -1246,11 +1412,39 @@
               <div class="info-card-title">
                 <i class="bi bi-journal-text"></i>
                 {% if diary.is_memo %}メモ内容{% else %}投資理由{% endif %}
+                {% if diary.reason %}
+                <button type="button" class="reason-expand-btn" id="reasonExpandBtn"
+                        title="全画面で表示">
+                  <i class="bi bi-arrows-fullscreen"></i>
+                  <span>全画面</span>
+                </button>
+                {% endif %}
               </div>
               <div class="reason-content mobile-optimized markdown-content">
                 {{ diary.reason|render_markdown }}
               </div>
             </div>
+
+            <!-- 投資理由 全画面モーダル -->
+            {% if diary.reason %}
+            <div class="reason-fullscreen-overlay" id="reasonFullscreenOverlay">
+              <div class="reason-fullscreen-panel">
+                <div class="reason-fullscreen-header">
+                  <h5>
+                    <i class="bi bi-journal-text"></i>
+                    {% if diary.is_memo %}メモ内容{% else %}投資理由{% endif %}
+                  </h5>
+                  <button type="button" class="reason-fullscreen-close" id="reasonFullscreenClose"
+                          title="閉じる">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                </div>
+                <div class="reason-fullscreen-body markdown-content">
+                  {{ diary.reason|render_markdown }}
+                </div>
+              </div>
+            </div>
+            {% endif %}
 
             <!-- 取引サマリー -->
             {% if not diary.is_memo %}
@@ -1747,6 +1941,41 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     loadNotifications();
+
+    // ============================================
+    // 投資理由 全画面モーダル
+    // ============================================
+    const reasonExpandBtn = document.getElementById('reasonExpandBtn');
+    const reasonOverlay = document.getElementById('reasonFullscreenOverlay');
+    const reasonClose = document.getElementById('reasonFullscreenClose');
+
+    if (reasonExpandBtn && reasonOverlay) {
+      reasonExpandBtn.addEventListener('click', function() {
+        reasonOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      });
+
+      function closeReasonFullscreen() {
+        reasonOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+
+      if (reasonClose) {
+        reasonClose.addEventListener('click', closeReasonFullscreen);
+      }
+
+      reasonOverlay.addEventListener('click', function(e) {
+        if (e.target === reasonOverlay) {
+          closeReasonFullscreen();
+        }
+      });
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && reasonOverlay.classList.contains('active')) {
+          closeReasonFullscreen();
+        }
+      });
+    }
     
     // プッシュ通知ステータス更新時のUI更新
     document.addEventListener('pushStatusUpdated', function(e) {
