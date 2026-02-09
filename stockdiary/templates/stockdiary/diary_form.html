@@ -575,23 +575,24 @@
 
   .EasyMDEContainer .editor-toolbar {
     display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    gap: 0;
+    flex-wrap: wrap;  /* 🔧 nowrap → wrap に変更 */
+    overflow-x: visible;  /* 🔧 auto → visible に変更 */
+    gap: 0.25rem;  /* 🔧 0 → 0.25rem に変更（ボタン間の余白） */
     padding: 0.5rem;
+    align-items: center;  /* 🆕 追加: ボタンを中央揃え */
   }
 
   .EasyMDEContainer .editor-toolbar button {
     flex-shrink: 0;
+    min-width: 28px;  /* 🆕 追加: 最小幅を設定 */
+    height: 28px;  /* 🆕 追加: 高さを統一 */
+    padding: 0.25rem;  /* 🆕 追加: パディングを調整 */
   }
 
-  .EasyMDEContainer .CodeMirror {
-    font-family: 'Hiragino Kaku Gothic Pro', 'メイリオ', sans-serif;
-    line-height: 1.8;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-color, #d1d5db);
-    min-height: 250px;
-    padding: 0.5rem;
+  /* 🆕 追加: セパレータの調整 */
+  .EasyMDEContainer .editor-toolbar i.separator {
+    margin: 0 0.25rem;
+    height: 20px;
   }
 
   .EasyMDEContainer .CodeMirror-focused {
@@ -628,6 +629,35 @@
     padding: 1rem;
   }
 
+  /* 🆕 追加: モバイル対応 */
+  @media (max-width: 768px) {
+    .EasyMDEContainer .editor-toolbar {
+      padding: 0.375rem;
+    }
+
+    .EasyMDEContainer .editor-toolbar button {
+      min-width: 32px;  /* モバイルではタップしやすいように大きめに */
+      height: 32px;
+      font-size: 0.875rem;
+    }
+
+    .EasyMDEContainer .editor-toolbar i.separator {
+      display: none;  /* モバイルではセパレータを非表示 */
+    }
+  }
+
+  /* 🆕 追加: 小さい画面ではツールバーをさらにコンパクトに */
+  @media (max-width: 480px) {
+    .EasyMDEContainer .editor-toolbar {
+      gap: 0.125rem;
+    }
+
+    .EasyMDEContainer .editor-toolbar button {
+      min-width: 30px;
+      height: 30px;
+      padding: 0.125rem;
+    }
+  }
   /* EasyMDE ダークモード */
   .dark-mode .EasyMDEContainer .CodeMirror,
   [data-theme="dark"] .EasyMDEContainer .CodeMirror {
@@ -1413,12 +1443,18 @@ if (reasonTextareaEl) {
     },
     placeholder: 'なぜこの銘柄に注目したのか、どのような分析をしたのか、将来の見通しなどを自由に記録してください...\n\n**太字**、*斜体*、- リスト、## 見出し などのMarkdown記法が使えます',
     maxHeight: '400px',
+    // toolbar: [
+    //   'bold', 'italic', 'heading', '|',
+    //   'unordered-list', 'ordered-list', '|',
+    //   'link', 'quote', 'code', 'table', '|',
+    //   'preview', 'side-by-side', 'fullscreen', 'guide'
+    // ],
     toolbar: [
       'bold', 'italic', 'heading', '|',
       'unordered-list', 'ordered-list', '|',
-      'link', 'quote', 'code', 'table', '|',
-      'preview', 'side-by-side', 'fullscreen', 'guide'
-    ],
+      'link', 'quote', '|',
+      'preview', 'fullscreen', 'side-by-side'
+    ],  
     status: false,
     renderingConfig: {
       singleLineBreaks: true,
