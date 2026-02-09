@@ -225,6 +225,84 @@
     border-color: rgba(59, 130, 246, 0.3);
     color: var(--dm-foreground);
   }
+
+  /* アカウント設定ボタングリッド */
+  .account-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .account-actions .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md, 0.5rem);
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+  }
+
+  .account-actions .btn-delete-account {
+    grid-column: 1 / -1;
+  }
+
+  @media (max-width: 576px) {
+    .account-actions {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* ダークモード: アカウント設定ボタン */
+  .dark-mode .btn-outline-info,
+  [data-theme="dark"] .btn-outline-info {
+    color: var(--dm-primary, #71c4ef) !important;
+    border-color: var(--dm-primary, #71c4ef) !important;
+  }
+
+  .dark-mode .btn-outline-info:hover,
+  [data-theme="dark"] .btn-outline-info:hover {
+    background-color: rgba(113, 196, 239, 0.15) !important;
+    color: var(--dm-primary, #71c4ef) !important;
+  }
+
+  .dark-mode .btn-outline-warning,
+  [data-theme="dark"] .btn-outline-warning {
+    color: #fbbf24 !important;
+    border-color: #fbbf24 !important;
+  }
+
+  .dark-mode .btn-outline-warning:hover,
+  [data-theme="dark"] .btn-outline-warning:hover {
+    background-color: rgba(251, 191, 36, 0.15) !important;
+    color: #fbbf24 !important;
+  }
+
+  .dark-mode .btn-outline-danger,
+  [data-theme="dark"] .btn-outline-danger {
+    color: #f87171 !important;
+    border-color: #f87171 !important;
+  }
+
+  .dark-mode .btn-outline-danger:hover,
+  [data-theme="dark"] .btn-outline-danger:hover {
+    background-color: rgba(248, 113, 113, 0.15) !important;
+    color: #f87171 !important;
+  }
+
+  .dark-mode .btn-outline-primary,
+  [data-theme="dark"] .btn-outline-primary {
+    color: var(--dm-primary, #71c4ef) !important;
+    border-color: var(--dm-primary, #71c4ef) !important;
+  }
+
+  .dark-mode .btn-outline-primary:hover,
+  [data-theme="dark"] .btn-outline-primary:hover {
+    background-color: rgba(113, 196, 239, 0.15) !important;
+    color: var(--dm-primary, #71c4ef) !important;
+  }
 </style>
 {% endblock %}
 
@@ -312,18 +390,18 @@
           <i class="bi bi-gear"></i> アカウント設定
         </h3>
         
-        <div class="d-grid gap-2 d-md-flex">
+        <div class="account-actions">
           <a href="{% url 'users:profile_edit' %}" class="btn btn-outline-info">
-            <i class="bi bi-pencil me-1"></i> プロフィール編集
+            <i class="bi bi-pencil"></i> プロフィール編集
           </a>
           <a href="{% url 'users:password_change' %}" class="btn btn-outline-warning">
-            <i class="bi bi-shield-lock me-1"></i> パスワード変更
+            <i class="bi bi-shield-lock"></i> パスワード変更
           </a>
           <a href="{% url 'users:logout' %}" class="btn btn-outline-danger">
-            <i class="bi bi-box-arrow-right me-1"></i> ログアウト
+            <i class="bi bi-box-arrow-right"></i> ログアウト
           </a>
-          <a href="{% url 'users:account_delete_confirm' %}" class="btn btn-outline-danger">
-            <i class="bi bi-trash me-1"></i> アカウント削除
+          <a href="{% url 'users:account_delete_confirm' %}" class="btn btn-outline-danger btn-delete-account">
+            <i class="bi bi-trash"></i> アカウント削除
           </a>
         </div>
       </div>
