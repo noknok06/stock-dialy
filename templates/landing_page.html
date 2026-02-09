@@ -788,45 +788,6 @@
           transform: translateY(0);
         }
 
-        /* ========== モバイル navbar 認証ボタン ========== */
-        .navbar-auth-mobile {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          margin-right: 0.5rem;
-        }
-
-        .btn-auth-mobile {
-          padding: 0.35rem 0.75rem;
-          border-radius: 6px;
-          font-size: 0.8rem;
-          font-weight: 600;
-          text-decoration: none;
-          white-space: nowrap;
-          transition: all 0.2s ease;
-        }
-
-        .btn-login-mobile {
-          color: white;
-          border: 1px solid rgba(255, 255, 255, 0.4);
-          background: transparent;
-        }
-
-        .btn-login-mobile:hover {
-          background: rgba(255, 255, 255, 0.1);
-          color: white;
-        }
-
-        .btn-signup-mobile {
-          background: white;
-          color: #0e7490;
-        }
-
-        .btn-signup-mobile:hover {
-          background: rgba(255, 255, 255, 0.9);
-          color: #0e7490;
-        }
-
         /* Responsive Design */
         @media (max-width: 768px) {
           .navbar {
@@ -857,8 +818,7 @@
             align-items: center;
           }
           
-          .hero-actions .btn,
-          .cta-actions .btn {
+          .btn {
             width: 100%;
             max-width: 20rem;
           }
@@ -1010,36 +970,25 @@
                 </div>
                 カブログ
             </a>
-            <!-- モバイル: 認証ボタン（ハンバーガーの外に常時表示） -->
-            <div class="navbar-auth-mobile d-lg-none">
-                <a href="/users/login/" class="btn-auth-mobile btn-login-mobile">ログイン</a>
-                <a href="/users/signup/" class="btn-auth-mobile btn-signup-mobile">新規登録</a>
-            </div>
-            <button class="navbar-toggler d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" style="border: none; box-shadow: none;">
-                <span style="color: white; font-size: 1.25rem;">☰</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" style="border: none; box-shadow: none;">
+                <span style="color: white; font-size: 1.5rem;">☰</span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item d-none d-lg-block">
+                    <li class="nav-item">
                         <a class="nav-link" href="#features">特徴</a>
                     </li>
-                    <li class="nav-item d-none d-lg-block">
+                    <li class="nav-item">
                         <a class="nav-link" href="#benefits">メリット</a>
                     </li>
-                    <li class="nav-item d-none d-lg-block">
+                    <li class="nav-item">
                         <a class="nav-link" href="#comparison">比較</a>
                     </li>
-                    <!-- デスクトップ: 認証ボタン -->
-                    <li class="nav-item d-none d-lg-flex align-items-center ms-3 gap-2">
-                        <a href="/users/login/" class="btn btn-outline btn-sm px-3" style="border-color: rgba(255,255,255,0.4); color: white;">ログイン</a>
-                        <a href="/users/signup/" class="btn btn-sm px-3" style="background: white; color: #0e7490; font-weight: 600;">新規登録</a>
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-outline btn-sm ms-2 px-3" href="#cta" style="border-color: rgba(255,255,255,0.3); color: white;">
+                            無料で始める
+                        </a>
                     </li>
-                </ul>
-                <!-- モバイルメニュー内リンク -->
-                <ul class="navbar-nav d-lg-none mt-2 pt-2" style="border-top: 1px solid rgba(255,255,255,0.15);">
-                    <li class="nav-item"><a class="nav-link" href="#features">特徴</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#benefits">メリット</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#comparison">比較</a></li>
                 </ul>
             </div>
         </div>
@@ -1068,7 +1017,7 @@
                 </p>
                 
                 <div class="hero-actions">
-                    <a href="/users/signup/" class="btn btn-primary btn-lg">
+                    <a href="#cta" class="btn btn-primary btn-lg">
                         <i class="bi bi-rocket-takeoff me-2"></i>
                         無料で始める
                     </a>

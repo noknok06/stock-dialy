@@ -196,7 +196,6 @@ TEMPLATES = [
                 'subscriptions.context_processors.subscription_status',  # サブスクリプション状態
                 'ads.context_processors.ads_processor',  # 広告表示
                 'ads.context_processors.static_version',
-                'users.context_processors.google_oauth_status',  # Google OAuth状態
             ],
         },
     },
@@ -259,10 +258,6 @@ SOCIALACCOUNT_REDIRECT_URLS = {
 }
 
 # Google認証設定
-# 環境変数からGoogle OAuth認証情報を取得（未設定の場合はGoogleログインボタンを非表示）
-GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
-GOOGLE_OAUTH_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '')
-
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'SCOPE': [
@@ -273,16 +268,8 @@ SOCIALACCOUNT_PROVIDERS = {
             'access_type': 'online',
         },
         'VERIFIED_EMAIL': True,  # Googleからのメールを検証済みとして扱う
-        'APP': {
-            'client_id': GOOGLE_OAUTH_CLIENT_ID,
-            'secret': GOOGLE_OAUTH_CLIENT_SECRET,
-            'key': '',
-        }
     }
 }
-
-# Google OAuth が設定済みかどうかのフラグ
-GOOGLE_OAUTH_ENABLED = bool(GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET)
 
 # =============================================================================
 # 静的・メディアファイル設定
