@@ -15,10 +15,14 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         settings.pyのAPPキーとDBのSocialAppが重複した場合、
         settings.py側（APP設定）を優先して1つだけ返す。
         """
-        apps = super().list_apps(request, provider=provider, client_id=client_id)
+        try:
+            apps = super().list_apps(request, provider=provider, client_id=client_id)
+        except Exception as e:
+            logger.error(f"Error in list_apps: {e}")
+            return []
+
         if len(apps) > 1 and provider:
-            # settings.py由来のアプリを優先（provider_id が空でDBに保存されていないもの）
-            # allauthはsettings.py由来のappもSocialAppインスタンスとして返すが、pkがNone
+            # settings.py由来のアプリを優先（pkがNone = DB未保存）
             settings_apps = [app for app in apps if app.pk is None]
             if settings_apps:
                 logger.warning(
@@ -40,14 +44,14 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         # すでに認証済みのユーザーの場合は何もしない
         if request.user.is_authenticated:
             return
-            
+
         # メールアドレスで既存ユーザーを検索
         email = sociallogin.account.extra_data.get('email')
         if email:
             try:
                 # メールアドレスが一致する既存ユーザーを検索
                 existing_user = User.objects.get(email=email)
-                
+
                 # 既存ユーザーにソーシャルアカウントが接続されているか確認
                 if existing_user.socialaccount_set.filter(provider='google').exists():
                     # 既に連携済みの場合は通常のログインフローを続ける
@@ -56,16 +60,15 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
                     # 既存ユーザーだが、ソーシャル連携がまだの場合
                     # ここでは自動連携せず、メッセージを表示してリダイレクト
                     messages.info(
-                        request, 
+                        request,
                         f"メールアドレス {email} は既に通常アカウントとして登録されています。"
                         f"そのアカウントでログインしてください。"
                     )
                     # ログインページにリダイレクト
-                    # sociallogin.state['next']は使用せず、例外を投げる
                     from django.shortcuts import redirect
                     from allauth.exceptions import ImmediateHttpResponse
                     raise ImmediateHttpResponse(redirect('users:login'))
-                    
+
             except User.DoesNotExist:
                 # 既存ユーザーが見つからない場合は新規登録フローへ
                 pass

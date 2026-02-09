@@ -27,30 +27,14 @@
     overflow: hidden;
   }
 
-  .social-signup-header::before {
-    content: "";
-    position: absolute;
-    top: -20px;
-    right: -20px;
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    z-index: 1;
-  }
-
   .social-signup-header h2 {
     font-weight: 700;
     margin-bottom: 0.5rem;
-    position: relative;
-    z-index: 2;
   }
 
   .social-signup-header p {
     opacity: 0.9;
     margin-bottom: 0;
-    position: relative;
-    z-index: 2;
   }
 
   .social-signup-body {
@@ -58,43 +42,6 @@
     background-color: white;
   }
 
-  /* Google アカウント情報カード */
-  .google-account-card {
-    display: flex;
-    align-items: center;
-    padding: 1.25rem;
-    background-color: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.75rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .google-account-card svg {
-    width: 32px;
-    height: 32px;
-    flex-shrink: 0;
-    margin-right: 1rem;
-  }
-
-  .google-account-info {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .google-account-info .account-label {
-    font-size: 0.8rem;
-    color: #6b7280;
-    margin-bottom: 0.125rem;
-  }
-
-  .google-account-info .account-email {
-    font-weight: 600;
-    color: #111827;
-    font-size: 0.95rem;
-    word-break: break-all;
-  }
-
-  /* 確認メッセージ */
   .confirm-message {
     text-align: center;
     margin-bottom: 2rem;
@@ -131,7 +78,36 @@
     margin: 0 auto;
   }
 
-  /* サービス説明 */
+  .google-account-card {
+    display: flex;
+    align-items: center;
+    padding: 1.25rem;
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .google-account-card svg {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    margin-right: 1rem;
+  }
+
+  .google-account-info .account-label {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-bottom: 0.125rem;
+  }
+
+  .google-account-info .account-email {
+    font-weight: 600;
+    color: #111827;
+    font-size: 0.95rem;
+    word-break: break-all;
+  }
+
   .service-features {
     list-style: none;
     padding: 0;
@@ -158,7 +134,6 @@
     flex-shrink: 0;
   }
 
-  /* フォーム */
   .social-signup-form .form-label {
     font-weight: 500;
     color: #374151;
@@ -171,7 +146,6 @@
     color: #9ca3af;
   }
 
-  /* ボタンエリア */
   .signup-actions {
     display: flex;
     flex-direction: column;
@@ -211,6 +185,8 @@
     border: 1px solid #d1d5db;
     color: #6b7280;
     transition: all 0.3s ease;
+    text-align: center;
+    text-decoration: none;
   }
 
   .btn-cancel-signup:hover {
@@ -219,7 +195,6 @@
     color: #374151;
   }
 
-  /* 利用規約 */
   .terms-note {
     text-align: center;
     font-size: 0.8rem;
@@ -232,7 +207,6 @@
     text-decoration: underline;
   }
 
-  /* エラー */
   .text-danger {
     color: #ef4444;
     font-size: 0.85rem;
@@ -318,7 +292,6 @@
     color: var(--dm-text-secondary, #a0a0b8);
   }
 
-  /* モバイル */
   @media (max-width: 576px) {
     .social-signup-container {
       padding: 1.5rem 0.75rem;
@@ -348,7 +321,6 @@
     </div>
 
     <div class="social-signup-body">
-      <!-- 確認メッセージ -->
       <div class="confirm-message">
         <div class="confirm-icon">
           <i class="bi bi-person-plus"></i>
@@ -357,7 +329,7 @@
         <p>カブログのアカウントが作成され、今後はGoogleアカウントでログインできるようになります。</p>
       </div>
 
-      <!-- Google アカウント情報 -->
+      {% if account %}
       <div class="google-account-card">
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -367,11 +339,11 @@
         </svg>
         <div class="google-account-info">
           <div class="account-label">Googleアカウント</div>
-          <div class="account-email">{{ account.extra_data.email|default:account.email|default:"" }}</div>
+          <div class="account-email">{{ account.extra_data.email }}</div>
         </div>
       </div>
+      {% endif %}
 
-      <!-- カブログの機能紹介 -->
       <ul class="service-features">
         <li><i class="bi bi-check-circle-fill"></i>株式投資の記録・分析</li>
         <li><i class="bi bi-check-circle-fill"></i>投資日記の管理</li>
@@ -385,7 +357,6 @@
       </div>
       {% endif %}
 
-      <!-- サインアップフォーム -->
       <form class="social-signup-form" id="signup_form" method="post" action="{% url 'socialaccount_signup' %}">
         {% csrf_token %}
 
@@ -420,7 +391,7 @@
             <i class="bi bi-check-circle"></i>
             アカウントを作成する
           </button>
-          <a href="{% url 'users:login' %}" class="btn btn-cancel-signup">
+          <a href="{% url 'users:login' %}" class="btn-cancel-signup">
             キャンセル
           </a>
         </div>
