@@ -635,11 +635,12 @@
             </div>
           </form>
 
+          {% if google_oauth_enabled %}
           <div class="social-divider">
             <span>または</span>
           </div>
 
-          <a href="{% url 'users:google_login' %}" class="google-btn">
+          <a href="/accounts/google/login/" class="google-btn">
             <svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
               <g transform="matrix(1, 0, 0, 1, 0, 0)">
                 <path
@@ -658,6 +659,7 @@
             </svg>
             <span>Googleでログイン</span>
           </a>
+          {% endif %}
 
           <div class="login-footer">
             <p>アカウントをお持ちでない場合は
