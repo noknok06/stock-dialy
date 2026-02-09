@@ -4,10 +4,37 @@ from django.contrib.auth import get_user_model
 import random
 import string
 from django.contrib import messages
+import logging
 
+logger = logging.getLogger(__name__)
 User = get_user_model()
 
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
+    def list_apps(self, request, provider=None, client_id=None):
+        """
+        settings.pyのAPPキーとDBのSocialAppが重複した場合、
+        settings.py側（APP設定）を優先して1つだけ返す。
+        """
+        apps = super().list_apps(request, provider=provider, client_id=client_id)
+        if len(apps) > 1 and provider:
+            # settings.py由来のアプリを優先（provider_id が空でDBに保存されていないもの）
+            # allauthはsettings.py由来のappもSocialAppインスタンスとして返すが、pkがNone
+            settings_apps = [app for app in apps if app.pk is None]
+            if settings_apps:
+                logger.warning(
+                    f"Multiple SocialApps found for provider '{provider}'. "
+                    f"Using settings-based configuration. "
+                    f"Please remove duplicate SocialApp from the database via admin."
+                )
+                return settings_apps[:1]
+            # すべてDB由来の場合は最初の1つを返す
+            logger.warning(
+                f"Multiple SocialApps found in DB for provider '{provider}'. "
+                f"Using first one. Please clean up duplicates."
+            )
+            return apps[:1]
+        return apps
+
     def pre_social_login(self, request, sociallogin):
         """ソーシャルログイン前の処理"""
         # すでに認証済みのユーザーの場合は何もしない
