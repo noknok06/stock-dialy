@@ -387,14 +387,24 @@
 {% block content %}
 <div class="dashboard-container py-4">
   <!-- ページヘッダー -->
-  <div class="page-header mb-4">
-    <h1 class="page-title">
-      <span class="tag-badge-large">
-        <i class="bi bi-tag-fill"></i>
-        {{ tag.name }}
-      </span>
-    </h1>
-    <p class="text-muted mb-0">このタグが設定されている銘柄と投資記録</p>
+  <div class="page-header mb-4 d-flex justify-content-between align-items-start flex-wrap gap-3">
+    <div>
+      <h1 class="page-title">
+        <span class="tag-badge-large">
+          <i class="bi bi-tag-fill"></i>
+          {{ tag.name }}
+        </span>
+      </h1>
+      <p class="text-muted mb-0">このタグが設定されている銘柄と投資記録</p>
+    </div>
+
+    <!-- 本モードボタン -->
+    {% if stats.total_diaries > 0 %}
+    <a href="{% url 'tags:book' tag.pk %}" class="btn btn-primary d-flex align-items-center gap-2" style="height: fit-content;">
+      <i class="bi bi-book"></i>
+      <span>本モードで見る</span>
+    </a>
+    {% endif %}
   </div>
 
   <!-- 統計カード -->

@@ -12,6 +12,7 @@ urlpatterns = [
     path('<int:pk>/', views.TagDetailView.as_view(), name='detail'),
     path('<int:pk>/update/', views.TagUpdateView.as_view(), name='update'),
     path('<int:pk>/delete/', views.TagDeleteView.as_view(), name='delete'),
-    
+    path('<int:pk>/book/', views.TagBookView.as_view(), name='book'),  # 本モード
+
     path('api/list/', api.list_tags, name='api_list'),
 ]

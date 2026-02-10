@@ -208,7 +208,7 @@ class TagDeleteView(LoginRequiredMixin, DeleteView):
     model = Tag
     template_name = 'tags/tag_confirm_delete.html'
     success_url = reverse_lazy('tags:list')
-    
+
     def get_queryset(self):
         return Tag.objects.filter(user=self.request.user)
 
@@ -225,4 +225,54 @@ class TagDeleteView(LoginRequiredMixin, DeleteView):
             }
         ]
         context['page_actions'] = analytics_actions
+        return context
+
+
+class TagBookView(LoginRequiredMixin, DetailView):
+    """
+    タグ付き銘柄を本のようにめくって表示するビュー
+    """
+    model = Tag
+    template_name = 'tags/tag_book.html'
+    context_object_name = 'tag'
+
+    def get_queryset(self):
+        return Tag.objects.filter(user=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        tag = self.object
+
+        # このタグが設定されている日記を取得（投資理由がある銘柄のみ）
+        diaries = tag.stockdiary_set.filter(
+            reason__isnull=False
+        ).exclude(
+            reason=''
+        ).select_related('user').order_by('-created_at')
+
+        # 銘柄ごとの最新の日記を取得（投資理由を表示）
+        seen_stocks = set()
+        unique_diaries = []
+
+        for diary in diaries:
+            stock_key = f"{diary.stock_symbol}_{diary.stock_name}"
+            if stock_key not in seen_stocks:
+                seen_stocks.add(stock_key)
+                unique_diaries.append(diary)
+
+        context.update({
+            'diaries': unique_diaries,
+            'total_pages': len(unique_diaries),
+        })
+
+        # スピードダイアル用のアクション
+        context['page_actions'] = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('tags:detail', kwargs={'pk': tag.pk}),
+                'icon': 'bi-arrow-left',
+                'label': '戻る'
+            }
+        ]
+
         return context

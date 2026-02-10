@@ -1,0 +1,830 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load stockdiary_filters %}
+
+{% block title %}{{ tag.name }} - 本モード | カブログ{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/3-components/components.css' %}?v={{ STATIC_VERSION }}">
+<link rel="stylesheet" href="{% static 'css/3-components/dark-mode-components.css' %}?v={{ STATIC_VERSION }}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/marked@11.1.1/lib/marked.min.css">
+
+<style>
+  /* ========== 本モード専用スタイル ========== */
+
+  .book-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  .book-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border-light);
+  }
+
+  .book-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-100);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    line-height: 1.3;
+  }
+
+  .book-title i {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .book-subtitle {
+    font-size: 0.95rem;
+    color: var(--text-200);
+  }
+
+  /* ページカード */
+  .page-card {
+    background: var(--bg-100);
+    border: 2px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    display: none;
+    min-height: 500px;
+    position: relative;
+  }
+
+  .page-card.active {
+    display: block;
+    animation: fadeIn 0.4s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .page-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .page-stock-name {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-100);
+    margin-bottom: 0.75rem;
+    line-height: 1.35;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .page-stock-code {
+    font-size: 0.95rem;
+    color: var(--text-200);
+    margin: 0 0 0.75rem 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .page-stock-code i {
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+
+  .page-stock-code span {
+    line-height: 1;
+  }
+
+  .page-sector {
+    display: inline-block;
+    background: var(--primary-100);
+    color: var(--primary-200);
+    padding: 0.35rem 0.85rem;
+    border-radius: 16px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .page-content {
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: var(--text-100);
+  }
+
+  .page-content h1, .page-content h2, .page-content h3 {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    color: var(--text-100);
+  }
+
+  .page-content p {
+    margin-bottom: 1rem;
+  }
+
+  .page-content ul, .page-content ol {
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .page-content li {
+    margin-bottom: 0.5rem;
+  }
+
+  .page-content code {
+    background: rgba(0, 0, 0, 0.05);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-family: 'Courier New', monospace;
+  }
+
+  .page-content pre {
+    background: rgba(0, 0, 0, 0.05);
+    padding: 1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+  }
+
+  .page-content pre code {
+    background: none;
+    padding: 0;
+  }
+
+  .page-content blockquote {
+    border-left: 4px solid var(--primary-200);
+    padding-left: 1rem;
+    margin: 1rem 0;
+    color: var(--text-200);
+    font-style: italic;
+  }
+
+  .page-content a {
+    color: var(--primary-200);
+    text-decoration: none;
+  }
+
+  .page-content a:hover {
+    text-decoration: underline;
+  }
+
+  .page-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+  }
+
+  .page-content th,
+  .page-content td {
+    padding: 0.5rem;
+    border: 1px solid var(--border-light);
+    text-align: left;
+  }
+
+  .page-content th {
+    background: var(--bg-200);
+    font-weight: 600;
+  }
+
+  .page-content hr {
+    border: none;
+    border-top: 2px solid var(--border-light);
+    margin: 1.5rem 0;
+  }
+
+  .page-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 1rem 0;
+  }
+
+  /* ページャー */
+  .book-pager {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 0;
+    margin-top: 2rem;
+    border-top: 2px solid var(--border-light);
+  }
+
+  .pager-btn {
+    background: var(--gradient-primary);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .pager-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .pager-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .pager-info {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-100);
+  }
+
+  .pager-info .current-page {
+    color: var(--accent-200);
+    font-size: 1.3rem;
+  }
+
+  /* キーボードショートカットヒント */
+  .keyboard-hint {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    z-index: 1000;
+    opacity: 0;
+    animation: fadeInOut 3s ease-in-out;
+  }
+
+  @keyframes fadeInOut {
+    0%, 100% { opacity: 0; }
+    10%, 90% { opacity: 1; }
+  }
+
+  .keyboard-hint kbd {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-family: monospace;
+    margin: 0 0.25rem;
+  }
+
+  /* 空の状態 */
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--bg-100);
+    border-radius: var(--radius-lg);
+  }
+
+  .empty-state-icon {
+    font-size: 4rem;
+    color: var(--text-200);
+    margin-bottom: 1rem;
+  }
+
+  .empty-state-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-100);
+    margin-bottom: 0.5rem;
+  }
+
+  .empty-state-text {
+    color: var(--text-200);
+    margin-bottom: 2rem;
+  }
+
+  /* ダークモード */
+  .dark-mode .page-card,
+  [data-theme="dark"] .page-card {
+    background: var(--dm-card);
+    border-color: var(--dm-border);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  }
+
+  .dark-mode .book-header,
+  [data-theme="dark"] .book-header {
+    border-bottom-color: var(--dm-border);
+  }
+
+  .dark-mode .book-title,
+  [data-theme="dark"] .book-title {
+    color: var(--dm-text);
+  }
+
+  .dark-mode .book-subtitle,
+  [data-theme="dark"] .book-subtitle {
+    color: var(--dm-text-secondary);
+  }
+
+  .dark-mode .page-header,
+  [data-theme="dark"] .page-header {
+    border-bottom-color: var(--dm-border);
+  }
+
+  .dark-mode .page-stock-name,
+  [data-theme="dark"] .page-stock-name {
+    color: var(--dm-text);
+  }
+
+  .dark-mode .page-stock-code,
+  [data-theme="dark"] .page-stock-code {
+    color: var(--dm-text-secondary);
+  }
+
+  .dark-mode .page-sector,
+  [data-theme="dark"] .page-sector {
+    background: var(--dm-primary-bg);
+    color: var(--dm-primary-text);
+  }
+
+  .dark-mode .book-pager,
+  [data-theme="dark"] .book-pager {
+    border-top-color: var(--dm-border);
+  }
+
+  .dark-mode .pager-info,
+  [data-theme="dark"] .pager-info {
+    color: var(--dm-text);
+  }
+
+  .dark-mode .pager-info .current-page,
+  [data-theme="dark"] .pager-info .current-page {
+    color: var(--accent-200);
+  }
+
+  .dark-mode .pager-btn,
+  [data-theme="dark"] .pager-btn {
+    background: var(--gradient-primary);
+  }
+
+  .dark-mode .page-content,
+  [data-theme="dark"] .page-content {
+    color: var(--dm-text);
+  }
+
+  .dark-mode .page-content h1,
+  .dark-mode .page-content h2,
+  .dark-mode .page-content h3,
+  .dark-mode .page-content h4,
+  .dark-mode .page-content h5,
+  .dark-mode .page-content h6,
+  [data-theme="dark"] .page-content h1,
+  [data-theme="dark"] .page-content h2,
+  [data-theme="dark"] .page-content h3,
+  [data-theme="dark"] .page-content h4,
+  [data-theme="dark"] .page-content h5,
+  [data-theme="dark"] .page-content h6 {
+    color: var(--dm-text);
+  }
+
+  .dark-mode .page-content a,
+  [data-theme="dark"] .page-content a {
+    color: var(--accent-200);
+  }
+
+  .dark-mode .page-content code,
+  [data-theme="dark"] .page-content code {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--dm-text);
+  }
+
+  .dark-mode .page-content pre,
+  [data-theme="dark"] .page-content pre {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--dm-border);
+  }
+
+  .dark-mode .page-content blockquote,
+  [data-theme="dark"] .page-content blockquote {
+    border-left-color: var(--dm-border);
+    color: var(--dm-text-secondary);
+  }
+
+  .dark-mode .empty-state,
+  [data-theme="dark"] .empty-state {
+    background: var(--dm-card);
+  }
+
+  .dark-mode .empty-state-icon,
+  [data-theme="dark"] .empty-state-icon {
+    color: var(--dm-text-secondary);
+  }
+
+  .dark-mode .empty-state-title,
+  [data-theme="dark"] .empty-state-title {
+    color: var(--dm-text);
+  }
+
+  .dark-mode .empty-state-text,
+  [data-theme="dark"] .empty-state-text {
+    color: var(--dm-text-secondary);
+  }
+
+  .dark-mode .page-content table th,
+  .dark-mode .page-content table td,
+  [data-theme="dark"] .page-content table th,
+  [data-theme="dark"] .page-content table td {
+    border-color: var(--dm-border);
+  }
+
+  .dark-mode .page-content table th,
+  [data-theme="dark"] .page-content table th {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .dark-mode .page-content hr,
+  [data-theme="dark"] .page-content hr {
+    border-top-color: var(--dm-border);
+  }
+
+  /* レスポンシブ */
+  @media (max-width: 768px) {
+    .book-container {
+      padding: 1rem 0.75rem;
+    }
+
+    .book-header {
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+    }
+
+    .book-title {
+      font-size: 1.35rem;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .book-title i {
+      font-size: 1.25rem;
+    }
+
+    .book-subtitle {
+      font-size: 0.85rem;
+    }
+
+    .page-card {
+      padding: 1.25rem;
+      min-height: 350px;
+      margin-bottom: 1.5rem;
+    }
+
+    .page-header {
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+    }
+
+    .page-stock-name {
+      font-size: 1.2rem;
+      line-height: 1.4;
+      margin-bottom: 0.6rem;
+    }
+
+    .page-stock-code {
+      font-size: 0.875rem;
+      margin-bottom: 0.65rem;
+      gap: 0.3rem;
+    }
+
+    .page-stock-code i {
+      font-size: 0.75rem;
+    }
+
+    .page-sector {
+      font-size: 0.75rem;
+      padding: 0.3rem 0.7rem;
+    }
+
+    .page-content {
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    .page-content h1 {
+      font-size: 1.5rem;
+    }
+
+    .page-content h2 {
+      font-size: 1.3rem;
+    }
+
+    .page-content h3 {
+      font-size: 1.15rem;
+    }
+
+    .book-pager {
+      padding: 1rem 0;
+      margin-top: 1.5rem;
+      gap: 0.5rem;
+    }
+
+    .pager-btn {
+      padding: 0.6rem 1rem;
+      font-size: 0.85rem;
+      gap: 0.3rem;
+    }
+
+    .pager-btn i {
+      font-size: 1rem;
+    }
+
+    .pager-info {
+      font-size: 1rem;
+    }
+
+    .pager-info .current-page {
+      font-size: 1.2rem;
+    }
+
+    .empty-state {
+      padding: 3rem 1.5rem;
+    }
+
+    .empty-state-icon {
+      font-size: 3rem;
+    }
+
+    .empty-state-title {
+      font-size: 1.25rem;
+    }
+
+    .empty-state-text {
+      font-size: 0.9rem;
+    }
+
+    .keyboard-hint {
+      display: none;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .book-container {
+      padding: 0.75rem 0.5rem;
+    }
+
+    .book-title {
+      font-size: 1.15rem;
+    }
+
+    .book-title i {
+      font-size: 1rem;
+    }
+
+    .page-card {
+      padding: 1rem;
+    }
+
+    .page-header {
+      margin-bottom: 1rem;
+      padding-bottom: 0.6rem;
+    }
+
+    .page-stock-name {
+      font-size: 1.05rem;
+      line-height: 1.35;
+      margin-bottom: 0.5rem;
+    }
+
+    .page-stock-code {
+      font-size: 0.8rem;
+      margin-bottom: 0.55rem;
+      gap: 0.25rem;
+    }
+
+    .page-stock-code i {
+      font-size: 0.7rem;
+    }
+
+    .page-sector {
+      font-size: 0.7rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 12px;
+    }
+
+    .pager-btn {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+    }
+
+    .pager-info {
+      font-size: 0.9rem;
+    }
+
+    .pager-info .current-page {
+      font-size: 1.1rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="book-container">
+  <!-- ヘッダー -->
+  <div class="book-header">
+    <h1 class="book-title">
+      <i class="bi bi-book"></i>
+      {{ tag.name }}
+    </h1>
+    <p class="book-subtitle">{{ total_pages }}件の銘柄</p>
+  </div>
+
+  {% if diaries %}
+    <!-- ページコンテンツ -->
+    <div id="book-pages">
+      {% for diary in diaries %}
+      <div class="page-card {% if forloop.first %}active{% endif %}" data-page="{{ forloop.counter }}">
+        <div class="page-header">
+          <h2 class="page-stock-name">{{ diary.stock_name }}</h2>
+          {% if diary.stock_symbol %}
+          <p class="page-stock-code">
+            <i class="bi bi-tag"></i><span>{{ diary.stock_symbol }}</span>
+          </p>
+          {% endif %}
+          {% if diary.sector %}
+          <span class="page-sector">{{ diary.sector }}</span>
+          {% endif %}
+        </div>
+
+        <div class="page-content markdown-content" id="content-{{ forloop.counter }}">
+          {{ diary.reason }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- ページャー -->
+    <div class="book-pager">
+      <button class="pager-btn" id="prevBtn" disabled>
+        <i class="bi bi-chevron-left"></i>
+        <span class="d-none d-sm-inline">前のページ</span>
+      </button>
+
+      <div class="pager-info">
+        <span class="current-page" id="currentPage">1</span>
+        <span class="text-muted"> / {{ total_pages }}</span>
+      </div>
+
+      <button class="pager-btn" id="nextBtn">
+        <span class="d-none d-sm-inline">次のページ</span>
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+
+    <!-- キーボードショートカットヒント -->
+    <div class="keyboard-hint" id="keyboardHint">
+      <kbd>←</kbd> 前のページ / <kbd>→</kbd> 次のページ
+    </div>
+
+  {% else %}
+    <!-- 空の状態 -->
+    <div class="empty-state">
+      <div class="empty-state-icon">
+        <i class="bi bi-book"></i>
+      </div>
+      <h2 class="empty-state-title">投資理由が記録されていません</h2>
+      <p class="empty-state-text">
+        このタグに紐付いた銘柄で投資理由が記録されているものがありません。
+      </p>
+      <a href="{% url 'tags:detail' tag.pk %}" class="btn btn-primary">
+        <i class="bi bi-arrow-left me-2"></i>
+        タグ詳細に戻る
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+{% include 'speed_dial.html' with actions=page_actions %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+
+<script>
+{% if diaries %}
+// ページめくり機能
+const totalPages = {{ total_pages }};
+let currentPage = 1;
+
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const currentPageSpan = document.getElementById('currentPage');
+const pages = document.querySelectorAll('.page-card');
+
+// marked.js の設定
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+  headerIds: false,
+  mangle: false
+});
+
+// マークダウンをレンダリング
+pages.forEach((page, index) => {
+  const contentDiv = document.getElementById(`content-${index + 1}`);
+  if (contentDiv) {
+    const rawContent = contentDiv.textContent.trim();
+    // 空でない場合のみパース
+    if (rawContent) {
+      contentDiv.innerHTML = marked.parse(rawContent);
+    }
+  }
+});
+
+function showPage(pageNum) {
+  // 範囲チェック
+  if (pageNum < 1 || pageNum > totalPages) return;
+
+  // すべてのページを非表示
+  pages.forEach(page => page.classList.remove('active'));
+
+  // 指定されたページを表示
+  const targetPage = document.querySelector(`[data-page="${pageNum}"]`);
+  if (targetPage) {
+    targetPage.classList.add('active');
+    currentPage = pageNum;
+    currentPageSpan.textContent = pageNum;
+
+    // ボタンの有効/無効を更新
+    prevBtn.disabled = (pageNum === 1);
+    nextBtn.disabled = (pageNum === totalPages);
+  }
+}
+
+// ボタンクリックイベント
+prevBtn.addEventListener('click', () => showPage(currentPage - 1));
+nextBtn.addEventListener('click', () => showPage(currentPage + 1));
+
+// キーボードショートカット
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    showPage(currentPage - 1);
+  } else if (e.key === 'ArrowRight') {
+    e.preventDefault();
+    showPage(currentPage + 1);
+  }
+});
+
+// タッチイベント用の変数
+let touchStartX = 0;
+let touchEndX = 0;
+const swipeThreshold = 50; // スワイプと判定する最小距離（ピクセル）
+
+// タッチイベントリスナー
+const bookPages = document.getElementById('book-pages');
+if (bookPages) {
+  bookPages.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+
+  bookPages.addEventListener('touchend', (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+  }, { passive: true });
+}
+
+function handleSwipe() {
+  const swipeDistance = touchEndX - touchStartX;
+
+  // 左スワイプ（次のページ）
+  if (swipeDistance < -swipeThreshold) {
+    showPage(currentPage + 1);
+  }
+  // 右スワイプ（前のページ）
+  else if (swipeDistance > swipeThreshold) {
+    showPage(currentPage - 1);
+  }
+}
+
+// キーボードヒントを表示
+setTimeout(() => {
+  const hint = document.getElementById('keyboardHint');
+  if (hint) {
+    hint.style.animation = 'fadeInOut 3s ease-in-out';
+  }
+}, 500);
+{% endif %}
+</script>
+{% endblock %}
