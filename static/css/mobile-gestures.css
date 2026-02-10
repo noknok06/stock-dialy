@@ -1,0 +1,31 @@
+/* ========================================
+   Mobile Gestures - スワイプタブ切替の視覚フィードバック
+   ======================================== */
+
+/* スワイプ中のタブコンテンツ領域 */
+.diary-tab-content {
+  touch-action: pan-y;
+  overflow: hidden;
+  will-change: transform;
+}
+
+/* タブ切替時のハイライトエフェクト */
+.tab-btn.tab-highlight {
+  background: rgba(113, 196, 239, 0.25);
+  color: var(--accent-200);
+  transition: background 0.15s ease;
+}
+
+/* ダークモード */
+.dark-mode .tab-btn.tab-highlight,
+[data-theme="dark"] .tab-btn.tab-highlight {
+  background: rgba(113, 196, 239, 0.3);
+  color: var(--accent-100);
+}
+
+/* reduced-motion 対応 */
+@media (prefers-reduced-motion: reduce) {
+  .diary-tab-content {
+    will-change: auto;
+  }
+}
