@@ -13,7 +13,10 @@ import os
 import uuid
 from PIL import Image
 import io
+import logging
 from tags.models import Tag
+
+logger = logging.getLogger(__name__)
 
 
 def get_diary_image_path(instance, filename):
@@ -300,7 +303,7 @@ class StockDiary(models.Model):
             return True
             
         except Exception as e:
-            print(f"Image processing failed: {str(e)}")
+            logger.error(f"Image processing failed for StockDiary: {str(e)}", exc_info=True)
             return False
 
     def delete_image(self):
@@ -312,7 +315,7 @@ class StockDiary(models.Model):
                 self.save(update_fields=['image'])
                 return True
         except Exception as e:
-            print(f"Image deletion failed: {str(e)}")
+            logger.error(f"Image deletion failed for StockDiary: {str(e)}", exc_info=True)
         return False
 
     def get_image_url(self):
@@ -599,7 +602,7 @@ class DiaryNote(models.Model):
             return True
             
         except Exception as e:
-            print(f"Note image processing failed: {str(e)}")
+            logger.error(f"Note image processing failed for DiaryNote: {str(e)}", exc_info=True)
             return False
 
     def delete_image(self):
@@ -611,7 +614,7 @@ class DiaryNote(models.Model):
                 self.save(update_fields=['image'])
                 return True
         except Exception as e:
-            print(f"Note image deletion failed: {str(e)}")
+            logger.error(f"Note image deletion failed for DiaryNote: {str(e)}", exc_info=True)
         return False
 
     def get_image_url(self):

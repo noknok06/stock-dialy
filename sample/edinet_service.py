@@ -612,8 +612,13 @@ class EDINETService:
 
 def main():
     """使用例とテスト"""
+    import os
     # 設定
-    API_KEY = "14fb862b5660412d82cc77373cde4170"
+    API_KEY = os.getenv('EDINET_API_KEY', '')
+    if not API_KEY:
+        print("Error: EDINET_API_KEY environment variable is not set")
+        print("Please set it in your .env file or export it: export EDINET_API_KEY='your_key_here'")
+        return
     
     # サービス初期化
     service = EDINETService(API_KEY)

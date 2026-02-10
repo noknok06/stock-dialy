@@ -308,7 +308,9 @@ EMAIL_HOST = 'smtp.gmail.com'  # メールサーバー
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'kabulog.information@gmail.com'
-EMAIL_HOST_PASSWORD = 'wfsdxbdxsdusvddw'  # 注意: 環境変数を使用することをお勧めします
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+if not EMAIL_HOST_PASSWORD:
+    raise ValueError("EMAIL_HOST_PASSWORD environment variable is required")
 # デフォルトの送信元メールアドレス
 DEFAULT_FROM_EMAIL = 'カブログ <kabulog.information@gmail.com>'
 # =============================================================================
@@ -318,19 +320,75 @@ DEFAULT_FROM_EMAIL = 'カブログ <kabulog.information@gmail.com>'
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{levelname}] {asctime} {name} {message}',
+            'style': '{',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+        'simple': {
+            'format': '[{levelname}] {message}',
+            'style': '{',
+        },
+    },
     'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+            'level': 'INFO',
+        },
         'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'app.log'),
+            'maxBytes': 1024 * 1024 * 10,  # 10MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+            'level': 'INFO',
+        },
+        'error_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'error.log'),
+            'maxBytes': 1024 * 1024 * 10,  # 10MB
+            'backupCount': 5,
+            'formatter': 'verbose',
             'level': 'ERROR',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'django-error.log'),
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],
-            'level': 'ERROR',
-            'propagate': True,
+            'handlers': ['console', 'error_file'],
+            'level': 'WARNING',
+            'propagate': False,
         },
+        'stockdiary': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'subscriptions': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'earnings_analysis': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'security': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'analysis_template': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file', 'error_file'],
+        'level': 'WARNING',
     },
 }
 

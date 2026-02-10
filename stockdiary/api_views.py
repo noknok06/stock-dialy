@@ -2,12 +2,15 @@
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods, require_GET
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from .models import (
-    PushSubscription, DiaryNotification, 
+    PushSubscription, DiaryNotification,
     NotificationLog, StockDiary
 )
 import json
@@ -25,14 +28,11 @@ def get_vapid_public_key(request):
     })
 
 
-@csrf_exempt  # 🆕 CSRF保護を無効化
-@require_http_methods(["POST"])
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def subscribe_push(request):
     """プッシュ通知サブスクリプションを登録"""
-    
-    # 認証チェック
-    if not request.user.is_authenticated:
-        return JsonResponse({'error': '認証が必要です'}, status=401)
     
     try:
         data = json.loads(request.body)
@@ -76,13 +76,11 @@ def subscribe_push(request):
         }, status=500)
         
 
-@csrf_exempt  # 🆕
-@require_http_methods(["POST"])
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def unsubscribe_push(request):
     """プッシュ通知サブスクリプションを解除"""
-    
-    if not request.user.is_authenticated:
-        return JsonResponse({'error': '認証が必要です'}, status=401)
     
     try:
         data = json.loads(request.body)

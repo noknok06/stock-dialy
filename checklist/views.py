@@ -9,10 +9,12 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_protect
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.csrf import csrf_exempt  # 開発中のみ使用（本番環境では適切なCSRF保護を実装すること
 import json
+import logging
 from stockdiary.models import StockDiary
 from .models import ChecklistItem, DiaryChecklistItem
+
+logger = logging.getLogger(__name__)
 
 class ChecklistListView(LoginRequiredMixin, ListView):
     model = Checklist
@@ -110,69 +112,64 @@ class ChecklistDeleteView(LoginRequiredMixin, DeleteView):
 # checklist/views.py
 @login_required
 @require_POST
-@csrf_exempt  # 開発中のみ使用
 def toggle_checklist_item(request, item_id):
     try:
-        # デバッグ出力を追加
-        print(f"Received request for item_id: {item_id}")
-        print(f"Request body: {request.body}")
-        
+        logger.debug(f"Received toggle request for item_id: {item_id}")
+
         # リクエストからデータを取得（例外処理を改善）
         try:
             data = json.loads(request.body)
             status = data.get('status', False)
         except json.JSONDecodeError:
-            print("JSON decode error")
+            logger.warning(f"JSON decode error for item {item_id}, trying form data")
             # フォームデータとして処理を試みる
             status = request.POST.get('status') == 'true'
-        
-        print(f"Status value: {status}")
-        
+
+        logger.debug(f"Status value for item {item_id}: {status}")
+
         # チェックリストアイテムを取得
         try:
             item = ChecklistItem.objects.get(id=item_id)
-            print(f"Found checklist item: {item}")
+            logger.debug(f"Found checklist item: {item}")
         except ChecklistItem.DoesNotExist:
-            print(f"Checklist item {item_id} not found")
+            logger.warning(f"Checklist item {item_id} not found")
             return JsonResponse({'error': 'チェックリストアイテムが見つかりません'}, status=404)
-        
+
         # 日記IDを取得（URLパラメータからも取得できるように修正）
         diary_id = request.session.get('current_diary_id')
         if not diary_id:
             # URLからの取得も試みる
             diary_id = request.POST.get('diary_id') or request.GET.get('diary_id')
-            
+
         if not diary_id:
-            print("No diary ID found")
+            logger.warning(f"No diary ID found for checklist item {item_id}")
             return JsonResponse({'error': '日記IDが見つかりません'}, status=400)
-            
+
         try:
             diary = StockDiary.objects.get(id=diary_id, user=request.user)
-            print(f"Found diary: {diary}")
+            logger.debug(f"Found diary: {diary.id}")
         except StockDiary.DoesNotExist:
-            print(f"Diary {diary_id} not found")
+            logger.warning(f"Diary {diary_id} not found for user {request.user.id}")
             return JsonResponse({'error': '日記が見つかりません'}, status=404)
-        
+
         # DiaryChecklistItemを取得または作成
         diary_item, created = DiaryChecklistItem.objects.get_or_create(
             diary=diary,
             checklist_item=item,
             defaults={'status': status}
         )
-        
+
         # 既存のアイテムの場合は状態を更新
         if not created:
             diary_item.status = status
             diary_item.save()
-        
-        print(f"Successfully updated item status to {status}")
+
+        logger.info(f"Successfully {'created' if created else 'updated'} checklist item {item_id} for diary {diary_id} with status {status}")
         return JsonResponse({
             'success': True,
             'status': status
         })
-        
+
     except Exception as e:
-        import traceback
-        print(f"Error in toggle_checklist_item: {str(e)}")
-        print(traceback.format_exc())
+        logger.error(f"Error in toggle_checklist_item for item {item_id}: {str(e)}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)

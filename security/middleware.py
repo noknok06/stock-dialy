@@ -281,22 +281,43 @@ class IPFilterMiddleware:
         return ip
     
     def _get_country_code(self, ip):
-        """IPアドレスから国コードを取得"""
+        """IPアドレスから国コードを取得（キャッシュ付き）"""
         try:
             ip_obj = ipaddress.ip_address(ip)
             if ip_obj.is_private:
                 return None
-                
+
+            # キャッシュをチェック (24時間)
+            cache_key = f'country_code_{ip}'
+            country_code = cache.get(cache_key)
+
+            if country_code is not None:
+                return country_code
+
+            # キャッシュミスの場合のみ外部APIを呼び出し
             try:
-                response = requests.get(f'https://ipapi.co/{ip}/json/', timeout=2)
+                response = requests.get(
+                    f'https://ipapi.co/{ip}/json/',
+                    timeout=2
+                )
                 if response.status_code == 200:
                     data = response.json()
-                    return data.get('country_code')
-            except:
-                pass
-                
-            return None
-        except:
+                    country_code = data.get('country_code', 'UNKNOWN')
+                    # 24時間キャッシュ
+                    cache.set(cache_key, country_code, 60 * 60 * 24)
+                    return country_code
+            except requests.RequestException as e:
+                logger.warning(f"Failed to get country code for IP {ip}: {e}")
+            except Exception as e:
+                logger.error(f"Unexpected error getting country code for IP {ip}: {e}")
+
+            # フォールバック: エラー時はUNKNOWNを返す
+            # TODO: ipapi.coをMaxMind GeoIP2データベース（ローカル）に置き換えることを検討
+            # これにより外部API依存を完全に排除できる
+            return 'UNKNOWN'
+
+        except ValueError:
+            # Invalid IP address
             return None
             
     def _check_japan_only_access(self, request):
