@@ -9,6 +9,650 @@
 <link rel="stylesheet" href="{% static 'css/3-components/dark-mode-components.css' %}?v={{ STATIC_VERSION }}">
 
 <style>
+  /* ========== モダンタグ管理UI ========== */
+
+  .tags-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  /* ヘッダーセクション */
+  .tags-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .tags-header-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary-200) 0%, var(--accent-200) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .tags-header-subtitle {
+    font-size: 1.1rem;
+    color: var(--text-200);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* 検索とアクションバー */
+  .tags-actions {
+    background: var(--bg-100);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .tags-search-wrapper {
+    position: relative;
+    flex: 1;
+  }
+
+  .tags-search-icon {
+    position: absolute;
+    left: 1.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-300);
+    font-size: 1.125rem;
+  }
+
+  .tags-search-input {
+    width: 100%;
+    padding: 0.875rem 1.25rem 0.875rem 3.25rem;
+    border: 2px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: var(--bg-200);
+  }
+
+  .tags-search-input:focus {
+    outline: none;
+    border-color: var(--primary-200);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    background: var(--bg-100);
+  }
+
+  .tags-action-btn {
+    padding: 0.875rem 1.5rem;
+    border-radius: var(--radius-lg);
+    font-weight: 600;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+
+  .tags-action-btn-primary {
+    background: var(--gradient-primary);
+    color: white;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
+  .tags-action-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+    color: white;
+  }
+
+  .tags-action-btn-secondary {
+    background: transparent;
+    color: var(--text-200);
+    border: 2px solid var(--border-light);
+  }
+
+  .tags-action-btn-secondary:hover {
+    background: var(--bg-200);
+    border-color: var(--text-200);
+    color: var(--text-100);
+  }
+
+  /* タグカードグリッド */
+  .tags-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .tag-card {
+    background: var(--bg-100);
+    border: 2px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    padding: 1.75rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tag-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--gradient-primary);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+  }
+
+  .tag-card:hover {
+    border-color: var(--primary-200);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  }
+
+  .tag-card:hover::before {
+    transform: scaleX(1);
+  }
+
+  .tag-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+
+  .tag-card-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-lg);
+    background: var(--gradient-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
+  .tag-card-icon i {
+    font-size: 1.75rem;
+    color: white;
+  }
+
+  .tag-card-menu {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .tag-card-menu-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--text-300);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+
+  .tag-card-menu-btn:hover {
+    background: var(--bg-200);
+    color: var(--text-100);
+  }
+
+  .tag-card-body {
+    margin-bottom: 1.25rem;
+  }
+
+  .tag-card-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-100);
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .tag-card-count {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-200);
+    font-size: 0.95rem;
+  }
+
+  .tag-card-count i {
+    font-size: 1rem;
+  }
+
+  .tag-card-footer {
+    display: flex;
+    gap: 0.75rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-light);
+  }
+
+  .tag-card-btn {
+    flex: 1;
+    padding: 0.75rem;
+    border-radius: var(--radius-lg);
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+
+  .tag-card-btn-primary {
+    background: var(--primary-100);
+    color: var(--primary-200);
+  }
+
+  .tag-card-btn-primary:hover {
+    background: var(--primary-200);
+    color: white;
+    transform: translateY(-1px);
+  }
+
+  .tag-card-btn-secondary {
+    background: var(--bg-200);
+    color: var(--text-200);
+  }
+
+  .tag-card-btn-secondary:hover {
+    background: var(--bg-300);
+    color: var(--text-100);
+  }
+
+  /* 統計カード */
+  .tags-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .tags-stat-card {
+    background: var(--gradient-primary);
+    color: white;
+    padding: 1.25rem 1.5rem;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .tags-stat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .tags-stat-icon i {
+    font-size: 1.75rem;
+  }
+
+  .tags-stat-content {
+    flex: 1;
+  }
+
+  .tags-stat-value {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 0.125rem;
+    line-height: 1;
+  }
+
+  .tags-stat-label {
+    font-size: 0.875rem;
+    opacity: 0.9;
+  }
+
+  /* 空の状態 */
+  .tags-empty {
+    text-align: center;
+    padding: 5rem 2rem;
+    background: var(--bg-100);
+    border-radius: var(--radius-xl);
+    border: 2px dashed var(--border-light);
+  }
+
+  .tags-empty-icon {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 2rem;
+    border-radius: var(--radius-full);
+    background: var(--primary-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .tags-empty-icon i {
+    font-size: 4rem;
+    color: var(--primary-200);
+  }
+
+  .tags-empty-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-100);
+    margin-bottom: 0.75rem;
+  }
+
+  .tags-empty-text {
+    font-size: 1.1rem;
+    color: var(--text-200);
+    max-width: 500px;
+    margin: 0 auto 2rem;
+    line-height: 1.6;
+  }
+
+  /* ガイドセクション */
+  .tags-guide {
+    background: var(--bg-100);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    padding: 2rem;
+    margin-top: 3rem;
+  }
+
+  .tags-guide-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-100);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .tags-guide-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+  }
+
+  .tags-guide-item {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .tags-guide-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-lg);
+    background: var(--gradient-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .tags-guide-icon i {
+    font-size: 1.5rem;
+    color: white;
+  }
+
+  .tags-guide-content h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-100);
+    margin-bottom: 0.5rem;
+  }
+
+  .tags-guide-content p {
+    font-size: 0.95rem;
+    color: var(--text-200);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  /* ダークモード */
+  .dark-mode .tags-header-title,
+  [data-theme="dark"] .tags-header-title {
+    background: linear-gradient(135deg, var(--dm-primary-200) 0%, var(--accent-200) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .dark-mode .tags-header-subtitle,
+  [data-theme="dark"] .tags-header-subtitle {
+    color: var(--dm-text-secondary);
+  }
+
+  .dark-mode .tags-actions,
+  [data-theme="dark"] .tags-actions {
+    background: var(--dm-card);
+    border-color: var(--dm-border);
+  }
+
+  .dark-mode .tags-search-input,
+  [data-theme="dark"] .tags-search-input {
+    background: var(--dm-bg-300);
+    border-color: var(--dm-border);
+    color: var(--dm-text);
+  }
+
+  .dark-mode .tags-search-input:focus,
+  [data-theme="dark"] .tags-search-input:focus {
+    background: var(--dm-card);
+    border-color: var(--dm-primary-200);
+    box-shadow: 0 0 0 4px rgba(89, 142, 243, 0.15);
+  }
+
+  .dark-mode .tags-search-icon,
+  [data-theme="dark"] .tags-search-icon {
+    color: var(--dm-text-secondary);
+  }
+
+  .dark-mode .tag-card,
+  [data-theme="dark"] .tag-card {
+    background: var(--dm-card);
+    border-color: var(--dm-border);
+  }
+
+  .dark-mode .tag-card:hover,
+  [data-theme="dark"] .tag-card:hover {
+    border-color: var(--dm-primary-200);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  .dark-mode .tag-card-name,
+  [data-theme="dark"] .tag-card-name {
+    color: var(--dm-text);
+  }
+
+  .dark-mode .tag-card-count,
+  [data-theme="dark"] .tag-card-count {
+    color: var(--dm-text-secondary);
+  }
+
+  .dark-mode .tag-card-footer,
+  [data-theme="dark"] .tag-card-footer {
+    border-top-color: var(--dm-border);
+  }
+
+  .dark-mode .tag-card-btn-primary,
+  [data-theme="dark"] .tag-card-btn-primary {
+    background: var(--dm-primary-bg);
+    color: var(--dm-primary-text);
+  }
+
+  .dark-mode .tag-card-btn-primary:hover,
+  [data-theme="dark"] .tag-card-btn-primary:hover {
+    background: var(--dm-primary-100);
+    color: white;
+  }
+
+  .dark-mode .tag-card-btn-secondary,
+  [data-theme="dark"] .tag-card-btn-secondary {
+    background: var(--dm-bg-300);
+    color: var(--dm-text-secondary);
+  }
+
+  .dark-mode .tag-card-btn-secondary:hover,
+  [data-theme="dark"] .tag-card-btn-secondary:hover {
+    background: var(--dm-bg-200);
+    color: var(--dm-text);
+  }
+
+  .dark-mode .tag-card-menu-btn,
+  [data-theme="dark"] .tag-card-menu-btn {
+    color: var(--dm-text-secondary);
+  }
+
+  .dark-mode .tag-card-menu-btn:hover,
+  [data-theme="dark"] .tag-card-menu-btn:hover {
+    background: var(--dm-bg-300);
+    color: var(--dm-text);
+  }
+
+  .dark-mode .tags-empty,
+  [data-theme="dark"] .tags-empty {
+    background: var(--dm-card);
+    border-color: var(--dm-border);
+  }
+
+  .dark-mode .tags-empty-icon,
+  [data-theme="dark"] .tags-empty-icon {
+    background: var(--dm-primary-bg);
+  }
+
+  .dark-mode .tags-empty-icon i,
+  [data-theme="dark"] .tags-empty-icon i {
+    color: var(--dm-primary-text);
+  }
+
+  .dark-mode .tags-empty-title,
+  [data-theme="dark"] .tags-empty-title {
+    color: var(--dm-text);
+  }
+
+  .dark-mode .tags-empty-text,
+  [data-theme="dark"] .tags-empty-text {
+    color: var(--dm-text-secondary);
+  }
+
+  .dark-mode .tags-guide,
+  [data-theme="dark"] .tags-guide {
+    background: var(--dm-card);
+    border-color: var(--dm-border);
+  }
+
+  .dark-mode .tags-guide-title,
+  [data-theme="dark"] .tags-guide-title {
+    color: var(--dm-text);
+  }
+
+  .dark-mode .tags-guide-content h3,
+  [data-theme="dark"] .tags-guide-content h3 {
+    color: var(--dm-text);
+  }
+
+  .dark-mode .tags-guide-content p,
+  [data-theme="dark"] .tags-guide-content p {
+    color: var(--dm-text-secondary);
+  }
+
+  /* レスポンシブ */
+  @media (max-width: 768px) {
+    .tags-container {
+      padding: 1.5rem 1rem;
+    }
+
+    .tags-header-title {
+      font-size: 2rem;
+    }
+
+    .tags-header-subtitle {
+      font-size: 1rem;
+    }
+
+    .tags-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .tag-card {
+      padding: 1.25rem;
+    }
+
+    .tag-card-name {
+      font-size: 1.25rem;
+    }
+
+    .tags-guide-grid {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    .tags-actions {
+      padding: 1rem;
+    }
+
+    .tags-action-btn {
+      font-size: 0.9rem;
+      padding: 0.75rem 1.25rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .tags-header-title {
+      font-size: 1.75rem;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .tag-card-icon {
+      width: 48px;
+      height: 48px;
+    }
+
+    .tag-card-icon i {
+      font-size: 1.5rem;
+    }
+
+    .tag-card-name {
+      font-size: 1.1rem;
+    }
+
+    .tag-card-footer {
+      flex-direction: column;
+    }
+
+    .tags-stat-value {
+      font-size: 1.75rem;
+    }
+  }
   /* ========== ページ固有スタイル ========== */
   
   /* タグバッジ（テーブル内） */
@@ -324,178 +968,165 @@
 {% endblock %}
 
 {% block content %}
-<div class="dashboard-container py-4">
-  <!-- ページヘッダー -->
-  <div class="page-header page-header-with-actions mb-4">
-    <div class="page-header-content">
-      <h1 class="page-title">
-        <i class="bi bi-tags"></i>
-        <span>タグ管理</span>
-      </h1>
-      <p class="page-subtitle">投資記録を分類・整理するためのタグを管理</p>
-    </div>
+<div class="tags-container">
+  <!-- ヘッダー -->
+  <div class="tags-header">
+    <h1 class="tags-header-title">
+      <i class="bi bi-tags-fill"></i>
+      タグ管理
+    </h1>
+    <p class="tags-header-subtitle">
+      投資記録を分類・整理するためのタグを管理
+    </p>
   </div>
 
-  <!-- 検索フォーム -->
-  <div class="form-section mb-4">
-    <h5 class="form-section-title">
-      <i class="bi bi-search"></i> 検索
-    </h5>
-    <form method="get" class="row g-3">
-      <div class="col-md-8">
-        <div class="search-input-wrapper">
-          <i class="bi bi-search search-icon"></i>
-          <input type="text" 
-                 name="query" 
-                 class="form-control" 
-                 placeholder="タグ名で検索" 
-                 value="{{ request.GET.query }}">
-        </div>
+  <!-- 統計カード -->
+  {% if tags %}
+  <div class="tags-stats">
+    <div class="tags-stat-card">
+      <div class="tags-stat-icon">
+        <i class="bi bi-tags-fill"></i>
       </div>
-      
-      <div class="col-md-4 d-flex align-items-end gap-2">
-        <button type="submit" class="btn btn-primary flex-grow-1">
+      <div class="tags-stat-content">
+        <div class="tags-stat-value">{{ tags|length }}</div>
+        <div class="tags-stat-label">作成済みタグ</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- 検索とアクションバー -->
+  <div class="tags-actions">
+    <form method="get" class="d-flex flex-wrap gap-3 align-items-center">
+      <div class="tags-search-wrapper">
+        <i class="bi bi-search tags-search-icon"></i>
+        <input type="text"
+               name="query"
+               class="tags-search-input"
+               placeholder="タグ名で検索..."
+               value="{{ request.GET.query }}">
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="tags-action-btn tags-action-btn-primary">
           <i class="bi bi-search"></i>
           <span>検索</span>
         </button>
-        <a href="{% url 'tags:list' %}" class="btn btn-outline-secondary flex-grow-1">
-          <i class="bi bi-arrow-counterclockwise"></i>
-          <span>リセット</span>
+        {% if request.GET.query %}
+        <a href="{% url 'tags:list' %}" class="tags-action-btn tags-action-btn-secondary">
+          <i class="bi bi-x-circle"></i>
+          <span>クリア</span>
         </a>
+        {% endif %}
       </div>
     </form>
   </div>
-  
-  <!-- アクションボタン -->
-  <div class="mb-4 d-flex justify-content-between flex-wrap gap-3">
-    <div>
-      <a href="{% url 'tags:create' %}" class="btn btn-success">
-        <i class="bi bi-plus-lg me-1"></i>
-        <span>新規タグ作成</span>
-      </a>
-    </div>
-    <div>
-      <a href="{% url 'stockdiary:home' %}" class="btn btn-info">
-        <i class="bi bi-journal-text me-1"></i>
-        <span>日記一覧に戻る</span>
-      </a>
-    </div>
-  </div>
-  
+
   {% if tags %}
-  <!-- タグ一覧カード -->
-  <div class="card">
-    <div class="card-header">
-      <h5 class="card-title mb-0">
-        <i class="bi bi-list-ul me-2"></i>タグ一覧
-        {% include "stockdiary/components/_badge.html" with type="info" text=tags|length extra_class="ms-2" %}
-      </h5>
-    </div>
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead>
-            <tr>
-              <th style="width: 60%">タグ名</th>
-              <th style="width: 40%">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for tag in tags %}
-            <tr>
-              <td>
-                <div class="table-tag-name">
-                  <a href="{% url 'tags:detail' tag.id %}" class="text-decoration-none">
-                    <span class="table-tag-badge">
-                      <i class="bi bi-tag-fill"></i>
-                      {{ tag.name }}
-                    </span>
-                  </a>
-                  {% with diary_count=tag.stockdiary_set.count %}
-                  {% if diary_count > 0 %}
-                  <small class="text-muted d-block mt-1">
-                    <i class="bi bi-journal-text me-1"></i>{{ diary_count }}件の記録で使用中
-                  </small>
-                  {% else %}
-                  <small class="text-muted d-block mt-1">
-                    <i class="bi bi-dash-circle me-1"></i>未使用
-                  </small>
-                  {% endif %}
-                  {% endwith %}
-                </div>
-              </td>
-              <td>
-                <div class="d-flex gap-2 flex-wrap">
-                  <a href="{% url 'tags:detail' tag.id %}" 
-                     class="btn-icon btn-primary-icon btn--sm" 
-                     title="詳細を見る">
-                    <i class="bi bi-eye"></i>
-                  </a>
-                  <a href="{% url 'tags:update' tag.id %}" 
-                     class="btn-icon btn-warning-icon btn--sm" 
-                     title="編集">
-                    <i class="bi bi-pencil"></i>
-                  </a>
-                  <a href="{% url 'tags:delete' tag.id %}" 
-                     class="btn-icon btn-danger-icon btn--sm" 
-                     title="削除">
-                    <i class="bi bi-trash"></i>
-                  </a>
-                </div>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+  <!-- タグカードグリッド -->
+  <div class="tags-grid">
+    {% for tag in tags %}
+    <div class="tag-card">
+      <div class="tag-card-header">
+        <div class="tag-card-icon">
+          <i class="bi bi-tag-fill"></i>
+        </div>
+        <div class="tag-card-menu">
+          <a href="{% url 'tags:update' tag.id %}"
+             class="tag-card-menu-btn"
+             title="編集">
+            <i class="bi bi-pencil-fill"></i>
+          </a>
+          <a href="{% url 'tags:delete' tag.id %}"
+             class="tag-card-menu-btn"
+             title="削除">
+            <i class="bi bi-trash-fill"></i>
+          </a>
+        </div>
+      </div>
+
+      <div class="tag-card-body">
+        <h2 class="tag-card-name">
+          {{ tag.name }}
+        </h2>
+        <div class="tag-card-count">
+          {% with diary_count=tag.stockdiary_set.count %}
+          {% if diary_count > 0 %}
+          <i class="bi bi-journal-text"></i>
+          <span>{{ diary_count }}件の記録で使用中</span>
+          {% else %}
+          <i class="bi bi-dash-circle"></i>
+          <span>未使用</span>
+          {% endif %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="tag-card-footer">
+        <a href="{% url 'tags:detail' tag.id %}"
+           class="tag-card-btn tag-card-btn-primary">
+          <i class="bi bi-eye-fill"></i>
+          <span>詳細</span>
+        </a>
+        <a href="{% url 'tags:book' tag.id %}"
+           class="tag-card-btn tag-card-btn-secondary">
+          <i class="bi bi-book-fill"></i>
+          <span>本モード</span>
+        </a>
       </div>
     </div>
+    {% endfor %}
   </div>
   {% else %}
-  <!-- 空状態（コンポーネント使用） -->
-  {% include "stockdiary/components/_empty_state.html" with icon="bi-tags" title="タグがありません" description="タグを作成して、株式日記を整理・分類しましょう。タグを使うことで、投資の傾向や特定の銘柄グループを簡単に見つけることができます。" action_url="tags:create" action_text="最初のタグを作成" action_icon="bi-plus-lg" %}
-  {% endif %}
-  
-  <!-- タグの使い方ガイド -->
-  <div class="card mt-4">
-    <div class="card-header">
-      <h5 class="card-title mb-0">
-        <i class="bi bi-lightbulb me-2 text-warning"></i>タグの使い方
-      </h5>
+  <!-- 空の状態 -->
+  <div class="tags-empty">
+    <div class="tags-empty-icon">
+      <i class="bi bi-tags-fill"></i>
     </div>
-    <div class="card-body">
-      <div class="row g-4">
-        <div class="col-md-4">
-          <div class="guide-item">
-            <div class="guide-icon">
-              <i class="bi bi-tag"></i>
-            </div>
-            <div>
-              <h6>銘柄を分類</h6>
-              <p>業種、投資戦略、市場などでタグ付けして銘柄を整理します。</p>
-            </div>
-          </div>
+    <h2 class="tags-empty-title">タグがありません</h2>
+    <p class="tags-empty-text">
+      タグを作成して、株式日記を整理・分類しましょう。<br>
+      タグを使うことで、投資の傾向や特定の銘柄グループを簡単に見つけることができます。
+    </p>
+    <a href="{% url 'tags:create' %}" class="tags-action-btn tags-action-btn-primary">
+      <i class="bi bi-plus-lg"></i>
+      <span>最初のタグを作成</span>
+    </a>
+  </div>
+  {% endif %}
+
+  <!-- タグの使い方ガイド -->
+  <div class="tags-guide">
+    <h2 class="tags-guide-title">
+      <i class="bi bi-lightbulb-fill"></i>
+      タグの活用方法
+    </h2>
+    <div class="tags-guide-grid">
+      <div class="tags-guide-item">
+        <div class="tags-guide-icon">
+          <i class="bi bi-folder-fill"></i>
         </div>
-        <div class="col-md-4">
-          <div class="guide-item">
-            <div class="guide-icon">
-              <i class="bi bi-search"></i>
-            </div>
-            <div>
-              <h6>素早く検索</h6>
-              <p>タグを使って関連する投資記録をすばやく見つけることができます。</p>
-            </div>
-          </div>
+        <div class="tags-guide-content">
+          <h3>銘柄を分類</h3>
+          <p>業種、投資戦略、市場などでタグ付けして銘柄を整理します。</p>
         </div>
-        <div class="col-md-4">
-          <div class="guide-item">
-            <div class="guide-icon">
-              <i class="bi bi-graph-up"></i>
-            </div>
-            <div>
-              <h6>傾向を分析</h6>
-              <p>タグごとのパフォーマンスを比較して投資戦略を最適化できます。</p>
-            </div>
-          </div>
+      </div>
+      <div class="tags-guide-item">
+        <div class="tags-guide-icon">
+          <i class="bi bi-search"></i>
+        </div>
+        <div class="tags-guide-content">
+          <h3>素早く検索</h3>
+          <p>タグを使って関連する投資記録をすばやく見つけることができます。</p>
+        </div>
+      </div>
+      <div class="tags-guide-item">
+        <div class="tags-guide-icon">
+          <i class="bi bi-graph-up-arrow"></i>
+        </div>
+        <div class="tags-guide-content">
+          <h3>傾向を分析</h3>
+          <p>タグごとのパフォーマンスを比較して投資戦略を最適化できます。</p>
         </div>
       </div>
     </div>
@@ -513,7 +1144,20 @@ document.addEventListener('DOMContentLoaded', function() {
   if (typeof initializeSpeedDial === 'function') {
     initializeSpeedDial();
   }
-  
+
+  // カードのクリックでアニメーション
+  const tagCards = document.querySelectorAll('.tag-card');
+  tagCards.forEach(card => {
+    card.addEventListener('click', function(e) {
+      if (!e.target.closest('a') && !e.target.closest('button')) {
+        const detailLink = this.querySelector('.tag-card-btn-primary');
+        if (detailLink) {
+          detailLink.click();
+        }
+      }
+    });
+  });
+
   // 検索フォームのローディング表示
   const searchForm = document.querySelector('form[method="get"]');
   if (searchForm) {
@@ -521,7 +1165,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const submitBtn = this.querySelector('button[type="submit"]');
       const btnText = submitBtn.querySelector('span');
       const btnIcon = submitBtn.querySelector('i');
-      
+
       btnIcon.className = 'bi bi-hourglass-split';
       if (btnText) {
         btnText.textContent = '検索中...';
