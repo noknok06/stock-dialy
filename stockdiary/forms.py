@@ -85,7 +85,7 @@ class StockDiaryForm(forms.ModelForm):
                 'class': 'form-control',
                 'maxlength': '5000',
                 'id': 'id_reason',
-                'placeholder': '投資理由や分析内容を記録（Markdown対応）'
+                'placeholder': '投資理由や分析内容を記録（Markdown対応）\n\n📝 見出し: # 見出し\n🏷️ タグ: @成長株 @配当 @長期保有\n\n例:\n## 投資判断\n成長性が高く、配当も安定している。\nタグ: @成長株 @配当'
             }),
             'memo': forms.Textarea(attrs={
                 'rows': 5, 
@@ -113,6 +113,7 @@ class StockDiaryForm(forms.ModelForm):
         self.fields['stock_symbol'].help_text = "米国株も検索可能ですが、為替対応はありません。"
         self.fields['stock_symbol'].required = False
         self.fields['reason'].label = "投資理由 / 分析内容"
+        self.fields['reason'].help_text = "Markdown対応。タグは @タグ名 の形式で記述すると検索可能になります（例: @成長株 @配当）"
         self.fields['memo'].label = "追加メモ"
         
         # 初期値設定（新規作成時）

@@ -166,19 +166,26 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
     paginate_by = 4
     
     def get_queryset(self):
+        from .utils import search_diaries_by_hashtag
+
         queryset = StockDiary.objects.filter(user=self.request.user).order_by('-updated_at')
         queryset = queryset.select_related('user').prefetch_related('tags', 'notes')
-        
+
         # 検索クエリ（銘柄名、コード、内容、メモ）
         query = self.request.GET.get('query', '').strip()
         if query:
             queryset = queryset.filter(
-                Q(stock_name__icontains=query) | 
+                Q(stock_name__icontains=query) |
                 Q(stock_symbol__icontains=query) |
                 Q(reason__icontains=query) |
                 Q(memo__icontains=query) |
                 Q(sector__icontains=query)
             )
+
+        # ハッシュタグフィルター
+        hashtag = self.request.GET.get('hashtag', '').strip()
+        if hashtag:
+            queryset = search_diaries_by_hashtag(queryset, hashtag)
 
         # タグフィルター
         tag_id = self.request.GET.get('tag', '')
@@ -1431,26 +1438,33 @@ class ServeImageView(LoginRequiredMixin, View):
 # ==========================================
 def diary_list(request):
     """日記リストを表示するビュー（HTMX対応）"""
+    from .utils import search_diaries_by_hashtag
+
     is_htmx = request.headers.get('HX-Request') == 'true' or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    
+
     if not is_htmx:
         return redirect(f'/stockdiary/?{request.GET.urlencode()}')
-    
+
     try:
         queryset = StockDiary.objects.filter(user=request.user).order_by('-updated_at')
         queryset = queryset.select_related('user').prefetch_related('tags', 'notes')
-        
+
         # 検索クエリ
         query = request.GET.get('query', '').strip()
         if query:
             queryset = queryset.filter(
-                Q(stock_name__icontains=query) | 
+                Q(stock_name__icontains=query) |
                 Q(stock_symbol__icontains=query) |
                 Q(reason__icontains=query) |
                 Q(memo__icontains=query) |
                 Q(sector__icontains=query)
             )
-        
+
+        # ハッシュタグフィルター
+        hashtag = request.GET.get('hashtag', '').strip()
+        if hashtag:
+            queryset = search_diaries_by_hashtag(queryset, hashtag)
+
         # タグフィルター
         tag_id = request.GET.get('tag', '')
         if tag_id:

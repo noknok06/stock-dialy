@@ -629,6 +629,26 @@
     padding: 1rem;
   }
 
+  /* ハッシュタグのスタイル（プレビュー内） */
+  .EasyMDEContainer .editor-preview .hashtag,
+  .EasyMDEContainer .editor-preview-side .hashtag {
+    color: #0969da;
+    font-weight: 600;
+    background-color: rgba(9, 105, 218, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  .dark-mode .EasyMDEContainer .editor-preview .hashtag,
+  .dark-mode .EasyMDEContainer .editor-preview-side .hashtag,
+  [data-theme="dark"] .EasyMDEContainer .editor-preview .hashtag,
+  [data-theme="dark"] .EasyMDEContainer .editor-preview-side .hashtag {
+    color: #71c4ef;
+    background-color: rgba(113, 196, 239, 0.15);
+  }
+  }
+
   /* 🆕 追加: モバイル対応 */
   @media (max-width: 768px) {
     .EasyMDEContainer .editor-toolbar {
@@ -925,12 +945,39 @@
               <i class="bi bi-markdown me-1"></i>Markdown対応
             </small>
           </h4>
+
+          <!-- タグ機能のヘルプ -->
+          <div class="alert alert-info py-2 px-3 mb-3" style="font-size: 0.875rem; line-height: 1.6;">
+            <div class="mb-2">
+              <i class="bi bi-lightbulb me-1"></i>
+              <strong>マークダウンとタグ機能:</strong>
+            </div>
+            <div class="row g-2 mb-2">
+              <div class="col-md-6">
+                <span class="badge bg-primary">見出し</span>
+                <code style="background: rgba(255,255,255,0.6); padding: 2px 8px; border-radius: 3px; margin-left: 4px;"># 見出し</code>
+                <small class="text-muted d-block ms-4">→ マークダウン記法</small>
+              </div>
+              <div class="col-md-6">
+                <span class="badge bg-success">タグ</span>
+                <code style="background: rgba(255,255,255,0.6); padding: 2px 8px; border-radius: 3px; margin-left: 4px;">@成長株</code>
+                <small class="text-muted d-block ms-4">→ 検索可能なタグ</small>
+              </div>
+            </div>
+            <small class="text-muted">
+              <i class="bi bi-check-circle me-1"></i>
+              本文中の <code style="background: rgba(255,255,255,0.6); padding: 2px 6px;">@成長株 @配当 @長期保有</code> は検索で絞り込み可能になります
+            </small>
+          </div>
+
           <textarea class="form-control"
                     name="reason"
                     id="id_reason"
                     rows="10"
                     maxlength="5000">{{ form.reason.value|default:'' }}</textarea>
-          <div class="character-count" id="reasonCharCount">0 / 5000文字</div>
+          <div class="d-flex justify-content-end align-items-center mt-1">
+            <div class="character-count" id="reasonCharCount">0 / 5000文字</div>
+          </div>
           {% if form.reason.errors %}
           <div class="text-danger small mt-1">{{ form.reason.errors }}</div>
           {% endif %}
@@ -1435,6 +1482,30 @@ const reasonCharCount = document.getElementById('reasonCharCount');
 const MAX_REASON_LENGTH = 5000;
 
 if (reasonTextareaEl) {
+  // カスタムマークダウンレンダラーを作成（ハッシュタグ対応）
+  const customRenderer = {
+    preprocess: function(markdown) {
+      // プレビュー前処理: ハッシュタグを一時的に保護
+      // 行頭の # + スペース 以外の # をエスケープ
+      const lines = markdown.split('\n');
+      const processedLines = lines.map(line => {
+        // 行頭の # + スペース（見出し）はそのまま
+        if (line.match(/^\s*#{1,6}\s/)) {
+          return line;
+        }
+
+        // それ以外の # をハッシュタグとして処理
+        // #タグ名 を <span class="hashtag">#タグ名</span> に変換
+        return line.replace(
+          /#([\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\uFF66-\uFF9Fa-zA-Z0-9_]+)/g,
+          '<span class="hashtag">#$1</span>'
+        );
+      });
+
+      return processedLines.join('\n');
+    }
+  };
+
   const easyMDE = new EasyMDE({
     element: reasonTextareaEl,
     spellChecker: false,
@@ -1443,24 +1514,28 @@ if (reasonTextareaEl) {
     },
     placeholder: 'なぜこの銘柄に注目したのか、どのような分析をしたのか、将来の見通しなどを自由に記録してください...\n\n**太字**、*斜体*、- リスト、## 見出し などのMarkdown記法が使えます',
     maxHeight: '400px',
-    // toolbar: [
-    //   'bold', 'italic', 'heading', '|',
-    //   'unordered-list', 'ordered-list', '|',
-    //   'link', 'quote', 'code', 'table', '|',
-    //   'preview', 'side-by-side', 'fullscreen', 'guide'
-    // ],
     toolbar: [
       'bold', 'italic', 'heading', '|',
       'unordered-list', 'ordered-list', '|',
       'link', 'quote', '|',
       'preview', 'fullscreen', 'side-by-side'
-    ],  
+    ],
     status: false,
     renderingConfig: {
       singleLineBreaks: true,
       codeSyntaxHighlighting: false,
     },
     uploadImage: false,
+    // 重要: CodeMirrorの初期モードを無効化
+    parsingConfig: {
+      allowAtxHeaderWithoutSpace: false, // # の後にスペースが必須
+    },
+    // カスタムプレビューレンダラー
+    previewRender: function(plainText) {
+      // ハッシュタグを保護してからマークダウンをレンダリング
+      const processed = customRenderer.preprocess(plainText);
+      return this.parent.markdown(processed);
+    },
   });
 
   // EasyMDE用の文字数カウンター
@@ -1478,6 +1553,108 @@ if (reasonTextareaEl) {
 
   easyMDE.codemirror.on('change', updateEasyMDECharCount);
   updateEasyMDECharCount();
+
+  // ハッシュタグのハイライト表示（CodeMirrorカスタムモード）
+  CodeMirror.defineMode("markdown-with-hashtags", function(config) {
+    const mdMode = CodeMirror.getMode(config, "markdown");
+
+    return {
+      startState: function() {
+        const state = mdMode.startState();
+        state.isAtLineStart = true;
+        return state;
+      },
+
+      copyState: function(state) {
+        const newState = CodeMirror.copyState(mdMode, state);
+        newState.isAtLineStart = state.isAtLineStart;
+        return newState;
+      },
+
+      token: function(stream, state) {
+        // 行頭かどうかを追跡
+        if (stream.sol()) {
+          state.isAtLineStart = true;
+        }
+
+        // 行頭の空白をスキップ
+        if (state.isAtLineStart && stream.eatSpace()) {
+          return null;
+        }
+
+        // 行頭の # + スペース（マークダウン見出し）
+        if (state.isAtLineStart && stream.match(/^#{1,6}\s/)) {
+          state.isAtLineStart = false;
+          return "header";
+        }
+
+        // それ以外の場合は行頭フラグをオフ
+        if (state.isAtLineStart && !stream.eol()) {
+          state.isAtLineStart = false;
+        }
+
+        // ハッシュタグをチェック（行頭以外、または#の後にスペースなし）
+        if (stream.match(/#[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\uFF66-\uFF9Fa-zA-Z0-9_]+/)) {
+          return "hashtag";
+        }
+
+        // その他はマークダウンモードに委譲
+        return mdMode.token(stream, state);
+      }
+    };
+  });
+
+  // ハッシュタグと見出し用のスタイルを追加
+  const style = document.createElement('style');
+  style.textContent = `
+    /* ハッシュタグのスタイル */
+    .cm-hashtag {
+      color: #0969da !important;
+      font-weight: 600;
+      background-color: rgba(9, 105, 218, 0.1);
+      padding: 2px 4px;
+      border-radius: 3px;
+    }
+
+    .dark-mode .cm-hashtag,
+    [data-theme="dark"] .cm-hashtag {
+      color: #71c4ef !important;
+      background-color: rgba(113, 196, 239, 0.15);
+    }
+
+    /* マークダウン見出しのスタイル（念のため） */
+    .cm-header {
+      color: #1f2328 !important;
+      font-weight: bold !important;
+    }
+
+    .dark-mode .cm-header,
+    [data-theme="dark"] .cm-header {
+      color: #e6edf3 !important;
+    }
+  `;
+  document.head.appendChild(style);
+
+  // モードを適用
+  easyMDE.codemirror.setOption('mode', 'markdown-with-hashtags');
+
+  // CodeMirrorのマークダウン設定を強制上書き
+  // allowAtxHeaderWithoutSpace を無効化して、# の後にスペースがない場合は見出しとして扱わない
+  if (easyMDE.codemirror.getMode().name === 'markdown-with-hashtags') {
+    const originalGetTokenAt = easyMDE.codemirror.getTokenAt.bind(easyMDE.codemirror);
+    easyMDE.codemirror.getTokenAt = function(pos, precise) {
+      const token = originalGetTokenAt(pos, precise);
+      // header トークンを無効化（ハッシュタグとして扱う）
+      if (token && token.type && token.type.includes('header')) {
+        // 行頭の # + スペース 以外は header を削除
+        const line = this.getLine(pos.line);
+        if (!line.match(/^\s*#{1,6}\s/)) {
+          token.type = token.type.replace(/header/g, '');
+        }
+      }
+      return token;
+    };
+  }
 
   // 送信前の文字数チェック
   const diaryForm = document.getElementById('diaryForm');

@@ -82,6 +82,9 @@ urlpatterns = [
     path('api/margin-sector/<int:diary_id>/', views.api_margin_sector_data, name='api_margin_sector'),
     path('api/margin-sector-suggestions/<int:diary_id>/', views.api_margin_sector_suggestions, name='api_margin_sector_suggestions'),
 
+    # ハッシュタグAPI
+    path('api/hashtags/', api_views.get_hashtags, name='api_hashtags'),
+
     # 銘柄一覧
     path('stocks/', views.StockListView.as_view(), name='stock_list'),
     path('api/stock-diaries/<str:symbol>/', views.api_stock_diaries, name='api_stock_diaries'),

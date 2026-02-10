@@ -13,6 +13,7 @@ from .models import (
     PushSubscription, DiaryNotification,
     NotificationLog, StockDiary
 )
+from .utils import extract_hashtags, get_all_hashtags_from_queryset, search_diaries_by_hashtag
 import json
 from pywebpush import webpush, WebPushException
 from decimal import Decimal, InvalidOperation
@@ -385,7 +386,7 @@ def list_all_notifications(request):
         notifications = DiaryNotification.objects.filter(
             diary__user=request.user
         ).select_related('diary').order_by('-created_at')
-        
+
         notification_list = []
         for notification in notifications:
             notification_list.append({
@@ -398,17 +399,62 @@ def list_all_notifications(request):
                 'last_sent': notification.last_sent.isoformat() if notification.last_sent else None,
                 'created_at': notification.created_at.isoformat(),
             })
-        
+
         return JsonResponse({
             'success': True,
             'notifications': notification_list,
             'count': len(notification_list)
         })
-        
+
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"List all notifications error: {traceback.format_exc()}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def get_hashtags(request):
+    """
+    ユーザーの日記から全てのハッシュタグを取得
+
+    Query Parameters:
+        - q: 検索クエリ（ハッシュタグのフィルタリング用）
+        - limit: 返却する最大件数（デフォルト: 50）
+    """
+    try:
+        query = request.GET.get('q', '').strip().lstrip('#')
+        limit = int(request.GET.get('limit', 50))
+
+        # ユーザーの日記を取得
+        diaries = StockDiary.objects.filter(user=request.user)
+
+        # 全てのハッシュタグを抽出
+        hashtags = get_all_hashtags_from_queryset(diaries)
+
+        # クエリでフィルタリング
+        if query:
+            hashtags = [
+                tag_data for tag_data in hashtags
+                if query.lower() in tag_data['tag'].lower()
+            ]
+
+        # 上限を適用
+        hashtags = hashtags[:limit]
+
+        return JsonResponse({
+            'success': True,
+            'hashtags': hashtags,
+            'count': len(hashtags)
+        })
+
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error(f"Get hashtags error: {traceback.format_exc()}")
         return JsonResponse({
             'success': False,
             'error': str(e)

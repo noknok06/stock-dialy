@@ -576,19 +576,20 @@
       
       <!-- メイン検索バー -->
       <div class="main-search-wrapper">
-        <input type="text" 
-               class="main-search-input validate-inline" 
+        <input type="text"
+               class="main-search-input validate-inline"
                id="mainSearchInput"
-               name="query" 
-               placeholder="銘柄名、シンボル、内容で検索..."
+               name="query"
+               placeholder="銘柄名、シンボル、内容、@タグで検索..."
                value="{{ request.GET.query }}"
-               hx-get="{% url 'stockdiary:search_suggestion' %}"
-               hx-trigger="keyup changed delay:500ms"
-               hx-target="#searchSuggestions">
+               autocomplete="off">
         <i class="bi bi-search search-icon"></i>
-        
+
         <div class="search-suggestions" id="searchSuggestions"></div>
       </div>
+
+      <!-- ハッシュタグフィルター用の隠しフィールド -->
+      <input type="hidden" name="hashtag" id="hashtagFilter" value="{{ request.GET.hashtag }}">
 
       <!-- アクティブフィルターの表示 -->
       <div class="active-filters" id="activeFilters">
@@ -624,6 +625,15 @@
           <div class="filter-chip" data-filter="sector" data-value="{{ request.GET.sector }}">
             <span>業種: {{ request.GET.sector }}</span>
             <button type="button" class="filter-chip-remove" onclick="removeFilter('sector')">
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+        {% endif %}
+
+        {% if request.GET.hashtag %}
+          <div class="filter-chip" data-filter="hashtag" data-value="{{ request.GET.hashtag }}">
+            <span>@{{ request.GET.hashtag }}</span>
+            <button type="button" class="filter-chip-remove" onclick="removeFilter('hashtag')">
               <i class="bi bi-x"></i>
             </button>
           </div>
@@ -945,8 +955,13 @@ function removeFilter(filterName) {
     if (sortFilter) {
       sortFilter.value = '';
     }
+  } else if (filterName === 'hashtag') {
+    const hashtagFilter = document.getElementById('hashtagFilter');
+    if (hashtagFilter) {
+      hashtagFilter.value = '';
+    }
   }
-  
+
   const badge = document.querySelector(`[data-filter="${filterName}"]`);
   if (badge) {
     badge.remove();
@@ -1070,6 +1085,156 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script>
+// ハッシュタグオートコンプリート機能
+document.addEventListener('DOMContentLoaded', function() {
+  const mainSearchInput = document.getElementById('mainSearchInput');
+  const searchSuggestions = document.getElementById('searchSuggestions');
+  let hashtagCache = [];
+  let selectedIndex = -1;
+
+  // ハッシュタグキャッシュを更新
+  async function updateHashtagCache() {
+    try {
+      const response = await fetch('{% url "stockdiary:api_hashtags" %}?limit=100');
+      const data = await response.json();
+      if (data.success) {
+        hashtagCache = data.hashtags;
+      }
+    } catch (error) {
+      console.error('Failed to fetch hashtags:', error);
+    }
+  }
+
+  // 初回ロード時にキャッシュを取得
+  updateHashtagCache();
+
+  // 入力イベント
+  mainSearchInput.addEventListener('input', function(e) {
+    const value = e.target.value;
+    const cursorPosition = e.target.selectionStart;
+
+    // カーソル位置から@を探す
+    const textBeforeCursor = value.substring(0, cursorPosition);
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+
+    if (lastAtIndex !== -1) {
+      // @以降の文字列を取得
+      const hashtagQuery = textBeforeCursor.substring(lastAtIndex + 1);
+
+      // スペースが含まれていたらオートコンプリートを閉じる
+      if (hashtagQuery.includes(' ')) {
+        closeSuggestions();
+        return;
+      }
+
+      // ハッシュタグの候補を表示
+      showHashtagSuggestions(hashtagQuery, lastAtIndex);
+    } else {
+      closeSuggestions();
+    }
+  });
+
+  // ハッシュタグ候補を表示
+  function showHashtagSuggestions(query, hashIndex) {
+    const filtered = hashtagCache.filter(tag =>
+      tag.tag.toLowerCase().includes(query.toLowerCase())
+    ).slice(0, 10);
+
+    if (filtered.length === 0) {
+      closeSuggestions();
+      return;
+    }
+
+    searchSuggestions.innerHTML = filtered.map((tag, index) => `
+      <div class="suggestion-item hashtag-suggestion" data-index="${index}" data-tag="${tag.tag}">
+        <i class="bi bi-at suggestion-icon"></i>
+        <span class="suggestion-text">${tag.tag}</span>
+        <span class="suggestion-type">${tag.count}件</span>
+      </div>
+    `).join('');
+
+    searchSuggestions.style.display = 'block';
+    selectedIndex = -1;
+
+    // クリックイベント
+    document.querySelectorAll('.hashtag-suggestion').forEach(item => {
+      item.addEventListener('click', function() {
+        const tagName = this.getAttribute('data-tag');
+        insertHashtag(tagName, hashIndex);
+      });
+    });
+  }
+
+  // ハッシュタグを挿入
+  function insertHashtag(tagName, atIndex) {
+    const value = mainSearchInput.value;
+    const beforeAt = value.substring(0, atIndex);
+    const afterCursor = value.substring(mainSearchInput.selectionStart);
+
+    // @タグ名 を挿入
+    mainSearchInput.value = beforeAt + '@' + tagName + ' ' + afterCursor;
+
+    // カーソル位置を調整
+    const newPosition = beforeAt.length + tagName.length + 2;
+    mainSearchInput.setSelectionRange(newPosition, newPosition);
+
+    closeSuggestions();
+    mainSearchInput.focus();
+  }
+
+  // 候補を閉じる
+  function closeSuggestions() {
+    searchSuggestions.style.display = 'none';
+    searchSuggestions.innerHTML = '';
+    selectedIndex = -1;
+  }
+
+  // キーボード操作
+  mainSearchInput.addEventListener('keydown', function(e) {
+    const suggestions = document.querySelectorAll('.hashtag-suggestion');
+
+    if (suggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      selectedIndex = (selectedIndex + 1) % suggestions.length;
+      updateSelection(suggestions);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      selectedIndex = selectedIndex <= 0 ? suggestions.length - 1 : selectedIndex - 1;
+      updateSelection(suggestions);
+    } else if (e.key === 'Enter') {
+      if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
+        e.preventDefault();
+        const tagName = suggestions[selectedIndex].getAttribute('data-tag');
+        const textBeforeCursor = mainSearchInput.value.substring(0, mainSearchInput.selectionStart);
+        const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+        insertHashtag(tagName, lastAtIndex);
+      }
+    } else if (e.key === 'Escape') {
+      closeSuggestions();
+    }
+  });
+
+  function updateSelection(suggestions) {
+    suggestions.forEach((item, index) => {
+      if (index === selectedIndex) {
+        item.style.backgroundColor = 'var(--primary-100)';
+        item.scrollIntoView({ block: 'nearest' });
+      } else {
+        item.style.backgroundColor = '';
+      }
+    });
+  }
+
+  // 外部クリックで閉じる
+  document.addEventListener('click', function(e) {
+    if (!mainSearchInput.contains(e.target) && !searchSuggestions.contains(e.target)) {
+      closeSuggestions();
+    }
+  });
+});
+
 // タグクリックフィルタリング機能
 document.addEventListener('DOMContentLoaded', function() {
   function setupTagClickHandlers() {
