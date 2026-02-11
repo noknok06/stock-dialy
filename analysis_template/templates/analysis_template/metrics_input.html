@@ -60,14 +60,20 @@
 .input-group-compact {
     display: flex;
     border: 2px solid var(--at-border, #e2e8f0);
-    border-radius: 8px;
+    border-radius: 10px;
     overflow: hidden;
-    transition: border-color 0.15s ease;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.input-group-compact:hover {
+    border-color: var(--at-primary, #3b82f6);
 }
 
 .input-group-compact:focus-within {
     border-color: var(--at-primary, #3b82f6);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+    transform: translateY(-1px);
 }
 
 .input-group-compact input {
@@ -75,26 +81,45 @@
     border: none !important;
     border-radius: 0 !important;
     box-shadow: none !important;
-    padding: 0.5rem;
-    font-size: 0.875rem;
-    min-height: 38px;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    min-height: 42px;
+    color: var(--at-text-primary, #0f172a);
+}
+
+.input-group-compact input::placeholder {
+    color: var(--at-text-muted, #cbd5e1);
+    font-weight: 400;
 }
 
 .input-group-compact .input-group-text {
     border: none;
     background: var(--at-bg-secondary, #f8fafc);
-    padding: 0.25rem 0.5rem;
-    font-size: 0.6875rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
     color: var(--at-text-muted, #94a3b8);
     white-space: nowrap;
+}
+
+.input-group-compact input:not(:placeholder-shown) {
+    background: rgba(59, 130, 246, 0.03);
 }
 
 .company-card-mobile {
     background: var(--at-bg-card, #ffffff);
     border: 2px solid var(--at-border, #e2e8f0);
-    border-radius: 12px;
-    padding: 1rem;
-    margin-bottom: 1rem;
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s ease;
+}
+
+.company-card-mobile:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    border-color: var(--at-primary, #3b82f6);
 }
 
 .company-header-mobile {
@@ -102,40 +127,58 @@
     justify-content: space-between;
     align-items: flex-start;
     gap: 0.75rem;
-    margin-bottom: 1rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--at-border, #e2e8f0);
+    margin-bottom: 1.25rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 2px solid var(--at-border, #e2e8f0);
 }
 
 .company-info-mobile h5 {
-    font-size: 1.125rem;
+    font-size: 1.25rem;
     font-weight: 700;
-    margin: 0 0 0.25rem 0;
+    margin: 0 0 0.375rem 0;
+    color: var(--at-text-primary, #0f172a);
 }
 
 .company-info-mobile small {
-    font-size: 0.8125rem;
-    color: var(--at-text-muted, #94a3b8);
+    font-size: 0.875rem;
+    color: var(--at-text-muted, #64748b);
+    font-weight: 500;
 }
 
 .fetch-btn-mobile {
     flex-shrink: 0;
 }
 
+.company-card-mobile[data-filled="true"] {
+    border-color: var(--at-success, #10b981);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.02), rgba(16, 185, 129, 0.05));
+}
+
 .metric-section-mobile {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.75rem;
+}
+
+.metric-section-mobile:last-child {
+    margin-bottom: 0;
 }
 
 .metric-section-title {
-    font-size: 0.9375rem;
+    font-size: 1rem;
     font-weight: 700;
     color: var(--at-text-primary, #0f172a);
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.875rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid var(--at-border, #e2e8f0);
+    gap: 0.625rem;
+    margin-bottom: 1rem;
+    padding: 0.5rem 0.75rem;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(139, 92, 246, 0.05));
+    border-left: 4px solid var(--at-primary, #3b82f6);
+    border-radius: 0 8px 8px 0;
+}
+
+.metric-section-title i {
+    font-size: 1.125rem;
+    color: var(--at-primary, #3b82f6);
 }
 
 .sticky-bottom-bar {
@@ -169,6 +212,107 @@
         padding-bottom: 0;
     }
 }
+
+/* ========== Dark Mode Support ========== */
+.dark-mode .company-card-mobile,
+.dark-mode .at-card,
+.dark-mode .sticky-bottom-bar,
+[data-theme="dark"] .company-card-mobile,
+[data-theme="dark"] .at-card,
+[data-theme="dark"] .sticky-bottom-bar {
+    background: var(--at-bg-card);
+    border-color: var(--at-border);
+}
+
+.dark-mode .company-card-mobile:hover,
+[data-theme="dark"] .company-card-mobile:hover {
+    border-color: var(--at-primary);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .company-card-mobile[data-filled="true"],
+[data-theme="dark"] .company-card-mobile[data-filled="true"] {
+    border-color: var(--at-success);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(16, 185, 129, 0.1));
+}
+
+.dark-mode .company-header-mobile,
+[data-theme="dark"] .company-header-mobile {
+    border-bottom-color: var(--at-border);
+}
+
+.dark-mode .company-info-mobile h5,
+.dark-mode .metric-section-title,
+[data-theme="dark"] .company-info-mobile h5,
+[data-theme="dark"] .metric-section-title {
+    color: var(--at-text-primary);
+}
+
+.dark-mode .company-info-mobile small,
+[data-theme="dark"] .company-info-mobile small {
+    color: var(--at-text-muted);
+}
+
+.dark-mode .metric-section-title,
+[data-theme="dark"] .metric-section-title {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+    border-left-color: var(--at-primary);
+}
+
+.dark-mode .metric-section-title i,
+[data-theme="dark"] .metric-section-title i {
+    color: var(--at-primary);
+}
+
+.dark-mode .metric-label,
+[data-theme="dark"] .metric-label {
+    color: var(--at-text-secondary);
+}
+
+.dark-mode .metric-info-icon,
+[data-theme="dark"] .metric-info-icon {
+    color: var(--at-text-muted);
+}
+
+.dark-mode .input-group-compact,
+[data-theme="dark"] .input-group-compact {
+    background: rgba(51, 65, 85, 0.3);
+    border-color: var(--at-border);
+}
+
+.dark-mode .input-group-compact input,
+[data-theme="dark"] .input-group-compact input {
+    background: rgba(51, 65, 85, 0.3);
+    color: var(--at-text-primary);
+}
+
+.dark-mode .input-group-compact input::placeholder,
+[data-theme="dark"] .input-group-compact input::placeholder {
+    color: var(--at-text-muted);
+}
+
+.dark-mode .input-group-compact input:not(:placeholder-shown),
+[data-theme="dark"] .input-group-compact input:not(:placeholder-shown) {
+    background: rgba(59, 130, 246, 0.15);
+}
+
+.dark-mode .input-group-compact .input-group-text,
+[data-theme="dark"] .input-group-compact .input-group-text {
+    background: rgba(15, 23, 42, 0.5);
+    color: var(--at-text-secondary);
+}
+
+.dark-mode .alert-info,
+[data-theme="dark"] .alert-info {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.2);
+    color: var(--at-text-primary);
+}
+
+.dark-mode .alert-info strong,
+[data-theme="dark"] .alert-info strong {
+    color: var(--at-text-primary);
+}
 </style>
 {% endblock %}
 
@@ -185,26 +329,25 @@
 
     <form method="post" id="metricsForm">
         {% csrf_token %}
-        
-        <!-- 会計年度入力 -->
+
+        <!-- ヒント表示とプログレス -->
         <div class="at-card mb-3 mb-md-4">
-            <div class="row g-3 align-items-end">
-                <div class="col-12 col-sm-6 col-md-4">
-                    <label for="fiscal_year" class="at-form-label">
-                        <i class="bi bi-calendar3 me-1"></i>会計年度
-                    </label>
-                    <input type="text" 
-                           class="at-form-input" 
-                           id="fiscal_year" 
-                           name="fiscal_year" 
-                           value="{{ latest_fiscal_year }}"
-                           placeholder="例: 2024">
+            <div class="alert alert-info mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-lightbulb" style="font-size: 1.25rem;"></i>
+                <div>
+                    <strong>効率的な入力方法:</strong>
+                    各企業カードの「<i class="bi bi-cloud-download"></i> API取得」ボタンで自動入力が可能です。空欄のまま保存するとスキップされます。
                 </div>
-                <div class="col-12 col-sm-6 col-md-8">
-                    <div class="alert alert-info mb-0 small py-2 px-3">
-                        <i class="bi bi-info-circle me-1"></i>
-                        空欄は保存されません
-                    </div>
+            </div>
+
+            <!-- 入力プログレス -->
+            <div class="input-progress">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small fw-semibold">入力進捗</span>
+                    <span class="small fw-bold text-primary" id="progressText">0 / 0 (0%)</span>
+                </div>
+                <div class="progress" style="height: 8px;">
+                    <div class="progress-bar bg-primary" id="progressBar" role="progressbar" style="width: 0%"></div>
                 </div>
             </div>
         </div>
@@ -222,13 +365,22 @@
                         {% endif %}
                     </small>
                 </div>
-                <button type="button" 
-                        class="btn btn-primary btn-sm fetch-btn-mobile fetch-single-btn"
-                        data-company-code="{{ company.code }}"
-                        data-company-name="{{ company.name }}">
-                    <i class="bi bi-cloud-download"></i>
-                    <span class="d-none d-sm-inline ms-1">取得</span>
-                </button>
+                <div class="d-flex gap-2">
+                    <button type="button"
+                            class="btn btn-outline-primary btn-sm fetch-single-btn"
+                            data-company-code="{{ company.code }}"
+                            data-company-name="{{ company.name }}"
+                            title="Yahoo FinanceからAPI自動取得">
+                        <i class="bi bi-cloud-download"></i>
+                        <span class="d-none d-md-inline ms-1">API取得</span>
+                    </button>
+                    <button type="button"
+                            class="btn btn-outline-secondary btn-sm clear-company-btn"
+                            data-company-code="{{ company.code }}"
+                            title="この企業の入力をクリア">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
             </div>
             
             {% for group_code, group_info in metric_groups.items %}
@@ -251,12 +403,13 @@
                             {% endif %}
                         </div>
                         <div class="input-group-compact">
-                            <input type="number" 
-                                   class="form-control metric-input" 
+                            <input type="number"
+                                   class="form-control metric-input"
                                    id="metric_{{ company.id }}_{{ metric.id }}"
                                    name="metric_{{ company.id }}_{{ metric.id }}"
                                    data-metric-name="{{ metric.name }}"
-                                   value="{{ existing_data|get_item:'metric_'|add:company.id|add:'_'|add:metric.id }}"
+                                   data-company-id="{{ company.id }}"
+                                   data-metric-id="{{ metric.id }}"
                                    step="0.01"
                                    placeholder="0.00">
                             <span class="input-group-text">{{ metric.get_formatted_unit }}</span>
@@ -271,25 +424,24 @@
 
         <!-- 固定ボタンバー -->
         <div class="sticky-bottom-bar">
-            <div class="d-grid gap-2">
-                <div class="row g-2">
-                    <div class="col-6 col-sm-3">
-                        <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn btn-secondary w-100">
-                            <i class="bi bi-arrow-left me-1"></i>
-                            <span class="d-none d-sm-inline">戻る</span>
-                        </a>
-                    </div>
-                    <div class="col-6 col-sm-3">
-                        <button type="button" class="btn btn-outline-secondary w-100" onclick="clearForm()">
-                            <i class="bi bi-x-circle me-1"></i>
-                            <span class="d-none d-sm-inline">クリア</span>
-                        </button>
-                    </div>
-                    <div class="col-12 col-sm-6">
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="bi bi-save me-1"></i>保存してレポート表示
-                        </button>
-                    </div>
+            <div class="row g-2">
+                <div class="col-4 col-sm-3">
+                    <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn btn-secondary w-100">
+                        <i class="bi bi-arrow-left"></i>
+                        <span class="d-none d-md-inline ms-1">戻る</span>
+                    </a>
+                </div>
+                <div class="col-4 col-sm-3">
+                    <button type="button" class="btn btn-outline-secondary w-100" onclick="clearAllForm()">
+                        <i class="bi bi-x-circle"></i>
+                        <span class="d-none d-md-inline ms-1">全クリア</span>
+                    </button>
+                </div>
+                <div class="col-4 col-sm-6">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-circle"></i>
+                        <span class="d-none d-md-inline ms-1">保存して完了</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -305,23 +457,118 @@ document.addEventListener('DOMContentLoaded', function() {
     // ツールチップ初期化
     const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
     tooltips.forEach(el => new bootstrap.Tooltip(el));
-    
+
+    // 既存データを設定
+    loadExistingData();
+
     // 個別取得ボタン
     document.querySelectorAll('.fetch-single-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             fetchSingleCompany(this.dataset.companyCode, this.dataset.companyName, this);
         });
     });
+
+    // 企業ごとのクリアボタン
+    document.querySelectorAll('.clear-company-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            clearCompanyInputs(this.dataset.companyCode);
+        });
+    });
+
+    // 入力変更監視
+    document.querySelectorAll('input[type="number"].metric-input').forEach(input => {
+        input.addEventListener('input', updateProgress);
+    });
+
+    // 初期プログレス更新
+    updateProgress();
+
+    // キーボードショートカット
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+S or Cmd+S で保存
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            document.getElementById('metricsForm').submit();
+        }
+    });
 });
+
+function loadExistingData() {
+    try {
+        const existingData = {{ existing_data|safe }};
+
+        if (existingData && typeof existingData === 'object') {
+            Object.entries(existingData).forEach(([key, value]) => {
+                const input = document.getElementById(key);
+                if (input && value) {
+                    input.value = value;
+                }
+            });
+
+            // 既存データ件数を表示
+            const count = Object.keys(existingData).length;
+            if (count > 0) {
+                showToast(`${count}件の既存データを読み込みました`, 'info');
+            }
+        }
+    } catch (e) {
+        console.error('既存データの読み込みに失敗:', e);
+    }
+}
+
+function updateProgress() {
+    const allInputs = document.querySelectorAll('input[type="number"].metric-input');
+    const filledInputs = Array.from(allInputs).filter(input => input.value && input.value.trim() !== '');
+
+    const total = allInputs.length;
+    const filled = filledInputs.length;
+    const percentage = total > 0 ? Math.round((filled / total) * 100) : 0;
+
+    // プログレスバー更新
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+
+    if (progressBar) {
+        progressBar.style.width = percentage + '%';
+        progressBar.setAttribute('aria-valuenow', percentage);
+
+        // 色変更
+        progressBar.className = 'progress-bar';
+        if (percentage === 100) {
+            progressBar.classList.add('bg-success');
+        } else if (percentage >= 50) {
+            progressBar.classList.add('bg-primary');
+        } else if (percentage > 0) {
+            progressBar.classList.add('bg-warning');
+        } else {
+            progressBar.classList.add('bg-secondary');
+        }
+    }
+
+    if (progressText) {
+        progressText.textContent = `${filled} / ${total} (${percentage}%)`;
+    }
+
+    // 企業カードにデータ充填状況を反映
+    document.querySelectorAll('.company-card-mobile').forEach(card => {
+        const inputs = card.querySelectorAll('input[type="number"].metric-input');
+        const filledCount = Array.from(inputs).filter(input => input.value && input.value.trim() !== '').length;
+
+        if (filledCount > 0) {
+            card.setAttribute('data-filled', 'true');
+        } else {
+            card.removeAttribute('data-filled');
+        }
+    });
+}
 
 async function fetchSingleCompany(code, name, button) {
     const originalHtml = button.innerHTML;
-    
+    const originalClass = button.className;
+
     button.disabled = true;
     button.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-    
-    const fiscalYear = document.getElementById('fiscal_year').value;
-    
+
     try {
         const response = await fetch(`/analysis_template/${templateId}/metrics/auto-fetch/`, {
             method: 'POST',
@@ -331,55 +578,66 @@ async function fetchSingleCompany(code, name, button) {
             },
             body: JSON.stringify({
                 company_codes: [code],
-                fiscal_year: fiscalYear,
+                fiscal_year: '',  // 会計年度は不要
                 overwrite: true
             })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success && data.results.length > 0) {
             const result = data.results[0];
-            
+
             if (result.status === 'success') {
                 updateFormWithResults([result]);
-                
-                button.classList.remove('btn-primary');
-                button.classList.add('btn-success');
-                button.innerHTML = `<i class="bi bi-check-circle"></i><span class="d-none d-sm-inline ms-1">完了</span>`;
-                
+
+                button.className = button.className.replace('btn-outline-primary', 'btn-success');
+                button.innerHTML = `<i class="bi bi-check-circle-fill"></i><span class="d-none d-md-inline ms-1">完了</span>`;
+
                 setTimeout(() => {
-                    button.classList.remove('btn-success');
-                    button.classList.add('btn-primary');
+                    button.className = originalClass;
                     button.innerHTML = originalHtml;
                     button.disabled = false;
-                }, 3000);
+                }, 2000);
             } else {
-                alert(`取得失敗: ${result.message}`);
-                button.disabled = false;
-                button.innerHTML = originalHtml;
+                showError(button, result.message || 'データ取得に失敗しました');
             }
         } else {
-            alert('データの取得に失敗しました');
-            button.disabled = false;
-            button.innerHTML = originalHtml;
+            showError(button, 'データの取得に失敗しました');
         }
     } catch (error) {
-        alert('取得に失敗しました: ' + error.message);
-        button.disabled = false;
-        button.innerHTML = originalHtml;
+        showError(button, '通信エラーが発生しました');
     }
 }
 
+function showError(button, message) {
+    const originalHtml = button.innerHTML;
+    const originalClass = button.className;
+
+    button.className = button.className.replace('btn-outline-primary', 'btn-danger');
+    button.innerHTML = `<i class="bi bi-x-circle"></i>`;
+
+    alert(message);
+
+    setTimeout(() => {
+        button.className = originalClass;
+        button.innerHTML = originalHtml;
+        button.disabled = false;
+    }, 1500);
+}
+
 function updateFormWithResults(results) {
+    let filledCount = 0;
+
     results.forEach(result => {
         if (result.status !== 'success' || !result.values) return;
-        
+
         Object.entries(result.values).forEach(([metricName, metricData]) => {
             const input = document.getElementById(metricData.field_name);
             if (input) {
                 input.value = metricData.value;
-                
+                filledCount++;
+
                 // アニメーション効果
                 const wrapper = input.closest('.input-group-compact');
                 if (wrapper) {
@@ -393,26 +651,103 @@ function updateFormWithResults(results) {
             }
         });
     });
+
+    if (filledCount > 0) {
+        showToast(`${filledCount}件の指標を入力しました`, 'success');
+    }
 }
 
-function clearForm() {
-    if (confirm('入力した内容をすべてクリアしますか？')) {
-        document.querySelectorAll('input[type="number"]').forEach(input => {
-            if (input.id !== 'fiscal_year') input.value = '';
-        });
+function clearCompanyInputs(companyCode) {
+    const card = document.querySelector(`.company-card-mobile[data-company-code="${companyCode}"]`);
+    if (!card) return;
+
+    const inputs = card.querySelectorAll('input[type="number"]');
+    let hasValue = false;
+
+    inputs.forEach(input => {
+        if (input.value.trim()) hasValue = true;
+    });
+
+    if (!hasValue) {
+        showToast('入力されている値がありません', 'info');
+        return;
     }
+
+    if (confirm('この企業の入力をすべてクリアしますか？')) {
+        inputs.forEach(input => {
+            input.value = '';
+        });
+        showToast('入力をクリアしました', 'success');
+    }
+}
+
+function clearAllForm() {
+    if (confirm('すべての企業の入力をクリアしますか？\nこの操作は取り消せません。')) {
+        document.querySelectorAll('input[type="number"].metric-input').forEach(input => {
+            input.value = '';
+        });
+        showToast('すべての入力をクリアしました', 'success');
+    }
+}
+
+function showToast(message, type = 'info') {
+    // Bootstrap Toast がない場合の簡易通知
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 1rem 1.5rem;
+        background: ${type === 'success' ? '#10b981' : type === 'danger' ? '#ef4444' : '#3b82f6'};
+        color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 9999;
+        font-weight: 600;
+        animation: slideIn 0.3s ease;
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 2000);
 }
 
 document.getElementById('metricsForm').addEventListener('submit', function(e) {
     let hasValue = false;
-    document.querySelectorAll('input[type="number"]').forEach(input => {
-        if (input.value?.trim() && input.id !== 'fiscal_year') hasValue = true;
+    document.querySelectorAll('input[type="number"].metric-input').forEach(input => {
+        if (input.value?.trim()) hasValue = true;
     });
-    
+
     if (!hasValue) {
         e.preventDefault();
         alert('少なくとも1つの指標を入力してください');
+        return false;
+    }
+
+    // 送信確認
+    const count = Array.from(document.querySelectorAll('input[type="number"].metric-input'))
+        .filter(input => input.value?.trim()).length;
+
+    if (!confirm(`${count}件の指標データを保存します。よろしいですか？`)) {
+        e.preventDefault();
     }
 });
+
+// CSS アニメーション追加
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
 </script>
 {% endblock %}

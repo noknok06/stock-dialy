@@ -6,709 +6,1454 @@
 {% block head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link rel="stylesheet" href="{% static 'css/2-layouts/analysis-template.css' %}?v={{ STATIC_VERSION }}">
+<style>
+/* ========== Modern Header ========== */
+.detail-header {
+    background: linear-gradient(135deg, var(--at-primary, #3b82f6), var(--at-primary-dark, #2563eb));
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+    border-radius: 0 0 24px 24px;
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.2);
+}
+
+.detail-header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.detail-header-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.detail-title {
+    font-size: 2rem;
+    font-weight: 800;
+    margin: 0 0 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.detail-subtitle {
+    font-size: 1rem;
+    opacity: 0.9;
+    margin: 0;
+}
+
+.detail-header-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.header-action-btn {
+    padding: 0.75rem 1.25rem;
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.header-action-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+    color: white;
+}
+
+/* ========== Stats Cards ========== */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--at-bg-card, #ffffff);
+    border: 2px solid var(--at-border, #e2e8f0);
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s;
+}
+
+.stat-card:hover {
+    border-color: var(--at-primary, #3b82f6);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.1);
+    transform: translateY(-2px);
+}
+
+.stat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    flex-shrink: 0;
+}
+
+.stat-icon.primary {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.2));
+    color: var(--at-primary, #3b82f6);
+}
+
+.stat-icon.success {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.2));
+    color: var(--at-success, #10b981);
+}
+
+.stat-icon.warning {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(249, 115, 22, 0.2));
+    color: var(--at-warning, #f97316);
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--at-text-muted, #64748b);
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--at-text-primary, #0f172a);
+    line-height: 1;
+}
+
+/* ========== Modern Tabs ========== */
+.modern-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    padding: 0.5rem;
+    background: var(--at-bg-secondary, #f8fafc);
+    border-radius: 16px;
+    border: 2px solid var(--at-border, #e2e8f0);
+}
+
+.modern-tab {
+    flex: 1;
+    min-width: 120px;
+    padding: 0.875rem 1.25rem;
+    background: transparent;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: var(--at-text-secondary, #64748b);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.modern-tab:hover {
+    background: rgba(59, 130, 246, 0.05);
+    color: var(--at-primary, #3b82f6);
+}
+
+.modern-tab.active {
+    background: white;
+    color: var(--at-primary, #3b82f6);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* ========== Company Grid ========== */
+.company-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+}
+
+.company-card-modern {
+    background: var(--at-bg-card, #ffffff);
+    border: 2px solid var(--at-border, #e2e8f0);
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+
+.company-card-modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--at-primary, #3b82f6), var(--at-primary-light, #60a5fa));
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.company-card-modern:hover {
+    border-color: var(--at-primary, #3b82f6);
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.12);
+    transform: translateY(-4px);
+}
+
+.company-card-modern:hover::before {
+    opacity: 1;
+}
+
+.company-card-modern.high-score {
+    border-color: var(--at-success, #10b981);
+}
+
+.company-card-modern.high-score::before {
+    background: linear-gradient(90deg, var(--at-success, #10b981), var(--at-success-light, #34d399));
+    opacity: 1;
+}
+
+.company-header-modern {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.25rem;
+    gap: 1rem;
+}
+
+.company-info-modern {
+    flex: 1;
+    min-width: 0;
+}
+
+.company-name-modern {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--at-text-primary, #0f172a);
+    margin-bottom: 0.375rem;
+}
+
+.company-meta-modern {
+    font-size: 0.8125rem;
+    color: var(--at-text-muted, #64748b);
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.score-badge-modern {
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.15));
+    border: 2px solid rgba(59, 130, 246, 0.2);
+    flex-shrink: 0;
+}
+
+.score-number-modern {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--at-primary, #3b82f6);
+    line-height: 1;
+}
+
+.score-label-modern {
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: var(--at-text-muted, #64748b);
+    margin-top: 0.125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.score-badge-modern.high {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.15));
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.score-badge-modern.high .score-number-modern {
+    color: var(--at-success, #10b981);
+}
+
+.score-badge-modern.low {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(249, 115, 22, 0.15));
+    border-color: rgba(249, 115, 22, 0.2);
+}
+
+.score-badge-modern.low .score-number-modern {
+    color: var(--at-warning, #f97316);
+}
+
+.metrics-preview {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+.metric-preview-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.metric-preview-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--at-text-muted, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.metric-preview-value {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--at-text-primary, #0f172a);
+}
+
+/* ========== Chart Card ========== */
+.chart-card {
+    background: var(--at-bg-card, #ffffff);
+    border: 2px solid var(--at-border, #e2e8f0);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.chart-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--at-text-primary, #0f172a);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.chart-container {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+/* ========== Empty State ========== */
+.empty-state-modern {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--at-bg-card, #ffffff);
+    border: 2px dashed var(--at-border, #e2e8f0);
+    border-radius: 16px;
+}
+
+.empty-icon-modern {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    opacity: 0.3;
+}
+
+.empty-title-modern {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--at-text-primary, #0f172a);
+    margin-bottom: 0.75rem;
+}
+
+.empty-desc-modern {
+    font-size: 1rem;
+    color: var(--at-text-muted, #64748b);
+    margin-bottom: 2rem;
+}
+
+/* ========== Accordion Modern ========== */
+.accordion-modern {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.accordion-item-modern {
+    background: var(--at-bg-card, #ffffff);
+    border: 2px solid var(--at-border, #e2e8f0);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.2s;
+}
+
+.accordion-button-modern {
+    width: 100%;
+    padding: 1.25rem 1.5rem;
+    background: transparent;
+    border: none;
+    text-align: left;
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--at-text-primary, #0f172a);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.accordion-button-modern:hover {
+    background: var(--at-bg-secondary, #f8fafc);
+}
+
+.accordion-button-modern .icon {
+    transition: transform 0.2s;
+}
+
+.accordion-button-modern[aria-expanded="true"] .icon {
+    transform: rotate(180deg);
+}
+
+.accordion-body-modern {
+    padding: 1.5rem;
+    border-top: 2px solid var(--at-border, #e2e8f0);
+}
+
+.metrics-grid-detail {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.metric-detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.metric-detail-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--at-text-muted, #64748b);
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.metric-detail-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--at-text-primary, #0f172a);
+}
+
+.metric-detail-comparison {
+    font-size: 0.8125rem;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.comparison-positive {
+    color: var(--at-success, #10b981);
+}
+
+.comparison-negative {
+    color: var(--at-danger, #ef4444);
+}
+
+/* ========== Progress Bar ========== */
+.progress-bar-modern {
+    width: 100%;
+    height: 8px;
+    background: var(--at-bg-secondary, #e2e8f0);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+.progress-fill-modern {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.progress-fill-modern.high {
+    background: linear-gradient(90deg, var(--at-success, #10b981), var(--at-success-light, #34d399));
+}
+
+.progress-fill-modern.mid {
+    background: linear-gradient(90deg, var(--at-primary, #3b82f6), var(--at-primary-light, #60a5fa));
+}
+
+.progress-fill-modern.low {
+    background: linear-gradient(90deg, var(--at-warning, #f97316), var(--at-warning-light, #fb923c));
+}
+
+/* ========== Compare Mode ========== */
+.compare-toggle-btn {
+    position: fixed;
+    bottom: 1rem;
+    left: 2rem;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--at-primary), var(--at-primary-dark, #2563eb));
+    color: white;
+    border: none;
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    transition: all 0.3s;
+    z-index: 90;
+}
+
+.compare-toggle-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 12px 32px rgba(59, 130, 246, 0.4);
+}
+
+.compare-toggle-btn.active {
+    background: linear-gradient(135deg, var(--at-success), #059669);
+}
+
+@media (max-width: 768px) {
+    .compare-toggle-btn {
+        bottom: 1rem;
+        width: 56px;
+        height: 56px;
+        font-size: 1.375rem;
+    }
+}
+
+.compare-mode-view {
+    display: none;
+}
+
+.compare-mode-view.active {
+    display: block;
+}
+
+.compare-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--at-bg-card);
+    border: 2px solid var(--at-border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.compare-table thead th {
+    background: var(--at-bg-secondary);
+    color: var(--at-text-primary);
+    font-weight: 700;
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 2px solid var(--at-border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.compare-table thead th:first-child {
+    width: 180px;
+    min-width: 180px;
+}
+
+.compare-table tbody td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--at-border);
+    color: var(--at-text-primary);
+}
+
+.compare-table tbody tr:hover {
+    background: var(--at-bg-secondary);
+}
+
+.compare-table .metric-name {
+    font-weight: 600;
+    color: var(--at-text-secondary);
+}
+
+.compare-table .company-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.compare-table .company-name {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--at-text-primary);
+}
+
+.compare-table .company-code {
+    font-size: 0.8125rem;
+    color: var(--at-primary);
+    font-weight: 600;
+}
+
+.compare-table .metric-value {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--at-text-primary);
+}
+
+.compare-table .metric-value.best {
+    color: var(--at-success);
+}
+
+.compare-table .metric-value.worst {
+    color: var(--at-warning);
+}
+
+.compare-section-header {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+    padding: 0.75rem 1rem;
+    font-weight: 700;
+    color: var(--at-primary);
+    border-bottom: 2px solid var(--at-primary);
+}
+
+/* ========== Dark Mode ========== */
+.dark-mode .detail-header,
+[data-theme="dark"] .detail-header {
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+}
+
+.dark-mode .stat-card,
+.dark-mode .company-card-modern,
+.dark-mode .chart-card,
+.dark-mode .accordion-item-modern,
+.dark-mode .empty-state-modern,
+[data-theme="dark"] .stat-card,
+[data-theme="dark"] .company-card-modern,
+[data-theme="dark"] .chart-card,
+[data-theme="dark"] .accordion-item-modern,
+[data-theme="dark"] .empty-state-modern {
+    background: var(--at-bg-card);
+    border-color: var(--at-border);
+}
+
+.dark-mode .stat-card:hover,
+.dark-mode .company-card-modern:hover,
+[data-theme="dark"] .stat-card:hover,
+[data-theme="dark"] .company-card-modern:hover {
+    border-color: var(--at-primary);
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.2);
+}
+
+.dark-mode .stat-label,
+.dark-mode .company-meta-modern,
+.dark-mode .score-label-modern,
+.dark-mode .metric-preview-label,
+.dark-mode .metric-detail-label,
+[data-theme="dark"] .stat-label,
+[data-theme="dark"] .company-meta-modern,
+[data-theme="dark"] .score-label-modern,
+[data-theme="dark"] .metric-preview-label,
+[data-theme="dark"] .metric-detail-label {
+    color: var(--at-text-secondary);
+}
+
+.dark-mode .stat-value,
+.dark-mode .company-name-modern,
+.dark-mode .metric-preview-value,
+.dark-mode .metric-detail-value,
+.dark-mode .chart-title,
+.dark-mode .empty-title-modern,
+.dark-mode .accordion-button-modern,
+[data-theme="dark"] .stat-value,
+[data-theme="dark"] .company-name-modern,
+[data-theme="dark"] .metric-preview-value,
+[data-theme="dark"] .metric-detail-value,
+[data-theme="dark"] .chart-title,
+[data-theme="dark"] .empty-title-modern,
+[data-theme="dark"] .accordion-button-modern {
+    color: var(--at-text-primary);
+}
+
+.dark-mode .empty-desc-modern,
+[data-theme="dark"] .empty-desc-modern {
+    color: var(--at-text-muted);
+}
+
+.dark-mode .modern-tabs,
+[data-theme="dark"] .modern-tabs {
+    background: var(--at-bg-secondary);
+    border-color: var(--at-border);
+}
+
+.dark-mode .modern-tab,
+[data-theme="dark"] .modern-tab {
+    color: var(--at-text-secondary);
+}
+
+.dark-mode .modern-tab:hover,
+[data-theme="dark"] .modern-tab:hover {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--at-primary);
+}
+
+.dark-mode .modern-tab.active,
+[data-theme="dark"] .modern-tab.active {
+    background: var(--at-bg-card);
+    color: var(--at-primary);
+}
+
+.dark-mode .accordion-button-modern:hover,
+[data-theme="dark"] .accordion-button-modern:hover {
+    background: var(--at-bg-secondary);
+}
+
+.dark-mode .accordion-body-modern,
+[data-theme="dark"] .accordion-body-modern {
+    border-top-color: var(--at-border);
+}
+
+.dark-mode .stat-icon.primary,
+[data-theme="dark"] .stat-icon.primary {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.25));
+}
+
+.dark-mode .stat-icon.success,
+[data-theme="dark"] .stat-icon.success {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.25));
+}
+
+.dark-mode .stat-icon.warning,
+[data-theme="dark"] .stat-icon.warning {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(249, 115, 22, 0.25));
+}
+
+.dark-mode .score-badge-modern,
+[data-theme="dark"] .score-badge-modern {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.2));
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.dark-mode .score-badge-modern.high,
+[data-theme="dark"] .score-badge-modern.high {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.2));
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.dark-mode .score-badge-modern.low,
+[data-theme="dark"] .score-badge-modern.low {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(249, 115, 22, 0.2));
+    border-color: rgba(249, 115, 22, 0.3);
+}
+
+.dark-mode .compare-toggle-btn,
+[data-theme="dark"] .compare-toggle-btn {
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+}
+
+.dark-mode .compare-toggle-btn.active,
+[data-theme="dark"] .compare-toggle-btn.active {
+    background: linear-gradient(135deg, var(--at-success), #059669);
+}
+
+.dark-mode .compare-table,
+[data-theme="dark"] .compare-table {
+    background: var(--at-bg-card);
+    border-color: var(--at-border);
+}
+
+.dark-mode .compare-table thead th,
+[data-theme="dark"] .compare-table thead th {
+    background: var(--at-bg-secondary);
+    border-bottom-color: var(--at-border);
+}
+
+.dark-mode .compare-table tbody tr:hover,
+[data-theme="dark"] .compare-table tbody tr:hover {
+    background: var(--at-bg-secondary);
+}
+
+.dark-mode .compare-section-header,
+[data-theme="dark"] .compare-section-header {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(139, 92, 246, 0.15));
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 768px) {
+    .detail-header {
+        padding: 1.5rem 0;
+        margin-bottom: 1.5rem;
+        border-radius: 0 0 16px 16px;
+    }
+
+    .detail-title {
+        font-size: 1.5rem;
+    }
+
+    .detail-header-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .header-action-btn {
+        flex: 1;
+        justify-content: center;
+        padding: 0.625rem 1rem;
+        font-size: 0.875rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .chart-card {
+        padding: 1.5rem;
+    }
+
+    .company-card-modern {
+        padding: 1.25rem;
+    }
+
+    .score-badge-modern {
+        width: 56px;
+        height: 56px;
+    }
+
+    .score-number-modern {
+        font-size: 1.25rem;
+    }
+
+    .accordion-body-modern {
+        padding: 1.25rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .modern-tabs {
+        flex-direction: column;
+        gap: 0.375rem;
+    }
+
+    .modern-tab {
+        width: 100%;
+    }
+
+    .company-name-modern {
+        font-size: 1rem;
+    }
+
+    .metric-preview-value {
+        font-size: 1rem;
+    }
+
+    .metric-detail-value {
+        font-size: 1.25rem;
+    }
+}
+</style>
 {% endblock %}
 
 {% block content %}
-<header class="page-header">
-    <div class="page-header-content">
-        <div>
-            <h1>
-                <i class="fas fa-brain"></i>
+<!-- ヘッダー -->
+<header class="detail-header">
+    <div class="detail-header-content">
+        <div class="detail-header-info">
+            <h1 class="detail-title">
+                <i class="bi bi-file-earmark-bar-graph"></i>
                 {{ template.name }}
             </h1>
-            <p class="page-header-subtitle">{{ template.description|default:"業種別ベンチマーク比較分析" }}</p>
+            <p class="detail-subtitle">{{ template.description|default:"企業分析レポート" }}</p>
         </div>
-        <div class="page-header-badge">
-        <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn-icon btn-info-icon btn--sm">
-          <i class="bi bi-building-add"></i>
-        </a>
-        <a href="{% url 'analysis_template:metrics_edit' template.pk %}" class="btn-icon btn-success-icon btn--sm">
-          <i class="bi bi-bar-chart"></i>
-        </a>
+        <div class="detail-header-actions">
+            <a href="{% url 'analysis_template:company_select' template.pk %}" class="header-action-btn">
+                <i class="bi bi-building-add"></i>
+                <span class="d-none d-sm-inline">企業</span>
+            </a>
+            <a href="{% url 'analysis_template:metrics_input' template.pk %}" class="header-action-btn">
+                <i class="bi bi-bar-chart-line"></i>
+                <span class="d-none d-sm-inline">指標</span>
+            </a>
+            <a href="{% url 'analysis_template:update' template.pk %}" class="header-action-btn">
+                <i class="bi bi-pencil"></i>
+                <span class="d-none d-sm-inline">編集</span>
+            </a>
         </div>
     </div>
 </header>
+
 <div class="at-container">
-  <!-- 企業一覧セクション -->
-  <section class="mb-4">
-    <h2 class="at-section-title">
-      <i class="bi bi-building"></i>
-      企業一覧
-      <span class="badge bg-primary ms-2" id="companyCount">0</span>
-    </h2>
-    
-    <div class="at-company-grid" id="companyGrid">
-      <!-- JavaScript で生成 -->
+    <!-- Stats Cards -->
+    <div class="stats-grid" id="statsGrid">
+        <!-- JavaScript で生成 -->
     </div>
-  </section>
 
-  <!-- タブナビゲーション -->
-  <div class="at-tabs" role="tablist">
-    <button class="at-tab active" data-bs-toggle="tab" data-bs-target="#tab-chart" role="tab">
-      <i class="bi bi-pie-chart"></i>
-      <span>チャート</span>
-    </button>
-    <button class="at-tab" data-bs-toggle="tab" data-bs-target="#tab-details" role="tab">
-      <i class="bi bi-list-ul"></i>
-      <span>詳細</span>
-    </button>
-    <button class="at-tab" data-bs-toggle="tab" data-bs-target="#tab-benchmark" role="tab">
-      <i class="bi bi-graph-up"></i>
-      <span>業種平均</span>
-    </button>
-  </div>
-
-  <!-- タブコンテンツ -->
-  <div class="tab-content">
-    <!-- チャートタブ -->
-    <div class="tab-pane fade show active" id="tab-chart" role="tabpanel">
-      <div class="at-card">
-        <h6 class="at-chart-title">
-          <i class="bi bi-radar me-2"></i>8指標レーダーチャート比較
-        </h6>
-        <div class="at-chart-container">
-          <canvas id="radar-chart"></canvas>
-        </div>
-      </div>
-      
-      <!-- 比較表（アコーディオン） -->
-      <div class="at-accordion-item">
-        <button class="at-accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTable" aria-expanded="false">
-          <span><i class="bi bi-table me-2"></i>詳細比較表</span>
+    <!-- Tabs -->
+    <div class="modern-tabs" role="tablist">
+        <button class="modern-tab active" data-tab="overview" onclick="switchTab('overview')">
+            <i class="bi bi-grid-3x2"></i>
+            <span>概要</span>
         </button>
-        <div id="collapseTable" class="collapse">
-          <div class="at-accordion-body">
-            <div class="at-table-wrapper">
-              <table class="at-table" id="comparison-table">
+        <button class="modern-tab" data-tab="chart" onclick="switchTab('chart')">
+            <i class="bi bi-radar"></i>
+            <span>チャート</span>
+        </button>
+        <button class="modern-tab" data-tab="details" onclick="switchTab('details')">
+            <i class="bi bi-list-ul"></i>
+            <span>詳細</span>
+        </button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content-modern">
+        <!-- Overview Tab -->
+        <div class="tab-pane-modern active" id="tab-overview">
+            <!-- カードビュー -->
+            <div class="company-grid" id="companyGrid">
                 <!-- JavaScript で生成 -->
-              </table>
             </div>
-          </div>
+
+            <!-- 比較ビュー -->
+            <div class="compare-mode-view" id="compareView">
+                <div class="compare-table-wrapper">
+                    <table class="compare-table" id="compareTable">
+                        <!-- JavaScript で生成 -->
+                    </table>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
 
-    <!-- 詳細タブ -->
-    <div class="tab-pane fade" id="tab-details" role="tabpanel">
-      <div id="detailsAccordion">
-        <!-- JavaScript で生成 -->
-      </div>
-    </div>
+        <!-- Chart Tab -->
+        <div class="tab-pane-modern" id="tab-chart" style="display: none;">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <i class="bi bi-radar"></i>
+                        8指標レーダーチャート比較
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="radarChart"></canvas>
+                </div>
+            </div>
+        </div>
 
-    <!-- 業種平均タブ -->
-    <div class="tab-pane fade" id="tab-benchmark" role="tabpanel">
-      <div id="benchmarkList">
-        <!-- JavaScript で生成 -->
-      </div>
+        <!-- Details Tab -->
+        <div class="tab-pane-modern" id="tab-details" style="display: none;">
+            <div class="accordion-modern" id="detailsAccordion">
+                <!-- JavaScript で生成 -->
+            </div>
+        </div>
     </div>
-  </div>
 </div>
+
+<!-- 比較モード切替ボタン -->
+<button class="compare-toggle-btn" id="compareToggleBtn" onclick="toggleCompareMode()" title="比較モード切替">
+    <i class="bi bi-arrow-left-right"></i>
+</button>
 
 {% include 'speed_dial.html' with actions=form_actions %}
 <script>
 const companiesData = {{ companies_data|safe }};
 const benchmarksData = {{ benchmarks_data|safe }};
 const templateId = {{ template.pk }};
+let compareMode = false;
 
-// ========================================
-// ユーティリティ
-// ========================================
+// ========== Tab Switching ==========
+function switchTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.modern-tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.dataset.tab === tabName) {
+            tab.classList.add('active');
+        }
+    });
+
+    // Update tab content
+    document.querySelectorAll('.tab-pane-modern').forEach(pane => {
+        pane.style.display = 'none';
+    });
+    document.getElementById(`tab-${tabName}`).style.display = 'block';
+
+    // Initialize chart if switching to chart tab
+    if (tabName === 'chart' && !window.chartInitialized) {
+        generateRadarChart();
+        window.chartInitialized = true;
+    }
+}
+
+// ========== Utilities ==========
 function formatNumber(num, decimals = 2) {
-  if (num === null || num === undefined || isNaN(num)) return '-';
-  return Number(num).toFixed(decimals);
+    if (num === null || num === undefined || isNaN(num)) return '-';
+    return Number(num).toFixed(decimals);
 }
 
-function getScoreColor(score) {
-  if (score >= 70) return 'success';
-  if (score >= 50) return 'primary';
-  return 'warning';
-}
-
-// ========================================
-// スコア計算（改善版）
-// normalizeValue関数を使用して総合スコアを算出
-// ========================================
+// ========== Score Calculation ==========
 function calculateScore(company) {
-  const benchmark = benchmarksData[company.industry_code_33];
-  
-  // スコア計算に使用する主要指標（重み付け可能）
-  const scoreMetrics = [
-    { key: 'roe', weight: 1.5 },           // 収益性（重要）
-    { key: 'roa', weight: 1.0 },           // 収益性
-    { key: 'operating_margin', weight: 1.2 }, // 収益性
-    { key: 'per', weight: 1.0 },           // バリュエーション
-    { key: 'pbr', weight: 0.8 },           // バリュエーション
-    { key: 'dividend_yield', weight: 0.8 }, // 配当
-    { key: 'equity_ratio', weight: 0.8 },  // 財務健全性
-    { key: 'revenue_growth', weight: 0.7 }, // 成長性
-    { key: 'profit_growth', weight: 0.7 }, // 成長性
-  ];
-  
-  let totalWeightedScore = 0;
-  let totalWeight = 0;
-  
-  scoreMetrics.forEach(({ key, weight }) => {
-    const value = company.metrics[key];
-    if (value == null) return;
-    
-    const b = benchmark ? benchmark[key] : null;
-    const score = normalizeValue(value, key, b);
-    
-    if (score != null) {
-      totalWeightedScore += score * weight;
-      totalWeight += weight;
-    }
-  });
-  
-  return totalWeight > 0 ? totalWeightedScore / totalWeight : 50;
+    const metrics = ['roe', 'roa', 'operating_margin', 'per', 'pbr', 'dividend_yield', 'equity_ratio'];
+    let total = 0;
+    let count = 0;
+
+    metrics.forEach(key => {
+        const value = company.metrics[key];
+        if (value != null && !isNaN(value)) {
+            // Simple normalization (can be enhanced)
+            const normalized = Math.min(100, Math.max(0, Number(value) * 5));
+            total += normalized;
+            count++;
+        }
+    });
+
+    return count > 0 ? Math.round(total / count) : 50;
 }
 
-// ========================================
-// 指標別の正規化設定
-// 業種ベンチマークがない場合のフォールバック用
-// 
-// 構造: poor → avg → excellent の方向でスコアが上がる
-// 通常指標: poor < avg < excellent（値が大きいほど良い）
-// 逆指標:   poor > avg > excellent（値が小さいほど良い）
-// ========================================
-const METRIC_DEFAULTS = {
-  // 収益性（高いほど良い）
-  roe:              { poor: 4,   avg: 8,   excellent: 15 },
-  roa:              { poor: 2,   avg: 4,   excellent: 8 },
-  operating_margin: { poor: 3,   avg: 7,   excellent: 13 },
-  net_margin:       { poor: 2,   avg: 4,   excellent: 10 },
-  
-  // 成長性（高いほど良い）
-  revenue_growth:   { poor: -3,  avg: 5,   excellent: 15 },
-  profit_growth:    { poor: -5,  avg: 8,   excellent: 18 },
-  eps_growth:       { poor: -5,  avg: 8,   excellent: 20 },
-  
-  // バリュエーション（低いほど良い）: poor > avg > excellent
-  per:              { poor: 30,  avg: 15,  excellent: 10 },
-  pbr:              { poor: 2.5, avg: 1.2, excellent: 0.7 },
-  psr:              { poor: 3.0, avg: 1.5, excellent: 0.8 },
-  pcfr:             { poor: 20,  avg: 12,  excellent: 7 },
-  ev_ebitda:        { poor: 15,  avg: 10,  excellent: 6 },
-  
-  // 配当（高いほど良い）
-  dividend_yield:   { poor: 0.8, avg: 2.0, excellent: 3.5 },
-  dividend_payout:  { poor: 15,  avg: 35,  excellent: 50 },
-  payout_ratio:     { poor: 15,  avg: 35,  excellent: 50 },
-  
-  // 財務健全性
-  equity_ratio:     { poor: 25,  avg: 42,  excellent: 60 },       // 高いほど良い
-  current_ratio:    { poor: 100, avg: 150, excellent: 200 },      // 高いほど良い
-  debt_equity_ratio:{ poor: 180, avg: 100, excellent: 50 },       // 低いほど良い
-  
-  // 効率性（高いほど良い）
-  asset_turnover:   { poor: 0.5, avg: 1.0, excellent: 1.8 },
-  inventory_turnover:{ poor: 4,  avg: 8,   excellent: 15 },
-};
+// ========== Generate Stats Cards ==========
+function generateStatsCards() {
+    const container = document.getElementById('statsGrid');
 
-/**
- * 値を0-100のスコアに正規化
- * 
- * 方式: 3点線形補間
- * - poor（要注意）= 0点
- * - avg（平均）= 50点  
- * - excellent（優良）= 100点
- * 
- * 逆指標（PER, PBR等）はベンチマークの構造から自動判定:
- * - excellent < avg の場合、値が小さいほど良い
- * 
- * @param {number} value - 実際の値
- * @param {string} key - 指標キー（roe, per等）
- * @param {object} benchmark - 業種ベンチマーク {avg, excellent, poor}
- * @returns {number|null} 0-100のスコア
- */
-function normalizeValue(value, key, benchmark) {
-  if (value == null || isNaN(value)) return null;
-  const v = Number(value);
-  
-  // ベンチマークまたはデフォルト設定から基準値を取得
-  let poor, avg, excellent;
-  
-  if (benchmark && benchmark.avg != null) {
-    // 業種ベンチマークがある場合
-    avg = Number(benchmark.avg);
-    excellent = Number(benchmark.excellent ?? (avg > 0 ? avg * 1.5 : avg * 0.5));
-    poor = Number(benchmark.poor ?? (avg > 0 ? avg * 0.4 : avg * 1.6));
-  } else if (METRIC_DEFAULTS[key]) {
-    // デフォルト設定を使用
-    const def = METRIC_DEFAULTS[key];
-    poor = def.poor;
-    avg = def.avg;
-    excellent = def.excellent;
-  } else {
-    // フォールバック: テンプレート内平均を使用
-    const vals = companiesData.map(c => c.metrics[key]).filter(x => x != null).map(Number);
-    if (!vals.length) return null;
-    avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-    if (avg === 0) return 50;
-    poor = avg * 0.4;
-    excellent = avg * 1.5;
-  }
-  
-  // 逆指標判定: excellent < avg の場合（PER, PBR等）
-  const isReverse = excellent < avg;
-  
-  // 3点線形補間でスコア計算
-  let score;
-  
-  if (isReverse) {
-    // 逆指標: 値が小さいほど良い (poor > avg > excellent)
-    if (v >= poor) {
-      // poor以上 → 0点（悪い）
-      score = 0;
-    } else if (v <= excellent) {
-      // excellent以下 → 100点（優良）
-      score = 100;
-    } else if (v >= avg) {
-      // avg〜poor → 50〜0点の線形補間
-      score = 50 * (1 - (v - avg) / (poor - avg));
-    } else {
-      // excellent〜avg → 100〜50点の線形補間
-      score = 50 + 50 * (1 - (v - excellent) / (avg - excellent));
-    }
-  } else {
-    // 通常指標: 値が大きいほど良い (poor < avg < excellent)
-    if (v <= poor) {
-      // poor以下 → 0点
-      score = 0;
-    } else if (v >= excellent) {
-      // excellent以上 → 100点
-      score = 100;
-    } else if (v <= avg) {
-      // poor〜avg → 0〜50点の線形補間
-      score = ((v - poor) / (avg - poor)) * 50;
-    } else {
-      // avg〜excellent → 50〜100点の線形補間
-      score = 50 + ((v - avg) / (excellent - avg)) * 50;
-    }
-  }
-  
-  return Math.max(0, Math.min(100, Math.round(score * 10) / 10));
+    const companyCount = companiesData.length;
+    const avgScore = companyCount > 0
+        ? Math.round(companiesData.reduce((sum, c) => sum + calculateScore(c), 0) / companyCount)
+        : 0;
+    const highScore = companyCount > 0
+        ? Math.max(...companiesData.map(c => calculateScore(c)))
+        : 0;
+
+    container.innerHTML = `
+        <div class="stat-card">
+            <div class="stat-icon primary">
+                <i class="bi bi-building"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">登録企業数</div>
+                <div class="stat-value">${companyCount}</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon success">
+                <i class="bi bi-graph-up-arrow"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">平均スコア</div>
+                <div class="stat-value">${avgScore}</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon warning">
+                <i class="bi bi-trophy"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">最高スコア</div>
+                <div class="stat-value">${highScore}</div>
+            </div>
+        </div>
+    `;
 }
 
-// ========================================
-// 企業カード生成
-// ========================================
+// ========== Generate Company Cards ==========
 function generateCompanyCards() {
-  const grid = document.getElementById('companyGrid');
-  const countEl = document.getElementById('companyCount');
-  
-  if (!companiesData.length) {
-    grid.innerHTML = `
-      <div class="at-empty-state" style="grid-column: 1/-1;">
-        <div class="at-empty-icon">📊</div>
-        <h3 class="at-empty-title">企業が登録されていません</h3>
-        <p class="at-empty-desc">分析対象の企業を追加してください</p>
-        <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn btn-primary">
-          <i class="bi bi-plus-circle me-2"></i>企業を追加
-        </a>
-      </div>`;
-    return;
-  }
-  
-  countEl.textContent = companiesData.length;
-  grid.innerHTML = '';
-  
-  companiesData.forEach(company => {
-    const score = calculateScore(company);
-    const color = getScoreColor(score);
-    
-    const card = document.createElement('div');
-    card.className = `at-company-card score-${score >= 70 ? 'high' : score >= 50 ? 'mid' : 'low'}`;
-    card.innerHTML = `
-      <div class="at-company-header">
-        <div class="at-company-info">
-          <div class="at-company-name">${company.name}</div>
-          <div class="at-company-code">${company.code} · ${company.industry_name_33 || '-'}</div>
-        </div>
-        <div class="at-score-display">
-          <span class="at-score-badge text-${color}">${score.toFixed(0)}</span>
-          <div class="at-score-label">スコア</div>
-        </div>
-      </div>
-      <div class="at-metrics-grid">
-        <div class="at-metric-item">
-          <span class="at-metric-label">ROE</span>
-          <span class="at-metric-value">${company.metrics.roe}%</span>
-        </div>
-        <div class="at-metric-item">
-          <span class="at-metric-label">ROA</span>
-          <span class="at-metric-value">${company.metrics.roa}%</span>
-        </div>
-        <div class="at-metric-item">
-          <span class="at-metric-label">営業利益率</span>
-          <span class="at-metric-value">${company.metrics.operating_margin}%</span>
-        </div>
-        <div class="at-metric-item">
-          <span class="at-metric-label">配当利回り</span>
-          <span class="at-metric-value">${company.metrics.dividend_yield}%</span>
-        </div>
-      </div>
-    `;
-    grid.appendChild(card);
-  });
+    const container = document.getElementById('companyGrid');
+
+    if (!companiesData.length) {
+        container.innerHTML = `
+            <div class="empty-state-modern" style="grid-column: 1/-1;">
+                <div class="empty-icon-modern">📊</div>
+                <h3 class="empty-title-modern">企業が登録されていません</h3>
+                <p class="empty-desc-modern">分析対象の企業を追加してレポートを作成しましょう</p>
+                <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>企業を追加
+                </a>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = '';
+
+    companiesData.forEach(company => {
+        const score = calculateScore(company);
+        const scoreClass = score >= 70 ? 'high' : score >= 50 ? 'mid' : 'low';
+
+        const card = document.createElement('div');
+        card.className = `company-card-modern ${score >= 70 ? 'high-score' : ''}`;
+        card.innerHTML = `
+            <div class="company-header-modern">
+                <div class="company-info-modern">
+                    <div class="company-name-modern">${company.name}</div>
+                    <div class="company-meta-modern">
+                        <span>${company.code}</span>
+                        ${company.industry_name_33 ? `<span>·</span><span>${company.industry_name_33}</span>` : ''}
+                    </div>
+                </div>
+                <div class="score-badge-modern ${scoreClass}">
+                    <div class="score-number-modern">${score}</div>
+                    <div class="score-label-modern">Score</div>
+                </div>
+            </div>
+            <div class="metrics-preview">
+                <div class="metric-preview-item">
+                    <div class="metric-preview-label">ROE</div>
+                    <div class="metric-preview-value">${formatNumber(company.metrics.roe, 1)}%</div>
+                </div>
+                <div class="metric-preview-item">
+                    <div class="metric-preview-label">ROA</div>
+                    <div class="metric-preview-value">${formatNumber(company.metrics.roa, 1)}%</div>
+                </div>
+                <div class="metric-preview-item">
+                    <div class="metric-preview-label">PER</div>
+                    <div class="metric-preview-value">${formatNumber(company.metrics.per, 1)}x</div>
+                </div>
+                <div class="metric-preview-item">
+                    <div class="metric-preview-label">配当</div>
+                    <div class="metric-preview-value">${formatNumber(company.metrics.dividend_yield, 1)}%</div>
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
 }
 
-// ========================================
-// 詳細アコーディオン生成
-// ========================================
+// ========== Generate Details Accordion ==========
 function generateDetailsAccordion() {
-  const container = document.getElementById('detailsAccordion');
-  if (!companiesData.length) {
-    container.innerHTML = '<div class="at-card"><p class="text-center at-text-muted py-4">企業が登録されていません</p></div>';
-    return;
-  }
-  
-  container.innerHTML = '';
-  
-  companiesData.forEach((company, i) => {
-    const benchmark = benchmarksData[company.industry_code_33];
-    
-    const item = document.createElement('div');
-    item.className = 'at-accordion-item';
-    item.innerHTML = `
-      <button class="at-accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#detail${i}" aria-expanded="false">
-        <span>${company.name} <small class="at-text-muted ms-2">${company.code}</small></span>
-      </button>
-      <div id="detail${i}" class="collapse">
-        <div class="at-accordion-body">
-          <div class="at-form-section">
-            <div class="at-form-section-title"><i class="bi bi-graph-up-arrow me-2"></i>収益性</div>
-            ${generateMetricRows([
-              ['ROE', company.metrics.roe, '%', benchmark?.roe, 'roe'],
-              ['ROA', company.metrics.roa, '%', benchmark?.roa, 'roa'],
-              ['営業利益率', company.metrics.operating_margin, '%', benchmark?.operating_margin, 'operating_margin']
-            ])}
-          </div>
-          <div class="at-form-section">
-            <div class="at-form-section-title"><i class="bi bi-currency-yen me-2"></i>バリュエーション</div>
-            ${generateMetricRows([
-              ['PER', company.metrics.per, '倍', benchmark?.per, 'per'],
-              ['PBR', company.metrics.pbr, '倍', benchmark?.pbr, 'pbr'],
-              ['配当利回り', company.metrics.dividend_yield, '%', benchmark?.dividend_yield, 'dividend_yield']
-            ])}
-          </div>
-          <div class="at-form-section">
-            <div class="at-form-section-title"><i class="bi bi-shield-check me-2"></i>財務健全性</div>
-            ${generateMetricRows([
-              ['自己資本比率', company.metrics.equity_ratio, '%', benchmark?.equity_ratio, 'equity_ratio']
-            ])}
-          </div>
-          <div class="at-form-section">
-            <div class="at-form-section-title"><i class="bi bi-graph-up me-2"></i>成長性</div>
-            ${generateMetricRows([
-              ['売上成長率', company.metrics.revenue_growth, '%', benchmark?.revenue_growth, 'revenue_growth'],
-              ['利益成長率', company.metrics.profit_growth, '%', benchmark?.profit_growth, 'profit_growth']
-            ])}
-          </div>
-        </div>
-      </div>
-    `;
-    container.appendChild(item);
-  });
-}
+    const container = document.getElementById('detailsAccordion');
 
-function generateMetricRows(metrics) {
-  return metrics.map(([label, value, unit, benchmark, key]) => {
-    let comparison = '';
-    let scoreBar = '';
-    
-    if (benchmark && value != null) {
-      const diff = Number(value) - Number(benchmark.avg);
-      
-      // 逆指標判定: excellent < avg の場合
-      const isReverse = benchmark.excellent != null && benchmark.excellent < benchmark.avg;
-      
-      // 逆指標の場合は色を反転（低い方が良い）
-      const isPositive = isReverse ? (diff < 0) : (diff > 0);
-      const colorClass = isPositive ? 'at-text-success' : 'at-text-danger';
-      const arrow = isPositive ? '↑' : '↓';
-      
-      comparison = `<small class="${colorClass} ms-2">${arrow}${Math.abs(diff).toFixed(1)}</small>`;
-      
-      // スコアバー（normalizeValueを使用）
-      if (key) {
-        const score = normalizeValue(value, key, benchmark);
-        if (score != null) {
-          const barColor = score >= 70 ? 'var(--at-success)' : score >= 50 ? 'var(--at-primary)' : 'var(--at-warning)';
-          scoreBar = `<div class="at-score-bar" style="width:80px;height:6px;background:var(--at-bg-secondary);border-radius:3px;margin-left:8px;overflow:hidden;"><div style="width:${score}%;height:100%;background:${barColor};border-radius:3px;"></div></div>`;
-        }
-      }
+    if (!companiesData.length) {
+        container.innerHTML = `
+            <div class="empty-state-modern">
+                <div class="empty-icon-modern">📋</div>
+                <p class="empty-desc-modern">企業データがありません</p>
+            </div>
+        `;
+        return;
     }
-    return `
-      <div class="at-benchmark-row" style="align-items:center;">
-        <span class="at-benchmark-label">${label}</span>
-        <span style="display:flex;align-items:center;"><strong class="at-benchmark-value">${value}${unit}</strong>${comparison}${scoreBar}</span>
-      </div>`;
-  }).join('');
-}
 
-// ========================================
-// 業種平均リスト生成
-// ========================================
-function generateBenchmarkList() {
-  const container = document.getElementById('benchmarkList');
-  
-  if (!Object.keys(benchmarksData).length) {
-    container.innerHTML = '<div class="at-card"><p class="text-center at-text-muted py-4">業種別ベンチマークが未登録です</p></div>';
-    return;
-  }
-  
-  container.innerHTML = '';
-  
-  Object.entries(benchmarksData).forEach(([code, benchmark]) => {
-    const card = document.createElement('div');
-    card.className = 'at-benchmark-card';
-    card.innerHTML = `
-      <div class="at-benchmark-title">${benchmark.name}</div>
-      <div class="at-form-section">
-        <div class="at-form-section-title" style="font-size:0.8rem;"><i class="bi bi-graph-up-arrow me-1"></i>収益性</div>
-        ${generateBenchmarkMetricRow('ROE', benchmark.roe)}
-        ${generateBenchmarkMetricRow('ROA', benchmark.roa)}
-        ${generateBenchmarkMetricRow('営業利益率', benchmark.operating_margin)}
-      </div>
-      <div class="at-form-section">
-        <div class="at-form-section-title" style="font-size:0.8rem;"><i class="bi bi-currency-yen me-1"></i>バリュエーション</div>
-        ${generateBenchmarkMetricRow('PER', benchmark.per, true)}
-        ${generateBenchmarkMetricRow('PBR', benchmark.pbr, true)}
-      </div>
-      <div class="at-form-section">
-        <div class="at-form-section-title" style="font-size:0.8rem;"><i class="bi bi-graph-up me-1"></i>成長性・配当</div>
-        ${generateBenchmarkMetricRow('売上成長率', benchmark.revenue_growth)}
-        ${generateBenchmarkMetricRow('利益成長率', benchmark.profit_growth)}
-        ${generateBenchmarkMetricRow('配当利回り', benchmark.dividend_yield)}
-      </div>
-    `;
-    container.appendChild(card);
-  });
-}
+    container.innerHTML = '';
 
-function generateBenchmarkMetricRow(label, data, isReverse = false) {
-  if (!data) return '';
-  
-  // 逆指標の場合は自動判定も行う
-  const actualReverse = isReverse || (data.excellent != null && data.excellent < data.avg);
-  
-  // 評価基準の表示
-  let thresholds = '';
-  if (data.excellent != null && data.poor != null) {
-    if (actualReverse) {
-      thresholds = `<span class="at-benchmark-thresholds"><span class="at-text-success">優良≤${data.excellent}</span> / <span class="at-text-danger">要注意≥${data.poor}</span></span>`;
-    } else {
-      thresholds = `<span class="at-benchmark-thresholds"><span class="at-text-success">優良≥${data.excellent}</span> / <span class="at-text-danger">要注意≤${data.poor}</span></span>`;
-    }
-  }
-  
-  return `
-    <div class="at-benchmark-row">
-      <span class="at-benchmark-label">${label}</span>
-      <span class="at-benchmark-values">
-        <strong class="at-benchmark-value">${data.avg}</strong>
-        ${thresholds}
-      </span>
-    </div>`;
-}
-
-// ========================================
-// 比較テーブル生成
-// ========================================
-function generateComparisonTable() {
-  const table = document.getElementById('comparison-table');
-  
-  if (!companiesData.length) {
-    table.innerHTML = '<tbody><tr><td class="text-center py-4 at-text-muted">企業が登録されていません</td></tr></tbody>';
-    return;
-  }
-  
-  const metrics = [
-    { key: 'roe', label: 'ROE', unit: '%' },
-    { key: 'roa', label: 'ROA', unit: '%' },
-    { key: 'operating_margin', label: '営業利益率', unit: '%' },
-    { key: 'per', label: 'PER', unit: '倍' },
-    { key: 'pbr', label: 'PBR', unit: '倍' },
-    { key: 'dividend_yield', label: '配当利回り', unit: '%' },
-    { key: 'equity_ratio', label: '自己資本比率', unit: '%' }
-  ];
-  
-  let html = '<thead><tr><th>指標</th>';
-  companiesData.forEach(c => html += `<th>${c.name.substring(0, 8)}${c.name.length > 8 ? '...' : ''}</th>`);
-  html += '</tr></thead><tbody>';
-  
-  metrics.forEach(m => {
-    html += `<tr><td class="fw-semibold">${m.label}</td>`;
-    companiesData.forEach(c => {
-      const v = c.metrics[m.key];
-      html += `<td class="text-end">${v}${v != null ? m.unit : ''}</td>`;
+    companiesData.forEach((company, i) => {
+        const item = document.createElement('div');
+        item.className = 'accordion-item-modern';
+        item.innerHTML = `
+            <button class="accordion-button-modern"
+                    onclick="toggleAccordion(this)"
+                    aria-expanded="false">
+                <span>${company.name} <small style="opacity: 0.6;">${company.code}</small></span>
+                <i class="bi bi-chevron-down icon"></i>
+            </button>
+            <div class="accordion-body-modern" style="display: none;">
+                <div class="metrics-grid-detail">
+                    <div class="metric-detail-item">
+                        <div class="metric-detail-label">
+                            <i class="bi bi-graph-up"></i>
+                            ROE
+                        </div>
+                        <div class="metric-detail-value">${formatNumber(company.metrics.roe, 1)}%</div>
+                    </div>
+                    <div class="metric-detail-item">
+                        <div class="metric-detail-label">
+                            <i class="bi bi-graph-up"></i>
+                            ROA
+                        </div>
+                        <div class="metric-detail-value">${formatNumber(company.metrics.roa, 1)}%</div>
+                    </div>
+                    <div class="metric-detail-item">
+                        <div class="metric-detail-label">
+                            <i class="bi bi-percent"></i>
+                            営業利益率
+                        </div>
+                        <div class="metric-detail-value">${formatNumber(company.metrics.operating_margin, 1)}%</div>
+                    </div>
+                    <div class="metric-detail-item">
+                        <div class="metric-detail-label">
+                            <i class="bi bi-tag"></i>
+                            PER
+                        </div>
+                        <div class="metric-detail-value">${formatNumber(company.metrics.per, 1)}x</div>
+                    </div>
+                    <div class="metric-detail-item">
+                        <div class="metric-detail-label">
+                            <i class="bi bi-tag"></i>
+                            PBR
+                        </div>
+                        <div class="metric-detail-value">${formatNumber(company.metrics.pbr, 2)}x</div>
+                    </div>
+                    <div class="metric-detail-item">
+                        <div class="metric-detail-label">
+                            <i class="bi bi-cash-coin"></i>
+                            配当利回り
+                        </div>
+                        <div class="metric-detail-value">${formatNumber(company.metrics.dividend_yield, 1)}%</div>
+                    </div>
+                    <div class="metric-detail-item">
+                        <div class="metric-detail-label">
+                            <i class="bi bi-shield-check"></i>
+                            自己資本比率
+                        </div>
+                        <div class="metric-detail-value">${formatNumber(company.metrics.equity_ratio, 1)}%</div>
+                    </div>
+                    <div class="metric-detail-item">
+                        <div class="metric-detail-label">
+                            <i class="bi bi-arrow-up-right"></i>
+                            売上成長率
+                        </div>
+                        <div class="metric-detail-value">${formatNumber(company.metrics.revenue_growth, 1)}%</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.appendChild(item);
     });
-    html += '</tr>';
-  });
-  
-  table.innerHTML = html + '</tbody>';
 }
 
-// ========================================
-// レーダーチャート生成
-// ========================================
+function toggleAccordion(button) {
+    const body = button.nextElementSibling;
+    const isExpanded = button.getAttribute('aria-expanded') === 'true';
+
+    button.setAttribute('aria-expanded', !isExpanded);
+    body.style.display = isExpanded ? 'none' : 'block';
+}
+
+// ========== Generate Radar Chart ==========
 function generateRadarChart() {
-  const ctx = document.getElementById('radar-chart');
-  
-  if (!companiesData.length) {
-    ctx.parentElement.innerHTML = '<div class="text-center at-text-muted py-4">企業が登録されていません</div>';
-    return;
-  }
-  
-  const colors = [
-    { bg: 'rgba(59, 130, 246, 0.2)', border: 'rgb(59, 130, 246)' },
-    { bg: 'rgba(16, 185, 129, 0.2)', border: 'rgb(16, 185, 129)' },
-    { bg: 'rgba(249, 115, 22, 0.2)', border: 'rgb(249, 115, 22)' },
-    { bg: 'rgba(168, 85, 247, 0.2)', border: 'rgb(168, 85, 247)' },
-    { bg: 'rgba(236, 72, 153, 0.2)', border: 'rgb(236, 72, 153)' },
-    { bg: 'rgba(20, 184, 166, 0.2)', border: 'rgb(20, 184, 166)' }
-  ];
-  
-  const datasets = companiesData.map((company, i) => {
-    const color = colors[i % colors.length];
-    const benchmark = benchmarksData[company.industry_code_33];
-    
-    return {
-      label: company.name,
-      data: [
-        normalizeValue(company.metrics.roe, 'roe', benchmark?.roe),
-        normalizeValue(company.metrics.roa, 'roa', benchmark?.roa),
-        normalizeValue(company.metrics.operating_margin, 'operating_margin', benchmark?.operating_margin),
-        normalizeValue(company.metrics.revenue_growth, 'revenue_growth', benchmark?.revenue_growth),
-        normalizeValue(company.metrics.profit_growth, 'profit_growth', benchmark?.profit_growth),
-        normalizeValue(company.metrics.equity_ratio, 'equity_ratio', benchmark?.equity_ratio),
-        normalizeValue(company.metrics.dividend_yield, 'dividend_yield', benchmark?.dividend_yield),
-        normalizeValue(company.metrics.pbr, 'pbr', benchmark?.pbr)
-      ],
-      backgroundColor: color.bg,
-      borderColor: color.border,
-      borderWidth: 2,
-      pointBackgroundColor: color.border,
-      pointBorderColor: '#fff',
-      pointRadius: 3,
-      pointHoverRadius: 5
-    };
-  });
-  
-  // ダークモード判定
-  const isDarkMode = document.body.classList.contains('dark-mode') || 
-                     document.documentElement.getAttribute('data-theme') === 'dark';
-  
-  // 色設定（ライトモード / ダークモード）
-  const chartColors = isDarkMode ? {
-    // ダークモード - 明るい色を使用
-    grid: 'rgba(148, 163, 184, 0.4)',
-    tick: '#e2e8f0',
-    label: '#f8fafc',
-    legendLabel: '#f8fafc'
-  } : {
-    // ライトモード - 濃い色を使用
-    grid: 'rgba(100, 116, 139, 0.25)',
-    tick: '#334155',
-    label: '#0f172a',
-    legendLabel: '#0f172a'
-  };
-  
-  new Chart(ctx, {
-    type: 'radar',
-    data: {
-      labels: ['ROE', 'ROA', '営業利益率', '売上成長率', '利益成長率', '自己資本比率', '配当利回り', 'PBR'],
-      datasets: datasets
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      scales: {
-        r: {
-          beginAtZero: true,
-          max: 100,
-          ticks: {
-            stepSize: 25,
-            font: { size: 10, weight: '500' },
-            color: chartColors.tick,
-            backdropColor: 'transparent',
-            showLabelBackdrop: false
-          },
-          pointLabels: {
-            font: { size: 12, weight: '600' },
-            color: chartColors.label
-          },
-          grid: { 
-            color: chartColors.grid,
-            lineWidth: 1
-          },
-          angleLines: { 
-            color: chartColors.grid,
-            lineWidth: 1
-          }
-        }
-      },
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            padding: 16,
-            font: { size: 11, weight: '500' },
-            boxWidth: 12,
-            color: chartColors.legendLabel,
-            usePointStyle: true,
-            pointStyle: 'circle'
-          }
-        },
-        tooltip: {
-          backgroundColor: isDarkMode ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-          titleColor: isDarkMode ? '#f1f5f9' : '#1e293b',
-          bodyColor: isDarkMode ? '#cbd5e1' : '#475569',
-          borderColor: isDarkMode ? '#475569' : '#e2e8f0',
-          borderWidth: 1,
-          padding: 12,
-          boxPadding: 6
-        }
-      }
+    const ctx = document.getElementById('radarChart');
+
+    if (!companiesData.length) {
+        ctx.parentElement.innerHTML = `
+            <div class="empty-state-modern">
+                <div class="empty-icon-modern">📊</div>
+                <p class="empty-desc-modern">チャート表示に必要なデータがありません</p>
+            </div>
+        `;
+        return;
     }
-  });
-}
 
-// テーマ変更時にチャートを再描画
-function setupThemeChangeListener() {
-  // MutationObserverでテーマ変更を監視
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      if (mutation.attributeName === 'class' || mutation.attributeName === 'data-theme') {
-        // 既存のチャートを破棄して再生成
-        const chartCanvas = document.getElementById('radar-chart');
-        if (chartCanvas) {
-          const existingChart = Chart.getChart(chartCanvas);
-          if (existingChart) {
-            existingChart.destroy();
-          }
-          generateRadarChart();
-        }
-      }
+    const colors = [
+        { bg: 'rgba(59, 130, 246, 0.2)', border: 'rgb(59, 130, 246)' },
+        { bg: 'rgba(16, 185, 129, 0.2)', border: 'rgb(16, 185, 129)' },
+        { bg: 'rgba(249, 115, 22, 0.2)', border: 'rgb(249, 115, 22)' },
+        { bg: 'rgba(168, 85, 247, 0.2)', border: 'rgb(168, 85, 247)' },
+        { bg: 'rgba(236, 72, 153, 0.2)', border: 'rgb(236, 72, 153)' }
+    ];
+
+    const datasets = companiesData.map((company, i) => {
+        const color = colors[i % colors.length];
+        return {
+            label: company.name,
+            data: [
+                company.metrics.roe || 0,
+                company.metrics.roa || 0,
+                company.metrics.operating_margin || 0,
+                company.metrics.revenue_growth || 0,
+                company.metrics.profit_growth || 0,
+                company.metrics.equity_ratio || 0,
+                company.metrics.dividend_yield || 0,
+                company.metrics.pbr ? Math.min(5, company.metrics.pbr) : 0
+            ],
+            backgroundColor: color.bg,
+            borderColor: color.border,
+            borderWidth: 2,
+            pointBackgroundColor: color.border,
+            pointBorderColor: '#fff',
+            pointRadius: 4,
+            pointHoverRadius: 6
+        };
     });
-  });
-  
-  // bodyとhtmlの両方を監視
-  observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+    // ダークモード判定
+    const isDark = document.body.classList.contains('dark-mode') ||
+                   document.documentElement.getAttribute('data-theme') === 'dark';
+
+    const chartColors = isDark ? {
+        grid: 'rgba(148, 163, 184, 0.3)',
+        tick: '#e2e8f0',
+        label: '#f8fafc'
+    } : {
+        grid: 'rgba(100, 116, 139, 0.2)',
+        tick: '#475569',
+        label: '#0f172a'
+    };
+
+    new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: ['ROE', 'ROA', '営業利益率', '売上成長', '利益成長', '自己資本比率', '配当利回り', 'PBR'],
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    ticks: {
+                        font: { size: 11, weight: '500' },
+                        color: chartColors.tick
+                    },
+                    pointLabels: {
+                        font: { size: 12, weight: '600' },
+                        color: chartColors.label
+                    },
+                    grid: { color: chartColors.grid },
+                    angleLines: { color: chartColors.grid }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 16,
+                        font: { size: 12, weight: '500' },
+                        color: chartColors.label,
+                        usePointStyle: true
+                    }
+                }
+            }
+        }
+    });
 }
 
-// ========================================
-// 初期化
-// ========================================
+// ========== Compare Mode ==========
+function toggleCompareMode() {
+    compareMode = !compareMode;
+    const btn = document.getElementById('compareToggleBtn');
+    const cardView = document.getElementById('companyGrid');
+    const compareView = document.getElementById('compareView');
+
+    if (compareMode) {
+        btn.classList.add('active');
+        btn.innerHTML = '<i class="bi bi-grid-3x2"></i>';
+        btn.title = 'カードビュー';
+        cardView.style.display = 'none';
+        compareView.classList.add('active');
+        generateCompareTable();
+    } else {
+        btn.classList.remove('active');
+        btn.innerHTML = '<i class="bi bi-arrow-left-right"></i>';
+        btn.title = '比較モード切替';
+        cardView.style.display = 'grid';
+        compareView.classList.remove('active');
+    }
+}
+
+function generateCompareTable() {
+    const table = document.getElementById('compareTable');
+
+    if (!companiesData.length) {
+        table.innerHTML = '<tbody><tr><td colspan="100%" class="text-center text-muted">企業データがありません</td></tr></tbody>';
+        return;
+    }
+
+    // メトリクスグループ定義
+    const metricsGroups = {
+        '収益性': ['roe', 'roa', 'operating_margin'],
+        '成長性': ['revenue_growth', 'profit_growth'],
+        '安全性': ['equity_ratio', 'current_ratio'],
+        'バリュエーション': ['per', 'pbr', 'dividend_yield']
+    };
+
+    const metricLabels = {
+        'roe': 'ROE',
+        'roa': 'ROA',
+        'operating_margin': '営業利益率',
+        'revenue_growth': '売上成長率',
+        'profit_growth': '利益成長率',
+        'equity_ratio': '自己資本比率',
+        'current_ratio': '流動比率',
+        'per': 'PER',
+        'pbr': 'PBR',
+        'dividend_yield': '配当利回り'
+    };
+
+    // ヘッダー生成
+    let headerHTML = '<thead><tr><th>指標</th>';
+    companiesData.forEach(company => {
+        headerHTML += `
+            <th>
+                <div class="company-header">
+                    <div class="company-name">${company.name}</div>
+                    <div class="company-code">${company.code}</div>
+                </div>
+            </th>
+        `;
+    });
+    headerHTML += '</tr></thead>';
+
+    // ボディ生成
+    let bodyHTML = '<tbody>';
+    Object.entries(metricsGroups).forEach(([groupName, metrics]) => {
+        bodyHTML += `<tr><td colspan="${companiesData.length + 1}" class="compare-section-header">${groupName}</td></tr>`;
+
+        metrics.forEach(metric => {
+            bodyHTML += `<tr><td class="metric-name">${metricLabels[metric]}</td>`;
+
+            // 各企業の値を取得
+            const values = companiesData.map(c => c.metrics[metric] || null);
+            const numericValues = values.filter(v => v !== null && !isNaN(v));
+            const max = numericValues.length > 0 ? Math.max(...numericValues) : null;
+            const min = numericValues.length > 0 ? Math.min(...numericValues) : null;
+
+            companiesData.forEach((company, i) => {
+                const value = company.metrics[metric];
+                let className = 'metric-value';
+
+                // 高い方が良い指標
+                const higherIsBetter = !['per', 'pbr'].includes(metric);
+
+                if (value !== null && !isNaN(value) && numericValues.length > 1) {
+                    if (higherIsBetter) {
+                        if (value === max) className += ' best';
+                        if (value === min) className += ' worst';
+                    } else {
+                        if (value === min) className += ' best';
+                        if (value === max) className += ' worst';
+                    }
+                }
+
+                const displayValue = value !== null && !isNaN(value) ? formatNumber(value, 1) : '-';
+                const unit = ['per', 'pbr'].includes(metric) ? 'x' : '%';
+
+                bodyHTML += `<td><span class="${className}">${displayValue}${value !== null && !isNaN(value) ? unit : ''}</span></td>`;
+            });
+
+            bodyHTML += '</tr>';
+        });
+    });
+    bodyHTML += '</tbody>';
+
+    table.innerHTML = headerHTML + bodyHTML;
+}
+
+// ========== Initialize ==========
 document.addEventListener('DOMContentLoaded', () => {
-  generateCompanyCards();
-  generateDetailsAccordion();
-  generateBenchmarkList();
-  generateComparisonTable();
-  generateRadarChart();
-  setupThemeChangeListener();
+    generateStatsCards();
+    generateCompanyCards();
+    generateDetailsAccordion();
+    // Chart will be initialized when tab is clicked
 });
 </script>
 {% endblock %}

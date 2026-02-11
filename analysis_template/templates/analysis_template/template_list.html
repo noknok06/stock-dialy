@@ -4,117 +4,690 @@
 {% block title %}分析レポート一覧 - カブログ{% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="{% static 'css/2-layouts/analysis-template.css' %}?v={{ STATIC_VERSION }}">
+<link rel="stylesheet" href="{% static 'css/3-components/components.css' %}?v={{ STATIC_VERSION }}">
+<link rel="stylesheet" href="{% static 'css/3-components/dark-mode-components.css' %}?v={{ STATIC_VERSION }}">
+
+<style>
+  /* ========== モダン分析レポートUI ========== */
+
+  .analysis-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  /* ヘッダーセクション */
+  .analysis-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .analysis-header-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary-200) 0%, var(--accent-200) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .analysis-header-subtitle {
+    font-size: 1.1rem;
+    color: var(--text-200);
+    max-width: 600px;
+    margin: 0 auto 2rem;
+  }
+
+  .analysis-header-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .analysis-action-btn {
+    padding: 0.875rem 1.75rem;
+    border-radius: var(--radius-lg);
+    font-weight: 600;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .analysis-action-btn-primary {
+    background: var(--gradient-primary);
+    color: white;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
+  .analysis-action-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+    color: white;
+  }
+
+  /* 一括操作バー */
+  .analysis-bulk-bar {
+    position: fixed;
+    bottom: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-100);
+    border: 2px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    padding: 1.25rem 2rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    min-width: 400px;
+  }
+
+  .analysis-bulk-bar.show {
+    bottom: 2rem;
+  }
+
+  .analysis-selection-count {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-100);
+  }
+
+  .analysis-selection-count strong {
+    color: var(--primary-200);
+    font-size: 1.25rem;
+  }
+
+  .analysis-action-group {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .analysis-bulk-btn {
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--radius-lg);
+    font-weight: 600;
+    font-size: 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    border: 2px solid;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .analysis-bulk-btn-danger {
+    background: transparent;
+    border-color: var(--danger-200);
+    color: var(--danger-200);
+  }
+
+  .analysis-bulk-btn-danger:hover {
+    background: var(--danger-200);
+    color: white;
+  }
+
+  .analysis-bulk-btn-secondary {
+    background: transparent;
+    border-color: var(--border-light);
+    color: var(--text-200);
+  }
+
+  .analysis-bulk-btn-secondary:hover {
+    background: var(--bg-200);
+    border-color: var(--text-200);
+    color: var(--text-100);
+  }
+
+  /* レポートカードグリッド */
+  .analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .analysis-card {
+    background: var(--bg-100);
+    border: 2px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    padding: 1.75rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .analysis-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--gradient-primary);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+  }
+
+  .analysis-card:hover {
+    border-color: var(--primary-200);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  }
+
+  .analysis-card:hover::before {
+    transform: scaleX(1);
+  }
+
+  .analysis-card.selected {
+    border-color: var(--primary-200);
+    background: var(--primary-50);
+  }
+
+  .analysis-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+  }
+
+  .analysis-checkbox-wrapper {
+    display: flex;
+    align-items: center;
+  }
+
+  .analysis-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--primary-200);
+  }
+
+  .analysis-company-badge {
+    background: var(--primary-100);
+    color: var(--primary-200);
+    padding: 0.375rem 0.875rem;
+    border-radius: var(--radius-full);
+    font-size: 0.875rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .analysis-card-body {
+    margin-bottom: 1.5rem;
+  }
+
+  .analysis-card-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-100);
+    margin-bottom: 0.75rem;
+    line-height: 1.3;
+    word-wrap: break-word;
+  }
+
+  .analysis-card-desc {
+    font-size: 0.95rem;
+    color: var(--text-200);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+
+  .analysis-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-300);
+    font-size: 0.875rem;
+  }
+
+  .analysis-card-meta i {
+    font-size: 1rem;
+  }
+
+  .analysis-card-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-light);
+  }
+
+  .analysis-card-btn-primary {
+    padding: 0.875rem;
+    border-radius: var(--radius-lg);
+    background: var(--gradient-primary);
+    color: white;
+    font-weight: 600;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+
+  .analysis-card-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    color: white;
+  }
+
+  .analysis-card-actions {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+  }
+
+  .analysis-action-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: var(--bg-200);
+    color: var(--text-200);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+
+  .analysis-action-icon:hover {
+    background: var(--primary-100);
+    color: var(--primary-200);
+    transform: scale(1.1);
+  }
+
+  .analysis-action-icon.danger:hover {
+    background: var(--danger-100);
+    color: var(--danger-200);
+  }
+
+  .analysis-action-icon i {
+    font-size: 1.125rem;
+  }
+
+  /* 空の状態 */
+  .analysis-empty {
+    text-align: center;
+    padding: 5rem 2rem;
+    background: var(--bg-100);
+    border-radius: var(--radius-xl);
+    border: 2px dashed var(--border-light);
+  }
+
+  .analysis-empty-icon {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 2rem;
+    border-radius: var(--radius-full);
+    background: var(--primary-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+  }
+
+  .analysis-empty-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-100);
+    margin-bottom: 0.75rem;
+  }
+
+  .analysis-empty-desc {
+    font-size: 1.1rem;
+    color: var(--text-200);
+    max-width: 500px;
+    margin: 0 auto 2rem;
+    line-height: 1.6;
+  }
+
+  /* ダークモード */
+  .dark-mode .analysis-header-title,
+  [data-theme="dark"] .analysis-header-title {
+    background: linear-gradient(135deg, var(--dm-primary-200) 0%, var(--accent-200) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .dark-mode .analysis-header-subtitle,
+  [data-theme="dark"] .analysis-header-subtitle {
+    color: var(--dm-text-secondary);
+  }
+
+  .dark-mode .analysis-bulk-bar,
+  [data-theme="dark"] .analysis-bulk-bar {
+    background: var(--dm-card);
+    border-color: var(--dm-border);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  .dark-mode .analysis-selection-count,
+  [data-theme="dark"] .analysis-selection-count {
+    color: var(--dm-text);
+  }
+
+  .dark-mode .analysis-selection-count strong,
+  [data-theme="dark"] .analysis-selection-count strong {
+    color: var(--dm-primary-200);
+  }
+
+  .dark-mode .analysis-bulk-btn-secondary,
+  [data-theme="dark"] .analysis-bulk-btn-secondary {
+    border-color: var(--dm-border);
+    color: var(--dm-text-secondary);
+  }
+
+  .dark-mode .analysis-bulk-btn-secondary:hover,
+  [data-theme="dark"] .analysis-bulk-btn-secondary:hover {
+    background: var(--dm-bg-300);
+    border-color: var(--dm-text-secondary);
+    color: var(--dm-text);
+  }
+
+  .dark-mode .analysis-card,
+  [data-theme="dark"] .analysis-card {
+    background: var(--dm-card);
+    border-color: var(--dm-border);
+  }
+
+  .dark-mode .analysis-card:hover,
+  [data-theme="dark"] .analysis-card:hover {
+    border-color: var(--dm-primary-200);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  .dark-mode .analysis-card.selected,
+  [data-theme="dark"] .analysis-card.selected {
+    border-color: var(--dm-primary-200);
+    background: var(--dm-primary-bg);
+  }
+
+  .dark-mode .analysis-company-badge,
+  [data-theme="dark"] .analysis-company-badge {
+    background: var(--dm-primary-bg);
+    color: var(--dm-primary-text);
+  }
+
+  .dark-mode .analysis-card-title,
+  [data-theme="dark"] .analysis-card-title {
+    color: var(--dm-text);
+  }
+
+  .dark-mode .analysis-card-desc,
+  [data-theme="dark"] .analysis-card-desc {
+    color: var(--dm-text-secondary);
+  }
+
+  .dark-mode .analysis-card-meta,
+  [data-theme="dark"] .analysis-card-meta {
+    color: var(--dm-text-tertiary);
+  }
+
+  .dark-mode .analysis-card-footer,
+  [data-theme="dark"] .analysis-card-footer {
+    border-top-color: var(--dm-border);
+  }
+
+  .dark-mode .analysis-action-icon,
+  [data-theme="dark"] .analysis-action-icon {
+    background: var(--dm-bg-300);
+    color: var(--dm-text-secondary);
+  }
+
+  .dark-mode .analysis-action-icon:hover,
+  [data-theme="dark"] .analysis-action-icon:hover {
+    background: var(--dm-primary-bg);
+    color: var(--dm-primary-text);
+  }
+
+  .dark-mode .analysis-action-icon.danger:hover,
+  [data-theme="dark"] .analysis-action-icon.danger:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+  }
+
+  .dark-mode .analysis-empty,
+  [data-theme="dark"] .analysis-empty {
+    background: var(--dm-card);
+    border-color: var(--dm-border);
+  }
+
+  .dark-mode .analysis-empty-icon,
+  [data-theme="dark"] .analysis-empty-icon {
+    background: var(--dm-primary-bg);
+  }
+
+  .dark-mode .analysis-empty-title,
+  [data-theme="dark"] .analysis-empty-title {
+    color: var(--dm-text);
+  }
+
+  .dark-mode .analysis-empty-desc,
+  [data-theme="dark"] .analysis-empty-desc {
+    color: var(--dm-text-secondary);
+  }
+
+  /* レスポンシブ */
+  @media (max-width: 768px) {
+    .analysis-container {
+      padding: 1.5rem 1rem;
+    }
+
+    .analysis-header-title {
+      font-size: 2rem;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .analysis-header-subtitle {
+      font-size: 1rem;
+    }
+
+    .analysis-bulk-bar {
+      min-width: auto;
+      width: calc(100% - 2rem);
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1rem 1.5rem;
+    }
+
+    .analysis-action-group {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    .analysis-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .analysis-card {
+      padding: 1.25rem;
+    }
+
+    .analysis-card-title {
+      font-size: 1.25rem;
+    }
+
+    .analysis-action-icon {
+      width: 40px;
+      height: 40px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .analysis-header-title {
+      font-size: 1.75rem;
+    }
+
+    .analysis-card {
+      padding: 1rem;
+    }
+
+    .analysis-card-title {
+      font-size: 1.1rem;
+    }
+
+    .analysis-bulk-btn {
+      padding: 0.625rem 1rem;
+      font-size: 0.875rem;
+    }
+
+    .analysis-action-icon {
+      width: 36px;
+      height: 36px;
+    }
+
+    .analysis-action-icon i {
+      font-size: 1rem;
+    }
+  }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="at-container">
-    <!-- ページヘッダー -->
-    <div class="page-header page-header-with-actions mb-4">
-        <div class="page-header-content">
-            <h1 class="page-title">
-                <i class="bi bi-clipboard-data"></i>
-                <span>分析レポート一覧</span>
-            </h1>
-            <p class="page-subtitle">企業の財務指標を比較分析するレポートを管理できます</p>
-        </div>
-        <a href="{% url 'analysis_template:create' %}" class="btn btn-primary d-flex align-items-center gap-2">
-            <i class="bi bi-plus-circle"></i>
-            <span class="d-none d-sm-inline">新規レポート作成</span>
-            <span class="d-sm-none">新規作成</span>
-        </a>
+<div class="analysis-container">
+  <!-- ヘッダー -->
+  <div class="analysis-header">
+    <h1 class="analysis-header-title">
+      <i class="bi bi-clipboard-data"></i>
+      分析レポート一覧
+    </h1>
+    <p class="analysis-header-subtitle">
+      企業の財務指標を比較分析するレポートを管理できます
+    </p>
+    <div class="analysis-header-actions">
+      <a href="{% url 'analysis_template:create' %}" class="analysis-action-btn analysis-action-btn-primary">
+        <i class="bi bi-plus-circle"></i>
+        <span>新規レポート作成</span>
+      </a>
     </div>
+  </div>
 
-    {% if templates %}
-    <!-- 一括操作バー -->
-    <div class="at-bulk-bar" id="bulkActionBar">
-        <div class="at-bulk-bar-content">
-            <div class="at-selection-count">
-                選択中: <strong id="selectedCount">0</strong> 件
-            </div>
-            <div class="at-action-group">
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="bulkDelete()">
-                    <i class="bi bi-trash me-1"></i>まとめて削除
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearSelection()">
-                    <i class="bi bi-x-circle me-1"></i>選択解除
-                </button>
-            </div>
-        </div>
+  {% if templates %}
+  <!-- 一括操作バー -->
+  <div class="analysis-bulk-bar" id="bulkActionBar">
+    <div class="analysis-selection-count">
+      選択中: <strong id="selectedCount">0</strong> 件
     </div>
+    <div class="analysis-action-group">
+      <button type="button" class="analysis-bulk-btn analysis-bulk-btn-danger" onclick="bulkDelete()">
+        <i class="bi bi-trash"></i>
+        <span>まとめて削除</span>
+      </button>
+      <button type="button" class="analysis-bulk-btn analysis-bulk-btn-secondary" onclick="clearSelection()">
+        <i class="bi bi-x-circle"></i>
+        <span>選択解除</span>
+      </button>
+    </div>
+  </div>
 
-    <!-- レポート一覧 -->
-    <div class="at-company-grid">
-        {% for template in templates %}
-        <div class="at-template-card" data-template-id="{{ template.pk }}">
-            <!-- カードヘッダー -->
-            <div class="at-template-card-header">
-                <label class="d-flex align-items-center gap-2 mb-0" style="cursor: pointer;">
-                    <input type="checkbox" 
-                           class="at-checkbox template-checkbox" 
-                           value="{{ template.pk }}"
-                           onchange="updateSelection()">
-                </label>
-                <span class="at-company-badge">{{ template.company_count }}社</span>
-            </div>
-            
-            <!-- カードボディ -->
-            <div class="at-template-card-body">
-                <h5 class="at-template-title">{{ template.name }}</h5>
-                {% if template.description %}
-                <p class="at-template-desc">{{ template.description|truncatewords:15 }}</p>
-                {% else %}
-                <p class="at-template-desc at-text-muted" style="font-style: italic;">説明なし</p>
-                {% endif %}
-                <div class="at-template-meta mt-3">
-                    <i class="bi bi-clock"></i>
-                    <span>{{ template.updated_at|date:"Y/m/d H:i" }}</span>
-                </div>
-            </div>
-            
-            <!-- カードフッター -->
-            <div class="at-template-card-footer">
-                <a href="{% url 'analysis_template:detail' template.pk %}" 
-                   class="btn btn-primary btn-sm w-100 mb-2">
-                    <i class="bi bi-eye me-1"></i>レポート表示
-                </a>
-                <div class="d-flex gap-2">
-                    <a href="{% url 'analysis_template:update' template.pk %}" 
-                       class="at-btn-icon flex-fill" title="編集">
-                        <i class="bi bi-pencil"></i>
-                    </a>
-                    <button type="button" 
-                            class="at-btn-icon flex-fill"
-                            onclick="duplicateTemplate({{ template.pk }})"
-                            title="複製">
-                        <i class="bi bi-files"></i>
-                    </button>
-                    <a href="{% url 'analysis_template:export' template.pk %}" 
-                       class="at-btn-icon flex-fill" title="エクスポート">
-                        <i class="bi bi-download"></i>
-                    </a>
-                    <button type="button" 
-                            class="at-btn-icon danger flex-fill"
-                            onclick="confirmDelete({{ template.pk }}, '{{ template.name|escapejs }}')"
-                            title="削除">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
-            </div>
+  <!-- レポートカードグリッド -->
+  <div class="analysis-grid">
+    {% for template in templates %}
+    <div class="analysis-card" data-template-id="{{ template.pk }}">
+      <!-- カードヘッダー -->
+      <div class="analysis-card-header">
+        <div class="analysis-checkbox-wrapper">
+          <input type="checkbox"
+                 class="analysis-checkbox template-checkbox"
+                 value="{{ template.pk }}"
+                 onchange="updateSelection()"
+                 title="選択">
         </div>
-        {% endfor %}
-    </div>
-    {% else %}
-    <!-- 空の状態 -->
-    <div class="at-empty-state">
-        <div class="at-empty-icon">📊</div>
-        <h3 class="at-empty-title">レポートがありません</h3>
-        <p class="at-empty-desc">企業の財務指標を比較分析するレポートを作成してみましょう</p>
-        <a href="{% url 'analysis_template:create' %}" class="btn btn-primary btn-lg">
-            <i class="bi bi-plus-circle me-2"></i>最初のレポートを作成
+        <span class="analysis-company-badge">
+          <i class="bi bi-building"></i>
+          <span>{{ template.company_count }}社</span>
+        </span>
+      </div>
+
+      <!-- カードボディ -->
+      <div class="analysis-card-body">
+        <h3 class="analysis-card-title">{{ template.name }}</h3>
+        {% if template.description %}
+        <p class="analysis-card-desc">{{ template.description|truncatewords:15 }}</p>
+        {% else %}
+        <p class="analysis-card-desc" style="font-style: italic;">説明なし</p>
+        {% endif %}
+        <div class="analysis-card-meta">
+          <i class="bi bi-clock"></i>
+          <span>{{ template.updated_at|date:"Y/m/d H:i" }}</span>
+        </div>
+      </div>
+
+      <!-- カードフッター -->
+      <div class="analysis-card-footer">
+        <a href="{% url 'analysis_template:detail' template.pk %}"
+           class="analysis-card-btn-primary">
+          <i class="bi bi-eye-fill"></i>
+          <span>レポート表示</span>
         </a>
+        <div class="analysis-card-actions">
+          <a href="{% url 'analysis_template:update' template.pk %}"
+             class="analysis-action-icon"
+             title="編集">
+            <i class="bi bi-pencil-fill"></i>
+          </a>
+          <button type="button"
+                  class="analysis-action-icon"
+                  onclick="duplicateTemplate({{ template.pk }})"
+                  title="複製">
+            <i class="bi bi-files"></i>
+          </button>
+          <a href="{% url 'analysis_template:export' template.pk %}"
+             class="analysis-action-icon"
+             title="エクスポート">
+            <i class="bi bi-download"></i>
+          </a>
+          <button type="button"
+                  class="analysis-action-icon danger"
+                  onclick="confirmDelete({{ template.pk }}, '{{ template.name|escapejs }}')"
+                  title="削除">
+            <i class="bi bi-trash-fill"></i>
+          </button>
+        </div>
+      </div>
     </div>
-    {% endif %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <!-- 空の状態 -->
+  <div class="analysis-empty">
+    <div class="analysis-empty-icon">
+      <i class="bi bi-clipboard-data"></i>
+    </div>
+    <h2 class="analysis-empty-title">レポートがありません</h2>
+    <p class="analysis-empty-desc">
+      企業の財務指標を比較分析するレポートを作成してみましょう
+    </p>
+    <a href="{% url 'analysis_template:create' %}" class="analysis-action-btn analysis-action-btn-primary">
+      <i class="bi bi-plus-circle"></i>
+      <span>最初のレポートを作成</span>
+    </a>
+  </div>
+  {% endif %}
 </div>
 
 <!-- 削除確認用フォーム -->
@@ -132,19 +705,19 @@ function updateSelection() {
     document.querySelectorAll('.template-checkbox:checked').forEach(cb => {
         selectedTemplates.add(parseInt(cb.value));
     });
-    
+
     const count = selectedTemplates.size;
     document.getElementById('selectedCount').textContent = count;
-    
+
     const bar = document.getElementById('bulkActionBar');
     if (count > 0) {
         bar.classList.add('show');
     } else {
         bar.classList.remove('show');
     }
-    
+
     // 選択中のカードをハイライト
-    document.querySelectorAll('.at-template-card').forEach(card => {
+    document.querySelectorAll('.analysis-card').forEach(card => {
         const checkbox = card.querySelector('.template-checkbox');
         if (checkbox?.checked) {
             card.classList.add('selected');

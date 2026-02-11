@@ -359,15 +359,14 @@ def metrics_input(request, pk):
             }
     
     if request.method == 'POST':
-        fiscal_year = request.POST.get('fiscal_year', '')
         saved_count = 0
-        
+
         with transaction.atomic():
             for company in companies:
                 for metric in MetricDefinition.objects.filter(is_active=True):
                     field_name = f'metric_{company.id}_{metric.id}'
                     value = request.POST.get(field_name)
-                    
+
                     if value and value.strip():
                         try:
                             value_decimal = Decimal(value)
@@ -375,13 +374,15 @@ def metrics_input(request, pk):
                                 template=template,
                                 company=company,
                                 metric_definition=metric,
-                                fiscal_year=fiscal_year,
-                                defaults={'value': value_decimal}
+                                defaults={
+                                    'value': value_decimal,
+                                    'fiscal_year': ''  # 会計年度は空文字列で統一
+                                }
                             )
                             saved_count += 1
                         except (ValueError, Decimal.InvalidOperation):
                             pass
-        
+
         if saved_count > 0:
             messages.success(request, f'{saved_count}件の指標を保存しました')
             return redirect('analysis_template:detail', pk=template.pk)
@@ -390,31 +391,26 @@ def metrics_input(request, pk):
     
     # 既存データを取得
     existing_data = {}
-    latest_fiscal_year = None
-    
+
     for company in companies:
         company_metrics = TemplateMetrics.objects.filter(
             template=template,
             company=company
         ).select_related('metric_definition')
-        
-        if company_metrics.exists() and not latest_fiscal_year:
-            latest_fiscal_year = company_metrics.first().fiscal_year
-        
+
         for tm in company_metrics:
             key = f'metric_{company.id}_{tm.metric_definition.id}'
             existing_data[key] = str(tm.value)
-    
+
     context = {
         'template': template,
         'companies': companies,
         'metric_groups': metric_groups,
-        'existing_data': existing_data,
-        'latest_fiscal_year': latest_fiscal_year or '',
+        'existing_data': json.dumps(existing_data),  # JSONに変換
         'form_actions': [
             {
                 'type': 'back',
-                'url': reverse_lazy('analysis_template:list'),
+                'url': reverse('analysis_template:company_select', kwargs={'pk': template.pk}),
                 'icon': 'bi-arrow-left',
                 'label': '戻る'
             }
@@ -575,22 +571,23 @@ def metrics_edit(request, pk):
         form = BulkMetricsForm(request.POST, template=template)
         if form.is_valid():
             company = form.cleaned_data['company']
-            fiscal_year = form.cleaned_data.get('fiscal_year', '')
-            
+
             # 各指標の値を保存
             for field_name, value in form.cleaned_data.items():
                 if field_name.startswith('metric_') and value is not None:
                     metric_id = field_name.replace('metric_', '')
                     metric_def = MetricDefinition.objects.get(id=metric_id)
-                    
+
                     TemplateMetrics.objects.update_or_create(
                         template=template,
                         company=company,
                         metric_definition=metric_def,
-                        fiscal_year=fiscal_year,
-                        defaults={'value': value}
+                        defaults={
+                            'value': value,
+                            'fiscal_year': ''  # 会計年度は空
+                        }
                     )
-            
+
             messages.success(request, f'{company.name}の指標を保存しました。')
             return redirect('analysis_template:metrics_edit', pk=template.pk)
     else:
@@ -863,29 +860,28 @@ def metrics_auto_fetch(request, pk):
     try:
         data = json.loads(request.body)
         company_codes = data.get('company_codes', [])
-        fiscal_year = data.get('fiscal_year', '')
-        overwrite = data.get('overwrite', False)  # 既存データを上書きするか
-        
+        overwrite = data.get('overwrite', True)  # デフォルトで上書き
+
         if not company_codes:
             return JsonResponse({
                 'success': False,
                 'error': '企業が選択されていません'
             }, status=400)
-        
+
         success_count = 0
         error_count = 0
         skipped_count = 0
         results = []
-        
+
         with transaction.atomic():
             for code in company_codes:
                 try:
                     # 企業を取得
                     company = CompanyMaster.objects.get(code=code)
-                    
-                    # APIからデータ取得
-                    api_data = YahooFinanceService.fetch_company_data(code, fiscal_year)
-                    
+
+                    # APIからデータ取得（会計年度は不要）
+                    api_data = YahooFinanceService.fetch_company_data(code, '')
+
                     if not api_data:
                         error_count += 1
                         results.append({
@@ -895,10 +891,10 @@ def metrics_auto_fetch(request, pk):
                             'message': 'APIからデータを取得できませんでした'
                         })
                         continue
-                    
+
                     saved_metrics = []
-                    saved_values = {}  # ⭐ 保存した値を格納
-                    
+                    saved_values = {}
+
                     # 各指標を保存
                     for metric_name, value in api_data.items():
                         try:
@@ -907,41 +903,42 @@ def metrics_auto_fetch(request, pk):
                                 name=metric_name,
                                 is_active=True
                             )
-                            
-                            # 既存データをチェック
+
+                            # 既存データをチェック（会計年度なし）
                             existing = TemplateMetrics.objects.filter(
                                 template=template,
                                 company=company,
-                                metric_definition=metric_def,
-                                fiscal_year=fiscal_year
+                                metric_definition=metric_def
                             ).first()
-                            
+
                             if existing and not overwrite:
                                 skipped_count += 1
                                 continue
-                            
-                            # データを保存
+
+                            # データを保存（会計年度は空）
                             TemplateMetrics.objects.update_or_create(
                                 template=template,
                                 company=company,
                                 metric_definition=metric_def,
-                                fiscal_year=fiscal_year,
-                                defaults={'value': value}
+                                defaults={
+                                    'value': value,
+                                    'fiscal_year': ''
+                                }
                             )
-                            
+
                             saved_metrics.append(metric_def.display_name)
-                            # ⭐ フィールド名と値をマッピング
+                            # フィールド名と値をマッピング
                             field_name = f'metric_{company.id}_{metric_def.id}'
                             saved_values[metric_name] = {
                                 'field_name': field_name,
                                 'value': str(value),
                                 'metric_id': metric_def.id
                             }
-                            
+
                         except MetricDefinition.DoesNotExist:
                             logger.warning(f"Metric definition not found: {metric_name}")
                             continue
-                    
+
                     if saved_metrics:
                         success_count += 1
                         results.append({
@@ -950,7 +947,7 @@ def metrics_auto_fetch(request, pk):
                             'status': 'success',
                             'metrics_count': len(saved_metrics),
                             'metrics': saved_metrics,
-                            'values': saved_values  # ⭐ 値を含める
+                            'values': saved_values
                         })
                     else:
                         skipped_count += 1
@@ -960,7 +957,7 @@ def metrics_auto_fetch(request, pk):
                             'status': 'skipped',
                             'message': '保存する指標がありませんでした'
                         })
-                
+
                 except CompanyMaster.DoesNotExist:
                     error_count += 1
                     results.append({

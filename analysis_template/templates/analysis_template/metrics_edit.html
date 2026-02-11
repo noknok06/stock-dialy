@@ -30,20 +30,16 @@
                     {% csrf_token %}
                     
                     <div class="row g-3 mb-4">
-                        <div class="col-12 col-md-8">
+                        <div class="col-12">
                             <label for="{{ form.company.id_for_label }}" class="at-form-label">
                                 企業 <span class="text-danger">*</span>
                             </label>
                             {{ form.company }}
                         </div>
-                        <div class="col-12 col-md-4">
-                            <label for="{{ form.fiscal_year.id_for_label }}" class="at-form-label">会計年度</label>
-                            {{ form.fiscal_year }}
-                        </div>
                     </div>
 
                     {% for field in form %}
-                        {% if field.name != 'company' and field.name != 'fiscal_year' %}
+                        {% if field.name != 'company' %}
                         <div class="at-form-group">
                             <label for="{{ field.id_for_label }}" class="at-form-label">{{ field.label }}</label>
                             {{ field }}
@@ -79,7 +75,6 @@
                             <tr>
                                 <th>企業</th>
                                 <th>指標数</th>
-                                <th>会計年度</th>
                                 <th>最終更新</th>
                                 <th style="width: 50px;"></th>
                             </tr>
@@ -93,9 +88,6 @@
                                 </td>
                                 <td><span class="badge bg-primary">{{ data.metrics|length }}件</span></td>
                                 <td>
-                                    {% if data.first_metric %}{{ data.first_metric.fiscal_year|default:"-" }}{% else %}-{% endif %}
-                                </td>
-                                <td>
                                     {% if data.first_metric %}{{ data.first_metric.updated_at|date:"Y/m/d H:i" }}{% else %}-{% endif %}
                                 </td>
                                 <td>
@@ -106,7 +98,7 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="5" class="text-center at-text-muted py-4">指標データがありません</td>
+                                <td colspan="4" class="text-center at-text-muted py-4">指標データがありません</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -236,11 +228,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function fetchFromApi(companyCode, companyName) {
-        const fiscalYear = document.getElementById('id_fiscal_year')?.value || '';
-        
         fetchApiButton.disabled = true;
         fetchApiButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>取得中...';
-        
+
         fetch(`/analysis_template/${templateId}/metrics/auto-fetch/`, {
             method: 'POST',
             headers: {
@@ -249,7 +239,6 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify({
                 company_codes: [companyCode],
-                fiscal_year: fiscalYear,
                 overwrite: true
             })
         })

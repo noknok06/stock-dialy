@@ -5,134 +5,875 @@
 
 {% block head %}
 <link rel="stylesheet" href="{% static 'css/2-layouts/analysis-template.css' %}?v={{ STATIC_VERSION }}">
-{% endblock %}
-
-{% block content %}
-<div class="at-container">
-    <!-- ヘッダー -->
-    <div class="page-header mb-4">
-        <h1 class="page-title">
-            <i class="bi bi-{% if action == 'create' %}plus-circle{% else %}pencil{% endif %}"></i>
-            <span>{% if action == 'create' %}新規レポート作成{% else %}レポート編集{% endif %}</span>
-        </h1>
-        <p class="page-subtitle">{% if action == 'create' %}企業分析レポートの基本情報を入力{% else %}レポートの基本情報を編集{% endif %}</p>
-    </div>
-
-    <div class="row g-4">
-        <div class="col-lg-8">
-            <div class="at-card">
-                <form method="post" novalidate>
-                    {% csrf_token %}
-                    
-                    <div class="at-form-section">
-                        <div class="at-form-section-title">
-                            <i class="bi bi-info-circle me-1"></i>基本情報
-                        </div>
-                        
-                        <div class="at-form-group">
-                            <label for="{{ form.name.id_for_label }}" class="at-form-label">
-                                テンプレート名 <span class="text-danger">*</span>
-                            </label>
-                            {{ form.name }}
-                            {% if form.name.errors %}
-                            <div class="text-danger small mt-1">{{ form.name.errors }}</div>
-                            {% endif %}
-                            <div class="small at-text-muted mt-1">レポートを識別しやすい名前を付けてください</div>
-                        </div>
-                        
-                        <div class="at-form-group">
-                            <label for="{{ form.description.id_for_label }}" class="at-form-label">説明</label>
-                            {{ form.description }}
-                            {% if form.description.errors %}
-                            <div class="text-danger small mt-1">{{ form.description.errors }}</div>
-                            {% endif %}
-                            <div class="small at-text-muted mt-1">レポートの目的や内容について簡単な説明（任意）</div>
-                        </div>
-                    </div>
-
-                    <div class="at-action-group">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-circle me-1"></i>
-                            {% if action == 'create' %}作成して企業選択へ{% else %}更新{% endif %}
-                        </button>
-                        <a href="{% if action == 'create' %}{% url 'analysis_template:list' %}{% else %}{% url 'analysis_template:detail' template.pk %}{% endif %}" 
-                           class="btn btn-secondary">
-                            <i class="bi bi-x-circle me-1"></i>キャンセル
-                        </a>
-                    </div>
-                </form>
-            </div>
-        </div>
-        
-        <div class="col-lg-4">
-            <div class="at-card">
-                <h6 class="at-card-title">
-                    <i class="bi bi-lightbulb text-warning me-2"></i>
-                    {% if action == 'create' %}作成の流れ{% else %}ヒント{% endif %}
-                </h6>
-                {% if action == 'create' %}
-                <ol class="small mb-0 ps-3">
-                    <li class="mb-2"><strong>基本情報入力</strong><br>レポート名と説明を入力</li>
-                    <li class="mb-2"><strong>企業選択</strong><br>分析対象の企業を選択</li>
-                    <li class="mb-2"><strong>指標入力</strong><br>各企業の財務指標を入力（API自動取得可）</li>
-                    <li class="mb-2"><strong>レポート表示</strong><br>比較分析レポートを確認</li>
-                </ol>
-                {% else %}
-                <ul class="small mb-0 ps-3">
-                    <li class="mb-2">テンプレート名は後から変更できます</li>
-                    <li class="mb-2">説明は任意項目です</li>
-                    <li class="mb-2">企業や指標は別画面で管理します</li>
-                </ul>
-                {% endif %}
-            </div>
-
-            {% if action == 'update' %}
-            <div class="at-card mt-3">
-                <h6 class="at-card-title">
-                    <i class="bi bi-tools me-2"></i>その他の操作
-                </h6>
-                <div class="d-grid gap-2">
-                    <a href="{% url 'analysis_template:company_select' template.pk %}" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-building me-1"></i>企業選択
-                    </a>
-                    <a href="{% url 'analysis_template:metrics_input' template.pk %}" class="btn btn-outline-success btn-sm">
-                        <i class="bi bi-bar-chart me-1"></i>指標入力
-                    </a>
-                    <a href="{% url 'analysis_template:metrics_edit' template.pk %}" class="btn btn-outline-info btn-sm">
-                        <i class="bi bi-pencil me-1"></i>指標編集
-                    </a>
-                </div>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-</div>
-
-{% include 'speed_dial.html' with actions=form_actions %}
 <style>
-/* フォームコントロールのダークモード対応 */
+/* ========================================
+   Form Page Specific Styles
+   ======================================== */
+.form-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.form-header {
+  margin-bottom: 2.5rem;
+  text-align: center;
+}
+
+.form-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1rem;
+  background: var(--gradient-primary);
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 2rem;
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+}
+
+.form-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--at-text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.form-subtitle {
+  font-size: 1rem;
+  color: var(--at-text-secondary);
+  font-weight: 400;
+}
+
+.form-main {
+  background: var(--at-bg-card);
+  border: 2px solid var(--at-border);
+  border-radius: var(--radius-xl);
+  padding: 2.5rem;
+  box-shadow: var(--at-shadow-sm);
+}
+
+.form-section {
+  margin-bottom: 2.5rem;
+}
+
+.form-section:last-child {
+  margin-bottom: 0;
+}
+
+.form-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--at-text-primary);
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--at-border);
+}
+
+.form-section-title i {
+  color: var(--at-primary);
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  font-weight: 600;
+  color: var(--at-text-primary);
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.form-label .required {
+  color: var(--at-danger);
+  margin-left: 0.25rem;
+}
+
+.form-control,
+.form-select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--at-border);
+  border-radius: var(--radius-lg);
+  font-size: 1rem;
+  background: var(--at-bg-card);
+  color: var(--at-text-primary);
+  transition: all 0.2s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--at-primary);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.form-control::placeholder {
+  color: var(--at-text-muted);
+}
+
+textarea.form-control {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.form-hint {
+  font-size: 0.875rem;
+  color: var(--at-text-secondary);
+  margin-top: 0.5rem;
+}
+
+.form-error {
+  font-size: 0.875rem;
+  color: var(--at-danger);
+  margin-top: 0.5rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--at-border);
+}
+
+.form-btn {
+  padding: 0.875rem 2rem;
+  border: none;
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+
+.form-btn-primary {
+  background: var(--gradient-primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.form-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+  color: white;
+}
+
+.form-btn-secondary {
+  background: var(--bg-200);
+  color: var(--text-200);
+  border: 2px solid var(--border-light);
+}
+
+.form-btn-secondary:hover {
+  background: var(--bg-300);
+  color: var(--text-100);
+  transform: translateY(-2px);
+}
+
+/* Sidebar */
+.form-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.info-card {
+  background: var(--at-bg-card);
+  border: 2px solid var(--at-border);
+  border-radius: var(--radius-xl);
+  padding: 1.75rem;
+  box-shadow: var(--at-shadow-sm);
+}
+
+.info-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--at-text-primary);
+  margin-bottom: 1.25rem;
+}
+
+.info-card-title i {
+  font-size: 1.25rem;
+  color: var(--at-primary);
+}
+
+.info-card ol,
+.info-card ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.info-card li {
+  font-size: 0.9rem;
+  color: var(--at-text-secondary);
+  margin-bottom: 0.875rem;
+  line-height: 1.6;
+}
+
+.info-card li:last-child {
+  margin-bottom: 0;
+}
+
+.info-card li strong {
+  color: var(--at-text-primary);
+  font-weight: 600;
+}
+
+.action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.action-btn {
+  padding: 0.75rem 1.25rem;
+  border: 2px solid var(--at-border);
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--at-text-primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  text-align: left;
+}
+
+.action-btn:hover {
+  background: var(--at-bg-secondary);
+  border-color: var(--at-primary);
+  color: var(--at-primary);
+  transform: translateX(4px);
+}
+
+.action-btn i {
+  font-size: 1.1rem;
+  color: var(--at-primary);
+}
+
+/* Dark Mode */
 .dark-mode .form-control,
 .dark-mode .form-select,
 [data-theme="dark"] .form-control,
 [data-theme="dark"] .form-select {
-    background-color: var(--at-bg-card-hover, rgba(71, 85, 105, 0.3));
-    border-color: var(--at-border, #334155);
-    color: var(--at-text-primary, #f1f5f9);
+  background-color: var(--at-bg-card);
+  border-color: var(--at-border);
+  color: var(--at-text-primary);
 }
 
 .dark-mode .form-control:focus,
 .dark-mode .form-select:focus,
 [data-theme="dark"] .form-control:focus,
 [data-theme="dark"] .form-select:focus {
-    background-color: var(--at-bg-card-hover, rgba(71, 85, 105, 0.4));
-    border-color: var(--at-primary, #3b82f6);
-    color: var(--at-text-primary, #f1f5f9);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background-color: var(--at-bg-card);
+  border-color: var(--at-primary);
+  color: var(--at-text-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .dark-mode .form-control::placeholder,
 [data-theme="dark"] .form-control::placeholder {
-    color: var(--at-text-muted, #64748b);
+  color: var(--at-text-muted);
+}
+
+/* ========== Progress Steps ========== */
+.progress-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 800px;
+  margin: 0 auto 3rem;
+  padding: 0 1rem;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 0.4;
+  transition: opacity 0.3s;
+}
+
+.step.active {
+  opacity: 1;
+}
+
+.step-number {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--at-bg-secondary);
+  border: 3px solid var(--at-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--at-text-muted);
+  transition: all 0.3s;
+}
+
+.step.active .step-number {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border-color: var(--at-primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.step.completed .step-number {
+  background: var(--at-success);
+  border-color: var(--at-success);
+  color: white;
+}
+
+.step-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--at-text-muted);
+  white-space: nowrap;
+}
+
+.step.active .step-label {
+  color: var(--at-text-primary);
+}
+
+.step-line {
+  flex: 1;
+  height: 3px;
+  background: var(--at-border);
+  margin: 0 0.5rem;
+  position: relative;
+  top: -12px;
+}
+
+/* ========== Quick Examples ========== */
+.quick-examples {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(139, 92, 246, 0.05));
+  border: 2px dashed var(--at-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+}
+
+.quick-examples-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--at-text-primary);
+  margin-bottom: 1rem;
+}
+
+.examples-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+.example-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--at-bg-card);
+  border: 2px solid var(--at-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--at-text-secondary);
+}
+
+.example-btn:hover {
+  border-color: var(--at-primary);
+  background: rgba(59, 130, 246, 0.05);
+  transform: translateY(-2px);
+  color: var(--at-primary);
+}
+
+.example-btn i {
+  font-size: 1.5rem;
+  color: var(--at-primary);
+}
+
+/* ========== Steps Preview ========== */
+.steps-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.preview-step {
+  display: flex;
+  gap: 0.875rem;
+  align-items: flex-start;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+
+.preview-step.active {
+  opacity: 1;
+}
+
+.preview-step-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-step-icon i {
+  font-size: 1.75rem;
+  color: var(--at-text-muted);
+}
+
+.preview-step.active .preview-step-icon i {
+  color: var(--at-primary);
+}
+
+.preview-step-content {
+  flex: 1;
+}
+
+.preview-step-title {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--at-text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.preview-step-desc {
+  font-size: 0.8125rem;
+  color: var(--at-text-secondary);
+  line-height: 1.4;
+}
+
+/* ========== Use Cases ========== */
+.use-cases {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.use-case-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 0.9rem;
+  color: var(--at-text-secondary);
+  line-height: 1.5;
+}
+
+.use-case-item i {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .form-container {
+    padding: 1.5rem 1rem;
+  }
+
+  .form-main {
+    padding: 1.5rem;
+  }
+
+  .form-header {
+    margin-bottom: 2rem;
+  }
+
+  .form-icon {
+    width: 56px;
+    height: 56px;
+    font-size: 1.75rem;
+  }
+
+  .form-title {
+    font-size: 1.5rem;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .progress-steps {
+    margin-bottom: 2rem;
+  }
+
+  .step-label {
+    font-size: 0.75rem;
+  }
+
+  .step-number {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+
+  .step-line {
+    margin: 0 0.25rem;
+  }
+
+  .examples-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ========== Dark Mode Support ========== */
+.dark-mode .form-main,
+.dark-mode .info-card,
+[data-theme="dark"] .form-main,
+[data-theme="dark"] .info-card {
+  background: var(--at-bg-card);
+  border-color: var(--at-border);
+}
+
+.dark-mode .form-icon,
+[data-theme="dark"] .form-icon {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+}
+
+.dark-mode .form-label,
+.dark-mode .info-title,
+.dark-mode .step-title,
+[data-theme="dark"] .form-label,
+[data-theme="dark"] .info-title,
+[data-theme="dark"] .step-title {
+  color: var(--at-text-primary);
+}
+
+.dark-mode .form-text,
+.dark-mode .step-desc,
+[data-theme="dark"] .form-text,
+[data-theme="dark"] .step-desc {
+  color: var(--at-text-secondary);
+}
+
+.dark-mode .example-btn,
+[data-theme="dark"] .example-btn {
+  background: var(--at-bg-secondary);
+  border-color: var(--at-border);
+  color: var(--at-text-primary);
+}
+
+.dark-mode .example-btn:hover,
+[data-theme="dark"] .example-btn:hover {
+  background: var(--at-bg-card-hover);
+  border-color: var(--at-primary);
+  color: var(--at-primary);
+}
+
+.dark-mode .quick-examples,
+[data-theme="dark"] .quick-examples {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+  border-color: var(--at-border);
+}
+
+.dark-mode .step-number,
+[data-theme="dark"] .step-number {
+  background: var(--at-bg-secondary);
+  border-color: var(--at-border);
+  color: var(--at-text-muted);
+}
+
+.dark-mode .step.active .step-number,
+[data-theme="dark"] .step.active .step-number {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  color: white;
+}
+
+.dark-mode .step.completed .step-number,
+[data-theme="dark"] .step.completed .step-number {
+  background: var(--at-success);
+  border-color: var(--at-success);
+  color: white;
 }
 </style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+  {% if action == 'create' %}
+  <!-- プログレスステップ -->
+  <div class="progress-steps mb-4">
+    <div class="step active">
+      <div class="step-number">1</div>
+      <div class="step-label">基本情報</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step">
+      <div class="step-number">2</div>
+      <div class="step-label">企業選択</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step">
+      <div class="step-number">3</div>
+      <div class="step-label">指標入力</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step">
+      <div class="step-number">4</div>
+      <div class="step-label">完成</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ヘッダー -->
+  <div class="form-header">
+    <div class="form-icon">
+      <i class="bi bi-{% if action == 'create' %}file-earmark-plus{% else %}pencil-square{% endif %}"></i>
+    </div>
+    <h1 class="form-title">{% if action == 'create' %}新規レポート作成{% else %}レポート編集{% endif %}</h1>
+    <p class="form-subtitle">{% if action == 'create' %}まずはレポートの名前と目的を設定しましょう{% else %}レポートの基本情報を編集{% endif %}</p>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="form-main">
+        <form method="post" novalidate id="templateForm">
+          {% csrf_token %}
+
+          <div class="form-section">
+            <div class="form-section-title">
+              <i class="bi bi-pen"></i>
+              <span>基本情報の入力</span>
+            </div>
+
+            <div class="form-group">
+              <label for="{{ form.name.id_for_label }}" class="form-label">
+                レポート名<span class="required">*</span>
+              </label>
+              {{ form.name }}
+              {% if form.name.errors %}
+              <div class="form-error">{{ form.name.errors }}</div>
+              {% endif %}
+              <div class="form-hint">
+                <i class="bi bi-info-circle me-1"></i>
+                例: 「半導体業界比較」「配当重視銘柄」など
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="{{ form.description.id_for_label }}" class="form-label">
+                説明<span class="text-muted ms-1">(任意)</span>
+              </label>
+              {{ form.description }}
+              {% if form.description.errors %}
+              <div class="form-error">{{ form.description.errors }}</div>
+              {% endif %}
+              <div class="form-hint">
+                <i class="bi bi-info-circle me-1"></i>
+                このレポートの目的やメモを記入できます
+              </div>
+            </div>
+
+            {% if action == 'create' %}
+            <div class="quick-examples mt-4">
+              <div class="quick-examples-title">
+                <i class="bi bi-stars text-primary"></i>
+                クイック入力例
+              </div>
+              <div class="examples-grid">
+                <button type="button" class="example-btn" onclick="fillExample('成長株分析', '売上・利益の成長率が高い銘柄を比較')">
+                  <i class="bi bi-graph-up"></i>
+                  <span>成長株分析</span>
+                </button>
+                <button type="button" class="example-btn" onclick="fillExample('配当重視銘柄', '配当利回りと配当性向を重視した銘柄比較')">
+                  <i class="bi bi-cash-coin"></i>
+                  <span>配当重視</span>
+                </button>
+                <button type="button" class="example-btn" onclick="fillExample('財務健全性比較', '自己資本比率や流動比率で安全性を比較')">
+                  <i class="bi bi-shield-check"></i>
+                  <span>財務健全性</span>
+                </button>
+                <button type="button" class="example-btn" onclick="fillExample('割安株発掘', 'PER・PBRで割安な銘柄を発掘')">
+                  <i class="bi bi-gem"></i>
+                  <span>割安株</span>
+                </button>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="form-btn form-btn-primary">
+              <i class="bi bi-arrow-right-circle"></i>
+              <span>{% if action == 'create' %}次へ: 企業を選択{% else %}更新して戻る{% endif %}</span>
+            </button>
+            <a href="{% if action == 'create' %}{% url 'analysis_template:list' %}{% else %}{% url 'analysis_template:detail' template.pk %}{% endif %}"
+               class="form-btn form-btn-secondary">
+              <i class="bi bi-x-circle"></i>
+              <span>キャンセル</span>
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="form-sidebar">
+        <div class="info-card">
+          <h6 class="info-card-title">
+            <i class="bi bi-lightbulb text-warning"></i>
+            <span>{% if action == 'create' %}レポート作成の流れ{% else %}ヒント{% endif %}</span>
+          </h6>
+          {% if action == 'create' %}
+          <div class="steps-preview">
+            <div class="preview-step active">
+              <div class="preview-step-icon">
+                <i class="bi bi-1-circle-fill"></i>
+              </div>
+              <div class="preview-step-content">
+                <div class="preview-step-title">基本情報入力</div>
+                <div class="preview-step-desc">レポート名と目的を設定</div>
+              </div>
+            </div>
+            <div class="preview-step">
+              <div class="preview-step-icon">
+                <i class="bi bi-2-circle"></i>
+              </div>
+              <div class="preview-step-content">
+                <div class="preview-step-title">企業選択</div>
+                <div class="preview-step-desc">比較する企業を検索して追加</div>
+              </div>
+            </div>
+            <div class="preview-step">
+              <div class="preview-step-icon">
+                <i class="bi bi-3-circle"></i>
+              </div>
+              <div class="preview-step-content">
+                <div class="preview-step-title">指標入力</div>
+                <div class="preview-step-desc">財務データを入力またはAPI取得</div>
+              </div>
+            </div>
+            <div class="preview-step">
+              <div class="preview-step-icon">
+                <i class="bi bi-check-circle"></i>
+              </div>
+              <div class="preview-step-content">
+                <div class="preview-step-title">レポート完成</div>
+                <div class="preview-step-desc">比較分析結果を確認</div>
+              </div>
+            </div>
+          </div>
+          {% else %}
+          <ul>
+            <li>レポート名はいつでも変更可能</li>
+            <li>説明は後から追加・編集できます</li>
+            <li>企業や指標は別メニューで管理</li>
+          </ul>
+          {% endif %}
+        </div>
+
+        {% if action == 'create' %}
+        <div class="info-card">
+          <h6 class="info-card-title">
+            <i class="bi bi-question-circle text-info"></i>
+            <span>よくある使い方</span>
+          </h6>
+          <div class="use-cases">
+            <div class="use-case-item">
+              <i class="bi bi-check-circle-fill text-success"></i>
+              <span>同業他社との業績比較</span>
+            </div>
+            <div class="use-case-item">
+              <i class="bi bi-check-circle-fill text-success"></i>
+              <span>ポートフォリオの分析</span>
+            </div>
+            <div class="use-case-item">
+              <i class="bi bi-check-circle-fill text-success"></i>
+              <span>投資候補の絞り込み</span>
+            </div>
+            <div class="use-case-item">
+              <i class="bi bi-check-circle-fill text-success"></i>
+              <span>セクターローテーション</span>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if action == 'update' %}
+        <div class="info-card">
+          <h6 class="info-card-title">
+            <i class="bi bi-tools"></i>
+            <span>その他の操作</span>
+          </h6>
+          <div class="action-list">
+            <a href="{% url 'analysis_template:company_select' template.pk %}" class="action-btn">
+              <i class="bi bi-building"></i>
+              <span>企業選択</span>
+            </a>
+            <a href="{% url 'analysis_template:metrics_input' template.pk %}" class="action-btn">
+              <i class="bi bi-bar-chart"></i>
+              <span>指標入力</span>
+            </a>
+            <a href="{% url 'analysis_template:metrics_edit' template.pk %}" class="action-btn">
+              <i class="bi bi-pencil"></i>
+              <span>指標編集</span>
+            </a>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% include 'speed_dial.html' with actions=form_actions %}
+<script>
+function fillExample(name, description) {
+    document.getElementById('{{ form.name.id_for_label }}').value = name;
+    document.getElementById('{{ form.description.id_for_label }}').value = description;
+
+    // フォーカスアニメーション
+    const nameInput = document.getElementById('{{ form.name.id_for_label }}');
+    nameInput.focus();
+    nameInput.style.borderColor = 'var(--at-primary, #3b82f6)';
+    nameInput.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.1)';
+
+    setTimeout(() => {
+        nameInput.style.borderColor = '';
+        nameInput.style.boxShadow = '';
+    }, 1500);
+}
+
+// フォームバリデーション
+document.getElementById('templateForm')?.addEventListener('submit', function(e) {
+    const nameInput = document.getElementById('{{ form.name.id_for_label }}');
+    if (!nameInput.value.trim()) {
+        e.preventDefault();
+        nameInput.focus();
+        nameInput.style.borderColor = 'var(--danger-200, #ef4444)';
+        alert('レポート名を入力してください');
+    }
+});
+</script>
 {% endblock %}

@@ -6,83 +6,396 @@
 {% block head %}
 <link rel="stylesheet" href="{% static 'css/2-layouts/analysis-template.css' %}?v={{ STATIC_VERSION }}">
 <style>
-/* モバイル用追加スタイル */
-@media (max-width: 767px) {
-    .company-table-mobile {
-        display: block;
-    }
-    
-    .company-table-mobile thead {
-        display: none;
-    }
-    
-    .company-table-mobile tbody,
-    .company-table-mobile tr {
-        display: block;
-    }
-    
-    .company-table-mobile tr {
-        background: var(--at-bg-card, #ffffff);
-        border: 1px solid var(--at-border, #e2e8f0);
-        border-radius: 12px;
-        padding: 1rem;
-        margin-bottom: 0.75rem;
-        position: relative;
-    }
-    
-    .company-table-mobile tr.table-active {
-        border-color: var(--at-primary, #3b82f6);
-        background: rgba(59, 130, 246, 0.05);
-    }
-    
-    .company-table-mobile td {
-        display: block;
-        padding: 0.5rem 0;
-        border: none;
-    }
-    
-    .company-table-mobile td:first-child {
-        position: absolute;
-        top: 1rem;
-        right: 1rem;
-    }
-    
-    .company-table-mobile .fw-medium {
-        font-size: 1.125rem;
-        display: inline-block;
-        margin-right: 0.5rem;
-    }
-    
-    .company-checkbox-cell {
-        padding: 0 !important;
-    }
+/* ========== Company Card Style ========== */
+.company-card {
+    background: var(--at-bg-card, #ffffff);
+    border: 2px solid var(--at-border, #e2e8f0);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
 }
 
-.sticky-actions {
-    position: sticky;
+.company-card:hover {
+    border-color: var(--at-primary, #3b82f6);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    transform: translateY(-2px);
+}
+
+.company-card.selected {
+    border-color: var(--at-primary, #3b82f6);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.08));
+}
+
+.company-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.company-checkbox-wrapper {
+    flex-shrink: 0;
+}
+
+.company-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--at-primary, #3b82f6);
+}
+
+.company-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.company-code {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--at-primary, #3b82f6);
+    margin-bottom: 0.25rem;
+}
+
+.company-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--at-text-primary, #0f172a);
+    margin-bottom: 0.375rem;
+}
+
+.company-meta {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    font-size: 0.8125rem;
+    color: var(--at-text-muted, #64748b);
+}
+
+.company-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.company-meta-item i {
+    font-size: 0.75rem;
+}
+
+.selected-badge {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: var(--at-success, #10b981);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* ========== Search Box Enhancement ========== */
+.search-box {
+    position: relative;
+}
+
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--at-text-muted, #94a3b8);
+    pointer-events: none;
+}
+
+.search-input {
+    padding-left: 2.75rem !important;
+}
+
+/* ========== Filter Pills ========== */
+.filter-pills {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+}
+
+.filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    background: var(--at-bg-secondary, #f1f5f9);
+    border: 1px solid var(--at-border, #e2e8f0);
+    border-radius: 20px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--at-text-secondary, #475569);
+}
+
+.filter-pill .remove-filter {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.filter-pill .remove-filter:hover {
+    opacity: 1;
+    color: var(--at-danger, #ef4444);
+}
+
+/* ========== Selection Summary ========== */
+.selection-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--at-bg-card);
+    border: 2px solid var(--at-border);
+    padding: 1.25rem;
+    border-radius: 16px;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--at-shadow-sm);
+}
+
+.summary-count {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.summary-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--at-primary);
+}
+
+.summary-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.summary-number {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--at-text-primary);
+}
+
+.summary-label {
+    font-size: 0.875rem;
+    color: var(--at-text-secondary);
+    font-weight: 500;
+}
+
+.summary-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.summary-btn {
+    padding: 0.625rem 1rem;
+    border: 2px solid var(--at-border);
+    background: var(--at-bg-card);
+    color: var(--at-text-primary);
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.summary-btn:hover {
+    background: var(--at-primary);
+    border-color: var(--at-primary);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.summary-btn i {
+    font-size: 1rem;
+}
+
+/* ========== Empty State ========== */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--at-text-muted, #94a3b8);
+}
+
+.empty-state i {
+    font-size: 3rem;
+    opacity: 0.3;
+    margin-bottom: 1rem;
+}
+
+/* ========== Sticky Bottom Bar ========== */
+.sticky-bottom-bar {
+    position: fixed;
     bottom: 0;
+    left: 0;
+    right: 0;
     background: var(--at-bg-card, #ffffff);
     border-top: 2px solid var(--at-border, #e2e8f0);
     padding: 1rem;
-    margin: 0 -1rem -1rem;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
-    z-index: 10;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+    z-index: 100;
 }
 
 @media (min-width: 768px) {
-    .sticky-actions {
+    .sticky-bottom-bar {
         position: static;
         box-shadow: none;
-        margin: 1rem 0 0;
-        padding: 0;
+        padding: 1.5rem 0 0;
         border: none;
     }
+}
+
+.content-with-bottom-bar {
+    padding-bottom: 100px;
+}
+
+@media (min-width: 768px) {
+    .content-with-bottom-bar {
+        padding-bottom: 0;
+    }
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 767px) {
+    .company-code {
+        font-size: 1rem;
+    }
+
+    .company-name {
+        font-size: 0.9375rem;
+    }
+
+    .summary-number {
+        font-size: 1.5rem;
+    }
+}
+
+/* ========== Dark Mode Support ========== */
+.dark-mode .company-card,
+.dark-mode .at-card,
+.dark-mode .sticky-bottom-bar,
+[data-theme="dark"] .company-card,
+[data-theme="dark"] .at-card,
+[data-theme="dark"] .sticky-bottom-bar {
+    background: var(--at-bg-card);
+    border-color: var(--at-border);
+}
+
+.dark-mode .company-card:hover,
+[data-theme="dark"] .company-card:hover {
+    border-color: var(--at-primary);
+    background: var(--at-bg-card-hover);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .company-card.selected,
+[data-theme="dark"] .company-card.selected {
+    border-color: var(--at-primary);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.15));
+}
+
+.dark-mode .company-code,
+.dark-mode .company-name,
+.dark-mode .summary-number,
+[data-theme="dark"] .company-code,
+[data-theme="dark"] .company-name,
+[data-theme="dark"] .summary-number {
+    color: var(--at-text-primary);
+}
+
+.dark-mode .company-industry,
+.dark-mode .summary-label,
+.dark-mode .empty-state,
+[data-theme="dark"] .company-industry,
+[data-theme="dark"] .summary-label,
+[data-theme="dark"] .empty-state {
+    color: var(--at-text-muted);
+}
+
+.dark-mode .filter-pill,
+[data-theme="dark"] .filter-pill {
+    background: var(--at-bg-secondary);
+    border-color: var(--at-border);
+    color: var(--at-text-secondary);
+}
+
+.dark-mode .filter-pill.active,
+.dark-mode .filter-pill:hover,
+[data-theme="dark"] .filter-pill.active,
+[data-theme="dark"] .filter-pill:hover {
+    background: var(--at-primary);
+    border-color: var(--at-primary);
+    color: white;
+}
+
+.dark-mode .search-input,
+[data-theme="dark"] .search-input {
+    background: var(--at-bg-card);
+    border-color: var(--at-border);
+    color: var(--at-text-primary);
+}
+
+.dark-mode .search-input::placeholder,
+[data-theme="dark"] .search-input::placeholder {
+    color: var(--at-text-muted);
+}
+
+.dark-mode .search-input:focus,
+[data-theme="dark"] .search-input:focus {
+    border-color: var(--at-primary);
+    background: var(--at-bg-card);
+}
+
+.dark-mode .selection-summary,
+[data-theme="dark"] .selection-summary {
+    background: var(--at-bg-card);
+    border-color: var(--at-border);
+}
+
+.dark-mode .summary-icon,
+[data-theme="dark"] .summary-icon {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.25));
+}
+
+.dark-mode .summary-btn,
+[data-theme="dark"] .summary-btn {
+    background: var(--at-bg-secondary);
+    border-color: var(--at-border);
+    color: var(--at-text-primary);
+}
+
+.dark-mode .summary-btn:hover,
+[data-theme="dark"] .summary-btn:hover {
+    background: var(--at-primary);
+    border-color: var(--at-primary);
+    color: white;
 }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="at-container">
+<div class="at-container content-with-bottom-bar">
     <!-- ヘッダー -->
     <div class="page-header mb-3 mb-md-4">
         <h1 class="page-title">
@@ -92,16 +405,44 @@
         <p class="page-subtitle">{{ template.name }}</p>
     </div>
 
+    <!-- 選択サマリー -->
+    <div class="selection-summary">
+        <div class="summary-count">
+            <div class="summary-icon">
+                <i class="bi bi-building-check"></i>
+            </div>
+            <div class="summary-text">
+                <div class="summary-number" id="selectionCount">0</div>
+                <div class="summary-label">社選択中</div>
+            </div>
+        </div>
+        <div class="summary-actions">
+            <button type="button" class="summary-btn" onclick="selectAllOnPage()">
+                <i class="bi bi-check-all"></i>
+                <span class="d-none d-sm-inline">全選択</span>
+            </button>
+            <button type="button" class="summary-btn" onclick="clearAllSelections()">
+                <i class="bi bi-x-lg"></i>
+                <span class="d-none d-sm-inline">クリア</span>
+            </button>
+        </div>
+    </div>
+
     <div class="row g-3 g-md-4">
         <!-- 左: 企業検索・選択 -->
         <div class="col-lg-8">
             <!-- 検索フォーム -->
             <div class="at-card mb-3">
                 <form method="get" id="searchForm">
+                    <div class="search-box mb-3">
+                        <i class="bi bi-search search-icon"></i>
+                        <input type="text"
+                               name="query"
+                               class="form-control search-input"
+                               placeholder="銘柄コードまたは企業名で検索"
+                               value="{{ request.GET.query|default:'' }}">
+                    </div>
                     <div class="row g-2">
-                        <div class="col-12">
-                            {{ search_form.query }}
-                        </div>
                         <div class="col-6">
                             {{ search_form.industry }}
                         </div>
@@ -110,142 +451,99 @@
                         </div>
                     </div>
                     <div class="d-flex gap-2 mt-3">
-                        <button type="submit" class="btn btn-primary btn-sm flex-fill" onclick="saveBeforeSearch()">
+                        <button type="submit" class="btn btn-primary flex-fill" onclick="saveBeforeSearch()">
                             <i class="bi bi-search me-1"></i>検索
                         </button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" onclick="resetSearch()">
+                        <button type="button" class="btn btn-outline-secondary flex-fill" onclick="resetSearch()">
                             <i class="bi bi-arrow-clockwise me-1"></i>リセット
                         </button>
                     </div>
-                </form>
-            </div>
 
-            <!-- 一括選択バー -->
-            <div class="at-card mb-3">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="fw-semibold">選択中:</span>
-                        <span class="badge bg-primary" id="selectionCount" style="font-size: 1rem; padding: 0.375rem 0.75rem;">0</span>
-                    </div>
-                    <div class="d-flex gap-2 flex-wrap">
-                        <button type="button" class="btn btn-sm btn-outline-warning" onclick="selectAllOnPage()">
-                            <i class="bi bi-check-square me-1"></i>
-                            <span class="d-none d-sm-inline">ページ全選択</span>
-                            <span class="d-sm-none">全選択</span>
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearAllSelections()">
-                            <i class="bi bi-x-circle me-1"></i>クリア
-                        </button>
-                    </div>
-                </div>
+                    <!-- アクティブフィルター表示 -->
+                    <div class="filter-pills" id="activePills"></div>
+                </form>
             </div>
 
             <!-- 企業リスト -->
-            <div class="at-card">
-                <form method="post" id="companySelectForm">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" id="actionInput" value="add">
-                    <div id="hiddenInputsContainer"></div>
-                    
-                    <div class="at-table-wrapper">
-                        <table class="at-table company-table-mobile">
-                            <thead>
-                                <tr>
-                                    <th style="width: 40px;"></th>
-                                    <th>コード</th>
-                                    <th>銘柄名</th>
-                                    <th class="d-none d-md-table-cell">業種</th>
-                                    <th class="d-none d-lg-table-cell">市場</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for company in page_obj %}
-                                <tr class="company-row" data-company-code="{{ company.code }}">
-                                    <td class="company-checkbox-cell">
-                                        <input type="checkbox" 
-                                               value="{{ company.code }}"
-                                               class="at-checkbox company-checkbox"
-                                               data-company-code="{{ company.code }}"
-                                               data-company-name="{{ company.name }}">
-                                    </td>
-                                    <td>
-                                        <span class="fw-medium">{{ company.code }}</span>
-                                        <span class="selected-badge badge bg-success ms-1 d-none">✓</span>
-                                    </td>
-                                    <td>
-                                        <strong>{{ company.name }}</strong>
-                                    </td>
-                                    <td class="d-none d-md-table-cell">
-                                        <small class="at-text-muted">{{ company.industry_name_33|default:"-" }}</small>
-                                    </td>
-                                    <td class="d-none d-lg-table-cell">
-                                        <small class="at-text-muted">{{ company.market|default:"-" }}</small>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="5" class="text-center at-text-muted py-4">
-                                        該当する企業が見つかりませんでした
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+            <form method="post" id="companySelectForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" id="actionInput" value="add">
+                <div id="hiddenInputsContainer"></div>
 
-                    <!-- ページネーション -->
-                    {% if page_obj.has_other_pages %}
-                    <nav class="mt-3">
-                        <ul class="pagination pagination-sm justify-content-center mb-0">
-                            {% if page_obj.has_previous %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}{% if request.GET.industry %}&industry={{ request.GET.industry }}{% endif %}{% if request.GET.market %}&market={{ request.GET.market }}{% endif %}" onclick="saveBeforeNavigate(event)">
-                                    <i class="bi bi-chevron-left"></i>
-                                </a>
-                            </li>
-                            {% endif %}
-                            <li class="page-item active">
-                                <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-                            </li>
-                            {% if page_obj.has_next %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}{% if request.GET.industry %}&industry={{ request.GET.industry }}{% endif %}{% if request.GET.market %}&market={{ request.GET.market }}{% endif %}" onclick="saveBeforeNavigate(event)">
-                                    <i class="bi bi-chevron-right"></i>
-                                </a>
-                            </li>
-                            {% endif %}
-                        </ul>
-                    </nav>
-                    {% endif %}
-
-                    <!-- アクションボタン -->
-                    <div class="sticky-actions">
-                        <div class="d-grid gap-2">
-                            <div class="row g-2">
-                                <div class="col-6 col-sm-4">
-                                    <a href="{% url 'analysis_template:detail' template.pk %}" class="btn btn-secondary w-100">
-                                        <i class="bi bi-x-circle me-1"></i>
-                                        <span class="d-none d-sm-inline">キャンセル</span>
-                                        <span class="d-sm-none">戻る</span>
-                                    </a>
-                                </div>
-                                <div class="col-6 col-sm-4">
-                                    <button type="button" class="btn btn-success w-100" onclick="submitForm('add')">
-                                        <i class="bi bi-plus-circle me-1"></i>追加
-                                    </button>
-                                </div>
-                                <div class="col-12 col-sm-4">
-                                    <button type="button" class="btn btn-primary w-100" onclick="submitForm('replace')">
-                                        <i class="bi bi-arrow-repeat me-1"></i>
-                                        <span class="d-none d-sm-inline">置き換え</span>
-                                        <span class="d-sm-none">置換</span>
-                                    </button>
+                <div id="companiesContainer">
+                    {% for company in page_obj %}
+                    <div class="company-card"
+                         data-company-code="{{ company.code }}"
+                         onclick="toggleCompanySelection('{{ company.code }}', '{{ company.name|escapejs }}', event)">
+                        <div class="company-card-header">
+                            <div class="company-checkbox-wrapper">
+                                <input type="checkbox"
+                                       value="{{ company.code }}"
+                                       class="company-checkbox"
+                                       data-company-code="{{ company.code }}"
+                                       data-company-name="{{ company.name }}"
+                                       onclick="event.stopPropagation()">
+                            </div>
+                            <div class="company-info">
+                                <div class="company-code">{{ company.code }}</div>
+                                <div class="company-name">{{ company.name }}</div>
+                                <div class="company-meta">
+                                    {% if company.industry_name_33 %}
+                                    <div class="company-meta-item">
+                                        <i class="bi bi-tag"></i>
+                                        <span>{{ company.industry_name_33 }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if company.market %}
+                                    <div class="company-meta-item">
+                                        <i class="bi bi-shop"></i>
+                                        <span>{{ company.market }}</span>
+                                    </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
+                        <div class="selected-badge d-none">
+                            <i class="bi bi-check-circle-fill"></i>
+                            <span>選択中</span>
+                        </div>
                     </div>
-                </form>
-            </div>
+                    {% empty %}
+                    <div class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <p>該当する企業が見つかりませんでした</p>
+                        <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="resetSearch()">
+                            検索条件をリセット
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- ページネーション -->
+                {% if page_obj.has_other_pages %}
+                <nav class="mt-3">
+                    <ul class="pagination pagination-sm justify-content-center mb-0">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}{% if request.GET.industry %}&industry={{ request.GET.industry }}{% endif %}{% if request.GET.market %}&market={{ request.GET.market }}{% endif %}" onclick="saveBeforeNavigate(event)">
+                                <i class="bi bi-chevron-left"></i> 前へ
+                            </a>
+                        </li>
+                        {% endif %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+                        </li>
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}{% if request.GET.industry %}&industry={{ request.GET.industry }}{% endif %}{% if request.GET.market %}&market={{ request.GET.market }}{% endif %}" onclick="saveBeforeNavigate(event)">
+                                次へ <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </form>
         </div>
 
         <!-- 右: 選択済み企業 -->
@@ -255,30 +553,55 @@
                     <i class="bi bi-check-circle me-1"></i>選択済み企業
                     <span class="badge bg-primary ms-2" id="selectedCount2">0</span>
                 </h6>
-                <div id="selectedCompaniesList" style="max-height: 300px; overflow-y: auto;">
+                <div id="selectedCompaniesList" style="max-height: 400px; overflow-y: auto;">
                     <div class="text-center at-text-muted py-4" id="emptyState">
                         <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.5;"></i>
                         <p class="mb-0 mt-2 small">企業が選択されていません</p>
                     </div>
                 </div>
             </div>
-            
+
             <!-- 使い方 -->
             <div class="at-card mt-3 d-none d-lg-block">
                 <h6 class="at-card-title">
-                    <i class="bi bi-info-circle me-1"></i>使い方
+                    <i class="bi bi-lightbulb text-warning me-1"></i>使い方
                 </h6>
                 <ol class="small mb-0 ps-3">
-                    <li class="mb-2">企業を検索してチェック</li>
-                    <li class="mb-2">検索条件を変えて追加選択可</li>
-                    <li class="mb-2">「追加」または「置き換え」</li>
+                    <li class="mb-2">検索条件で企業を絞り込み</li>
+                    <li class="mb-2">企業カードをクリックして選択</li>
+                    <li class="mb-2">条件を変えて追加選択可能</li>
+                    <li class="mb-2">「追加」または「置き換え」で確定</li>
                 </ol>
                 <hr class="my-3">
                 <div class="small">
-                    <p class="mb-1"><strong>追加:</strong> 既存+新規</p>
-                    <p class="mb-0"><strong>置き換え:</strong> 既存削除</p>
+                    <p class="mb-2"><strong><i class="bi bi-plus-circle text-success"></i> 追加:</strong> 既存の企業に追加</p>
+                    <p class="mb-0"><strong><i class="bi bi-arrow-repeat text-primary"></i> 置き換え:</strong> 既存を削除して新規選択</p>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- 固定ボトムバー -->
+<div class="sticky-bottom-bar">
+    <div class="row g-2">
+        <div class="col-4">
+            <a href="{% url 'analysis_template:detail' template.pk %}" class="btn btn-secondary w-100">
+                <i class="bi bi-x-circle"></i>
+                <span class="d-none d-md-inline ms-1">キャンセル</span>
+            </a>
+        </div>
+        <div class="col-4">
+            <button type="button" class="btn btn-success w-100" onclick="submitForm('add')">
+                <i class="bi bi-plus-circle"></i>
+                <span class="d-none d-md-inline ms-1">追加</span>
+            </button>
+        </div>
+        <div class="col-4">
+            <button type="button" class="btn btn-primary w-100" onclick="submitForm('replace')">
+                <i class="bi bi-arrow-repeat"></i>
+                <span class="d-none d-md-inline ms-1">置換</span>
+            </button>
         </div>
     </div>
 </div>
@@ -300,6 +623,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadSelections();
     setupEventListeners();
     updateUI();
+    showActiveFilters();
 });
 
 function loadSelections() {
@@ -326,17 +650,27 @@ function setupEventListeners() {
             e.stopPropagation();
             const code = this.value;
             const name = this.dataset.companyName;
-            
+
             if (this.checked) {
                 selectedCompanies[code] = { code, name };
             } else {
                 delete selectedCompanies[code];
             }
-            
+
             saveSelections();
             updateUI();
         });
     });
+}
+
+function toggleCompanySelection(code, name, event) {
+    if (event.target.type === 'checkbox') return;
+
+    const checkbox = document.querySelector(`.company-checkbox[data-company-code="${code}"]`);
+    if (checkbox) {
+        checkbox.checked = !checkbox.checked;
+        checkbox.dispatchEvent(new Event('change'));
+    }
 }
 
 function updateUI() {
@@ -344,30 +678,30 @@ function updateUI() {
         const code = cb.value;
         const isSelected = selectedCompanies.hasOwnProperty(code);
         cb.checked = isSelected;
-        
-        const row = cb.closest('tr');
-        if (row) {
-            row.classList.toggle('table-active', isSelected);
-            const badge = row.querySelector('.selected-badge');
+
+        const card = cb.closest('.company-card');
+        if (card) {
+            card.classList.toggle('selected', isSelected);
+            const badge = card.querySelector('.selected-badge');
             if (badge) badge.classList.toggle('d-none', !isSelected);
         }
     });
-    
+
     const count = Object.keys(selectedCompanies).length;
     document.querySelectorAll('#selectionCount, #selectedCount2').forEach(el => el.textContent = count);
-    
+
     const container = document.getElementById('selectedCompaniesList');
     const emptyState = document.getElementById('emptyState');
-    
+
     if (count === 0) {
         emptyState.classList.remove('d-none');
         container.querySelectorAll('.selected-company-item').forEach(item => item.remove());
         return;
     }
-    
+
     emptyState.classList.add('d-none');
     container.querySelectorAll('.selected-company-item').forEach(item => item.remove());
-    
+
     Object.values(selectedCompanies).sort((a, b) => a.code.localeCompare(b.code)).forEach(company => {
         const item = document.createElement('div');
         item.className = 'selected-company-item d-flex justify-content-between align-items-center py-2 border-bottom';
@@ -382,6 +716,47 @@ function updateUI() {
         `;
         container.appendChild(item);
     });
+}
+
+function showActiveFilters() {
+    const pillsContainer = document.getElementById('activePills');
+    pillsContainer.innerHTML = '';
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const query = urlParams.get('query');
+    const industry = urlParams.get('industry');
+    const market = urlParams.get('market');
+
+    if (query) {
+        addFilterPill(pillsContainer, '検索', query, 'query');
+    }
+    if (industry) {
+        const select = document.querySelector('select[name="industry"]');
+        const text = select?.options[select.selectedIndex]?.text || industry;
+        addFilterPill(pillsContainer, '業種', text, 'industry');
+    }
+    if (market) {
+        const select = document.querySelector('select[name="market"]');
+        const text = select?.options[select.selectedIndex]?.text || market;
+        addFilterPill(pillsContainer, '市場', text, 'market');
+    }
+}
+
+function addFilterPill(container, label, value, param) {
+    const pill = document.createElement('div');
+    pill.className = 'filter-pill';
+    pill.innerHTML = `
+        <span><strong>${label}:</strong> ${value}</span>
+        <i class="bi bi-x remove-filter" onclick="removeFilter('${param}')"></i>
+    `;
+    container.appendChild(pill);
+}
+
+function removeFilter(param) {
+    const url = new URL(window.location);
+    url.searchParams.delete(param);
+    saveSelections();
+    window.location.href = url.toString();
 }
 
 function removeFromSelection(code) {
@@ -412,7 +787,7 @@ function selectAllOnPage() {
             added++;
         }
     });
-    
+
     if (added > 0) {
         saveSelections();
         updateUI();
@@ -435,15 +810,15 @@ function submitForm(action) {
         alert('企業を選択してください');
         return;
     }
-    
-    const msg = action === 'add' 
+
+    const msg = action === 'add'
         ? `${count}社を追加します。よろしいですか？`
         : `既存の企業を削除し、${count}社で置き換えます。よろしいですか？`;
-    
+
     if (!confirm(msg)) return;
-    
+
     document.getElementById('actionInput').value = action;
-    
+
     const container = document.getElementById('hiddenInputsContainer');
     container.innerHTML = '';
     Object.keys(selectedCompanies).forEach(code => {
@@ -453,7 +828,7 @@ function submitForm(action) {
         input.value = code;
         container.appendChild(input);
     });
-    
+
     sessionStorage.removeItem(storageKey);
     document.getElementById('companySelectForm').submit();
 }

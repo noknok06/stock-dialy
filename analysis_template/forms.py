@@ -71,10 +71,10 @@ TemplateCompanyFormSet = inlineformset_factory(
 
 class TemplateMetricsForm(forms.ModelForm):
     """テンプレート指標フォーム"""
-    
+
     class Meta:
         model = TemplateMetrics
-        fields = ['metric_definition', 'value', 'fiscal_year', 'notes']
+        fields = ['metric_definition', 'value', 'notes']
         widgets = {
             'metric_definition': forms.Select(attrs={
                 'class': 'form-select'
@@ -84,17 +84,13 @@ class TemplateMetricsForm(forms.ModelForm):
                 'step': '0.01',
                 'placeholder': '値を入力'
             }),
-            'fiscal_year': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': '例: 2024'
-            }),
             'notes': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 2,
                 'placeholder': '備考（任意）'
             }),
         }
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # アクティブな指標定義のみ表示
@@ -110,23 +106,14 @@ class BulkMetricsForm(forms.Form):
         queryset=CompanyMaster.objects.all().order_by('code'),
         widget=forms.Select(attrs={'class': 'form-select'})
     )
-    fiscal_year = forms.CharField(
-        label='会計年度',
-        max_length=10,
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': '例: 2024'
-        })
-    )
-    
+
     def __init__(self, *args, template=None, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         if template:
             # テンプレートに登録されている企業のみ選択可能
             self.fields['company'].queryset = template.companies.all().order_by('code')
-            
+
             # 各指標定義に対してフィールドを動的に追加
             for metric_def in MetricDefinition.objects.filter(is_active=True).order_by('display_order'):
                 field_name = f'metric_{metric_def.id}'
@@ -139,7 +126,7 @@ class BulkMetricsForm(forms.Form):
                         'class': 'form-control',
                         'step': '0.01',
                         'placeholder': f'{metric_def.get_formatted_unit()}',
-                        'id': f'id_metric_{metric_def.id}'  # ここを追加
+                        'id': f'id_metric_{metric_def.id}'
                     })
                 )
 
