@@ -2,6 +2,10 @@
 """
 モバイルUX向上のためのビュー
 クイック記録、ボトムシート対応
+
+🆕 修正内容:
+- 銘柄コード（stock_code）と銘柄名（stock_name_hidden）を分けて取得・保存
+- 業種・市場情報も自動設定
 """
 
 from django.http import JsonResponse
@@ -22,10 +26,28 @@ def quick_create_diary(request):
     """
     クイック記録API（Ajax対応）
     最小限の入力で日記を作成
+    
+    🆕 修正内容:
+    - 銘柄コード（stock_code）と銘柄名（stock_name_hidden）を分けて取得
+    - 業種・市場情報も自動設定
     """
     try:
-        # 銘柄名（任意）
-        stock_name = request.POST.get('stock_name', '').strip()
+        # 🆕 銘柄コードと名称を分けて取得
+        stock_code = request.POST.get('stock_code', '').strip()
+        stock_name = request.POST.get('stock_name_hidden', '').strip()
+        
+        # 🔧 後方互換性: stock_nameフィールドから取得を試みる（手動入力の場合）
+        if not stock_name:
+            stock_name_input = request.POST.get('stock_name', '').strip()
+            # "コード 名称" 形式で入力されている場合はパース
+            if stock_name_input:
+                parts = stock_name_input.split(None, 1)  # 最初の空白で分割
+                if len(parts) == 2:
+                    stock_code = parts[0]
+                    stock_name = parts[1]
+                elif len(parts) == 1:
+                    # コードのみの場合
+                    stock_name = parts[0]
 
         # 銘柄名がない場合は「メモ」として扱う
         if not stock_name:
@@ -37,45 +59,30 @@ def quick_create_diary(request):
                 'success': False,
                 'message': '銘柄名は100文字以内で入力してください'
             }, status=400)
+        
+        if stock_code and len(stock_code) > 50:
+            return JsonResponse({
+                'success': False,
+                'message': '銘柄コードは50文字以内で入力してください'
+            }, status=400)
 
         # 日記作成
         diary = StockDiary(
             user=request.user,
             stock_name=stock_name,
+            stock_symbol=stock_code if stock_code else '',  # 🆕 銘柄コードを設定
         )
-
-        # 任意項目: 購入情報
-        purchase_price = request.POST.get('purchase_price', '').strip()
-        purchase_quantity = request.POST.get('purchase_quantity', '').strip()
-        purchase_date = request.POST.get('purchase_date', '').strip()
-
-        if purchase_price:
-            try:
-                diary.purchase_price = Decimal(purchase_price)
-            except (ValueError, InvalidOperation):
-                return JsonResponse({
-                    'success': False,
-                    'message': '購入単価は数値で入力してください'
-                }, status=400)
-
-        if purchase_quantity:
-            try:
-                diary.purchase_quantity = Decimal(purchase_quantity)
-            except (ValueError, InvalidOperation):
-                return JsonResponse({
-                    'success': False,
-                    'message': '購入数量は数値で入力してください'
-                }, status=400)
-
-        if purchase_date:
-            try:
-                from datetime import datetime
-                diary.purchase_date = datetime.strptime(purchase_date, '%Y-%m-%d').date()
-            except ValueError:
-                return JsonResponse({
-                    'success': False,
-                    'message': '購入日の形式が正しくありません'
-                }, status=400)
+        
+        # 🆕 業種・市場情報を設定
+        industry = request.POST.get('industry', '').strip()
+        market = request.POST.get('market', '').strip()
+        
+        if industry:
+            diary.sector = industry[:50]  # 最大50文字
+        
+        # 市場情報はメモに追記（必要に応じて）
+        if market and not diary.memo:
+            diary.memo = f"市場: {market}"
 
         # 任意項目: 投資理由
         reason = request.POST.get('reason', '').strip()
@@ -89,11 +96,22 @@ def quick_create_diary(request):
 
         # 保存
         diary.save()
+        
+        # 🆕 ログ出力（デバッグ用）
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(
+            f"[quick_create_diary] Created diary: "
+            f"code={stock_code}, name={stock_name}, "
+            f"industry={industry}, market={market}"
+        )
 
         return JsonResponse({
             'success': True,
             'message': f'クイック記録を作成しました: {stock_name}',
             'diary_id': diary.id,
+            'stock_code': stock_code,
+            'stock_name': stock_name,
             'redirect_url': reverse('stockdiary:detail', kwargs={'pk': diary.id})
         })
 

@@ -650,15 +650,6 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         # スピードダイアルアクション
         context['diary_actions'] = [
             {
-                'id': 'quick-add-new',
-                'type': 'quick-add',
-                'url': '#',
-                'icon': 'bi-lightning-charge-fill',
-                'label': '新規クイック記録',
-                'aria_label': '別の銘柄を素早く記録',
-                'condition': True
-            },
-            {
                 'type': 'back',
                 'url': reverse_lazy('stockdiary:home'),
                 'icon': 'bi-arrow-left',

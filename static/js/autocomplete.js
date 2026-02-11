@@ -1,6 +1,10 @@
 /**
  * Autocomplete Component
  * オートコンプリート機能（銘柄検索）
+ * 
+ * 🆕 修正内容:
+ * - 選択時に銘柄コードと名称を隠しフィールドに分けて設定
+ * - 業種・市場情報も自動入力
  */
 
 class Autocomplete {
@@ -18,7 +22,7 @@ class Autocomplete {
       minChars: 2,
       debounceDelay: 300,
       maxResults: 5,
-      apiUrl: '/stockdiary/api/stock/search/',
+      apiUrl: window.location.origin + '/stockdiary/api/stock/search/',
       onSelect: null,
       enableKeyboard: true,
       enableHaptics: true,
@@ -30,6 +34,8 @@ class Autocomplete {
     this.suggestions = [];
     this.debounceTimer = null;
     this.isLoading = false;
+
+    console.log('[Autocomplete] Initialized with API URL:', this.options.apiUrl);
 
     this.init();
   }
@@ -62,6 +68,9 @@ class Autocomplete {
   // ========== 入力ハンドラー ==========
   onInput(e) {
     const query = e.target.value.trim();
+
+    // 🆕 入力が変更されたら隠しフィールドをクリア
+    this.clearHiddenFields();
 
     // 最小文字数チェック
     if (query.length < this.options.minChars) {
@@ -128,22 +137,43 @@ class Autocomplete {
     this.showLoading();
 
     try {
-      const url = new URL(this.options.apiUrl, window.location.origin);
+      const url = new URL(this.options.apiUrl);
       url.searchParams.append('query', query);
       url.searchParams.append('limit', this.options.maxResults);
 
-      const response = await fetch(url);
+      console.log('[Autocomplete] Fetching:', url.toString());
+
+      const response = await fetch(url, {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+
+      console.log('[Autocomplete] Response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[Autocomplete] API Error:', response.status, errorText);
+        throw new Error(`APIエラー: ${response.status}`);
+      }
+
       const data = await response.json();
+      console.log('[Autocomplete] Response data:', data);
 
       if (data.success && data.companies) {
         this.suggestions = data.companies;
         this.renderSuggestions(data.companies);
       } else {
+        if (data.message) {
+          console.warn('[Autocomplete] API message:', data.message);
+        }
         this.showNoResults();
       }
     } catch (error) {
-      console.error('Autocomplete search error:', error);
-      this.showError();
+      console.error('[Autocomplete] Search error:', error);
+      this.showError(error.message);
     } finally {
       this.isLoading = false;
     }
@@ -202,8 +232,63 @@ class Autocomplete {
 
   // ========== 候補選択 ==========
   selectSuggestion(company) {
-    // 入力欄に値を設定
+    // 入力欄に値を設定（表示用）
     this.input.value = `${company.code} ${company.name}`;
+
+    // 🆕 銘柄コードと名称を隠しフィールドに分けて設定
+    const form = this.input.closest('form');
+    if (form) {
+      // 銘柄コード用の隠しフィールド
+      let stockCodeInput = form.querySelector('input[name="stock_code"]');
+      if (!stockCodeInput) {
+        stockCodeInput = document.createElement('input');
+        stockCodeInput.type = 'hidden';
+        stockCodeInput.name = 'stock_code';
+        form.appendChild(stockCodeInput);
+      }
+      stockCodeInput.value = company.code;
+      
+      // 銘柄名用の隠しフィールド
+      let stockNameInput = form.querySelector('input[name="stock_name_hidden"]');
+      if (!stockNameInput) {
+        stockNameInput = document.createElement('input');
+        stockNameInput.type = 'hidden';
+        stockNameInput.name = 'stock_name_hidden';
+        form.appendChild(stockNameInput);
+      }
+      stockNameInput.value = company.name;
+      
+      // 業種情報も設定（あれば）
+      if (company.industry) {
+        let industryInput = form.querySelector('input[name="industry"]');
+        if (!industryInput) {
+          industryInput = document.createElement('input');
+          industryInput.type = 'hidden';
+          industryInput.name = 'industry';
+          form.appendChild(industryInput);
+        }
+        industryInput.value = company.industry;
+      }
+      
+      // 市場情報も設定（あれば）
+      if (company.market) {
+        let marketInput = form.querySelector('input[name="market"]');
+        if (!marketInput) {
+          marketInput = document.createElement('input');
+          marketInput.type = 'hidden';
+          marketInput.name = 'market';
+          form.appendChild(marketInput);
+        }
+        marketInput.value = company.market;
+      }
+      
+      console.log('[Autocomplete] Set hidden fields:', {
+        code: company.code,
+        name: company.name,
+        industry: company.industry,
+        market: company.market
+      });
+    }
 
     // 触覚フィードバック
     if (this.options.enableHaptics && navigator.vibrate) {
@@ -223,6 +308,20 @@ class Autocomplete {
       detail: { company }
     });
     this.input.dispatchEvent(event);
+  }
+
+  // 🆕 隠しフィールドをクリア
+  clearHiddenFields() {
+    const form = this.input.closest('form');
+    if (form) {
+      const hiddenFields = ['stock_code', 'stock_name_hidden', 'industry', 'market'];
+      hiddenFields.forEach(fieldName => {
+        const field = form.querySelector(`input[name="${fieldName}"]`);
+        if (field) {
+          field.value = '';
+        }
+      });
+    }
   }
 
   // ========== 表示制御 ==========
@@ -252,13 +351,14 @@ class Autocomplete {
     this.suggestionsContainer.classList.add('active');
   }
 
-  showError() {
+  showError(errorMessage) {
     const listContainer = this.suggestionsContainer.querySelector('.suggestions-list');
     if (listContainer) {
       listContainer.innerHTML = `
         <div class="suggestion-item text-center text-danger">
           <i class="bi bi-exclamation-triangle me-2"></i>
           検索エラーが発生しました
+          ${errorMessage ? `<div class="small mt-1">${this.escapeHtml(errorMessage)}</div>` : ''}
         </div>
       `;
     }
