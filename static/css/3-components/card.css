@@ -7,15 +7,21 @@
 .card {
   border: none;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--elevation-3);
+  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
   margin-bottom: var(--spacing-lg);
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  background: var(--gradient-card);
+  background: var(--bg-100);
   overflow: hidden;
   position: relative;
+}
+
+/* ホバー時に elevation を上げる */
+.card:hover {
+  box-shadow: var(--elevation-4);
+  transform: translateY(-2px);
 }
 
 .card::before {
@@ -391,4 +397,68 @@
 [data-theme="dark"] .card-stats-label,
 [data-theme="dark"] .card-compact-label {
   color: var(--dm-muted-foreground);
+}
+
+/* ========== Material 3 Card Variants ========== */
+
+/* Elevated Card - デフォルトよりも強い浮遊感 */
+.card-elevated {
+  background: var(--bg-100);
+  border: none;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--elevation-3);
+  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.card-elevated:hover {
+  box-shadow: var(--elevation-4);
+  transform: translateY(-2px);
+}
+
+/* Filled Card - 塗りつぶし背景、影なし */
+.card-filled {
+  background: var(--bg-200);
+  border: none;
+  border-radius: var(--radius-xl);
+  box-shadow: none;
+  transition: all 0.3s ease;
+}
+
+.card-filled:hover {
+  background: var(--primary-100);
+}
+
+/* Outlined Card - ボーダーのみ、影なし */
+.card-outlined {
+  background: var(--bg-100);
+  border: 2px solid var(--border-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: none;
+  transition: all 0.3s ease;
+}
+
+.card-outlined:hover {
+  border-color: var(--accent-100);
+  box-shadow: var(--elevation-1);
+}
+
+/* Glass Card - ガラスモーフィズムエフェクト */
+.card-glass {
+  background: var(--glass-medium);
+  backdrop-filter: blur(var(--glass-blur-md)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-md)) saturate(180%);
+  border: 1px solid var(--glass-border-strong);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--elevation-2);
+}
+
+/* Interactive Card - クリック可能なカード */
+.card-interactive {
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.card-interactive:active {
+  transform: scale(0.98);
+  box-shadow: var(--elevation-1);
 }
