@@ -1,0 +1,135 @@
+/* ========================================
+   Elevation System - Material 3 スタイル
+   奥行き感のあるシャドウシステム
+   ======================================== */
+
+:root {
+  /* ========== Material 3 Elevation Levels ========== */
+
+  /* Level 0: Surface - 影なし */
+  --elevation-0: none;
+
+  /* Level 1: Raised - 少し浮いた要素 (1-3dp)
+     用途: ボタン（rest）、小さなカード */
+  --elevation-1:
+    0 1px 3px 1px rgba(0, 102, 140, 0.03),
+    0 1px 2px 0 rgba(29, 28, 28, 0.08);
+
+  /* Level 2: Floating - 浮遊状態 (3-6dp)
+     用途: カード（rest）、小さなダイアログ */
+  --elevation-2:
+    0 2px 6px 2px rgba(0, 102, 140, 0.04),
+    0 1px 2px 0 rgba(29, 28, 28, 0.12);
+
+  /* Level 3: Cards/Dialogs - カードとダイアログ (6-8dp)
+     用途: デフォルトのカード elevation、アクティブな要素 */
+  --elevation-3:
+    0 4px 8px 3px rgba(0, 102, 140, 0.05),
+    0 1px 3px 0 rgba(29, 28, 28, 0.15);
+
+  /* Level 4: Navigation - ナビゲーション要素 (8-12dp)
+     用途: モーダル、ドロワー、メニュー */
+  --elevation-4:
+    0 6px 10px 4px rgba(0, 102, 140, 0.06),
+    0 2px 3px 0 rgba(29, 28, 28, 0.18);
+
+  /* Level 5: Overlays - 最上位オーバーレイ (12-16dp)
+     用途: ダイアログ（最高階層）、ポップオーバー */
+  --elevation-5:
+    0 8px 12px 6px rgba(0, 102, 140, 0.08),
+    0 4px 4px 0 rgba(29, 28, 28, 0.20);
+
+  /* ========== Dark Mode Elevation ========== */
+  /* ダークモードでは影をより強調 */
+}
+
+[data-theme="dark"] {
+  --elevation-1:
+    0 1px 3px 1px rgba(113, 196, 239, 0.05),
+    0 1px 2px 0 rgba(0, 0, 0, 0.20);
+
+  --elevation-2:
+    0 2px 6px 2px rgba(113, 196, 239, 0.08),
+    0 1px 2px 0 rgba(0, 0, 0, 0.24);
+
+  --elevation-3:
+    0 4px 8px 3px rgba(113, 196, 239, 0.10),
+    0 1px 3px 0 rgba(0, 0, 0, 0.28);
+
+  --elevation-4:
+    0 6px 10px 4px rgba(113, 196, 239, 0.12),
+    0 2px 3px 0 rgba(0, 0, 0, 0.32);
+
+  --elevation-5:
+    0 8px 12px 6px rgba(113, 196, 239, 0.15),
+    0 4px 4px 0 rgba(0, 0, 0, 0.36);
+}
+
+/* ========== Utility Classes ========== */
+
+.elevation-0 {
+  box-shadow: var(--elevation-0);
+}
+
+.elevation-1 {
+  box-shadow: var(--elevation-1);
+}
+
+.elevation-2 {
+  box-shadow: var(--elevation-2);
+}
+
+.elevation-3 {
+  box-shadow: var(--elevation-3);
+}
+
+.elevation-4 {
+  box-shadow: var(--elevation-4);
+}
+
+.elevation-5 {
+  box-shadow: var(--elevation-5);
+}
+
+/* ========== Hover Elevation Changes ========== */
+/* ホバー時に elevation を上げる */
+
+.elevation-hover-1:hover {
+  box-shadow: var(--elevation-2);
+  transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.elevation-hover-2:hover {
+  box-shadow: var(--elevation-3);
+  transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.elevation-hover-3:hover {
+  box-shadow: var(--elevation-4);
+  transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.elevation-hover-4:hover {
+  box-shadow: var(--elevation-5);
+  transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ========== Usage Examples ========== */
+/*
+  基本的な使い方:
+
+  <div class="card elevation-3">カードコンテンツ</div>
+  <button class="btn elevation-1 elevation-hover-2">ボタン</button>
+  <div class="modal elevation-5">モーダル</div>
+
+  Elevation の選び方:
+  - Level 1: 小さな浮いたボタン、チップ
+  - Level 2: カード（通常時）、FAB（rest）
+  - Level 3: カード（デフォルト推奨）、ダイアログ
+  - Level 4: ナビゲーション、ドロワー、メニュー
+  - Level 5: モーダルダイアログ、ツールチップ
+
+  ホバー時の elevation:
+  - rest: level 2 → hover: level 3
+  - rest: level 3 → hover: level 4
+*/
