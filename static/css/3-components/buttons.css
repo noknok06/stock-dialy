@@ -297,6 +297,125 @@
   pointer-events: none;
 }
 
+/* ========== Material 3 Button Variants ========== */
+
+/* Tonal Button - Material 3 スタイル
+   用途: セカンダリアクション、コンテキストアクション */
+.btn-tonal {
+  background: rgba(113, 196, 239, 0.15);
+  color: var(--accent-200);
+  border: none;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.btn-tonal:hover:not(:disabled) {
+  background: rgba(113, 196, 239, 0.25);
+  box-shadow: var(--elevation-1);
+}
+
+.btn-tonal:active:not(:disabled) {
+  background: rgba(113, 196, 239, 0.35);
+  transform: scale(0.98);
+}
+
+/* Text Button - Material 3 スタイル
+   用途: 軽いアクション、キャンセルボタン */
+.btn-text {
+  background: transparent;
+  border: none;
+  color: var(--accent-200);
+  padding: 0.625rem 1rem;
+  min-height: 40px;
+}
+
+.btn-text:hover:not(:disabled) {
+  background: rgba(113, 196, 239, 0.08);
+}
+
+.btn-text:active:not(:disabled) {
+  background: rgba(113, 196, 239, 0.12);
+  transform: scale(0.98);
+}
+
+/* Elevated Button - iOS スタイル
+   用途: カード上のボタン、浮き上がったボタン */
+.btn-elevated {
+  background: var(--bg-100);
+  color: var(--accent-200);
+  border: none;
+  box-shadow: var(--elevation-2);
+}
+
+.btn-elevated:hover:not(:disabled) {
+  box-shadow: var(--elevation-4);
+  transform: translateY(-1px);
+}
+
+.btn-elevated:active:not(:disabled) {
+  box-shadow: var(--elevation-1);
+  transform: translateY(0);
+}
+
+/* Pill Button - iOS スタイル
+   用途: 検索バー、タグ、選択可能なアイテム */
+.btn-pill {
+  border-radius: 999px;
+  padding: 0.625rem 1.5rem;
+}
+
+/* Size variants for new button types */
+.btn-tonal.btn--sm,
+.btn-text.btn--sm,
+.btn-elevated.btn--sm {
+  padding: 0.5rem 1rem;
+  font-size: var(--text-sm);
+}
+
+.btn-tonal.btn--lg,
+.btn-text.btn--lg,
+.btn-elevated.btn--lg {
+  padding: 1rem 2rem;
+  font-size: var(--text-lg);
+}
+
+/* ========== Ripple Effect ========== */
+/* CSSのみのリップルエフェクト */
+
+.btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-ripple::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn-ripple:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* Dark theme ripple */
+[data-theme="dark"] .btn-ripple::after {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ========== Press Feedback（全ボタン共通） ========== */
+/* ネイティブアプリのようなプレスフィードバック */
+
+.btn:active:not(:disabled):not(.btn-text) {
+  transform: scale(0.98);
+}
+
 .btn--loading::after {
   content: "";
   position: absolute;

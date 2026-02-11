@@ -1,0 +1,168 @@
+/* ========================================
+   Glassmorphism System - iOS/Android スタイル
+   フロストグラス（すりガラス）エフェクト
+   ======================================== */
+
+:root {
+  /* ========== Glass Background Colors ========== */
+
+  /* Light mode glass colors */
+  --glass-light: rgba(255, 254, 251, 0.8);    /* 80% opacity */
+  --glass-medium: rgba(255, 254, 251, 0.7);   /* 70% opacity */
+  --glass-heavy: rgba(255, 254, 251, 0.6);    /* 60% opacity */
+
+  /* Glass blur amounts */
+  --glass-blur-sm: 8px;
+  --glass-blur-md: 12px;
+  --glass-blur-lg: 20px;
+  --glass-blur-xl: 28px;
+
+  /* Glass border colors */
+  --glass-border: rgba(204, 203, 200, 0.2);
+  --glass-border-strong: rgba(204, 203, 200, 0.3);
+}
+
+/* Dark mode glass colors */
+[data-theme="dark"] {
+  --glass-light: rgba(30, 41, 59, 0.8);
+  --glass-medium: rgba(30, 41, 59, 0.7);
+  --glass-heavy: rgba(30, 41, 59, 0.6);
+
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-border-strong: rgba(255, 255, 255, 0.15);
+}
+
+/* ========== Glass Utility Classes ========== */
+
+/* Light Glass - 軽いガラスエフェクト
+   用途: サブヘッダー、軽いオーバーレイ */
+.glass-light {
+  background: var(--glass-light);
+  backdrop-filter: blur(var(--glass-blur-sm)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm)) saturate(180%);
+  border: 1px solid var(--glass-border);
+}
+
+/* Medium Glass - 中程度のガラスエフェクト
+   用途: カードオーバーレイ、ポップオーバー */
+.glass-medium {
+  background: var(--glass-medium);
+  backdrop-filter: blur(var(--glass-blur-md)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-md)) saturate(180%);
+  border: 1px solid var(--glass-border-strong);
+}
+
+/* Heavy Glass - 強いガラスエフェクト
+   用途: ナビゲーションバー、モーダルバックドロップ */
+.glass-heavy {
+  background: var(--glass-heavy);
+  backdrop-filter: blur(var(--glass-blur-lg)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg)) saturate(180%);
+  border: 1px solid var(--glass-border-strong);
+}
+
+/* Extra Heavy Glass - 最も強いガラスエフェクト
+   用途: フローティングナビゲーション、重要なオーバーレイ */
+.glass-xl {
+  background: var(--glass-heavy);
+  backdrop-filter: blur(var(--glass-blur-xl)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-xl)) saturate(180%);
+  border: 1px solid var(--glass-border-strong);
+}
+
+/* ========== Glass with Shadow ========== */
+/* ガラスエフェクト + elevation を組み合わせ */
+
+.glass-elevated {
+  background: var(--glass-medium);
+  backdrop-filter: blur(var(--glass-blur-md)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-md)) saturate(180%);
+  border: 1px solid var(--glass-border-strong);
+  box-shadow: var(--elevation-2);
+}
+
+.glass-floating {
+  background: var(--glass-heavy);
+  backdrop-filter: blur(var(--glass-blur-lg)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg)) saturate(180%);
+  border: 1px solid var(--glass-border-strong);
+  box-shadow: var(--elevation-3);
+}
+
+/* ========== Fallback for Unsupported Browsers ========== */
+/* backdrop-filter 非対応ブラウザ用のフォールバック */
+
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-light,
+  .glass-medium,
+  .glass-heavy,
+  .glass-xl,
+  .glass-elevated,
+  .glass-floating {
+    /* 古いブラウザでは不透明度を上げて視認性を確保 */
+    background: rgba(255, 254, 251, 0.95);
+  }
+
+  [data-theme="dark"] .glass-light,
+  [data-theme="dark"] .glass-medium,
+  [data-theme="dark"] .glass-heavy,
+  [data-theme="dark"] .glass-xl,
+  [data-theme="dark"] .glass-elevated,
+  [data-theme="dark"] .glass-floating {
+    background: rgba(30, 41, 59, 0.95);
+  }
+}
+
+/* ========== Glass Panel Variants ========== */
+
+/* Glass card - ガラスエフェクト付きカード */
+.glass-card {
+  background: var(--glass-medium);
+  backdrop-filter: blur(var(--glass-blur-md)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-md)) saturate(180%);
+  border: 1px solid var(--glass-border-strong);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--elevation-2);
+}
+
+/* Glass header - ガラスエフェクト付きヘッダー */
+.glass-header {
+  background: var(--glass-heavy);
+  backdrop-filter: blur(var(--glass-blur-lg)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg)) saturate(180%);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+/* Glass modal backdrop - モーダル用バックドロップ */
+.glass-backdrop {
+  background: rgba(29, 28, 28, 0.4);
+  backdrop-filter: blur(var(--glass-blur-sm)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm)) saturate(150%);
+}
+
+/* ========== Usage Examples ========== */
+/*
+  基本的な使い方:
+
+  <header class="glass-heavy">ナビゲーションヘッダー</header>
+  <div class="glass-card">カードコンテンツ</div>
+  <div class="glass-backdrop">モーダルバックドロップ</div>
+
+  Glass effect の選び方:
+  - Light (8px blur): サブヘッダー、軽いオーバーレイ
+  - Medium (12px blur): カードオーバーレイ、ポップオーバー
+  - Heavy (20px blur): ナビゲーションバー、タブバー
+  - XL (28px blur): 重要なフローティング要素
+
+  iOS/Android での使用例:
+  - ボトムタブバー: .glass-heavy
+  - トップナビゲーション: .glass-heavy + .glass-header
+  - モーダルシート: .glass-elevated
+  - カードオーバーレイ: .glass-medium
+
+  注意事項:
+  - backdrop-filter はパフォーマンスに影響する可能性があるため、
+    必要な箇所にのみ使用してください
+  - 古いブラウザでは自動的に不透明な背景にフォールバックします
+*/
