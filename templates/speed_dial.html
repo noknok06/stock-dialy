@@ -43,10 +43,19 @@ page_actionsは以下のような構造のリストを含む変数名:
            role="menuitem"
            data-action-id="{{ action.id|default:action.type }}">
         <span class="action-label">{{ action.label }}</span>
-        
-        {% if action.type == 'modal' %}
+
+        {% if action.type == 'quick-add' %}
+          {# クイック記録ボタン #}
+          <button type="button"
+                  class="speed-dial-btn action-{{ action.type }}"
+                  onclick="openQuickRecordSheet()"
+                  aria-label="{{ action.aria_label|default:action.label }}"
+                  title="{{ action.label }}">
+            <i class="bi {{ action.icon }}"></i>
+          </button>
+        {% elif action.type == 'modal' %}
           {# モーダルを開くボタン #}
-          <button type="button" 
+          <button type="button"
                   class="speed-dial-btn action-{{ action.type }}"
                   data-bs-toggle="modal"
                   data-bs-target="{{ action.modal_target }}"
@@ -56,7 +65,7 @@ page_actionsは以下のような構造のリストを含む変数名:
           </button>
         {% else %}
           {# 通常のリンクボタン #}
-          <a href="{{ action.url }}" 
+          <a href="{{ action.url }}"
              class="speed-dial-btn action-{{ action.type }}"
              role="button"
              aria-label="{{ action.aria_label|default:action.label }}"

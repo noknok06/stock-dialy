@@ -12,10 +12,10 @@ python manage.py load_metric_definitions -->
 <!-- python manage.py load_industry_benchmarks -->
 
 # タグ作成
-python manage.py create_tags --username admin
+python manage.py create_tags --username naoki
 
 # 株式日記テストデータ（リアルなサンプル）
-python manage.py create_realistic_test_data --username admin
+python manage.py create_realistic_test_data --username h
 
 # テスト環境一括セットアップ（プラン・ユーザー・広告）
 python manage.py setup_test_environment --all

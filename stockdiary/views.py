@@ -502,11 +502,20 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         # フォーム用のスピードダイアルアクション
         context['form_actions'] = [
             {
+                'id': 'quick-add',
+                'type': 'quick-add',
+                'url': '#',
+                'icon': 'bi-lightning-charge-fill',
+                'label': 'クイック記録',
+                'aria_label': '素早く投資記録を作成',
+                'condition': True
+            },
+            {
                 'type': 'add',
                 'url': reverse_lazy('stockdiary:create'),
                 'icon': 'bi-plus-lg',
                 'label': '新規登録',
-                'aria_label': '新規登録' 
+                'aria_label': '新規登録'
             },
             {
                 'type': 'template',
@@ -520,9 +529,12 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
                 'url': reverse_lazy('tags:list'),
                 'icon': 'bi-tags',
                 'label': 'タグ管理',
-                'aria_label': 'タグ管理' 
+                'aria_label': 'タグ管理'
             }
         ]
+
+        # クイック記録用に今日の日付を追加
+        context['today'] = timezone.now().date()
         return context
 
     def get(self, request, *args, **kwargs):
@@ -638,6 +650,15 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         # スピードダイアルアクション
         context['diary_actions'] = [
             {
+                'id': 'quick-add-new',
+                'type': 'quick-add',
+                'url': '#',
+                'icon': 'bi-lightning-charge-fill',
+                'label': '新規クイック記録',
+                'aria_label': '別の銘柄を素早く記録',
+                'condition': True
+            },
+            {
                 'type': 'back',
                 'url': reverse_lazy('stockdiary:home'),
                 'icon': 'bi-arrow-left',
@@ -662,7 +683,10 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
                 'label': '削除'
             }
         ]
-        
+
+        # クイック記録用に今日の日付を追加
+        context['today'] = timezone.now().date()
+
         return context
     
 class StockDiaryCreateView(LoginRequiredMixin, CreateView):

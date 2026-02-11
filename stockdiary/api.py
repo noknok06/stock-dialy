@@ -330,3 +330,52 @@ def api_create_diary(request):
             'success': False,
             'message': f'エラーが発生しました: {str(e)}'
         }, status=500)
+
+
+@login_required
+@require_GET
+def search_stock(request):
+    """
+    銘柄検索API（オートコンプリート用）
+    銘柄コードまたは銘柄名で検索
+    """
+    query = request.GET.get('query', '').strip()
+    limit = int(request.GET.get('limit', 20))
+
+    if not query or len(query) < 2:
+        return JsonResponse({
+            'success': False,
+            'message': '検索クエリは2文字以上入力してください'
+        }, status=400)
+
+    try:
+        # 企業マスタから検索
+        from django.db.models import Q
+
+        companies = CompanyMaster.objects.filter(
+            Q(code__icontains=query) |
+            Q(name__icontains=query)
+        ).order_by('code')[:limit]
+
+        results = []
+        for company in companies:
+            results.append({
+                'code': company.code,
+                'name': company.name,
+                'industry': company.industry_name_33 or company.industry_name_17 or '不明',
+                'market': company.market or '東証'
+            })
+
+        return JsonResponse({
+            'success': True,
+            'companies': results,
+            'count': len(results)
+        })
+
+    except Exception as e:
+        print(f"Search error: {str(e)}")
+        print(traceback.format_exc())
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)

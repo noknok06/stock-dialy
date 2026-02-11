@@ -3,6 +3,7 @@ from django.urls import path
 from . import views
 from . import api
 from . import api_views  # 🔧 追加
+from . import views_mobile_ux  # 🆕 モバイルUX用ビュー
 from django.contrib.auth.decorators import login_required
 
 app_name = 'stockdiary'
@@ -16,6 +17,14 @@ urlpatterns = [
     path('<int:pk>/', views.StockDiaryDetailView.as_view(), name='detail'),
     path('<int:pk>/update/', views.StockDiaryUpdateView.as_view(), name='update'),
     path('<int:pk>/delete/', views.StockDiaryDeleteView.as_view(), name='delete'),
+
+    # ==========================================
+    # 🆕 クイック記録（モバイルUX）
+    # ==========================================
+    path('quick/create/', views_mobile_ux.quick_create_diary, name='quick_create'),
+    path('quick/<int:diary_id>/note/', views_mobile_ux.quick_add_note, name='quick_add_note'),
+    path('quick/<int:diary_id>/transaction/', views_mobile_ux.quick_add_transaction, name='quick_add_transaction'),
+    path('api/templates/', views_mobile_ux.get_template_suggestions, name='api_templates'),
 
     # ==========================================
     # 取引管理

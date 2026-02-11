@@ -59,6 +59,7 @@
     <link rel="stylesheet" href="{% static 'css/diary-theme-dark-colors.css' %}?v={{ STATIC_VERSION }}">
     <link rel="stylesheet" href="{% static 'css/mobile-friendly.css' %}?v={{ STATIC_VERSION }}">
     <link rel="stylesheet" href="{% static 'css/speed-dial.css' %}?v={{ STATIC_VERSION }}">
+    <link rel="stylesheet" href="{% static 'css/bottom-sheet.css' %}?v={{ STATIC_VERSION }}">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v={{ STATIC_VERSION }}">
 
     <!-- Bootstrap Icons -->
@@ -1338,6 +1339,8 @@
       });
   </script>
   <script src="{% static 'js/speed-dial.js' %}"></script>
+  <script src="{% static 'js/bottom-sheet.js' %}"></script>
+  <script src="{% static 'js/autocomplete.js' %}"></script>
   <script src="{% static 'js/image-compression.js' %}"></script>
 <script>
 // 画像モーダル表示機能
@@ -1490,5 +1493,8 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 {% endif %}
   {% endblock %}
+
+  <!-- クイック記録ボトムシート -->
+  {% include 'components/quick_record_sheet.html' %}
 </body>
 </html>
