@@ -1,0 +1,518 @@
+/* ========================================
+   Modern Form Inputs - Material 3 & iOS スタイル
+   ネイティブアプリレベルのフォーム体験
+   ======================================== */
+
+/* ========== 1. Floating Label Input (Material Design) ========== */
+
+.form-floating-modern {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.form-floating-modern input,
+.form-floating-modern textarea,
+.form-floating-modern select {
+  width: 100%;
+  padding: 1.25rem 1rem 0.5rem;
+  border: 2px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  background: var(--bg-100);
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--text-primary);
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  outline: none;
+}
+
+.form-floating-modern label {
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+  font-size: 1rem;
+  color: var(--text-200);
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  transform-origin: left top;
+  background: var(--bg-100);
+  padding: 0 0.25rem;
+}
+
+/* Focus state */
+.form-floating-modern input:focus,
+.form-floating-modern textarea:focus,
+.form-floating-modern select:focus {
+  border-color: var(--accent-200);
+  box-shadow: 0 0 0 4px rgba(0, 102, 140, 0.1);
+}
+
+/* Label animation on focus or when filled */
+.form-floating-modern input:focus ~ label,
+.form-floating-modern textarea:focus ~ label,
+.form-floating-modern select:focus ~ label,
+.form-floating-modern input:not(:placeholder-shown) ~ label,
+.form-floating-modern textarea:not(:placeholder-shown) ~ label,
+.form-floating-modern select:not([value=""]):not(:invalid) ~ label {
+  transform: translateY(-0.75rem) scale(0.85);
+  color: var(--accent-200);
+  font-weight: 500;
+}
+
+/* Error state */
+.form-floating-modern.error input,
+.form-floating-modern.error textarea,
+.form-floating-modern.error select {
+  border-color: var(--danger-color);
+}
+
+.form-floating-modern.error input:focus,
+.form-floating-modern.error textarea:focus,
+.form-floating-modern.error select:focus {
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+}
+
+.form-floating-modern.error label {
+  color: var(--danger-color);
+}
+
+/* Success state */
+.form-floating-modern.success input,
+.form-floating-modern.success textarea,
+.form-floating-modern.success select {
+  border-color: var(--success-color);
+}
+
+.form-floating-modern.success input:focus,
+.form-floating-modern.success textarea:focus,
+.form-floating-modern.success select:focus {
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+/* Helper text */
+.form-floating-modern .form-text {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: var(--text-label);
+  color: var(--text-200);
+}
+
+.form-floating-modern.error .form-text {
+  color: var(--danger-color);
+}
+
+.form-floating-modern.success .form-text {
+  color: var(--success-color);
+}
+
+/* Icon support */
+.form-floating-modern.with-icon input,
+.form-floating-modern.with-icon textarea {
+  padding-left: 2.75rem;
+}
+
+.form-floating-modern.with-icon label {
+  left: 2.75rem;
+}
+
+.form-floating-modern .form-icon {
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+  font-size: 1.25rem;
+  color: var(--text-200);
+  transition: color 0.2s ease;
+}
+
+.form-floating-modern input:focus ~ .form-icon {
+  color: var(--accent-200);
+}
+
+/* ========== 2. Filled Input (Material 3) ========== */
+
+.form-filled {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.form-filled input,
+.form-filled textarea,
+.form-filled select {
+  width: 100%;
+  padding: 1.75rem 1rem 0.5rem;
+  border: none;
+  border-bottom: 2px solid var(--border-primary);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--bg-200);
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--text-primary);
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  outline: none;
+}
+
+.form-filled label {
+  position: absolute;
+  left: 1rem;
+  top: 1.25rem;
+  font-size: 1rem;
+  color: var(--text-200);
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  transform-origin: left top;
+}
+
+/* Focus state */
+.form-filled input:focus,
+.form-filled textarea:focus,
+.form-filled select:focus {
+  background: var(--primary-100);
+  border-bottom-color: var(--accent-200);
+  box-shadow: 0 2px 0 0 var(--accent-200);
+}
+
+/* Label animation */
+.form-filled input:focus ~ label,
+.form-filled textarea:focus ~ label,
+.form-filled select:focus ~ label,
+.form-filled input:not(:placeholder-shown) ~ label,
+.form-filled textarea:not(:placeholder-shown) ~ label,
+.form-filled select:not([value=""]):not(:invalid) ~ label {
+  transform: translateY(-0.5rem) scale(0.85);
+  color: var(--accent-200);
+  font-weight: 500;
+}
+
+/* Error state */
+.form-filled.error input,
+.form-filled.error textarea,
+.form-filled.error select {
+  border-bottom-color: var(--danger-color);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.form-filled.error input:focus,
+.form-filled.error textarea:focus,
+.form-filled.error select:focus {
+  box-shadow: 0 2px 0 0 var(--danger-color);
+}
+
+.form-filled.error label {
+  color: var(--danger-color);
+}
+
+/* Supporting text */
+.form-filled .form-text {
+  display: block;
+  margin-top: 0.5rem;
+  padding-left: 1rem;
+  font-size: var(--text-label);
+  color: var(--text-200);
+}
+
+.form-filled.error .form-text {
+  color: var(--danger-color);
+}
+
+/* ========== 3. Pill Input (iOS-style) ========== */
+
+.form-pill {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.form-pill input,
+.form-pill textarea {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  border: 2px solid var(--border-light);
+  border-radius: 999px;
+  background: var(--bg-200);
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--text-primary);
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  outline: none;
+}
+
+.form-pill textarea {
+  border-radius: var(--radius-xl);
+  padding: 1rem 1.25rem;
+}
+
+/* Focus state */
+.form-pill input:focus,
+.form-pill textarea:focus {
+  border-color: var(--accent-200);
+  background: var(--bg-100);
+  box-shadow: 0 0 0 4px rgba(0, 102, 140, 0.08);
+}
+
+/* Icon support */
+.form-pill.with-icon input {
+  padding-left: 2.75rem;
+}
+
+.form-pill .form-icon {
+  position: absolute;
+  left: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.25rem;
+  color: var(--text-200);
+  transition: color 0.2s ease;
+}
+
+.form-pill input:focus ~ .form-icon {
+  color: var(--accent-200);
+}
+
+/* Placeholder styling */
+.form-pill input::placeholder,
+.form-pill textarea::placeholder {
+  color: var(--text-200);
+  opacity: 0.7;
+}
+
+/* Error state */
+.form-pill.error input,
+.form-pill.error textarea {
+  border-color: var(--danger-color);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.form-pill.error input:focus,
+.form-pill.error textarea:focus {
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.08);
+}
+
+/* Helper text */
+.form-pill .form-text {
+  display: block;
+  margin-top: 0.5rem;
+  padding-left: 1.25rem;
+  font-size: var(--text-label);
+  color: var(--text-200);
+}
+
+.form-pill.error .form-text {
+  color: var(--danger-color);
+}
+
+/* ========== Search Input Variant (Pill with icon) ========== */
+
+.form-search {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.form-search input {
+  width: 100%;
+  padding: 0.875rem 1.25rem 0.875rem 2.75rem;
+  border: 2px solid var(--border-light);
+  border-radius: 999px;
+  background: var(--bg-200);
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--text-primary);
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  outline: none;
+}
+
+.form-search .search-icon {
+  position: absolute;
+  left: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.25rem;
+  color: var(--text-200);
+  pointer-events: none;
+}
+
+.form-search input:focus {
+  border-color: var(--accent-200);
+  background: var(--bg-100);
+  box-shadow: var(--elevation-1);
+}
+
+.form-search input:focus ~ .search-icon {
+  color: var(--accent-200);
+}
+
+/* Clear button */
+.form-search .clear-btn {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.5rem;
+  height: 1.5rem;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: var(--text-200);
+  color: var(--bg-100);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.form-search input:not(:placeholder-shown) ~ .clear-btn {
+  display: flex;
+}
+
+.form-search .clear-btn:hover {
+  background: var(--text-100);
+  transform: translateY(-50%) scale(1.1);
+}
+
+/* ========== Checkbox & Radio (Modern Style) ========== */
+
+.form-check-modern {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  cursor: pointer;
+}
+
+.form-check-modern input[type="checkbox"],
+.form-check-modern input[type="radio"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  background: var(--bg-100);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.form-check-modern input[type="radio"] {
+  border-radius: 50%;
+}
+
+.form-check-modern input[type="checkbox"]:checked,
+.form-check-modern input[type="radio"]:checked {
+  background: var(--accent-200);
+  border-color: var(--accent-200);
+}
+
+.form-check-modern input[type="checkbox"]:checked::after {
+  content: "✓";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 0.875rem;
+  font-weight: bold;
+}
+
+.form-check-modern input[type="radio"]:checked::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 0.5rem;
+  height: 0.5rem;
+  background: white;
+  border-radius: 50%;
+}
+
+.form-check-modern input:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(0, 102, 140, 0.1);
+}
+
+.form-check-modern label {
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+/* ========== Dark Mode Support ========== */
+
+[data-theme="dark"] .form-floating-modern input,
+[data-theme="dark"] .form-floating-modern textarea,
+[data-theme="dark"] .form-floating-modern select,
+[data-theme="dark"] .form-pill input,
+[data-theme="dark"] .form-pill textarea,
+[data-theme="dark"] .form-search input {
+  background: rgba(30, 41, 59, 0.5);
+  color: var(--dm-foreground);
+  border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .form-filled input,
+[data-theme="dark"] .form-filled textarea,
+[data-theme="dark"] .form-filled select {
+  background: rgba(30, 41, 59, 0.3);
+  color: var(--dm-foreground);
+}
+
+[data-theme="dark"] .form-floating-modern label,
+[data-theme="dark"] .form-filled label,
+[data-theme="dark"] .form-pill .form-text,
+[data-theme="dark"] .form-search input::placeholder {
+  color: var(--dm-muted-foreground);
+}
+
+/* ========== Responsive Design ========== */
+
+@media (max-width: 640px) {
+  .form-floating-modern input,
+  .form-floating-modern textarea,
+  .form-filled input,
+  .form-filled textarea,
+  .form-pill input,
+  .form-pill textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+/* ========== Usage Examples ========== */
+/*
+  1. Floating Label (Material Design):
+
+  <div class="form-floating-modern">
+    <input type="text" id="stock-code" placeholder=" " />
+    <label for="stock-code">銘柄コード</label>
+    <small class="form-text">例: 1234</small>
+  </div>
+
+  2. Filled Input (Material 3):
+
+  <div class="form-filled">
+    <input type="number" id="price" placeholder=" " />
+    <label for="price">購入価格</label>
+    <small class="form-text">円単位で入力</small>
+  </div>
+
+  3. Pill Input (iOS-style):
+
+  <div class="form-pill">
+    <input type="text" placeholder="メモを入力..." />
+  </div>
+
+  4. Search Input:
+
+  <div class="form-search">
+    <input type="search" placeholder="銘柄を検索..." />
+    <i class="bi bi-search search-icon"></i>
+    <button class="clear-btn">×</button>
+  </div>
+
+  5. With Icon:
+
+  <div class="form-floating-modern with-icon">
+    <input type="email" id="email" placeholder=" " />
+    <label for="email">メールアドレス</label>
+    <i class="bi bi-envelope form-icon"></i>
+  </div>
+*/
