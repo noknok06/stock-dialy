@@ -1067,7 +1067,7 @@
 }
 
 .reason-fullscreen-overlay.active {
-  display: flex;
+  display: flex !important;
   align-items: center;
   justify-content: center;
 }
@@ -1940,41 +1940,65 @@
 <script src="{% static 'js/push-notification-ui.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    loadNotifications();
+    // loadNotifications()をtry-catchで囲む
+    try {
+        loadNotifications();
+    } catch (error) {
+        console.error('通知読み込みエラー:', error);
+    }
 
     // ============================================
     // 投資理由 全画面モーダル
     // ============================================
-    const reasonExpandBtn = document.getElementById('reasonExpandBtn');
-    const reasonOverlay = document.getElementById('reasonFullscreenOverlay');
-    const reasonClose = document.getElementById('reasonFullscreenClose');
+    try {
+        const reasonExpandBtn = document.getElementById('reasonExpandBtn');
+        const reasonOverlay = document.getElementById('reasonFullscreenOverlay');
+        const reasonClose = document.getElementById('reasonFullscreenClose');
 
-    if (reasonExpandBtn && reasonOverlay) {
-      reasonExpandBtn.addEventListener('click', function() {
-        reasonOverlay.classList.add('active');
-        document.body.style.overflow = 'hidden';
-      });
-
-      function closeReasonFullscreen() {
-        reasonOverlay.classList.remove('active');
-        document.body.style.overflow = '';
-      }
-
-      if (reasonClose) {
-        reasonClose.addEventListener('click', closeReasonFullscreen);
-      }
-
-      reasonOverlay.addEventListener('click', function(e) {
-        if (e.target === reasonOverlay) {
-          closeReasonFullscreen();
+        // デバッグログ（開発環境のみ）
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.log('投資理由モーダル要素:', {
+                button: reasonExpandBtn,
+                overlay: reasonOverlay,
+                close: reasonClose
+            });
         }
-      });
 
-      document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && reasonOverlay.classList.contains('active')) {
-          closeReasonFullscreen();
+        if (reasonExpandBtn && reasonOverlay) {
+            reasonExpandBtn.addEventListener('click', function() {
+                console.log('全画面ボタンがクリックされました');
+                reasonOverlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            });
+
+            function closeReasonFullscreen() {
+                reasonOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+
+            if (reasonClose) {
+                reasonClose.addEventListener('click', closeReasonFullscreen);
+            }
+
+            reasonOverlay.addEventListener('click', function(e) {
+                if (e.target === reasonOverlay) {
+                    closeReasonFullscreen();
+                }
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && reasonOverlay.classList.contains('active')) {
+                    closeReasonFullscreen();
+                }
+            });
+        } else {
+            console.warn('投資理由モーダルの要素が見つかりません:', {
+                button: !!reasonExpandBtn,
+                overlay: !!reasonOverlay
+            });
         }
-      });
+    } catch (error) {
+        console.error('投資理由モーダルの初期化エラー:', error);
     }
     
     // プッシュ通知ステータス更新時のUI更新
