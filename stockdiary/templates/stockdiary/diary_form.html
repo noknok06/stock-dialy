@@ -1934,33 +1934,41 @@ if (fetchCurrentPriceBtn) {
   fetchCurrentPriceBtn.addEventListener('click', async function() {
     const stockCode = stockSymbolInput.value.trim();
     const priceInput = document.getElementById('id_initial_purchase_price');
-    
+
     if (!stockCode) {
       alert('銘柄コードを入力してください');
       stockSymbolInput.focus();
       return;
     }
-    
+
     fetchCurrentPriceBtn.disabled = true;
     fetchCurrentPriceBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-    
+
     try {
-      const response = await fetch(`/stockdiary/api/stock/price/${stockCode}/`);
-      
+      // 正しいAPIエンドポイント: /stockdiary/api/stock/{code}/price/
+      const response = await fetch(`/stockdiary/api/stock/${stockCode}/price/`);
+
       if (!response.ok) {
         throw new Error('株価の取得に失敗しました');
       }
-      
+
       const data = await response.json();
-      
+
       if (data.success && data.price) {
         priceInput.value = parseFloat(data.price).toFixed(2);
+
+        // フィールドをハイライト表示
+        priceInput.classList.add('auto-filled');
+        setTimeout(() => {
+          priceInput.classList.remove('auto-filled');
+        }, 2000);
+
         updateInitialPurchasePreview();
         showNotification('success', '現在株価を取得しました');
       } else {
         throw new Error('株価情報が見つかりませんでした');
       }
-      
+
     } catch (error) {
       console.error('Price fetch error:', error);
       showNotification('error', error.message);
