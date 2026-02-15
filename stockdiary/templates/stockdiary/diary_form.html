@@ -1272,6 +1272,53 @@
 <script src="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js"></script>
 <script>
 
+// ============================================
+// 初回購入情報の表示/非表示（グローバルスコープ）
+// ============================================
+// この関数はHTML onchange属性から呼び出されるため、グローバルスコープに定義する必要がある
+window.handleInitialPurchaseToggle = function(checkbox) {
+  console.log('[初回購入情報] handleInitialPurchaseToggle called, checked:', checkbox.checked);
+  const initialPurchaseSection = document.getElementById('initialPurchaseSection');
+
+  if (!initialPurchaseSection) {
+    console.error('[初回購入情報] Section not found!');
+    return;
+  }
+
+  // updateRequiredFields関数を直接呼び出す
+  const dateField = document.getElementById('id_initial_purchase_date');
+  const priceField = document.getElementById('id_initial_purchase_price');
+  const quantityField = document.getElementById('id_initial_purchase_quantity');
+
+  if (checkbox.checked) {
+    initialPurchaseSection.style.display = 'block';
+    initialPurchaseSection.classList.add('active');
+
+    // フィールドにrequired属性を追加
+    [dateField, priceField, quantityField].forEach(field => {
+      if (field) {
+        field.setAttribute('required', 'required');
+      }
+    });
+  } else {
+    initialPurchaseSection.style.display = 'none';
+    initialPurchaseSection.classList.remove('active');
+
+    // フィールドからrequired属性を削除してクリア
+    [dateField, priceField, quantityField].forEach(field => {
+      if (field) {
+        field.removeAttribute('required');
+        field.value = '';
+      }
+    });
+
+    const preview = document.getElementById('initial-purchase-preview');
+    if (preview) {
+      preview.style.display = 'none';
+    }
+  }
+};
+
 document.addEventListener('DOMContentLoaded', function() {
 
 // ============================================
@@ -1790,30 +1837,8 @@ if (memoTextarea && memoCharCount) {
 }
 
 // ============================================
-// 初回購入情報の表示/非表示
+// 初回購入情報のDOMContentLoaded時の初期化
 // ============================================
-// グローバル関数（HTML onchange属性から呼び出される）
-window.handleInitialPurchaseToggle = function(checkbox) {
-  console.log('[初回購入情報] handleInitialPurchaseToggle called, checked:', checkbox.checked);
-  const initialPurchaseSection = document.getElementById('initialPurchaseSection');
-
-  if (!initialPurchaseSection) {
-    console.error('[初回購入情報] Section not found!');
-    return;
-  }
-
-  if (checkbox.checked) {
-    initialPurchaseSection.style.display = 'block';
-    initialPurchaseSection.classList.add('active');
-    updateRequiredFields(true);
-  } else {
-    initialPurchaseSection.style.display = 'none';
-    initialPurchaseSection.classList.remove('active');
-    updateRequiredFields(false);
-  }
-};
-
-// DOMContentLoaded時の初期化
 (function initInitialPurchaseToggle() {
   const addInitialPurchaseCheckbox = document.getElementById('id_add_initial_purchase');
   const initialPurchaseSection = document.getElementById('initialPurchaseSection');
@@ -1827,18 +1852,13 @@ window.handleInitialPurchaseToggle = function(checkbox) {
     return;
   }
 
-  // 初期状態を反映
-  const initialChecked = addInitialPurchaseCheckbox.checked;
-  console.log('[初回購入情報] Initial checkbox state:', initialChecked);
-
-  if (initialChecked) {
-    initialPurchaseSection.style.display = 'block';
-    initialPurchaseSection.classList.add('active');
-    updateRequiredFields(true);
+  // 初期状態を反映（ページ読み込み時にチェックされている場合）
+  if (addInitialPurchaseCheckbox.checked) {
+    console.log('[初回購入情報] Initial checkbox state: checked');
+    // handleInitialPurchaseToggleを呼び出して初期表示
+    window.handleInitialPurchaseToggle(addInitialPurchaseCheckbox);
   } else {
-    initialPurchaseSection.style.display = 'none';
-    initialPurchaseSection.classList.remove('active');
-    updateRequiredFields(false);
+    console.log('[初回購入情報] Initial checkbox state: unchecked');
   }
 
   console.log('[初回購入情報] Initialization complete');
