@@ -1098,10 +1098,11 @@
         {% if not form.instance.pk %}
         <div class="form-section">
           <div class="form-check mb-3">
-            <input type="checkbox" class="form-check-input" 
-                   id="id_add_initial_purchase" 
+            <input type="checkbox" class="form-check-input"
+                   id="id_add_initial_purchase"
                    name="add_initial_purchase"
-                   {% if form.add_initial_purchase.value %}checked{% endif %}>
+                   {% if form.add_initial_purchase.value %}checked{% endif %}
+                   onchange="handleInitialPurchaseToggle(this)">
             <label class="form-check-label" for="id_add_initial_purchase">
               <strong>{{ form.add_initial_purchase.label }}</strong>
               <small class="d-block text-muted">
@@ -1791,31 +1792,57 @@ if (memoTextarea && memoCharCount) {
 // ============================================
 // 初回購入情報の表示/非表示
 // ============================================
-const addInitialPurchaseCheckbox = document.getElementById('id_add_initial_purchase');
-const initialPurchaseSection = document.getElementById('initialPurchaseSection');
+// グローバル関数（HTML onchange属性から呼び出される）
+window.handleInitialPurchaseToggle = function(checkbox) {
+  console.log('[初回購入情報] handleInitialPurchaseToggle called, checked:', checkbox.checked);
+  const initialPurchaseSection = document.getElementById('initialPurchaseSection');
 
-if (addInitialPurchaseCheckbox && initialPurchaseSection) {
-  // ページ読み込み時の初期状態を設定
-  function toggleInitialPurchaseSection(show) {
-    if (show) {
-      initialPurchaseSection.style.display = 'block';
-      initialPurchaseSection.classList.add('active');
-      updateRequiredFields(true);
-    } else {
-      initialPurchaseSection.style.display = 'none';
-      initialPurchaseSection.classList.remove('active');
-      updateRequiredFields(false);
-    }
+  if (!initialPurchaseSection) {
+    console.error('[初回購入情報] Section not found!');
+    return;
+  }
+
+  if (checkbox.checked) {
+    initialPurchaseSection.style.display = 'block';
+    initialPurchaseSection.classList.add('active');
+    updateRequiredFields(true);
+  } else {
+    initialPurchaseSection.style.display = 'none';
+    initialPurchaseSection.classList.remove('active');
+    updateRequiredFields(false);
+  }
+};
+
+// DOMContentLoaded時の初期化
+(function initInitialPurchaseToggle() {
+  const addInitialPurchaseCheckbox = document.getElementById('id_add_initial_purchase');
+  const initialPurchaseSection = document.getElementById('initialPurchaseSection');
+
+  console.log('[初回購入情報] Initializing...');
+  console.log('[初回購入情報] Checkbox:', addInitialPurchaseCheckbox);
+  console.log('[初回購入情報] Section:', initialPurchaseSection);
+
+  if (!addInitialPurchaseCheckbox || !initialPurchaseSection) {
+    console.warn('[初回購入情報] Elements not found - skipping (normal for edit mode)');
+    return;
   }
 
   // 初期状態を反映
-  toggleInitialPurchaseSection(addInitialPurchaseCheckbox.checked);
+  const initialChecked = addInitialPurchaseCheckbox.checked;
+  console.log('[初回購入情報] Initial checkbox state:', initialChecked);
 
-  // チェックボックスの変更イベント
-  addInitialPurchaseCheckbox.addEventListener('change', function() {
-    toggleInitialPurchaseSection(this.checked);
-  });
-}
+  if (initialChecked) {
+    initialPurchaseSection.style.display = 'block';
+    initialPurchaseSection.classList.add('active');
+    updateRequiredFields(true);
+  } else {
+    initialPurchaseSection.style.display = 'none';
+    initialPurchaseSection.classList.remove('active');
+    updateRequiredFields(false);
+  }
+
+  console.log('[初回購入情報] Initialization complete');
+})()
 
 function updateRequiredFields(required) {
   const dateField = document.getElementById('id_initial_purchase_date');
