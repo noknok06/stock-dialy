@@ -1064,6 +1064,7 @@
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
   animation: reasonFadeIn 0.2s ease-out;
+  overflow: hidden;
 }
 
 .reason-fullscreen-overlay.active {
@@ -1087,6 +1088,8 @@
   flex-direction: column;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   animation: reasonSlideUp 0.25s ease-out;
+  overflow: hidden;
+  position: relative;
 }
 
 @keyframes reasonSlideUp {
@@ -1101,6 +1104,9 @@
   padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--border-color, #cccbc8);
   flex-shrink: 0;
+  background: var(--bg-100, #fffefb);
+  position: relative;
+  z-index: 1;
 }
 
 .reason-fullscreen-header h5 {
@@ -1133,9 +1139,11 @@
 .reason-fullscreen-body {
   padding: 1.5rem;
   overflow-y: auto;
+  overflow-x: hidden;
   flex: 1;
   line-height: 1.8;
-  color: var(--text-100);
+  color: var(--text-primary, #1d1c1c);
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ダークモード */
@@ -1425,27 +1433,6 @@
                 {{ diary.reason|render_markdown }}
               </div>
             </div>
-
-            <!-- 投資理由 全画面モーダル -->
-            {% if diary.reason %}
-            <div class="reason-fullscreen-overlay" id="reasonFullscreenOverlay">
-              <div class="reason-fullscreen-panel">
-                <div class="reason-fullscreen-header">
-                  <h5>
-                    <i class="bi bi-journal-text"></i>
-                    {% if diary.is_memo %}メモ内容{% else %}投資理由{% endif %}
-                  </h5>
-                  <button type="button" class="reason-fullscreen-close" id="reasonFullscreenClose"
-                          title="閉じる">
-                    <i class="bi bi-x-lg"></i>
-                  </button>
-                </div>
-                <div class="reason-fullscreen-body markdown-content">
-                  {{ diary.reason|render_markdown }}
-                </div>
-              </div>
-            </div>
-            {% endif %}
 
             <!-- 取引サマリー -->
             {% if not diary.is_memo %}
@@ -1929,6 +1916,27 @@
     </div>
   </div>
 </div>
+
+<!-- 投資理由 全画面モーダル -->
+{% if diary.reason %}
+<div class="reason-fullscreen-overlay" id="reasonFullscreenOverlay">
+  <div class="reason-fullscreen-panel">
+    <div class="reason-fullscreen-header">
+      <h5>
+        <i class="bi bi-journal-text"></i>
+        {% if diary.is_memo %}メモ内容{% else %}投資理由{% endif %}
+      </h5>
+      <button type="button" class="reason-fullscreen-close" id="reasonFullscreenClose"
+              title="閉じる">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="reason-fullscreen-body markdown-content">
+      {{ diary.reason|render_markdown }}
+    </div>
+  </div>
+</div>
+{% endif %}
 
 {% include 'speed_dial.html' with actions=diary_actions %}
 {% endblock %}
