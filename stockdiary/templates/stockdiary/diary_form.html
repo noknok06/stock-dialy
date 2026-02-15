@@ -1795,8 +1795,9 @@ const addInitialPurchaseCheckbox = document.getElementById('id_add_initial_purch
 const initialPurchaseSection = document.getElementById('initialPurchaseSection');
 
 if (addInitialPurchaseCheckbox && initialPurchaseSection) {
-  addInitialPurchaseCheckbox.addEventListener('change', function() {
-    if (this.checked) {
+  // ページ読み込み時の初期状態を設定
+  function toggleInitialPurchaseSection(show) {
+    if (show) {
       initialPurchaseSection.style.display = 'block';
       initialPurchaseSection.classList.add('active');
       updateRequiredFields(true);
@@ -1805,6 +1806,14 @@ if (addInitialPurchaseCheckbox && initialPurchaseSection) {
       initialPurchaseSection.classList.remove('active');
       updateRequiredFields(false);
     }
+  }
+
+  // 初期状態を反映
+  toggleInitialPurchaseSection(addInitialPurchaseCheckbox.checked);
+
+  // チェックボックスの変更イベント
+  addInitialPurchaseCheckbox.addEventListener('change', function() {
+    toggleInitialPurchaseSection(this.checked);
   });
 }
 

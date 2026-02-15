@@ -18,6 +18,9 @@ from decimal import Decimal, InvalidOperation
 
 from .models import StockDiary, Transaction, DiaryNote
 from tags.models import Tag
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -66,20 +69,69 @@ def quick_create_diary(request):
                 'message': '銘柄コードは50文字以内で入力してください'
             }, status=400)
 
+        # 🆕 購入情報を取得
+        purchase_price = request.POST.get('purchase_price', '').strip()
+        purchase_quantity = request.POST.get('purchase_quantity', '').strip()
+        purchase_date_str = request.POST.get('purchase_date', '').strip()
+
+        # 🆕 購入価格のバリデーション
+        purchase_price_decimal = None
+        if purchase_price:
+            try:
+                purchase_price_decimal = Decimal(purchase_price)
+                if purchase_price_decimal < 0:
+                    return JsonResponse({
+                        'success': False,
+                        'message': '購入単価は0以上の数値を入力してください'
+                    }, status=400)
+            except (ValueError, InvalidOperation):
+                return JsonResponse({
+                    'success': False,
+                    'message': '購入単価は有効な数値を入力してください'
+                }, status=400)
+
+        # 🆕 購入数量のバリデーション
+        purchase_quantity_int = None
+        if purchase_quantity:
+            try:
+                purchase_quantity_int = int(purchase_quantity)
+                if purchase_quantity_int < 1:
+                    return JsonResponse({
+                        'success': False,
+                        'message': '購入数量は1以上の整数を入力してください'
+                    }, status=400)
+            except ValueError:
+                return JsonResponse({
+                    'success': False,
+                    'message': '購入数量は有効な整数を入力してください'
+                }, status=400)
+
+        # 🆕 購入日のバリデーション
+        purchase_date = None
+        if purchase_date_str:
+            try:
+                from datetime import datetime
+                purchase_date = datetime.strptime(purchase_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                return JsonResponse({
+                    'success': False,
+                    'message': '購入日の形式が正しくありません'
+                }, status=400)
+
         # 日記作成
         diary = StockDiary(
             user=request.user,
             stock_name=stock_name,
             stock_symbol=stock_code if stock_code else '',  # 🆕 銘柄コードを設定
         )
-        
+
         # 🆕 業種・市場情報を設定
         industry = request.POST.get('industry', '').strip()
         market = request.POST.get('market', '').strip()
-        
+
         if industry:
             diary.sector = industry[:50]  # 最大50文字
-        
+
         # 市場情報はメモに追記（必要に応じて）
         if market and not diary.memo:
             diary.memo = f"市場: {market}"
@@ -96,14 +148,71 @@ def quick_create_diary(request):
 
         # 保存
         diary.save()
-        
+
+        # 🆕 銘柄コードが設定されているが購入価格が未入力の場合、株価APIから自動取得
+        if stock_code and not purchase_price_decimal:
+            try:
+                from .api import get_stock_price
+                from django.http import HttpRequest
+
+                # 株価取得APIを内部的に呼び出し
+                api_request = HttpRequest()
+                api_request.user = request.user
+                api_request.method = 'GET'
+
+                stock_price_response = get_stock_price(api_request, stock_code)
+
+                if stock_price_response.status_code == 200:
+                    import json
+                    price_data = json.loads(stock_price_response.content)
+
+                    if price_data.get('success') and price_data.get('price'):
+                        # 株価を取得できた場合、purchase_price_decimalに設定
+                        purchase_price_decimal = Decimal(str(price_data['price']))
+
+                        logger.info(
+                            f"[quick_create_diary] Auto-fetched stock price: "
+                            f"code={stock_code}, price={purchase_price_decimal}"
+                        )
+            except Exception as e:
+                # 株価取得に失敗してもエラーにはせず、ログ出力のみ
+                logger.warning(
+                    f"[quick_create_diary] Failed to auto-fetch stock price: "
+                    f"code={stock_code}, error={str(e)}"
+                )
+
+        # 🆕 購入情報があれば、Transactionを作成
+        transaction_created = False
+        if purchase_price_decimal is not None and purchase_quantity_int is not None:
+            # 購入日が未指定の場合は今日の日付
+            if not purchase_date:
+                purchase_date = timezone.now().date()
+
+            # Transaction作成
+            transaction = Transaction.objects.create(
+                diary=diary,
+                transaction_type='buy',
+                transaction_date=purchase_date,
+                price=purchase_price_decimal,
+                quantity=purchase_quantity_int,
+                is_margin=False
+            )
+
+            # 日記の集計情報を更新
+            diary.update_aggregates()
+
+            transaction_created = True
+
+            logger.info(
+                f"[quick_create_diary] Created transaction: "
+                f"price={purchase_price_decimal}, quantity={purchase_quantity_int}, date={purchase_date}"
+            )
+
         # 🆕 ログ出力（デバッグ用）
-        import logging
-        logger = logging.getLogger(__name__)
         logger.info(
             f"[quick_create_diary] Created diary: "
             f"code={stock_code}, name={stock_name}, "
-            f"industry={industry}, market={market}"
+            f"industry={industry}, market={market}, transaction_created={transaction_created}"
         )
 
         return JsonResponse({
@@ -112,6 +221,10 @@ def quick_create_diary(request):
             'diary_id': diary.id,
             'stock_code': stock_code,
             'stock_name': stock_name,
+            'transaction_created': transaction_created,
+            'purchase_price': float(purchase_price_decimal) if purchase_price_decimal else None,
+            'purchase_quantity': purchase_quantity_int,
+            'purchase_date': purchase_date.strftime('%Y-%m-%d') if purchase_date else None,
             'redirect_url': reverse('stockdiary:detail', kwargs={'pk': diary.id})
         })
 

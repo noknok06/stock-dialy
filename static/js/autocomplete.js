@@ -288,6 +288,9 @@ class Autocomplete {
         industry: company.industry,
         market: company.market
       });
+
+      // 🆕 株価を自動取得して購入単価フィールドに設定
+      this.fetchStockPrice(company.code, form);
     }
 
     // 触覚フィードバック
@@ -308,6 +311,59 @@ class Autocomplete {
       detail: { company }
     });
     this.input.dispatchEvent(event);
+  }
+
+  // 🆕 株価を自動取得
+  async fetchStockPrice(stockCode, form) {
+    // 購入単価フィールドを取得（quick_record用とレギュラー用の両方に対応）
+    const purchasePriceInput = form.querySelector('input[name="purchase_price"]');
+
+    if (!purchasePriceInput) {
+      console.log('[Autocomplete] purchase_price field not found, skipping stock price fetch');
+      return;
+    }
+
+    // すでに価格が入力されている場合はスキップ
+    if (purchasePriceInput.value && purchasePriceInput.value.trim() !== '') {
+      console.log('[Autocomplete] purchase_price already filled, skipping auto-fetch');
+      return;
+    }
+
+    try {
+      console.log(`[Autocomplete] Fetching stock price for ${stockCode}...`);
+
+      const apiUrl = `${window.location.origin}/stockdiary/api/stock/${stockCode}/price/`;
+      const response = await fetch(apiUrl);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success && data.price) {
+        // 購入単価フィールドに株価を設定
+        purchasePriceInput.value = data.price;
+
+        // フィールドをハイライトして変更を視覚的に示す
+        purchasePriceInput.classList.add('auto-filled');
+        setTimeout(() => {
+          purchasePriceInput.classList.remove('auto-filled');
+        }, 2000);
+
+        console.log(`[Autocomplete] Auto-filled stock price: ${data.price}`);
+
+        // 触覚フィードバック
+        if (this.options.enableHaptics && navigator.vibrate) {
+          navigator.vibrate([10, 5, 10]);
+        }
+      } else {
+        console.warn('[Autocomplete] Stock price not available:', data);
+      }
+    } catch (error) {
+      console.error('[Autocomplete] Failed to fetch stock price:', error);
+      // エラーは無視して処理を継続（株価取得はオプション機能のため）
+    }
   }
 
   // 🆕 隠しフィールドをクリア

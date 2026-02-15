@@ -890,3 +890,24 @@
 .form-control-enhanced:invalid:not(:placeholder-shown) {
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1), 0 0 20px rgba(239, 68, 68, 0.05);
 }
+
+/* ========== 株価自動入力ハイライト ========== */
+.form-control.auto-filled,
+input[type="number"].auto-filled {
+  border-color: #10b981 !important;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05)) !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2), 0 0 25px rgba(16, 185, 129, 0.15) !important;
+  animation: auto-fill-pulse 2s ease-out;
+}
+
+@keyframes auto-fill-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.1);
+  }
+  100% {
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2), 0 0 25px rgba(16, 185, 129, 0.15);
+  }
+}
