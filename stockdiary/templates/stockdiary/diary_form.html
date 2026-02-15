@@ -800,7 +800,7 @@
       width: 1.75rem;
       height: 1.75rem;
     }
-    
+
     .analysis-item-label {
       padding: 0.5rem 0;
       min-height: 44px;
@@ -812,6 +812,93 @@
     .analysis-item .form-select {
       min-height: 44px;
     }
+  }
+
+  /* ========== フローティング保存ボタン ========== */
+  .floating-save-btn {
+    position: fixed;
+    bottom: 76px; /* スピードダイヤルトリガー(16px + 56px) + gap(12px) - ボタン中心調整(-8px) = 76px */
+    right: 20px; /* スピードダイヤルアクション位置に合わせる */
+    z-index: 1039; /* スピードダイヤル(1040)より下 */
+    display: flex;
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+    transition: opacity 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+                transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+  }
+
+  .floating-save-btn.hidden {
+    opacity: 0;
+    transform: translateY(20px) translateZ(0);
+    pointer-events: none;
+  }
+
+  .floating-save-btn .btn {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: unset !important;
+    padding: 0 !important;
+    background-color: rgba(0, 102, 140, 0.85) !important;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white !important;
+    border: none;
+    font-size: 1.25rem;
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: relative;
+    overflow: hidden;
+    will-change: transform;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+  }
+
+  /* リップルエフェクト */
+  .floating-save-btn .btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s ease-out, height 0.6s ease-out, opacity 0.6s ease-out;
+    opacity: 0;
+  }
+
+  .floating-save-btn .btn:active::after {
+    width: 200%;
+    height: 200%;
+    opacity: 1;
+    transition: width 0s, height 0s, opacity 0s;
+  }
+
+  .floating-save-btn .btn:hover,
+  .floating-save-btn .btn:focus {
+    transform: scale(1.1) translateZ(0);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .floating-save-btn .btn:active {
+    transform: scale(1.05) translateZ(0);
+  }
+
+  /* ダークモード */
+  .dark-mode .floating-save-btn .btn,
+  [data-theme="dark"] .floating-save-btn .btn {
+    background-color: rgba(59, 130, 246, 0.85) !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  }
+
+  .dark-mode .floating-save-btn .btn:hover,
+  [data-theme="dark"] .floating-save-btn .btn:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
   }
 </style>
 {% endblock %}
@@ -1166,6 +1253,13 @@
       </form>
     </div>
   </div>
+</div>
+
+<!-- フローティング保存ボタン -->
+<div class="floating-save-btn" id="floatingSaveBtn">
+  <button type="submit" form="diaryForm" class="btn btn-primary" aria-label="保存" title="保存">
+    <i class="bi bi-check-lg"></i>
+  </button>
 </div>
 
 {% include 'speed_dial.html' with actions=form_actions %}
@@ -2190,6 +2284,59 @@ const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-tog
 tooltipTriggerList.map(function (tooltipTriggerEl) {
   return new bootstrap.Tooltip(tooltipTriggerEl);
 });
+
+// ============================================
+// フローティング保存ボタンの表示制御
+// ============================================
+const floatingBtn = document.getElementById('floatingSaveBtn');
+const formFooter = document.querySelector('.form-footer');
+
+if (floatingBtn && formFooter) {
+  let ticking = false;
+
+  function updateFloatingBtnVisibility() {
+    const footerRect = formFooter.getBoundingClientRect();
+    const windowHeight = window.innerHeight;
+
+    // フッターが画面内に完全に見えている場合はフローティングボタンを非表示
+    // それ以外の場合は表示
+    if (footerRect.top < windowHeight - 80 && footerRect.bottom > 0) {
+      floatingBtn.classList.add('hidden');
+    } else {
+      floatingBtn.classList.remove('hidden');
+    }
+
+    ticking = false;
+  }
+
+  function requestTick() {
+    if (!ticking) {
+      window.requestAnimationFrame(updateFloatingBtnVisibility);
+      ticking = true;
+    }
+  }
+
+  // スクロールイベント（パフォーマンス最適化）
+  window.addEventListener('scroll', requestTick, { passive: true });
+  window.addEventListener('resize', requestTick, { passive: true });
+
+  // 初回チェック（少し遅延させて正確な位置を取得）
+  setTimeout(updateFloatingBtnVisibility, 100);
+
+  // EasyMDEのフルスクリーン時は非表示
+  if (typeof easyMDE !== 'undefined') {
+    easyMDE.codemirror.on('optionChange', function(cm, option) {
+      if (option === 'fullScreen') {
+        if (cm.getOption('fullScreen')) {
+          floatingBtn.classList.add('hidden');
+        } else {
+          floatingBtn.classList.remove('hidden');
+          updateFloatingBtnVisibility();
+        }
+      }
+    });
+  }
+}
 });
 
 // HTMLエスケープ関数
