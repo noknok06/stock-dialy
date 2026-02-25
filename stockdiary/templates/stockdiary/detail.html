@@ -1620,7 +1620,8 @@
               <form id="quickNoteForm" method="post" action="{% url 'stockdiary:add_note' diary.id %}" enctype="multipart/form-data">
                 {% csrf_token %}
                 
-                {% include "stockdiary/components/_form_field.html" with type="date" name="date" label="日付" icon="bi-calendar-date" required=True %}
+                {% now "Y-m-d" as today %}
+                {% include "stockdiary/components/_form_field.html" with type="date" name="date" label="日付" icon="bi-calendar-date" required=True value=today %}
                 
                 <div class="form-section mobile-optimized">
                   <div class="section-title">
