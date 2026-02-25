@@ -900,6 +900,151 @@
   [data-theme="dark"] .floating-save-btn .btn:hover {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
   }
+
+  /* ========== ウィザードフォーム ========== */
+
+  /* ステップ表示制御 */
+  .wizard-step {
+    display: none;
+  }
+  .wizard-step.wizard-active {
+    display: block;
+    animation: wizardFadeIn 0.25s ease;
+  }
+  @keyframes wizardFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0);   }
+  }
+
+  /* プログレスバー */
+  .wizard-progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem 1rem 1rem;
+    margin-bottom: 1.5rem;
+    background: var(--card-bg, #fff);
+    border-radius: var(--radius-md, 0.5rem);
+    border: 1px solid var(--border-color, #e5e7eb);
+  }
+  .wizard-step-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    min-width: 56px;
+  }
+  .wizard-step-dot {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--bg-secondary, #f3f4f6);
+    border: 2px solid var(--border-color, #d1d5db);
+    color: var(--text-muted, #6b7280);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition: background 0.3s, border-color 0.3s, color 0.3s;
+  }
+  .wizard-step-label {
+    font-size: 0.7rem;
+    color: var(--text-muted, #6b7280);
+    white-space: nowrap;
+    transition: color 0.3s;
+  }
+  .wizard-step-item.wizard-si-active .wizard-step-dot {
+    background: var(--primary-color, #3b82f6);
+    border-color: var(--primary-color, #3b82f6);
+    color: #fff;
+  }
+  .wizard-step-item.wizard-si-active .wizard-step-label {
+    color: var(--primary-color, #3b82f6);
+    font-weight: 600;
+  }
+  .wizard-step-item.wizard-si-done .wizard-step-dot {
+    background: var(--success-color, #10b981);
+    border-color: var(--success-color, #10b981);
+    color: #fff;
+  }
+  .wizard-step-connector {
+    flex: 1;
+    height: 2px;
+    background: var(--border-color, #d1d5db);
+    margin: 0 0.5rem 1.2rem;
+    min-width: 20px;
+  }
+
+  /* ダークモード対応 */
+  .dark-mode .wizard-progress-bar,
+  [data-theme="dark"] .wizard-progress-bar {
+    background: var(--dm-card, #1e293b);
+    border-color: var(--dm-border, #334155);
+  }
+
+  /* ウィザードナビゲーション */
+  .wizard-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-color, #e5e7eb);
+    flex-wrap: wrap;
+  }
+  .wizard-nav .ms-auto {
+    margin-left: auto !important;
+  }
+  .btn-wizard-skip {
+    font-size: 0.875rem;
+    color: var(--text-muted, #6b7280);
+    background: none;
+    border: none;
+    padding: 0.375rem 0.75rem;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .btn-wizard-skip:hover {
+    color: var(--text-secondary, #374151);
+  }
+
+  /* フォームフッター・フローティングボタンをウィザードモードで非表示 */
+  form.wizard-mode .form-footer {
+    display: none !important;
+  }
+
+  /* 初回購入チェックボックスをウィザード内で非表示 */
+  .wizard-mode .wizard-purchase-toggle {
+    display: none;
+  }
+  .wizard-mode #initialPurchaseSection {
+    display: block !important;
+  }
+  .wizard-mode #initial-purchase-preview {
+    display: none;
+  }
+
+  /* ウィザード内の初回購入セクション heading */
+  .wizard-step-heading {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary, #111827);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .wizard-step-heading .badge-optional {
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 0.2em 0.5em;
+    border-radius: 999px;
+    background: var(--bg-secondary, #f3f4f6);
+    color: var(--text-muted, #6b7280);
+    border: 1px solid var(--border-color, #e5e7eb);
+  }
 </style>
 {% endblock %}
 
@@ -919,11 +1064,36 @@
   <!-- フォームカード -->
   <div class="diary-form">
     <div class="form-body">
-      <form method="post" enctype="multipart/form-data" id="diaryForm">
+      <form method="post" enctype="multipart/form-data" id="diaryForm"{% if not form.instance.pk %} class="wizard-mode"{% endif %}>
         {% csrf_token %}
 
-        <!-- 株式情報セクション -->
-        <div class="form-section">
+        {% if not form.instance.pk %}
+        <!-- ウィザード プログレスバー -->
+        <div class="wizard-progress-bar" id="wizardProgressBar">
+          <div class="wizard-step-item wizard-si-active" data-step-indicator="1">
+            <div class="wizard-step-dot">1</div>
+            <span class="wizard-step-label">銘柄情報</span>
+          </div>
+          <div class="wizard-step-connector"></div>
+          <div class="wizard-step-item" data-step-indicator="2">
+            <div class="wizard-step-dot">2</div>
+            <span class="wizard-step-label">初回取引</span>
+          </div>
+          <div class="wizard-step-connector"></div>
+          <div class="wizard-step-item" data-step-indicator="3">
+            <div class="wizard-step-dot">3</div>
+            <span class="wizard-step-label">投資理由</span>
+          </div>
+          <div class="wizard-step-connector"></div>
+          <div class="wizard-step-item" data-step-indicator="4">
+            <div class="wizard-step-dot">4</div>
+            <span class="wizard-step-label">タグ・詳細</span>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- 株式情報セクション (ウィザード Step 1) -->
+        <div class="form-section{% if not form.instance.pk %} wizard-step wizard-active{% endif %}"{% if not form.instance.pk %} data-step="1"{% endif %}>
           <h4 class="form-section-title">
             <i class="bi bi-graph-up"></i> 銘柄情報
           </h4>
@@ -1022,10 +1192,104 @@
               <small class="form-text text-muted">複数選択可能です</small>
             </div>
           </div>
+          {% if not form.instance.pk %}
+          <!-- ウィザード Step 1 ナビゲーション -->
+          <div class="wizard-nav">
+            <a href="{% url 'stockdiary:home' %}" class="btn btn-diary btn-diary-outline btn-sm">
+              <i class="bi bi-arrow-left me-1"></i> キャンセル
+            </a>
+            <button type="button" class="btn btn-diary btn-diary-primary ms-auto" onclick="wizardNext()">
+              次へ <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+          </div>
+          {% endif %}
         </div>
 
-        <!-- 投資理由セクション（Markdownエディタ） -->
-        <div class="form-section">
+        {% if not form.instance.pk %}
+        <!-- ウィザード Step 2: 初回取引 (新規作成時のみ) -->
+        <div class="form-section wizard-step" data-step="2">
+          <div class="wizard-step-heading">
+            <i class="bi bi-cart-plus"></i> 初回取引
+            <span class="badge-optional">任意</span>
+          </div>
+          <p class="text-muted small mb-3">購入していない場合や後で記録する場合は「スキップ」してください</p>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label for="id_initial_purchase_date" class="form-label">
+                <i class="bi bi-calendar-date me-1"></i>購入日
+              </label>
+              <input type="date"
+                     class="form-control"
+                     id="id_initial_purchase_date"
+                     name="initial_purchase_date"
+                     value="{{ form.initial_purchase_date.value|default:'' }}">
+              {% if form.initial_purchase_date.errors %}
+              <div class="text-danger small">{{ form.initial_purchase_date.errors }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-4 mb-3">
+              <label for="id_initial_purchase_price" class="form-label">
+                <i class="bi bi-currency-yen me-1"></i>購入単価（円）
+              </label>
+              <div class="input-group">
+                <input type="number"
+                       class="form-control"
+                       id="id_initial_purchase_price"
+                       name="initial_purchase_price"
+                       step="0.01"
+                       min="0.01"
+                       placeholder="例: 2500"
+                       value="{{ form.initial_purchase_price.value|default:'' }}">
+                <button type="button" class="btn btn-outline-primary"
+                        id="fetch-current-price" title="現在株価を取得">
+                  <i class="bi bi-arrow-repeat"></i>
+                </button>
+              </div>
+              {% if form.initial_purchase_price.errors %}
+              <div class="text-danger small">{{ form.initial_purchase_price.errors }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-4 mb-3">
+              <label for="id_initial_purchase_quantity" class="form-label">
+                <i class="bi bi-stack me-1"></i>購入数量（株）
+              </label>
+              <input type="number"
+                     class="form-control"
+                     id="id_initial_purchase_quantity"
+                     name="initial_purchase_quantity"
+                     step="1"
+                     min="1"
+                     placeholder="例: 100"
+                     value="{{ form.initial_purchase_quantity.value|default:'' }}">
+              {% if form.initial_purchase_quantity.errors %}
+              <div class="text-danger small">{{ form.initial_purchase_quantity.errors }}</div>
+              {% endif %}
+            </div>
+          </div>
+          <!-- 合計金額プレビュー -->
+          <div id="initial-purchase-preview" style="display: none;">
+            <div class="alert alert-success d-flex justify-content-between align-items-center py-2">
+              <strong><i class="bi bi-calculator me-2"></i>購入金額:</strong>
+              <span id="initial-purchase-amount" class="fs-6 fw-bold">0</span>円
+            </div>
+          </div>
+          <!-- 非表示チェックボックス (バックエンドへの送信用) -->
+          <input type="checkbox" id="id_add_initial_purchase" name="add_initial_purchase" style="display:none">
+          <!-- ウィザード Step 2 ナビゲーション -->
+          <div class="wizard-nav">
+            <button type="button" class="btn btn-diary btn-diary-outline btn-sm" onclick="wizardBack()">
+              <i class="bi bi-arrow-left me-1"></i> 前へ
+            </button>
+            <button type="button" class="btn-wizard-skip" onclick="wizardSkip()">スキップ</button>
+            <button type="button" class="btn btn-diary btn-diary-primary ms-auto" onclick="wizardNext()">
+              次へ <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- 投資理由セクション（Markdownエディタ）(ウィザード Step 3) -->
+        <div class="form-section{% if not form.instance.pk %} wizard-step{% endif %}"{% if not form.instance.pk %} data-step="3"{% endif %}>
           <h4 class="form-section-title">
             <i class="bi bi-journal-text"></i> 投資理由・分析内容
             <small class="text-muted ms-2" style="font-size: 0.75rem; font-weight: 400;">
@@ -1068,10 +1332,22 @@
           {% if form.reason.errors %}
           <div class="text-danger small mt-1">{{ form.reason.errors }}</div>
           {% endif %}
+          {% if not form.instance.pk %}
+          <!-- ウィザード Step 3 ナビゲーション -->
+          <div class="wizard-nav">
+            <button type="button" class="btn btn-diary btn-diary-outline btn-sm" onclick="wizardBack()">
+              <i class="bi bi-arrow-left me-1"></i> 前へ
+            </button>
+            <button type="button" class="btn-wizard-skip" onclick="wizardSkip()">スキップ</button>
+            <button type="button" class="btn btn-diary btn-diary-primary ms-auto" onclick="wizardNext()">
+              次へ <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+          </div>
+          {% endif %}
         </div>
 
-        <!-- メモセクション -->
-        <div class="form-section">
+        <!-- メモセクション (ウィザード Step 4) -->
+        <div class="form-section{% if not form.instance.pk %} wizard-step{% endif %}"{% if not form.instance.pk %} data-step="4"{% endif %}>
           <h4 class="form-section-title">
             <i class="bi bi-sticky"></i> メモ・気づいたこと
             {% include "stockdiary/components/_badge.html" with type="warning" text="メモ" icon="bi-sticky" extra_class="ms-2" %}
@@ -1094,105 +1370,9 @@
           {% endif %}
         </div>
 
-        <!-- 初回購入情報セクション（新規作成時のみ） -->
-        {% if not form.instance.pk %}
-        <div class="form-section">
-          <div class="form-check mb-3">
-            <input type="checkbox" class="form-check-input"
-                   id="id_add_initial_purchase"
-                   name="add_initial_purchase"
-                   {% if form.add_initial_purchase.value %}checked{% endif %}
-                   onchange="handleInitialPurchaseToggle(this)">
-            <label class="form-check-label" for="id_add_initial_purchase">
-              <strong>{{ form.add_initial_purchase.label }}</strong>
-              <small class="d-block text-muted">
-                チェックすると、日記作成と同時に最初の購入取引を記録できます
-              </small>
-            </label>
-          </div>
-        
-          <div class="initial-purchase-section" id="initialPurchaseSection" 
-               {% if not form.add_initial_purchase.value %}style="display: none;"{% endif %}>
-            
-            <!-- 情報アラート（コンポーネント使用） -->
-            {% include "stockdiary/components/_alert.html" with type="info" icon="bi-info-circle" message="<strong>初回購入について:</strong><ul class='mb-0 mt-2 small'><li>日記作成後、「取引履歴」タブから追加購入・売却を記録できます</li><li>まだ購入していない場合は、チェックを外してください</li><li>後から「取引履歴」タブで追加できます</li></ul>" %}
-        
-            <h6 class="mb-3">
-              <i class="bi bi-cart-plus"></i> 初回購入情報
-            </h6>
-        
-            <div class="row">
-              <div class="col-md-4 mb-3">
-                <label for="id_initial_purchase_date" class="form-label">
-                  <i class="bi bi-calendar-date me-1"></i>購入日<span class="text-danger">*</span>
-                </label>
-                <input type="date" 
-                       class="form-control" 
-                       id="id_initial_purchase_date"
-                       name="initial_purchase_date"
-                       value="{{ form.initial_purchase_date.value|default:'' }}">
-                {% if form.initial_purchase_date.errors %}
-                <div class="text-danger small">{{ form.initial_purchase_date.errors }}</div>
-                {% endif %}
-              </div>
-        
-              <div class="col-md-4 mb-3">
-                <label for="id_initial_purchase_price" class="form-label">
-                  <i class="bi bi-currency-yen me-1"></i>購入単価（円）<span class="text-danger">*</span>
-                </label>
-                <div class="input-group">
-                  <input type="number" 
-                         class="form-control" 
-                         id="id_initial_purchase_price"
-                         name="initial_purchase_price"
-                         step="0.01" 
-                         min="0.01"
-                         placeholder="例: 1000.00"
-                         value="{{ form.initial_purchase_price.value|default:'' }}">
-                  <button type="button" class="btn btn-outline-primary" 
-                          id="fetch-current-price" title="現在株価を取得">
-                    <i class="bi bi-arrow-repeat"></i> 現在株価
-                  </button>
-                </div>
-                <small class="form-text text-muted">1株あたりの単価</small>
-                {% if form.initial_purchase_price.errors %}
-                <div class="text-danger small">{{ form.initial_purchase_price.errors }}</div>
-                {% endif %}
-              </div>
-        
-              <div class="col-md-4 mb-3">
-                <label for="id_initial_purchase_quantity" class="form-label">
-                  <i class="bi bi-stack me-1"></i>購入数量（株）<span class="text-danger">*</span>
-                </label>
-                <input type="number" 
-                       class="form-control"
-                       id="id_initial_purchase_quantity"
-                       name="initial_purchase_quantity"
-                       step="1" 
-                       min="1"
-                       placeholder="例: 100"
-                       value="{{ form.initial_purchase_quantity.value|default:'' }}">
-                <small class="form-text text-muted">取引株数</small>
-                {% if form.initial_purchase_quantity.errors %}
-                <div class="text-danger small">{{ form.initial_purchase_quantity.errors }}</div>
-                {% endif %}
-              </div>
-            </div>
-        
-            <!-- 合計金額の表示（コンポーネント使用） -->
-            <div id="initial-purchase-preview" style="display: none;">
-              {% include "stockdiary/components/_alert.html" with type="success" icon="bi-calculator" %}
-              <div class="alert alert-success d-flex justify-content-between align-items-center">
-                <strong><i class="bi bi-calculator me-2"></i>初回購入金額:</strong>
-                <span id="initial-purchase-amount" class="fs-5 fw-bold">0</span>円
-              </div>
-            </div>
-          </div>
-        </div>
-        {% endif %}
 
-        <!-- 画像セクション -->
-        <div class="form-section">
+        <!-- 画像セクション (ウィザード Step 4 - メモセクションと同じステップ) -->
+        <div class="form-section{% if not form.instance.pk %} wizard-step{% endif %}"{% if not form.instance.pk %} data-step="4"{% endif %}>
           <h4 class="form-section-title">
             <i class="bi bi-image"></i> 画像添付（任意）
           </h4>
@@ -1239,6 +1419,18 @@
             </div>
             {% endif %}
           </div>
+          {% if not form.instance.pk %}
+          <!-- ウィザード Step 4 最終ナビゲーション -->
+          <div class="wizard-nav">
+            <button type="button" class="btn btn-diary btn-diary-outline btn-sm" onclick="wizardBack()">
+              <i class="bi bi-arrow-left me-1"></i> 前へ
+            </button>
+            <button type="submit" class="btn btn-diary btn-diary-primary ms-auto" id="wizardSubmitBtn"
+                    onclick="wizardAutoSetPurchase()">
+              <i class="bi bi-save me-1"></i> 保存する
+            </button>
+          </div>
+          {% endif %}
         </div>
 
         <!-- フッター -->
@@ -1256,12 +1448,14 @@
   </div>
 </div>
 
-<!-- フローティング保存ボタン -->
+{% if form.instance.pk %}
+<!-- フローティング保存ボタン (編集モードのみ) -->
 <div class="floating-save-btn" id="floatingSaveBtn">
   <button type="submit" form="diaryForm" class="btn btn-primary" aria-label="保存" title="保存">
     <i class="bi bi-check-lg"></i>
   </button>
 </div>
+{% endif %}
 
 {% include 'speed_dial.html' with actions=form_actions %}
 {% endblock %}
@@ -1648,7 +1842,7 @@ if (reasonTextareaEl) {
     }
   };
 
-  const easyMDE = new EasyMDE({
+  window.easyMDE = new EasyMDE({
     element: reasonTextareaEl,
     spellChecker: false,
     autosave: {
@@ -1682,7 +1876,7 @@ if (reasonTextareaEl) {
 
   // EasyMDE用の文字数カウンター
   function updateEasyMDECharCount() {
-    const count = easyMDE.value().length;
+    const count = window.easyMDE.value().length;
     reasonCharCount.textContent = `${count} / ${MAX_REASON_LENGTH}文字`;
 
     reasonCharCount.classList.remove('warning', 'danger');
@@ -1693,7 +1887,7 @@ if (reasonTextareaEl) {
     }
   }
 
-  easyMDE.codemirror.on('change', updateEasyMDECharCount);
+  window.window.easyMDE.codemirror.on('change', updateEasyMDECharCount);
   updateEasyMDECharCount();
 
   // ハッシュタグのハイライト表示（CodeMirrorカスタムモード）
@@ -1778,13 +1972,13 @@ if (reasonTextareaEl) {
   document.head.appendChild(style);
 
   // モードを適用
-  easyMDE.codemirror.setOption('mode', 'markdown-with-hashtags');
+  window.easyMDE.codemirror.setOption('mode', 'markdown-with-hashtags');
 
   // CodeMirrorのマークダウン設定を強制上書き
   // allowAtxHeaderWithoutSpace を無効化して、# の後にスペースがない場合は見出しとして扱わない
-  if (easyMDE.codemirror.getMode().name === 'markdown-with-hashtags') {
-    const originalGetTokenAt = easyMDE.codemirror.getTokenAt.bind(easyMDE.codemirror);
-    easyMDE.codemirror.getTokenAt = function(pos, precise) {
+  if (window.easyMDE.codemirror.getMode().name === 'markdown-with-hashtags') {
+    const originalGetTokenAt = window.easyMDE.codemirror.getTokenAt.bind(window.easyMDE.codemirror);
+    window.easyMDE.codemirror.getTokenAt = function(pos, precise) {
       const token = originalGetTokenAt(pos, precise);
       // header トークンを無効化（ハッシュタグとして扱う）
       if (token && token.type && token.type.includes('header')) {
@@ -1802,9 +1996,9 @@ if (reasonTextareaEl) {
   const diaryForm = document.getElementById('diaryForm');
   if (diaryForm) {
     diaryForm.addEventListener('submit', function(e) {
-      if (easyMDE.value().length > MAX_REASON_LENGTH) {
+      if (window.easyMDE.value().length > MAX_REASON_LENGTH) {
         e.preventDefault();
-        alert(`投資理由は${MAX_REASON_LENGTH}文字以内で入力してください。現在: ${easyMDE.value().length}文字`);
+        alert(`投資理由は${MAX_REASON_LENGTH}文字以内で入力してください。現在: ${window.easyMDE.value().length}文字`);
         return false;
       }
     });
@@ -1964,6 +2158,8 @@ if (fetchCurrentPriceBtn) {
         }, 2000);
 
         updateInitialPurchasePreview();
+        // ウィザードモードでも購入プレビューを更新するため input イベントを発火
+        priceInput.dispatchEvent(new Event('input'));
         showNotification('success', '現在株価を取得しました');
       } else {
         throw new Error('株価情報が見つかりませんでした');
@@ -2389,7 +2585,7 @@ if (floatingBtn && formFooter) {
 
   // EasyMDEのフルスクリーン時は非表示
   if (typeof easyMDE !== 'undefined') {
-    easyMDE.codemirror.on('optionChange', function(cm, option) {
+    window.easyMDE.codemirror.on('optionChange', function(cm, option) {
       if (option === 'fullScreen') {
         if (cm.getOption('fullScreen')) {
           floatingBtn.classList.add('hidden');
@@ -2414,6 +2610,169 @@ function escapeHtml(text) {
     };
     return text.replace(/[&<>"']/g, m => map[m]);
 }
+
+// ============================================
+// ウィザードフォーム ナビゲーション (新規作成時のみ)
+// ============================================
+{% if not form.instance.pk %}
+(function() {
+  const WIZARD_TOTAL_STEPS = 4;
+  let currentWizardStep = 1;
+
+  // ステップを表示する
+  function showWizardStep(step) {
+    document.querySelectorAll('.wizard-step').forEach(function(el) {
+      el.classList.remove('wizard-active');
+    });
+    document.querySelectorAll('.wizard-step[data-step="' + step + '"]').forEach(function(el) {
+      el.classList.add('wizard-active');
+    });
+    updateWizardProgress(step);
+    currentWizardStep = step;
+
+    // Step 3 (投資理由) が表示されたときに EasyMDE をリフレッシュ
+    if (step === 3 && window.easyMDE) {
+      setTimeout(function() {
+        window.easyMDE.codemirror.refresh();
+      }, 100);
+    }
+
+    // フォームの先頭にスクロール
+    var progressBar = document.getElementById('wizardProgressBar');
+    if (progressBar) {
+      progressBar.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  // プログレスバーを更新する
+  function updateWizardProgress(step) {
+    document.querySelectorAll('[data-step-indicator]').forEach(function(el) {
+      var num = parseInt(el.dataset.stepIndicator, 10);
+      el.classList.remove('wizard-si-active', 'wizard-si-done');
+      if (num === step) {
+        el.classList.add('wizard-si-active');
+        el.querySelector('.wizard-step-dot').textContent = num;
+      } else if (num < step) {
+        el.classList.add('wizard-si-done');
+        el.querySelector('.wizard-step-dot').innerHTML = '<i class="bi bi-check-lg" style="font-size:0.75rem"></i>';
+      } else {
+        el.querySelector('.wizard-step-dot').textContent = num;
+      }
+    });
+  }
+
+  // Step 1 バリデーション (銘柄名必須)
+  function validateStep1() {
+    var stockName = document.getElementById('id_stock_name');
+    if (!stockName || !stockName.value.trim()) {
+      stockName.classList.add('is-invalid');
+      var existing = stockName.parentNode.querySelector('.wizard-invalid-feedback');
+      if (!existing) {
+        var fb = document.createElement('div');
+        fb.className = 'invalid-feedback d-block wizard-invalid-feedback';
+        fb.textContent = '銘柄名/タイトルを入力してください';
+        stockName.parentNode.appendChild(fb);
+      }
+      stockName.focus();
+      return false;
+    }
+    stockName.classList.remove('is-invalid');
+    var fb = stockName.parentNode.querySelector('.wizard-invalid-feedback');
+    if (fb) fb.remove();
+    return true;
+  }
+
+  // 購入フィールドに値があれば hidden チェックボックスを自動セット
+  window.wizardAutoSetPurchase = function() {
+    var priceField    = document.getElementById('id_initial_purchase_price');
+    var quantityField = document.getElementById('id_initial_purchase_quantity');
+    var dateField     = document.getElementById('id_initial_purchase_date');
+    var checkbox      = document.getElementById('id_add_initial_purchase');
+    if (!checkbox) return;
+
+    var hasData = (priceField && priceField.value.trim()) ||
+                  (quantityField && quantityField.value.trim());
+    checkbox.checked = !!hasData;
+
+    // 日付が未入力なら今日を自動セット
+    if (hasData && dateField && !dateField.value) {
+      var today = new Date();
+      var yyyy  = today.getFullYear();
+      var mm    = String(today.getMonth() + 1).padStart(2, '0');
+      var dd    = String(today.getDate()).padStart(2, '0');
+      dateField.value = yyyy + '-' + mm + '-' + dd;
+    }
+  };
+
+  // 購入フィールドをクリア
+  function clearPurchaseFields() {
+    ['id_initial_purchase_price', 'id_initial_purchase_quantity', 'id_initial_purchase_date'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    var cb = document.getElementById('id_add_initial_purchase');
+    if (cb) cb.checked = false;
+    var preview = document.getElementById('initial-purchase-preview');
+    if (preview) preview.style.display = 'none';
+  }
+
+  // ---- 公開関数 ----
+  window.wizardNext = function() {
+    if (currentWizardStep === 1 && !validateStep1()) return;
+    if (currentWizardStep === 2) window.wizardAutoSetPurchase();
+    if (currentWizardStep < WIZARD_TOTAL_STEPS) {
+      showWizardStep(currentWizardStep + 1);
+    }
+  };
+
+  window.wizardBack = function() {
+    if (currentWizardStep > 1) {
+      showWizardStep(currentWizardStep - 1);
+    }
+  };
+
+  window.wizardSkip = function() {
+    if (currentWizardStep === 2) clearPurchaseFields();
+    if (currentWizardStep < WIZARD_TOTAL_STEPS) {
+      showWizardStep(currentWizardStep + 1);
+    }
+  };
+
+  // 購入金額リアルタイム計算 (Step 2 用)
+  function updatePurchasePreview() {
+    var price    = parseFloat((document.getElementById('id_initial_purchase_price') || {}).value) || 0;
+    var quantity = parseFloat((document.getElementById('id_initial_purchase_quantity') || {}).value) || 0;
+    var preview  = document.getElementById('initial-purchase-preview');
+    var amount   = document.getElementById('initial-purchase-amount');
+    if (!preview || !amount) return;
+    if (price > 0 && quantity > 0) {
+      amount.textContent = (price * quantity).toLocaleString('ja-JP', { maximumFractionDigits: 0 });
+      preview.style.display = 'block';
+    } else {
+      preview.style.display = 'none';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    // 初期表示: Step 1 をアクティブに
+    showWizardStep(1);
+
+    // 購入フィールドの変化で金額プレビューを更新
+    ['id_initial_purchase_price', 'id_initial_purchase_quantity'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('input', updatePurchasePreview);
+    });
+
+    // フォーム送信前にも購入チェックボックスを自動セット
+    var form = document.getElementById('diaryForm');
+    if (form) {
+      form.addEventListener('submit', function() {
+        window.wizardAutoSetPurchase();
+      }, true);
+    }
+  });
+})();
+{% endif %}
 
 </script>
 {% endblock %}
