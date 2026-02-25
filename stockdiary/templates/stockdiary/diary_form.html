@@ -2144,13 +2144,12 @@ if (fetchCurrentPriceBtn) {
     this.disabled = true;
     this.innerHTML = '<i class="bi bi-hourglass-split"></i><span class="d-none d-sm-inline ms-1">取得中...</span>';
 
-    fetch(`/stockdiary/api/stock/price/${stockCode}/`)
+    // 自動入力でも使用する get_stock_info エンドポイントを統一して使用
+    fetch(`/stockdiary/api/stock/info/${stockCode}/`)
       .then(response => response.json())
       .then(data => {
-        if (data.price && priceInput) {
+        if (data.price != null && priceInput) {
           priceInput.value = parseFloat(data.price).toFixed(2);
-          priceInput.classList.add('auto-filled');
-          setTimeout(() => priceInput.classList.remove('auto-filled'), 2000);
           updateInitialPurchasePreview();
           priceInput.dispatchEvent(new Event('input'));
           showNotification('success', '現在株価を取得しました');
