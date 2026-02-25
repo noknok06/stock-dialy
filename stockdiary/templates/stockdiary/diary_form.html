@@ -2119,46 +2119,6 @@ if (quantityField) {
 }
 
 // ============================================
-// 現在株価取得 (グローバル関数として定義 → onclick から直接呼び出し)
-// ============================================
-window.doFetchCurrentPrice = function(btn) {
-  const stockCode = (document.getElementById('id_stock_symbol') || {}).value.trim();
-  const priceInput = document.getElementById('id_initial_purchase_price');
-
-  if (!stockCode) {
-    console.warn('[fetchPrice] 銘柄コードが空です');
-    showNotification('error', '先に銘柄コードを入力してください');
-    return;
-  }
-
-  console.log('[fetchPrice] 取得開始:', stockCode);
-  btn.disabled = true;
-  btn.innerHTML = '<i class="bi bi-hourglass-split"></i><span class="d-none d-sm-inline ms-1">取得中...</span>';
-
-  fetch(`/stockdiary/api/stock/info/${stockCode}/`)
-    .then(response => response.json())
-    .then(data => {
-      console.log('[fetchPrice] レスポンス:', data);
-      if (data.price != null && priceInput) {
-        priceInput.value = parseFloat(data.price).toFixed(2);
-        updateInitialPurchasePreview();
-        priceInput.dispatchEvent(new Event('input'));
-        showNotification('success', '現在株価を取得しました');
-      } else {
-        showNotification('error', data.error || '株価情報が見つかりませんでした');
-      }
-    })
-    .catch(error => {
-      console.error('[fetchPrice] エラー:', error);
-      showNotification('error', '株価の取得に失敗しました');
-    })
-    .finally(() => {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i><span class="d-none d-sm-inline">現在株価</span>';
-    });
-};
-
-// ============================================
 // 画像プレビュー
 // ============================================
 const imageInput = document.getElementById('id_image');
@@ -2581,6 +2541,46 @@ if (floatingBtn && formFooter) {
   }
 }
 });
+
+// ============================================
+// 現在株価取得 (DOMContentLoaded の外側に定義 → onclick から確実に参照可能)
+// ============================================
+window.doFetchCurrentPrice = function(btn) {
+  const stockCode = (document.getElementById('id_stock_symbol') || {}).value.trim();
+  const priceInput = document.getElementById('id_initial_purchase_price');
+
+  if (!stockCode) {
+    console.warn('[fetchPrice] 銘柄コードが空です');
+    if (window.showNotification) showNotification('error', '先に銘柄コードを入力してください');
+    return;
+  }
+
+  console.log('[fetchPrice] 取得開始:', stockCode);
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass-split"></i><span class="d-none d-sm-inline ms-1">取得中...</span>';
+
+  fetch('/stockdiary/api/stock/info/' + stockCode + '/')
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      console.log('[fetchPrice] レスポンス:', data);
+      if (data.price != null && priceInput) {
+        priceInput.value = parseFloat(data.price).toFixed(2);
+        if (window.updateInitialPurchasePreview) updateInitialPurchasePreview();
+        priceInput.dispatchEvent(new Event('input'));
+        if (window.showNotification) showNotification('success', '現在株価を取得しました');
+      } else {
+        if (window.showNotification) showNotification('error', data.error || '株価情報が見つかりませんでした');
+      }
+    })
+    .catch(function(error) {
+      console.error('[fetchPrice] エラー:', error);
+      if (window.showNotification) showNotification('error', '株価の取得に失敗しました');
+    })
+    .finally(function() {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i><span class="d-none d-sm-inline">現在株価</span>';
+    });
+};
 
 // HTMLエスケープ関数
 function escapeHtml(text) {
