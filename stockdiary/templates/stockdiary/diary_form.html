@@ -968,6 +968,15 @@
     border-color: var(--success-color, #10b981);
     color: #fff;
   }
+  .wizard-step-item.wizard-si-error .wizard-step-dot {
+    background: var(--danger-color, #ef4444);
+    border-color: var(--danger-color, #ef4444);
+    color: #fff;
+  }
+  .wizard-step-item.wizard-si-error .wizard-step-label {
+    color: var(--danger-color, #ef4444);
+    font-weight: 600;
+  }
   .wizard-step-connector {
     flex: 1;
     height: 2px;
@@ -1242,7 +1251,7 @@
                        value="{{ form.initial_purchase_price.value|default:'' }}">
                 <button type="button" class="btn btn-outline-primary"
                         id="fetch-current-price" title="現在株価を取得">
-                  <i class="bi bi-arrow-repeat"></i>
+                  <i class="bi bi-arrow-repeat me-1"></i><span class="d-none d-sm-inline">現在株価</span>
                 </button>
               </div>
               {% if form.initial_purchase_price.errors %}
@@ -1253,14 +1262,20 @@
               <label for="id_initial_purchase_quantity" class="form-label">
                 <i class="bi bi-stack me-1"></i>購入数量（株）
               </label>
-              <input type="number"
-                     class="form-control"
-                     id="id_initial_purchase_quantity"
-                     name="initial_purchase_quantity"
-                     step="1"
-                     min="1"
-                     placeholder="例: 100"
-                     value="{{ form.initial_purchase_quantity.value|default:'' }}">
+              <div class="input-group">
+                <button type="button" class="btn btn-outline-secondary"
+                        onclick="changeQuantity(-100)" title="-100株">−100</button>
+                <input type="number"
+                       class="form-control text-center"
+                       id="id_initial_purchase_quantity"
+                       name="initial_purchase_quantity"
+                       step="1"
+                       min="1"
+                       placeholder="100"
+                       value="{{ form.initial_purchase_quantity.value|default:'' }}">
+                <button type="button" class="btn btn-outline-secondary"
+                        onclick="changeQuantity(100)" title="+100株">+100</button>
+              </div>
               {% if form.initial_purchase_quantity.errors %}
               <div class="text-danger small">{{ form.initial_purchase_quantity.errors }}</div>
               {% endif %}
@@ -1297,29 +1312,11 @@
             </small>
           </h4>
 
-          <!-- タグ機能のヘルプ -->
-          <div class="alert alert-info py-2 px-3 mb-3" style="font-size: 0.875rem; line-height: 1.6;">
-            <div class="mb-2">
-              <i class="bi bi-lightbulb me-1"></i>
-              <strong>マークダウンとタグ機能:</strong>
-            </div>
-            <div class="row g-2 mb-2">
-              <div class="col-md-6">
-                <span class="badge bg-primary">見出し</span>
-                <code style="background: rgba(255,255,255,0.6); padding: 2px 8px; border-radius: 3px; margin-left: 4px;"># 見出し</code>
-                <small class="text-muted d-block ms-4">→ マークダウン記法</small>
-              </div>
-              <div class="col-md-6">
-                <span class="badge bg-success">タグ</span>
-                <code style="background: rgba(255,255,255,0.6); padding: 2px 8px; border-radius: 3px; margin-left: 4px;">@成長株</code>
-                <small class="text-muted d-block ms-4">→ 検索可能なタグ</small>
-              </div>
-            </div>
-            <small class="text-muted">
-              <i class="bi bi-check-circle me-1"></i>
-              本文中の <code style="background: rgba(255,255,255,0.6); padding: 2px 6px;">@成長株 @配当 @長期保有</code> は検索で絞り込み可能になります
-            </small>
-          </div>
+          <!-- タグ機能のヘルプ (コンパクト版) -->
+          <p class="text-muted small mb-2">
+            <i class="bi bi-markdown me-1"></i>Markdown対応 &nbsp;·&nbsp;
+            <code style="font-size:0.8em;">@成長株</code> で検索可能なタグを挿入できます
+          </p>
 
           <textarea class="form-control"
                     name="reason"
@@ -2753,9 +2750,80 @@ function escapeHtml(text) {
     }
   }
 
+  // ±100株 ボタン
+  window.changeQuantity = function(delta) {
+    var el = document.getElementById('id_initial_purchase_quantity');
+    if (!el) return;
+    var current = parseInt(el.value, 10) || 0;
+    var next = current + delta;
+    if (next < 1) next = 1;
+    el.value = next;
+    el.dispatchEvent(new Event('input'));
+  };
+
+  // showWizardStep のフック: Step 2 表示時に購入日を今日にセット
+  var _originalShowStep = showWizardStep;
+  showWizardStep = function(step) {
+    _originalShowStep(step);
+    if (step === 2) {
+      var dateField = document.getElementById('id_initial_purchase_date');
+      if (dateField && !dateField.value) {
+        var today = new Date();
+        var yyyy  = today.getFullYear();
+        var mm    = String(today.getMonth() + 1).padStart(2, '0');
+        var dd    = String(today.getDate()).padStart(2, '0');
+        dateField.value = yyyy + '-' + mm + '-' + dd;
+      }
+    }
+  };
+
+  // バリデーションエラーがあるステップを検出して自動ジャンプ
+  function detectErrorSteps() {
+    var steps = [1, 2, 3, 4];
+    var errorSteps = [];
+    steps.forEach(function(s) {
+      var container = s === 2
+        // Step 2 は form.instance.pk が false のときのみ存在。data-step="2" で探す
+        ? document.querySelector('.wizard-step[data-step="2"]')
+        : document.querySelector('[data-step="' + s + '"]');
+      if (container && container.querySelector('.text-danger')) {
+        errorSteps.push(s);
+      }
+    });
+    return errorSteps;
+  }
+
+  function markErrorsOnProgress(errorSteps) {
+    errorSteps.forEach(function(s) {
+      var indicator = document.querySelector('[data-step-indicator="' + s + '"]');
+      if (indicator) {
+        indicator.classList.add('wizard-si-error');
+        indicator.querySelector('.wizard-step-dot').innerHTML =
+          '<i class="bi bi-exclamation-lg" style="font-size:0.75rem"></i>';
+      }
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
-    // 初期表示: Step 1 をアクティブに
-    showWizardStep(1);
+    // バリデーションエラーがあれば該当ステップに自動ジャンプ
+    var errorSteps = detectErrorSteps();
+    if (errorSteps.length > 0) {
+      markErrorsOnProgress(errorSteps);
+      showWizardStep(errorSteps[0]);
+      // エラーがある残りのステップをプログレスバーでも示す
+      var banner = document.createElement('div');
+      banner.className = 'alert alert-danger py-2 px-3 mb-3';
+      banner.style.fontSize = '0.875rem';
+      banner.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-2"></i>' +
+        '入力に問題があります。赤いステップを確認してください。';
+      var progressBar = document.getElementById('wizardProgressBar');
+      if (progressBar) {
+        progressBar.insertAdjacentElement('afterend', banner);
+      }
+    } else {
+      // 通常: Step 1 をアクティブに
+      showWizardStep(1);
+    }
 
     // 購入フィールドの変化で金額プレビューを更新
     ['id_initial_purchase_price', 'id_initial_purchase_quantity'].forEach(function(id) {
