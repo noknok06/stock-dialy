@@ -1753,11 +1753,20 @@ function displayStockInfo(data, stockCode) {
   document.getElementById('stockInfoCode').className = 'badge badge-primary';
   
   if (data.price !== null && data.price !== undefined) {
-    document.getElementById('stockInfoPrice').textContent = 
+    document.getElementById('stockInfoPrice').textContent =
       `${parseFloat(data.price).toLocaleString('ja-JP', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
       })}円`;
+    // step 2 の購入単価フィールドが未入力なら自動反映
+    const purchasePriceInput = document.getElementById('id_initial_purchase_price');
+    if (purchasePriceInput && !purchasePriceInput.value) {
+      purchasePriceInput.value = parseFloat(data.price).toFixed(2);
+      if (typeof updateInitialPurchasePreview === 'function') {
+        updateInitialPurchasePreview();
+        purchasePriceInput.dispatchEvent(new Event('input'));
+      }
+    }
   } else {
     document.getElementById('stockInfoPrice').textContent = '取得できませんでした';
   }
@@ -2118,57 +2127,46 @@ if (quantityField) {
 }
 
 // ============================================
-// 現在株価取得
+// 現在株価取得 (diary-detail.js と同じパターン)
 // ============================================
 const fetchCurrentPriceBtn = document.getElementById('fetch-current-price');
 if (fetchCurrentPriceBtn) {
-  fetchCurrentPriceBtn.addEventListener('click', async function() {
-    const stockCode = stockSymbolInput.value.trim();
+  fetchCurrentPriceBtn.addEventListener('click', function() {
+    const stockCode = stockSymbolInput ? stockSymbolInput.value.trim() : '';
     const priceInput = document.getElementById('id_initial_purchase_price');
 
     if (!stockCode) {
       alert('銘柄コードを入力してください');
-      stockSymbolInput.focus();
+      if (stockSymbolInput) stockSymbolInput.focus();
       return;
     }
 
-    fetchCurrentPriceBtn.disabled = true;
-    fetchCurrentPriceBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    this.disabled = true;
+    this.innerHTML = '<i class="bi bi-hourglass-split"></i><span class="d-none d-sm-inline ms-1">取得中...</span>';
 
-    try {
-      // APIエンドポイント: /stockdiary/api/stock/price/{code}/
-      const response = await fetch(`/stockdiary/api/stock/price/${stockCode}/`);
-
-      if (!response.ok) {
-        throw new Error('株価の取得に失敗しました');
-      }
-
-      const data = await response.json();
-
-      if (data.success && data.price) {
-        priceInput.value = parseFloat(data.price).toFixed(2);
-
-        // フィールドをハイライト表示
-        priceInput.classList.add('auto-filled');
-        setTimeout(() => {
-          priceInput.classList.remove('auto-filled');
-        }, 2000);
-
-        updateInitialPurchasePreview();
-        // ウィザードモードでも購入プレビューを更新するため input イベントを発火
-        priceInput.dispatchEvent(new Event('input'));
-        showNotification('success', '現在株価を取得しました');
-      } else {
-        throw new Error('株価情報が見つかりませんでした');
-      }
-
-    } catch (error) {
-      console.error('Price fetch error:', error);
-      showNotification('error', error.message);
-    } finally {
-      fetchCurrentPriceBtn.disabled = false;
-      fetchCurrentPriceBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> 現在株価';
-    }
+    fetch(`/stockdiary/api/stock/price/${stockCode}/`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.price && priceInput) {
+          priceInput.value = parseFloat(data.price).toFixed(2);
+          priceInput.classList.add('auto-filled');
+          setTimeout(() => priceInput.classList.remove('auto-filled'), 2000);
+          updateInitialPurchasePreview();
+          priceInput.dispatchEvent(new Event('input'));
+          showNotification('success', '現在株価を取得しました');
+        } else {
+          console.warn('Price fetch: no price in response', data);
+          showNotification('error', data.error || '株価情報が見つかりませんでした');
+        }
+      })
+      .catch(error => {
+        console.error('Price fetch error:', error);
+        showNotification('error', '株価の取得に失敗しました');
+      })
+      .finally(() => {
+        this.disabled = false;
+        this.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i><span class="d-none d-sm-inline">現在株価</span>';
+      });
   });
 }
 
