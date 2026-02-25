@@ -2136,8 +2136,8 @@ if (fetchCurrentPriceBtn) {
     fetchCurrentPriceBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
     try {
-      // 正しいAPIエンドポイント: /stockdiary/api/stock/{code}/price/
-      const response = await fetch(`/stockdiary/api/stock/${stockCode}/price/`);
+      // APIエンドポイント: /stockdiary/api/stock/price/{code}/
+      const response = await fetch(`/stockdiary/api/stock/price/${stockCode}/`);
 
       if (!response.ok) {
         throw new Error('株価の取得に失敗しました');
@@ -2786,7 +2786,8 @@ function escapeHtml(text) {
         // Step 2 は form.instance.pk が false のときのみ存在。data-step="2" で探す
         ? document.querySelector('.wizard-step[data-step="2"]')
         : document.querySelector('[data-step="' + s + '"]');
-      if (container && container.querySelector('.text-danger')) {
+      // span.text-danger は必須フィールドの「*」なので除外し、div のみをエラーと判定
+      if (container && container.querySelector('div.text-danger')) {
         errorSteps.push(s);
       }
     });
