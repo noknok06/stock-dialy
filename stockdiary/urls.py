@@ -92,6 +92,13 @@ urlpatterns = [
     path('api/margin-sector/<int:diary_id>/', views.api_margin_sector_data, name='api_margin_sector'),
     path('api/margin-sector-suggestions/<int:diary_id>/', views.api_margin_sector_suggestions, name='api_margin_sector_suggestions'),
 
+    # ==========================================
+    # 関連日記
+    # ==========================================
+    path('<int:diary_id>/related/search/', views.search_related_diaries, name='related_search'),
+    path('<int:diary_id>/related/add/<int:related_id>/', views.add_related_diary, name='related_add'),
+    path('<int:diary_id>/related/remove/<int:related_id>/', views.remove_related_diary, name='related_remove'),
+
     # ハッシュタグAPI
     path('api/hashtags/', api_views.get_hashtags, name='api_hashtags'),
 

@@ -1,0 +1,54 @@
+{% load stockdiary_filters %}
+
+<div id="linked-diaries-section">
+
+  {# 現在の関連日記リスト #}
+  {% if linked_diaries %}
+  <ul class="list-group list-group-flush mb-3">
+    {% for linked in linked_diaries %}
+    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+      <a href="{% url 'stockdiary:detail' linked.id %}" class="d-flex align-items-center gap-2 text-decoration-none flex-grow-1 me-2">
+        <i class="bi bi-journal-text text-secondary"></i>
+        <span class="fw-medium">{{ linked.stock_name }}</span>
+        {% if linked.stock_symbol %}
+        <span class="text-muted small">{{ linked.stock_symbol }}</span>
+        {% endif %}
+        {% include "stockdiary/components/_status_badge.html" with diary=linked extra_class="ms-1" %}
+      </a>
+      <button class="btn btn-sm btn-outline-danger border-0 flex-shrink-0"
+              hx-post="{% url 'stockdiary:related_remove' diary.id linked.id %}"
+              hx-target="#linked-diaries-section"
+              hx-swap="outerHTML"
+              hx-confirm="「{{ linked.stock_name }}」との関連付けを解除しますか？"
+              title="関連付けを解除">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="text-muted small mb-3">
+    <i class="bi bi-info-circle me-1"></i>関連日記はまだ登録されていません
+  </p>
+  {% endif %}
+
+  {# 検索フォーム #}
+  <div class="related-diary-search">
+    <div class="input-group input-group-sm">
+      <span class="input-group-text bg-transparent">
+        <i class="bi bi-search text-muted"></i>
+      </span>
+      <input type="text"
+             class="form-control"
+             name="query"
+             placeholder="銘柄名・コードで検索して追加..."
+             autocomplete="off"
+             hx-get="{% url 'stockdiary:related_search' diary.id %}"
+             hx-trigger="keyup changed delay:300ms"
+             hx-target="#related-search-results"
+             hx-swap="innerHTML">
+    </div>
+    <div id="related-search-results" class="mt-2"></div>
+  </div>
+
+</div>

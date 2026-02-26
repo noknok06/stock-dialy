@@ -678,6 +678,9 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         # クイック記録用に今日の日付を追加
         context['today'] = timezone.now().date()
 
+        # 手動で関連付けた日記
+        context['linked_diaries'] = self.object.linked_diaries.all().order_by('stock_name')
+
         return context
     
 class StockDiaryCreateView(LoginRequiredMixin, CreateView):
@@ -3641,3 +3644,70 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
         ]
 
         return context
+
+
+# ===========================================================================
+# 関連日記機能
+# ===========================================================================
+
+@login_required
+@require_GET
+def search_related_diaries(request, diary_id):
+    """関連付け候補の日記を検索（HTMX用）"""
+    diary = get_object_or_404(StockDiary, pk=diary_id, user=request.user)
+    query = request.GET.get('query', '').strip()
+
+    results = []
+    if query:
+        already_linked_ids = list(diary.linked_diaries.values_list('id', flat=True))
+        already_linked_ids.append(diary.id)
+        results = (
+            StockDiary.objects
+            .filter(user=request.user)
+            .filter(Q(stock_name__icontains=query) | Q(stock_symbol__icontains=query))
+            .exclude(id__in=already_linked_ids)
+            .order_by('stock_name')[:10]
+        )
+
+    return render(request, 'stockdiary/partials/related_diary_search_results.html', {
+        'results': results,
+        'diary': diary,
+        'query': query,
+    })
+
+
+@login_required
+def add_related_diary(request, diary_id, related_id):
+    """関連日記を追加（HTMX用）"""
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    diary = get_object_or_404(StockDiary, pk=diary_id, user=request.user)
+    related = get_object_or_404(StockDiary, pk=related_id, user=request.user)
+
+    if diary.id != related.id:
+        diary.linked_diaries.add(related)
+
+    linked_diaries = diary.linked_diaries.all().order_by('stock_name')
+    return render(request, 'stockdiary/partials/related_diaries_section.html', {
+        'diary': diary,
+        'linked_diaries': linked_diaries,
+    })
+
+
+@login_required
+def remove_related_diary(request, diary_id, related_id):
+    """関連日記を解除（HTMX用）"""
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    diary = get_object_or_404(StockDiary, pk=diary_id, user=request.user)
+    related = get_object_or_404(StockDiary, pk=related_id, user=request.user)
+
+    diary.linked_diaries.remove(related)
+
+    linked_diaries = diary.linked_diaries.all().order_by('stock_name')
+    return render(request, 'stockdiary/partials/related_diaries_section.html', {
+        'diary': diary,
+        'linked_diaries': linked_diaries,
+    })
