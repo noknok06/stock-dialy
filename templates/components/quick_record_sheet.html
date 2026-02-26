@@ -39,22 +39,18 @@
             銘柄名（任意・メモのみも可）
           </label>
           <div class="input-with-suggestions">
-            <input
-              type="text"
-              name="stock_name"
-              id="stock_name_quick"
-              class="form-control form-control-lg"
-              placeholder="例: トヨタ自動車 または 7203"
-              autocomplete="off"
-              aria-describedby="stock_name_help">
-
-            <div class="form-text small text-muted mt-2" id="stock_name_help">
-              💡 銘柄コードまたは会社名を入力（空欄でメモのみ記録も可能）
+            {# React 銘柄検索アイランド #}
+            <div data-react="stock-search"
+                 data-api-url="{% url 'stockdiary:search_stock' %}"
+                 data-price-api-url="/stockdiary/api/stock/price/"
+                 data-input-id="stock_name_quick"
+                 data-input-name="stock_name"
+                 data-hidden-fields='{"price":"purchase_price_quick"}'
+                 data-placeholder="例: トヨタ自動車 または 7203">
             </div>
 
-            <!-- オートコンプリート候補 -->
-            <div class="suggestions-inline" id="suggestions_quick" role="listbox">
-              <div class="suggestions-list"></div>
+            <div class="form-text small text-muted mt-2" id="stock_name_quick_help">
+              💡 銘柄コードまたは会社名を入力（空欄でメモのみ記録も可能）
             </div>
           </div>
         </div>

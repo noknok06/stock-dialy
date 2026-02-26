@@ -1,5 +1,6 @@
 {% load static %}
 {% load ads_tags %}
+{% load django_vite %}
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -1345,7 +1346,7 @@
   </script>
   <script src="{% static 'js/speed-dial.js' %}"></script>
   <script src="{% static 'js/bottom-sheet.js' %}"></script>
-  <script src="{% static 'js/autocomplete.js' %}"></script>
+  {# autocomplete.js を削除: 銘柄検索はReact Islandに移行済み #}
   <script src="{% static 'js/image-compression.js' %}"></script>
 <script>
 // 画像モーダル表示機能
@@ -1501,5 +1502,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   <!-- クイック記録ボトムシート -->
   {% include 'components/quick_record_sheet.html' %}
+
+  <!-- React Islands: Viteビルドアセット -->
+  {% vite_hmr_client %}
+  {% vite_asset 'src/stock-search.tsx' %}
 </body>
 </html>

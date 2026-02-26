@@ -128,6 +128,7 @@ THIRD_PARTY_APPS = [
     'django_filters',  # ← 追加（フィルタリング用）
     'corsheaders',     # ← 追加（CORS用、必要に応じて）
     'django_q',
+    'django_vite',  # Vite + React Islands
 ]
 
 # ローカルアプリ
@@ -649,6 +650,11 @@ CSP_CONNECT_SRC = CSP_CONNECT_SRC + [
     'disclosure.edinet-fsa.go.jp',
 ]
 
+# Vite開発サーバー（HMR WebSocket）のCSP許可（開発環境のみ）
+if DEBUG:
+    CSP_SCRIPT_SRC = CSP_SCRIPT_SRC + ['http://localhost:5173', 'ws://localhost:5173']
+    CSP_CONNECT_SRC = CSP_CONNECT_SRC + ['http://localhost:5173', 'ws://localhost:5173']
+
 # 既存のLOGGING設定のhandlersとloggersに追加
 LOGGING['handlers']['earnings_file'] = {
     'level': 'INFO',
@@ -747,3 +753,14 @@ Q_CLUSTER = {
 }
 
 STATIC_VERSION = '1.0.13'
+
+# =============================================================================
+# Vite + React Islands 設定
+# =============================================================================
+DJANGO_VITE = {
+    'default': {
+        'dev_mode': DEBUG,
+        'dev_server_port': 5173,
+        'manifest_path': BASE_DIR / 'static' / 'dist' / '.vite' / 'manifest.json',
+    }
+}
