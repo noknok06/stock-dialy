@@ -90,7 +90,12 @@ export default function StockSearch({
           const data = await res.json()
           const price = data.price ?? data.current_price
           if (data.success && price != null) {
-            setFieldValue(hiddenFields.price, String(price))
+            const priceEl = document.getElementById(hiddenFields.price) as HTMLInputElement | null
+            if (priceEl) {
+              priceEl.value = String(price)
+              priceEl.dataset.autofilledByIsland = 'true'
+              priceEl.dispatchEvent(new Event('change', { bubbles: true }))
+            }
           }
         } catch {
           // Price fetch failure is non-critical
@@ -145,6 +150,19 @@ export default function StockSearch({
           const v = e.target.value
           setQuery(v)
           fetchSuggestions(v)
+          // Clear hidden fields when user modifies the text after a selection
+          setFieldValue(hiddenFields.code, '')
+          setFieldValue(hiddenFields.name, '')
+          setFieldValue(hiddenFields.industry, '')
+          setFieldValue(hiddenFields.market, '')
+          // Clear auto-filled price only (preserve manually entered price)
+          if (hiddenFields.price) {
+            const priceEl = document.getElementById(hiddenFields.price) as HTMLInputElement | null
+            if (priceEl?.dataset.autofilledByIsland === 'true') {
+              priceEl.value = ''
+              delete priceEl.dataset.autofilledByIsland
+            }
+          }
         }}
         onKeyDown={handleKeyDown}
       />

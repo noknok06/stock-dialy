@@ -45,9 +45,15 @@
                  data-price-api-url="/stockdiary/api/stock/price/"
                  data-input-id="stock_name_quick"
                  data-input-name="stock_name"
-                 data-hidden-fields='{"price":"purchase_price_quick"}'
+                 data-hidden-fields='{"code":"hidden_stock_code","name":"hidden_stock_name","industry":"hidden_stock_industry","market":"hidden_stock_market","price":"purchase_price_quick"}'
                  data-placeholder="例: トヨタ自動車 または 7203">
             </div>
+
+            {# 銘柄選択時にReact islandが設定する隠しフィールド #}
+            <input type="hidden" id="hidden_stock_code"     name="stock_code">
+            <input type="hidden" id="hidden_stock_name"     name="stock_name_hidden">
+            <input type="hidden" id="hidden_stock_industry" name="industry">
+            <input type="hidden" id="hidden_stock_market"   name="market">
 
             <div class="form-text small text-muted mt-2" id="stock_name_quick_help">
               💡 銘柄コードまたは会社名を入力（空欄でメモのみ記録も可能）
