@@ -95,6 +95,13 @@ urlpatterns = [
     # ハッシュタグAPI
     path('api/hashtags/', api_views.get_hashtags, name='api_hashtags'),
 
+    # ==========================================
+    # 関連日記API
+    # ==========================================
+    path('api/diary/<int:diary_id>/related/search/', api_views.search_related_diaries, name='api_related_search'),
+    path('api/diary/<int:diary_id>/related/add/', api_views.add_related_diary, name='api_related_add'),
+    path('api/diary/<int:diary_id>/related/<int:related_id>/remove/', api_views.remove_related_diary, name='api_related_remove'),
+
     # 銘柄一覧
     path('stocks/', views.StockListView.as_view(), name='stock_list'),
     path('api/stock-diaries/<str:symbol>/', views.api_stock_diaries, name='api_stock_diaries'),

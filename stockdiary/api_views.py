@@ -459,3 +459,102 @@ def get_hashtags(request):
             'success': False,
             'error': str(e)
         }, status=500)
+
+
+# ==========================================
+# 関連日記API
+# ==========================================
+
+def _diary_excerpt(diary, length=60):
+    """日記の本文（reason or memo）から簡易抜粋を生成"""
+    import re
+    text = (diary.reason or diary.memo or '').strip()
+    text = re.sub(r'#{1,6}\s*', '', text)       # Markdown見出し除去
+    text = re.sub(r'[*_`>\-]+', '', text)        # Markdown記号除去
+    text = re.sub(r'\s+', ' ', text).strip()
+    if not text:
+        return ''
+    return text[:length] + ('…' if len(text) > length else '')
+
+
+@login_required
+@require_http_methods(["GET"])
+def search_related_diaries(request, diary_id):
+    """関連付けする日記を検索する"""
+    diary = get_object_or_404(StockDiary, id=diary_id, user=request.user)
+    query = request.GET.get('q', '').strip()
+
+    if not query:
+        return JsonResponse({'diaries': []})
+
+    # 自身・既に関連付け済み・逆方向も除外
+    already_linked_ids = set(diary.linked_diaries.values_list('id', flat=True))
+    already_linked_ids |= set(diary.linked_from.values_list('id', flat=True))
+    already_linked_ids.add(diary_id)
+
+    from django.db.models import Q
+    results = StockDiary.objects.filter(
+        user=request.user
+    ).filter(
+        Q(stock_name__icontains=query) | Q(stock_symbol__icontains=query) | Q(reason__icontains=query)
+    ).exclude(
+        id__in=already_linked_ids
+    ).order_by('-updated_at')[:10]
+
+    diaries = [
+        {
+            'id': d.id,
+            'stock_name': d.stock_name,
+            'stock_symbol': d.stock_symbol,
+            'first_purchase_date': d.first_purchase_date.strftime('%Y/%m/%d') if d.first_purchase_date else None,
+            'excerpt': _diary_excerpt(d),
+        }
+        for d in results
+    ]
+    return JsonResponse({'diaries': diaries})
+
+
+@login_required
+@require_http_methods(["POST"])
+def add_related_diary(request, diary_id):
+    """関連日記を追加する（双方向）"""
+    import json
+    diary = get_object_or_404(StockDiary, id=diary_id, user=request.user)
+
+    try:
+        data = json.loads(request.body)
+        related_id = int(data.get('related_id'))
+    except (ValueError, TypeError, KeyError):
+        return JsonResponse({'error': '無効なパラメータ'}, status=400)
+
+    if related_id == diary_id:
+        return JsonResponse({'error': '自分自身は関連付けできません'}, status=400)
+
+    related = get_object_or_404(StockDiary, id=related_id, user=request.user)
+
+    # 双方向で追加
+    diary.linked_diaries.add(related)
+    related.linked_diaries.add(diary)
+
+    return JsonResponse({
+        'success': True,
+        'diary': {
+            'id': related.id,
+            'stock_name': related.stock_name,
+            'stock_symbol': related.stock_symbol,
+        }
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def remove_related_diary(request, diary_id, related_id):
+    """関連日記を解除する（双方向）"""
+    diary = get_object_or_404(StockDiary, id=diary_id, user=request.user)
+    related = get_object_or_404(StockDiary, id=related_id, user=request.user)
+
+    # 双方向で削除
+    diary.linked_diaries.remove(related)
+    related.linked_diaries.remove(diary)
+
+    return JsonResponse({'success': True})

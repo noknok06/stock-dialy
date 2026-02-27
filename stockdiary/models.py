@@ -61,6 +61,9 @@ class StockDiary(models.Model):
     first_purchase_date = models.DateField(null=True, blank=True, db_index=True, verbose_name='最初の購入日')
     last_transaction_date = models.DateField(null=True, blank=True, verbose_name='最後の取引日')
     
+    # 関連日記（非対称M2M：対称性はアプリ層で管理）
+    linked_diaries = models.ManyToManyField('self', blank=True, symmetrical=False, related_name='linked_from', verbose_name='関連日記')
+
     # システム情報
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
