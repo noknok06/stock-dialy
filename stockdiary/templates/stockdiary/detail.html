@@ -2248,5 +2248,13 @@ async function deleteDiaryNotification(notificationId) {
 
 window.deleteDiaryNotification = deleteDiaryNotification;
 window.loadNotifications = loadNotifications;
+
+// HTMXリクエストにCSRFトークンを追加（関連日記機能のhx-postに必要）
+document.body.addEventListener('htmx:configRequest', function(evt) {
+    const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (csrfToken) {
+        evt.detail.headers['X-CSRFToken'] = csrfToken.value;
+    }
+});
 </script>
 {% endblock %}
