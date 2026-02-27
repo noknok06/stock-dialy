@@ -3641,3 +3641,13 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
         ]
 
         return context
+
+
+class DiaryGraphView(LoginRequiredMixin, TemplateView):
+    """日記関連グラフ表示ページ"""
+    template_name = 'stockdiary/diary_graph.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['diary_count'] = StockDiary.objects.filter(user=self.request.user).count()
+        return context

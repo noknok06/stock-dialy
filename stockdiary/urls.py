@@ -111,4 +111,10 @@ urlpatterns = [
     path('trade-upload/process/', views.process_trade_upload, name='process_trade_upload'),
     
     path('dashboard/', views.TradingDashboardView.as_view(), name='dashboard'),
+
+    # ==========================================
+    # 日記関連グラフ
+    # ==========================================
+    path('graph/', views.DiaryGraphView.as_view(), name='diary_graph'),
+    path('api/diary-graph/data/', api_views.diary_graph_data, name='api_diary_graph_data'),
 ]

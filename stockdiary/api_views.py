@@ -558,3 +558,83 @@ def remove_related_diary(request, diary_id, related_id):
     related.linked_diaries.remove(diary)
 
     return JsonResponse({'success': True})
+
+
+@login_required
+@require_http_methods(["GET"])
+def diary_graph_data(request):
+    """日記関連グラフのノード・エッジデータを返す。
+
+    Query Parameters:
+        status: all / holding / sold / memo（デフォルト: all）
+    """
+    try:
+        user = request.user
+        status_filter = request.GET.get('status', 'all')
+
+        qs = StockDiary.objects.filter(user=user)
+
+        if status_filter == 'holding':
+            qs = qs.filter(current_quantity__gt=0)
+        elif status_filter == 'sold':
+            qs = qs.filter(transaction_count__gt=0, current_quantity=0)
+        elif status_filter == 'memo':
+            qs = qs.filter(transaction_count=0)
+
+        diaries = list(qs.only(
+            'id', 'stock_name', 'stock_symbol',
+            'sector', 'realized_profit',
+            'current_quantity', 'transaction_count'
+        ))
+        diary_ids = set(d.id for d in diaries)
+
+        # エッジ重複排除:
+        # add_related_diary が双方向追加するため Through テーブルに (A→B) と (B→A) が両存在する。
+        # (min_id, max_id) タプルの set で1本に統一する。
+        Through = StockDiary.linked_diaries.through
+        raw_links = Through.objects.filter(
+            from_stockdiary_id__in=diary_ids,
+            to_stockdiary_id__in=diary_ids
+        ).values_list('from_stockdiary_id', 'to_stockdiary_id')
+
+        edge_set = set()
+        for src, tgt in raw_links:
+            edge_set.add((min(src, tgt), max(src, tgt)))
+
+        link_count_map = {}
+        for src, tgt in edge_set:
+            link_count_map[src] = link_count_map.get(src, 0) + 1
+            link_count_map[tgt] = link_count_map.get(tgt, 0) + 1
+
+        nodes = []
+        for d in diaries:
+            if d.current_quantity > 0:
+                status = 'holding'
+            elif d.transaction_count > 0:
+                status = 'sold'
+            else:
+                status = 'memo'
+            nodes.append({
+                'id': d.id,
+                'stock_name': d.stock_name,
+                'stock_symbol': d.stock_symbol,
+                'status': status,
+                'sector': d.sector or '未分類',
+                'realized_profit': float(d.realized_profit),
+                'link_count': link_count_map.get(d.id, 0),
+                'url': f'/stockdiary/{d.id}/',
+            })
+
+        return JsonResponse({
+            'nodes': nodes,
+            'edges': [{'source': s, 'target': t} for s, t in edge_set],
+            'meta': {
+                'total_nodes': len(nodes),
+                'total_edges': len(edge_set),
+            },
+        })
+
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error(f"diary_graph_data error: {traceback.format_exc()}")
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

@@ -1,0 +1,259 @@
+/* ===================================================
+   graph-view.css  - 日記関連グラフページ専用スタイル
+   CSS変数・ダークモード対応
+   =================================================== */
+
+/* ---- グラフキャンバス共通 ---- */
+.graph-canvas {
+  height: 600px;
+  width: 100%;
+}
+
+/* ---- ローディング（Bootstrap d-flex を使わずに制御） ---- */
+#graph-loading {
+  display: flex;          /* !important なし → inline style で上書き可能 */
+  justify-content: center;
+  align-items: center;
+}
+
+/* ---- 空状態（初期非表示・表示はJSが display:flex を付与） ---- */
+#graph-empty {
+  display: none;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ---- グラフコンテナ ---- */
+.graph-container {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--bg-200, #f5f4f1);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* ---- SVG本体 ---- */
+#diary-graph-svg {
+  display: block;
+  background-color: var(--bg-200, #f5f4f1);
+  cursor: grab;
+}
+#diary-graph-svg:active {
+  cursor: grabbing;
+}
+
+/* ---- エッジ（リンク線） ---- */
+.graph-link {
+  stroke: var(--primary-200, #b6ccd8);
+  stroke-opacity: 0.55;
+  stroke-width: 1.5px;
+  fill: none;
+  transition: stroke-opacity 0.2s ease, stroke-width 0.2s ease;
+}
+.graph-link.highlighted {
+  stroke: var(--accent-100, #71c4ef);
+  stroke-opacity: 1;
+  stroke-width: 2.5px;
+}
+.graph-link.dimmed {
+  stroke-opacity: 0.07;
+}
+
+/* ---- ノード共通 ---- */
+.graph-node {
+  cursor: pointer;
+}
+.graph-node circle {
+  stroke: var(--bg-100, #fffefb);
+  stroke-width: 2.5px;
+  transition: r 0.2s ease, opacity 0.25s ease, filter 0.2s ease;
+}
+
+/* ---- ノード: 保有中 ---- */
+.graph-node.status-holding circle {
+  fill: #10b981;
+}
+
+/* ---- ノード: 売却済み ---- */
+.graph-node.status-sold circle {
+  fill: #ef4444;
+}
+
+/* ---- ノード: メモ ---- */
+.graph-node.status-memo circle {
+  fill: #9ca3af;
+}
+
+/* ---- ホバー ---- */
+.graph-node:hover circle {
+  stroke: var(--accent-200, #00668c);
+  stroke-width: 3.5px;
+  filter: brightness(1.15);
+}
+
+/* ---- 検索マッチ（ハイライト） ---- */
+.graph-node.highlighted circle {
+  stroke: #f59e0b;
+  stroke-width: 4px;
+  animation: graph-pulse 1.5s ease-in-out infinite;
+}
+
+/* ---- 検索非マッチ（暗く） ---- */
+.graph-node.dimmed {
+  opacity: 0.18;
+}
+
+/* ---- ラベルテキスト ---- */
+.graph-node text {
+  font-size: 11px;
+  fill: var(--text-200, #313d44);
+  pointer-events: none;
+  user-select: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* ---- パルスアニメーション ---- */
+@keyframes graph-pulse {
+  0%, 100% { stroke-width: 4px; }
+  50%       { stroke-width: 7px; }
+}
+
+/* ---- ツールチップ ---- */
+.graph-tooltip {
+  position: fixed;
+  background-color: var(--bg-100, #fffefb);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.8rem;
+  color: var(--text-100, #1d1c1c);
+  pointer-events: none;
+  z-index: 9999;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  max-width: 230px;
+  white-space: nowrap;
+}
+.graph-tooltip .tt-name {
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+  color: var(--text-100, #1d1c1c);
+}
+.graph-tooltip .tt-symbol {
+  color: var(--text-200, #313d44);
+  font-size: 0.75rem;
+  margin-bottom: 0.15rem;
+}
+.graph-tooltip .tt-profit {
+  font-size: 0.8rem;
+  margin-bottom: 0.1rem;
+}
+.graph-tooltip .tt-profit.positive { color: #10b981; }
+.graph-tooltip .tt-profit.negative { color: #ef4444; }
+.graph-tooltip .tt-meta {
+  color: var(--text-200, #313d44);
+  font-size: 0.72rem;
+  opacity: 0.8;
+}
+
+/* ---- 凡例ドット ---- */
+.graph-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ---- 統計バッジ（グラフ右下） ---- */
+.graph-stats-badge {
+  position: absolute;
+  bottom: 10px;
+  right: 12px;
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+/* ---- コントロールカード ---- */
+.graph-controls-card {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* ================================================================
+   ダークモード
+   ================================================================ */
+body.dark-mode .graph-container,
+[data-theme="dark"] .graph-container {
+  background-color: var(--dm-card, #1e1e2e);
+  border-color: var(--dm-border, rgba(255,255,255,0.1));
+}
+
+body.dark-mode #diary-graph-svg,
+[data-theme="dark"] #diary-graph-svg {
+  background-color: var(--dm-card, #1e1e2e);
+}
+
+body.dark-mode .graph-node circle,
+[data-theme="dark"] .graph-node circle {
+  stroke: var(--dm-card, #1e1e2e);
+}
+
+body.dark-mode .graph-node text,
+[data-theme="dark"] .graph-node text {
+  fill: var(--dm-foreground, #e0e0e0);
+}
+
+body.dark-mode .graph-link,
+[data-theme="dark"] .graph-link {
+  stroke: rgba(255, 255, 255, 0.25);
+}
+body.dark-mode .graph-link.highlighted,
+[data-theme="dark"] .graph-link.highlighted {
+  stroke: var(--accent-100, #71c4ef);
+}
+
+body.dark-mode .graph-tooltip,
+[data-theme="dark"] .graph-tooltip {
+  background-color: var(--dm-card, #1e1e2e);
+  border-color: var(--dm-border, rgba(255,255,255,0.15));
+  color: var(--dm-foreground, #e0e0e0);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+body.dark-mode .graph-tooltip .tt-name,
+[data-theme="dark"] .graph-tooltip .tt-name {
+  color: var(--dm-foreground, #e0e0e0);
+}
+body.dark-mode .graph-tooltip .tt-symbol,
+body.dark-mode .graph-tooltip .tt-meta,
+[data-theme="dark"] .graph-tooltip .tt-symbol,
+[data-theme="dark"] .graph-tooltip .tt-meta {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+body.dark-mode .graph-controls-card,
+[data-theme="dark"] .graph-controls-card {
+  background-color: var(--dm-card, #1e1e2e);
+  border-color: var(--dm-border, rgba(255,255,255,0.1));
+}
+
+/* ================================================================
+   レスポンシブ
+   ================================================================ */
+@media (max-width: 768px) {
+  .graph-canvas {
+    height: 450px;
+  }
+
+  .graph-tooltip {
+    font-size: 0.75rem;
+    max-width: 190px;
+    padding: 0.45rem 0.65rem;
+  }
+
+  #graph-controls .col-auto {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .graph-canvas {
+    height: 380px;
+  }
+}
