@@ -11,6 +11,11 @@ class Migration(migrations.Migration):
 
     initial = True
 
+    replaces = [
+        ("stockdiary", "0001_initial"),
+        ("stockdiary", "0002_alter_stockdiary_reason"),
+    ]
+
     dependencies = [
         ("tags", "__first__"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
@@ -156,12 +161,6 @@ class Migration(migrations.Migration):
                 ),
                 ("created_at", models.DateTimeField(auto_now_add=True, db_index=True)),
                 ("updated_at", models.DateTimeField(auto_now=True)),
-                (
-                    "linked_diaries",
-                    models.ManyToManyField(
-                        blank=True, to="stockdiary.stockdiary", verbose_name="関連日記"
-                    ),
-                ),
                 ("tags", models.ManyToManyField(blank=True, to="tags.tag")),
                 (
                     "user",
