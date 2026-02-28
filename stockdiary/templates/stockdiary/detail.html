@@ -1920,7 +1920,6 @@
                     name="content"
                     rows="6"
                     placeholder="状況の変化や新たな情報を記録しましょう"
-                    required
                   ></textarea>
                   <div class="d-flex justify-content-end align-items-center mt-1">
                     <div class="character-count" id="noteContentCharCount">0 / 1000文字</div>
@@ -2326,12 +2325,16 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // フォーム送信前: 文字数チェック
+  // フォーム送信前: textarea に値を明示的に同期してからバリデーション
   const quickNoteForm = document.getElementById('quickNoteForm');
   if (quickNoteForm) {
     quickNoteForm.addEventListener('submit', function(e) {
-      if (noteEasyMDE) {
+      const textarea = document.getElementById('content');
+      if (noteEasyMDE && textarea) {
+        // EasyMDE の内容を textarea に確実に同期する
         const text = noteEasyMDE.value();
+        textarea.value = text;
+
         if (!text.trim()) {
           e.preventDefault();
           alert('記録内容を入力してください。');
@@ -2344,6 +2347,12 @@ document.addEventListener('DOMContentLoaded', function() {
           noteEasyMDE.codemirror.focus();
           return false;
         }
+      } else if (textarea && !textarea.value.trim()) {
+        // EasyMDE が未初期化の場合も空チェック
+        e.preventDefault();
+        alert('記録内容を入力してください。');
+        textarea.focus();
+        return false;
       }
     });
   }
