@@ -12,6 +12,8 @@
 <!-- コンポーネントCSS -->
 <link rel="stylesheet" href="{% static 'css/3-components/components.css' %}?v={{ STATIC_VERSION }}">
 <link rel="stylesheet" href="{% static 'css/3-components/dark-mode-components.css' %}?v={{ STATIC_VERSION }}">
+<!-- EasyMDE Markdown Editor (継続記録フォーム) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
 
 <style>
@@ -1903,7 +1905,27 @@
                   <input type="hidden" id="note_importance" name="importance" value="medium">
                 </div>
                 
-                {% include "stockdiary/components/_form_field.html" with type="textarea" name="content" label="記録内容" icon="bi-journal-text" rows=4 placeholder="状況の変化や新たな情報を記録しましょう" required=True %}
+                <div class="form-group">
+                  <label class="form-label-improved" for="content">
+                    <i class="bi-journal-text me-1"></i>
+                    記録内容
+                    <small class="text-muted ms-2" style="font-size: 0.75rem; font-weight: 400;">
+                      <i class="bi bi-markdown me-1"></i>Markdown対応
+                    </small>
+                    <span class="text-danger ms-1">*</span>
+                  </label>
+                  <textarea
+                    class="form-input-improved"
+                    id="content"
+                    name="content"
+                    rows="6"
+                    placeholder="状況の変化や新たな情報を記録しましょう"
+                    required
+                  ></textarea>
+                  <div class="d-flex justify-content-end align-items-center mt-1">
+                    <div class="character-count" id="noteContentCharCount">0 / 1000文字</div>
+                  </div>
+                </div>
                               
                 <!-- 画像添付セクション -->
                 <div class="form-section mobile-optimized">
@@ -2031,7 +2053,7 @@
                 </div>
                 {% endif %}
                 
-                <div class="note-content-text">{{ note.content|linebreaks }}</div>
+                <div class="note-content-text markdown-content">{{ note.content|render_markdown }}</div>
               </div>
             </div>
             {% empty %}
@@ -2176,6 +2198,163 @@
 <script src="{% static 'js/diary-detail-tabs.js' %}"></script>
 <script src="{% static 'js/notifications.js' %}"></script>
 <script src="{% static 'js/push-notification-ui.js' %}"></script>
+<!-- EasyMDE Markdown Editor (継続記録フォーム) -->
+<script src="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js"></script>
+<script>
+// ============================================
+// 継続記録フォーム: Markdown エディタ & 文字数カウンター
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+(function() {
+  const MAX_NOTE_LENGTH = 1000;
+  let noteEasyMDE = null;
+
+  // EasyMDE ダークモード対応スタイル
+  const dmStyle = document.createElement('style');
+  dmStyle.textContent = `
+    .dark-mode .EasyMDEContainer .CodeMirror,
+    [data-theme="dark"] .EasyMDEContainer .CodeMirror {
+      background: rgba(71, 85, 105, 0.3) !important;
+      color: var(--dm-text-100) !important;
+      border-color: var(--dm-border) !important;
+    }
+    .dark-mode .EasyMDEContainer .editor-toolbar,
+    [data-theme="dark"] .EasyMDEContainer .editor-toolbar {
+      background-color: var(--dm-card) !important;
+      border-color: var(--dm-border) !important;
+    }
+    .dark-mode .EasyMDEContainer .editor-toolbar button,
+    [data-theme="dark"] .EasyMDEContainer .editor-toolbar button {
+      color: var(--dm-text-200) !important;
+    }
+    .dark-mode .EasyMDEContainer .editor-toolbar button:hover,
+    .dark-mode .EasyMDEContainer .editor-toolbar button.active,
+    [data-theme="dark"] .EasyMDEContainer .editor-toolbar button:hover,
+    [data-theme="dark"] .EasyMDEContainer .editor-toolbar button.active {
+      background: rgba(89, 142, 243, 0.15) !important;
+      border-color: var(--dm-primary-200) !important;
+      color: var(--dm-primary-200) !important;
+    }
+    .dark-mode .EasyMDEContainer .editor-toolbar i.separator,
+    [data-theme="dark"] .EasyMDEContainer .editor-toolbar i.separator {
+      border-left-color: var(--dm-border) !important;
+    }
+    .dark-mode .EasyMDEContainer .editor-preview,
+    [data-theme="dark"] .EasyMDEContainer .editor-preview {
+      background: var(--dm-card) !important;
+      color: var(--dm-text-100) !important;
+    }
+    /* 文字数カウンター */
+    .character-count { font-size: 0.875rem; color: var(--text-muted); }
+    .character-count.warning { color: var(--warning-color); }
+    .character-count.danger { color: var(--danger-color); }
+    .dark-mode .character-count,
+    [data-theme="dark"] .character-count { color: var(--dm-text-200) !important; }
+  `;
+  document.head.appendChild(dmStyle);
+
+  function updateNoteCharCount(text) {
+    const count = (text || '').length;
+    const el = document.getElementById('noteContentCharCount');
+    if (!el) return;
+    el.textContent = count + ' / ' + MAX_NOTE_LENGTH + '文字';
+    el.classList.remove('warning', 'danger');
+    if (count > MAX_NOTE_LENGTH * 0.9) {
+      el.classList.add('danger');
+    } else if (count > MAX_NOTE_LENGTH * 0.7) {
+      el.classList.add('warning');
+    }
+  }
+
+  function initNoteEasyMDE() {
+    if (noteEasyMDE) return; // 既に初期化済み
+    const textarea = document.getElementById('content');
+    if (!textarea) return;
+
+    noteEasyMDE = new EasyMDE({
+      element: textarea,
+      toolbar: [
+        'bold', 'italic', '|',
+        'unordered-list', 'ordered-list', '|',
+        'quote', 'code', '|',
+        'preview', 'side-by-side', 'fullscreen', '|',
+        'guide'
+      ],
+      placeholder: '状況の変化や新たな情報を記録しましょう\n\n**太字**、*斜体*、箇条書きなどMarkdown記法が使えます',
+      autosave: { enabled: false },
+      spellChecker: false,
+      status: false,
+      minHeight: '120px',
+      maxHeight: '400px',
+      renderingConfig: { singleLineBreaks: true },
+    });
+
+    // 文字数カウンター: EasyMDE のテキスト変更イベントにフック
+    noteEasyMDE.codemirror.on('change', function() {
+      updateNoteCharCount(noteEasyMDE.value());
+    });
+
+    // 初期値を反映
+    updateNoteCharCount(noteEasyMDE.value());
+  }
+
+  function resetNoteEasyMDE() {
+    if (noteEasyMDE) {
+      noteEasyMDE.value('');
+      updateNoteCharCount('');
+    }
+  }
+
+  // collapsed → shown: EasyMDE 初期化 + フォーカス + スクロール
+  const formCollapse = document.getElementById('noteFormCollapse');
+  if (formCollapse) {
+    formCollapse.addEventListener('shown.bs.collapse', function() {
+      initNoteEasyMDE();
+      // フォームまでスクロール
+      setTimeout(function() {
+        formCollapse.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // EasyMDE にフォーカス
+        if (noteEasyMDE) {
+          noteEasyMDE.codemirror.focus();
+        }
+      }, 100);
+    });
+
+    // フォームリセット時に EasyMDE もリセット
+    formCollapse.addEventListener('hidden.bs.collapse', function() {
+      resetNoteEasyMDE();
+    });
+  }
+
+  // フォーム送信前: 文字数チェック
+  const quickNoteForm = document.getElementById('quickNoteForm');
+  if (quickNoteForm) {
+    quickNoteForm.addEventListener('submit', function(e) {
+      if (noteEasyMDE) {
+        const text = noteEasyMDE.value();
+        if (!text.trim()) {
+          e.preventDefault();
+          alert('記録内容を入力してください。');
+          noteEasyMDE.codemirror.focus();
+          return false;
+        }
+        if (text.length > MAX_NOTE_LENGTH) {
+          e.preventDefault();
+          alert('記録内容は' + MAX_NOTE_LENGTH + '文字以内で入力してください。\n現在: ' + text.length + '文字');
+          noteEasyMDE.codemirror.focus();
+          return false;
+        }
+      }
+    });
+  }
+
+  // URLハッシュで直接フォームを開く場合も EasyMDE 初期化
+  if (window.location.hash === '#add-note') {
+    setTimeout(initNoteEasyMDE, 300);
+  }
+})();
+}); // DOMContentLoaded
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // loadNotifications()をtry-catchで囲む

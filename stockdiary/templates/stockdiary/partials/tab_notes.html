@@ -54,8 +54,8 @@
     {% endif %}
 
     <!-- 本文 -->
-    <div class="note-body">
-      {{ note.content|safe|linebreaks|truncatewords_html:40 }}
+    <div class="note-body markdown-content">
+      {{ note.content|render_markdown|truncatewords_html:40 }}
     </div>
 
     {% if note.content|wordcount > 40 %}
