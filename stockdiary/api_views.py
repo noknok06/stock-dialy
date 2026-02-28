@@ -567,31 +567,59 @@ def diary_graph_data(request):
 
     Query Parameters:
         status: all / holding / sold / memo（デフォルト: all）
+        tag:    タグID（空文字 or 未指定で全て）
+
+    フィルタに合う日記を primary_ids とし、
+    それに関連している日記を secondary_ids として両方表示する。
     """
     try:
         user = request.user
         status_filter = request.GET.get('status', 'all')
+        tag_id = request.GET.get('tag', '').strip()
 
-        qs = StockDiary.objects.filter(user=user)
-
-        if status_filter == 'holding':
-            qs = qs.filter(current_quantity__gt=0)
-        elif status_filter == 'sold':
-            qs = qs.filter(transaction_count__gt=0, current_quantity=0)
-        elif status_filter == 'memo':
-            qs = qs.filter(transaction_count=0)
-
-        diaries = list(qs.only(
-            'id', 'stock_name', 'stock_symbol',
-            'sector', 'realized_profit',
-            'current_quantity', 'transaction_count'
-        ))
-        diary_ids = set(d.id for d in diaries)
-
-        # エッジ重複排除:
-        # add_related_diary が双方向追加するため Through テーブルに (A→B) と (B→A) が両存在する。
-        # (min_id, max_id) タプルの set で1本に統一する。
         Through = StockDiary.linked_diaries.through
+        all_user_qs = StockDiary.objects.filter(user=user)
+
+        # --- primary: フィルター条件に合う日記 ---
+        primary_qs = all_user_qs
+        if status_filter == 'holding':
+            primary_qs = primary_qs.filter(current_quantity__gt=0)
+        elif status_filter == 'sold':
+            primary_qs = primary_qs.filter(transaction_count__gt=0, current_quantity=0)
+        elif status_filter == 'memo':
+            primary_qs = primary_qs.filter(transaction_count=0)
+        if tag_id:
+            primary_qs = primary_qs.filter(tags__id=tag_id)
+
+        primary_ids = set(primary_qs.values_list('id', flat=True))
+
+        # --- secondary: primary に関連している日記（フィルター外でも含める）---
+        is_filtered = (status_filter != 'all' or bool(tag_id))
+        if is_filtered:
+            linked_from = set(
+                Through.objects.filter(from_stockdiary_id__in=primary_ids)
+                .values_list('to_stockdiary_id', flat=True)
+            )
+            linked_to = set(
+                Through.objects.filter(to_stockdiary_id__in=primary_ids)
+                .values_list('from_stockdiary_id', flat=True)
+            )
+            secondary_ids = (linked_from | linked_to) - primary_ids
+        else:
+            secondary_ids = set()
+
+        all_ids = primary_ids | secondary_ids
+
+        # --- ノード取得 ---
+        diaries = list(
+            all_user_qs.filter(id__in=all_ids).only(
+                'id', 'stock_name', 'stock_symbol', 'sector',
+                'realized_profit', 'current_quantity', 'transaction_count'
+            )
+        )
+        diary_ids = {d.id for d in diaries}
+
+        # --- エッジ（重複排除）---
         raw_links = Through.objects.filter(
             from_stockdiary_id__in=diary_ids,
             to_stockdiary_id__in=diary_ids
@@ -606,6 +634,7 @@ def diary_graph_data(request):
             link_count_map[src] = link_count_map.get(src, 0) + 1
             link_count_map[tgt] = link_count_map.get(tgt, 0) + 1
 
+        # --- ノードデータ構築 ---
         nodes = []
         for d in diaries:
             if d.current_quantity > 0:
@@ -623,6 +652,7 @@ def diary_graph_data(request):
                 'realized_profit': float(d.realized_profit),
                 'link_count': link_count_map.get(d.id, 0),
                 'url': f'/stockdiary/{d.id}/',
+                'is_primary': d.id in primary_ids,
             })
 
         return JsonResponse({

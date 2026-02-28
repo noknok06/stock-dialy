@@ -3649,5 +3649,12 @@ class DiaryGraphView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['diary_count'] = StockDiary.objects.filter(user=self.request.user).count()
+        user = self.request.user
+        context['diary_count'] = StockDiary.objects.filter(user=user).count()
+        # ユーザーの日記に実際に使われているタグのみ取得
+        context['tags'] = (
+            Tag.objects.filter(user=user, stockdiary__user=user)
+            .distinct()
+            .order_by('name')
+        )
         return context

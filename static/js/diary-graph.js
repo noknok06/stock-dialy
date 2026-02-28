@@ -35,8 +35,10 @@
       this.gRoot      = null;
       this.zoomBehavior = null;
 
-      this.currentStatus = 'all';
-      this.showLabels    = true;
+      this.currentStatus  = 'all';
+      this.currentTag     = '';
+      this.showLabels     = true;
+      this.pinnedNodeId   = null;   // ピン留め中のノードID
 
       this._init();
     }
@@ -60,6 +62,15 @@
           this._fetchAndRender();
         });
       });
+
+      // タグフィルター
+      const tagSel = document.getElementById('tagFilter');
+      if (tagSel) {
+        tagSel.addEventListener('change', e => {
+          this.currentTag = e.target.value;
+          this._fetchAndRender();
+        });
+      }
 
       // ラベルトグル
       const labelToggle = document.getElementById('showLabels');
@@ -86,6 +97,9 @@
       const params = new URLSearchParams();
       if (this.currentStatus && this.currentStatus !== 'all') {
         params.set('status', this.currentStatus);
+      }
+      if (this.currentTag) {
+        params.set('tag', this.currentTag);
       }
 
       try {
@@ -123,6 +137,7 @@
         this.simulation = null;
       }
       this.svgEl.innerHTML = '';
+      this.pinnedNodeId = null;
 
       const svgEl = this.svgEl;
       const width  = svgEl.clientWidth || svgEl.parentElement.clientWidth || 800;
@@ -145,6 +160,12 @@
         .scaleExtent([0.15, 5])
         .on('zoom', event => g.attr('transform', event.transform));
       svg.call(this.zoomBehavior);
+
+      // SVG背景クリック → ピン解除
+      svg.on('click', () => {
+        this.pinnedNodeId = null;
+        this._hideTooltip();
+      });
 
       // ノード・エッジデータをコピー（D3がmutateするため）
       const nodes = this.allNodes.map(d => ({ ...d }));
@@ -200,9 +221,10 @@
               })
           );
 
-      // circle 追加
+      // circle 追加（secondary ノードはやや薄く）
       nodeSel.append('circle')
-        .attr('r', d => radiusScale(d.link_count));
+        .attr('r', d => radiusScale(d.link_count))
+        .classed('secondary-node', d => !d.is_primary);
 
       // ラベル追加
       nodeSel.append('text')
@@ -214,14 +236,25 @@
           return name.length > 8 ? name.substring(0, 8) + '…' : name;
         });
 
-      // ホバー・クリックイベント
+      // イベント:
+      //   mouseenter/move/leave → ホバーツールチップ（ピン中は固定）
+      //   click → ピン留めツールチップ（詳細リンク付き）
       nodeSel
-        .on('mouseenter', (event, d) => this._showTooltip(event, d))
-        .on('mousemove',  event         => this._moveTooltip(event))
-        .on('mouseleave', ()            => this._hideTooltip())
-        .on('click',      (event, d) => {
+        .on('mouseenter', (event, d) => {
+          if (this.pinnedNodeId === null) {
+            this._showTooltip(event, d, false);
+          }
+        })
+        .on('mousemove', event => {
+          if (this.pinnedNodeId === null) this._moveTooltip(event);
+        })
+        .on('mouseleave', () => {
+          if (this.pinnedNodeId === null) this._hideTooltip();
+        })
+        .on('click', (event, d) => {
           event.stopPropagation();
-          window.location.href = d.url;
+          this.pinnedNodeId = d.id;
+          this._showTooltip(event, d, true);
         });
 
       // tick 更新
@@ -266,7 +299,12 @@
     // ==============================
     // ツールチップ
     // ==============================
-    _showTooltip(event, d) {
+    /**
+     * @param {MouseEvent} event
+     * @param {Object} d - ノードデータ
+     * @param {boolean} pinned - true のとき「詳細を見る」リンクを表示
+     */
+    _showTooltip(event, d, pinned) {
       const profit = d.realized_profit || 0;
       const sign   = profit > 0 ? '+' : '';
       const profitStr = profit === 0
@@ -281,12 +319,22 @@
       };
       const statusLabel = statusMap[d.status] || d.status;
 
+      const linkHtml = pinned
+        ? `<div class="tt-link-row">
+             <a href="${d.url}" class="tt-detail-link">
+               詳細を見る <i class="bi bi-arrow-right-short"></i>
+             </a>
+           </div>`
+        : '';
+
       this.tooltipEl.innerHTML = `
         <div class="tt-name">${_esc(d.stock_name)}</div>
         <div class="tt-symbol">${_esc(d.stock_symbol || '-')} &nbsp;/&nbsp; ${_esc(d.sector)}</div>
         <div class="tt-profit ${profitClass}">実現損益: ${profitStr}</div>
         <div class="tt-meta">${statusLabel} &nbsp;|&nbsp; 接続: ${d.link_count}本</div>
+        ${linkHtml}
       `;
+      this.tooltipEl.classList.toggle('pinned', pinned);
       this.tooltipEl.style.display = 'block';
       this._moveTooltip(event);
     }
@@ -294,7 +342,7 @@
     _moveTooltip(event) {
       const padding = 14;
       const ttw = this.tooltipEl.offsetWidth || 200;
-      const tth = this.tooltipEl.offsetHeight || 80;
+      const tth = this.tooltipEl.offsetHeight || 90;
       let x = event.clientX + padding;
       let y = event.clientY - 10;
 
@@ -313,6 +361,7 @@
 
     _hideTooltip() {
       this.tooltipEl.style.display = 'none';
+      this.tooltipEl.classList.remove('pinned');
     }
 
     // ==============================
@@ -331,7 +380,7 @@
     _showLoading() {
       this.loadingEl.style.display = 'flex';
       this.svgEl.style.display     = 'none';
-      this.emptyEl.style.display = 'none';
+      this.emptyEl.style.display   = 'none';
       if (this.statsEl) this.statsEl.style.display = 'none';
     }
 

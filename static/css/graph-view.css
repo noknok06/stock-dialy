@@ -132,6 +132,10 @@
   max-width: 230px;
   white-space: nowrap;
 }
+/* ピン留め時はクリック可能にする */
+.graph-tooltip.pinned {
+  pointer-events: auto;
+}
 .graph-tooltip .tt-name {
   font-weight: 600;
   margin-bottom: 0.2rem;
@@ -152,6 +156,28 @@
   color: var(--text-200, #313d44);
   font-size: 0.72rem;
   opacity: 0.8;
+}
+
+/* ---- ピン留めツールチップの詳細リンク ---- */
+.tt-link-row {
+  margin-top: 0.4rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  padding-top: 0.35rem;
+}
+.tt-detail-link {
+  color: var(--accent-200, #00668c);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.8rem;
+  pointer-events: auto;
+}
+.tt-detail-link:hover {
+  text-decoration: underline;
+}
+
+/* ---- セカンダリノード（フィルター条件外の関連ノード）---- */
+.graph-node circle.secondary-node {
+  opacity: 0.45;
 }
 
 /* ---- 凡例ドット ---- */
@@ -231,6 +257,15 @@ body.dark-mode .graph-controls-card,
 [data-theme="dark"] .graph-controls-card {
   background-color: var(--dm-card, #1e1e2e);
   border-color: var(--dm-border, rgba(255,255,255,0.1));
+}
+
+body.dark-mode .tt-link-row,
+[data-theme="dark"] .tt-link-row {
+  border-top-color: rgba(255, 255, 255, 0.15);
+}
+body.dark-mode .tt-detail-link,
+[data-theme="dark"] .tt-detail-link {
+  color: var(--accent-100, #71c4ef);
 }
 
 /* ================================================================
