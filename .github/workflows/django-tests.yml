@@ -83,12 +83,6 @@ jobs:
         echo "# ✅ SSL無効化" >> config/test_settings.py
         echo "SECURE_SSL_REDIRECT = False" >> config/test_settings.py
 
-    - name: Run migrations
-      run: |
-        rm -f test_db.sqlite3
-        python manage.py makemigrations --settings=config.test_settings
-        python manage.py migrate --settings=config.test_settings
-
     - name: Run tests
       run: |
         export DJANGO_SETTINGS_MODULE=config.test_settings
