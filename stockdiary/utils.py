@@ -147,12 +147,13 @@ def get_tag_graph_data(diaries_qs) -> Dict[str, Any]:
     return {'tag_nodes': tag_nodes, 'edges': edges}
 
 
-def get_sector_graph_data(diaries_qs) -> Dict[str, Any]:
+def get_sector_graph_data(diaries_qs, company_sector_map: Dict[str, str] = None) -> Dict[str, Any]:
     """
     業種ハブノードと diary→sector エッジを生成する。
 
     Args:
         diaries_qs: StockDiary QuerySet（sector フィールドを含む）
+        company_sector_map: stock_symbol -> 業種名 の辞書（sector が空の日記を補完する）
 
     Returns:
         {
@@ -165,7 +166,11 @@ def get_sector_graph_data(diaries_qs) -> Dict[str, Any]:
     UNKNOWN = '未分類'
 
     for diary in diaries_qs:
-        sector_name = (diary.sector or '').strip() or UNKNOWN
+        sector_name = (diary.sector or '').strip()
+        # sector が未設定の場合は company_sector_map から補完
+        if not sector_name and company_sector_map:
+            sector_name = company_sector_map.get(diary.stock_symbol or '', '')
+        sector_name = sector_name or UNKNOWN
         sector_id = f'sec_{sector_name}'
         sector_diary_count[sector_name] += 1
         edges.append({

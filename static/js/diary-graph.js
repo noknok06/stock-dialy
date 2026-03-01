@@ -72,7 +72,7 @@
 
       this.currentStatus    = 'all';
       this.currentTag       = '';
-      this.currentEdgeMode  = config.defaultEdgeMode || 'tag';
+      this.currentEdgeModes = new Set(config.defaultEdgeModes || ['tag']);
       this.currentColorMode = 'status';
       this.showLabels       = true;
       this.searchQuery      = '';
@@ -86,13 +86,14 @@
     // ==============================
     _init() {
       this._bindControls();
-      this._syncEdgeModeSelect();
+      this._syncEdgeModeCheckboxes();
       this._fetchAndRender();
     }
 
-    _syncEdgeModeSelect() {
-      const sel = document.getElementById('edgeModeSelect');
-      if (sel) sel.value = this.currentEdgeMode;
+    _syncEdgeModeCheckboxes() {
+      document.querySelectorAll('.edge-mode-check').forEach(cb => {
+        cb.checked = this.currentEdgeModes.has(cb.value);
+      });
     }
 
     // ==============================
@@ -114,14 +115,19 @@
         });
       }
 
-      const edgeSel = document.getElementById('edgeModeSelect');
-      if (edgeSel) {
-        edgeSel.addEventListener('change', e => {
-          this.currentEdgeMode = e.target.value;
+      document.querySelectorAll('.edge-mode-check').forEach(cb => {
+        cb.addEventListener('change', () => {
+          // 少なくとも1つは選択を維持
+          const checked = [...document.querySelectorAll('.edge-mode-check')].filter(c => c.checked);
+          if (checked.length === 0) {
+            cb.checked = true;
+            return;
+          }
+          this.currentEdgeModes = new Set(checked.map(c => c.value));
           this._updateLegend();
           this._fetchAndRender();
         });
-      }
+      });
 
       const searchInput = document.getElementById('graphSearch');
       if (searchInput) {
@@ -186,7 +192,7 @@
       if (this.currentTag) {
         params.set('tag', this.currentTag);
       }
-      params.set('edge_mode', this.currentEdgeMode);
+      params.set('edge_modes', [...this.currentEdgeModes].join(','));
 
       try {
         const resp = await fetch(`${this.apiUrl}?${params.toString()}`, {
@@ -274,8 +280,8 @@
       const nodes = this.allNodes.map(d => ({ ...d }));
       const edges = this.allEdges.map(d => ({ ...d }));
 
-      const isHubMode = this.currentEdgeMode !== 'manual';
-      const linkDist  = isHubMode ? FORCE_LINK_DISTANCE_HUB : FORCE_LINK_DISTANCE_DEFAULT;
+      const hasHubMode = this.currentEdgeModes.has('tag') || this.currentEdgeModes.has('sector') || this.currentEdgeModes.has('hashtag');
+      const linkDist  = hasHubMode ? FORCE_LINK_DISTANCE_HUB : FORCE_LINK_DISTANCE_DEFAULT;
 
       this.simulation = d3.forceSimulation(nodes)
         .force('link',
@@ -466,16 +472,17 @@
     // 凡例更新
     // ==============================
     _updateLegend() {
-      const mode   = this.currentEdgeMode;
+      const modes  = this.currentEdgeModes;
       const tagLeg  = document.getElementById('legend-tag-node');
       const secLeg  = document.getElementById('legend-sector-node');
       const htLeg   = document.getElementById('legend-hashtag-node');
       const hubWrap = document.getElementById('legend-hubs');
 
-      if (tagLeg)  tagLeg.style.display  = (mode === 'tag')     ? '' : 'none';
-      if (secLeg)  secLeg.style.display  = (mode === 'sector')  ? '' : 'none';
-      if (htLeg)   htLeg.style.display   = (mode === 'hashtag') ? '' : 'none';
-      if (hubWrap) hubWrap.style.display = (mode !== 'manual')  ? '' : 'none';
+      if (tagLeg)  tagLeg.style.display  = modes.has('tag')     ? '' : 'none';
+      if (secLeg)  secLeg.style.display  = modes.has('sector')  ? '' : 'none';
+      if (htLeg)   htLeg.style.display   = modes.has('hashtag') ? '' : 'none';
+      const hasHub = modes.has('tag') || modes.has('sector') || modes.has('hashtag');
+      if (hubWrap) hubWrap.style.display = hasHub ? '' : 'none';
     }
 
     // ==============================

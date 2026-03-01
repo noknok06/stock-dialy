@@ -569,21 +569,30 @@ def diary_graph_data(request):
     """日記関連グラフのノード・エッジデータを返す。
 
     Query Parameters:
-        status:    all / holding / sold / memo（デフォルト: all）
-        tag:       タグID（空文字 or 未指定で全て）
-        edge_mode: manual / tag / sector / hashtag（デフォルト: manual）
+        status:     all / holding / sold / memo（デフォルト: all）
+        tag:        タグID（空文字 or 未指定で全て）
+        edge_modes: カンマ区切りのモード列（manual,tag,sector,hashtag）
+                    後方互換のため edge_mode（単数）も受け付ける
 
-    edge_mode:
-        manual   - 手動 linked_diaries リンクのみ（従来通り）
-        tag      - Tagをハブノードとして追加し diary→tag エッジを生成
-        sector   - 業種をハブノードとして追加し diary→sector エッジを生成
-        hashtag  - @ハッシュタグをハブノードとして追加し diary→hashtag エッジを生成
+    edge_modes:
+        manual   - 手動 linked_diaries リンク
+        tag      - Tagをハブノードとして diary→tag エッジを生成
+        sector   - 業種をハブノードとして diary→sector エッジを生成
+        hashtag  - @ハッシュタグをハブノードとして diary→hashtag エッジを生成
+
+    複数モードを同時に指定すると各モードのノード・エッジを統合して返す。
     """
     try:
         user = request.user
         status_filter = request.GET.get('status', 'all')
         tag_id = request.GET.get('tag', '').strip()
-        edge_mode = request.GET.get('edge_mode', 'manual').strip()
+
+        # edge_modes（複数可）を解析。後方互換として edge_mode（単数）も受け付ける
+        VALID_MODES = {'manual', 'tag', 'sector', 'hashtag'}
+        raw = request.GET.get('edge_modes', request.GET.get('edge_mode', 'tag')).strip()
+        edge_modes = [m.strip() for m in raw.split(',') if m.strip() in VALID_MODES]
+        if not edge_modes:
+            edge_modes = ['tag']
 
         all_user_qs = StockDiary.objects.filter(user=user)
 
@@ -603,14 +612,26 @@ def diary_graph_data(request):
 
         primary_ids = set(primary_qs.values_list('id', flat=True))
 
-        # ====================================================
-        # edge_mode: manual（従来の手動リンク）
-        # ====================================================
-        if edge_mode == 'manual':
-            Through = StockDiary.linked_diaries.through
+        # 全モードで共通利用する primary 日記を一括取得
+        primary_diaries = list(
+            primary_qs.prefetch_related('tags').only(
+                'id', 'stock_name', 'stock_symbol', 'sector',
+                'realized_profit', 'current_quantity', 'transaction_count', 'reason',
+            )
+        )
 
-            # secondary: primary に手動リンクされている日記
+        # 結果コンテナ（日記ノードは id で重複排除）
+        diary_nodes_map = {}   # diary_id -> node dict
+        hub_nodes_map = {}     # hub_id   -> node dict
+        all_edges = []
+
+        # ====================================================
+        # manual モード: 手動リンク（diary-diary エッジ）
+        # ====================================================
+        if 'manual' in edge_modes:
+            Through = StockDiary.linked_diaries.through
             is_filtered = (status_filter != 'all' or bool(tag_id))
+            secondary_ids = set()
             if is_filtered:
                 linked_from = set(
                     Through.objects.filter(from_stockdiary_id__in=primary_ids)
@@ -621,144 +642,124 @@ def diary_graph_data(request):
                     .values_list('from_stockdiary_id', flat=True)
                 )
                 secondary_ids = (linked_from | linked_to) - primary_ids
-            else:
-                secondary_ids = set()
 
-            all_ids = primary_ids | secondary_ids
+            manual_all_ids = primary_ids | secondary_ids
 
-            diaries = list(
-                all_user_qs.filter(id__in=all_ids).only(
+            # secondary 日記（フィルター外だが手動リンクで繋がっている日記）
+            if secondary_ids:
+                for d in all_user_qs.filter(id__in=secondary_ids).only(
                     'id', 'stock_name', 'stock_symbol', 'sector',
                     'realized_profit', 'current_quantity', 'transaction_count'
-                )
-            )
-            diary_ids = {d.id for d in diaries}
+                ):
+                    if d.id not in diary_nodes_map:
+                        diary_nodes_map[d.id] = {
+                            'id': d.id,
+                            'node_type': 'diary',
+                            'stock_name': d.stock_name,
+                            'stock_symbol': d.stock_symbol,
+                            'status': _diary_status(d),
+                            'sector': d.sector or '未分類',
+                            'realized_profit': float(d.realized_profit),
+                            'link_count': 0,
+                            'url': f'/stockdiary/{d.id}/',
+                            'is_primary': False,
+                        }
 
             raw_links = Through.objects.filter(
-                from_stockdiary_id__in=diary_ids,
-                to_stockdiary_id__in=diary_ids
+                from_stockdiary_id__in=manual_all_ids,
+                to_stockdiary_id__in=manual_all_ids,
             ).values_list('from_stockdiary_id', 'to_stockdiary_id')
 
-            edge_set = set()
+            manual_edge_set = set()
             for src, tgt in raw_links:
-                edge_set.add((min(src, tgt), max(src, tgt)))
+                manual_edge_set.add((min(src, tgt), max(src, tgt)))
 
-            link_count_map = {}
-            for src, tgt in edge_set:
-                link_count_map[src] = link_count_map.get(src, 0) + 1
-                link_count_map[tgt] = link_count_map.get(tgt, 0) + 1
+            for s, t in manual_edge_set:
+                all_edges.append({'source': s, 'target': t, 'edge_type': 'manual'})
 
-            nodes = []
-            for d in diaries:
-                status = _diary_status(d)
-                nodes.append({
+        # ====================================================
+        # tag モード: タグハブノード
+        # ====================================================
+        if 'tag' in edge_modes:
+            hub_data = get_tag_graph_data(primary_diaries)
+            for hub in hub_data['tag_nodes']:
+                hub['link_count'] = hub.get('diary_count', 0)
+                hub_nodes_map[hub['id']] = hub
+            all_edges.extend(hub_data['edges'])
+
+        # ====================================================
+        # sector モード: 業種ハブノード（CompanyMaster で補完）
+        # ====================================================
+        if 'sector' in edge_modes:
+            # sector が空の日記について CompanyMaster から業種を補完
+            symbols_without_sector = [
+                d.stock_symbol for d in primary_diaries
+                if not (d.sector or '').strip() and d.stock_symbol
+            ]
+            company_sector_map = {}
+            if symbols_without_sector:
+                from company_master.models import CompanyMaster
+                for c in CompanyMaster.objects.filter(
+                    code__in=symbols_without_sector
+                ).values('code', 'industry_name_33', 'industry_name_17'):
+                    company_sector_map[c['code']] = (
+                        c['industry_name_33'] or c['industry_name_17'] or ''
+                    )
+
+            hub_data = get_sector_graph_data(primary_diaries, company_sector_map)
+            for hub in hub_data['sector_nodes']:
+                hub['link_count'] = hub.get('diary_count', 0)
+                hub_nodes_map[hub['id']] = hub
+            all_edges.extend(hub_data['edges'])
+
+        # ====================================================
+        # hashtag モード: @ハッシュタグハブノード
+        # ====================================================
+        if 'hashtag' in edge_modes:
+            hub_data = get_hashtag_graph_data(primary_diaries)
+            for hub in hub_data['hashtag_nodes']:
+                hub['link_count'] = hub.get('diary_count', 0)
+                hub_nodes_map[hub['id']] = hub
+            all_edges.extend(hub_data['edges'])
+
+        # ====================================================
+        # primary 日記ノードを diary_nodes_map に追加（重複排除）
+        # ====================================================
+        for d in primary_diaries:
+            if d.id not in diary_nodes_map:
+                diary_nodes_map[d.id] = {
                     'id': d.id,
                     'node_type': 'diary',
                     'stock_name': d.stock_name,
                     'stock_symbol': d.stock_symbol,
-                    'status': status,
+                    'status': _diary_status(d),
                     'sector': d.sector or '未分類',
                     'realized_profit': float(d.realized_profit),
-                    'link_count': link_count_map.get(d.id, 0),
+                    'link_count': 0,
                     'url': f'/stockdiary/{d.id}/',
-                    'is_primary': d.id in primary_ids,
-                })
+                    'is_primary': True,
+                }
 
-            edges = [{'source': s, 'target': t, 'edge_type': 'manual'} for s, t in edge_set]
-
-            return JsonResponse({
-                'nodes': nodes,
-                'edges': edges,
-                'meta': {
-                    'total_nodes': len(nodes),
-                    'total_edges': len(edges),
-                    'mode': 'manual',
-                },
-            })
-
-        # ====================================================
-        # edge_mode: tag / sector / hashtag（ハブノードモード）
-        # ====================================================
-        # 対象日記を取得
-        if edge_mode == 'tag':
-            diaries_qs = primary_qs.prefetch_related('tags').only(
-                'id', 'stock_name', 'stock_symbol', 'sector',
-                'realized_profit', 'current_quantity', 'transaction_count'
-            )
-            hub_data = get_tag_graph_data(list(diaries_qs))
-            hub_nodes = hub_data['tag_nodes']
-            hub_edges = hub_data['edges']
-
-        elif edge_mode == 'sector':
-            diaries_qs = primary_qs.only(
-                'id', 'stock_name', 'stock_symbol', 'sector',
-                'realized_profit', 'current_quantity', 'transaction_count'
-            )
-            hub_data = get_sector_graph_data(list(diaries_qs))
-            hub_nodes = hub_data['sector_nodes']
-            hub_edges = hub_data['edges']
-
-        elif edge_mode == 'hashtag':
-            diaries_qs = primary_qs.only(
-                'id', 'stock_name', 'stock_symbol', 'sector',
-                'realized_profit', 'current_quantity', 'transaction_count',
-                'reason',
-            )
-            hub_data = get_hashtag_graph_data(list(diaries_qs))
-            hub_nodes = hub_data['hashtag_nodes']
-            hub_edges = hub_data['edges']
-
-        else:
-            # 未知のモードは manual にフォールバック
-            hub_nodes = []
-            hub_edges = []
-            diaries_qs = primary_qs.only(
-                'id', 'stock_name', 'stock_symbol', 'sector',
-                'realized_profit', 'current_quantity', 'transaction_count'
-            )
-
-        # 日記ノード構築
-        # hub_edges に含まれる diary id だけ使う
-        diary_ids_in_edges = {e['source'] for e in hub_edges}
-        # diaries_qs を評価（tag/hashtag モードは prefetch 済みで再クエリ不要）
-        diaries_list = list(diaries_qs) if edge_mode in ('tag', 'hashtag') else list(diaries_qs)
-
-        # link_count: 各日記のエッジ数をカウント
+        # link_count を全エッジから集計（diary ノードのみ）
         link_count_map = {}
-        for e in hub_edges:
-            src = e['source']
-            link_count_map[src] = link_count_map.get(src, 0) + 1
+        for e in all_edges:
+            for key in ('source', 'target'):
+                v = e[key]
+                if isinstance(v, int):
+                    link_count_map[v] = link_count_map.get(v, 0) + 1
 
-        # ハブノードの link_count（diary_count そのもの）
-        for hub in hub_nodes:
-            hub['link_count'] = hub.get('diary_count', 0)
+        for diary_id, node in diary_nodes_map.items():
+            node['link_count'] = link_count_map.get(diary_id, 0)
 
-        diary_nodes = []
-        for d in diaries_list:
-            status = _diary_status(d)
-            diary_nodes.append({
-                'id': d.id,
-                'node_type': 'diary',
-                'stock_name': d.stock_name,
-                'stock_symbol': d.stock_symbol,
-                'status': status,
-                'sector': d.sector or '未分類',
-                'realized_profit': float(d.realized_profit),
-                'link_count': link_count_map.get(d.id, 0),
-                'url': f'/stockdiary/{d.id}/',
-                'is_primary': True,
-            })
-
-        all_nodes = diary_nodes + hub_nodes
-        total_edges = len(hub_edges)
+        all_nodes = list(diary_nodes_map.values()) + list(hub_nodes_map.values())
 
         return JsonResponse({
             'nodes': all_nodes,
-            'edges': hub_edges,
+            'edges': all_edges,
             'meta': {
                 'total_nodes': len(all_nodes),
-                'total_edges': total_edges,
-                'mode': edge_mode,
+                'total_edges': len(all_edges),
+                'modes': edge_modes,
             },
         })
 
