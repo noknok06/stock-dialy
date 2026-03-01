@@ -308,7 +308,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'kabulog.information@gmail.com'
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-if not EMAIL_HOST_PASSWORD:
+if not EMAIL_HOST_PASSWORD and not os.getenv('DJANGO_TESTING'):
     raise ValueError("EMAIL_HOST_PASSWORD environment variable is required")
 # デフォルトの送信元メールアドレス
 DEFAULT_FROM_EMAIL = 'カブログ <kabulog.information@gmail.com>'
