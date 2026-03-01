@@ -3682,3 +3682,101 @@ class DiaryGraphView(LoginRequiredMixin, TemplateView):
             .order_by('name')
         )
         return context
+
+
+class ExploreView(LoginRequiredMixin, ListView):
+    """
+    全文検索ページ（Obsidian風）
+    日記の投資理由・メモ・継続記録・@ハッシュタグを横断検索する。
+    """
+    model = StockDiary
+    template_name = 'stockdiary/explore.html'
+    context_object_name = 'diaries'
+    paginate_by = 20
+
+    def get_queryset(self):
+        from .utils import search_diaries_by_hashtag
+
+        qs = StockDiary.objects.filter(user=self.request.user).order_by('-updated_at')
+        qs = qs.prefetch_related('tags', 'notes')
+
+        q = self.request.GET.get('q', '').strip()
+        if q:
+            search_type = self.request.GET.get('search_type', 'all')
+            if search_type == 'reason':
+                qs = qs.filter(Q(reason__icontains=q) | Q(memo__icontains=q))
+            elif search_type == 'note':
+                qs = qs.filter(notes__content__icontains=q).distinct()
+            elif search_type == 'hashtag':
+                qs = search_diaries_by_hashtag(qs, q)
+            else:  # all
+                qs = qs.filter(
+                    Q(stock_name__icontains=q) |
+                    Q(stock_symbol__icontains=q) |
+                    Q(reason__icontains=q) |
+                    Q(memo__icontains=q) |
+                    Q(notes__content__icontains=q)
+                ).distinct()
+
+        # ステータスフィルター
+        status = self.request.GET.get('status', '')
+        if status == 'holding':
+            qs = qs.filter(current_quantity__gt=0)
+        elif status == 'sold':
+            qs = qs.filter(transaction_count__gt=0, current_quantity=0)
+        elif status == 'memo':
+            qs = qs.filter(transaction_count=0)
+
+        # 業種フィルター
+        sector = self.request.GET.get('sector', '').strip()
+        if sector:
+            qs = qs.filter(sector=sector)
+
+        # タグフィルター
+        tag_id = self.request.GET.get('tag', '').strip()
+        if tag_id:
+            try:
+                qs = qs.filter(tags__id=int(tag_id))
+            except (ValueError, TypeError):
+                pass
+
+        return qs
+
+    def get_context_data(self, **kwargs):
+        from .utils import get_all_hashtags_from_queryset
+
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+
+        q           = self.request.GET.get('q', '').strip()
+        search_type = self.request.GET.get('search_type', 'all')
+        status      = self.request.GET.get('status', '')
+        sector      = self.request.GET.get('sector', '').strip()
+        tag_id      = self.request.GET.get('tag', '').strip()
+
+        context['q']           = q
+        context['search_type'] = search_type
+        context['status']      = status
+        context['sector']      = sector
+        context['tag_id']      = tag_id
+
+        # 全ユーザー日記からハッシュタグ一覧を取得（上位20件）
+        all_diaries = StockDiary.objects.filter(user=user).only('reason')
+        context['top_hashtags'] = get_all_hashtags_from_queryset(all_diaries)[:20]
+
+        # タグ一覧
+        context['tags'] = Tag.objects.filter(user=user).order_by('name')
+
+        # 業種一覧
+        context['sectors'] = (
+            StockDiary.objects.filter(user=user)
+            .exclude(sector='')
+            .values_list('sector', flat=True)
+            .distinct()
+            .order_by('sector')
+        )
+
+        # 総日記数
+        context['total_diary_count'] = StockDiary.objects.filter(user=user).count()
+
+        return context

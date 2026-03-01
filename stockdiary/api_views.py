@@ -13,7 +13,10 @@ from .models import (
     PushSubscription, DiaryNotification,
     NotificationLog, StockDiary
 )
-from .utils import extract_hashtags, get_all_hashtags_from_queryset, search_diaries_by_hashtag
+from .utils import (
+    extract_hashtags, get_all_hashtags_from_queryset, search_diaries_by_hashtag,
+    get_tag_graph_data, get_sector_graph_data, get_hashtag_graph_data,
+)
 import json
 from pywebpush import webpush, WebPushException
 from decimal import Decimal, InvalidOperation
@@ -566,18 +569,22 @@ def diary_graph_data(request):
     """日記関連グラフのノード・エッジデータを返す。
 
     Query Parameters:
-        status: all / holding / sold / memo（デフォルト: all）
-        tag:    タグID（空文字 or 未指定で全て）
+        status:    all / holding / sold / memo（デフォルト: all）
+        tag:       タグID（空文字 or 未指定で全て）
+        edge_mode: manual / tag / sector / hashtag（デフォルト: manual）
 
-    フィルタに合う日記を primary_ids とし、
-    それに関連している日記を secondary_ids として両方表示する。
+    edge_mode:
+        manual   - 手動 linked_diaries リンクのみ（従来通り）
+        tag      - Tagをハブノードとして追加し diary→tag エッジを生成
+        sector   - 業種をハブノードとして追加し diary→sector エッジを生成
+        hashtag  - @ハッシュタグをハブノードとして追加し diary→hashtag エッジを生成
     """
     try:
         user = request.user
         status_filter = request.GET.get('status', 'all')
         tag_id = request.GET.get('tag', '').strip()
+        edge_mode = request.GET.get('edge_mode', 'manual').strip()
 
-        Through = StockDiary.linked_diaries.through
         all_user_qs = StockDiary.objects.filter(user=user)
 
         # --- primary: フィルター条件に合う日記 ---
@@ -589,62 +596,149 @@ def diary_graph_data(request):
         elif status_filter == 'memo':
             primary_qs = primary_qs.filter(transaction_count=0)
         if tag_id:
-            primary_qs = primary_qs.filter(tags__id=tag_id)
+            try:
+                primary_qs = primary_qs.filter(tags__id=int(tag_id))
+            except (ValueError, TypeError):
+                pass
 
         primary_ids = set(primary_qs.values_list('id', flat=True))
 
-        # --- secondary: primary に関連している日記（フィルター外でも含める）---
-        is_filtered = (status_filter != 'all' or bool(tag_id))
-        if is_filtered:
-            linked_from = set(
-                Through.objects.filter(from_stockdiary_id__in=primary_ids)
-                .values_list('to_stockdiary_id', flat=True)
-            )
-            linked_to = set(
-                Through.objects.filter(to_stockdiary_id__in=primary_ids)
-                .values_list('from_stockdiary_id', flat=True)
-            )
-            secondary_ids = (linked_from | linked_to) - primary_ids
-        else:
-            secondary_ids = set()
+        # ====================================================
+        # edge_mode: manual（従来の手動リンク）
+        # ====================================================
+        if edge_mode == 'manual':
+            Through = StockDiary.linked_diaries.through
 
-        all_ids = primary_ids | secondary_ids
+            # secondary: primary に手動リンクされている日記
+            is_filtered = (status_filter != 'all' or bool(tag_id))
+            if is_filtered:
+                linked_from = set(
+                    Through.objects.filter(from_stockdiary_id__in=primary_ids)
+                    .values_list('to_stockdiary_id', flat=True)
+                )
+                linked_to = set(
+                    Through.objects.filter(to_stockdiary_id__in=primary_ids)
+                    .values_list('from_stockdiary_id', flat=True)
+                )
+                secondary_ids = (linked_from | linked_to) - primary_ids
+            else:
+                secondary_ids = set()
 
-        # --- ノード取得 ---
-        diaries = list(
-            all_user_qs.filter(id__in=all_ids).only(
+            all_ids = primary_ids | secondary_ids
+
+            diaries = list(
+                all_user_qs.filter(id__in=all_ids).only(
+                    'id', 'stock_name', 'stock_symbol', 'sector',
+                    'realized_profit', 'current_quantity', 'transaction_count'
+                )
+            )
+            diary_ids = {d.id for d in diaries}
+
+            raw_links = Through.objects.filter(
+                from_stockdiary_id__in=diary_ids,
+                to_stockdiary_id__in=diary_ids
+            ).values_list('from_stockdiary_id', 'to_stockdiary_id')
+
+            edge_set = set()
+            for src, tgt in raw_links:
+                edge_set.add((min(src, tgt), max(src, tgt)))
+
+            link_count_map = {}
+            for src, tgt in edge_set:
+                link_count_map[src] = link_count_map.get(src, 0) + 1
+                link_count_map[tgt] = link_count_map.get(tgt, 0) + 1
+
+            nodes = []
+            for d in diaries:
+                status = _diary_status(d)
+                nodes.append({
+                    'id': d.id,
+                    'node_type': 'diary',
+                    'stock_name': d.stock_name,
+                    'stock_symbol': d.stock_symbol,
+                    'status': status,
+                    'sector': d.sector or '未分類',
+                    'realized_profit': float(d.realized_profit),
+                    'link_count': link_count_map.get(d.id, 0),
+                    'url': f'/stockdiary/{d.id}/',
+                    'is_primary': d.id in primary_ids,
+                })
+
+            edges = [{'source': s, 'target': t, 'edge_type': 'manual'} for s, t in edge_set]
+
+            return JsonResponse({
+                'nodes': nodes,
+                'edges': edges,
+                'meta': {
+                    'total_nodes': len(nodes),
+                    'total_edges': len(edges),
+                    'mode': 'manual',
+                },
+            })
+
+        # ====================================================
+        # edge_mode: tag / sector / hashtag（ハブノードモード）
+        # ====================================================
+        # 対象日記を取得
+        if edge_mode == 'tag':
+            diaries_qs = primary_qs.prefetch_related('tags').only(
                 'id', 'stock_name', 'stock_symbol', 'sector',
                 'realized_profit', 'current_quantity', 'transaction_count'
             )
-        )
-        diary_ids = {d.id for d in diaries}
+            hub_data = get_tag_graph_data(list(diaries_qs))
+            hub_nodes = hub_data['tag_nodes']
+            hub_edges = hub_data['edges']
 
-        # --- エッジ（重複排除）---
-        raw_links = Through.objects.filter(
-            from_stockdiary_id__in=diary_ids,
-            to_stockdiary_id__in=diary_ids
-        ).values_list('from_stockdiary_id', 'to_stockdiary_id')
+        elif edge_mode == 'sector':
+            diaries_qs = primary_qs.only(
+                'id', 'stock_name', 'stock_symbol', 'sector',
+                'realized_profit', 'current_quantity', 'transaction_count'
+            )
+            hub_data = get_sector_graph_data(list(diaries_qs))
+            hub_nodes = hub_data['sector_nodes']
+            hub_edges = hub_data['edges']
 
-        edge_set = set()
-        for src, tgt in raw_links:
-            edge_set.add((min(src, tgt), max(src, tgt)))
+        elif edge_mode == 'hashtag':
+            diaries_qs = primary_qs.only(
+                'id', 'stock_name', 'stock_symbol', 'sector',
+                'realized_profit', 'current_quantity', 'transaction_count',
+                'reason',
+            )
+            hub_data = get_hashtag_graph_data(list(diaries_qs))
+            hub_nodes = hub_data['hashtag_nodes']
+            hub_edges = hub_data['edges']
 
+        else:
+            # 未知のモードは manual にフォールバック
+            hub_nodes = []
+            hub_edges = []
+            diaries_qs = primary_qs.only(
+                'id', 'stock_name', 'stock_symbol', 'sector',
+                'realized_profit', 'current_quantity', 'transaction_count'
+            )
+
+        # 日記ノード構築
+        # hub_edges に含まれる diary id だけ使う
+        diary_ids_in_edges = {e['source'] for e in hub_edges}
+        # diaries_qs を評価（tag/hashtag モードは prefetch 済みで再クエリ不要）
+        diaries_list = list(diaries_qs) if edge_mode in ('tag', 'hashtag') else list(diaries_qs)
+
+        # link_count: 各日記のエッジ数をカウント
         link_count_map = {}
-        for src, tgt in edge_set:
+        for e in hub_edges:
+            src = e['source']
             link_count_map[src] = link_count_map.get(src, 0) + 1
-            link_count_map[tgt] = link_count_map.get(tgt, 0) + 1
 
-        # --- ノードデータ構築 ---
-        nodes = []
-        for d in diaries:
-            if d.current_quantity > 0:
-                status = 'holding'
-            elif d.transaction_count > 0:
-                status = 'sold'
-            else:
-                status = 'memo'
-            nodes.append({
+        # ハブノードの link_count（diary_count そのもの）
+        for hub in hub_nodes:
+            hub['link_count'] = hub.get('diary_count', 0)
+
+        diary_nodes = []
+        for d in diaries_list:
+            status = _diary_status(d)
+            diary_nodes.append({
                 'id': d.id,
+                'node_type': 'diary',
                 'stock_name': d.stock_name,
                 'stock_symbol': d.stock_symbol,
                 'status': status,
@@ -652,15 +746,19 @@ def diary_graph_data(request):
                 'realized_profit': float(d.realized_profit),
                 'link_count': link_count_map.get(d.id, 0),
                 'url': f'/stockdiary/{d.id}/',
-                'is_primary': d.id in primary_ids,
+                'is_primary': True,
             })
 
+        all_nodes = diary_nodes + hub_nodes
+        total_edges = len(hub_edges)
+
         return JsonResponse({
-            'nodes': nodes,
-            'edges': [{'source': s, 'target': t} for s, t in edge_set],
+            'nodes': all_nodes,
+            'edges': hub_edges,
             'meta': {
-                'total_nodes': len(nodes),
-                'total_edges': len(edge_set),
+                'total_nodes': len(all_nodes),
+                'total_edges': total_edges,
+                'mode': edge_mode,
             },
         })
 
@@ -668,3 +766,12 @@ def diary_graph_data(request):
         logger = logging.getLogger(__name__)
         logger.error(f"diary_graph_data error: {traceback.format_exc()}")
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+def _diary_status(diary) -> str:
+    """日記オブジェクトから保有ステータス文字列を返す"""
+    if diary.current_quantity > 0:
+        return 'holding'
+    elif diary.transaction_count > 0:
+        return 'sold'
+    return 'memo'

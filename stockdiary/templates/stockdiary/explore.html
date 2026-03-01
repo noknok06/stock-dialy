@@ -1,0 +1,448 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}探索・全文検索 - カブログ{% endblock %}
+
+{% block head %}
+<style>
+/* ================================================================
+   explore.html 専用スタイル
+   ================================================================ */
+.explore-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+/* ---- 検索バー ---- */
+.explore-search-bar {
+  background: var(--bg-100);
+  border: 1px solid var(--border-light, rgba(0,0,0,0.1));
+  border-radius: var(--radius-lg, 12px);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--card-shadow, 0 1px 4px rgba(0,0,0,0.06));
+}
+.explore-search-input-wrap {
+  display: flex;
+  gap: 0.5rem;
+}
+.explore-q-input {
+  flex: 1;
+  min-height: 44px;
+  font-size: 1rem;
+  border: 1.5px solid var(--bg-300, #d1d5db);
+  border-radius: var(--radius-md, 8px);
+  padding: 0.5rem 1rem;
+  background: var(--bg-100);
+  color: var(--text-100);
+  transition: border-color 0.2s;
+}
+.explore-q-input:focus {
+  outline: none;
+  border-color: var(--accent-200, #00668c);
+  box-shadow: 0 0 0 3px rgba(0,102,140,0.1);
+}
+.explore-filter-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.6rem;
+}
+
+/* ---- サイドバー ---- */
+.explore-sidebar {
+  position: sticky;
+  top: 1rem;
+}
+.explore-sidebar .card-header {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: transparent;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  padding: 0.6rem 0.85rem;
+  color: var(--text-200, #6b7280);
+}
+.explore-sidebar .card-body {
+  padding: 0.6rem 0.85rem;
+}
+.explore-sidebar .list-unstyled li {
+  margin-bottom: 0.25rem;
+}
+.explore-sidebar a {
+  color: var(--text-100);
+  text-decoration: none;
+  font-size: 0.83rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.35rem;
+  border-radius: 5px;
+  transition: background 0.15s;
+}
+.explore-sidebar a:hover,
+.explore-sidebar a.active {
+  background: var(--bg-200);
+  color: var(--accent-200, #00668c);
+}
+
+/* ---- 検索結果カード ---- */
+.explore-card {
+  background: var(--bg-100);
+  border: 1px solid var(--border-light, rgba(0,0,0,0.08));
+  border-radius: var(--radius-md, 10px);
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.65rem;
+  transition: box-shadow 0.15s;
+}
+.explore-card:hover {
+  box-shadow: 0 2px 10px rgba(0,0,0,0.09);
+}
+.explore-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+.explore-card-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-100);
+  text-decoration: none;
+}
+.explore-card-title:hover {
+  color: var(--accent-200, #00668c);
+}
+.explore-card-meta {
+  font-size: 0.75rem;
+  color: var(--text-200, #6b7280);
+  margin-bottom: 0.4rem;
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.explore-card-excerpt {
+  font-size: 0.82rem;
+  color: var(--text-200, #374151);
+  line-height: 1.55;
+  margin-bottom: 0.4rem;
+}
+.explore-card-tags {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+.explore-card-tags .badge {
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+/* ---- 検索ハイライト ---- */
+mark.q-highlight {
+  background-color: #fef08a;
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* ---- ハッシュタグチップ ---- */
+.ht-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  background: var(--bg-200);
+  color: var(--text-200);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+  border: 1px solid transparent;
+}
+.ht-chip:hover {
+  background: var(--accent-100, #71c4ef);
+  color: #fff;
+}
+.ht-chip .ht-count {
+  background: rgba(0,0,0,0.1);
+  border-radius: 20px;
+  padding: 0 4px;
+  font-size: 0.65rem;
+}
+
+/* ---- 空状態 ---- */
+.explore-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-200, #9ca3af);
+}
+
+/* ---- レスポンシブ ---- */
+@media (max-width: 768px) {
+  .explore-layout {
+    grid-template-columns: 1fr;
+  }
+  .explore-sidebar {
+    position: static;
+    display: none;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 py-3">
+
+  <!-- ページヘッダー -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="h4 mb-1">
+        <i class="bi bi-search me-2 text-primary"></i>探索・全文検索
+      </h1>
+      <p class="text-muted small mb-0">日記・継続記録・@ハッシュタグを横断検索（全 {{ total_diary_count }} 件）</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'stockdiary:diary_graph' %}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-diagram-3 me-1"></i>グラフ
+      </a>
+      <a href="{% url 'stockdiary:home' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>一覧
+      </a>
+    </div>
+  </div>
+
+  <!-- 検索バー -->
+  <div class="explore-search-bar">
+    <form method="get" action="" id="explore-form">
+      <div class="explore-search-input-wrap">
+        <input type="text" name="q" id="explore-q"
+               class="explore-q-input"
+               value="{{ q }}"
+               placeholder="銘柄名・投資理由・継続記録・@ハッシュタグを検索..."
+               autocomplete="off">
+        <button type="submit" class="btn btn-primary px-3">
+          <i class="bi bi-search"></i>
+        </button>
+        {% if q %}
+        <a href="{% url 'stockdiary:explore' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-x"></i>
+        </a>
+        {% endif %}
+      </div>
+
+      <!-- 絞り込みフィルター -->
+      <div class="explore-filter-row">
+        <!-- 検索対象 -->
+        <select name="search_type" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+          <option value="all"     {% if search_type == 'all' %}selected{% endif %}>すべて</option>
+          <option value="reason"  {% if search_type == 'reason' %}selected{% endif %}>投資理由・メモ</option>
+          <option value="note"    {% if search_type == 'note' %}selected{% endif %}>継続記録</option>
+          <option value="hashtag" {% if search_type == 'hashtag' %}selected{% endif %}>@ハッシュタグ</option>
+        </select>
+
+        <!-- ステータス -->
+        <select name="status" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+          <option value=""        {% if status == '' %}selected{% endif %}>全ステータス</option>
+          <option value="holding" {% if status == 'holding' %}selected{% endif %}>保有中</option>
+          <option value="sold"    {% if status == 'sold' %}selected{% endif %}>売却済み</option>
+          <option value="memo"    {% if status == 'memo' %}selected{% endif %}>メモ</option>
+        </select>
+
+        <!-- 業種 -->
+        {% if sectors %}
+        <select name="sector" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+          <option value="">全業種</option>
+          {% for s in sectors %}
+          <option value="{{ s }}" {% if sector == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+        {% endif %}
+
+        <!-- タグ -->
+        {% if tags %}
+        <select name="tag" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+          <option value="">全タグ</option>
+          {% for t in tags %}
+          <option value="{{ t.id }}" {% if tag_id == t.id|stringformat:"s" %}selected{% endif %}>{{ t.name }}</option>
+          {% endfor %}
+        </select>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- レイアウト本体 -->
+  <div class="explore-layout">
+
+    <!-- サイドバー（@ハッシュタグ一覧） -->
+    <aside class="explore-sidebar">
+      {% if top_hashtags %}
+      <div class="card mb-3">
+        <div class="card-header">
+          <i class="bi bi-hash me-1"></i>よく使う@タグ
+        </div>
+        <div class="card-body">
+          <ul class="list-unstyled mb-0">
+            {% for ht in top_hashtags %}
+            <li>
+              <a href="?q=@{{ ht.tag }}&search_type=hashtag"
+                 class="{% if q == '@'|add:ht.tag and search_type == 'hashtag' %}active{% endif %}">
+                <i class="bi bi-hash" style="color:#0ea5e9; font-size:0.75rem;"></i>
+                {{ ht.tag }}
+                <span class="ms-auto badge bg-secondary" style="font-size:0.65rem;">{{ ht.count }}</span>
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if tags %}
+      <div class="card mb-3">
+        <div class="card-header">
+          <i class="bi bi-tag me-1"></i>タグ
+        </div>
+        <div class="card-body">
+          <ul class="list-unstyled mb-0">
+            {% for t in tags %}
+            <li>
+              <a href="?tag={{ t.id }}{% if q %}&q={{ q }}{% endif %}"
+                 class="{% if tag_id == t.id|stringformat:'s' %}active{% endif %}">
+                <i class="bi bi-tag-fill" style="color:#7c3aed; font-size:0.75rem;"></i>{{ t.name }}
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% endif %}
+    </aside>
+
+    <!-- 検索結果 -->
+    <main>
+      {% if q or status or sector or tag_id %}
+        <div class="text-muted small mb-2">
+          {% if q %}<strong>「{{ q }}」</strong> の検索結果 &nbsp;&middot;&nbsp;{% endif %}
+          {{ page_obj.paginator.count }} 件見つかりました
+        </div>
+      {% endif %}
+
+      {% if diaries %}
+        {% for diary in diaries %}
+        <div class="explore-card">
+          <div class="explore-card-header">
+            <!-- ステータスドット -->
+            {% if diary.current_quantity > 0 %}
+              <span class="rounded-circle d-inline-block" style="width:8px;height:8px;background:#10b981;flex-shrink:0;"></span>
+            {% elif diary.transaction_count > 0 %}
+              <span class="rounded-circle d-inline-block" style="width:8px;height:8px;background:#ef4444;flex-shrink:0;"></span>
+            {% else %}
+              <span class="rounded-circle d-inline-block" style="width:8px;height:8px;background:#9ca3af;flex-shrink:0;"></span>
+            {% endif %}
+
+            <a href="{% url 'stockdiary:detail' diary.pk %}" class="explore-card-title">
+              {{ diary.stock_name }}
+            </a>
+            {% if diary.stock_symbol %}
+            <span class="badge bg-light text-secondary border small">{{ diary.stock_symbol }}</span>
+            {% endif %}
+          </div>
+
+          <div class="explore-card-meta">
+            {% if diary.sector %}<span><i class="bi bi-building me-1"></i>{{ diary.sector }}</span>{% endif %}
+            {% if diary.updated_at %}<span><i class="bi bi-clock me-1"></i>{{ diary.updated_at|date:"Y/m/d" }}</span>{% endif %}
+            {% if diary.realized_profit %}
+              {% if diary.realized_profit > 0 %}
+                <span class="text-success"><i class="bi bi-arrow-up me-1"></i>+{{ diary.realized_profit|floatformat:0|intcomma }}円</span>
+              {% elif diary.realized_profit < 0 %}
+                <span class="text-danger"><i class="bi bi-arrow-down me-1"></i>{{ diary.realized_profit|floatformat:0|intcomma }}円</span>
+              {% endif %}
+            {% endif %}
+          </div>
+
+          <!-- 投資理由の抜粋 -->
+          {% if diary.reason %}
+          <div class="explore-card-excerpt">
+            {{ diary.reason|truncatechars:180 }}
+          </div>
+          {% endif %}
+
+          <!-- タグ -->
+          {% if diary.tags.all %}
+          <div class="explore-card-tags mb-1">
+            {% for tag in diary.tags.all %}
+            <a href="?tag={{ tag.id }}" class="badge bg-primary bg-opacity-10 text-primary text-decoration-none">
+              <i class="bi bi-tag-fill me-1" style="font-size:0.65rem;"></i>{{ tag.name }}
+            </a>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          <!-- 継続記録のヒット数（ノート） -->
+          {% if diary.notes.all %}
+          <div class="small text-muted">
+            <i class="bi bi-journal-check me-1"></i>継続記録 {{ diary.notes.count }} 件
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+
+        <!-- ページネーション -->
+        {% if page_obj.has_other_pages %}
+        <nav class="mt-3" aria-label="ページナビゲーション">
+          <ul class="pagination pagination-sm justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?{% if q %}q={{ q }}&{% endif %}{% if search_type %}search_type={{ search_type }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% if sector %}sector={{ sector }}&{% endif %}{% if tag_id %}tag={{ tag_id }}&{% endif %}page={{ page_obj.previous_page_number }}">前へ</a>
+            </li>
+            {% endif %}
+            <li class="page-item disabled">
+              <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+            </li>
+            {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?{% if q %}q={{ q }}&{% endif %}{% if search_type %}search_type={{ search_type }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% if sector %}sector={{ sector }}&{% endif %}{% if tag_id %}tag={{ tag_id }}&{% endif %}page={{ page_obj.next_page_number }}">次へ</a>
+            </li>
+            {% endif %}
+          </ul>
+        </nav>
+        {% endif %}
+
+      {% elif q or status or sector or tag_id %}
+        <div class="explore-empty">
+          <i class="bi bi-search" style="font-size:3rem; opacity:0.2;"></i>
+          <p class="mt-3 mb-1">「{{ q }}」に一致する日記が見つかりませんでした。</p>
+          <p class="small">検索ワードを変えるか、フィルターを解除してみてください。</p>
+        </div>
+
+      {% else %}
+        <!-- 検索前の初期画面 -->
+        <div class="explore-empty">
+          <i class="bi bi-journal-text" style="font-size:3rem; opacity:0.2;"></i>
+          <p class="mt-3 mb-1">投資理由・継続記録・@ハッシュタグを横断検索できます。</p>
+          <p class="small">左の@タグをクリックするか、上の検索バーにキーワードを入力してください。</p>
+        </div>
+      {% endif %}
+    </main>
+
+  </div><!-- /.explore-layout -->
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Enterキーで即検索
+document.getElementById('explore-q').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    document.getElementById('explore-form').submit();
+  }
+});
+</script>
+{% endblock %}

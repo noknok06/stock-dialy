@@ -2,7 +2,8 @@
 stockdiary app utility functions
 """
 import re
-from typing import List, Set
+from typing import List, Set, Dict, Any, Tuple
+from collections import defaultdict
 
 
 def extract_hashtags(text: str) -> List[str]:
@@ -102,3 +103,127 @@ def search_diaries_by_hashtag(queryset, hashtag: str):
     return queryset.filter(
         Q(reason__icontains=f'@{tag}')
     )
+
+
+def get_tag_graph_data(diaries_qs) -> Dict[str, Any]:
+    """
+    タグハブノードと diary→tag エッジを生成する。
+
+    Args:
+        diaries_qs: prefetch_related('tags') 済みの StockDiary QuerySet
+
+    Returns:
+        {
+            'tag_nodes': [{'id': 'tag_<pk>', 'node_type': 'tag', 'tag_name': str, 'tag_pk': int, 'diary_count': int}],
+            'edges':     [{'source': <diary_id>, 'target': 'tag_<pk>', 'edge_type': 'tag'}]
+        }
+    """
+    tag_diary_count: Dict[int, int] = defaultdict(int)
+    tag_meta: Dict[int, dict] = {}
+    edges: List[dict] = []
+
+    for diary in diaries_qs:
+        for tag in diary.tags.all():
+            tag_diary_count[tag.pk] += 1
+            if tag.pk not in tag_meta:
+                tag_meta[tag.pk] = {'name': tag.name}
+            edges.append({
+                'source': diary.pk,
+                'target': f'tag_{tag.pk}',
+                'edge_type': 'tag',
+            })
+
+    tag_nodes = [
+        {
+            'id': f'tag_{pk}',
+            'node_type': 'tag',
+            'tag_name': meta['name'],
+            'tag_pk': pk,
+            'diary_count': tag_diary_count[pk],
+        }
+        for pk, meta in tag_meta.items()
+    ]
+
+    return {'tag_nodes': tag_nodes, 'edges': edges}
+
+
+def get_sector_graph_data(diaries_qs) -> Dict[str, Any]:
+    """
+    業種ハブノードと diary→sector エッジを生成する。
+
+    Args:
+        diaries_qs: StockDiary QuerySet（sector フィールドを含む）
+
+    Returns:
+        {
+            'sector_nodes': [{'id': 'sec_<name>', 'node_type': 'sector', 'sector_name': str, 'diary_count': int}],
+            'edges':        [{'source': <diary_id>, 'target': 'sec_<name>', 'edge_type': 'sector'}]
+        }
+    """
+    sector_diary_count: Dict[str, int] = defaultdict(int)
+    edges: List[dict] = []
+    UNKNOWN = '未分類'
+
+    for diary in diaries_qs:
+        sector_name = (diary.sector or '').strip() or UNKNOWN
+        sector_id = f'sec_{sector_name}'
+        sector_diary_count[sector_name] += 1
+        edges.append({
+            'source': diary.pk,
+            'target': sector_id,
+            'edge_type': 'sector',
+        })
+
+    sector_nodes = [
+        {
+            'id': f'sec_{name}',
+            'node_type': 'sector',
+            'sector_name': name,
+            'diary_count': count,
+        }
+        for name, count in sector_diary_count.items()
+    ]
+
+    return {'sector_nodes': sector_nodes, 'edges': edges}
+
+
+def get_hashtag_graph_data(diaries_qs) -> Dict[str, Any]:
+    """
+    @ハッシュタグが共通する日記同士をエッジで繋ぐ。
+    ハッシュタグをハブノードとして追加する。
+
+    Args:
+        diaries_qs: StockDiary QuerySet（reason フィールドを含む）
+
+    Returns:
+        {
+            'hashtag_nodes': [{'id': 'ht_<tag>', 'node_type': 'hashtag', 'tag_name': str, 'diary_count': int}],
+            'edges':         [{'source': <diary_id>, 'target': 'ht_<tag>', 'edge_type': 'hashtag'}]
+        }
+    """
+    ht_diary_count: Dict[str, int] = defaultdict(int)
+    edges: List[dict] = []
+
+    for diary in diaries_qs:
+        if not diary.reason:
+            continue
+        for tag in extract_hashtags(diary.reason):
+            ht_id = f'ht_{tag}'
+            ht_diary_count[tag] += 1
+            edges.append({
+                'source': diary.pk,
+                'target': ht_id,
+                'edge_type': 'hashtag',
+            })
+
+    hashtag_nodes = [
+        {
+            'id': f'ht_{tag}',
+            'node_type': 'hashtag',
+            'tag_name': tag,
+            'diary_count': count,
+        }
+        for tag, count in ht_diary_count.items()
+    ]
+
+    return {'hashtag_nodes': hashtag_nodes, 'edges': edges}

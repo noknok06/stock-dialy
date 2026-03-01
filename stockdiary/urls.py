@@ -117,4 +117,9 @@ urlpatterns = [
     # ==========================================
     path('graph/', views.DiaryGraphView.as_view(), name='diary_graph'),
     path('api/diary-graph/data/', api_views.diary_graph_data, name='api_diary_graph_data'),
+
+    # ==========================================
+    # 全文探索ページ（Obsidian風検索）
+    # ==========================================
+    path('explore/', views.ExploreView.as_view(), name='explore'),
 ]
