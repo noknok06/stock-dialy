@@ -9,6 +9,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      DJANGO_TESTING: '1'
+      PYTHONPATH: ${{ github.workspace }}
 
     steps:
     - uses: actions/checkout@v3
@@ -31,7 +34,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.10'
+        python-version: '3.12'
         
     - name: Install dependencies
       run: |
@@ -79,12 +82,6 @@ jobs:
         echo "" >> config/test_settings.py
         echo "# ✅ SSL無効化" >> config/test_settings.py
         echo "SECURE_SSL_REDIRECT = False" >> config/test_settings.py
-
-    - name: Run migrations
-      run: |
-        rm -f test_db.sqlite3
-        python manage.py makemigrations --settings=config.test_settings
-        python manage.py migrate --settings=config.test_settings
 
     - name: Run tests
       run: |

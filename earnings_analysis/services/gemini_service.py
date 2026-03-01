@@ -98,13 +98,14 @@ class GeminiReportGenerator:
             
         except Exception as e:
             logger.error(f"GEMINI API呼び出しエラー: {e}")
-        
+            error_msg = str(e)
+
         fallback_result = self._generate_fallback_report(disclosure_dict, report_type)
         fallback_result.update({
             'api_available': self.api_available,
             'api_success': False,
             'fallback_used': True,
-            'error': str(e) if 'e' in dir() else 'Unknown error',
+            'error': error_msg,
             'generation_timestamp': start_time.isoformat(),
             'model_used': self.model_name
         })

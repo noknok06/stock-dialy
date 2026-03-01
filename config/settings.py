@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import os
-import dj_database_url
 from dotenv import load_dotenv
 
 # .envファイルの読み込み
@@ -244,9 +243,8 @@ SITE_ID = 1
 
 # Django-allauth基本設定
 ACCOUNT_EMAIL_VERIFICATION = 'optional'  # メール検証は任意
-ACCOUNT_EMAIL_REQUIRED = True  # メールアドレスは必須
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']  # 必須フィールド
 ACCOUNT_UNIQUE_EMAIL = True  # メールアドレスの一意性
-ACCOUNT_USERNAME_REQUIRED = True  # ユーザー名は必須
 SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'  # ソーシャルアカウントのメール検証なし
 SOCIALACCOUNT_AUTO_SIGNUP = False  # 確認画面を表示してからサインアップ
 SOCIALACCOUNT_LOGIN_ON_GET = True  # GETリクエストで直接ログイン
@@ -309,7 +307,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'kabulog.information@gmail.com'
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-if not EMAIL_HOST_PASSWORD:
+if not EMAIL_HOST_PASSWORD and not os.getenv('DJANGO_TESTING'):
     raise ValueError("EMAIL_HOST_PASSWORD environment variable is required")
 # デフォルトの送信元メールアドレス
 DEFAULT_FROM_EMAIL = 'カブログ <kabulog.information@gmail.com>'
@@ -436,83 +434,87 @@ MAINTENANCE_EXEMPT_URLS = [
 MAINTENANCE_END_TIME = '2025年3月23日 10:00 (JST)'  # メンテナンス終了予定時間
 MAINTENANCE_CONTACT_EMAIL = 'kabulog.information@gmail.com'  # 問い合わせ用メール
 
-# コンテンツセキュリティポリシー設定
-CSP_DEFAULT_SRC = ["'self'", "cdn.jsdelivr.net", "*.googleapis.com", "*.gstatic.com", "*.bootstrapcdn.com", "unpkg.com"]
-CSP_SCRIPT_SRC = [
-    "'self'", 
-    "'unsafe-inline'",
-    "'unsafe-eval'",
-    "unpkg.com", 
-    "https://unpkg.com",
-    "cdn.jsdelivr.net", 
-    "*.jquery.com", 
-    "*.googleadservices.com", 
-    "*.google.com", 
-    "*.googleapis.com", 
-    "*.gstatic.com",
-    "*.googlesyndication.com", 
-    "pagead2.googlesyndication.com", 
-    "*.doubleclick.net", 
-    "googleads.g.doubleclick.net",
-    "*.bootstrapcdn.com", 
-    "*.googletagmanager.com",
-    "www.googletagmanager.com",
-    "https://www.googletagmanager.com",
-    "https://pagead2.googlesyndication.com",
-    "https://www.google-analytics.com",
-    "https://ssl.google-analytics.com",
-    # 以下を追加
-    "*.adtrafficquality.google",
-    "https://adtrafficquality.google",
-    "https://ep1.adtrafficquality.google",
-    "https://ep2.adtrafficquality.google"
-]
-
-CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", "*.googleapis.com", "*.bootstrapcdn.com", 
-                 "https://cdn.jsdelivr.net", "https:", "data:"]
-CSP_FONT_SRC = [
-    "'self'", 
-    "data:", 
-    "*.googleapis.com", 
-    "*.gstatic.com", 
-    "*.bootstrapcdn.com", 
-    "cdn.jsdelivr.net", 
-    "cdnjs.cloudflare.com",
-    "https://fonts.gstatic.com"
-]
-CSP_IMG_SRC = ["'self'", "data:", "https:", "blob:", "*.google.com", "*.googleapis.com", "*.gstatic.com", 
-               "*.doubleclick.net", "pagead2.googlesyndication.com"]
-CSP_CONNECT_SRC = [
-    "'self'", 
-    "*.google.com", 
-    "*.doubleclick.net", 
-    "*.googleapis.com", 
-    "www.google-analytics.com", 
-    "stats.g.doubleclick.net",
-    "*.googletagmanager.com",
-    "https://www.googletagmanager.com",
-    "https://adtrafficquality.google", 
-    "*.adtrafficquality.google",       
-    "https://ep1.adtrafficquality.google",
-    "pagead2.googlesyndication.com",
-    "*.googlesyndication.com",
-    "https://ep2.adtrafficquality.google",
-    "cdn.jsdelivr.net",  # Bootstrap用
-]
-CSP_FRAME_SRC = [
-    "'self'", 
-    "*.google.com",
-    "*.doubleclick.net", 
-    "https://*.doubleclick.net",
-    "googleads.g.doubleclick.net", 
-    "tpc.googlesyndication.com", 
-    "www.googletagmanager.com", 
-    "*.googletagmanager.com",
-    "*.googlesyndication.com", 
-    "pagead2.googlesyndication.com",
-    "ep2.adtrafficquality.google",
-    "*.adtrafficquality.google",
-]
+# コンテンツセキュリティポリシー設定（django-csp 4.0 新形式）
+CONTENT_SECURITY_POLICY = {
+    'DIRECTIVES': {
+        'default-src': ["'self'", "cdn.jsdelivr.net", "*.googleapis.com", "*.gstatic.com", "*.bootstrapcdn.com", "unpkg.com"],
+        'script-src': [
+            "'self'",
+            "'unsafe-inline'",
+            "'unsafe-eval'",
+            "unpkg.com",
+            "https://unpkg.com",
+            "cdn.jsdelivr.net",
+            "*.jquery.com",
+            "*.googleadservices.com",
+            "*.google.com",
+            "*.googleapis.com",
+            "*.gstatic.com",
+            "*.googlesyndication.com",
+            "pagead2.googlesyndication.com",
+            "*.doubleclick.net",
+            "googleads.g.doubleclick.net",
+            "*.bootstrapcdn.com",
+            "*.googletagmanager.com",
+            "www.googletagmanager.com",
+            "https://www.googletagmanager.com",
+            "https://pagead2.googlesyndication.com",
+            "https://www.google-analytics.com",
+            "https://ssl.google-analytics.com",
+            "*.adtrafficquality.google",
+            "https://adtrafficquality.google",
+            "https://ep1.adtrafficquality.google",
+            "https://ep2.adtrafficquality.google",
+        ],
+        'style-src': ["'self'", "'unsafe-inline'", "*.googleapis.com", "*.bootstrapcdn.com",
+                      "https://cdn.jsdelivr.net", "https:", "data:"],
+        'font-src': [
+            "'self'",
+            "data:",
+            "*.googleapis.com",
+            "*.gstatic.com",
+            "*.bootstrapcdn.com",
+            "cdn.jsdelivr.net",
+            "cdnjs.cloudflare.com",
+            "https://fonts.gstatic.com",
+        ],
+        'img-src': ["'self'", "data:", "https:", "blob:", "*.google.com", "*.googleapis.com", "*.gstatic.com",
+                    "*.doubleclick.net", "pagead2.googlesyndication.com"],
+        'connect-src': [
+            "'self'",
+            "*.google.com",
+            "*.doubleclick.net",
+            "*.googleapis.com",
+            "www.google-analytics.com",
+            "stats.g.doubleclick.net",
+            "*.googletagmanager.com",
+            "https://www.googletagmanager.com",
+            "https://adtrafficquality.google",
+            "*.adtrafficquality.google",
+            "https://ep1.adtrafficquality.google",
+            "pagead2.googlesyndication.com",
+            "*.googlesyndication.com",
+            "https://ep2.adtrafficquality.google",
+            "cdn.jsdelivr.net",
+            "api.edinet-fsa.go.jp",
+            "disclosure.edinet-fsa.go.jp",
+        ],
+        'frame-src': [
+            "'self'",
+            "*.google.com",
+            "*.doubleclick.net",
+            "https://*.doubleclick.net",
+            "googleads.g.doubleclick.net",
+            "tpc.googlesyndication.com",
+            "www.googletagmanager.com",
+            "*.googletagmanager.com",
+            "*.googlesyndication.com",
+            "pagead2.googlesyndication.com",
+            "ep2.adtrafficquality.google",
+            "*.adtrafficquality.google",
+        ],
+    }
+}
 # =============================================================================
 # 現在使用していない設定（コメントアウト）
 # =============================================================================
@@ -642,12 +644,6 @@ RATE_LIMIT.update({
     }
 })
 
-# CSP設定への追加（既存のCSP設定に追加）
-# EDINET APIへのアクセスを許可
-CSP_CONNECT_SRC = CSP_CONNECT_SRC + [
-    'api.edinet-fsa.go.jp',
-    'disclosure.edinet-fsa.go.jp',
-]
 
 # 既存のLOGGING設定のhandlersとloggersに追加
 LOGGING['handlers']['earnings_file'] = {
