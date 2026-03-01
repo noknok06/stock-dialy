@@ -3346,7 +3346,13 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
         total_cash_invested = Decimal('0')  # 総投資額（現物のみ）
         total_cash_sell_amount = Decimal('0')  # 総売却額（現物のみ）
         total_current_value = Decimal('0')  # 現在の評価額
-        
+
+        # 勝率・プロフィットファクター用
+        win_count = 0
+        loss_count = 0
+        total_win_profit = Decimal('0')
+        total_loss_profit = Decimal('0')
+
         for diary in diaries_in_period:
             # ✅ 現物取引のみの統計を取得
             cash_stats = diary.calculate_cash_only_stats()
@@ -3365,6 +3371,24 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
             if cash_stats['current_quantity'] > 0 and cash_stats['average_purchase_price']:
                 current_value = cash_stats['current_quantity'] * cash_stats['average_purchase_price']
                 total_current_value += current_value
+
+            # 勝率集計：売却ありの日記のみカウント
+            diary_realized = cash_stats['realized_profit'] or Decimal('0')
+            if cash_stats['total_sold_quantity'] > 0:
+                if diary_realized > 0:
+                    win_count += 1
+                    total_win_profit += diary_realized
+                elif diary_realized < 0:
+                    loss_count += 1
+                    total_loss_profit += abs(diary_realized)
+
+        # 勝率・プロフィットファクター・平均損益倍率
+        total_traded_count = win_count + loss_count
+        win_rate = round((win_count / total_traded_count * 100), 1) if total_traded_count > 0 else 0
+        profit_factor = round(float(total_win_profit / total_loss_profit), 2) if total_loss_profit > 0 else None
+        avg_win = round(float(total_win_profit / win_count), 0) if win_count > 0 else 0
+        avg_loss = round(float(total_loss_profit / loss_count), 0) if loss_count > 0 else 0
+        avg_win_loss_ratio = round(avg_win / avg_loss, 2) if avg_loss > 0 else None
 
         # ✅ ROI = (売却総額 + 評価額 - 総投資額) / 総投資額 × 100
         if total_cash_invested > 0:
@@ -3396,6 +3420,22 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
 
         avg_profit_rate = (sum(profitable_rates) / len(profitable_rates) 
                           if profitable_rates else 0)
+
+        # ========== 月別損益トレンド ==========
+        from collections import defaultdict
+        monthly_profit = defaultdict(Decimal)
+
+        sell_txns = period_transactions.filter(
+            transaction_type='sell'
+        ).order_by('transaction_date').select_related('diary')
+
+        sell_by_diary_month = {}
+        for sell_tx in sell_txns:
+            key = (sell_tx.diary_id, sell_tx.transaction_date.strftime('%Y-%m'))
+            sell_by_diary_month[key] = (
+                sell_by_diary_month.get(key, Decimal('0'))
+                + sell_tx.price * sell_tx.quantity
+            )
 
         # ========== 取引回数ランキング（銘柄別・現物のみ） ==========
         stock_ranking = {}
@@ -3436,17 +3476,26 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
             else:
                 last_trade_display = '不明'
             
+            # 月別損益：この日記の実現損益を売却月ごとの比率で配分
+            diary_realized_float = float(cash_stats['realized_profit'] or 0)
+            diary_total_sell_float = float(cash_stats['total_sell_amount'] or 0)
+            if diary_total_sell_float > 0:
+                for (d_id, month_key), month_sell in sell_by_diary_month.items():
+                    if d_id == diary.id:
+                        proportion = float(month_sell) / diary_total_sell_float
+                        monthly_profit[month_key] += Decimal(str(diary_realized_float * proportion))
+
             # ✅ ROI計算：(売却総額 + 評価額 - 総投資額) / 総投資額 × 100
             total_invested = cash_stats['total_buy_amount']
             total_sell = cash_stats['total_sell_amount']
             current_value = Decimal('0')
             if cash_stats['current_quantity'] > 0 and cash_stats['average_purchase_price']:
                 current_value = cash_stats['current_quantity'] * cash_stats['average_purchase_price']
-            
+
             roi = Decimal('0')
             if total_invested > 0:
                 roi = ((total_sell + current_value - total_invested) / total_invested * 100)
-            
+
             stock_ranking[stock_code]['diaries'].append({
                 'id': diary.id,
                 'transaction_count': cash_transaction_count,
@@ -3466,6 +3515,74 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
             key=lambda x: x['transaction_count'],
             reverse=True
         )[:10]
+
+        # 月別損益データを時系列順に整形
+        monthly_pl_data = [
+            {
+                'month': m,
+                'profit': round(float(monthly_profit[m]), 0),
+                'label': f"{m[:4]}年{int(m[5:7])}月",
+            }
+            for m in sorted(monthly_profit.keys())
+        ]
+
+        # ========== ポートフォリオ配分（保有銘柄を業種別に集計） ==========
+        # company_industriesを全日記に拡張するため全銘柄コードも取得
+        all_stock_codes = list(
+            StockDiary.objects.filter(user=user).values_list('stock_symbol', flat=True).distinct()
+        )
+        extra_codes = [c for c in all_stock_codes if c not in company_industries]
+        if extra_codes:
+            extra_companies = CompanyMaster.objects.filter(
+                code__in=extra_codes
+            ).values('code', 'industry_name_33')
+            for ec in extra_companies:
+                code = ec['code'].split('.')[0]
+                industry = ec['industry_name_33'] or '未分類'
+                company_industries[code] = industry.strip()
+
+        allocation_by_sector = {}
+        for diary in all_diaries:
+            cash_stats = diary.calculate_cash_only_stats()
+            if cash_stats['current_quantity'] > 0 and cash_stats['average_purchase_price']:
+                holding_value = float(
+                    cash_stats['current_quantity'] * cash_stats['average_purchase_price']
+                )
+                stock_code = diary.stock_symbol.split('.')[0] if diary.stock_symbol else None
+                sector = company_industries.get(stock_code, '未分類') if stock_code else '未分類'
+                allocation_by_sector[sector] = allocation_by_sector.get(sector, 0.0) + holding_value
+
+        total_holding_value = sum(allocation_by_sector.values())
+        sector_allocation_list = (
+            [
+                {
+                    'sector': s,
+                    'value': round(v, 0),
+                    'percentage': round(v / total_holding_value * 100, 1),
+                }
+                for s, v in sorted(allocation_by_sector.items(), key=lambda x: -x[1])
+            ]
+            if total_holding_value > 0
+            else []
+        )
+
+        # ========== ベスト・ワーストトレード ==========
+        all_diary_roi_list = []
+        for stock_code, stock_data in stock_ranking.items():
+            for d in stock_data['diaries']:
+                if d['total_invested'] > 0:
+                    all_diary_roi_list.append({
+                        'stock_name': stock_data['stock_name'],
+                        'stock_code': stock_code,
+                        'diary_id': d['id'],
+                        'roi': round(d['roi'], 1),
+                        'realized_profit': round(d['realized_profit'], 0),
+                        'total_invested': round(d['total_invested'], 0),
+                    })
+
+        all_diary_roi_list.sort(key=lambda x: x['roi'], reverse=True)
+        best_trades = all_diary_roi_list[:3]
+        worst_trades = list(reversed(all_diary_roi_list[-3:])) if len(all_diary_roi_list) >= 3 else list(reversed(all_diary_roi_list))
 
         # ========== 業種別分析（現物のみ） ==========
         sector_stats = {}
@@ -3643,6 +3760,25 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
             'total_invested': float(total_cash_invested),
             'total_roi': round(float(total_roi), 1),
             'avg_profit_rate': round(avg_profit_rate, 1),
+            # 勝率・プロフィットファクター
+            'win_rate': win_rate,
+            'win_count': win_count,
+            'loss_count': loss_count,
+            'total_traded_count': total_traded_count,
+            'profit_factor': profit_factor,
+            'avg_win': avg_win,
+            'avg_loss': avg_loss,
+            'avg_win_loss_ratio': avg_win_loss_ratio,
+            # 月別損益
+            'monthly_pl_data': json.dumps(monthly_pl_data, ensure_ascii=False),
+            # ポートフォリオ配分
+            'sector_allocation_list': sector_allocation_list,
+            'sector_allocation_json': json.dumps(sector_allocation_list, ensure_ascii=False),
+            'total_holding_value': round(total_holding_value, 0),
+            # ベスト・ワーストトレード
+            'best_trades': best_trades,
+            'worst_trades': worst_trades,
+            # 既存
             'transaction_ranking': transaction_ranking,
             'sector_analysis': sector_analysis,
             'profitable_sectors': profitable_sectors,
