@@ -69,12 +69,24 @@
         </div>
         {% endif %}
         <div class="ctrl-edge">
-          <select class="form-select form-select-sm" id="edgeModeSelect">
-            <option value="manual">手動リンク</option>
-            <option value="tag" selected>タグ接続</option>
-            <option value="sector">業種クラスター</option>
-            <option value="hashtag">@ハッシュタグ</option>
-          </select>
+          <div class="btn-group btn-group-sm" role="group" aria-label="接続モード">
+            <input type="checkbox" class="btn-check edge-mode-check" id="mode-manual" value="manual" autocomplete="off">
+            <label class="btn btn-outline-secondary" for="mode-manual">
+              <i class="bi bi-link-45deg me-1"></i>手動
+            </label>
+            <input type="checkbox" class="btn-check edge-mode-check" id="mode-tag" value="tag" autocomplete="off" checked>
+            <label class="btn btn-outline-primary" for="mode-tag">
+              <i class="bi bi-tag me-1"></i>タグ
+            </label>
+            <input type="checkbox" class="btn-check edge-mode-check" id="mode-sector" value="sector" autocomplete="off">
+            <label class="btn btn-outline-warning" for="mode-sector">
+              <i class="bi bi-building me-1"></i>業種
+            </label>
+            <input type="checkbox" class="btn-check edge-mode-check" id="mode-hashtag" value="hashtag" autocomplete="off">
+            <label class="btn btn-outline-info" for="mode-hashtag">
+              <i class="bi bi-hash me-1"></i>@タグ
+            </label>
+          </div>
         </div>
       </div>
 
@@ -210,7 +222,7 @@
   const GRAPH_CONFIG = {
     apiUrl: "{% url 'stockdiary:api_diary_graph_data' %}",
     diaryCount: {{ diary_count }},
-    defaultEdgeMode: 'tag',
+    defaultEdgeModes: ['tag'],
   };
 </script>
 <script src="{% static 'js/diary-graph.js' %}?v={{ STATIC_VERSION }}"></script>
