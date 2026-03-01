@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       // アクティブフィルターを更新
-      setTimeout(updateActiveFilters, 100);
+      if (typeof updateFilterBadges === 'function') setTimeout(updateFilterBadges, 100);
     });
 
   // タグクリック時のイベントリスナーを設定
@@ -163,39 +163,15 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // タグフィルターを適用する関数
   function applyTagFilter(tagId, tagName) {
-    // セレクトボックスの値を更新
     const tagFilterSelect = document.getElementById('tagFilter');
     if (tagFilterSelect) {
       tagFilterSelect.value = tagId;
     }
-    
-    // 詳細検索パネルが閉じている場合は開く
-    const advancedPanel = document.getElementById('advancedPanel');
-    const advancedToggle = document.getElementById('advancedToggle');
-    
-    if (advancedPanel && advancedPanel.classList.contains('collapsed')) {
-      advancedPanel.classList.remove('collapsed');
-      advancedPanel.classList.add('slide-down');
-      
-      if (advancedToggle) {
-        advancedToggle.innerHTML = '<i class="bi bi-x"></i>';
-        advancedToggle.setAttribute('aria-expanded', 'true');
-      }
-    }
-    
-    // 検索フォームを送信
+
     const searchForm = document.getElementById('optimizedSearchForm');
     if (searchForm) {
-      // HTMXで検索を実行
       htmx.trigger(searchForm, 'submit');
-      
-      // ページ上部にスクロール（スムーズに）
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
-      
-      // ユーザーへのフィードバック
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       showFilterNotification(tagName);
     }
   }
@@ -331,21 +307,6 @@ style.textContent = `
 `;
   document.head.appendChild(style);   
 
-  // フィルター選択時の自動検索
-  const filterSelects = document.querySelectorAll('#tagFilter, #statusFilter, #sectorFilter, #dateRange');
-  filterSelects.forEach(select => {
-    select.addEventListener('change', function() {
-      // フォームを自動送信（HTMXが処理）
-      const changeEvent = new Event('change', { bubbles: true });
-      this.dispatchEvent(changeEvent);
-      
-      // アクティブフィルターを更新
-      setTimeout(updateActiveFilters, 100);
-    });
-  });
-
-  // 初期化時にアクティブフィルターを設定
-  updateActiveFilters();
 });
 
 // サジェスチョンアイテムのクリックハンドラーを設定
@@ -385,89 +346,6 @@ function setupSuggestionClickHandlers() {
       }
     });
   });
-}
-
-// フィルターチップの削除機能
-function removeFilter(filterType) {
-  const form = document.getElementById('optimizedSearchForm');
-  if (!form) return;
-  
-  // 該当するフィルターフィールドをクリア
-  const filterElement = form.querySelector(`[name="${filterType}"]`);
-  if (filterElement) {
-    filterElement.value = '';
-    
-    // HTMXで更新
-    htmx.trigger(form, 'submit');
-  }
-  
-  // アクティブフィルターを更新
-  setTimeout(updateActiveFilters, 100);
-}
-
-// アクティブフィルターの表示を更新
-function updateActiveFilters() {
-  const activeFilters = document.getElementById('activeFilters');
-  if (!activeFilters) return;
-  
-  const form = document.getElementById('optimizedSearchForm');
-  if (!form) return;
-  
-  let hasFilters = false;
-  const filterContainer = activeFilters;
-  
-  // 既存のフィルターチップをクリア
-  filterContainer.innerHTML = '';
-  
-  // 各フィルターをチェック
-  const filters = [
-    { name: 'tag', type: 'select', getLabel: (value) => {
-      const option = form.querySelector(`select[name="tag"] option[value="${value}"]`);
-      return option ? option.textContent : value;
-    }},
-    { name: 'status', type: 'select', getLabel: (value) => {
-      const labels = {
-        'active': '保有中',
-        'memo': 'メモのみ'
-      };
-      return labels[value] || value;
-    }},
-    { name: 'sector', type: 'select', getLabel: (value) => value },
-    { name: 'date_range', type: 'select', getLabel: (value) => {
-      const labels = {
-        '1w': '過去1週間',
-        '1m': '過去1ヶ月',
-        '3m': '過去3ヶ月',
-        '6m': '過去6ヶ月',
-        '1y': '過去1年'
-      };
-      return labels[value] || value;
-    }}
-  ];
-  
-  filters.forEach(filter => {
-    const element = form.querySelector(`[name="${filter.name}"]`);
-    if (element && element.value) {
-      hasFilters = true;
-      
-      const chip = document.createElement('div');
-      chip.className = 'filter-chip';
-      chip.setAttribute('data-filter', filter.name);
-      chip.setAttribute('data-value', element.value);
-      
-      chip.innerHTML = `
-        <span>${filter.getLabel(element.value)}</span>
-        <button type="button" class="filter-chip-remove" onclick="removeFilter('${filter.name}')">
-          <i class="bi bi-x"></i>
-        </button>
-      `;
-      
-      filterContainer.appendChild(chip);
-    }
-  });
-  
-  // アクティブフィルターコンテナの表示/非表示
-  activeFilters.style.display = hasFilters ? 'block' : 'none';
 }
 
 // 検索履歴の管理
@@ -586,56 +464,3 @@ function debounce(func, wait) {
   };
 }
 
-// 検索フォームの状態管理
-const SearchFormManager = {
-  // フォームの状態を保存
-  saveState: function() {
-    const form = document.getElementById('optimizedSearchForm');
-    if (!form) return;
-    
-    const formData = new FormData(form);
-    const state = {};
-    
-    for (const [key, value] of formData.entries()) {
-      if (value) {
-        state[key] = value;
-      }
-    }
-    
-    try {
-      sessionStorage.setItem('search_form_state', JSON.stringify(state));
-    } catch (e) {
-      console.warn('フォーム状態の保存に失敗しました:', e);
-    }
-  },
-  
-  // フォームの状態を復元
-  restoreState: function() {
-    try {
-      const state = JSON.parse(sessionStorage.getItem('search_form_state') || '{}');
-      const form = document.getElementById('optimizedSearchForm');
-      if (!form) return;
-      
-      Object.entries(state).forEach(([key, value]) => {
-        const element = form.querySelector(`[name="${key}"]`);
-        if (element) {
-          element.value = value;
-        }
-      });
-      
-      updateActiveFilters();
-    } catch (e) {
-      console.warn('フォーム状態の復元に失敗しました:', e);
-    }
-  }
-};
-
-// ページ読み込み時にフォーム状態を復元
-document.addEventListener('DOMContentLoaded', function() {
-  SearchFormManager.restoreState();
-});
-
-// ページ離脱時にフォーム状態を保存
-window.addEventListener('beforeunload', function() {
-  SearchFormManager.saveState();
-});

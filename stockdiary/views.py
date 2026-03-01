@@ -1522,6 +1522,22 @@ def diary_list(request):
                     Q(first_purchase_date__isnull=True, created_at__gte=start_date)
                 )
         
+        # トランザクション期間フィルター（created_at基準）
+        transaction_date_range = request.GET.get('transaction_date_range', '')
+        if transaction_date_range:
+            from datetime import timedelta
+            today = timezone.now()
+            range_mapping = {
+                '1w': 7, '1m': 30, '3m': 90, '6m': 180, '1y': 365
+            }
+            if transaction_date_range in range_mapping:
+                start_datetime = today - timedelta(days=range_mapping[transaction_date_range])
+                diary_ids = Transaction.objects.filter(
+                    diary__user=request.user,
+                    created_at__gte=start_datetime
+                ).values_list('diary_id', flat=True).distinct()
+                queryset = queryset.filter(id__in=diary_ids)
+
         # ソート
         sort = request.GET.get('sort', '')
         if sort == 'name':
@@ -1542,6 +1558,14 @@ def diary_list(request):
             queryset = queryset.order_by('-realized_profit')
         elif sort == 'profit_asc':
             queryset = queryset.order_by('realized_profit')
+        elif sort == 'transaction_count_desc':
+            queryset = queryset.order_by('-transaction_count', '-updated_at')
+        elif sort == 'transaction_count_asc':
+            queryset = queryset.order_by('transaction_count', 'updated_at')
+        elif sort == 'total_cost_desc':
+            queryset = queryset.order_by('-total_cost', '-updated_at')
+        elif sort == 'total_cost_asc':
+            queryset = queryset.order_by('total_cost', 'updated_at')
         else:
             queryset = queryset.order_by('-updated_at')
         
