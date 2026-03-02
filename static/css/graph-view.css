@@ -144,6 +144,25 @@
   opacity: 0.15;
 }
 
+/* ---- ホバー時の隣接ハイライト ---- */
+.graph-node.neighbor-dim {
+  opacity: 0.12;
+  transition: opacity 0.15s ease;
+}
+.graph-node.neighbor-highlight circle,
+.graph-node.neighbor-highlight polygon,
+.graph-node.neighbor-highlight rect {
+  stroke: #f59e0b !important;
+  stroke-width: 3px !important;
+}
+
+/* ---- ピン留めノードの視覚表示 ---- */
+.graph-node.pinned circle,
+.graph-node.pinned polygon,
+.graph-node.pinned rect {
+  stroke-dasharray: 3 2;
+}
+
 /* ---- ラベルテキスト ---- */
 .graph-node text {
   font-size: 11px;
@@ -273,6 +292,13 @@
   border-radius: 50%;
   flex-shrink: 0;
 }
+
+/* クラスベースの表示切り替え（!important なし） */
+.legend-hidden { display: none !important; }
+#legend-hubs:not(.legend-hidden) { display: flex; }
+#legend-tag-node:not(.legend-hidden),
+#legend-sector-node:not(.legend-hidden),
+#legend-hashtag-node:not(.legend-hidden) { display: inline-flex; }
 
 /* ================================================================
    統計バッジ（グラフ右下）
