@@ -267,12 +267,31 @@
       const g = svg.append('g').attr('class', 'graph-root');
       this.gRoot = g;
 
+      // ユーザーが手動でズーム・パン操作したかを記録するフラグ
+      this._userHasInteracted = false;
+
       this.zoomBehavior = d3.zoom()
         .scaleExtent([0.1, 6])
-        .on('zoom', event => g.attr('transform', event.transform));
+        .on('zoom', event => {
+          g.attr('transform', event.transform);
+          // sourceEvent がある = ユーザー操作（プログラム制御の transform 変更は除外）
+          if (event.sourceEvent) this._userHasInteracted = true;
+        });
       svg.call(this.zoomBehavior);
 
-      svg.on('click', () => {
+      // パン（ドラッグ）と単純クリックを区別するため、mousedown 時の座標を記録
+      let _mouseDownPos = null;
+      svg.on('mousedown.clickguard', event => {
+        _mouseDownPos = [event.clientX, event.clientY];
+      });
+      svg.on('click', event => {
+        // mousedown から 4px 以上動いていたらパン操作 → パネルを閉じない
+        const moved = _mouseDownPos && (
+          Math.abs(event.clientX - _mouseDownPos[0]) > 4 ||
+          Math.abs(event.clientY - _mouseDownPos[1]) > 4
+        );
+        _mouseDownPos = null;
+        if (moved) return;
         this._hideTooltip();
         this._closeSidePanel();
       });
@@ -462,10 +481,14 @@
       this._applySearch();
       this._showGraph();
 
-      // シミュレーション安定後に自動フィット
-      this.simulation.on('end', () => { this._fitToView(false); });
-      // 3秒後にもフィット（end が発火しないケースの保険）
-      setTimeout(() => { if (this.svg) this._fitToView(false); }, 3000);
+      // シミュレーション安定後に自動フィット（ユーザーが手動操作していない場合のみ）
+      this.simulation.on('end', () => {
+        if (!this._userHasInteracted) this._fitToView(false);
+      });
+      // 3秒後にもフィット（end が発火しないケースの保険。手動操作済みなら実行しない）
+      setTimeout(() => {
+        if (this.svg && !this._userHasInteracted) this._fitToView(false);
+      }, 3000);
     }
 
     // ==============================
