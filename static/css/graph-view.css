@@ -541,3 +541,46 @@ body.dark-mode .side-panel-footer,
   .ctrl-status .btn { font-size: 0.72rem; padding: 0.2rem 0.35rem; }
   .ctrl-status .graph-legend-dot { display: none; }
 }
+
+/* ================================================================
+   接続モード（ctrl-edge）: 均等幅・1行
+   ================================================================ */
+
+/* ctrl-edge は行いっぱいに広がる */
+.ctrl-edge { flex: 1; min-width: 0; }
+
+/* btn-group を flex にして各ボタンを均等幅に */
+.ctrl-edge .btn-group {
+  display: flex;
+}
+
+/* チェックボックス label を均等幅・中央揃え */
+.ctrl-edge .btn-group > label {
+  flex: 1;
+  text-align: center;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* アイコンとラベルの間隔 */
+.ctrl-edge .btn-group > label .mode-label {
+  margin-left: 0.25rem;
+}
+
+/* モバイル: 文字小さめ・余白を詰める */
+@media (max-width: 576px) {
+  .ctrl-edge .btn-group > label {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.2rem;
+  }
+  .ctrl-edge .btn-group > label .mode-label {
+    margin-left: 0.15rem;
+  }
+}
+
+/* 極小画面: アイコンを非表示にしてテキストのみ */
+@media (max-width: 380px) {
+  .ctrl-edge .btn-group > label i { display: none; }
+  .ctrl-edge .btn-group > label .mode-label { margin-left: 0; }
+}

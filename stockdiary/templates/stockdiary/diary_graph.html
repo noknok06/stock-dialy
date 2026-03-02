@@ -57,8 +57,8 @@
       </div>
 
       <!-- 行2: タグフィルター + 接続モード（横並び、input-group 廃止） -->
+      {% if tags %}
       <div class="ctrl-row">
-        {% if tags %}
         <div class="ctrl-tag">
           <select class="form-select form-select-sm" id="tagFilter">
             <option value="">全タグ</option>
@@ -67,24 +67,26 @@
             {% endfor %}
           </select>
         </div>
-        {% endif %}
+      </div>
+      {% endif %}
+      <div class="ctrl-row">
         <div class="ctrl-edge">
-          <div class="btn-group btn-group-sm" role="group" aria-label="接続モード">
+          <div class="btn-group btn-group-sm w-100" role="group" aria-label="接続モード">
             <input type="checkbox" class="btn-check edge-mode-check" id="mode-manual" value="manual" autocomplete="off">
             <label class="btn btn-outline-secondary" for="mode-manual">
-              <i class="bi bi-link-45deg me-1"></i>手動
+              <i class="bi bi-link-45deg"></i><span class="mode-label">手動</span>
             </label>
             <input type="checkbox" class="btn-check edge-mode-check" id="mode-tag" value="tag" autocomplete="off" checked>
             <label class="btn btn-outline-primary" for="mode-tag">
-              <i class="bi bi-tag me-1"></i>タグ
+              <i class="bi bi-tag"></i><span class="mode-label">タグ</span>
             </label>
             <input type="checkbox" class="btn-check edge-mode-check" id="mode-sector" value="sector" autocomplete="off">
             <label class="btn btn-outline-warning" for="mode-sector">
-              <i class="bi bi-building me-1"></i>業種
+              <i class="bi bi-building"></i><span class="mode-label">業種</span>
             </label>
             <input type="checkbox" class="btn-check edge-mode-check" id="mode-hashtag" value="hashtag" autocomplete="off">
             <label class="btn btn-outline-info" for="mode-hashtag">
-              <i class="bi bi-hash me-1"></i>@タグ
+              <i class="bi bi-hash"></i><span class="mode-label">@タグ</span>
             </label>
           </div>
         </div>
