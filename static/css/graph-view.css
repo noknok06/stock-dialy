@@ -314,7 +314,10 @@
 }
 .ctrl-filter-row::-webkit-scrollbar { display: none; }
 
-/* ツール行（検索・色・ラベル・ズーム） */
+/* ★ overflow-x が発動するための必須条件: 直接の子を縮小禁止 */
+.ctrl-filter-row > * { flex-shrink: 0; }
+
+/* ツール行 */
 .ctrl-tools-row {
   display: flex;
   align-items: center;
@@ -329,7 +332,6 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   white-space: nowrap;
-  flex-shrink: 0;
 }
 
 /* 縦区切り線 */
@@ -337,25 +339,20 @@
   width: 1px;
   height: 18px;
   background: rgba(0, 0, 0, 0.1);
-  flex-shrink: 0;
   align-self: center;
 }
 
 /* タグ select */
 .ctrl-tag-sel {
-  flex-shrink: 0;
   width: auto;
   min-width: 80px;
   max-width: 130px;
 }
 
-/* 検索（伸縮） */
+/* 検索・色・ツール */
 .ctrl-search { flex: 1; min-width: 0; }
-
-/* 色 select（幅は内容に合わせる） */
+.ctrl-search .form-control { width: 100%; min-width: 0; }
 .ctrl-color { flex-shrink: 0; width: auto; }
-
-/* ツール群 */
 .ctrl-tools {
   flex-shrink: 0;
   display: flex;
@@ -363,21 +360,48 @@
   gap: 6px;
 }
 
-/* 検索 input は親幅に追従 */
-.ctrl-search .form-control { width: 100%; min-width: 0; }
+/* ================================================================
+   フィルターチップ（ピル型・2025年スタイル）
+   Bootstrap btn-group の連結ボーダーを廃止し、
+   独立したピル型チップとして再定義
+   ================================================================ */
 
-/* ---- ステータスボタン: 選択時に各色で塗りつぶし ---- */
-#filter-all:checked     + label { background-color: #6c757d !important; border-color: #6c757d !important; color: #fff !important; font-weight: 600; }
-#filter-holding:checked + label { background-color: #10b981 !important; border-color: #10b981 !important; color: #fff !important; font-weight: 600; }
-#filter-sold:checked    + label { background-color: #ef4444 !important; border-color: #ef4444 !important; color: #fff !important; font-weight: 600; }
-#filter-memo:checked    + label { background-color: #9ca3af !important; border-color: #9ca3af !important; color: #fff !important; font-weight: 600; }
+/* btn-group → gap 付き flex（inline-flex を上書き） */
+.ctrl-filter-row .btn-group {
+  display: flex !important;
+  gap: 3px;
+}
 
-/* ---- 接続ボタン: 選択時に青で強調 ---- */
+/* 全チップ共通スタイル */
+.ctrl-filter-row .btn-group .btn {
+  flex-shrink: 0;
+  border-radius: 20px !important;   /* ピル型・Bootstrap の先頭末尾差分を上書き */
+  padding: 3px 10px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.13);
+  color: var(--text-100, #1d1c1c);
+  white-space: nowrap;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.ctrl-filter-row .btn-group .btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.22);
+}
+
+/* ステータスチップ: 選択時に各ステータス色で塗りつぶし */
+#filter-all:checked     + label { background: #4b5563 !important; border-color: #4b5563 !important; color: #fff !important; }
+#filter-holding:checked + label { background: #10b981 !important; border-color: #10b981 !important; color: #fff !important; }
+#filter-sold:checked    + label { background: #ef4444 !important; border-color: #ef4444 !important; color: #fff !important; }
+#filter-memo:checked    + label { background: #9ca3af !important; border-color: #9ca3af !important; color: #fff !important; }
+
+/* 接続チップ: 選択時に青 */
 .ctrl-edge-group .btn-check:checked + label {
-  background-color: #0d6efd !important;
-  border-color: #0d6efd !important;
+  background: #2563eb !important;
+  border-color: #2563eb !important;
   color: #fff !important;
-  font-weight: 600;
 }
 
 /* ----------------------------------------------------------------
