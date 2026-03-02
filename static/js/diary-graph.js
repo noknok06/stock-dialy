@@ -279,18 +279,22 @@
         });
       svg.call(this.zoomBehavior);
 
-      // パン（ドラッグ）と単純クリックを区別するため、mousedown 時の座標を記録
-      let _mouseDownPos = null;
-      svg.on('mousedown.clickguard', event => {
-        _mouseDownPos = [event.clientX, event.clientY];
+      // パン・スクロールと単純クリックを区別（mouse / touch 両対応）
+      let _ptrStart = null;
+      svg.on('pointerdown.clickguard', event => {
+        _ptrStart = [event.clientX, event.clientY];
+      });
+      svg.on('pointercancel.clickguard', () => {
+        // ブラウザがページスクロールを引き継いだ場合 → 次の click でパネルを閉じない
+        if (_ptrStart) _ptrStart = [-9999, -9999];
       });
       svg.on('click', event => {
-        // mousedown から 4px 以上動いていたらパン操作 → パネルを閉じない
-        const moved = _mouseDownPos && (
-          Math.abs(event.clientX - _mouseDownPos[0]) > 4 ||
-          Math.abs(event.clientY - _mouseDownPos[1]) > 4
+        // pointerdown から 4px 以上動いていたら移動操作 → パネルを閉じない
+        const moved = _ptrStart && (
+          Math.abs(event.clientX - _ptrStart[0]) > 4 ||
+          Math.abs(event.clientY - _ptrStart[1]) > 4
         );
-        _mouseDownPos = null;
+        _ptrStart = null;
         if (moved) return;
         this._hideTooltip();
         this._closeSidePanel();
