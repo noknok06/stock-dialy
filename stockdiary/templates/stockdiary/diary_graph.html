@@ -24,25 +24,27 @@
     </a>
   </div>
 
-  <!-- コントロールパネル -->
-  <div class="card mb-3 graph-controls-card" id="graph-controls">
-    <div class="card-body py-2" id="ctrl-panel">
+  <!-- フィルターバー -->
+  <div class="graph-filter-bar mb-3" id="graph-controls">
+    <div id="ctrl-panel">
 
-      <!-- 行1: ステータスフィルター（常時全幅） -->
-      <div class="ctrl-row">
-        <div class="ctrl-status w-100">
-          <div class="btn-group btn-group-sm w-100" role="group" aria-label="ステータスフィルター">
+      <!-- 行1: 表示 ＋ 接続 ＋ タグ -->
+      <div class="ctrl-row ctrl-row-wrap">
+
+        <div class="ctrl-group">
+          <span class="ctrl-label">表示</span>
+          <div class="btn-group btn-group-sm ctrl-status" role="group" aria-label="ステータスフィルター">
             <input type="radio" class="btn-check" name="statusFilter" id="filter-all" value="all" checked>
             <label class="btn btn-outline-secondary" for="filter-all">すべて</label>
 
             <input type="radio" class="btn-check" name="statusFilter" id="filter-holding" value="holding">
-            <label class="btn btn-outline-success" for="filter-holding">
+            <label class="btn btn-outline-secondary" for="filter-holding">
               <span class="graph-legend-dot d-inline-block me-1" style="background:#10b981;"></span>
               <span class="ctrl-status-label">保有中</span>
             </label>
 
             <input type="radio" class="btn-check" name="statusFilter" id="filter-sold" value="sold">
-            <label class="btn btn-outline-danger" for="filter-sold">
+            <label class="btn btn-outline-secondary" for="filter-sold">
               <span class="graph-legend-dot d-inline-block me-1" style="background:#ef4444;"></span>
               <span class="ctrl-status-label">売却済み</span>
             </label>
@@ -54,11 +56,34 @@
             </label>
           </div>
         </div>
-      </div>
 
-      <!-- 行2: タグフィルター + 接続モード（横並び、input-group 廃止） -->
-      {% if tags %}
-      <div class="ctrl-row">
+        <div class="ctrl-sep d-none d-md-flex"></div>
+
+        <div class="ctrl-group ctrl-group-edge">
+          <span class="ctrl-label">接続</span>
+          <div class="ctrl-edge">
+            <div class="btn-group btn-group-sm w-100" role="group" aria-label="接続モード">
+              <input type="checkbox" class="btn-check edge-mode-check" id="mode-manual" value="manual" autocomplete="off">
+              <label class="btn btn-outline-secondary" for="mode-manual">
+                <i class="bi bi-link-45deg"></i><span class="mode-label">手動</span>
+              </label>
+              <input type="checkbox" class="btn-check edge-mode-check" id="mode-tag" value="tag" autocomplete="off" checked>
+              <label class="btn btn-outline-secondary" for="mode-tag">
+                <i class="bi bi-tag"></i><span class="mode-label">タグ</span>
+              </label>
+              <input type="checkbox" class="btn-check edge-mode-check" id="mode-sector" value="sector" autocomplete="off">
+              <label class="btn btn-outline-secondary" for="mode-sector">
+                <i class="bi bi-building"></i><span class="mode-label">業種</span>
+              </label>
+              <input type="checkbox" class="btn-check edge-mode-check" id="mode-hashtag" value="hashtag" autocomplete="off">
+              <label class="btn btn-outline-secondary" for="mode-hashtag">
+                <i class="bi bi-hash"></i><span class="mode-label">@タグ</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {% if tags %}
         <div class="ctrl-tag">
           <select class="form-select form-select-sm" id="tagFilter">
             <option value="">全タグ</option>
@@ -67,34 +92,13 @@
             {% endfor %}
           </select>
         </div>
-      </div>
-      {% endif %}
-      <div class="ctrl-row">
-        <div class="ctrl-edge">
-          <div class="btn-group btn-group-sm w-100" role="group" aria-label="接続モード">
-            <input type="checkbox" class="btn-check edge-mode-check" id="mode-manual" value="manual" autocomplete="off">
-            <label class="btn btn-outline-secondary" for="mode-manual">
-              <i class="bi bi-link-45deg"></i><span class="mode-label">手動</span>
-            </label>
-            <input type="checkbox" class="btn-check edge-mode-check" id="mode-tag" value="tag" autocomplete="off" checked>
-            <label class="btn btn-outline-secondary" for="mode-tag">
-              <i class="bi bi-tag"></i><span class="mode-label">タグ</span>
-            </label>
-            <input type="checkbox" class="btn-check edge-mode-check" id="mode-sector" value="sector" autocomplete="off">
-            <label class="btn btn-outline-secondary" for="mode-sector">
-              <i class="bi bi-building"></i><span class="mode-label">業種</span>
-            </label>
-            <input type="checkbox" class="btn-check edge-mode-check" id="mode-hashtag" value="hashtag" autocomplete="off">
-            <label class="btn btn-outline-secondary" for="mode-hashtag">
-              <i class="bi bi-hash"></i><span class="mode-label">@タグ</span>
-            </label>
-          </div>
-        </div>
+        {% endif %}
+
       </div>
 
-      <!-- 行3: グラフ内検索（アイコンオーバーレイ方式） -->
+      <!-- 行2: 検索 ＋ 色 ＋ ツール -->
       <div class="ctrl-row">
-        <div class="ctrl-search w-100">
+        <div class="ctrl-search">
           <i class="bi bi-search ctrl-search-icon"></i>
           <input type="text" class="form-control form-control-sm ctrl-search-input"
                  id="graphSearch" placeholder="銘柄名・コードで検索">
@@ -102,17 +106,11 @@
             <i class="bi bi-x"></i>
           </button>
         </div>
-      </div>
-
-      <!-- 行4: カラーモード + ラベル&ズーム -->
-      <div class="ctrl-row">
-        <div class="ctrl-color">
-          <select class="form-select form-select-sm" id="colorModeSelect">
-            <option value="status">色: ステータス</option>
-            <option value="sector">色: 業種</option>
-            <option value="profit">色: 損益</option>
-          </select>
-        </div>
+        <select class="form-select form-select-sm ctrl-color" id="colorModeSelect">
+          <option value="status">色: ステータス</option>
+          <option value="sector">色: 業種</option>
+          <option value="profit">色: 損益</option>
+        </select>
         <div class="ctrl-tools">
           <div class="form-check form-switch mb-0 d-flex align-items-center gap-1">
             <input class="form-check-input" type="checkbox" id="showLabels" checked>
