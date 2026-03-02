@@ -610,6 +610,26 @@ body.dark-mode .side-panel-footer,
 /* ================================================================
    レスポンシブ
    ================================================================ */
+
+/* ---- ツール行: 狭い画面で検索を1行に展開 ---- */
+@media (max-width: 640px) {
+  .ctrl-tools-row {
+    flex-wrap: wrap;
+  }
+  /* 検索ボックスを最初に表示し、1行全体を使う */
+  .ctrl-search {
+    order: -1;
+    flex: 0 0 100%;
+    min-width: 0;
+  }
+  /* カラー選択に最低幅を確保 */
+  .ctrl-color {
+    flex: 1;
+    min-width: 110px;
+    max-width: 160px;
+  }
+}
+
 @media (max-width: 768px) {
   .graph-canvas { height: 450px; }
   .graph-outer-wrapper { flex-direction: column; }
