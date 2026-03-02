@@ -286,49 +286,107 @@
 }
 
 /* ================================================================
-   コントロールカード
+   フィルターバー（モダン・コンパクト）
    ================================================================ */
-.graph-controls-card {
-  border-color: rgba(0, 0, 0, 0.08);
+.graph-filter-bar {
+  background: var(--bg-100, #fffefb);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
-
-/* ================================================================
-   コントロールパネル レイアウト（デスクトップ・モバイル共通）
-   ================================================================ */
 
 /* #ctrl-panel: 行を縦積み */
 #ctrl-panel {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 8px;
 }
 
 /* 各行: 横並び flex */
 .ctrl-row {
   display: flex;
-  gap: 0.4rem;
+  gap: 6px;
   align-items: center;
 }
 
-/* 伸縮するセル（input-group を内包するため min-width: 0 必須） */
-.ctrl-tag,
-.ctrl-edge,
-.ctrl-color { flex: 1; min-width: 0; }
+/* 行1: 折り返し許可（モバイルで表示/接続が縦に落ちる） */
+.ctrl-row-wrap {
+  flex-wrap: wrap;
+}
 
-/* 検索は必ず全幅 */
+/* ---- セクションラベル（「表示」「接続」） ---- */
+.ctrl-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-200, #9ca3af);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ---- セパレーター（デスクトップのみ表示） ---- */
+.ctrl-sep {
+  width: 1px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.1);
+  align-self: center;
+  flex-shrink: 0;
+}
+
+/* ---- グループ（ラベル + ボタン群） ---- */
+.ctrl-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* 接続グループ: 残幅を使い切る */
+.ctrl-group-edge {
+  flex: 1;
+  min-width: 0;
+}
+.ctrl-group-edge .ctrl-edge {
+  flex: 1;
+  min-width: 0;
+}
+
+/* タグ select: 自動幅（最大150px） */
+.ctrl-tag {
+  flex-shrink: 0;
+}
+.ctrl-tag .form-select {
+  width: auto;
+  max-width: 150px;
+}
+
+/* 検索: 伸縮 */
 .ctrl-search { flex: 1; min-width: 0; }
 
-/* ツール群（ラベル+ズーム）: 縮まないよう固定 */
+/* 色 select: 自動幅 */
+.ctrl-color {
+  flex-shrink: 0;
+  width: auto;
+}
+
+/* ツール群 */
 .ctrl-tools {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 6px;
 }
 
-/* form-select・form-control を親幅に追従させる */
-#ctrl-panel .form-select,
+/* form-control を親幅に追従 */
 #ctrl-panel .form-control { width: 100%; min-width: 0; }
+
+/* ---- ステータスボタン: 選択時に各色で塗りつぶし ---- */
+#filter-all:checked     + label { background-color: #6c757d !important; border-color: #6c757d !important; color: #fff !important; font-weight: 600; }
+#filter-holding:checked + label { background-color: #10b981 !important; border-color: #10b981 !important; color: #fff !important; font-weight: 600; }
+#filter-sold:checked    + label { background-color: #ef4444 !important; border-color: #ef4444 !important; color: #fff !important; font-weight: 600; }
+#filter-memo:checked    + label { background-color: #9ca3af !important; border-color: #9ca3af !important; color: #fff !important; font-weight: 600; }
 
 /* ----------------------------------------------------------------
    検索フィールド（アイコンオーバーレイ方式）
@@ -426,10 +484,21 @@ body.dark-mode .graph-tooltip .tt-hint,
   color: rgba(255, 255, 255, 0.6);
 }
 
-body.dark-mode .graph-controls-card,
-[data-theme="dark"] .graph-controls-card {
+body.dark-mode .graph-filter-bar,
+[data-theme="dark"] .graph-filter-bar {
   background-color: var(--dm-card, #1e1e2e);
   border-color: var(--dm-border, rgba(255,255,255,0.1));
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .ctrl-label,
+[data-theme="dark"] .ctrl-label {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+body.dark-mode .ctrl-sep,
+[data-theme="dark"] .ctrl-sep {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 /* ---- コントロール内 form 要素 ---- */
@@ -528,8 +597,14 @@ body.dark-mode .side-panel-footer,
     padding: 0.45rem 0.65rem;
   }
 
-  /* ステータスボタン: スペース節約（grid 廃止・flex 行のため追加調整不要） */
-  .ctrl-status .btn { padding: 0.25rem 0.4rem; font-size: 0.8rem; }
+  /* モバイル: 表示グループが全幅に落ちる */
+  .ctrl-group { flex: 0 0 100%; }
+  .ctrl-group-edge { flex: 0 0 100%; }
+  .ctrl-tag { flex: 0 0 100%; }
+  .ctrl-tag .form-select { width: 100%; max-width: none; }
+
+  /* ステータスボタン: 少し詰める */
+  .ctrl-status .btn { padding: 0.25rem 0.35rem; font-size: 0.8rem; }
 }
 
 @media (max-width: 480px) {
@@ -537,8 +612,7 @@ body.dark-mode .side-panel-footer,
     height: 360px;
   }
 
-  /* さらに詰める: 文字を小さく、ドット非表示 */
-  .ctrl-status .btn { font-size: 0.72rem; padding: 0.2rem 0.35rem; }
+  .ctrl-status .btn { font-size: 0.72rem; padding: 0.2rem 0.3rem; }
   .ctrl-status .graph-legend-dot { display: none; }
 }
 
