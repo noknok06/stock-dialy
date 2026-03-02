@@ -329,7 +329,8 @@
               .on('drag', (event, d) => { d.fx = event.x; d.fy = event.y; })
               .on('end',  (event, d) => {
                 if (!event.active) self.simulation.alphaTarget(0);
-                d.fx = null; d.fy = null;
+                // ドラッグ位置にピン留め。クラスで固定中を示す
+                d3.select(event.sourceEvent.target.closest('.graph-node')).classed('pinned', true);
               })
           );
 
@@ -392,11 +393,57 @@
           return name.length > 8 ? name.substring(0, 8) + '…' : name;
         });
 
+      // ホバー時の隣接ハイライト用マップを構築
+      const neighborMap = new Map();
+      nodes.forEach(n => neighborMap.set(String(n.id), new Set()));
+      edges.forEach(e => {
+        const s = String(typeof e.source === 'object' ? e.source.id : e.source);
+        const t = String(typeof e.target === 'object' ? e.target.id : e.target);
+        if (neighborMap.has(s)) neighborMap.get(s).add(t);
+        if (neighborMap.has(t)) neighborMap.get(t).add(s);
+      });
+
       // イベント
       nodeSel
-        .on('mouseenter', (event, d) => { this._showTooltip(event, d); })
-        .on('mousemove',  event => { this._moveTooltip(event); })
-        .on('mouseleave', () => { this._hideTooltip(); })
+        .on('mouseenter', (event, d) => {
+          this._showTooltip(event, d);
+          const id = String(d.id);
+          const neighbors = neighborMap.get(id) || new Set();
+          // 隣接ノードをハイライト、それ以外を薄く
+          nodeSel.classed('neighbor-dim', n => {
+            const nid = String(n.id);
+            return nid !== id && !neighbors.has(nid);
+          });
+          nodeSel.classed('neighbor-highlight', n => {
+            const nid = String(n.id);
+            return nid !== id && neighbors.has(nid);
+          });
+          // 接続エッジをハイライト
+          linkSel.classed('highlighted', e => {
+            const s = String(typeof e.source === 'object' ? e.source.id : e.source);
+            const t = String(typeof e.target === 'object' ? e.target.id : e.target);
+            return s === id || t === id;
+          });
+          linkSel.classed('dimmed', e => {
+            const s = String(typeof e.source === 'object' ? e.source.id : e.source);
+            const t = String(typeof e.target === 'object' ? e.target.id : e.target);
+            return s !== id && t !== id;
+          });
+        })
+        .on('mousemove', event => { this._moveTooltip(event); })
+        .on('mouseleave', () => {
+          this._hideTooltip();
+          nodeSel.classed('neighbor-dim', false).classed('neighbor-highlight', false);
+          linkSel.classed('highlighted', false).classed('dimmed', false);
+        })
+        .on('dblclick', (event, d) => {
+          // ダブルクリックでピン留め解除
+          event.stopPropagation();
+          d.fx = null; d.fy = null;
+          d3.select(event.currentTarget).classed('pinned', false);
+          self.simulation.alphaTarget(0.1).restart();
+          setTimeout(() => self.simulation.alphaTarget(0), 500);
+        })
         .on('click', (event, d) => {
           event.stopPropagation();
           this._openSidePanel(d);
@@ -414,6 +461,11 @@
       this._toggleLabels();
       this._applySearch();
       this._showGraph();
+
+      // シミュレーション安定後に自動フィット
+      this.simulation.on('end', () => { this._fitToView(false); });
+      // 3秒後にもフィット（end が発火しないケースの保険）
+      setTimeout(() => { if (this.svg) this._fitToView(false); }, 3000);
     }
 
     // ==============================
@@ -478,20 +530,41 @@
       const htLeg   = document.getElementById('legend-hashtag-node');
       const hubWrap = document.getElementById('legend-hubs');
 
-      if (tagLeg)  tagLeg.style.display  = modes.has('tag')     ? '' : 'none';
-      if (secLeg)  secLeg.style.display  = modes.has('sector')  ? '' : 'none';
-      if (htLeg)   htLeg.style.display   = modes.has('hashtag') ? '' : 'none';
+      const toggle = (el, show) => el && el.classList.toggle('legend-hidden', !show);
+      toggle(tagLeg,  modes.has('tag'));
+      toggle(secLeg,  modes.has('sector'));
+      toggle(htLeg,   modes.has('hashtag'));
       const hasHub = modes.has('tag') || modes.has('sector') || modes.has('hashtag');
-      if (hubWrap) hubWrap.style.display = hasHub ? '' : 'none';
+      toggle(hubWrap, hasHub);
     }
 
     // ==============================
-    // ズームリセット
+    // ズームリセット（全ノードをビューに収める）
     // ==============================
     _resetZoom() {
-      if (!this.svg || !this.zoomBehavior) return;
-      this.svg.transition().duration(400)
-        .call(this.zoomBehavior.transform, d3.zoomIdentity);
+      this._fitToView(true);
+    }
+
+    _fitToView(animate) {
+      if (!this.svg || !this.zoomBehavior || !this.gRoot) return;
+      const svgEl = this.svgEl;
+      const width  = svgEl.clientWidth  || svgEl.parentElement.clientWidth  || 800;
+      const height = svgEl.clientHeight || 600;
+      try {
+        const bbox = this.gRoot.node().getBBox();
+        if (!bbox || bbox.width === 0 || bbox.height === 0) return;
+        const padding = 40;
+        const scale = Math.min(
+          (width  - padding * 2) / bbox.width,
+          (height - padding * 2) / bbox.height,
+          2  // 最大2倍まで
+        );
+        const tx = width  / 2 - scale * (bbox.x + bbox.width  / 2);
+        const ty = height / 2 - scale * (bbox.y + bbox.height / 2);
+        const t = d3.zoomIdentity.translate(tx, ty).scale(scale);
+        const sel = animate ? this.svg.transition().duration(500) : this.svg;
+        sel.call(this.zoomBehavior.transform, t);
+      } catch (_) { /* getBBox が利用できない環境では無視 */ }
     }
 
     // ==============================
