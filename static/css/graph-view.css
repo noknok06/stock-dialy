@@ -543,29 +543,40 @@ body.dark-mode .side-panel-footer,
 }
 
 /* ================================================================
-   接続モード（ctrl-edge）: 均等幅・1行
+   接続モード（ctrl-edge）: 均等幅・1行・形状統一・選択状態強調
    ================================================================ */
 
 /* ctrl-edge は行いっぱいに広がる */
 .ctrl-edge { flex: 1; min-width: 0; }
 
-/* btn-group を flex にして各ボタンを均等幅に */
+/* gap で分離することで、Bootstrap が先頭/末尾だけに付ける角丸を
+   全ボタンで同一にできる */
 .ctrl-edge .btn-group {
   display: flex;
+  gap: 3px;
 }
 
-/* チェックボックス label を均等幅・中央揃え */
+/* 全ボタン: 均等幅・同一角丸・中央揃え */
 .ctrl-edge .btn-group > label {
   flex: 1;
   text-align: center;
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
+  border-radius: 4px !important; /* Bootstrap の先頭/末尾特殊角丸を上書き */
 }
 
 /* アイコンとラベルの間隔 */
 .ctrl-edge .btn-group > label .mode-label {
   margin-left: 0.25rem;
+}
+
+/* 選択状態: 青で明確に強調 */
+.ctrl-edge .btn-check:checked + label {
+  background-color: #0d6efd !important;
+  border-color: #0d6efd !important;
+  color: #fff !important;
+  font-weight: 600;
 }
 
 /* モバイル: 文字小さめ・余白を詰める */
