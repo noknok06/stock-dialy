@@ -850,17 +850,17 @@
 <div class="tag-detail-container">
   <!-- ページヘッダー -->
   <div class="tag-detail-header">
-    <div class="tag-detail-title-row">
-      <div class="tag-detail-title-content">
-        <h1 class="tag-badge-large">
+    <div class="page-header page-header-with-actions tag-detail-title-row">
+      <div class="page-header-content tag-detail-title-content">
+        <h1 class="page-title tag-badge-large">
           <i class="bi bi-tag-fill"></i>
           <span>{{ tag.name }}</span>
         </h1>
-        <p class="tag-detail-subtitle">このタグが設定されている銘柄と投資記録</p>
+        <p class="page-subtitle tag-detail-subtitle">このタグが設定されている銘柄と投資記録</p>
       </div>
 
       <!-- アクションボタン -->
-      <div class="tag-detail-actions">
+      <div class="page-header-actions tag-detail-actions">
         {% if stats.total_diaries > 0 %}
         <a href="{% url 'tags:book' tag.pk %}" class="tag-action-btn tag-action-btn-primary">
           <i class="bi bi-book-fill"></i>
