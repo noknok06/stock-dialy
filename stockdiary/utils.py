@@ -232,3 +232,79 @@ def get_hashtag_graph_data(diaries_qs) -> Dict[str, Any]:
     ]
 
     return {'hashtag_nodes': hashtag_nodes, 'edges': edges}
+
+
+def extract_stock_mentions(text: str) -> List[str]:
+    """
+    テキストから証券コードを抽出する（括弧内の数字・英数字）
+
+    対応フォーマット:
+        - (9101)  / （9101）  : 日本株・旧形式（4〜6桁数字）
+        - (285A)  / （285A）  : 日本株・新形式（3〜4桁数字＋大文字1字）
+        - (AAPL)  / （AAPL）  : 米国株・ETF（大文字2〜6字）
+
+    Examples:
+        >>> extract_stock_mentions("日本郵船(9101) / キオクシア(285A)")
+        ['9101', '285A']
+        >>> extract_stock_mentions("参考: AAPL(AAPL) / (USD)")
+        ['AAPL', 'USD']
+    """
+    if not text:
+        return []
+
+    # 半角・全角括弧内の証券コードを抽出:
+    #   \d{4,6}        : 純数字 4〜6桁（旧形式日本株）
+    #   \d{3,4}[A-Z]   : 数字3〜4桁＋大文字1字（新形式 285A 等）
+    #   [A-Z]{2,6}     : 大文字のみ 2〜6字（米国株・ETF）
+    pattern = r'[（(](\d{4,6}|\d{3,4}[A-Z]|[A-Z]{2,6})[）)]'
+    matches = re.findall(pattern, text)
+
+    seen: Set[str] = set()
+    unique: List[str] = []
+    for m in matches:
+        if m not in seen:
+            seen.add(m)
+            unique.append(m)
+    return unique
+
+
+def get_mention_graph_data(
+    primary_diaries,
+    symbol_to_diary_id: Dict[str, int],
+) -> Dict[str, Any]:
+    """
+    日記テキスト（reason / memo）内の銘柄コードメンションによるエッジを生成。
+
+    Args:
+        primary_diaries: StockDiary のリスト（reason, memo フィールドを含む）
+        symbol_to_diary_id: stock_symbol -> diary_pk の辞書（全ユーザー日記）
+
+    Returns:
+        {
+            'edges':                [{'source': diary_pk, 'target': diary_pk, 'edge_type': 'mention'}],
+            'mentioned_diary_ids':  primary 外のメンション先 diary ID の set
+        }
+    """
+    edges: List[dict] = []
+    edge_set: Set[Tuple[int, int]] = set()
+    mentioned_diary_ids: Set[int] = set()
+    primary_id_set = {d.pk for d in primary_diaries}
+
+    for diary in primary_diaries:
+        text = (diary.reason or '') + ' ' + (getattr(diary, 'memo', '') or '')
+        for symbol in extract_stock_mentions(text):
+            target_id = symbol_to_diary_id.get(symbol)
+            if not target_id or target_id == diary.pk:
+                continue
+            key = (min(diary.pk, target_id), max(diary.pk, target_id))
+            if key not in edge_set:
+                edge_set.add(key)
+                edges.append({
+                    'source': diary.pk,
+                    'target': target_id,
+                    'edge_type': 'mention',
+                })
+            if target_id not in primary_id_set:
+                mentioned_diary_ids.add(target_id)
+
+    return {'edges': edges, 'mentioned_diary_ids': mentioned_diary_ids}

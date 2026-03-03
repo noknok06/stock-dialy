@@ -16,6 +16,7 @@ from .models import (
 from .utils import (
     extract_hashtags, get_all_hashtags_from_queryset, search_diaries_by_hashtag,
     get_tag_graph_data, get_sector_graph_data, get_hashtag_graph_data,
+    get_mention_graph_data,
 )
 import json
 from pywebpush import webpush, WebPushException
@@ -588,7 +589,7 @@ def diary_graph_data(request):
         tag_id = request.GET.get('tag', '').strip()
 
         # edge_modes（複数可）を解析。後方互換として edge_mode（単数）も受け付ける
-        VALID_MODES = {'manual', 'tag', 'sector', 'hashtag'}
+        VALID_MODES = {'manual', 'tag', 'sector', 'hashtag', 'mention'}
         raw = request.GET.get('edge_modes', request.GET.get('edge_mode', 'tag')).strip()
         edge_modes = [m.strip() for m in raw.split(',') if m.strip() in VALID_MODES]
         if not edge_modes:
@@ -613,10 +614,11 @@ def diary_graph_data(request):
         primary_ids = set(primary_qs.values_list('id', flat=True))
 
         # 全モードで共通利用する primary 日記を一括取得
+        # mention モードで memo も参照するため常に含める
         primary_diaries = list(
             primary_qs.prefetch_related('tags').only(
                 'id', 'stock_name', 'stock_symbol', 'sector',
-                'realized_profit', 'current_quantity', 'transaction_count', 'reason',
+                'realized_profit', 'current_quantity', 'transaction_count', 'reason', 'memo',
             )
         )
 
@@ -721,6 +723,40 @@ def diary_graph_data(request):
                 hub['link_count'] = hub.get('diary_count', 0)
                 hub_nodes_map[hub['id']] = hub
             all_edges.extend(hub_data['edges'])
+
+        # ====================================================
+        # mention モード: テキスト内銘柄コード → diary-diary エッジ
+        # ====================================================
+        if 'mention' in edge_modes:
+            # 全ユーザー日記の stock_symbol → diary_id マップを構築
+            symbol_to_diary_id = {}
+            for row in all_user_qs.filter(stock_symbol__gt='').values('id', 'stock_symbol'):
+                if row['stock_symbol']:
+                    symbol_to_diary_id[row['stock_symbol']] = row['id']
+
+            mention_data = get_mention_graph_data(primary_diaries, symbol_to_diary_id)
+            all_edges.extend(mention_data['edges'])
+
+            # primary に含まれないメンション先日記をセカンダリノードとして追加
+            mention_secondary_ids = mention_data['mentioned_diary_ids'] - set(diary_nodes_map.keys())
+            if mention_secondary_ids:
+                for d in all_user_qs.filter(id__in=mention_secondary_ids).only(
+                    'id', 'stock_name', 'stock_symbol', 'sector',
+                    'realized_profit', 'current_quantity', 'transaction_count'
+                ):
+                    if d.id not in diary_nodes_map:
+                        diary_nodes_map[d.id] = {
+                            'id': d.id,
+                            'node_type': 'diary',
+                            'stock_name': d.stock_name,
+                            'stock_symbol': d.stock_symbol,
+                            'status': _diary_status(d),
+                            'sector': d.sector or '未分類',
+                            'realized_profit': float(d.realized_profit),
+                            'link_count': 0,
+                            'url': f'/stockdiary/{d.id}/',
+                            'is_primary': False,
+                        }
 
         # ====================================================
         # primary 日記ノードを diary_nodes_map に追加（重複排除）

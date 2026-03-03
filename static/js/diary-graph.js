@@ -32,6 +32,7 @@
     tag:     '#a78bfa',
     sector:  '#fb923c',
     hashtag: '#38bdf8',
+    mention: '#f59e0b',
   };
 
   // ハブノード色
@@ -556,6 +557,7 @@
       const secLeg  = document.getElementById('legend-sector-node');
       const htLeg   = document.getElementById('legend-hashtag-node');
       const hubWrap = document.getElementById('legend-hubs');
+      const mentionLeg = document.getElementById('legend-mention-edge');
 
       const toggle = (el, show) => el && el.classList.toggle('legend-hidden', !show);
       toggle(tagLeg,  modes.has('tag'));
@@ -563,6 +565,7 @@
       toggle(htLeg,   modes.has('hashtag'));
       const hasHub = modes.has('tag') || modes.has('sector') || modes.has('hashtag');
       toggle(hubWrap, hasHub);
+      toggle(mentionLeg, modes.has('mention'));
     }
 
     // ==============================
