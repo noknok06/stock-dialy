@@ -1585,7 +1585,7 @@
                 {% endif %}
               </div>
               <div class="reason-content mobile-optimized markdown-content">
-                {{ diary.reason|render_markdown }}
+                {{ diary.reason|render_markdown_with_mentions:mention_map }}
               </div>
             </div>
 
@@ -2029,7 +2029,7 @@
                 </div>
                 {% endif %}
                 
-                <div class="note-content-text markdown-content">{{ note.content|render_markdown }}</div>
+                <div class="note-content-text markdown-content">{{ note.content|render_markdown_with_mentions:mention_map }}</div>
               </div>
             </div>
             {% empty %}
@@ -2082,7 +2082,7 @@
                   {% endif %}
 
                   <div class="timeline-content markdown-content">
-                    {{ timeline_diary.reason|render_markdown|truncatewords_html:30 }}
+                    {{ timeline_diary.reason|render_markdown_with_mentions:mention_map|truncatewords_html:30 }}
                   </div>
                 </div>
                 {% else %}
@@ -2106,7 +2106,7 @@
                   {% endif %}
 
                   <div class="timeline-content markdown-content">
-                    {{ timeline_diary.reason|render_markdown|truncatewords_html:20 }}
+                    {{ timeline_diary.reason|render_markdown_with_mentions:mention_map|truncatewords_html:20 }}
                   </div>
 
                   {% if timeline_diary.tags.exists %}
@@ -2159,7 +2159,7 @@
       </button>
     </div>
     <div class="reason-fullscreen-body markdown-content">
-      {{ diary.reason|render_markdown }}
+      {{ diary.reason|render_markdown_with_mentions:mention_map }}
     </div>
   </div>
 </div>

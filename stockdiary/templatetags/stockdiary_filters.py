@@ -572,3 +572,30 @@ def render_markdown(value):
     )
 
     return mark_safe(clean_html)
+
+
+_MENTION_PATTERN = re.compile(r'[（(](\d{4,6}|\d{3,4}[A-Z]|[A-Z]{2,6})[）)]')
+
+
+def _linkify_mentions(text, mention_map):
+    """(CODE) 形式の銘柄コードを Markdown リンク構文に変換（mention_map に存在するコードのみ）"""
+    def replace(m):
+        code = m.group(1)
+        if code in mention_map:
+            return f'[({code})](/stockdiary/{mention_map[code]}/)'
+        return m.group(0)
+    return _MENTION_PATTERN.sub(replace, text)
+
+
+@register.filter(name='render_markdown_with_mentions')
+def render_markdown_with_mentions(value, mention_map):
+    """銘柄コード (CODE) をリンク化してから render_markdown に渡すフィルター。
+
+    使用例: {{ diary.reason|render_markdown_with_mentions:mention_map }}
+    mention_map: {stock_symbol: diary_pk} の dict（コンテキストから渡す）
+    """
+    if not value:
+        return ''
+    if mention_map and isinstance(mention_map, dict):
+        value = _linkify_mentions(str(value), mention_map)
+    return render_markdown(value)
