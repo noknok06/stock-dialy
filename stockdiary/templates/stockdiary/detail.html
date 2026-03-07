@@ -1357,6 +1357,73 @@
 [data-theme="dark"] .related-result-meta {
   color: var(--dm-muted);
 }
+
+/* ========== バックリンクパネル (Obsidian風) ========== */
+.backlinks-panel {
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+}
+.backlinks-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+.backlinks-count {
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  padding: 0.05rem 0.45rem;
+  font-size: 0.7rem;
+  color: var(--text-tertiary, var(--text-secondary));
+  font-weight: 500;
+}
+.backlinks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.backlink-item {
+  display: block;
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  border-left: 2px solid var(--primary-color);
+  background: rgba(99, 102, 241, 0.04);
+  transition: background 0.15s, color 0.15s;
+}
+.backlink-item:hover {
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--primary-color);
+}
+.dark-mode .backlinks-panel,
+[data-theme="dark"] .backlinks-panel {
+  border-top-color: rgba(255,255,255,0.1);
+}
+.dark-mode .backlinks-header,
+[data-theme="dark"] .backlinks-header {
+  color: var(--dm-muted-foreground, #94a3b8);
+}
+.dark-mode .backlinks-count,
+[data-theme="dark"] .backlinks-count {
+  background: rgba(255,255,255,0.08);
+  color: var(--dm-muted-foreground, #94a3b8);
+}
+.dark-mode .backlink-item,
+[data-theme="dark"] .backlink-item {
+  background: rgba(99, 102, 241, 0.08);
+  color: var(--dm-foreground, #e2e8f0);
+}
+.dark-mode .backlink-item:hover,
+[data-theme="dark"] .backlink-item:hover {
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+}
 </style>
 {% endblock %}
 
@@ -1698,10 +1765,9 @@
               </button>
             </div>
 
-            <!-- 既存の関連日記一覧 -->
+            <!-- 既存の関連日記一覧（アウトリンク） -->
             <div id="related-diaries-list">
-              {% with linked=diary.linked_diaries.all linked_from=diary.linked_from.all %}
-              {% for related in linked %}
+              {% for related in diary.linked_diaries.all %}
               <div class="related-diary-item d-flex align-items-center justify-content-between" id="related-item-{{ related.id }}">
                 <a href="{% url 'stockdiary:detail' related.pk %}" class="text-decoration-none d-flex align-items-start gap-1 overflow-hidden">
                   {% if related.stock_symbol %}<span class="badge bg-secondary flex-shrink-0" style="font-size:0.68rem; margin-top:0.1rem;">{{ related.stock_symbol }}</span>{% endif %}
@@ -1719,32 +1785,9 @@
                   <i class="bi bi-x-circle" style="font-size:0.85rem;"></i>
                 </button>
               </div>
-              {% endfor %}
-              {% for related in linked_from %}
-              {% if related not in linked %}
-              <div class="related-diary-item d-flex align-items-center justify-content-between" id="related-item-{{ related.id }}">
-                <a href="{% url 'stockdiary:detail' related.pk %}" class="text-decoration-none d-flex align-items-start gap-1 overflow-hidden">
-                  {% if related.stock_symbol %}<span class="badge bg-secondary flex-shrink-0" style="font-size:0.68rem; margin-top:0.1rem;">{{ related.stock_symbol }}</span>{% endif %}
-                  <span class="overflow-hidden">
-                    <div class="related-diary-name">{{ related.stock_name }}</div>
-                    {% if related.reason or related.memo %}
-                    <div class="related-diary-excerpt">{{ related.reason|default:related.memo|striptags|truncatechars:55 }}</div>
-                    {% endif %}
-                  </span>
-                </a>
-                <button type="button"
-                        class="btn btn-sm btn-link text-danger p-0 ms-2 flex-shrink-0"
-                        onclick="removeRelatedDiary({{ related.id }})"
-                        title="関連を解除">
-                  <i class="bi bi-x-circle" style="font-size:0.85rem;"></i>
-                </button>
-              </div>
-              {% endif %}
-              {% endfor %}
-              {% if not diary.linked_diaries.exists and not diary.linked_from.exists %}
+              {% empty %}
               <p class="text-muted mb-0 small" id="no-related-msg">関連日記はありません</p>
-              {% endif %}
-              {% endwith %}
+              {% endfor %}
             </div>
 
             <!-- 検索フォーム（折りたたみ） -->
@@ -1759,6 +1802,34 @@
               </div>
               <div id="related-search-results" style="max-height:220px; overflow-y:auto; margin-top:0.3rem;"></div>
             </div>
+
+            <!-- バックリンクパネル（この日記を参照している日記） -->
+            {% with backlinks=diary.linked_from.all %}
+            {% if backlinks %}
+            <div class="backlinks-panel">
+              <div class="backlinks-header">
+                <i class="bi bi-arrow-return-left"></i>
+                <span>バックリンク</span>
+                <span class="backlinks-count">{{ backlinks.count }}</span>
+              </div>
+              <div class="backlinks-list">
+                {% for bl in backlinks %}
+                <a href="{% url 'stockdiary:detail' bl.pk %}" class="backlink-item text-decoration-none">
+                  <div class="d-flex align-items-start gap-1">
+                    {% if bl.stock_symbol %}<span class="badge bg-secondary flex-shrink-0" style="font-size:0.68rem; margin-top:0.1rem;">{{ bl.stock_symbol }}</span>{% endif %}
+                    <span class="overflow-hidden">
+                      <div class="related-diary-name">{{ bl.stock_name }}</div>
+                      {% if bl.reason or bl.memo %}
+                      <div class="related-diary-excerpt">{{ bl.reason|default:bl.memo|striptags|truncatechars:55 }}</div>
+                      {% endif %}
+                    </span>
+                  </div>
+                </a>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+            {% endwith %}
           </div>
 
           <!-- プッシュ通知セクション -->
