@@ -1389,7 +1389,8 @@
   gap: 0.25rem;
 }
 .backlink-item {
-  display: block;
+  display: flex;
+  align-items: center;
   padding: 0.35rem 0.6rem;
   border-radius: var(--radius-sm);
   color: var(--text-primary);
@@ -1399,7 +1400,22 @@
 }
 .backlink-item:hover {
   background: rgba(99, 102, 241, 0.12);
+}
+.backlink-actions {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.backlink-item:hover .backlink-actions {
+  opacity: 1;
+}
+.backlink-reciprocate-btn {
   color: var(--primary-color);
+}
+.badge-mutual {
+  font-size: 0.7rem;
+  color: var(--primary-color);
+  opacity: 0.7;
+  padding: 0 0.2rem;
 }
 .dark-mode .backlinks-panel,
 [data-theme="dark"] .backlinks-panel {
@@ -1804,7 +1820,7 @@
             </div>
 
             <!-- バックリンクパネル（この日記を参照している日記） -->
-            {% with backlinks=diary.linked_from.all %}
+            {% with backlinks=diary.linked_from.all outlink_ids=diary.linked_diaries.all|dictsort:"id" %}
             {% if backlinks %}
             <div class="backlinks-panel">
               <div class="backlinks-header">
@@ -1814,8 +1830,12 @@
               </div>
               <div class="backlinks-list">
                 {% for bl in backlinks %}
-                <a href="{% url 'stockdiary:detail' bl.pk %}" class="backlink-item text-decoration-none">
-                  <div class="d-flex align-items-start gap-1">
+                <div class="backlink-item d-flex align-items-center justify-content-between" id="backlink-item-{{ bl.id }}"
+                     data-id="{{ bl.id }}"
+                     data-name="{{ bl.stock_name|escapejs }}"
+                     data-symbol="{{ bl.stock_symbol|default:''|escapejs }}"
+                     data-excerpt="{{ bl.reason|default:bl.memo|striptags|truncatechars:55|escapejs }}">
+                  <a href="{% url 'stockdiary:detail' bl.pk %}" class="text-decoration-none d-flex align-items-start gap-1 overflow-hidden flex-grow-1">
                     {% if bl.stock_symbol %}<span class="badge bg-secondary flex-shrink-0" style="font-size:0.68rem; margin-top:0.1rem;">{{ bl.stock_symbol }}</span>{% endif %}
                     <span class="overflow-hidden">
                       <div class="related-diary-name">{{ bl.stock_name }}</div>
@@ -1823,8 +1843,26 @@
                       <div class="related-diary-excerpt">{{ bl.reason|default:bl.memo|striptags|truncatechars:55 }}</div>
                       {% endif %}
                     </span>
+                  </a>
+                  <div class="backlink-actions flex-shrink-0 ms-1 d-flex align-items-center gap-1">
+                    {% if bl in diary.linked_diaries.all %}
+                    <span class="badge-mutual" title="相互リンク済み"><i class="bi bi-arrow-left-right"></i></span>
+                    {% else %}
+                    <button type="button"
+                            class="btn btn-sm btn-link p-0 backlink-reciprocate-btn"
+                            onclick="reciprocateBacklink({{ bl.id }})"
+                            title="アウトリンクとして追加（相互リンク化）">
+                      <i class="bi bi-plus-circle" style="font-size:0.85rem;"></i>
+                    </button>
+                    {% endif %}
+                    <button type="button"
+                            class="btn btn-sm btn-link text-danger p-0 backlink-remove-btn"
+                            onclick="removeBacklink({{ bl.id }})"
+                            title="バックリンクを解除">
+                      <i class="bi bi-x-circle" style="font-size:0.85rem;"></i>
+                    </button>
                   </div>
-                </a>
+                </div>
                 {% endfor %}
               </div>
             </div>
@@ -2824,6 +2862,15 @@ window.loadNotifications = loadNotifications;
       `;
       list.appendChild(item);
 
+      // バックリンクパネル側にも相互リンクバッジを反映
+      const blItem = document.getElementById(`backlink-item-${relatedId}`);
+      if (blItem) {
+        const recipBtn = blItem.querySelector('.backlink-reciprocate-btn');
+        if (recipBtn) {
+          recipBtn.outerHTML = `<span class="badge-mutual" title="相互リンク済み"><i class="bi bi-arrow-left-right"></i></span>`;
+        }
+      }
+
       // 検索エリアをリセット
       document.getElementById('related-search-input').value = '';
       document.getElementById('related-search-results').innerHTML = '';
@@ -2852,6 +2899,45 @@ window.loadNotifications = loadNotifications;
       }
     } catch (e) {
       console.error('関連日記削除エラー:', e);
+    }
+  };
+
+  // バックリンクを相互リンク化（バックリンク元をアウトリンクとして追加）
+  window.reciprocateBacklink = async function(sourceId) {
+    const item = document.getElementById(`backlink-item-${sourceId}`);
+    const name    = item ? item.dataset.name    : '';
+    const symbol  = item ? item.dataset.symbol  : '';
+    const excerpt = item ? item.dataset.excerpt : '';
+    await addRelatedDiary(sourceId, name, symbol, excerpt);
+    // ボタンを相互リンクバッジに差し替え
+    const btn = item ? item.querySelector('.backlink-reciprocate-btn') : null;
+    if (btn) {
+      btn.outerHTML = `<span class="badge-mutual" title="相互リンク済み"><i class="bi bi-arrow-left-right"></i></span>`;
+    }
+  };
+
+  // バックリンク解除（バックリンク元の日記からこの日記へのリンクを削除）
+  window.removeBacklink = async function(sourceId) {
+    if (!confirm('バックリンクを解除しますか？（相手の日記からこの日記への関連が削除されます）')) return;
+    try {
+      const url = `/stockdiary/api/diary/${sourceId}/related/${DIARY_ID}/remove/`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrf() }
+      });
+      const data = await res.json();
+      if (data.success) {
+        const item = document.getElementById(`backlink-item-${sourceId}`);
+        if (item) item.remove();
+        // パネルが空になったら非表示
+        const list = document.querySelector('.backlinks-list');
+        const panel = document.querySelector('.backlinks-panel');
+        if (list && panel && !list.querySelector('[id^="backlink-item-"]')) {
+          panel.remove();
+        }
+      }
+    } catch (e) {
+      console.error('バックリンク解除エラー:', e);
     }
   };
 })();
