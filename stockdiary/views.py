@@ -678,8 +678,14 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         # クイック記録用に今日の日付を追加
         context['today'] = timezone.now().date()
 
+        # テキスト内銘柄コードリンク用マッピング {stock_symbol: diary_pk}
+        user_symbol_map = StockDiary.objects.filter(
+            user=self.request.user
+        ).exclude(stock_symbol='').values('id', 'stock_symbol')
+        context['mention_map'] = {d['stock_symbol']: d['id'] for d in user_symbol_map}
+
         return context
-    
+
 class StockDiaryCreateView(LoginRequiredMixin, CreateView):
     model = StockDiary
     form_class = StockDiaryForm
@@ -1631,6 +1637,10 @@ def tab_content(request, diary_id, tab_type):
             if tab_type == 'notes':
                 notes = diary.notes.all().order_by('-date')[:3]
                 context['notes'] = notes
+                user_symbol_map = StockDiary.objects.filter(
+                    user=request.user
+                ).exclude(stock_symbol='').values('id', 'stock_symbol')
+                context['mention_map'] = {d['stock_symbol']: d['id'] for d in user_symbol_map}
                 template_name = 'stockdiary/partials/tab_notes.html'
                         
             elif tab_type == 'details':

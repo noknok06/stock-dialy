@@ -55,7 +55,7 @@
 
     <!-- 本文 -->
     <div class="note-body markdown-content">
-      {{ note.content|render_markdown|truncatewords_html:40 }}
+      {{ note.content|render_markdown_with_mentions:mention_map|truncatewords_html:40 }}
     </div>
 
     {% if note.content|wordcount > 40 %}
