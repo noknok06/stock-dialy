@@ -643,9 +643,19 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
             user=self.request.user,
             stock_symbol=self.object.stock_symbol
         ).order_by('first_purchase_date', 'created_at')
-        
+
         context['related_diaries'] = all_related_diaries.exclude(id=self.object.id)
         context['timeline_diaries'] = all_related_diaries
+
+        # 手動リンク + 自動リンク（同一銘柄）を統合した関連日記リスト
+        manual_linked_ids = set(self.object.linked_diaries.values_list('id', flat=True))
+        combined_related = []
+        for d in self.object.linked_diaries.select_related():
+            combined_related.append({'diary': d, 'is_auto': False})
+        for d in all_related_diaries.exclude(id=self.object.id):
+            if d.id not in manual_linked_ids:
+                combined_related.append({'diary': d, 'is_auto': True})
+        context['combined_related_diaries'] = combined_related
         
         # スピードダイアルアクション
         context['diary_actions'] = [
