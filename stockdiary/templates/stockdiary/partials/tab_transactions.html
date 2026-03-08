@@ -205,27 +205,26 @@
 
   <!-- アクションボタン -->
   <div class="d-flex gap-2 mb-3">
-    <button type="button" class="btn btn-primary" onclick="openBottomSheet('transactionBottomSheet')">
+    <button type="button" class="btn btn-primary" onclick="toggleAddForm()">
       <i class="bi bi-cart-plus me-1"></i>取引を追加
     </button>
-    <button type="button" class="btn btn-info" onclick="openBottomSheet('splitBottomSheet')">
+    <button type="button" class="btn btn-info" onclick="toggleSplitForm()">
       <i class="bi bi-scissors me-1"></i>株式分割を追加
     </button>
   </div>
 
-  <!-- 取引追加 ボトムシート -->
-  <div id="transactionBottomSheet" class="bottom-sheet">
-    <div class="bottom-sheet-handle"></div>
-    <div class="bottom-sheet-header">
-      <span><i class="bi bi-cart-plus me-2"></i>取引を追加</span>
-      <button type="button" class="btn-icon btn-danger-icon btn--sm" onclick="closeBottomSheet('transactionBottomSheet')" aria-label="閉じる">
+  <!-- 取引追加フォーム（折りたたみ） -->
+  <div id="addTransactionForm" class="form-card-improved mb-3" style="display: none;">
+    <div class="form-header-improved">
+      <span><i class="bi bi-plus-circle me-2"></i>取引を追加</span>
+      <button type="button" class="btn-icon btn-info-icon" onclick="closeAddForm()">
         <i class="bi bi-x-lg"></i>
       </button>
     </div>
-    <div class="bottom-sheet-body">
+    <div class="form-body-improved">
       <form method="post" action="{% url 'stockdiary:add_transaction' diary.id %}" id="addForm">
         {% csrf_token %}
-
+        
         <div class="row g-3">
           <div class="col-md-6">
             <label class="form-label-improved">取引種別<span class="text-danger ms-1">*</span></label>
@@ -234,36 +233,36 @@
               <option value="sell">売却</option>
             </select>
           </div>
-
+          
           <div class="col-md-6">
             <label class="form-label-improved">取引日<span class="text-danger ms-1">*</span></label>
-            <input type="date" class="form-input-improved" name="transaction_date"
+            <input type="date" class="form-input-improved" name="transaction_date" 
                    value="{% now 'Y-m-d' %}" required>
           </div>
-
+          
           <div class="col-md-6">
             <label class="form-label-improved">単価（円）<span class="text-danger ms-1">*</span></label>
-            <input type="number" class="form-input-improved" name="price"
+            <input type="number" class="form-input-improved" name="price" 
                    step="0.01" min="0.01" placeholder="例: 1000.00" required>
           </div>
-
+          
           <div class="col-md-6">
             <label class="form-label-improved">数量（株）<span class="text-danger ms-1">*</span></label>
-            <input type="number" class="form-input-improved" name="quantity"
+            <input type="number" class="form-input-improved" name="quantity" 
                    step="1" min="1" placeholder="例: 100" required>
           </div>
-
+          
           <div class="col-12">
             <label class="form-label-improved">メモ（任意）</label>
             <textarea class="form-input-improved" name="memo" rows="2" maxlength="500"></textarea>
           </div>
         </div>
-
+        
         <div class="form-actions-improved">
           <button type="submit" class="btn btn-primary">
             <i class="bi bi-save me-1"></i>保存
           </button>
-          <button type="button" class="btn btn-secondary" onclick="closeBottomSheet('transactionBottomSheet')">
+          <button type="button" class="btn btn-secondary" onclick="closeAddForm()">
             キャンセル
           </button>
         </div>
@@ -271,49 +270,48 @@
     </div>
   </div>
 
-  <!-- 株式分割 ボトムシート -->
-  <div id="splitBottomSheet" class="bottom-sheet">
-    <div class="bottom-sheet-handle"></div>
-    <div class="bottom-sheet-header">
+  <!-- 株式分割追加フォーム（折りたたみ） -->
+  <div id="addSplitForm" class="form-card-improved mb-3" style="display: none;">
+    <div class="form-header-improved">
       <span><i class="bi bi-scissors me-2"></i>株式分割を追加</span>
-      <button type="button" class="btn-icon btn-danger-icon btn--sm" onclick="closeBottomSheet('splitBottomSheet')" aria-label="閉じる">
+      <button type="button" class="btn-icon btn-info-icon" onclick="closeSplitForm()">
         <i class="bi bi-x-lg"></i>
       </button>
     </div>
-    <div class="bottom-sheet-body">
+    <div class="form-body-improved">
       <form method="post" action="{% url 'stockdiary:add_stock_split' diary.id %}">
         {% csrf_token %}
-
+        
         <div class="alert-info-improved mb-3">
           <i class="bi bi-info-circle me-2"></i>
           株式分割の情報を登録します。「適用」すると分割日以前の取引が自動調整されます。
         </div>
-
+        
         <div class="row g-3">
           <div class="col-md-6">
             <label class="form-label-improved">分割実行日<span class="text-danger ms-1">*</span></label>
-            <input type="date" class="form-input-improved" name="split_date"
+            <input type="date" class="form-input-improved" name="split_date" 
                    value="{% now 'Y-m-d' %}" required>
           </div>
-
+          
           <div class="col-md-6">
             <label class="form-label-improved">分割比率<span class="text-danger ms-1">*</span></label>
-            <input type="number" class="form-input-improved" name="split_ratio"
+            <input type="number" class="form-input-improved" name="split_ratio" 
                    step="0.0001" min="0.0001" placeholder="例: 2.0" required>
             <small class="form-text-improved">1株が何株になるか（例: 1→2株なら「2.0」）</small>
           </div>
-
+          
           <div class="col-12">
             <label class="form-label-improved">メモ（任意）</label>
             <textarea class="form-input-improved" name="memo" rows="2" maxlength="500"></textarea>
           </div>
         </div>
-
+        
         <div class="form-actions-improved">
           <button type="submit" class="btn btn-primary">
             <i class="bi bi-scissors me-1"></i>追加
           </button>
-          <button type="button" class="btn btn-secondary" onclick="closeBottomSheet('splitBottomSheet')">
+          <button type="button" class="btn btn-secondary" onclick="closeSplitForm()">
             キャンセル
           </button>
         </div>
@@ -1237,6 +1235,46 @@
 const DIARY_ID = {{ diary.id }};
 
 // 追加フォーム表示/非表示
+function toggleAddForm() {
+  const form = document.getElementById('addTransactionForm');
+  const splitForm = document.getElementById('addSplitForm');
+  
+  splitForm.style.display = 'none';
+  document.querySelectorAll('[id^="edit-form-"]').forEach(f => f.style.display = 'none');
+  document.querySelectorAll('[id^="transaction-"]').forEach(f => f.style.display = 'block');
+  
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  
+  if (form.style.display === 'block') {
+    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function closeAddForm() {
+  document.getElementById('addTransactionForm').style.display = 'none';
+  document.getElementById('addForm').reset();
+}
+
+// 株式分割フォーム表示/非表示
+function toggleSplitForm() {
+  const form = document.getElementById('addSplitForm');
+  const addForm = document.getElementById('addTransactionForm');
+  
+  addForm.style.display = 'none';
+  document.querySelectorAll('[id^="edit-form-"]').forEach(f => f.style.display = 'none');
+  document.querySelectorAll('[id^="transaction-"]').forEach(f => f.style.display = 'block');
+  
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  
+  if (form.style.display === 'block') {
+    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function closeSplitForm() {
+  document.getElementById('addSplitForm').style.display = 'none';
+}
+
 // 編集フォーム表示
 function showEditForm(transactionId) {
   document.querySelectorAll('[id^="edit-form-"]').forEach(form => {
@@ -1245,9 +1283,12 @@ function showEditForm(transactionId) {
   document.querySelectorAll('[id^="transaction-"]').forEach(item => {
     item.style.display = 'block';
   });
-
+  
+  document.getElementById('addTransactionForm').style.display = 'none';
+  document.getElementById('addSplitForm').style.display = 'none';
+  
   document.getElementById('transaction-' + transactionId).style.display = 'none';
-
+  
   const editForm = document.getElementById('edit-form-' + transactionId);
   editForm.style.display = 'block';
   editForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });

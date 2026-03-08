@@ -1362,9 +1362,6 @@
 {% endblock %}
 
 {% block content %}
-<!-- ボトムシート オーバーレイ -->
-<div id="bottomSheetOverlay" class="bottom-sheet-overlay"></div>
-
 <div class="diary-detail-container">
   <!-- 操作バー -->
   <div class="action-bar">
@@ -1552,105 +1549,146 @@
         <!-- 基本情報タブ -->
         <div class="tab-pane fade show active" id="basic-content" role="tabpanel" aria-labelledby="basic-tab">
           {% if diary.image_url %}
-          <div class="diary-image-section fade-in text-center mb-3">
-            <img src="{{ diary.image_url }}"
-                 class="img-fluid rounded diary-main-image"
-                 alt="{{ diary.stock_name }}の画像"
-                 loading="lazy"
-                 style="max-height: 240px; object-fit: cover; cursor: pointer;"
-                 onclick="showImageModal('{{ diary.image_url }}', '{{ diary.stock_name }} - {{ diary.first_purchase_date|date:"Y年m月d日" }}')">
-            <div class="mt-1">
-              <small class="text-muted"><i class="bi bi-image me-1"></i>クリックで拡大表示</small>
+          <div class="diary-image-section fade-in">
+            <div class="card border-0">
+              <div class="card-body p-2">
+                <div class="text-center">
+                  <img src="{{ diary.image_url }}" 
+                       class="img-fluid rounded diary-main-image" 
+                       alt="{{ diary.stock_name }}の画像"
+                       loading="lazy"
+                       onclick="showImageModal('{{ diary.image_url }}', '{{ diary.stock_name }} - {{ diary.first_purchase_date|date:"Y年m月d日" }}')">
+                  <div class="mt-2">
+                    <small class="text-muted">
+                      <i class="bi bi-image me-1"></i>
+                      クリックで拡大表示
+                    </small>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           {% endif %}
 
-          <!-- 投資理由/メモ -->
-          <div class="fade-in mb-3">
-            <div class="section-label">
-              <i class="bi bi-journal-text"></i>
-              {% if diary.is_memo %}メモ内容{% else %}投資理由{% endif %}
-              {% if diary.reason %}
-              <button type="button" class="reason-expand-btn" id="reasonExpandBtn" title="全画面で表示">
-                <i class="bi bi-arrows-fullscreen"></i>
-                <span>全画面</span>
-              </button>
-              {% endif %}
+          <div class="info-grid mobile-optimized fade-in">
+            <!-- 投資理由/メモ -->
+            <div class="info-card mobile-optimized">
+              <div class="info-card-title">
+                <i class="bi bi-journal-text"></i>
+                {% if diary.is_memo %}メモ内容{% else %}投資理由{% endif %}
+                {% if diary.reason %}
+                <button type="button" class="reason-expand-btn" id="reasonExpandBtn"
+                        title="全画面で表示">
+                  <i class="bi bi-arrows-fullscreen"></i>
+                  <span>全画面</span>
+                </button>
+                {% endif %}
+              </div>
+              <div class="reason-content mobile-optimized markdown-content">
+                {{ diary.reason|render_markdown_with_mentions:mention_map }}
+              </div>
             </div>
-            <div class="reason-content mobile-optimized markdown-content">
-              {{ diary.reason|render_markdown_with_mentions:mention_map }}
-            </div>
-          </div>
 
-          <!-- 取引サマリー -->
-          {% if not diary.is_memo %}
-          <hr class="section-divider">
-          <div class="fade-in mb-3">
-            <div class="section-label">
-              <i class="bi bi-graph-up"></i>
-              取引サマリー
+            <!-- 取引サマリー -->
+            {% if not diary.is_memo %}
+            <div class="info-card mobile-optimized">
+              <div class="info-card-title">
+                <i class="bi bi-graph-up"></i>
+                取引サマリー
+              </div>
+              <div class="info-items mobile-optimized">
+                <div class="info-item-improved mobile-optimized">
+                  <div class="info-icon-improved">
+                    <i class="bi bi-calendar-date"></i>
+                  </div>
+                  <div class="info-content-improved">
+                    <div class="info-label-improved">最初の購入日</div>
+                    <div class="info-value-improved">
+                      {% include "stockdiary/components/_date_display.html" with date=diary.first_purchase_date show_icon=False %}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="info-item-improved mobile-optimized">
+                  <div class="info-icon-improved">
+                    <i class="bi bi-currency-yen"></i>
+                  </div>
+                  <div class="info-content-improved">
+                    <div class="info-label-improved">平均取得単価</div>
+                    <div class="info-value-improved">
+                      {% include "stockdiary/components/_price_display.html" with price=diary.average_purchase_price %}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="info-item-improved mobile-optimized">
+                  <div class="info-icon-improved">
+                    <i class="bi bi-graph-up"></i>
+                  </div>
+                  <div class="info-content-improved">
+                    <div class="info-label-improved">現在保有数</div>
+                    <div class="info-value-improved">{{ diary.current_quantity|floatformat:0 }}株</div>
+                  </div>
+                </div>
+
+                <div class="info-item-improved mobile-optimized">
+                  <div class="info-icon-improved">
+                    <i class="bi bi-cash-stack"></i>
+                  </div>
+                  <div class="info-content-improved">
+                    <div class="info-label-improved">総取得原価(信用含む)</div>
+                    <div class="info-value-improved">{{ diary.total_cost|intcomma_float:0 }}円</div>
+                  </div>
+                </div>
+
+                {% if diary.realized_profit != 0 %}
+                <div class="info-item-improved mobile-optimized">
+                  <div class="info-icon-improved">
+                    <i class="bi bi-piggy-bank"></i>
+                  </div>
+                  <div class="info-content-improved">
+                    <div class="info-label-improved">実現損益(信用含む)</div>
+                    <div class="info-value-improved">
+                      {% include "stockdiary/components/_profit_display.html" with profit=diary.realized_profit %}
+                    </div>
+                  </div>
+                </div>
+                {% endif %}
+              </div>
             </div>
-            <div class="summary-compact-grid">
-              {% if diary.first_purchase_date %}
-              <div class="summary-compact-item">
-                <div class="summary-compact-label">最初の購入日</div>
-                <div class="summary-compact-value" style="font-size:0.85rem;">
-                  {% include "stockdiary/components/_date_display.html" with date=diary.first_purchase_date show_icon=False %}
-                </div>
-              </div>
-              {% endif %}
-              {% if diary.average_purchase_price %}
-              <div class="summary-compact-item">
-                <div class="summary-compact-label">平均取得単価</div>
-                <div class="summary-compact-value">
-                  {{ diary.average_purchase_price|floatformat:2|intcomma }}<span class="unit">円</span>
-                </div>
-              </div>
-              {% endif %}
-              <div class="summary-compact-item">
-                <div class="summary-compact-label">現在保有数</div>
-                <div class="summary-compact-value">{{ diary.current_quantity|floatformat:0 }}<span class="unit">株</span></div>
-              </div>
-              <div class="summary-compact-item">
-                <div class="summary-compact-label">総取得原価</div>
-                <div class="summary-compact-value" style="font-size:0.85rem;">{{ diary.total_cost|intcomma_float:0 }}<span class="unit">円</span></div>
-              </div>
-              {% if diary.realized_profit != 0 %}
-              <div class="summary-compact-item" style="grid-column: span 2;">
-                <div class="summary-compact-label">実現損益(信用含む)</div>
-                <div class="summary-compact-value {% if diary.realized_profit > 0 %}text-success{% elif diary.realized_profit < 0 %}text-danger{% endif %}">
-                  {% if diary.realized_profit > 0 %}+{% endif %}{{ diary.realized_profit|floatformat:0|intcomma }}<span class="unit">円</span>
-                </div>
-              </div>
-              {% endif %}
-            </div>
+            {% endif %}
           </div>
-          {% endif %}
 
           <!-- タグとメモ -->
-          <hr class="section-divider">
-          <div class="fade-in mb-3">
-            <div class="section-label"><i class="bi bi-tags"></i> タグ</div>
-            <div>
+          <div class="info-grid mobile-optimized fade-in">
+            <div class="info-card mobile-optimized">
+              <div class="info-card-title">
+                <i class="bi bi-tags"></i>
+                タグ
+              </div>
               {% for tag in diary.tags.all %}
                 {% include "stockdiary/components/_badge.html" with type="primary" text=tag.name icon="bi-tag-fill" extra_class="me-1 mb-1" %}
               {% empty %}
-              <p class="text-muted mb-0 small">タグはありません</p>
+              <p class="text-muted mb-0">タグはありません</p>
               {% endfor %}
+            </div>
+
+            <div class="info-card mobile-optimized">
+              <div class="info-card-title">
+                <i class="bi bi-sticky"></i>
+                メモ
+              </div>
+              {% if diary.memo %}
+              <div class="memo-content">{{ diary.memo|linebreaks }}</div>
+              {% else %}
+              <p class="text-muted mb-0">メモはありません</p>
+              {% endif %}
             </div>
           </div>
 
-          {% if diary.memo %}
-          <div class="fade-in mb-3">
-            <div class="section-label"><i class="bi bi-sticky"></i> メモ</div>
-            <div class="memo-content">{{ diary.memo|linebreaks }}</div>
-          </div>
-          {% endif %}
-
           <!-- 関連日記セクション -->
-          <hr class="section-divider">
-          <div class="fade-in mb-3">
-            <div class="section-label d-flex justify-content-between align-items-center">
+          <div class="info-card mobile-optimized" style="margin-bottom: 1rem;">
+            <div class="info-card-title d-flex justify-content-between align-items-center">
               <span><i class="bi bi-link-45deg"></i> 関連日記</span>
               <button type="button"
                       class="btn btn-sm btn-outline-secondary"
@@ -1704,56 +1742,65 @@
             </div>
           </div>
 
-          <!-- プッシュ通知セクション（折りたたみ） -->
-          <hr class="section-divider">
-          <details class="fade-in" style="margin-bottom: 0.5rem;">
-            <summary class="section-label" style="cursor: pointer; list-style: none; display: flex; align-items: center; gap: 0.4rem;">
-              <i class="bi bi-bell"></i> プッシュ通知
-              {% include "stockdiary/components/_badge.html" with type="primary" text="BETA" size="sm" %}
-              <i class="bi bi-chevron-down ms-auto" style="font-size: 0.75rem;"></i>
-            </summary>
-            <div id="push-notification-section" class="mt-2">
-              <div id="push-status">
-                <div class="push-status-icon">
-                  <i class="bi bi-hourglass-split"></i>
-                </div>
-                <div class="push-status-text">
-                  <div class="push-status-label">ステータス</div>
-                  <div class="push-status-value">読み込み中...</div>
-                </div>
+          <!-- プッシュ通知セクション -->
+          <div id="push-notification-section" class="slide-in-right">
+            <div class="push-notification-header">
+              <div class="push-notification-icon">
+                <i class="bi bi-bell-fill"></i>
               </div>
-
-              <button id="enable-push-btn" class="btn btn-primary" style="display: none;">
-                <i class="bi bi-bell"></i> プッシュ通知を有効にする
-              </button>
-
-              <button id="disable-push-btn" class="btn btn-outline-danger" style="display: none;">
-                <i class="bi bi-bell-slash"></i> プッシュ通知を無効にする
-              </button>
-
-              <div id="push-error" style="display: none;">
-                {% include "stockdiary/components/_alert.html" with type="warning" message="" %}
-              </div>
-
-              <div class="notification-settings-section">
-                <div class="notification-settings-header">
-                  <div class="notification-settings-title">
-                    <i class="bi bi-gear"></i>
-                    <h6>通知設定</h6>
-                  </div>
-                  <button type="button"
-                          class="btn btn-primary btn--sm"
-                          data-bs-toggle="modal"
-                          data-bs-target="#notificationModal">
-                    <i class="bi bi-plus-circle me-1"></i>
-                  </button>
-                </div>
-                <div id="notification-list-container">
-                  {% include "stockdiary/components/_loading.html" with text="通知設定を読み込んでいます..." %}
-                </div>
+              <div class="push-notification-title">
+                <h6>
+                  プッシュ通知
+                  {% include "stockdiary/components/_badge.html" with type="primary" text="BETA" size="sm" %}
+                </h6>
+                <p class="push-notification-subtitle">大切な情報をリアルタイムで受け取れます</p>
               </div>
             </div>
-          </details>
+            
+            <div id="push-status">
+              <div class="push-status-icon">
+                <i class="bi bi-hourglass-split"></i>
+              </div>
+              <div class="push-status-text">
+                <div class="push-status-label">ステータス</div>
+                <div class="push-status-value">読み込み中...</div>
+              </div>
+            </div>
+            
+            <button id="enable-push-btn" class="btn btn-primary" style="display: none;">
+              <i class="bi bi-bell"></i>
+              プッシュ通知を有効にする
+            </button>
+            
+            <button id="disable-push-btn" class="btn btn-outline-danger" style="display: none;">
+              <i class="bi bi-bell-slash"></i>
+              プッシュ通知を無効にする
+            </button>
+            
+            <div id="push-error" style="display: none;">
+              {% include "stockdiary/components/_alert.html" with type="warning" message="" %}
+            </div>
+
+            <!-- 通知設定一覧 -->
+            <div class="notification-settings-section">
+              <div class="notification-settings-header">
+                <div class="notification-settings-title">
+                  <i class="bi bi-gear"></i>
+                  <h6>通知設定</h6>
+                </div>
+                <button type="button" 
+                        class="btn btn-primary btn--sm"
+                        data-bs-toggle="modal"
+                        data-bs-target="#notificationModal">
+                  <i class="bi bi-plus-circle me-1"></i>
+                </button>
+              </div>
+              
+              <div id="notification-list-container">
+                {% include "stockdiary/components/_loading.html" with text="通知設定を読み込んでいます..." %}
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- 取引履歴タブ -->
@@ -1763,14 +1810,164 @@
 
         <!-- 継続記録タブ -->
         <div class="tab-pane fade" id="notes-content" role="tabpanel" aria-labelledby="notes-tab">
-          <!-- ボトムシート起動ボタン -->
+          <!-- フォーム表示/非表示の切り替えボタン -->
           <div class="d-flex justify-content-center mb-3">
-            <button
-              type="button"
-              class="btn btn-primary"
-              onclick="openBottomSheet('noteBottomSheet')">
-              <i class="bi bi-plus-circle me-2"></i>記録を追加
+            <button 
+              type="button" 
+              class="btn btn-primary" 
+              id="toggleNoteForm"
+              data-bs-toggle="collapse" 
+              data-bs-target="#noteFormCollapse" 
+              aria-expanded="false" 
+              aria-controls="noteFormCollapse">
+              <i class="bi bi-plus-circle me-2"></i>
+              <span class="toggle-text">記録を追加</span>
             </button>
+          </div>
+
+          <!-- 折りたたみ可能な継続記録フォーム -->
+          <div class="collapse" id="noteFormCollapse">
+            <div class="simplified-note-form mobile-optimized mb-3">
+              <form id="quickNoteForm" method="post" action="{% url 'stockdiary:add_note' diary.id %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                {% now "Y-m-d" as today %}
+                {% include "stockdiary/components/_form_field.html" with type="date" name="date" label="日付" icon="bi-calendar-date" required=True value=today %}
+                
+                <div class="form-section mobile-optimized">
+                  <div class="section-title">
+                    <i class="bi bi-tag"></i>
+                    記録タイプ
+                  </div>
+                  <div class="option-pills mobile-optimized">
+                    <div class="option-pill active" data-value="analysis" data-target="note_type">
+                      <i class="bi bi-graph-up"></i>
+                      分析更新
+                    </div>
+                    <div class="option-pill" data-value="news" data-target="note_type">
+                      <i class="bi bi-newspaper"></i>
+                      ニュース
+                    </div>
+                    <div class="option-pill" data-value="earnings" data-target="note_type">
+                      <i class="bi bi-bar-chart"></i>
+                      決算
+                    </div>
+                    <div class="option-pill" data-value="insight" data-target="note_type">
+                      <i class="bi bi-lightbulb"></i>
+                      気づき
+                    </div>
+                    <div class="option-pill" data-value="risk" data-target="note_type">
+                      <i class="bi bi-exclamation-triangle"></i>
+                      リスク
+                    </div>
+                  </div>
+                  <input type="hidden" id="note_type" name="note_type" value="analysis">
+                </div>
+                
+                <div class="form-section mobile-optimized">
+                  <div class="section-title">
+                    <i class="bi bi-exclamation-circle"></i>
+                    重要度
+                  </div>
+                  <div class="option-pills mobile-optimized">
+                    <div class="option-pill importance-pill low" data-value="low" data-target="note_importance">
+                      <i class="bi bi-arrow-down-circle"></i>
+                      低
+                    </div>
+                    <div class="option-pill importance-pill medium active" data-value="medium" data-target="note_importance">
+                      <i class="bi bi-dash-circle"></i>
+                      中
+                    </div>
+                    <div class="option-pill importance-pill high" data-value="high" data-target="note_importance">
+                      <i class="bi bi-arrow-up-circle"></i>
+                      高
+                    </div>
+                  </div>
+                  <input type="hidden" id="note_importance" name="importance" value="medium">
+                </div>
+                
+                <div class="form-group">
+                  <label class="form-label-improved" for="content">
+                    <i class="bi-journal-text me-1"></i>
+                    記録内容
+                    <small class="text-muted ms-2" style="font-size: 0.75rem; font-weight: 400;">
+                      <i class="bi bi-markdown me-1"></i>Markdown対応
+                    </small>
+                    <span class="text-danger ms-1">*</span>
+                  </label>
+                  <textarea
+                    class="form-input-improved"
+                    id="content"
+                    name="content"
+                    rows="6"
+                    placeholder="状況の変化や新たな情報を記録しましょう"
+                  ></textarea>
+                  <div class="d-flex justify-content-end align-items-center mt-1">
+                    <div class="character-count" id="noteContentCharCount">0 / 1000文字</div>
+                  </div>
+                </div>
+                              
+                <!-- 画像添付セクション -->
+                <div class="form-section mobile-optimized">
+                  <label for="note_image" class="section-title">
+                    <i class="bi bi-image"></i>
+                    画像添付（オプション）
+                  </label>
+                  
+                  <div class="image-upload-area-note mobile-optimized mb-2" onclick="document.getElementById('note_image').click();">
+                    <i class="bi bi-cloud-upload text-muted" style="font-size: 2rem;"></i>
+                    <p class="text-muted mb-0">ここをクリックして画像を選択</p>
+                    <small class="text-muted">自動圧縮対応</small>
+                  </div>
+                  
+                  <input type="file" class="form-control d-none" id="note_image" name="image" 
+                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
+                  
+                  <div id="note-image-preview-container" class="mt-2" style="display: none;">
+                    <div class="card" style="max-width: 100%;">
+                      <img id="note-image-preview" class="card-img-top" style="max-height: 200px; object-fit: cover;" alt="プレビュー">
+                      <div class="card-body p-2">
+                        <small class="text-muted">選択された画像</small>
+                        <button type="button" id="note-remove-image" class="btn btn--sm btn-outline-danger float-end">
+                          <i class="bi bi-x"></i> 削除
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-section mobile-optimized">
+                  <label for="note_current_price" class="section-title">
+                    <i class="bi bi-currency-yen"></i>
+                    現在価格（オプション）
+                  </label>
+                  <div class="input-group">
+                    <input type="number" class="form-control form-input-improved" id="note_current_price" name="current_price" 
+                          placeholder="円" step="0.01">
+                    <button type="button" class="btn btn-outline-primary" id="fetch-note-price" data-stock-symbol="{{ diary.stock_symbol }}">
+                      <i class="bi bi-arrow-repeat"></i>
+                      <span class="d-none d-sm-inline ms-1">取得</span>
+                    </button>
+                  </div>
+                </div>
+                
+                <div class="d-flex gap-2 flex-column flex-sm-row">
+                  <button type="submit" class="btn btn-primary flex-fill">
+                    <i class="bi bi-journal-plus me-1"></i>
+                    記録を追加
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn btn-outline-secondary" 
+                    data-bs-toggle="collapse" 
+                    data-bs-target="#noteFormCollapse"
+                    aria-expanded="false">
+                    <i class="bi bi-x"></i>
+                    キャンセル
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
 
           <!-- 継続記録一覧 -->
@@ -1973,185 +2170,10 @@
 {% endif %}
 
 {% include 'speed_dial.html' with actions=diary_actions %}
-
-<!-- ===== ボトムシート: 継続記録 ===== -->
-<div id="noteBottomSheet" class="bottom-sheet">
-  <div class="bottom-sheet-handle"></div>
-  <div class="bottom-sheet-header">
-    <span><i class="bi bi-journal-plus me-2"></i>記録を追加</span>
-    <button type="button" class="btn-icon btn-danger-icon btn--sm" onclick="closeBottomSheet('noteBottomSheet')" aria-label="閉じる">
-      <i class="bi bi-x-lg"></i>
-    </button>
-  </div>
-  <div class="bottom-sheet-body">
-    <div class="simplified-note-form mobile-optimized">
-      <form id="quickNoteForm" method="post" action="{% url 'stockdiary:add_note' diary.id %}" enctype="multipart/form-data">
-        {% csrf_token %}
-
-        {% now "Y-m-d" as today %}
-        {% include "stockdiary/components/_form_field.html" with type="date" name="date" label="日付" icon="bi-calendar-date" required=True value=today %}
-
-        <div class="form-section mobile-optimized">
-          <div class="section-title">
-            <i class="bi bi-tag"></i>
-            記録タイプ
-          </div>
-          <div class="option-pills mobile-optimized">
-            <div class="option-pill active" data-value="analysis" data-target="note_type">
-              <i class="bi bi-graph-up"></i>分析更新
-            </div>
-            <div class="option-pill" data-value="news" data-target="note_type">
-              <i class="bi bi-newspaper"></i>ニュース
-            </div>
-            <div class="option-pill" data-value="earnings" data-target="note_type">
-              <i class="bi bi-bar-chart"></i>決算
-            </div>
-            <div class="option-pill" data-value="insight" data-target="note_type">
-              <i class="bi bi-lightbulb"></i>気づき
-            </div>
-            <div class="option-pill" data-value="risk" data-target="note_type">
-              <i class="bi bi-exclamation-triangle"></i>リスク
-            </div>
-          </div>
-          <input type="hidden" id="note_type" name="note_type" value="analysis">
-        </div>
-
-        <div class="form-section mobile-optimized">
-          <div class="section-title">
-            <i class="bi bi-exclamation-circle"></i>重要度
-          </div>
-          <div class="option-pills mobile-optimized">
-            <div class="option-pill importance-pill low" data-value="low" data-target="note_importance">
-              <i class="bi bi-arrow-down-circle"></i>低
-            </div>
-            <div class="option-pill importance-pill medium active" data-value="medium" data-target="note_importance">
-              <i class="bi bi-dash-circle"></i>中
-            </div>
-            <div class="option-pill importance-pill high" data-value="high" data-target="note_importance">
-              <i class="bi bi-arrow-up-circle"></i>高
-            </div>
-          </div>
-          <input type="hidden" id="note_importance" name="importance" value="medium">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label-improved" for="content">
-            <i class="bi-journal-text me-1"></i>記録内容
-            <small class="text-muted ms-2" style="font-size: 0.75rem; font-weight: 400;">
-              <i class="bi bi-markdown me-1"></i>Markdown対応
-            </small>
-            <span class="text-danger ms-1">*</span>
-          </label>
-          <textarea
-            class="form-input-improved"
-            id="content"
-            name="content"
-            rows="6"
-            placeholder="状況の変化や新たな情報を記録しましょう"
-          ></textarea>
-          <div class="d-flex justify-content-end align-items-center mt-1">
-            <div class="character-count" id="noteContentCharCount">0 / 1000文字</div>
-          </div>
-        </div>
-
-        <!-- 画像添付セクション -->
-        <div class="form-section mobile-optimized">
-          <label for="note_image" class="section-title">
-            <i class="bi bi-image"></i>画像添付（オプション）
-          </label>
-          <div class="image-upload-area-note mobile-optimized mb-2" onclick="document.getElementById('note_image').click();">
-            <i class="bi bi-cloud-upload text-muted" style="font-size: 2rem;"></i>
-            <p class="text-muted mb-0">ここをクリックして画像を選択</p>
-            <small class="text-muted">自動圧縮対応</small>
-          </div>
-          <input type="file" class="form-control d-none" id="note_image" name="image"
-                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
-          <div id="note-image-preview-container" class="mt-2" style="display: none;">
-            <div class="card" style="max-width: 100%;">
-              <img id="note-image-preview" class="card-img-top" style="max-height: 200px; object-fit: cover;" alt="プレビュー">
-              <div class="card-body p-2">
-                <small class="text-muted">選択された画像</small>
-                <button type="button" id="note-remove-image" class="btn btn--sm btn-outline-danger float-end">
-                  <i class="bi bi-x"></i> 削除
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-section mobile-optimized">
-          <label for="note_current_price" class="section-title">
-            <i class="bi bi-currency-yen"></i>現在価格（オプション）
-          </label>
-          <div class="input-group">
-            <input type="number" class="form-control form-input-improved" id="note_current_price" name="current_price"
-                  placeholder="円" step="0.01">
-            <button type="button" class="btn btn-outline-primary" id="fetch-note-price" data-stock-symbol="{{ diary.stock_symbol }}">
-              <i class="bi bi-arrow-repeat"></i>
-              <span class="d-none d-sm-inline ms-1">取得</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="d-flex gap-2 flex-column flex-sm-row mt-3">
-          <button type="submit" class="btn btn-primary flex-fill">
-            <i class="bi bi-journal-plus me-1"></i>記録を追加
-          </button>
-          <button type="button" class="btn btn-outline-secondary" onclick="closeBottomSheet('noteBottomSheet')">
-            <i class="bi bi-x"></i>キャンセル
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
 {% endblock %}
 
 {% block scripts %}
 {{ block.super }}
-<script>
-// ===== ボトムシート制御 =====
-function openBottomSheet(sheetId) {
-  document.getElementById('bottomSheetOverlay').classList.add('active');
-  document.getElementById(sheetId).classList.add('active');
-  document.body.style.overflow = 'hidden';
-
-  // 継続記録シートのコールバック
-  if (sheetId === 'noteBottomSheet' && window._noteSheetOpenCallback) {
-    setTimeout(window._noteSheetOpenCallback, 50);
-  }
-}
-function closeBottomSheet(sheetId) {
-  document.getElementById('bottomSheetOverlay').classList.remove('active');
-  document.getElementById(sheetId).classList.remove('active');
-  document.body.style.overflow = '';
-
-  // 継続記録シートのコールバック
-  if (sheetId === 'noteBottomSheet' && window._noteSheetCloseCallback) {
-    window._noteSheetCloseCallback();
-  }
-}
-document.addEventListener('DOMContentLoaded', function() {
-  const overlay = document.getElementById('bottomSheetOverlay');
-  if (overlay) {
-    overlay.addEventListener('click', function() {
-      document.querySelectorAll('.bottom-sheet.active').forEach(function(s) {
-        s.classList.remove('active');
-        if (s.id === 'noteBottomSheet' && window._noteSheetCloseCallback) {
-          window._noteSheetCloseCallback();
-        }
-      });
-      overlay.classList.remove('active');
-      document.body.style.overflow = '';
-    });
-  }
-
-  // URLハッシュで継続記録フォームを直接開く
-  if (window.location.hash === '#add-note') {
-    setTimeout(function() { openBottomSheet('noteBottomSheet'); }, 300);
-  }
-});
-</script>
 <script src="{% static 'js/diary-detail.js' %}"></script>
 <script src="{% static 'js/diary-detail-tabs.js' %}"></script>
 <script src="{% static 'js/notifications.js' %}"></script>
@@ -2263,18 +2285,26 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // ボトムシートが開いたときに EasyMDE を初期化
-  window._noteSheetOpenCallback = function() {
-    initNoteEasyMDE();
-    setTimeout(function() {
-      if (noteEasyMDE) noteEasyMDE.codemirror.focus();
-    }, 150);
-  };
+  // collapsed → shown: EasyMDE 初期化 + フォーカス + スクロール
+  const formCollapse = document.getElementById('noteFormCollapse');
+  if (formCollapse) {
+    formCollapse.addEventListener('shown.bs.collapse', function() {
+      initNoteEasyMDE();
+      // フォームまでスクロール
+      setTimeout(function() {
+        formCollapse.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // EasyMDE にフォーカス
+        if (noteEasyMDE) {
+          noteEasyMDE.codemirror.focus();
+        }
+      }, 100);
+    });
 
-  // ボトムシートが閉じたときに EasyMDE をリセット
-  window._noteSheetCloseCallback = function() {
-    resetNoteEasyMDE();
-  };
+    // フォームリセット時に EasyMDE もリセット
+    formCollapse.addEventListener('hidden.bs.collapse', function() {
+      resetNoteEasyMDE();
+    });
+  }
 
   // フォーム送信前: textarea に値を明示的に同期してからバリデーション
   const quickNoteForm = document.getElementById('quickNoteForm');
