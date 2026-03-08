@@ -1699,25 +1699,29 @@
               </button>
             </div>
 
-            <!-- 既存の関連日記一覧（アウトリンク） -->
+            <!-- 関連日記一覧（手動リンク + 自動リンク統合） -->
             <div id="related-diaries-list">
-              {% for related in diary.linked_diaries.all %}
-              <div class="related-diary-item d-flex align-items-center justify-content-between" id="related-item-{{ related.id }}">
-                <a href="{% url 'stockdiary:detail' related.pk %}" class="text-decoration-none d-flex align-items-start gap-1 overflow-hidden">
-                  {% if related.stock_symbol %}<span class="badge bg-secondary flex-shrink-0" style="font-size:0.68rem; margin-top:0.1rem;">{{ related.stock_symbol }}</span>{% endif %}
+              {% for item in combined_related_diaries %}
+              <div class="related-diary-item d-flex align-items-center justify-content-between" id="related-item-{{ item.diary.id }}">
+                <a href="{% url 'stockdiary:detail' item.diary.pk %}" class="text-decoration-none d-flex align-items-start gap-1 overflow-hidden">
+                  {% if item.diary.stock_symbol %}<span class="badge bg-secondary flex-shrink-0" style="font-size:0.68rem; margin-top:0.1rem;">{{ item.diary.stock_symbol }}</span>{% endif %}
                   <span class="overflow-hidden">
-                    <div class="related-diary-name">{{ related.stock_name }}</div>
-                    {% if related.reason or related.memo %}
-                    <div class="related-diary-excerpt">{{ related.reason|default:related.memo|striptags|truncatechars:55 }}</div>
+                    <div class="related-diary-name">{{ item.diary.stock_name }}</div>
+                    {% if item.diary.reason or item.diary.memo %}
+                    <div class="related-diary-excerpt">{{ item.diary.reason|default:item.diary.memo|striptags|truncatechars:55 }}</div>
                     {% endif %}
                   </span>
                 </a>
+                {% if item.is_auto %}
+                <span class="badge bg-light text-secondary flex-shrink-0 ms-2" style="font-size:0.65rem;" title="同一銘柄のため自動表示">自動</span>
+                {% else %}
                 <button type="button"
                         class="btn btn-sm btn-link text-danger p-0 ms-2 flex-shrink-0"
-                        onclick="removeRelatedDiary({{ related.id }})"
+                        onclick="removeRelatedDiary({{ item.diary.id }})"
                         title="関連を解除">
                   <i class="bi bi-x-circle" style="font-size:0.85rem;"></i>
                 </button>
+                {% endif %}
               </div>
               {% empty %}
               <p class="text-muted mb-0 small" id="no-related-msg">関連日記はありません</p>
@@ -2707,12 +2711,13 @@ window.loadNotifications = loadNotifications;
       const data = await res.json();
       if (!data.success) { alert(data.error || '追加に失敗しました'); return; }
 
-      // リストに追加
+      // リストに追加（自動リンクで既存の場合は上書き）
       const list = document.getElementById('related-diaries-list');
       const noMsg = document.getElementById('no-related-msg');
       if (noMsg) noMsg.remove();
 
-      const item = document.createElement('div');
+      const existing = document.getElementById(`related-item-${relatedId}`);
+      const item = existing || document.createElement('div');
       item.className = 'related-diary-item d-flex align-items-center justify-content-between';
       item.id = `related-item-${relatedId}`;
       item.innerHTML = `
@@ -2728,7 +2733,7 @@ window.loadNotifications = loadNotifications;
           <i class="bi bi-x-circle" style="font-size:0.85rem;"></i>
         </button>
       `;
-      list.appendChild(item);
+      if (!existing) list.appendChild(item);
 
       // 検索エリアをリセット
       document.getElementById('related-search-input').value = '';
