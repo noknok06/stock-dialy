@@ -648,13 +648,16 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         context['timeline_diaries'] = all_related_diaries
 
         # 手動リンク + 自動リンク（同一銘柄）を統合した関連日記リスト
+        # 銘柄コードがある場合のみ自動リンクを有効にする
         manual_linked_ids = set(self.object.linked_diaries.values_list('id', flat=True))
         combined_related = []
         for d in self.object.linked_diaries.select_related():
             combined_related.append({'diary': d, 'is_auto': False})
-        for d in all_related_diaries.exclude(id=self.object.id):
-            if d.id not in manual_linked_ids:
-                combined_related.append({'diary': d, 'is_auto': True})
+        has_symbol = bool(self.object.stock_symbol and self.object.stock_symbol.strip())
+        if has_symbol:
+            for d in all_related_diaries.exclude(id=self.object.id):
+                if d.id not in manual_linked_ids:
+                    combined_related.append({'diary': d, 'is_auto': True})
         context['combined_related_diaries'] = combined_related
         
         # スピードダイアルアクション
