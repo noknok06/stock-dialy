@@ -1,5 +1,5 @@
 // static/sw.js - シンプル版
-const VERSION = '1.0.18';  // ← CSS変更時はここだけ変更すればOK
+const VERSION = '1.0.20';  // ← CSS変更時はここだけ変更すればOK
 const CACHE_NAME = `kabulog-v${VERSION}`;
 const STATIC_CACHE_NAME = `kabulog-static-v${VERSION}`;
 
