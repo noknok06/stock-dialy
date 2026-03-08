@@ -21,6 +21,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.conf import settings
 from django.urls import reverse
 from django.core.exceptions import ValidationError
+from django.core.cache import cache
 
 from utils.mixins import ObjectNotFoundRedirectMixin
 from .models import StockDiary, DiaryNote, DiaryNotification
@@ -65,6 +66,19 @@ except ImportError:
 # ==========================================
 # ユーティリティ関数
 # ==========================================
+
+def get_mention_map(user):
+    """ユーザーのstock_symbol→diary_idマップ（LocMemCacheで5分キャッシュ）"""
+    cache_key = f'mention_map_u{user.id}'
+    mention_map = cache.get(cache_key)
+    if mention_map is None:
+        rows = StockDiary.objects.filter(
+            user=user
+        ).exclude(stock_symbol='').values('id', 'stock_symbol')
+        mention_map = {r['stock_symbol']: r['id'] for r in rows}
+        cache.set(cache_key, mention_map, 300)
+    return mention_map
+
 
 def get_market_issue(stock_symbol):
     """証券コードから銘柄を取得する共通関数"""
@@ -465,35 +479,23 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         ).exclude(sector='').values_list('sector', flat=True).distinct().order_by('sector')
         context['sectors'] = list(sectors)
         
-        # カレンダー表示用にすべての日記データを追加
-        diaries_query = StockDiary.objects.filter(user=self.request.user)
-        context['all_diaries'] = diaries_query.defer(
+        # カレンダー表示用にすべての日記データを追加（統計も同一クエリで取得）
+        all_diaries_qs = StockDiary.objects.filter(user=self.request.user)
+        context['all_diaries'] = all_diaries_qs.defer(
             'reason', 'memo', 'created_at', 'updated_at',
         )
-        
-        # 統計情報を計算
-        all_diaries = StockDiary.objects.filter(user=self.request.user)
-        
-        # 保有中の銘柄数
-        active_holdings = all_diaries.filter(current_quantity__gt=0)
-        context['active_holdings_count'] = active_holdings.count()
-        
-        # 実現損益の合計
-        realized_profit = all_diaries.aggregate(
-            total_profit=Sum('realized_profit')
-        )['total_profit'] or Decimal('0')
-        context['realized_profit'] = realized_profit
-        
-        # 売却済み銘柄数
-        sold_count = all_diaries.filter(
-            current_quantity=0, 
-            transaction_count__gt=0
-        ).count()
-        context['sold_count'] = sold_count
-        
-        # メモのみの件数
-        memo_count = all_diaries.filter(transaction_count=0).count()
-        context['memo_count'] = memo_count
+
+        # 統計情報を1クエリにまとめて取得
+        stats = all_diaries_qs.aggregate(
+            active_count=Count('id', filter=Q(current_quantity__gt=0)),
+            sold_count=Count('id', filter=Q(current_quantity=0, transaction_count__gt=0)),
+            memo_count=Count('id', filter=Q(transaction_count=0)),
+            total_profit=Sum('realized_profit'),
+        )
+        context['active_holdings_count'] = stats['active_count'] or 0
+        context['realized_profit'] = stats['total_profit'] or Decimal('0')
+        context['sold_count'] = stats['sold_count'] or 0
+        context['memo_count'] = stats['memo_count'] or 0
         
         # 検索パラメータを保持
         context['current_query'] = self.request.GET.urlencode()
@@ -590,7 +592,7 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
     def get_queryset(self):
         return StockDiary.objects.filter(user=self.request.user).select_related('user').prefetch_related(
             'notes', 'tags',
-            'transactions', 'stock_splits'
+            'transactions', 'stock_splits', 'linked_diaries'
         )
     
     def get_context_data(self, **kwargs):
@@ -697,10 +699,7 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         context['today'] = timezone.now().date()
 
         # テキスト内銘柄コードリンク用マッピング {stock_symbol: diary_pk}
-        user_symbol_map = StockDiary.objects.filter(
-            user=self.request.user
-        ).exclude(stock_symbol='').values('id', 'stock_symbol')
-        context['mention_map'] = {d['stock_symbol']: d['id'] for d in user_symbol_map}
+        context['mention_map'] = get_mention_map(self.request.user)
 
         return context
 
@@ -752,10 +751,11 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
                 )
         else:
             messages.success(self.request, '日記を作成しました')
-        
+
+        cache.delete(f'mention_map_u{self.request.user.id}')
         return response
 
- 
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
@@ -834,9 +834,10 @@ class StockDiaryUpdateView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Upda
             success = self.object.process_and_save_image(image_file)
             if not success:
                 messages.warning(self.request, '日記は更新されましたが、画像の処理に失敗しました。')
-                
+
+        cache.delete(f'mention_map_u{self.request.user.id}')
         return response
-    
+
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         return form
@@ -852,6 +853,11 @@ class StockDiaryDeleteView(LoginRequiredMixin, DeleteView):
     
     def get_queryset(self):
         return StockDiary.objects.filter(user=self.request.user)
+
+    def delete(self, request, *args, **kwargs):
+        response = super().delete(request, *args, **kwargs)
+        cache.delete(f'mention_map_u{request.user.id}')
+        return response
 
 
 class AddDiaryNoteView(LoginRequiredMixin, CreateView):
@@ -1639,7 +1645,9 @@ def tab_content(request, diary_id, tab_type):
     """日記カードのタブコンテンツを表示するビュー"""
     try:
         try:
-            diary = StockDiary.objects.get(id=diary_id, user=request.user)
+            diary = StockDiary.objects.prefetch_related(
+                'notes', 'transactions'
+            ).get(id=diary_id, user=request.user)
         except StockDiary.DoesNotExist:
             return HttpResponse(
                 '<div class="alert alert-warning">指定された日記が見つかりません。</div>', 
@@ -1655,17 +1663,14 @@ def tab_content(request, diary_id, tab_type):
             if tab_type == 'notes':
                 notes = diary.notes.all().order_by('-date')[:3]
                 context['notes'] = notes
-                user_symbol_map = StockDiary.objects.filter(
-                    user=request.user
-                ).exclude(stock_symbol='').values('id', 'stock_symbol')
-                context['mention_map'] = {d['stock_symbol']: d['id'] for d in user_symbol_map}
+                context['mention_map'] = get_mention_map(request.user)
                 template_name = 'stockdiary/partials/tab_notes.html'
-                        
+
             elif tab_type == 'details':
                 # 取引タブの処理を追加
                 transactions = diary.transactions.all().order_by('-transaction_date', '-created_at')[:5]
                 context['transactions'] = transactions
-                context['transaction_count'] = diary.transactions.count()
+                context['transaction_count'] = diary.transaction_count
                 template_name = 'stockdiary/partials/tab_details.html'
                         
             elif tab_type == 'margin':

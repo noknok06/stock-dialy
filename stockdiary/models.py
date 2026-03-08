@@ -73,6 +73,7 @@ class StockDiary(models.Model):
             models.Index(fields=['user', 'first_purchase_date']),
             models.Index(fields=['user', 'stock_symbol']),
             models.Index(fields=['user', 'current_quantity']),
+            models.Index(fields=['user', '-updated_at']),
         ]
         verbose_name = '株式日記'
         verbose_name_plural = '株式日記'
@@ -121,9 +122,8 @@ class StockDiary(models.Model):
         # デバッグ用のログ
         import logging
         logger = logging.getLogger(__name__)
-        logger.info(f"\n{'='*60}")
-        logger.info(f"集計開始: {self.stock_name} ({self.stock_symbol})")
-        logger.info(f"取引数: {transactions.count()}")
+        logger.debug(f"\n{'='*60}")
+        logger.debug(f"集計開始: {self.stock_name} ({self.stock_symbol})")
         
         for idx, transaction in enumerate(transactions, 1):
             # 分割調整を適用
@@ -150,7 +150,7 @@ class StockDiary(models.Model):
                         profit = returned_cost - buy_cost
                         self.realized_profit += profit
                         
-                        logger.info(
+                        logger.debug(
                             f"{idx}. {transaction.transaction_date} 返済買い "
                             f"{returned_quantity}株 @ {adjusted_price}円 "
                             f"(平均売却単価: {avg_sell_price:.2f}円) "
@@ -175,7 +175,7 @@ class StockDiary(models.Model):
                 self.total_bought_quantity += adjusted_quantity
                 self.total_buy_amount += buy_amount
                 
-                logger.info(
+                logger.debug(
                     f"{idx}. {transaction.transaction_date} 購入 "
                     f"{adjusted_quantity}株 @ {adjusted_price}円 "
                     f"→ 保有: {before_qty} → {self.current_quantity}"
@@ -209,7 +209,7 @@ class StockDiary(models.Model):
                     self.total_cost -= sell_cost
                     self.current_quantity -= sold_quantity
                     
-                    logger.info(
+                    logger.debug(
                         f"{idx}. {transaction.transaction_date} 売却 "
                         f"{sold_quantity}株 @ {adjusted_price}円 "
                         f"(平均単価: {avg_price:.2f}円) "
@@ -224,7 +224,7 @@ class StockDiary(models.Model):
                         self.current_quantity -= remaining_quantity
                         self.total_cost -= adjusted_price * remaining_quantity
                         
-                        logger.info(
+                        logger.debug(
                             f"    ↳ 信用売り {remaining_quantity}株 "
                             f"→ 保有: {self.current_quantity}"
                         )
@@ -235,7 +235,7 @@ class StockDiary(models.Model):
                     self.current_quantity -= adjusted_quantity
                     self.total_cost -= sell_amount
                     
-                    logger.info(
+                    logger.debug(
                         f"{idx}. {transaction.transaction_date} 信用売り "
                         f"{adjusted_quantity}株 @ {adjusted_price}円 "
                         f"→ 保有: {before_qty} → {self.current_quantity}"
@@ -263,11 +263,11 @@ class StockDiary(models.Model):
         self.total_cost = self.total_cost.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         self.realized_profit = self.realized_profit.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         
-        logger.info(f"集計完了: 保有数={self.current_quantity}, "
-                    f"購入計={self.total_bought_quantity}, "
-                    f"売却計={self.total_sold_quantity}, "
-                    f"実現損益={self.realized_profit}")
-        logger.info(f"{'='*60}\n")
+        logger.debug(f"集計完了: 保有数={self.current_quantity}, "
+                     f"購入計={self.total_bought_quantity}, "
+                     f"売却計={self.total_sold_quantity}, "
+                     f"実現損益={self.realized_profit}")
+        logger.debug(f"{'='*60}\n")
         
         self.save()    
     def process_and_save_image(self, image_file):
