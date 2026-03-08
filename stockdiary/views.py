@@ -22,8 +22,6 @@ from django.conf import settings
 from django.urls import reverse
 from django.core.exceptions import ValidationError
 
-from django.core.cache import cache
-
 from utils.mixins import ObjectNotFoundRedirectMixin
 from .models import StockDiary, DiaryNote, DiaryNotification
 from .models import Transaction, StockSplit
@@ -460,18 +458,12 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['tags'] = Tag.objects.filter(user=self.request.user)
         
-        # 業種リストを取得（重複なし）- Redis にキャッシュ（10分）
-        sector_cache_key = f'sectors_{self.request.user.id}'
-        sectors = cache.get(sector_cache_key)
-        if sectors is None:
-            sectors = list(
-                StockDiary.objects.filter(
-                    user=self.request.user,
-                    sector__isnull=False
-                ).exclude(sector='').values_list('sector', flat=True).distinct().order_by('sector')
-            )
-            cache.set(sector_cache_key, sectors, 600)
-        context['sectors'] = sectors
+        # 業種リストを取得（重複なし）
+        sectors = StockDiary.objects.filter(
+            user=self.request.user,
+            sector__isnull=False
+        ).exclude(sector='').values_list('sector', flat=True).distinct().order_by('sector')
+        context['sectors'] = list(sectors)
         
         # カレンダー表示用にすべての日記データを追加
         diaries_query = StockDiary.objects.filter(user=self.request.user)
@@ -704,16 +696,11 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         # クイック記録用に今日の日付を追加
         context['today'] = timezone.now().date()
 
-        # テキスト内銘柄コードリンク用マッピング {stock_symbol: diary_pk} - Redis にキャッシュ（5分）
-        mention_cache_key = f'mention_map_{self.request.user.id}'
-        mention_map = cache.get(mention_cache_key)
-        if mention_map is None:
-            user_symbol_map = StockDiary.objects.filter(
-                user=self.request.user
-            ).exclude(stock_symbol='').values('id', 'stock_symbol')
-            mention_map = {d['stock_symbol']: d['id'] for d in user_symbol_map}
-            cache.set(mention_cache_key, mention_map, 300)
-        context['mention_map'] = mention_map
+        # テキスト内銘柄コードリンク用マッピング {stock_symbol: diary_pk}
+        user_symbol_map = StockDiary.objects.filter(
+            user=self.request.user
+        ).exclude(stock_symbol='').values('id', 'stock_symbol')
+        context['mention_map'] = {d['stock_symbol']: d['id'] for d in user_symbol_map}
 
         return context
 
@@ -1652,16 +1639,10 @@ def tab_content(request, diary_id, tab_type):
     """日記カードのタブコンテンツを表示するビュー"""
     try:
         try:
-            # tab_type に応じて必要なリレーションのみ prefetch
-            if tab_type == 'notes':
-                diary = StockDiary.objects.prefetch_related('notes').get(id=diary_id, user=request.user)
-            elif tab_type == 'details':
-                diary = StockDiary.objects.prefetch_related('transactions').get(id=diary_id, user=request.user)
-            else:
-                diary = StockDiary.objects.get(id=diary_id, user=request.user)
+            diary = StockDiary.objects.get(id=diary_id, user=request.user)
         except StockDiary.DoesNotExist:
             return HttpResponse(
-                '<div class="alert alert-warning">指定された日記が見つかりません。</div>',
+                '<div class="alert alert-warning">指定された日記が見つかりません。</div>', 
                 status=404
             )
 
@@ -1669,21 +1650,15 @@ def tab_content(request, diary_id, tab_type):
             'diary': diary,
             'is_detail_view': False,  # ホーム画面からの呼び出し
         }
-
+        
         try:
             if tab_type == 'notes':
                 notes = diary.notes.all().order_by('-date')[:3]
                 context['notes'] = notes
-                # mention_map をキャッシュから取得（詳細ビューと共有）
-                mention_cache_key = f'mention_map_{request.user.id}'
-                mention_map = cache.get(mention_cache_key)
-                if mention_map is None:
-                    user_symbol_map = StockDiary.objects.filter(
-                        user=request.user
-                    ).exclude(stock_symbol='').values('id', 'stock_symbol')
-                    mention_map = {d['stock_symbol']: d['id'] for d in user_symbol_map}
-                    cache.set(mention_cache_key, mention_map, 300)
-                context['mention_map'] = mention_map
+                user_symbol_map = StockDiary.objects.filter(
+                    user=request.user
+                ).exclude(stock_symbol='').values('id', 'stock_symbol')
+                context['mention_map'] = {d['stock_symbol']: d['id'] for d in user_symbol_map}
                 template_name = 'stockdiary/partials/tab_notes.html'
                         
             elif tab_type == 'details':

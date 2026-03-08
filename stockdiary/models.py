@@ -57,16 +57,6 @@ class StockDiary(models.Model):
     total_sell_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name='累計売却額')
     transaction_count = models.IntegerField(default=0, verbose_name='取引回数')
     
-    # 現物取引のみの集計（信用取引除外・事前計算済み）
-    cash_only_current_quantity = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name='現物保有数')
-    cash_only_average_purchase_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name='現物平均取得単価')
-    cash_only_total_cost = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name='現物総原価')
-    cash_only_realized_profit = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name='現物実現損益')
-    cash_only_total_bought_quantity = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name='現物累計購入数')
-    cash_only_total_sold_quantity = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name='現物累計売却数')
-    cash_only_total_buy_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name='現物累計購入額')
-    cash_only_total_sell_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name='現物累計売却額')
-
     # 日付情報
     first_purchase_date = models.DateField(null=True, blank=True, db_index=True, verbose_name='最初の購入日')
     last_transaction_date = models.DateField(null=True, blank=True, verbose_name='最後の取引日')
@@ -89,25 +79,6 @@ class StockDiary(models.Model):
     
     def __str__(self):
         return f"{self.stock_name} ({self.stock_symbol})"
-
-    def _invalidate_user_cache(self):
-        """ユーザーに紐づくビュー用キャッシュを無効化（Redis 接続エラーは無視）"""
-        try:
-            from django.core.cache import cache
-            cache.delete_many([
-                f'mention_map_{self.user_id}',
-                f'sectors_{self.user_id}',
-            ])
-        except Exception:
-            pass
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        self._invalidate_user_cache()
-
-    def delete(self, *args, **kwargs):
-        self._invalidate_user_cache()
-        super().delete(*args, **kwargs)
 
     @property
     def is_memo(self):
@@ -147,9 +118,12 @@ class StockDiary(models.Model):
         self.last_transaction_date = None
         self.average_purchase_price = None
         
-        logger.debug(f"\n{'='*60}")
-        logger.debug(f"集計開始: {self.stock_name} ({self.stock_symbol})")
-        logger.debug(f"取引数: {transactions.count()}")
+        # デバッグ用のログ
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"\n{'='*60}")
+        logger.info(f"集計開始: {self.stock_name} ({self.stock_symbol})")
+        logger.info(f"取引数: {transactions.count()}")
         
         for idx, transaction in enumerate(transactions, 1):
             # 分割調整を適用
@@ -176,7 +150,7 @@ class StockDiary(models.Model):
                         profit = returned_cost - buy_cost
                         self.realized_profit += profit
                         
-                        logger.debug(
+                        logger.info(
                             f"{idx}. {transaction.transaction_date} 返済買い "
                             f"{returned_quantity}株 @ {adjusted_price}円 "
                             f"(平均売却単価: {avg_sell_price:.2f}円) "
@@ -201,7 +175,7 @@ class StockDiary(models.Model):
                 self.total_bought_quantity += adjusted_quantity
                 self.total_buy_amount += buy_amount
                 
-                logger.debug(
+                logger.info(
                     f"{idx}. {transaction.transaction_date} 購入 "
                     f"{adjusted_quantity}株 @ {adjusted_price}円 "
                     f"→ 保有: {before_qty} → {self.current_quantity}"
@@ -235,7 +209,7 @@ class StockDiary(models.Model):
                     self.total_cost -= sell_cost
                     self.current_quantity -= sold_quantity
                     
-                    logger.debug(
+                    logger.info(
                         f"{idx}. {transaction.transaction_date} 売却 "
                         f"{sold_quantity}株 @ {adjusted_price}円 "
                         f"(平均単価: {avg_price:.2f}円) "
@@ -250,7 +224,7 @@ class StockDiary(models.Model):
                         self.current_quantity -= remaining_quantity
                         self.total_cost -= adjusted_price * remaining_quantity
                         
-                        logger.debug(
+                        logger.info(
                             f"    ↳ 信用売り {remaining_quantity}株 "
                             f"→ 保有: {self.current_quantity}"
                         )
@@ -261,7 +235,7 @@ class StockDiary(models.Model):
                     self.current_quantity -= adjusted_quantity
                     self.total_cost -= sell_amount
                     
-                    logger.debug(
+                    logger.info(
                         f"{idx}. {transaction.transaction_date} 信用売り "
                         f"{adjusted_quantity}株 @ {adjusted_price}円 "
                         f"→ 保有: {before_qty} → {self.current_quantity}"
@@ -289,65 +263,13 @@ class StockDiary(models.Model):
         self.total_cost = self.total_cost.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         self.realized_profit = self.realized_profit.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         
-        logger.debug(f"集計完了: 保有数={self.current_quantity}, "
+        logger.info(f"集計完了: 保有数={self.current_quantity}, "
                     f"購入計={self.total_bought_quantity}, "
                     f"売却計={self.total_sold_quantity}, "
                     f"実現損益={self.realized_profit}")
-        logger.debug(f"{'='*60}\n")
-
-        # 現物取引（is_margin=False）のみの集計を同時に計算して保存
-        self._update_cash_only_aggregates()
-
-        self.save()
-
-    def _update_cash_only_aggregates(self):
-        """現物取引のみの集計フィールドを更新（save()は呼ばない）"""
-        cash_transactions = self.transactions.filter(is_margin=False).order_by('transaction_date', 'created_at')
-
-        cash_quantity = Decimal('0')
-        cash_cost = Decimal('0')
-        cash_realized_profit = Decimal('0')
-        cash_bought_quantity = Decimal('0')
-        cash_sold_quantity = Decimal('0')
-        cash_buy_amount = Decimal('0')
-        cash_sell_amount = Decimal('0')
-
-        for transaction in cash_transactions:
-            adjusted_quantity = transaction.quantity
-            adjusted_price = transaction.price
-
-            if transaction.transaction_type == 'buy':
-                buy_amount = adjusted_price * adjusted_quantity
-                cash_cost += buy_amount
-                cash_quantity += adjusted_quantity
-                cash_bought_quantity += adjusted_quantity
-                cash_buy_amount += buy_amount
-            elif transaction.transaction_type == 'sell':
-                if cash_quantity > 0:
-                    avg_price = cash_cost / cash_quantity
-                    sell_quantity = min(adjusted_quantity, cash_quantity)
-                    sell_cost = avg_price * sell_quantity
-                    actual_sell_amount = adjusted_price * sell_quantity
-                    profit = actual_sell_amount - sell_cost
-                    cash_realized_profit += profit
-                    cash_cost -= sell_cost
-                    cash_quantity -= sell_quantity
-                    cash_sold_quantity += adjusted_quantity
-                    cash_sell_amount += adjusted_price * adjusted_quantity
-
-        cash_avg_price = None
-        if cash_quantity > 0:
-            cash_avg_price = (cash_cost / cash_quantity).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-
-        self.cash_only_current_quantity = cash_quantity.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        self.cash_only_average_purchase_price = cash_avg_price
-        self.cash_only_total_cost = cash_cost.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        self.cash_only_realized_profit = cash_realized_profit.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        self.cash_only_total_bought_quantity = cash_bought_quantity
-        self.cash_only_total_sold_quantity = cash_sold_quantity
-        self.cash_only_total_buy_amount = cash_buy_amount
-        self.cash_only_total_sell_amount = cash_sell_amount
-
+        logger.info(f"{'='*60}\n")
+        
+        self.save()    
     def process_and_save_image(self, image_file):
         """画像を圧縮・処理して保存"""
         try:
@@ -409,16 +331,67 @@ class StockDiary(models.Model):
         return None
 
     def calculate_cash_only_stats(self):
-        """現物取引（is_margin=False）のみの統計を返す（DBフィールドから取得）"""
+        """現物取引（is_margin=False）のみの統計を計算"""
+        from decimal import Decimal, ROUND_HALF_UP
+        
+        cash_transactions = self.transactions.filter(is_margin=False).order_by('transaction_date', 'created_at')
+        
+        cash_quantity = Decimal('0')
+        cash_cost = Decimal('0')
+        cash_realized_profit = Decimal('0')
+        cash_bought_quantity = Decimal('0')
+        cash_sold_quantity = Decimal('0')
+        cash_buy_amount = Decimal('0')
+        cash_sell_amount = Decimal('0')
+        
+        for transaction in cash_transactions:
+            # 分割調整を適用
+            adjusted_quantity = transaction.quantity
+            adjusted_price = transaction.price
+                        
+            if transaction.transaction_type == 'buy':
+                # 購入処理
+                buy_amount = adjusted_price * adjusted_quantity
+                cash_cost += buy_amount
+                cash_quantity += adjusted_quantity
+                cash_bought_quantity += adjusted_quantity
+                cash_buy_amount += buy_amount
+                
+            elif transaction.transaction_type == 'sell':
+                # 売却処理
+                if cash_quantity > 0:
+                    avg_price = cash_cost / cash_quantity
+                    sell_quantity = min(adjusted_quantity, cash_quantity)
+                    sell_cost = avg_price * sell_quantity
+                    actual_sell_amount = adjusted_price * sell_quantity
+                    profit = actual_sell_amount - sell_cost
+                    cash_realized_profit += profit
+                    cash_cost -= sell_cost
+                    cash_quantity -= sell_quantity
+                    cash_sold_quantity += adjusted_quantity
+                    cash_sell_amount += adjusted_price * adjusted_quantity
+        
+        # 平均取得単価を計算
+        cash_avg_price = None
+        if cash_quantity > 0:
+            cash_avg_price = (cash_cost / cash_quantity).quantize(
+                Decimal('0.01'), rounding=ROUND_HALF_UP
+            )
+        
+        # 数値の丸め処理
+        cash_quantity = cash_quantity.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        cash_cost = cash_cost.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        cash_realized_profit = cash_realized_profit.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        
         return {
-            'current_quantity': self.cash_only_current_quantity,
-            'average_purchase_price': self.cash_only_average_purchase_price,
-            'total_cost': self.cash_only_total_cost,
-            'realized_profit': self.cash_only_realized_profit,
-            'total_bought_quantity': self.cash_only_total_bought_quantity,
-            'total_sold_quantity': self.cash_only_total_sold_quantity,
-            'total_buy_amount': self.cash_only_total_buy_amount,
-            'total_sell_amount': self.cash_only_total_sell_amount,
+            'current_quantity': cash_quantity,
+            'average_purchase_price': cash_avg_price,
+            'total_cost': cash_cost,
+            'realized_profit': cash_realized_profit,
+            'total_bought_quantity': cash_bought_quantity,
+            'total_sold_quantity': cash_sold_quantity,
+            'total_buy_amount': cash_buy_amount,
+            'total_sell_amount': cash_sell_amount,
         }
         
     @property
