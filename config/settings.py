@@ -722,37 +722,59 @@ WEBPUSH_SETTINGS = {
     'VAPID_ADMIN_EMAIL': os.getenv('VAPID_ADMIN_EMAIL', 'kabulog.information@gmail.com'),
 }
 
-# Django-Q設定
-# Django キャッシュ設定（Redis DB=1 を使用。DB=0 は Django-Q が使用）
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/1'),
-        'TIMEOUT': 300,  # デフォルト TTL: 5分
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        },
-        'KEY_PREFIX': 'kabulog',
-    }
-}
+# Django キャッシュ設定（REDIS_URL が設定されている場合は Redis、なければ LocMemCache）
+_REDIS_URL = os.getenv('REDIS_URL', '')
 
-Q_CLUSTER = {
-    'name': 'kabulog',
-    'workers': 2,
-    'recycle': 500,
-    'timeout': 120,        # タスクのタイムアウト: 2分
-    'retry': 600,          # 🔧 リトライ待機時間: 10分（timeoutより大きく）
-    'compress': True,
-    'save_limit': 100,
-    'queue_limit': 300,
-    'cpu_affinity': [0, 1],
-    'label': 'Django Q',
-    'redis': {
-        'host': '127.0.0.1',
-        'port': 6379,
-        'db': 0,
-    },
-    'orm': 'default',
-}
+if _REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': _REDIS_URL,
+            'TIMEOUT': 300,
+            'KEY_PREFIX': 'kabulog',
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'TIMEOUT': 300,
+            'KEY_PREFIX': 'kabulog',
+        }
+    }
+
+# Django-Q設定
+if _REDIS_URL:
+    Q_CLUSTER = {
+        'name': 'kabulog',
+        'workers': 2,
+        'recycle': 500,
+        'timeout': 120,
+        'retry': 600,
+        'compress': True,
+        'save_limit': 100,
+        'queue_limit': 300,
+        'cpu_affinity': [0, 1],
+        'label': 'Django Q',
+        'redis': {
+            'host': '127.0.0.1',
+            'port': 6379,
+            'db': 0,
+        },
+        'orm': 'default',
+    }
+else:
+    Q_CLUSTER = {
+        'name': 'kabulog',
+        'workers': 2,
+        'recycle': 500,
+        'timeout': 120,
+        'retry': 600,
+        'compress': True,
+        'save_limit': 100,
+        'queue_limit': 300,
+        'label': 'Django Q (ORM mode)',
+        'orm': 'default',
+    }
 
 STATIC_VERSION = '1.0.18'
