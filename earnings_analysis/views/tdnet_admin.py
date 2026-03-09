@@ -83,6 +83,7 @@ class TDNETPDFUploadView(AdminRequiredMixin, FormView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = 'PDF URLから開示情報を作成'
+        context['recent_jobs'] = TDNETPDFJob.objects.order_by('-created_at')[:10]
         return context
 
 
