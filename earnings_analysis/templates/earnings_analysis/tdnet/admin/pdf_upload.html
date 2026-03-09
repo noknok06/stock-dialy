@@ -189,23 +189,61 @@
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>送信中...';
     });
 
-    // TDNETのURLから証券コードを推測する簡易パーサ
-    document.getElementById('btn-parse-url').addEventListener('click', function () {
+    // 自動入力ボタン：PDFをサーバーで解析してフォームに自動入力
+    document.getElementById('btn-parse-url').addEventListener('click', async function () {
+        var btn = this;
         var urlVal = document.querySelector('[name="pdf_url"]').value.trim();
         if (!urlVal) {
             alert('まずPDF URLを入力してください');
             return;
         }
-        // URLのファイル名部分から14桁数字を探す（TDNETの開示番号 = 先頭6桁が証券コードではないが一応案内）
-        var match = urlVal.match(/(\d{14})\.pdf/i);
-        if (match) {
-            var disclosureNo = match[1];
-            // 開示番号から情報を自動入力する処理はサーバーサイドAPIが必要なため
-            // ここではURLコピー元のメモを促すダイアログを表示
-            alert('開示番号: ' + disclosureNo + '\n\nTDNETの検索ページで証券コード・企業名・タイトルを確認して入力してください。');
-        } else {
-            alert('TDNETの標準URLから開示番号を取得できませんでした。\n手動で入力してください。');
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>解析中...';
+
+        try {
+            var resp = await fetch("{% url 'copomo:tdnet-admin-parse-pdf-url' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({ pdf_url: urlVal }),
+            });
+            var data = await resp.json();
+
+            if (data.success) {
+                if (data.company_code) document.querySelector('[name="company_code"]').value = data.company_code;
+                if (data.company_name) document.querySelector('[name="company_name"]').value = data.company_name;
+                if (data.disclosure_type) document.querySelector('[name="disclosure_type"]').value = data.disclosure_type;
+                if (data.title) document.querySelector('[name="title"]').value = data.title;
+                btn.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i> 入力完了';
+            } else {
+                btn.innerHTML = '<i class="bi bi-magic"></i> 自動入力';
+                alert('自動入力できませんでした: ' + (data.error || '不明なエラー'));
+            }
+        } catch (e) {
+            btn.innerHTML = '<i class="bi bi-magic"></i> 自動入力';
+            alert('通信エラーが発生しました');
+        } finally {
+            btn.disabled = false;
         }
+    });
+
+    // 証券コード入力後にフォーカスを外すと会社名を自動補完
+    document.querySelector('[name="company_code"]').addEventListener('blur', async function () {
+        var code = this.value.trim();
+        if (!code) return;
+        var nameField = document.querySelector('[name="company_name"]');
+        if (nameField.value) return;
+
+        try {
+            var resp = await fetch('/company_master/api/company/' + encodeURIComponent(code) + '/');
+            var data = await resp.json();
+            if (data.success && data.company && data.company.name) {
+                nameField.value = data.company.name;
+            }
+        } catch (e) { /* silent */ }
     });
 
     // サンプルURL入力

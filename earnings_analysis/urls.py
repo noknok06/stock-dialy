@@ -86,6 +86,11 @@ urlpatterns = [
          tdnet_admin.TDNETPDFUploadView.as_view(),
          name='tdnet-admin-pdf-upload'),
 
+    # PDF自動入力API
+    path('admin_xyz/tdnet/parse-pdf-url/',
+         tdnet_admin.PDFParseAPIView.as_view(),
+         name='tdnet-admin-parse-pdf-url'),
+
     # PDFジョブステータスページ
     path('admin_xyz/tdnet/jobs/<uuid:job_id>/',
          tdnet_admin.TDNETJobStatusView.as_view(),
