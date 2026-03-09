@@ -733,7 +733,6 @@ Q_CLUSTER = {
     'compress': True,
     'save_limit': 100,
     'queue_limit': 300,
-    'cpu_affinity': [0, 1],
     'label': 'Django Q',
     'redis': {
         'host': '127.0.0.1',
