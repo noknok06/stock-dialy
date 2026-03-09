@@ -82,9 +82,19 @@ urlpatterns = [
          RedirectView.as_view(pattern_name='copomo:document-list-ui', permanent=False)),
     
     # PDF URL入力画面（メイン）
-    path('admin_xyz/tdnet/pdf-upload/', 
-         tdnet_admin.TDNETPDFUploadView.as_view(), 
+    path('admin_xyz/tdnet/pdf-upload/',
+         tdnet_admin.TDNETPDFUploadView.as_view(),
          name='tdnet-admin-pdf-upload'),
+
+    # PDFジョブステータスページ
+    path('admin_xyz/tdnet/jobs/<uuid:job_id>/',
+         tdnet_admin.TDNETJobStatusView.as_view(),
+         name='tdnet-admin-job-status'),
+
+    # PDFジョブステータスAPI（AJAXポーリング）
+    path('admin_xyz/tdnet/jobs/<uuid:job_id>/status/',
+         tdnet_admin.TDNETJobStatusAPIView.as_view(),
+         name='tdnet-admin-job-status-api'),
     
     # 開示情報一覧
     path('admin_xyz/tdnet/disclosures/', 
