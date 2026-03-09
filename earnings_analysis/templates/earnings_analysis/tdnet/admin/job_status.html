@@ -7,121 +7,271 @@
 <div class="container mt-4">
     <div class="row">
         <div class="col-md-8 mx-auto">
-            <h2>{{ page_title }}</h2>
 
-            <div class="card mt-4">
-                <div class="card-body">
-                    <h5 class="card-title">PDF処理状況</h5>
+            <!-- パンくず -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb small">
+                    <li class="breadcrumb-item"><a href="{% url 'copomo:tdnet-admin-pdf-upload' %}">PDF処理</a></li>
+                    <li class="breadcrumb-item active">処理状況</li>
+                </ol>
+            </nav>
 
-                    <dl class="row">
-                        <dt class="col-sm-3">PDF URL</dt>
-                        <dd class="col-sm-9"><code>{{ job.pdf_url }}</code></dd>
+            <h2 class="mb-1">{{ page_title }}</h2>
+            <p class="text-muted small mb-4">
+                {{ job.company_code }} {{ job.company_name }} &mdash; {{ job.title }}
+            </p>
 
-                        <dt class="col-sm-3">企業コード</dt>
-                        <dd class="col-sm-9">{{ job.company_code }}</dd>
-
-                        <dt class="col-sm-3">企業名</dt>
-                        <dd class="col-sm-9">{{ job.company_name }}</dd>
-
-                        <dt class="col-sm-3">開示種別</dt>
-                        <dd class="col-sm-9">{{ job.disclosure_type }}</dd>
-
-                        <dt class="col-sm-3">タイトル</dt>
-                        <dd class="col-sm-9">{{ job.title }}</dd>
-                    </dl>
-
-                    <hr>
-
-                    <!-- ステータス表示 -->
-                    <div id="status-area" class="text-center py-4">
-                        {% if job.status == 'pending' or job.status == 'processing' %}
-                            <div class="spinner-border text-primary mb-3" role="status" id="spinner">
-                                <span class="visually-hidden">処理中...</span>
+            <!-- ステップ進捗バー -->
+            <div class="card mb-3">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between align-items-start" id="steps-bar">
+                        {% with s=job.status %}
+                        <div class="text-center flex-fill" id="step-1">
+                            <div class="rounded-circle mx-auto mb-1 d-flex align-items-center justify-content-center bg-success text-white"
+                                 style="width:36px;height:36px;font-size:.9rem;">
+                                <i class="bi bi-check-lg"></i>
                             </div>
-                            <p class="lead" id="status-text">
-                                {% if job.status == 'pending' %}待機中...{% else %}処理中（PDFダウンロード→テキスト抽出→AIレポート生成）{% endif %}
-                            </p>
-                            <p class="text-muted small">このページは自動的に更新されます。完了まで1〜3分かかる場合があります。</p>
-                        {% elif job.status == 'done' %}
-                            <div class="alert alert-success" role="alert">
-                                <i class="fas fa-check-circle"></i> 処理が完了しました
+                            <div class="small fw-semibold">受付完了</div>
+                        </div>
+                        <div class="flex-fill d-flex align-items-center pb-4">
+                            <div class="border-top w-100" style="border-width:2px!important;
+                                {% if s == 'processing' or s == 'done' %}border-color:#198754!important{% else %}border-color:#dee2e6!important{% endif %}"></div>
+                        </div>
+                        <div class="text-center flex-fill" id="step-2">
+                            <div class="rounded-circle mx-auto mb-1 d-flex align-items-center justify-content-center
+                                {% if s == 'processing' %}bg-primary text-white
+                                {% elif s == 'done' %}bg-success text-white
+                                {% elif s == 'error' %}bg-danger text-white
+                                {% else %}bg-light text-muted border{% endif %}"
+                                 style="width:36px;height:36px;font-size:.9rem;">
+                                {% if s == 'processing' %}
+                                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                                {% elif s == 'done' %}
+                                    <i class="bi bi-check-lg"></i>
+                                {% elif s == 'error' %}
+                                    <i class="bi bi-x-lg"></i>
+                                {% else %}
+                                    <i class="bi bi-hourglass"></i>
+                                {% endif %}
                             </div>
-                            {% if job.report %}
-                                <a href="{% url 'admin:earnings_analysis_tdnetreport_change' job.report.pk %}"
-                                   class="btn btn-success btn-lg">
-                                    レポートを確認する
-                                </a>
-                            {% endif %}
-                        {% elif job.status == 'error' %}
-                            <div class="alert alert-danger" role="alert">
-                                <strong>エラーが発生しました</strong><br>
-                                {{ job.error_message }}
+                            <div class="small fw-semibold">PDF処理・AI生成</div>
+                        </div>
+                        <div class="flex-fill d-flex align-items-center pb-4">
+                            <div class="border-top w-100" id="connector-2-3" style="border-width:2px!important;
+                                {% if s == 'done' %}border-color:#198754!important{% else %}border-color:#dee2e6!important{% endif %}"></div>
+                        </div>
+                        <div class="text-center flex-fill" id="step-3">
+                            <div class="rounded-circle mx-auto mb-1 d-flex align-items-center justify-content-center
+                                {% if s == 'done' %}bg-success text-white{% else %}bg-light text-muted border{% endif %}"
+                                 style="width:36px;height:36px;font-size:.9rem;">
+                                <i class="bi bi-{% if s == 'done' %}check-lg{% else %}file-earmark-text{% endif %}"></i>
                             </div>
-                            <a href="{% url 'copomo:tdnet-admin-pdf-upload' %}" class="btn btn-secondary">
-                                もう一度試す
-                            </a>
-                        {% endif %}
-                    </div>
-
-                    <div class="text-muted small text-center">
-                        ジョブID: {{ job.job_id }}<br>
-                        作成日時: {{ job.created_at|date:"Y-m-d H:i:s" }}
+                            <div class="small fw-semibold">レポート完成</div>
+                        </div>
+                        {% endwith %}
                     </div>
                 </div>
             </div>
 
+            <!-- ステータスエリア -->
+            <div class="card">
+                <div class="card-body">
+                    <div id="status-area" class="py-3">
+                        {% if job.status == 'pending' %}
+                            <div class="text-center">
+                                <div class="spinner-border text-secondary mb-3" role="status">
+                                    <span class="visually-hidden">待機中...</span>
+                                </div>
+                                <p class="lead mb-1" id="status-text">ワーカーへのジョブ投入待ち...</p>
+                                <p class="text-muted small">Django-Q ワーカーが処理を開始するまでしばらくお待ちください。</p>
+                            </div>
+                        {% elif job.status == 'processing' %}
+                            <div class="text-center">
+                                <div class="spinner-border text-primary mb-3" role="status">
+                                    <span class="visually-hidden">処理中...</span>
+                                </div>
+                                <p class="lead mb-1" id="status-text">PDFダウンロード → テキスト抽出 → AIレポート生成</p>
+                                <p class="text-muted small">完了まで1〜3分かかる場合があります。このページは自動更新されます。</p>
+                            </div>
+                        {% elif job.status == 'done' %}
+                            <div class="text-center">
+                                <div class="text-success mb-2" style="font-size:3rem;"><i class="bi bi-check-circle-fill"></i></div>
+                                <p class="lead fw-bold text-success mb-3">処理が完了しました</p>
+                                {% if job.report %}
+                                    <a href="{% url 'admin:earnings_analysis_tdnetreport_change' job.report.pk %}"
+                                       class="btn btn-success btn-lg">
+                                        <i class="bi bi-file-earmark-text"></i> レポートを確認する
+                                    </a>
+                                {% endif %}
+                                {% if job.disclosure %}
+                                    <a href="{% url 'admin:earnings_analysis_tdnetdisclosure_change' job.disclosure.pk %}"
+                                       class="btn btn-outline-secondary ms-2">
+                                        開示情報を確認
+                                    </a>
+                                {% endif %}
+                            </div>
+                        {% elif job.status == 'error' %}
+                            <div class="text-center">
+                                <div class="text-danger mb-2" style="font-size:3rem;"><i class="bi bi-x-circle-fill"></i></div>
+                                <p class="lead fw-bold text-danger mb-2">エラーが発生しました</p>
+                                <div class="alert alert-danger text-start small">{{ job.error_message }}</div>
+                                <a href="{% url 'copomo:tdnet-admin-pdf-upload' %}" class="btn btn-primary">
+                                    <i class="bi bi-arrow-left"></i> もう一度試す
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- 経過時間 -->
+                    <div class="border-top pt-2 mt-1 d-flex justify-content-between align-items-center">
+                        <div class="text-muted" style="font-size:.75rem;">
+                            開始: {{ job.created_at|date:"H:i:s" }}
+                            &nbsp;&middot;&nbsp;
+                            経過: <span id="elapsed-time">--</span>
+                        </div>
+                        <div class="text-muted" style="font-size:.75rem;">
+                            Job: <code>{{ job.job_id|slice:":8" }}...</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 入力内容サマリー（折りたたみ） -->
             <div class="mt-3">
-                <a href="{% url 'copomo:tdnet-admin-disclosure-list' %}" class="btn btn-outline-secondary btn-sm">
-                    開示情報一覧へ
+                <a class="text-muted small text-decoration-none" data-bs-toggle="collapse" href="#job-detail-collapse" role="button">
+                    <i class="bi bi-chevron-down"></i> 入力内容を確認
                 </a>
-                <a href="{% url 'copomo:tdnet-admin-pdf-upload' %}" class="btn btn-outline-primary btn-sm ms-2">
-                    別のPDFを処理する
+                <div class="collapse mt-2" id="job-detail-collapse">
+                    <div class="card">
+                        <div class="card-body py-2">
+                            <dl class="row mb-0 small">
+                                <dt class="col-sm-3 text-muted">PDF URL</dt>
+                                <dd class="col-sm-9 text-break"><code class="small">{{ job.pdf_url }}</code></dd>
+                                <dt class="col-sm-3 text-muted">企業</dt>
+                                <dd class="col-sm-9">{{ job.company_code }} &nbsp; {{ job.company_name }}</dd>
+                                <dt class="col-sm-3 text-muted">開示種別</dt>
+                                <dd class="col-sm-9">{{ job.disclosure_type }}</dd>
+                                <dt class="col-sm-3 text-muted">タイトル</dt>
+                                <dd class="col-sm-9">{{ job.title }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3 d-flex gap-2">
+                <a href="{% url 'copomo:tdnet-admin-pdf-upload' %}" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-plus"></i> 別のPDFを処理する
+                </a>
+                <a href="{% url 'copomo:tdnet-admin-disclosure-list' %}" class="btn btn-outline-secondary btn-sm">
+                    開示情報一覧
                 </a>
             </div>
+
         </div>
     </div>
 </div>
 
-{% if job.status == 'pending' or job.status == 'processing' %}
 <script>
-(function() {
+(function () {
+    var createdAt = new Date("{{ job.created_at|date:'c' }}");
+    var initialStatus = "{{ job.status }}";
     var apiUrl = "{% url 'copomo:tdnet-admin-job-status-api' job_id=job.job_id %}";
-    var pollInterval = 3000; // 3秒ごとにポーリング
+    var pollInterval = 3000;
+    var autoRedirectDelay = 2500;
 
-    function updateStatus() {
-        fetch(apiUrl, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                var statusArea = document.getElementById('status-area');
+    // 経過時間の更新（処理中のみ）
+    if (initialStatus === 'pending' || initialStatus === 'processing') {
+        function updateElapsed() {
+            var sec = Math.floor((Date.now() - createdAt.getTime()) / 1000);
+            var m = Math.floor(sec / 60);
+            var s = sec % 60;
+            var el = document.getElementById('elapsed-time');
+            if (el) el.textContent = (m > 0 ? m + '分 ' : '') + s + '秒';
+        }
+        updateElapsed();
+        setInterval(updateElapsed, 1000);
+    }
 
-                if (data.status === 'done') {
-                    var html = '<div class="alert alert-success" role="alert">' +
-                               '<i class="fas fa-check-circle"></i> 処理が完了しました</div>';
+    if (initialStatus !== 'pending' && initialStatus !== 'processing') return;
+
+    function setStep2Icon(status) {
+        var el = document.getElementById('step-2');
+        if (!el) return;
+        var icon = el.querySelector('div');
+        if (status === 'processing') {
+            icon.className = 'rounded-circle mx-auto mb-1 d-flex align-items-center justify-content-center bg-primary text-white';
+            icon.style.cssText = 'width:36px;height:36px;font-size:.9rem;';
+            icon.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+        } else if (status === 'done') {
+            icon.className = 'rounded-circle mx-auto mb-1 d-flex align-items-center justify-content-center bg-success text-white';
+            icon.style.cssText = 'width:36px;height:36px;font-size:.9rem;';
+            icon.innerHTML = '<i class="bi bi-check-lg"></i>';
+        } else if (status === 'error') {
+            icon.className = 'rounded-circle mx-auto mb-1 d-flex align-items-center justify-content-center bg-danger text-white';
+            icon.style.cssText = 'width:36px;height:36px;font-size:.9rem;';
+            icon.innerHTML = '<i class="bi bi-x-lg"></i>';
+        }
+    }
+    function setStep3Done() {
+        var el = document.getElementById('step-3');
+        if (!el) return;
+        var icon = el.querySelector('div');
+        icon.className = 'rounded-circle mx-auto mb-1 d-flex align-items-center justify-content-center bg-success text-white';
+        icon.style.cssText = 'width:36px;height:36px;font-size:.9rem;';
+        icon.innerHTML = '<i class="bi bi-check-lg"></i>';
+        var c = document.getElementById('connector-2-3');
+        if (c) c.style.borderColor = '#198754';
+    }
+
+    function poll() {
+        fetch(apiUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                var area = document.getElementById('status-area');
+
+                if (data.status === 'processing') {
+                    setStep2Icon('processing');
+                    var txt = document.getElementById('status-text');
+                    if (txt) txt.textContent = 'PDFダウンロード → テキスト抽出 → AIレポート生成';
+                    setTimeout(poll, pollInterval);
+
+                } else if (data.status === 'done') {
+                    setStep2Icon('done');
+                    setStep3Done();
+                    var html = '<div class="text-center">' +
+                        '<div class="text-success mb-2" style="font-size:3rem;"><i class="bi bi-check-circle-fill"></i></div>' +
+                        '<p class="lead fw-bold text-success mb-3">処理が完了しました</p>';
                     if (data.report_admin_url) {
-                        html += '<a href="' + data.report_admin_url + '" class="btn btn-success btn-lg">レポートを確認する</a>';
+                        html += '<a href="' + data.report_admin_url + '" class="btn btn-success btn-lg">' +
+                            '<i class="bi bi-file-earmark-text"></i> レポートを確認する</a>';
+                        html += '<p class="text-muted small mt-2">' + (autoRedirectDelay / 1000) + '秒後に自動移動します...</p>';
+                        setTimeout(function () { window.location.href = data.report_admin_url; }, autoRedirectDelay);
                     }
-                    statusArea.innerHTML = html;
+                    html += '</div>';
+                    area.innerHTML = html;
+
                 } else if (data.status === 'error') {
-                    statusArea.innerHTML = '<div class="alert alert-danger" role="alert">' +
-                        '<strong>エラーが発生しました</strong><br>' +
-                        (data.error_message || '不明なエラー') + '</div>' +
-                        '<a href="{% url "copomo:tdnet-admin-pdf-upload" %}" class="btn btn-secondary">もう一度試す</a>';
+                    setStep2Icon('error');
+                    area.innerHTML =
+                        '<div class="text-center">' +
+                        '<div class="text-danger mb-2" style="font-size:3rem;"><i class="bi bi-x-circle-fill"></i></div>' +
+                        '<p class="lead fw-bold text-danger mb-2">エラーが発生しました</p>' +
+                        '<div class="alert alert-danger text-start small">' + (data.error_message || '不明なエラー') + '</div>' +
+                        '<a href="{% url "copomo:tdnet-admin-pdf-upload" %}" class="btn btn-primary">' +
+                        '<i class="bi bi-arrow-left"></i> もう一度試す</a>' +
+                        '</div>';
+
                 } else {
-                    var txt = data.status === 'processing'
-                        ? '処理中（PDFダウンロード→テキスト抽出→AIレポート生成）'
-                        : '待機中...';
-                    document.getElementById('status-text').textContent = txt;
-                    setTimeout(updateStatus, pollInterval);
+                    setTimeout(poll, pollInterval);
                 }
             })
-            .catch(function() {
-                // ネットワークエラーは無視して再試行
-                setTimeout(updateStatus, pollInterval * 2);
+            .catch(function () {
+                setTimeout(poll, pollInterval * 2);
             });
     }
 
-    setTimeout(updateStatus, pollInterval);
+    setTimeout(poll, pollInterval);
 })();
 </script>
-{% endif %}
 {% endblock %}
