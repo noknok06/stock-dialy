@@ -171,6 +171,46 @@ class TDNETDisclosureDetailView(AdminRequiredMixin, DetailView):
         return context
 
 
+class PDFParseAPIView(AdminRequiredMixin, View):
+    """PDFからメタデータを抽出するAPI（自動入力ボタン用）"""
+
+    def post(self, request):
+        import json
+        from ..services.pdf_processor import PDFProcessor
+
+        try:
+            body = json.loads(request.body)
+            pdf_url = body.get('pdf_url', '').strip()
+        except Exception:
+            return JsonResponse({'success': False, 'error': '不正なリクエスト'}, status=400)
+
+        if not pdf_url:
+            return JsonResponse({'success': False, 'error': 'PDF URLが未入力です'}, status=400)
+
+        processor = PDFProcessor()
+        result = processor.process_pdf_url(pdf_url, max_pages=5)
+
+        if not result['success']:
+            return JsonResponse({'success': False, 'error': result.get('error', '不明なエラー')})
+
+        meta = processor.extract_metadata_from_text(result['text'])
+
+        company_name = meta.get('company_name', '')
+        if meta.get('company_code') and not company_name:
+            from company_master.models import CompanyMaster
+            cm = CompanyMaster.objects.filter(code=meta['company_code']).first()
+            if cm:
+                company_name = cm.name
+
+        return JsonResponse({
+            'success': True,
+            'company_code': meta.get('company_code', ''),
+            'company_name': company_name,
+            'disclosure_type': meta.get('disclosure_type', 'other'),
+            'title': meta.get('title', ''),
+        })
+
+
 class TDNETReportGenerateView(AdminRequiredMixin, View):
     """レポート生成"""
     
