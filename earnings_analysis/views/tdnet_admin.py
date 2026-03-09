@@ -6,8 +6,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.contrib import messages
 from django.urls import reverse
+from django.http import JsonResponse
 from ..forms import PDFUploadForm
 from ..models import TDNETDisclosure, TDNETReport
+from ..models.tdnet import TDNETPDFJob
 from ..services.tdnet_report_generator import TDNETReportGeneratorService
 import logging
 
@@ -31,49 +33,50 @@ class TDNETPDFUploadView(AdminRequiredMixin, FormView):
     form_class = PDFUploadForm
     
     def form_valid(self, form):
-        """フォーム送信時の処理"""
+        """フォーム送信時の処理（バックグラウンドタスクとして非同期実行）"""
+        from django_q.tasks import async_task
+        from ..tasks import generate_report_from_pdf_url_task
+
         pdf_url = form.cleaned_data['pdf_url']
         company_code = form.cleaned_data['company_code']
         company_name = form.cleaned_data['company_name']
         disclosure_type = form.cleaned_data['disclosure_type']
         title = form.cleaned_data['title']
         max_pdf_pages = form.cleaned_data['max_pdf_pages']
-        auto_generate = form.cleaned_data['auto_generate_report']
-        
+
+        # ジョブレコードを作成してすぐにステータスページへリダイレクト
         try:
-            generator_service = TDNETReportGeneratorService()
-            
-            # PDF URL→開示情報＋レポート生成
-            result = generator_service.generate_report_from_pdf_url(
+            job = TDNETPDFJob.objects.create(
                 pdf_url=pdf_url,
                 company_code=company_code,
                 company_name=company_name,
                 disclosure_type=disclosure_type,
                 title=title,
-                user=self.request.user,
-                max_pdf_pages=max_pdf_pages
+                max_pdf_pages=max_pdf_pages,
+                created_by=self.request.user,
+                status=TDNETPDFJob.STATUS_PENDING,
             )
-            
-            if result['success']:
-                disclosure = result['disclosure']
-                report = result['report']
-                
-                messages.success(
-                    self.request,
-                    f'開示情報とレポートを生成しました: {disclosure.disclosure_id}'
-                )
-                
-                # レポート詳細画面へリダイレクト
-                return redirect('admin:earnings_analysis_tdnetreport_change', report.id)
-            else:
-                messages.error(
-                    self.request,
-                    f'エラー: {result["error"]}'
-                )
-                return self.form_invalid(form)
-            
+
+            async_task(
+                generate_report_from_pdf_url_task,
+                str(job.job_id),
+                pdf_url,
+                company_code,
+                company_name,
+                disclosure_type,
+                title,
+                self.request.user.pk,
+                max_pdf_pages,
+            )
+
+            messages.info(
+                self.request,
+                'PDF処理をバックグラウンドで開始しました。完了までしばらくお待ちください。'
+            )
+            return redirect('copomo:tdnet-admin-job-status', job_id=job.job_id)
+
         except Exception as e:
-            logger.error(f"PDF処理エラー: {e}")
+            logger.error(f"PDFジョブ作成エラー: {e}")
             messages.error(self.request, f'予期しないエラー: {str(e)}')
             return self.form_invalid(form)
     
@@ -81,6 +84,44 @@ class TDNETPDFUploadView(AdminRequiredMixin, FormView):
         context = super().get_context_data(**kwargs)
         context['page_title'] = 'PDF URLから開示情報を作成'
         return context
+
+
+class TDNETJobStatusView(AdminRequiredMixin, View):
+    """PDFジョブステータス確認ページ"""
+
+    def get(self, request, job_id):
+        job = get_object_or_404(TDNETPDFJob, job_id=job_id)
+        context = {
+            'page_title': 'PDF処理状況',
+            'job': job,
+        }
+        return render(request, 'earnings_analysis/tdnet/admin/job_status.html', context)
+
+
+class TDNETJobStatusAPIView(AdminRequiredMixin, View):
+    """PDFジョブステータスAPI（AJAXポーリング用）"""
+
+    def get(self, request, job_id):
+        job = get_object_or_404(TDNETPDFJob, job_id=job_id)
+
+        data = {
+            'status': job.status,
+            'status_display': job.get_status_display(),
+            'is_done': job.is_done,
+            'is_error': job.is_error,
+            'error_message': job.error_message,
+            'report_admin_url': None,
+            'disclosure_id': None,
+        }
+
+        if job.is_done and job.report:
+            data['report_admin_url'] = reverse(
+                'admin:earnings_analysis_tdnetreport_change', args=[job.report.pk]
+            )
+        if job.is_done and job.disclosure:
+            data['disclosure_id'] = job.disclosure.disclosure_id
+
+        return JsonResponse(data)
 
 
 class TDNETDisclosureListView(AdminRequiredMixin, ListView):

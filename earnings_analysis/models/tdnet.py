@@ -398,3 +398,90 @@ class TDNETReportSection(models.Model):
     @property
     def display_type(self):
         return dict(self.SECTION_TYPE_CHOICES).get(self.section_type, self.section_type)
+
+
+class TDNETPDFJob(models.Model):
+    """PDFレポート生成ジョブのステータス追跡"""
+
+    STATUS_PENDING = 'pending'
+    STATUS_PROCESSING = 'processing'
+    STATUS_DONE = 'done'
+    STATUS_ERROR = 'error'
+
+    STATUS_CHOICES = [
+        (STATUS_PENDING, '待機中'),
+        (STATUS_PROCESSING, '処理中'),
+        (STATUS_DONE, '完了'),
+        (STATUS_ERROR, 'エラー'),
+    ]
+
+    job_id = models.UUIDField(
+        'ジョブID',
+        default=uuid.uuid4,
+        unique=True,
+        db_index=True,
+        editable=False,
+    )
+    status = models.CharField(
+        'ステータス',
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_PENDING,
+        db_index=True,
+    )
+    pdf_url = models.URLField('PDF URL', max_length=500)
+    company_code = models.CharField('証券コード', max_length=10)
+    company_name = models.CharField('企業名', max_length=255)
+    disclosure_type = models.CharField('開示種別', max_length=50)
+    title = models.CharField('タイトル', max_length=500)
+    max_pdf_pages = models.IntegerField('最大ページ数', default=50)
+
+    created_by = models.ForeignKey(
+        'users.CustomUser',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='pdf_jobs',
+        verbose_name='作成者',
+    )
+    disclosure = models.ForeignKey(
+        TDNETDisclosure,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='pdf_jobs',
+        verbose_name='開示情報',
+    )
+    report = models.ForeignKey(
+        TDNETReport,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='pdf_jobs',
+        verbose_name='レポート',
+    )
+    error_message = models.TextField('エラーメッセージ', blank=True)
+
+    created_at = models.DateTimeField('作成日時', auto_now_add=True)
+    updated_at = models.DateTimeField('更新日時', auto_now=True)
+
+    class Meta:
+        db_table = 'earnings_tdnet_pdf_job'
+        verbose_name = 'PDFジョブ'
+        verbose_name_plural = 'PDFジョブ一覧'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.job_id} [{self.status}] {self.pdf_url[:60]}"
+
+    @property
+    def is_done(self):
+        return self.status == self.STATUS_DONE
+
+    @property
+    def is_error(self):
+        return self.status == self.STATUS_ERROR
+
+    @property
+    def is_pending(self):
+        return self.status in (self.STATUS_PENDING, self.STATUS_PROCESSING)

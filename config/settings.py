@@ -728,8 +728,8 @@ Q_CLUSTER = {
     'name': 'kabulog',
     'workers': 2,
     'recycle': 500,
-    'timeout': 120,        # タスクのタイムアウト: 2分
-    'retry': 600,          # 🔧 リトライ待機時間: 10分（timeoutより大きく）
+    'timeout': 300,        # タスクのタイムアウト: 5分（PDF処理は60〜150秒かかるため延長）
+    'retry': 900,          # リトライ待機時間: 15分（timeoutより大きく）
     'compress': True,
     'save_limit': 100,
     'queue_limit': 300,
