@@ -2071,10 +2071,12 @@ body {
                 {% endif %}
                 
                 <div class="action-buttons">
-                    <a href="{% url 'copomo:sentiment-analysis' document.doc_id %}" class="action-btn action-btn-primary">
+                    {% if dev_mode %}
+                    <a href="{% url 'copomo:sentiment-analysis' document.doc_id %}?force=1" class="action-btn action-btn-primary">
                         <i class="fas fa-redo"></i>
                         再分析実行
                     </a>
+                    {% endif %}
                     <a href="{% url 'copomo:financial-analysis' document.doc_id %}" class="action-btn">
                         <i class="fas fa-chart-pie"></i>
                         財務分析も実行
@@ -2082,6 +2084,10 @@ body {
                     <a href="{% url 'copomo:document-detail-ui' document.doc_id %}" class="action-btn">
                         <i class="fas fa-arrow-left"></i>
                         書類詳細に戻る
+                    </a>
+                    <a href="{% url 'copomo:company-detail-ui' document.edinet_code %}" class="action-btn">
+                        <i class="fas fa-building"></i>
+                        会社情報を見る
                     </a>
                     <button type="button" class="action-btn" onclick="shareResult()">
                         <i class="fas fa-share"></i>

@@ -664,90 +664,31 @@ body {
     color: white;
 }
 
-.progress-backdrop {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-}
-
+/* フローティングプログレスカード（右下固定） */
 .progress-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    bottom: 1.5rem;
+    right: 1.5rem;
     z-index: 1050;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    transform: translateY(20px);
+    width: 320px;
+    max-width: calc(100vw - 2rem);
 }
 
 .progress-overlay.active {
     opacity: 1;
     pointer-events: auto;
-}
-
-.progress-backdrop {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-}
-
-.progress-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-}
-
-/* モーダルコンテンツ - レスポンシブ対応 */
-.progress-content {
-    position: relative;
-    background: white;
-    border-radius: var(--radius-2xl);
-    box-shadow: var(--shadow-xl);
-    width: calc(100% - 2rem);  /* パディング分を引く */
-    max-width: 500px;          /* PC: 最大500px */
-    max-height: 90vh;
-    overflow-y: auto;
-    transform: translateY(20px);
-    opacity: 0;
-    transition: transform 0.3s ease, opacity 0.3s ease;
-    margin: 0 auto;            /* 中央揃え */
-}
-
-.progress-overlay.active .progress-content {
     transform: translateY(0);
-    opacity: 1;
 }
 
-/* タブレット以上 */
-@media (min-width: 768px) {
-    .progress-content {
-        width: 90%;
-        max-width: 560px;
-    }
-}
-
-/* PC */
-@media (min-width: 992px) {
-    .progress-content {
-        width: 560px;
-        max-width: 600px;
-    }
+.progress-content {
+    background: white;
+    border-radius: var(--radius-xl);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10);
+    width: 100%;
 }
 
 .progress-header {
@@ -1056,7 +997,7 @@ body {
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{% url 'copomo:index' %}">ホーム</a></li>
         <li class="breadcrumb-item"><a href="{% url 'copomo:document-list-ui' %}">書類一覧</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'copomo:document-detail-ui' document.doc_id %}">{{ document.doc_id }}</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'copomo:document-detail-ui' document.doc_id %}">{{ document.company_name }}</a></li>
         <li class="breadcrumb-item active">感情分析</li>
     </ol>
 </nav>
@@ -1350,47 +1291,30 @@ body {
     </div>
 </div>
 
-<!-- プログレスオーバーレイ -->
+<!-- プログレス フローティングカード -->
 <div id="progressOverlay" class="progress-overlay">
-    <div class="progress-backdrop"></div>
-    <div class="progress-container">
-        <div class="progress-content">
-            <div class="progress-header">
-                <h5 class="progress-title">
-                    <i class="fas fa-brain text-primary"></i>
-                    感情分析実行中
-                </h5>
+    <div class="progress-content">
+        <div class="progress-header">
+            <h5 class="progress-title">
+                <i class="fas fa-brain text-primary"></i>
+                感情分析実行中
+            </h5>
+        </div>
+        <div class="progress-body">
+            <div class="progress-bar-wrapper">
+                <div class="progress-bar-fill" id="progressBar" style="width: 0%"></div>
             </div>
-            
-            <div class="progress-body">
-                <div class="progress-icon">
-                    <i class="fas fa-spinner fa-spin"></i>
-                </div>
-                
-                <div class="progress-bar-wrapper">
-                    <div class="progress-bar-fill" id="progressBar" style="width: 0%"></div>
-                </div>
-                
-                <div class="progress-text" id="progressText">0%</div>
-                <div class="progress-status" id="statusMessage">分析を開始しています...</div>
-                
-                <div id="progressAdContainer" class="progress-ad-container">
-                    <!-- 広告は動的に挿入される -->
-                    <div id="modalAdSlot"></div>
-                </div>
-                
-                <div class="progress-hint">
-                    この処理には数分かかる場合があります。<br>
-                    テキストの解析と感情スコアの計算を行います。
-                </div>
+            <div class="progress-text" id="progressText">0%</div>
+            <div class="progress-status" id="statusMessage">分析を開始しています...</div>
+            <div class="progress-hint">
+                この処理には数分かかります。このままページを閲覧できます。
             </div>
-            
-            <div class="progress-footer">
-                <button type="button" class="progress-cancel-btn" id="cancelBtn" onclick="cancelAnalysis()">
-                    <i class="fas fa-times"></i>
-                    キャンセル
-                </button>
-            </div>
+        </div>
+        <div class="progress-footer">
+            <button type="button" class="progress-cancel-btn" id="cancelBtn" onclick="cancelAnalysis()">
+                <i class="fas fa-times"></i>
+                キャンセル
+            </button>
         </div>
     </div>
 </div>
@@ -1532,10 +1456,6 @@ function updateProgressUI(data) {
 function showProgressOverlay() {
     const overlay = document.getElementById('progressOverlay');
     overlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
-    
-    // アニメーション完了後に広告を読み込み（transitionの300msを待つ）
-    setTimeout(loadModalAd, 350);
 }
 
 function loadModalAd() {
@@ -1583,7 +1503,6 @@ function loadModalAd() {
 
 function hideProgressOverlay() {
     document.getElementById('progressOverlay').classList.remove('active');
-    document.body.style.overflow = '';
 }
 
 function cancelAnalysis() {

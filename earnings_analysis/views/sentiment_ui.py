@@ -16,7 +16,33 @@ logger = logging.getLogger(__name__)
 class SentimentAnalysisView(TemplateView):
     """感情分析専用ページ（開発モード対応版）"""
     template_name = 'earnings_analysis/sentiment/analysis.html'
-    
+
+    def get(self, request, *args, **kwargs):
+        """分析済みの場合は結果ページへ自動リダイレクト（?force=1 で強制表示）"""
+        if not request.GET.get('force'):
+            doc_id = kwargs.get('doc_id')
+            document = get_object_or_404(
+                DocumentMetadata,
+                doc_id=doc_id,
+                legal_status='1'
+            )
+            latest_valid_session = SentimentAnalysisSession.objects.filter(
+                document=document,
+                processing_status='COMPLETED',
+                expires_at__gt=timezone.now()
+            ).order_by('-created_at').first()
+
+            if (
+                latest_valid_session
+                and latest_valid_session.analysis_result
+                    .get("analysis_metadata", {})
+                    .get("ai_analysis", {})
+                    .get("error_type") != "rate_limit"
+            ):
+                return redirect('copomo:sentiment-result', session_id=latest_valid_session.session_id)
+
+        return super().get(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         doc_id = kwargs.get('doc_id')
