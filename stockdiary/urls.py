@@ -101,6 +101,7 @@ urlpatterns = [
     path('api/diary/<int:diary_id>/related/search/', api_views.search_related_diaries, name='api_related_search'),
     path('api/diary/<int:diary_id>/related/add/', api_views.add_related_diary, name='api_related_add'),
     path('api/diary/<int:diary_id>/related/<int:related_id>/remove/', api_views.remove_related_diary, name='api_related_remove'),
+    path('api/diary/<int:diary_id>/graph/', api_views.diary_detail_graph_data, name='api_diary_detail_graph'),
 
     # 銘柄一覧
     path('stocks/', views.StockListView.as_view(), name='stock_list'),

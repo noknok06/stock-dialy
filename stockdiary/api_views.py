@@ -16,7 +16,7 @@ from .models import (
 from .utils import (
     extract_hashtags, get_all_hashtags_from_queryset, search_diaries_by_hashtag,
     get_tag_graph_data, get_sector_graph_data, get_hashtag_graph_data,
-    get_mention_graph_data,
+    get_mention_graph_data, extract_stock_mentions,
 )
 import json
 from pywebpush import webpush, WebPushException
@@ -812,3 +812,176 @@ def _diary_status(diary) -> str:
     elif diary.transaction_count > 0:
         return 'sold'
     return 'memo'
+
+
+@login_required
+@require_http_methods(["GET"])
+def diary_detail_graph_data(request, diary_id):
+    """日記詳細画面用：特定の日記を中心とした関連グラフデータを返す。
+
+    Query Parameters:
+        edge_modes: カンマ区切りのモード列（manual,tag,sector,hashtag,mention）
+                    デフォルトは全モード
+
+    Returns:
+        {
+          nodes: [...],  # diary ノード + ハブノード
+          edges: [...],
+          meta: { total_nodes, total_edges, modes, focal_diary_id }
+        }
+        diary ノードには is_focal: true/false フラグを含む
+    """
+    try:
+        focal = get_object_or_404(StockDiary, id=diary_id, user=request.user)
+
+        VALID_MODES = {'manual', 'tag', 'sector', 'hashtag', 'mention'}
+        raw = request.GET.get('edge_modes', 'manual,tag,sector,hashtag,mention').strip()
+        edge_modes = [m.strip() for m in raw.split(',') if m.strip() in VALID_MODES]
+        if not edge_modes:
+            edge_modes = ['manual', 'tag', 'sector', 'hashtag', 'mention']
+
+        # ── 近傍日記IDを収集 ──────────────────────────────────────────
+        neighbor_ids = set()
+
+        # 手動リンク（両方向）
+        manual_linked_ids = set(focal.linked_diaries.values_list('id', flat=True))
+        manual_from_ids = set(focal.linked_from.values_list('id', flat=True))
+        if 'manual' in edge_modes:
+            neighbor_ids |= manual_linked_ids | manual_from_ids
+
+        # 同一銘柄コードの日記（常に含める）
+        if focal.stock_symbol:
+            same_symbol_ids = set(
+                StockDiary.objects.filter(
+                    user=request.user,
+                    stock_symbol=focal.stock_symbol,
+                ).exclude(id=focal.id).values_list('id', flat=True)
+            )
+            neighbor_ids |= same_symbol_ids
+
+        # テキスト内言及銘柄の日記
+        if 'mention' in edge_modes:
+            search_text = ' '.join(filter(None, [focal.memo, focal.reason]))
+            mentioned_codes = extract_stock_mentions(search_text)
+            if mentioned_codes:
+                mentioned_ids = set(
+                    StockDiary.objects.filter(
+                        user=request.user,
+                        stock_symbol__in=mentioned_codes,
+                    ).exclude(id=focal.id).values_list('id', flat=True)
+                )
+                neighbor_ids |= mentioned_ids
+
+        # ── 全ノード日記を取得 ──────────────────────────────────────────
+        all_diary_ids = {focal.id} | neighbor_ids
+        all_diaries = list(
+            StockDiary.objects.filter(id__in=all_diary_ids)
+            .prefetch_related('tags')
+            .only(
+                'id', 'stock_name', 'stock_symbol', 'sector',
+                'realized_profit', 'current_quantity', 'transaction_count',
+                'reason', 'memo',
+            )
+        )
+
+        diary_nodes_map = {}
+        hub_nodes_map = {}
+        all_edges = []
+
+        for d in all_diaries:
+            diary_nodes_map[d.id] = {
+                'id': d.id,
+                'node_type': 'diary',
+                'stock_name': d.stock_name,
+                'stock_symbol': d.stock_symbol or '',
+                'status': _diary_status(d),
+                'sector': d.sector or '未分類',
+                'realized_profit': float(d.realized_profit),
+                'link_count': 0,
+                'url': f'/stockdiary/{d.id}/',
+                'is_primary': True,
+                'is_focal': d.id == focal.id,
+            }
+
+        # ── エッジ構築 ──────────────────────────────────────────────────
+        # manual エッジ
+        if 'manual' in edge_modes:
+            edge_set = set()
+            for linked_id in manual_linked_ids:
+                if linked_id in diary_nodes_map:
+                    key = (focal.id, linked_id)
+                    if key not in edge_set:
+                        edge_set.add(key)
+                        all_edges.append({'source': focal.id, 'target': linked_id, 'edge_type': 'manual'})
+            for linked_id in manual_from_ids:
+                if linked_id in diary_nodes_map:
+                    key = tuple(sorted([focal.id, linked_id]))
+                    if key not in edge_set:
+                        edge_set.add(key)
+                        all_edges.append({'source': linked_id, 'target': focal.id, 'edge_type': 'manual'})
+
+        # tag ハブノード（フォーカル日記のタグのみ）
+        if 'tag' in edge_modes:
+            focal_list = [d for d in all_diaries if d.id == focal.id]
+            hub_data = get_tag_graph_data(focal_list)
+            for hub in hub_data['tag_nodes']:
+                hub['link_count'] = hub.get('diary_count', 0)
+                hub_nodes_map[hub['id']] = hub
+            all_edges.extend(hub_data['edges'])
+
+        # sector ハブノード（フォーカル日記の業種のみ）
+        if 'sector' in edge_modes and focal.sector:
+            sector_id = f'sec_{focal.sector}'
+            hub_nodes_map[sector_id] = {
+                'id': sector_id,
+                'node_type': 'sector',
+                'tag_name': focal.sector,
+                'diary_count': 1,
+                'link_count': 1,
+            }
+            all_edges.append({'source': focal.id, 'target': sector_id, 'edge_type': 'sector'})
+
+        # hashtag ハブノード（フォーカル日記のハッシュタグのみ）
+        if 'hashtag' in edge_modes:
+            focal_list = [d for d in all_diaries if d.id == focal.id]
+            hub_data = get_hashtag_graph_data(focal_list)
+            for hub in hub_data['hashtag_nodes']:
+                hub['link_count'] = hub.get('diary_count', 0)
+                hub_nodes_map[hub['id']] = hub
+            all_edges.extend(hub_data['edges'])
+
+        # mention エッジ（フォーカル日記のテキスト内言及）
+        if 'mention' in edge_modes:
+            symbol_to_id = {d.stock_symbol: d.id for d in all_diaries if d.stock_symbol}
+            focal_list = [d for d in all_diaries if d.id == focal.id]
+            mention_data = get_mention_graph_data(focal_list, symbol_to_id)
+            all_edges.extend(mention_data['edges'])
+
+        # ── link_count 集計 ──────────────────────────────────────────────
+        link_count_map = {}
+        for e in all_edges:
+            for key in ('source', 'target'):
+                v = e[key]
+                if isinstance(v, int):
+                    link_count_map[v] = link_count_map.get(v, 0) + 1
+
+        for nid, node in diary_nodes_map.items():
+            node['link_count'] = link_count_map.get(nid, 0)
+
+        all_nodes = list(diary_nodes_map.values()) + list(hub_nodes_map.values())
+
+        return JsonResponse({
+            'nodes': all_nodes,
+            'edges': all_edges,
+            'meta': {
+                'total_nodes': len(all_nodes),
+                'total_edges': len(all_edges),
+                'modes': edge_modes,
+                'focal_diary_id': focal.id,
+            },
+        })
+
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error(f"diary_detail_graph_data error: {traceback.format_exc()}")
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
