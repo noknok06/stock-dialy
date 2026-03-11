@@ -26,17 +26,10 @@
       <form id="quickRecordForm" method="post" action="{% url 'stockdiary:quick_create' %}">
         {% csrf_token %}
 
-        <!-- Step インジケーター -->
-        <div class="step-indicator" aria-label="入力ステップ">
-          <span class="step active" aria-label="ステップ1: 銘柄名">1</span>
-          <span class="step" aria-label="ステップ2: 購入情報">2</span>
-          <span class="step" aria-label="ステップ3: 投資理由">3</span>
-        </div>
-
-        <!-- Step 1: 銘柄名のみ（任意） -->
-        <div class="form-step active" data-step="1">
+        <!-- 銘柄名 -->
+        <div class="mb-3">
           <label for="stock_name_quick">
-            銘柄名（任意・メモのみも可）
+            銘柄名（任意）
           </label>
           <div class="input-with-suggestions">
             <input
@@ -59,108 +52,25 @@
           </div>
         </div>
 
-        <!-- Step 2: 購入情報（任意） -->
-        <div class="form-step" data-step="2">
-          <label>購入情報（任意・スキップ可）</label>
-          <p class="text-muted small mb-3">
-            後から詳細ページで追加できます
-          </p>
-
-          <div class="row g-2">
-            <div class="col-6">
-              <label for="purchase_price_quick" class="small">購入単価（円）</label>
-              <input
-                type="number"
-                name="purchase_price"
-                id="purchase_price_quick"
-                class="form-control"
-                placeholder="2500"
-                step="0.01"
-                min="0">
-            </div>
-            <div class="col-6">
-              <label for="purchase_quantity_quick" class="small">購入数量（株）</label>
-              <input
-                type="number"
-                name="purchase_quantity"
-                id="purchase_quantity_quick"
-                class="form-control"
-                placeholder="100"
-                step="1"
-                min="1">
-            </div>
-          </div>
-
-          <div class="mt-3">
-            <label for="purchase_date_quick" class="small">購入日</label>
-            <input
-              type="date"
-              name="purchase_date"
-              id="purchase_date_quick"
-              class="form-control"
-              value="{{ today|date:'Y-m-d' }}">
-          </div>
-        </div>
-
-        <!-- Step 3: 投資理由（任意） -->
-        <div class="form-step" data-step="3">
-          <label for="reason_quick">投資理由（任意・スキップ可）</label>
-          <p class="text-muted small mb-3">
-            後から詳細ページで詳しく記入できます
-          </p>
-
-          <!-- テンプレート選択 -->
-          <div class="mb-3">
-            <label class="small fw-bold mb-2">
-              <i class="bi bi-file-earmark-text me-1"></i>
-              テンプレートを使う（任意）
-            </label>
-            <div class="d-flex flex-wrap gap-2">
-              <button type="button" class="btn btn-sm btn-outline-primary template-btn" data-template="growth">
-                🚀 成長株
-              </button>
-              <button type="button" class="btn btn-sm btn-outline-success template-btn" data-template="dividend">
-                💰 配当
-              </button>
-              <button type="button" class="btn btn-sm btn-outline-info template-btn" data-template="value">
-                📊 バリュー
-              </button>
-              <button type="button" class="btn btn-sm btn-outline-warning template-btn" data-template="swing">
-                📈 スイング
-              </button>
-            </div>
-          </div>
-
+        <!-- メモ -->
+        <div class="mb-3">
+          <label for="reason_quick">メモ（任意）</label>
           <textarea
             name="reason"
             id="reason_quick"
             class="form-control"
-            rows="6"
-            placeholder="購入を検討した理由や注目ポイントを入力...
-
-例:
-・決算が良かった
-・チャートが上昇トレンド
-・配当利回りが高い"
+            rows="5"
+            placeholder="気になるポイントや考察を自由に記録..."
             maxlength="2000"></textarea>
-
-          <div class="form-text small text-muted mt-2">
+          <div class="form-text small text-muted mt-1">
             <i class="bi bi-info-circle me-1"></i>
             2000文字まで入力可能
           </div>
         </div>
 
-        <!-- ナビゲーションボタン -->
-        <div class="step-navigation">
-          <button type="button" class="btn btn-outline" id="prevBtn" style="display:none;">
-            <i class="bi bi-arrow-left me-1"></i>
-            戻る
-          </button>
-          <button type="button" class="btn btn-primary" id="nextBtn">
-            次へ
-            <i class="bi bi-arrow-right ms-1"></i>
-          </button>
-          <button type="submit" class="btn btn-success" id="submitBtn" style="display:none;">
+        <!-- 送信ボタン -->
+        <div class="d-grid">
+          <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
             <i class="bi bi-check-lg me-1"></i>
             保存
           </button>
@@ -170,70 +80,17 @@
   </div>
 </div>
 
-{% comment %}
-JavaScript初期化
-※ bottom-sheet.js が読み込まれていることが前提
-{% endcomment %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // テンプレートボタンのイベント
-  const templateBtns = document.querySelectorAll('.template-btn');
-  const reasonTextarea = document.getElementById('reason_quick');
-
-  templateBtns.forEach(btn => {
-    btn.addEventListener('click', function() {
-      const template = this.dataset.template;
-
-      // アクティブ状態を切り替え
-      templateBtns.forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
-
-      // テンプレートテキストを挿入
-      const templates = {
-        'growth': `## 注目理由
-- 業績の成長性が高い
-- 市場シェア拡大中
-
-## リスク
-- 割高感に注意`,
-        'dividend': `## 配当情報
-- 配当利回り: %
-- 配当性向: %
-
-## 安定性
-- 業績安定`,
-        'value': `## バリュエーション
-- PER:
-- PBR:
-- 割安と判断した理由: `,
-        'swing': `## エントリー条件
-- テクニカル指標:
-- 目標価格:
-- 損切りライン: `
-      };
-
-      if (templates[template]) {
-        reasonTextarea.value = templates[template];
-
-        // 触覚フィードバック
-        if (navigator.vibrate) {
-          navigator.vibrate(10);
-        }
-      }
-    });
-  });
-
   // フォーム送信時の処理
   const form = document.getElementById('quickRecordForm');
   form.addEventListener('submit', function(e) {
     e.preventDefault();
 
-    // ボタンを無効化（二重送信防止）
     const submitBtn = document.getElementById('submitBtn');
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>保存中...';
 
-    // フォーム送信
     const formData = new FormData(form);
 
     fetch(form.action, {
@@ -246,18 +103,13 @@ document.addEventListener('DOMContentLoaded', function() {
     .then(response => response.json())
     .then(data => {
       if (data.success) {
-        // 成功時の処理
         if (navigator.vibrate) {
-          navigator.vibrate([10, 5, 10]); // 成功の振動
+          navigator.vibrate([10, 5, 10]);
         }
 
-        // ボトムシートを閉じる
         closeBottomSheet('quickRecordSheet');
-
-        // 成功メッセージを表示
         showToast('success', 'クイック記録を作成しました');
 
-        // ページをリロードまたは日記を追加
         if (data.redirect_url) {
           setTimeout(() => {
             window.location.href = data.redirect_url;
@@ -268,7 +120,6 @@ document.addEventListener('DOMContentLoaded', function() {
           }, 500);
         }
       } else {
-        // エラー時の処理
         showToast('error', data.message || '保存に失敗しました');
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i> 保存';
@@ -283,10 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// トースト通知（簡易版）
 function showToast(type, message) {
-  // 既存のトースト通知システムがあればそれを使用
-  // なければシンプルなalertで代替
   if (typeof window.showNotification === 'function') {
     window.showNotification(message, type);
   } else {
