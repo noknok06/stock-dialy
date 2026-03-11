@@ -302,3 +302,53 @@
 [data-theme="dark"] .markdown-content hr {
   border-top-color: var(--dm-border);
 }
+
+/* ========== 関連グラフ（詳細画面埋め込み）ダークモード ========== */
+.dark-mode #detail-graph-container,
+[data-theme="dark"] #detail-graph-container {
+  background-color: var(--dm-card) !important;
+}
+
+.dark-mode #detail-graph-svg,
+[data-theme="dark"] #detail-graph-svg {
+  background-color: var(--dm-card);
+}
+
+/* フォーカルノード以外の diary ノードの stroke を背景色に合わせる */
+.dark-mode .detail-graph-node:not(.focal-node) circle,
+[data-theme="dark"] .detail-graph-node:not(.focal-node) circle {
+  stroke: var(--dm-card);
+}
+
+.dark-mode .detail-graph-node text,
+[data-theme="dark"] .detail-graph-node text {
+  fill: var(--dm-text-100);
+}
+
+.dark-mode .detail-graph-links line,
+[data-theme="dark"] .detail-graph-links line {
+  stroke-opacity: 0.35;
+}
+
+/* エッジモードチェックボックスのバッジラベル */
+.dark-mode .detail-edge-label,
+[data-theme="dark"] .detail-edge-label {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  border-color: var(--dm-border) !important;
+  color: var(--dm-text-100) !important;
+}
+
+/* ツールチップ */
+.dark-mode #detail-graph-tooltip,
+[data-theme="dark"] #detail-graph-tooltip {
+  background: var(--dm-card);
+  border: 1px solid var(--dm-border);
+  color: var(--dm-text-100);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ローディングスピナー領域 */
+.dark-mode #detail-graph-loading,
+[data-theme="dark"] #detail-graph-loading {
+  background-color: var(--dm-card);
+}
