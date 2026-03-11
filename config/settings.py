@@ -742,4 +742,4 @@ Q_CLUSTER = {
     'orm': 'default',
 }
 
-STATIC_VERSION = '1.0.20'
+STATIC_VERSION = '1.0.21'
