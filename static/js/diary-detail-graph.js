@@ -159,7 +159,9 @@
         .selectAll('g')
         .data(nodes)
         .join('g')
-          .attr('class', 'detail-graph-node')
+          .attr('class', d =>
+            'detail-graph-node' + (d.id === this.focalId ? ' focal-node' : '')
+          )
           .style('cursor', d =>
             d.id === this.focalId ? 'default' : (d.node_type === 'diary' ? 'pointer' : 'default')
           )
