@@ -738,8 +738,13 @@
    ======================================== */
 @media (max-width: 991px) {
   html {
-    scroll-snap-type: y proximity;
+    scroll-snap-type: y mandatory;
     scroll-behavior: smooth;
+  }
+  /* bodyをスナップポイントにすることで、ページ最上部（フィルターエリア）を
+     mandatory時でも確実にたどり着けるスナップ位置として登録する */
+  body {
+    scroll-snap-align: start;
   }
   .diary-article {
     scroll-snap-align: start;
