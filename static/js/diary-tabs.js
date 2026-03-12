@@ -22,11 +22,11 @@ document.addEventListener('click', function(e) {
   tabBtn.classList.add('active');
   tabBtn.setAttribute('aria-selected', 'true');
 
-  // 取引・継続タブでは画像を非表示にして表示領域を最大化
+  // 取引・継続タブでは画像を折りたたんで表示領域を最大化
   const figure = article.querySelector('.diary-figure');
   if (figure) {
     const isContentTab = targetId.includes('notes') || targetId.includes('transactions');
-    figure.style.display = isContentTab ? 'none' : '';
+    figure.classList.toggle('figure-collapsed', isContentTab);
   }
 
   const targetPanel = document.getElementById(targetId);
