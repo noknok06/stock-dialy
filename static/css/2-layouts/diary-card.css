@@ -11,6 +11,11 @@
   overflow: hidden;
 }
 
+/* カード本文ラッパー（モバイルでの高さ制限対象） */
+.card-body-inner {
+  position: relative;
+}
+
 .diary-article:last-child {
   border-bottom: none;
 }
@@ -495,6 +500,34 @@
 [data-theme="dark"] .view-detail,
 [data-theme="dark"] .read-more {
   color: var(--accent-100);
+}
+
+/* ========================================
+   カード高さ制限（モバイル）
+   ======================================== */
+
+@media (max-width: 767px) {
+  .card-body-inner {
+    max-height: 80dvh;
+    overflow: hidden;
+  }
+
+  /* はみ出し時のグラデーションフェード */
+  .diary-article.card-truncated .card-body-inner::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: linear-gradient(to bottom, transparent, var(--bg-100));
+    pointer-events: none;
+  }
+}
+
+.dark-mode .diary-article.card-truncated .card-body-inner::after,
+[data-theme="dark"] .diary-article.card-truncated .card-body-inner::after {
+  background: linear-gradient(to bottom, transparent, var(--dm-background, #1a1a1a));
 }
 
 /* ========================================

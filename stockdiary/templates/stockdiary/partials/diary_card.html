@@ -2,7 +2,9 @@
 {% load humanize %}
 
 <article class="diary-article" data-diary-id="{{ diary.id }}">
-  
+
+  <div class="card-body-inner">
+
   <!-- ========== ヘッダー部分 ========== -->
   <header class="diary-header">
     <div class="diary-title-row">
@@ -139,11 +141,13 @@
 
   </div>
 
+  </div><!-- /.card-body-inner -->
+
   <!-- ========== フッター ========== -->
   <footer class="diary-footer">
     <a href="{% url 'stockdiary:detail' diary.id %}" class="view-detail">
       <i class="bi bi-box-arrow-up-right"></i>
-      詳細を見る
+      <span class="view-detail-label">詳細を見る</span>
     </a>
   </footer>
 

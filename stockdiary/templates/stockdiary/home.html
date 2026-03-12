@@ -1456,8 +1456,29 @@ document.addEventListener('DOMContentLoaded', function() {
       setTimeout(setupTagClickHandlers, 100);
     }
   });
-  
+
   setupTagClickHandlers();
+});
+
+// カード高さ制限: はみ出し検出 → 「続きを読む」表示
+function applyCardTruncation() {
+  if (window.innerWidth >= 768) return;
+  document.querySelectorAll('.card-body-inner').forEach(inner => {
+    const article = inner.closest('.diary-article');
+    if (!article) return;
+    if (inner.scrollHeight > inner.clientHeight + 2) {
+      article.classList.add('card-truncated');
+      const label = article.querySelector('.view-detail-label');
+      if (label) label.textContent = '続きを読む';
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', applyCardTruncation);
+document.body.addEventListener('htmx:afterSwap', function(event) {
+  if (event.detail.target.id === 'diary-container') {
+    setTimeout(applyCardTruncation, 50);
+  }
 });
 </script>
 {% endblock %}
