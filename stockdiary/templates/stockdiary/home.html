@@ -731,6 +731,20 @@
   background: linear-gradient(135deg, var(--dm-primary), var(--dm-primary-hover));
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
+
+/* ========================================
+   カードスクロールスナップ（モバイル）
+   一覧で次のカードにスムーズに移れる
+   ======================================== */
+@media (max-width: 991px) {
+  html {
+    scroll-snap-type: y proximity;
+  }
+  .diary-article {
+    scroll-snap-align: start;
+    scroll-margin-top: 0.5rem;
+  }
+}
 </style>
 {% endblock %}
 
