@@ -29,8 +29,8 @@
   --at-border: var(--bg-300);
   --at-border-light: var(--bg-200);
 
-  --at-primary: var(--accent-200);
-  --at-primary-dark: var(--accent-100);
+  --at-primary: var(--primary-600, #4072B3);
+  --at-primary-dark: var(--primary-700, #2d5a8a);
   --at-success: #10b981;
   --at-warning: #f59e0b;
   --at-danger: #ef4444;
@@ -143,7 +143,7 @@
 
 /* ========== Report Header ========== */
 .at-report-header {
-  background: linear-gradient(135deg, var(--dm-primary), #2563eb);
+  background: linear-gradient(135deg, var(--primary-700, #2d5a8a), var(--primary-600, #4072B3));
   color: white;
   padding: 1.25rem 1rem;
   border-radius: 12px;
@@ -1134,6 +1134,93 @@
 .at-btn-icon.danger:hover {
   background-color: rgba(239, 68, 68, 0.1);
   border-color: var(--at-danger);
+}
+
+/* ========================================
+   Score Display - 財務・感情分析結果で共有
+   ======================================== */
+.score-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 180px;
+  aspect-ratio: 1;
+  border-radius: var(--radius-xl, 1rem);
+  margin: 0 auto;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.score-number {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+  color: white;
+}
+
+.score-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.score-positive {
+  background: linear-gradient(135deg, var(--success-500, #10b981), var(--success-600, #059669));
+}
+
+.score-negative {
+  background: linear-gradient(135deg, var(--danger-500, #ef4444), var(--danger-600, #dc2626));
+}
+
+/* ========================================
+   Analysis Card - 分析結果カードの統一スタイル
+   ======================================== */
+.analysis-card.card {
+  border: 1px solid var(--gray-100, #f3f4f6);
+  border-radius: var(--radius-xl, 1rem);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.analysis-card .card-header {
+  background: var(--primary-50, #f0f5fa);
+  border-bottom: 1px solid var(--primary-100, #dce7f4);
+  border-left: 4px solid var(--primary-600, #4072B3);
+  padding: 1rem 1.25rem;
+}
+
+.analysis-card .card-header h5,
+.analysis-card .card-header h6 {
+  color: var(--primary-700, #2d5a8a);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ========================================
+   Document Header - 書類詳細ヘッダー（ブランドカラー統一）
+   ======================================== */
+.document-header {
+  background: linear-gradient(135deg, var(--primary-700, #2d5a8a) 0%, var(--primary-600, #4072B3) 60%, var(--primary-500, #6088C6) 100%);
+  color: white;
+  padding: 2rem 1.5rem;
+  border-radius: var(--radius-2xl, 1.5rem);
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .document-header {
+    padding: 2.5rem 2rem;
+  }
 }
 
 /* ========== Print Styles ========== */
