@@ -29,9 +29,20 @@ document.addEventListener('click', function(e) {
     figure.classList.toggle('figure-collapsed', isContentTab);
   }
 
+  // すべてのパネルのスクロールクラスをリセット
+  article.querySelectorAll('.tab-panel').forEach(panel => {
+    panel.classList.remove('panel-scrollable');
+  });
+
   const targetPanel = document.getElementById(targetId);
   if (targetPanel) {
     targetPanel.style.display = 'block';
+
+    // 継続・取引タブではパネルをスクロール可能に
+    const isContentTab = targetId.includes('notes') || targetId.includes('transactions');
+    if (isContentTab) {
+      targetPanel.classList.add('panel-scrollable');
+    }
 
     // 遅延ロード（HTMXが利用可能な場合）
     if (!isLoaded && diaryId && typeof htmx !== 'undefined') {
