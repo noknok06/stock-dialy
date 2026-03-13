@@ -980,6 +980,70 @@
   </div>
 </div>
 
+<!-- ========== クイックメモ追加シート ========== -->
+<div class="bottom-sheet" id="quickNoteSheet" aria-hidden="true">
+  <div class="bottom-sheet-backdrop"></div>
+  <div class="bottom-sheet-content" style="max-height: 60vh;">
+    <div class="bottom-sheet-handle"></div>
+    <div class="bottom-sheet-header" style="padding: 0.75rem 1rem;">
+      <h3 class="m-0" style="font-size: 1rem;">継続メモを追加</h3>
+      <button type="button" class="btn-close ms-auto" aria-label="閉じる">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="bottom-sheet-body" style="padding: 1rem;">
+      <div id="quickNoteStockName" class="text-muted mb-2" style="font-size: 0.875rem;"></div>
+      <textarea id="quickNoteContent"
+                class="form-control"
+                rows="4"
+                placeholder="気づいたことや変化を記録..."
+                maxlength="1000"
+                style="resize: none; font-size: 0.9375rem;"></textarea>
+      <div class="d-flex gap-2 mt-3">
+        <button type="button" id="quickNoteSubmit" class="btn btn-primary flex-fill">
+          <i class="bi bi-check-lg me-1"></i>保存する
+        </button>
+        <button type="button" class="btn btn-outline-secondary quick-note-cancel">
+          キャンセル
+        </button>
+      </div>
+      <div id="quickNoteError" class="text-danger mt-2" style="font-size: 0.875rem; display: none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 削除確認シート ========== -->
+<div class="bottom-sheet" id="deleteConfirmSheet" aria-hidden="true">
+  <div class="bottom-sheet-backdrop"></div>
+  <div class="bottom-sheet-content" style="max-height: 40vh;">
+    <div class="bottom-sheet-handle"></div>
+    <div class="bottom-sheet-header" style="padding: 0.75rem 1rem;">
+      <h3 class="m-0" style="font-size: 1rem;">日記を削除</h3>
+      <button type="button" class="btn-close ms-auto" aria-label="閉じる">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="bottom-sheet-body" style="padding: 1rem;">
+      <p class="mb-1" style="font-size: 0.9375rem;">
+        <strong id="deleteConfirmStockName"></strong> の日記を削除しますか？
+      </p>
+      <p class="text-muted mb-3" style="font-size: 0.875rem;">この操作は取り消せません。</p>
+      <div class="d-flex gap-2">
+        <button type="button" id="deleteConfirmBtn"
+                class="btn btn-danger flex-fill"
+                hx-method="post"
+                hx-target="closest .diary-article"
+                hx-swap="outerHTML swap:0.3s">
+          <i class="bi bi-trash me-1"></i>削除する
+        </button>
+        <button type="button" class="btn btn-outline-secondary delete-confirm-cancel">
+          キャンセル
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -1681,6 +1745,228 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
   });
 
   document.addEventListener('DOMContentLoaded', setupDiaryModalLinks);
+})();
+
+// ========== カードスワイプアクション ==========
+(function() {
+  'use strict';
+
+  var quickNoteSheetInstance = null;
+  var deleteConfirmSheetInstance = null;
+  var currentSwipeDiaryId = null;
+  var currentSwipeDiaryName = null;
+
+  function getQuickNoteSheet() {
+    if (!quickNoteSheetInstance) {
+      quickNoteSheetInstance = new BottomSheet('quickNoteSheet', {
+        closeOnBackdrop: true,
+        enableDrag: true,
+        onClose: function() {
+          document.getElementById('quickNoteContent').value = '';
+          document.getElementById('quickNoteError').style.display = 'none';
+        }
+      });
+    }
+    return quickNoteSheetInstance;
+  }
+
+  function getDeleteConfirmSheet() {
+    if (!deleteConfirmSheetInstance) {
+      deleteConfirmSheetInstance = new BottomSheet('deleteConfirmSheet', {
+        closeOnBackdrop: true,
+        enableDrag: true
+      });
+    }
+    return deleteConfirmSheetInstance;
+  }
+
+  function openQuickNoteSheet(diaryId, diaryName) {
+    currentSwipeDiaryId = diaryId;
+    currentSwipeDiaryName = diaryName;
+    var nameEl = document.getElementById('quickNoteStockName');
+    if (nameEl) nameEl.textContent = diaryName || '';
+    getQuickNoteSheet().open();
+    setTimeout(function() {
+      var ta = document.getElementById('quickNoteContent');
+      if (ta) ta.focus();
+    }, 350);
+  }
+
+  function openDeleteConfirmSheet(diaryId, diaryName) {
+    currentSwipeDiaryId = diaryId;
+    currentSwipeDiaryName = diaryName;
+    var nameEl = document.getElementById('deleteConfirmStockName');
+    if (nameEl) nameEl.textContent = diaryName || '';
+    var btn = document.getElementById('deleteConfirmBtn');
+    if (btn) {
+      btn.setAttribute('hx-action', '/stockdiary/' + diaryId + '/delete/');
+      btn.dataset.diaryId = diaryId;
+    }
+    getDeleteConfirmSheet().open();
+  }
+
+  // クイックメモ保存
+  document.addEventListener('click', function(e) {
+    if (e.target && e.target.id === 'quickNoteSubmit') {
+      var content = document.getElementById('quickNoteContent').value.trim();
+      var errEl = document.getElementById('quickNoteError');
+      if (!content) {
+        errEl.textContent = '内容を入力してください';
+        errEl.style.display = '';
+        return;
+      }
+      var btn = document.getElementById('quickNoteSubmit');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>保存中...';
+
+      fetch('/stockdiary/quick/' + currentSwipeDiaryId + '/note/', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: 'content=' + encodeURIComponent(content) + '&note_type=other&importance=medium'
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success) {
+          getQuickNoteSheet().close();
+          // カードのカウントバッジを更新
+          var card = document.querySelector('[data-diary-id="' + currentSwipeDiaryId + '"]');
+          if (card) {
+            var noteBadge = card.querySelector('.diary-count-badge .bi-journals');
+            if (noteBadge) {
+              var badge = noteBadge.closest('.diary-count-badge');
+              var cur = parseInt(badge.textContent.trim()) || 0;
+              badge.innerHTML = '<i class="bi bi-journals"></i> ' + (cur + 1);
+            } else {
+              var metaRow = card.querySelector('.diary-meta-row');
+              if (metaRow) {
+                var newBadge = document.createElement('span');
+                newBadge.className = 'diary-count-badge';
+                newBadge.innerHTML = '<i class="bi bi-journals"></i> 1';
+                metaRow.appendChild(newBadge);
+              }
+            }
+          }
+        } else {
+          errEl.textContent = data.message || 'エラーが発生しました';
+          errEl.style.display = '';
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>保存する';
+        }
+      })
+      .catch(function() {
+        errEl.textContent = '通信エラーが発生しました';
+        errEl.style.display = '';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>保存する';
+      });
+    }
+  });
+
+  // キャンセルボタン
+  document.addEventListener('click', function(e) {
+    if (e.target && e.target.closest('.quick-note-cancel')) getQuickNoteSheet().close();
+    if (e.target && e.target.closest('.delete-confirm-cancel')) getDeleteConfirmSheet().close();
+  });
+
+  // 削除実行
+  document.addEventListener('click', function(e) {
+    var btn = e.target && e.target.closest('#deleteConfirmBtn');
+    if (!btn) return;
+    e.preventDefault();
+    var diaryId = btn.dataset.diaryId;
+    if (!diaryId) return;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>削除中...';
+
+    fetch('/stockdiary/' + diaryId + '/delete/', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: '_method=DELETE'
+    })
+    .then(function(r) {
+      if (r.ok || r.redirected) {
+        getDeleteConfirmSheet().close();
+        var card = document.querySelector('[data-diary-id="' + diaryId + '"]');
+        if (card) {
+          card.style.transition = 'opacity 0.3s, transform 0.3s';
+          card.style.opacity = '0';
+          card.style.transform = 'translateX(-100%)';
+          setTimeout(function() { card.remove(); }, 300);
+        }
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-trash me-1"></i>削除する';
+      }
+    })
+    .catch(function() {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-trash me-1"></i>削除する';
+    });
+  });
+
+  // スワイプ検出
+  function bindCardSwipe(scope) {
+    var cards = (scope || document).querySelectorAll('.diary-article:not([data-swipe-bound])');
+    cards.forEach(function(card) {
+      card.dataset.swipeBound = '1';
+      var startX = 0, startY = 0, moved = false;
+
+      card.addEventListener('touchstart', function(e) {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        moved = false;
+      }, { passive: true });
+
+      card.addEventListener('touchmove', function(e) {
+        var dx = e.touches[0].clientX - startX;
+        var dy = e.touches[0].clientY - startY;
+        if (Math.abs(dy) > Math.abs(dx) * 0.8) return; // 縦スクロール優先
+        moved = true;
+        if (dx > 30) {
+          card.classList.add('swipe-hint-right');
+          card.classList.remove('swipe-hint-left');
+        } else if (dx < -30) {
+          card.classList.add('swipe-hint-left');
+          card.classList.remove('swipe-hint-right');
+        } else {
+          card.classList.remove('swipe-hint-right', 'swipe-hint-left');
+        }
+      }, { passive: true });
+
+      card.addEventListener('touchend', function(e) {
+        card.classList.remove('swipe-hint-right', 'swipe-hint-left');
+        if (!moved) return;
+        var dx = e.changedTouches[0].clientX - startX;
+        var dy = e.changedTouches[0].clientY - startY;
+        if (Math.abs(dy) > Math.abs(dx) * 0.8) return;
+        if (Math.abs(dx) < 60) return;
+
+        var diaryId = card.dataset.diaryId;
+        var nameEl = card.querySelector('.diary-name a');
+        var diaryName = nameEl ? nameEl.textContent.trim() : '';
+
+        if (dx > 60) {
+          openQuickNoteSheet(diaryId, diaryName);
+        } else if (dx < -60) {
+          openDeleteConfirmSheet(diaryId, diaryName);
+        }
+      }, { passive: true });
+    });
+  }
+
+  document.body.addEventListener('htmx:afterSwap', function(event) {
+    if (event.detail.target.id === 'diary-container') {
+      setTimeout(function() { bindCardSwipe(); }, 100);
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', function() { bindCardSwipe(); });
 })();
 </script>
 {% endblock %}

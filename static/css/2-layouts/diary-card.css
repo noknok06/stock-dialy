@@ -368,6 +368,74 @@
   font-size: 0.875rem;
 }
 
+/* ========== Count Badges (in meta row) ========== */
+.diary-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  background: var(--bg-200);
+  color: var(--text-200);
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border: 1px solid var(--bg-300);
+}
+
+.diary-count-badge i {
+  font-size: 0.75rem;
+}
+
+.dark-mode .diary-count-badge,
+[data-theme="dark"] .diary-count-badge {
+  background: rgba(182, 204, 216, 0.1);
+  color: var(--dm-muted-foreground);
+  border-color: var(--dm-border);
+}
+
+/* ========== Reason Text (no tab wrapper) ========== */
+.diary-reason-text {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--text-100);
+  margin-bottom: 0.75rem;
+}
+
+.diary-reason-text p {
+  margin-bottom: 0.75rem;
+}
+
+.diary-reason-text p:last-child {
+  margin-bottom: 0;
+}
+
+.dark-mode .diary-reason-text,
+[data-theme="dark"] .diary-reason-text {
+  color: var(--dm-foreground);
+}
+
+@media (min-width: 768px) {
+  .diary-reason-text {
+    font-size: 1rem;
+  }
+}
+
+/* ========== Swipe Feedback ========== */
+.diary-article {
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.diary-article.swipe-hint-right {
+  background: rgba(16, 185, 129, 0.08);
+  transition: background 0.15s ease;
+}
+
+.diary-article.swipe-hint-left {
+  background: rgba(239, 68, 68, 0.08);
+  transition: background 0.15s ease;
+}
+
 /* ========== Footer ========== */
 .diary-footer {
   margin-top: 1rem;
