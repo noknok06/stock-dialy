@@ -14,10 +14,6 @@
 <!-- コンポーネントCSS -->
 <link rel="stylesheet" href="{% static 'css/3-components/components.css' %}?v={{ STATIC_VERSION }}">
 <link rel="stylesheet" href="{% static 'css/3-components/dark-mode-components.css' %}?v={{ STATIC_VERSION }}">
-<!-- 日記詳細モーダル用CSS -->
-<link rel="stylesheet" href="{% static 'css/diary-theme.css' %}?v={{ STATIC_VERSION }}">
-<link rel="stylesheet" href="{% static 'css/diary-detail.css' %}?v={{ STATIC_VERSION }}">
-<link rel="stylesheet" href="{% static 'css/mobile-friendly.css' %}?v={{ STATIC_VERSION }}">
 
 <style>
 /* ========== 検索フォーム ========== */
@@ -951,38 +947,6 @@
 {% endif %}
 
 {% include 'speed_dial.html' with actions=form_actions %}
-
-<!-- ========== 日記詳細モーダル ========== -->
-<div class="modal fade" id="diaryDetailModal" tabindex="-1"
-     aria-labelledby="diaryDetailModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-fullscreen-md-down modal-dialog-scrollable">
-    <div class="modal-content">
-
-      <!-- モーダルヘッダー -->
-      <div class="modal-header" id="diaryDetailModalHeader" style="border-bottom: 1px solid var(--border-color); padding: 0.75rem 1rem;">
-        <div class="d-flex align-items-center gap-2 flex-grow-1 min-width-0">
-          <h5 class="modal-title text-truncate" id="diaryDetailModalLabel" style="font-size: 1rem; margin: 0;"></h5>
-        </div>
-        <div class="d-flex align-items-center gap-1 ms-2 flex-shrink-0" id="diaryDetailModalActions">
-          <!-- 編集・削除・詳細ページリンクはJS で動的に挿入 -->
-        </div>
-        <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="閉じる"></button>
-      </div>
-
-      <!-- モーダルボディ -->
-      <div class="modal-body" id="diaryDetailModalBody" style="padding: 0;">
-        <!-- ローディングスピナー -->
-        <div id="diaryDetailModalLoading" class="d-flex justify-content-center align-items-center" style="min-height: 300px;">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">読み込み中...</span>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div>
-
 {% endblock %}
 
 {% block extra_js %}
@@ -1523,122 +1487,5 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
     setTimeout(applyCardTruncation, 50);
   }
 });
-
-// ========== 日記詳細モーダル ==========
-(function() {
-  'use strict';
-
-  var diaryDetailModal = null;
-  var listUrl = window.location.href.split('?')[0];
-
-  function getModal() {
-    if (!diaryDetailModal) {
-      var el = document.getElementById('diaryDetailModal');
-      if (el) {
-        diaryDetailModal = new bootstrap.Modal(el, { backdrop: true, keyboard: true });
-        el.addEventListener('hidden.bs.modal', function() {
-          // URL を一覧に戻す
-          history.pushState(null, '', listUrl);
-          // ボディをリセット（次回用）
-          var body = document.getElementById('diaryDetailModalBody');
-          body.innerHTML = '<div id="diaryDetailModalLoading" class="d-flex justify-content-center align-items-center" style="min-height:300px;"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">読み込み中...</span></div></div>';
-          document.getElementById('diaryDetailModalLabel').textContent = '';
-          document.getElementById('diaryDetailModalActions').innerHTML = '';
-        });
-      }
-    }
-    return diaryDetailModal;
-  }
-
-  function openDiaryModal(diaryId, diaryName) {
-    var modal = getModal();
-    if (!modal) return;
-
-    // URL を詳細ページに更新
-    var detailUrl = '/stockdiary/' + diaryId + '/';
-    history.pushState(null, '', detailUrl);
-
-    // ヘッダーにタイトルとアクションボタンを設定
-    document.getElementById('diaryDetailModalLabel').textContent = diaryName || '';
-    document.getElementById('diaryDetailModalActions').innerHTML =
-      '<a href="' + detailUrl + 'update/" class="btn-icon btn-success-icon btn--sm" title="編集"><i class="bi bi-pencil"></i></a>' +
-      '<a href="' + detailUrl + '" class="btn-icon btn--sm" title="詳細ページを開く" target="_blank" style="background:var(--bg-200);color:var(--text-100);"><i class="bi bi-box-arrow-up-right"></i></a>';
-
-    modal.show();
-
-    // HTMX で詳細コンテンツを取得
-    htmx.ajax('GET', detailUrl, {
-      target: '#diaryDetailModalBody',
-      swap: 'innerHTML',
-      headers: { 'HX-Request': 'true' }
-    }).then(function() {
-      // Bootstrap タブを初期化（モーダル内の要素）
-      var tabs = document.querySelectorAll('#diaryDetailModal [data-bs-toggle="tab"]');
-      tabs.forEach(function(tab) {
-        tab.addEventListener('click', function(e) {
-          e.preventDefault();
-          var target = document.querySelector(tab.getAttribute('data-bs-target'));
-          if (!target) return;
-          // 既存アクティブを解除
-          document.querySelectorAll('#diaryDetailModal .improved-tab-link').forEach(function(t) {
-            t.classList.remove('active');
-            t.setAttribute('aria-selected', 'false');
-          });
-          document.querySelectorAll('#diaryDetailModal .tab-pane').forEach(function(p) {
-            p.classList.remove('show', 'active');
-          });
-          tab.classList.add('active');
-          tab.setAttribute('aria-selected', 'true');
-          target.classList.add('show', 'active');
-        });
-      });
-
-      // モーダル内の diary-modal-link にもイベントを設定
-      setupModalInnerLinks();
-    });
-  }
-
-  function setupModalInnerLinks() {
-    document.querySelectorAll('#diaryDetailModal .diary-modal-link').forEach(function(link) {
-      link.addEventListener('click', function(e) {
-        e.preventDefault();
-        var diaryId = this.dataset.diaryId;
-        var diaryName = this.dataset.diaryName || this.textContent.trim();
-        if (diaryId) openDiaryModal(diaryId, diaryName);
-      });
-    });
-  }
-
-  // ページ内の diary-modal-link をモーダル起動に接続
-  function setupDiaryModalLinks() {
-    document.querySelectorAll('.diary-modal-link').forEach(function(link) {
-      if (link.dataset.modalBound) return;
-      link.dataset.modalBound = '1';
-      link.addEventListener('click', function(e) {
-        e.preventDefault();
-        var diaryId = this.dataset.diaryId;
-        var diaryName = this.dataset.diaryName || this.textContent.trim();
-        if (diaryId) openDiaryModal(diaryId, diaryName);
-      });
-    });
-  }
-
-  // HTMX で一覧が更新された後にも再バインド
-  document.body.addEventListener('htmx:afterSwap', function(event) {
-    if (event.detail.target.id === 'diary-container') {
-      setTimeout(setupDiaryModalLinks, 100);
-    }
-  });
-
-  // ブラウザ「戻る」ボタンでモーダルを閉じる
-  window.addEventListener('popstate', function() {
-    var modal = getModal();
-    if (modal && document.getElementById('diaryDetailModal').classList.contains('show')) {
-      modal.hide();
-    }
-  });
-
-  document.addEventListener('DOMContentLoaded', setupDiaryModalLinks);
-})();
 </script>
 {% endblock %}
