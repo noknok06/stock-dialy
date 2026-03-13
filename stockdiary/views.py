@@ -588,6 +588,11 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
     context_object_name = 'diary'
     redirect_url = 'stockdiary:home'
     not_found_message = "日記エントリーが見つかりません。削除された可能性があります。"
+
+    def get_template_names(self):
+        if self.request.headers.get('HX-Request'):
+            return ['stockdiary/partials/diary_detail_modal_content.html']
+        return [self.template_name]
     
     def get_queryset(self):
         return StockDiary.objects.filter(user=self.request.user).select_related('user').prefetch_related(

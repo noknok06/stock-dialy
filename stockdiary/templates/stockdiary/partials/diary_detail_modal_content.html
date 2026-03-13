@@ -1,0 +1,334 @@
+{% load stockdiary_filters %}
+{% load humanize %}
+
+<div class="diary-detail-modal-inner">
+
+  <!-- ========== ヘッダー ========== -->
+  <div class="diary-header-improved mobile-optimized" data-stock-symbol="{{ diary.stock_symbol }}">
+    <div class="header-main-info">
+      <div class="stock-identity">
+        <div class="stock-name-row">
+          <h2 class="stock-title" style="font-size:1.4rem;">{{ diary.stock_name }}</h2>
+          {% if diary.stock_symbol %}
+          <span class="stock-symbol-badge">{{ diary.stock_symbol }}</span>
+          {% endif %}
+        </div>
+
+        <div class="header-meta-info">
+          <div class="purchase-date">
+            {% include "stockdiary/components/_date_display.html" with date=diary.first_purchase_date|default:diary.created_at icon="bi-calendar-check" %}
+            {% if not diary.first_purchase_date %}
+            <span class="text-muted">（作成日）</span>
+            {% endif %}
+          </div>
+          <div class="status-badges">
+            {% include "stockdiary/components/_status_badge.html" with diary=diary %}
+          </div>
+        </div>
+      </div>
+
+      <!-- 価格サマリー -->
+      {% if not diary.is_memo and diary.average_purchase_price %}
+      <div class="price-summary">
+        {% if diary.realized_profit != 0 %}
+        <div class="profit-hero-card {% if diary.realized_profit < 0 %}loss{% endif %}">
+          <div class="profit-label">評価損益</div>
+          <div class="profit-value">
+            <span class="profit-icon">{% if diary.realized_profit > 0 %}↗{% else %}↘{% endif %}</span>
+            <span>{{ diary.realized_profit|floatformat:0|intcomma }}</span>
+            <span class="profit-unit">円</span>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="price-details-grid">
+          <div class="price-detail-card">
+            <div class="price-detail-label">平均取得単価</div>
+            <div class="price-detail-value">
+              {{ diary.average_purchase_price|floatformat:2|intcomma }}<span class="unit">円</span>
+            </div>
+          </div>
+          {% if diary.current_quantity > 0 %}
+          <div class="price-detail-card">
+            <div class="price-detail-label">保有数量</div>
+            <div class="price-detail-value">
+              {{ diary.current_quantity|floatformat:0 }}<span class="unit">株</span>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ========== タブナビゲーション ========== -->
+  <div class="tabs-section mobile-optimized">
+    <ul class="improved-tabs mobile-optimized" id="diaryDetailTabs" role="tablist">
+      <li class="improved-tab-item" role="presentation">
+        <button class="improved-tab-link active" id="modal-basic-tab"
+                data-bs-toggle="tab" data-bs-target="#modal-basic-content"
+                type="button" role="tab" aria-controls="modal-basic-content" aria-selected="true">
+          <div class="tab-icon"><i class="bi bi-info-circle"></i></div>
+          <div class="tab-label">基本情報</div>
+        </button>
+      </li>
+      <li class="improved-tab-item" role="presentation">
+        <button class="improved-tab-link" id="modal-transactions-tab"
+                data-bs-toggle="tab" data-bs-target="#modal-transactions-content"
+                type="button" role="tab" aria-controls="modal-transactions-content" aria-selected="false">
+          <div class="tab-icon">
+            <i class="bi bi-receipt"></i>
+            {% if diary.transaction_count > 0 %}
+            {% include "stockdiary/components/_badge.html" with type="info" text=diary.transaction_count size="sm" %}
+            {% endif %}
+          </div>
+          <div class="tab-label">取引履歴</div>
+        </button>
+      </li>
+      <li class="improved-tab-item" role="presentation">
+        <button class="improved-tab-link" id="modal-notes-tab"
+                data-bs-toggle="tab" data-bs-target="#modal-notes-content"
+                type="button" role="tab" aria-controls="modal-notes-content" aria-selected="false">
+          <div class="tab-icon">
+            <i class="bi bi-journal-richtext"></i>
+            {% if notes.count > 0 %}
+            {% include "stockdiary/components/_badge.html" with type="info" text=notes.count size="sm" %}
+            {% endif %}
+          </div>
+          <div class="tab-label">継続記録</div>
+        </button>
+      </li>
+      {% if related_diaries %}
+      <li class="improved-tab-item" role="presentation">
+        <button class="improved-tab-link" id="modal-timeline-tab"
+                data-bs-toggle="tab" data-bs-target="#modal-timeline-content"
+                type="button" role="tab" aria-controls="modal-timeline-content" aria-selected="false">
+          <div class="tab-icon">
+            <i class="bi bi-link-45deg"></i>
+            {% include "stockdiary/components/_badge.html" with type="info" text=related_diaries.count size="sm" %}
+          </div>
+          <div class="tab-label">タイムライン</div>
+        </button>
+      </li>
+      {% endif %}
+    </ul>
+
+    <!-- タブコンテンツ -->
+    <div class="tab-content tab-content-improved mobile-optimized" id="diaryDetailTabContent">
+
+      <!-- 基本情報タブ -->
+      <div class="tab-pane fade show active" id="modal-basic-content" role="tabpanel" aria-labelledby="modal-basic-tab">
+        {% if diary.image_url %}
+        <div class="diary-image-section fade-in">
+          <div class="card border-0">
+            <div class="card-body p-2">
+              <div class="text-center">
+                <img src="{{ diary.image_url }}"
+                     class="img-fluid rounded diary-main-image"
+                     alt="{{ diary.stock_name }}の画像"
+                     loading="lazy"
+                     onclick="showImageModal('{{ diary.image_url }}', '{{ diary.stock_name|escapejs }}')">
+                <div class="mt-2">
+                  <small class="text-muted"><i class="bi bi-image me-1"></i>クリックで拡大表示</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="info-grid mobile-optimized fade-in">
+          <!-- 投資理由/メモ -->
+          <div class="info-card mobile-optimized">
+            <div class="info-card-title">
+              <i class="bi bi-journal-text"></i>
+              {% if diary.is_memo %}メモ内容{% else %}投資理由{% endif %}
+            </div>
+            <div class="reason-content mobile-optimized markdown-content">
+              {{ diary.reason|render_markdown_with_mentions:mention_map }}
+            </div>
+          </div>
+
+          <!-- 取引サマリー -->
+          {% if not diary.is_memo %}
+          <div class="info-card mobile-optimized">
+            <div class="info-card-title">
+              <i class="bi bi-graph-up"></i>
+              取引サマリー
+            </div>
+            <div class="info-items mobile-optimized">
+              <div class="info-item-improved mobile-optimized">
+                <div class="info-icon-improved"><i class="bi bi-calendar-date"></i></div>
+                <div class="info-content-improved">
+                  <div class="info-label-improved">最初の購入日</div>
+                  <div class="info-value-improved">
+                    {% include "stockdiary/components/_date_display.html" with date=diary.first_purchase_date show_icon=False %}
+                  </div>
+                </div>
+              </div>
+              <div class="info-item-improved mobile-optimized">
+                <div class="info-icon-improved"><i class="bi bi-currency-yen"></i></div>
+                <div class="info-content-improved">
+                  <div class="info-label-improved">平均取得単価</div>
+                  <div class="info-value-improved">
+                    {% include "stockdiary/components/_price_display.html" with price=diary.average_purchase_price %}
+                  </div>
+                </div>
+              </div>
+              <div class="info-item-improved mobile-optimized">
+                <div class="info-icon-improved"><i class="bi bi-graph-up"></i></div>
+                <div class="info-content-improved">
+                  <div class="info-label-improved">現在保有数</div>
+                  <div class="info-value-improved">{{ diary.current_quantity|floatformat:0 }}株</div>
+                </div>
+              </div>
+              {% if diary.realized_profit != 0 %}
+              <div class="info-item-improved mobile-optimized">
+                <div class="info-icon-improved"><i class="bi bi-piggy-bank"></i></div>
+                <div class="info-content-improved">
+                  <div class="info-label-improved">実現損益</div>
+                  <div class="info-value-improved">
+                    {% include "stockdiary/components/_profit_display.html" with profit=diary.realized_profit %}
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- タグとメモ -->
+        <div class="info-grid mobile-optimized fade-in">
+          <div class="info-card mobile-optimized">
+            <div class="info-card-title"><i class="bi bi-tags"></i> タグ</div>
+            {% for tag in diary.tags.all %}
+              {% include "stockdiary/components/_badge.html" with type="primary" text=tag.name icon="bi-tag-fill" extra_class="me-1 mb-1" %}
+            {% empty %}
+            <p class="text-muted mb-0">タグはありません</p>
+            {% endfor %}
+          </div>
+          <div class="info-card mobile-optimized">
+            <div class="info-card-title"><i class="bi bi-sticky"></i> メモ</div>
+            {% if diary.memo %}
+            <div class="memo-content">{{ diary.memo|linebreaks }}</div>
+            {% else %}
+            <p class="text-muted mb-0">メモはありません</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- 取引履歴タブ -->
+      <div class="tab-pane fade" id="modal-transactions-content" role="tabpanel" aria-labelledby="modal-transactions-tab">
+        {% include 'stockdiary/partials/tab_transactions.html' %}
+      </div>
+
+      <!-- 継続記録タブ -->
+      <div class="tab-pane fade" id="modal-notes-content" role="tabpanel" aria-labelledby="modal-notes-tab">
+        <div class="notes-list mobile-optimized">
+          {% for note in notes %}
+          <div class="note-card mobile-optimized fade-in">
+            <div class="note-card-header-modern">
+              <div class="note-header-left">
+                <div class="note-date-large">
+                  <span class="date-day">{{ note.date|date:"d" }}</span>
+                  <div class="date-year-month">
+                    <span class="date-year">{{ note.date|date:"Y" }}</span>
+                    <span class="date-month">{{ note.date|date:"m月" }}</span>
+                  </div>
+                </div>
+                <div class="note-meta-badges">
+                  {% include "stockdiary/components/_note_type_badge.html" with note_type=note.note_type %}
+                  {% include "stockdiary/components/_importance_badge.html" with importance=note.importance %}
+                </div>
+              </div>
+              <div class="note-header-right">
+                {% if note.current_price %}
+                <div class="price-info-compact">
+                  <div class="current-price">{{ note.current_price|floatformat:2|intcomma }}<span class="unit">円</span></div>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="note-card-body mobile-optimized">
+              {% if note.image_url %}
+              <div class="note-image mb-2">
+                <img src="{{ note.image_url }}"
+                     class="img-fluid rounded"
+                     alt="継続記録画像"
+                     loading="lazy"
+                     style="max-height: 200px; object-fit: cover; width: 100%; cursor: pointer;"
+                     onclick="showImageModal('{{ note.image_url }}', '{{ note.date|date:"Y年m月d日" }}の記録')">
+              </div>
+              {% endif %}
+              <div class="note-content-text markdown-content">{{ note.content|render_markdown_with_mentions:mention_map }}</div>
+            </div>
+          </div>
+          {% empty %}
+          {% include "stockdiary/components/_empty_state.html" with icon="bi-journal-text" title="継続記録はまだありません" description="詳細ページから記録を追加できます" %}
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- タイムラインタブ -->
+      {% if related_diaries %}
+      <div class="tab-pane fade" id="modal-timeline-content" role="tabpanel" aria-labelledby="modal-timeline-tab">
+        <div class="timeline-section mobile-optimized">
+          <h3 class="section-title mb-3">
+            <i class="bi bi-clock-history"></i>
+            {{ diary.stock_symbol }} の投資履歴
+          </h3>
+          <ol class="timeline-list mobile-optimized">
+            {% for timeline_diary in timeline_diaries %}
+            <li class="timeline-item mobile-optimized
+              {% if timeline_diary.sell_date %}sold
+              {% elif timeline_diary.is_memo or timeline_diary.purchase_price is None or timeline_diary.purchase_quantity is None %}memo
+              {% else %}active{% endif %}
+              {% if timeline_diary.id == diary.id %}current{% endif %}">
+
+              <div class="timeline-date mb-2">
+                {% include "stockdiary/components/_date_display.html" with date=timeline_diary.first_purchase_date %}
+                {% if timeline_diary.id == diary.id %}
+                  {% include "stockdiary/components/_badge.html" with type="warning" text="現在表示中" extra_class="ms-2" %}
+                {% endif %}
+              </div>
+
+              {% if timeline_diary.id == diary.id %}
+              <div class="timeline-card current mobile-optimized">
+                <div class="timeline-card-header">
+                  <h6>{{ timeline_diary.stock_name }}</h6>
+                </div>
+                <div class="timeline-content markdown-content">
+                  {{ timeline_diary.reason|render_markdown_with_mentions:mention_map|truncatewords_html:30 }}
+                </div>
+              </div>
+              {% else %}
+              <a href="{% url 'stockdiary:detail' timeline_diary.id %}"
+                 class="timeline-card mobile-optimized diary-modal-link"
+                 data-diary-id="{{ timeline_diary.id }}">
+                <div class="timeline-card-header">
+                  <h6>{{ timeline_diary.stock_name }}</h6>
+                </div>
+                {% if not timeline_diary.is_memo and timeline_diary.purchase_price is not None %}
+                <div class="timeline-price-info">
+                  {% include "stockdiary/components/_profit_display.html" with profit=timeline_diary.realized_profit %}
+                </div>
+                {% endif %}
+                <div class="timeline-content markdown-content">
+                  {{ timeline_diary.reason|render_markdown_with_mentions:mention_map|truncatewords_html:20 }}
+                </div>
+              </a>
+              {% endif %}
+            </li>
+            {% endfor %}
+          </ol>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>

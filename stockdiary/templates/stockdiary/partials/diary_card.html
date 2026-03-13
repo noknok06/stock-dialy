@@ -9,9 +9,12 @@
   <header class="diary-header">
     <div class="diary-title-row">
       <h3 class="diary-name">
-        <a href="{% url 'stockdiary:detail' diary.id %}">
+        <a href="{% url 'stockdiary:detail' diary.id %}"
+           class="diary-modal-link"
+           data-diary-id="{{ diary.id }}"
+           data-diary-name="{{ diary.stock_name|escapejs }}">
           {{ diary.stock_name }}
-        </a>        
+        </a>
         {% if diary.stock_symbol %}
           <span class="diary-code">{{ diary.stock_symbol }}</span>
         {% endif %}
@@ -107,7 +110,10 @@
         {% endif %}
       </div>
       {% if diary.reason|wordcount > 50 %}
-        <a href="{% url 'stockdiary:detail' diary.id %}" class="read-more">
+        <a href="{% url 'stockdiary:detail' diary.id %}"
+           class="read-more diary-modal-link"
+           data-diary-id="{{ diary.id }}"
+           data-diary-name="{{ diary.stock_name|escapejs }}">
           続きを読む →
         </a>
       {% endif %}
@@ -145,8 +151,11 @@
 
   <!-- ========== フッター ========== -->
   <footer class="diary-footer">
-    <a href="{% url 'stockdiary:detail' diary.id %}" class="view-detail">
-      <i class="bi bi-box-arrow-up-right"></i>
+    <a href="{% url 'stockdiary:detail' diary.id %}"
+       class="view-detail diary-modal-link"
+       data-diary-id="{{ diary.id }}"
+       data-diary-name="{{ diary.stock_name|escapejs }}">
+      <i class="bi bi-layout-text-window-reverse"></i>
       <span class="view-detail-label">詳細を見る</span>
     </a>
   </footer>
