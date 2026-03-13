@@ -1460,6 +1460,8 @@
 {{ block.super }}
 <!-- EasyMDE Markdown Editor -->
 <script src="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js"></script>
+<!-- @ハッシュタグ オートコンプリート -->
+<script src="{% static 'js/hashtag-autocomplete.js' %}"></script>
 <script>
 
 // ============================================
@@ -1885,6 +1887,12 @@ if (reasonTextareaEl) {
 
   window.window.easyMDE.codemirror.on('change', updateEasyMDECharCount);
   updateEasyMDECharCount();
+
+  // @ハッシュタグ オートコンプリート（投資仮説フィールド）
+  new HashtagMentionAutocomplete(
+    window.easyMDE.codemirror,
+    "{% url 'stockdiary:api_hashtags' %}"
+  );
 
   // ハッシュタグのハイライト表示（CodeMirrorカスタムモード）
   CodeMirror.defineMode("markdown-with-hashtags", function(config) {

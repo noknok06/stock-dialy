@@ -93,3 +93,71 @@
       background-color: rgba(74, 109, 167, 0.15);
     }
   }
+
+/* ============================================================
+   @ハッシュタグ オートコンプリート（HashtagMentionAutocomplete）
+   ============================================================ */
+
+.hashtag-autocomplete-dropdown {
+  position: fixed;       /* body に追加して fixed で位置決め */
+  z-index: 1050;
+  width: 220px;
+  max-height: 240px;
+  overflow-y: auto;
+  background-color: var(--bg-100);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  animation: fadeInDown 0.15s ease-out;
+}
+
+.hashtag-suggestion-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.88rem;
+  transition: background-color 0.12s;
+}
+
+.hashtag-suggestion-item:hover,
+.hashtag-suggestion-item.active {
+  background-color: rgba(74, 109, 167, 0.1);
+}
+
+.hashtag-at {
+  color: var(--primary-color, #4a6da7);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.hashtag-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hashtag-count {
+  margin-left: auto;
+  padding-left: 8px;
+  font-size: 0.72rem;
+  color: var(--text-muted, #888);
+  flex-shrink: 0;
+}
+
+/* スクロールバー */
+.hashtag-autocomplete-dropdown::-webkit-scrollbar { width: 4px; }
+.hashtag-autocomplete-dropdown::-webkit-scrollbar-track { background: var(--bg-200); }
+.hashtag-autocomplete-dropdown::-webkit-scrollbar-thumb {
+  background: var(--bg-300);
+  border-radius: 4px;
+}
+
+/* タッチデバイス */
+@media (hover: none) {
+  .hashtag-suggestion-item:active {
+    background-color: rgba(74, 109, 167, 0.15);
+  }
+}

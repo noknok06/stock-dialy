@@ -532,7 +532,7 @@ class DiaryNote(models.Model):
     """日記への継続的な追記"""
     diary = models.ForeignKey(StockDiary, on_delete=models.CASCADE, related_name='notes')
     date = models.DateField()
-    content = models.TextField(verbose_name='記録内容', blank=True, max_length=1000)
+    content = models.TextField(verbose_name='記録内容', blank=True, max_length=3000)
     current_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, 
                                        verbose_name='記録時点の価格')
     
@@ -568,8 +568,8 @@ class DiaryNote(models.Model):
     
     def clean(self):
         super().clean()
-        if self.content and len(self.content) > 1000:
-            raise ValidationError({'content': '記録内容は1000文字以内で入力してください'})
+        if self.content and len(self.content) > 3000:
+            raise ValidationError({'content': '記録内容は3000文字以内で入力してください'})
     
     def save(self, *args, **kwargs):
         self.full_clean()

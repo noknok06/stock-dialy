@@ -2088,6 +2088,8 @@
 <script src="{% static 'js/diary-detail-tabs.js' %}"></script>
 <script src="{% static 'js/notifications.js' %}"></script>
 <script src="{% static 'js/push-notification-ui.js' %}"></script>
+<!-- @ハッシュタグ オートコンプリート -->
+<script src="{% static 'js/hashtag-autocomplete.js' %}"></script>
 <!-- EasyMDE Markdown Editor (継続記録フォーム) -->
 <script src="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js"></script>
 <script>
@@ -2096,7 +2098,7 @@
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
 (function() {
-  const MAX_NOTE_LENGTH = 1000;
+  const MAX_NOTE_LENGTH = 3000;
   let noteEasyMDE = null;
 
   // EasyMDE ダークモード対応スタイル
@@ -2186,6 +2188,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 初期値を反映
     updateNoteCharCount(noteEasyMDE.value());
+
+    // @ハッシュタグ オートコンプリート（継続ノートフィールド）
+    new HashtagMentionAutocomplete(
+      noteEasyMDE.codemirror,
+      "{% url 'stockdiary:api_hashtags' %}"
+    );
   }
 
   function resetNoteEasyMDE() {
@@ -2856,7 +2864,7 @@ window.loadNotifications = loadNotifications;
             placeholder="状況の変化や新たな情報を記録しましょう"
           ></textarea>
           <div class="d-flex justify-content-end align-items-center mt-1">
-            <div class="character-count" id="noteContentCharCount">0 / 1000文字</div>
+            <div class="character-count" id="noteContentCharCount">0 / 3000文字</div>
           </div>
         </div>
 
