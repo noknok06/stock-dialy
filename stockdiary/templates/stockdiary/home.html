@@ -952,30 +952,33 @@
 
 {% include 'speed_dial.html' with actions=form_actions %}
 
-<!-- ========== 日記詳細ボトムシート ========== -->
-<div class="bottom-sheet" id="diaryDetailSheet" aria-hidden="true">
-  <div class="bottom-sheet-backdrop"></div>
-  <div class="bottom-sheet-content" style="max-height: 95vh; height: 95vh;">
-    <div class="bottom-sheet-handle" aria-label="シートを閉じるにはドラッグしてください"></div>
+<!-- ========== 日記詳細モーダル ========== -->
+<div class="modal fade" id="diaryDetailModal" tabindex="-1"
+     aria-labelledby="diaryDetailModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-fullscreen-md-down modal-dialog-scrollable">
+    <div class="modal-content">
 
-    <!-- シートヘッダー -->
-    <div class="bottom-sheet-header" style="padding: 0.75rem 1rem;">
-      <div style="flex: 1; min-width: 0; overflow: hidden;">
-        <h3 class="m-0 text-truncate" id="diaryDetailSheetTitle" style="font-size: 1rem;"></h3>
+      <!-- モーダルヘッダー -->
+      <div class="modal-header" id="diaryDetailModalHeader" style="border-bottom: 1px solid var(--border-color); padding: 0.75rem 1rem;">
+        <div class="d-flex align-items-center gap-2 flex-grow-1 min-width-0">
+          <h5 class="modal-title text-truncate" id="diaryDetailModalLabel" style="font-size: 1rem; margin: 0;"></h5>
+        </div>
+        <div class="d-flex align-items-center gap-1 ms-2 flex-shrink-0" id="diaryDetailModalActions">
+          <!-- 編集・削除・詳細ページリンクはJS で動的に挿入 -->
+        </div>
+        <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="閉じる"></button>
       </div>
-      <div class="d-flex align-items-center gap-1 ms-2 flex-shrink-0" id="diaryDetailSheetActions"></div>
-      <button type="button" class="btn-close ms-2" aria-label="閉じる">
-        <i class="bi bi-x-lg"></i>
-      </button>
-    </div>
 
-    <!-- シートボディ -->
-    <div class="bottom-sheet-body" id="diaryDetailSheetBody" style="flex: 1; overflow-y: auto; padding: 0;">
-      <div class="d-flex justify-content-center align-items-center" style="min-height: 300px;">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">読み込み中...</span>
+      <!-- モーダルボディ -->
+      <div class="modal-body" id="diaryDetailModalBody" style="padding: 0;">
+        <!-- ローディングスピナー -->
+        <div id="diaryDetailModalLoading" class="d-flex justify-content-center align-items-center" style="min-height: 300px;">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">読み込み中...</span>
+          </div>
         </div>
       </div>
+
     </div>
   </div>
 </div>
@@ -985,8 +988,6 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
 <script src="{% static 'js/mobile-gestures.js' %}?v={{ STATIC_VERSION }}"></script>
-<!-- 日記詳細ボトムシート用 -->
-<script src="{% static 'js/diary-detail.js' %}?v={{ STATIC_VERSION }}"></script>
 
 <script>
 // ── HTMX設定 ──
@@ -1523,128 +1524,82 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
   }
 });
 
-// ========== 日記詳細ボトムシート ==========
+// ========== 日記詳細モーダル ==========
 (function() {
   'use strict';
 
-  var detailSheetInstance = null;
+  var diaryDetailModal = null;
   var listUrl = window.location.href.split('?')[0];
-  var INNER_SHEETS = ['addTransactionSheet', 'addSplitSheet', 'addNoteSheet'];
 
-  function resetSheetBody() {
-    var body = document.getElementById('diaryDetailSheetBody');
-    if (body) {
-      body.innerHTML = '<div class="d-flex justify-content-center align-items-center" style="min-height:300px;"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">読み込み中...</span></div></div>';
-    }
-    var title = document.getElementById('diaryDetailSheetTitle');
-    if (title) title.textContent = '';
-    var actions = document.getElementById('diaryDetailSheetActions');
-    if (actions) actions.innerHTML = '';
-  }
-
-  function cleanupInnerSheets() {
-    INNER_SHEETS.forEach(function(sheetId) {
-      var el = document.getElementById(sheetId);
-      if (el) el.remove();
-      if (window.bottomSheets) delete window.bottomSheets[sheetId];
-    });
-  }
-
-  function getDetailSheet() {
-    if (!detailSheetInstance) {
-      detailSheetInstance = new BottomSheet('diaryDetailSheet', {
-        closeOnBackdrop: true,
-        enableDrag: true,
-        onClose: function() {
+  function getModal() {
+    if (!diaryDetailModal) {
+      var el = document.getElementById('diaryDetailModal');
+      if (el) {
+        diaryDetailModal = new bootstrap.Modal(el, { backdrop: true, keyboard: true });
+        el.addEventListener('hidden.bs.modal', function() {
+          // URL を一覧に戻す
           history.pushState(null, '', listUrl);
-          cleanupInnerSheets();
-          resetSheetBody();
-        }
-      });
+          // ボディをリセット（次回用）
+          var body = document.getElementById('diaryDetailModalBody');
+          body.innerHTML = '<div id="diaryDetailModalLoading" class="d-flex justify-content-center align-items-center" style="min-height:300px;"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">読み込み中...</span></div></div>';
+          document.getElementById('diaryDetailModalLabel').textContent = '';
+          document.getElementById('diaryDetailModalActions').innerHTML = '';
+        });
+      }
     }
-    return detailSheetInstance;
+    return diaryDetailModal;
   }
 
   function openDiaryModal(diaryId, diaryName) {
+    var modal = getModal();
+    if (!modal) return;
+
+    // URL を詳細ページに更新
     var detailUrl = '/stockdiary/' + diaryId + '/';
     history.pushState(null, '', detailUrl);
 
-    document.getElementById('diaryDetailSheetTitle').textContent = diaryName || '';
-    document.getElementById('diaryDetailSheetActions').innerHTML =
+    // ヘッダーにタイトルとアクションボタンを設定
+    document.getElementById('diaryDetailModalLabel').textContent = diaryName || '';
+    document.getElementById('diaryDetailModalActions').innerHTML =
       '<a href="' + detailUrl + 'update/" class="btn-icon btn-success-icon btn--sm" title="編集"><i class="bi bi-pencil"></i></a>' +
       '<a href="' + detailUrl + '" class="btn-icon btn--sm" title="詳細ページを開く" target="_blank" style="background:var(--bg-200);color:var(--text-100);"><i class="bi bi-box-arrow-up-right"></i></a>';
 
-    getDetailSheet().open();
+    modal.show();
 
+    // HTMX で詳細コンテンツを取得
     htmx.ajax('GET', detailUrl, {
-      target: '#diaryDetailSheetBody',
+      target: '#diaryDetailModalBody',
       swap: 'innerHTML',
       headers: { 'HX-Request': 'true' }
     }).then(function() {
-      afterContentLoaded(diaryId);
-    });
-  }
-
-  function afterContentLoaded(diaryId) {
-    // inner bottom sheets を body 直下に移動（position:fixed の祖先 transform 問題を回避）
-    INNER_SHEETS.forEach(function(sheetId) {
-      var el = document.getElementById(sheetId);
-      if (el && el.parentElement !== document.body) {
-        document.body.appendChild(el);
-      }
-    });
-
-    // タブクリックを手動バインド
-    document.querySelectorAll('#diaryDetailSheet [data-bs-toggle="tab"]').forEach(function(tab) {
-      tab.addEventListener('click', function(e) {
-        e.preventDefault();
-        var target = document.querySelector(tab.getAttribute('data-bs-target'));
-        if (!target) return;
-        document.querySelectorAll('#diaryDetailSheet .improved-tab-link').forEach(function(t) {
-          t.classList.remove('active');
-          t.setAttribute('aria-selected', 'false');
+      // Bootstrap タブを初期化（モーダル内の要素）
+      var tabs = document.querySelectorAll('#diaryDetailModal [data-bs-toggle="tab"]');
+      tabs.forEach(function(tab) {
+        tab.addEventListener('click', function(e) {
+          e.preventDefault();
+          var target = document.querySelector(tab.getAttribute('data-bs-target'));
+          if (!target) return;
+          // 既存アクティブを解除
+          document.querySelectorAll('#diaryDetailModal .improved-tab-link').forEach(function(t) {
+            t.classList.remove('active');
+            t.setAttribute('aria-selected', 'false');
+          });
+          document.querySelectorAll('#diaryDetailModal .tab-pane').forEach(function(p) {
+            p.classList.remove('show', 'active');
+          });
+          tab.classList.add('active');
+          tab.setAttribute('aria-selected', 'true');
+          target.classList.add('show', 'active');
         });
-        document.querySelectorAll('#diaryDetailSheet .tab-pane').forEach(function(p) {
-          p.classList.remove('show', 'active');
-        });
-        tab.classList.add('active');
-        tab.setAttribute('aria-selected', 'true');
-        target.classList.add('show', 'active');
       });
+
+      // モーダル内の diary-modal-link にもイベントを設定
+      setupModalInnerLinks();
     });
-
-    // タブのスワイプ操作
-    setupTabSwipe();
-
-    // シート内の diary-modal-link を再バインド
-    setupModalInnerLinks();
-  }
-
-  function setupTabSwipe() {
-    var tabContent = document.getElementById('diaryDetailTabContent');
-    var tabsContainer = document.getElementById('diaryDetailTabs');
-    if (!tabContent || !tabsContainer) return;
-
-    var startX = 0, startY = 0;
-
-    tabContent.addEventListener('touchstart', function(e) {
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-    }, { passive: true });
-
-    tabContent.addEventListener('touchend', function(e) {
-      var dx = e.changedTouches[0].clientX - startX;
-      var dy = e.changedTouches[0].clientY - startY;
-      if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.7) return;
-      var tabs = Array.from(tabsContainer.querySelectorAll('.improved-tab-link'));
-      var cur = tabs.findIndex(function(t) { return t.classList.contains('active'); });
-      var next = dx < 0 ? cur + 1 : cur - 1;
-      if (next >= 0 && next < tabs.length) tabs[next].click();
-    }, { passive: true });
   }
 
   function setupModalInnerLinks() {
-    document.querySelectorAll('#diaryDetailSheet .diary-modal-link').forEach(function(link) {
+    document.querySelectorAll('#diaryDetailModal .diary-modal-link').forEach(function(link) {
       link.addEventListener('click', function(e) {
         e.preventDefault();
         var diaryId = this.dataset.diaryId;
@@ -1654,6 +1609,7 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
     });
   }
 
+  // ページ内の diary-modal-link をモーダル起動に接続
   function setupDiaryModalLinks() {
     document.querySelectorAll('.diary-modal-link').forEach(function(link) {
       if (link.dataset.modalBound) return;
@@ -1667,16 +1623,18 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
     });
   }
 
+  // HTMX で一覧が更新された後にも再バインド
   document.body.addEventListener('htmx:afterSwap', function(event) {
     if (event.detail.target.id === 'diary-container') {
       setTimeout(setupDiaryModalLinks, 100);
     }
   });
 
+  // ブラウザ「戻る」ボタンでモーダルを閉じる
   window.addEventListener('popstate', function() {
-    var el = document.getElementById('diaryDetailSheet');
-    if (el && el.classList.contains('active') && detailSheetInstance) {
-      detailSheetInstance.close();
+    var modal = getModal();
+    if (modal && document.getElementById('diaryDetailModal').classList.contains('show')) {
+      modal.hide();
     }
   });
 
