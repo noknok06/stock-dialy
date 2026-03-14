@@ -28,8 +28,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # セキュリティ警告: 本番環境用シークレットキー（環境変数から取得）
 SECRET_KEY = os.getenv('SECRET_KEY')
 
-# 本番環境用デバッグ設定（無効）
-DEBUG = False
+# 本番環境用デバッグ設定（無効）。DJANGO_DEBUG=True で開発用に上書き可
+DEBUG = os.getenv('DJANGO_DEBUG', 'False') == 'True'
 
 # ホストとCSRF設定
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
@@ -44,7 +44,12 @@ if DEBUG:
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
-    # その他の開発環境向け設定
+    # CSP: 開発環境ではインラインスタイル・外部CDNを許可
+    CSP_DEFAULT_SRC = ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net", "*.googleapis.com", "*.gstatic.com", "*.bootstrapcdn.com", "*"]
+    CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net", "*.googleapis.com", "https:", "*"]
+    CSP_SCRIPT_SRC = ["'self'", "'unsafe-inline'", "'unsafe-eval'", "cdn.jsdelivr.net", "*"]
+    CSP_FONT_SRC = ["'self'", "data:", "*.googleapis.com", "*.gstatic.com", "*"]
+    CSP_IMG_SRC = ["'self'", "data:", "*"]
 else:
     # 本番環境の設定
     SECURE_SSL_REDIRECT = True

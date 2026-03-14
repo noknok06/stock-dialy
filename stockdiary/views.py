@@ -87,32 +87,6 @@ def calculate_margin_ratio(outstanding_purchases, outstanding_sales):
     return 0
 
 
-def get_margin_data(stock_symbol, limit=20):
-    """銘柄の信用倍率データを取得する共通関数"""
-    if not MARGIN_TRADING_AVAILABLE:
-        return None, None
-    
-    try:
-        market_issue = get_market_issue(stock_symbol)
-        if not market_issue:
-            return None, None
-        
-        margin_queryset = MarginTradingData.objects.filter(
-            issue=market_issue
-        ).order_by('-date')[:limit]
-        
-        latest_margin_data = margin_queryset.first() if margin_queryset else None
-        margin_data = list(margin_queryset)
-        
-        return margin_data, latest_margin_data
-    
-    except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.warning(f"信用倍率データ取得エラー (symbol: {stock_symbol}): {e}")
-        return None, None
-
-
 def render_error_html(icon, title, message, show_retry=False):
     """エラーメッセージHTMLを生成する共通関数"""
     retry_button = '''
@@ -620,13 +594,6 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         # 継続記録
         context['note_form'] = DiaryNoteForm(initial={'date': timezone.now().date()})
         context['notes'] = self.object.notes.all().order_by('-date')
-        
-        # 信用倍率データ
-        if MARGIN_TRADING_AVAILABLE:
-            from .views import get_margin_data
-            margin_data, latest_margin_data = get_margin_data(self.object.stock_symbol, limit=10)
-            context['margin_data'] = margin_data
-            context['latest_margin_data'] = latest_margin_data
         
         # 関連日記
         all_related_diaries = StockDiary.objects.filter(
@@ -1615,12 +1582,6 @@ def tab_content(request, diary_id, tab_type):
                 context['transaction_count'] = diary.transaction_count
                 template_name = 'stockdiary/partials/tab_details.html'
                         
-            elif tab_type == 'margin':
-                margin_data, latest_margin_data = get_margin_data(diary.stock_symbol, limit=10)
-                context['margin_data'] = margin_data
-                context['latest_margin_data'] = latest_margin_data
-                template_name = 'stockdiary/partials/tab_margin.html'
-            
             else:
                 return HttpResponse(
                     '<div class="alert alert-warning">無効なタブタイプです。</div>', 

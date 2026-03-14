@@ -87,6 +87,30 @@
           --ease-out: cubic-bezier(0, 0, 0.2, 1);
         }
 
+        /* Dark Mode Variables */
+        [data-theme="dark"] {
+          --background: #0d1117;
+          --surface: #161b22;
+          --surface-elevated: #1c2128;
+          --text-primary: #e6edf3;
+          --text-secondary: #8b949e;
+          --text-tertiary: #6e7681;
+          --text-inverse: #0d1117;
+          --border-primary: #30363d;
+          --border-secondary: #484f58;
+          --neutral-50: #161b22;
+          --neutral-100: #21262d;
+          --neutral-200: #30363d;
+          --neutral-300: #484f58;
+          --neutral-400: #6e7681;
+          --neutral-500: #8b949e;
+          --neutral-700: #c9d1d9;
+          --neutral-800: #e6edf3;
+          --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+          --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+          --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+        }
+
         /* Reset & Base Styles */
         *, *::before, *::after {
           box-sizing: border-box;
@@ -111,6 +135,13 @@
           width: 100%;
           max-width: 100vw;
           box-sizing: border-box;
+          transition: background-color var(--duration-300) var(--ease-in-out), color var(--duration-300) var(--ease-in-out);
+        }
+
+        /* Dark mode section overrides */
+        [data-theme="dark"] .section[style*="background: var(--surface)"],
+        [data-theme="dark"] .section[style*="background: var(--background)"] {
+          background: var(--surface) !important;
         }
 
         /* Modern Components */
@@ -330,17 +361,17 @@
         }
 
         .icon-primary {
-          background: linear-gradient(135deg, var(--primary-100) 0%, var(--primary-200) 100%);
+          background: var(--neutral-100);
           color: var(--primary-600);
         }
 
         .icon-secondary {
-          background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.2) 100%);
+          background: var(--neutral-100);
           color: var(--secondary-600);
         }
 
         .icon-accent {
-          background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.2) 100%);
+          background: var(--neutral-100);
           color: var(--accent-600);
         }
 
@@ -350,7 +381,7 @@
           min-height: 100vh;
           display: flex;
           align-items: center;
-          background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+          background: #0f172a;
           overflow: hidden;
           color: var(--text-inverse);
         }
@@ -359,31 +390,10 @@
           content: '';
           position: absolute;
           inset: 0;
-          background-image: 
-            radial-gradient(circle at 25% 25%, rgba(8, 145, 178, 0.3) 0%, transparent 50%),
-            radial-gradient(circle at 75% 75%, rgba(59, 130, 246, 0.3) 0%, transparent 50%);
-          animation: heroFloat 20s ease-in-out infinite;
-        }
-
-        @keyframes heroFloat {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          33% { transform: translateY(-10px) rotate(1deg); }
-          66% { transform: translateY(5px) rotate(-1deg); }
-        }
-
-        .hero-grid {
-          position: absolute;
-          inset: 0;
-          background-image: 
-            linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-          background-size: 50px 50px;
-          animation: gridMove 30s linear infinite;
-        }
-
-        @keyframes gridMove {
-          0% { transform: translate(0, 0); }
-          100% { transform: translate(50px, 50px); }
+          background-image:
+            radial-gradient(ellipse at 20% 50%, rgba(51, 65, 85, 0.6) 0%, transparent 60%),
+            radial-gradient(ellipse at 80% 50%, rgba(30, 41, 59, 0.4) 0%, transparent 60%);
+          pointer-events: none;
         }
 
         .hero-content {
@@ -494,36 +504,13 @@
           overflow: hidden;
         }
 
-        .feature-card::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 4px;
-          background: linear-gradient(90deg, var(--primary-500) 0%, var(--secondary-500) 100%);
-          transform: scaleX(0);
-          transform-origin: left;
-          transition: transform var(--duration-300) var(--ease-out);
-        }
-
-        .feature-card:hover::before {
-          transform: scaleX(1);
-        }
-
         .feature-card:hover {
-          transform: translateY(-8px);
-          box-shadow: var(--shadow-2xl);
+          box-shadow: var(--shadow-md);
           border-color: var(--border-secondary);
         }
 
         .feature-icon {
           margin-bottom: 1.5rem;
-          transition: transform var(--duration-300) var(--ease-out);
-        }
-
-        .feature-card:hover .feature-icon {
-          transform: scale(1.1) rotate(5deg);
         }
 
         .feature-title {
@@ -552,14 +539,10 @@
 
         .benefit-icon {
           margin: 0 auto 1.5rem;
-          background: linear-gradient(135deg, var(--primary-500) 0%, var(--secondary-500) 100%);
-          color: var(--text-inverse);
+          background: var(--neutral-100);
+          color: var(--neutral-700);
           border-radius: 50%;
-          transition: transform var(--duration-300) var(--ease-out);
-        }
-
-        .benefit-item:hover .benefit-icon {
-          transform: scale(1.1) rotate(10deg);
+          border: 1px solid var(--border-primary);
         }
 
         .benefit-title {
@@ -767,6 +750,192 @@
           font-size: 0.875rem;
         }
 
+        /* Phone Frame */
+        .phone-frame {
+          border-radius: 2rem;
+          overflow: hidden;
+          box-shadow: 0 30px 80px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0,0,0,0.06);
+          border: 3px solid var(--neutral-200);
+          background: white;
+          position: relative;
+        }
+
+        .phone-frame img {
+          width: 100%;
+          display: block;
+          border-radius: 1.7rem;
+        }
+
+        /* Hero Phone */
+        .hero-phone {
+          max-width: 300px;
+          margin: 0 auto;
+          transform: rotate(2deg);
+          filter: drop-shadow(0 40px 80px rgba(0,0,0,0.25));
+        }
+
+        /* Screenshots Grid */
+        .screenshots-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 2.5rem;
+          align-items: start;
+        }
+
+        .screenshot-item {
+          text-align: center;
+        }
+
+        .screenshot-item .phone-frame {
+          margin-bottom: 1.25rem;
+          max-width: 220px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+
+        .screenshot-label {
+          font-size: 1rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          margin-bottom: 0.4rem;
+        }
+
+        .screenshot-desc {
+          font-size: 0.875rem;
+          color: var(--text-secondary);
+          line-height: 1.5;
+        }
+
+        /* Problem Section */
+        .problem-table {
+          width: 100%;
+          border-collapse: collapse;
+          border-radius: var(--radius-xl);
+          overflow: hidden;
+          box-shadow: var(--shadow-md);
+        }
+
+        .problem-table th {
+          padding: 1rem 1.5rem;
+          font-size: 0.875rem;
+          font-weight: 600;
+          text-align: center;
+        }
+
+        .problem-table th:first-child {
+          text-align: left;
+          background: var(--neutral-800);
+          color: white;
+        }
+
+        .problem-table th.col-securities {
+          background: var(--neutral-200);
+          color: var(--neutral-700);
+        }
+
+        .problem-table th.col-kablog {
+          background: linear-gradient(135deg, var(--primary-500), var(--secondary-500));
+          color: white;
+        }
+
+        .problem-table td {
+          padding: 1rem 1.5rem;
+          border-top: 1px solid var(--neutral-100);
+          font-size: 0.9375rem;
+        }
+
+        .problem-table td:first-child {
+          font-weight: 500;
+          color: var(--text-primary);
+          background: var(--neutral-50);
+        }
+
+        .problem-table td:not(:first-child) {
+          text-align: center;
+        }
+
+        .problem-table tr.highlight-row td {
+          background: rgba(8, 145, 178, 0.04);
+        }
+
+        .problem-table tr.highlight-row td:first-child {
+          background: rgba(8, 145, 178, 0.07);
+          color: var(--primary-700);
+          font-weight: 600;
+        }
+
+        /* How It Works */
+        .how-it-works-steps {
+          max-width: 52rem;
+          margin: 0 auto;
+          position: relative;
+        }
+
+        .how-it-works-steps::before {
+          content: '';
+          position: absolute;
+          left: 2rem;
+          top: 2.5rem;
+          bottom: 2.5rem;
+          width: 2px;
+          background: linear-gradient(to bottom, var(--primary-500), var(--secondary-500));
+          opacity: 0.3;
+        }
+
+        .step-item {
+          display: flex;
+          gap: 1.5rem;
+          align-items: flex-start;
+          padding: 1.25rem 0;
+          position: relative;
+        }
+
+        .step-number {
+          flex-shrink: 0;
+          width: 4rem;
+          height: 4rem;
+          border-radius: 50%;
+          background: linear-gradient(135deg, var(--primary-500), var(--secondary-500));
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.25rem;
+          font-weight: 800;
+          box-shadow: 0 4px 16px rgba(8,145,178,0.3);
+          z-index: 1;
+        }
+
+        .step-content {
+          padding-top: 0.6rem;
+          flex: 1;
+        }
+
+        .step-title {
+          font-size: 1.125rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          margin-bottom: 0.35rem;
+        }
+
+        .step-desc {
+          font-size: 0.9375rem;
+          color: var(--text-secondary);
+          line-height: 1.6;
+        }
+
+        .step-tag {
+          display: inline-block;
+          background: var(--primary-50);
+          color: var(--primary-700);
+          border: 1px solid var(--primary-100);
+          border-radius: 99px;
+          padding: 0.2rem 0.65rem;
+          font-size: 0.8rem;
+          font-weight: 500;
+          margin-top: 0.4rem;
+        }
+
         /* Animations */
         .fade-in {
           opacity: 0;
@@ -777,6 +946,28 @@
         .fade-in.visible {
           opacity: 1;
           transform: translateY(0);
+        }
+
+        /* Dark mode toggle button */
+        .theme-toggle {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 2rem;
+          height: 2rem;
+          border-radius: var(--radius-md);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          background: transparent;
+          color: rgba(255, 255, 255, 0.8);
+          cursor: pointer;
+          font-size: 0.875rem;
+          transition: all var(--duration-200) var(--ease-out);
+          padding: 0;
+        }
+        .theme-toggle:hover {
+          background: rgba(255, 255, 255, 0.1);
+          color: white;
+          border-color: rgba(255, 255, 255, 0.4);
         }
 
         /* ========== モバイル navbar 認証ボタン ========== */
@@ -861,6 +1052,27 @@
           .features-grid {
             grid-template-columns: 1fr;
             gap: 1.5rem;
+          }
+
+          .screenshots-grid {
+            grid-template-columns: 1fr;
+            gap: 3rem;
+          }
+
+          .how-it-works-steps::before {
+            left: 1.75rem;
+          }
+
+          .step-number {
+            width: 3.5rem;
+            height: 3.5rem;
+            font-size: 1.1rem;
+          }
+
+          .problem-table td,
+          .problem-table th {
+            padding: 0.75rem 1rem;
+            font-size: 0.85rem;
           }
           
           .benefits-grid {
@@ -1020,8 +1232,11 @@
                     <li class="nav-item d-none d-lg-block">
                         <a class="nav-link" href="#comparison">比較</a>
                     </li>
-                    <!-- デスクトップ: 認証ボタン -->
+                    <!-- デスクトップ: 認証ボタン + テーマ切替 -->
                     <li class="nav-item d-none d-lg-flex align-items-center ms-3 gap-2">
+                        <button id="theme-toggle" class="theme-toggle" title="ダークモード切替" aria-label="テーマ切替">
+                            <i class="bi bi-moon"></i>
+                        </button>
                         <a href="/users/login/" class="btn btn-outline btn-sm px-3" style="border-color: rgba(255,255,255,0.4); color: white;">ログイン</a>
                         <a href="/users/signup/" class="btn btn-sm px-3" style="background: white; color: #0e7490; font-weight: 600;">新規登録</a>
                     </li>
@@ -1038,53 +1253,126 @@
 
     <!-- Hero Section -->
     <section class="hero">
-        <div class="hero-grid"></div>
         <div class="container">
-            <div class="hero-content">
-                <div class="badge mb-4">
-                    <i class="bi bi-stars me-1"></i>
-                    投資記録と分析プラットフォーム
-                </div>
-                
-                <h1 class="hero-title">
-                    売買記録から分析まで。<br>
-                    <span style="background: linear-gradient(135deg, #0891b2 0%, #3b82f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                        データに基づく投資
-                    </span><br>
-                    を始めよう
-                </h1>
-                
-                <p class="hero-subtitle">
-                    詳細な取引記録と多角的な分析で、投資判断を記録・改善。楽天証券のCSVインポートにも対応し、過去のデータも簡単に取り込めます。
-                </p>
-                
-                <div class="hero-actions">
-                    <a href="/users/signup/" class="btn btn-primary btn-lg">
-                        <i class="bi bi-rocket-takeoff me-2"></i>
-                        無料で始める
-                    </a>
-                    <button class="btn btn-outline btn-lg" onclick="scrollToSection('features')" style="border-color: rgba(255,255,255,0.3); color: white;">
-                        <i class="bi bi-play-circle me-2"></i>
-                        詳細を見る
-                    </button>
-                </div>
-                
-                <!-- Trust Indicators -->
-                <div class="hero-trust fade-in">
-                    <div class="trust-item">
-                        <i class="bi bi-shield-check trust-icon"></i>
-                        <span>完全無料で開始</span>
+            <div class="row align-items-center g-4" style="min-height: 85vh; padding: 3rem 0;">
+
+                <!-- Left: Text -->
+                <div class="col-lg-7">
+                    <div class="badge mb-4">
+                        <i class="bi bi-journal-richtext me-1"></i>
+                        投資の「思考」を記録する日記アプリ
                     </div>
-                    <div class="trust-item">
-                        <i class="bi bi-clock trust-icon"></i>
-                        <span>30秒で登録完了</span>
+
+                    <h1 class="hero-title">
+                        「なぜ買ったか」を<br>
+                        <span style="background: linear-gradient(135deg, #0891b2 0%, #3b82f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                            記録する投資日記
+                        </span>
+                    </h1>
+
+                    <p class="hero-subtitle">
+                        証券会社アプリは「何を・いくらで」は記録してくれる。<br>
+                        でも<strong style="color: rgba(255,255,255,0.95);">「なぜそう判断したか」</strong>は残らない。<br>
+                        カブログは投資の思考・根拠・気づきを蓄積し、<br>
+                        自分だけの投資知識ベースを育てるツールです。
+                    </p>
+
+                    <div class="hero-actions">
+                        <a href="/users/signup/" class="btn btn-primary btn-lg">
+                            <i class="bi bi-rocket-takeoff me-2"></i>
+                            無料で始める
+                        </a>
+                        <button class="btn btn-outline btn-lg" onclick="scrollToSection('features')" style="border-color: rgba(255,255,255,0.3); color: white;">
+                            <i class="bi bi-play-circle me-2"></i>
+                            詳細を見る
+                        </button>
                     </div>
-                    <div class="trust-item">
-                        <i class="bi bi-file-earmark-arrow-up trust-icon"></i>
-                        <span>CSVインポート対応</span>
+
+                    <!-- Trust Indicators -->
+                    <div class="hero-trust fade-in">
+                        <div class="trust-item">
+                            <i class="bi bi-database-fill-check trust-icon"></i>
+                            <span>記録が資産になる</span>
+                        </div>
+                        <div class="trust-item">
+                            <i class="bi bi-clock trust-icon"></i>
+                            <span>30秒で登録完了</span>
+                        </div>
+                        <div class="trust-item">
+                            <i class="bi bi-file-earmark-arrow-up trust-icon"></i>
+                            <span>CSVインポート対応</span>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Right: App Screenshot -->
+                <div class="col-lg-5 d-none d-lg-flex justify-content-center align-items-center fade-in">
+                    <div class="hero-phone">
+                        <div class="phone-frame">
+                            <img src="../static/images/sample3.jpg" alt="カブログ 日記詳細画面">
+                        </div>
+                    </div>
+                </div>
+
             </div>
+        </div>
+    </section>
+
+    <!-- Problem Section -->
+    <section class="section" style="background: var(--surface);">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2 class="section-title">証券会社アプリで、足りていないもの</h2>
+                <p class="section-subtitle">取引の「記録」はできても、判断の「理由」は残らない</p>
+            </div>
+
+            <div class="fade-in" style="overflow-x: auto;">
+                <table class="problem-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left; background: var(--neutral-700); color: white; padding: 1.1rem 1.5rem;">記録できること</th>
+                            <th class="col-securities">証券会社アプリ</th>
+                            <th class="col-kablog">カブログ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>売買記録（いつ・何株・いくらで）</td>
+                            <td><i class="bi bi-check-lg" style="color: var(--success); font-size: 1.2rem;"></i></td>
+                            <td><i class="bi bi-check-lg" style="color: var(--success); font-size: 1.2rem;"></i></td>
+                        </tr>
+                        <tr>
+                            <td>損益計算・ポートフォリオ管理</td>
+                            <td><i class="bi bi-check-lg" style="color: var(--success); font-size: 1.2rem;"></i></td>
+                            <td><i class="bi bi-check-lg" style="color: var(--success); font-size: 1.2rem;"></i></td>
+                        </tr>
+                        <tr class="highlight-row">
+                            <td><i class="bi bi-star-fill me-1" style="color: var(--primary-500); font-size: 0.8rem;"></i> <strong>買った理由・考えていたこと</strong></td>
+                            <td><i class="bi bi-x-lg" style="color: var(--error); font-size: 1.1rem;"></i></td>
+                            <td><i class="bi bi-check-lg" style="color: var(--success); font-size: 1.2rem;"></i></td>
+                        </tr>
+                        <tr class="highlight-row">
+                            <td><i class="bi bi-star-fill me-1" style="color: var(--primary-500); font-size: 0.8rem;"></i> <strong>後からの振り返り・気づき</strong></td>
+                            <td><i class="bi bi-x-lg" style="color: var(--error); font-size: 1.1rem;"></i></td>
+                            <td><i class="bi bi-check-lg" style="color: var(--success); font-size: 1.2rem;"></i></td>
+                        </tr>
+                        <tr class="highlight-row">
+                            <td><i class="bi bi-star-fill me-1" style="color: var(--primary-500); font-size: 0.8rem;"></i> <strong>時系列での思考の深掘り</strong></td>
+                            <td><i class="bi bi-x-lg" style="color: var(--error); font-size: 1.1rem;"></i></td>
+                            <td><i class="bi bi-check-lg" style="color: var(--success); font-size: 1.2rem;"></i></td>
+                        </tr>
+                        <tr class="highlight-row">
+                            <td><i class="bi bi-star-fill me-1" style="color: var(--primary-500); font-size: 0.8rem;"></i> <strong>銘柄間のつながり・知識グラフ</strong></td>
+                            <td><i class="bi bi-x-lg" style="color: var(--error); font-size: 1.1rem;"></i></td>
+                            <td><i class="bi bi-check-lg" style="color: var(--success); font-size: 1.2rem;"></i></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="text-center mt-4 fade-in" style="color: var(--text-secondary); font-size: 0.9375rem;">
+                損益計算は証券会社アプリに任せる。カブログは<strong>「なぜそう判断したか」の経緯を残すこと</strong>に特化します。
+            </p>
         </div>
     </section>
 
@@ -1092,10 +1380,10 @@
     <section class="section" id="features">
         <div class="container">
             <div class="section-header fade-in">
-                <h2 class="section-title">投資記録をもっと深く、もっと効果的に</h2>
-                <p class="section-subtitle">カブログの豊富な機能で、投資判断の質を向上させます</p>
+                <h2 class="section-title">思考を記録し、知識を育てる機能</h2>
+                <p class="section-subtitle">使えば使うほど、自分の判断・失敗・気づきの地図が積み上がっていく</p>
             </div>
-            
+
             <div class="features-grid">
                 <div class="feature-card fade-in">
                     <div class="feature-icon">
@@ -1104,7 +1392,7 @@
                         </div>
                     </div>
                     <h3 class="feature-title">投資日記</h3>
-                    <p class="feature-description">売買の理由や市場の感想を銘柄ごとに記録。投資判断の根拠を振り返り、スキルアップに活かせます。</p>
+                    <p class="feature-description">「なぜ買ったか」の経緯を Markdown で記録。@ハッシュタグで自由に分類し、後から正確に振り返れます。</p>
                 </div>
 
                 <div class="feature-card fade-in">
@@ -1114,7 +1402,7 @@
                         </div>
                     </div>
                     <h3 class="feature-title">取引履歴管理</h3>
-                    <p class="feature-description">詳細な売買記録と自動損益計算。各取引の結果を正確に把握し、トレード成績を可視化します。</p>
+                    <p class="feature-description">売買記録と自動損益計算（FIFO方式）。日記の文脈を数字で補強する補助機能として機能します。</p>
                 </div>
 
                 <div class="feature-card fade-in">
@@ -1124,88 +1412,137 @@
                         </div>
                     </div>
                     <h3 class="feature-title">分析テンプレート</h3>
-                    <p class="feature-description">カスタマイズ可能な分析項目で、銘柄を多角的に評価。投資基準を明確にし、判断の一貫性を保ちます。</p>
+                    <p class="feature-description">カスタマイズ可能な分析項目で銘柄を多角的に評価。業種ベンチマークとの比較で投資基準を明確化します。</p>
                 </div>
 
                 <div class="feature-card fade-in">
                     <div class="feature-icon">
-                        <div class="icon-container icon-container-md" style="background: linear-gradient(135deg, #f59e0b20 0%, #f59e0b40 100%); color: #f59e0b;">
+                        <div class="icon-container icon-container-md" style="background: var(--neutral-100); color: #d97706;">
                             <i class="bi bi-journal-plus" style="font-size: 1.5rem;"></i>
                         </div>
                     </div>
                     <h3 class="feature-title">継続記録</h3>
-                    <p class="feature-description">投資後の経過を追記記録。株価変動や企業ニュースへの考察を残し、投資判断の精度を高めます。</p>
+                    <p class="feature-description">保有中の気づき・決算・ニュースを時系列で追記。<strong>考えが変わっていく過程</strong>そのものを記録できます。</p>
                 </div>
 
                 <div class="feature-card fade-in">
                     <div class="feature-icon">
-                        <div class="icon-container icon-container-md" style="background: linear-gradient(135deg, #10b98120 0%, #10b98140 100%); color: #10b981;">
+                        <div class="icon-container icon-container-md" style="background: var(--neutral-100); color: #059669;">
                             <i class="bi bi-file-earmark-arrow-up" style="font-size: 1.5rem;"></i>
                         </div>
                     </div>
                     <h3 class="feature-title">CSVインポート</h3>
-                    <p class="feature-description">楽天証券の取引履歴CSVを一括取込。過去データの手入力は不要で、すぐに分析を開始できます。</p>
+                    <p class="feature-description">楽天証券・SBI証券の取引履歴CSVを一括取込。過去データの手入力は不要で、すぐに使い始められます。</p>
                 </div>
 
                 <div class="feature-card fade-in">
                     <div class="feature-icon">
-                        <div class="icon-container icon-container-md" style="background: linear-gradient(135deg, #ef444420 0%, #ef444440 100%); color: #ef4444;">
+                        <div class="icon-container icon-container-md" style="background: var(--neutral-100); color: #dc2626;">
                             <i class="bi bi-graph-up" style="font-size: 1.5rem;"></i>
                         </div>
                     </div>
                     <h3 class="feature-title">決算レポート</h3>
-                    <p class="feature-description">企業の決算情報を整理・記録。財務データと株価の関係を分析し、投資判断の材料にできます。</p>
+                    <p class="feature-description">企業の決算情報を整理・記録。財務データと株価の関係を分析し、次の投資判断の材料として蓄積できます。</p>
                 </div>
 
-                <div class="feature-card fade-in" style="border: 1px solid rgba(124,58,237,0.25); background: linear-gradient(135deg, rgba(124,58,237,0.04) 0%, rgba(79,70,229,0.06) 100%);">
+                <div class="feature-card fade-in">
                     <div class="feature-icon">
-                        <div class="icon-container icon-container-md" style="background: linear-gradient(135deg, #7c3aed20 0%, #7c3aed40 100%); color: #7c3aed;">
+                        <div class="icon-container icon-container-md" style="background: var(--neutral-100); color: #7c3aed;">
                             <i class="bi bi-diagram-3" style="font-size: 1.5rem;"></i>
                         </div>
                     </div>
                     <h3 class="feature-title">日記関連グラフ</h3>
-                    <p class="feature-description">タグ・業種・@ハッシュタグで銘柄の繋がりを自動可視化。Obsidian風のナレッジグラフで、投資テーマのネットワークを直感的に探索できます。</p>
+                    <p class="feature-description">タグ・業種・@ハッシュタグで銘柄の繋がりを自動可視化。<strong>使うほど地図が育つ</strong>Obsidian風ナレッジグラフです。</p>
+                </div>
+
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <div class="icon-container icon-container-md" style="background: var(--neutral-100); color: #059669;">
+                            <i class="bi bi-search" style="font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+                    <h3 class="feature-title">Exploreビュー（全文横断検索）</h3>
+                    <p class="feature-description">日記・継続記録・@ハッシュタグをまとめてキーワード横断検索。Obsidian風のUIで蓄積した思考をすぐに再発見できます。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Screenshots Section -->
+    <section class="section" id="screenshots" style="background: var(--surface);">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2 class="section-title">実際の画面を見てみよう</h2>
+                <p class="section-subtitle">シンプルで使いやすいモバイルUIで、どこでも記録・確認できます</p>
+            </div>
+
+            <div class="screenshots-grid">
+                <!-- sample3.jpg: 日記詳細 -->
+                <div class="screenshot-item fade-in">
+                    <div class="phone-frame">
+                        <img src="../static/images/sample3.jpg" alt="投資日記詳細画面">
+                    </div>
+                    <h4 class="screenshot-label mt-3">投資日記の詳細</h4>
+                    <p class="screenshot-desc">銘柄ごとに株価チャート・投資理由・取引履歴を一覧。「配当銘柄」タグで素早く分類。</p>
+                </div>
+
+                <!-- sample2.jpg: 日記関連グラフ -->
+                <div class="screenshot-item fade-in">
+                    <div class="phone-frame">
+                        <img src="../static/images/sample2.jpg" alt="日記関連グラフ画面">
+                    </div>
+                    <h4 class="screenshot-label mt-3">日記関連グラフ</h4>
+                    <p class="screenshot-desc">銘柄・タグ・業種の関係をネットワークで可視化。蓄積した記録が「投資知識の地図」になります。</p>
+                </div>
+
+                <!-- sample1.jpg: タグ管理 -->
+                <div class="screenshot-item fade-in">
+                    <div class="phone-frame">
+                        <img src="../static/images/sample1.jpg" alt="タグ管理画面">
+                    </div>
+                    <h4 class="screenshot-label mt-3">タグ管理</h4>
+                    <p class="screenshot-desc">投資テーマ・業種・戦略などで日記を自由に分類。タグをハブに銘柄同士がつながります。</p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Benefits Section -->
-    <section class="section" id="benefits" style="background: var(--surface);">
+    <section class="section" id="benefits" style="background: var(--background);">
         <div class="container">
             <div class="section-header fade-in">
                 <h2 class="section-title">なぜカブログを選ぶのか</h2>
-                <p class="section-subtitle">投資家のために設計された、使いやすく強力な機能</p>
+                <p class="section-subtitle">日記・タグ・リンクの蓄積が、自分だけの投資知識ベースになる</p>
             </div>
-            
+
             <div class="benefits-grid">
                 <div class="benefit-item fade-in">
                     <div class="benefit-icon icon-container icon-container-lg">
                         <i class="bi bi-lightning-charge" style="font-size: 2rem;"></i>
                     </div>
-                    <h3 class="benefit-title">簡単操作</h3>
+                    <h3 class="benefit-title">すぐ書ける、続けられる</h3>
                     <p class="benefit-description">
-                        直感的なインターフェースで投資記録が簡単に。CSVインポートで過去データも一瞬で取り込めます。
+                        フローティングボタンからモーダルで即時記録。CSVインポートで過去データも一瞬で取り込み、すぐ日記を書き始められます。
                     </p>
                 </div>
 
                 <div class="benefit-item fade-in">
                     <div class="benefit-icon icon-container icon-container-lg">
-                        <i class="bi bi-database-check" style="font-size: 2rem;"></i>
+                        <i class="bi bi-pencil-square" style="font-size: 2rem;"></i>
                     </div>
-                    <h3 class="benefit-title">詳細な記録</h3>
+                    <h3 class="benefit-title">思考を言語化・記録する</h3>
                     <p class="benefit-description">
-                        取引履歴、分析項目、継続観察まで。多面的な記録で投資の全体像を把握できます。
+                        Markdownで投資理由を書き、@ハッシュタグで文脈を分類。継続記録で「考えが変わった経緯」も時系列で追えます。
                     </p>
                 </div>
 
                 <div class="benefit-item fade-in">
                     <div class="benefit-icon icon-container icon-container-lg">
-                        <i class="bi bi-graph-up-arrow" style="font-size: 2rem;"></i>
+                        <i class="bi bi-collection" style="font-size: 2rem;"></i>
                     </div>
-                    <h3 class="benefit-title">成長をサポート</h3>
+                    <h3 class="benefit-title">記録が資産になる</h3>
                     <p class="benefit-description">
-                        データドリブンな分析で投資判断を改善。記録を振り返り、継続的な成長を実現します。
+                        蓄積した記録はグラフで地図として俯瞰でき、Exploreで横断検索できる。使うほど自分だけの投資知識ベースが育っていきます。
                     </p>
                 </div>
             </div>
@@ -1228,7 +1565,7 @@
                         <span style="background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">自動でグラフ化</span>
                     </h2>
                     <p style="color: #94a3b8; font-size: 1rem; line-height: 1.75; margin-bottom: 1.5rem;">
-                        タグ・業種・ハッシュタグを共有する銘柄を自動で接続。蓄積した日記がナレッジグラフとして可視化され、投資テーマのネットワークを直感的に探索できます。
+                        タグ・業種・@ハッシュタグを共有する銘柄を自動で接続。蓄積した記録が自分だけの投資知識ベースになる。グラフはその可視化であり、<strong style="color: #e2e8f0;">使うほど地図が育っていく</strong>。
                     </p>
                     <ul style="list-style: none; padding: 0; margin-bottom: 2rem; display: flex; flex-direction: column; gap: 0.65rem;">
                         <li style="display: flex; align-items: flex-start; gap: 0.6rem; color: #cbd5e1; font-size: 0.92rem;">
@@ -1361,6 +1698,75 @@
                     <p style="text-align: center; color: #334155; font-size: 0.78rem; margin-top: 0.6rem;">
                         <i class="bi bi-diagram-3 me-1" style="color: #7c3aed;"></i>タグ接続モードのイメージ — 紫ハブ(タグ) · 橙ハブ(業種) · 緑/赤ノード(銘柄)
                     </p>
+
+                    <!-- Actual screenshot below SVG -->
+                    <div style="margin-top: 1.5rem; padding: 0.5rem 1rem; background: rgba(167,139,250,0.08); border: 1px solid rgba(167,139,250,0.2); border-radius: 0.75rem;">
+                        <p style="color: #a78bfa; font-size: 0.78rem; font-weight: 600; text-align: center; margin-bottom: 0.75rem;">
+                            <i class="bi bi-phone me-1"></i>実際の画面（174ノード・47接続）
+                        </p>
+                        <div class="phone-frame" style="max-width: 240px; margin: 0 auto;">
+                            <img src="../static/images/sample2.jpg" alt="日記関連グラフ 実際の画面">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="section" id="how-it-works" style="background: var(--surface);">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2 class="section-title">カブログの使い方</h2>
+                <p class="section-subtitle">ニュースを見て、記録して、つなげて、俯瞰する — 5つのステップ</p>
+            </div>
+
+            <div class="how-it-works-steps fade-in">
+
+                <div class="step-item">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4 class="step-title">ニュースを見る</h4>
+                        <p class="step-desc">「ホルムズ海峡封鎖リスク」「半導体規制強化」など、気になるテーマや銘柄に関する情報を自分で収集します。</p>
+                        <span class="step-tag"><i class="bi bi-newspaper me-1"></i>自分で調べる</span>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4 class="step-title">日記に記録する</h4>
+                        <p class="step-desc">投資理由・考察を Markdown で書き、<code style="background: var(--neutral-100); padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.875rem;">@石油関連</code> <code style="background: var(--neutral-100); padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.875rem;">@地政学リスク</code> などのハッシュタグで分類。「なぜそう判断したか」を言語化します。</p>
+                        <span class="step-tag"><i class="bi bi-journal-text me-1"></i>思考を言語化</span>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4 class="step-title">銘柄同士を紐づける</h4>
+                        <p class="step-desc">「INPEX ↔ 三菱重工」のように関連日記を手動リンク。タグ・業種でも自動クラスタリングされ、投資テーマのネットワークが形成されます。</p>
+                        <span class="step-tag"><i class="bi bi-share me-1"></i>つながりを定義</span>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4 class="step-title">グラフで俯瞰する</h4>
+                        <p class="step-desc">蓄積した日記がナレッジグラフとして可視化。自分の投資思考の地図を鳥の目で眺め、テーマ間のつながりを直感的に探索できます。</p>
+                        <span class="step-tag"><i class="bi bi-diagram-3 me-1"></i>知識地図として俯瞰</span>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <h4 class="step-title">振り返る</h4>
+                        <p class="step-desc">「あのとき何を考えていたか」が時系列で追える。ダッシュボードで「どんな銘柄・業種で調子がいいか」を確認し、自分の投資パターンを発見します。</p>
+                        <span class="step-tag"><i class="bi bi-arrow-counterclockwise me-1"></i>自己改善のサイクル</span>
+                    </div>
                 </div>
 
             </div>
@@ -1583,6 +1989,41 @@
         window.addEventListener('load', function() {
             document.body.classList.add('loaded');
         });
+
+        // Dark mode toggle
+        (function() {
+            const html = document.documentElement;
+            const saved = localStorage.getItem('kablog-theme');
+            if (saved === 'dark') {
+                html.setAttribute('data-theme', 'dark');
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                const toggle = document.getElementById('theme-toggle');
+                if (!toggle) return;
+
+                function updateIcon() {
+                    const isDark = html.getAttribute('data-theme') === 'dark';
+                    toggle.innerHTML = isDark
+                        ? '<i class="bi bi-sun"></i>'
+                        : '<i class="bi bi-moon"></i>';
+                    toggle.title = isDark ? 'ライトモードに切替' : 'ダークモードに切替';
+                }
+                updateIcon();
+
+                toggle.addEventListener('click', function() {
+                    const isDark = html.getAttribute('data-theme') === 'dark';
+                    if (isDark) {
+                        html.removeAttribute('data-theme');
+                        localStorage.setItem('kablog-theme', 'light');
+                    } else {
+                        html.setAttribute('data-theme', 'dark');
+                        localStorage.setItem('kablog-theme', 'dark');
+                    }
+                    updateIcon();
+                });
+            });
+        })();
     </script>
 </body>
 </html>
