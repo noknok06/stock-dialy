@@ -26,7 +26,6 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),
     path('users/', include('users.urls')),
     path('', include('stockdiary.urls')),
-    path('checklist/', include('checklist.urls')),
     path('tags/', include('tags.urls')),
     path('analysis/', include('analysis_template.urls')),
     path('company_master/', include('company_master.urls')),

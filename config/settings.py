@@ -133,7 +133,6 @@ THIRD_PARTY_APPS = [
 # ローカルアプリ
 LOCAL_APPS = [
     'users',
-    'checklist',
     'tags',
     'ads',
     'security',
