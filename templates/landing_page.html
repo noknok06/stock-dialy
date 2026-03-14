@@ -773,6 +773,47 @@
           filter: drop-shadow(0 40px 80px rgba(0,0,0,0.25));
         }
 
+        /* App Preview Section */
+        .app-preview-section {
+          background: linear-gradient(180deg, #0f172a 0%, var(--background) 55%);
+          padding: 0 0 5rem;
+          overflow: hidden;
+        }
+
+        .app-preview-phones {
+          display: flex;
+          justify-content: center;
+          align-items: flex-end;
+          gap: 1.5rem;
+          padding: 0 1rem;
+        }
+
+        .preview-phone {
+          flex-shrink: 0;
+        }
+
+        .preview-phone-center {
+          width: 270px;
+          position: relative;
+          z-index: 2;
+          filter: drop-shadow(0 40px 80px rgba(0,0,0,0.5));
+        }
+
+        .preview-phone-side {
+          width: 210px;
+          opacity: 0.75;
+        }
+
+        .preview-phone-left {
+          transform: rotate(-8deg) translateY(40px);
+          filter: drop-shadow(0 20px 40px rgba(0,0,0,0.4));
+        }
+
+        .preview-phone-right {
+          transform: rotate(8deg) translateY(40px);
+          filter: drop-shadow(0 20px 40px rgba(0,0,0,0.4));
+        }
+
         /* Screenshots Grid */
         .screenshots-grid {
           display: grid;
@@ -1058,6 +1099,14 @@
             gap: 3rem;
           }
 
+          .preview-phone-side {
+            display: none;
+          }
+
+          .preview-phone-center {
+            width: 240px;
+          }
+
           .how-it-works-steps::before {
             left: 1.75rem;
           }
@@ -1253,63 +1302,72 @@
     <!-- Hero Section -->
     <section class="hero">
         <div class="container">
-            <div class="row align-items-center g-4" style="min-height: 85vh; padding: 3rem 0;">
-
-                <!-- Left: Text -->
-                <div class="col-lg-7">
-                    <div class="badge mb-4">
-                        <i class="bi bi-journal-richtext me-1"></i>
-                        投資の「思考」を記録する日記アプリ
-                    </div>
-
-                    <h1 class="hero-title">
-                        「なぜ買ったか」を<br>
-                        <span style="background: linear-gradient(135deg, #0891b2 0%, #3b82f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                            記録する投資日記
-                        </span>
-                    </h1>
-
-                    <p class="hero-subtitle">
-                        投資の「なぜ」を記録・蓄積して、自分だけの知識ベースを育てましょう。
-                    </p>
-
-                    <div class="hero-actions">
-                        <a href="/users/signup/" class="btn btn-primary btn-lg">
-                            <i class="bi bi-rocket-takeoff me-2"></i>
-                            無料で始める
-                        </a>
-                        <button class="btn btn-outline btn-lg" onclick="scrollToSection('features')" style="border-color: rgba(255,255,255,0.3); color: white;">
-                            <i class="bi bi-play-circle me-2"></i>
-                            詳細を見る
-                        </button>
-                    </div>
-
-                    <!-- Trust Indicators -->
-                    <div class="hero-trust fade-in">
-                        <div class="trust-item">
-                            <i class="bi bi-database-fill-check trust-icon"></i>
-                            <span>記録が資産になる</span>
-                        </div>
-                        <div class="trust-item">
-                            <i class="bi bi-clock trust-icon"></i>
-                            <span>30秒で登録完了</span>
-                        </div>
-                        <div class="trust-item">
-                            <i class="bi bi-file-earmark-arrow-up trust-icon"></i>
-                            <span>CSVインポート対応</span>
-                        </div>
-                    </div>
+            <div class="hero-content" style="padding: 5rem 0 4rem;">
+                <div class="badge mb-4">
+                    <i class="bi bi-journal-richtext me-1"></i>
+                    投資の「思考」を記録する日記アプリ
                 </div>
 
-                <!-- Right: App Screenshot -->
-                <div class="col-lg-5 d-none d-lg-flex justify-content-center align-items-center fade-in">
-                    <div class="hero-phone">
-                        <div class="phone-frame">
-                            <img src="../static/images/sample3.jpg" alt="カブログ 日記詳細画面">
-                        </div>
-                    </div>
+                <h1 class="hero-title">
+                    「なぜ買ったか」を<br>
+                    <span style="background: linear-gradient(135deg, #0891b2 0%, #3b82f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                        記録する投資日記
+                    </span>
+                </h1>
+
+                <p class="hero-subtitle">
+                    投資の「なぜ」を記録・蓄積して、自分だけの知識ベースを育てましょう。
+                </p>
+
+                <div class="hero-actions">
+                    <a href="/users/signup/" class="btn btn-primary btn-lg">
+                        <i class="bi bi-rocket-takeoff me-2"></i>
+                        無料で始める
+                    </a>
+                    <button class="btn btn-outline btn-lg" onclick="scrollToSection('features')" style="border-color: rgba(255,255,255,0.3); color: white;">
+                        <i class="bi bi-play-circle me-2"></i>
+                        詳細を見る
+                    </button>
                 </div>
 
+                <!-- Trust Indicators -->
+                <div class="hero-trust fade-in">
+                    <div class="trust-item">
+                        <i class="bi bi-database-fill-check trust-icon"></i>
+                        <span>記録が資産になる</span>
+                    </div>
+                    <div class="trust-item">
+                        <i class="bi bi-clock trust-icon"></i>
+                        <span>30秒で登録完了</span>
+                    </div>
+                    <div class="trust-item">
+                        <i class="bi bi-file-earmark-arrow-up trust-icon"></i>
+                        <span>CSVインポート対応</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- App Preview Section -->
+    <section class="app-preview-section">
+        <div class="container">
+            <div class="app-preview-phones">
+                <div class="preview-phone preview-phone-side preview-phone-left fade-in">
+                    <div class="phone-frame">
+                        <img src="../static/images/sample1.jpg" alt="タグ管理画面">
+                    </div>
+                </div>
+                <div class="preview-phone preview-phone-center fade-in">
+                    <div class="phone-frame">
+                        <img src="../static/images/sample3.jpg" alt="投資日記詳細画面">
+                    </div>
+                </div>
+                <div class="preview-phone preview-phone-side preview-phone-right fade-in">
+                    <div class="phone-frame">
+                        <img src="../static/images/sample2.jpg" alt="日記関連グラフ画面">
+                    </div>
+                </div>
             </div>
         </div>
     </section>
