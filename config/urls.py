@@ -70,7 +70,6 @@ urlpatterns = [
     path('tags/', include('tags.urls')),
     path('analysis_template/', include('analysis_template.urls')),
     path('company_master/', include('company_master.urls')),
-    path('financial_reports/', include('financial_reports.urls')),
     
     #コーポマインドリーダー（新機能）
     path('copomo/', include('earnings_analysis.urls', namespace='copomo')),

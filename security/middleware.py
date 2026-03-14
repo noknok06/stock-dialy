@@ -213,15 +213,7 @@ class IPFilterMiddleware:
             '/stripe/',
             '/webhook/'
         ]
-        
-        excluded_paths = [
-            '/admin/financial_reports/',
-        ]
-        
-        for path_prefix in excluded_paths:
-            if path.startswith(path_prefix):
-                return False
-                
+               
         return any(path.startswith(prefix) for prefix in sensitive_paths)
     
     def _is_suspicious_request(self, request):

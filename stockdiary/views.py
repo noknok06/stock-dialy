@@ -51,18 +51,6 @@ import statistics
 
 from PIL import Image
 
-# margin_trading アプリのインポート（オプション）
-try:
-    from margin_trading.models import MarginTradingData, MarketIssue
-    MARGIN_TRADING_AVAILABLE = True
-except ImportError:
-    MARGIN_TRADING_AVAILABLE = False
-    import logging
-    logging.getLogger(__name__).warning(
-        "margin_trading アプリが見つかりません。信用倍率機能は無効になります。"
-    )
-
-
 # ==========================================
 # ユーティリティ関数
 # ==========================================
@@ -933,8 +921,6 @@ class DiaryTabContentView(LoginRequiredMixin, View):
                 html = self._render_analysis_tab(diary)
             elif tab_type == 'details':
                 html = self._render_details_tab(context)
-            elif tab_type == 'margin':
-                html = self._render_margin_tab(diary)
             else:
                 return JsonResponse({'error': '無効なタブタイプです'}, status=400)
             
@@ -950,50 +936,6 @@ class DiaryTabContentView(LoginRequiredMixin, View):
                 'details': error_details
             }, status=500)
 
-    def _render_margin_tab(self, diary):
-        """信用倍率タブのHTMLをテンプレートレンダリングで生成"""
-        if not MARGIN_TRADING_AVAILABLE:
-            return render_error_html('exclamation-triangle', '信用倍率機能は利用できません', 
-                                   'margin_trading アプリが設定されていません')
-        
-        if not diary.stock_symbol:
-            return render_error_html('info-circle', '証券コードが設定されていません', 
-                                   '信用倍率データを取得するには証券コードが必要です')
-        
-        try:
-            margin_data, latest_margin_data = get_margin_data(diary.stock_symbol, limit=20)
-            
-            if margin_data is None:
-                return render_error_html('search', '銘柄が見つかりません', 
-                                       f'証券コード: {diary.stock_symbol}')
-            
-            if not margin_data:
-                return render_error_html('database-x', '信用取引データがありません', 
-                                       f'証券コード: {diary.stock_symbol}')
-            
-            context = {
-                'diary': diary,
-                'margin_data': margin_data,
-                'latest_margin_data': latest_margin_data,
-                'request': self.request,
-            }
-            
-            try:
-                return render_to_string('stockdiary/partials/tab_margin.html', context)
-            except Exception as template_error:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f"Margin tab template error: {template_error}", exc_info=True)
-                return render_error_html('exclamation-triangle text-warning', 'テンプレートエラー', 
-                                       '信用倍率タブの表示中にエラーが発生しました', show_retry=True)
-            
-        except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Margin tab rendering error (diary_id: {diary.id}): {e}", exc_info=True)
-            return render_error_html('exclamation-triangle text-warning', 'データ取得エラー', 
-                                   '信用倍率データの取得中にエラーが発生しました', show_retry=True)
-        
     def _render_notes_tab(self, diary):
         """継続記録タブのHTMLを直接生成"""
         notes = diary.notes.all().order_by('-date')[:3]
