@@ -28,11 +28,23 @@
 
   /**
    * 指定インデックスのタブをクリックして切り替える
-   * diary-tabs.js の click ハンドラが処理するため .click() で委譲
+   * diary-tabs.js の click ハンドラが処理するため .click() で委譲。
+   * スワイプ時は click イベントの到達が不安定なため、
+   * diary-figure の表示/非表示をここでも直接制御する（冪等なので二重実行も安全）。
    */
   function switchToTab(tabs, index) {
     if (index >= 0 && index < tabs.length) {
       tabs[index].click();
+
+      // スワイプ切替時のフィギュア直接制御（フォールバック）
+      var targetId = tabs[index].getAttribute('data-tab');
+      var art = tabs[index].closest('.diary-article');
+      var fig = art ? art.querySelector('.diary-figure') : null;
+      if (fig) {
+        var isContent = targetId.includes('notes') || targetId.includes('transactions');
+        fig.classList.toggle('figure-collapsed', isContent);
+        fig.style.display = isContent ? 'none' : '';
+      }
     }
   }
 

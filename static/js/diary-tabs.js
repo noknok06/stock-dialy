@@ -27,6 +27,11 @@ document.addEventListener('click', function(e) {
   if (figure) {
     const isContentTab = targetId.includes('notes') || targetId.includes('transactions');
     figure.classList.toggle('figure-collapsed', isContentTab);
+    // モバイルでは CSS max-height トランジションが
+    // overflow:hidden 親との組み合わせで不安定なため display で確実に制御
+    if (window.matchMedia('(max-width: 767px)').matches) {
+      figure.style.display = isContentTab ? 'none' : '';
+    }
   }
 
   // すべてのパネルのスクロールクラスをリセット
