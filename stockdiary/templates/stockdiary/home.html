@@ -752,6 +752,109 @@
     scroll-margin-top: 1rem;
   }
 }
+
+/* ========================================
+   クイックノート スワイプUI
+   CSS Grid で inner と panel を同セルに重ね、
+   高さの食い違いを構造的に排除する
+   ======================================== */
+.diary-header {
+  display: grid;
+  overflow: hidden;
+  /* position: relative 不要 (absolute 子要素なし) */
+}
+.diary-header-inner {
+  grid-row: 1;
+  grid-column: 1;
+  position: relative; /* z-index 有効化 */
+  z-index: 1;
+  background: var(--bg-100);
+  will-change: transform;
+  overflow: hidden; /* BFC化: 子要素の margin-bottom を inner 内に封じ込め、
+                       grid 行高さが inner の border-box と一致するようにする */
+}
+.note-action-panel {
+  /* グリッドの同セルに配置 → 高さが inner と自動一致 */
+  grid-row: 1;
+  grid-column: 1;
+  justify-self: end;   /* 右端に寄せる */
+  width: 80px;
+  z-index: 0;
+  background: var(--success-color, #16a34a);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  height: 99%; /* inner と同じ高さにする */
+}
+.note-action-panel i { font-size: 1.25rem; }
+
+/* デスクトップ用「＋」ボタン: ホバー可能デバイスのみ表示 */
+.note-add-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid var(--primary-color, #4a6da7);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--primary-color, #4a6da7);
+  font-size: 1rem;
+  cursor: pointer;
+  margin-left: 8px;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.note-add-btn:hover {
+  background: var(--primary-color, #4a6da7);
+  color: white;
+}
+@media (hover: hover) {
+  .note-add-btn { display: flex; }
+}
+
+/* ダークモード対応 */
+.dark-mode .diary-header-inner,
+[data-theme="dark"] .diary-header-inner {
+  background: var(--dm-card);
+}
+.dark-mode .note-action-panel,
+[data-theme="dark"] .note-action-panel {
+  /* 緑はダークモードでも視認しやすいが、彩度を少し落とす */
+  background: #15803d;
+}
+
+/* クイックノート pill ボタン */
+.qn-type-btn,
+.qn-importance-btn {
+  padding: 4px 12px;
+  border: 1.5px solid var(--bg-300);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text-200);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.qn-type-btn.active,
+.qn-importance-btn.active {
+  border-color: var(--primary-color, #4a6da7);
+  background: var(--primary-color, #4a6da7);
+  color: white;
+}
+.qn-type-btn:hover:not(.active),
+.qn-importance-btn:hover:not(.active) {
+  border-color: var(--primary-color, #4a6da7);
+  color: var(--primary-color, #4a6da7);
+}
 </style>
 {% endblock %}
 
@@ -947,6 +1050,66 @@
 {% endif %}
 
 {% include 'speed_dial.html' with actions=form_actions %}
+
+<!-- ホームからのクイックノート追加シート -->
+<div class="bottom-sheet" id="quickNoteFromHomeSheet" aria-hidden="true">
+  <div class="bottom-sheet-backdrop"></div>
+  <div class="bottom-sheet-content">
+    <div class="bottom-sheet-handle" aria-label="シートを閉じるにはドラッグしてください"></div>
+    <div class="bottom-sheet-header">
+      <h3 id="qnSheetTitle" style="font-size:1rem;margin:0;font-weight:600;">継続記録を追加</h3>
+      <button type="button" class="btn-close" onclick="closeBottomSheet('quickNoteFromHomeSheet')" aria-label="閉じる">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="bottom-sheet-body">
+      {% csrf_token %}
+      <input type="hidden" id="qnNoteUrl">
+
+      <!-- ノートタイプ -->
+      <div class="mb-3">
+        <label class="form-label small fw-semibold text-muted">種別</label>
+        <div class="d-flex gap-2 flex-wrap">
+          <button type="button" class="qn-type-btn active" data-value="analysis">分析</button>
+          <button type="button" class="qn-type-btn" data-value="news">ニュース</button>
+          <button type="button" class="qn-type-btn" data-value="earnings">決算</button>
+          <button type="button" class="qn-type-btn" data-value="insight">気づき</button>
+          <button type="button" class="qn-type-btn" data-value="risk">リスク</button>
+        </div>
+      </div>
+
+      <!-- 本文 -->
+      <div class="mb-2">
+        <textarea id="qnContent"
+                  class="form-control"
+                  rows="5"
+                  maxlength="3000"
+                  placeholder="気づいたことや継続観察メモを入力..."
+                  oninput="updateQnCharCount()"></textarea>
+        <div class="text-end mt-1">
+          <small id="qnCharCount" class="text-muted">0 / 3000</small>
+        </div>
+      </div>
+
+      <!-- 重要度 -->
+      <div class="mb-3">
+        <label class="form-label small fw-semibold text-muted">重要度</label>
+        <div class="d-flex gap-2">
+          <button type="button" class="qn-importance-btn" data-value="low">低</button>
+          <button type="button" class="qn-importance-btn active" data-value="medium">中</button>
+          <button type="button" class="qn-importance-btn" data-value="high">高</button>
+        </div>
+      </div>
+
+      <!-- 送信 -->
+      <div class="d-grid">
+        <button type="button" id="qnSubmitBtn" class="btn btn-success btn-lg" onclick="qnSubmitNote()">
+          <i class="bi bi-check-lg me-1"></i>記録する
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -1487,5 +1650,19 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
     setTimeout(applyCardTruncation, 50);
   }
 });
+
+// クイックノート pill ボタンの active 切替
+document.addEventListener('click', function(e) {
+  if (e.target.matches('.qn-type-btn')) {
+    document.querySelectorAll('.qn-type-btn').forEach(function(b) { b.classList.remove('active'); });
+    e.target.classList.add('active');
+  }
+  if (e.target.matches('.qn-importance-btn')) {
+    document.querySelectorAll('.qn-importance-btn').forEach(function(b) { b.classList.remove('active'); });
+    e.target.classList.add('active');
+  }
+});
 </script>
+
+<script src="{% static 'js/card-swipe-note.js' %}?v={{ STATIC_VERSION }}"></script>
 {% endblock %}

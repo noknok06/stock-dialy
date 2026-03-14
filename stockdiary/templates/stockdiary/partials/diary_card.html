@@ -6,40 +6,54 @@
   <div class="card-body-inner">
 
   <!-- ========== ヘッダー部分 ========== -->
-  <header class="diary-header">
-    <div class="diary-title-row">
-      <h3 class="diary-name">
-        <a href="{% url 'stockdiary:detail' diary.id %}">
-          {{ diary.stock_name }}
-        </a>        
-        {% if diary.stock_symbol %}
-          <span class="diary-code">{{ diary.stock_symbol }}</span>
+  <header class="diary-header"
+          data-quick-note-url="{% url 'stockdiary:quick_add_note' diary.id %}"
+          data-stock-name="{{ diary.stock_name|escapejs }}">
+    <div class="diary-header-inner">
+      <div class="diary-title-row">
+        <h3 class="diary-name">
+          <a href="{% url 'stockdiary:detail' diary.id %}">
+            {{ diary.stock_name }}
+          </a>
+          {% if diary.stock_symbol %}
+            <span class="diary-code">{{ diary.stock_symbol }}</span>
+          {% endif %}
+        </h3>
+
+        {% if diary.realized_profit != 0 %}
+          <div class="diary-profit-pill">
+            {% include "stockdiary/components/_profit_display.html" with profit=diary.realized_profit style="badge" size="sm" show_icon=False decimals=0 %}
+          </div>
         {% endif %}
-      </h3>
-      
-      {% if diary.realized_profit != 0 %}
-        <div class="diary-profit-pill">
-          {% include "stockdiary/components/_profit_display.html" with profit=diary.realized_profit style="badge" size="sm" show_icon=False decimals=0 %}
-        </div>
+
+        <button class="note-add-btn" type="button" aria-label="継続記録を追加">
+          <i class="bi bi-plus-lg"></i>
+        </button>
+      </div>
+
+      <div class="diary-meta-row">
+        {% include "stockdiary/components/_date_display.html" with date=diary.created_at format="short" show_icon=True %}
+        {% include "stockdiary/components/_status_badge.html" with diary=diary style="improved" size="sm" %}
+      </div>
+
+      <!-- タグ行 - 独立 -->
+      {% if diary.tags.all %}
+      <div class="diary-tags-row">
+        {% for tag in diary.tags.all %}
+          <span class="tag-pill diary-tag" data-tag-id="{{ tag.id }}">
+            <i class="bi bi-tag-fill"></i>
+            {{ tag.name }}
+          </span>
+        {% endfor %}
+      </div>
       {% endif %}
+    </div><!-- /.diary-header-inner -->
+
+    <!-- アクションパネル（左スワイプで露出） -->
+    <div class="note-action-panel" role="button" aria-label="継続記録を追加">
+      <i class="bi bi-pencil-square"></i>
+      <span>記録</span>
     </div>
-    
-    <div class="diary-meta-row">
-      {% include "stockdiary/components/_date_display.html" with date=diary.created_at format="short" show_icon=True %}
-      {% include "stockdiary/components/_status_badge.html" with diary=diary style="improved" size="sm" %}
-    </div>
-    
-    <!-- タグ行 - 独立 -->
-    {% if diary.tags.all %}
-    <div class="diary-tags-row">
-      {% for tag in diary.tags.all %}
-        <span class="tag-pill diary-tag" data-tag-id="{{ tag.id }}">
-          <i class="bi bi-tag-fill"></i>
-          {{ tag.name }}
-        </span>
-      {% endfor %}
-    </div>
-    {% endif %}
   </header>
 
   <!-- ========== 画像（あれば） ========== -->

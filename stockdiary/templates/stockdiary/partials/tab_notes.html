@@ -55,14 +55,12 @@
 
     <!-- 本文 -->
     <div class="note-body markdown-content">
-      {{ note.content|render_markdown_with_mentions:mention_map|truncatewords_html:40 }}
+      <div class="note-short">{{ note.content|render_markdown_with_mentions:mention_map|truncatewords_html:40 }}</div>
+      {% if note.content|wordcount > 40 %}
+        <div class="note-full" hidden>{{ note.content|render_markdown_with_mentions:mention_map }}</div>
+        <button class="note-expand-btn" type="button">続きを読む</button>
+      {% endif %}
     </div>
-
-    {% if note.content|wordcount > 40 %}
-    <a href="{% url 'stockdiary:detail' diary.id %}" class="note-more">
-      続きを読む →
-    </a>
-    {% endif %}
   </article>
   {% empty %}
   
@@ -244,8 +242,9 @@
   margin-bottom: 0;
 }
 
-/* ========== More Link ========== */
-.note-more {
+/* ========== More Link / Expand Button ========== */
+.note-more,
+.note-expand-btn {
   display: inline-flex;
   align-items: center;
   color: var(--primary-color);
@@ -253,9 +252,14 @@
   font-size: 0.875rem;
   font-weight: 500;
   transition: gap 0.2s ease;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
 
-.note-more:hover {
+.note-more:hover,
+.note-expand-btn:hover {
   gap: 0.25rem;
 }
 
@@ -545,4 +549,20 @@ if (typeof window.executeDeleteNote === 'undefined') {
     });
   };
 }
+
+// ============================================
+// 「続きを読む」インライン展開
+// ============================================
+(function() {
+  // イベント委譲: HTMX の再読み込み後にも有効
+  document.addEventListener('click', function(e) {
+    if (!e.target.matches('.note-expand-btn')) return;
+    var btn = e.target;
+    var full  = btn.previousElementSibling;  // .note-full
+    var short = full.previousElementSibling; // .note-short
+    short.hidden = true;
+    full.hidden  = false;
+    btn.hidden   = true;
+  });
+}());
 </script>

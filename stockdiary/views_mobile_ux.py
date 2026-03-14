@@ -129,10 +129,10 @@ def quick_add_note(request, diary_id):
                 'message': '記録内容を入力してください'
             }, status=400)
 
-        if len(content) > 1000:
+        if len(content) > 3000:
             return JsonResponse({
                 'success': False,
-                'message': '記録内容は1000文字以内で入力してください'
+                'message': '記録内容は3000文字以内で入力してください'
             }, status=400)
 
         # 継続記録作成
