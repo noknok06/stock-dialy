@@ -6,8 +6,8 @@ const STATIC_CACHE_NAME = `kabulog-static-v${VERSION}`;
 // キャッシュするのは画像とCDNのみ（CSS/JSは除外）
 // ★重要：CSS/JSはリストに含めない（常にネットワークから取得するため）
 const PRECACHE_URLS = [
-  '/static/images/icon-modern.svg',
-  '/static/images/icon-192.png',
+  '/static/images/icon-192.svg',
+  '/static/images/icon-192.svg',
   '/static/images/icon-512.png',
   '/static/images/icon-96.png',
   '/static/images/badge-72.png',
@@ -191,7 +191,7 @@ self.addEventListener('push', event => {
   
   const options = {
     body: data.message || '新しい通知があります',
-    icon: data.icon || '/static/images/icon-192.png',
+    icon: data.icon || '/static/images/icon-192.svg',
     badge: data.badge || '/static/images/badge-72.png',
     vibrate: [200, 100, 200],
     tag: data.tag || 'notification',
@@ -263,7 +263,7 @@ async function syncNotifications() {
     if (data.unread_count > 0) {
       self.registration.showNotification('カブログ', {
         body: `${data.unread_count}件の未読通知があります`,
-        icon: '/static/images/icon-192.png',
+        icon: '/static/images/icon-192.svg',
         badge: '/static/images/badge-72.png',
         data: { url: '/notifications/' }
       });

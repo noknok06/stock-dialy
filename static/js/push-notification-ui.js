@@ -313,7 +313,7 @@ class PushNotificationUI {
                 try {
                     new Notification('カブログ', {
                         body: 'プッシュ通知が有効になりました！',
-                        icon: '/static/images/icon-192.png'
+                        icon: '/static/images/icon-192.svg'
                     });
                 } catch (e) {
                     // console.log('テスト通知スキップ:', e.message);

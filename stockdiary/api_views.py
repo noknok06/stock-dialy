@@ -344,7 +344,7 @@ def send_push_notification(user, title, message, url='/', tag='notification'):
         'message': message,
         'url': url,
         'tag': tag,
-        'icon': '/static/images/icon-192.png',
+        'icon': '/static/images/icon-192.svg',
         'badge': '/static/images/badge-72.png',
     })
     
