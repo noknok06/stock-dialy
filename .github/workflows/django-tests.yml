@@ -48,6 +48,7 @@ jobs:
         run: pytest tests/ --cov --cov-report=term-missing
         env:
           DJANGO_SETTINGS_MODULE: config.test_settings
+          DJANGO_TESTING: '1'
 
   deploy:
     runs-on: ubuntu-latest
