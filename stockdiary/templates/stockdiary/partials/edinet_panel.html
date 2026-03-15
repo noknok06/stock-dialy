@@ -16,104 +16,75 @@
 <div class="text-center py-4 text-secondary small">
   <i class="bi bi-file-earmark-text fs-4 d-block mb-2 opacity-50"></i>
   開示書類データがありません
-  <div class="mt-1" style="font-size:0.75rem;">
-    earnings_analysis アプリでデータを取得してください
-  </div>
 </div>
 
 {% else %}
-<div class="list-group list-group-flush">
-  {% for item in documents %}
-  {% with doc=item.doc fin=item.fin sent=item.sent result_url=item.result_url pdf_url=item.pdf_url %}
-  <div class="list-group-item px-0 py-3 border-0 border-bottom">
+<div class="table-responsive">
+  <table class="table table-sm table-hover align-middle mb-0" style="font-size:0.8rem;">
+    <thead>
+      <tr class="text-secondary border-bottom">
+        <th class="fw-normal ps-0" style="width:5.5rem;">提出日</th>
+        <th class="fw-normal">書類名</th>
+        <th class="fw-normal text-center" style="width:5rem;">状態</th>
+        <th class="fw-normal pe-0" style="width:3.5rem;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in documents %}
+      {% with doc=item.doc fin=item.fin sent=item.sent result_url=item.result_url pdf_url=item.pdf_url %}
+      <tr>
+        <td class="ps-0 text-secondary">{{ doc.file_date|date:"Y/m/d" }}</td>
 
-    <!-- 行1: 企業名 + アクションボタン -->
-    <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
-      <div class="flex-grow-1 min-w-0">
-        <span class="fw-semibold text-body" style="font-size:0.9rem;">{{ doc.company_name }}</span>
-      </div>
-      <!-- アクションボタン -->
-      <div class="flex-shrink-0 d-flex gap-1">
-        {% if fin or sent %}
-          <button type="button"
-                  class="btn btn-sm btn-primary py-0 px-2"
-                  style="font-size:0.75rem;"
-                  onclick="edinetPrefillNote('{{ diary.id }}', '{{ doc.doc_id }}')"
-                  title="この分析をメモに追加">
-            <i class="bi bi-plus-circle"></i>
-            <span class="d-none d-sm-inline ms-1">メモ化</span>
-          </button>
-          {% if result_url %}
-          <a href="{{ result_url }}"
-             class="btn btn-sm btn-outline-secondary py-0 px-2"
-             style="font-size:0.75rem;"
-             target="_blank"
-             title="分析結果を開く">
-            <i class="bi bi-bar-chart-line"></i>
-            <span class="d-none d-sm-inline ms-1">分析結果</span>
-          </a>
+        <td class="text-body">{{ doc.doc_type_display_name|default:doc.doc_type_code }}</td>
+
+        <td class="text-center">
+          {% if fin and sent %}
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size:0.65rem;">分析済</span>
+          {% elif fin %}
+            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:0.65rem;">財務済</span>
+          {% elif sent %}
+            <span class="badge bg-info-subtle text-info border border-info-subtle" style="font-size:0.65rem;">感情済</span>
+          {% elif doc.pdf_flag %}
+            <span class="badge bg-body-secondary text-secondary border" style="font-size:0.65rem;">PDF</span>
+          {% else %}
+            <span class="text-secondary" style="font-size:0.65rem;">—</span>
           {% endif %}
-        {% elif pdf_url %}
-          <a href="{{ pdf_url }}"
-             class="btn btn-sm btn-outline-secondary py-0 px-2"
-             style="font-size:0.75rem;"
-             target="_blank"
-             title="PDFをダウンロード">
-            <i class="bi bi-file-earmark-pdf"></i>
-            <span class="d-none d-sm-inline ms-1">PDF</span>
-          </a>
-        {% endif %}
-      </div>
-    </div>
+        </td>
 
-    <!-- 行2: 書類種別 + 日付 + スコアバッジ -->
-    <div class="d-flex flex-wrap align-items-center gap-2">
-      <span class="badge bg-body-secondary text-body-secondary border" style="font-size:0.65rem;">
-        {{ doc.doc_type_display_name|default:doc.doc_type_code }}
-      </span>
-      <span class="text-secondary" style="font-size:0.7rem;">
-        <i class="bi bi-calendar3 me-1"></i>{{ doc.file_date|date:"Y/m/d" }}
-      </span>
-
-      {% if sent %}
-        {% if sent.sentiment_label == 'positive' %}
-          <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:0.65rem;">
-            <i class="bi bi-graph-up-arrow"></i> ポジティブ {{ sent.overall_score|floatformat:2 }}
-          </span>
-        {% elif sent.sentiment_label == 'negative' %}
-          <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size:0.65rem;">
-            <i class="bi bi-graph-down-arrow"></i> ネガティブ {{ sent.overall_score|floatformat:2 }}
-          </span>
-        {% else %}
-          <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style="font-size:0.65rem;">
-            中立 {{ sent.overall_score|floatformat:2 }}
-          </span>
-        {% endif %}
-      {% endif %}
-
-      {% if fin %}
-        {% if fin.overall_health_score >= 70 %}
-          <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:0.65rem;">
-            財務 {{ fin.overall_health_score|floatformat:0 }}/100
-          </span>
-        {% elif fin.overall_health_score >= 40 %}
-          <span class="badge bg-warning-subtle text-warning border border-warning-subtle" style="font-size:0.65rem;">
-            財務 {{ fin.overall_health_score|floatformat:0 }}/100
-          </span>
-        {% else %}
-          <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size:0.65rem;">
-            財務 {{ fin.overall_health_score|floatformat:0 }}/100
-          </span>
-        {% endif %}
-      {% endif %}
-
-      {% if not fin and not sent %}
-        <span class="text-secondary" style="font-size:0.7rem;">未分析</span>
-      {% endif %}
-    </div>
-
-  </div>
-  {% endwith %}
-  {% endfor %}
+        <td class="pe-0 text-end">
+          {% if fin or sent %}
+            <div class="d-flex justify-content-end gap-1">
+              <button type="button"
+                      class="btn btn-sm btn-primary py-0 px-2"
+                      style="font-size:0.7rem;"
+                      onclick="edinetPrefillNote('{{ diary.id }}', '{{ doc.doc_id }}')"
+                      title="この決算をもとに記録を作成">
+                <i class="bi bi-pencil-square"></i>
+              </button>
+              {% if result_url %}
+              <a href="{{ result_url }}"
+                 class="btn btn-sm btn-outline-secondary py-0 px-2"
+                 style="font-size:0.7rem;"
+                 target="_blank"
+                 title="分析結果を開く">
+                <i class="bi bi-bar-chart-line"></i>
+              </a>
+              {% endif %}
+            </div>
+          {% elif pdf_url %}
+            <a href="{{ pdf_url }}"
+               class="btn btn-sm btn-outline-secondary py-0 px-2"
+               style="font-size:0.7rem;"
+               target="_blank"
+               title="PDFをダウンロード">
+              <i class="bi bi-file-earmark-pdf"></i>
+            </a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endwith %}
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 {% endif %}
