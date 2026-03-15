@@ -1880,7 +1880,7 @@
               type="button"
               class="btn btn-primary"
               id="toggleNoteForm"
-              onclick="openBottomSheet('addNoteSheet')">
+              onclick="var s=document.getElementById('note_source_doc_id');if(s)s.value='';openBottomSheet('addNoteSheet')">
               <i class="bi bi-plus-circle me-2"></i>
               <span class="toggle-text">記録を追加</span>
             </button>
@@ -2752,6 +2752,10 @@ window.edinetPrefillNote = function(diaryId, docId) {
       });
     }
 
+    // 参照書類IDをセット
+    var srcDocEl = document.getElementById('note_source_doc_id');
+    if (srcDocEl) srcDocEl.value = data.doc_id || '';
+
     // 継続記録ボトムシートを開く
     if (typeof openBottomSheet === 'function') {
       openBottomSheet('addNoteSheet');
@@ -3019,6 +3023,7 @@ window.showSentimentModal = function(el) {
             </div>
           </div>
           <input type="hidden" id="note_importance" name="importance" value="medium">
+          <input type="hidden" id="note_source_doc_id" name="source_doc_id" value="">
         </div>
 
         <div class="form-group">
