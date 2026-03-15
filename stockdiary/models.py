@@ -554,10 +554,10 @@ class DiaryNote(models.Model):
         ('low', '低')
     ]
     importance = models.CharField(max_length=10, choices=IMPORTANCE_CHOICES, default='medium')
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         ordering = ['-date']
         verbose_name = '継続記録'
@@ -729,4 +729,4 @@ class NotificationLog(models.Model):
         ordering = ['-sent_at']
         indexes = [
             models.Index(fields=['user', 'is_read', '-sent_at']),
-        ]        
+        ]

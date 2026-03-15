@@ -3289,3 +3289,174 @@ class ExploreView(LoginRequiredMixin, ListView):
         context['total_diary_count'] = StockDiary.objects.filter(user=user).count()
 
         return context
+
+# ============================================================
+# EDINET連携: 開示書類パネル（HTMXパーシャル）
+# ============================================================
+
+def _get_securities_code(stock_symbol):
+    """銘柄コード（4桁）からEDINET用5桁証券コードに変換"""
+    if stock_symbol and stock_symbol.isdigit() and len(stock_symbol) == 4:
+        return stock_symbol + '0'
+    return None
+
+
+@login_required
+@require_GET
+def edinet_panel(request, diary_id):
+    """
+    EDINET関連開示書類パネル（HTMXで遅延ロード）
+    日本株4桁コードにマッチする直近の開示書類と分析結果を返す
+    """
+    diary = get_object_or_404(StockDiary, pk=diary_id, user=request.user)
+    documents = []
+    error = None
+
+    try:
+        from earnings_analysis.models.document import DocumentMetadata
+        from earnings_analysis.models.financial import FinancialAnalysisSession, FinancialAnalysisHistory
+        from earnings_analysis.models.sentiment import SentimentAnalysisSession, SentimentAnalysisHistory
+
+        sec_code = _get_securities_code(diary.stock_symbol)
+        if not sec_code:
+            return render(request, 'stockdiary/partials/edinet_panel.html', {
+                'diary': diary,
+                'documents': [],
+                'not_supported': True,
+            })
+
+        # 直近10件の開示書類を取得
+        docs = (
+            DocumentMetadata.objects
+            .filter(securities_code=sec_code)
+            .order_by('-submit_date_time')[:10]
+        )
+
+        for doc in docs:
+            # 完了済みの最新分析セッションを取得（なければ永続履歴にフォールバック）
+            fin = (
+                FinancialAnalysisSession.objects
+                .filter(document=doc, processing_status='COMPLETED')
+                .order_by('-created_at')
+                .first()
+            ) or (
+                FinancialAnalysisHistory.objects
+                .filter(document=doc)
+                .order_by('-analysis_date')
+                .first()
+            )
+            sent = (
+                SentimentAnalysisSession.objects
+                .filter(document=doc, processing_status='COMPLETED')
+                .order_by('-created_at')
+                .first()
+            ) or (
+                SentimentAnalysisHistory.objects
+                .filter(document=doc)
+                .order_by('-analysis_date')
+                .first()
+            )
+            documents.append({
+                'doc': doc,
+                'fin': fin,
+                'sent': sent,
+            })
+
+    except ImportError:
+        error = 'earnings_analysis アプリが利用できません'
+    except Exception as e:
+        error = str(e)
+
+    return render(request, 'stockdiary/partials/edinet_panel.html', {
+        'diary': diary,
+        'documents': documents,
+        'error': error,
+        'not_supported': False,
+    })
+
+
+@login_required
+@require_GET
+def edinet_note_prefill(request, diary_id):
+    """
+    EDINET開示書類の分析結果をDiaryNoteのプリセット内容としてJSON返却
+    新規Gemini呼び出しは行わず、保存済みanalysis_resultを使用
+    """
+    doc_id = request.GET.get('doc_id', '')
+    if not doc_id:
+        return JsonResponse({'error': 'doc_id required'}, status=400)
+
+    diary = get_object_or_404(StockDiary, pk=diary_id, user=request.user)
+
+    try:
+        from earnings_analysis.models.document import DocumentMetadata
+        from earnings_analysis.models.financial import FinancialAnalysisSession, FinancialAnalysisHistory
+
+        doc = get_object_or_404(DocumentMetadata, doc_id=doc_id)
+
+        # まずアクティブなセッションを検索、なければ永続履歴にフォールバック
+        fin_session = (
+            FinancialAnalysisSession.objects
+            .filter(document=doc, processing_status='COMPLETED')
+            .order_by('-created_at')
+            .first()
+        )
+        fin_history = None
+        if not fin_session:
+            fin_history = (
+                FinancialAnalysisHistory.objects
+                .filter(document=doc, analysis_result__isnull=False)
+                .order_by('-analysis_date')
+                .first()
+            )
+
+        # 保存済みGeminiインサイトからinvestment_pointsを取得
+        content_parts = []
+        content_parts.append(f'## EDINET開示: {doc.company_name}')
+        content_parts.append(f'書類種別: {doc.doc_type_display_name}')
+        content_parts.append(f'提出日: {doc.file_date}')
+        content_parts.append('')
+
+        # セッションまたは履歴からanalysis_resultを取得
+        result = None
+        health_score = None
+        investment_stance = ''
+        if fin_session and fin_session.analysis_result:
+            result = fin_session.analysis_result
+            health_score = fin_session.overall_health_score
+            investment_stance = fin_session.get_investment_stance_display() if fin_session.investment_stance else ''
+        elif fin_history and fin_history.analysis_result:
+            result = fin_history.analysis_result
+            health_score = fin_history.overall_health_score
+
+        if result:
+            # Geminiインサイトのinvestment_pointsを取得
+            insights = result.get('gemini_insights', {})
+            points = insights.get('investment_points', [])
+            if points:
+                content_parts.append('### 投資ポイント（AI分析）')
+                for p in points:
+                    title = p.get('title', '')
+                    desc = p.get('description', p.get('content', ''))
+                    if title:
+                        content_parts.append(f'- **{title}**: {desc}')
+                    else:
+                        content_parts.append(f'- {desc}')
+                content_parts.append('')
+
+            # 財務スコアサマリー
+            if health_score is not None:
+                content_parts.append(f'### 財務スコア')
+                content_parts.append(f'- 健全性スコア: {health_score:.0f}/100')
+                if investment_stance:
+                    content_parts.append(f'- 投資スタンス: {investment_stance}')
+
+        prefill_content = '\n'.join(content_parts)
+        return JsonResponse({
+            'content': prefill_content,
+            'note_type': 'earnings',
+            'importance': 'medium',
+        })
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

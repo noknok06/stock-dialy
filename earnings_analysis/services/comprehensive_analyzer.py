@@ -285,6 +285,7 @@ class ComprehensiveAnalysisService:
                 user_ip=user_ip,
                 analysis_duration=analysis_duration,
                 data_quality=safe_financial_result.get('analysis_metadata', {}).get('data_quality', 'unknown'),
+                analysis_result=self._make_json_safe(final_result),
             )
             
             logger.info(f"包括分析完了: {session.session_id} ({analysis_duration:.2f}秒)")

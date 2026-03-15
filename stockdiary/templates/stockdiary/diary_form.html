@@ -1317,6 +1317,59 @@
           <!-- タグ機能のヘルプ (コンパクト版) -->
           <p class="text-muted small mb-2"><code style="font-size:0.8em;">@成長株</code> で検索可能なタグを挿入できます</p>
 
+          <!-- ========== ガイドモード: モード切替 ========== -->
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <div id="guideChecklist" class="text-muted small" style="display:none;">
+              <span id="guideCheckCount" class="badge bg-secondary me-1">0/4</span>項目入力済み
+            </div>
+            <div class="ms-auto">
+              <div class="btn-group btn-group-sm" role="group" aria-label="入力モード選択">
+                <button type="button" id="btnFreeMode" class="btn btn-outline-secondary active" onclick="setReasonMode('free')">
+                  <i class="bi bi-pencil me-1"></i>フリーモード
+                </button>
+                <button type="button" id="btnGuideMode" class="btn btn-outline-secondary" onclick="setReasonMode('guide')">
+                  <i class="bi bi-list-check me-1"></i>ガイドモード
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ========== ガイドモード: 構造化入力フォーム（デフォルト非表示）========== -->
+          <div id="guideModeForm" style="display:none;">
+            <div class="mb-3">
+              <label class="form-label fw-bold">
+                <i class="bi bi-lightbulb text-warning me-1"></i>投資仮説
+                <span class="text-muted fw-normal ms-1" style="font-size:0.8rem;">市場が見落としていることは？</span>
+              </label>
+              <textarea id="guideHypothesis" class="form-control" rows="3"
+                placeholder="例：○○社のコア事業への転換が市場にまだ織り込まれていない"></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">
+                <i class="bi bi-lightning text-primary me-1"></i>カタリスト
+                <span class="text-muted fw-normal ms-1" style="font-size:0.8rem;">仮説が証明されるトリガーは？</span>
+              </label>
+              <textarea id="guideCatalyst" class="form-control" rows="3"
+                placeholder="例：次の決算でセグメント別収益が開示される見込み（○月予定）"></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">
+                <i class="bi bi-shield-half text-danger me-1"></i>反論への回答
+                <span class="text-muted fw-normal ms-1" style="font-size:0.8rem;">弱気論とその反論</span>
+              </label>
+              <textarea id="guideCounter" class="form-control" rows="3"
+                placeholder="例：弱気論＝競合の参入リスク → 反論＝特許による参入障壁が高い"></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">
+                <i class="bi bi-sign-stop text-secondary me-1"></i>損切り条件
+                <span class="text-muted fw-normal ms-1" style="font-size:0.8rem;">仮説が外れたら何をきっかけに売るか</span>
+              </label>
+              <textarea id="guideExit" class="form-control" rows="2"
+                placeholder="例：決算でセグメント開示がなかった場合、または○○円を割り込んだ場合"></textarea>
+            </div>
+          </div>
+
           <textarea class="form-control"
                     name="reason"
                     id="id_reason"
@@ -2547,6 +2600,97 @@ if (floatingBtn && formFooter) {
   }
 }
 });
+
+// ============================================
+// ガイドモード（投資前思考スキャフォールド）
+// ============================================
+(function() {
+  var currentMode = 'free';
+  var guideFields = [
+    { id: 'guideHypothesis', heading: '## 投資仮説' },
+    { id: 'guideCatalyst',   heading: '## カタリスト' },
+    { id: 'guideCounter',    heading: '## 反論への回答' },
+    { id: 'guideExit',       heading: '## 損切り条件' },
+  ];
+
+  function getGuideMarkdown() {
+    return guideFields.map(function(f) {
+      var el = document.getElementById(f.id);
+      var val = el ? el.value.trim() : '';
+      return val ? f.heading + '\n' + val : '';
+    }).filter(Boolean).join('\n\n');
+  }
+
+  function updateGuideChecklist() {
+    var filled = guideFields.filter(function(f) {
+      var el = document.getElementById(f.id);
+      return el && el.value.trim().length > 0;
+    }).length;
+    var countEl = document.getElementById('guideCheckCount');
+    var checklistEl = document.getElementById('guideChecklist');
+    if (countEl) {
+      countEl.textContent = filled + '/4';
+      countEl.className = 'badge me-1 ' +
+        (filled === 4 ? 'bg-success' : filled > 0 ? 'bg-warning text-dark' : 'bg-secondary');
+    }
+    if (checklistEl) checklistEl.style.display = (currentMode === 'guide') ? '' : 'none';
+  }
+
+  window.setReasonMode = function(mode) {
+    if (mode === currentMode) return;
+    var mdeContainer = document.querySelector('.EasyMDEContainer');
+    var guideForm = document.getElementById('guideModeForm');
+    var btnFree = document.getElementById('btnFreeMode');
+    var btnGuide = document.getElementById('btnGuideMode');
+    var checklistEl = document.getElementById('guideChecklist');
+
+    if (mode === 'guide') {
+      if (mdeContainer) mdeContainer.style.display = 'none';
+      if (guideForm) guideForm.style.display = '';
+      if (btnFree) btnFree.classList.remove('active');
+      if (btnGuide) btnGuide.classList.add('active');
+      if (checklistEl) checklistEl.style.display = '';
+      currentMode = 'guide';
+    } else {
+      var md = getGuideMarkdown();
+      if (md && window.easyMDE && !window.easyMDE.value().trim()) {
+        window.easyMDE.value(md);
+      }
+      if (mdeContainer) mdeContainer.style.display = '';
+      if (guideForm) guideForm.style.display = 'none';
+      if (btnFree) btnFree.classList.add('active');
+      if (btnGuide) btnGuide.classList.remove('active');
+      if (checklistEl) checklistEl.style.display = 'none';
+      currentMode = 'free';
+    }
+    updateGuideChecklist();
+  };
+
+  document.addEventListener('DOMContentLoaded', function() {
+    guideFields.forEach(function(f) {
+      var el = document.getElementById(f.id);
+      if (el) el.addEventListener('input', updateGuideChecklist);
+    });
+
+    // フォーム送信前にガイドモードの内容を textarea に書き込む
+    var form = document.getElementById('diaryForm');
+    if (form) {
+      form.addEventListener('submit', function() {
+        if (currentMode === 'guide') {
+          var md = getGuideMarkdown();
+          if (md) {
+            if (window.easyMDE) {
+              window.easyMDE.value(md);
+            } else {
+              var ta = document.getElementById('id_reason');
+              if (ta) ta.value = md;
+            }
+          }
+        }
+      }, true);
+    }
+  });
+})();
 
 // ============================================
 // 現在株価取得 (DOMContentLoaded の外側に定義 → onclick から確実に参照可能)
