@@ -8,7 +8,7 @@ from django.contrib.auth import get_user_model
 from decimal import Decimal
 from datetime import date, timedelta
 
-from stockdiary.models import StockDiary, Transaction, DiaryNote
+from stockdiary.models import StockDiary, Transaction
 from tags.models import Tag
 
 User = get_user_model()
