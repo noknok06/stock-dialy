@@ -52,8 +52,8 @@
         </td>
 
         <td class="pe-0 text-end">
-          {% if fin or sent %}
-            <div class="d-flex justify-content-end gap-1">
+          <div class="d-flex justify-content-end gap-1">
+            {% if fin or sent %}
               <button type="button"
                       class="btn btn-sm btn-primary py-0 px-2"
                       style="font-size:0.7rem;"
@@ -70,16 +70,17 @@
                 <i class="bi bi-bar-chart-line"></i>
               </a>
               {% endif %}
-            </div>
-          {% elif pdf_url %}
-            <a href="{{ pdf_url }}"
-               class="btn btn-sm btn-outline-secondary py-0 px-2"
-               style="font-size:0.7rem;"
-               target="_blank"
-               title="PDFをダウンロード">
-              <i class="bi bi-file-earmark-pdf"></i>
-            </a>
-          {% endif %}
+            {% endif %}
+            {% if pdf_url %}
+              <a href="{{ pdf_url }}"
+                 class="btn btn-sm btn-outline-secondary py-0 px-2"
+                 style="font-size:0.7rem;"
+                 target="_blank"
+                 title="PDFを表示">
+                <i class="bi bi-file-earmark-pdf"></i>
+              </a>
+            {% endif %}
+          </div>
         </td>
       </tr>
       {% endwith %}
