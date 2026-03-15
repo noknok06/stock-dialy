@@ -2743,9 +2743,14 @@ window.edinetPrefillNote = function(diaryId, docId) {
       var ta = document.getElementById('id_content');
       if (ta) ta.value = data.content || '';
     }
-    // note_type を earnings にセット
+    // note_type を earnings にセット（ピルUIも更新）
     var noteTypeEl = document.querySelector('[name="note_type"]');
-    if (noteTypeEl && data.note_type) noteTypeEl.value = data.note_type;
+    if (noteTypeEl && data.note_type) {
+      noteTypeEl.value = data.note_type;
+      document.querySelectorAll('[data-target="note_type"]').forEach(function(p) {
+        p.classList.toggle('active', p.dataset.value === data.note_type);
+      });
+    }
 
     // 継続記録ボトムシートを開く
     if (typeof openBottomSheet === 'function') {
@@ -2762,7 +2767,94 @@ window.edinetPrefillNote = function(diaryId, docId) {
   .catch(function(e) { console.error('[EDINET] fetch error:', e); });
 };
 
+// 感情分析モーダル表示
+function _escH(s) {
+  return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : '';
+}
+window.showSentimentModal = function(el) {
+  try {
+    var data = JSON.parse(el.dataset.sent);
+    var body = document.getElementById('sentimentModalBody');
+    if (!body) return;
+    var sl = data.sentiment_label || '';
+    var scoreClass = sl === 'positive' ? 'text-success' : sl === 'negative' ? 'text-danger' : 'text-secondary';
+    var badgeClass = sl === 'positive' ? 'bg-success' : sl === 'negative' ? 'bg-danger' : 'bg-secondary';
+    var scoreNum = data.overall_score ? (data.overall_score * 100).toFixed(0) : '0';
+    var html = '';
+
+    // スコアサマリー
+    html += '<div class="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom">';
+    html += '<div class="text-center"><div class="display-6 fw-bold ' + scoreClass + '">' + scoreNum + '</div>';
+    html += '<div class="text-secondary" style="font-size:0.7rem;">スコア(-100〜+100)</div></div>';
+    html += '<div><span class="badge fs-5 ' + badgeClass + '">' + _escH(data.label_display || '—') + '</span></div>';
+    html += '</div>';
+
+    // AI投資ポイント
+    var insights = data.ai_insights || [];
+    if (insights.length > 0) {
+      html += '<h6 class="mb-2 small fw-semibold">AI投資ポイント</h6><ul class="small mb-3 ps-3">';
+      insights.slice(0, 4).forEach(function(p) {
+        html += '<li>' + (p.title ? '<strong>' + _escH(p.title) + '</strong>: ' : '') + _escH(p.description || p.content || '') + '</li>';
+      });
+      html += '</ul>';
+    }
+
+    // ポジティブキーワード
+    var kpos = data.keyword_pos || [];
+    if (kpos.length > 0) {
+      html += '<p class="mb-1 small fw-semibold">ポジティブキーワード</p>';
+      html += '<div class="d-flex flex-wrap gap-1 mb-3">';
+      kpos.forEach(function(k) { html += '<span class="badge bg-success-subtle text-success border border-success-subtle">' + _escH(k) + '</span>'; });
+      html += '</div>';
+    }
+
+    // ネガティブキーワード
+    var kneg = data.keyword_neg || [];
+    if (kneg.length > 0) {
+      html += '<p class="mb-1 small fw-semibold">ネガティブキーワード</p>';
+      html += '<div class="d-flex flex-wrap gap-1 mb-3">';
+      kneg.forEach(function(k) { html += '<span class="badge bg-danger-subtle text-danger border border-danger-subtle">' + _escH(k) + '</span>'; });
+      html += '</div>';
+    }
+
+    // キーセンテンス
+    var sp = (data.sample_sentences && data.sample_sentences.positive) || [];
+    var sn = (data.sample_sentences && data.sample_sentences.negative) || [];
+    if (sp.length > 0 || sn.length > 0) {
+      html += '<p class="mb-2 small fw-semibold">キーセンテンス</p>';
+      sp.slice(0,2).forEach(function(s) { html += '<p class="small text-success mb-1"><i class="bi bi-plus-circle-fill me-1"></i>' + _escH(s) + '</p>'; });
+      sn.slice(0,2).forEach(function(s) { html += '<p class="small text-danger mb-1"><i class="bi bi-dash-circle-fill me-1"></i>' + _escH(s) + '</p>'; });
+    }
+
+    // 統計
+    var st = data.stats || {};
+    if (st.sentences_analyzed) {
+      html += '<div class="text-secondary border-top pt-2 mt-2" style="font-size:0.7rem;">分析文数: ' + st.sentences_analyzed;
+      if (st.positive_words_count !== undefined) html += ' | ポジ語: ' + st.positive_words_count + ' | ネガ語: ' + st.negative_words_count;
+      html += '</div>';
+    }
+
+    body.innerHTML = html || '<p class="text-secondary text-center py-3">詳細データがありません</p>';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('sentimentModal')).show();
+  } catch(e) { console.error('[EDINET] showSentimentModal:', e); }
+};
+
 </script>
+
+<!-- 感情分析モーダル（EDINETパネル用） -->
+<div class="modal fade" id="sentimentModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title fw-semibold small">
+          <i class="bi bi-bar-chart-line me-2 text-info"></i>感情分析結果
+        </h6>
+        <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body small" id="sentimentModalBody"></div>
+    </div>
+  </div>
+</div>
 
 <!-- 取引追加ボトムシート -->
 <div class="bottom-sheet" id="addTransactionSheet" aria-hidden="true">
