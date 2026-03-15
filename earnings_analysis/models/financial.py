@@ -118,7 +118,9 @@ class FinancialAnalysisHistory(models.Model):
     user_ip = models.GenericIPAddressField('実行ユーザーIP', null=True, blank=True)
     analysis_duration = models.FloatField('分析処理時間（秒）', null=True, blank=True)
     data_quality = models.CharField('データ品質', max_length=20, null=True, blank=True)
-    
+    analysis_result = models.JSONField('分析結果詳細', null=True, blank=True,
+                                       help_text='セッション期限切れ後も参照できる全結果JSON')
+
     class Meta:
         db_table = 'earnings_analysis_financial_history'
         verbose_name = '財務分析履歴'

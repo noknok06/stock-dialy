@@ -3314,8 +3314,8 @@ def edinet_panel(request, diary_id):
 
     try:
         from earnings_analysis.models.document import DocumentMetadata
-        from earnings_analysis.models.financial import FinancialAnalysisSession
-        from earnings_analysis.models.sentiment import SentimentAnalysisSession
+        from earnings_analysis.models.financial import FinancialAnalysisSession, FinancialAnalysisHistory
+        from earnings_analysis.models.sentiment import SentimentAnalysisSession, SentimentAnalysisHistory
 
         sec_code = _get_securities_code(diary.stock_symbol)
         if not sec_code:
@@ -3333,23 +3333,33 @@ def edinet_panel(request, diary_id):
         )
 
         for doc in docs:
-            # 完了済みの最新分析セッションを取得（新規API呼び出しなし）
-            fin_session = (
+            # 完了済みの最新分析セッションを取得（なければ永続履歴にフォールバック）
+            fin = (
                 FinancialAnalysisSession.objects
                 .filter(document=doc, processing_status='COMPLETED')
                 .order_by('-created_at')
                 .first()
+            ) or (
+                FinancialAnalysisHistory.objects
+                .filter(document=doc)
+                .order_by('-analysis_date')
+                .first()
             )
-            sent_session = (
+            sent = (
                 SentimentAnalysisSession.objects
                 .filter(document=doc, processing_status='COMPLETED')
                 .order_by('-created_at')
                 .first()
+            ) or (
+                SentimentAnalysisHistory.objects
+                .filter(document=doc)
+                .order_by('-analysis_date')
+                .first()
             )
             documents.append({
                 'doc': doc,
-                'fin': fin_session,
-                'sent': sent_session,
+                'fin': fin,
+                'sent': sent,
             })
 
     except ImportError:
@@ -3380,16 +3390,25 @@ def edinet_note_prefill(request, diary_id):
 
     try:
         from earnings_analysis.models.document import DocumentMetadata
-        from earnings_analysis.models.financial import FinancialAnalysisSession
+        from earnings_analysis.models.financial import FinancialAnalysisSession, FinancialAnalysisHistory
 
         doc = get_object_or_404(DocumentMetadata, doc_id=doc_id)
 
+        # まずアクティブなセッションを検索、なければ永続履歴にフォールバック
         fin_session = (
             FinancialAnalysisSession.objects
             .filter(document=doc, processing_status='COMPLETED')
             .order_by('-created_at')
             .first()
         )
+        fin_history = None
+        if not fin_session:
+            fin_history = (
+                FinancialAnalysisHistory.objects
+                .filter(document=doc, analysis_result__isnull=False)
+                .order_by('-analysis_date')
+                .first()
+            )
 
         # 保存済みGeminiインサイトからinvestment_pointsを取得
         content_parts = []
@@ -3398,9 +3417,19 @@ def edinet_note_prefill(request, diary_id):
         content_parts.append(f'提出日: {doc.file_date}')
         content_parts.append('')
 
+        # セッションまたは履歴からanalysis_resultを取得
+        result = None
+        health_score = None
+        investment_stance = ''
         if fin_session and fin_session.analysis_result:
             result = fin_session.analysis_result
+            health_score = fin_session.overall_health_score
+            investment_stance = fin_session.get_investment_stance_display() if fin_session.investment_stance else ''
+        elif fin_history and fin_history.analysis_result:
+            result = fin_history.analysis_result
+            health_score = fin_history.overall_health_score
 
+        if result:
             # Geminiインサイトのinvestment_pointsを取得
             insights = result.get('gemini_insights', {})
             points = insights.get('investment_points', [])
@@ -3416,8 +3445,6 @@ def edinet_note_prefill(request, diary_id):
                 content_parts.append('')
 
             # 財務スコアサマリー
-            health_score = fin_session.overall_health_score
-            investment_stance = fin_session.get_investment_stance_display() if fin_session.investment_stance else ''
             if health_score is not None:
                 content_parts.append(f'### 財務スコア')
                 content_parts.append(f'- 健全性スコア: {health_score:.0f}/100')
