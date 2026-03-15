@@ -2113,6 +2113,7 @@ class SentimentAnalysisService:
                 document=session.document,
                 overall_score=result['overall_score'],
                 sentiment_label=result['sentiment_label'],
+                analysis_result=session.analysis_result,
                 user_ip=user_ip,
                 analysis_duration=analysis_duration
             )
