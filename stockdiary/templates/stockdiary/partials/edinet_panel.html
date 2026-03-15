@@ -43,8 +43,25 @@
         <td class="text-center">
           <div class="d-flex flex-wrap justify-content-center gap-1">
             {% if fin %}
-              <span class="badge bg-success-subtle text-success border border-success-subtle"
-                    style="font-size:0.6rem;">財務済</span>
+              {% if fin.overall_health_score >= 70 %}
+                <span class="badge bg-success-subtle text-success border border-success-subtle"
+                      style="font-size:0.6rem;" title="総合健全性スコア">
+                  <i class="bi bi-graph-up-arrow"></i> {{ fin.overall_health_score|floatformat:0 }}
+                </span>
+              {% elif fin.overall_health_score >= 40 %}
+                <span class="badge bg-warning-subtle text-warning border border-warning-subtle"
+                      style="font-size:0.6rem;" title="総合健全性スコア">
+                  {{ fin.overall_health_score|floatformat:0 }}
+                </span>
+              {% elif fin.overall_health_score %}
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle"
+                      style="font-size:0.6rem;" title="総合健全性スコア">
+                  <i class="bi bi-graph-down-arrow"></i> {{ fin.overall_health_score|floatformat:0 }}
+                </span>
+              {% else %}
+                <span class="badge bg-body-secondary text-secondary border"
+                      style="font-size:0.6rem;">財務済</span>
+              {% endif %}
             {% endif %}
             {% if sent %}
               {% if sent_json %}

@@ -555,6 +555,9 @@ class DiaryNote(models.Model):
     ]
     importance = models.CharField(max_length=10, choices=IMPORTANCE_CHOICES, default='medium')
 
+    source_doc_id = models.CharField('参照書類ID', max_length=8, null=True, blank=True,
+                                     help_text='関連するEDINET書類のdoc_id')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

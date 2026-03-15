@@ -815,22 +815,28 @@ class AddDiaryNoteView(LoginRequiredMixin, CreateView):
         form.instance.diary = diary
         
         response = super().form_valid(form)
-        
+
+        # 参照書類IDを保存
+        source_doc_id = self.request.POST.get('source_doc_id', '').strip()[:8]
+        if source_doc_id:
+            self.object.source_doc_id = source_doc_id
+            self.object.save(update_fields=['source_doc_id'])
+
         image_file = self.request.FILES.get('image')
         if image_file:
             if image_file.size > 10 * 1024 * 1024:
                 messages.error(self.request, '画像ファイルのサイズは10MB以下にしてください')
                 return self.form_invalid(form)
-            
+
             valid_formats = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
             if hasattr(image_file, 'content_type') and image_file.content_type not in valid_formats:
                 messages.error(self.request, 'JPEG、PNG、GIF、WebP形式の画像ファイルのみアップロード可能です')
                 return self.form_invalid(form)
-            
+
             success = self.object.process_and_save_image(image_file)
             if not success:
                 messages.warning(self.request, '継続記録は追加されましたが、画像の処理に失敗しました。')
-        
+
         messages.success(self.request, "継続記録を追加しました")
         return response
     
@@ -3489,13 +3495,17 @@ def edinet_note_prefill(request, diary_id):
         result = None
         health_score = None
         investment_stance = ''
+        risk_level = ''
+        _risk_labels = {'low': '低リスク', 'medium': '中リスク', 'high': '高リスク'}
         if fin_session and fin_session.analysis_result:
             result = fin_session.analysis_result
             health_score = fin_session.overall_health_score
             investment_stance = fin_session.get_investment_stance_display() if fin_session.investment_stance else ''
+            risk_level = _risk_labels.get(fin_session.risk_level, '')
         elif fin_history and fin_history.analysis_result:
             result = fin_history.analysis_result
             health_score = fin_history.overall_health_score
+            risk_level = _risk_labels.get(getattr(fin_history, 'risk_level', ''), '')
 
         if result:
             # Geminiインサイトのinvestment_pointsを取得
@@ -3512,12 +3522,14 @@ def edinet_note_prefill(request, diary_id):
                         content_parts.append(f'- {desc}')
                 content_parts.append('')
 
-            # 財務スコアサマリー
-            if health_score is not None:
-                content_parts.append(f'### 財務スコア')
-                content_parts.append(f'- 健全性スコア: {health_score:.0f}/100')
-                if investment_stance:
-                    content_parts.append(f'- 投資スタンス: {investment_stance}')
+        # 総合評価スコア（分析の有無に関わらずセッション/履歴から取得）
+        if health_score is not None:
+            content_parts.append('### 総合評価スコア')
+            content_parts.append(f'- 健全性スコア: **{health_score:.0f}/100**')
+            if risk_level:
+                content_parts.append(f'- リスクレベル: {risk_level}')
+            if investment_stance:
+                content_parts.append(f'- 投資スタンス: {investment_stance}')
 
         content_parts.append('')
         content_parts.append('---')

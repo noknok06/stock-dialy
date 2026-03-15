@@ -1223,9 +1223,11 @@
         if (theme === 'dark') {
           document.body.classList.add('dark-mode');
           document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.setAttribute('data-bs-theme', 'dark');
         } else {
           document.body.classList.remove('dark-mode');
           document.documentElement.removeAttribute('data-theme');
+          document.documentElement.removeAttribute('data-bs-theme');
         }
         localStorage.setItem(THEME_KEY, theme);
         updateToggleButtons(theme);
