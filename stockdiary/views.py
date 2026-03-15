@@ -26,7 +26,6 @@ from django.core.cache import cache
 from utils.mixins import ObjectNotFoundRedirectMixin
 from .models import StockDiary, DiaryNote, DiaryNotification
 from .models import Transaction, StockSplit
-from .models import ReviewSchedule
 from .forms import TransactionForm, StockSplitForm, TradeUploadForm
 from .forms import StockDiaryForm, DiaryNoteForm
 from company_master.models import CompanyMaster
@@ -644,10 +643,6 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
 
         # テキスト内銘柄コードリンク用マッピング {stock_symbol: diary_pk}
         context['mention_map'] = get_mention_map(self.request.user)
-
-        # 定期レビュースケジュール
-        context['review_schedule'] = self.object.review_schedules.filter(is_active=True).first()
-        context['review_choices'] = ReviewSchedule.INTERVAL_CHOICES
 
         return context
 
@@ -3296,65 +3291,145 @@ class ExploreView(LoginRequiredMixin, ListView):
         return context
 
 # ============================================================
-# 定期レビューワークフロー
+# EDINET連携: 開示書類パネル（HTMXパーシャル）
 # ============================================================
 
-@login_required
-@require_http_methods(["POST"])
-def review_schedule_save(request, diary_id):
-    """ReviewSchedule の作成または更新"""
-    diary = get_object_or_404(StockDiary, pk=diary_id, user=request.user)
-    interval_days = int(request.POST.get('interval_days', 90))
-    action = request.POST.get('action', 'activate')
-
-    schedule, _ = ReviewSchedule.objects.get_or_create(diary=diary)
-
-    if action == 'deactivate':
-        schedule.is_active = False
-        schedule.save(update_fields=['is_active', 'updated_at'])
-        messages.success(request, '定期レビューを停止しました')
-    else:
-        from datetime import date, timedelta
-        schedule.interval_days = interval_days
-        schedule.is_active = True
-        schedule.next_review_date = date.today() + timedelta(days=interval_days)
-        schedule.save()
-        messages.success(request, f'定期レビューを設定しました（{schedule.get_interval_days_display()}ごと）')
-
-    return redirect(reverse_lazy('stockdiary:detail', kwargs={'pk': diary_id}) + '#tab-notes')
+def _get_securities_code(stock_symbol):
+    """銘柄コード（4桁）からEDINET用5桁証券コードに変換"""
+    if stock_symbol and stock_symbol.isdigit() and len(stock_symbol) == 4:
+        return stock_symbol + '0'
+    return None
 
 
 @login_required
-def review_page(request, diary_id):
-    """定期レビュー記録ページ - 投資仮説を振り返る"""
+@require_GET
+def edinet_panel(request, diary_id):
+    """
+    EDINET関連開示書類パネル（HTMXで遅延ロード）
+    日本株4桁コードにマッチする直近の開示書類と分析結果を返す
+    """
     diary = get_object_or_404(StockDiary, pk=diary_id, user=request.user)
-    schedule = diary.review_schedules.filter(is_active=True).first()
-    past_reviews = diary.notes.filter(is_review=True).order_by('date')
+    documents = []
+    error = None
 
-    if request.method == 'POST':
-        verdict = request.POST.get('verdict', '')
-        content = request.POST.get('content', '').strip()
-        if not content:
-            messages.error(request, 'レビュー内容を入力してください')
-        else:
-            from datetime import date
-            note = DiaryNote.objects.create(
-                diary=diary,
-                date=date.today(),
-                note_type='insight',
-                importance='high',
-                is_review=True,
-                review_verdict=verdict if verdict in dict(DiaryNote.REVIEW_VERDICT_CHOICES) else None,
-                content=content,
+    try:
+        from earnings_analysis.models.document import DocumentMetadata
+        from earnings_analysis.models.financial import FinancialAnalysisSession
+        from earnings_analysis.models.sentiment import SentimentAnalysisSession
+
+        sec_code = _get_securities_code(diary.stock_symbol)
+        if not sec_code:
+            return render(request, 'stockdiary/partials/edinet_panel.html', {
+                'diary': diary,
+                'documents': [],
+                'not_supported': True,
+            })
+
+        # 直近10件の開示書類を取得
+        docs = (
+            DocumentMetadata.objects
+            .filter(securities_code=sec_code)
+            .order_by('-submit_date_time')[:10]
+        )
+
+        for doc in docs:
+            # 完了済みの最新分析セッションを取得（新規API呼び出しなし）
+            fin_session = (
+                FinancialAnalysisSession.objects
+                .filter(document=doc, processing_status='COMPLETED')
+                .order_by('-created_at')
+                .first()
             )
-            if schedule:
-                schedule.advance_to_next()
-            messages.success(request, 'レビューを記録しました')
-            return redirect('stockdiary:detail', pk=diary_id)
+            sent_session = (
+                SentimentAnalysisSession.objects
+                .filter(document=doc, processing_status='COMPLETED')
+                .order_by('-created_at')
+                .first()
+            )
+            documents.append({
+                'doc': doc,
+                'fin': fin_session,
+                'sent': sent_session,
+            })
 
-    context = {
+    except ImportError:
+        error = 'earnings_analysis アプリが利用できません'
+    except Exception as e:
+        error = str(e)
+
+    return render(request, 'stockdiary/partials/edinet_panel.html', {
         'diary': diary,
-        'schedule': schedule,
-        'past_reviews': past_reviews,
-    }
-    return render(request, 'stockdiary/review_page.html', context)
+        'documents': documents,
+        'error': error,
+        'not_supported': False,
+    })
+
+
+@login_required
+@require_GET
+def edinet_note_prefill(request, diary_id):
+    """
+    EDINET開示書類の分析結果をDiaryNoteのプリセット内容としてJSON返却
+    新規Gemini呼び出しは行わず、保存済みanalysis_resultを使用
+    """
+    doc_id = request.GET.get('doc_id', '')
+    if not doc_id:
+        return JsonResponse({'error': 'doc_id required'}, status=400)
+
+    diary = get_object_or_404(StockDiary, pk=diary_id, user=request.user)
+
+    try:
+        from earnings_analysis.models.document import DocumentMetadata
+        from earnings_analysis.models.financial import FinancialAnalysisSession
+
+        doc = get_object_or_404(DocumentMetadata, doc_id=doc_id)
+
+        fin_session = (
+            FinancialAnalysisSession.objects
+            .filter(document=doc, processing_status='COMPLETED')
+            .order_by('-created_at')
+            .first()
+        )
+
+        # 保存済みGeminiインサイトからinvestment_pointsを取得
+        content_parts = []
+        content_parts.append(f'## EDINET開示: {doc.company_name}')
+        content_parts.append(f'書類種別: {doc.doc_type_display_name}')
+        content_parts.append(f'提出日: {doc.file_date}')
+        content_parts.append('')
+
+        if fin_session and fin_session.analysis_result:
+            result = fin_session.analysis_result
+
+            # Geminiインサイトのinvestment_pointsを取得
+            insights = result.get('gemini_insights', {})
+            points = insights.get('investment_points', [])
+            if points:
+                content_parts.append('### 投資ポイント（AI分析）')
+                for p in points:
+                    title = p.get('title', '')
+                    desc = p.get('description', p.get('content', ''))
+                    if title:
+                        content_parts.append(f'- **{title}**: {desc}')
+                    else:
+                        content_parts.append(f'- {desc}')
+                content_parts.append('')
+
+            # 財務スコアサマリー
+            health_score = fin_session.overall_health_score
+            investment_stance = fin_session.get_investment_stance_display() if fin_session.investment_stance else ''
+            if health_score is not None:
+                content_parts.append(f'### 財務スコア')
+                content_parts.append(f'- 健全性スコア: {health_score:.0f}/100')
+                if investment_stance:
+                    content_parts.append(f'- 投資スタンス: {investment_stance}')
+
+        prefill_content = '\n'.join(content_parts)
+        return JsonResponse({
+            'content': prefill_content,
+            'note_type': 'earnings',
+            'importance': 'medium',
+        })
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

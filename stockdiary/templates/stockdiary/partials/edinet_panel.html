@@ -1,0 +1,112 @@
+{% load stockdiary_filters %}
+{% load humanize %}
+
+{% if not_supported %}
+<div class="text-muted small text-center py-3">
+  <i class="bi bi-info-circle me-1"></i>
+  EDINET連携は日本株（4桁コード）のみ対応しています
+</div>
+
+{% elif error %}
+<div class="alert alert-warning py-2 small mb-0">
+  <i class="bi bi-exclamation-triangle me-1"></i>{{ error }}
+</div>
+
+{% elif not documents %}
+<div class="text-center py-4 text-muted small">
+  <i class="bi bi-file-earmark-text fs-4 d-block mb-2 opacity-50"></i>
+  開示書類データがありません
+  <div class="mt-1" style="font-size:0.75rem;">
+    earnings_analysis アプリでデータを取得してください
+  </div>
+</div>
+
+{% else %}
+<div class="list-group list-group-flush">
+  {% for item in documents %}
+  {% with doc=item.doc fin=item.fin sent=item.sent %}
+  <div class="list-group-item px-0 py-2 border-0 border-bottom">
+    <div class="d-flex align-items-start gap-2">
+
+      <!-- 書類タイプ & 日付 -->
+      <div class="flex-shrink-0 text-center" style="min-width:48px;">
+        <div class="badge bg-light text-dark border small" style="font-size:0.65rem;">
+          {{ doc.doc_type_display_name|default:doc.doc_type_code|truncatechars:5 }}
+        </div>
+        <div class="text-muted mt-1" style="font-size:0.7rem;">
+          {{ doc.file_date|date:"Y/m/d" }}
+        </div>
+      </div>
+
+      <!-- メイン情報 -->
+      <div class="flex-grow-1 min-w-0">
+        <div class="fw-bold small text-truncate">{{ doc.company_name }}</div>
+
+        <!-- 分析スコアバッジ -->
+        <div class="d-flex flex-wrap gap-1 mt-1">
+          {% if sent %}
+            {% if sent.sentiment_label == 'positive' %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:0.65rem;">
+                <i class="bi bi-graph-up-arrow"></i> ポジティブ {{ sent.overall_score|floatformat:2 }}
+              </span>
+            {% elif sent.sentiment_label == 'negative' %}
+              <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size:0.65rem;">
+                <i class="bi bi-graph-down-arrow"></i> ネガティブ {{ sent.overall_score|floatformat:2 }}
+              </span>
+            {% else %}
+              <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style="font-size:0.65rem;">
+                ニュートラル {{ sent.overall_score|floatformat:2 }}
+              </span>
+            {% endif %}
+          {% endif %}
+
+          {% if fin %}
+            {% if fin.overall_health_score >= 70 %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:0.65rem;">
+                財務 {{ fin.overall_health_score|floatformat:0 }}/100
+              </span>
+            {% elif fin.overall_health_score >= 40 %}
+              <span class="badge bg-warning-subtle text-warning border border-warning-subtle" style="font-size:0.65rem;">
+                財務 {{ fin.overall_health_score|floatformat:0 }}/100
+              </span>
+            {% else %}
+              <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size:0.65rem;">
+                財務 {{ fin.overall_health_score|floatformat:0 }}/100
+              </span>
+            {% endif %}
+          {% endif %}
+
+          {% if not fin and not sent %}
+            <span class="text-muted" style="font-size:0.7rem;">未分析</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- アクションボタン -->
+      <div class="flex-shrink-0 d-flex flex-column gap-1">
+        {% if fin or sent %}
+        <button type="button"
+                class="btn btn-sm btn-outline-primary py-0 px-2"
+                style="font-size:0.7rem;"
+                onclick="edinetPrefillNote('{{ diary.id }}', '{{ doc.doc_id }}')"
+                title="この分析をメモに追加">
+          <i class="bi bi-plus-circle me-1"></i>メモ化
+        </button>
+        {% endif %}
+        {% if doc.pdf_flag %}
+        <a href="{% url 'copomo:document_detail' doc.doc_id %}"
+           class="btn btn-sm btn-outline-secondary py-0 px-2"
+           style="font-size:0.7rem;"
+           target="_blank"
+           title="詳細分析を開く">
+          <i class="bi bi-box-arrow-up-right"></i>
+        </a>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+  {% endwith %}
+  {% endfor %}
+</div>
+{% endif %}

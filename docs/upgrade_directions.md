@@ -37,58 +37,41 @@
 **動作**:
 - フリーモード（既存EasyMDE）とガイドモードをトグルで切替
 - ガイドモードで入力した4フィールドは、送信時にMarkdown見出し付きで結合し、
-  既存の `reason` フィールドにそのまま保存（モデル変更なし）
+  既存の `reason` フィールドにそのまま保存（**モデル変更なし**）
 - リアルタイムの「0/4項目入力済み」バッジ表示
 
 ---
 
-### 方向性A: 定期レビューワークフロー
+### 方向性C: EDINET連携（開示書類と日記の双方向リンク）
 
 **対象ファイル**:
-- `stockdiary/models.py` — `DiaryNote.is_review`, `DiaryNote.review_verdict`, `ReviewSchedule` モデル追加
-- `stockdiary/migrations/0001_add_review_workflow.py` — マイグレーション
-- `stockdiary/views.py` — `review_page`, `review_schedule_save` ビュー追加
-- `stockdiary/urls.py` — `/stockdiary/<id>/review/`, `/stockdiary/<id>/review/schedule/` 追加
-- `stockdiary/tasks.py` — `process_review_notifications`, `setup_review_schedule` タスク追加
-- `stockdiary/templates/stockdiary/review_page.html` — 新規テンプレート
-- `stockdiary/templates/stockdiary/detail.html` — 継続記録タブにスケジュール設定UI追加
+- `stockdiary/views.py` — `edinet_panel`, `edinet_note_prefill` ビュー追加
+- `stockdiary/urls.py` — EDINET連携エンドポイント2本追加
+- `stockdiary/templates/stockdiary/detail.html` — 「開示書類」タブ追加（HTMXで遅延ロード）
+- `stockdiary/templates/stockdiary/partials/edinet_panel.html` — 開示書類一覧パーシャル（新規）
 
 **動作**:
-1. 日記詳細 → 継続記録タブ → 定期レビューパネルからスケジュール設定（30/60/90/180日）
-2. 期日になると Push通知（既存 `notification_service.py` + `PushSubscription` 使用）
-3. `/stockdiary/<id>/review/` でレビューページを開き:
-   - 元の投資理由を再確認
-   - 直近の継続記録タイムラインを参照
-   - 「仮説は有効 / 部分的に有効 / 無効」を選択して記録
-4. レビュー記録後、次回レビュー日が自動更新される
+1. 日記詳細画面に **「開示書類」タブ** を追加（銘柄コードあり銘柄のみ表示）
+2. タブをクリックすると HTMX で遅延ロード → `earnings_analysis` アプリの
+   `DocumentMetadata` を `securities_code` でフィルタリングして最新10件を表示
+3. 各書類に対してすでに完了済みの分析結果（`FinancialAnalysisSession` /
+   `SentimentAnalysisSession`）をバッジで表示
+   - 感情スコア（ポジティブ/ニュートラル/ネガティブ）
+   - 財務健全性スコア（0-100）
+4. **「メモ化」ボタン** → 保存済みGeminiインサイト（`investment_points`）を
+   Markdown形式で継続記録フォームに流し込む（**新規API呼び出し不要**）
+5. 「詳細分析を開く」→ `earnings_analysis` の詳細画面へリンク
 
-**新規モデル**:
+**銘柄コードマッチング**:
+- `StockDiary.stock_symbol` = `"7203"` (4桁)
+- `DocumentMetadata.securities_code` = `"72030"` (5桁、末尾は `0` が慣例)
+- 変換: `_get_securities_code("7203")` → `"72030"`
 
-```python
-class ReviewSchedule(models.Model):
-    diary           = ForeignKey(StockDiary)
-    interval_days   = PositiveIntegerField(choices=[30,60,90,180])
-    next_review_date = DateField()
-    is_active       = BooleanField(default=True)
-```
-
-```python
-# DiaryNote に追加
-is_review      = BooleanField(default=False)
-review_verdict = CharField(choices=['valid', 'partially', 'invalid'], null=True)
-```
+**コスト**: Gemini等AI APIの新規呼び出しなし。すべて保存済みデータを再利用。
 
 ---
 
 ## 今後の検討事項（未実装）
-
-### 方向性C: EDINET連携（コスト不要）
-
-`earnings_analysis` アプリの既存データ（`DocumentMetadata`, `SentimentResult`）を
-日記詳細に表示し、ワンクリックで `DiaryNote` を作成できるようにする。
-
-- 新規Gemini API呼び出しは不要（保存済みデータを再利用）
-- 実装箇所: `stockdiary/views.py` に HTMXパーシャルビュー追加, `detail.html` に折りたたみセクション
 
 ### 方向性D: エクスポートと学習デッキ（コスト不要）
 

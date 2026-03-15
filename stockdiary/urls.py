@@ -119,8 +119,8 @@ urlpatterns = [
     path('explore/', views.ExploreView.as_view(), name='explore'),
 
     # ==========================================
-    # 定期レビューワークフロー
+    # EDINET連携（開示書類パネル）
     # ==========================================
-    path('<int:diary_id>/review/', views.review_page, name='review_page'),
-    path('<int:diary_id>/review/schedule/', views.review_schedule_save, name='review_schedule_save'),
+    path('<int:diary_id>/edinet-panel/', views.edinet_panel, name='edinet_panel'),
+    path('<int:diary_id>/edinet-note-prefill/', views.edinet_note_prefill, name='edinet_note_prefill'),
 ]
