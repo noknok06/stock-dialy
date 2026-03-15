@@ -3334,32 +3334,73 @@ def edinet_panel(request, diary_id):
 
         for doc in docs:
             # 完了済みの最新分析セッションを取得（なければ永続履歴にフォールバック）
-            fin = (
+            fin_session = (
                 FinancialAnalysisSession.objects
                 .filter(document=doc, processing_status='COMPLETED')
                 .order_by('-created_at')
                 .first()
-            ) or (
-                FinancialAnalysisHistory.objects
-                .filter(document=doc)
-                .order_by('-analysis_date')
-                .first()
             )
-            sent = (
+            fin_history = None
+            if not fin_session:
+                try:
+                    fin_history = (
+                        FinancialAnalysisHistory.objects
+                        .filter(document=doc)
+                        .order_by('-analysis_date')
+                        .first()
+                    )
+                except Exception:
+                    pass
+            fin = fin_session or fin_history
+
+            sent_session = (
                 SentimentAnalysisSession.objects
                 .filter(document=doc, processing_status='COMPLETED')
                 .order_by('-created_at')
                 .first()
-            ) or (
-                SentimentAnalysisHistory.objects
-                .filter(document=doc)
-                .order_by('-analysis_date')
-                .first()
             )
+            sent_history = None
+            if not sent_session:
+                try:
+                    sent_history = (
+                        SentimentAnalysisHistory.objects
+                        .filter(document=doc)
+                        .order_by('-analysis_date')
+                        .first()
+                    )
+                except Exception:
+                    pass
+            sent = sent_session or sent_history
+
+            # URLをビュー側で生成（テンプレートの {% url %} エラーを防ぐ）
+            result_url = None
+            if fin_session:
+                try:
+                    result_url = reverse('copomo:financial-result', args=[str(fin_session.session_id)])
+                except Exception:
+                    try:
+                        result_url = reverse('copomo:document-detail-ui', args=[doc.doc_id])
+                    except Exception:
+                        pass
+            elif fin_history:
+                try:
+                    result_url = reverse('copomo:document-detail-ui', args=[doc.doc_id])
+                except Exception:
+                    pass
+
+            pdf_url = None
+            if doc.pdf_flag:
+                try:
+                    pdf_url = reverse('copomo:document-download', args=[doc.doc_id]) + '?type=pdf'
+                except Exception:
+                    pass
+
             documents.append({
                 'doc': doc,
                 'fin': fin,
                 'sent': sent,
+                'result_url': result_url,
+                'pdf_url': pdf_url,
             })
 
     except ImportError:
