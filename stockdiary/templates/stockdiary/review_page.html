@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% load stockdiary_filters %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}定期レビュー: {{ diary.stock_name }} | カブログ{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+<style>
+  .review-section { border-left: 4px solid var(--primary-color); padding-left: 1rem; margin-bottom: 1.5rem; }
+  .verdict-btn { border: 2px solid transparent; transition: all 0.2s; }
+  .verdict-btn.selected-valid    { border-color: #198754; background: #d1e7dd; }
+  .verdict-btn.selected-partially{ border-color: #ffc107; background: #fff3cd; }
+  .verdict-btn.selected-invalid  { border-color: #dc3545; background: #f8d7da; }
+  .past-review-item { border-left: 3px solid var(--border-color); padding: 0.75rem 1rem; margin-bottom: 0.75rem; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+  .verdict-badge-valid     { background: #d1e7dd; color: #0a3622; }
+  .verdict-badge-partially { background: #fff3cd; color: #664d03; }
+  .verdict-badge-invalid   { background: #f8d7da; color: #58151c; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 800px;">
+
+  <!-- ヘッダー -->
+  <div class="mb-4">
+    <a href="{% url 'stockdiary:detail' diary.pk %}" class="text-muted text-decoration-none small">
+      <i class="bi bi-arrow-left me-1"></i>日記に戻る
+    </a>
+    <h2 class="mt-2 mb-0">
+      <i class="bi bi-arrow-repeat text-primary me-2"></i>定期レビュー
+    </h2>
+    <p class="text-muted small mt-1">{{ diary.stock_name }}{% if diary.stock_symbol %} ({{ diary.stock_symbol }}){% endif %}</p>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- 元の投資理由 -->
+  <div class="card mb-4">
+    <div class="card-header d-flex align-items-center">
+      <i class="bi bi-journal-text me-2 text-primary"></i>
+      <strong>元の投資理由</strong>
+      {% if diary.first_purchase_date %}
+        <span class="text-muted small ms-auto">初回購入: {{ diary.first_purchase_date|date:"Y年m月d日" }}</span>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      {% if diary.reason %}
+        <div class="diary-content">{{ diary.reason|markdown|safe }}</div>
+      {% else %}
+        <p class="text-muted fst-italic">投資理由が記録されていません</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- 直近の継続記録 -->
+  {% with notes=diary.notes.all|slice:":5" %}
+  {% if notes %}
+  <div class="card mb-4">
+    <div class="card-header">
+      <i class="bi bi-clock-history me-2 text-secondary"></i>
+      <strong>直近の継続記録</strong>
+    </div>
+    <div class="card-body p-0">
+      {% for note in notes %}
+      <div class="past-review-item {% if note.is_review %}bg-light{% endif %}">
+        <div class="d-flex align-items-center mb-1">
+          <span class="badge bg-secondary me-2">{{ note.date|date:"m/d" }}</span>
+          {% if note.is_review and note.review_verdict %}
+            <span class="badge verdict-badge-{{ note.review_verdict }} me-2">
+              {{ note.get_review_verdict_display }}
+            </span>
+          {% endif %}
+          <small class="text-muted">{{ note.get_note_type_display }}</small>
+        </div>
+        <div class="small">{{ note.content|truncatechars:200 }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <!-- 現在の損益サマリー -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <i class="bi bi-graph-up me-2 text-success"></i>
+      <strong>現在の状況</strong>
+    </div>
+    <div class="card-body">
+      <div class="row g-3 text-center">
+        <div class="col-4">
+          <div class="small text-muted">現在保有数</div>
+          <div class="fw-bold">{{ diary.current_quantity|intcomma }}株</div>
+        </div>
+        <div class="col-4">
+          <div class="small text-muted">実現損益</div>
+          <div class="fw-bold {% if diary.realized_profit_loss > 0 %}text-success{% elif diary.realized_profit_loss < 0 %}text-danger{% endif %}">
+            {{ diary.realized_profit_loss|intcomma }}円
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="small text-muted">取引回数</div>
+          <div class="fw-bold">{{ diary.transaction_count }}回</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- レビュー記録フォーム -->
+  <div class="card mb-4 border-primary">
+    <div class="card-header bg-primary text-white">
+      <i class="bi bi-pencil-square me-2"></i>
+      <strong>今日のレビューを記録する</strong>
+    </div>
+    <div class="card-body">
+      <form method="post" id="reviewForm">
+        {% csrf_token %}
+
+        <!-- 判定ボタン -->
+        <div class="mb-3">
+          <label class="form-label fw-bold">投資仮説は今も有効ですか？</label>
+          <input type="hidden" name="verdict" id="verdictInput" value="">
+          <div class="d-flex gap-2 flex-wrap">
+            <button type="button" class="btn verdict-btn btn-outline-success"
+                    onclick="selectVerdict('valid', this)">
+              ✅ 有効
+            </button>
+            <button type="button" class="btn verdict-btn btn-outline-warning"
+                    onclick="selectVerdict('partially', this)">
+              ⚠️ 部分的に有効
+            </button>
+            <button type="button" class="btn verdict-btn btn-outline-danger"
+                    onclick="selectVerdict('invalid', this)">
+              ❌ 無効
+            </button>
+          </div>
+        </div>
+
+        <!-- レビュー内容 -->
+        <div class="mb-3">
+          <label class="form-label fw-bold">現在の考察・気づき</label>
+          <textarea name="content" class="form-control" rows="5" required
+                    placeholder="仮説の検証状況、市場環境の変化、今後の見通しなどを記入してください..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check-circle me-1"></i>レビューを記録する
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 過去のレビュー履歴 -->
+  {% with reviews=diary.notes.filter(is_review=True) %}
+  {% endwith %}
+  {% if past_reviews %}
+  <div class="card mb-4">
+    <div class="card-header">
+      <i class="bi bi-calendar-check me-2"></i>
+      <strong>過去のレビュー履歴</strong>
+      <span class="badge bg-secondary ms-2">{{ past_reviews|length }}回</span>
+    </div>
+    <div class="card-body p-0">
+      {% for review in past_reviews %}
+      <div class="past-review-item">
+        <div class="d-flex align-items-center mb-1">
+          <span class="badge bg-secondary me-2">{{ review.date|date:"Y/m/d" }}</span>
+          {% if review.review_verdict %}
+            <span class="badge verdict-badge-{{ review.review_verdict }} me-2">
+              {{ review.get_review_verdict_display }}
+            </span>
+          {% endif %}
+        </div>
+        <div class="small">{{ review.content }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+function selectVerdict(verdict, btn) {
+  document.getElementById('verdictInput').value = verdict;
+  document.querySelectorAll('.verdict-btn').forEach(function(b) {
+    b.classList.remove('selected-valid', 'selected-partially', 'selected-invalid');
+  });
+  btn.classList.add('selected-' + verdict);
+}
+</script>
+{% endblock %}

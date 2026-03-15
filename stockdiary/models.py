@@ -554,10 +554,22 @@ class DiaryNote(models.Model):
         ('low', '低')
     ]
     importance = models.CharField(max_length=10, choices=IMPORTANCE_CHOICES, default='medium')
-    
+
+    # 定期レビューワークフローで作成されたメモかどうか
+    is_review = models.BooleanField(default=False, verbose_name='定期レビュー')
+    REVIEW_VERDICT_CHOICES = [
+        ('valid',     '✅ 仮説は有効'),
+        ('partially', '⚠️ 部分的に有効'),
+        ('invalid',   '❌ 仮説は無効'),
+    ]
+    review_verdict = models.CharField(
+        max_length=20, choices=REVIEW_VERDICT_CHOICES,
+        null=True, blank=True, verbose_name='レビュー判定'
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         ordering = ['-date']
         verbose_name = '継続記録'
@@ -730,3 +742,46 @@ class NotificationLog(models.Model):
         indexes = [
             models.Index(fields=['user', 'is_read', '-sent_at']),
         ]        
+
+class ReviewSchedule(models.Model):
+    """定期レビュースケジュール - 保有銘柄の投資仮説を定期的に再検証する"""
+
+    INTERVAL_CHOICES = [
+        (30,  '1ヶ月'),
+        (60,  '2ヶ月'),
+        (90,  '3ヶ月（推奨）'),
+        (180, '6ヶ月'),
+    ]
+
+    diary = models.ForeignKey(
+        'StockDiary',
+        on_delete=models.CASCADE,
+        related_name='review_schedules',
+        verbose_name='対象日記'
+    )
+    interval_days = models.PositiveIntegerField(
+        default=90,
+        choices=INTERVAL_CHOICES,
+        verbose_name='レビュー間隔（日）'
+    )
+    next_review_date = models.DateField(verbose_name='次回レビュー日')
+    is_active = models.BooleanField(default=True, verbose_name='有効')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = '定期レビュースケジュール'
+        verbose_name_plural = '定期レビュースケジュール'
+        ordering = ['next_review_date']
+        indexes = [
+            models.Index(fields=['next_review_date', 'is_active']),
+        ]
+
+    def __str__(self):
+        return f"{self.diary.stock_name} - 次回: {self.next_review_date}"
+
+    def advance_to_next(self):
+        """レビュー完了後に次回レビュー日を更新する"""
+        from datetime import date, timedelta
+        self.next_review_date = date.today() + timedelta(days=self.interval_days)
+        self.save(update_fields=['next_review_date', 'updated_at'])

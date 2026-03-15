@@ -26,6 +26,7 @@ from django.core.cache import cache
 from utils.mixins import ObjectNotFoundRedirectMixin
 from .models import StockDiary, DiaryNote, DiaryNotification
 from .models import Transaction, StockSplit
+from .models import ReviewSchedule
 from .forms import TransactionForm, StockSplitForm, TradeUploadForm
 from .forms import StockDiaryForm, DiaryNoteForm
 from company_master.models import CompanyMaster
@@ -643,6 +644,10 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
 
         # テキスト内銘柄コードリンク用マッピング {stock_symbol: diary_pk}
         context['mention_map'] = get_mention_map(self.request.user)
+
+        # 定期レビュースケジュール
+        context['review_schedule'] = self.object.review_schedules.filter(is_active=True).first()
+        context['review_choices'] = ReviewSchedule.INTERVAL_CHOICES
 
         return context
 
@@ -3289,3 +3294,67 @@ class ExploreView(LoginRequiredMixin, ListView):
         context['total_diary_count'] = StockDiary.objects.filter(user=user).count()
 
         return context
+
+# ============================================================
+# 定期レビューワークフロー
+# ============================================================
+
+@login_required
+@require_http_methods(["POST"])
+def review_schedule_save(request, diary_id):
+    """ReviewSchedule の作成または更新"""
+    diary = get_object_or_404(StockDiary, pk=diary_id, user=request.user)
+    interval_days = int(request.POST.get('interval_days', 90))
+    action = request.POST.get('action', 'activate')
+
+    schedule, _ = ReviewSchedule.objects.get_or_create(diary=diary)
+
+    if action == 'deactivate':
+        schedule.is_active = False
+        schedule.save(update_fields=['is_active', 'updated_at'])
+        messages.success(request, '定期レビューを停止しました')
+    else:
+        from datetime import date, timedelta
+        schedule.interval_days = interval_days
+        schedule.is_active = True
+        schedule.next_review_date = date.today() + timedelta(days=interval_days)
+        schedule.save()
+        messages.success(request, f'定期レビューを設定しました（{schedule.get_interval_days_display()}ごと）')
+
+    return redirect(reverse_lazy('stockdiary:detail', kwargs={'pk': diary_id}) + '#tab-notes')
+
+
+@login_required
+def review_page(request, diary_id):
+    """定期レビュー記録ページ - 投資仮説を振り返る"""
+    diary = get_object_or_404(StockDiary, pk=diary_id, user=request.user)
+    schedule = diary.review_schedules.filter(is_active=True).first()
+    past_reviews = diary.notes.filter(is_review=True).order_by('date')
+
+    if request.method == 'POST':
+        verdict = request.POST.get('verdict', '')
+        content = request.POST.get('content', '').strip()
+        if not content:
+            messages.error(request, 'レビュー内容を入力してください')
+        else:
+            from datetime import date
+            note = DiaryNote.objects.create(
+                diary=diary,
+                date=date.today(),
+                note_type='insight',
+                importance='high',
+                is_review=True,
+                review_verdict=verdict if verdict in dict(DiaryNote.REVIEW_VERDICT_CHOICES) else None,
+                content=content,
+            )
+            if schedule:
+                schedule.advance_to_next()
+            messages.success(request, 'レビューを記録しました')
+            return redirect('stockdiary:detail', pk=diary_id)
+
+    context = {
+        'diary': diary,
+        'schedule': schedule,
+        'past_reviews': past_reviews,
+    }
+    return render(request, 'stockdiary/review_page.html', context)

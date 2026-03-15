@@ -1861,7 +1861,7 @@
         <!-- 継続記録タブ -->
         <div class="tab-pane fade" id="notes-content" role="tabpanel" aria-labelledby="notes-tab">
           <!-- フォーム表示ボタン -->
-          <div class="d-flex justify-content-center mb-3">
+          <div class="d-flex justify-content-center gap-2 mb-3 flex-wrap">
             <button
               type="button"
               class="btn btn-primary"
@@ -1870,8 +1870,56 @@
               <i class="bi bi-plus-circle me-2"></i>
               <span class="toggle-text">記録を追加</span>
             </button>
+            <a href="{% url 'stockdiary:review_page' diary.id %}"
+               class="btn btn-outline-primary">
+              <i class="bi bi-arrow-repeat me-2"></i>レビューを記録
+            </a>
           </div>
 
+          <!-- 定期レビュースケジュール設定 -->
+          <div class="card mb-3 border-0 bg-light" id="reviewSchedulePanel">
+            <div class="card-body py-2 px-3">
+              <div class="d-flex align-items-center justify-content-between">
+                <div>
+                  <i class="bi bi-calendar-check text-primary me-2"></i>
+                  <span class="fw-bold small">定期レビュー</span>
+                  {% if review_schedule %}
+                    <span class="badge bg-success ms-2">有効</span>
+                    <span class="text-muted small ms-2">次回: {{ review_schedule.next_review_date|date:"m/d" }}</span>
+                  {% else %}
+                    <span class="badge bg-secondary ms-2">未設定</span>
+                  {% endif %}
+                </div>
+                <button class="btn btn-sm btn-outline-secondary" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#reviewScheduleForm">
+                  <i class="bi bi-gear-fill"></i>
+                </button>
+              </div>
+              <div class="collapse mt-2" id="reviewScheduleForm">
+                <form method="post" action="{% url 'stockdiary:review_schedule_save' diary.id %}">
+                  {% csrf_token %}
+                  <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <select name="interval_days" class="form-select form-select-sm" style="width:auto;">
+                      {% for val, label in review_choices %}
+                        <option value="{{ val }}"
+                          {% if review_schedule and review_schedule.interval_days == val %}selected{% endif %}>
+                          {{ label }}ごと
+                        </option>
+                      {% endfor %}
+                    </select>
+                    <button type="submit" name="action" value="activate" class="btn btn-sm btn-primary">
+                      <i class="bi bi-check-circle me-1"></i>設定する
+                    </button>
+                    {% if review_schedule %}
+                    <button type="submit" name="action" value="deactivate" class="btn btn-sm btn-outline-secondary">
+                      停止
+                    </button>
+                    {% endif %}
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
 
           <!-- 継続記録一覧 -->
           <div class="notes-list mobile-optimized">

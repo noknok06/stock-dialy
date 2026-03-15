@@ -117,4 +117,10 @@ urlpatterns = [
     # 全文探索ページ（Obsidian風検索）
     # ==========================================
     path('explore/', views.ExploreView.as_view(), name='explore'),
+
+    # ==========================================
+    # 定期レビューワークフロー
+    # ==========================================
+    path('<int:diary_id>/review/', views.review_page, name='review_page'),
+    path('<int:diary_id>/review/schedule/', views.review_schedule_save, name='review_schedule_save'),
 ]
