@@ -3395,12 +3395,39 @@ def edinet_panel(request, diary_id):
                 except Exception:
                     pass
 
+            # 感情分析データをJSON化（モーダル表示用）
+            sent_json = None
+            if sent:
+                try:
+                    analysis_result = getattr(sent, 'analysis_result', None) or {}
+                    kw = analysis_result.get('keyword_analysis', {})
+                    stats_raw = analysis_result.get('statistics', {})
+                    sent_json = json.dumps({
+                        'overall_score': float(sent.overall_score) if sent.overall_score is not None else 0,
+                        'sentiment_label': sent.sentiment_label or '',
+                        'label_display': {
+                            'positive': 'ポジティブ', 'negative': 'ネガティブ', 'neutral': '中立',
+                        }.get(sent.sentiment_label, sent.sentiment_label or '—'),
+                        'sample_sentences': analysis_result.get('sample_sentences', {}),
+                        'keyword_pos': kw.get('positive', [])[:10],
+                        'keyword_neg': kw.get('negative', [])[:10],
+                        'stats': {k: stats_raw[k] for k in (
+                            'sentences_analyzed', 'positive_words_count', 'negative_words_count'
+                        ) if k in stats_raw},
+                        'ai_insights': (
+                            (analysis_result.get('ai_expert_analysis') or {}).get('investment_points', [])
+                        ),
+                    }, ensure_ascii=False)
+                except Exception:
+                    pass
+
             documents.append({
                 'doc': doc,
                 'fin': fin,
                 'sent': sent,
                 'result_url': result_url,
                 'pdf_url': pdf_url,
+                'sent_json': sent_json,
             })
 
     except ImportError:
@@ -3492,9 +3519,14 @@ def edinet_note_prefill(request, diary_id):
                 if investment_stance:
                     content_parts.append(f'- 投資スタンス: {investment_stance}')
 
+        content_parts.append('')
+        content_parts.append('---')
+        content_parts.append(f'*書類参照: {doc.doc_type_display_name} / {doc.file_date} [#{doc.doc_id}]*')
+
         prefill_content = '\n'.join(content_parts)
         return JsonResponse({
             'content': prefill_content,
+            'doc_id': doc.doc_id,
             'note_type': 'earnings',
             'importance': 'medium',
         })
