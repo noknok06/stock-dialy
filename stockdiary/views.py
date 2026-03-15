@@ -68,18 +68,6 @@ def get_mention_map(user):
     return mention_map
 
 
-def get_market_issue(stock_symbol):
-    """証券コードから銘柄を取得する共通関数"""
-    if not MARGIN_TRADING_AVAILABLE or not stock_symbol:
-        return None
-    
-    search_code = str(stock_symbol).rstrip('0') + '0'
-    market_issue = MarketIssue.objects.filter(code=search_code).first()
-    if not market_issue:
-        market_issue = MarketIssue.objects.filter(code=str(stock_symbol)).first()
-    return market_issue
-
-
 def calculate_margin_ratio(outstanding_purchases, outstanding_sales):
     """信用倍率を計算する共通関数"""
     if outstanding_sales > 0:
@@ -1171,39 +1159,6 @@ class StockListView(LoginRequiredMixin, TemplateView):
                         stock_info['sector'] = company.industry_name_33 or company.industry_name_17 or '未分類'
                 except:
                     pass
-            
-            # 信用倍率データの取得
-            if MARGIN_TRADING_AVAILABLE:
-                try:
-                    market_issue = get_market_issue(stock['stock_symbol'])
-                    
-                    if market_issue:
-                        margin_data = MarginTradingData.objects.filter(
-                            issue=market_issue
-                        ).order_by('-date')[:2]
-                        
-                        if margin_data.exists():
-                            stock_info['margin_data_available'] = True
-                            latest_data = margin_data[0]
-                            stock_info['latest_date'] = latest_data.date
-                            stock_info['current_ratio'] = calculate_margin_ratio(
-                                latest_data.outstanding_purchases, 
-                                latest_data.outstanding_sales
-                            )
-                            
-                            if len(margin_data) > 1:
-                                previous_data = margin_data[1]
-                                stock_info['previous_ratio'] = calculate_margin_ratio(
-                                    previous_data.outstanding_purchases,
-                                    previous_data.outstanding_sales
-                                )
-                                stock_info['ratio_change'] = round(
-                                    stock_info['current_ratio'] - stock_info['previous_ratio'], 2
-                                )
-                
-                except Exception as e:
-                    import logging
-                    logging.getLogger(__name__).warning(f"信用倍率データ取得エラー ({stock['stock_symbol']}): {e}")
             
             stock_list.append(stock_info)
         
