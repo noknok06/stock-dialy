@@ -91,7 +91,10 @@ class SentimentAnalysisHistory(models.Model):
     # 分析結果
     overall_score = models.FloatField('全体感情スコア', help_text='-1.0〜+1.0')
     sentiment_label = models.CharField('感情ラベル', max_length=20, choices=SENTIMENT_CHOICES)
-    
+
+    # 分析結果詳細（JSON）
+    analysis_result = JSONField('分析結果詳細', null=True, blank=True)
+
     # メタデータ
     analysis_date = models.DateTimeField('分析実行日時', auto_now_add=True)
     user_ip = models.GenericIPAddressField('実行ユーザーIP', null=True, blank=True)

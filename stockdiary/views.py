@@ -3320,7 +3320,7 @@ def edinet_panel(request, diary_id):
 
     try:
         from earnings_analysis.models.document import DocumentMetadata
-        from earnings_analysis.models.financial import FinancialAnalysisSession, FinancialAnalysisHistory
+        from earnings_analysis.models.financial import FinancialAnalysisSession
         from earnings_analysis.models.sentiment import SentimentAnalysisSession, SentimentAnalysisHistory
 
         sec_code = _get_securities_code(diary.stock_symbol)
@@ -3339,26 +3339,16 @@ def edinet_panel(request, diary_id):
         )
 
         for doc in docs:
-            # 完了済みの最新分析セッションを取得（なければ永続履歴にフォールバック）
+            # 財務分析: 完了済みセッションのみ参照（Historyは使わない）
             fin_session = (
                 FinancialAnalysisSession.objects
                 .filter(document=doc, processing_status='COMPLETED')
                 .order_by('-created_at')
                 .first()
             )
-            fin_history = None
-            if not fin_session:
-                try:
-                    fin_history = (
-                        FinancialAnalysisHistory.objects
-                        .filter(document=doc)
-                        .order_by('-analysis_date')
-                        .first()
-                    )
-                except Exception:
-                    pass
-            fin = fin_session or fin_history
+            fin = fin_session
 
+            # 感情分析: セッション → 永続履歴にフォールバック
             sent_session = (
                 SentimentAnalysisSession.objects
                 .filter(document=doc, processing_status='COMPLETED')
@@ -3388,11 +3378,6 @@ def edinet_panel(request, diary_id):
                         result_url = reverse('copomo:document-detail-ui', args=[doc.doc_id])
                     except Exception:
                         pass
-            elif fin_history:
-                try:
-                    result_url = reverse('copomo:document-detail-ui', args=[doc.doc_id])
-                except Exception:
-                    pass
 
             pdf_url = None
             if doc.pdf_flag:
@@ -3464,25 +3449,17 @@ def edinet_note_prefill(request, diary_id):
 
     try:
         from earnings_analysis.models.document import DocumentMetadata
-        from earnings_analysis.models.financial import FinancialAnalysisSession, FinancialAnalysisHistory
+        from earnings_analysis.models.financial import FinancialAnalysisSession
 
         doc = get_object_or_404(DocumentMetadata, doc_id=doc_id)
 
-        # まずアクティブなセッションを検索、なければ永続履歴にフォールバック
+        # 財務分析セッションのみ参照（Historyは使わない）
         fin_session = (
             FinancialAnalysisSession.objects
             .filter(document=doc, processing_status='COMPLETED')
             .order_by('-created_at')
             .first()
         )
-        fin_history = None
-        if not fin_session:
-            fin_history = (
-                FinancialAnalysisHistory.objects
-                .filter(document=doc, analysis_result__isnull=False)
-                .order_by('-analysis_date')
-                .first()
-            )
 
         # 保存済みGeminiインサイトからinvestment_pointsを取得
         content_parts = []
@@ -3491,7 +3468,7 @@ def edinet_note_prefill(request, diary_id):
         content_parts.append(f'提出日: {doc.file_date}')
         content_parts.append('')
 
-        # セッションまたは履歴からanalysis_resultを取得
+        # セッションからanalysis_resultを取得
         result = None
         health_score = None
         investment_stance = ''
@@ -3502,10 +3479,6 @@ def edinet_note_prefill(request, diary_id):
             health_score = fin_session.overall_health_score
             investment_stance = fin_session.get_investment_stance_display() if fin_session.investment_stance else ''
             risk_level = _risk_labels.get(fin_session.risk_level, '')
-        elif fin_history and fin_history.analysis_result:
-            result = fin_history.analysis_result
-            health_score = fin_history.overall_health_score
-            risk_level = _risk_labels.get(getattr(fin_history, 'risk_level', ''), '')
 
         if result:
             # Geminiインサイトのinvestment_pointsを取得
