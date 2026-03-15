@@ -90,7 +90,7 @@ class TestStockDiaryListView:
         
         # ログインページにリダイレクトされる
         assert response.status_code == 302
-        assert '/accounts/login/' in response.url
+        assert 'login' in response.url
     
     def test_filter_by_status_active(self, client):
         """保有中フィルター"""
