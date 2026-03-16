@@ -81,6 +81,9 @@ class FinancialAnalysisSession(models.Model):
     
     @property
     def is_expired(self):
+        # 完了済みセッションは期限に関わらず参照可能
+        if self.processing_status == 'COMPLETED':
+            return False
         return timezone.now() > self.expires_at
     
     @property
