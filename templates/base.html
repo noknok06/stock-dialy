@@ -1348,6 +1348,14 @@
                   document.body.style.overflow = '';
               }
           });
+
+          // bfcache（ブラウザバック）からの復元時にメニュー状態をリセット
+          window.addEventListener('pageshow', function(event) {
+              if (event.persisted) {
+                  fullscreenMenu.classList.remove('active');
+                  document.body.style.overflow = '';
+              }
+          });
       });
   </script>
   <script src="{% static 'js/speed-dial.js' %}"></script>

@@ -721,13 +721,13 @@ function createSpeedDial(options = {}) {
 function initializeSpeedDial() {
   const speedDial = new SpeedDial();
   window.speedDialInstance = speedDial;
-  
+
   // スピードダイヤルをDOM内で適切な位置に強制移動
   const speedDialContainer = document.querySelector('.speed-dial-container');
   if (speedDialContainer && speedDialContainer.parentElement !== document.body) {
     document.body.appendChild(speedDialContainer);
   }
-  
+
   // ページクリック時にポジションを確認・修正
   document.addEventListener('click', function() {
     const speedDial = document.querySelector('.speed-dial-container');
@@ -738,6 +738,13 @@ function initializeSpeedDial() {
 
   return speedDial;
 }
+
+// bfcache（ブラウザバック）からの復元時にスピードダイヤルをリセット
+window.addEventListener('pageshow', function(event) {
+  if (event.persisted && window.speedDialInstance) {
+    window.speedDialInstance.close();
+  }
+});
 
 // Intersection Observerによる遅延初期化
 let speedDialInitialized = false;
