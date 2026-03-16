@@ -31,7 +31,8 @@
     </thead>
     <tbody>
       {% for item in documents %}
-      {% with doc=item.doc fin=item.fin sent=item.sent result_url=item.result_url pdf_url=item.pdf_url sent_json=item.sent_json %}
+      {% with doc=item.doc sent=item.sent fin_data=item.fin_data pdf_url=item.pdf_url sent_json=item.sent_json %}
+      <!-- メイン行 -->
       <tr>
         <!-- 提出日 -->
         <td class="ps-0 text-secondary">{{ doc.file_date|date:"Y/m/d" }}</td>
@@ -77,6 +78,15 @@
                     title="この書類をもとに記録を作成">
               <i class="bi bi-pencil-square"></i>
             </button>
+            {% if not fin_data and doc.xbrl_flag %}
+            <button type="button"
+                    class="btn btn-sm btn-outline-success py-0 px-2"
+                    style="font-size:0.7rem;"
+                    onclick="edinetXBRLAnalyze('{{ diary.id }}', '{{ doc.doc_id }}', this)"
+                    title="XBRL財務分析を実行（AI不使用）">
+              <i class="bi bi-bar-chart-steps"></i>
+            </button>
+            {% endif %}
             {% if pdf_url %}
             <a href="{{ pdf_url }}"
                class="btn btn-sm btn-outline-secondary py-0 px-2"
@@ -89,6 +99,52 @@
           </div>
         </td>
       </tr>
+
+      {% if fin_data %}
+      <!-- 財務指標サブ行 -->
+      <tr class="border-0">
+        <td colspan="4" class="pt-0 pb-2 ps-0">
+          <div class="d-flex flex-wrap gap-2 align-items-center" style="font-size:0.72rem;">
+            {% if fin_data.operating_margin is not None %}
+            <span class="text-secondary">営業利益率:
+              <strong class="{% if fin_data.operating_margin >= 10 %}text-success{% elif fin_data.operating_margin >= 0 %}text-body{% else %}text-danger{% endif %}">
+                {{ fin_data.operating_margin|floatformat:1 }}%
+              </strong>
+            </span>
+            {% endif %}
+            {% if fin_data.roa is not None %}
+            <span class="text-secondary">ROA:
+              <strong class="{% if fin_data.roa >= 5 %}text-success{% elif fin_data.roa >= 0 %}text-body{% else %}text-danger{% endif %}">
+                {{ fin_data.roa|floatformat:1 }}%
+              </strong>
+            </span>
+            {% endif %}
+            {% if fin_data.equity_ratio is not None %}
+            <span class="text-secondary">自己資本比率:
+              <strong class="{% if fin_data.equity_ratio >= 50 %}text-success{% elif fin_data.equity_ratio >= 20 %}text-body{% else %}text-danger{% endif %}">
+                {{ fin_data.equity_ratio|floatformat:1 }}%
+              </strong>
+            </span>
+            {% endif %}
+            {% if fin_data.net_margin is not None %}
+            <span class="text-secondary">純利益率:
+              <strong>{{ fin_data.net_margin|floatformat:1 }}%</strong>
+            </span>
+            {% endif %}
+            {% if fin_data.operating_cf is not None and fin_data.investing_cf is not None and fin_data.financing_cf is not None %}
+              {% with op=fin_data.operating_cf inv=fin_data.investing_cf fin=fin_data.financing_cf %}
+              <span class="badge {% if op > 0 and inv < 0 and fin < 0 %}bg-success-subtle text-success border border-success-subtle{% elif op > 0 and inv < 0 %}bg-primary-subtle text-primary border border-primary-subtle{% elif op < 0 %}bg-danger-subtle text-danger border border-danger-subtle{% else %}bg-body-secondary text-secondary border{% endif %}"
+                    style="font-size:0.6rem;"
+                    title="CF: 営業{{ op|floatformat:0 }} 投資{{ inv|floatformat:0 }} 財務{{ fin|floatformat:0 }}">
+                CF{% if op > 0 %}+{% else %}-{% endif %}{% if inv > 0 %}+{% elif inv < 0 %}-{% else %}0{% endif %}{% if fin > 0 %}+{% elif fin < 0 %}-{% else %}0{% endif %}
+              </span>
+              {% endwith %}
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endif %}
+
       {% endwith %}
       {% endfor %}
     </tbody>

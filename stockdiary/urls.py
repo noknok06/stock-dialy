@@ -123,4 +123,5 @@ urlpatterns = [
     # ==========================================
     path('<int:diary_id>/edinet-panel/', views.edinet_panel, name='edinet_panel'),
     path('<int:diary_id>/edinet-note-prefill/', views.edinet_note_prefill, name='edinet_note_prefill'),
+    path('<int:diary_id>/edinet-xbrl-analyze/', views.edinet_xbrl_analyze, name='edinet_xbrl_analyze'),
 ]

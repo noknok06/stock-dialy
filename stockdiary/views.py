@@ -3321,6 +3321,7 @@ def edinet_panel(request, diary_id):
     try:
         from earnings_analysis.models.company import Company
         from earnings_analysis.models.document import DocumentMetadata
+        from earnings_analysis.models.financial import CompanyFinancialData
         from earnings_analysis.models.sentiment import SentimentAnalysisSession, SentimentAnalysisHistory
 
         sec_code = _get_securities_code(diary.stock_symbol)
@@ -3415,9 +3416,18 @@ def edinet_panel(request, diary_id):
                 except Exception:
                     pass
 
+            # 財務データ（XBRL 分析済みの場合）
+            fin_data = (
+                CompanyFinancialData.objects
+                .filter(document=doc)
+                .order_by('-updated_at')
+                .first()
+            )
+
             documents.append({
                 'doc': doc,
                 'sent': sent,
+                'fin_data': fin_data,
                 'pdf_url': pdf_url,
                 'sent_json': sent_json,
             })
@@ -3513,6 +3523,42 @@ def edinet_note_prefill(request, diary_id):
             'note_type': 'earnings',
             'importance': 'medium',
         })
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+# ============================================================
+# EDINET連携: XBRL 財務分析トリガー（非AI・ルールベース）
+# ============================================================
+
+@login_required
+@require_POST
+def edinet_xbrl_analyze(request, diary_id):
+    """
+    EDINET XBRL から財務指標を抽出・算出して CompanyFinancialData に保存。
+    AI（Gemini）は一切使用しない。
+    """
+    diary = get_object_or_404(StockDiary, pk=diary_id, user=request.user)
+    doc_id = request.POST.get('doc_id', '')
+    if not doc_id:
+        return JsonResponse({'error': 'doc_id required'}, status=400)
+
+    try:
+        from earnings_analysis.models.document import DocumentMetadata
+        from earnings_analysis.services.xbrl_analysis_service import XBRLAnalysisService
+
+        doc = get_object_or_404(DocumentMetadata, doc_id=doc_id, legal_status='1')
+
+        if not doc.xbrl_flag:
+            return JsonResponse({'error': 'この書類には XBRL データがありません'}, status=400)
+
+        result = XBRLAnalysisService().analyze_document(doc)
+
+        if not result.get('ok'):
+            return JsonResponse({'error': result.get('error', '分析に失敗しました')}, status=500)
+
+        return JsonResponse({'ok': True, 'result': result})
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
