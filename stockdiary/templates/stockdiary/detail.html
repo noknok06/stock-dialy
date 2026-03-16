@@ -2927,22 +2927,14 @@ window.showReportModal = function(el) {
     html += '<div class="text-secondary small">' + _escH(d.doc_type || '') + ' &nbsp;|&nbsp; ' + _escH(d.file_date || '') + '</div>';
     html += '</div>';
 
-    // ---- 収益性 ----
-    html += '<h6 class="small fw-semibold text-body-secondary mb-1 mt-2"><i class="bi bi-graph-up me-1"></i>収益性</h6>';
-    html += '<div class="small mb-3">';
-    var omColor = d.operating_margin != null ? (d.operating_margin >= 10 ? 'text-success' : d.operating_margin >= 0 ? '' : 'text-danger') : '';
-    var roaColor = d.roa != null ? (d.roa >= 5 ? 'text-success' : d.roa >= 0 ? '' : 'text-danger') : '';
-    html += metricRow('営業利益率', fmtPct(d.operating_margin), omColor);
-    html += metricRow('純利益率', fmtPct(d.net_margin), '');
-    html += metricRow('ROA', fmtPct(d.roa), roaColor);
-    html += '</div>';
-
     // ---- 財務安全性 ----
-    html += '<h6 class="small fw-semibold text-body-secondary mb-1 mt-2"><i class="bi bi-shield-check me-1"></i>財務安全性</h6>';
-    html += '<div class="small mb-3">';
-    var eqColor = d.equity_ratio != null ? (d.equity_ratio >= 50 ? 'text-success' : d.equity_ratio >= 20 ? '' : 'text-danger') : '';
-    html += metricRow('自己資本比率', fmtPct(d.equity_ratio), eqColor);
-    html += '</div>';
+    if (d.equity_ratio != null) {
+      html += '<h6 class="small fw-semibold text-body-secondary mb-1 mt-2"><i class="bi bi-shield-check me-1"></i>財務安全性</h6>';
+      html += '<div class="small mb-3">';
+      var eqColor = d.equity_ratio >= 50 ? 'text-success' : d.equity_ratio >= 20 ? '' : 'text-danger';
+      html += metricRow('自己資本比率', fmtPct(d.equity_ratio), eqColor);
+      html += '</div>';
+    }
 
     // ---- キャッシュフロー ----
     html += '<h6 class="small fw-semibold text-body-secondary mb-1 mt-2"><i class="bi bi-cash-stack me-1"></i>キャッシュフロー</h6>';

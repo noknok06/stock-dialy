@@ -19,149 +19,124 @@
 </div>
 
 {% else %}
-<div class="table-responsive">
-  <table class="table table-sm table-hover align-middle mb-0" style="font-size:0.8rem;">
-    <thead>
-      <tr class="text-secondary border-bottom">
-        <th class="fw-normal ps-0" style="width:5.5rem;">提出日</th>
-        <th class="fw-normal">書類名</th>
-        <th class="fw-normal text-center" style="width:6rem;">状態</th>
-        <th class="fw-normal pe-0" style="width:5rem;"></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in documents %}
-      {% with doc=item.doc sent=item.sent fin_data=item.fin_data report_json=item.report_json pdf_url=item.pdf_url sent_json=item.sent_json %}
-      <!-- メイン行 -->
-      <tr>
-        <!-- 提出日 -->
-        <td class="ps-0 text-secondary">{{ doc.file_date|date:"Y/m/d" }}</td>
+<div class="d-flex flex-column gap-2">
+  {% for item in documents %}
+  {% with doc=item.doc sent=item.sent fin_data=item.fin_data report_json=item.report_json pdf_url=item.pdf_url sent_json=item.sent_json %}
 
-        <!-- 書類名 -->
-        <td class="text-body">{{ doc.doc_type_display_name|default:doc.doc_type_code }}</td>
+  <div class="rounded-3 border px-3 py-2" style="background: var(--bs-body-bg);">
 
-        <!-- 状態バッジ（感情分析） -->
-        <td class="text-center">
-          <div class="d-flex flex-wrap justify-content-center gap-1">
-            {% if sent %}
-              {% if sent_json %}
-                <button type="button"
-                        class="badge bg-info-subtle text-info border border-info-subtle"
-                        style="font-size:0.6rem; cursor:pointer; line-height:1.3;"
-                        data-sent="{{ sent_json|escape }}"
-                        onclick="showSentimentModal(this)"
-                        title="感情分析の詳細を表示">
-                  感情済 <i class="bi bi-chevron-right" style="font-size:0.5rem;"></i>
-                </button>
-              {% else %}
-                <span class="badge bg-info-subtle text-info border border-info-subtle"
-                      style="font-size:0.6rem;">感情済</span>
-              {% endif %}
-            {% else %}
-              {% if doc.pdf_flag %}
-                <span class="badge bg-body-secondary text-secondary border"
-                      style="font-size:0.6rem;">PDF</span>
-              {% else %}
-                <span class="text-secondary" style="font-size:0.65rem;">—</span>
-              {% endif %}
-            {% endif %}
-          </div>
-        </td>
+    <!-- 上段：提出日 + 書類名 -->
+    <div class="d-flex align-items-start gap-2 mb-2">
+      <span class="text-secondary flex-shrink-0" style="font-size:0.7rem; padding-top:0.15rem; min-width:5rem;">
+        {{ doc.file_date|date:"Y/m/d" }}
+      </span>
+      <span class="fw-semibold flex-grow-1 lh-sm" style="font-size:0.8rem;">
+        {{ doc.doc_type_display_name|default:doc.doc_type_code }}
+      </span>
+    </div>
 
-        <!-- アクションボタン -->
-        <td class="pe-0 text-end">
-          <div class="d-flex justify-content-end gap-1">
-            <button type="button"
-                    class="btn btn-sm btn-outline-primary py-0 px-2"
-                    style="font-size:0.7rem;"
-                    onclick="edinetPrefillNote('{{ diary.id }}', '{{ doc.doc_id }}')"
-                    title="この書類をもとに記録を作成">
-              <i class="bi bi-pencil-square"></i>
-            </button>
-            {% if fin_data and report_json %}
-            <button type="button"
-                    class="btn btn-sm btn-outline-info py-0 px-2"
-                    style="font-size:0.7rem;"
-                    data-report="{{ report_json|escape }}"
-                    data-symbol="{{ diary.stock_symbol }}"
-                    onclick="showReportModal(this)"
-                    title="財務分析レポートを表示">
-              <i class="bi bi-file-earmark-bar-graph"></i>
-            </button>
-            {% elif not fin_data and doc.xbrl_flag %}
-            <button type="button"
-                    class="btn btn-sm btn-outline-success py-0 px-2"
-                    style="font-size:0.7rem;"
-                    onclick="edinetXBRLAnalyze('{{ diary.id }}', '{{ doc.doc_id }}', this)"
-                    title="XBRL財務分析を実行（AI不使用）">
-              <i class="bi bi-bar-chart-steps"></i>
-            </button>
-            {% endif %}
-            {% if pdf_url %}
-            <a href="{{ pdf_url }}"
-               class="btn btn-sm btn-outline-secondary py-0 px-2"
-               style="font-size:0.7rem;"
-               target="_blank"
-               title="PDFを表示">
-              <i class="bi bi-file-earmark-pdf"></i>
-            </a>
-            {% endif %}
-          </div>
-        </td>
-      </tr>
+    <!-- 中段：財務バッジ（fin_data がある場合） -->
+    {% if fin_data %}
+    <div class="d-flex flex-wrap gap-1 mb-2">
+      {% if fin_data.equity_ratio is not None %}
+      <span class="badge rounded-pill border
+          {% if fin_data.equity_ratio >= 50 %}bg-success-subtle text-success border-success-subtle
+          {% elif fin_data.equity_ratio >= 20 %}bg-body-secondary text-secondary border-secondary-subtle
+          {% else %}bg-danger-subtle text-danger border-danger-subtle{% endif %}"
+            style="font-size:0.65rem;">
+        自己資本比率 {{ fin_data.equity_ratio|floatformat:1 }}%
+      </span>
+      {% endif %}
+      {% if fin_data.operating_cf is not None and fin_data.investing_cf is not None and fin_data.financing_cf is not None %}
+        {% with op=fin_data.operating_cf inv=fin_data.investing_cf fin=fin_data.financing_cf %}
+        <button type="button"
+                class="badge rounded-pill border
+                  {% if op > 0 and inv < 0 and fin < 0 %}bg-success-subtle text-success border-success-subtle
+                  {% elif op > 0 and inv < 0 %}bg-primary-subtle text-primary border-primary-subtle
+                  {% elif op < 0 %}bg-danger-subtle text-danger border-danger-subtle
+                  {% else %}bg-body-secondary text-secondary border-secondary-subtle{% endif %}"
+                style="font-size:0.65rem; cursor:pointer;"
+                {% if report_json %}data-report="{{ report_json|escape }}" data-symbol="{{ diary.stock_symbol }}"{% endif %}
+                onclick="showReportModal(this)"
+                title="財務分析レポートを表示">
+          CF {% if op > 0 %}+{% else %}–{% endif %}{% if inv > 0 %}+{% elif inv < 0 %}–{% else %}0{% endif %}{% if fin > 0 %}+{% elif fin < 0 %}–{% else %}0{% endif %}
+          <i class="bi bi-chevron-right" style="font-size:0.5rem;"></i>
+        </button>
+        {% endwith %}
+      {% endif %}
+    </div>
+    {% endif %}
 
-      {% if fin_data %}
-      <!-- 財務指標サブ行 -->
-      <tr class="border-0">
-        <td colspan="4" class="pt-0 pb-2 ps-0">
-          <div class="d-flex flex-wrap gap-2 align-items-center" style="font-size:0.72rem;">
-            {% if fin_data.operating_margin is not None %}
-            <span class="text-secondary">営業利益率:
-              <strong class="{% if fin_data.operating_margin >= 10 %}text-success{% elif fin_data.operating_margin >= 0 %}text-body{% else %}text-danger{% endif %}">
-                {{ fin_data.operating_margin|floatformat:1 }}%
-              </strong>
-            </span>
-            {% endif %}
-            {% if fin_data.roa is not None %}
-            <span class="text-secondary">ROA:
-              <strong class="{% if fin_data.roa >= 5 %}text-success{% elif fin_data.roa >= 0 %}text-body{% else %}text-danger{% endif %}">
-                {{ fin_data.roa|floatformat:1 }}%
-              </strong>
-            </span>
-            {% endif %}
-            {% if fin_data.equity_ratio is not None %}
-            <span class="text-secondary">自己資本比率:
-              <strong class="{% if fin_data.equity_ratio >= 50 %}text-success{% elif fin_data.equity_ratio >= 20 %}text-body{% else %}text-danger{% endif %}">
-                {{ fin_data.equity_ratio|floatformat:1 }}%
-              </strong>
-            </span>
-            {% endif %}
-            {% if fin_data.net_margin is not None %}
-            <span class="text-secondary">純利益率:
-              <strong>{{ fin_data.net_margin|floatformat:1 }}%</strong>
-            </span>
-            {% endif %}
-            {% if fin_data.operating_cf is not None and fin_data.investing_cf is not None and fin_data.financing_cf is not None %}
-              {% with op=fin_data.operating_cf inv=fin_data.investing_cf fin=fin_data.financing_cf %}
-              <button type="button"
-                      class="badge border {% if op > 0 and inv < 0 and fin < 0 %}bg-success-subtle text-success border-success-subtle{% elif op > 0 and inv < 0 %}bg-primary-subtle text-primary border-primary-subtle{% elif op < 0 %}bg-danger-subtle text-danger border-danger-subtle{% else %}bg-body-secondary text-secondary{% endif %}"
-                      style="font-size:0.6rem; cursor:pointer; line-height:1.3;"
-                      {% if report_json %}data-report="{{ report_json|escape }}" data-symbol="{{ diary.stock_symbol }}"{% endif %}
-                      onclick="showReportModal(this)"
-                      title="財務分析レポートを表示">
-                CF{% if op > 0 %}+{% else %}-{% endif %}{% if inv > 0 %}+{% elif inv < 0 %}-{% else %}0{% endif %}{% if fin > 0 %}+{% elif fin < 0 %}-{% else %}0{% endif %}
-                <i class="bi bi-chevron-right" style="font-size:0.5rem;"></i>
-              </button>
-              {% endwith %}
-            {% endif %}
-          </div>
-        </td>
-      </tr>
+    <!-- 下段：アクションボタン群 -->
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+
+      <!-- 感情分析バッジ -->
+      {% if sent %}
+        {% if sent_json %}
+          <button type="button"
+                  class="badge rounded-pill bg-info-subtle text-info border border-info-subtle"
+                  style="font-size:0.65rem; cursor:pointer;"
+                  data-sent="{{ sent_json|escape }}"
+                  onclick="showSentimentModal(this)"
+                  title="感情分析の詳細を表示">
+            <i class="bi bi-emoji-smile me-1"></i>感情分析済
+          </button>
+        {% else %}
+          <span class="badge rounded-pill bg-info-subtle text-info border border-info-subtle"
+                style="font-size:0.65rem;">
+            <i class="bi bi-emoji-smile me-1"></i>感情分析済
+          </span>
+        {% endif %}
       {% endif %}
 
-      {% endwith %}
-      {% endfor %}
-    </tbody>
-  </table>
+      <!-- スペーサー -->
+      <div class="flex-grow-1"></div>
+
+      <!-- 記録作成ボタン -->
+      <button type="button"
+              class="btn btn-sm btn-outline-secondary py-0 px-2"
+              style="font-size:0.75rem;"
+              onclick="edinetPrefillNote('{{ diary.id }}', '{{ doc.doc_id }}')"
+              title="この書類をもとに記録を作成">
+        <i class="bi bi-pencil-square me-1"></i>記録
+      </button>
+
+      <!-- 財務レポート or XBRLボタン -->
+      {% if fin_data and report_json %}
+      <button type="button"
+              class="btn btn-sm btn-outline-info py-0 px-2"
+              style="font-size:0.75rem;"
+              data-report="{{ report_json|escape }}"
+              data-symbol="{{ diary.stock_symbol }}"
+              onclick="showReportModal(this)"
+              title="財務分析レポートを表示">
+        <i class="bi bi-bar-chart-line me-1"></i>財務
+      </button>
+      {% elif not fin_data and doc.xbrl_flag %}
+      <button type="button"
+              class="btn btn-sm btn-outline-success py-0 px-2"
+              style="font-size:0.75rem;"
+              onclick="edinetXBRLAnalyze('{{ diary.id }}', '{{ doc.doc_id }}', this)"
+              title="XBRL財務分析を実行（AI不使用）">
+        <i class="bi bi-bar-chart-steps me-1"></i>分析
+      </button>
+      {% endif %}
+
+      <!-- PDFボタン -->
+      {% if pdf_url %}
+      <a href="{{ pdf_url }}"
+         class="btn btn-sm btn-outline-secondary py-0 px-2"
+         style="font-size:0.75rem;"
+         target="_blank"
+         title="PDFを表示">
+        <i class="bi bi-file-earmark-pdf"></i>
+      </a>
+      {% endif %}
+
+    </div>
+  </div>
+
+  {% endwith %}
+  {% endfor %}
 </div>
 {% endif %}
