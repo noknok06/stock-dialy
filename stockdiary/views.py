@@ -3424,10 +3424,45 @@ def edinet_panel(request, diary_id):
                 .first()
             )
 
+            # CF パターン詳細（fin_data の CF 値からルールベースで算出）
+            cf_pattern_json = None
+            if fin_data and all(
+                getattr(fin_data, f) is not None
+                for f in ('operating_cf', 'investing_cf', 'financing_cf')
+            ):
+                try:
+                    from earnings_analysis.services.financial_analyzer import FinancialAnalyzer
+                    from decimal import Decimal
+                    cf_result = FinancialAnalyzer().analyze_cashflow_pattern({
+                        'operating_cf': Decimal(str(fin_data.operating_cf)),
+                        'investing_cf': Decimal(str(fin_data.investing_cf)),
+                        'financing_cf': Decimal(str(fin_data.financing_cf)),
+                    })
+                    _risk_labels = {'low': '低リスク', 'medium': '中リスク', 'high': '高リスク', 'very_high': '非常に高リスク'}
+                    ptn = cf_result.get('pattern', {})
+                    amt = cf_result.get('amounts', {})
+                    ana = cf_result.get('analysis', {})
+                    cf_pattern_json = json.dumps({
+                        'name': ptn.get('name', ''),
+                        'description': ptn.get('description', ''),
+                        'risk_level': ptn.get('risk_level', 'medium'),
+                        'risk_label': _risk_labels.get(ptn.get('risk_level', 'medium'), '中リスク'),
+                        'interpretation': ptn.get('interpretation', ''),
+                        'operating_cf': amt.get('operating_cf', 0),
+                        'investing_cf': amt.get('investing_cf', 0),
+                        'financing_cf': amt.get('financing_cf', 0),
+                        'strengths': ana.get('strengths', [])[:3],
+                        'concerns': ana.get('concerns', [])[:3],
+                        'key_insights': ana.get('key_insights', [])[:3],
+                    }, ensure_ascii=False)
+                except Exception:
+                    pass
+
             documents.append({
                 'doc': doc,
                 'sent': sent,
                 'fin_data': fin_data,
+                'cf_pattern_json': cf_pattern_json,
                 'pdf_url': pdf_url,
                 'sent_json': sent_json,
             })

@@ -2796,16 +2796,17 @@ window.edinetXBRLAnalyze = function(diaryId, docId, btn) {
       return;
     }
     // パネルを再ロードして財務指標を表示
-    var panel = document.getElementById('edinet-panel-body');
-    if (panel && window.htmx) {
-      htmx.trigger(document.getElementById('edinet-tab'), 'shown.bs.tab');
-    } else if (panel) {
-      // htmx が使えない場合は fetch で再取得
-      fetch('/stockdiary/' + diaryId + '/edinet-panel/', {
-        headers: {'X-Requested-With': 'XMLHttpRequest'}
-      })
-      .then(function(r) { return r.text(); })
-      .then(function(html) { panel.innerHTML = html; });
+    // htmx.ajax を直接呼ぶ（hx-trigger="once" の制限を回避）
+    var panelUrl = '/stockdiary/' + diaryId + '/edinet-panel/';
+    if (window.htmx) {
+      htmx.ajax('GET', panelUrl, {target: '#edinet-panel-body', swap: 'innerHTML'});
+    } else {
+      fetch(panelUrl, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+        .then(function(r) { return r.text(); })
+        .then(function(html) {
+          var p = document.getElementById('edinet-panel-body');
+          if (p) p.innerHTML = html;
+        });
     }
   })
   .catch(function(e) {
@@ -2891,6 +2892,61 @@ window.showSentimentModal = function(el) {
   } catch(e) { console.error('[EDINET] showSentimentModal:', e); }
 };
 
+// CF パターンモーダル表示
+window.showCFModal = function(el) {
+  try {
+    var raw = el.dataset.cf;
+    if (!raw) return;
+    var d = JSON.parse(raw);
+    var body = document.getElementById('cfModalBody');
+    if (!body) return;
+
+    var riskColor = {low:'success', medium:'warning', high:'danger', very_high:'danger'}[d.risk_level] || 'secondary';
+    var html = '';
+
+    // パターン名 + リスク
+    html += '<div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">';
+    html += '<div class="fw-bold fs-6">' + _escH(d.name) + '</div>';
+    html += '<span class="badge bg-' + riskColor + '-subtle text-' + riskColor + ' border border-' + riskColor + '-subtle" style="font-size:0.65rem;">' + _escH(d.risk_label || d.risk_level) + '</span>';
+    html += '</div>';
+
+    // CF 金額内訳
+    function fmtCF(v) {
+      if (v == null) return '—';
+      var abs = Math.abs(v);
+      var s = abs >= 1e8 ? (abs/1e8).toFixed(1) + '億円' : (abs/1e4).toFixed(0) + '万円';
+      return (v >= 0 ? '+' : '-') + s;
+    }
+    html += '<div class="d-flex gap-3 mb-3 small">';
+    html += '<div class="text-center"><div class="text-secondary" style="font-size:0.65rem;">営業CF</div><div class="fw-bold ' + (d.operating_cf >= 0 ? 'text-success' : 'text-danger') + '">' + fmtCF(d.operating_cf) + '</div></div>';
+    html += '<div class="text-center"><div class="text-secondary" style="font-size:0.65rem;">投資CF</div><div class="fw-bold ' + (d.investing_cf >= 0 ? 'text-success' : 'text-secondary') + '">' + fmtCF(d.investing_cf) + '</div></div>';
+    html += '<div class="text-center"><div class="text-secondary" style="font-size:0.65rem;">財務CF</div><div class="fw-bold ' + (d.financing_cf >= 0 ? 'text-secondary' : 'text-secondary') + '">' + fmtCF(d.financing_cf) + '</div></div>';
+    html += '</div>';
+
+    // 解釈
+    if (d.interpretation) {
+      html += '<p class="small mb-3 text-body-secondary">' + _escH(d.interpretation) + '</p>';
+    }
+
+    // 強み
+    if (d.strengths && d.strengths.length > 0) {
+      html += '<p class="mb-1 small fw-semibold text-success">強み</p><ul class="small mb-3 ps-3">';
+      d.strengths.forEach(function(s) { html += '<li>' + _escH(s) + '</li>'; });
+      html += '</ul>';
+    }
+
+    // 懸念
+    if (d.concerns && d.concerns.length > 0) {
+      html += '<p class="mb-1 small fw-semibold text-danger">懸念点</p><ul class="small mb-3 ps-3">';
+      d.concerns.forEach(function(s) { html += '<li>' + _escH(s) + '</li>'; });
+      html += '</ul>';
+    }
+
+    body.innerHTML = html;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('cfModal')).show();
+  } catch(e) { console.error('[EDINET] showCFModal:', e); }
+};
+
 </script>
 
 <!-- 感情分析モーダル（EDINETパネル用） -->
@@ -2904,6 +2960,21 @@ window.showSentimentModal = function(el) {
         <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body small" id="sentimentModalBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CF パターンモーダル（EDINETパネル用） -->
+<div class="modal fade" id="cfModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title fw-semibold small">
+          <i class="bi bi-cash-stack me-2 text-success"></i>CFパターン詳細
+        </h6>
+        <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body small" id="cfModalBody"></div>
     </div>
   </div>
 </div>
