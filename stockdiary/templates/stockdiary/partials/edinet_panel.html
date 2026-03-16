@@ -31,7 +31,7 @@
     </thead>
     <tbody>
       {% for item in documents %}
-      {% with doc=item.doc sent=item.sent fin_data=item.fin_data cf_pattern_json=item.cf_pattern_json pdf_url=item.pdf_url sent_json=item.sent_json %}
+      {% with doc=item.doc sent=item.sent fin_data=item.fin_data report_json=item.report_json pdf_url=item.pdf_url sent_json=item.sent_json %}
       <!-- メイン行 -->
       <tr>
         <!-- 提出日 -->
@@ -78,7 +78,17 @@
                     title="この書類をもとに記録を作成">
               <i class="bi bi-pencil-square"></i>
             </button>
-            {% if not fin_data and doc.xbrl_flag %}
+            {% if fin_data and report_json %}
+            <button type="button"
+                    class="btn btn-sm btn-outline-info py-0 px-2"
+                    style="font-size:0.7rem;"
+                    data-report="{{ report_json|escape }}"
+                    data-symbol="{{ diary.stock_symbol }}"
+                    onclick="showReportModal(this)"
+                    title="財務分析レポートを表示">
+              <i class="bi bi-file-earmark-bar-graph"></i>
+            </button>
+            {% elif not fin_data and doc.xbrl_flag %}
             <button type="button"
                     class="btn btn-sm btn-outline-success py-0 px-2"
                     style="font-size:0.7rem;"
@@ -136,9 +146,9 @@
               <button type="button"
                       class="badge border {% if op > 0 and inv < 0 and fin < 0 %}bg-success-subtle text-success border-success-subtle{% elif op > 0 and inv < 0 %}bg-primary-subtle text-primary border-primary-subtle{% elif op < 0 %}bg-danger-subtle text-danger border-danger-subtle{% else %}bg-body-secondary text-secondary{% endif %}"
                       style="font-size:0.6rem; cursor:pointer; line-height:1.3;"
-                      {% if cf_pattern_json %}data-cf="{{ cf_pattern_json|escape }}"{% endif %}
-                      onclick="showCFModal(this)"
-                      title="CFパターンの詳細を表示">
+                      {% if report_json %}data-report="{{ report_json|escape }}" data-symbol="{{ diary.stock_symbol }}"{% endif %}
+                      onclick="showReportModal(this)"
+                      title="財務分析レポートを表示">
                 CF{% if op > 0 %}+{% else %}-{% endif %}{% if inv > 0 %}+{% elif inv < 0 %}-{% else %}0{% endif %}{% if fin > 0 %}+{% elif fin < 0 %}-{% else %}0{% endif %}
                 <i class="bi bi-chevron-right" style="font-size:0.5rem;"></i>
               </button>

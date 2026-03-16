@@ -2892,59 +2892,119 @@ window.showSentimentModal = function(el) {
   } catch(e) { console.error('[EDINET] showSentimentModal:', e); }
 };
 
-// CF パターンモーダル表示
-window.showCFModal = function(el) {
+// 財務分析レポートモーダル表示
+window.showReportModal = function(el) {
   try {
-    var raw = el.dataset.cf;
+    var raw = el.dataset.report;
     if (!raw) return;
     var d = JSON.parse(raw);
-    var body = document.getElementById('cfModalBody');
+    var symbol = el.dataset.symbol || '';
+    var body = document.getElementById('reportModalBody');
     if (!body) return;
 
-    var riskColor = {low:'success', medium:'warning', high:'danger', very_high:'danger'}[d.risk_level] || 'secondary';
-    var html = '';
-
-    // パターン名 + リスク
-    html += '<div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">';
-    html += '<div class="fw-bold fs-6">' + _escH(d.name) + '</div>';
-    html += '<span class="badge bg-' + riskColor + '-subtle text-' + riskColor + ' border border-' + riskColor + '-subtle" style="font-size:0.65rem;">' + _escH(d.risk_label || d.risk_level) + '</span>';
-    html += '</div>';
-
-    // CF 金額内訳
     function fmtCF(v) {
       if (v == null) return '—';
       var abs = Math.abs(v);
       var s = abs >= 1e8 ? (abs/1e8).toFixed(1) + '億円' : (abs/1e4).toFixed(0) + '万円';
       return (v >= 0 ? '+' : '-') + s;
     }
-    html += '<div class="d-flex gap-3 mb-3 small">';
-    html += '<div class="text-center"><div class="text-secondary" style="font-size:0.65rem;">営業CF</div><div class="fw-bold ' + (d.operating_cf >= 0 ? 'text-success' : 'text-danger') + '">' + fmtCF(d.operating_cf) + '</div></div>';
-    html += '<div class="text-center"><div class="text-secondary" style="font-size:0.65rem;">投資CF</div><div class="fw-bold ' + (d.investing_cf >= 0 ? 'text-success' : 'text-secondary') + '">' + fmtCF(d.investing_cf) + '</div></div>';
-    html += '<div class="text-center"><div class="text-secondary" style="font-size:0.65rem;">財務CF</div><div class="fw-bold ' + (d.financing_cf >= 0 ? 'text-secondary' : 'text-secondary') + '">' + fmtCF(d.financing_cf) + '</div></div>';
+    function fmtPct(v, digits) {
+      return v != null ? v.toFixed(digits != null ? digits : 1) + '%' : '—';
+    }
+    function metricRow(label, val, cls) {
+      return '<div class="d-flex justify-content-between align-items-center py-1 border-bottom">'
+        + '<span class="text-secondary">' + label + '</span>'
+        + '<strong class="' + (cls || '') + '">' + val + '</strong></div>';
+    }
+
+    var cf = d.cf || {};
+    var riskColor = {low:'success', medium:'warning', high:'danger', very_high:'danger'}[cf.risk_level] || 'secondary';
+    var html = '';
+
+    // ヘッダー：企業名・書類
+    html += '<div class="mb-3 pb-2 border-bottom">';
+    html += '<div class="fw-semibold">' + _escH(d.company_name || '') + '</div>';
+    html += '<div class="text-secondary small">' + _escH(d.doc_type || '') + ' &nbsp;|&nbsp; ' + _escH(d.file_date || '') + '</div>';
     html += '</div>';
 
-    // 解釈
-    if (d.interpretation) {
-      html += '<p class="small mb-3 text-body-secondary">' + _escH(d.interpretation) + '</p>';
-    }
+    // ---- 収益性 ----
+    html += '<h6 class="small fw-semibold text-body-secondary mb-1 mt-2"><i class="bi bi-graph-up me-1"></i>収益性</h6>';
+    html += '<div class="small mb-3">';
+    var omColor = d.operating_margin != null ? (d.operating_margin >= 10 ? 'text-success' : d.operating_margin >= 0 ? '' : 'text-danger') : '';
+    var roaColor = d.roa != null ? (d.roa >= 5 ? 'text-success' : d.roa >= 0 ? '' : 'text-danger') : '';
+    html += metricRow('営業利益率', fmtPct(d.operating_margin), omColor);
+    html += metricRow('純利益率', fmtPct(d.net_margin), '');
+    html += metricRow('ROA', fmtPct(d.roa), roaColor);
+    html += '</div>';
 
-    // 強み
-    if (d.strengths && d.strengths.length > 0) {
-      html += '<p class="mb-1 small fw-semibold text-success">強み</p><ul class="small mb-3 ps-3">';
-      d.strengths.forEach(function(s) { html += '<li>' + _escH(s) + '</li>'; });
+    // ---- 財務安全性 ----
+    html += '<h6 class="small fw-semibold text-body-secondary mb-1 mt-2"><i class="bi bi-shield-check me-1"></i>財務安全性</h6>';
+    html += '<div class="small mb-3">';
+    var eqColor = d.equity_ratio != null ? (d.equity_ratio >= 50 ? 'text-success' : d.equity_ratio >= 20 ? '' : 'text-danger') : '';
+    html += metricRow('自己資本比率', fmtPct(d.equity_ratio), eqColor);
+    html += '</div>';
+
+    // ---- キャッシュフロー ----
+    html += '<h6 class="small fw-semibold text-body-secondary mb-1 mt-2"><i class="bi bi-cash-stack me-1"></i>キャッシュフロー</h6>';
+    html += '<div class="d-flex gap-3 mb-2 small text-center">';
+    html += '<div><div class="text-secondary" style="font-size:0.65rem;">営業CF</div><div class="fw-bold ' + (d.operating_cf >= 0 ? 'text-success' : 'text-danger') + '">' + fmtCF(d.operating_cf) + '</div></div>';
+    html += '<div><div class="text-secondary" style="font-size:0.65rem;">投資CF</div><div class="fw-bold ' + (d.investing_cf < 0 ? 'text-secondary' : 'text-warning') + '">' + fmtCF(d.investing_cf) + '</div></div>';
+    html += '<div><div class="text-secondary" style="font-size:0.65rem;">財務CF</div><div class="fw-bold text-secondary">' + fmtCF(d.financing_cf) + '</div></div>';
+    html += '</div>';
+    if (cf.name) {
+      html += '<div class="d-flex align-items-center gap-2 mb-2">';
+      html += '<span class="badge bg-' + riskColor + '-subtle text-' + riskColor + ' border border-' + riskColor + '-subtle">' + _escH(cf.name) + '</span>';
+      html += '<span class="badge bg-body-secondary text-secondary border" style="font-size:0.6rem;">' + _escH(cf.risk_label || '') + '</span>';
+      html += '</div>';
+    }
+    if (cf.interpretation) {
+      html += '<p class="small text-body-secondary mb-2">' + _escH(cf.interpretation) + '</p>';
+    }
+    if (cf.strengths && cf.strengths.length > 0) {
+      html += '<p class="mb-1 small fw-semibold text-success">強み</p><ul class="small mb-2 ps-3">';
+      cf.strengths.forEach(function(s) { html += '<li>' + _escH(s) + '</li>'; });
+      html += '</ul>';
+    }
+    if (cf.concerns && cf.concerns.length > 0) {
+      html += '<p class="mb-1 small fw-semibold text-danger">懸念点</p><ul class="small mb-2 ps-3">';
+      cf.concerns.forEach(function(s) { html += '<li>' + _escH(s) + '</li>'; });
       html += '</ul>';
     }
 
-    // 懸念
-    if (d.concerns && d.concerns.length > 0) {
-      html += '<p class="mb-1 small fw-semibold text-danger">懸念点</p><ul class="small mb-3 ps-3">';
-      d.concerns.forEach(function(s) { html += '<li>' + _escH(s) + '</li>'; });
-      html += '</ul>';
+    // ---- リアルタイム株価（非同期ロード） ----
+    var liveId = 'reportLiveMetrics';
+    if (symbol) {
+      html += '<hr class="my-2">';
+      html += '<h6 class="small fw-semibold text-body-secondary mb-1"><i class="bi bi-lightning me-1"></i>リアルタイム株価指標 <span class="text-muted fw-normal" style="font-size:0.65rem;">（取得日時点）</span></h6>';
+      html += '<div id="' + liveId + '" class="small text-secondary"><span class="spinner-border spinner-border-sm"></span> 取得中…</div>';
     }
 
     body.innerHTML = html;
-    bootstrap.Modal.getOrCreateInstance(document.getElementById('cfModal')).show();
-  } catch(e) { console.error('[EDINET] showCFModal:', e); }
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('reportModal')).show();
+
+    // リアルタイム株価を非同期取得
+    if (symbol) {
+      fetch('/stockdiary/api/stock/metrics/' + encodeURIComponent(symbol) + '/')
+        .then(function(r) { return r.json(); })
+        .then(function(m) {
+          var el2 = document.getElementById(liveId);
+          if (!el2) return;
+          if (!m.success) { el2.textContent = '取得失敗'; return; }
+          var rows = '';
+          if (m.price != null) rows += metricRow('株価', m.price.toLocaleString() + '円', 'text-body');
+          if (m.per != null) rows += metricRow('PER（実績）', m.per.toFixed(1) + '倍', '');
+          if (m.pbr != null) rows += metricRow('PBR', m.pbr.toFixed(2) + '倍', '');
+          if (m.dividend_yield != null) rows += metricRow('配当利回り', m.dividend_yield.toFixed(2) + '%', 'text-success');
+          if (m.market_cap_oku != null) rows += metricRow('時価総額', m.market_cap_oku.toLocaleString() + '億円', '');
+          rows += '<div class="text-secondary mt-1" style="font-size:0.65rem;">取得: ' + _escH(m.fetched_at || '') + '（Yahoo Finance）</div>';
+          el2.innerHTML = rows || '取得できる指標がありませんでした';
+        })
+        .catch(function() {
+          var el2 = document.getElementById(liveId);
+          if (el2) el2.textContent = '株価情報の取得に失敗しました';
+        });
+    }
+  } catch(e) { console.error('[EDINET] showReportModal:', e); }
 };
 
 </script>
@@ -2964,17 +3024,17 @@ window.showCFModal = function(el) {
   </div>
 </div>
 
-<!-- CF パターンモーダル（EDINETパネル用） -->
-<div class="modal fade" id="cfModal" tabindex="-1" aria-hidden="true">
+<!-- 財務分析レポートモーダル（EDINETパネル用） -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header py-2">
         <h6 class="modal-title fw-semibold small">
-          <i class="bi bi-cash-stack me-2 text-success"></i>CFパターン詳細
+          <i class="bi bi-file-earmark-bar-graph me-2 text-info"></i>財務分析レポート
         </h6>
         <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body small" id="cfModalBody"></div>
+      <div class="modal-body small" id="reportModalBody"></div>
     </div>
   </div>
 </div>
