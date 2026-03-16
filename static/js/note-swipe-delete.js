@@ -6,6 +6,9 @@
  *   .note-card          → display:grid のアウター（タッチイベント受付）
  *   .note-slide-content → grid-row:1/col:1, z-index:1（スライドするコンテンツ）
  *   .note-delete-shelf  → grid-row:1/col:1, justify-self:end（右端に隠れているシェルフ）
+ *
+ * ※ diary-detail-tabs.js がタブコンテンツ全体に水平スワイプを設定しているため、
+ *    カード上のタッチイベントは必ず stopPropagation() して干渉を防ぐ。
  */
 
 (function () {
@@ -16,7 +19,7 @@
   const VERTICAL_LIMIT  = 30;   // 縦移動がこれを超えたらスクロールと判定 (px)
   const HAPTIC_MS       = 15;
 
-  let currentOpenCard = null; // 現在シェルフが開いているカード
+  let currentOpenCard = null;
 
   // ============================================================
   // スワイプハンドラのバインド
@@ -31,9 +34,13 @@
 
       var startX, startY, moveX = 0, isTracking = false, isScrolling = null;
 
+      // ---- touchstart ----
       card.addEventListener('touchstart', function (e) {
-        // 削除シェルフへのタップは除外（click で処理）
         if (e.target.closest('.note-delete-shelf')) return;
+
+        // タブスワイプとの干渉を防ぐため伝播を止める
+        e.stopPropagation();
+
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
         moveX = 0;
@@ -42,8 +49,11 @@
         inner.style.transition = 'none';
       }, { passive: true });
 
+      // ---- touchmove ----
       card.addEventListener('touchmove', function (e) {
         if (!isTracking) return;
+
+        e.stopPropagation(); // タブスワイプへの伝播を止める
 
         var diffX = startX - e.touches[0].clientX; // 左スワイプで正
         var diffY = Math.abs(e.touches[0].clientY - startY);
@@ -64,21 +74,24 @@
           return;
         }
 
-        e.preventDefault();
+        e.preventDefault(); // 水平スクロールを防止
         moveX = Math.min(diffX, SHELF_WIDTH);
         inner.style.transform = 'translateX(-' + moveX + 'px)';
       }, { passive: false });
 
-      card.addEventListener('touchend', function () {
+      // ---- touchend ----
+      card.addEventListener('touchend', function (e) {
         if (!isTracking) return;
         isTracking = false;
+
+        e.stopPropagation();
 
         if (moveX >= SNAP_THRESHOLD) {
           openShelf(card, inner);
         } else {
           snapBack(inner);
         }
-      });
+      }, { passive: true });
     });
   }
 
@@ -86,7 +99,6 @@
   // シェルフの開閉
   // ============================================================
   function openShelf(card, inner) {
-    // 他に開いているシェルフを閉じる
     if (currentOpenCard && currentOpenCard !== card) {
       var prevInner = currentOpenCard.querySelector('.note-slide-content');
       if (prevInner) snapBack(prevInner);
@@ -98,7 +110,6 @@
 
     if (navigator.vibrate) navigator.vibrate(HAPTIC_MS);
 
-    // 削除シェルフのタップ: 一度だけバインド
     var shelf = card.querySelector('.note-delete-shelf');
     if (shelf && !shelf._tapBound) {
       shelf._tapBound = true;

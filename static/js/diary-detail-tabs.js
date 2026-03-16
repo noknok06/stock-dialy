@@ -130,7 +130,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // タッチ開始イベント
     function handleTouchStart(e) {
         if (isAnimating) return;
-        
+
+        // 継続記録カード上のスワイプはカード側のハンドラに委ねる
+        if (e.target.closest('.note-card')) return;
+
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         startTime = Date.now();
