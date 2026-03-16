@@ -3321,7 +3321,6 @@ def edinet_panel(request, diary_id):
     try:
         from earnings_analysis.models.company import Company
         from earnings_analysis.models.document import DocumentMetadata
-        from earnings_analysis.models.financial import FinancialAnalysisSession
         from earnings_analysis.models.sentiment import SentimentAnalysisSession, SentimentAnalysisHistory
 
         sec_code = _get_securities_code(diary.stock_symbol)
@@ -3348,15 +3347,6 @@ def edinet_panel(request, diary_id):
         )
 
         for doc in docs:
-            # 財務分析: 完了済みセッションのみ参照（Historyは使わない）
-            fin_session = (
-                FinancialAnalysisSession.objects
-                .filter(document=doc, processing_status='COMPLETED')
-                .order_by('-created_at')
-                .first()
-            )
-            fin = fin_session
-
             # 感情分析: セッション → 永続履歴にフォールバック
             sent_session = (
                 SentimentAnalysisSession.objects
@@ -3376,17 +3366,6 @@ def edinet_panel(request, diary_id):
                 except Exception:
                     pass
             sent = sent_session or sent_history
-
-            # URLをビュー側で生成（テンプレートの {% url %} エラーを防ぐ）
-            result_url = None
-            if fin_session:
-                try:
-                    result_url = reverse('copomo:financial-result', args=[str(fin_session.session_id)])
-                except Exception:
-                    try:
-                        result_url = reverse('copomo:document-detail-ui', args=[doc.doc_id])
-                    except Exception:
-                        pass
 
             pdf_url = None
             if doc.pdf_flag:
@@ -3423,9 +3402,7 @@ def edinet_panel(request, diary_id):
 
             documents.append({
                 'doc': doc,
-                'fin': fin,
                 'sent': sent,
-                'result_url': result_url,
                 'pdf_url': pdf_url,
                 'sent_json': sent_json,
             })
@@ -3458,42 +3435,49 @@ def edinet_note_prefill(request, diary_id):
 
     try:
         from earnings_analysis.models.document import DocumentMetadata
-        from earnings_analysis.models.financial import FinancialAnalysisSession
+        from earnings_analysis.models.sentiment import SentimentAnalysisSession, SentimentAnalysisHistory
 
         doc = get_object_or_404(DocumentMetadata, doc_id=doc_id, legal_status='1')
 
-        # 財務分析セッションのみ参照（Historyは使わない）
-        fin_session = (
-            FinancialAnalysisSession.objects
+        # 感情分析: セッション → 永続履歴にフォールバック
+        sent_session = (
+            SentimentAnalysisSession.objects
             .filter(document=doc, processing_status='COMPLETED')
             .order_by('-created_at')
             .first()
         )
+        sent = sent_session
+        if not sent:
+            try:
+                sent = (
+                    SentimentAnalysisHistory.objects
+                    .filter(document=doc)
+                    .order_by('-analysis_date')
+                    .first()
+                )
+            except Exception:
+                pass
 
-        # 保存済みGeminiインサイトからinvestment_pointsを取得
         content_parts = []
         content_parts.append(f'## EDINET開示: {doc.company_name}')
         content_parts.append(f'書類種別: {doc.doc_type_display_name}')
         content_parts.append(f'提出日: {doc.file_date}')
         content_parts.append('')
 
-        # セッションからanalysis_resultを取得
-        result = None
-        health_score = None
-        investment_stance = ''
-        risk_level = ''
-        _risk_labels = {'low': '低リスク', 'medium': '中リスク', 'high': '高リスク'}
-        if fin_session and fin_session.analysis_result:
-            result = fin_session.analysis_result
-            health_score = fin_session.overall_health_score
-            investment_stance = fin_session.get_investment_stance_display() if fin_session.investment_stance else ''
-            risk_level = _risk_labels.get(fin_session.risk_level, '')
+        if sent:
+            analysis_result = getattr(sent, 'analysis_result', None) or {}
+            _label_map = {'positive': 'ポジティブ', 'negative': 'ネガティブ', 'neutral': '中立'}
+            label_display = _label_map.get(sent.sentiment_label, sent.sentiment_label or '—')
+            score = float(sent.overall_score) if sent.overall_score is not None else None
 
-        if result:
-            # Geminiインサイトのinvestment_pointsを取得
-            insights = result.get('gemini_insights', {})
-            points = insights.get('investment_points', [])
+            content_parts.append('### 感情分析')
+            score_str = f'{score:.1f}' if score is not None else '—'
+            content_parts.append(f'- センチメント: **{label_display}** （スコア: {score_str}）')
+
+            # AIインサイトの投資ポイント
+            points = (analysis_result.get('ai_expert_analysis') or {}).get('investment_points', [])
             if points:
+                content_parts.append('')
                 content_parts.append('### 投資ポイント（AI分析）')
                 for p in points:
                     title = p.get('title', '')
@@ -3502,18 +3486,8 @@ def edinet_note_prefill(request, diary_id):
                         content_parts.append(f'- **{title}**: {desc}')
                     else:
                         content_parts.append(f'- {desc}')
-                content_parts.append('')
+            content_parts.append('')
 
-        # 総合評価スコア（分析の有無に関わらずセッション/履歴から取得）
-        if health_score is not None:
-            content_parts.append('### 総合評価スコア')
-            content_parts.append(f'- 健全性スコア: **{health_score:.0f}/100**')
-            if risk_level:
-                content_parts.append(f'- リスクレベル: {risk_level}')
-            if investment_stance:
-                content_parts.append(f'- 投資スタンス: {investment_stance}')
-
-        content_parts.append('')
         content_parts.append('---')
         content_parts.append(f'*書類参照: {doc.doc_type_display_name} / {doc.file_date} [#{doc.doc_id}]*')
 

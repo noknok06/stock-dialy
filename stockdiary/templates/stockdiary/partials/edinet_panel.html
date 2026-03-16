@@ -39,30 +39,9 @@
         <!-- 書類名 -->
         <td class="text-body">{{ doc.doc_type_display_name|default:doc.doc_type_code }}</td>
 
-        <!-- 状態バッジ（財務/感情を独立して表示） -->
+        <!-- 状態バッジ（感情分析） -->
         <td class="text-center">
           <div class="d-flex flex-wrap justify-content-center gap-1">
-            {% if fin %}
-              {% if fin.overall_health_score >= 70 %}
-                <span class="badge bg-success-subtle text-success border border-success-subtle"
-                      style="font-size:0.6rem;" title="総合健全性スコア">
-                  <i class="bi bi-graph-up-arrow"></i> {{ fin.overall_health_score|floatformat:0 }}
-                </span>
-              {% elif fin.overall_health_score >= 40 %}
-                <span class="badge bg-warning-subtle text-warning border border-warning-subtle"
-                      style="font-size:0.6rem;" title="総合健全性スコア">
-                  {{ fin.overall_health_score|floatformat:0 }}
-                </span>
-              {% elif fin.overall_health_score %}
-                <span class="badge bg-danger-subtle text-danger border border-danger-subtle"
-                      style="font-size:0.6rem;" title="総合健全性スコア">
-                  <i class="bi bi-graph-down-arrow"></i> {{ fin.overall_health_score|floatformat:0 }}
-                </span>
-              {% else %}
-                <span class="badge bg-body-secondary text-secondary border"
-                      style="font-size:0.6rem;">財務済</span>
-              {% endif %}
-            {% endif %}
             {% if sent %}
               {% if sent_json %}
                 <button type="button"
@@ -77,8 +56,7 @@
                 <span class="badge bg-info-subtle text-info border border-info-subtle"
                       style="font-size:0.6rem;">感情済</span>
               {% endif %}
-            {% endif %}
-            {% if not fin and not sent %}
+            {% else %}
               {% if doc.pdf_flag %}
                 <span class="badge bg-body-secondary text-secondary border"
                       style="font-size:0.6rem;">PDF</span>
@@ -89,7 +67,7 @@
           </div>
         </td>
 
-        <!-- アクションボタン（常に記録ボタンを表示） -->
+        <!-- アクションボタン -->
         <td class="pe-0 text-end">
           <div class="d-flex justify-content-end gap-1">
             <button type="button"
@@ -99,15 +77,6 @@
                     title="この書類をもとに記録を作成">
               <i class="bi bi-pencil-square"></i>
             </button>
-            {% if result_url %}
-            <a href="{{ result_url }}"
-               class="btn btn-sm btn-outline-secondary py-0 px-2"
-               style="font-size:0.7rem;"
-               target="_blank"
-               title="分析結果を開く">
-              <i class="bi bi-bar-chart-line"></i>
-            </a>
-            {% endif %}
             {% if pdf_url %}
             <a href="{{ pdf_url }}"
                class="btn btn-sm btn-outline-secondary py-0 px-2"
