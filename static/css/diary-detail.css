@@ -589,45 +589,37 @@
 
 /* === 継続記録カード === */
 .note-card {
-  background: var(--bg-100);
+  display: grid;          /* グリッドで shelf と slide-content を重ねる */
+  overflow: hidden;
   border: 1px solid var(--bg-300);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  overflow: hidden;
-  position: relative;
-  transition: all 0.3s ease;
+  transition: box-shadow 0.3s ease;
   margin-bottom: 1.5rem;
 }
 
 .note-card:hover {
-  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* モバイルでは hover transform を無効化（スワイプと競合しないよう） */
-@media (max-width: 768px) {
-  .note-card:hover {
-    transform: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  }
-}
-
-/* スワイプ削除: スライドするコンテンツラッパー */
+/* スワイプ削除: スライドするコンテンツラッパー（グリッドの同セルに配置） */
 .note-slide-content {
-  position: relative;
+  grid-row: 1;
+  grid-column: 1;
+  position: relative;     /* z-index 有効化 */
   z-index: 1;
   background: var(--bg-100);
-  border-radius: 12px;
   will-change: transform;
+  overflow: hidden;       /* BFC化 */
 }
 
-/* スワイプ削除: 右端の削除シェルフ */
+/* スワイプ削除: 右端の削除シェルフ（グリッドの同セルに配置・右寄せ） */
 .note-delete-shelf {
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
+  grid-row: 1;
+  grid-column: 1;
+  justify-self: end;      /* 右端 */
   width: 80px;
+  z-index: 0;
   background: var(--danger-color, #ef4444);
   color: white;
   display: flex;
@@ -637,7 +629,6 @@
   gap: 4px;
   font-size: 13px;
   font-weight: 600;
-  z-index: 0;
   cursor: pointer;
   user-select: none;
 }

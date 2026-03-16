@@ -2,15 +2,18 @@
  * note-swipe-delete.js
  * 継続記録カード（.note-card）を左スワイプして削除シェルフを表示する。
  *
- * card-swipe-note.js と同パターンで実装。
+ * card-swipe-note.js と同パターン（CSS Grid による重なりを利用）:
+ *   .note-card          → display:grid のアウター（タッチイベント受付）
+ *   .note-slide-content → grid-row:1/col:1, z-index:1（スライドするコンテンツ）
+ *   .note-delete-shelf  → grid-row:1/col:1, justify-self:end（右端に隠れているシェルフ）
  */
 
 (function () {
   'use strict';
 
-  const SHELF_WIDTH     = 80;  // 削除シェルフの幅 (px)
-  const SNAP_THRESHOLD  = 50;  // この距離を超えたらシェルフを固定 (px)
-  const VERTICAL_LIMIT  = 25;  // 縦移動がこれを超えたらスクロールと判定 (px)
+  const SHELF_WIDTH     = 80;   // 削除シェルフの幅 (px)
+  const SNAP_THRESHOLD  = 50;   // この距離を超えたらシェルフを固定 (px)
+  const VERTICAL_LIMIT  = 30;   // 縦移動がこれを超えたらスクロールと判定 (px)
   const HAPTIC_MS       = 15;
 
   let currentOpenCard = null; // 現在シェルフが開いているカード
@@ -29,7 +32,7 @@
       var startX, startY, moveX = 0, isTracking = false, isScrolling = null;
 
       card.addEventListener('touchstart', function (e) {
-        // 削除シェルフへのタップは除外
+        // 削除シェルフへのタップは除外（click で処理）
         if (e.target.closest('.note-delete-shelf')) return;
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
@@ -103,7 +106,6 @@
         snapBack(inner);
         currentOpenCard = null;
 
-        // data-* 属性から confirmDeleteNote を呼び出す
         if (typeof window.confirmDeleteNote === 'function') {
           window.confirmDeleteNote(
             parseInt(shelf.dataset.noteId, 10),
@@ -138,7 +140,6 @@
     setupSwipeHandlers();
   });
 
-  // グローバル公開（動的追加時に外部から呼べるように）
   window.setupNoteSwipeDelete = setupSwipeHandlers;
 
 }());
