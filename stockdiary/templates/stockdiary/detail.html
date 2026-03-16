@@ -2771,6 +2771,49 @@ window.edinetPrefillNote = function(diaryId, docId) {
   .catch(function(e) { console.error('[EDINET] fetch error:', e); });
 };
 
+// EDINET連携: XBRL 財務分析トリガー（AI 不使用）
+// ============================================
+window.edinetXBRLAnalyze = function(diaryId, docId, btn) {
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+  }
+  var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+  var fd = new FormData();
+  fd.append('doc_id', docId);
+  if (csrf) fd.append('csrfmiddlewaretoken', csrf.value);
+
+  fetch('/stockdiary/' + diaryId + '/edinet-xbrl-analyze/', {
+    method: 'POST',
+    headers: {'X-Requested-With': 'XMLHttpRequest'},
+    body: fd,
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.error) {
+      alert('XBRL 分析エラー: ' + data.error);
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-bar-chart-steps"></i>'; }
+      return;
+    }
+    // パネルを再ロードして財務指標を表示
+    var panel = document.getElementById('edinet-panel-body');
+    if (panel && window.htmx) {
+      htmx.trigger(document.getElementById('edinet-tab'), 'shown.bs.tab');
+    } else if (panel) {
+      // htmx が使えない場合は fetch で再取得
+      fetch('/stockdiary/' + diaryId + '/edinet-panel/', {
+        headers: {'X-Requested-With': 'XMLHttpRequest'}
+      })
+      .then(function(r) { return r.text(); })
+      .then(function(html) { panel.innerHTML = html; });
+    }
+  })
+  .catch(function(e) {
+    console.error('[EDINET] XBRL analyze error:', e);
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-bar-chart-steps"></i>'; }
+  });
+};
+
 // 感情分析モーダル表示
 function _escH(s) {
   return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : '';
