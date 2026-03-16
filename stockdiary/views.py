@@ -3459,16 +3459,29 @@ def edinet_panel(request, diary_id):
                     def _f(v):
                         return round(float(v), 2) if v is not None else None
 
+                    # 比率フィールドが null の場合は元データから直接計算（_calculate_ratios の条件が厳しいため）
+                    def _ratio_or_calc(stored, numerator, denominator):
+                        if stored is not None:
+                            return _f(stored)
+                        try:
+                            n = getattr(fin_data, numerator)
+                            d = getattr(fin_data, denominator)
+                            if n is not None and d is not None and Decimal(str(d)) != 0:
+                                return round(float(Decimal(str(n)) / Decimal(str(d)) * 100), 2)
+                        except Exception:
+                            pass
+                        return None
+
                     report_json = json.dumps({
                         'company_name': doc.company_name,
                         'doc_type': doc.doc_type_display_name or doc.doc_type_code,
                         'file_date': str(doc.file_date) if doc.file_date else '',
-                        # 収益性
-                        'operating_margin': _f(fin_data.operating_margin),
-                        'net_margin': _f(fin_data.net_margin),
-                        'roa': _f(fin_data.roa),
+                        # 収益性（DBの計算済み値 → なければ元データから直接計算）
+                        'operating_margin': _ratio_or_calc(fin_data.operating_margin, 'operating_income', 'net_sales'),
+                        'net_margin': _ratio_or_calc(fin_data.net_margin, 'net_income', 'net_sales'),
+                        'roa': _ratio_or_calc(fin_data.roa, 'net_income', 'total_assets'),
                         # 財務安全性
-                        'equity_ratio': _f(fin_data.equity_ratio),
+                        'equity_ratio': _ratio_or_calc(fin_data.equity_ratio, 'net_assets', 'total_assets'),
                         # CF 数値
                         'operating_cf': _f(fin_data.operating_cf),
                         'investing_cf': _f(fin_data.investing_cf),
