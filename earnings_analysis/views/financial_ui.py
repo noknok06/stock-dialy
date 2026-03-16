@@ -59,40 +59,44 @@ class FinancialAnalysisView(TemplateView):
 class FinancialResultView(TemplateView):
     """財務分析結果表示ページ"""
     template_name = 'earnings_analysis/financial/result.html'
-    
+
+    def get(self, request, *args, **kwargs):
+        session_id = kwargs.get('session_id')
+        session = get_object_or_404(FinancialAnalysisSession, session_id=session_id)
+        # 期限切れ（未完了セッションのみ到達）: 書類詳細にリダイレクト
+        if session.is_expired:
+            messages.error(request, 'セッションが期限切れです。')
+            return redirect('copomo:document-detail-ui', doc_id=session.document.doc_id)
+        return super().get(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         session_id = kwargs.get('session_id')
-        
-        # セッション情報取得
+
         session = get_object_or_404(
             FinancialAnalysisSession,
             session_id=session_id
         )
-        
-        if session.is_expired:
-            messages.error(self.request, 'セッションが期限切れです。')
-            return redirect('copomo:document-detail-ui', doc_id=session.document.doc_id)
-        
+
         # 関連データの取得
         related_analyses = FinancialAnalysisHistory.objects.filter(
             document__edinet_code=session.document.edinet_code
         ).exclude(
             document=session.document
         ).order_by('-analysis_date')[:5]
-                
+
         # 財務データの時系列
         historical_financial_data = CompanyFinancialData.objects.filter(
             document__edinet_code=session.document.edinet_code
         ).order_by('-period_end')[:8]  # 過去8期分
-        
+
         context.update({
             'session': session,
             'document': session.document,
             'related_analyses': related_analyses,
             'historical_financial_data': historical_financial_data,
         })
-        
+
         return context
 
 
