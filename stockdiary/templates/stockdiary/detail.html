@@ -2783,13 +2783,18 @@ window.showSentimentModal = function(el) {
     var sl = data.sentiment_label || '';
     var scoreClass = sl === 'positive' ? 'text-success' : sl === 'negative' ? 'text-danger' : 'text-secondary';
     var badgeClass = sl === 'positive' ? 'bg-success' : sl === 'negative' ? 'bg-danger' : 'bg-secondary';
-    var scoreNum = data.overall_score ? (data.overall_score * 100).toFixed(0) : '0';
+    // ai_overall_score（0〜100）を優先、なければ overall_score（-1〜+1）を-100〜+100変換
+    var useAiScore = data.ai_overall_score != null;
+    var scoreNum = useAiScore
+      ? parseFloat(data.ai_overall_score).toFixed(0)
+      : (data.overall_score ? (data.overall_score * 100).toFixed(0) : '0');
+    var scoreLabel = useAiScore ? 'スコア(/100点)' : 'スコア(-100〜+100)';
     var html = '';
 
     // スコアサマリー
     html += '<div class="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom">';
     html += '<div class="text-center"><div class="display-6 fw-bold ' + scoreClass + '">' + scoreNum + '</div>';
-    html += '<div class="text-secondary" style="font-size:0.7rem;">スコア(-100〜+100)</div></div>';
+    html += '<div class="text-secondary" style="font-size:0.7rem;">' + scoreLabel + '</div></div>';
     html += '<div><span class="badge fs-5 ' + badgeClass + '">' + _escH(data.label_display || '—') + '</span></div>';
     html += '</div>';
 
