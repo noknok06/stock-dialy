@@ -3319,6 +3319,7 @@ def edinet_panel(request, diary_id):
     error = None
 
     try:
+        from earnings_analysis.models.company import Company
         from earnings_analysis.models.document import DocumentMetadata
         from earnings_analysis.models.financial import FinancialAnalysisSession
         from earnings_analysis.models.sentiment import SentimentAnalysisSession, SentimentAnalysisHistory
@@ -3331,10 +3332,18 @@ def edinet_panel(request, diary_id):
                 'not_supported': True,
             })
 
-        # 直近10件の開示書類を取得
+        # EDINETの Company マスタから edinet_code を解決する
+        company = Company.objects.filter(securities_code=sec_code, is_active=True).first()
+        if company:
+            doc_filter = {'edinet_code': company.edinet_code, 'legal_status': '1'}
+        else:
+            # Company マスタに存在しない場合は securities_code で代替（EDINET制約は維持）
+            doc_filter = {'securities_code': sec_code, 'legal_status': '1'}
+
+        # 直近10件の開示書類を取得（legal_status='1'＝閲覧中のみ）
         docs = (
             DocumentMetadata.objects
-            .filter(securities_code=sec_code)
+            .filter(**doc_filter)
             .order_by('-submit_date_time')[:10]
         )
 
@@ -3451,7 +3460,7 @@ def edinet_note_prefill(request, diary_id):
         from earnings_analysis.models.document import DocumentMetadata
         from earnings_analysis.models.financial import FinancialAnalysisSession
 
-        doc = get_object_or_404(DocumentMetadata, doc_id=doc_id)
+        doc = get_object_or_404(DocumentMetadata, doc_id=doc_id, legal_status='1')
 
         # 財務分析セッションのみ参照（Historyは使わない）
         fin_session = (
