@@ -242,20 +242,20 @@ class CompanyFinancialData(models.Model):
     def _calculate_ratios(self):
         """財務比率の自動計算"""
         try:
-            # 営業利益率
-            if self.net_sales and self.operating_income and self.net_sales > 0:
+            # 営業利益率（operating_income が 0 でも計算する）
+            if self.net_sales is not None and self.operating_income is not None and self.net_sales > 0:
                 self.operating_margin = (self.operating_income / self.net_sales * 100).quantize(Decimal('0.01'))
-            
-            # 当期純利益率
-            if self.net_sales and self.net_income and self.net_sales > 0:
+
+            # 当期純利益率（net_income が 0 でも計算する）
+            if self.net_sales is not None and self.net_income is not None and self.net_sales > 0:
                 self.net_margin = (self.net_income / self.net_sales * 100).quantize(Decimal('0.01'))
-            
-            # ROA
-            if self.total_assets and self.net_income and self.total_assets > 0:
+
+            # ROA（net_income が 0 でも計算する）
+            if self.total_assets is not None and self.net_income is not None and self.total_assets > 0:
                 self.roa = (self.net_income / self.total_assets * 100).quantize(Decimal('0.01'))
-            
-            # 自己資本比率
-            if self.total_assets and self.net_assets and self.total_assets > 0:
+
+            # 自己資本比率（net_assets が 0 でも計算する）
+            if self.total_assets is not None and self.net_assets is not None and self.total_assets > 0:
                 self.equity_ratio = (self.net_assets / self.total_assets * 100).quantize(Decimal('0.01'))
                 
         except (TypeError, ZeroDivisionError, AttributeError):
