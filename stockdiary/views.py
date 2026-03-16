@@ -3381,21 +3381,36 @@ def edinet_panel(request, diary_id):
                     analysis_result = getattr(sent, 'analysis_result', None) or {}
                     kw = analysis_result.get('keyword_analysis', {})
                     stats_raw = analysis_result.get('statistics', {})
+                    ai_expert = analysis_result.get('ai_expert_analysis') or {}
+
+                    # キーワードは {'word': ..., 'count': ...} のdict配列なので文字列に変換
+                    def _kw_word(k):
+                        return k.get('word', '') if isinstance(k, dict) else str(k)
+
+                    # センテンスは {'text': ..., 'score': ...} のdict配列なので文字列に変換
+                    def _sent_text(s):
+                        return s.get('text', '') if isinstance(s, dict) else str(s)
+
+                    raw_sp = (analysis_result.get('sample_sentences') or {}).get('positive', [])
+                    raw_sn = (analysis_result.get('sample_sentences') or {}).get('negative', [])
+
                     sent_json = json.dumps({
                         'overall_score': float(sent.overall_score) if sent.overall_score is not None else 0,
+                        'ai_overall_score': ai_expert.get('overall_score'),
                         'sentiment_label': sent.sentiment_label or '',
                         'label_display': {
                             'positive': 'ポジティブ', 'negative': 'ネガティブ', 'neutral': '中立',
                         }.get(sent.sentiment_label, sent.sentiment_label or '—'),
-                        'sample_sentences': analysis_result.get('sample_sentences', {}),
-                        'keyword_pos': kw.get('positive', [])[:10],
-                        'keyword_neg': kw.get('negative', [])[:10],
+                        'sample_sentences': {
+                            'positive': [_sent_text(s) for s in raw_sp[:3]],
+                            'negative': [_sent_text(s) for s in raw_sn[:3]],
+                        },
+                        'keyword_pos': [_kw_word(k) for k in kw.get('positive', [])[:10]],
+                        'keyword_neg': [_kw_word(k) for k in kw.get('negative', [])[:10]],
                         'stats': {k: stats_raw[k] for k in (
                             'sentences_analyzed', 'positive_words_count', 'negative_words_count'
                         ) if k in stats_raw},
-                        'ai_insights': (
-                            (analysis_result.get('ai_expert_analysis') or {}).get('investment_points', [])
-                        ),
+                        'ai_insights': ai_expert.get('investment_points', []),
                     }, ensure_ascii=False)
                 except Exception:
                     pass
