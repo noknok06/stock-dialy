@@ -2906,70 +2906,105 @@ window.showReportModal = function(el) {
       if (v == null) return '—';
       var abs = Math.abs(v);
       var s = abs >= 1e8 ? (abs/1e8).toFixed(1) + '億円' : (abs/1e4).toFixed(0) + '万円';
-      return (v >= 0 ? '+' : '-') + s;
+      return (v >= 0 ? '+' : '−') + s;
     }
     function fmtPct(v, digits) {
       return v != null ? v.toFixed(digits != null ? digits : 1) + '%' : '—';
     }
-    function metricRow(label, val, cls) {
-      return '<div class="d-flex justify-content-between align-items-center py-1 border-bottom">'
-        + '<span class="text-secondary">' + label + '</span>'
-        + '<strong class="' + (cls || '') + '">' + val + '</strong></div>';
+    function indicatorRow(label, val, valStyle) {
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #f0f0f0;">'
+        + '<span style="color:#666;font-size:14px;">' + label + '</span>'
+        + '<span style="font-weight:600;font-size:15px;' + (valStyle||'') + '">' + val + '</span></div>';
     }
 
     var cf = d.cf || {};
-    var riskColor = {low:'success', medium:'warning', high:'danger', very_high:'danger'}[cf.risk_level] || 'secondary';
+    var isIdeal = d.operating_cf > 0 && d.investing_cf < 0 && d.financing_cf < 0;
+    var riskLabelMap = {low:'低リスク', medium:'中リスク', high:'高リスク', very_high:'高リスク'};
+    var riskLabel = riskLabelMap[cf.risk_level] || '';
+
     var html = '';
 
-    // ヘッダー：企業名・書類
-    html += '<div class="mb-3 pb-2 border-bottom">';
-    html += '<div class="fw-semibold">' + _escH(d.company_name || '') + '</div>';
-    html += '<div class="text-secondary small">' + _escH(d.doc_type || '') + ' &nbsp;|&nbsp; ' + _escH(d.file_date || '') + '</div>';
+    // ---- カードヘッダー ----
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:18px 22px 14px;border-bottom:1px solid #e8e8e8;">';
+    html += '<div style="font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px;color:#444;">';
+    html += '<i class="bi bi-bar-chart-fill" style="color:#6aa84f;"></i>財務分析レポート</div>';
+    html += '<button type="button" data-bs-dismiss="modal" style="background:none;border:none;font-size:20px;color:#aaa;cursor:pointer;line-height:1;padding:0;">✕</button>';
     html += '</div>';
 
-    // ---- 財務安全性 ----
-    if (d.equity_ratio != null) {
-      html += '<h6 class="small fw-semibold text-body-secondary mb-1 mt-2"><i class="bi bi-shield-check me-1"></i>財務安全性</h6>';
-      html += '<div class="small mb-3">';
-      var eqColor = d.equity_ratio >= 50 ? 'text-success' : d.equity_ratio >= 20 ? '' : 'text-danger';
-      html += metricRow('自己資本比率', fmtPct(d.equity_ratio), eqColor);
+    // ---- 本文 ----
+    html += '<div style="padding:22px 22px 24px;">';
+
+    // 企業名・書類種別
+    html += '<div style="font-size:18px;font-weight:700;margin:0 0 6px;letter-spacing:0.3px;">' + _escH(d.company_name || '') + '</div>';
+    html += '<div style="font-size:13px;color:#666;margin-bottom:22px;">' + _escH(d.doc_type || '') + ' | ' + _escH(d.file_date || '') + '</div>';
+
+    // キャッシュフロー
+    html += '<div style="font-size:13px;font-weight:600;color:#555;display:flex;align-items:center;gap:5px;margin-bottom:14px;">';
+    html += '<i class="bi bi-cash-stack"></i>キャッシュフロー</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center;margin-bottom:14px;">';
+    html += '<div><div style="font-size:12px;color:#888;margin-bottom:3px;">営業CF</div>'
+          + '<div style="font-size:15px;font-weight:700;color:' + (d.operating_cf >= 0 ? '#2a8b57' : '#e05c5c') + ';">' + fmtCF(d.operating_cf) + '</div></div>';
+    html += '<div><div style="font-size:12px;color:#888;margin-bottom:3px;">投資CF</div>'
+          + '<div style="font-size:15px;font-weight:700;color:#777;">' + fmtCF(d.investing_cf) + '</div></div>';
+    html += '<div><div style="font-size:12px;color:#888;margin-bottom:3px;">財務CF</div>'
+          + '<div style="font-size:15px;font-weight:700;color:#777;">' + fmtCF(d.financing_cf) + '</div></div>';
+    html += '</div>';
+
+    // CF分類タグ
+    if (cf.name || riskLabel) {
+      html += '<div style="display:flex;justify-content:center;gap:10px;margin-bottom:14px;">';
+      if (cf.name) {
+        html += '<span style="padding:5px 16px;border-radius:20px;font-size:12px;font-weight:600;'
+              + (isIdeal ? 'background:#e6f4ea;color:#2a8b57;border:1px solid #cce8d6;' : 'background:#f1f3f4;color:#555;border:1px solid #e0e0e0;')
+              + '">' + _escH(cf.name) + '</span>';
+      }
+      if (riskLabel) {
+        html += '<span style="padding:5px 16px;border-radius:20px;font-size:12px;font-weight:600;background:#f1f3f4;color:#555;border:1px solid #e0e0e0;">'
+              + _escH(riskLabel) + '</span>';
+      }
       html += '</div>';
     }
 
-    // ---- キャッシュフロー ----
-    html += '<h6 class="small fw-semibold text-body-secondary mb-1 mt-2"><i class="bi bi-cash-stack me-1"></i>キャッシュフロー</h6>';
-    html += '<div class="d-flex gap-3 mb-2 small text-center">';
-    html += '<div><div class="text-secondary" style="font-size:0.65rem;">営業CF</div><div class="fw-bold ' + (d.operating_cf >= 0 ? 'text-success' : 'text-danger') + '">' + fmtCF(d.operating_cf) + '</div></div>';
-    html += '<div><div class="text-secondary" style="font-size:0.65rem;">投資CF</div><div class="fw-bold ' + (d.investing_cf < 0 ? 'text-secondary' : 'text-warning') + '">' + fmtCF(d.investing_cf) + '</div></div>';
-    html += '<div><div class="text-secondary" style="font-size:0.65rem;">財務CF</div><div class="fw-bold text-secondary">' + fmtCF(d.financing_cf) + '</div></div>';
-    html += '</div>';
-    if (cf.name) {
-      html += '<div class="d-flex align-items-center gap-2 mb-2">';
-      html += '<span class="badge bg-' + riskColor + '-subtle text-' + riskColor + ' border border-' + riskColor + '-subtle">' + _escH(cf.name) + '</span>';
-      html += '<span class="badge bg-body-secondary text-secondary border" style="font-size:0.6rem;">' + _escH(cf.risk_label || '') + '</span>';
-      html += '</div>';
-    }
+    // 解説文
     if (cf.interpretation) {
-      html += '<p class="small text-body-secondary mb-2">' + _escH(cf.interpretation) + '</p>';
+      html += '<p style="font-size:13px;line-height:1.65;color:#555;margin-bottom:14px;">' + _escH(cf.interpretation) + '</p>';
     }
+
+    // 強み
     if (cf.strengths && cf.strengths.length > 0) {
-      html += '<p class="mb-1 small fw-semibold text-success">強み</p><ul class="small mb-2 ps-3">';
+      html += '<div style="font-size:13px;font-weight:700;color:#2a8b57;margin-bottom:7px;">強み</div>';
+      html += '<ul style="margin:0 0 14px;padding-left:18px;font-size:13px;color:#333;line-height:1.9;">';
       cf.strengths.forEach(function(s) { html += '<li>' + _escH(s) + '</li>'; });
       html += '</ul>';
     }
+
+    // 懸念点
     if (cf.concerns && cf.concerns.length > 0) {
-      html += '<p class="mb-1 small fw-semibold text-danger">懸念点</p><ul class="small mb-2 ps-3">';
+      html += '<div style="font-size:13px;font-weight:700;color:#e05c5c;margin-bottom:7px;">懸念点</div>';
+      html += '<ul style="margin:0 0 14px;padding-left:18px;font-size:13px;color:#333;line-height:1.9;">';
       cf.concerns.forEach(function(s) { html += '<li>' + _escH(s) + '</li>'; });
       html += '</ul>';
+    }
+
+    // 自己資本比率（財務安全性）
+    if (d.equity_ratio != null) {
+      var eqStyle = d.equity_ratio >= 50 ? 'color:#2a8b57;' : d.equity_ratio < 20 ? 'color:#e05c5c;' : '';
+      html += '<div style="height:1px;background:#e8e8e8;margin:16px 0;"></div>';
+      html += '<div style="font-size:13px;font-weight:600;color:#555;display:flex;align-items:center;gap:5px;margin-bottom:12px;">';
+      html += '<i class="bi bi-shield-check"></i>財務安全性</div>';
+      html += indicatorRow('自己資本比率', fmtPct(d.equity_ratio), eqStyle);
     }
 
     // ---- リアルタイム株価（非同期ロード） ----
     var liveId = 'reportLiveMetrics';
     if (symbol) {
-      html += '<hr class="my-2">';
-      html += '<h6 class="small fw-semibold text-body-secondary mb-1"><i class="bi bi-lightning me-1"></i>リアルタイム株価指標 <span class="text-muted fw-normal" style="font-size:0.65rem;">（取得日時点）</span></h6>';
-      html += '<div id="' + liveId + '" class="small text-secondary"><span class="spinner-border spinner-border-sm"></span> 取得中…</div>';
+      html += '<div style="height:1px;background:#e8e8e8;margin:16px 0;"></div>';
+      html += '<div style="font-size:13px;font-weight:600;color:#555;display:flex;align-items:center;gap:5px;margin-bottom:12px;">';
+      html += '<i class="bi bi-graph-up"></i>リアルタイム株価指標 <span style="font-size:11px;color:#999;font-weight:normal;">（取得日時点）</span></div>';
+      html += '<div id="' + liveId + '" style="color:#888;font-size:13px;"><span class="spinner-border spinner-border-sm me-1"></span>取得中…</div>';
     }
+
+    html += '</div>'; // end card-body
 
     body.innerHTML = html;
     bootstrap.Modal.getOrCreateInstance(document.getElementById('reportModal')).show();
@@ -2983,12 +3018,14 @@ window.showReportModal = function(el) {
           if (!el2) return;
           if (!m.success) { el2.textContent = '取得失敗'; return; }
           var rows = '';
-          if (m.price != null) rows += metricRow('株価', m.price.toLocaleString() + '円', 'text-body');
-          if (m.per != null) rows += metricRow('PER（実績）', m.per.toFixed(1) + '倍', '');
-          if (m.pbr != null) rows += metricRow('PBR', m.pbr.toFixed(2) + '倍', '');
-          if (m.dividend_yield != null) rows += metricRow('配当利回り', m.dividend_yield.toFixed(2) + '%', 'text-success');
-          if (m.market_cap_oku != null) rows += metricRow('時価総額', m.market_cap_oku.toLocaleString() + '億円', '');
-          rows += '<div class="text-secondary mt-1" style="font-size:0.65rem;">取得: ' + _escH(m.fetched_at || '') + '（Yahoo Finance）</div>';
+          if (m.price != null) rows += indicatorRow('株価', m.price.toLocaleString() + '円', '');
+          if (m.per != null) rows += indicatorRow('PER（実績）', m.per.toFixed(1) + '倍', '');
+          if (m.pbr != null) rows += indicatorRow('PBR', m.pbr.toFixed(2) + '倍', '');
+          if (m.dividend_yield != null) rows += indicatorRow('配当利回り', m.dividend_yield.toFixed(2) + '%', 'color:#2a8b57;');
+          if (m.market_cap_oku != null) rows += indicatorRow('時価総額', m.market_cap_oku.toLocaleString() + '億円', '');
+          if (rows) {
+            rows += '<div style="font-size:11px;color:#aaa;margin-top:10px;">取得: ' + _escH(m.fetched_at || '') + '（Yahoo Finance）</div>';
+          }
           el2.innerHTML = rows || '取得できる指標がありませんでした';
         })
         .catch(function() {
@@ -3018,15 +3055,9 @@ window.showReportModal = function(el) {
 
 <!-- 財務分析レポートモーダル（EDINETパネル用） -->
 <div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header py-2">
-        <h6 class="modal-title fw-semibold small">
-          <i class="bi bi-file-earmark-bar-graph me-2 text-info"></i>財務分析レポート
-        </h6>
-        <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body small" id="reportModalBody"></div>
+  <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+    <div class="modal-content border-0" style="border-radius:20px; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,0.14);">
+      <div id="reportModalBody"></div>
     </div>
   </div>
 </div>
