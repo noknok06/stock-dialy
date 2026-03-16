@@ -3424,36 +3424,57 @@ def edinet_panel(request, diary_id):
                 .first()
             )
 
-            # CF パターン詳細（fin_data の CF 値からルールベースで算出）
-            cf_pattern_json = None
-            if fin_data and all(
-                getattr(fin_data, f) is not None
-                for f in ('operating_cf', 'investing_cf', 'financing_cf')
-            ):
+            # 財務分析レポート JSON（fin_data がある場合に構築）
+            report_json = None
+            if fin_data:
                 try:
                     from earnings_analysis.services.financial_analyzer import FinancialAnalyzer
                     from decimal import Decimal
-                    cf_result = FinancialAnalyzer().analyze_cashflow_pattern({
-                        'operating_cf': Decimal(str(fin_data.operating_cf)),
-                        'investing_cf': Decimal(str(fin_data.investing_cf)),
-                        'financing_cf': Decimal(str(fin_data.financing_cf)),
-                    })
                     _risk_labels = {'low': '低リスク', 'medium': '中リスク', 'high': '高リスク', 'very_high': '非常に高リスク'}
-                    ptn = cf_result.get('pattern', {})
-                    amt = cf_result.get('amounts', {})
-                    ana = cf_result.get('analysis', {})
-                    cf_pattern_json = json.dumps({
-                        'name': ptn.get('name', ''),
-                        'description': ptn.get('description', ''),
-                        'risk_level': ptn.get('risk_level', 'medium'),
-                        'risk_label': _risk_labels.get(ptn.get('risk_level', 'medium'), '中リスク'),
-                        'interpretation': ptn.get('interpretation', ''),
-                        'operating_cf': amt.get('operating_cf', 0),
-                        'investing_cf': amt.get('investing_cf', 0),
-                        'financing_cf': amt.get('financing_cf', 0),
-                        'strengths': ana.get('strengths', [])[:3],
-                        'concerns': ana.get('concerns', [])[:3],
-                        'key_insights': ana.get('key_insights', [])[:3],
+
+                    cf_data = {}
+                    if all(getattr(fin_data, f) is not None for f in ('operating_cf', 'investing_cf', 'financing_cf')):
+                        cf_result = FinancialAnalyzer().analyze_cashflow_pattern({
+                            'operating_cf': Decimal(str(fin_data.operating_cf)),
+                            'investing_cf': Decimal(str(fin_data.investing_cf)),
+                            'financing_cf': Decimal(str(fin_data.financing_cf)),
+                        })
+                        ptn = cf_result.get('pattern', {})
+                        amt = cf_result.get('amounts', {})
+                        ana = cf_result.get('analysis', {})
+                        cf_data = {
+                            'name': ptn.get('name', ''),
+                            'description': ptn.get('description', ''),
+                            'risk_level': ptn.get('risk_level', 'medium'),
+                            'risk_label': _risk_labels.get(ptn.get('risk_level', 'medium'), '中リスク'),
+                            'interpretation': ptn.get('interpretation', ''),
+                            'operating_cf': amt.get('operating_cf', 0),
+                            'investing_cf': amt.get('investing_cf', 0),
+                            'financing_cf': amt.get('financing_cf', 0),
+                            'strengths': ana.get('strengths', [])[:3],
+                            'concerns': ana.get('concerns', [])[:3],
+                            'key_insights': ana.get('key_insights', [])[:3],
+                        }
+
+                    def _f(v):
+                        return round(float(v), 2) if v is not None else None
+
+                    report_json = json.dumps({
+                        'company_name': doc.company_name,
+                        'doc_type': doc.doc_type_display_name or doc.doc_type_code,
+                        'file_date': str(doc.file_date) if doc.file_date else '',
+                        # 収益性
+                        'operating_margin': _f(fin_data.operating_margin),
+                        'net_margin': _f(fin_data.net_margin),
+                        'roa': _f(fin_data.roa),
+                        # 財務安全性
+                        'equity_ratio': _f(fin_data.equity_ratio),
+                        # CF 数値
+                        'operating_cf': _f(fin_data.operating_cf),
+                        'investing_cf': _f(fin_data.investing_cf),
+                        'financing_cf': _f(fin_data.financing_cf),
+                        # CFパターン詳細
+                        'cf': cf_data,
                     }, ensure_ascii=False)
                 except Exception:
                     pass
@@ -3462,7 +3483,7 @@ def edinet_panel(request, diary_id):
                 'doc': doc,
                 'sent': sent,
                 'fin_data': fin_data,
-                'cf_pattern_json': cf_pattern_json,
+                'report_json': report_json,
                 'pdf_url': pdf_url,
                 'sent_json': sent_json,
             })

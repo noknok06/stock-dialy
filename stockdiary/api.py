@@ -334,6 +334,39 @@ def api_create_diary(request):
 
 @login_required
 @require_GET
+def get_stock_metrics(request, stock_code):
+    """
+    銘柄コードからリアルタイム株価・PER・PBR・配当利回りを返す
+    日本株4桁コードは自動的に .T サフィックスを付与
+    """
+    import yfinance as yf
+    from datetime import datetime
+
+    try:
+        ticker_symbol = f"{stock_code}.T" if (stock_code.isdigit() and len(stock_code) <= 4) else stock_code
+        info = yf.Ticker(ticker_symbol).info
+
+        price = info.get('regularMarketPrice') or info.get('currentPrice')
+        per = info.get('trailingPE') or info.get('forwardPE')
+        pbr = info.get('priceToBook')
+        dividend_yield = info.get('dividendYield')
+        market_cap = info.get('marketCap')
+
+        return JsonResponse({
+            'success': True,
+            'price': price,
+            'per': round(per, 2) if per else None,
+            'pbr': round(pbr, 2) if pbr else None,
+            'dividend_yield': round(dividend_yield * 100, 2) if dividend_yield else None,
+            'market_cap_oku': round(market_cap / 100_000_000, 0) if market_cap else None,
+            'fetched_at': datetime.now().strftime('%Y/%m/%d %H:%M'),
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@require_GET
 def search_stock(request):
     """
     銘柄検索API（オートコンプリート用）
