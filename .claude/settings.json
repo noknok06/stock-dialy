@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "バージョン番号を更新中...",
+            "command": "bash /home/user/stock-dialy/.claude/bump-version.sh 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
