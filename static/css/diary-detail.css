@@ -1272,6 +1272,206 @@
 }
 
 /* ========================================
+   EDINET開示書類パネル
+   ======================================== */
+
+.edinet-doc-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 16px 18px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.edinet-doc-date {
+  color: #8a8f98;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.edinet-doc-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  line-height: 1.4;
+  color: #1a1a2e;
+}
+
+.edinet-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.edinet-badge {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: #f2f3f5;
+  font-weight: 500;
+}
+
+.edinet-badge-positive { color: #1f8f63; }
+.edinet-badge-negative { color: #e05c5c; }
+.edinet-badge-neutral  { color: #555; }
+
+.edinet-cf-btn {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 5px 13px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 2px solid;
+}
+
+.edinet-cf-ideal {
+  background: #e8f7f0;
+  color: #1f8f63;
+  border-color: #1f8f63;
+  box-shadow: 0 2px 8px rgba(31, 143, 99, 0.18);
+}
+
+.edinet-cf-growth {
+  background: #e8f0fb;
+  color: #2e6be6;
+  border-color: #2e6be6;
+  box-shadow: 0 2px 8px rgba(46, 107, 230, 0.15);
+}
+
+.edinet-cf-warning {
+  background: #fdeaea;
+  color: #e05c5c;
+  border-color: #e05c5c;
+  box-shadow: 0 2px 8px rgba(224, 92, 92, 0.18);
+}
+
+.edinet-cf-neutral {
+  background: #f2f3f5;
+  color: #555;
+  border-color: #ddd;
+}
+
+.edinet-actions-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.edinet-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  background: #f2f3f5;
+  border-radius: 10px;
+  padding: 6px 14px;
+  font-size: 14px;
+  color: #333;
+  text-decoration: none;
+  white-space: nowrap;
+  border: none;
+  cursor: pointer;
+}
+
+.edinet-action-btn-fin {
+  background: #e8f7f0;
+  color: #1f8f63;
+}
+
+.edinet-action-btn-sent {
+  background: #e8f2fb;
+  color: #2e8bc0;
+}
+
+/* ---- ダークモード ---- */
+
+.dark-mode .edinet-doc-card,
+[data-theme="dark"] .edinet-doc-card {
+  background: var(--dm-card, #1e2633);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.dark-mode .edinet-doc-date,
+[data-theme="dark"] .edinet-doc-date {
+  color: var(--dm-text-200, #8a9ab5);
+}
+
+.dark-mode .edinet-doc-title,
+[data-theme="dark"] .edinet-doc-title {
+  color: var(--dm-text-100, #e2e8f0);
+}
+
+.dark-mode .edinet-badge,
+[data-theme="dark"] .edinet-badge {
+  background: var(--dm-bg-200, #2a3344);
+}
+
+.dark-mode .edinet-badge-positive,
+[data-theme="dark"] .edinet-badge-positive {
+  color: #4ade80;
+}
+
+.dark-mode .edinet-badge-negative,
+[data-theme="dark"] .edinet-badge-negative {
+  color: #f87171;
+}
+
+.dark-mode .edinet-badge-neutral,
+[data-theme="dark"] .edinet-badge-neutral {
+  color: var(--dm-text-200, #8a9ab5);
+}
+
+.dark-mode .edinet-cf-ideal,
+[data-theme="dark"] .edinet-cf-ideal {
+  background: rgba(31, 143, 99, 0.2);
+  color: #4ade80;
+  border-color: #4ade80;
+  box-shadow: 0 2px 8px rgba(74, 222, 128, 0.2);
+}
+
+.dark-mode .edinet-cf-growth,
+[data-theme="dark"] .edinet-cf-growth {
+  background: rgba(46, 107, 230, 0.2);
+  color: #7da9f5;
+  border-color: #7da9f5;
+  box-shadow: 0 2px 8px rgba(125, 169, 245, 0.2);
+}
+
+.dark-mode .edinet-cf-warning,
+[data-theme="dark"] .edinet-cf-warning {
+  background: rgba(224, 92, 92, 0.2);
+  color: #f87171;
+  border-color: #f87171;
+  box-shadow: 0 2px 8px rgba(248, 113, 113, 0.2);
+}
+
+.dark-mode .edinet-cf-neutral,
+[data-theme="dark"] .edinet-cf-neutral {
+  background: var(--dm-bg-200, #2a3344);
+  color: var(--dm-text-200, #8a9ab5);
+  border-color: var(--dm-border, #3a4558);
+}
+
+.dark-mode .edinet-action-btn,
+[data-theme="dark"] .edinet-action-btn {
+  background: var(--dm-bg-200, #2a3344);
+  color: var(--dm-text-100, #e2e8f0);
+}
+
+.dark-mode .edinet-action-btn-fin,
+[data-theme="dark"] .edinet-action-btn-fin {
+  background: rgba(31, 143, 99, 0.2);
+  color: #4ade80;
+}
+
+.dark-mode .edinet-action-btn-sent,
+[data-theme="dark"] .edinet-action-btn-sent {
+  background: rgba(46, 139, 192, 0.2);
+  color: #7da9f5;
+}
+
+/* ========================================
    note-card-header-modern モバイル対応
    ======================================== */
 

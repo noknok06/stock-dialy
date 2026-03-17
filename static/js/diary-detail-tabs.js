@@ -127,13 +127,27 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // タッチ開始点が横スクロール可能な要素の内側かどうかを判定
+    function isInsideHorizontalScrollable(element) {
+        let el = element;
+        while (el && el !== tabContent) {
+            const style = window.getComputedStyle(el);
+            const overflowX = style.overflowX;
+            if ((overflowX === 'auto' || overflowX === 'scroll') && el.scrollWidth > el.clientWidth) {
+                return true;
+            }
+            el = el.parentElement;
+        }
+        return false;
+    }
+
     // タッチ開始イベント
     function handleTouchStart(e) {
         if (isAnimating) return;
 
-        // 継続記録タブが表示中はタブスワイプを無効化（カード操作と干渉するため）
-        const notesPane = document.getElementById('notes-content');
-        if (notesPane && notesPane.classList.contains('active')) return;
+        // タッチ開始点が横スクロール可能な要素（コードブロック等）の内側であれば
+        // タブスワイプを無効化してその要素のスクロールを優先する
+        if (isInsideHorizontalScrollable(e.target)) return;
 
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
