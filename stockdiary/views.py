@@ -49,6 +49,13 @@ import traceback
 import html
 
 logger = logging.getLogger(__name__)
+
+# ページネーション定数
+DIARY_LIST_PAGE_SIZE = 10        # 日記一覧 HTMX パーシャルおよびFBV
+DIARY_LIST_INITIAL_SIZE = 4      # 日記一覧 CBV 初期表示
+NOTIFICATION_LIST_PAGE_SIZE = 20 # 通知一覧
+EXPLORE_PAGE_SIZE = 20           # Explore検索結果
+
 import json
 import re
 import statistics
@@ -131,7 +138,7 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
     model = StockDiary
     template_name = 'stockdiary/home.html'
     context_object_name = 'diaries'
-    paginate_by = 4
+    paginate_by = DIARY_LIST_INITIAL_SIZE
     
     def get_queryset(self):
         from .utils import search_diaries_by_hashtag
@@ -409,8 +416,8 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
             # ページネーション
             current_params = request.GET.copy()
             current_params.pop('page', None)
-            
-            paginator = Paginator(queryset, 10)
+
+            paginator = Paginator(queryset, DIARY_LIST_PAGE_SIZE)
             page = request.GET.get('page', 1)
             
             try:
@@ -1131,61 +1138,51 @@ class StockListView(LoginRequiredMixin, TemplateView):
         sort_by = self.request.GET.get('sort', 'symbol')
         sector_filter = self.request.GET.get('sector', '')
         
-        diary_stocks = StockDiary.objects.filter(user=user).values(
-            'stock_symbol', 'stock_name', 'sector'
-        ).distinct().order_by('stock_symbol')
-        
+        # 単一クエリで銘柄ごとに集計（N+1防止）
+        diary_agg = (
+            StockDiary.objects.filter(user=user, stock_symbol__isnull=False)
+            .exclude(stock_symbol='')
+            .values('stock_symbol')
+            .annotate(
+                stock_name=Max('stock_name'),
+                sector=Max('sector'),
+                diary_count=Count('id'),
+                active_count=Count('id', filter=Q(current_quantity__gt=0)),
+                sold_count=Count(
+                    'id',
+                    filter=Q(current_quantity=0, transaction_count__gt=0)
+                ),
+            )
+            .order_by('stock_symbol')
+        )
+
+        # CompanyMasterを一括取得して業種補完用辞書を作成
+        symbols = [row['stock_symbol'] for row in diary_agg]
+        company_sector_map = {
+            c.code: c.industry_name_33 or c.industry_name_17 or '未分類'
+            for c in CompanyMaster.objects.filter(code__in=symbols)
+        }
+
         stock_list = []
-        
-        for stock in diary_stocks:
-            if not stock['stock_symbol']:
-                continue
-                
-            stock_info = {
-                'symbol': stock['stock_symbol'],
-                'name': stock['stock_name'],
-                'sector': stock['sector'] or '未分類',
+
+        for row in diary_agg:
+            sector = row['sector'] or '未分類'
+            if sector == '未分類':
+                sector = company_sector_map.get(row['stock_symbol'], '未分類')
+
+            stock_list.append({
+                'symbol': row['stock_symbol'],
+                'name': row['stock_name'],
+                'sector': sector,
                 'current_ratio': 0,
                 'previous_ratio': 0,
                 'ratio_change': 0,
                 'latest_date': None,
-                'diary_count': 0,
-                'has_active_holdings': False,
-                'has_completed_sales': False,
-                'margin_data_available': False
-            }
-            
-            # 日記件数を取得
-            stock_info['diary_count'] = StockDiary.objects.filter(
-                user=user, 
-                stock_symbol=stock['stock_symbol']
-            ).count()
-            
-            # 保有中の日記の有無を確認
-            stock_info['has_active_holdings'] = StockDiary.objects.filter(
-                user=user,
-                stock_symbol=stock['stock_symbol'],
-                current_quantity__gt=0  # 現在保有数が0より大きい
-            ).exists()
-            
-            # 売却済みの日記の有無を確認
-            stock_info['has_completed_sales'] = StockDiary.objects.filter(
-                user=user,
-                stock_symbol=stock['stock_symbol'],
-                current_quantity=0,  # 現在保有数が0
-                transaction_count__gt=0  # 取引回数が1回以上
-            ).exists()
-            
-            # 業種情報の取得
-            if not stock_info['sector'] or stock_info['sector'] == '未分類':
-                try:
-                    company = CompanyMaster.objects.filter(code=stock['stock_symbol']).first()
-                    if company:
-                        stock_info['sector'] = company.industry_name_33 or company.industry_name_17 or '未分類'
-                except Exception:
-                    pass
-            
-            stock_list.append(stock_info)
+                'diary_count': row['diary_count'],
+                'has_active_holdings': row['active_count'] > 0,
+                'has_completed_sales': row['sold_count'] > 0,
+                'margin_data_available': False,
+            })
         
         # 検索フィルター
         if search_query:
@@ -1503,8 +1500,8 @@ def diary_list(request):
         # ページネーション
         current_params = request.GET.copy()
         current_params.pop('page', None)
-        
-        paginator = Paginator(queryset, 10)
+
+        paginator = Paginator(queryset, DIARY_LIST_PAGE_SIZE)
         page = request.GET.get('page', 1)
         
         try:
@@ -2453,7 +2450,7 @@ class NotificationListView(LoginRequiredMixin, TemplateView):
             notifications = notifications.filter(remind_at__gte=today_start)
         
         # Paginate results
-        paginator = Paginator(notifications, 20)
+        paginator = Paginator(notifications, NOTIFICATION_LIST_PAGE_SIZE)
         page_number = self.request.GET.get('page', 1)
         
         try:
@@ -3232,7 +3229,7 @@ class ExploreView(LoginRequiredMixin, ListView):
     model = StockDiary
     template_name = 'stockdiary/explore.html'
     context_object_name = 'diaries'
-    paginate_by = 20
+    paginate_by = EXPLORE_PAGE_SIZE
 
     def get_queryset(self):
         from .utils import search_diaries_by_hashtag

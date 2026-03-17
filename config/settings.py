@@ -736,12 +736,7 @@ Q_CLUSTER = {
     'save_limit': 100,
     'queue_limit': 300,
     'label': 'Django Q',
-    'redis': {
-        'host': '127.0.0.1',
-        'port': 6379,
-        'db': 0,
-    },
-    'orm': 'default',
+    'orm': 'default',      # Redis不要: Django ORM (PostgreSQL) をブローカーとして使用
 }
 
 STATIC_VERSION = '1.1.10'
