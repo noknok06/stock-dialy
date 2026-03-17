@@ -1059,6 +1059,14 @@ button.read-more { font-family: inherit; cursor: pointer; }
         </select>
       </div>
       <div>
+        <label class="filter-group-label" for="disclosureFilter">開示書類の更新</label>
+        <select class="form-select" id="disclosureFilter" name="disclosure" form="optimizedSearchForm">
+          <option value="">指定なし</option>
+          <option value="new" {% if request.GET.disclosure == 'new' %}selected{% endif %}>直近1週間に更新あり</option>
+          <option value="recent" {% if request.GET.disclosure == 'recent' %}selected{% endif %}>直近1ヶ月に更新あり</option>
+        </select>
+      </div>
+      <div>
         <label class="filter-group-label" for="dateRangeFilter">購入時期</label>
         <select class="form-select" id="dateRangeFilter" name="date_range" form="optimizedSearchForm">
           <option value="">指定なし</option>
@@ -1202,7 +1210,7 @@ document.getElementById('filterApplyBtn').addEventListener('click', function() {
 });
 
 document.getElementById('filterResetBtn').addEventListener('click', function() {
-  ['tagFilter', 'sectorFilter', 'transactionDateRangeFilter', 'dateRangeFilter'].forEach(function(id) {
+  ['tagFilter', 'sectorFilter', 'transactionDateRangeFilter', 'dateRangeFilter', 'disclosureFilter'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -1252,6 +1260,7 @@ function removeFilter(filterName) {
     'sector': 'sectorFilter',
     'transaction_date_range': 'transactionDateRangeFilter',
     'date_range': 'dateRangeFilter',
+    'disclosure': 'disclosureFilter',
     'hashtag': 'hashtagFilter',
     'sort': 'sortFilter'
   };
@@ -1314,6 +1323,14 @@ function updateFilterBadges() {
     count++;
   }
 
+  var disclosureFilter = document.getElementById('disclosureFilter');
+  if (disclosureFilter && disclosureFilter.value) {
+    var disclosureText = { 'new': '1週間以内', 'recent': '1ヶ月以内' };
+    addFilterChip('disclosure', disclosureFilter.value,
+      '開示更新: ' + (disclosureText[disclosureFilter.value] || disclosureFilter.value));
+    count++;
+  }
+
   var hashtagFilter = document.getElementById('hashtagFilter');
   if (hashtagFilter && hashtagFilter.value) {
     addFilterChip('hashtag', hashtagFilter.value, '@' + hashtagFilter.value);
@@ -1366,7 +1383,7 @@ function resetSearch() {
   document.getElementById('mainSearchInput').value = '';
   document.getElementById('hashtagFilter').value = '';
   document.getElementById('sortFilter').value = '';
-  ['tagFilter', 'sectorFilter', 'transactionDateRangeFilter', 'dateRangeFilter'].forEach(function(id) {
+  ['tagFilter', 'sectorFilter', 'transactionDateRangeFilter', 'dateRangeFilter', 'disclosureFilter'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.value = '';
   });

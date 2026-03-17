@@ -205,6 +205,17 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
                 ).values_list('diary_id', flat=True).distinct()
                 queryset = queryset.filter(id__in=diary_ids)
         
+        # 開示書類更新フィルター
+        disclosure_filter = self.request.GET.get('disclosure', '')
+        if disclosure_filter == 'new':
+            from datetime import timedelta
+            cutoff = timezone.now().date() - timedelta(days=7)
+            queryset = queryset.filter(latest_disclosure_date__gte=cutoff)
+        elif disclosure_filter == 'recent':
+            from datetime import timedelta
+            cutoff = timezone.now().date() - timedelta(days=30)
+            queryset = queryset.filter(latest_disclosure_date__gte=cutoff)
+
         # 既存の日付範囲フィルター（first_purchase_date基準）
         date_range = self.request.GET.get('date_range', '')
         if date_range:
@@ -330,23 +341,34 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
                     ).values_list('diary_id', flat=True).distinct()
                     queryset = queryset.filter(id__in=diary_ids)
             
+            # 開示書類更新フィルター
+            disclosure_filter = request.GET.get('disclosure', '')
+            if disclosure_filter == 'new':
+                from datetime import timedelta
+                cutoff = timezone.now().date() - timedelta(days=7)
+                queryset = queryset.filter(latest_disclosure_date__gte=cutoff)
+            elif disclosure_filter == 'recent':
+                from datetime import timedelta
+                cutoff = timezone.now().date() - timedelta(days=30)
+                queryset = queryset.filter(latest_disclosure_date__gte=cutoff)
+
             # 日付範囲フィルター
             date_range = request.GET.get('date_range', '')
             if date_range:
                 from datetime import timedelta
                 today = timezone.now().date()
-                
+
                 range_mapping = {
                     '1w': 7, '1m': 30, '3m': 90, '6m': 180, '1y': 365
                 }
-                
+
                 if date_range in range_mapping:
                     start_date = today - timedelta(days=range_mapping[date_range])
                     queryset = queryset.filter(
                         Q(first_purchase_date__gte=start_date) |
                         Q(first_purchase_date__isnull=True, created_at__gte=start_date)
                     )
-            
+
             # 🆕 ソート（取引回数・総取得原価を追加）
             sort = request.GET.get('sort', '')
             if sort == 'name':
