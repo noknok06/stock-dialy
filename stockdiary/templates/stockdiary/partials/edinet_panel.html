@@ -23,41 +23,35 @@
   {% for item in documents %}
   {% with doc=item.doc sent=item.sent fin_data=item.fin_data report_json=item.report_json pdf_url=item.pdf_url sent_json=item.sent_json %}
 
-  <div style="background:#fff; border-radius:18px; padding:16px 18px; box-shadow:0 4px 16px rgba(0,0,0,0.06);">
+  <div class="edinet-doc-card">
 
     <!-- 提出日 -->
-    <div style="color:#8a8f98; font-size:13px; margin-bottom:4px;">
+    <div class="edinet-doc-date">
       {{ doc.file_date|date:"Y/m/d" }}
     </div>
 
     <!-- 書類名 -->
-    <div style="font-size:16px; font-weight:600; margin-bottom:12px; line-height:1.4;">
+    <div class="edinet-doc-title">
       {{ doc.doc_type_display_name|default:doc.doc_type_code }}
     </div>
 
     <!-- 財務バッジ（fin_dataがある場合） -->
     {% if fin_data %}
-    <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;">
+    <div class="edinet-badges-row">
       {% if fin_data.operating_margin is not None %}
-      <span style="font-size:12px; padding:4px 10px; border-radius:8px; background:#f2f3f5; font-weight:500;
-          {% if fin_data.operating_margin >= 10 %}color:#1f8f63;{% elif fin_data.operating_margin < 0 %}color:#e05c5c;{% else %}color:#555;{% endif %}">
+      <span class="edinet-badge {% if fin_data.operating_margin >= 10 %}edinet-badge-positive{% elif fin_data.operating_margin < 0 %}edinet-badge-negative{% else %}edinet-badge-neutral{% endif %}">
         営業利益率 {{ fin_data.operating_margin|floatformat:1 }}%
       </span>
       {% endif %}
       {% if fin_data.equity_ratio is not None %}
-      <span style="font-size:12px; padding:4px 10px; border-radius:8px; background:#f2f3f5; font-weight:500;
-          {% if fin_data.equity_ratio >= 50 %}color:#1f8f63;{% elif fin_data.equity_ratio < 20 %}color:#e05c5c;{% else %}color:#555;{% endif %}">
+      <span class="edinet-badge {% if fin_data.equity_ratio >= 50 %}edinet-badge-positive{% elif fin_data.equity_ratio < 20 %}edinet-badge-negative{% else %}edinet-badge-neutral{% endif %}">
         自己資本比率 {{ fin_data.equity_ratio|floatformat:1 }}%
       </span>
       {% endif %}
       {% if fin_data.operating_cf is not None and fin_data.investing_cf is not None and fin_data.financing_cf is not None %}
         {% with op=fin_data.operating_cf inv=fin_data.investing_cf fin=fin_data.financing_cf %}
         <button type="button"
-                style="font-size:13px; font-weight:700; padding:5px 13px; border-radius:10px; cursor:pointer; border:2px solid;
-                  {% if op > 0 and inv < 0 and fin < 0 %}background:#e8f7f0; color:#1f8f63; border-color:#1f8f63; box-shadow:0 2px 8px rgba(31,143,99,0.18);
-                  {% elif op > 0 and inv < 0 %}background:#e8f0fb; color:#2e6be6; border-color:#2e6be6; box-shadow:0 2px 8px rgba(46,107,230,0.15);
-                  {% elif op < 0 %}background:#fdeaea; color:#e05c5c; border-color:#e05c5c; box-shadow:0 2px 8px rgba(224,92,92,0.18);
-                  {% else %}background:#f2f3f5; color:#555; border-color:#ddd;{% endif %}"
+                class="edinet-cf-btn {% if op > 0 and inv < 0 and fin < 0 %}edinet-cf-ideal{% elif op > 0 and inv < 0 %}edinet-cf-growth{% elif op < 0 %}edinet-cf-warning{% else %}edinet-cf-neutral{% endif %}"
                 {% if report_json %}data-report="{{ report_json|escape }}" data-symbol="{{ diary.stock_symbol }}"{% endif %}
                 onclick="showReportModal(this)"
                 title="財務分析レポートを表示">
@@ -69,17 +63,16 @@
     {% endif %}
 
     <!-- アクションボタン（横一列固定） -->
-    <div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:2px;">
+    <div class="edinet-actions-row">
 
       {% if pdf_url %}
-      <a href="{{ pdf_url }}" target="_blank"
-         style="display:flex; align-items:center; gap:5px; flex-shrink:0; background:#f2f3f5; border-radius:10px; padding:6px 14px; font-size:14px; color:#333; text-decoration:none; white-space:nowrap;">
+      <a href="{{ pdf_url }}" target="_blank" class="edinet-action-btn">
         <i class="bi bi-file-earmark-pdf"></i> PDF
       </a>
       {% endif %}
 
       <button type="button"
-              style="display:flex; align-items:center; gap:5px; flex-shrink:0; background:#f2f3f5; border-radius:10px; padding:6px 14px; font-size:14px; color:#333; border:none; cursor:pointer; white-space:nowrap;"
+              class="edinet-action-btn"
               onclick="edinetPrefillNote('{{ diary.id }}', '{{ doc.doc_id }}')"
               title="この書類をもとに記録を作成">
         <i class="bi bi-pencil-square"></i> 記録
@@ -87,7 +80,7 @@
 
       {% if fin_data and report_json %}
       <button type="button"
-              style="display:flex; align-items:center; gap:5px; flex-shrink:0; background:#e8f7f0; border-radius:10px; padding:6px 14px; font-size:14px; color:#1f8f63; border:none; cursor:pointer; white-space:nowrap;"
+              class="edinet-action-btn edinet-action-btn-fin"
               data-report="{{ report_json|escape }}"
               data-symbol="{{ diary.stock_symbol }}"
               onclick="showReportModal(this)"
@@ -96,7 +89,7 @@
       </button>
       {% elif not fin_data and doc.xbrl_flag %}
       <button type="button"
-              style="display:flex; align-items:center; gap:5px; flex-shrink:0; background:#e8f7f0; border-radius:10px; padding:6px 14px; font-size:14px; color:#1f8f63; border:none; cursor:pointer; white-space:nowrap;"
+              class="edinet-action-btn edinet-action-btn-fin"
               onclick="edinetXBRLAnalyze('{{ diary.id }}', '{{ doc.doc_id }}', this)"
               title="XBRL財務分析を実行（AI不使用）">
         <i class="bi bi-bar-chart-steps"></i> 分析
@@ -105,14 +98,14 @@
 
       {% if sent and sent_json %}
       <button type="button"
-              style="display:flex; align-items:center; gap:5px; flex-shrink:0; background:#e8f2fb; border-radius:10px; padding:6px 14px; font-size:14px; color:#2e8bc0; border:none; cursor:pointer; white-space:nowrap;"
+              class="edinet-action-btn edinet-action-btn-sent"
               data-sent="{{ sent_json|escape }}"
               onclick="showSentimentModal(this)"
               title="感情分析の詳細を表示">
         <i class="bi bi-emoji-smile"></i> 感情
       </button>
       {% elif sent %}
-      <span style="display:flex; align-items:center; gap:5px; flex-shrink:0; background:#e8f2fb; border-radius:10px; padding:6px 14px; font-size:14px; color:#2e8bc0; white-space:nowrap;">
+      <span class="edinet-action-btn edinet-action-btn-sent">
         <i class="bi bi-emoji-smile"></i> 感情済
       </span>
       {% endif %}
