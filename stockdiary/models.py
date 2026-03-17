@@ -11,8 +11,6 @@ from django.utils import timezone
 from decimal import Decimal, ROUND_HALF_UP
 import os
 import uuid
-from PIL import Image
-import io
 import logging
 from tags.models import Tag
 
@@ -134,262 +132,32 @@ class StockDiary(models.Model):
         return None
 
     def update_aggregates(self):
-        """集計フィールドを再計算"""
-        transactions = self.transactions.all().order_by('transaction_date', 'created_at')
-        
-        # 初期化
-        self.current_quantity = Decimal('0')
-        self.total_cost = Decimal('0')
-        self.realized_profit = Decimal('0')
-        self.total_bought_quantity = Decimal('0')
-        self.total_sold_quantity = Decimal('0')
-        self.total_buy_amount = Decimal('0')
-        self.total_sell_amount = Decimal('0')
-        self.transaction_count = 0
-        self.first_purchase_date = None
-        self.last_transaction_date = None
-        self.average_purchase_price = None
-        
-        # デバッグ用のログ
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.debug(f"\n{'='*60}")
-        logger.debug(f"集計開始: {self.stock_name} ({self.stock_symbol})")
-        
-        for idx, transaction in enumerate(transactions, 1):
-            # 分割調整を適用
-            adjusted_quantity = transaction.quantity
-            adjusted_price = transaction.price
-            
-            # 処理前の状態をログ
-            before_qty = self.current_quantity
-            
-            if transaction.transaction_type == 'buy':
-                # 購入処理
-                buy_amount = adjusted_price * adjusted_quantity
-                
-                # ✅ マイナス保有（信用売り）からの返済買いの場合
-                if self.current_quantity < 0:
-                    # 信用売りの返済買い
-                    returned_quantity = min(adjusted_quantity, abs(self.current_quantity))
-                    
-                    # 返済分の損益計算（売却時の単価で計算）
-                    if self.total_cost < 0:
-                        avg_sell_price = abs(self.total_cost) / abs(self.current_quantity)
-                        returned_cost = avg_sell_price * returned_quantity
-                        buy_cost = adjusted_price * returned_quantity
-                        profit = returned_cost - buy_cost
-                        self.realized_profit += profit
-                        
-                        logger.debug(
-                            f"{idx}. {transaction.transaction_date} 返済買い "
-                            f"{returned_quantity}株 @ {adjusted_price}円 "
-                            f"(平均売却単価: {avg_sell_price:.2f}円) "
-                            f"損益: {profit:+,.2f}円"
-                        )
-                    
-                    # 保有数を戻す
-                    self.current_quantity += returned_quantity
-                    self.total_cost += avg_sell_price * returned_quantity if self.total_cost < 0 else 0
-                    
-                    # 残りの購入分（通常の購入）
-                    remaining_quantity = adjusted_quantity - returned_quantity
-                    if remaining_quantity > 0:
-                        remaining_amount = adjusted_price * remaining_quantity
-                        self.total_cost += remaining_amount
-                        self.current_quantity += remaining_quantity
-                else:
-                    # 通常の購入
-                    self.total_cost += buy_amount
-                    self.current_quantity += adjusted_quantity
-                
-                self.total_bought_quantity += adjusted_quantity
-                self.total_buy_amount += buy_amount
-                
-                logger.debug(
-                    f"{idx}. {transaction.transaction_date} 購入 "
-                    f"{adjusted_quantity}株 @ {adjusted_price}円 "
-                    f"→ 保有: {before_qty} → {self.current_quantity}"
-                )
-                
-                # 最初の購入日を記録
-                if self.first_purchase_date is None:
-                    self.first_purchase_date = transaction.transaction_date
-                
-            elif transaction.transaction_type == 'sell':
-                # 売却処理
-                sell_amount = adjusted_price * adjusted_quantity
-                
-                # ✅ プラス保有（現物・信用買い）の売却
-                if self.current_quantity > 0:
-                    # 平均取得単価を計算
-                    avg_price = self.total_cost / self.current_quantity
-                    
-                    # 売却する数量（保有数を超えないように）
-                    sold_quantity = min(adjusted_quantity, self.current_quantity)
-                    
-                    # 売却原価と売却代金
-                    sell_cost = avg_price * sold_quantity
-                    actual_sell_amount = adjusted_price * sold_quantity
-                    
-                    # 実現損益を計算
-                    profit = actual_sell_amount - sell_cost
-                    self.realized_profit += profit
-                    
-                    # 総原価と保有数を減少
-                    self.total_cost -= sell_cost
-                    self.current_quantity -= sold_quantity
-                    
-                    logger.debug(
-                        f"{idx}. {transaction.transaction_date} 売却 "
-                        f"{sold_quantity}株 @ {adjusted_price}円 "
-                        f"(平均単価: {avg_price:.2f}円) "
-                        f"→ 保有: {before_qty} → {self.current_quantity} "
-                        f"損益: {profit:+,.2f}円"
-                    )
-                    
-                    # 残りの売却分（信用売り）
-                    remaining_quantity = adjusted_quantity - sold_quantity
-                    if remaining_quantity > 0:
-                        # 信用売り（ショート）
-                        self.current_quantity -= remaining_quantity
-                        self.total_cost -= adjusted_price * remaining_quantity
-                        
-                        logger.debug(
-                            f"    ↳ 信用売り {remaining_quantity}株 "
-                            f"→ 保有: {self.current_quantity}"
-                        )
-                
-                # ✅ ゼロまたはマイナス保有からの売却（信用売り）
-                else:
-                    # 信用売り（空売り）
-                    self.current_quantity -= adjusted_quantity
-                    self.total_cost -= sell_amount
-                    
-                    logger.debug(
-                        f"{idx}. {transaction.transaction_date} 信用売り "
-                        f"{adjusted_quantity}株 @ {adjusted_price}円 "
-                        f"→ 保有: {before_qty} → {self.current_quantity}"
-                    )
-                
-                self.total_sold_quantity += adjusted_quantity
-                self.total_sell_amount += sell_amount
-            
-            self.transaction_count += 1
-            self.last_transaction_date = transaction.transaction_date
-        
-        # 平均取得単価を計算
-        if self.current_quantity > 0 and self.total_cost > 0:
-            self.average_purchase_price = (self.total_cost / self.current_quantity).quantize(
-                Decimal('0.01'), rounding=ROUND_HALF_UP
-            )
-        elif self.current_quantity < 0 and self.total_cost < 0:
-            # マイナス保有（信用売り）の場合の平均売却単価
-            self.average_purchase_price = (abs(self.total_cost) / abs(self.current_quantity)).quantize(
-                Decimal('0.01'), rounding=ROUND_HALF_UP
-            )
-        
-        # 数値の丸め処理
-        self.current_quantity = self.current_quantity.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        self.total_cost = self.total_cost.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        self.realized_profit = self.realized_profit.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        
-        logger.debug(f"集計完了: 保有数={self.current_quantity}, "
-                     f"購入計={self.total_bought_quantity}, "
-                     f"売却計={self.total_sold_quantity}, "
-                     f"実現損益={self.realized_profit}")
-        logger.debug(f"{'='*60}\n")
-        
-        self._update_cash_only_aggregates()
-
-        self.save()
-
-    def _update_cash_only_aggregates(self):
-        """現物取引のみ（is_margin=False）の集計フィールドを更新（save()は呼ばない）"""
-        cash_transactions = self.transactions.filter(is_margin=False).order_by('transaction_date', 'created_at')
-
-        cash_quantity = Decimal('0')
-        cash_cost = Decimal('0')
-        cash_realized_profit = Decimal('0')
-        cash_bought_quantity = Decimal('0')
-        cash_sold_quantity = Decimal('0')
-        cash_buy_amount = Decimal('0')
-        cash_sell_amount = Decimal('0')
-
-        for transaction in cash_transactions:
-            adjusted_quantity = transaction.quantity
-            adjusted_price = transaction.price
-
-            if transaction.transaction_type == 'buy':
-                buy_amount = adjusted_price * adjusted_quantity
-                cash_cost += buy_amount
-                cash_quantity += adjusted_quantity
-                cash_bought_quantity += adjusted_quantity
-                cash_buy_amount += buy_amount
-            elif transaction.transaction_type == 'sell':
-                if cash_quantity > 0:
-                    avg_price = cash_cost / cash_quantity
-                    sell_quantity = min(adjusted_quantity, cash_quantity)
-                    sell_cost = avg_price * sell_quantity
-                    actual_sell_amount = adjusted_price * sell_quantity
-                    profit = actual_sell_amount - sell_cost
-                    cash_realized_profit += profit
-                    cash_cost -= sell_cost
-                    cash_quantity -= sell_quantity
-                cash_sold_quantity += adjusted_quantity
-                cash_sell_amount += adjusted_price * adjusted_quantity
-
-        cash_avg_price = None
-        if cash_quantity > 0:
-            cash_avg_price = (cash_cost / cash_quantity).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-
-        self.cash_only_current_quantity = cash_quantity.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        self.cash_only_average_purchase_price = cash_avg_price
-        self.cash_only_total_cost = cash_cost.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        self.cash_only_realized_profit = cash_realized_profit.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        self.cash_only_total_bought_quantity = cash_bought_quantity
-        self.cash_only_total_sold_quantity = cash_sold_quantity
-        self.cash_only_total_buy_amount = cash_buy_amount
-        self.cash_only_total_sell_amount = cash_sell_amount
+        """集計フィールドを再計算して save() する。"""
+        from .services.aggregate_service import AggregateService
+        AggregateService.recalculate(self)
 
     def process_and_save_image(self, image_file):
-        """画像を圧縮・処理して保存"""
+        """画像を非同期で圧縮・保存する。元画像をまず保存してからdjango-qでリサイズする。"""
+        from .services.image_service import ImageService
         try:
             if self.image:
-                self.delete_image()
-            
-            img = Image.open(image_file)
-            
-            if img.mode in ('RGBA', 'LA', 'P'):
-                background = Image.new('RGB', img.size, (255, 255, 255))
-                if img.mode == 'P':
-                    img = img.convert('RGBA')
-                background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
-                img = background
-            
-            max_width, max_height = 800, 600
-            img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
-            
-            output = io.BytesIO()
-            
-            try:
-                img.save(output, format='WebP', quality=85, optimize=True)
-                format_used = 'webp'
-            except Exception:
-                img.save(output, format='JPEG', quality=85, optimize=True)
-                format_used = 'jpg'
-            
-            filename = f"{uuid.uuid4().hex}.{format_used}"
-            content_file = ContentFile(output.getvalue())
-            
-            self.image.save(filename, content_file, save=False)
-            self.save(update_fields=['image'])
-            
+                self.image.delete(save=False)
+
+            filename = f"{uuid.uuid4().hex}{os.path.splitext(image_file.name)[1]}"
+            self.image.save(filename, image_file, save=True)
+
+            from django_q.tasks import async_task
+            async_task('stockdiary.tasks.compress_diary_image', self.id)
             return True
-            
+
         except Exception as e:
-            logger.error(f"Image processing failed for StockDiary: {str(e)}", exc_info=True)
-            return False
+            logger.error("Image upload failed for StockDiary(id=%s): %s", self.id, e, exc_info=True)
+            # フォールバック: 同期圧縮
+            try:
+                image_file.seek(0)
+                return ImageService.compress_and_save(self, image_file, max_size=(800, 600), quality=85)
+            except Exception:
+                return False
 
     def delete_image(self):
         """画像を削除"""
@@ -604,43 +372,27 @@ class DiaryNote(models.Model):
         self.diary.save(update_fields=['updated_at'])
 
     def process_and_save_image(self, image_file):
-        """画像を圧縮・処理して保存"""
+        """画像を非同期で圧縮・保存する。元画像をまず保存してからdjango-qでリサイズする。"""
+        from .services.image_service import ImageService
         try:
             if self.image:
-                self.delete_image()
-            
-            img = Image.open(image_file)
-            
-            if img.mode in ('RGBA', 'LA', 'P'):
-                background = Image.new('RGB', img.size, (255, 255, 255))
-                if img.mode == 'P':
-                    img = img.convert('RGBA')
-                background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
-                img = background
-            
-            max_width, max_height = 600, 400
-            img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
-            
-            output = io.BytesIO()
-            
-            try:
-                img.save(output, format='WebP', quality=80, optimize=True)
-                format_used = 'webp'
-            except Exception:
-                img.save(output, format='JPEG', quality=80, optimize=True)
-                format_used = 'jpg'
-            
-            filename = f"{uuid.uuid4().hex}.{format_used}"
-            content_file = ContentFile(output.getvalue())
-            
-            self.image.save(filename, content_file, save=False)
-            self.save(update_fields=['image'])
-            
+                self.image.delete(save=False)
+
+            filename = f"{uuid.uuid4().hex}{os.path.splitext(image_file.name)[1]}"
+            self.image.save(filename, image_file, save=True)
+
+            from django_q.tasks import async_task
+            async_task('stockdiary.tasks.compress_note_image', self.id)
             return True
-            
+
         except Exception as e:
-            logger.error(f"Note image processing failed for DiaryNote: {str(e)}", exc_info=True)
-            return False
+            logger.error("Image upload failed for DiaryNote(id=%s): %s", self.id, e, exc_info=True)
+            # フォールバック: 同期圧縮
+            try:
+                image_file.seek(0)
+                return ImageService.compress_and_save(self, image_file, max_size=(600, 400), quality=80)
+            except Exception:
+                return False
 
     def delete_image(self):
         """画像を削除"""

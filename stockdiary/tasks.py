@@ -6,6 +6,39 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+DIARY_IMAGE_MAX_SIZE = (800, 600)
+NOTE_IMAGE_MAX_SIZE = (600, 400)
+
+
+def compress_diary_image(diary_id):
+    """StockDiary の保存済み画像を圧縮する（django-q タスク）。"""
+    from .models import StockDiary
+    from .services.image_service import ImageService
+
+    try:
+        diary = StockDiary.objects.get(id=diary_id)
+    except StockDiary.DoesNotExist:
+        logger.warning("compress_diary_image: diary id=%s not found", diary_id)
+        return
+
+    if diary.image:
+        ImageService.compress_stored(diary, max_size=DIARY_IMAGE_MAX_SIZE, quality=85)
+
+
+def compress_note_image(note_id):
+    """DiaryNote の保存済み画像を圧縮する（django-q タスク）。"""
+    from .models import DiaryNote
+    from .services.image_service import ImageService
+
+    try:
+        note = DiaryNote.objects.get(id=note_id)
+    except DiaryNote.DoesNotExist:
+        logger.warning("compress_note_image: note id=%s not found", note_id)
+        return
+
+    if note.image:
+        ImageService.compress_stored(note, max_size=NOTE_IMAGE_MAX_SIZE, quality=80)
+
 
 def process_notifications():
     """
