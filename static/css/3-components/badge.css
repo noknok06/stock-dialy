@@ -113,6 +113,61 @@
   color: var(--info-color);
 }
 
+/* ========== 開示書類インジケーター ========== */
+.disclosure-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.disclosure-indicator--recent {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.disclosure-indicator--new {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  animation: disclosure-pulse 2.5s ease-in-out infinite;
+}
+
+.disclosure-indicator i {
+  font-size: 0.7rem;
+}
+
+.disclosure-date {
+  opacity: 0.85;
+}
+
+@keyframes disclosure-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}
+
+/* Dark mode */
+.dark-mode .disclosure-indicator--recent,
+[data-theme="dark"] .disclosure-indicator--recent {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.dark-mode .disclosure-indicator--new,
+[data-theme="dark"] .disclosure-indicator--new {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
 /* ========== アニメーション ========== */
 @keyframes fadeIn {
   from {

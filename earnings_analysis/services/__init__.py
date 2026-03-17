@@ -17,11 +17,15 @@ from .xbrl_extractor import XBRLFinancialExtractor, EDINETXBRLService, CashFlowE
 # バッチサービス
 from .batch_service import BatchService
 
+# 開示インジケーター同期
+from .disclosure_sync import update_diary_disclosure_status
+
 __all__ = [
     'EdinetAPIClient',
-    'EdinetDocumentService', 
+    'EdinetDocumentService',
     'XBRLFinancialExtractor',
     'EDINETXBRLService',
     'CashFlowExtractor',
     'BatchService',
+    'update_diary_disclosure_status',
 ]

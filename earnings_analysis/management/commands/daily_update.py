@@ -174,7 +174,10 @@ class Command(BaseCommand):
                 self._update_company_master_optimized(target_date)
             else:
                 self.stdout.write('企業マスタ更新をスキップしました。')
-            
+
+            # 開示インジケーター更新
+            self._update_disclosure_indicators()
+
             # 成功処理
             self._record_batch_success(batch_execution, processed_count)
             success = True
@@ -1033,3 +1036,15 @@ class Command(BaseCommand):
             return datetime.strptime(datetime_str, '%Y-%m-%d %H:%M')
         except (ValueError, TypeError):
             return timezone.now()
+
+    def _update_disclosure_indicators(self):
+        """株式日記の開示インジケーターを更新"""
+        try:
+            from earnings_analysis.services.disclosure_sync import update_diary_disclosure_status
+            self.stdout.write('開示インジケーター更新中...')
+            updated = update_diary_disclosure_status()
+            self.stdout.write(self.style.SUCCESS(f'開示インジケーター更新完了: {updated}件'))
+        except Exception as e:
+            # インジケーター更新の失敗はバッチ全体を止めない
+            logger.warning(f'開示インジケーター更新エラー（スキップ）: {e}', exc_info=True)
+            self.stdout.write(self.style.WARNING(f'開示インジケーター更新スキップ: {e}'))

@@ -74,6 +74,14 @@ class StockDiary(models.Model):
     # 関連日記（非対称M2M：対称性はアプリ層で管理）
     linked_diaries = models.ManyToManyField('self', blank=True, symmetrical=False, related_name='linked_from', verbose_name='関連日記')
 
+    # 開示書類情報（EDINETから定期更新）
+    latest_disclosure_date = models.DateField(
+        null=True, blank=True, verbose_name='最新開示日'
+    )
+    latest_disclosure_doc_type_name = models.CharField(
+        max_length=50, blank=True, verbose_name='最新開示種別'
+    )
+
     # システム情報
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -111,6 +119,19 @@ class StockDiary(models.Model):
     def is_short(self):
         """信用売り（ショートポジション）かどうか"""
         return self.current_quantity < 0
+
+    @property
+    def recent_disclosure_status(self):
+        """開示書類の直近度: 'new'(7日以内), 'recent'(30日以内), None"""
+        if not self.latest_disclosure_date:
+            return None
+        from datetime import date
+        days = (date.today() - self.latest_disclosure_date).days
+        if days <= 7:
+            return 'new'
+        elif days <= 30:
+            return 'recent'
+        return None
 
     def update_aggregates(self):
         """集計フィールドを再計算"""
