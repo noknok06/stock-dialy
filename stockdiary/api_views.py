@@ -19,10 +19,13 @@ from .utils import (
     get_mention_graph_data, extract_stock_mentions,
 )
 import json
-from pywebpush import webpush, WebPushException
-from decimal import Decimal, InvalidOperation
 import logging
 import traceback
+
+from pywebpush import webpush, WebPushException
+from decimal import Decimal, InvalidOperation
+
+logger = logging.getLogger(__name__)
 
 
 @require_GET
@@ -69,16 +72,9 @@ def subscribe_push(request):
         })
         
     except Exception as e:
-        import traceback
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Push subscription error: {e}")
-        logger.error(traceback.format_exc())
-        
-        return JsonResponse({
-            'error': str(e),
-            'detail': 'サブスクリプションの登録に失敗しました'
-        }, status=500)
+        logger.error("Push subscription error: %s", e, exc_info=True)
+
+        return JsonResponse({'error': 'サブスクリプションの登録に失敗しました'}, status=500)
         
 
 @api_view(['POST'])
@@ -107,16 +103,14 @@ def unsubscribe_push(request):
         })
         
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
-    
+        logger.error("Unsubscribe push error: %s", e, exc_info=True)
+        return JsonResponse({'error': 'サブスクリプションの解除に失敗しました'}, status=500)
+
 
 @login_required
 @require_http_methods(["POST"])
 def create_diary_notification(request, diary_id):
     """日記の通知設定を作成（リマインダーのみ）"""
-    import logging
-    logger = logging.getLogger(__name__)
-    
     try:
         # 日記を取得
         diary = get_object_or_404(StockDiary, id=diary_id, user=request.user)
@@ -194,12 +188,12 @@ def create_diary_notification(request, diary_id):
         })
         
     except Exception as e:
-        logger.error(f"Unexpected error: {traceback.format_exc()}")
+        logger.error("Unexpected error in create_diary_notification: %s", e, exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': f'通知設定中にエラーが発生しました: {str(e)}'
+            'error': '通知設定中にエラーが発生しました'
         }, status=500)
-    
+
 
 @require_http_methods(["POST"])  # ← DELETEを削除、POSTのみ
 @login_required
@@ -219,10 +213,8 @@ def delete_diary_notification(request, notification_id):
         })
         
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"通知削除エラー: {e}", exc_info=True)
-        return JsonResponse({'error': str(e)}, status=500)
+        logger.error("通知削除エラー: %s", e, exc_info=True)
+        return JsonResponse({'error': '通知設定の削除に失敗しました'}, status=500)
 
 
 @login_required
@@ -254,12 +246,10 @@ def list_diary_notifications(request, diary_id):
         })
         
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"List notifications error: {traceback.format_exc()}")
+        logger.error("List notifications error: %s", e, exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': '通知設定の取得に失敗しました'
         }, status=500)
 
 
@@ -312,7 +302,8 @@ def mark_notification_read(request, log_id):
         return JsonResponse({'success': True})
         
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        logger.error("Mark notification read error: %s", e, exc_info=True)
+        return JsonResponse({'error': '既読処理に失敗しました'}, status=500)
 
 
 @require_http_methods(["POST"])
@@ -328,7 +319,8 @@ def mark_all_read(request):
         return JsonResponse({'success': True})
         
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        logger.error("Mark all read error: %s", e, exc_info=True)
+        return JsonResponse({'error': '既読処理に失敗しました'}, status=500)
 
 
 # プッシュ通知送信ヘルパー
@@ -411,12 +403,10 @@ def list_all_notifications(request):
         })
 
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"List all notifications error: {traceback.format_exc()}")
+        logger.error("List all notifications error: %s", e, exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': '通知設定の取得に失敗しました'
         }, status=500)
 
 
@@ -457,11 +447,10 @@ def get_hashtags(request):
         })
 
     except Exception as e:
-        logger = logging.getLogger(__name__)
-        logger.error(f"Get hashtags error: {traceback.format_exc()}")
+        logger.error("Get hashtags error: %s", e, exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': 'ハッシュタグの取得に失敗しました'
         }, status=500)
 
 
@@ -800,9 +789,8 @@ def diary_graph_data(request):
         })
 
     except Exception as e:
-        logger = logging.getLogger(__name__)
-        logger.error(f"diary_graph_data error: {traceback.format_exc()}")
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+        logger.error("diary_graph_data error: %s", e, exc_info=True)
+        return JsonResponse({'success': False, 'error': 'グラフデータの取得に失敗しました'}, status=500)
 
 
 def _diary_status(diary) -> str:
@@ -982,6 +970,5 @@ def diary_detail_graph_data(request, diary_id):
         })
 
     except Exception as e:
-        logger = logging.getLogger(__name__)
-        logger.error(f"diary_detail_graph_data error: {traceback.format_exc()}")
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+        logger.error("diary_detail_graph_data error: %s", e, exc_info=True)
+        return JsonResponse({'success': False, 'error': 'グラフデータの取得に失敗しました'}, status=500)

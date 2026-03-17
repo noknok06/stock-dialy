@@ -1,3 +1,5 @@
+import logging
+
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView, View
 from django.urls import reverse_lazy
 from django.db.models import Q, Count, Avg, F, Sum, Min, Max, Case, When, Value, IntegerField, DecimalField
@@ -45,6 +47,8 @@ import csv
 import io
 import traceback
 import html
+
+logger = logging.getLogger(__name__)
 import json
 import re
 import statistics
@@ -433,11 +437,10 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
             return render(request, 'stockdiary/partials/diary_list.html', context)
         
         except Exception as e:
-            print(f"Diary list error: {str(e)}")
-            traceback.print_exc()
-            
+            logger.error("Diary list error: %s", e, exc_info=True)
+
             return HttpResponse(
-                f'<div class="alert alert-danger">日記リストの読み込みに失敗しました: {str(e)}</div>',
+                '<div class="alert alert-danger">日記リストの読み込みに失敗しました。</div>',
                 status=500
             )
     def get_context_data(self, **kwargs):
@@ -535,7 +538,7 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
                             })
                             data.append(diary_html)
                         except Exception as e:
-                            print(f"Error rendering diary {diary.id}: {e}")
+                            logger.warning("Error rendering diary %s: %s", diary.id, e, exc_info=True)
                             continue
                     
                     return JsonResponse({
@@ -544,10 +547,8 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
                         'next_page': page_obj.next_page_number() if page_obj.has_next() else None
                     })
             except Exception as e:
-                print(f"AJAX request error: {e}")
-                print(traceback.format_exc())
+                logger.error("AJAX request error: %s", e, exc_info=True)
                 return JsonResponse({
-                    'error': str(e),
                     'message': 'データの読み込み中にエラーが発生しました。'
                 }, status=500)
         
@@ -912,12 +913,8 @@ class DiaryTabContentView(LoginRequiredMixin, View):
         except StockDiary.DoesNotExist:
             return JsonResponse({'error': '日記が見つかりません'}, status=404)
         except Exception as e:
-            error_details = traceback.format_exc()
-            print(f"Tab content error: {error_details}")
-            return JsonResponse({
-                'error': str(e),
-                'details': error_details
-            }, status=500)
+            logger.error("Tab content error: %s", e, exc_info=True)
+            return JsonResponse({'error': 'タブコンテンツの読み込みに失敗しました'}, status=500)
 
     def _render_notes_tab(self, diary):
         """継続記録タブのHTMLを直接生成"""
@@ -1185,7 +1182,7 @@ class StockListView(LoginRequiredMixin, TemplateView):
                     company = CompanyMaster.objects.filter(code=stock['stock_symbol']).first()
                     if company:
                         stock_info['sector'] = company.industry_name_33 or company.industry_name_17 or '未分類'
-                except:
+                except Exception:
                     pass
             
             stock_list.append(stock_info)
@@ -1287,7 +1284,7 @@ class ServeImageView(LoginRequiredMixin, View):
             return self._serve_image(image_field)
             
         except Exception as e:
-            print(f"Image serving error: {str(e)}")
+            logger.error("Image serving error: %s", e, exc_info=True)
             raise Http404("画像の配信中にエラーが発生しました")
     
     def _serve_image(self, image_field):
@@ -1309,7 +1306,7 @@ class ServeImageView(LoginRequiredMixin, View):
             return response
             
         except Exception as e:
-            print(f"Error serving image: {str(e)}")
+            logger.error("Error serving image: %s", e, exc_info=True)
             raise Http404("画像ファイルが見つかりません")
     
     def _serve_thumbnail(self, image_field, request):
@@ -1365,7 +1362,7 @@ class ServeImageView(LoginRequiredMixin, View):
             return response
             
         except Exception as e:
-            print(f"Error creating thumbnail: {str(e)}")
+            logger.warning("Error creating thumbnail: %s", e, exc_info=True)
             return self._serve_image(image_field)
 
 
@@ -1535,11 +1532,10 @@ def diary_list(request):
         return render(request, 'stockdiary/partials/diary_list.html', context)
     
     except Exception as e:
-        print(f"Diary list error: {str(e)}")
-        traceback.print_exc()
-        
+        logger.error("Diary list error: %s", e, exc_info=True)
+
         return HttpResponse(
-            f'<div class="alert alert-danger">日記リストの読み込みに失敗しました: {str(e)}</div>',
+            '<div class="alert alert-danger">日記リストの読み込みに失敗しました。</div>',
             status=500
         )
 
@@ -1584,18 +1580,16 @@ def tab_content(request, diary_id, tab_type):
             return render(request, template_name, context)
 
         except Exception as render_error:
-            print(f"タブレンダリングエラー: {str(render_error)}")
-            traceback.print_exc()
+            logger.error("タブレンダリングエラー: %s", render_error, exc_info=True)
             return HttpResponse(
-                f'<div class="alert alert-danger">タブコンテンツの読み込み中にエラーが発生しました: {str(render_error)}</div>', 
+                '<div class="alert alert-danger">タブコンテンツの読み込み中にエラーが発生しました。</div>',
                 status=500
             )
 
     except Exception as e:
-        print(f"想定外のエラー: {str(e)}")
-        traceback.print_exc()
+        logger.error("想定外のエラー: %s", e, exc_info=True)
         return HttpResponse(
-            '<div class="alert alert-danger">予期せぬエラーが発生しました。</div>', 
+            '<div class="alert alert-danger">予期せぬエラーが発生しました。</div>',
             status=500
         )
 
@@ -1772,9 +1766,8 @@ def add_transaction(request, diary_id):
             else:
                 messages.error(request, str(e))
         except Exception as e:
-            import traceback
-            print(f"Transaction add error: {traceback.format_exc()}")
-            messages.error(request, f'取引の記録中にエラーが発生しました: {str(e)}')
+            logger.error("Transaction add error: %s", e, exc_info=True)
+            messages.error(request, '取引の記録中にエラーが発生しました。')
     else:
         # フォームのエラーを表示
         for field, errors in form.errors.items():
@@ -1826,9 +1819,8 @@ def update_transaction(request, transaction_id):
             else:
                 messages.error(request, str(e))
         except Exception as e:
-            import traceback
-            print(f"Transaction update error: {traceback.format_exc()}")
-            messages.error(request, f'取引の更新中にエラーが発生しました: {str(e)}')
+            logger.error("Transaction update error: %s", e, exc_info=True)
+            messages.error(request, '取引の更新中にエラーが発生しました。')
     else:
         for field, errors in form.errors.items():
             field_label = form.fields[field].label if field in form.fields else field
@@ -2400,7 +2392,7 @@ def parse_rakuten_csv_preview(csv_content):
             grouped_data[key]['count'] += 1
             
         except Exception as e:
-            print(f"Row {row_num} parsing error: {e}")
+            logger.warning("Row %s parsing error: %s", row_num, e, exc_info=True)
             continue
     
     # ✅ 集約されたデータをプレビュー用に整形
@@ -2589,7 +2581,7 @@ def parse_sbi_csv_preview(csv_content):
             grouped_data[key]['count'] += 1
             
         except Exception as e:
-            print(f"Row {row_num} parsing error: {e}")
+            logger.warning("Row %s parsing error: %s", row_num, e, exc_info=True)
             continue
     
     # 集約されたデータをプレビュー用に整形
