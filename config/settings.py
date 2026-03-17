@@ -63,8 +63,9 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
-# CSRFトークンを常に検証
-CSRF_COOKIE_HTTPONLY = True
+# CSRF_COOKIE_HTTPONLY = True にするとJavaScriptがCSRFトークンを読めなくなり
+# fetchなどのAJAXリクエストでX-CSRFTokenヘッダーが送れず403エラーになるためFalseに設定
+CSRF_COOKIE_HTTPONLY = False
 
 # 2. セッション設定の強化
 SESSION_COOKIE_HTTPONLY = True
