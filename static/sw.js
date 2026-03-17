@@ -1,5 +1,5 @@
 // static/sw.js - シンプル版
-const VERSION = '1.1.4';  // ← CSS変更時はここだけ変更すればOK
+const VERSION = '1.1.5';  // ← CSS変更時はここだけ変更すればOK
 const CACHE_NAME = `kabulog-v${VERSION}`;
 const STATIC_CACHE_NAME = `kabulog-static-v${VERSION}`;
 
@@ -7,10 +7,8 @@ const STATIC_CACHE_NAME = `kabulog-static-v${VERSION}`;
 // ★重要：CSS/JSはリストに含めない（常にネットワークから取得するため）
 const PRECACHE_URLS = [
   '/static/images/icon-192.svg',
-  '/static/images/icon-192.svg',
+  '/static/images/icon-192.png',
   '/static/images/icon-512.png',
-  '/static/images/icon-96.png',
-  '/static/images/badge-72.png',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
   'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css'
 ];
@@ -192,7 +190,7 @@ self.addEventListener('push', event => {
   const options = {
     body: data.message || '新しい通知があります',
     icon: data.icon || '/static/images/icon-192.svg',
-    badge: data.badge || '/static/images/badge-72.png',
+    badge: data.badge || '/static/images/icon-192.svg',
     vibrate: [200, 100, 200],
     tag: data.tag || 'notification',
     data: {
