@@ -314,6 +314,13 @@ class IPFilterMiddleware:
             
     def _check_japan_only_access(self, request):
         """日本からのアクセスのみを許可"""
+        # 認証不要の公開APIパスはJapan制限から除外
+        public_api_paths = [
+            '/api/push/vapid-key/',
+        ]
+        if any(request.path.startswith(path) for path in public_api_paths):
+            return True
+
         protected_paths = [
             '/subscriptions/checkout/',
             '/admin/',

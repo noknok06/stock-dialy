@@ -278,8 +278,9 @@ class PushNotificationUI {
             
             const saveRes = await fetch('/api/push/subscribe/', {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCookie('csrftoken'),
                 },
                 credentials: 'same-origin',
                 body: JSON.stringify({
@@ -367,7 +368,10 @@ class PushNotificationUI {
                 try {
                     const unsubRes = await fetch('/api/push/unsubscribe/', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this.getCookie('csrftoken'),
+                        },
                         credentials: 'same-origin',
                         body: JSON.stringify({ endpoint: subscription.endpoint })
                     });
@@ -415,6 +419,21 @@ class PushNotificationUI {
         }
     }
     
+    getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
     getDeviceInfo() {
         const ua = navigator.userAgent;
         let name = 'Unknown Device';
