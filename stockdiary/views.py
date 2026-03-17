@@ -1459,6 +1459,17 @@ def diary_list(request):
                 ).values_list('diary_id', flat=True).distinct()
                 queryset = queryset.filter(id__in=diary_ids)
 
+        # 開示書類更新フィルター
+        disclosure_filter = request.GET.get('disclosure', '')
+        if disclosure_filter == 'new':
+            from datetime import timedelta
+            cutoff = timezone.now().date() - timedelta(days=7)
+            queryset = queryset.filter(latest_disclosure_date__gte=cutoff)
+        elif disclosure_filter == 'recent':
+            from datetime import timedelta
+            cutoff = timezone.now().date() - timedelta(days=30)
+            queryset = queryset.filter(latest_disclosure_date__gte=cutoff)
+
         # ソート
         sort = request.GET.get('sort', '')
         if sort == 'name':
