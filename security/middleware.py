@@ -317,21 +317,20 @@ class IPFilterMiddleware:
         protected_paths = [
             '/subscriptions/checkout/',
             '/admin/',
-            '/api/',
             '/stripe/',
             '/webhook/'
         ]
-        
+
         if any(request.path.startswith(path) for path in protected_paths):
             client_ip = self._get_client_ip(request)
             country_code = self._get_country_code(client_ip)
-            
+
             if country_code is None:
                 return True
-                
+
             if country_code != 'JP':
                 return False
-                
+
         return True
 
 
