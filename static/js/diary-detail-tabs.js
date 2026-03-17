@@ -131,8 +131,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function handleTouchStart(e) {
         if (isAnimating) return;
 
-        // 継続記録カード上のスワイプはカード側のハンドラに委ねる
-        if (e.target.closest('.note-card')) return;
+        // 継続記録タブが表示中はタブスワイプを無効化（カード操作と干渉するため）
+        const notesPane = document.getElementById('notes-content');
+        if (notesPane && notesPane.classList.contains('active')) return;
 
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;

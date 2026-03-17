@@ -1890,83 +1890,79 @@
           <div class="notes-list mobile-optimized">
             {% for note in notes %}
             <div class="note-card mobile-optimized fade-in">
-
-              <!-- 削除シェルフ（モバイル左スワイプで表示） -->
+              <!-- スワイプ削除シェルフ（モバイルのみ表示） -->
               <div class="note-delete-shelf"
                    data-note-id="{{ note.id }}"
-                   data-note-date="{{ note.date|date:"Y年m月d日" }}"
+                   data-note-date="{{ note.date|date:'Y年m月d日' }}"
                    data-note-type-label="{% if note.note_type == 'analysis' %}分析更新{% elif note.note_type == 'news' %}ニュース{% elif note.note_type == 'earnings' %}決算情報{% elif note.note_type == 'insight' %}新たな気づき{% elif note.note_type == 'risk' %}リスク要因{% else %}その他{% endif %}"
                    data-diary-id="{{ diary.id }}">
                 <i class="bi bi-trash3"></i>
                 <span>削除</span>
               </div>
-
               <!-- スライドするコンテンツ -->
               <div class="note-slide-content">
-                <div class="note-card-header-modern">
-                  <!-- 左側：日付とメタ情報 -->
-                  <div class="note-header-left">
-                    <div class="note-date-large">
-                      <span class="date-day">{{ note.date|date:"d" }}</span>
-                      <div class="date-year-month">
-                        <span class="date-year">{{ note.date|date:"Y" }}</span>
-                        <span class="date-month">{{ note.date|date:"m月" }}</span>
-                      </div>
-                    </div>
-
-                    <div class="note-meta-badges">
-                      {% include "stockdiary/components/_note_type_badge.html" with note_type=note.note_type %}
-                      {% include "stockdiary/components/_importance_badge.html" with importance=note.importance %}
+              <div class="note-card-header-modern">
+                <!-- 左側：日付とメタ情報 -->
+                <div class="note-header-left">
+                  <div class="note-date-large">
+                    <span class="date-day">{{ note.date|date:"d" }}</span>
+                    <div class="date-year-month">
+                      <span class="date-year">{{ note.date|date:"Y" }}</span>
+                      <span class="date-month">{{ note.date|date:"m月" }}</span>
                     </div>
                   </div>
 
-                  <!-- 右側：価格とアクション -->
-                  <div class="note-header-right">
-                    {% if note.current_price %}
-                    <div class="price-info-compact">
-                      <div class="current-price">{{ note.current_price|floatformat:2|intcomma }}<span class="unit">円</span></div>
-                      {% with price_change=note.get_price_change %}
-                      {% if price_change %}
-                      <div class="price-change-badge {% if price_change > 0 %}gain{% else %}loss{% endif %}">
-                        <i class="bi bi-arrow-{% if price_change > 0 %}up{% else %}down{% endif %}-right"></i>
-                        {% if price_change > 0 %}+{% endif %}{{ price_change|floatformat:2 }}%
-                      </div>
-                      {% endif %}
-                      {% endwith %}
-                    </div>
-                    {% endif %}
-
-                    <!-- デスクトップのみ表示（モバイルはスワイプ削除） -->
-                    <button class="btn-delete-note"
-                            onclick="confirmDeleteNote({{ note.id }}, '{{ note.date|date:"Y年m月d日" }}', '{% if note.note_type == 'analysis' %}分析更新{% elif note.note_type == 'news' %}ニュース{% elif note.note_type == 'earnings' %}決算情報{% elif note.note_type == 'insight' %}新たな気づき{% elif note.note_type == 'risk' %}リスク要因{% else %}その他{% endif %}', {{ diary.id }})"
-                            title="削除">
-                      <i class="bi bi-trash3"></i>
-                    </button>
+                  <div class="note-meta-badges">
+                    {% include "stockdiary/components/_note_type_badge.html" with note_type=note.note_type %}
+                    {% include "stockdiary/components/_importance_badge.html" with importance=note.importance %}
                   </div>
                 </div>
 
-                <div class="note-card-body mobile-optimized">
-                  {% if note.image_url %}
-                  <div class="note-image mb-2">
-                    <img src="{{ note.image_url }}"
-                        class="img-fluid rounded note-attached-image"
-                        alt="継続記録画像"
-                        loading="lazy"
-                        style="max-height: 200px; object-fit: cover; width: 100%; cursor: pointer;"
-                        onclick="showImageModal('{{ note.image_url }}', '{{ note.date|date:"Y年m月d日" }}の記録')">
-                    <div class="mt-1">
-                      <small class="text-muted">
-                        <i class="bi bi-image me-1"></i>
-                        クリックで拡大表示
-                      </small>
+                <!-- 右側：価格とアクション -->
+                <div class="note-header-right">
+                  {% if note.current_price %}
+                  <div class="price-info-compact">
+                    <div class="current-price">{{ note.current_price|floatformat:2|intcomma }}<span class="unit">円</span></div>
+                    {% with price_change=note.get_price_change %}
+                    {% if price_change %}
+                    <div class="price-change-badge {% if price_change > 0 %}gain{% else %}loss{% endif %}">
+                      <i class="bi bi-arrow-{% if price_change > 0 %}up{% else %}down{% endif %}-right"></i>
+                      {% if price_change > 0 %}+{% endif %}{{ price_change|floatformat:2 }}%
                     </div>
+                    {% endif %}
+                    {% endwith %}
                   </div>
                   {% endif %}
 
-                  <div class="note-content-text markdown-content">{{ note.content|render_markdown_with_mentions:mention_map }}</div>
+                  <button class="btn-delete-note"
+                          onclick="confirmDeleteNote({{ note.id }}, '{{ note.date|date:"Y年m月d日" }}', '{% if note.note_type == 'analysis' %}分析更新{% elif note.note_type == 'news' %}ニュース{% elif note.note_type == 'earnings' %}決算情報{% elif note.note_type == 'insight' %}新たな気づき{% elif note.note_type == 'risk' %}リスク要因{% else %}その他{% endif %}', {{ diary.id }})"
+                          title="削除">
+                    <i class="bi bi-trash3"></i>
+                  </button>
                 </div>
-              </div><!-- /.note-slide-content -->
+              </div>
 
+              <div class="note-card-body mobile-optimized">
+                {% if note.image_url %}
+                <div class="note-image mb-2">
+                  <img src="{{ note.image_url }}"
+                      class="img-fluid rounded note-attached-image"
+                      alt="継続記録画像"
+                      loading="lazy"
+                      style="max-height: 200px; object-fit: cover; width: 100%; cursor: pointer;"
+                      onclick="showImageModal('{{ note.image_url }}', '{{ note.date|date:"Y年m月d日" }}の記録')">
+                  <div class="mt-1">
+                    <small class="text-muted">
+                      <i class="bi bi-image me-1"></i>
+                      クリックで拡大表示
+                    </small>
+                  </div>
+                </div>
+                {% endif %}
+
+                <div class="note-content-text markdown-content">{{ note.content|render_markdown_with_mentions:mention_map }}</div>
+              </div>
+              </div><!-- /.note-slide-content -->
             </div>
             {% empty %}
             {% include "stockdiary/components/_empty_state.html" with icon="bi-journal-text" title="継続記録はまだありません" description="上のボタンから最初の記録を追加しましょう" %}

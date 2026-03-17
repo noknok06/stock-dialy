@@ -589,65 +589,67 @@
 
 /* === 継続記録カード === */
 .note-card {
-  display: grid;          /* グリッドで shelf と slide-content を重ねる */
-  overflow: hidden;
+  background: var(--bg-100);
   border: 1px solid var(--bg-300);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  transition: box-shadow 0.3s ease;
+  overflow: hidden;
+  transition: all 0.3s ease;
   margin-bottom: 1.5rem;
+  position: relative;
 }
 
 .note-card:hover {
+  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* スワイプ削除: スライドするコンテンツラッパー（グリッドの同セルに配置） */
-.note-slide-content {
-  grid-row: 1;
-  grid-column: 1;
-  position: relative;     /* z-index 有効化 */
-  z-index: 1;
-  background: var(--bg-100);
-  will-change: transform;
-  overflow: hidden;       /* BFC化 */
+@media (max-width: 768px) {
+  .note-card:hover {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
 }
 
-/* スワイプ削除: 右端の削除シェルフ（グリッドの同セルに配置・右寄せ） */
+/* スワイプ削除: スライドするコンテンツラッパー */
+.note-slide-content {
+  position: relative;
+  z-index: 1;
+  background: var(--bg-100);
+  border-radius: 12px;
+  will-change: transform;
+}
+
+/* スワイプ削除: 右端の削除シェルフ（モバイルのみ表示） */
 .note-delete-shelf {
-  grid-row: 1;
-  grid-column: 1;
-  justify-self: end;      /* 右端 */
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
   width: 80px;
-  z-index: 0;
-  background: var(--danger-color, #ef4444);
+  background: #ef4444;
   color: white;
-  display: flex;
+  display: none;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 4px;
   font-size: 13px;
-  font-weight: 600;
+  z-index: 0;
   cursor: pointer;
-  user-select: none;
+  border-radius: 0 12px 12px 0;
 }
 
 .note-delete-shelf i {
   font-size: 20px;
 }
 
-/* デスクトップではシェルフを非表示（ゴミ箱ボタンを使う） */
-@media (min-width: 769px) {
-  .note-delete-shelf {
-    display: none;
-  }
-}
-
-/* モバイルではヘッダー内ゴミ箱ボタンを非表示 */
 @media (max-width: 768px) {
+  .note-delete-shelf {
+    display: flex;
+  }
   .btn-delete-note {
-    display: none;
+    display: none !important;
   }
 }
 
