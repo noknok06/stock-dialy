@@ -1,0 +1,75 @@
+name: 機能リクエスト
+description: 株式日記アプリへの新機能追加や既存機能の改善を提案する
+title: "[機能] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        機能リクエストにご協力いただきありがとうございます。
+        投資日記として役立つアイデアをぜひお聞かせください。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 解決したい課題・困っていること
+      description: どのような場面で不便を感じているか教えてください。現在のアプリで何が足りないか、または改善できるかを説明してください。
+      placeholder: |
+        例）複数銘柄の損益を一覧で比較したいが、現在は銘柄ごとに詳細画面を開く必要があり手間がかかる。
+        例）決算発表日に合わせてリマインダーを設定したい。
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: 提案する機能・解決策
+      description: どのような機能があれば課題が解決されるか、具体的にイメージを教えてください。
+      placeholder: |
+        例）ポートフォリオ一覧画面に、保有銘柄の取得単価・現在値・損益率をまとめた比較テーブルを追加する。
+        例）銘柄詳細の「決算情報」タブに、次回決算日をカレンダーに追加するボタンを設ける。
+    validations:
+      required: true
+
+  - type: dropdown
+    id: feature_area
+    attributes:
+      label: 関連する機能領域
+      description: リクエストが関係するアプリの機能を選択してください。
+      options:
+        - 株式日記（一覧・詳細）
+        - 継続記録（ノート管理）
+        - ポートフォリオ・損益管理
+        - 銘柄検索・情報表示
+        - グラフ・チャート表示
+        - 決算分析
+        - トレード記録アップロード
+        - 通知・リマインダー
+        - UI / デザイン
+        - 新しい機能領域
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 優先度（あなたの主観で構いません）
+      options:
+        - 高（これがないと投資日記として使いにくい）
+        - 中（あると便利だが今すぐでなくても良い）
+        - 低（あればうれしい程度）
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 現在の回避策（もしあれば）
+      description: 現状どのように対処しているか教えてください。
+      placeholder: 例）Excelに別途まとめているが、アプリ内で完結させたい。
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 参考資料・補足
+      description: 参考になる他のアプリのスクリーンショット、UIのスケッチ、参考URLなどがあれば添付または記載してください。
