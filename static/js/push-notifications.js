@@ -135,6 +135,14 @@ class PushNotificationManager {
     }
   
     getCookie(name) {
+      // meta タグから取得（CSRF_COOKIE_HTTPONLY=True 環境でも動作する）
+      if (name === 'csrftoken') {
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        if (meta && meta.content) {
+          return meta.content;
+        }
+      }
+      // フォールバック: Cookie から取得
       let cookieValue = null;
       if (document.cookie && document.cookie !== '') {
         const cookies = document.cookie.split(';');
