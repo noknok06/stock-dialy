@@ -272,9 +272,10 @@
     text-align: center;
   }
 
+  /* 変更5: 1.75rem（タブレット時に一時的に大きくなる問題を修正） */
   .profit-value {
     justify-content: center;
-    font-size: 1.75rem;
+    font-size: 1.5rem;
   }
 
   .price-details-grid {
@@ -776,12 +777,23 @@
 
 /* === レスポンシブ追加調整 === */
 @media (max-width: 768px) {
+  /* 変更1: desktop-actions をモバイルでもコンパクト表示（アイコンのみ） */
   .desktop-actions {
-    display: none;
+    display: flex;
+    gap: 0.375rem;
+  }
+
+  /* 変更7: action-bar の backdrop-filter を無効化（スクロールパフォーマンス向上） */
+  .action-bar {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .tab-content-improved {
     padding: 1rem 0.75rem;
+    /* 変更7: タブコンテンツのスムーズスクロール */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 
   .simplified-note-form {
@@ -828,8 +840,9 @@
     font-size: 0.75rem;
   }
 
+  /* 変更6: 左右パディングを 0.5rem → 0.75rem に調整（コンテンツが端に詰まるのを防ぐ） */
   .tab-content-improved {
-    padding: 0.875rem 0.5rem;
+    padding: 0.875rem 0.75rem;
   }
 
   .info-card {
@@ -974,9 +987,10 @@
   font-size: 0.8rem;
 }
 
+/* 変更2: タッチターゲットを推奨最小サイズ 44×44px に拡大 */
 .btn-delete-note {
-  width: 30px;
-  height: 30px;
+  width: 44px;
+  height: 44px;
   border-radius: 6px;
   border: none;
   background: transparent;
@@ -1614,5 +1628,23 @@
 
   .current-price {
     font-size: 0.875rem;
+  }
+
+  /* 変更8: 極小画面では価格変動バッジを非表示にして cramped を解消 */
+  .price-change-badge {
+    display: none;
+  }
+}
+
+/* === 変更4: iOS セーフエリア対応（ノッチ・ホームインジケーター） === */
+@supports (padding: env(safe-area-inset-top)) {
+  .action-bar {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  .diary-detail-container {
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
   }
 }
