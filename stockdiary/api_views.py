@@ -8,6 +8,16 @@ from django.utils import timezone
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
+
+
+class CsrfExemptSessionAuthentication(SessionAuthentication):
+    """CSRF チェックをスキップする SessionAuthentication
+
+    プッシュ通知 API など、JSON を受け取る同一オリジンの API エンドポイントに使用。
+    IsAuthenticated によるセッション認証と SameSite=Lax Cookie で保護されるため安全。
+    """
+    def enforce_csrf(self, request):
+        return
 from rest_framework.response import Response
 from .models import (
     PushSubscription, DiaryNotification,
@@ -37,7 +47,7 @@ def get_vapid_public_key(request):
 
 
 @api_view(['POST'])
-@authentication_classes([SessionAuthentication])
+@authentication_classes([CsrfExemptSessionAuthentication])
 @permission_classes([IsAuthenticated])
 def subscribe_push(request):
     """プッシュ通知サブスクリプションを登録"""
@@ -78,7 +88,7 @@ def subscribe_push(request):
         
 
 @api_view(['POST'])
-@authentication_classes([SessionAuthentication])
+@authentication_classes([CsrfExemptSessionAuthentication])
 @permission_classes([IsAuthenticated])
 def unsubscribe_push(request):
     """プッシュ通知サブスクリプションを解除"""
