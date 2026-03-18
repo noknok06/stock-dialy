@@ -2196,6 +2196,21 @@ document.addEventListener('DOMContentLoaded', function() {
     .character-count.danger { color: var(--danger-color); }
     .dark-mode .character-count,
     [data-theme="dark"] .character-count { color: var(--dm-text-200) !important; }
+    /* 変更3: EasyMDE モバイル最適化 */
+    @media (max-width: 768px) {
+      .EasyMDEContainer .editor-toolbar {
+        flex-wrap: wrap;
+        overflow-x: visible;
+        padding: 4px;
+      }
+      .EasyMDEContainer .editor-toolbar button {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+    }
   `;
   document.head.appendChild(dmStyle);
 
