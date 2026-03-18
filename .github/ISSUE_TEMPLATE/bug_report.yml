@@ -1,0 +1,109 @@
+name: バグ報告
+description: 株式日記アプリで発生した不具合や動作の問題を報告する
+title: "[バグ] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        バグ報告にご協力いただきありがとうございます。
+        できる限り詳しく情報をご記入ください。再現に必要な情報が不足していると対応が遅れる場合があります。
+
+  - type: textarea
+    id: description
+    attributes:
+      label: バグの概要
+      description: 何が起きているか、一言で説明してください。
+      placeholder: 例）日記詳細画面で「記録を追加」ボタンを押すと日付バッジが枠からはみ出す
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      description: バグを再現するための手順を番号付きで記述してください。
+      placeholder: |
+        1. 株式日記の一覧画面を開く
+        2. 任意の銘柄（例：トヨタ自動車 7203）の日記を開く
+        3. 「記録を追加」ボタンをタップする
+        4. 日付バッジが枠をはみ出す
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待する動作
+      description: 本来どのように動作すべきか説明してください。
+      placeholder: 例）日付バッジがカードの枠内に収まって表示される
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際の動作
+      description: 実際に起きていることを説明してください。スクリーンショットがあれば添付してください。
+      placeholder: 例）日付の数字がカードヘッダーの右側にはみ出し、他の要素と重なる
+    validations:
+      required: true
+
+  - type: dropdown
+    id: feature_area
+    attributes:
+      label: 発生している機能
+      description: バグが発生しているアプリの機能を選択してください。
+      options:
+        - 株式日記（一覧・詳細）
+        - 継続記録（ノート追加・編集・削除）
+        - 銘柄検索・追加
+        - グラフ表示
+        - 決算分析
+        - トレード記録アップロード
+        - ユーザー認証（ログイン・登録）
+        - 通知
+        - その他
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS
+      options:
+        - iOS
+        - Android
+        - Windows
+        - macOS
+        - Linux
+        - その他
+    validations:
+      required: true
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: ブラウザ
+      options:
+        - Safari（iPhone / iPad）
+        - Chrome（Android）
+        - Chrome（PC）
+        - Firefox
+        - Edge
+        - その他
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: デバイス・画面サイズ（わかる範囲で）
+      description: スマートフォンの機種名や画面サイズ（例：iPhone 15、Galaxy S24、13インチMacBook）を入力してください。
+      placeholder: 例）iPhone 14 Pro（393px幅）
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 補足情報
+      description: その他、再現に役立つ情報があれば記入してください（エラーメッセージ、コンソールログ、特定の銘柄でのみ発生するかどうかなど）。
