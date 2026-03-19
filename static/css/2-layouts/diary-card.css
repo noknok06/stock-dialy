@@ -379,6 +379,98 @@
   gap: 0.5rem;
 }
 
+/* フッター「記録追加」ボタン */
+.note-add-footer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.875rem;
+  border: 1.5px solid var(--accent-200);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--accent-200);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+}
+
+.note-add-footer-btn i {
+  font-size: 0.875rem;
+}
+
+.note-add-footer-btn:hover {
+  background: var(--accent-200);
+  color: white;
+}
+
+.note-add-footer-btn:active {
+  transform: scale(0.94);
+  background: var(--accent-200);
+  color: white;
+}
+
+/* ダークモード */
+.dark-mode .note-add-footer-btn,
+[data-theme="dark"] .note-add-footer-btn {
+  border-color: var(--accent-100);
+  color: var(--accent-100);
+}
+
+.dark-mode .note-add-footer-btn:hover,
+[data-theme="dark"] .note-add-footer-btn:hover {
+  background: var(--accent-100);
+  color: var(--dm-background);
+}
+
+/* ========== スワイプヒントインジケーター（モバイルのみ） ========== */
+@media (hover: none) and (pointer: coarse) {
+  /* ヘッダー右端に微かな緑ライン → 「右に何かある」を示唆 */
+  .diary-header {
+    position: relative;
+  }
+
+  .diary-header::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 20%;
+    height: 60%;
+    width: 3px;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      var(--success-color),
+      transparent
+    );
+    border-radius: 2px 0 0 2px;
+    opacity: 0.35;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  /* パネルが開いたとき（innerが左にずれたとき）はヒントを非表示に */
+  .diary-header-inner[style*="translateX(-80px)"] ~ .note-action-panel,
+  .diary-header:has(.diary-header-inner[style*="translateX(-80"]) .note-action-panel {
+    opacity: 1;
+  }
+}
+
+/* ========== peek アニメーション（JS でクラス付与） ========== */
+.diary-header-inner.swipe-peek {
+  animation: swipe-peek-hint 0.9s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes swipe-peek-hint {
+  0%   { transform: translateX(0); }
+  30%  { transform: translateX(-18px); }
+  60%  { transform: translateX(-6px); }
+  80%  { transform: translateX(-10px); }
+  100% { transform: translateX(0); }
+}
+
 .view-detail {
   display: inline-flex;
   align-items: center;
