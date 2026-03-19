@@ -3332,4 +3332,148 @@ window.showReportModal = function(el) {
     </div>
   </div>
 </div>
+
+<script>
+/* ============================================
+   詳細ページ リッチアニメーション
+   ============================================ */
+(function () {
+  'use strict';
+
+  /* ① アクションバー スクロールシャドウ */
+  function initActionBarScroll() {
+    var actionBar = document.querySelector('.action-bar');
+    if (!actionBar) return;
+    var ticking = false;
+    function onScroll() {
+      if (!ticking) {
+        requestAnimationFrame(function () {
+          actionBar.classList.toggle('scrolled', window.scrollY > 8);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  }
+
+  /* ② 損益ヒーローカード 数値カウントアップ */
+  function animateCountUp(el, target, duration, prefix, suffix) {
+    var start = performance.now();
+    var from = 0;
+    function step(now) {
+      var progress = Math.min((now - start) / duration, 1);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      var current = Math.round(from + (target - from) * eased);
+      el.textContent = prefix + current.toLocaleString('ja-JP') + suffix;
+      if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function initProfitHeroCounter() {
+    var profitEl = document.querySelector('.profit-hero-card .profit-value');
+    if (!profitEl || profitEl.dataset.animated) return;
+    profitEl.dataset.animated = '1';
+
+    /* テキストから数値を抽出 */
+    var raw = profitEl.textContent.replace(/[^\d\-+,]/g, '').replace(/,/g, '');
+    var num = parseInt(raw, 10);
+    if (isNaN(num)) return;
+
+    var prefix = num >= 0 ? '+' : '';
+    profitEl.textContent = prefix + '0円';
+
+    /* アニメーション開始を少し遅らせる */
+    setTimeout(function () {
+      animateCountUp(profitEl, num, 900, prefix, '円');
+    }, 300);
+  }
+
+  /* ③ タブ切替時にコンテンツをスライドアニメーション */
+  function initTabContentAnimation() {
+    var tabLinks = document.querySelectorAll('.improved-tab-link');
+    tabLinks.forEach(function (link) {
+      link.addEventListener('click', function () {
+        var targetId = this.getAttribute('href') || this.dataset.bsTarget;
+        if (!targetId) return;
+        var panel = document.querySelector(targetId);
+        if (!panel) return;
+        /* アニメーションをリセットして再実行 */
+        panel.style.animation = 'none';
+        void panel.offsetHeight;
+        panel.style.animation = '';
+      });
+    });
+  }
+
+  /* ④ option-pill スプリングアニメーション */
+  function initOptionPillAnimation() {
+    document.querySelectorAll('.option-pill').forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        this.classList.add('active');
+        /* 同グループ内の他ピルを非アクティブに（既存ロジックに任せる） */
+      });
+    });
+  }
+
+  /* ⑤ 価格詳細カード ホバー時パーティクル（ライト版） */
+  function initPriceCardShine() {
+    if (window.matchMedia('(hover: none)').matches) return;
+    document.querySelectorAll('.price-detail-card').forEach(function (card) {
+      card.addEventListener('mousemove', function (e) {
+        var rect = card.getBoundingClientRect();
+        var x = ((e.clientX - rect.left) / rect.width * 100).toFixed(1);
+        var y = ((e.clientY - rect.top) / rect.height * 100).toFixed(1);
+        card.style.background =
+          'radial-gradient(circle at ' + x + '% ' + y + '%, ' +
+          'rgba(113,196,239,0.12) 0%, var(--bg-200) 60%)';
+      });
+      card.addEventListener('mouseleave', function () {
+        card.style.background = '';
+      });
+    });
+  }
+
+  /* ⑥ 通知アイテム 削除アニメーション（既存のdelete処理にフック） */
+  function initNotifDeleteAnimation() {
+    document.querySelectorAll('[data-delete-notification]').forEach(function (btn) {
+      if (btn.dataset.richHooked) return;
+      btn.dataset.richHooked = '1';
+      btn.addEventListener('click', function () {
+        var item = this.closest('.notification-item');
+        if (!item) return;
+        item.style.transition = 'transform 0.3s ease, opacity 0.3s ease, max-height 0.35s ease';
+        item.style.transform = 'translateX(40px)';
+        item.style.opacity = '0';
+        item.style.maxHeight = item.offsetHeight + 'px';
+        setTimeout(function () {
+          item.style.maxHeight = '0';
+          item.style.overflow = 'hidden';
+          item.style.marginBottom = '0';
+          item.style.paddingTop = '0';
+          item.style.paddingBottom = '0';
+        }, 280);
+      });
+    });
+  }
+
+  /* 初期化 */
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  function init() {
+    initActionBarScroll();
+    initProfitHeroCounter();
+    initTabContentAnimation();
+    initOptionPillAnimation();
+    initPriceCardShine();
+    initNotifDeleteAnimation();
+  }
+})();
+</script>
 {% endblock %}

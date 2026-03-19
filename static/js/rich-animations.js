@@ -372,6 +372,51 @@
   });
 
   /* =========================================================
+   * ⑪ 詳細ページ タブ切替 スライドトランジション
+   * ======================================================= */
+  function initDetailTabSlide() {
+    const tabLinks = document.querySelectorAll('.improved-tab-link');
+    if (!tabLinks.length) return;
+
+    tabLinks.forEach(function (link) {
+      link.addEventListener('shown.bs.tab', function (e) {
+        const targetSelector = e.target.getAttribute('data-bs-target') || e.target.getAttribute('href');
+        if (!targetSelector) return;
+        const panel = document.querySelector(targetSelector);
+        if (!panel) return;
+
+        panel.style.animation = 'none';
+        void panel.offsetHeight;
+        panel.style.animation = 'tab-content-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both';
+      });
+    });
+  }
+
+  /* =========================================================
+   * ⑫ 詳細ページ 株価詳細カード マウス光彩
+   * ======================================================= */
+  function initDetailPriceCardMagic() {
+    if (window.matchMedia('(hover: none)').matches) return;
+
+    document.querySelectorAll('.price-detail-card').forEach(function (card) {
+      if (card.dataset.magicInit) return;
+      card.dataset.magicInit = '1';
+
+      card.addEventListener('mousemove', function (e) {
+        const rect = card.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width * 100).toFixed(1);
+        const y = ((e.clientY - rect.top) / rect.height * 100).toFixed(1);
+        card.style.background =
+          'radial-gradient(circle at ' + x + '% ' + y + '%, rgba(113,196,239,0.12) 0%, var(--bg-200) 60%)';
+      });
+
+      card.addEventListener('mouseleave', function () {
+        card.style.background = '';
+      });
+    });
+  }
+
+  /* =========================================================
    * 初期化
    * ======================================================= */
   function init() {
@@ -383,6 +428,8 @@
     initProfitCounters();
     initTagStarburst();
     patchFilterChipRemove();
+    initDetailTabSlide();
+    initDetailPriceCardMagic();
 
     // View Transitions API が利用可能な場合のみ
     if (typeof document.startViewTransition === 'function') {
