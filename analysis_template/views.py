@@ -165,11 +165,6 @@ def company_select(request, pk):
                 except CompanyMaster.DoesNotExist:
                     pass
         
-        if action == 'replace':
-            messages.success(request, f'{added_count}社を選択しました')
-        else:
-            messages.success(request, f'{added_count}社を追加しました')
-        
         return redirect('analysis_template:metrics_input', pk=template.pk)
     
     context = {
