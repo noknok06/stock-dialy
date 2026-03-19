@@ -1,0 +1,679 @@
+/* ========================================
+   Rich Animations - リッチUIアニメーション
+   yui540スタイル インスパイア
+   流体・弾性・多層アニメーション
+   ======================================== */
+
+/* ========== カスタムイージング ========== */
+:root {
+  --ease-spring: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --ease-spring-soft: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-spring-out: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ease-expo-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-circ-out: cubic-bezier(0, 0.55, 0.45, 1);
+  --ease-back-out: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ========== ① カード登場アニメーション ========== */
+
+@keyframes card-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(32px) scale(0.96);
+    filter: blur(4px);
+  }
+  60% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes card-enter-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-24px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* カードの初期状態 */
+.diary-article {
+  opacity: 0;
+  animation: card-enter 0.6s var(--ease-expo-out) forwards;
+}
+
+/* スタガー遅延 */
+.diary-article:nth-child(1)  { animation-delay: 0ms; }
+.diary-article:nth-child(2)  { animation-delay: 60ms; }
+.diary-article:nth-child(3)  { animation-delay: 120ms; }
+.diary-article:nth-child(4)  { animation-delay: 180ms; }
+.diary-article:nth-child(5)  { animation-delay: 240ms; }
+.diary-article:nth-child(6)  { animation-delay: 300ms; }
+.diary-article:nth-child(7)  { animation-delay: 360ms; }
+.diary-article:nth-child(8)  { animation-delay: 420ms; }
+.diary-article:nth-child(9)  { animation-delay: 480ms; }
+.diary-article:nth-child(10) { animation-delay: 540ms; }
+.diary-article:nth-child(n+11) { animation-delay: 600ms; }
+
+/* ========== ② グラデーションボーダー（ホバー時） ========== */
+
+@keyframes gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes border-glow-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1; }
+}
+
+@media (min-width: 768px) {
+  .diary-article {
+    position: relative;
+    transition:
+      box-shadow 0.4s var(--ease-expo-out),
+      transform 0.3s var(--ease-spring-soft),
+      border-color 0.3s ease;
+  }
+
+  .diary-article::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: calc(var(--radius-lg) + 1px);
+    background: linear-gradient(
+      135deg,
+      var(--accent-100),
+      var(--accent-200),
+      rgba(113, 196, 239, 0.3),
+      var(--accent-200)
+    );
+    background-size: 300% 300%;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: -1;
+    animation: gradient-shift 4s ease infinite;
+    animation-play-state: paused;
+    pointer-events: none;
+  }
+
+  .diary-article:hover::before {
+    opacity: 0.5;
+    animation-play-state: running;
+  }
+
+  .diary-article:hover {
+    box-shadow:
+      0 8px 32px rgba(0, 102, 140, 0.12),
+      0 2px 8px rgba(0, 102, 140, 0.08);
+    transform: translateY(-2px);
+  }
+}
+
+/* ========== ③ タブ インジケーター 液体アニメーション ========== */
+
+.diary-tabs .tab-btn {
+  transition:
+    color 0.3s var(--ease-expo-out),
+    background 0.3s var(--ease-expo-out),
+    transform 0.2s var(--ease-spring-soft);
+}
+
+.diary-tabs .tab-btn:active {
+  transform: scale(0.94);
+}
+
+.diary-tabs .tab-btn i {
+  transition: transform 0.4s var(--ease-spring);
+}
+
+.diary-tabs .tab-btn.active i {
+  transform: scale(1.15) rotate(-3deg);
+}
+
+/* タブバッジのポップイン */
+@keyframes badge-pop {
+  0%   { transform: scale(0); opacity: 0; }
+  70%  { transform: scale(1.25); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.tab-badge {
+  animation: badge-pop 0.4s var(--ease-spring) both;
+}
+
+/* ========== ④ フィルターチップ アニメーション ========== */
+
+@keyframes chip-enter {
+  0% {
+    opacity: 0;
+    transform: scale(0.7) translateY(4px);
+  }
+  70% {
+    transform: scale(1.05) translateY(-1px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.filter-chip {
+  animation: chip-enter 0.35s var(--ease-spring) both;
+  transition: transform 0.2s var(--ease-spring-soft), box-shadow 0.2s ease;
+}
+
+.filter-chip:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 102, 140, 0.3);
+}
+
+/* ========== ⑤ フィルターパネル スプリング登場 ========== */
+
+@keyframes filter-panel-spring-up {
+  0% {
+    transform: translateY(100%) scale(0.98);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(-6px) scale(1.005);
+    opacity: 1;
+  }
+  80% {
+    transform: translateY(3px) scale(0.999);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes filter-panel-spring-center {
+  0% {
+    transform: translate(-50%, -40%) scale(0.9);
+    opacity: 0;
+  }
+  60% {
+    transform: translate(-50%, -52%) scale(1.01);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+.filter-panel.open {
+  animation: filter-panel-spring-up 0.5s var(--ease-expo-out) both;
+}
+
+@media (min-width: 768px) {
+  .filter-panel.open {
+    animation: filter-panel-spring-center 0.45s var(--ease-spring-soft) both;
+  }
+}
+
+/* ========== ⑥ ソートパネル アニメーション ========== */
+
+@keyframes dropdown-enter {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(-8px);
+    transform-origin: top right;
+  }
+  70% {
+    transform: scale(1.01) translateY(1px);
+    transform-origin: top right;
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    transform-origin: top right;
+  }
+}
+
+.sort-panel.open {
+  display: block;
+  animation: dropdown-enter 0.3s var(--ease-spring-soft) both;
+}
+
+/* ソートオプションのスタガー */
+.sort-option {
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    padding-left 0.2s var(--ease-expo-out);
+}
+
+.sort-option:hover {
+  padding-left: 1.25rem;
+  color: var(--accent-200);
+  background-color: rgba(113, 196, 239, 0.08) !important;
+}
+
+.sort-option.active {
+  padding-left: 1.25rem;
+}
+
+/* ========== ⑦ 検索インプット フォーカスアニメーション ========== */
+
+@keyframes search-focus-glow {
+  0%   { box-shadow: 0 0 0 0 rgba(0, 102, 140, 0); }
+  50%  { box-shadow: 0 0 0 6px rgba(0, 102, 140, 0.12); }
+  100% { box-shadow: 0 0 0 3px rgba(0, 102, 140, 0.1); }
+}
+
+.main-search-input:focus {
+  animation: search-focus-glow 0.4s var(--ease-expo-out) both;
+}
+
+/* 検索インジケーター アニメーション */
+@keyframes search-indicator-enter {
+  0%  { opacity: 0; transform: translateY(-6px); }
+  100%{ opacity: 1; transform: translateY(0); }
+}
+
+#search-indicator[style*="flex"],
+#search-indicator:not([style*="none"]) {
+  animation: search-indicator-enter 0.25s var(--ease-expo-out) both;
+}
+
+/* ========== ⑧ ステータスタブ スライディング ========== */
+
+.status-tab {
+  transition:
+    background-color 0.3s var(--ease-expo-out),
+    color 0.3s ease,
+    box-shadow 0.3s ease,
+    transform 0.2s var(--ease-spring-soft);
+}
+
+.status-tab:active {
+  transform: scale(0.95);
+}
+
+.status-tab.active {
+  animation: badge-pop 0.35s var(--ease-spring) both;
+}
+
+/* ========== ⑨ タグピル インタラクション ========== */
+
+.tag-pill {
+  transition:
+    transform 0.25s var(--ease-spring-soft),
+    background 0.25s ease,
+    color 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.tag-pill:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 12px rgba(113, 196, 239, 0.4);
+}
+
+.tag-pill:active {
+  transform: scale(0.93);
+  transition-duration: 0.1s;
+}
+
+/* ========== ⑩ 利益バッジ アニメーション ========== */
+
+@keyframes profit-appear {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) translateX(8px);
+  }
+  60% {
+    transform: scale(1.08) translateX(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+  }
+}
+
+.diary-profit-pill {
+  animation: profit-appear 0.5s var(--ease-spring) both;
+  animation-delay: 0.2s;
+}
+
+/* ========== ⑪ ページヘッダー アニメーション ========== */
+
+@keyframes header-slide-down {
+  0% {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-header {
+  animation: header-slide-down 0.5s var(--ease-expo-out) both;
+}
+
+.page-title {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+@keyframes icon-spin-in {
+  0% {
+    opacity: 0;
+    transform: rotate(-30deg) scale(0.5);
+  }
+  60% {
+    transform: rotate(8deg) scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(0) scale(1);
+  }
+}
+
+.page-title i {
+  animation: icon-spin-in 0.6s var(--ease-spring) both;
+  animation-delay: 0.1s;
+}
+
+/* ========== ⑫ ビューディテールリンク ========== */
+
+.view-detail {
+  position: relative;
+  overflow: hidden;
+  transition:
+    gap 0.3s var(--ease-spring-soft),
+    color 0.2s ease;
+}
+
+.view-detail::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 0;
+  height: 1.5px;
+  background: var(--accent-200);
+  transition: width 0.35s var(--ease-expo-out);
+}
+
+.view-detail:hover::after {
+  width: 100%;
+}
+
+.view-detail i {
+  transition: transform 0.3s var(--ease-spring);
+}
+
+.view-detail:hover i {
+  transform: translateX(3px) translateY(-2px) rotate(10deg);
+}
+
+/* ========== ⑬ 「続きを読む」ボタン ========== */
+
+.read-more--toggle {
+  transition:
+    background 0.25s ease,
+    gap 0.3s var(--ease-spring-soft);
+}
+
+.read-more--toggle:hover {
+  gap: 0.5rem;
+}
+
+.read-more__icon {
+  transition: transform 0.4s var(--ease-spring) !important;
+}
+
+.read-more--toggle[aria-expanded="true"] .read-more__icon {
+  transform: rotate(180deg) scale(1.1) !important;
+}
+
+/* ========== ⑭ スクロール検知 フェードイン ========== */
+
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.6s var(--ease-expo-out),
+    transform 0.6s var(--ease-expo-out);
+}
+
+.reveal-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ========== ⑮ ボタン マイクロインタラクション ========== */
+
+.btn {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 0.2s var(--ease-spring-soft),
+    box-shadow 0.25s ease,
+    background 0.25s ease !important;
+}
+
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, transparent 70%);
+  opacity: 0;
+  transform: scale(0);
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.btn:active::after {
+  opacity: 1;
+  transform: scale(2);
+  transition-duration: 0.1s;
+}
+
+.btn:active {
+  transform: scale(0.96);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 102, 140, 0.35) !important;
+}
+
+/* ========== ⑯ フィルター通知トースト ========== */
+
+@keyframes toast-spring-in {
+  0% {
+    opacity: 0;
+    transform: translateX(120px) rotate(3deg);
+  }
+  60% {
+    transform: translateX(-8px) rotate(-1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) rotate(0);
+  }
+}
+
+.filter-notification.show {
+  animation: toast-spring-in 0.5s var(--ease-spring-soft) both !important;
+  opacity: 1 !important;
+  transform: translateX(0) !important;
+}
+
+/* ========== ⑰ ローディング エンハンスメント ========== */
+
+@keyframes panel-loading-pulse {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.panel-loading {
+  animation: panel-loading-pulse 1.5s ease-in-out infinite;
+}
+
+/* ========== ⑱ 開示インジケーター ========== */
+
+@keyframes disclosure-badge-shine {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.disclosure-indicator--new {
+  background: linear-gradient(
+    90deg,
+    rgba(16, 185, 129, 0.15) 0%,
+    rgba(16, 185, 129, 0.3) 50%,
+    rgba(16, 185, 129, 0.15) 100%
+  );
+  background-size: 200% auto;
+  animation: disclosure-badge-shine 2.5s linear infinite;
+}
+
+/* ========== ⑲ ダークモード トランジション ========== */
+
+html {
+  transition:
+    background-color 0.4s ease,
+    color 0.4s ease;
+}
+
+body,
+.diary-article,
+.mobile-search-container,
+.filter-panel,
+.status-tabs {
+  transition:
+    background-color 0.4s ease,
+    border-color 0.4s ease,
+    color 0.3s ease;
+}
+
+/* ========== ⑳ 検索コンテナ ホバー ========== */
+
+.mobile-search-container {
+  transition:
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+}
+
+.mobile-search-container:focus-within {
+  box-shadow:
+    0 4px 20px rgba(0, 102, 140, 0.08),
+    0 0 0 3px rgba(0, 102, 140, 0.06);
+  border-color: rgba(0, 102, 140, 0.3);
+}
+
+/* ========== ㉑ View Transitions API ページ遷移 ========== */
+
+@keyframes slide-out-to-left {
+  to {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+@keyframes slide-in-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@supports (view-transition-name: none) {
+  ::view-transition-old(root) {
+    animation: 0.25s var(--ease-expo-out) both slide-out-to-left;
+  }
+
+  ::view-transition-new(root) {
+    animation: 0.3s var(--ease-expo-out) both slide-in-from-right;
+  }
+}
+
+/* ========== ㉒ フローティングアクションボタン ========== */
+
+.speed-dial-btn,
+.speed-dial-action {
+  transition:
+    transform 0.3s var(--ease-spring-soft),
+    box-shadow 0.25s ease,
+    background 0.25s ease !important;
+}
+
+.speed-dial-btn:hover {
+  transform: scale(1.08) rotate(45deg) !important;
+}
+
+.speed-dial-action {
+  transition-delay: calc(var(--i, 0) * 40ms) !important;
+}
+
+/* ========== ㉓ ボトムシート スプリング ========== */
+
+.bottom-sheet-content {
+  transition: transform 0.45s var(--ease-expo-out) !important;
+}
+
+/* ========== アクセシビリティ: モーション削減 ========== */
+
+@media (prefers-reduced-motion: reduce) {
+  .diary-article {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  .diary-article::before,
+  .filter-chip,
+  .tag-pill,
+  .diary-profit-pill,
+  .page-header,
+  .page-title i,
+  .tab-badge,
+  .status-tab.active,
+  .panel-loading,
+  .disclosure-indicator--new {
+    animation: none !important;
+  }
+
+  .diary-article:hover,
+  .tag-pill:hover,
+  .btn:hover,
+  .btn:active,
+  .tag-pill:active,
+  .status-tab:active,
+  .diary-tabs .tab-btn:active {
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .main-search-input:focus {
+    animation: none !important;
+  }
+}
