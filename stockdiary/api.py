@@ -355,19 +355,20 @@ def get_stock_metrics(request, stock_code):
 
         per = pbr = dividend_yield = None
 
-        # --- PER / PBR: 財務諸表から計算
+        # --- PER / PBR: 年次損益計算書 + 直近四半期BSから計算
+        # quarterly_income_stmt は日本企業で累計値になることがあるため年次を使用
         try:
-            income_stmt   = ticker.quarterly_income_stmt
+            income_stmt   = ticker.income_stmt            # 年次
             balance_sheet = ticker.quarterly_balance_sheet
 
-            i_cols   = sorted(income_stmt.columns,   reverse=True)[:4]
-            b_col    = sorted(balance_sheet.columns, reverse=True)[0]
+            latest_i_col = sorted(income_stmt.columns,   reverse=True)[0]
+            b_col        = sorted(balance_sheet.columns, reverse=True)[0]
 
-            def ttm(label, stmt):
-                if label not in stmt.index:
+            def annual_val(label):
+                if label not in income_stmt.index:
                     return None
-                vals = stmt.loc[label, i_cols].dropna()
-                return float(vals.sum()) if len(vals) > 0 else None
+                v = income_stmt.loc[label, latest_i_col]
+                return float(v) if not pd.isna(v) else None
 
             def bs(label):
                 if label not in balance_sheet.index:
@@ -375,12 +376,12 @@ def get_stock_metrics(request, stock_code):
                 v = balance_sheet.loc[label, b_col]
                 return float(v) if not pd.isna(v) else None
 
-            ttm_net = ttm('Net Income', income_stmt)
-            equity  = bs('Stockholders Equity')
+            annual_net = annual_val('Net Income')
+            equity     = bs('Stockholders Equity')
 
             if price and shares and shares > 0:
-                if ttm_net and ttm_net > 0:
-                    per = round(price / (ttm_net / shares), 2)
+                if annual_net and annual_net > 0:
+                    per = round(price / (annual_net / shares), 2)
                 if equity and equity > 0:
                     pbr = round(price / (equity / shares), 2)
         except Exception:

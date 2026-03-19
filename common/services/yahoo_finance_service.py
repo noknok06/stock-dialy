@@ -66,100 +66,101 @@ class YahooFinanceService:
     @classmethod
     def _fetch_from_statements(cls, ticker, price: Optional[float], shares: Optional[float]) -> dict:
         """
-        quarterly_income_stmt / quarterly_balance_sheet から財務指標を計算。
-        TTM (直近4四半期合算) を使用して季節性バイアスを除去。
+        income_stmt（年次）/ quarterly_balance_sheet から財務指標を計算。
+
+        注意: quarterly_income_stmt は日本企業では累計値（Q2=上半期合計、
+        Q3=9ヶ月合計等）で格納されることがあり、4四半期を合算すると実態の
+        3〜4倍になる。そのため損益計算書は年次 income_stmt を使用する。
         """
         result = {}
+        ttm_net = None
+        equity  = None
+
+        # ---------- 損益計算書（年次）----------
         try:
-            income_stmt   = ticker.quarterly_income_stmt
+            income_stmt = ticker.income_stmt  # 年次: 通常4年分
+
+            if income_stmt is not None and not income_stmt.empty:
+                i_cols     = sorted(income_stmt.columns, reverse=True)
+                latest_col = i_cols[0]
+                prior_col  = i_cols[1] if len(i_cols) >= 2 else None
+
+                def annual(label):
+                    if label not in income_stmt.index:
+                        return None
+                    v = income_stmt.loc[label, latest_col]
+                    return float(v) if not pd.isna(v) else None
+
+                def prior_annual(label):
+                    if prior_col is None or label not in income_stmt.index:
+                        return None
+                    v = income_stmt.loc[label, prior_col]
+                    return float(v) if not pd.isna(v) else None
+
+                annual_revenue   = annual('Total Revenue')
+                annual_operating = annual('Operating Income')
+                annual_net       = annual('Net Income')
+                prior_revenue    = prior_annual('Total Revenue')
+                prior_net        = prior_annual('Net Income')
+
+                ttm_net = annual_net  # ROE/PER 計算に使用
+
+                if annual_revenue and annual_revenue != 0:
+                    result['revenue'] = annual_revenue / 1e8
+                    if annual_operating is not None:
+                        result['operating_margin'] = annual_operating / annual_revenue * 100
+                        result['operating_profit'] = annual_operating / 1e8
+
+                if annual_revenue and prior_revenue and prior_revenue != 0:
+                    result['revenue_growth'] = (annual_revenue - prior_revenue) / abs(prior_revenue) * 100
+
+                if annual_net and prior_net and prior_net != 0:
+                    result['profit_growth'] = (annual_net - prior_net) / abs(prior_net) * 100
+
+        except Exception as e:
+            logger.warning(f"年次損益計算書の処理に失敗: {e}")
+
+        # ---------- 貸借対照表（直近四半期）----------
+        try:
             balance_sheet = ticker.quarterly_balance_sheet
-        except Exception as e:
-            logger.warning(f"財務諸表の取得に失敗: {e}")
-            return result
 
-        # ---------- 損益計算書 (TTM) ----------
-        try:
-            i_cols = sorted(income_stmt.columns, reverse=True)
-            ttm_cols = i_cols[:4]
-            prior_cols = i_cols[4:8]
+            if balance_sheet is not None and not balance_sheet.empty:
+                b_col = sorted(balance_sheet.columns, reverse=True)[0]
 
-            def ttm_sum(label):
-                if label not in income_stmt.index:
-                    return None
-                vals = income_stmt.loc[label, ttm_cols].dropna()
-                return float(vals.sum()) if len(vals) > 0 else None
+                def bs(label):
+                    if label not in balance_sheet.index:
+                        return None
+                    v = balance_sheet.loc[label, b_col]
+                    return float(v) if not pd.isna(v) else None
 
-            def prior_sum(label):
-                if label not in income_stmt.index or len(prior_cols) < 4:
-                    return None
-                vals = income_stmt.loc[label, prior_cols].dropna()
-                return float(vals.sum()) if len(vals) == 4 else None
+                equity     = bs('Stockholders Equity')
+                assets     = bs('Total Assets')
+                total_debt = bs('Total Debt')
+                curr_a     = bs('Current Assets')
+                curr_l     = bs('Current Liabilities')
 
-            ttm_revenue   = ttm_sum('Total Revenue')
-            ttm_operating = ttm_sum('Operating Income')
-            ttm_net       = ttm_sum('Net Income')
-            prior_revenue = prior_sum('Total Revenue')
-            prior_net     = prior_sum('Net Income')
+                if equity and assets and assets != 0:
+                    result['equity_ratio'] = equity / assets * 100
+                    if ttm_net is not None:
+                        result['roe'] = ttm_net / equity * 100
+                        result['roa'] = ttm_net / assets * 100
 
-            if ttm_revenue and ttm_revenue != 0:
-                result['revenue'] = float(ttm_revenue) / 1e8
-                if ttm_operating is not None:
-                    result['operating_margin']  = ttm_operating / ttm_revenue * 100
-                    result['operating_profit']  = float(ttm_operating) / 1e8
+                if total_debt is not None and equity and equity != 0:
+                    result['debt_equity_ratio'] = total_debt / equity
 
-            if ttm_revenue and prior_revenue and prior_revenue != 0:
-                result['revenue_growth'] = (ttm_revenue - prior_revenue) / abs(prior_revenue) * 100
-
-            if ttm_net and prior_net and prior_net != 0:
-                result['profit_growth'] = (ttm_net - prior_net) / abs(prior_net) * 100
-
-        except Exception as e:
-            logger.warning(f"損益計算書の処理に失敗: {e}")
-            ttm_net = None
-
-        # ---------- 貸借対照表 ----------
-        try:
-            b_cols    = sorted(balance_sheet.columns, reverse=True)
-            b_col     = b_cols[0]
-
-            def bs(label):
-                if label not in balance_sheet.index:
-                    return None
-                v = balance_sheet.loc[label, b_col]
-                return float(v) if not pd.isna(v) else None
-
-            equity    = bs('Stockholders Equity')
-            assets    = bs('Total Assets')
-            total_debt= bs('Total Debt')
-            curr_a    = bs('Current Assets')
-            curr_l    = bs('Current Liabilities')
-
-            if equity and assets and assets != 0:
-                result['equity_ratio'] = equity / assets * 100
-                if ttm_net is not None:
-                    result['roe'] = ttm_net / equity * 100
-                    result['roa'] = ttm_net / assets * 100
-
-            if total_debt is not None and equity and equity != 0:
-                result['debt_equity_ratio'] = total_debt / equity
-
-            if curr_a and curr_l and curr_l != 0:
-                result['current_ratio'] = curr_a / curr_l
+                if curr_a and curr_l and curr_l != 0:
+                    result['current_ratio'] = curr_a / curr_l
 
         except Exception as e:
             logger.warning(f"貸借対照表の処理に失敗: {e}")
-            equity = None
-            assets = None
 
-        # ---------- PER / PBR (株価ベース) ----------
+        # ---------- PER / PBR（株価ベース）----------
         try:
             if price and shares and shares > 0:
-                if ttm_net is not None and ttm_net > 0:
-                    eps = ttm_net / shares
-                    result['per'] = price / eps
-                if 'equity' in dir() and equity and equity > 0:
-                    bvps = equity / shares
-                    result['pbr'] = price / bvps
+                if ttm_net and ttm_net > 0:
+                    result['per'] = price / (ttm_net / shares)
+                if equity and equity > 0:
+                    result['pbr'] = price / (equity / shares)
         except Exception as e:
             logger.warning(f"PER/PBR計算に失敗: {e}")
 
