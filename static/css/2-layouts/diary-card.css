@@ -425,37 +425,35 @@
   color: var(--dm-background);
 }
 
-/* ========== スワイプヒントインジケーター（モバイルのみ） ========== */
-@media (hover: none) and (pointer: coarse) {
-  /* ヘッダー右端に微かな緑ライン → 「右に何かある」を示唆 */
-  .diary-header {
-    position: relative;
-  }
+/* ========== スワイプヒントインジケーター（左端ライン・常時表示） ========== */
+.diary-article {
+  position: relative;
+}
 
-  .diary-header::after {
-    content: '';
-    position: absolute;
-    right: 0;
-    top: 20%;
-    height: 60%;
-    width: 3px;
-    background: linear-gradient(
-      to bottom,
-      transparent,
-      var(--success-color),
-      transparent
-    );
-    border-radius: 2px 0 0 2px;
-    opacity: 0.35;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-  }
+.diary-article::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12%;
+  height: 76%;
+  width: 3px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--accent-200),
+    transparent
+  );
+  border-radius: 0 2px 2px 0;
+  opacity: 0.28;
+  pointer-events: none;
+  transition: opacity 0.25s ease, width 0.25s ease;
+}
 
-  /* パネルが開いたとき（innerが左にずれたとき）はヒントを非表示に */
-  .diary-header-inner[style*="translateX(-80px)"] ~ .note-action-panel,
-  .diary-header:has(.diary-header-inner[style*="translateX(-80"]) .note-action-panel {
-    opacity: 1;
-  }
+/* スワイプ中（パネルが開いているとき）は強調 */
+.diary-article:has(.diary-header-inner[style*="translateX(-"]) ::before,
+.diary-article:has(.diary-header-inner[style*="translateX(-"])::before {
+  opacity: 0.7;
+  width: 4px;
 }
 
 /* ========== peek アニメーション（JS でクラス付与） ========== */
