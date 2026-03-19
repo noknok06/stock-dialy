@@ -5,7 +5,10 @@
 
 {% if profit is not None %}
   {% if display_style == "badge" %}
-    <span class="badge {% if profit > 0 %}bg-success{% elif profit < 0 %}bg-danger{% else %}bg-secondary{% endif %} {% if size %}badge-{{ size }}{% endif %}">
+    <span class="badge {% if profit > 0 %}bg-success{% elif profit < 0 %}bg-danger{% else %}bg-secondary{% endif %} {% if size %}badge-{{ size }}{% endif %}"
+          data-profit-value="{{ profit|floatformat:0 }}"
+          data-profit-prefix="{% if profit > 0 and show_sign %}+{% endif %}"
+          data-profit-suffix="円">
       {% if show_icon %}
         {% if profit > 0 %}<i class="bi bi-graph-up-arrow me-1"></i>
         {% elif profit < 0 %}<i class="bi bi-graph-down-arrow me-1"></i>
