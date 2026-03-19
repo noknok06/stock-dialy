@@ -795,29 +795,42 @@
 }
 .note-action-panel i { font-size: 1.25rem; }
 
-/* デスクトップ用「＋」ボタン: ホバー可能デバイスのみ表示 */
+/* 継続記録「＋」ボタン: 全デバイスで表示 */
 .note-add-btn {
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: 1.5px solid var(--primary-color, #4a6da7);
+  border: 1.5px solid var(--accent-200);
   border-radius: 50%;
   background: transparent;
-  color: var(--primary-color, #4a6da7);
+  color: var(--accent-200);
   font-size: 1rem;
   cursor: pointer;
   margin-left: 8px;
   flex-shrink: 0;
-  transition: all 0.15s ease;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 .note-add-btn:hover {
-  background: var(--primary-color, #4a6da7);
+  background: var(--accent-200);
   color: white;
 }
-@media (hover: hover) {
-  .note-add-btn { display: flex; }
+/* タッチデバイス: より大きく・視認しやすく */
+@media (hover: none) and (pointer: coarse) {
+  .note-add-btn {
+    width: 36px;
+    height: 36px;
+    background: rgba(0, 102, 140, 0.08);
+    border-color: var(--accent-200);
+    border-width: 2px;
+  }
+  .note-add-btn:active {
+    background: var(--accent-200);
+    color: white;
+    transform: scale(0.9);
+  }
 }
 
 /* ダークモード対応 */

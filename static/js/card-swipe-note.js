@@ -264,22 +264,67 @@
   }
 
   // ============================================================
+  // フッター「記録追加」ボタンのバインド
+  // ============================================================
+  function setupFooterButtons() {
+    document.querySelectorAll('.note-add-footer-btn').forEach(function (btn) {
+      if (btn._footerBound) return;
+      btn._footerBound = true;
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var selector = btn.dataset.diaryHeader;
+        if (!selector) return;
+        var header = document.querySelector(selector);
+        if (header) openSheet(header);
+      });
+    });
+  }
+
+  // ============================================================
+  // 初回訪問時スワイプヒント（セッション1回だけ）
+  // ============================================================
+  function showSwipeHintOnce() {
+    // タッチデバイスのみ
+    if (!('ontouchstart' in window)) return;
+    // 1セッション1回だけ
+    if (sessionStorage.getItem('swipe-hint-shown')) return;
+    sessionStorage.setItem('swipe-hint-shown', '1');
+
+    // 最初のカードの header-inner で peek
+    var firstInner = document.querySelector('.diary-header .diary-header-inner');
+    if (!firstInner) return;
+
+    setTimeout(function () {
+      firstInner.classList.add('swipe-peek');
+      firstInner.addEventListener('animationend', function () {
+        firstInner.classList.remove('swipe-peek');
+      }, { once: true });
+    }, 1800); // カード表示アニメーション後
+  }
+
+  // ============================================================
   // グローバル公開
   // ============================================================
   window.qnSubmitNote        = submitNote;
   window.updateQnCharCount   = updateQnCharCount;
+  // フッターボタン等の外部から openSheet を呼べるよう公開
+  window.openQuickNoteSheet  = openSheet;
 
   // ============================================================
   // 初期化
   // ============================================================
   document.addEventListener('DOMContentLoaded', function () {
     setupSwipeHandlers();
+    setupFooterButtons();
+    showSwipeHintOnce();
   });
 
   // HTMX の再レンダリング後にも再バインド
   document.addEventListener('htmx:afterSwap', function (e) {
     if (e.detail && e.detail.target && e.detail.target.id === 'diary-container') {
       setupSwipeHandlers();
+      setupFooterButtons();
+      showSwipeHintOnce();
     }
   });
 
