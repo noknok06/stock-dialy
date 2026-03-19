@@ -1648,3 +1648,386 @@
     padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
   }
 }
+
+/* ========================================
+   リッチアニメーション - 詳細ページ専用
+   ======================================== */
+
+/* ① コンテナ登場 */
+.diary-detail-container {
+  animation: detail-container-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes detail-container-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ② アクションバー スムーズスクロールシャドウ */
+.action-bar {
+  transition:
+    box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    background 0.3s ease;
+}
+
+.action-bar.scrolled {
+  box-shadow: 0 4px 20px rgba(0, 102, 140, 0.1), 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* ③ 戻るリンク */
+.back-link {
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    gap 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.back-link i {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.back-link:hover i {
+  transform: translateX(-4px);
+}
+
+/* ④ ヘッダー登場 */
+.diary-header-improved {
+  animation: header-improved-enter 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.05s;
+}
+
+@keyframes header-improved-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.99);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 背景グローをアニメーション */
+.diary-header-improved::before {
+  animation: glow-drift 6s ease-in-out infinite alternate;
+}
+
+@keyframes glow-drift {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(-15%, 10%) scale(1.2); }
+  100% { transform: translate(10%, -5%) scale(0.9); }
+}
+
+/* ⑤ 損益ヒーローカード カウンター対応 + 登場 */
+.profit-hero-card {
+  animation: profit-card-enter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: 0.15s;
+  transition:
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.3s ease;
+}
+
+@keyframes profit-card-enter {
+  0% {
+    opacity: 0;
+    transform: scale(0.85) translateY(10px);
+  }
+  70% {
+    transform: scale(1.02) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.profit-hero-card:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(0, 102, 140, 0.15);
+}
+
+/* ⑥ 価格詳細カード スタガー登場 */
+.price-details-grid .price-detail-card {
+  opacity: 0;
+  animation: price-card-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.price-details-grid .price-detail-card:nth-child(1) { animation-delay: 0.25s; }
+.price-details-grid .price-detail-card:nth-child(2) { animation-delay: 0.32s; }
+.price-details-grid .price-detail-card:nth-child(3) { animation-delay: 0.39s; }
+.price-details-grid .price-detail-card:nth-child(4) { animation-delay: 0.46s; }
+.price-details-grid .price-detail-card:nth-child(n+5) { animation-delay: 0.52s; }
+
+@keyframes price-card-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.price-detail-card {
+  transition:
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.25s ease,
+    background 0.2s ease;
+}
+
+.price-detail-card:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 6px 16px rgba(0, 102, 140, 0.12);
+}
+
+/* ⑦ タブナビゲーション アンダーライン強化 */
+.improved-tab-link {
+  transition:
+    color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    background 0.25s ease;
+}
+
+.improved-tab-link::after {
+  transition:
+    background-color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  width: 0;
+  left: 50%;
+  right: auto;
+}
+
+.improved-tab-link.active::after {
+  background-color: var(--accent-200);
+  width: 100%;
+  left: 0;
+}
+
+.tab-icon {
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.improved-tab-link.active .tab-icon {
+  transform: scale(1.15) translateY(-2px);
+}
+
+.improved-tab-link:active {
+  transform: scale(0.96);
+}
+
+/* ⑧ タブコンテンツ フェードスライド */
+.tab-content-improved {
+  animation: tab-content-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes tab-content-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ⑨ 情報カード スタガー */
+.info-grid .info-card {
+  animation: info-card-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition:
+    box-shadow 0.3s ease,
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-color 0.3s ease;
+}
+
+.info-grid .info-card:nth-child(1) { animation-delay: 0.1s; }
+.info-grid .info-card:nth-child(2) { animation-delay: 0.18s; }
+.info-grid .info-card:nth-child(3) { animation-delay: 0.26s; }
+.info-grid .info-card:nth-child(n+4) { animation-delay: 0.34s; }
+
+@keyframes info-card-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.info-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 102, 140, 0.1);
+  border-color: rgba(113, 196, 239, 0.4);
+}
+
+/* ⑩ オプションピル スプリング選択 */
+.option-pill {
+  transition:
+    border-color 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background 0.25s ease,
+    color 0.25s ease,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.25s ease !important;
+}
+
+.option-pill:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 102, 140, 0.15);
+}
+
+.option-pill:active {
+  transform: scale(0.92) !important;
+  transition-duration: 0.1s !important;
+}
+
+.option-pill.active {
+  animation: pill-select 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes pill-select {
+  0%   { transform: scale(0.92); }
+  60%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+/* ⑪ 継続記録フォーム 登場 */
+.simplified-note-form {
+  animation: note-form-enter 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes note-form-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ⑫ 通知アイテム スタガー */
+.notification-item {
+  animation: notif-enter 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#notification-list-container .notification-item:nth-child(1) { animation-delay: 0.05s; }
+#notification-list-container .notification-item:nth-child(2) { animation-delay: 0.12s; }
+#notification-list-container .notification-item:nth-child(3) { animation-delay: 0.19s; }
+#notification-list-container .notification-item:nth-child(n+4) { animation-delay: 0.26s; }
+
+@keyframes notif-enter {
+  0% {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.notification-item:hover {
+  transform: translateX(4px);
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 16px rgba(0, 102, 140, 0.1);
+}
+
+/* ⑬ 画像ホバー強化 */
+.diary-main-image {
+  transition:
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.3s ease !important;
+}
+
+.diary-main-image:hover {
+  transform: scale(1.02) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* ⑭ stock-identity タイトル */
+.stock-title {
+  animation: stock-title-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.08s;
+}
+
+@keyframes stock-title-enter {
+  0% {
+    opacity: 0;
+    transform: translateX(-8px);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+    filter: blur(0);
+  }
+}
+
+.stock-symbol-badge {
+  animation: badge-float-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: 0.18s;
+}
+
+@keyframes badge-float-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) translateY(-4px);
+  }
+  70% {
+    transform: scale(1.08) translateY(1px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ⑮ アクセシビリティ: モーション削減 */
+@media (prefers-reduced-motion: reduce) {
+  .diary-detail-container,
+  .diary-header-improved,
+  .profit-hero-card,
+  .price-details-grid .price-detail-card,
+  .info-grid .info-card,
+  .simplified-note-form,
+  .notification-item,
+  .stock-title,
+  .stock-symbol-badge,
+  .tab-content-improved {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  .diary-header-improved::before {
+    animation: none !important;
+  }
+
+  .price-detail-card:hover,
+  .info-card:hover,
+  .profit-hero-card:hover,
+  .notification-item:hover,
+  .option-pill:hover,
+  .option-pill:active,
+  .back-link:hover i,
+  .improved-tab-link:active,
+  .improved-tab-link.active .tab-icon {
+    transform: none !important;
+    transition: none !important;
+  }
+}
