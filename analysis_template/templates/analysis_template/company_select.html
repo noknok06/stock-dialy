@@ -570,13 +570,8 @@
                     <li class="mb-2">検索条件で企業を絞り込み</li>
                     <li class="mb-2">企業カードをクリックして選択</li>
                     <li class="mb-2">条件を変えて追加選択可能</li>
-                    <li class="mb-2">「追加」または「置き換え」で確定</li>
+                    <li class="mb-2">「更新」で選択内容を確定</li>
                 </ol>
-                <hr class="my-3">
-                <div class="small">
-                    <p class="mb-2"><strong><i class="bi bi-plus-circle text-success"></i> 追加:</strong> 既存の企業に追加</p>
-                    <p class="mb-0"><strong><i class="bi bi-arrow-repeat text-primary"></i> 置き換え:</strong> 既存を削除して新規選択</p>
-                </div>
             </div>
         </div>
     </div>
@@ -585,22 +580,16 @@
 <!-- 固定ボトムバー -->
 <div class="sticky-bottom-bar">
     <div class="row g-2">
-        <div class="col-4">
+        <div class="col-6">
             <a href="{% url 'analysis_template:detail' template.pk %}" class="btn btn-secondary w-100">
                 <i class="bi bi-x-circle"></i>
-                <span class="d-none d-md-inline ms-1">キャンセル</span>
+                <span class="ms-1">キャンセル</span>
             </a>
         </div>
-        <div class="col-4">
-            <button type="button" class="btn btn-success w-100" onclick="submitForm('add')">
-                <i class="bi bi-plus-circle"></i>
-                <span class="d-none d-md-inline ms-1">追加</span>
-            </button>
-        </div>
-        <div class="col-4">
+        <div class="col-6">
             <button type="button" class="btn btn-primary w-100" onclick="submitForm('replace')">
-                <i class="bi bi-arrow-repeat"></i>
-                <span class="d-none d-md-inline ms-1">置換</span>
+                <i class="bi bi-check-circle"></i>
+                <span class="ms-1">更新</span>
             </button>
         </div>
     </div>
@@ -627,6 +616,13 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadSelections() {
+    // ブラウザバック後の再訪問はセッションをリセット（ページネーション・検索内からのアクセスは保持）
+    const referrer = document.referrer;
+    const isInternalNav = referrer.includes('company-select') || referrer.includes('company_select');
+    if (!isInternalNav) {
+        sessionStorage.removeItem(storageKey);
+    }
+
     const saved = sessionStorage.getItem(storageKey);
     if (saved) {
         try {
@@ -766,34 +762,20 @@ function removeFromSelection(code) {
 }
 
 function clearAllSelections() {
-    const count = Object.keys(selectedCompanies).length;
-    if (!count) {
-        alert('選択されている企業がありません');
-        return;
-    }
-    if (confirm(`${count}社の選択をすべてクリアしますか？`)) {
-        selectedCompanies = {};
-        saveSelections();
-        updateUI();
-    }
+    selectedCompanies = {};
+    saveSelections();
+    updateUI();
 }
 
 function selectAllOnPage() {
-    let added = 0;
     document.querySelectorAll('.company-checkbox').forEach(cb => {
         const code = cb.value;
         if (!selectedCompanies[code]) {
             selectedCompanies[code] = { code, name: cb.dataset.companyName };
-            added++;
         }
     });
-
-    if (added > 0) {
-        saveSelections();
-        updateUI();
-    } else {
-        alert('このページの企業はすべて選択済みです');
-    }
+    saveSelections();
+    updateUI();
 }
 
 function saveBeforeSearch() { saveSelections(); }
@@ -806,16 +788,7 @@ function resetSearch() {
 
 function submitForm(action) {
     const count = Object.keys(selectedCompanies).length;
-    if (!count) {
-        alert('企業を選択してください');
-        return;
-    }
-
-    const msg = action === 'add'
-        ? `${count}社を追加します。よろしいですか？`
-        : `既存の企業を削除し、${count}社で置き換えます。よろしいですか？`;
-
-    if (!confirm(msg)) return;
+    if (!count) return;
 
     document.getElementById('actionInput').value = action;
 
