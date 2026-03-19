@@ -340,24 +340,90 @@ def get_stock_metrics(request, stock_code):
     日本株4桁コードは自動的に .T サフィックスを付与
     """
     import yfinance as yf
+    import pandas as pd
     from datetime import datetime
 
     try:
         ticker_symbol = f"{stock_code}.T" if (stock_code.isdigit() and len(stock_code) <= 4) else stock_code
-        info = yf.Ticker(ticker_symbol).info
+        ticker = yf.Ticker(ticker_symbol)
 
-        price = info.get('regularMarketPrice') or info.get('currentPrice')
-        per = info.get('trailingPE') or info.get('forwardPE')
-        pbr = info.get('priceToBook')
-        dividend_yield = info.get('dividendYield')
-        market_cap = info.get('marketCap')
+        # --- 株価・時価総額: fast_info を優先（ticker.info より高速・正確）
+        fi = ticker.fast_info
+        price      = getattr(fi, 'last_price',   None) or getattr(fi, 'lastPrice',   None)
+        market_cap = getattr(fi, 'market_cap',   None) or getattr(fi, 'marketCap',   None)
+        shares     = getattr(fi, 'shares',       None) or getattr(fi, 'sharesOutstanding', None)
+
+        per = pbr = dividend_yield = None
+
+        # --- PER / PBR: 財務諸表から計算
+        try:
+            income_stmt   = ticker.quarterly_income_stmt
+            balance_sheet = ticker.quarterly_balance_sheet
+
+            i_cols   = sorted(income_stmt.columns,   reverse=True)[:4]
+            b_col    = sorted(balance_sheet.columns, reverse=True)[0]
+
+            def ttm(label, stmt):
+                if label not in stmt.index:
+                    return None
+                vals = stmt.loc[label, i_cols].dropna()
+                return float(vals.sum()) if len(vals) > 0 else None
+
+            def bs(label):
+                if label not in balance_sheet.index:
+                    return None
+                v = balance_sheet.loc[label, b_col]
+                return float(v) if not pd.isna(v) else None
+
+            ttm_net = ttm('Net Income', income_stmt)
+            equity  = bs('Stockholders Equity')
+
+            if price and shares and shares > 0:
+                if ttm_net and ttm_net > 0:
+                    per = round(price / (ttm_net / shares), 2)
+                if equity and equity > 0:
+                    pbr = round(price / (equity / shares), 2)
+        except Exception:
+            pass
+
+        # 財務諸表で取得できなかった場合は ticker.info にフォールバック
+        if per is None or pbr is None:
+            try:
+                info = ticker.info
+                if per is None:
+                    raw = info.get('trailingPE') or info.get('forwardPE')
+                    per = round(raw, 2) if raw else None
+                if pbr is None:
+                    raw = info.get('priceToBook')
+                    pbr = round(raw, 2) if raw else None
+            except Exception:
+                pass
+
+        # --- 配当利回り: ticker.dividends から直近1年合計で計算
+        try:
+            divs = ticker.dividends
+            if divs is not None and len(divs) > 0:
+                one_year_ago = pd.Timestamp.now(tz=divs.index.tz) - pd.DateOffset(years=1)
+                annual_div   = float(divs[divs.index >= one_year_ago].sum())
+                if annual_div > 0 and price and price > 0:
+                    dividend_yield = round(annual_div / price * 100, 2)
+        except Exception:
+            pass
+
+        # 配当が取得できなかった場合は ticker.info にフォールバック
+        if dividend_yield is None:
+            try:
+                raw = ticker.info.get('dividendYield')
+                dividend_yield = round(raw * 100, 2) if raw else None
+            except Exception:
+                pass
 
         return JsonResponse({
             'success': True,
             'price': price,
-            'per': round(per, 2) if per else None,
-            'pbr': round(pbr, 2) if pbr else None,
-            'dividend_yield': round(dividend_yield * 100, 2) if dividend_yield else None,
+            'per': per,
+            'pbr': pbr,
+            'dividend_yield': dividend_yield,
             'market_cap_oku': round(market_cap / 100_000_000, 0) if market_cap else None,
             'fetched_at': datetime.now().strftime('%Y/%m/%d %H:%M'),
         })
