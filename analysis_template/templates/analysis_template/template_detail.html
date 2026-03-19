@@ -957,6 +957,9 @@
                         <i class="bi bi-radar"></i>
                         8指標レーダーチャート比較
                     </div>
+                    <div style="font-size:0.78rem;color:var(--at-text-muted);margin-top:0.25rem;">
+                        各指標を 0〜100点 に正規化して表示。タップで実値を確認できます。
+                    </div>
                 </div>
                 <div class="chart-container">
                     <canvas id="radarChart"></canvas>
@@ -1238,6 +1241,52 @@ function toggleAccordion(button) {
     body.style.display = isExpanded ? 'none' : 'block';
 }
 
+// ========== Radar Chart Scoring ==========
+// 各指標を 0〜100点 に正規化する。業種に関わらず一定の基準で評価。
+// 閾値・スコアは区間ごとに線形補間。
+const RADAR_SCORING = {
+    //              閾値配列                     スコア配列
+    roe:              { b: [0,  5,  10,  20,  30],    s: [0,  20, 45,  75, 100] },
+    roa:              { b: [0,  3,   6,  10,  15],    s: [0,  25, 50,  75, 100] },
+    operating_margin: { b: [0,  5,  10,  15,  25],    s: [0,  25, 50,  70, 100] },
+    revenue_growth:   { b: [-20, 0,  5,  15,  30],    s: [0,  30, 50,  75, 100] },
+    profit_growth:    { b: [-30, 0,  5,  20,  50],    s: [0,  25, 45,  75, 100] },
+    equity_ratio:     { b: [10, 30,  50,  70,  85],   s: [0,  30, 60,  85, 100] },
+    dividend_yield:   { b: [0,  1,   2,   4,   6],    s: [5,  30, 60,  85, 100] },
+    // PBR: 市場評価プレミアム。高いほど市場の期待が大きいとして高スコア
+    pbr:              { b: [0, 0.5,  1,   2,   5,  10], s: [0, 20, 45,  65,  85, 100] },
+};
+
+// 指標ごとの表示単位
+const RADAR_UNITS = {
+    roe: '%', roa: '%', operating_margin: '%',
+    revenue_growth: '%', profit_growth: '%', equity_ratio: '%',
+    dividend_yield: '%', pbr: '倍'
+};
+
+// 指標ごとの補足ラベル（チャート軸）
+const RADAR_LABELS = {
+    roe: 'ROE', roa: 'ROA', operating_margin: '営業利益率',
+    revenue_growth: '売上成長', profit_growth: '利益成長',
+    equity_ratio: '自己資本比率', dividend_yield: '配当利回り', pbr: 'PBR'
+};
+
+function radarScore(key, raw) {
+    if (raw === null || raw === undefined || isNaN(raw)) return 0;
+    const cfg = RADAR_SCORING[key];
+    if (!cfg) return 0;
+    const { b, s } = cfg;
+    if (raw <= b[0]) return s[0];
+    if (raw >= b[b.length - 1]) return s[s.length - 1];
+    for (let i = 0; i < b.length - 1; i++) {
+        if (raw >= b[i] && raw <= b[i + 1]) {
+            const t = (raw - b[i]) / (b[i + 1] - b[i]);
+            return s[i] + t * (s[i + 1] - s[i]);
+        }
+    }
+    return 0;
+}
+
 // ========== Generate Radar Chart ==========
 function generateRadarChart() {
     const ctx = document.getElementById('radarChart');
@@ -1252,6 +1301,8 @@ function generateRadarChart() {
         return;
     }
 
+    const METRIC_KEYS = ['roe', 'roa', 'operating_margin', 'revenue_growth', 'profit_growth', 'equity_ratio', 'dividend_yield', 'pbr'];
+
     const colors = [
         { bg: 'rgba(59, 130, 246, 0.2)', border: 'rgb(59, 130, 246)' },
         { bg: 'rgba(16, 185, 129, 0.2)', border: 'rgb(16, 185, 129)' },
@@ -1264,16 +1315,7 @@ function generateRadarChart() {
         const color = colors[i % colors.length];
         return {
             label: company.name,
-            data: [
-                company.metrics.roe || 0,
-                company.metrics.roa || 0,
-                company.metrics.operating_margin || 0,
-                company.metrics.revenue_growth || 0,
-                company.metrics.profit_growth || 0,
-                company.metrics.equity_ratio || 0,
-                company.metrics.dividend_yield || 0,
-                company.metrics.pbr ? Math.min(5, company.metrics.pbr) : 0
-            ],
+            data: METRIC_KEYS.map(key => Math.round(radarScore(key, company.metrics[key]))),
             backgroundColor: color.bg,
             borderColor: color.border,
             borderWidth: 2,
@@ -1290,7 +1332,7 @@ function generateRadarChart() {
 
     const chartColors = isDark ? {
         grid: 'rgba(148, 163, 184, 0.3)',
-        tick: '#e2e8f0',
+        tick: '#94a3b8',
         label: '#f8fafc'
     } : {
         grid: 'rgba(100, 116, 139, 0.2)',
@@ -1301,7 +1343,7 @@ function generateRadarChart() {
     new Chart(ctx, {
         type: 'radar',
         data: {
-            labels: ['ROE', 'ROA', '営業利益率', '売上成長', '利益成長', '自己資本比率', '配当利回り', 'PBR'],
+            labels: METRIC_KEYS.map(k => RADAR_LABELS[k]),
             datasets: datasets
         },
         options: {
@@ -1309,10 +1351,13 @@ function generateRadarChart() {
             maintainAspectRatio: true,
             scales: {
                 r: {
-                    beginAtZero: true,
+                    min: 0,
+                    max: 100,
                     ticks: {
-                        font: { size: 11, weight: '500' },
-                        color: chartColors.tick
+                        stepSize: 20,
+                        font: { size: 10 },
+                        color: chartColors.tick,
+                        backdropColor: 'transparent'
                     },
                     pointLabels: {
                         font: { size: 12, weight: '600' },
@@ -1330,6 +1375,21 @@ function generateRadarChart() {
                         font: { size: 12, weight: '500' },
                         color: chartColors.label,
                         usePointStyle: true
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        title: ctx => ctx[0].label,
+                        label: ctx => {
+                            const company = companiesData[ctx.datasetIndex];
+                            const key = METRIC_KEYS[ctx.dataIndex];
+                            const raw = company.metrics[key];
+                            const unit = RADAR_UNITS[key] || '';
+                            const rawStr = (raw !== null && raw !== undefined)
+                                ? `${Number(raw).toFixed(1)}${unit}`
+                                : 'データなし';
+                            return ` ${company.name}  ${ctx.raw}点  （実値: ${rawStr}）`;
+                        }
                     }
                 }
             }
