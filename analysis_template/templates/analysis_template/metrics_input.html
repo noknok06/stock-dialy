@@ -504,12 +504,6 @@ function loadExistingData() {
                     input.value = value;
                 }
             });
-
-            // 既存データ件数を表示
-            const count = Object.keys(existingData).length;
-            if (count > 0) {
-                showToast(`${count}件の既存データを読み込みました`, 'info');
-            }
         }
     } catch (e) {
         console.error('既存データの読み込みに失敗:', e);
@@ -653,7 +647,7 @@ function updateFormWithResults(results) {
     });
 
     if (filledCount > 0) {
-        showToast(`${filledCount}件の指標を入力しました`, 'success');
+        showToast('success', `${filledCount}件の指標を入力しました`);
     }
 }
 
@@ -669,7 +663,7 @@ function clearCompanyInputs(companyCode) {
     });
 
     if (!hasValue) {
-        showToast('入力されている値がありません', 'info');
+        showToast('info', '入力されている値がありません');
         return;
     }
 
@@ -677,7 +671,7 @@ function clearCompanyInputs(companyCode) {
         inputs.forEach(input => {
             input.value = '';
         });
-        showToast('入力をクリアしました', 'success');
+        showToast('success', '入力をクリアしました');
     }
 }
 
@@ -686,26 +680,31 @@ function clearAllForm() {
         document.querySelectorAll('input[type="number"].metric-input').forEach(input => {
             input.value = '';
         });
-        showToast('すべての入力をクリアしました', 'success');
+        showToast('success', 'すべての入力をクリアしました');
     }
 }
 
 function showToast(message, type = 'info') {
-    // Bootstrap Toast がない場合の簡易通知
     const toast = document.createElement('div');
+    const bg = type === 'success' ? '#10b981' : type === 'danger' ? '#ef4444' : '#3b82f6';
+    
     toast.style.cssText = `
         position: fixed;
         top: 20px;
         right: 20px;
         padding: 1rem 1.5rem;
-        background: ${type === 'success' ? '#10b981' : type === 'danger' ? '#ef4444' : '#3b82f6'};
-        color: white;
+        background: ${bg};
         border-radius: 8px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         z-index: 9999;
-        font-weight: 600;
         animation: slideIn 0.3s ease;
     `;
+    // !important が必要なプロパティは setProperty で設定
+    toast.style.setProperty('color', 'white', 'important');
+    toast.style.setProperty('font-size', '14px', 'important');
+    toast.style.setProperty('font-weight', '600', 'important');
+    toast.style.setProperty('line-height', '1.5', 'important');
+
     toast.textContent = message;
     document.body.appendChild(toast);
 
